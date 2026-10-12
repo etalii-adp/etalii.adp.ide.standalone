@@ -58,8 +58,7 @@ public class RdfContextPropertyProviderTests : IDisposable
         return path;
     }
 
-    private ContextTarget Target(string bodyPath, string elementId) => new(
-        ContextScope.DiagramElement, bodyPath, IsContainer: false, SourceId: default, _root, default, elementId);
+    private ContextTarget Target(string bodyPath, string elementId) => ContextTarget.ForElement(bodyPath, elementId, _root);
 
     [Fact]
     public async Task AResource_ShowsIdentityReadOnly_AndItsDocumentationEditable()

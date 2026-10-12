@@ -34,7 +34,7 @@ public class SparqlProvidersTests : IDisposable
     }
 
     private ContextTarget TargetFor(string bodyPath, string elementId) =>
-        new(ContextScope.DiagramElement, bodyPath, IsContainer: false, SourceId: default, _root, ShortGuid.NewShortGuid(), elementId);
+        ContextTarget.ForElement(bodyPath, elementId, _root, ShortGuid.NewShortGuid());
 
     private async Task<IReadOnlyList<ContextPropertyDefinition>> RowsFor(string elementId)
     {

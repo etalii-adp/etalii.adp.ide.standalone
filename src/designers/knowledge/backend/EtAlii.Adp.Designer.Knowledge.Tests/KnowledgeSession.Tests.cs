@@ -191,7 +191,7 @@ public sealed class KnowledgeSessionTests : IDisposable
         // Assert: the structure, the findings and the window's rows, from the file as it is now.
         // The write is seen as it happens, so a reading taken halfway through may be pushed first: what is waited for is the file as it ended.
         Assert.True(
-            await Eventually(() => pushed.OfType<TableStructureChanged>().LastOrDefault()?.Title == "Towns" && pushed.OfType<TableRowsChanged>().LastOrDefault()?.Rows.Count > 0),
+            await Eventually.TrueAsync(() => pushed.OfType<TableStructureChanged>().LastOrDefault()?.Title == "Towns" && pushed.OfType<TableRowsChanged>().LastOrDefault()?.Rows.Count > 0, TestContext.Current.CancellationToken, Patience),
             "The session never showed the change made to its file.");
         Assert.Equal("Towns", pushed.OfType<TableStructureChanged>().Last().Title);
         Assert.Equal("Mokum", pushed.OfType<TableRowsChanged>().Last().Rows[0].Cells.Single(cell => cell.ColumnId == "p1").Values.Single());
@@ -226,7 +226,7 @@ public sealed class KnowledgeSessionTests : IDisposable
         File.Delete(path);
 
         // Assert: the session stops claiming the file opens and says why, and keeps the last good table.
-        Assert.True(await Eventually(() => session.Refusal.Length > 0), "The session never learned its file was deleted.");
+        Assert.True(await Eventually.TrueAsync(() => session.Refusal.Length > 0, TestContext.Current.CancellationToken, Patience), "The session never learned its file was deleted.");
         Assert.Equal("The file no longer exists.", session.Refusal);
         Assert.Equal("Cities", session.Baseline().Title);
     }
@@ -244,7 +244,7 @@ public sealed class KnowledgeSessionTests : IDisposable
         watcher.EnableRaisingEvents = false;
         var text = await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken);
         await File.WriteAllTextAsync(path, text.Replace("name: Cities", "name: Towns", StringComparison.Ordinal), TestContext.Current.CancellationToken);
-        RaiseOverflow(watcher);
+        watcher.RaiseOverflow();
 
         // Assert: synchronously, because the watcher's own Error is.
         Assert.Equal("Towns", pushed.OfType<TableStructureChanged>().Single().Title);
@@ -488,38 +488,4 @@ public sealed class KnowledgeSessionTests : IDisposable
     }
 
     // The one signal a watcher gives when it has dropped events, raised the way the watcher raises it.
-    private static void RaiseOverflow(FileSystemWatcher watcher) =>
-        (typeof(FileSystemWatcher).GetMethod("OnError", BindingFlags.Instance | BindingFlags.NonPublic)
-            ?? throw new InvalidOperationException("FileSystemWatcher.OnError was not found."))
-        .Invoke(watcher, [new ErrorEventArgs(new InternalBufferOverflowException())]);
-
-    private static async Task<bool> Eventually(Func<bool> condition)
-    {
-        var deadline = DateTime.UtcNow + Patience;
-        while (true)
-        {
-            bool met;
-            try
-            {
-                met = condition();
-            }
-            catch (InvalidOperationException)
-            {
-                // The list was being added to while it was read; look again.
-                met = false;
-            }
-
-            if (met)
-            {
-                return true;
-            }
-
-            if (DateTime.UtcNow > deadline)
-            {
-                return false;
-            }
-
-            await Task.Delay(20, TestContext.Current.CancellationToken);
-        }
-    }
 }

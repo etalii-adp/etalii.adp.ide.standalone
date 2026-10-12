@@ -55,12 +55,6 @@ public class SparqlSessionTests : IDisposable
         return factory.Open(ShortGuid.NewShortGuid(), _root, bodyPath, registrationPath);
     }
 
-    private static IReadOnlyList<DiagramElement> ElementsOf(IDiagramSession session)
-    {
-        var baseline = Assert.Single(session.Baseline());
-        return Assert.IsType<DiagramAddDelta>(baseline).Elements.ToList();
-    }
-
     /// <summary>
     /// The loop this task closes (view-delta-adoption Requirements 1.2, 1.3): a changed
     /// viewport answers with what left the view and what came into it, in that order - the shared
@@ -77,7 +71,7 @@ public class SparqlSessionTests : IDisposable
         // Regions, because they are placed: an edge, a note or the header sits at the origin, so
         // the leftmost of everything is a window that holds no region at all, and panning from
         // there only ever adds - which would pass against either order.
-        var regions = ElementsOf(session).Where(element => element.Type == SparqlElementMapper.RegionType).ToList();
+        var regions = session.BaselineElements().Where(element => element.Type == SparqlElementMapper.RegionType).ToList();
         var leftmost = regions.MinBy(element => element.X)!;
         var rightmost = regions.MaxBy(element => element.X)!;
         Assert.NotEqual(leftmost.Id, rightmost.Id);
@@ -108,7 +102,7 @@ public class SparqlSessionTests : IDisposable
         // Arrange: open, then narrow the viewport to one element so the rest is culled.
         var body = CopyFixture("groups.rq");
         await using var session = Open(body, WriteRegistration("groups.rq"));
-        var all = ElementsOf(session);
+        var all = session.BaselineElements();
         var kept = all.MinBy(element => element.X)!;
         var culled = all.MaxBy(element => element.X)!;
         session.UpdateView(Around(kept));
@@ -156,7 +150,7 @@ public class SparqlSessionTests : IDisposable
 
         // Act.
         await using var session = Open(body, WriteRegistration("groups.rq"));
-        var elements = ElementsOf(session);
+        var elements = session.BaselineElements();
 
         // Assert.
         Assert.Contains(elements, element => element is { Id: "var:x", Type: SparqlElementMapper.VariableType });
@@ -177,7 +171,7 @@ public class SparqlSessionTests : IDisposable
 
         // Act.
         await using var session = Open(body, registration);
-        var elements = ElementsOf(session);
+        var elements = session.BaselineElements();
 
         // Assert.
         var node = Assert.Single(elements, element => element.Id == "var:x");
@@ -276,7 +270,7 @@ public class SparqlSessionTests : IDisposable
         // Arrange.
         var body = CopyFixture("lf-line-endings.rq");
         await using var session = Open(body, WriteRegistration("lf-line-endings.rq"));
-        ElementsOf(session);
+        session.BaselineElements();
 
         IReadOnlyList<DiagramDelta> received = [];
         session.Changed += (_, args) => received = args.Deltas;
@@ -301,7 +295,7 @@ public class SparqlSessionTests : IDisposable
 
         // Act.
         await using var session = Open(body, WriteRegistration("broken.rq"));
-        var elements = ElementsOf(session);
+        var elements = session.BaselineElements();
 
         // Assert.
         Assert.Equal(SparqlElementMapper.HeaderId, Assert.Single(elements).Id);

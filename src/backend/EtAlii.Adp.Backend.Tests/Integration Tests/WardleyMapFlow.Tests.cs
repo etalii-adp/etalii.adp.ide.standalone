@@ -374,7 +374,7 @@ public class WardleyMapFlowTests : IClassFixture<WebApplicationFactory<Program>>
 
         // Assert, continued. The actions arrive with the selection, described by the backend
         // down to their shortcuts (Requirements 11.4, 11.5).
-        var actions = changed.Actions.SelectMany(group => group.Actions).ToArray();
+        var actions = changed.Actions.Actions();
         Assert.Contains(actions, action => action.Id == WardleyContextActionProvider.RenameActionId && action.Shortcut.Key == "F2");
         Assert.Contains(actions, action => action.Id == WardleyContextActionProvider.LinkActionId);
 

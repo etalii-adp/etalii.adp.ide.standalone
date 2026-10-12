@@ -183,7 +183,7 @@ public class ContextSelectionFlowTests : IClassFixture<WebApplicationFactory<Pro
         // A bare .mm body routes by its declared extension: the pushed detail says which
         // canvas can open it (diagram-workspace-tabs Requirement 1.1).
         Assert.Equal("freeplane/mindmap", detail.Entry.DiagramMimeType);
-        var actionIds = pushed.Actions.SelectMany(g => g.Actions).Select(a => a.Id).ToList();
+        var actionIds = pushed.Actions.ActionIds();
         Assert.Contains(HierarchyContextActionProvider.RenameActionId, actionIds);
         Assert.Contains(HierarchyContextActionProvider.DeleteActionId, actionIds);
     }

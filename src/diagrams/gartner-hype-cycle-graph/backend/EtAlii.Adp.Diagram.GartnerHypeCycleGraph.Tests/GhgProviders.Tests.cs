@@ -48,7 +48,7 @@ public sealed class GhgProvidersTests : IDisposable
     private static int M(int year, int month = 1) => GhgScale.MonthIndex(year, month);
 
     private ContextTarget Target(string elementId) =>
-        new(ContextScope.DiagramElement, Body, IsContainer: false, SourceId: default, _folder, ShortGuid.NewShortGuid(), elementId);
+        ContextTarget.ForElement(Body, elementId, _folder, ShortGuid.NewShortGuid());
 
     private async Task<IReadOnlyList<ContextPropertyDefinition>> RowsOf(string elementId, GhgContextPropertyProvider? provider = null) =>
         await (provider ?? _properties).DescribeAsync(Target(elementId), TestContext.Current.CancellationToken);
@@ -282,8 +282,8 @@ public sealed class GhgProvidersTests : IDisposable
         var adds = await _actions.DiscoverAsync(Target(GestureIds.Placement(1, 2)), TestContext.Current.CancellationToken);
         var connects = await _actions.DiscoverAsync(Target(GestureIds.Relation("a", "b")), TestContext.Current.CancellationToken);
 
-        Assert.Equal(["ghg.add.trend", "ghg.add.trigger", "ghg.add.note", "ghg.arrange"], adds.SelectMany(group => group.Actions).Select(action => action.Id));
-        Assert.Equal(["ghg.connect.influence"], connects.SelectMany(group => group.Actions).Select(action => action.Id));
+        Assert.Equal(["ghg.add.trend", "ghg.add.trigger", "ghg.add.note", "ghg.arrange"], adds.ActionIds());
+        Assert.Equal(["ghg.connect.influence"], connects.ActionIds());
     }
 
     [Fact]
@@ -292,8 +292,8 @@ public sealed class GhgProvidersTests : IDisposable
         var dragged = await _actions.DiscoverAsync(Target("steam-engine"), TestContext.Current.CancellationToken);
         var even = await _actions.DiscoverAsync(Target("railways"), TestContext.Current.CancellationToken);
 
-        Assert.Contains(GhgContextActionProvider.EvenPhasesActionId, dragged.SelectMany(group => group.Actions).Select(action => action.Id));
-        Assert.DoesNotContain(GhgContextActionProvider.EvenPhasesActionId, even.SelectMany(group => group.Actions).Select(action => action.Id));
+        Assert.Contains(GhgContextActionProvider.EvenPhasesActionId, dragged.ActionIds());
+        Assert.DoesNotContain(GhgContextActionProvider.EvenPhasesActionId, even.ActionIds());
     }
 
     [Fact]

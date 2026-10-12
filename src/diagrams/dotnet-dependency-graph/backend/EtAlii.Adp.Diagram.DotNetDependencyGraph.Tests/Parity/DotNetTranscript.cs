@@ -51,7 +51,7 @@ internal static partial class DotNetTranscript
     private static readonly TypeRegistry _payloadTypes = TypeRegistry.FromMessages(DependencyElementPayload.Descriptor);
 
     /// <summary>The module's folder, <c>src/diagrams/dotnet-dependency-graph</c>.</summary>
-    private static string ModuleFolder { get; } = FindModuleFolder();
+    private static string ModuleFolder { get; } = RepositoryPaths.Under("src", "diagrams", "dotnet-dependency-graph");
 
     /// <summary>The checked-in transcript.</summary>
     public static string CheckedInPath => Path.Combine(ModuleFolder, "backend", TestProject, "Parity", FileName);
@@ -238,7 +238,7 @@ internal static partial class DotNetTranscript
     }
 
     private static ContextTarget Target(string path, string elementId) =>
-        new(ContextScope.DiagramElement, path, IsContainer: false, SourceId: default, Path.GetDirectoryName(path) ?? "", default, elementId, Diagram.DependencyGraph.Origin);
+        ContextTarget.ForElement(path, elementId, Path.GetDirectoryName(path) ?? "", origin: Diagram.DependencyGraph.Origin);
 
     /// <summary>What a graph holds, so two solutions with equal bytes but different projects are told apart.</summary>
     private static string Fingerprint(DependencyGraphModel graph) =>
@@ -307,19 +307,6 @@ internal static partial class DotNetTranscript
 
     [GeneratedRegex(@"\{src\}[^\s'""]*")]
     private static partial Regex SourcePath();
-
-    private static string FindModuleFolder()
-    {
-        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
-        {
-            if (directory.Name == "dotnet-dependency-graph" && Directory.Exists(Path.Combine(directory.FullName, "backend")))
-            {
-                return directory.FullName;
-            }
-        }
-
-        throw new InvalidOperationException($"No dotnet-dependency-graph folder above {AppContext.BaseDirectory}. That is a failure, not a skip.");
-    }
 
     /// <summary>A store that holds one graph, whatever it is asked for: the provider's view of a store.</summary>
     private sealed class FixedStore(DependencyGraphModel graph) : IDependencyGraphStore

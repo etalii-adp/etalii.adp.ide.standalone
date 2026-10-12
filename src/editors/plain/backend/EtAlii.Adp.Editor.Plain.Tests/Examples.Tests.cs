@@ -16,24 +16,10 @@ public class ExamplesTests
     /// than by counting <c>..</c> segments - the count changes with the build layout, the
     /// folder name does not (the shape ExampleRegistrationTests already uses).
     /// </summary>
-    private static string ExamplesRoot { get; } = Locate("src", "editors", "plain", "examples");
+    private static string ExamplesRoot { get; } = RepositoryPaths.Under("src", "editors", "plain", "examples");
 
     /// <summary>The combined project's replica of this module's examples (structure.md's replication rule).</summary>
-    private static string ReplicaRoot { get; } = Locate("src", "examples", "editors", "plain");
-
-    private static string Locate(params string[] segments)
-    {
-        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
-        {
-            var candidate = IoPath.Combine([directory.FullName, .. segments]);
-            if (Directory.Exists(candidate))
-            {
-                return candidate;
-            }
-        }
-
-        throw new InvalidOperationException($"The {string.Join('/', segments)} folder was not found above the test binary.");
-    }
+    private static string ReplicaRoot { get; } = RepositoryPaths.Under("src", "examples", "editors", "plain");
 
     public static TheoryData<string> EveryExampleFile()
     {

@@ -47,7 +47,7 @@ internal static class AbmTranscript
     private static readonly TypeRegistry _payloadTypes = TypeRegistry.FromFiles(AgentBehaviorModellingReflection.Descriptor);
 
     /// <summary>The module's folder, <c>src/diagrams/agent-behavior-modelling</c>.</summary>
-    private static string ModuleFolder { get; } = FindModuleFolder();
+    private static string ModuleFolder { get; } = RepositoryPaths.Under("src", "diagrams", "agent-behavior-modelling");
 
     /// <summary>The checked-in transcript.</summary>
     public static string CheckedInPath => Path.Combine(ModuleFolder, "backend", TestProject, "Parity", FileName);
@@ -336,19 +336,6 @@ internal static class AbmTranscript
         AbmNode? Root() => session.Model.Roots.FirstOrDefault();
     }
 
-    private static string FindModuleFolder()
-    {
-        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
-        {
-            if (directory.Name == "agent-behavior-modelling")
-            {
-                return directory.FullName;
-            }
-        }
-
-        throw new InvalidOperationException($"No agent-behavior-modelling folder above {AppContext.BaseDirectory}. That is a failure, not a skip.");
-    }
-
     /// <summary>One document's store, history and providers, readable and read-only.</summary>
     private sealed class Session : IDisposable
     {
@@ -385,7 +372,7 @@ internal static class AbmTranscript
         public AbmModel Model => Store.GetOrLoad(Body).Model;
 
         public ContextTarget Target(string elementId) =>
-            new(ContextScope.DiagramElement, Body, IsContainer: false, SourceId: default, Folder, default, elementId, Diagram.AgentBehaviorModelling.Origin);
+            ContextTarget.ForElement(Body, elementId, Folder, origin: Diagram.AgentBehaviorModelling.Origin);
 
         public void Dispose() => History.Dispose();
     }

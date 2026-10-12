@@ -53,7 +53,7 @@ public class OpenAsTextContextActionProviderTests : IDisposable
     }
 
     private static IReadOnlyList<ContextActionDefinition> ActionsOf(IReadOnlyList<ContextActionGroupDefinition> groups) =>
-        [.. groups.SelectMany(group => group.Actions)];
+        [.. groups.Actions()];
 
     [Fact]
     public async Task Discover_ADiagramClaimedFile_OffersOpenAsText()

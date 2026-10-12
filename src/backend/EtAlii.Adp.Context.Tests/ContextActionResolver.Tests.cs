@@ -30,7 +30,7 @@ public class ContextActionResolverTests
         var groups = await resolver.DiscoverAsync(Target(), TestContext.Current.CancellationToken);
 
         // Assert.
-        Assert.Equal(new[] { "matching" }, groups.SelectMany(g => g.Actions).Select(a => a.Id));
+        Assert.Equal(new[] { "matching" }, groups.ActionIds());
         Assert.False(other.WasConsulted);
     }
 
@@ -199,7 +199,7 @@ public class ContextActionResolverTests
         var groups = await resolver.DiscoverAsync(TargetOf(shapes), TestContext.Current.CancellationToken);
 
         // Assert: the other reading's verbs are absent, not merely ordered lower.
-        var ids = groups.SelectMany(group => group.Actions).Select(action => action.Id).ToList();
+        var ids = groups.ActionIds();
         Assert.Equal(["family.rename", "shacl.deactivate"], ids);
     }
 }

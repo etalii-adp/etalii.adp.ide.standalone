@@ -60,6 +60,24 @@ public sealed class TestFolder : IDisposable
     public void Dispose() => TryDelete(Path, Directory.Exists, _caller);
 
     /// <summary>
+    /// Copies every folder and file under <paramref name="from"/> to the same place under
+    /// <paramref name="to"/>, empty folders included.
+    /// </summary>
+    public static void CopyTree(string from, string to)
+    {
+        Directory.CreateDirectory(to);
+        foreach (var folder in Directory.EnumerateDirectories(from, "*", SearchOption.AllDirectories))
+        {
+            Directory.CreateDirectory(IoPath.Combine(to, IoPath.GetRelativePath(from, folder)));
+        }
+
+        foreach (var file in Directory.EnumerateFiles(from, "*", SearchOption.AllDirectories))
+        {
+            File.Copy(file, IoPath.Combine(to, IoPath.GetRelativePath(from, file)));
+        }
+    }
+
+    /// <summary>
     /// The environment variable a gate sets to collect this run's reports in a directory of its
     /// own. Unset, a local run still reports to one file under %TEMP%.
     /// </summary>

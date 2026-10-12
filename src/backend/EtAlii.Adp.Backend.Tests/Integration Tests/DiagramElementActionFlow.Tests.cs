@@ -467,7 +467,7 @@ public class DiagramElementActionFlowTests : IClassFixture<WebApplicationFactory
     };
 
     private static string[] ActionLabels(ContextSelectionChanged changed) =>
-        changed.Actions.SelectMany(group => group.Actions).Select(action => action.Label).ToArray();
+        changed.Actions.Actions().Select(action => action.Label).ToArray();
 
     private static async Task<ContextSelectionChanged> ReadUntilSelectionActionsAsync(IAsyncStreamReader<ContextMessage> stream, CancellationToken cancellationToken)
     {

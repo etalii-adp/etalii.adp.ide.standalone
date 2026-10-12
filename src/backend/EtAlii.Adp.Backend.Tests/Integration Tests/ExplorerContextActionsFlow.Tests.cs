@@ -103,7 +103,7 @@ public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFacto
             new DiscoverActionsRequest { ProjectId = projectId, WatchId = watchId, Source = source },
             headers,
             cancellationToken: TestContext.Current.CancellationToken);
-        var renameAction = discovered.Groups.SelectMany(g => g.Actions).Single(a => a.Id == HierarchyContextActionProvider.RenameActionId);
+        var renameAction = discovered.Groups.Actions().Single(a => a.Id == HierarchyContextActionProvider.RenameActionId);
         Assert.True(renameAction.Available);
 
         var interactionId = ShortGuid.NewShortGuid();

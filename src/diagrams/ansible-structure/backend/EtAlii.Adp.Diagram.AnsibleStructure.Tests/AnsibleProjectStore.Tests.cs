@@ -23,7 +23,7 @@ public class AnsibleProjectStoreTests : IDisposable
     public AnsibleProjectStoreTests()
     {
         _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        CopyTree(IoPath.Combine("Fixtures", "infrastructure"), _root);
+        TestFolder.CopyTree(IoPath.Combine("Fixtures", "infrastructure"), _root);
     }
 
     public void Dispose()
@@ -257,18 +257,5 @@ public class AnsibleProjectStoreTests : IDisposable
 
         Assert.Fail($"The folder was not re-read within {WaitLimit}.");
         return null!;
-    }
-
-    private static void CopyTree(string source, string destination)
-    {
-        Directory.CreateDirectory(destination);
-        foreach (var folder in Directory.GetDirectories(source, "*", SearchOption.AllDirectories))
-        {
-            Directory.CreateDirectory(IoPath.Combine(destination, IoPath.GetRelativePath(source, folder)));
-        }
-        foreach (var file in Directory.GetFiles(source, "*", SearchOption.AllDirectories))
-        {
-            File.Copy(file, IoPath.Combine(destination, IoPath.GetRelativePath(source, file)));
-        }
     }
 }

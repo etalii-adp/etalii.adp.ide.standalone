@@ -53,7 +53,7 @@ internal static class TimelineTranscript
     private static readonly TypeRegistry _payloadTypes = TypeRegistry.FromFiles(TimelineReflection.Descriptor);
 
     /// <summary>The module's folder, <c>src/diagrams/timeline</c>.</summary>
-    private static string ModuleFolder { get; } = FindModuleFolder();
+    private static string ModuleFolder { get; } = RepositoryPaths.Under("src", "diagrams", "timeline");
 
     /// <summary>The checked-in transcript.</summary>
     public static string CheckedInPath => Path.Combine(ModuleFolder, "backend", TestProject, "Parity", FileName);
@@ -352,19 +352,6 @@ internal static class TimelineTranscript
         await script.EndAsync(original);
     }
 
-    private static string FindModuleFolder()
-    {
-        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
-        {
-            if (directory.Name == "timeline" && Directory.Exists(Path.Combine(directory.FullName, "backend", TestProject)))
-            {
-                return directory.FullName;
-            }
-        }
-
-        throw new InvalidOperationException($"No timeline module folder above {AppContext.BaseDirectory}. That is a failure, not a skip.");
-    }
-
     /// <summary>One document's store, history and providers.</summary>
     private sealed class Session : IDisposable
     {
@@ -392,7 +379,7 @@ internal static class TimelineTranscript
         public TimelineModel Model => Store.GetOrLoad(Body).Model;
 
         public ContextTarget Target(string elementId) =>
-            new(ContextScope.DiagramElement, Body, IsContainer: false, SourceId: default, Folder, default, elementId, Diagram.Timeline.Origin);
+            ContextTarget.ForElement(Body, elementId, Folder, origin: Diagram.Timeline.Origin);
 
         public void Dispose() => History.Dispose();
     }

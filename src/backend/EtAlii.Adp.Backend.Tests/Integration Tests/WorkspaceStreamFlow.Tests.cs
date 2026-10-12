@@ -108,7 +108,7 @@ public sealed class WorkspaceStreamFlowTests : IClassFixture<WebApplicationFacto
 
         // Closing the diagram stops its pump and leaves the connection open.
         await session.Workspace.CloseDiagramAsync(new CloseDiagramStreamRequest { WatchId = session.WatchId, StreamId = streamId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
-        Assert.True(await EventuallyAsync(() => Connections().Find((ShortGuid)session.WatchId)?.DiagramStreamCount == 0), "The diagram stream was still running after it was closed.");
+        Assert.True(await Eventually.TrueAsync(() => Connections().Find((ShortGuid)session.WatchId)?.DiagramStreamCount == 0, TestContext.Current.CancellationToken, MessageTimeout), "The diagram stream was still running after it was closed.");
         Assert.NotNull(Connections().Find((ShortGuid)session.WatchId));
     }
 
@@ -134,8 +134,8 @@ public sealed class WorkspaceStreamFlowTests : IClassFixture<WebApplicationFacto
         watch.Dispose();
 
         // Assert: the connection is gone, and so is the pump it carried - not merely forgotten.
-        Assert.True(await EventuallyAsync(() => Connections().Find((ShortGuid)session.WatchId) is null), "The connection outlived its stream.");
-        Assert.True(await EventuallyAsync(() => connection!.DiagramStreamCount == 0), "A diagram stream kept running after the stream carrying it ended.");
+        Assert.True(await Eventually.TrueAsync(() => Connections().Find((ShortGuid)session.WatchId) is null, TestContext.Current.CancellationToken, MessageTimeout), "The connection outlived its stream.");
+        Assert.True(await Eventually.TrueAsync(() => connection!.DiagramStreamCount == 0, TestContext.Current.CancellationToken, MessageTimeout), "A diagram stream kept running after the stream carrying it ended.");
     }
 
     [Fact]
@@ -208,22 +208,6 @@ public sealed class WorkspaceStreamFlowTests : IClassFixture<WebApplicationFacto
                 return message;
             }
         }
-    }
-
-    private static async Task<bool> EventuallyAsync(Func<bool> condition)
-    {
-        var deadline = DateTime.UtcNow + MessageTimeout;
-        while (DateTime.UtcNow < deadline)
-        {
-            if (condition())
-            {
-                return true;
-            }
-
-            await Task.Delay(25, TestContext.Current.CancellationToken);
-        }
-
-        return condition();
     }
 
     private async Task<Session> OpenSessionAsync()

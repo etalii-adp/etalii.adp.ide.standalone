@@ -115,21 +115,7 @@ public partial class ShapeOfFileAccessTests
 
     private static readonly string Replacement = "SharedDocumentReader (reads), AdpFileWriter.Save (overwrites) or AdpFileWriter.Create/CreateAll (new files)";
 
-    private static string RepositoryRoot { get; } = Locate();
-
-    private static string Locate()
-    {
-        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
-        {
-            if (Directory.Exists(IoPath.Combine(directory.FullName, "src", "diagrams")) &&
-                Directory.Exists(IoPath.Combine(directory.FullName, "src", "backend")))
-            {
-                return directory.FullName;
-            }
-        }
-
-        throw new InvalidOperationException("The repository root (src/diagrams beside src/backend) was not found above the test binary.");
-    }
+    private static string RepositoryRoot { get; } = RepositoryPaths.Root;
 
     /// <summary>Production C# only: generated output, build artifacts and test code are not the subject.</summary>
     /// <remarks>

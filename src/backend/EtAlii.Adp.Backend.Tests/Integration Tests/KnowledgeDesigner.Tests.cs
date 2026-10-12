@@ -74,26 +74,11 @@ public sealed class KnowledgeDesignerTests : IClassFixture<WebApplicationFactory
         TestFolder.TryDelete(_appDataRoot);
     }
 
-    /// <summary>The module's examples folder, found by walking up from the test binary.</summary>
-    private static string Examples()
-    {
-        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
-        {
-            var candidate = IoPath.Combine(directory.FullName, "src", "designers", "knowledge", "examples");
-            if (Directory.Exists(candidate))
-            {
-                return candidate;
-            }
-        }
-
-        throw new InvalidOperationException("The Knowledge designer's examples were not found above the test binary.");
-    }
-
     /// <summary>The example and the table it relates to in the project, each with its registration.</summary>
     private void Seed(string extension)
     {
-        File.Copy(IoPath.Combine(Examples(), "cities" + extension), IoPath.Combine(_projectFolder, "cities" + extension));
-        File.Copy(IoPath.Combine(Examples(), "provinces.yaml"), IoPath.Combine(_projectFolder, "provinces.yaml"));
+        File.Copy(IoPath.Combine(RepositoryPaths.Under("src", "designers", "knowledge", "examples"), "cities" + extension), IoPath.Combine(_projectFolder, "cities" + extension));
+        File.Copy(IoPath.Combine(RepositoryPaths.Under("src", "designers", "knowledge", "examples"), "provinces.yaml"), IoPath.Combine(_projectFolder, "provinces.yaml"));
         File.WriteAllText(IoPath.Combine(_projectFolder, "cities.adp"), $"etalii/knowledge\r\nbody: cities{extension}\r\n");
         File.WriteAllText(IoPath.Combine(_projectFolder, "provinces.adp"), "etalii/knowledge\r\nbody: provinces.yaml\r\n");
     }

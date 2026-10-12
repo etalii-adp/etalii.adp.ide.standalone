@@ -18,7 +18,7 @@ public class HelmContextPropertyProviderTests : IDisposable
     public HelmContextPropertyProviderTests()
     {
         _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        CopyTree(IoPath.Combine(AppContext.BaseDirectory, "Fixtures", "well-formed"), _root);
+        TestFolder.CopyTree(IoPath.Combine(AppContext.BaseDirectory, "Fixtures", "well-formed"), _root);
         _provider = new HelmContextPropertyProvider(_store);
     }
 
@@ -134,26 +134,5 @@ public class HelmContextPropertyProviderTests : IDisposable
         Assert.Contains("changes nothing", result.Error, StringComparison.Ordinal);
     }
 
-    private ContextTarget Target(string elementId) => new(
-        ContextScope.DiagramElement,
-        _root,
-        IsContainer: false,
-        SourceId: default,
-        _root,
-        default,
-        elementId);
-
-    private static void CopyTree(string source, string destination)
-    {
-        Directory.CreateDirectory(destination);
-        foreach (var directory in Directory.EnumerateDirectories(source, "*", SearchOption.AllDirectories))
-        {
-            Directory.CreateDirectory(IoPath.Combine(destination, IoPath.GetRelativePath(source, directory)));
-        }
-
-        foreach (var file in Directory.EnumerateFiles(source, "*", SearchOption.AllDirectories))
-        {
-            File.Copy(file, IoPath.Combine(destination, IoPath.GetRelativePath(source, file)));
-        }
-    }
+    private ContextTarget Target(string elementId) => ContextTarget.ForElement(_root, elementId, _root);
 }

@@ -69,15 +69,15 @@ public sealed class WardleyContextPropertyProviderTests : IDisposable
         var rows = await Describe(IdOf("Kettle"));
 
         // Assert.
-        Assert.Equal("Kettle", Value(rows, WardleyContextPropertyProvider.NamePropertyId));
-        Assert.Equal("component", Value(rows, WardleyContextPropertyProvider.KindPropertyId));
-        Assert.Equal("0.43", Value(rows, WardleyContextPropertyProvider.VisibilityPropertyId));
-        Assert.Equal("0.35", Value(rows, WardleyContextPropertyProvider.MaturityPropertyId));
-        Assert.Equal("Custom Built", Value(rows, WardleyContextPropertyProvider.StagePropertyId));
-        Assert.Equal("0.62", Value(rows, WardleyContextPropertyProvider.EvolvePropertyId));
-        Assert.Equal("Electric Kettle", Value(rows, WardleyContextPropertyProvider.EvolveNamePropertyId));
-        Assert.Equal("true", Value(rows, WardleyContextPropertyProvider.InertiaPropertyId));
-        Assert.Equal("buy", Value(rows, WardleyContextPropertyProvider.DecoratorsPropertyId));
+        Assert.Equal("Kettle", rows.Row(WardleyContextPropertyProvider.NamePropertyId).Value);
+        Assert.Equal("component", rows.Row(WardleyContextPropertyProvider.KindPropertyId).Value);
+        Assert.Equal("0.43", rows.Row(WardleyContextPropertyProvider.VisibilityPropertyId).Value);
+        Assert.Equal("0.35", rows.Row(WardleyContextPropertyProvider.MaturityPropertyId).Value);
+        Assert.Equal("Custom Built", rows.Row(WardleyContextPropertyProvider.StagePropertyId).Value);
+        Assert.Equal("0.62", rows.Row(WardleyContextPropertyProvider.EvolvePropertyId).Value);
+        Assert.Equal("Electric Kettle", rows.Row(WardleyContextPropertyProvider.EvolveNamePropertyId).Value);
+        Assert.Equal("true", rows.Row(WardleyContextPropertyProvider.InertiaPropertyId).Value);
+        Assert.Equal("buy", rows.Row(WardleyContextPropertyProvider.DecoratorsPropertyId).Value);
     }
 
     [Fact]
@@ -88,8 +88,8 @@ public sealed class WardleyContextPropertyProviderTests : IDisposable
         var rows = await Describe(IdOf("Kettle"));
 
         // Assert.
-        Assert.Equal("component", Value(rows, WardleyContextPropertyProvider.KindPropertyId));
-        Assert.Equal("buy", Value(rows, WardleyContextPropertyProvider.DecoratorsPropertyId));
+        Assert.Equal("component", rows.Row(WardleyContextPropertyProvider.KindPropertyId).Value);
+        Assert.Equal("buy", rows.Row(WardleyContextPropertyProvider.DecoratorsPropertyId).Value);
     }
 
     [Fact]
@@ -177,13 +177,13 @@ public sealed class WardleyContextPropertyProviderTests : IDisposable
         var rows = await Describe(IdOf("Kettle"));
 
         // Assert.
-        Assert.True(Row(rows, WardleyContextPropertyProvider.NamePropertyId).IsEditable);
-        Assert.True(Row(rows, WardleyContextPropertyProvider.VisibilityPropertyId).IsEditable);
-        Assert.True(Row(rows, WardleyContextPropertyProvider.MaturityPropertyId).IsEditable);
-        Assert.True(Row(rows, WardleyContextPropertyProvider.EvolvePropertyId).IsEditable);
-        Assert.True(Row(rows, WardleyContextPropertyProvider.InertiaPropertyId).IsEditable);
-        Assert.True(Row(rows, WardleyContextPropertyProvider.DecoratorsPropertyId).IsEditable);
-        Assert.False(Row(rows, WardleyContextPropertyProvider.StagePropertyId).IsEditable);
+        Assert.True(rows.Row(WardleyContextPropertyProvider.NamePropertyId).IsEditable);
+        Assert.True(rows.Row(WardleyContextPropertyProvider.VisibilityPropertyId).IsEditable);
+        Assert.True(rows.Row(WardleyContextPropertyProvider.MaturityPropertyId).IsEditable);
+        Assert.True(rows.Row(WardleyContextPropertyProvider.EvolvePropertyId).IsEditable);
+        Assert.True(rows.Row(WardleyContextPropertyProvider.InertiaPropertyId).IsEditable);
+        Assert.True(rows.Row(WardleyContextPropertyProvider.DecoratorsPropertyId).IsEditable);
+        Assert.False(rows.Row(WardleyContextPropertyProvider.StagePropertyId).IsEditable);
     }
 
     [Fact]
@@ -195,7 +195,7 @@ public sealed class WardleyContextPropertyProviderTests : IDisposable
 
         // Assert. The reason is shown AND thrown: the panel puts it beside the value, and the
         // resolver returns it verbatim when it refuses the write.
-        Assert.Contains("Change Maturity instead", Row(rows, WardleyContextPropertyProvider.StagePropertyId).ReadOnlyReason, StringComparison.Ordinal);
+        Assert.Contains("Change Maturity instead", rows.Row(WardleyContextPropertyProvider.StagePropertyId).ReadOnlyReason, StringComparison.Ordinal);
         Assert.False(result.IsSuccess);
         Assert.Contains("Maturity", result.Error, StringComparison.Ordinal);
         Assert.Equal(Map, await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken));
@@ -208,12 +208,12 @@ public sealed class WardleyContextPropertyProviderTests : IDisposable
         var rows = await Describe(LinkId());
 
         // Assert.
-        Assert.Equal("Kettle", Value(rows, WardleyContextPropertyProvider.LinkSourcePropertyId));
-        Assert.Equal("Power", Value(rows, WardleyContextPropertyProvider.LinkTargetPropertyId));
-        Assert.Equal("flow", Value(rows, WardleyContextPropertyProvider.LinkKindPropertyId));
-        Assert.Equal("cash", Value(rows, WardleyContextPropertyProvider.LinkContextPropertyId));
-        Assert.True(Row(rows, WardleyContextPropertyProvider.LinkContextPropertyId).IsEditable);
-        Assert.False(Row(rows, WardleyContextPropertyProvider.LinkSourcePropertyId).IsEditable);
+        Assert.Equal("Kettle", rows.Row(WardleyContextPropertyProvider.LinkSourcePropertyId).Value);
+        Assert.Equal("Power", rows.Row(WardleyContextPropertyProvider.LinkTargetPropertyId).Value);
+        Assert.Equal("flow", rows.Row(WardleyContextPropertyProvider.LinkKindPropertyId).Value);
+        Assert.Equal("cash", rows.Row(WardleyContextPropertyProvider.LinkContextPropertyId).Value);
+        Assert.True(rows.Row(WardleyContextPropertyProvider.LinkContextPropertyId).IsEditable);
+        Assert.False(rows.Row(WardleyContextPropertyProvider.LinkSourcePropertyId).IsEditable);
     }
 
     [Fact]
@@ -223,12 +223,12 @@ public sealed class WardleyContextPropertyProviderTests : IDisposable
         var rows = await Describe(ChildId());
 
         // Assert.
-        var visibility = Row(rows, WardleyContextPropertyProvider.VisibilityPropertyId);
+        var visibility = rows.Row(WardleyContextPropertyProvider.VisibilityPropertyId);
         Assert.Equal("0.43", visibility.Value);
         Assert.False(visibility.IsEditable);
         Assert.Contains("takes its visibility from its parent", visibility.ReadOnlyReason, StringComparison.Ordinal);
         Assert.Contains("Kettle", visibility.ReadOnlyReason, StringComparison.Ordinal);
-        Assert.True(Row(rows, WardleyContextPropertyProvider.MaturityPropertyId).IsEditable);
+        Assert.True(rows.Row(WardleyContextPropertyProvider.MaturityPropertyId).IsEditable);
     }
 
     [Fact]
@@ -238,9 +238,9 @@ public sealed class WardleyContextPropertyProviderTests : IDisposable
         var rows = await Describe(PipelineId());
 
         // Assert.
-        Assert.Equal("Kettle", Value(rows, WardleyContextPropertyProvider.NamePropertyId));
-        Assert.Equal("0.43", Value(rows, WardleyContextPropertyProvider.VisibilityPropertyId));
-        Assert.Equal("Electric Kettle (0.63)", Value(rows, WardleyContextPropertyProvider.PipelineChildrenPropertyId));
+        Assert.Equal("Kettle", rows.Row(WardleyContextPropertyProvider.NamePropertyId).Value);
+        Assert.Equal("0.43", rows.Row(WardleyContextPropertyProvider.VisibilityPropertyId).Value);
+        Assert.Equal("Electric Kettle (0.63)", rows.Row(WardleyContextPropertyProvider.PipelineChildrenPropertyId).Value);
     }
 
     [Fact]
@@ -488,8 +488,7 @@ public sealed class WardleyContextPropertyProviderTests : IDisposable
         .Single(entry => entry.Kind == WardleyIdentityKind.Pipeline)
         .Id;
 
-    private ContextTarget Target(string elementId) => new(
-        ContextScope.DiagramElement, _path, IsContainer: false, SourceId: default, _root, default, elementId);
+    private ContextTarget Target(string elementId) => ContextTarget.ForElement(_path, elementId, _root);
 
     private async Task<IReadOnlyList<ContextPropertyDefinition>> Describe(string elementId) =>
         await _provider.DescribeAsync(Target(elementId), TestContext.Current.CancellationToken);
@@ -497,10 +496,5 @@ public sealed class WardleyContextPropertyProviderTests : IDisposable
     private Task<ContextPropertyResult> Set(string elementId, string propertyId, string value) =>
         _provider.SetAsync(Target(elementId), propertyId, value, TestContext.Current.CancellationToken).AsTask();
 
-    private static ContextPropertyDefinition Row(IReadOnlyList<ContextPropertyDefinition> rows, string id) =>
-        rows.Single(row => row.Id == id);
-
-    private static string Value(IReadOnlyList<ContextPropertyDefinition> rows, string id) => Row(rows, id).Value;
-
-    private static string Group(IReadOnlyList<ContextPropertyDefinition> rows, string id) => Row(rows, id).Group;
+    private static string Group(IReadOnlyList<ContextPropertyDefinition> rows, string id) => rows.Row(id).Group;
 }

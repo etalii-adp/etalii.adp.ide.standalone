@@ -51,4 +51,14 @@ public sealed record ContextTarget(
     string RootPath = "",
     ShortGuid WatchId = default,
     string ElementId = "",
-    DiagramOrigin? Origin = null);
+    DiagramOrigin? Origin = null)
+{
+    /// <summary>
+    /// The element <paramref name="elementId"/> of the diagram file at <paramref name="bodyPath"/>,
+    /// resolved within <paramref name="rootPath"/>: a leaf, named by no client id - the shape almost
+    /// every element target takes.
+    /// </summary>
+    public static ContextTarget ForElement(
+        string bodyPath, string elementId, string rootPath = "", ShortGuid watchId = default, DiagramOrigin? origin = null) =>
+        new(ContextScope.DiagramElement, bodyPath, IsContainer: false, SourceId: default, rootPath, watchId, elementId, origin);
+}

@@ -346,7 +346,7 @@ public class UndoRedoFlowTests : IClassFixture<WebApplicationFactory<Program>>, 
     }
 
     private static ContextAction UndoOf(ContextProjectActions actions) =>
-        actions.Actions.SelectMany(group => group.Actions).Single(action => action.Id == HistoryContextActionProvider.UndoActionId);
+        actions.Actions.Actions().Single(action => action.Id == HistoryContextActionProvider.UndoActionId);
 
     private static async Task WaitUntilAsync(Func<bool> condition)
     {

@@ -334,7 +334,7 @@ public class AzurePipelineFlowTests : IClassFixture<WebApplicationFactory<Progra
             headers,
             cancellationToken: TestContext.Current.CancellationToken);
 
-        return response.Groups.SelectMany(group => group.Actions).Select(action => action.Id).ToList();
+        return response.Groups.ActionIds();
     }
 
     /// <summary>

@@ -132,7 +132,7 @@ public class AddDiagramFlowTests : IClassFixture<WebApplicationFactory<Program>>
 
         // Assert.
         Assert.Null(baseline.Selection);
-        var actions = baseline.Actions.SelectMany(group => group.Actions).ToList();
+        var actions = baseline.Actions.Actions();
         var add = Assert.Single(actions, action => action.Id == AddDiagramContextActionProvider.AddActionId);
         Assert.True(add.Available);
         Assert.Equal("Insert", add.Shortcut.Key);
@@ -238,7 +238,7 @@ public class AddDiagramFlowTests : IClassFixture<WebApplicationFactory<Program>>
             new DiscoverActionsRequest { ProjectId = projectId, WatchId = watchId, Source = new ContextSource { EntryId = folderId } },
             headers,
             cancellationToken: TestContext.Current.CancellationToken);
-        var add = Assert.Single(discovered.Groups.SelectMany(g => g.Actions), a => a.Id == AddDiagramContextActionProvider.AddActionId);
+        var add = Assert.Single(discovered.Groups.Actions(), a => a.Id == AddDiagramContextActionProvider.AddActionId);
         Assert.True(add.Available);
 
         var executed = await contextClient.ExecuteActionAsync(
@@ -283,9 +283,9 @@ public class AddDiagramFlowTests : IClassFixture<WebApplicationFactory<Program>>
             cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert.
-        Assert.DoesNotContain(discovered.Groups.SelectMany(g => g.Actions), a => a.Id == AddDiagramContextActionProvider.AddActionId);
+        Assert.DoesNotContain(discovered.Groups.Actions(), a => a.Id == AddDiagramContextActionProvider.AddActionId);
         // ...while the file's own actions are still there.
-        Assert.Contains(discovered.Groups.SelectMany(g => g.Actions), a => a.Id == HierarchyContextActionProvider.RenameActionId);
+        Assert.Contains(discovered.Groups.Actions(), a => a.Id == HierarchyContextActionProvider.RenameActionId);
     }
 
     [Fact]

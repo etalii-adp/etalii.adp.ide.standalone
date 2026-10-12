@@ -48,7 +48,7 @@ internal static class DependencyGraphTranscript
     private static readonly TypeRegistry _payloadTypes = TypeRegistry.FromFiles(DependencyGraphReflection.Descriptor);
 
     /// <summary>The module's folder, <c>src/diagrams/dependency-graph</c>.</summary>
-    private static string ModuleFolder { get; } = FindModuleFolder();
+    private static string ModuleFolder { get; } = RepositoryPaths.Under("src", "diagrams", "dependency-graph");
 
     /// <summary>The checked-in transcript.</summary>
     public static string CheckedInPath => Path.Combine(ModuleFolder, "backend", TestProject, "Parity", FileName);
@@ -335,19 +335,6 @@ internal static class DependencyGraphTranscript
         await script.EndAsync(original);
     }
 
-    private static string FindModuleFolder()
-    {
-        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
-        {
-            if (directory.Name == "dependency-graph")
-            {
-                return directory.FullName;
-            }
-        }
-
-        throw new InvalidOperationException($"No dependency-graph module folder above {AppContext.BaseDirectory}. That is a failure, not a skip.");
-    }
-
     /// <summary>One document's store, history and providers, readable and read-only.</summary>
     private sealed class Session : IDisposable
     {
@@ -382,7 +369,7 @@ internal static class DependencyGraphTranscript
         public DependencyGraphModel Model => Store.GetOrLoad(Body).Model;
 
         public ContextTarget Target(string elementId) =>
-            new(ContextScope.DiagramElement, Body, IsContainer: false, SourceId: default, Folder, default, elementId, Diagram.DependencyGraph.Origin);
+            ContextTarget.ForElement(Body, elementId, Folder, origin: Diagram.DependencyGraph.Origin);
 
         public void Dispose() => History.Dispose();
     }

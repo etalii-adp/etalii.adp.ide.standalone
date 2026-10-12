@@ -49,7 +49,7 @@ public class NoWriterSweepTests : IDisposable
     /// <summary>A real vendored query, copied out of the examples tree the module ships.</summary>
     private string CopyVendoredExample()
     {
-        var examples = ExampleCorpusTests.ExamplesRoot();
+        var examples = RepositoryPaths.Under("src", "diagrams", "sparql", "examples");
         var source = IoPath.Combine(examples, "w3c-sparql", "optional.rq");
         var destination = IoPath.Combine(_root, "optional.rq");
         File.Copy(source, destination);
@@ -68,8 +68,7 @@ public class NoWriterSweepTests : IDisposable
 
         var factory = _provider.GetServices<IDiagramSessionFactory>()
             .Single(candidate => candidate.Origin == ServiceCollectionAddSparqlExtension.SparqlOrigin);
-        var target = new ContextTarget(
-            ContextScope.DiagramElement, body, IsContainer: false, SourceId: default, _root, ShortGuid.NewShortGuid(), "var:x");
+        var target = ContextTarget.ForElement(body, "var:x", _root, ShortGuid.NewShortGuid());
 
         // Act: everything the module can be asked to do, in one pass.
         await using (var session = factory.Open(ShortGuid.NewShortGuid(), _root, body, registration))

@@ -100,7 +100,7 @@ public sealed class SupplyChainProvidersTests : IDisposable
         var increased = await _actions.ExecuteAsync(Target("plant"), SupplyChainContextActionProvider.IncreaseActionId, TestContext.Current.CancellationToken);
 
         // Assert.
-        var actions = groups.SelectMany(group => group.Actions).ToList();
+        var actions = groups.Actions();
         Assert.Equal("+", actions.Single(action => action.Id == SupplyChainContextActionProvider.IncreaseActionId).Shortcut?.Key);
         Assert.Equal("-", actions.Single(action => action.Id == SupplyChainContextActionProvider.DecreaseActionId).Shortcut?.Key);
         Assert.IsType<ContextExecutionCompleted>(increased);
@@ -111,7 +111,7 @@ public sealed class SupplyChainProvidersTests : IDisposable
     public async Task DecreaseAtZero_IsOfferedButUnavailable_SayingWhy()
     {
         // Act: the shop states no quantity.
-        var actions = (await _actions.DiscoverAsync(Target("shop"), TestContext.Current.CancellationToken)).SelectMany(group => group.Actions);
+        var actions = (await _actions.DiscoverAsync(Target("shop"), TestContext.Current.CancellationToken)).Actions();
 
         // Assert.
         var decrease = actions.Single(action => action.Id == SupplyChainContextActionProvider.DecreaseActionId);
@@ -136,7 +136,7 @@ public sealed class SupplyChainProvidersTests : IDisposable
     public async Task ADropAndAGesture_DiscoverTheAddsAndTheConnect_AndExecuteThem()
     {
         // Act.
-        var adds = (await _actions.DiscoverAsync(Target(GestureIds.Placement(300, 700)), TestContext.Current.CancellationToken)).SelectMany(group => group.Actions).Select(action => action.Id).ToList();
+        var adds = (await _actions.DiscoverAsync(Target(GestureIds.Placement(300, 700)), TestContext.Current.CancellationToken)).ActionIds();
         var added = await _actions.ExecuteAsync(Target(GestureIds.Placement(300, 700)), SupplyChainContextActionProvider.AddActionId(SupplyChainNodeTypes.Consumer), TestContext.Current.CancellationToken);
         var connected = await _actions.ExecuteAsync(Target(GestureIds.Relation("mine", "shop")), SupplyChainContextActionProvider.ConnectActionId, TestContext.Current.CancellationToken);
 
@@ -180,7 +180,7 @@ public sealed class SupplyChainProvidersTests : IDisposable
     {
         // Act.
         var adds = (await _actions.DiscoverAsync(Target(GestureIds.Placement(300, 700)), TestContext.Current.CancellationToken))
-            .SelectMany(group => group.Actions)
+            .Actions()
             .Where(action => action.Id != SupplyChainContextActionProvider.ArrangeActionId)
             .ToDictionary(action => action.Id, action => action.Icon);
 
@@ -191,7 +191,7 @@ public sealed class SupplyChainProvidersTests : IDisposable
     }
 
     private ContextTarget Target(string elementId) =>
-        new(ContextScope.DiagramElement, _folder.Body, IsContainer: false, SourceId: default, _folder.Folder, ShortGuid.NewShortGuid(), elementId);
+        ContextTarget.ForElement(_folder.Body, elementId, _folder.Folder, ShortGuid.NewShortGuid());
 
     private SupplyChainModel Parse() => SupplyChainParser.Parse(LineDocument.Parse(File.ReadAllText(_folder.Body)));
 }

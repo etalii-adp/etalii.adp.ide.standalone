@@ -13,7 +13,7 @@ public class MindmapContextActionProviderTests : IDisposable
 
     private async Task<IReadOnlyList<ContextActionDefinition>> Discover(string nodeId) =>
         (await _project.Provider.DiscoverAsync(_project.NodeTarget(nodeId), TestContext.Current.CancellationToken))
-            .SelectMany(group => group.Actions).ToList();
+            .Actions();
 
     private ValueTask<ContextExecutionResult> Execute(string nodeId, string actionId) =>
         _project.Provider.ExecuteAsync(_project.NodeTarget(nodeId), actionId, TestContext.Current.CancellationToken);
@@ -100,8 +100,7 @@ public class MindmapContextActionProviderTests : IDisposable
         // action lookup over a .tml timeline.
         var foreignPath = IoPath.Combine(_project.Root, "docs", "roadmap.tml");
         await File.WriteAllTextAsync(foreignPath, "timeline: 1\r\nelements:\r\n  - id: aaa\r\n    label: First\r\n    begin: 2026-01-01\r\n    row: 0\r\n", TestContext.Current.CancellationToken);
-        var target = new ContextTarget(
-            ContextScope.DiagramElement, foreignPath, IsContainer: false, SourceId: default, _project.Root, _project.WatchId, "aaa");
+        var target = ContextTarget.ForElement(foreignPath, "aaa", _project.Root, _project.WatchId);
 
         // Act.
         var groups = await _project.Provider.DiscoverAsync(target, TestContext.Current.CancellationToken);

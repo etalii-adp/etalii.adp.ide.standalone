@@ -48,7 +48,7 @@ public class WatcherWiringTests
         @"new\s+FileSystemWatcher[^;{]*\{[^;}]*EnableRaisingEvents",
         RegexOptions.Compiled | RegexOptions.Singleline);
 
-    private static string RepositoryRoot { get; } = Locate();
+    private static string RepositoryRoot { get; } = RepositoryPaths.Root;
 
     [Fact]
     public void NoWatcherIsEnabledInsideItsObjectInitializer()
@@ -150,18 +150,4 @@ public class WatcherWiringTests
             .EnumerateFiles(IoPath.Combine(RepositoryRoot, "src"), "*.cs", SearchOption.AllDirectories)
             .Where(file => !file.Contains($"{IoPath.DirectorySeparatorChar}obj{IoPath.DirectorySeparatorChar}", StringComparison.Ordinal))
             .Where(file => !file.Contains($"{IoPath.DirectorySeparatorChar}bin{IoPath.DirectorySeparatorChar}", StringComparison.Ordinal));
-
-    private static string Locate()
-    {
-        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
-        {
-            if (Directory.Exists(IoPath.Combine(directory.FullName, "src", "diagrams")) &&
-                Directory.Exists(IoPath.Combine(directory.FullName, "docs")))
-            {
-                return directory.FullName;
-            }
-        }
-
-        throw new InvalidOperationException("The repository root was not found above the test assembly.");
-    }
 }

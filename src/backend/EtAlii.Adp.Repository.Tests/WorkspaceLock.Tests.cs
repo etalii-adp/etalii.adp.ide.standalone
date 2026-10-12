@@ -27,21 +27,7 @@ public class WorkspaceLockTests
     /// The repository root, found by walking up from the test binary - the shape established and <see cref="DependencyInventoryTests"/>
     /// reuses, anchored on the folders this guard needs.
     /// </summary>
-    private static string RepositoryRoot { get; } = Locate();
-
-    private static string Locate()
-    {
-        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
-        {
-            if (Directory.Exists(IoPath.Combine(directory.FullName, "src", "diagrams")) &&
-                File.Exists(IoPath.Combine(directory.FullName, "src", "package-lock.json")))
-            {
-                return directory.FullName;
-            }
-        }
-
-        throw new InvalidOperationException("The repository root (src/diagrams beside src/package-lock.json) was not found above the test binary.");
-    }
+    private static string RepositoryRoot { get; } = RepositoryPaths.Root;
 
     [Fact]
     public void TheWalk_StillFindsTheWorkspaces()

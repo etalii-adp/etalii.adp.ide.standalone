@@ -82,7 +82,7 @@ public class PipelineContextPropertyProviderTests : IDisposable
     }
 
     private ContextTarget Target(string path, string elementId) =>
-        new(ContextScope.DiagramElement, path, IsContainer: false, SourceId: default, _workspace, ShortGuid.NewShortGuid(), elementId);
+        ContextTarget.ForElement(path, elementId, _workspace, ShortGuid.NewShortGuid());
 
     private async Task<IReadOnlyList<ContextPropertyDefinition>> DescribeAsync(string path, string elementId) =>
         await _provider.DescribeAsync(Target(path, elementId), CancellationToken.None);

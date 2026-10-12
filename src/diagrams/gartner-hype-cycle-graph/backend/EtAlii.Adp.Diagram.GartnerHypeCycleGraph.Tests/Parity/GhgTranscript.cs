@@ -59,7 +59,7 @@ internal static class GhgTranscript
     private static readonly TypeRegistry _payloadTypes = TypeRegistry.FromFiles(GartnerHypecycleGraphReflection.Descriptor);
 
     /// <summary>The module's folder, <c>src/diagrams/gartner-hype-cycle-graph</c>.</summary>
-    public static string ModuleFolder { get; } = FindModuleFolder();
+    public static string ModuleFolder { get; } = RepositoryPaths.Under("src", "diagrams", "gartner-hype-cycle-graph");
 
     /// <summary>The checked-in transcript.</summary>
     public static string CheckedInPath => Path.Combine(ModuleFolder, "backend", TestProject, "Parity", FileName);
@@ -386,19 +386,6 @@ internal static class GhgTranscript
 
     private static int ElementCount(GhgModel model) => model.Trends.Count + model.Triggers.Count + model.Notes.Count + model.Influences.Count;
 
-    private static string FindModuleFolder()
-    {
-        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
-        {
-            if (directory.Name == "gartner-hype-cycle-graph")
-            {
-                return directory.FullName;
-            }
-        }
-
-        throw new InvalidOperationException($"No gartner-hype-cycle-graph folder above {AppContext.BaseDirectory}. That is a failure, not a skip.");
-    }
-
     /// <summary>One document's store, history and providers, readable and read-only.</summary>
     private sealed class Session : IDisposable
     {
@@ -433,7 +420,7 @@ internal static class GhgTranscript
         public GhgModel Model => Store.GetOrLoad(Body).Model;
 
         public ContextTarget Target(string elementId) =>
-            new(ContextScope.DiagramElement, Body, IsContainer: false, SourceId: default, Folder, default, elementId, Diagram.HypeCycleGraph.Origin);
+            ContextTarget.ForElement(Body, elementId, Folder, origin: Diagram.HypeCycleGraph.Origin);
 
         public void Dispose() => History.Dispose();
     }

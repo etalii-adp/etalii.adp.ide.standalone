@@ -248,7 +248,7 @@ public class CausalLoopContextSourceResolverTests : IDisposable
         // Assert.
         // The end-to-end claim, in one line: a selection made the way the application makes one
         // reaches this module's actions.
-        Assert.NotEmpty(groups.SelectMany(group => group.Actions));
+        Assert.NotEmpty(groups.Actions());
     }
 
     // ---- refusals, so other modules' resolvers can answer ---------------------------------------
@@ -331,9 +331,7 @@ public class CausalLoopContextSourceResolverTests : IDisposable
             new ContextSource(),
             ["Population"],
             ContextScope.DiagramElement,
-            new ContextTarget(
-                ContextScope.DiagramElement, registration, IsContainer: false, SourceId: default,
-                _workspace, ShortGuid.NewShortGuid(), "variable:population"),
+            ContextTarget.ForElement(registration, "variable:population", _workspace, ShortGuid.NewShortGuid()),
             new ContextLevelDetail(),
             null!);
 

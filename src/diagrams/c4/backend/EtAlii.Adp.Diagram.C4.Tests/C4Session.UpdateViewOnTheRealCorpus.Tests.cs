@@ -129,7 +129,7 @@ public class C4SessionUpdateViewOnTheRealCorpusTests : IDisposable
 
     private string CopyCorpus()
     {
-        var source = IoPath.Combine(ExamplesRoot(), "industrial-plant", "architecture");
+        var source = IoPath.Combine(RepositoryPaths.Under("src", "diagrams", "c4", "examples"), "industrial-plant", "architecture");
         foreach (var file in Directory.GetFiles(source))
         {
             File.Copy(file, IoPath.Combine(_root, IoPath.GetFileName(file)));
@@ -141,18 +141,4 @@ public class C4SessionUpdateViewOnTheRealCorpusTests : IDisposable
     private C4Session Open(string bodyPath, string? registrationPath) =>
         (C4Session)new C4SessionFactory(new DiagramOrigin("c4", "system-landscape"), _documents, _mapper, _historyStacks)
             .Open(ShortGuid.NewShortGuid(), _root, bodyPath, registrationPath);
-
-    private static string ExamplesRoot()
-    {
-        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
-        {
-            var candidate = IoPath.Combine(directory.FullName, "examples");
-            if (Directory.Exists(candidate) && Directory.Exists(IoPath.Combine(directory.FullName, "backend")))
-            {
-                return candidate;
-            }
-        }
-
-        throw new DirectoryNotFoundException("The c4 module's examples folder could not be found from " + AppContext.BaseDirectory);
-    }
 }

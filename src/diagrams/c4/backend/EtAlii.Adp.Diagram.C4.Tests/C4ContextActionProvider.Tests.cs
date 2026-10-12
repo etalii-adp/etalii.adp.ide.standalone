@@ -59,16 +59,16 @@ public class C4ContextActionProviderTests : IDisposable
     }
 
     private ContextTarget TargetFor(string elementId) =>
-        new(ContextScope.DiagramElement, _bodyPath, IsContainer: false, SourceId: default, _root, ShortGuid.NewShortGuid(), elementId);
+        ContextTarget.ForElement(_bodyPath, elementId, _root, ShortGuid.NewShortGuid());
 
     /// <summary>Executes an action that is expected to ask for a value, and hands back the request.</summary>
     private async Task<ContextExecutionRequiresInput> Input(ContextTarget target, string actionId) =>
         Assert.IsType<ContextExecutionRequiresInput>(await _provider.ExecuteAsync(target, actionId, TestContext.Current.CancellationToken));
 
-    private async Task<string[]> ActionIdsFor(string elementId)
+    private async Task<IReadOnlyList<string>> ActionIdsFor(string elementId)
     {
         var groups = await _provider.DiscoverAsync(TargetFor(elementId), TestContext.Current.CancellationToken);
-        return groups.SelectMany(group => group.Actions).Select(action => action.Id).ToArray();
+        return groups.ActionIds();
     }
 
     [Fact]

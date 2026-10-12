@@ -63,7 +63,7 @@ public class SolutionWatcherObligationsTests : IDisposable
 
         File.WriteAllText(watched, "<Solution><Project Path=\"A.csproj\" /></Solution>");
 
-        RaiseOverflow(watchers[0]);
+        watchers[0].RaiseOverflow();
 
         Assert.True(stale.Wait(Patience, TestContext.Current.CancellationToken), "An overflow left the graph looking fresh.");
     }
@@ -73,10 +73,6 @@ public class SolutionWatcherObligationsTests : IDisposable
         ?? throw new InvalidOperationException("SolutionWatcher no longer keeps its watchers in _watchers; this test must follow it.");
 
     // The one signal a watcher gives when it has dropped events, raised the way the watcher raises it.
-    private static void RaiseOverflow(FileSystemWatcher watcher) =>
-        (typeof(FileSystemWatcher).GetMethod("OnError", BindingFlags.Instance | BindingFlags.NonPublic)
-            ?? throw new InvalidOperationException("FileSystemWatcher.OnError was not found."))
-        .Invoke(watcher, [new ErrorEventArgs(new InternalBufferOverflowException())]);
 
     private string Write(string name, string content)
     {

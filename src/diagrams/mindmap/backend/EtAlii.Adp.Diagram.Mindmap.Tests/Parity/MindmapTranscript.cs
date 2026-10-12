@@ -44,7 +44,7 @@ internal static partial class MindmapTranscript
     private static readonly TypeRegistry _payloadTypes = TypeRegistry.FromFiles(MindmapReflection.Descriptor);
 
     /// <summary>The module's folder, <c>src/diagrams/mindmap</c>.</summary>
-    private static string ModuleFolder { get; } = FindModuleFolder();
+    private static string ModuleFolder { get; } = RepositoryPaths.Under("src", "diagrams", "mindmap");
 
     /// <summary>The checked-in transcript.</summary>
     public static string CheckedInPath => Path.Combine(ModuleFolder, "backend", TestProject, "Parity", FileName);
@@ -313,25 +313,6 @@ internal static partial class MindmapTranscript
         MindmapNode? Root() => Document()?.Root;
 
         MindmapDocument? Document() => session.TryDocument();
-    }
-
-    private static string FindModuleFolder()
-    {
-        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
-        {
-            var candidate = Path.Combine(directory.FullName, "src", "diagrams", "mindmap");
-            if (directory.Name == "mindmap" && Directory.Exists(Path.Combine(directory.FullName, "backend", TestProject)))
-            {
-                return directory.FullName;
-            }
-
-            if (Directory.Exists(Path.Combine(candidate, "backend", TestProject)))
-            {
-                return candidate;
-            }
-        }
-
-        throw new InvalidOperationException($"No mindmap module folder above {AppContext.BaseDirectory}. That is a failure, not a skip.");
     }
 
     [GeneratedRegex("ID=\"([^\"]*)\"", RegexOptions.CultureInvariant)]

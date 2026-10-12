@@ -46,7 +46,7 @@ public sealed class FdgProvidersTests : IDisposable
     }
 
     private ContextTarget Target(string elementId) =>
-        new(ContextScope.DiagramElement, Body, IsContainer: false, SourceId: default, _folder, ShortGuid.NewShortGuid(), elementId);
+        ContextTarget.ForElement(Body, elementId, _folder, ShortGuid.NewShortGuid());
 
     private async Task<IReadOnlyList<string>> RowIdsOf(string elementId) =>
         [.. (await _properties.DescribeAsync(Target(elementId), TestContext.Current.CancellationToken)).Select(row => row.Id)];
@@ -251,10 +251,10 @@ public sealed class FdgProvidersTests : IDisposable
         // Assert.
         Assert.Equal(
             ["fdg.add.ui-element", "fdg.add.data-element", "fdg.add.action", "fdg.add.function", "fdg.add.comment"],
-            adds.SelectMany(group => group.Actions).Select(action => action.Id));
+            adds.ActionIds());
         Assert.Equal(
             ["fdg.connect.ui-child", "fdg.connect.owns-action", "fdg.connect.owns-data", "fdg.connect.owns-function", "fdg.connect.shows"],
-            connects.SelectMany(group => group.Actions).Select(action => action.Id));
+            connects.ActionIds());
     }
 
     [Fact]

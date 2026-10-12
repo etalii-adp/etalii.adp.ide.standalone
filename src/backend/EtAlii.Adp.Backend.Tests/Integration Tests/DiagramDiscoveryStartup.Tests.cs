@@ -312,7 +312,7 @@ public class DiagramDiscoveryStartupTests : IClassFixture<WebApplicationFactory<
         // own business, and this parser follows it rather than pinning it. (The HTML shape
         // going unparsed is exactly how 48 stub origins silently fell out of this check once.)
         var titles = new Dictionary<string, string>(StringComparer.Ordinal);
-        foreach (var line in File.ReadLines(LocateCatalog()))
+        foreach (var line in File.ReadLines(RepositoryPaths.Under("docs", "tools.md")))
         {
             if (line.StartsWith('|'))
             {
@@ -358,22 +358,4 @@ public class DiagramDiscoveryStartupTests : IClassFixture<WebApplicationFactory<
     /// <summary>A cell's visible text: tags stripped, entities decoded, non-breaking spaces ordinary again.</summary>
     private static string HtmlCellText(string cell) =>
         WebUtility.HtmlDecode(Regex.Replace(cell, "<[^>]+>", "")).Replace('\u00A0', ' ').Trim();
-
-    /// <summary>
-    /// The catalog document, found by walking up from the test binary rather than by counting
-    /// `..` segments - the count changes with the build layout, the path does not.
-    /// </summary>
-    private static string LocateCatalog()
-    {
-        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
-        {
-            var candidate = IoPath.Combine(directory.FullName, "docs", "tools.md");
-            if (File.Exists(candidate))
-            {
-                return candidate;
-            }
-        }
-
-        throw new FileNotFoundException("docs/tools.md could not be found from " + AppContext.BaseDirectory);
-    }
 }

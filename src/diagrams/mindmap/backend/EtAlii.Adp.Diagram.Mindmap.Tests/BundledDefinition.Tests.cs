@@ -19,17 +19,6 @@ public sealed partial class BundledDefinitionTests
 {
     private static readonly Assembly _module = typeof(Diagram).Assembly;
 
-    private static byte[] Resource(string logicalName)
-    {
-        using var stream = _module.GetManifestResourceStream(logicalName)
-            ?? throw new InvalidOperationException($"The module embeds no resource {logicalName}.");
-        using var copy = new MemoryStream();
-        stream.CopyTo(copy);
-        return copy.ToArray();
-    }
-
-    private static JsonElement Json(string logicalName) => JsonDocument.Parse(Resource(logicalName)).RootElement;
-
     [GeneratedRegex("^[0-9a-f]{40}$")]
     private static partial Regex FullRevision();
 
@@ -37,9 +26,9 @@ public sealed partial class BundledDefinitionTests
     [Fact]
     public void TheBundledDefinition_HashesToItsProvenance()
     {
-        var provenance = Json("mindmap.provenance.json");
+        var provenance = _module.ResourceJson("mindmap.provenance.json");
 
-        var actual = Convert.ToHexStringLower(SHA256.HashData(Resource("mindmap.dis")));
+        var actual = Convert.ToHexStringLower(SHA256.HashData(_module.ResourceBytes("mindmap.dis")));
 
         Assert.Equal(provenance.GetProperty("sha256").GetString(), actual);
     }
@@ -48,7 +37,7 @@ public sealed partial class BundledDefinitionTests
     [Fact]
     public void TheProvenance_NamesAFullRevisionOfTheUpstreamFile()
     {
-        var provenance = Json("mindmap.provenance.json");
+        var provenance = _module.ResourceJson("mindmap.provenance.json");
 
         Assert.Equal("etalii-adp/etalii.adp", provenance.GetProperty("repository").GetString());
         Assert.Equal("definitions/diagrams/mindmap.dis", provenance.GetProperty("path").GetString());
@@ -59,7 +48,7 @@ public sealed partial class BundledDefinitionTests
     [Fact]
     public void TheBundledDefinition_IsThisModulesLanguage()
     {
-        var language = Json("mindmap.dis").GetProperty("language");
+        var language = _module.ResourceJson("mindmap.dis").GetProperty("language");
 
         Assert.Equal("net.etalii.adp.freeplane.mindmap", language.GetProperty("id").GetString());
         Assert.Equal(Diagram.Mindmap.Origin.Key, language.GetProperty("origin").GetString());

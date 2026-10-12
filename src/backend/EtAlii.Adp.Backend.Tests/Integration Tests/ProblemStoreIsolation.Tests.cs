@@ -99,26 +99,12 @@ public class ProblemStoreIsolationTests
     /// segments - the count changes with the build layout, the folder name does not. The same walk
     /// <see cref="ExampleRegistrationTests"/> uses, for the same reason.
     /// </summary>
-    private static string BackendFolder { get; } = Locate();
+    private static string BackendFolder { get; } = RepositoryPaths.Under("src", "backend");
 
     private static bool IsBuildOutput(string source)
     {
         var separator = IoPath.DirectorySeparatorChar;
         return source.Contains($"{separator}bin{separator}", StringComparison.Ordinal)
                || source.Contains($"{separator}obj{separator}", StringComparison.Ordinal);
-    }
-
-    private static string Locate()
-    {
-        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
-        {
-            var candidate = IoPath.Combine(directory.FullName, "src", "backend");
-            if (Directory.Exists(IoPath.Combine(candidate, "EtAlii.Adp.Backend.Tests")))
-            {
-                return candidate;
-            }
-        }
-
-        throw new InvalidOperationException("src/backend was not found above the test binary.");
     }
 }

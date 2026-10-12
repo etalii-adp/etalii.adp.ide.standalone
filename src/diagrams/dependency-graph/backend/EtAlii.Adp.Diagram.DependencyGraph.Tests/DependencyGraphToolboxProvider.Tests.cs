@@ -111,9 +111,7 @@ public class DependencyGraphToolboxProviderTests : IDisposable
         await File.WriteAllTextAsync(path, "dependencies: 1\r\nelements: []\r\n", TestContext.Current.CancellationToken);
         _store.Forget(path);
         var item = _toolbox.Items.Single(candidate => candidate.Id == "dependencies.toolbox.node");
-        var target = new ContextTarget(
-            ContextScope.DiagramElement, path, IsContainer: false, SourceId: default, _workspace,
-            ShortGuid.NewShortGuid(), DependencyGraphNewPlacement.IdFor(612.5, 3));
+        var target = ContextTarget.ForElement(path, DependencyGraphNewPlacement.IdFor(612.5, 3), _workspace, ShortGuid.NewShortGuid());
 
         // Act: the drop names a placement, and the node appears there with nothing asked.
         var result = await _actions.ExecuteAsync(target, item.DropActionId, CancellationToken.None);

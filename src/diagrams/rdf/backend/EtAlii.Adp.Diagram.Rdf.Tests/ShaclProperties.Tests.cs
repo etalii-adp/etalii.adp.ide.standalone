@@ -75,9 +75,6 @@ public class ShaclPropertiesTests : IDisposable
     private IReadOnlyList<ContextPropertyDefinition> Grid() =>
         ShaclProperties.Describe(Entry(), Target(CardId, ServiceCollectionAddShaclExtension.ShaclOrigin))!;
 
-    private static ContextPropertyDefinition Row(IReadOnlyList<ContextPropertyDefinition> rows, string id) =>
-        Assert.Single(rows, row => row.Id == id);
-
     [Fact]
     public void TheGrid_AnswersForItsOwnOriginOnly()
     {
@@ -94,13 +91,13 @@ public class ShaclPropertiesTests : IDisposable
     {
         var rows = Grid();
 
-        Assert.Equal("http://example.org/PersonShape", Row(rows, "shacl.iri").Value);
-        Assert.Equal("Person", Row(rows, "shacl.name").Value);
-        Assert.Equal("Every person we hold.", Row(rows, "shacl.description").Value);
-        Assert.Equal("A person must have a name.", Row(rows, "shacl.message").Value);
-        Assert.Equal("true", Row(rows, "shacl.closed").Value);
-        Assert.Equal("sh:Warning", Row(rows, "shacl.severity").Value);
-        Assert.Equal("false", Row(rows, "shacl.deactivated").Value);
+        Assert.Equal("http://example.org/PersonShape", rows.Row("shacl.iri").Value);
+        Assert.Equal("Person", rows.Row("shacl.name").Value);
+        Assert.Equal("Every person we hold.", rows.Row("shacl.description").Value);
+        Assert.Equal("A person must have a name.", rows.Row("shacl.message").Value);
+        Assert.Equal("true", rows.Row("shacl.closed").Value);
+        Assert.Equal("sh:Warning", rows.Row("shacl.severity").Value);
+        Assert.Equal("false", rows.Row("shacl.deactivated").Value);
     }
 
     [Fact]
@@ -111,8 +108,8 @@ public class ShaclPropertiesTests : IDisposable
         // Requirement 6.3 permits editing only where Requirement 5 does, and Requirement 5's
         // writers are gestures: targets, rows, activation, rename and removal all live on the
         // menu, where the dialogs and the removal count are.
-        Assert.True(Row(rows, "shacl.name").IsEditable);
-        Assert.True(Row(rows, "shacl.description").IsEditable);
+        Assert.True(rows.Row("shacl.name").IsEditable);
+        Assert.True(rows.Row("shacl.description").IsEditable);
 
         var readOnly = rows.Where(row => !row.IsEditable).ToArray();
         Assert.Equal(rows.Count - 2, readOnly.Length);
@@ -124,7 +121,7 @@ public class ShaclPropertiesTests : IDisposable
     [Fact]
     public void ABlankRootedRow_IsFullyReadableAndRefusedWithTheOneSentence()
     {
-        var row = Row(Grid(), "shacl.row:0");
+        var row = Grid().Row("shacl.row:0");
 
         // Requirement 4.1: the anonymous property shape has no identity, yet everything it says
         // is legible here - path, datatype, cardinality.
@@ -140,7 +137,7 @@ public class ShaclPropertiesTests : IDisposable
     [Fact]
     public void AnAbsentTarget_ReadsAsAFactRatherThanAFinding()
     {
-        var row = Row(Grid(), "shacl.target:0");
+        var row = Grid().Row("shacl.target:0");
 
         Assert.Equal("Target class", row.Label);
 
@@ -154,7 +151,7 @@ public class ShaclPropertiesTests : IDisposable
     [Fact]
     public void ASparqlConstraint_ShowsItsQueryTextAndSaysItIsNotRun()
     {
-        var row = Row(Grid(), "shacl.sparql:0");
+        var row = Grid().Row("shacl.sparql:0");
 
         // Requirement 1.7: the text is readable, extracted and nothing more.
         Assert.Equal("SELECT $this WHERE { $this ex:name ?n }", row.Value);
@@ -189,7 +186,7 @@ public class ShaclPropertiesTests : IDisposable
 
         Assert.NotEmpty(rows);
         Assert.All(rows, row => Assert.False(row.IsEditable));
-        Assert.Equal(ShaclRefusals.BlankRooted, Row(rows, "shacl.iri").ReadOnlyReason);
+        Assert.Equal(ShaclRefusals.BlankRooted, rows.Row("shacl.iri").ReadOnlyReason);
 
         // The gate refuses the write independently of the grid, so an edit dispatched directly
         // cannot land behind the read-only flags.

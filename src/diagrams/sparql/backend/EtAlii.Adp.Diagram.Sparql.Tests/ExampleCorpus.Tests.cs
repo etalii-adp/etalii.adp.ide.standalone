@@ -11,47 +11,10 @@ namespace EtAlii.Adp.Diagram.Sparql.Tests;
 /// </summary>
 public class ExampleCorpusTests
 {
-    /// <summary>
-    /// This module's own examples folder, found by walking up from the test binary on a
-    /// distinctive multi-segment path rather than on a folder name (test-suite-conformance
-    /// Requirement 3).
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// This used to walk up looking for any directory called <c>examples</c>, and a second one
-    /// sits further up the very same walk at <c>src/examples</c> - the showcase tree. It was
-    /// correct only because the nearer directory wins, which is not a property anyone had
-    /// checked; move or rename this module's folder and the guard would have gone on asserting
-    /// happily about somebody else's corpus.
-    /// </para>
-    /// <para>
-    /// The two-part form - a folder that holds both <c>examples</c> and <c>backend</c> - was
-    /// considered and is <b>not</b> enough here, which is worth recording because a sibling
-    /// guard uses it: <c>src</c> itself holds both <c>examples</c> and <c>backend</c>, so that
-    /// form is also only correct because the module's own directory is nearer. It moves the
-    /// false match one step further away rather than removing it. The full path names exactly
-    /// one directory in the tree, and fails loudly instead of quietly guarding the wrong one.
-    /// </para>
-    /// </remarks>
-    internal static string ExamplesRoot()
-    {
-        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
-        {
-            var candidate = IoPath.Combine(directory.FullName, "src", "diagrams", "sparql", "examples");
-            if (Directory.Exists(candidate))
-            {
-                return candidate;
-            }
-        }
-
-        throw new DirectoryNotFoundException(
-            "src/diagrams/sparql/examples was not found above " + AppContext.BaseDirectory);
-    }
-
     public static TheoryData<string> EveryQuery()
     {
         var data = new TheoryData<string>();
-        foreach (var path in Directory.EnumerateFiles(ExamplesRoot(), "*.rq", SearchOption.AllDirectories))
+        foreach (var path in Directory.EnumerateFiles(RepositoryPaths.Under("src", "diagrams", "sparql", "examples"), "*.rq", SearchOption.AllDirectories))
         {
             data.Add(path);
         }
@@ -96,7 +59,7 @@ public class ExampleCorpusTests
     {
         // Arrange: a folder holding found-online queries owes both files; the one folder whose
         // content ADP wrote itself owes only the readme that says so.
-        var folders = Directory.EnumerateDirectories(ExamplesRoot()).ToArray();
+        var folders = Directory.EnumerateDirectories(RepositoryPaths.Under("src", "diagrams", "sparql", "examples")).ToArray();
 
         // Assert, first, that there was anything to check. Every assertion below sits inside the
         // loop, so an empty sweep asserted the licence rule about no corpus at all and passed -
@@ -108,7 +71,7 @@ public class ExampleCorpusTests
         // corpus is a thing somebody decides, not a thing that happens.
         Assert.True(
             folders.Length >= 3,
-            $"Only {folders.Length} example folders were found under {ExamplesRoot()}; this guard has stopped finding the corpus whose licensing it checks.");
+            $"Only {folders.Length} example folders were found under {RepositoryPaths.Under("src", "diagrams", "sparql", "examples")}; this guard has stopped finding the corpus whose licensing it checks.");
 
         foreach (var folder in folders)
         {
@@ -128,7 +91,7 @@ public class ExampleCorpusTests
     {
         // Arrange.
         var models = Directory
-            .EnumerateFiles(ExamplesRoot(), "*.rq", SearchOption.AllDirectories)
+            .EnumerateFiles(RepositoryPaths.Under("src", "diagrams", "sparql", "examples"), "*.rq", SearchOption.AllDirectories)
             .Select(path => SparqlParser.Parse(File.ReadAllText(path)))
             .ToList();
 

@@ -62,7 +62,7 @@ public class TimelineContextPropertyProviderTests : IDisposable
     }
 
     private ContextTarget Target(string path, string elementId) =>
-        new(ContextScope.DiagramElement, path, IsContainer: false, SourceId: default, _workspace, ShortGuid.NewShortGuid(), elementId);
+        ContextTarget.ForElement(path, elementId, _workspace, ShortGuid.NewShortGuid());
 
     [Fact]
     public async Task APeriod_ContributesLabelBeginEndAndRow()

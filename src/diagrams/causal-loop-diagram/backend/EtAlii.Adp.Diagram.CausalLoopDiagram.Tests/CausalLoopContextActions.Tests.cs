@@ -61,7 +61,7 @@ public class CausalLoopContextActionsTests : IDisposable
     private async Task<IReadOnlyList<ContextActionDefinition>> Discover(string elementId)
     {
         var groups = await _actions.DiscoverAsync(Target(elementId), TestContext.Current.CancellationToken);
-        return [.. groups.SelectMany(group => group.Actions)];
+        return [.. groups.Actions()];
     }
 
     // ---- what each selection offers ---------------------------------------------------------
@@ -396,7 +396,7 @@ public class CausalLoopContextActionsTests : IDisposable
         // Act.
         var actions = (await _actions.DiscoverAsync(
             Target(CausalLoopSelection.RelationFor("population", "births")),
-            TestContext.Current.CancellationToken)).SelectMany(group => group.Actions).ToList();
+            TestContext.Current.CancellationToken)).Actions();
 
         // Assert.
         Assert.Contains(actions, action => action.Id == CausalLoopContextActionProvider.ConnectActionId);

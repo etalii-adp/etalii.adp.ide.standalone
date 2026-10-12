@@ -18,6 +18,23 @@ public static class Eventually
     private static readonly TimeSpan DefaultInterval = TimeSpan.FromMilliseconds(25);
 
     /// <summary>
+    /// Whether <paramref name="condition"/> came to hold before <paramref name="patience"/> ran out,
+    /// asked as often as <see cref="ValueAsync{T}"/> asks its probe.
+    /// </summary>
+    public static async Task<bool> TrueAsync(
+        Func<bool> condition,
+        CancellationToken cancellationToken,
+        TimeSpan? patience = null,
+        TimeSpan? interval = null,
+        TimeProvider? time = null)
+    {
+        ArgumentNullException.ThrowIfNull(condition);
+        return await ValueAsync(() => condition() ? _held : null, cancellationToken, patience, interval, time) is not null;
+    }
+
+    private static readonly object _held = new();
+
+    /// <summary>
     /// The first non-null value <paramref name="probe"/> returns, or null when
     /// <paramref name="patience"/> runs out first. The probe is asked once more at the deadline, so
     /// a value that arrives during the last interval is not missed.

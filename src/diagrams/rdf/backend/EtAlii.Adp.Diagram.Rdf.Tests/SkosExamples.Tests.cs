@@ -16,21 +16,6 @@ public class SkosExamplesTests
 {
     private static readonly DiagramOrigin _origin = new("w3c", "skos");
 
-    /// <summary>The stw examples folder, found by walking up from the test binary.</summary>
-    private static string StwFolder()
-    {
-        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
-        {
-            var candidate = IoPath.Combine(directory.FullName, "src", "diagrams", "rdf", "examples", "stw");
-            if (Directory.Exists(candidate))
-            {
-                return candidate;
-            }
-        }
-
-        throw new InvalidOperationException("src/diagrams/rdf/examples/stw was not found above the test binary.");
-    }
-
     public static TheoryData<string> Documents() => new("business-economics", "geographic-names");
 
     [Theory]
@@ -38,7 +23,7 @@ public class SkosExamplesTests
     public async Task EveryStwExtract_ValidatesCleanUnderTheSkosRules(string name)
     {
         // Arrange.
-        var folder = StwFolder();
+        var folder = RepositoryPaths.Under("src", "diagrams", "rdf", "examples", "stw");
         var path = IoPath.Combine(folder, name + ".ttl");
         var registration = IoPath.Combine(folder, name + ".adp");
 
@@ -58,7 +43,7 @@ public class SkosExamplesTests
     public async Task EveryStwExtract_LaysOutAsAHierarchy_NotAsALine(string name)
     {
         // Arrange: the whole extract, laid out as the session lays it out - unbudgeted.
-        var path = IoPath.Combine(StwFolder(), name + ".ttl");
+        var path = IoPath.Combine(RepositoryPaths.Under("src", "diagrams", "rdf", "examples", "stw"), name + ".ttl");
         var text = await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken);
         var projection = SkosProjection.Project(RdfParser.Parse(LineDocument.Parse(text)), int.MaxValue);
 

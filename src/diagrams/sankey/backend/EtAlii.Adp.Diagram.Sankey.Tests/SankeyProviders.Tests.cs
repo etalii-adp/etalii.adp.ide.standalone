@@ -116,7 +116,7 @@ public sealed class SankeyProvidersTests : IDisposable
         var increased = await _actions.ExecuteAsync(Target("m->x"), SankeyContextActionProvider.IncreaseActionId, TestContext.Current.CancellationToken);
 
         // Assert.
-        var actions = groups.SelectMany(group => group.Actions).ToList();
+        var actions = groups.Actions();
         Assert.Equal("+", actions.Single(action => action.Id == SankeyContextActionProvider.IncreaseActionId).Shortcut?.Key);
         Assert.Equal("-", actions.Single(action => action.Id == SankeyContextActionProvider.DecreaseActionId).Shortcut?.Key);
         Assert.Contains(actions, action => action.Id == SankeyContextActionProvider.ThickerActionId);
@@ -156,7 +156,7 @@ public sealed class SankeyProvidersTests : IDisposable
     public async Task ADropAndAGesture_DiscoverTheAddAndTheConnect_AndExecuteThem()
     {
         // Act.
-        var offered = (await _actions.DiscoverAsync(Target(GestureIds.Placement(700, 900)), TestContext.Current.CancellationToken)).SelectMany(group => group.Actions).Select(action => action.Id).ToList();
+        var offered = (await _actions.DiscoverAsync(Target(GestureIds.Placement(700, 900)), TestContext.Current.CancellationToken)).ActionIds();
         var added = await _actions.ExecuteAsync(Target(GestureIds.Placement(700, 900)), SankeyContextActionProvider.AddActionId, TestContext.Current.CancellationToken);
         var connected = await _actions.ExecuteAsync(Target(GestureIds.Relation("a", "x")), SankeyContextActionProvider.ConnectActionId, TestContext.Current.CancellationToken);
 
@@ -191,7 +191,7 @@ public sealed class SankeyProvidersTests : IDisposable
     }
 
     private ContextTarget Target(string elementId) =>
-        new(ContextScope.DiagramElement, _folder.Body, IsContainer: false, SourceId: default, _folder.Folder, ShortGuid.NewShortGuid(), elementId);
+        ContextTarget.ForElement(_folder.Body, elementId, _folder.Folder, ShortGuid.NewShortGuid());
 
     private SankeyModel Parse() => SankeyParser.Parse(LineDocument.Parse(File.ReadAllText(_folder.Body)));
 }

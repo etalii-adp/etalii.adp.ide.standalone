@@ -469,13 +469,12 @@ public sealed class WardleyContextActionProviderTests : IDisposable
         .Single(entry => entry.Kind == WardleyIdentityKind.Component && entry.Key == name)
         .Id;
 
-    private ContextTarget Target(string elementId) => new(
-        ContextScope.DiagramElement, _path, IsContainer: false, SourceId: default, _root, default, elementId);
+    private ContextTarget Target(string elementId) => ContextTarget.ForElement(_path, elementId, _root);
 
     private async Task<IReadOnlyList<ContextActionDefinition>> ActionsFor(string elementId)
     {
         var groups = await _provider.DiscoverAsync(Target(elementId), TestContext.Current.CancellationToken);
-        return groups.SelectMany(group => group.Actions).ToArray();
+        return groups.Actions();
     }
 
     private async Task<IReadOnlyList<string>> ActionIdsFor(string elementId) =>

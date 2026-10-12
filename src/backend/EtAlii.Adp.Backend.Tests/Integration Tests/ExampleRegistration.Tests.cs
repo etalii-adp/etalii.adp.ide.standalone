@@ -63,21 +63,7 @@ public class ExampleRegistrationTests : IClassFixture<WebApplicationFactory<Prog
     /// counting `..` segments - the count changes with the build layout, the folder name
     /// does not.
     /// </summary>
-    private static string DiagramsRoot { get; } = Locate();
-
-    private static string Locate()
-    {
-        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
-        {
-            var candidate = IoPath.Combine(directory.FullName, "src", "diagrams");
-            if (Directory.Exists(candidate))
-            {
-                return candidate;
-            }
-        }
-
-        throw new InvalidOperationException("The src/diagrams folder was not found above the test binary.");
-    }
+    private static string DiagramsRoot { get; } = RepositoryPaths.Under("src", "diagrams");
 
     /// <summary>
     /// The example roots this suite walks: every module's own <c>examples/</c> folder, and
@@ -88,7 +74,7 @@ public class ExampleRegistrationTests : IClassFixture<WebApplicationFactory<Prog
     /// </summary>
     private static IEnumerable<string> ExampleRoots()
     {
-        foreach (var module in Directory.EnumerateDirectories(Locate()))
+        foreach (var module in Directory.EnumerateDirectories(RepositoryPaths.Under("src", "diagrams")))
         {
             var examples = IoPath.Combine(module, "examples");
             if (Directory.Exists(examples))
@@ -97,7 +83,7 @@ public class ExampleRegistrationTests : IClassFixture<WebApplicationFactory<Prog
             }
         }
 
-        var userFacing = IoPath.Combine(IoPath.GetDirectoryName(Locate())!, "examples");
+        var userFacing = IoPath.Combine(IoPath.GetDirectoryName(RepositoryPaths.Under("src", "diagrams"))!, "examples");
         if (Directory.Exists(userFacing))
         {
             yield return userFacing;
@@ -121,7 +107,7 @@ public class ExampleRegistrationTests : IClassFixture<WebApplicationFactory<Prog
         {
             foreach (var adp in Directory.EnumerateFiles(examples, "*.adp", SearchOption.AllDirectories).Where(IsADesigners))
             {
-                data.Add(IoPath.GetRelativePath(Locate(), adp));
+                data.Add(IoPath.GetRelativePath(RepositoryPaths.Under("src", "diagrams"), adp));
             }
         }
 
@@ -163,7 +149,7 @@ public class ExampleRegistrationTests : IClassFixture<WebApplicationFactory<Prog
         {
             foreach (var adp in Directory.EnumerateFiles(examples, "*.adp", SearchOption.AllDirectories).Where(adp => !IsADesigners(adp)))
             {
-                data.Add(IoPath.GetRelativePath(Locate(), adp));
+                data.Add(IoPath.GetRelativePath(RepositoryPaths.Under("src", "diagrams"), adp));
             }
         }
 
@@ -264,7 +250,7 @@ public class ExampleRegistrationTests : IClassFixture<WebApplicationFactory<Prog
                 var directory = IoPath.GetDirectoryName(adp);
                 if (directory is not null && directories.Add(directory))
                 {
-                    data.Add(IoPath.GetRelativePath(Locate(), directory));
+                    data.Add(IoPath.GetRelativePath(RepositoryPaths.Under("src", "diagrams"), directory));
                 }
             }
         }

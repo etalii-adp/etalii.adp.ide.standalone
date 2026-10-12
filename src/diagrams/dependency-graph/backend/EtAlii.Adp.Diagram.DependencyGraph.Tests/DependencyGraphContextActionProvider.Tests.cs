@@ -63,12 +63,12 @@ public class DependencyGraphContextActionProviderTests : IDisposable
     private readonly ShortGuid _watchId = ShortGuid.NewShortGuid();
 
     private ContextTarget Target(string path, string elementId) =>
-        new(ContextScope.DiagramElement, path, IsContainer: false, SourceId: default, _workspace, _watchId, elementId);
+        ContextTarget.ForElement(path, elementId, _workspace, _watchId);
 
     private async Task<IReadOnlyList<string>> ActionIdsFor(string path, string elementId)
     {
         var groups = await _actions.DiscoverAsync(Target(path, elementId), CancellationToken.None);
-        return groups.SelectMany(group => group.Actions).Select(action => action.Id).ToList();
+        return groups.ActionIds();
     }
 
     [Fact]
