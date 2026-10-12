@@ -38,7 +38,7 @@ One Developer owns this specification, per CLAUDE.md's one-owner-per-specificati
 
 ## The tasks
 
-- [ ] 1. Prove the schema service in this client
+- [x] 1. Prove the schema service in this client
   - Files: `src/client/src/editors/spike/jsonLanguageService.spike.test.ts` (new), `src/client/package.json` (the dependency, moved to the module's own manifest in task 7), `docs/dependencies.md`
   - Add `vscode-json-languageservice` at an exact version and its row in the dependency inventory, with the licence read from the installed package's own metadata.
   - Write the spike as tests that stay: for one fixed document and one fixed schema, the findings, the completions at one position and the hover text at one position. One further test per JSON Schema dialect (draft-04, draft-06, draft-07, 2019-09, 2020-12), each asserting one finding that only that dialect's keyword gives.
@@ -50,7 +50,7 @@ One Developer owns this specification, per CLAUDE.md's one-owner-per-specificati
   - _Requirements: 1.1, 1.2, 1.3, 1.4_
   - _Prompt: Implement the task for spec json-editor, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Front-end developer who verifies a third-party library before building on it | Task: Add vscode-json-languageservice, write the spike as Vitest tests that stay (findings, completion, hover, one test per schema dialect), run it under npm test and in a production build opened in a browser, measure bundle size and timings, and record the results in the design by a small amendment | Restrictions: Do not design or build anything else on the library in this task; do not work around a failure, stop and raise the selection of Requirement 1.4; read the licence from the package's own metadata; the temporary browser route does not reach the pull request | _Leverage: the design's scratch run, vite.config.ts | _Requirements: 1.1, 1.2, 1.3, 1.4 | Success: the spike tests are green under npm test, the browser run is recorded with what the console showed, sizes and timings are measured and in the design, four gates exit zero | Instructions: set this task to [-] in tasks.md before starting, log the work with log-implementation when done, then set it to [x]._
 
-- [ ] 2. Let an editor module declare its own dependencies
+- [x] 2. Let an editor module declare its own dependencies
   - Files: `src/package.json`, `src/editors/markdown/client/package.json` and `src/editors/plain/client/package.json` (only if the workspace glob requires every match to have one), `src/package-lock.json`
   - Add `editors/*/client` to the workspaces. Find out whether npm accepts a matched folder without a `package.json`; if not, give the two existing modules a manifest with no dependencies.
   - Show that `DependencyInventoryTests` counts the new workspace: add a throwaway dependency to one editor manifest, see the guard fail for the missing row, and remove it.
@@ -58,7 +58,7 @@ One Developer owns this specification, per CLAUDE.md's one-owner-per-specificati
   - _Requirements: 9.1_
   - _Prompt: Implement the task for spec json-editor, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Build engineer for an npm workspace | Task: Add editors/*/client to the workspaces of src/package.json so an editor module can declare dependencies, and prove the dependency inventory guard counts it | Restrictions: Change no dependency version; do not edit the guard unless it cannot expand the new glob, and then extend Expand deliberately with a test; build a newly created worktree before trusting a green gate | _Leverage: DependencyInventoryTests, the diagrams workspace | _Requirements: 9.1 | Success: npm install resolves from a clean tree, the guard was seen to fail on an uninventoried editor dependency and is green without it, four gates exit zero | Instructions: set this task to [-] in tasks.md before starting, log the work with log-implementation when done, then set it to [x]._
 
-- [ ] 3. One colour scheme for every editor
+- [x] 3. One colour scheme for every editor
   - Files: `src/client/src/editors/editorHighlight.ts` (new), `src/client/src/editors/BaseTextEditor.tsx`, `src/client/src/index.css`, `src/client/src/theme.contrast.test.ts`, `src/client/src/themeTokens.test.ts`, `src/client/src/editors/editorHighlight.test.tsx` (new), `src/editors/markdown/client/MarkdownEditorPanel.test.tsx`
   - Declare the nine `--color-syntax-*` tokens for the light and the dark theme as literal hex.
   - Write the `HighlightStyle` that maps Lezer's tags to them, and install it in `BaseTextEditor` with `bracketMatching()` and `foldGutter()`.
@@ -69,7 +69,7 @@ One Developer owns this specification, per CLAUDE.md's one-owner-per-specificati
   - _Requirements: 9.2, 3.3, 3.5, 3.6_
   - _Prompt: Implement the task for spec json-editor, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Front-end developer working on CodeMirror 6 themes | Task: Add nine syntax colour tokens for both themes, one shared HighlightStyle bound to them, install it with bracket matching and fold gutter in BaseTextEditor, and extend the token-level contrast guard to them | Restrictions: Literal hex in the theme so the guard can compute; no colour written in a module; do not assert colour through jsdom, which applies no CSS; the guard must be seen to fail; follow src/.editorconfig | _Leverage: themeContrast.ts, theme.contrast.test.ts, @codemirror/language | _Requirements: 9.2, 3.3, 3.5, 3.6 | Success: every token passes in both themes, the markdown editor shows highlight classes, folding leaves the text unchanged, four gates exit zero | Instructions: set this task to [-] in tasks.md before starting, log the work with log-implementation when done, then set it to [x]._
 
-- [ ] 4. One presentation of findings
+- [x] 4. One presentation of findings
   - Files: `src/client/src/editors/editorAnalysis.ts` (new: `EditorFinding`, `EditorAnalysis`), `src/client/src/editors/analysisExtensions.ts` (new), `src/client/src/editors/TextEditorPanel.tsx`, `src/client/src/editors/editors.css`, `src/client/src/editors/analysisExtensions.test.tsx` (new), `src/client/package.json`, `docs/dependencies.md`
   - Add `@codemirror/lint`. Give `TextEditorPanel` an optional `analysis` and turn it into a linter with a 400 ms delay, a gutter mark, an underline whose line style differs per severity, and the keyboard path to the next finding.
   - The status line shows the counts of errors and warnings when there are any, and the analysis's own status after them.
@@ -79,7 +79,7 @@ One Developer owns this specification, per CLAUDE.md's one-owner-per-specificati
   - _Requirements: 9.3, 4.4, 4.5, 4.6_
   - _Prompt: Implement the task for spec json-editor, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Front-end developer working on CodeMirror 6 extensions | Task: Define EditorFinding and EditorAnalysis, and present findings from any analysis in the shared text panel: underline per severity, gutter mark, sentence on hover and from the keyboard, counts in the status line, stale answers dropped | Restrictions: The shared code names no format; extensions are built once at mount, so read what changes through references; severity is never carried by colour alone; a finding never blocks a save; every test is seen to fail against the behaviour removed | _Leverage: TextEditorPanel, BaseTextEditor, @codemirror/lint | _Requirements: 9.3, 4.4, 4.5, 4.6 | Success: a fake analysis's findings show in all three ways, counts are right and absent when zero, a stale answer never reaches the screen, four gates exit zero | Instructions: set this task to [-] in tasks.md before starting, log the work with log-implementation when done, then set it to [x]._
 
-- [ ] 5. One presentation of completions and hover text
+- [x] 5. One presentation of completions and hover text
   - Files: `src/client/src/editors/editorAnalysis.ts`, `src/client/src/editors/analysisExtensions.ts`, `src/client/src/editors/analysisExtensions.test.tsx`, `src/client/package.json`, `docs/dependencies.md`
   - Add `@codemirror/autocomplete`. Define `EditorCompletion`, `EditorCompletionList` and `EditorHover`; install completion with the analysis as its only source, and a hover tooltip.
   - The list opens on typing and on Ctrl+Space and is walked, accepted and dismissed from the keyboard. An item's description is shown beside it.
@@ -89,7 +89,7 @@ One Developer owns this specification, per CLAUDE.md's one-owner-per-specificati
   - _Requirements: 9.4, 7.3, 7.5, 7.6_
   - _Prompt: Implement the task for spec json-editor, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Front-end developer working on CodeMirror 6 extensions | Task: Define the completion and hover shapes and present them from any analysis: a list with descriptions that opens on typing and on Ctrl+Space and works from the keyboard alone, hover text for a described name, snippet inserts | Restrictions: Nothing that comes from a schema is assigned as HTML, ever, and a test holds it; the shared code names no format; every test is seen to fail against the behaviour removed | _Leverage: analysisExtensions.ts, @codemirror/autocomplete | _Requirements: 9.4, 7.3, 7.5, 7.6 | Success: a fake analysis's completions and hover show and work from the keyboard, markup in a description stays text, four gates exit zero | Instructions: set this task to [-] in tasks.md before starting, log the work with log-implementation when done, then set it to [x]._
 
-- [ ] 6. Where a schema comes from, once
+- [x] 6. Where a schema comes from, once
   - Files: `src/client/src/editors/schemaReference.ts` (new), `src/client/src/editors/schemaReference.test.ts` (new), `src/fixtures/schema-reference-cases.json` (new), `src/client/src/editors/SchemaFiles.tsx` (new), `src/client/src/editors/SchemaFiles.test.tsx` (new), `docs/creating-an-editor-module.md`
   - Write the case file first: relative references in the same folder, a subfolder and a parent folder; a reference that steps above the project root; `http`, `https` and an unknown scheme; a bundled address; an empty reference. Each case names its expected target or its reason.
   - Write `resolveSchemaReference` to the cases. A reference that leaves the root is refused and never clamped; one test holds exactly that against URL arithmetic.
