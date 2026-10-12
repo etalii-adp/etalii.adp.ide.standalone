@@ -49,8 +49,19 @@ public class ConformanceFixturesTests
         return $"../../{Path.GetFileName(file)}{reference[hash..]}";
     }
 
+    /// <summary>
+    /// The fixtures the library passes: every one but those it departs from today, which
+    /// <see cref="InsertEmptyFixturesTests"/> runs with the departure written out.
+    /// </summary>
+    public static TheoryData<string> PassingFixtures()
+    {
+        var data = new TheoryData<string>();
+        foreach (var name in Fixtures().Select(row => row.Data).Where(name => !InsertEmptyFixturesTests.Departing.Contains(name))) data.Add(name);
+        return data;
+    }
+
     [Theory]
-    [MemberData(nameof(Fixtures))]
+    [MemberData(nameof(PassingFixtures))]
     public void TheFixturePasses(string name)
     {
         // Arrange.
