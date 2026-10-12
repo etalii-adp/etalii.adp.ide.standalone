@@ -32,6 +32,26 @@ What the run showed that the design depends on:
 - Hover text comes back with markdown escaping (`place\.`). The module asks for plain text and renders text nodes only.
 - The library's source names the dialects draft-04, draft-06, draft-07, 2019-09 and 2020-12. That is a reading of the source; the spike task holds one test per dialect, and Requirement 6.5's list is whatever those tests show.
 
+### What the spike recorded (task 1, 2026-10-12)
+
+Task 1 repeated the scratch run inside the repository, as tests that stay (`src/client/src/editors/spike/jsonLanguageService.spike.test.ts`), and once in a browser. Recorded here by a small amendment, as the task asks.
+
+| Question | Answer | Known |
+| --- | --- | --- |
+| Under `npm test`? | Yes. Ten tests green: the schema requested through the module's callback under the module's scheme; schema findings as errors on the lines concerned and none on `$schema`; property and enumeration completions; hover text; a schema that cannot be loaded reported as one resolve error (code at or above `0x300`); and one test per dialect. | Run |
+| In a production build, in a browser? | Yes. `vite build` with no warning but the shell's existing chunk-size one; the built page opened in headless Chromium 141 with a temporary route running the same calls. The console showed the route's result and nothing from the library: findings (port above its maximum, a trailing comma), a completion (`mode`) and hover text (`The name\.`). The only console errors were two 501 answers to the shell's sign-in calls, because the build was served without a backend. The route was removed before the pull request. | Run |
+| What does it add? | **151.07 kB minified, 41.79 kB gzipped**, as its own chunk loaded with `import()`, from Vite's report of the production build; the chunk includes the route's few lines of calling code. The shell's own chunk grew by 1.8 kB (1,661.98 to 1,663.78 kB) for the temporary route's dynamic import. | Measured |
+| How fast is it? | In the browser, a 5,005-line document against a 2,017-line schema: validation 75 ms cold and 50 ms warm, a completion list (498 items) 5 ms. | Measured, headless Chromium in the cloud container, not the development machine |
+| Which version? | `6.0.0-next.3`, pinned exactly. | Read |
+
+What the spike showed beyond the scratch run:
+
+- **A relative `$schema` is not resolved against the document's URI by itself.** Without a `workspaceContext.resolveRelativePath`, the service asks for `file:///./app.schema.json`. With one, it asks under the module's own scheme. The module therefore supplies it, and that is where the raw reference meets `resolveSchemaReference`.
+- **The service normalises a URI through `vscode-uri`**: `adp-project:///settings/app.json` comes back as `adp-project:/settings/app.json`. The module keys its schemas by the normalised form.
+- **Hover text is markdown-escaped even when plain text is asked for** (`title bar\.`). The module unescapes it and sets it as text.
+
+**The dialects supported (Requirement 6.5)**, by the spike's one test per dialect, each with a keyword only that dialect gives meaning to: **draft-04** (a boolean `exclusiveMaximum`), **draft-06** (`const`), **draft-07** (`if`/`then`), **2019-09** (`dependentRequired`, shown to raise nothing under draft-07) and **2020-12** (`prefixItems`, shown to raise nothing under 2019-09). The library's source also names draft-03; no test holds it, so it is not listed as supported.
+
 ## Rulings asked
 
 Each is a small amendment to an approved requirement, asked in chat as the rules for small amendments say. The design below is written for the first option of each.

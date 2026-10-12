@@ -136,3 +136,33 @@ describe("a diagram fill stays readable under the theme's text", () => {
     });
   });
 });
+
+/**
+ * The editors' syntax colours, against the surface every editor is drawn on, in both modes
+ * (json-editor Requirement 3.3 and 9.2). These are TEXT, so the question is the one any text is
+ * held to - WCAG AA's 4.5:1 - and the ground is `--color-surface`, which `BaseTextEditor` paints.
+ * Taken by prefix and counted first, for the same reason as the fills above: a renamed family
+ * must say "found none" rather than pass over an empty set.
+ */
+describe("an editor's syntax colour stays readable on the editor's surface", () => {
+  const here = path.dirname(fileURLToPath(import.meta.url));
+  const tokens = themeTokens(readFileSync(path.join(here, "index.css"), "utf8"));
+  const AA = 4.5;
+  const PREFIX = "--color-syntax-";
+
+  for (const mode of ["light", "dark"] as const) {
+    it(`clears ${AA}:1 for all nine kinds of token in ${mode} mode`, () => {
+      const surface = resolveToken(tokens[mode], "--color-surface");
+      expect(surface, `${mode} declares --color-surface`).toBeDefined();
+      const declared = [...tokens[mode].keys()].filter((name) => name.startsWith(PREFIX));
+      expect(declared.sort()).toEqual(
+        ["attribute", "comment", "invalid", "keyword", "name", "number", "punctuation", "string", "tag"].map((kind) => PREFIX + kind),
+      );
+      for (const name of declared) {
+        const colour = resolveToken(tokens[mode], name)!;
+        const ratio = contrastRatio(colour, surface!);
+        expect(ratio, `${name} is ${colour} in ${mode} mode, at ${ratio.toFixed(4)}:1 on --color-surface ${surface}`).toBeGreaterThanOrEqual(AA);
+      }
+    });
+  }
+});

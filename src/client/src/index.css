@@ -125,6 +125,19 @@
      projection mark, so selection in that colour read as "selected" on things nobody had
      selected. Anything painting this at rest breaks the one rule this token has. */
   --color-selected: #7c3aed;
+  /* THE EDITORS' SYNTAX COLOURS: the nine kinds of token every editor module colours through the one
+     shared HighlightStyle in editors/editorHighlight.ts (json-editor Requirement 9.2). Text on
+     --color-surface, so theme.contrast.test.ts holds each to the line it holds text to, in both modes.
+     Nine hues, so that no two kinds a format shows side by side share one. */
+  --color-syntax-name: #0550ae;
+  --color-syntax-string: #0a7a3a;
+  --color-syntax-number: #9a4a00;
+  --color-syntax-keyword: #8250df;
+  --color-syntax-comment: #5f6b76;
+  --color-syntax-punctuation: #3b4450;
+  --color-syntax-tag: #b3156a;
+  --color-syntax-attribute: #0a6d73;
+  --color-syntax-invalid: #cf222e;
   --radius: 10px;
   --shadow: 0 1px 2px rgba(15, 23, 42, 0.06), 0 8px 24px rgba(15, 23, 42, 0.08);
 }
@@ -210,6 +223,16 @@
     --color-diagram-sankey-pink: #f472b6;
     --color-diagram-sankey-brown: #d6a26f;
     --color-selected: #a78bfa; /* the same violet, lifted so it still reads on the dark surface */
+    /* The same nine kinds, lifted so they read on the dark surface. */
+    --color-syntax-name: #79c0ff;
+    --color-syntax-string: #7ee787;
+    --color-syntax-number: #ffa657;
+    --color-syntax-keyword: #d2a8ff;
+    --color-syntax-comment: #9aa5b1;
+    --color-syntax-punctuation: #c9d1d9;
+    --color-syntax-tag: #ff7bc3;
+    --color-syntax-attribute: #56d4dd;
+    --color-syntax-invalid: #ff7b72;
     --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.4);
   }
 }
