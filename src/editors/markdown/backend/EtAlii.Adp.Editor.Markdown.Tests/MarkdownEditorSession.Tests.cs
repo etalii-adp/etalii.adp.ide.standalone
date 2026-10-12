@@ -1,5 +1,4 @@
 using Xunit;
-using IoPath = System.IO.Path;
 
 namespace EtAlii.Adp.Editor.Markdown.Tests;
 
@@ -10,24 +9,15 @@ namespace EtAlii.Adp.Editor.Markdown.Tests;
 /// </summary>
 public class MarkdownEditorSessionTests : IDisposable
 {
-    private readonly string _root;
+    private readonly TestFolder _folder = TestFolder.Create("markdown-session");
 
-    public MarkdownEditorSessionTests()
-    {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
-    }
-
-    public void Dispose()
-    {
-        TestFolder.TryDelete(_root);
-    }
+    public void Dispose() => _folder.Dispose();
 
     [Fact]
     public async Task ASession_ReadsAMarkdownFile()
     {
         // Arrange.
-        var path = IoPath.Combine(_root, "readme.md");
+        var path = _folder.Combine("readme.md");
         await File.WriteAllBytesAsync(path, "# Title\r\n\r\nBody\r\n"u8.ToArray(), TestContext.Current.CancellationToken);
 
         // Act.
@@ -43,7 +33,7 @@ public class MarkdownEditorSessionTests : IDisposable
     {
         // Arrange: the family's headline guarantee, held by this module too (Requirement 10.2).
         byte[] bytes = [0xEF, 0xBB, 0xBF, .. "# Doc\nline\n"u8];
-        var path = IoPath.Combine(_root, "doc.md");
+        var path = _folder.Combine("doc.md");
         await File.WriteAllBytesAsync(path, bytes, TestContext.Current.CancellationToken);
         await using var session = new MarkdownEditorSession(path);
 

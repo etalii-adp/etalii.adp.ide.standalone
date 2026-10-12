@@ -208,16 +208,10 @@ public class FileHoldersAnswersLateTests : IDisposable
     private static async Task<string> EventuallyAsync(LogCapture logs, Func<string, bool> matches)
     {
         var clock = System.Diagnostics.Stopwatch.StartNew();
-        var deadline = DateTime.UtcNow + Patience;
-        while (DateTime.UtcNow < deadline)
+        var found = await Eventually.ValueAsync(() => logs.Warnings.FirstOrDefault(matches), TestContext.Current.CancellationToken, Patience);
+        if (found is not null)
         {
-            var found = logs.Warnings.FirstOrDefault(matches);
-            if (found is not null)
-            {
-                return found;
-            }
-
-            await Task.Delay(25, TestContext.Current.CancellationToken);
+            return found;
         }
 
         var seen = logs.Warnings.ToArray();

@@ -1,4 +1,5 @@
 using EtAlii.Adp.History;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -16,14 +17,19 @@ public class TimelineCommandsTests : IDisposable
         "adp-timeline-commands-" + Guid.NewGuid().ToString("N"));
 
     private readonly TimelineDocumentStore _store = new();
-    private readonly HistoryStackStore _historyStacks;
+    private readonly IHistoryStackStore _historyStacks;
 
     private IHistoryStack History => _historyStacks.Get(_workspace);
 
     public TimelineCommandsTests()
     {
         Directory.CreateDirectory(_workspace);
-        _historyStacks = new HistoryStackStore(new TimelineTestDispatcher(_store));
+        // The host's own command pipeline, with this module's registrations and this test's store.
+        _historyStacks = TestHistory.For(services =>
+        {
+            services.AddSingleton<ITimelineDocumentStore>(_store);
+            services.AddTimeline();
+        });
     }
 
     public void Dispose()

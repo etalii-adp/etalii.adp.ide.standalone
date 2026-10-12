@@ -6,9 +6,9 @@
     unblock items 2, 6 and 7). Deliberately NOT named *.Tests: that suffix would compile
     LogCapture into this assembly, whose [ModuleInitializer] must run once per TEST project
     - the do-not-reference trap Directory.Build.targets documents. Per-assembly support
-    (LogCapture, TestFolder) stays source-compiled by the naming convention; only support
-    that is safe to share by reference lives here, public because a referenced internal
-    helps nobody.
+    (LogCapture) stays source-compiled by the naming convention; support that is safe to
+    share by reference lives here, public because a referenced internal helps nobody, and
+    Directory.Build.targets attaches it to every test project.
   -->
 
   <ItemGroup>
@@ -22,9 +22,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Not a *.Tests project, so Directory.Build.targets does not compile the teardown helper in;
-         DrawnConnections deletes its scratch copy through it like every test does. -->
-    <Compile Include="..\..\TestSupport\TestFolder.cs" Link="TestSupport\TestFolder.cs" />
+    <!-- TestFolder's report seams are internal; its own tests live in the core test project. -->
+    <InternalsVisibleTo Include="EtAlii.Adp.Tests" />
   </ItemGroup>
 
 </Project>
