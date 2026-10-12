@@ -3,8 +3,10 @@
   "title": "design.md: FBL 0.5 in the standalone library, seven steps (proposes one new requirement: attribute types derived from DISL, step 7)",
   "filePath": ".spec-workflow/specs/fbl-written-text/design.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-10-12T09:37:44.528Z",
   "category": "spec",
-  "categoryName": "fbl-written-text"
+  "categoryName": "fbl-written-text",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-10-12T09:56:21.197Z"
 }
