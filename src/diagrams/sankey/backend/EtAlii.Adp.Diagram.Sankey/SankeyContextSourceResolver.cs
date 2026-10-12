@@ -127,7 +127,7 @@ public sealed class SankeyContextSourceResolver : IContextSourceResolver
         _documents.Changed += OnChanged;
         return new Unsubscriber(() => _documents.Changed -= OnChanged);
 
-        void OnChanged(object? sender, SankeyDocumentChangedEventArgs args)
+        void OnChanged(object? sender, DocumentChangedEventArgs args)
         {
             if (string.Equals(args.Path, bodyPath, StringComparison.OrdinalIgnoreCase))
             {

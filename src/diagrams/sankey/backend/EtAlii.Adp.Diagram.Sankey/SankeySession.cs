@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.Sankey;
@@ -134,6 +135,6 @@ public sealed class SankeySession : IDiagramSession
     private void Raise(IReadOnlyList<DiagramDelta> deltas) =>
         Changed?.Invoke(this, new DiagramDeltasEventArgs(deltas));
 
-    private void OnDocumentChanged(object? sender, SankeyDocumentChangedEventArgs args) =>
+    private void OnDocumentChanged(object? sender, DocumentChangedEventArgs args) =>
         _changes.OnDocumentChanged(args.Path);
 }
