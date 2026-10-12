@@ -621,7 +621,7 @@ describe("C4Canvas", () => {
 
     // Assert.
     expect(select).toHaveBeenCalled();
-    expect(container.querySelector(".context-menu")).toBeNull();
+    expect(document.querySelector(".context-menu")).toBeNull();
   });
 
   // ---- dragging an element ----------------------------------------------------------------

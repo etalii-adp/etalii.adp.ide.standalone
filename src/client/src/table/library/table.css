@@ -201,8 +201,8 @@
 /* The room a row's handle takes, kept in the first header so its checkbox and icon line up with the rows' own. */
 .table-header-handle-room {
   margin-inline-end: -4px; /* a row's handle stands 2px from its checkbox; the header's gap is 6px */
+  opacity: 0; /* not visibility, which an element inside would inherit */
   pointer-events: none;
-  visibility: hidden;
 }
 
 /* The header's checkbox stands as a row's does, with only the margin the header's gap does not already give. */
