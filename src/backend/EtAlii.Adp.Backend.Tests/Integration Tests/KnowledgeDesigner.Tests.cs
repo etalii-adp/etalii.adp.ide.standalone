@@ -1,25 +1,17 @@
-using EtAlii.Adp.Authentication.Wire;
 using EtAlii.Adp.Context.Wire;
 using EtAlii.Adp.Diagram;
 using EtAlii.Adp.Diagram.Wire;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
-using EtAlii.Adp.Projects;
-using EtAlii.Adp.Projects.Wire;
 using EtAlii.Adp.TestSupport.Host;
 using Grpc.Core;
-using Grpc.Net.Client;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Xunit;
 using ContextService = EtAlii.Adp.Context.Wire.ContextService;
 using DesignerService = EtAlii.Adp.Designer.Wire.DesignerService;
 using HierarchyService = EtAlii.Adp.Hierarchy.Wire.HierarchyService;
 using IoPath = System.IO.Path;
 using Path = EtAlii.Adp.Documents.Wire.Path;
-using ProjectService = EtAlii.Adp.Projects.Wire.ProjectService;
 using Proto = EtAlii.Adp.Designer.Wire;
 using WorkspaceService = EtAlii.Adp.Diagram.Wire.WorkspaceService;
 
@@ -35,44 +27,9 @@ namespace EtAlii.Adp.Backend.Tests;
 /// Nothing here is a test double. The host is the one <c>Program.cs</c> builds, the module is the
 /// one discovery found, and the files are copies of the examples the module ships.
 /// </remarks>
-public sealed class KnowledgeDesignerTests : IClassFixture<WebApplicationFactory<Program>>, IDisposable
+public sealed class KnowledgeDesignerTests(HostFixture host) : IClassFixture<HostFixture>
 {
-    private const string DeveloperUsername = "admin";
-    private const string DeveloperCredential = "changeme";
-    private const string SessionTokenHeader = "session-token";
-    private static readonly TimeSpan MessageTimeout = TimeSpan.FromSeconds(20);
-
-    private readonly WebApplicationFactory<Program> _factory;
-    private readonly string _appDataRoot;
-    private readonly string _projectFolder;
-
-    public KnowledgeDesignerTests(WebApplicationFactory<Program> baseFactory)
-    {
-        _appDataRoot = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.IntegrationTests", Guid.NewGuid().ToString("N"));
-        _projectFolder = IoPath.Combine(_appDataRoot, "tables");
-        Directory.CreateDirectory(_projectFolder);
-
-        _factory = baseFactory.WithWebHostBuilder(builder =>
-        {
-            builder.UseEnvironment("developer");
-            builder.ConfigureServices(services =>
-            {
-                services.RemoveAll<IProjectStore>();
-                services.AddSingleton<IProjectStore>(new FileProjectStore(_appDataRoot));
-                services.RemoveAll<Problems.IProblemStore>();
-                services.AddSingleton<Problems.IProblemStore>(provider => new Problems.ProblemStore(
-                    _appDataRoot,
-                    provider.GetRequiredService<DiagramFileRouter>(),
-                    provider.GetRequiredService<DiagramValidators>()));
-            });
-        });
-    }
-
-    public void Dispose()
-    {
-        _factory.Dispose();
-        TestFolder.TryDelete(_appDataRoot);
-    }
+    private readonly string _projectFolder = host.NewProjectFolder("tables");
 
     /// <summary>The module's examples folder, found by walking up from the test binary.</summary>
     private static string Examples()
@@ -108,7 +65,7 @@ public sealed class KnowledgeDesignerTests : IClassFixture<WebApplicationFactory
         Seed(extension);
         var body = IoPath.Combine(_projectFolder, "cities" + extension);
         var session = await OpenSessionAsync();
-        using var cts = CreateMessageTimeout();
+        using var cts = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken);
         using var watch = Watch(session, TestContext.Current.CancellationToken);
         await ReadAsync(watch.ResponseStream, cts.Token);
 
@@ -171,7 +128,7 @@ public sealed class KnowledgeDesignerTests : IClassFixture<WebApplicationFactory
 
         // Act and assert: closed, and the connection stays.
         await session.Designer.CloseTableAsync(new Proto.CloseTableRequest { WatchId = session.WatchId, StreamId = streamId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
-        Assert.NotNull(_factory.Services.GetRequiredService<WorkspaceConnections>().Find((ShortGuid)session.WatchId));
+        Assert.NotNull(host.Services.GetRequiredService<WorkspaceConnections>().Find((ShortGuid)session.WatchId));
     }
 
     [Fact]
@@ -180,7 +137,7 @@ public sealed class KnowledgeDesignerTests : IClassFixture<WebApplicationFactory
         // Arrange: both tables open on one connection.
         Seed(".yaml");
         var session = await OpenSessionAsync();
-        using var cts = CreateMessageTimeout();
+        using var cts = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken);
         using var watch = Watch(session, TestContext.Current.CancellationToken);
         await ReadAsync(watch.ResponseStream, cts.Token);
         Documents.Wire.ShortGuid cities = ShortGuid.NewShortGuid();
@@ -234,7 +191,7 @@ public sealed class KnowledgeDesignerTests : IClassFixture<WebApplicationFactory
         var cities = IoPath.Combine(_projectFolder, "cities.yaml");
         var provinces = IoPath.Combine(_projectFolder, "provinces.yaml");
         var before = await File.ReadAllBytesAsync(cities, TestContext.Current.CancellationToken);
-        var history = _factory.Services.GetRequiredService<IHistoryStackStore>().Get(_projectFolder);
+        var history = host.Services.GetRequiredService<IHistoryStackStore>().Get(_projectFolder);
 
         // Act: the rename the explorer makes.
         var renamed = await history.ExecuteAsync(new RenameEntryCommand(provinces, "regions.yaml", _projectFolder), TestContext.Current.CancellationToken);
@@ -261,11 +218,11 @@ public sealed class KnowledgeDesignerTests : IClassFixture<WebApplicationFactory
         // Arrange: a connection that watches its selection, and the entry of the table's registration.
         Seed(".yaml");
         var session = await OpenSessionAsync();
-        var hierarchy = new HierarchyService.HierarchyServiceClient(session.Channel);
-        var context = new ContextService.ContextServiceClient(session.Channel);
+        var hierarchy = session.Hierarchy;
+        var context = session.Context;
         var entryId = await NestedEntryLookup.EntryIdOfAsync(hierarchy, session.ProjectId, session.WatchId, session.Headers, "cities.adp");
         using var watch = context.Watch(new WatchContextRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
-        using var cts = CreateMessageTimeout();
+        using var cts = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken);
         await StreamProbe.WaitUntilContextLiveAsync(watch.ResponseStream, cts.Token);
 
         // Act: the row, selected under the file as an element of a diagram is.
@@ -317,13 +274,6 @@ public sealed class KnowledgeDesignerTests : IClassFixture<WebApplicationFactory
         return new Proto.OpenTableRequest { ProjectId = session.ProjectId, WatchId = session.WatchId, StreamId = streamId, Path = path };
     }
 
-    private static CancellationTokenSource CreateMessageTimeout()
-    {
-        var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
-        cts.CancelAfter(MessageTimeout);
-        return cts;
-    }
-
     private static async Task<WorkspaceMessage> ReadAsync(IAsyncStreamReader<WorkspaceMessage> stream, CancellationToken cancellationToken)
     {
         Assert.True(await stream.MoveNext(cancellationToken), "The workspace stream ended.");
@@ -358,23 +308,16 @@ public sealed class KnowledgeDesignerTests : IClassFixture<WebApplicationFactory
 
     private async Task<Session> OpenSessionAsync()
     {
-        var httpClient = _factory.CreateDefaultClient();
-        var channel = GrpcChannel.ForAddress(httpClient.BaseAddress!, new GrpcChannelOptions { HttpClient = httpClient });
-        var authClient = new AuthenticationService.AuthenticationServiceClient(channel);
-        var login = await authClient.LoginAsync(new LoginRequest { Username = DeveloperUsername, Credential = DeveloperCredential }, cancellationToken: TestContext.Current.CancellationToken);
-        var headers = new Metadata { { SessionTokenHeader, login.Session.Value } };
-
-        var pathMessage = new Path();
-        pathMessage.Segments.AddRange(_projectFolder.Split(IoPath.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries));
-        var added = await new ProjectService.ProjectServiceClient(channel).AddProjectAsync(new AddProjectRequest { Path = pathMessage }, headers, cancellationToken: TestContext.Current.CancellationToken);
-
+        // The connection stays open for the rest of the test: the clients below ride its channel.
+        var flow = await FlowSession.OpenAsync(host, _projectFolder, TestContext.Current.CancellationToken);
         return new Session(
-            headers,
-            added.Added.Id,
-            ShortGuid.NewShortGuid(),
-            new WorkspaceService.WorkspaceServiceClient(channel),
-            new DesignerService.DesignerServiceClient(channel),
-            channel);
+            flow.Headers,
+            flow.ProjectId,
+            flow.WatchId,
+            new WorkspaceService.WorkspaceServiceClient(flow.Channel),
+            new DesignerService.DesignerServiceClient(flow.Channel),
+            flow.Hierarchy,
+            flow.Context);
     }
 
     private sealed record Session(
@@ -383,5 +326,6 @@ public sealed class KnowledgeDesignerTests : IClassFixture<WebApplicationFactory
         Documents.Wire.ShortGuid WatchId,
         WorkspaceService.WorkspaceServiceClient Workspace,
         DesignerService.DesignerServiceClient Designer,
-        GrpcChannel Channel);
+        HierarchyService.HierarchyServiceClient Hierarchy,
+        ContextService.ContextServiceClient Context);
 }

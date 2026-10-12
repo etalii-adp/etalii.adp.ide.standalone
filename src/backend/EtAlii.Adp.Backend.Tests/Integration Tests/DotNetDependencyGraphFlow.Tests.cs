@@ -1,18 +1,9 @@
-using EtAlii.Adp.Authentication.Wire;
 using EtAlii.Adp.Diagram.Wire;
 using EtAlii.Adp.Documents.Wire;
-using EtAlii.Adp.Projects;
-using EtAlii.Adp.Projects.Wire;
-using Grpc.Core;
-using Grpc.Net.Client;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
+using EtAlii.Adp.TestSupport.Host;
 using Xunit;
 using IoPath = System.IO.Path;
 using Path = EtAlii.Adp.Documents.Wire.Path;
-using ProjectService = EtAlii.Adp.Projects.Wire.ProjectService;
 
 namespace EtAlii.Adp.Backend.Tests;
 
@@ -32,44 +23,10 @@ namespace EtAlii.Adp.Backend.Tests;
 /// it passes twice while the diagram draws nothing.
 /// </para>
 /// </remarks>
-public class DotNetDependencyGraphFlowTests : IClassFixture<WebApplicationFactory<Program>>, IDisposable
+public class DotNetDependencyGraphFlowTests(HostFixture host) : IClassFixture<HostFixture>
 {
-    private const string DeveloperUsername = "admin";
-    private const string DeveloperCredential = "changeme";
-    private const string SessionTokenHeader = "session-token";
-
-    private readonly WebApplicationFactory<Program> _factory;
-    private readonly string _appDataRoot;
-    private readonly string _projectFolder;
-
-    public DotNetDependencyGraphFlowTests(WebApplicationFactory<Program> baseFactory)
-    {
-        _appDataRoot = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.IntegrationTests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_appDataRoot);
-        _projectFolder = ShowcaseFolder();
-
-        _factory = baseFactory.WithWebHostBuilder(builder =>
-        {
-            builder.UseEnvironment("developer");
-            builder.ConfigureServices(services =>
-            {
-                services.RemoveAll<IProjectStore>();
-                services.AddSingleton<IProjectStore>(new FileProjectStore(_appDataRoot));
-                services.RemoveAll<Problems.IProblemStore>();
-                services.AddSingleton<Problems.IProblemStore>(provider => new Problems.ProblemStore(
-                    _appDataRoot,
-                    provider.GetRequiredService<Hierarchy.DiagramFileRouter>(),
-                    provider.GetRequiredService<Diagram.DiagramValidators>()));
-            });
-        });
-    }
-
-    public void Dispose()
-    {
-        _factory.Dispose();
-        TestFolder.TryDelete(_appDataRoot);
-        GC.SuppressFinalize(this);
-    }
+    // The shipped showcase itself, read in place: nothing here writes to it.
+    private readonly string _projectFolder = ShowcaseFolder();
 
     private static string ShowcaseFolder()
     {
@@ -101,22 +58,9 @@ public class DotNetDependencyGraphFlowTests : IClassFixture<WebApplicationFactor
     [Fact]
     public async Task TheShowcase_OpensWithTheWholeExamplesTreeAsTheProject()
     {
-        var httpClient = _factory.CreateDefaultClient();
-        using var channel = GrpcChannel.ForAddress(httpClient.BaseAddress!, new GrpcChannelOptions { HttpClient = httpClient });
-
-        var auth = new AuthenticationService.AuthenticationServiceClient(channel);
-        var login = await auth.LoginAsync(
-            new LoginRequest { Username = DeveloperUsername, Credential = DeveloperCredential },
-            cancellationToken: TestContext.Current.CancellationToken);
-        var headers = new Metadata { { SessionTokenHeader, login.Session.Value } };
-
         // src/examples, four levels above the diagram.
         var examplesRoot = IoPath.GetFullPath(IoPath.Combine(_projectFolder, "..", "..", ".."));
-        var projects = new ProjectService.ProjectServiceClient(channel);
-        var folder = new Path();
-        folder.Segments.AddRange(examplesRoot.Split(IoPath.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries));
-        var added = await projects.AddProjectAsync(
-            new AddProjectRequest { Path = folder }, headers, cancellationToken: TestContext.Current.CancellationToken);
+        using var session = await FlowSession.OpenAsync(host, examplesRoot, TestContext.Current.CancellationToken);
 
         var diagramPath = new Path();
         diagramPath.Segments.Add("diagrams");
@@ -124,7 +68,7 @@ public class DotNetDependencyGraphFlowTests : IClassFixture<WebApplicationFactor
         diagramPath.Segments.Add("pipeline-toolkit");
         diagramPath.Segments.Add("PipelineToolkit.adp");
 
-        var diagrams = new DiagramService.DiagramServiceClient(channel);
+        var diagrams = new DiagramService.DiagramServiceClient(session.Channel);
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
         cts.CancelAfter(TimeSpan.FromSeconds(30));
 
@@ -132,11 +76,11 @@ public class DotNetDependencyGraphFlowTests : IClassFixture<WebApplicationFactor
         using var stream = diagrams.Open(
             new OpenDiagramRequest
             {
-                ProjectId = added.Added.Id,
+                ProjectId = session.ProjectId,
                 WatchId = ShortGuid.NewShortGuid(),
                 Path = diagramPath,
             },
-            headers,
+            session.Headers,
             cancellationToken: cts.Token);
 
         while (await stream.ResponseStream.MoveNext(cts.Token))
@@ -161,25 +105,12 @@ public class DotNetDependencyGraphFlowTests : IClassFixture<WebApplicationFactor
     [Fact]
     public async Task TheShippedShowcase_StreamsItsProjectsPackagesAndEdges()
     {
-        var httpClient = _factory.CreateDefaultClient();
-        using var channel = GrpcChannel.ForAddress(httpClient.BaseAddress!, new GrpcChannelOptions { HttpClient = httpClient });
-
-        var auth = new AuthenticationService.AuthenticationServiceClient(channel);
-        var login = await auth.LoginAsync(
-            new LoginRequest { Username = DeveloperUsername, Credential = DeveloperCredential },
-            cancellationToken: TestContext.Current.CancellationToken);
-        var headers = new Metadata { { SessionTokenHeader, login.Session.Value } };
-
-        var projects = new ProjectService.ProjectServiceClient(channel);
-        var folder = new Path();
-        folder.Segments.AddRange(_projectFolder.Split(IoPath.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries));
-        var added = await projects.AddProjectAsync(
-            new AddProjectRequest { Path = folder }, headers, cancellationToken: TestContext.Current.CancellationToken);
+        using var session = await FlowSession.OpenAsync(host, _projectFolder, TestContext.Current.CancellationToken);
 
         var diagramPath = new Path();
         diagramPath.Segments.Add("PipelineToolkit.adp");
 
-        var diagrams = new DiagramService.DiagramServiceClient(channel);
+        var diagrams = new DiagramService.DiagramServiceClient(session.Channel);
 
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
         cts.CancelAfter(TimeSpan.FromSeconds(30));
@@ -189,11 +120,11 @@ public class DotNetDependencyGraphFlowTests : IClassFixture<WebApplicationFactor
         using var stream = diagrams.Open(
             new OpenDiagramRequest
             {
-                ProjectId = added.Added.Id,
+                ProjectId = session.ProjectId,
                 WatchId = ShortGuid.NewShortGuid(),
                 Path = diagramPath,
             },
-            headers,
+            session.Headers,
             cancellationToken: cts.Token);
 
         while (await stream.ResponseStream.MoveNext(cts.Token))

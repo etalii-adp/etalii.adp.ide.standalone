@@ -15,16 +15,17 @@ namespace EtAlii.Adp.TestSupport.Host;
 /// </summary>
 public sealed class FlowSession : IDisposable
 {
-    private readonly GrpcChannel _channel;
-
     private FlowSession(GrpcChannel channel, Metadata headers, ShortGuid projectId)
     {
-        _channel = channel;
+        Channel = channel;
         Headers = headers;
         ProjectId = projectId;
         Hierarchy = new HierarchyService.HierarchyServiceClient(channel);
         Context = new ContextService.ContextServiceClient(channel);
     }
+
+    /// <summary>The channel to the host, for the clients of a service this session does not hold.</summary>
+    public GrpcChannel Channel { get; }
 
     /// <summary>The signed-in session's token, as every call sends it.</summary>
     public Metadata Headers { get; }
@@ -46,6 +47,19 @@ public sealed class FlowSession : IDisposable
         var headers = await SignInAsync(channel, cancellationToken);
         var projectId = await AddProjectAsync(channel, headers, projectFolder, cancellationToken);
         return new FlowSession(channel, headers, projectId);
+    }
+
+    /// <summary>
+    /// Signs in on a new channel to <paramref name="host"/> for the project <paramref name="joined"/>
+    /// already added: a second connection to the same project, with a watch id of its own.
+    /// </summary>
+    public static async Task<FlowSession> JoinAsync(HostFixture host, FlowSession joined, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(host);
+        ArgumentNullException.ThrowIfNull(joined);
+        var channel = host.CreateChannel();
+        var headers = await SignInAsync(channel, cancellationToken);
+        return new FlowSession(channel, headers, joined.ProjectId);
     }
 
     /// <summary>Signs in as the developer on <paramref name="channel"/> and returns the headers a call carries.</summary>
@@ -80,5 +94,5 @@ public sealed class FlowSession : IDisposable
         return timeout;
     }
 
-    public void Dispose() => _channel.Dispose();
+    public void Dispose() => Channel.Dispose();
 }

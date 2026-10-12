@@ -1,4 +1,3 @@
-using EtAlii.Adp.Authentication.Wire;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Context.Wire;
 using EtAlii.Adp.Diagram.WardleyMap;
@@ -6,22 +5,12 @@ using EtAlii.Adp.Diagram.Wire;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.Hierarchy.Wire;
-using EtAlii.Adp.Projects;
-using EtAlii.Adp.Projects.Wire;
 using EtAlii.Adp.TestSupport.Host;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
-using Grpc.Net.Client;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Xunit;
-using ContextService = EtAlii.Adp.Context.Wire.ContextService;
-using HierarchyService = EtAlii.Adp.Hierarchy.Wire.HierarchyService;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 using Path = EtAlii.Adp.Documents.Wire.Path;
-using ProjectService = EtAlii.Adp.Projects.Wire.ProjectService;
 
 namespace EtAlii.Adp.Backend.Tests;
 
@@ -43,13 +32,8 @@ namespace EtAlii.Adp.Backend.Tests;
 /// and the file on disk agreeing with all of them.
 /// </para>
 /// </remarks>
-public class WardleyMapFlowTests : IClassFixture<WebApplicationFactory<Program>>, IDisposable
+public class WardleyMapFlowTests(HostFixture host) : IClassFixture<HostFixture>
 {
-    private const string DeveloperUsername = "admin";
-    private const string DeveloperCredential = "changeme";
-    private const string SessionTokenHeader = "session-token";
-    private static readonly TimeSpan MessageTimeout = TimeSpan.FromSeconds(10);
-
     private const string Map = """
         title Tea Shop
         anchor Business [0.95, 0.63]
@@ -59,48 +43,16 @@ public class WardleyMapFlowTests : IClassFixture<WebApplicationFactory<Program>>
 
         """;
 
-    private readonly WebApplicationFactory<Program> _factory;
-    private readonly string _appDataRoot;
-    private readonly string _projectFolder;
+    private readonly string _projectFolder = Seed(host.NewProjectFolder("wardley-project"));
 
-    public WardleyMapFlowTests(WebApplicationFactory<Program> baseFactory)
+    private static string Seed(string projectFolder)
     {
-        _appDataRoot = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.IntegrationTests", Guid.NewGuid().ToString("N"));
-        _projectFolder = IoPath.Combine(_appDataRoot, "wardley-project");
-        Directory.CreateDirectory(_projectFolder);
-
-        File.WriteAllText(IoPath.Combine(_projectFolder, "tea.adp"), "wardley/map\n");
-        File.WriteAllText(IoPath.Combine(_projectFolder, "tea.owm"), Map);
+        File.WriteAllText(IoPath.Combine(projectFolder, "tea.adp"), "wardley/map\n");
+        File.WriteAllText(IoPath.Combine(projectFolder, "tea.owm"), Map);
 
         // A body with no `.adp` beside it: Requirement 2.5's bare-document open.
-        File.WriteAllText(IoPath.Combine(_projectFolder, "bare.owm"), "anchor Need [0.9, 0.5]\ncomponent Thing [0.4, 0.4]\n");
-
-        _factory = baseFactory.WithWebHostBuilder(builder =>
-        {
-            builder.UseEnvironment("developer");
-            builder.ConfigureServices(services =>
-            {
-                services.RemoveAll<IProjectStore>();
-                services.AddSingleton<IProjectStore>(new FileProjectStore(_appDataRoot));
-                // The problem cache must live and die with this test, not in the real user
-                // profile the host's AddProblems registration points at. A host booted without
-                // this override leaves a cache file behind naming a temp folder that is deleted
-                // moments later, and every later run then walks that dead root at startup: 605
-                // such files had accumulated, costing the suite 22,591 warnings and an apparent
-                // hang. DiagramToolboxFlowTests fixed this for itself; it never generalised.
-                services.RemoveAll<Problems.IProblemStore>();
-                services.AddSingleton<Problems.IProblemStore>(provider => new Problems.ProblemStore(
-                    _appDataRoot,
-                    provider.GetRequiredService<DiagramFileRouter>(),
-                    provider.GetRequiredService<Diagram.DiagramValidators>()));
-            });
-        });
-    }
-
-    public void Dispose()
-    {
-        _factory.Dispose();
-        TestFolder.TryDelete(_appDataRoot);
+        File.WriteAllText(IoPath.Combine(projectFolder, "bare.owm"), "anchor Need [0.9, 0.5]\ncomponent Thing [0.4, 0.4]\n");
+        return projectFolder;
     }
 
     // ---- opening ------------------------------------------------------------------------------
@@ -109,13 +61,10 @@ public class WardleyMapFlowTests : IClassFixture<WebApplicationFactory<Program>>
     public async Task AMapOpens_AndDeliversItsElementsAndItsEvolutionAxis()
     {
         // Arrange.
-        using var channel = CreateChannel();
-        var headers = await LoginAsync(channel);
-        var projectId = await AddProjectAsync(channel, headers);
-        var client = new DiagramService.DiagramServiceClient(channel);
+        using var session = await FlowSession.OpenAsync(host, _projectFolder, TestContext.Current.CancellationToken);
 
         // Act.
-        var elements = await BaselineAsync(client, headers, projectId, "tea.adp");
+        var elements = await DiagramFlow.BaselineAsync(session, "tea.adp");
 
         // Assert. The axis goes out as a map-level element, so the client draws the bands it is
         // told about rather than constants it holds (Requirement 8.2).
@@ -129,13 +78,10 @@ public class WardleyMapFlowTests : IClassFixture<WebApplicationFactory<Program>>
     {
         // Arrange. Requirement 2.5 - the extension is declared, so the body is openable on its
         // own without a registration being invented for it.
-        using var channel = CreateChannel();
-        var headers = await LoginAsync(channel);
-        var projectId = await AddProjectAsync(channel, headers);
-        var client = new DiagramService.DiagramServiceClient(channel);
+        using var session = await FlowSession.OpenAsync(host, _projectFolder, TestContext.Current.CancellationToken);
 
         // Act.
-        var elements = await BaselineAsync(client, headers, projectId, "bare.owm");
+        var elements = await DiagramFlow.BaselineAsync(session, "bare.owm");
 
         // Assert.
         Assert.Equal(2, elements.Count(element => element.Type == WardleyElementTypes.Element));
@@ -146,16 +92,14 @@ public class WardleyMapFlowTests : IClassFixture<WebApplicationFactory<Program>>
     {
         // Arrange. Requirement 1.6 - the `.adp` carries the MIME line and the `.owm` sibling is
         // created beside it by this module's document factory, through the shared command.
-        using var channel = CreateChannel();
-        var headers = await LoginAsync(channel);
-        var projectId = await AddProjectAsync(channel, headers);
+        using var session = await FlowSession.OpenAsync(host, _projectFolder, TestContext.Current.CancellationToken);
         var watchId = ShortGuid.NewShortGuid();
-        var contextClient = new ContextService.ContextServiceClient(channel);
+        var contextClient = session.Context;
 
-        using var cts = CreateMessageTimeout();
+        using var cts = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken);
         using var contextCall = contextClient.Watch(
-            new WatchContextRequest { ProjectId = projectId, WatchId = watchId },
-            headers, cancellationToken: TestContext.Current.CancellationToken);
+            new WatchContextRequest { ProjectId = session.ProjectId, WatchId = watchId },
+            session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         await StreamProbe.WaitUntilContextLiveAsync(contextCall.ResponseStream, cts.Token);
         var pendingPrompt = ReadUntilPromptAsync(contextCall.ResponseStream, cts.Token);
 
@@ -165,12 +109,12 @@ public class WardleyMapFlowTests : IClassFixture<WebApplicationFactory<Program>>
         var executed = await contextClient.ExecuteActionAsync(
             new ExecuteActionRequest
             {
-                ProjectId = projectId,
+                ProjectId = session.ProjectId,
                 WatchId = watchId,
                 InteractionId = interactionId,
                 ActionId = AddDiagramContextActionProvider.AddActionId,
             },
-            headers, cancellationToken: TestContext.Current.CancellationToken);
+            session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         Assert.True(executed.Accepted, executed.Error);
 
         var prompt = await pendingPrompt;
@@ -180,7 +124,7 @@ public class WardleyMapFlowTests : IClassFixture<WebApplicationFactory<Program>>
         // Act.
         var submitted = await contextClient.SubmitInteractionAsync(
             new SubmitInteractionRequest { InteractionId = interactionId, Value = wardley.Id, Text = "strategy" },
-            headers, cancellationToken: TestContext.Current.CancellationToken);
+            session.Headers, cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert. Both files, and the `.adp` carrying exactly its MIME line.
         Assert.True(submitted.Completed, submitted.Error);
@@ -195,22 +139,19 @@ public class WardleyMapFlowTests : IClassFixture<WebApplicationFactory<Program>>
     {
         // Arrange. Requirement 7.2 - position is meaning here, so a drag goes through the
         // history like every other edit and lands in the `.owm`.
-        using var channel = CreateChannel();
-        var headers = await LoginAsync(channel);
-        var projectId = await AddProjectAsync(channel, headers);
+        using var session = await FlowSession.OpenAsync(host, _projectFolder, TestContext.Current.CancellationToken);
         var watchId = ShortGuid.NewShortGuid();
-        var client = new DiagramService.DiagramServiceClient(channel);
-        var contextClient = new ContextService.ContextServiceClient(channel);
+        var client = new DiagramService.DiagramServiceClient(session.Channel);
 
         // Arrange, continued. The move is refused unless the diagram is open on THIS
         // connection - core will not edit a document a caller is not looking at - so the stream
         // stays open for the length of the test.
-        using var cts = CreateMessageTimeout();
+        using var cts = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken);
         var path = new Path();
         path.Segments.Add("tea.adp");
         using var call = client.Open(
-            new OpenDiagramRequest { ProjectId = projectId, WatchId = watchId, Path = path },
-            headers, cancellationToken: cts.Token);
+            new OpenDiagramRequest { ProjectId = session.ProjectId, WatchId = watchId, Path = path },
+            session.Headers, cancellationToken: cts.Token);
 
         var elements = await ReadAddAsync(call.ResponseStream, cts.Token);
         var kettle = elements.Single(element =>
@@ -222,13 +163,13 @@ public class WardleyMapFlowTests : IClassFixture<WebApplicationFactory<Program>>
         var moved = await client.MoveElementAsync(
             new MoveElementRequest
             {
-                ProjectId = projectId,
+                ProjectId = session.ProjectId,
                 WatchId = watchId,
                 Path = path,
                 ElementId = kettle.Id.Value,
                 Position = new Point2D { X = 0.8d, Y = 0.4d },
             },
-            headers, cancellationToken: TestContext.Current.CancellationToken);
+            session.Headers, cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert. y = 0.4 is a visibility of 0.6; x = 0.8 is the maturity as written.
         Assert.Equal("", moved.Error);
@@ -236,7 +177,7 @@ public class WardleyMapFlowTests : IClassFixture<WebApplicationFactory<Program>>
         Assert.Contains("component Kettle [0.6, 0.8]", text, StringComparison.Ordinal);
 
         // Act, continued.
-        var undone = await ExecuteProjectActionAsync(contextClient, projectId, watchId, headers, HistoryContextActionProvider.UndoActionId);
+        var undone = await DiagramFlow.ExecuteProjectActionAsync(session, watchId, HistoryContextActionProvider.UndoActionId);
 
         // Assert. Byte-identical, not merely equivalent: the undo restores the LINE, so
         // `[0.43, 0.35]` does not come back as a differently-rounded pair (Requirement 3.1).
@@ -249,12 +190,10 @@ public class WardleyMapFlowTests : IClassFixture<WebApplicationFactory<Program>>
     {
         // Arrange. Requirement 10.6 - two connections hold ONE document between them, so an
         // edit through either is visible to the other without a reload.
-        using var channel = CreateChannel();
-        var headers = await LoginAsync(channel);
-        var projectId = await AddProjectAsync(channel, headers);
-        var client = new DiagramService.DiagramServiceClient(channel);
+        using var session = await FlowSession.OpenAsync(host, _projectFolder, TestContext.Current.CancellationToken);
+        var client = new DiagramService.DiagramServiceClient(session.Channel);
 
-        using var cts = CreateMessageTimeout();
+        using var cts = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken);
         var path = new Path();
         path.Segments.Add("tea.adp");
 
@@ -263,11 +202,11 @@ public class WardleyMapFlowTests : IClassFixture<WebApplicationFactory<Program>>
         var dragging = ShortGuid.NewShortGuid();
 
         using var watcher = client.Open(
-            new OpenDiagramRequest { ProjectId = projectId, WatchId = watching, Path = path },
-            headers, cancellationToken: cts.Token);
+            new OpenDiagramRequest { ProjectId = session.ProjectId, WatchId = watching, Path = path },
+            session.Headers, cancellationToken: cts.Token);
         using var dragger = client.Open(
-            new OpenDiagramRequest { ProjectId = projectId, WatchId = dragging, Path = path },
-            headers, cancellationToken: cts.Token);
+            new OpenDiagramRequest { ProjectId = session.ProjectId, WatchId = dragging, Path = path },
+            session.Headers, cancellationToken: cts.Token);
 
         var baseline = await ReadAddAsync(watcher.ResponseStream, cts.Token);
         await ReadAddAsync(dragger.ResponseStream, cts.Token);
@@ -280,13 +219,13 @@ public class WardleyMapFlowTests : IClassFixture<WebApplicationFactory<Program>>
         await client.MoveElementAsync(
             new MoveElementRequest
             {
-                ProjectId = projectId,
+                ProjectId = session.ProjectId,
                 WatchId = dragging,
                 Path = path,
                 ElementId = kettle.Id.Value,
                 Position = new Point2D { X = 0.8d, Y = 0.4d },
             },
-            headers, cancellationToken: TestContext.Current.CancellationToken);
+            session.Headers, cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert. The watching connection is told, and the element keeps its id across the edit
         // (Requirement 4.1) - a move is a move, not a delete and an add.
@@ -311,11 +250,8 @@ public class WardleyMapFlowTests : IClassFixture<WebApplicationFactory<Program>>
         // The UNDO half is true today and is what this asserts: an edit ADP did not make never
         // became a command, so there is nothing on the history to step back through and the
         // other editor's work is not silently reverted.
-        using var channel = CreateChannel();
-        var headers = await LoginAsync(channel);
-        var projectId = await AddProjectAsync(channel, headers);
+        using var session = await FlowSession.OpenAsync(host, _projectFolder, TestContext.Current.CancellationToken);
         var watchId = ShortGuid.NewShortGuid();
-        var contextClient = new ContextService.ContextServiceClient(channel);
 
         // Act.
         await File.WriteAllTextAsync(
@@ -323,7 +259,7 @@ public class WardleyMapFlowTests : IClassFixture<WebApplicationFactory<Program>>
             Map + "component Water [0.38, 0.82]\n",
             TestContext.Current.CancellationToken);
 
-        var undone = await ExecuteProjectActionAsync(contextClient, projectId, watchId, headers, HistoryContextActionProvider.UndoActionId);
+        var undone = await DiagramFlow.ExecuteProjectActionAsync(session, watchId, HistoryContextActionProvider.UndoActionId);
 
         // Assert.
         Assert.False(undone.Accepted);
@@ -339,35 +275,32 @@ public class WardleyMapFlowTests : IClassFixture<WebApplicationFactory<Program>>
     public async Task SelectingAnElement_PushesItsDetail_ItsActions_AndItsProperties()
     {
         // Arrange. Requirements 11.1-11.4 and 15: one click, and three panels can answer.
-        using var channel = CreateChannel();
-        var headers = await LoginAsync(channel);
-        var projectId = await AddProjectAsync(channel, headers);
+        using var session = await FlowSession.OpenAsync(host, _projectFolder, TestContext.Current.CancellationToken);
         var watchId = ShortGuid.NewShortGuid();
-        var hierarchyClient = new HierarchyService.HierarchyServiceClient(channel);
-        var contextClient = new ContextService.ContextServiceClient(channel);
-        var diagramClient = new DiagramService.DiagramServiceClient(channel);
+        var hierarchyClient = session.Hierarchy;
+        var contextClient = session.Context;
 
         var entries = await hierarchyClient.ListEntriesAsync(
-            new ListEntriesRequest { ProjectId = projectId, WatchId = watchId },
-            headers, cancellationToken: TestContext.Current.CancellationToken);
-        var entryId = await NestedEntryLookup.EntryIdOfAsync(hierarchyClient, projectId, watchId, headers, "tea.adp");
+            new ListEntriesRequest { ProjectId = session.ProjectId, WatchId = watchId },
+            session.Headers, cancellationToken: TestContext.Current.CancellationToken);
+        var entryId = await NestedEntryLookup.EntryIdOfAsync(hierarchyClient, session.ProjectId, watchId, session.Headers, "tea.adp");
 
-        var elements = await BaselineAsync(diagramClient, headers, projectId, "tea.adp");
+        var elements = await DiagramFlow.BaselineAsync(session, "tea.adp");
         var kettle = elements.Single(element =>
             element.Type == WardleyElementTypes.Element &&
             WardleyElementPayload.Parser.ParseFrom(element.Payload.Value.Span).Name == "Kettle");
 
-        using var cts = CreateMessageTimeout();
+        using var cts = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken);
         using var contextCall = contextClient.Watch(
-            new WatchContextRequest { ProjectId = projectId, WatchId = watchId },
-            headers, cancellationToken: TestContext.Current.CancellationToken);
+            new WatchContextRequest { ProjectId = session.ProjectId, WatchId = watchId },
+            session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         await StreamProbe.WaitUntilContextLiveAsync(contextCall.ResponseStream, cts.Token);
         var pendingSelection = ReadUntilSelectionWithActionsAsync(contextCall.ResponseStream, cts.Token);
 
         // Act.
         var selected = await contextClient.SelectAsync(
-            new SelectRequest { ProjectId = projectId, WatchId = watchId, Selection = ElementChain(entryId, kettle.Id.Value) },
-            headers, cancellationToken: TestContext.Current.CancellationToken);
+            new SelectRequest { ProjectId = session.ProjectId, WatchId = watchId, Selection = ElementChain(entryId, kettle.Id.Value) },
+            session.Headers, cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert. The pushed selection is self-describing: the innermost level carries the
         // element's name and the module's own payload, so a consumer needs no second call
@@ -389,8 +322,8 @@ public class WardleyMapFlowTests : IClassFixture<WebApplicationFactory<Program>>
 
         // Assert, continued. And the property grid can ask, and correct (Requirement 15).
         var described = await contextClient.DescribePropertiesAsync(
-            new DescribePropertiesRequest { ProjectId = projectId, WatchId = watchId },
-            headers, cancellationToken: TestContext.Current.CancellationToken);
+            new DescribePropertiesRequest { ProjectId = session.ProjectId, WatchId = watchId },
+            session.Headers, cancellationToken: TestContext.Current.CancellationToken);
 
         var maturity = described.Properties.Single(property => property.Id == WardleyContextPropertyProvider.MaturityPropertyId);
         Assert.Equal("0.35", maturity.Value);
@@ -400,8 +333,8 @@ public class WardleyMapFlowTests : IClassFixture<WebApplicationFactory<Program>>
         Assert.Contains("Change Maturity instead", stage.ReadOnlyReason, StringComparison.Ordinal);
 
         var set = await contextClient.SetPropertyAsync(
-            new SetPropertyRequest { ProjectId = projectId, WatchId = watchId, PropertyId = WardleyContextPropertyProvider.MaturityPropertyId, Value = "0.42" },
-            headers, cancellationToken: TestContext.Current.CancellationToken);
+            new SetPropertyRequest { ProjectId = session.ProjectId, WatchId = watchId, PropertyId = WardleyContextPropertyProvider.MaturityPropertyId, Value = "0.42" },
+            session.Headers, cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal("", set.Error);
         Assert.Contains(
@@ -418,37 +351,34 @@ public class WardleyMapFlowTests : IClassFixture<WebApplicationFactory<Program>>
         // watcher events reload it, and every module's selection track re-finds the element in
         // whatever the reload holds - so a reload observed mid-swap reads as "element gone"
         // and clears a selection whose element never went anywhere.
-        using var channel = CreateChannel();
-        var headers = await LoginAsync(channel);
-        var projectId = await AddProjectAsync(channel, headers);
+        using var session = await FlowSession.OpenAsync(host, _projectFolder, TestContext.Current.CancellationToken);
         var watchId = ShortGuid.NewShortGuid();
-        var hierarchyClient = new HierarchyService.HierarchyServiceClient(channel);
-        var contextClient = new ContextService.ContextServiceClient(channel);
-        var diagramClient = new DiagramService.DiagramServiceClient(channel);
+        var hierarchyClient = session.Hierarchy;
+        var contextClient = session.Context;
 
-        var entryId = await NestedEntryLookup.EntryIdOfAsync(hierarchyClient, projectId, watchId, headers, "tea.adp");
-        var elements = await BaselineAsync(diagramClient, headers, projectId, "tea.adp");
+        var entryId = await NestedEntryLookup.EntryIdOfAsync(hierarchyClient, session.ProjectId, watchId, session.Headers, "tea.adp");
+        var elements = await DiagramFlow.BaselineAsync(session, "tea.adp");
         var kettle = elements.Single(element =>
             element.Type == WardleyElementTypes.Element &&
             WardleyElementPayload.Parser.ParseFrom(element.Payload.Value.Span).Name == "Kettle");
 
-        using var cts = CreateMessageTimeout();
+        using var cts = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken);
         using var contextCall = contextClient.Watch(
-            new WatchContextRequest { ProjectId = projectId, WatchId = watchId },
-            headers, cancellationToken: TestContext.Current.CancellationToken);
+            new WatchContextRequest { ProjectId = session.ProjectId, WatchId = watchId },
+            session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         await StreamProbe.WaitUntilContextLiveAsync(contextCall.ResponseStream, cts.Token);
         var pendingSelection = ReadUntilSelectionWithActionsAsync(contextCall.ResponseStream, cts.Token);
 
         var selected = await contextClient.SelectAsync(
-            new SelectRequest { ProjectId = projectId, WatchId = watchId, Selection = ElementChain(entryId, kettle.Id.Value) },
-            headers, cancellationToken: TestContext.Current.CancellationToken);
+            new SelectRequest { ProjectId = session.ProjectId, WatchId = watchId, Selection = ElementChain(entryId, kettle.Id.Value) },
+            session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal("", selected.Error);
         Assert.Equal("Kettle", (await pendingSelection).Levels[^1].Element.Text);
 
         // Act: the property grid's commit.
         var set = await contextClient.SetPropertyAsync(
-            new SetPropertyRequest { ProjectId = projectId, WatchId = watchId, PropertyId = WardleyContextPropertyProvider.MaturityPropertyId, Value = "0.42" },
-            headers, cancellationToken: TestContext.Current.CancellationToken);
+            new SetPropertyRequest { ProjectId = session.ProjectId, WatchId = watchId, PropertyId = WardleyContextPropertyProvider.MaturityPropertyId, Value = "0.42" },
+            session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal("", set.Error);
 
         // Assert: give the write's watcher storm time to land, and read every push it causes.
@@ -489,18 +419,16 @@ public class WardleyMapFlowTests : IClassFixture<WebApplicationFactory<Program>>
     {
         // Arrange. Requirement 13 - the palette is data the client renders without
         // understanding, and it is answerable before the panel that shows it exists.
-        using var channel = CreateChannel();
-        var headers = await LoginAsync(channel);
-        var projectId = await AddProjectAsync(channel, headers);
-        var client = new DiagramService.DiagramServiceClient(channel);
+        using var session = await FlowSession.OpenAsync(host, _projectFolder, TestContext.Current.CancellationToken);
+        var client = new DiagramService.DiagramServiceClient(session.Channel);
 
         var path = new Path();
         path.Segments.Add("tea.adp");
 
         // Act.
         var described = await client.DescribeToolboxAsync(
-            new DescribeToolboxRequest { ProjectId = projectId, Path = path },
-            headers, cancellationToken: TestContext.Current.CancellationToken);
+            new DescribeToolboxRequest { ProjectId = session.ProjectId, Path = path },
+            session.Headers, cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Equal(
@@ -546,41 +474,6 @@ public class WardleyMapFlowTests : IClassFixture<WebApplicationFactory<Program>>
         }
 
         return null;
-    }
-
-    private static Task<ExecuteActionResponse> ExecuteProjectActionAsync(
-        ContextService.ContextServiceClient contextClient,
-        Documents.Wire.ShortGuid projectId,
-        Documents.Wire.ShortGuid watchId,
-        Metadata headers,
-        string actionId) =>
-        contextClient.ExecuteActionAsync(
-            new ExecuteActionRequest
-            {
-                ProjectId = projectId,
-                WatchId = watchId,
-                Source = new ContextSource { Project = new Empty() },
-                InteractionId = ShortGuid.NewShortGuid(),
-                ActionId = actionId,
-            },
-            headers,
-            cancellationToken: TestContext.Current.CancellationToken).ResponseAsync;
-
-    private static async Task<IReadOnlyList<Element>> BaselineAsync(
-        DiagramService.DiagramServiceClient client,
-        Metadata headers,
-        Documents.Wire.ShortGuid projectId,
-        string fileName)
-    {
-        using var cts = CreateMessageTimeout();
-
-        var path = new Path();
-        path.Segments.Add(fileName);
-        using var call = client.Open(
-            new OpenDiagramRequest { ProjectId = projectId, WatchId = ShortGuid.NewShortGuid(), Path = path },
-            headers, cancellationToken: cts.Token);
-
-        return await ReadAddAsync(call.ResponseStream, cts.Token);
     }
 
     /// <summary>The elements of the next add on a stream - a baseline, or the deltas of a change.</summary>
@@ -636,38 +529,5 @@ public class WardleyMapFlowTests : IClassFixture<WebApplicationFactory<Program>>
         }
 
         throw new InvalidOperationException("The stream ended before a selection with actions arrived.");
-    }
-
-    private static CancellationTokenSource CreateMessageTimeout()
-    {
-        var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
-        cts.CancelAfter(MessageTimeout);
-        return cts;
-    }
-
-    private GrpcChannel CreateChannel()
-    {
-        var httpClient = _factory.CreateDefaultClient();
-        return GrpcChannel.ForAddress(httpClient.BaseAddress!, new GrpcChannelOptions { HttpClient = httpClient });
-    }
-
-    private static async Task<Metadata> LoginAsync(GrpcChannel channel)
-    {
-        var authClient = new AuthenticationService.AuthenticationServiceClient(channel);
-        var response = await authClient.LoginAsync(
-            new LoginRequest { Username = DeveloperUsername, Credential = DeveloperCredential },
-            cancellationToken: TestContext.Current.CancellationToken);
-        return new Metadata { { SessionTokenHeader, response.Session.Value } };
-    }
-
-    private async Task<Documents.Wire.ShortGuid> AddProjectAsync(GrpcChannel channel, Metadata headers)
-    {
-        var projectClient = new ProjectService.ProjectServiceClient(channel);
-        var pathMessage = new Path();
-        pathMessage.Segments.AddRange(_projectFolder.Split(IoPath.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries));
-        var response = await projectClient.AddProjectAsync(
-            new AddProjectRequest { Path = pathMessage }, headers,
-            cancellationToken: TestContext.Current.CancellationToken);
-        return response.Added.Id;
     }
 }

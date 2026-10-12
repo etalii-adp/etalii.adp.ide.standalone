@@ -1,20 +1,13 @@
-using EtAlii.Adp.Authentication.Wire;
 using EtAlii.Adp.Context.Wire;
 using EtAlii.Adp.Diagram.Wire;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Hierarchy.Wire;
-using EtAlii.Adp.Projects;
-using EtAlii.Adp.Projects.Wire;
+using EtAlii.Adp.TestSupport.Host;
 using Grpc.Core;
 using Grpc.Net.Client;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 using Path = EtAlii.Adp.Documents.Wire.Path;
-using ProjectService = EtAlii.Adp.Projects.Wire.ProjectService;
 
 namespace EtAlii.Adp.Backend.Tests;
 
@@ -29,12 +22,8 @@ namespace EtAlii.Adp.Backend.Tests;
 /// core's router and is exercised by two modules at once, which is exactly the sort of thing only
 /// an integration test can catch.
 /// </remarks>
-public class AzurePipelineFlowTests : IClassFixture<WebApplicationFactory<Program>>, IDisposable
+public class AzurePipelineFlowTests(HostFixture host) : IClassFixture<HostFixture>
 {
-    private const string DeveloperUsername = "admin";
-    private const string DeveloperCredential = "changeme";
-    private const string SessionTokenHeader = "session-token";
-
     private const string Pipeline = """
         trigger:
           - main
@@ -54,50 +43,20 @@ public class AzurePipelineFlowTests : IClassFixture<WebApplicationFactory<Progra
                   - script: dotnet test
         """;
 
-    private readonly WebApplicationFactory<Program> _factory;
-    private readonly string _appDataRoot;
-    private readonly string _projectFolder;
+    private readonly string _projectFolder = Seed(host.NewProjectFolder());
 
-    public AzurePipelineFlowTests(WebApplicationFactory<Program> baseFactory)
+    private static string Seed(string projectFolder)
     {
-        _appDataRoot = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.IntegrationTests", Guid.NewGuid().ToString("N"));
-        _projectFolder = IoPath.Combine(_appDataRoot, "sample-project");
-        Directory.CreateDirectory(_projectFolder);
-
         // A pipeline nobody has registered yet, a registered one, a mindmap whose bare body still
         // routes, and a file no type claims.
-        File.WriteAllText(IoPath.Combine(_projectFolder, "unregistered.yml"), Pipeline);
-        File.WriteAllText(IoPath.Combine(_projectFolder, "azure-pipelines.yml"), Pipeline);
-        File.WriteAllText(IoPath.Combine(_projectFolder, "azure-pipelines.adp"), "azure-devops/pipeline\n");
+        File.WriteAllText(IoPath.Combine(projectFolder, "unregistered.yml"), Pipeline);
+        File.WriteAllText(IoPath.Combine(projectFolder, "azure-pipelines.yml"), Pipeline);
+        File.WriteAllText(IoPath.Combine(projectFolder, "azure-pipelines.adp"), "azure-devops/pipeline\n");
         File.WriteAllText(
-            IoPath.Combine(_projectFolder, "roadmap.mm"),
+            IoPath.Combine(projectFolder, "roadmap.mm"),
             "<map version=\"freeplane 1.11.5\">\n<node TEXT=\"roadmap\" ID=\"ID_1\"/>\n</map>\n");
-        File.WriteAllText(IoPath.Combine(_projectFolder, "notes.txt"), "not a diagram\n");
-
-        _factory = baseFactory.WithWebHostBuilder(builder =>
-        {
-            builder.UseEnvironment("developer");
-            builder.ConfigureServices(services =>
-            {
-                services.RemoveAll<IProjectStore>();
-                services.AddSingleton<IProjectStore>(new FileProjectStore(_appDataRoot));
-                // The problem cache lives and dies with this test rather than in the real user
-                // profile the host's AddProblems registration points at.
-                services.RemoveAll<Problems.IProblemStore>();
-                services.AddSingleton<Problems.IProblemStore>(provider => new Problems.ProblemStore(
-                    _appDataRoot,
-                    provider.GetRequiredService<Hierarchy.DiagramFileRouter>(),
-                    provider.GetRequiredService<Diagram.DiagramValidators>()));
-            });
-        });
-    }
-
-    public void Dispose()
-    {
-        _factory.Dispose();
-        TestFolder.TryDelete(_appDataRoot);
-
-        GC.SuppressFinalize(this);
+        File.WriteAllText(IoPath.Combine(projectFolder, "notes.txt"), "not a diagram\n");
+        return projectFolder;
     }
 
     [Fact]
@@ -105,12 +64,10 @@ public class AzurePipelineFlowTests : IClassFixture<WebApplicationFactory<Progra
     {
         // Arrange: Requirement 11.1 - opened over DiagramService.Open with the file's
         // project-relative path, like every other diagram type.
-        using var channel = CreateChannel();
-        var headers = await LoginAsync(channel);
-        var projectId = await AddProjectAsync(channel, headers);
+        using var session = await FlowSession.OpenAsync(host, _projectFolder, TestContext.Current.CancellationToken);
 
         // Act.
-        var elements = await BaselineAsync(channel, headers, projectId, "azure-pipelines.adp");
+        var elements = await BaselineAsync(session.Channel, session.Headers, session.ProjectId, "azure-pipelines.adp");
 
         // Assert.
         Assert.Contains(elements, element => element.Id.Value == "Build" && element.Type == "azure-devops/pipeline+stage");
@@ -125,18 +82,16 @@ public class AzurePipelineFlowTests : IClassFixture<WebApplicationFactory<Progra
         // Arrange: Requirement 2.2 and 2.3 - the whole point of a shared extension. Half the files
         // in a repository are YAML, so a .yml is a pipeline only where somebody said so; a .mm is
         // a mindmap wherever it is found, and that must not have been broken to achieve this.
-        using var channel = CreateChannel();
-        var diagramClient = new DiagramService.DiagramServiceClient(channel);
-        var headers = await LoginAsync(channel);
-        var projectId = await AddProjectAsync(channel, headers);
+        using var session = await FlowSession.OpenAsync(host, _projectFolder, TestContext.Current.CancellationToken);
+        var diagramClient = new DiagramService.DiagramServiceClient(session.Channel);
 
         // Act.
         var pipeline = await diagramClient.DescribeToolboxAsync(
-            new DescribeToolboxRequest { ProjectId = projectId, Path = PathOf("unregistered.yml") },
-            headers, cancellationToken: TestContext.Current.CancellationToken);
+            new DescribeToolboxRequest { ProjectId = session.ProjectId, Path = PathOf("unregistered.yml") },
+            session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         var mindmap = await diagramClient.DescribeToolboxAsync(
-            new DescribeToolboxRequest { ProjectId = projectId, Path = PathOf("roadmap.mm") },
-            headers, cancellationToken: TestContext.Current.CancellationToken);
+            new DescribeToolboxRequest { ProjectId = session.ProjectId, Path = PathOf("roadmap.mm") },
+            session.Headers, cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Empty(pipeline.Items);
@@ -147,14 +102,12 @@ public class AzurePipelineFlowTests : IClassFixture<WebApplicationFactory<Progra
     public async Task ARegisteredPipeline_AnswersWithThePipelinePalette()
     {
         // Arrange & act.
-        using var channel = CreateChannel();
-        var diagramClient = new DiagramService.DiagramServiceClient(channel);
-        var headers = await LoginAsync(channel);
-        var projectId = await AddProjectAsync(channel, headers);
+        using var session = await FlowSession.OpenAsync(host, _projectFolder, TestContext.Current.CancellationToken);
+        var diagramClient = new DiagramService.DiagramServiceClient(session.Channel);
 
         var response = await diagramClient.DescribeToolboxAsync(
-            new DescribeToolboxRequest { ProjectId = projectId, Path = PathOf("azure-pipelines.adp") },
-            headers, cancellationToken: TestContext.Current.CancellationToken);
+            new DescribeToolboxRequest { ProjectId = session.ProjectId, Path = PathOf("azure-pipelines.adp") },
+            session.Headers, cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Equal(
@@ -167,19 +120,17 @@ public class AzurePipelineFlowTests : IClassFixture<WebApplicationFactory<Progra
     {
         // Arrange: Requirement 2.5 - Add-on-a-file is how a .yml already in the repository becomes
         // a diagram, and it must not be offered where it would do nothing.
-        using var channel = CreateChannel();
-        var contextClient = new ContextService.ContextServiceClient(channel);
-        var headers = await LoginAsync(channel);
-        var projectId = await AddProjectAsync(channel, headers);
+        using var session = await FlowSession.OpenAsync(host, _projectFolder, TestContext.Current.CancellationToken);
+        var contextClient = session.Context;
         // One watch id throughout: a hierarchy model is per connection, so an entry listed on
         // one cannot be named by a call on another.
         var watchId = ShortGuid.NewShortGuid();
-        var hierarchy = await EntriesAsync(channel, headers, projectId, watchId);
+        var hierarchy = await EntriesAsync(session.Channel, session.Headers, session.ProjectId, watchId);
 
         // Act.
-        var onPipeline = await ActionsOnAsync(contextClient, headers, projectId, watchId, hierarchy["unregistered.yml"]);
-        var onPlainFile = await ActionsOnAsync(contextClient, headers, projectId, watchId, hierarchy["notes.txt"]);
-        var onRegistered = await ActionsOnAsync(contextClient, headers, projectId, watchId, hierarchy["azure-pipelines.yml"]);
+        var onPipeline = await ActionsOnAsync(contextClient, session.Headers, session.ProjectId, watchId, hierarchy["unregistered.yml"]);
+        var onPlainFile = await ActionsOnAsync(contextClient, session.Headers, session.ProjectId, watchId, hierarchy["notes.txt"]);
+        var onRegistered = await ActionsOnAsync(contextClient, session.Headers, session.ProjectId, watchId, hierarchy["azure-pipelines.yml"]);
 
         // Assert.
         Assert.Contains(onPipeline, action => action.StartsWith("hierarchy.add", StringComparison.Ordinal));
@@ -195,12 +146,10 @@ public class AzurePipelineFlowTests : IClassFixture<WebApplicationFactory<Progra
         // Arrange: Requirement 9.8 - the edit reaches the file, and the file is otherwise exactly
         // what it was. This is the promise the whole module is built around, checked here over the
         // real host rather than against the writer in isolation.
-        using var channel = CreateChannel();
-        var contextClient = new ContextService.ContextServiceClient(channel);
-        var headers = await LoginAsync(channel);
-        var projectId = await AddProjectAsync(channel, headers);
+        using var session = await FlowSession.OpenAsync(host, _projectFolder, TestContext.Current.CancellationToken);
+        var contextClient = session.Context;
         var watchId = ShortGuid.NewShortGuid();
-        var entries = await EntriesAsync(channel, headers, projectId, watchId);
+        var entries = await EntriesAsync(session.Channel, session.Headers, session.ProjectId, watchId);
         var bodyPath = IoPath.Combine(_projectFolder, "azure-pipelines.yml");
         var before = await File.ReadAllLinesAsync(bodyPath, TestContext.Current.CancellationToken);
 
@@ -211,11 +160,11 @@ public class AzurePipelineFlowTests : IClassFixture<WebApplicationFactory<Progra
         var selected = await contextClient.SelectAsync(
             new SelectRequest
             {
-                ProjectId = projectId,
+                ProjectId = session.ProjectId,
                 WatchId = watchId,
                 Selection = ElementChain(entries["azure-pipelines.adp"], "Test"),
             },
-            headers,
+            session.Headers,
             cancellationToken: TestContext.Current.CancellationToken);
         Assert.Empty(selected.Error);
 
@@ -223,12 +172,12 @@ public class AzurePipelineFlowTests : IClassFixture<WebApplicationFactory<Progra
         var result = await contextClient.SetPropertyAsync(
             new SetPropertyRequest
             {
-                ProjectId = projectId,
+                ProjectId = session.ProjectId,
                 WatchId = watchId,
                 PropertyId = "azure-pipeline.display-name",
                 Value = "Run the tests",
             },
-            headers,
+            session.Headers,
             cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert.
@@ -258,8 +207,7 @@ public class AzurePipelineFlowTests : IClassFixture<WebApplicationFactory<Progra
             cancellationToken: TestContext.Current.CancellationToken);
 
         var elements = new List<Element>();
-        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
-        timeout.CancelAfter(TimeSpan.FromSeconds(20));
+        using var timeout = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken);
 
         try
         {
@@ -376,32 +324,5 @@ public class AzurePipelineFlowTests : IClassFixture<WebApplicationFactory<Progra
         var path = new Path();
         path.Segments.Add(fileName);
         return path;
-    }
-
-    private GrpcChannel CreateChannel()
-    {
-        var httpClient = _factory.CreateDefaultClient();
-        return GrpcChannel.ForAddress(httpClient.BaseAddress!, new GrpcChannelOptions { HttpClient = httpClient });
-    }
-
-    private static async Task<Metadata> LoginAsync(GrpcChannel channel)
-    {
-        var authClient = new AuthenticationService.AuthenticationServiceClient(channel);
-        var response = await authClient.LoginAsync(
-            new LoginRequest { Username = DeveloperUsername, Credential = DeveloperCredential },
-            cancellationToken: TestContext.Current.CancellationToken);
-        return new Metadata { { SessionTokenHeader, response.Session.Value } };
-    }
-
-    private async Task<ShortGuid> AddProjectAsync(GrpcChannel channel, Metadata headers)
-    {
-        var projectClient = new ProjectService.ProjectServiceClient(channel);
-        var pathMessage = new Path();
-        pathMessage.Segments.AddRange(_projectFolder.Split(IoPath.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries));
-        var response = await projectClient.AddProjectAsync(
-            new AddProjectRequest { Path = pathMessage },
-            headers,
-            cancellationToken: TestContext.Current.CancellationToken);
-        return response.Added.Id;
     }
 }

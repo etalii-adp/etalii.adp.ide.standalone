@@ -23,16 +23,24 @@ namespace EtAlii.Adp.Backend.Tests;
 /// That is quadratic in the worst way: 605 accumulated files times roughly 900 host startups in
 /// a run came to 22,591 warnings and a suite that looked hung rather than slow. Four classes
 /// were leaking; the other twenty already carried the override, and
-/// <see cref="DiagramToolboxFlowTests"/>'s comment records the same defect being found and
-/// fixed for that one class alone. The fix never generalised because nothing asked it to -
-/// which is what this test is: the twenty-third host-booting class cannot reintroduce the leak
-/// without turning this red.
+/// <see cref="DiagramToolboxFlowTests"/> had recorded the same defect being found and fixed for
+/// that one class alone. The fix never generalised because nothing asked it to - which is what
+/// this test is: the twenty-third host-booting class cannot reintroduce the leak without turning
+/// this red.
 /// </para>
 /// <para>
 /// <b>It sweeps every test project under <c>src/backend</c>, not only this folder.</b> The
 /// host-logger guard boots the host from a project of its own, <c>EtAlii.Adp.HostLogging.Tests</c>,
 /// because its subject is process-wide. A sweep of this folder alone would have lost it from the
 /// population without a sound, which is the one way this guard can be switched off by a move.
+/// </para>
+/// <para>
+/// <b>And it sweeps the host harness, <c>EtAlii.Adp.TestSupport.Host</c>.</b> Since spec 025 the
+/// flow tests take their host from its <see cref="TestSupport.Host.HostFixture"/> rather than
+/// building one each, so the one override that matters most lives there - in a project not named
+/// <c>*.Tests</c>, which a sweep of the test projects alone would never read. The harness is also
+/// the canary that the walk still finds what it guards: it must be among the sources that boot the
+/// host, or the guard has stopped looking.
 /// </para>
 /// <para>
 /// It reads sources rather than services because the choice being guarded is made inside a
@@ -44,7 +52,12 @@ public class ProblemStoreIsolationTests
 {
     private const string ThisFile = "ProblemStoreIsolation.Tests.cs";
 
-    /// <summary>Marks a file as booting the real host - the fixture every flow test takes.</summary>
+    /// <summary>The project the flow tests' host comes from, and the file in it that boots that host.</summary>
+    private const string HarnessProject = "EtAlii.Adp.TestSupport.Host";
+
+    private const string HarnessFile = "HostFixture.cs";
+
+    /// <summary>Marks a file as booting the real host.</summary>
     private const string BootsTheHost = "WebApplicationFactory<Program>";
 
     /// <summary>
@@ -62,6 +75,7 @@ public class ProblemStoreIsolationTests
         // This file itself is skipped: it names the fixture type and the override in its own
         // text, so it would answer both questions about itself and prove nothing.
         var sources = Directory.EnumerateDirectories(BackendFolder, "*.Tests")
+            .Append(IoPath.Combine(BackendFolder, HarnessProject))
             .SelectMany(project => Directory.EnumerateFiles(project, "*.cs", SearchOption.AllDirectories))
             .Where(source => !IsBuildOutput(source))
             .Where(source => !IoPath.GetFileName(source).Equals(ThisFile, StringComparison.OrdinalIgnoreCase))
@@ -71,10 +85,11 @@ public class ProblemStoreIsolationTests
 
         // Assert, first, that the walk found the suite at all. Without this the test passes
         // loudest exactly when it has stopped looking at anything - a renamed folder or a
-        // changed fixture type would otherwise turn the guard off in silence.
+        // changed fixture type would otherwise turn the guard off in silence. Every flow test's
+        // host is the harness's, so the harness must be among what the walk found.
         Assert.True(
-            booting.Length >= 20,
-            $"Only {booting.Length} integration test sources mention {BootsTheHost}; this guard has stopped finding the suite it guards.");
+            booting.Any(source => IoPath.GetFileName(source).Equals(HarnessFile, StringComparison.Ordinal)),
+            $"The host harness's {HarnessFile} is not among the sources that mention {BootsTheHost}; this guard has stopped finding the suite it guards.");
 
         // Act.
         var leaking = booting
@@ -90,8 +105,8 @@ public class ProblemStoreIsolationTests
             + Environment.NewLine
             + string.Join(Environment.NewLine, leaking.Select(name => "  " + name))
             + Environment.NewLine
-            + "Copy the RemoveAll<Problems.IProblemStore>() override from DiagramToolboxFlowTests, "
-            + "pointing the replacement at a temp root the test deletes when it disposes.");
+            + "Take the host from HostFixture in EtAlii.Adp.TestSupport.Host, or copy its "
+            + "RemoveAll<IProblemStore>() override, pointing the replacement at a temp root the test deletes when it disposes.");
     }
 
     /// <summary>
