@@ -25,6 +25,8 @@ export interface TableSurfaceProps extends TableEvents {
   definition: TableDefinition;
   /** Opens what one value of a cell names, where a kind's values name something that can be opened: a related row. Left out, such values are text. */
   onOpenValue?: (column: TableColumn, value: string) => void;
+  /** A row to select from outside, by its id: when this changes to a row, that row alone is selected. For a row that is opened from elsewhere. */
+  selectedRow?: string;
   /** Told which rows are selected, whenever that changes: for what shows a selected row's properties. */
   onSelectRows?: (rowIds: readonly string[]) => void;
   /** How many edits are shown and not written yet, when the table comes from a stream that writes behind. */
@@ -65,7 +67,7 @@ const FALLBACK_VIEWPORT_HEIGHT = 660;
  * gesture the backend refuses changes nothing here - the reason is shown, and the cell is still
  * what the model says it is.
  */
-export function TableSurface({ model, definition, pendingEdits = 0, onSelectRows, onOpenValue, onWindow, onView, onGesture, fallbackViewportHeight = FALLBACK_VIEWPORT_HEIGHT }: TableSurfaceProps) {
+export function TableSurface({ model, definition, pendingEdits = 0, selectedRow, onSelectRows, onOpenValue, onWindow, onView, onGesture, fallbackViewportHeight = FALLBACK_VIEWPORT_HEIGHT }: TableSurfaceProps) {
   const rowHeight = definition.rowHeight ?? DEFAULT_ROW_HEIGHT;
   const columns = useMemo(() => model.columns.filter((column) => column.visible), [model.columns]);
   const scrollerRef = useRef<HTMLDivElement>(null);
@@ -324,6 +326,13 @@ export function TableSurface({ model, definition, pendingEdits = 0, onSelectRows
     },
     [onSelectRows],
   );
+  // A row named from outside is the selection from then on; its author changes it as any other.
+  useEffect(() => {
+    if (selectedRow !== undefined && selectedRow !== "") {
+      setSelectedRows(new Set([selectedRow]));
+    }
+  }, [selectedRow]);
+
   /** The rows a gesture on one row is about: all that are selected when it is one of them, else that row alone. */
   const rowsOf = (rowId: string) => (selectedRows.has(rowId) && selectedRows.size > 1 ? [...selectedRows] : [rowId]);
 
