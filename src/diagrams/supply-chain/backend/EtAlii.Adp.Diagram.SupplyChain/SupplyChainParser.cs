@@ -28,6 +28,22 @@ public static class SupplyChainParser
     internal const string NodesKey = "nodes";
     internal const string FlowsKey = "flows";
 
+    /// <summary>The text of a new, empty <c>.supply</c> document.</summary>
+    /// <remarks>
+    /// <para>
+    /// The header and the three sections written flow-empty - <c>groups: []</c> and so on - because a
+    /// bare <c>nodes:</c> parses as a null rather than an empty sequence. The first added entry opens
+    /// the flow form into a block one, which <c>LineSplice.InsertionPointFor</c> does.
+    /// </para>
+    /// <para>CRLF, the repository's house style, because a new file has no style of its own to keep.</para>
+    /// </remarks>
+    internal static string EmptyDocument { get; } = string.Join(
+        "\r\n",
+        $"{HeaderKey}: {SupplyChainModel.CurrentVersion}",
+        $"{GroupsKey}: []",
+        $"{NodesKey}: []",
+        $"{FlowsKey}: []") + "\r\n";
+
     private static readonly string[] GroupKeys = ["id", "name", "description", "x", "y"];
 
     private static readonly string[] NodeKeys =

@@ -18,7 +18,7 @@ public static class ServiceCollectionAddSupplyChainExtension
     {
         ArgumentNullException.ThrowIfNull(services);
 
-        services.AddSingleton<IDiagramDocumentFactory, SupplyChainDocumentFactory>();
+        services.AddEmptyDocument(Diagram.SupplyChain.Origin, SupplyChainParser.EmptyDocument);
         services.AddSingleton<SupplyChainElementMapper>();
 
         // One document per path, shared by every connection viewing it; TryAdd so a test keeps its own.
@@ -28,8 +28,14 @@ public static class ServiceCollectionAddSupplyChainExtension
         // read it and re-render with the chain through it marked.
         services.AddSingleton<SupplyChainSelections>();
 
-        services.AddSingleton<IDiagramSessionFactory, SupplyChainSessionFactory>();
-        services.AddSingleton<IDiagramDocumentReloader, SupplyChainDocumentReloader>();
+        services.AddDiagramSession(Diagram.SupplyChain.Origin, (provider, opening) => new SupplyChainSession(
+            opening.WatchId,
+            opening.BodyPath,
+            provider.GetRequiredService<ISupplyChainDocumentStore>(),
+            provider.GetRequiredService<SupplyChainElementMapper>(),
+            provider.GetRequiredService<SupplyChainSelections>(),
+            provider.GetRequiredService<IHistoryStackStore>().Get(opening.RootPath)));
+        services.AddDiagramDocumentReloader<ISupplyChainDocumentStore>(Diagram.SupplyChain.Origin);
         services.AddSingleton<IContextSourceResolver, SupplyChainContextSourceResolver>();
 
         services.AddSingleton<IDiagramToolboxProvider, SupplyChainToolboxProvider>();
