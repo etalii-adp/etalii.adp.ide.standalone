@@ -36,6 +36,8 @@ What the run showed that the design depends on:
 | --- | --- | --- | --- |
 | A1 | 2.5: "no core file and no shell file SHALL change for it" | The service needs Node's `path` replaced in the browser build. That is one line in `src/client/vite.config.ts`, a file every module shares. | **(recommended) Allow the one alias**, `path` to `path-browserify`, with a comment naming this module, and add `path-browserify` as a dependency. The sentence gains "apart from one alias in the client's build configuration". It affects every import of the bare name `path` in the client; no file under `src/client/src`, `src/diagrams`, `src/designers` or `src/editors` has one today (searched). Three test-support files import `node:path`, a different name the alias is not expected to match; the suite running green with the alias in place is what confirms that. · **Fall back as Requirement 1.4 names**: read with `yaml` and validate the data with the JSON editor's service, completion written in this module. No shared file changes and about 1.2 MB less to download; costs writing and maintaining YAML completion, and positions for findings mapped by hand. · Other. |
 
+**Ruled by the user in chat on 2026-10-12: the first option.** The requirements were amended the same day.
+
 ## Steering Document Alignment
 
 ### Technical Standards (tech.md)
