@@ -206,7 +206,7 @@ public class GhgDerivedGesturesTests
     /// <summary>The documents gestured on: readable, at most <see cref="MaxLines"/> lines long, each text once.</summary>
     private static IEnumerable<(string Path, string Text)> Gestured() =>
         GhgDisl.Texts()
-            .Where(document => document.Text.Count(character => character == '\n') <= MaxLines && GhgDocumentEntry.Read(document.Text).IsUsable)
+            .Where(document => document.Text.Count(character => character == '\n') <= MaxLines && GhgEntries.Read(document.Text).IsUsable)
             .DistinctBy(document => document.Text, StringComparer.Ordinal);
 
     private static async Task<CommandResult> RunAsync<TCommand>(ICommandHandler<TCommand> handler, TCommand command)
@@ -239,13 +239,13 @@ public class GhgDerivedGesturesTests
     /// <summary>A store holding one document that never changes: every edit starts from the same text, and a save is a no-op.</summary>
     private sealed class Store(string text) : IGhgDocumentStore
     {
-        public event EventHandler<GhgDocumentChangedEventArgs>? Changed
+        public event EventHandler<DocumentChangedEventArgs>? Changed
         {
             add { }
             remove { }
         }
 
-        public GhgDocumentEntry GetOrLoad(string path) => GhgDocumentEntry.Read(text);
+        public DocumentEntry<GhgBody, GhgModel> GetOrLoad(string path) => GhgEntries.Read(text);
 
         public DocumentSaveResult Save(string path, GhgBody document) => DocumentSaveResult.Ok;
 

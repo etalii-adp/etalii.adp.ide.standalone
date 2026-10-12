@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using System.Text;
 using Xunit;
 
@@ -202,7 +203,7 @@ public class GhgDocumentTests
     [Fact]
     public void TheEmptyDocument_IsAHeaderAndTwoEmptySections_ThatParseWithNoProblems()
     {
-        var text = GhgDocumentFactory.EmptyDocument("\n");
+        var text = GhgParser.EmptyDocument("\n");
 
         Assert.Equal("gartner-hypecycle-graph: 1\ntrends: []\ninfluences: []\n", text);
 
@@ -217,7 +218,7 @@ public class GhgDocumentTests
     [Fact]
     public void AddingToAnEmptyDocument_OpensBothFlowSections()
     {
-        var document = GhgBody.Parse(GhgDocumentFactory.EmptyDocument("\n"));
+        var document = GhgBody.Parse(GhgParser.EmptyDocument("\n"));
         var a = new GhgTrend("a", "A", 22800, 22812, 0, 4, [null, null, null], ["x"], "", default);
         var b = new GhgTrend("b", "B", 22806, 22830, 1, 2, [null, null, null], [], "", default);
 
@@ -259,7 +260,7 @@ public class GhgDocumentTests
     [Fact]
     public void AddingANoteWithNoText_WritesItsTextEmpty()
     {
-        var document = GhgBody.Parse(GhgDocumentFactory.EmptyDocument("\n"));
+        var document = GhgBody.Parse(GhgParser.EmptyDocument("\n"));
 
         var edit = Parity.HandWrittenGhgEdits.AddNote(document, GhgParser.Parse(document), new GhgNote("note", "", 22810, 1, 160, 64, default));
 

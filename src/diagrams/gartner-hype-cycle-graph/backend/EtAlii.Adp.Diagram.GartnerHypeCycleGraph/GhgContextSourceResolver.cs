@@ -173,7 +173,7 @@ public sealed class GhgContextSourceResolver : IContextSourceResolver
         _documents.Changed += OnChanged;
         return new Unsubscriber(() => _documents.Changed -= OnChanged);
 
-        void OnChanged(object? sender, GhgDocumentChangedEventArgs args)
+        void OnChanged(object? sender, DocumentChangedEventArgs args)
         {
             if (!string.Equals(args.Path, bodyPath, StringComparison.OrdinalIgnoreCase))
             {

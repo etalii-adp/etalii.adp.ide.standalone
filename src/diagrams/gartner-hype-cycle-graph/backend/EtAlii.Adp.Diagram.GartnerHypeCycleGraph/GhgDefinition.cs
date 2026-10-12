@@ -56,7 +56,7 @@ internal static class GhgDefinition
     public static IReadOnlyList<ToolboxItemDefinition> Toolbox => LoadedToolbox.Value;
 
     /// <summary>The context menu of <paramref name="elementId"/> in <paramref name="entry"/>: an element, a placement, a connect gesture; none for anything else.</summary>
-    public static IReadOnlyList<ContextActionGroupDefinition> Menus(GhgDocumentEntry entry, string elementId)
+    public static IReadOnlyList<ContextActionGroupDefinition> Menus(DocumentEntry<GhgBody, GhgModel> entry, string elementId)
     {
         ArgumentNullException.ThrowIfNull(entry);
         var diagram = entry.Document.Disl.Diagram;
@@ -77,7 +77,7 @@ internal static class GhgDefinition
     }
 
     /// <summary>The property rows of <paramref name="elementId"/> in <paramref name="entry"/>: an element's form; none for anything else.</summary>
-    public static IReadOnlyList<ContextPropertyDefinition> Rows(GhgDocumentEntry entry, string elementId)
+    public static IReadOnlyList<ContextPropertyDefinition> Rows(DocumentEntry<GhgBody, GhgModel> entry, string elementId)
     {
         ArgumentNullException.ThrowIfNull(entry);
         return ElementOf(entry.Document.Disl.Diagram, elementId) is not { } element
@@ -137,7 +137,7 @@ internal static class GhgDefinition
         return element.HostAttributes.TryGetValue("storedId", out var stored) ? GhgParser.Text(stored) ?? "" : "";
     }
 
-    private static DislEnv Env(GhgDocumentEntry entry) => new(ReadOnly: !entry.IsUsable, Viewpoint: Viewpoint);
+    private static DislEnv Env(DocumentEntry<GhgBody, GhgModel> entry) => new(ReadOnly: !entry.IsUsable, Viewpoint: Viewpoint);
 
     private static ContextActionDefinition Action(DerivedMenuEntry entry) => new(
         entry.Id,

@@ -152,7 +152,7 @@ public class GhgDerivedOperationsTests
 
     private static IEnumerable<(string Path, string Text)> Edited() =>
         GhgDisl.Texts()
-            .Where(document => document.Text.Count(character => character == '\n') <= MaxLines && GhgDocumentEntry.Read(document.Text).IsUsable)
+            .Where(document => document.Text.Count(character => character == '\n') <= MaxLines && GhgEntries.Read(document.Text).IsUsable)
             .DistinctBy(document => document.Text, StringComparer.Ordinal);
 
     /// <summary>A store holding one document that never changes; a save records the text it was given.</summary>
@@ -161,13 +161,13 @@ public class GhgDerivedOperationsTests
         /// <summary>The text of the last save, or null.</summary>
         public string? Saved { get; private set; }
 
-        public event EventHandler<GhgDocumentChangedEventArgs>? Changed
+        public event EventHandler<DocumentChangedEventArgs>? Changed
         {
             add { }
             remove { }
         }
 
-        public GhgDocumentEntry GetOrLoad(string path) => GhgDocumentEntry.Read(text);
+        public DocumentEntry<GhgBody, GhgModel> GetOrLoad(string path) => GhgEntries.Read(text);
 
         public DocumentSaveResult Save(string path, GhgBody document)
         {

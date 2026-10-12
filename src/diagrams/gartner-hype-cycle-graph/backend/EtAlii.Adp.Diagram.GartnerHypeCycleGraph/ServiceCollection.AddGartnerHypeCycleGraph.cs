@@ -19,18 +19,23 @@ public static class ServiceCollectionAddGartnerHypeCycleGraphExtension
 
         // Without a document factory the host refuses to start: a type that declares an extension
         // must be creatable from the Add dialog.
-        services.AddSingleton<IDiagramDocumentFactory, GhgDocumentFactory>();
+        services.AddEmptyDocument(Diagram.HypeCycleGraph.Origin, GhgParser.EmptyDocument("\r\n"));
         services.AddSingleton<GhgElementMapper>();
 
         // One document per path, shared by every connection viewing it. TryAdd rather than Add so a
         // test that registers its own store keeps it.
         services.TryAddSingleton<IGhgDocumentStore, GhgDocumentStore>();
 
-        services.AddSingleton<IDiagramSessionFactory, GhgSessionFactory>();
+        // The project's history, so a drag is one undo away like every other edit.
+        services.AddDiagramSession(Diagram.HypeCycleGraph.Origin, (provider, opening) => new GhgSession(
+            opening.BodyPath,
+            provider.GetRequiredService<IGhgDocumentStore>(),
+            provider.GetRequiredService<GhgElementMapper>(),
+            provider.GetRequiredService<IHistoryStackStore>().Get(opening.RootPath)));
 
         // The reload seam: an external write to a .ghg body reaches the store, and through it every
         // open session - and a deleted body reaches it as a deletion, not as a reload.
-        services.AddSingleton<IDiagramDocumentReloader, GhgDocumentReloader>();
+        services.AddDiagramDocumentReloader<IGhgDocumentStore>(Diagram.HypeCycleGraph.Origin);
 
         // Every breach, to the Errors and Warnings panel (Requirement 2.4).
         services.AddSingleton<IDiagramValidator, GhgValidator>();

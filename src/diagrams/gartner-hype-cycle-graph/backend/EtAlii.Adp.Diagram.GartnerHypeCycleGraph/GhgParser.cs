@@ -33,6 +33,23 @@ namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
 /// </remarks>
 public static class GhgParser
 {
+    /// <summary>The text of a new, empty <c>.ghg</c> document, with the line ending the caller asks for.</summary>
+    /// <remarks>
+    /// The header and the two sections written flow-empty, because a bare <c>trends:</c> parses as a
+    /// null rather than an empty sequence. The host writes it with CRLF, the repository's house style,
+    /// because a new file has no style of its own to keep.
+    /// </remarks>
+    public static string EmptyDocument(string lineEnding)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(lineEnding);
+
+        return string.Join(
+            lineEnding,
+            $"gartner-hypecycle-graph: {GhgModel.CurrentVersion}",
+            "trends: []",
+            "influences: []") + lineEnding;
+    }
+
     private const string HeaderKey = "gartner-hypecycle-graph";
     private const string UnitKey = "unit";
 
