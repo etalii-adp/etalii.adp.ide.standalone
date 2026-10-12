@@ -1,13 +1,10 @@
-using EtAlii.Adp.Authentication.Wire;
 using EtAlii.Adp.Context.Wire;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.Hierarchy.Wire;
 using EtAlii.Adp.Projects;
-using EtAlii.Adp.Projects.Wire;
 using EtAlii.Adp.TestSupport.Host;
 using Grpc.Core;
-using Grpc.Net.Client;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
@@ -15,8 +12,6 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Xunit;
 using HierarchyService = EtAlii.Adp.Hierarchy.Wire.HierarchyService;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
-using Path = EtAlii.Adp.Documents.Wire.Path;
-using ProjectService = EtAlii.Adp.Projects.Wire.ProjectService;
 
 namespace EtAlii.Adp.Backend.Tests;
 
@@ -29,8 +24,6 @@ namespace EtAlii.Adp.Backend.Tests;
 /// </summary>
 public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFactory<Program>>, IDisposable
 {
-    private const string DeveloperUsername = "admin";
-    private const string DeveloperCredential = "changeme";
     private const string SessionTokenHeader = "session-token";
     private static readonly TimeSpan MessageTimeout = TimeSpan.FromSeconds(10);
 
@@ -80,65 +73,6 @@ public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFacto
         return cts;
     }
 
-    private GrpcChannel CreateChannel()
-    {
-        var httpClient = _factory.CreateDefaultClient();
-        return GrpcChannel.ForAddress(httpClient.BaseAddress!, new GrpcChannelOptions { HttpClient = httpClient });
-    }
-
-    private static async Task<Metadata> LoginAsync(GrpcChannel channel)
-    {
-        var authClient = new AuthenticationService.AuthenticationServiceClient(channel);
-        var response = await authClient.LoginAsync(new LoginRequest { Username = DeveloperUsername, Credential = DeveloperCredential }, cancellationToken: TestContext.Current.CancellationToken);
-        return new Metadata { { SessionTokenHeader, response.Session.Value } };
-    }
-
-    private async Task<ShortGuid> AddProjectAsync(GrpcChannel channel, Metadata headers, string? folder = null)
-    {
-        var projectClient = new ProjectService.ProjectServiceClient(channel);
-        var pathMessage = new Path();
-        pathMessage.Segments.AddRange((folder ?? _projectFolder).Split(IoPath.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries));
-        var response = await projectClient.AddProjectAsync(new AddProjectRequest { Path = pathMessage }, headers, cancellationToken: TestContext.Current.CancellationToken);
-        return response.Added.Id;
-    }
-
-    /// <summary>
-    /// Reads the context stream until a prompt arrives, skipping the selection baseline and
-    /// any selection change that precedes it.
-    /// </summary>
-    private static async Task<ContextPrompt> ReadUntilPromptAsync(IAsyncStreamReader<ContextMessage> stream, CancellationToken cancellationToken)
-    {
-        while (await stream.MoveNext(cancellationToken))
-        {
-            if (stream.Current.MessageCase == ContextMessage.MessageOneofCase.Prompt)
-            {
-                return stream.Current.Prompt;
-            }
-        }
-
-        throw new InvalidOperationException("The stream ended before a prompt arrived.");
-    }
-
-    /// <summary>
-    /// Reads until the wanted kind of hierarchy change arrives. A recursive folder delete
-    /// legitimately emits other changes first (the folder's has-children flag flips as its
-    /// contents go), so a test after the removal must look past those.
-    /// </summary>
-    private static async Task<HierarchyChange> ReadUntilChangeAsync(
-        IAsyncStreamReader<HierarchyMessage> stream, HierarchyChange.ChangeOneofCase wanted, CancellationToken cancellationToken)
-    {
-        while (await stream.MoveNext(cancellationToken))
-        {
-            var message = stream.Current;
-            if (message.MessageCase == HierarchyMessage.MessageOneofCase.Change && message.Change.ChangeCase == wanted)
-            {
-                return message.Change;
-            }
-        }
-
-        throw new InvalidOperationException($"The stream ended before a {wanted} change arrived.");
-    }
-
     [Fact]
     public async Task TheFullRenameArc_ValidatesThenRenamesOnDisk_AndReportsTheRenameOnTheSameStream()
     {
@@ -146,11 +80,11 @@ public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFacto
         await File.WriteAllTextAsync(IoPath.Combine(_projectFolder, "original.txt"), "content", TestContext.Current.CancellationToken);
         await File.WriteAllTextAsync(IoPath.Combine(_projectFolder, "taken.txt"), "", TestContext.Current.CancellationToken);
 
-        using var channel = CreateChannel();
+        using var channel = _factory.CreateGrpcChannel();
         var hierarchyClient = new HierarchyService.HierarchyServiceClient(channel);
         var contextClient = new ContextService.ContextServiceClient(channel);
-        var headers = await LoginAsync(channel);
-        var projectId = await AddProjectAsync(channel, headers);
+        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
+        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
         var watchId = ShortGuid.NewShortGuid();
 
         var entries = await hierarchyClient.ListEntriesAsync(new ListEntriesRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
@@ -161,7 +95,7 @@ public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFacto
         await StreamProbe.WaitUntilHierarchyLiveAsync(call.ResponseStream, _projectFolder, cts.Token);
         using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
         await StreamProbe.WaitUntilContextLiveAsync(contextCall.ResponseStream, cts.Token);
-        var pendingPrompt = ReadUntilPromptAsync(contextCall.ResponseStream, cts.Token);
+        var pendingPrompt = contextCall.ResponseStream.ReadUntilPromptAsync(cts.Token);
 
         // Act and assert, step by step.
         var source = new ContextSource { EntryId = entryId };
@@ -201,7 +135,7 @@ public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFacto
         Assert.True(accepted.Valid);
         Assert.Equal(2u, accepted.Revision);
 
-        var pendingChange = ReadUntilChangeAsync(call.ResponseStream, HierarchyChange.ChangeOneofCase.Renamed, cts.Token);
+        var pendingChange = call.ResponseStream.ReadUntilChangeAsync(HierarchyChange.ChangeOneofCase.Renamed, cts.Token);
 
         var submitted = await contextClient.SubmitInteractionAsync(
             new SubmitInteractionRequest { InteractionId = interactionId, Value = "renamed.txt" }, headers, cancellationToken: TestContext.Current.CancellationToken);
@@ -222,11 +156,11 @@ public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFacto
         Directory.CreateDirectory(IoPath.Combine(folder, "inner"));
         await File.WriteAllTextAsync(IoPath.Combine(folder, "inner", "leaf.txt"), "", TestContext.Current.CancellationToken);
 
-        using var channel = CreateChannel();
+        using var channel = _factory.CreateGrpcChannel();
         var hierarchyClient = new HierarchyService.HierarchyServiceClient(channel);
         var contextClient = new ContextService.ContextServiceClient(channel);
-        var headers = await LoginAsync(channel);
-        var projectId = await AddProjectAsync(channel, headers);
+        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
+        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
         var watchId = ShortGuid.NewShortGuid();
 
         var entries = await hierarchyClient.ListEntriesAsync(new ListEntriesRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
@@ -237,7 +171,7 @@ public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFacto
         await StreamProbe.WaitUntilHierarchyLiveAsync(call.ResponseStream, _projectFolder, cts.Token);
         using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
         await StreamProbe.WaitUntilContextLiveAsync(contextCall.ResponseStream, cts.Token);
-        var pendingPrompt = ReadUntilPromptAsync(contextCall.ResponseStream, cts.Token);
+        var pendingPrompt = contextCall.ResponseStream.ReadUntilPromptAsync(cts.Token);
 
         // Act and assert, step by step.
         var interactionId = ShortGuid.NewShortGuid();
@@ -259,7 +193,7 @@ public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFacto
         Assert.True(prompt.ConfirmDialog.Danger);
         Assert.Contains("doomed", prompt.ConfirmDialog.Message);
 
-        var pendingChange = ReadUntilChangeAsync(call.ResponseStream, HierarchyChange.ChangeOneofCase.Removed, cts.Token);
+        var pendingChange = call.ResponseStream.ReadUntilChangeAsync(HierarchyChange.ChangeOneofCase.Removed, cts.Token);
 
         var submitted = await contextClient.SubmitInteractionAsync(
             new SubmitInteractionRequest { InteractionId = interactionId, Value = "" }, headers, cancellationToken: TestContext.Current.CancellationToken);
@@ -277,11 +211,11 @@ public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFacto
         await File.WriteAllTextAsync(IoPath.Combine(_projectFolder, "shortcut.txt"), "", TestContext.Current.CancellationToken);
 
         // Arrange, continued.
-        using var channel = CreateChannel();
+        using var channel = _factory.CreateGrpcChannel();
         var hierarchyClient = new HierarchyService.HierarchyServiceClient(channel);
         var contextClient = new ContextService.ContextServiceClient(channel);
-        var headers = await LoginAsync(channel);
-        var projectId = await AddProjectAsync(channel, headers);
+        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
+        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
         var watchId = ShortGuid.NewShortGuid();
 
         // Arrange, continued.
@@ -293,7 +227,7 @@ public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFacto
         using var cts = CreateMessageTimeout();
         using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
         await StreamProbe.WaitUntilContextLiveAsync(contextCall.ResponseStream, cts.Token);
-        var pendingPrompt = ReadUntilPromptAsync(contextCall.ResponseStream, cts.Token);
+        var pendingPrompt = contextCall.ResponseStream.ReadUntilPromptAsync(cts.Token);
 
         // Act.
         var executed = await contextClient.ExecuteActionAsync(
@@ -321,11 +255,11 @@ public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFacto
         // Arrange.
         await File.WriteAllTextAsync(IoPath.Combine(_projectFolder, "shared.txt"), "", TestContext.Current.CancellationToken);
 
-        using var channel = CreateChannel();
+        using var channel = _factory.CreateGrpcChannel();
         var hierarchyClient = new HierarchyService.HierarchyServiceClient(channel);
         var contextClient = new ContextService.ContextServiceClient(channel);
-        var headers = await LoginAsync(channel);
-        var projectId = await AddProjectAsync(channel, headers);
+        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
+        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
         var watchIdA = ShortGuid.NewShortGuid();
         var watchIdB = ShortGuid.NewShortGuid();
 
@@ -384,11 +318,11 @@ public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFacto
         await File.WriteAllTextAsync(IoPath.Combine(_projectFolder, "shared.txt"), "", TestContext.Current.CancellationToken);
 
         // Arrange, continued.
-        using var channel = CreateChannel();
+        using var channel = _factory.CreateGrpcChannel();
         var hierarchyClient = new HierarchyService.HierarchyServiceClient(channel);
         var contextClient = new ContextService.ContextServiceClient(channel);
-        var headers = await LoginAsync(channel);
-        var projectId = await AddProjectAsync(channel, headers);
+        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
+        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
         var watchIdA = ShortGuid.NewShortGuid();
         var watchIdB = ShortGuid.NewShortGuid();
 
@@ -418,11 +352,11 @@ public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFacto
         await File.WriteAllTextAsync(IoPath.Combine(_projectFolder, "private.txt"), "", TestContext.Current.CancellationToken);
 
         // Arrange, continued.
-        using var ownerChannel = CreateChannel();
-        var ownerHeaders = await LoginAsync(ownerChannel);
+        using var ownerChannel = _factory.CreateGrpcChannel();
+        var ownerHeaders = await ownerChannel.SignInAsync(TestContext.Current.CancellationToken);
         var ownerClient = new HierarchyService.HierarchyServiceClient(ownerChannel);
         var ownerContextClient = new ContextService.ContextServiceClient(ownerChannel);
-        var projectId = await AddProjectAsync(ownerChannel, ownerHeaders);
+        var projectId = await ownerChannel.AddProjectAsync(ownerHeaders, _projectFolder, TestContext.Current.CancellationToken);
         var watchId = ShortGuid.NewShortGuid();
         var entries = await ownerClient.ListEntriesAsync(new ListEntriesRequest { ProjectId = projectId, WatchId = watchId }, ownerHeaders, cancellationToken: TestContext.Current.CancellationToken);
         var entryId = entries.Entries.Entries_.Single(e => e.Name == "private.txt").Id;
@@ -430,7 +364,7 @@ public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFacto
         // Arrange, continued.
         // A second login is a second session; the project was never added under it, so the
         // project id resolves to nothing for this caller.
-        using var otherChannel = CreateChannel();
+        using var otherChannel = _factory.CreateGrpcChannel();
         var otherHeaders = new Metadata { { SessionTokenHeader, "not-a-valid-session" } };
         var otherContextClient = new ContextService.ContextServiceClient(otherChannel);
 
@@ -456,11 +390,11 @@ public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFacto
         await File.WriteAllTextAsync(IoPath.Combine(_projectFolder, "selected.txt"), "", TestContext.Current.CancellationToken);
 
         // Arrange, continued.
-        using var channel = CreateChannel();
+        using var channel = _factory.CreateGrpcChannel();
         var hierarchyClient = new HierarchyService.HierarchyServiceClient(channel);
         var contextClient = new ContextService.ContextServiceClient(channel);
-        var headers = await LoginAsync(channel);
-        var projectId = await AddProjectAsync(channel, headers);
+        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
+        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
         var watchId = ShortGuid.NewShortGuid();
 
         // Arrange, continued.
@@ -471,7 +405,7 @@ public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFacto
         using var cts = CreateMessageTimeout();
         using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
         await StreamProbe.WaitUntilContextLiveAsync(contextCall.ResponseStream, cts.Token);
-        var pendingPrompt = ReadUntilPromptAsync(contextCall.ResponseStream, cts.Token);
+        var pendingPrompt = contextCall.ResponseStream.ReadUntilPromptAsync(cts.Token);
 
         // Arrange, continued.
         var nothingSelected = await contextClient.ExecuteActionAsync(
@@ -516,11 +450,11 @@ public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFacto
         await File.WriteAllTextAsync(IoPath.Combine(_projectFolder, "once.txt"), "", TestContext.Current.CancellationToken);
 
         // Arrange, continued.
-        using var channel = CreateChannel();
+        using var channel = _factory.CreateGrpcChannel();
         var hierarchyClient = new HierarchyService.HierarchyServiceClient(channel);
         var contextClient = new ContextService.ContextServiceClient(channel);
-        var headers = await LoginAsync(channel);
-        var projectId = await AddProjectAsync(channel, headers);
+        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
+        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
         var watchId = ShortGuid.NewShortGuid();
 
         // Arrange, continued.
@@ -532,7 +466,7 @@ public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFacto
         using var cts = CreateMessageTimeout();
         using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
         await StreamProbe.WaitUntilContextLiveAsync(contextCall.ResponseStream, cts.Token);
-        var pendingPrompt = ReadUntilPromptAsync(contextCall.ResponseStream, cts.Token);
+        var pendingPrompt = contextCall.ResponseStream.ReadUntilPromptAsync(cts.Token);
 
         // Arrange, continued.
         var interactionId = ShortGuid.NewShortGuid();

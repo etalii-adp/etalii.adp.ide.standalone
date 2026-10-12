@@ -113,16 +113,11 @@ public class DotNetDependencyGraphFlowTests : IClassFixture<WebApplicationFactor
         // src/examples, four levels above the diagram.
         var examplesRoot = IoPath.GetFullPath(IoPath.Combine(_projectFolder, "..", "..", ".."));
         var projects = new ProjectService.ProjectServiceClient(channel);
-        var folder = new Path();
-        folder.Segments.AddRange(examplesRoot.Split(IoPath.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries));
+        var folder = Path.OfLocation(examplesRoot);
         var added = await projects.AddProjectAsync(
             new AddProjectRequest { Path = folder }, headers, cancellationToken: TestContext.Current.CancellationToken);
 
-        var diagramPath = new Path();
-        diagramPath.Segments.Add("diagrams");
-        diagramPath.Segments.Add("dotnet-dependency-graph");
-        diagramPath.Segments.Add("pipeline-toolkit");
-        diagramPath.Segments.Add("PipelineToolkit.adp");
+        var diagramPath = Path.Of("diagrams", "dotnet-dependency-graph", "pipeline-toolkit", "PipelineToolkit.adp");
 
         var diagrams = new DiagramService.DiagramServiceClient(channel);
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
@@ -171,13 +166,11 @@ public class DotNetDependencyGraphFlowTests : IClassFixture<WebApplicationFactor
         var headers = new Metadata { { SessionTokenHeader, login.Session.Value } };
 
         var projects = new ProjectService.ProjectServiceClient(channel);
-        var folder = new Path();
-        folder.Segments.AddRange(_projectFolder.Split(IoPath.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries));
+        var folder = Path.OfLocation(_projectFolder);
         var added = await projects.AddProjectAsync(
             new AddProjectRequest { Path = folder }, headers, cancellationToken: TestContext.Current.CancellationToken);
 
-        var diagramPath = new Path();
-        diagramPath.Segments.Add("PipelineToolkit.adp");
+        var diagramPath = Path.Of("PipelineToolkit.adp");
 
         var diagrams = new DiagramService.DiagramServiceClient(channel);
 

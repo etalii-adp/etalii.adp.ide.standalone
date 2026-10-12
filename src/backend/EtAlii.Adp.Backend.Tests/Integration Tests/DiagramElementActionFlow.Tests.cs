@@ -1,13 +1,10 @@
 using System.Text.RegularExpressions;
-using EtAlii.Adp.Authentication.Wire;
 using EtAlii.Adp.Context.Wire;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Hierarchy.Wire;
 using EtAlii.Adp.Projects;
-using EtAlii.Adp.Projects.Wire;
 using EtAlii.Adp.TestSupport.Host;
 using Grpc.Core;
-using Grpc.Net.Client;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
@@ -15,7 +12,6 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 using Path = EtAlii.Adp.Documents.Wire.Path;
-using ProjectService = EtAlii.Adp.Projects.Wire.ProjectService;
 
 namespace EtAlii.Adp.Backend.Tests;
 
@@ -28,9 +24,6 @@ namespace EtAlii.Adp.Backend.Tests;
 /// </summary>
 public class DiagramElementActionFlowTests : IClassFixture<WebApplicationFactory<Program>>, IDisposable
 {
-    private const string DeveloperUsername = "admin";
-    private const string DeveloperCredential = "changeme";
-    private const string SessionTokenHeader = "session-token";
     private static readonly TimeSpan MessageTimeout = TimeSpan.FromSeconds(10);
 
     private readonly WebApplicationFactory<Program> _factory;
@@ -78,11 +71,11 @@ public class DiagramElementActionFlowTests : IClassFixture<WebApplicationFactory
     public async Task AKeystrokeAgainstTheSelectedNode_ReachesItsActionAndPromptsForTheChild()
     {
         // Arrange.
-        using var channel = CreateChannel();
+        using var channel = _factory.CreateGrpcChannel();
         var hierarchyClient = new HierarchyService.HierarchyServiceClient(channel);
         var contextClient = new ContextService.ContextServiceClient(channel);
-        var headers = await LoginAsync(channel);
-        var projectId = await AddProjectAsync(channel, headers);
+        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
+        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
         var watchId = ShortGuid.NewShortGuid();
 
         // Arrange, continued.
@@ -93,7 +86,7 @@ public class DiagramElementActionFlowTests : IClassFixture<WebApplicationFactory
         using var cts = CreateMessageTimeout();
         using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
         await StreamProbe.WaitUntilContextLiveAsync(contextCall.ResponseStream, cts.Token);
-        var pendingPrompt = ReadUntilPromptAsync(contextCall.ResponseStream, cts.Token);
+        var pendingPrompt = contextCall.ResponseStream.ReadUntilPromptAsync(cts.Token);
 
         // Arrange, continued.
         // The canvas's click: the nested file -> node selection.
@@ -144,11 +137,11 @@ public class DiagramElementActionFlowTests : IClassFixture<WebApplicationFactory
         // Left unhandled, the submit re-runs "add child" against the ORIGINAL node - so the
         // map quietly grows a second child named after whatever was typed, and the node the
         // user was editing keeps its generated name. That is the failure this guards.
-        using var channel = CreateChannel();
+        using var channel = _factory.CreateGrpcChannel();
         var hierarchyClient = new HierarchyService.HierarchyServiceClient(channel);
         var contextClient = new ContextService.ContextServiceClient(channel);
-        var headers = await LoginAsync(channel);
-        var projectId = await AddProjectAsync(channel, headers);
+        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
+        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
         var watchId = ShortGuid.NewShortGuid();
 
         var entryId = await NestedEntryLookup.EntryIdOfAsync(hierarchyClient, projectId, watchId, headers, "roadmap.adp");
@@ -156,7 +149,7 @@ public class DiagramElementActionFlowTests : IClassFixture<WebApplicationFactory
         using var cts = CreateMessageTimeout();
         using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
         await StreamProbe.WaitUntilContextLiveAsync(contextCall.ResponseStream, cts.Token);
-        var pendingPrompt = ReadUntilPromptAsync(contextCall.ResponseStream, cts.Token);
+        var pendingPrompt = contextCall.ResponseStream.ReadUntilPromptAsync(cts.Token);
 
         await contextClient.SelectAsync(
             new SelectRequest { ProjectId = projectId, WatchId = watchId, Selection = NodeChain(entryId, "ID_1") },
@@ -209,11 +202,11 @@ public class DiagramElementActionFlowTests : IClassFixture<WebApplicationFactory
             TestContext.Current.CancellationToken);
 
         // Arrange, continued.
-        using var channel = CreateChannel();
+        using var channel = _factory.CreateGrpcChannel();
         var hierarchyClient = new HierarchyService.HierarchyServiceClient(channel);
         var contextClient = new ContextService.ContextServiceClient(channel);
-        var headers = await LoginAsync(channel);
-        var projectId = await AddProjectAsync(channel, headers);
+        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
+        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
         var watchId = ShortGuid.NewShortGuid();
 
         // Arrange, continued.
@@ -224,7 +217,7 @@ public class DiagramElementActionFlowTests : IClassFixture<WebApplicationFactory
         using var cts = CreateMessageTimeout();
         using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
         await StreamProbe.WaitUntilContextLiveAsync(contextCall.ResponseStream, cts.Token);
-        var pendingPrompt = ReadUntilPromptAsync(contextCall.ResponseStream, cts.Token);
+        var pendingPrompt = contextCall.ResponseStream.ReadUntilPromptAsync(cts.Token);
 
         // Arrange, continued.
         // Only the file is selected - no node level in the chain.
@@ -267,11 +260,11 @@ public class DiagramElementActionFlowTests : IClassFixture<WebApplicationFactory
             "<map version=\"freeplane 1.11.5\">\n<node TEXT=\"other\" ID=\"ID_1\"/>\n</map>\n",
             TestContext.Current.CancellationToken);
 
-        using var channel = CreateChannel();
+        using var channel = _factory.CreateGrpcChannel();
         var hierarchyClient = new HierarchyService.HierarchyServiceClient(channel);
         var contextClient = new ContextService.ContextServiceClient(channel);
-        var headers = await LoginAsync(channel);
-        var projectId = await AddProjectAsync(channel, headers);
+        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
+        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
         var watchId = ShortGuid.NewShortGuid();
 
         var roadmapId = await NestedEntryLookup.EntryIdOfAsync(hierarchyClient, projectId, watchId, headers, "roadmap.adp");
@@ -280,7 +273,7 @@ public class DiagramElementActionFlowTests : IClassFixture<WebApplicationFactory
         using var cts = CreateMessageTimeout();
         using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
         await StreamProbe.WaitUntilContextLiveAsync(contextCall.ResponseStream, cts.Token);
-        var pendingPrompt = ReadUntilPromptAsync(contextCall.ResponseStream, cts.Token);
+        var pendingPrompt = contextCall.ResponseStream.ReadUntilPromptAsync(cts.Token);
 
         // The tab the user left: its file is still the selection.
         await contextClient.SelectAsync(
@@ -313,11 +306,11 @@ public class DiagramElementActionFlowTests : IClassFixture<WebApplicationFactory
         // Found by the same pass: a canvas clears the selection when the selected element leaves
         // the drawn area, and every action it raised after that was refused as "This item is no
         // longer available." until something was clicked.
-        using var channel = CreateChannel();
+        using var channel = _factory.CreateGrpcChannel();
         var hierarchyClient = new HierarchyService.HierarchyServiceClient(channel);
         var contextClient = new ContextService.ContextServiceClient(channel);
-        var headers = await LoginAsync(channel);
-        var projectId = await AddProjectAsync(channel, headers);
+        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
+        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
         var watchId = ShortGuid.NewShortGuid();
 
         var roadmapId = await NestedEntryLookup.EntryIdOfAsync(hierarchyClient, projectId, watchId, headers, "roadmap.adp");
@@ -325,7 +318,7 @@ public class DiagramElementActionFlowTests : IClassFixture<WebApplicationFactory
         using var cts = CreateMessageTimeout();
         using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
         await StreamProbe.WaitUntilContextLiveAsync(contextCall.ResponseStream, cts.Token);
-        var pendingPrompt = ReadUntilPromptAsync(contextCall.ResponseStream, cts.Token);
+        var pendingPrompt = contextCall.ResponseStream.ReadUntilPromptAsync(cts.Token);
 
         // Act. Nothing is selected.
         var executed = await contextClient.ExecuteActionAsync(
@@ -352,28 +345,6 @@ public class DiagramElementActionFlowTests : IClassFixture<WebApplicationFactory
         var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
         cts.CancelAfter(MessageTimeout);
         return cts;
-    }
-
-    private GrpcChannel CreateChannel()
-    {
-        var httpClient = _factory.CreateDefaultClient();
-        return GrpcChannel.ForAddress(httpClient.BaseAddress!, new GrpcChannelOptions { HttpClient = httpClient });
-    }
-
-    private static async Task<Metadata> LoginAsync(GrpcChannel channel)
-    {
-        var authClient = new AuthenticationService.AuthenticationServiceClient(channel);
-        var response = await authClient.LoginAsync(new LoginRequest { Username = DeveloperUsername, Credential = DeveloperCredential }, cancellationToken: TestContext.Current.CancellationToken);
-        return new Metadata { { SessionTokenHeader, response.Session.Value } };
-    }
-
-    private async Task<ShortGuid> AddProjectAsync(GrpcChannel channel, Metadata headers)
-    {
-        var projectClient = new ProjectService.ProjectServiceClient(channel);
-        var pathMessage = new Path();
-        pathMessage.Segments.AddRange(_projectFolder.Split(IoPath.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries));
-        var response = await projectClient.AddProjectAsync(new AddProjectRequest { Path = pathMessage }, headers, cancellationToken: TestContext.Current.CancellationToken);
-        return response.Added.Id;
     }
 
     /// <summary>The canvas's nested selection: the .adp file, then the node as its child.</summary>
@@ -406,11 +377,11 @@ public class DiagramElementActionFlowTests : IClassFixture<WebApplicationFactory
             "<map version=\"freeplane 1.11.5\">\n<node TEXT=\"deep\" ID=\"ID_d0\">\n<node TEXT=\"Alpha\" ID=\"ID_d1\"/>\n</node>\n</map>\n",
             TestContext.Current.CancellationToken);
 
-        using var channel = CreateChannel();
+        using var channel = _factory.CreateGrpcChannel();
         var hierarchyClient = new HierarchyService.HierarchyServiceClient(channel);
         var contextClient = new ContextService.ContextServiceClient(channel);
-        var headers = await LoginAsync(channel);
-        var projectId = await AddProjectAsync(channel, headers);
+        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
+        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
         var watchId = ShortGuid.NewShortGuid();
 
         var entries = await hierarchyClient.ListEntriesAsync(new ListEntriesRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
@@ -448,11 +419,11 @@ public class DiagramElementActionFlowTests : IClassFixture<WebApplicationFactory
             TestContext.Current.CancellationToken);
 
         // Arrange, continued.
-        using var channel = CreateChannel();
+        using var channel = _factory.CreateGrpcChannel();
         var hierarchyClient = new HierarchyService.HierarchyServiceClient(channel);
         var contextClient = new ContextService.ContextServiceClient(channel);
-        var headers = await LoginAsync(channel);
-        var projectId = await AddProjectAsync(channel, headers);
+        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
+        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
         var watchId = ShortGuid.NewShortGuid();
 
         // Arrange, continued.
@@ -511,18 +482,5 @@ public class DiagramElementActionFlowTests : IClassFixture<WebApplicationFactory
         }
 
         throw new InvalidOperationException("The stream ended before a selection with actions arrived.");
-    }
-
-    private static async Task<ContextPrompt> ReadUntilPromptAsync(IAsyncStreamReader<ContextMessage> stream, CancellationToken cancellationToken)
-    {
-        while (await stream.MoveNext(cancellationToken))
-        {
-            if (stream.Current.MessageCase == ContextMessage.MessageOneofCase.Prompt)
-            {
-                return stream.Current.Prompt;
-            }
-        }
-
-        throw new InvalidOperationException("The stream ended before a prompt arrived.");
     }
 }

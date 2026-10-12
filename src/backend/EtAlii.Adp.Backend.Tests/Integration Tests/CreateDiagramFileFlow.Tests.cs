@@ -29,34 +29,6 @@ public class CreateDiagramFileFlowTests(HostFixture host) : IClassFixture<HostFi
         //return stream.Current.Selection;
     }
 
-    private static async Task<ContextPrompt> ReadUntilPromptAsync(IAsyncStreamReader<ContextMessage> stream, CancellationToken cancellationToken)
-    {
-        while (await stream.MoveNext(cancellationToken))
-        {
-            if (stream.Current.MessageCase == ContextMessage.MessageOneofCase.Prompt)
-            {
-                return stream.Current.Prompt;
-            }
-        }
-
-        throw new InvalidOperationException("The stream ended before a prompt arrived.");
-    }
-
-    private static async Task<HierarchyChange> ReadUntilChangeAsync(
-        IAsyncStreamReader<HierarchyMessage> stream, HierarchyChange.ChangeOneofCase wanted, CancellationToken cancellationToken)
-    {
-        while (await stream.MoveNext(cancellationToken))
-        {
-            var message = stream.Current;
-            if (message.MessageCase == HierarchyMessage.MessageOneofCase.Change && message.Change.ChangeCase == wanted)
-            {
-                return message.Change;
-            }
-        }
-
-        throw new InvalidOperationException($"The stream ended before a {wanted} change arrived.");
-    }
-
     /// <summary>
     /// The first selectable leaf that takes a name, depth first - a real diagram type to choose
     /// and then name.
@@ -94,7 +66,7 @@ public class CreateDiagramFileFlowTests(HostFixture host) : IClassFixture<HostFi
     private async Task<(ContextPrompt Prompt, Documents.Wire.ShortGuid InteractionId)> OpenAddDialogAsync(
         FlowSession session, IAsyncStreamReader<ContextMessage> stream, CancellationToken cancellationToken, Documents.Wire.ShortGuid? folderId = null)
     {
-        var pendingPrompt = ReadUntilPromptAsync(stream, cancellationToken);
+        var pendingPrompt = stream.ReadUntilPromptAsync(cancellationToken);
 
         var interactionId = ShortGuid.NewShortGuid();
         var request = new ExecuteActionRequest
@@ -174,7 +146,7 @@ public class CreateDiagramFileFlowTests(HostFixture host) : IClassFixture<HostFi
         using var hierarchyCall = session.Hierarchy.WatchHierarchy(
             new WatchHierarchyRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         await StreamProbe.WaitUntilHierarchyLiveAsync(hierarchyCall.ResponseStream, _projectFolder, cts.Token);
-        var pendingCreate = ReadUntilChangeAsync(hierarchyCall.ResponseStream, HierarchyChange.ChangeOneofCase.Created, cts.Token);
+        var pendingCreate = hierarchyCall.ResponseStream.ReadUntilChangeAsync(HierarchyChange.ChangeOneofCase.Created, cts.Token);
 
         // Act and assert, step by step.
         using var contextCall = session.Context.Watch(

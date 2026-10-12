@@ -1,4 +1,3 @@
-using EtAlii.Adp.Authentication.Wire;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Context.Wire;
 using EtAlii.Adp.Diagram.Databricks;
@@ -7,7 +6,7 @@ using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.Hierarchy.Wire;
 using EtAlii.Adp.Projects;
-using EtAlii.Adp.Projects.Wire;
+using EtAlii.Adp.TestSupport.Host;
 using Grpc.Core;
 using Grpc.Net.Client;
 using Microsoft.AspNetCore.Hosting;
@@ -19,7 +18,6 @@ using ContextService = EtAlii.Adp.Context.Wire.ContextService;
 using HierarchyService = EtAlii.Adp.Hierarchy.Wire.HierarchyService;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 using Path = EtAlii.Adp.Documents.Wire.Path;
-using ProjectService = EtAlii.Adp.Projects.Wire.ProjectService;
 
 namespace EtAlii.Adp.Backend.Tests;
 
@@ -38,9 +36,6 @@ namespace EtAlii.Adp.Backend.Tests;
 /// </remarks>
 public class DatabricksFlowTests : IClassFixture<WebApplicationFactory<Program>>, IDisposable
 {
-    private const string DeveloperUsername = "admin";
-    private const string DeveloperCredential = "changeme";
-    private const string SessionTokenHeader = "session-token";
     private static readonly TimeSpan MessageTimeout = TimeSpan.FromSeconds(20);
 
     private const string Lakehouse = """
@@ -122,9 +117,9 @@ public class DatabricksFlowTests : IClassFixture<WebApplicationFactory<Program>>
     {
         // Arrange: Requirement 1.4 - three MIME types over one file, each registration opening
         // its own projection; the pipeline one selected by its resource: header (Requirement 1.3).
-        using var channel = CreateChannel();
-        var headers = await LoginAsync(channel);
-        var projectId = await AddProjectAsync(channel, headers);
+        using var channel = _factory.CreateGrpcChannel();
+        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
+        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
 
         // Act.
         var bundle = await BaselineAsync(channel, headers, projectId, "lakehouse.adp");
@@ -148,11 +143,11 @@ public class DatabricksFlowTests : IClassFixture<WebApplicationFactory<Program>>
         // Arrange: the layout-persistence promise (Requirement 7), end to end. The diagram must
         // be open on the SAME connection, because core will not edit a document a caller is not
         // looking at.
-        using var channel = CreateChannel();
+        using var channel = _factory.CreateGrpcChannel();
         var client = new DiagramService.DiagramServiceClient(channel);
         var contextClient = new ContextService.ContextServiceClient(channel);
-        var headers = await LoginAsync(channel);
-        var projectId = await AddProjectAsync(channel, headers);
+        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
+        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
         var watchId = ShortGuid.NewShortGuid();
         var bodyPath = IoPath.Combine(_projectFolder, "lakehouse.yml");
         var adpPath = IoPath.Combine(_projectFolder, "lakehouse.job.adp");
@@ -161,9 +156,9 @@ public class DatabricksFlowTests : IClassFixture<WebApplicationFactory<Program>>
 
         using var cts = CreateMessageTimeout();
         using var call = client.Open(
-            new OpenDiagramRequest { ProjectId = projectId, WatchId = watchId, Path = PathOf("lakehouse.job.adp") },
+            new OpenDiagramRequest { ProjectId = projectId, WatchId = watchId, Path = Path.Of("lakehouse.job.adp") },
             headers, cancellationToken: cts.Token);
-        await ReadAddAsync(call.ResponseStream, cts.Token);
+        await call.ResponseStream.ReadAddAsync(cts.Token);
 
         // Act: drag the ingest task to an authored spot.
         var moved = await client.MoveElementAsync(
@@ -171,7 +166,7 @@ public class DatabricksFlowTests : IClassFixture<WebApplicationFactory<Program>>
             {
                 ProjectId = projectId,
                 WatchId = watchId,
-                Path = PathOf("lakehouse.job.adp"),
+                Path = Path.Of("lakehouse.job.adp"),
                 ElementId = "task:ingest",
                 Position = new Point2D { X = 300, Y = 180 },
             },
@@ -203,10 +198,10 @@ public class DatabricksFlowTests : IClassFixture<WebApplicationFactory<Program>>
         // Arrange: the property path over the real selection chain - which also proves a
         // databricks element resolves while every other module's resolver is registered beside
         // this one (Requirement 10.5, 12's integration half).
-        using var channel = CreateChannel();
+        using var channel = _factory.CreateGrpcChannel();
         var contextClient = new ContextService.ContextServiceClient(channel);
-        var headers = await LoginAsync(channel);
-        var projectId = await AddProjectAsync(channel, headers);
+        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
+        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
         var watchId = ShortGuid.NewShortGuid();
         var entries = await EntriesAsync(channel, headers, projectId, watchId);
         var bodyPath = IoPath.Combine(_projectFolder, "lakehouse.yml");
@@ -250,10 +245,10 @@ public class DatabricksFlowTests : IClassFixture<WebApplicationFactory<Program>>
     {
         // Arrange: the same body edited through the pipeline registration - the shared-store
         // half of Requirement 1.4: three diagram types, one document, one history.
-        using var channel = CreateChannel();
+        using var channel = _factory.CreateGrpcChannel();
         var contextClient = new ContextService.ContextServiceClient(channel);
-        var headers = await LoginAsync(channel);
-        var projectId = await AddProjectAsync(channel, headers);
+        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
+        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
         var watchId = ShortGuid.NewShortGuid();
         var entries = await EntriesAsync(channel, headers, projectId, watchId);
         var bodyPath = IoPath.Combine(_projectFolder, "lakehouse.yml");
@@ -299,35 +294,9 @@ public class DatabricksFlowTests : IClassFixture<WebApplicationFactory<Program>>
         var diagramClient = new DiagramService.DiagramServiceClient(channel);
         using var cts = CreateMessageTimeout();
         using var call = diagramClient.Open(
-            new OpenDiagramRequest { ProjectId = projectId, WatchId = ShortGuid.NewShortGuid(), Path = PathOf(fileName) },
+            new OpenDiagramRequest { ProjectId = projectId, WatchId = ShortGuid.NewShortGuid(), Path = Path.Of(fileName) },
             headers, cancellationToken: cts.Token);
-        return await ReadAddAsync(call.ResponseStream, cts.Token);
-    }
-
-    private static async Task<IReadOnlyList<Element>> ReadAddAsync(
-        IAsyncStreamReader<Delta> stream,
-        CancellationToken cancellationToken)
-    {
-        try
-        {
-            while (await stream.MoveNext(cancellationToken))
-            {
-                if (stream.Current.ActionCase == Delta.ActionOneofCase.Add)
-                {
-                    return [.. stream.Current.Add.Elements];
-                }
-            }
-        }
-        catch (RpcException exception) when (exception.StatusCode == StatusCode.Cancelled)
-        {
-            // Reading stopped at the deadline; the caller's assertion reports the empty baseline.
-        }
-        catch (OperationCanceledException)
-        {
-            // Same story, thrown the other way.
-        }
-
-        return [];
+        return await call.ResponseStream.ReadAddAsync(cts.Token);
     }
 
     /// <summary>
@@ -393,44 +362,10 @@ public class DatabricksFlowTests : IClassFixture<WebApplicationFactory<Program>>
             headers,
             cancellationToken: TestContext.Current.CancellationToken).ResponseAsync;
 
-    private static Path PathOf(string fileName)
-    {
-        var path = new Path();
-        path.Segments.Add(fileName);
-        return path;
-    }
-
     private static CancellationTokenSource CreateMessageTimeout()
     {
         var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
         cts.CancelAfter(MessageTimeout);
         return cts;
-    }
-
-    private GrpcChannel CreateChannel()
-    {
-        var httpClient = _factory.CreateDefaultClient();
-        return GrpcChannel.ForAddress(httpClient.BaseAddress!, new GrpcChannelOptions { HttpClient = httpClient });
-    }
-
-    private static async Task<Metadata> LoginAsync(GrpcChannel channel)
-    {
-        var authClient = new AuthenticationService.AuthenticationServiceClient(channel);
-        var response = await authClient.LoginAsync(
-            new LoginRequest { Username = DeveloperUsername, Credential = DeveloperCredential },
-            cancellationToken: TestContext.Current.CancellationToken);
-        return new Metadata { { SessionTokenHeader, response.Session.Value } };
-    }
-
-    private async Task<ShortGuid> AddProjectAsync(GrpcChannel channel, Metadata headers)
-    {
-        var projectClient = new ProjectService.ProjectServiceClient(channel);
-        var pathMessage = new Path();
-        pathMessage.Segments.AddRange(_projectFolder.Split(IoPath.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries));
-        var response = await projectClient.AddProjectAsync(
-            new AddProjectRequest { Path = pathMessage },
-            headers,
-            cancellationToken: TestContext.Current.CancellationToken);
-        return response.Added.Id;
     }
 }

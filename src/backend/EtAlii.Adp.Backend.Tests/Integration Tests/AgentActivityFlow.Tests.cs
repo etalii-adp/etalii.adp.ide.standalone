@@ -1,4 +1,3 @@
-using EtAlii.Adp.Authentication.Wire;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Context.Wire;
 using EtAlii.Adp.Diagram.AgentActivityDiagram;
@@ -6,10 +5,9 @@ using EtAlii.Adp.Diagram.Wire;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Hierarchy.Wire;
 using EtAlii.Adp.Projects;
-using EtAlii.Adp.Projects.Wire;
+using EtAlii.Adp.TestSupport.Host;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
-using Grpc.Net.Client;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
@@ -19,7 +17,6 @@ using ContextService = EtAlii.Adp.Context.Wire.ContextService;
 using HierarchyService = EtAlii.Adp.Hierarchy.Wire.HierarchyService;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 using Path = EtAlii.Adp.Documents.Wire.Path;
-using ProjectService = EtAlii.Adp.Projects.Wire.ProjectService;
 
 namespace EtAlii.Adp.Backend.Tests;
 
@@ -30,9 +27,6 @@ namespace EtAlii.Adp.Backend.Tests;
 /// </summary>
 public class AgentActivityFlowTests : IClassFixture<WebApplicationFactory<Program>>, IDisposable
 {
-    private const string DeveloperUsername = "admin";
-    private const string DeveloperCredential = "changeme";
-    private const string SessionTokenHeader = "session-token";
     private static readonly TimeSpan MessageTimeout = TimeSpan.FromSeconds(20);
 
     private const string Work =
@@ -91,13 +85,13 @@ public class AgentActivityFlowTests : IClassFixture<WebApplicationFactory<Progra
     public async Task WhatAnAgentWrites_ReachesTheCanvasThatHasTheFileOpen()
     {
         // Arrange: a canvas with the file open.
-        using var channel = CreateChannel();
+        using var channel = _factory.CreateGrpcChannel();
         var client = new DiagramService.DiagramServiceClient(channel);
-        var headers = await LoginAsync(channel);
-        var projectId = await AddProjectAsync(channel, headers);
+        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
+        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
         using var cts = CreateMessageTimeout();
         using var call = client.Open(new OpenDiagramRequest { ProjectId = projectId, WatchId = ShortGuid.NewShortGuid(), Path = WorkPath() }, headers, cancellationToken: cts.Token);
-        var baseline = await ReadAddAsync(call.ResponseStream, cts.Token);
+        var baseline = await call.ResponseStream.ReadAddAsync(cts.Token);
         Assert.Equal("progressing", Payload(baseline, "s-activity").Tasks.Single().Status);
 
         // Act: an agent finishes its task and says so in the file, as it would from any program.
@@ -109,7 +103,7 @@ public class AgentActivityFlowTests : IClassFixture<WebApplicationFactory<Progra
         string? status = null;
         while (status != "finished")
         {
-            var update = await ReadAddAsync(call.ResponseStream, cts.Token);
+            var update = await call.ResponseStream.ReadAddAsync(cts.Token);
             Assert.True(update.Count > 0, "The stream ended, or the deadline passed, before the agent's change arrived.");
             if (update.Any(element => element.Id.Value == "s-activity"))
             {
@@ -122,19 +116,19 @@ public class AgentActivityFlowTests : IClassFixture<WebApplicationFactory<Progra
     public async Task AGestureOnTheCanvas_IsWrittenToTheFile_AndUndoneOnlyWhileNoAgentWroteAfterIt()
     {
         // Arrange: a canvas with the file open and the file selected, as a canvas has it.
-        using var channel = CreateChannel();
+        using var channel = _factory.CreateGrpcChannel();
         var client = new DiagramService.DiagramServiceClient(channel);
         var hierarchyClient = new HierarchyService.HierarchyServiceClient(channel);
         var contextClient = new ContextService.ContextServiceClient(channel);
-        var headers = await LoginAsync(channel);
-        var projectId = await AddProjectAsync(channel, headers);
+        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
+        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
         var watchId = ShortGuid.NewShortGuid();
         await hierarchyClient.ListEntriesAsync(new ListEntriesRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
         var entryId = await NestedEntryLookup.EntryIdOfAsync(hierarchyClient, projectId, watchId, headers, "work.adp");
         using var cts = CreateMessageTimeout();
         using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: cts.Token);
         using var call = client.Open(new OpenDiagramRequest { ProjectId = projectId, WatchId = watchId, Path = WorkPath() }, headers, cancellationToken: cts.Token);
-        await ReadAddAsync(call.ResponseStream, cts.Token);
+        await call.ResponseStream.ReadAddAsync(cts.Token);
         var selected = await contextClient.SelectAsync(new SelectRequest { ProjectId = projectId, WatchId = watchId, Selection = FileChain(entryId) }, headers, cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal("", selected.Error);
 
@@ -181,8 +175,7 @@ public class AgentActivityFlowTests : IClassFixture<WebApplicationFactory<Progra
 
     private static Path WorkPath()
     {
-        var path = new Path();
-        path.Segments.Add("work.adp");
+        var path = Path.Of("work.adp");
         return path;
     }
 
@@ -203,28 +196,6 @@ public class AgentActivityFlowTests : IClassFixture<WebApplicationFactory<Progra
         return cts;
     }
 
-    private GrpcChannel CreateChannel()
-    {
-        var httpClient = _factory.CreateDefaultClient();
-        return GrpcChannel.ForAddress(httpClient.BaseAddress!, new GrpcChannelOptions { HttpClient = httpClient });
-    }
-
-    private static async Task<Metadata> LoginAsync(GrpcChannel channel)
-    {
-        var authClient = new AuthenticationService.AuthenticationServiceClient(channel);
-        var response = await authClient.LoginAsync(new LoginRequest { Username = DeveloperUsername, Credential = DeveloperCredential }, cancellationToken: TestContext.Current.CancellationToken);
-        return new Metadata { { SessionTokenHeader, response.Session.Value } };
-    }
-
-    private async Task<Documents.Wire.ShortGuid> AddProjectAsync(GrpcChannel channel, Metadata headers)
-    {
-        var projectClient = new ProjectService.ProjectServiceClient(channel);
-        var pathMessage = new Path();
-        pathMessage.Segments.AddRange(_projectFolder.Split(IoPath.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries));
-        var response = await projectClient.AddProjectAsync(new AddProjectRequest { Path = pathMessage }, headers, cancellationToken: TestContext.Current.CancellationToken);
-        return response.Added.Id;
-    }
-
     private static Task<ExecuteActionResponse> ExecuteProjectActionAsync(
         ContextService.ContextServiceClient contextClient,
         Documents.Wire.ShortGuid projectId,
@@ -242,25 +213,4 @@ public class AgentActivityFlowTests : IClassFixture<WebApplicationFactory<Progra
             },
             headers,
             cancellationToken: TestContext.Current.CancellationToken).ResponseAsync;
-
-    /// <summary>The next delta that adds or replaces elements; an empty list when none came before the deadline.</summary>
-    private static async Task<IReadOnlyList<Element>> ReadAddAsync(IAsyncStreamReader<Delta> stream, CancellationToken cancellationToken)
-    {
-        try
-        {
-            while (await stream.MoveNext(cancellationToken))
-            {
-                if (stream.Current.ActionCase == Delta.ActionOneofCase.Add)
-                {
-                    return [.. stream.Current.Add.Elements];
-                }
-            }
-        }
-        catch (RpcException exception) when (exception.StatusCode == StatusCode.Cancelled)
-        {
-            // Reading stopped at the deadline, which is how this helper ends when nothing came.
-        }
-
-        return [];
-    }
 }

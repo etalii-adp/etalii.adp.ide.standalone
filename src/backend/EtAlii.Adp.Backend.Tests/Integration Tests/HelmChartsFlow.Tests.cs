@@ -1,11 +1,10 @@
-using EtAlii.Adp.Authentication.Wire;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Context.Wire;
 using EtAlii.Adp.Diagram.Wire;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.Projects;
-using EtAlii.Adp.Projects.Wire;
+using EtAlii.Adp.TestSupport.Host;
 using Grpc.Core;
 using Grpc.Net.Client;
 using Microsoft.AspNetCore.Hosting;
@@ -16,7 +15,6 @@ using Xunit;
 using ContextService = EtAlii.Adp.Context.Wire.ContextService;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 using Path = EtAlii.Adp.Documents.Wire.Path;
-using ProjectService = EtAlii.Adp.Projects.Wire.ProjectService;
 using Wire = EtAlii.Adp.Diagram.HelmChart.Wire;
 
 namespace EtAlii.Adp.Backend.Tests;
@@ -34,9 +32,6 @@ namespace EtAlii.Adp.Backend.Tests;
 /// </remarks>
 public class HelmChartsFlowTests : IClassFixture<WebApplicationFactory<Program>>, IDisposable
 {
-    private const string DeveloperUsername = "admin";
-    private const string DeveloperCredential = "changeme";
-    private const string SessionTokenHeader = "session-token";
     private static readonly TimeSpan MessageTimeout = TimeSpan.FromSeconds(15);
 
     private readonly WebApplicationFactory<Program> _factory;
@@ -82,9 +77,9 @@ public class HelmChartsFlowTests : IClassFixture<WebApplicationFactory<Program>>
     public async Task ARegisteredChart_OpensAndDeliversItsAnatomy()
     {
         // Arrange.
-        using var channel = CreateChannel();
-        var headers = await LoginAsync(channel);
-        var projectId = await AddProjectAsync(channel, headers);
+        using var channel = _factory.CreateGrpcChannel();
+        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
+        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
 
         // Act.
         var elements = await BaselineAsync(channel, headers, projectId);
@@ -106,9 +101,9 @@ public class HelmChartsFlowTests : IClassFixture<WebApplicationFactory<Program>>
     public async Task ADependencysPayload_CarriesItsWiring()
     {
         // Arrange.
-        using var channel = CreateChannel();
-        var headers = await LoginAsync(channel);
-        var projectId = await AddProjectAsync(channel, headers);
+        using var channel = _factory.CreateGrpcChannel();
+        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
+        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
 
         // Act.
         var elements = await BaselineAsync(channel, headers, projectId);
@@ -128,9 +123,9 @@ public class HelmChartsFlowTests : IClassFixture<WebApplicationFactory<Program>>
     public async Task AChangeInTheChart_ReachesAnOpenDiagram()
     {
         // Arrange.
-        using var channel = CreateChannel();
-        var headers = await LoginAsync(channel);
-        var projectId = await AddProjectAsync(channel, headers);
+        using var channel = _factory.CreateGrpcChannel();
+        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
+        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
         var client = new DiagramService.DiagramServiceClient(channel);
 
         using var cts = CreateMessageTimeout();
@@ -158,11 +153,11 @@ public class HelmChartsFlowTests : IClassFixture<WebApplicationFactory<Program>>
         // Arrange: the layout-persistence promise (Requirement 6), end to end. The diagram
         // must be open on the SAME connection, because core will not edit a document a caller
         // is not looking at.
-        using var channel = CreateChannel();
+        using var channel = _factory.CreateGrpcChannel();
         var client = new DiagramService.DiagramServiceClient(channel);
         var contextClient = new ContextService.ContextServiceClient(channel);
-        var headers = await LoginAsync(channel);
-        var projectId = await AddProjectAsync(channel, headers);
+        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
+        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
         var watchId = ShortGuid.NewShortGuid();
         var adpPath = IoPath.Combine(_chart, "web-shop.adp");
         var adpBefore = await File.ReadAllTextAsync(adpPath, TestContext.Current.CancellationToken);
@@ -172,7 +167,7 @@ public class HelmChartsFlowTests : IClassFixture<WebApplicationFactory<Program>>
         using var call = client.Open(
             new OpenDiagramRequest { ProjectId = projectId, WatchId = watchId, Path = ChartPath() },
             headers, cancellationToken: cts.Token);
-        await ReadAddAsync(call.ResponseStream, cts.Token);
+        await call.ResponseStream.ReadAddAsync(cts.Token);
 
         // Act: drag the chart node to an authored spot.
         var moved = await client.MoveElementAsync(
@@ -223,9 +218,7 @@ public class HelmChartsFlowTests : IClassFixture<WebApplicationFactory<Program>>
 
     private static Path ChartPath()
     {
-        var path = new Path();
-        path.Segments.Add("web-shop");
-        path.Segments.Add("web-shop.adp");
+        var path = Path.Of("web-shop", "web-shop.adp");
         return path;
     }
 
@@ -257,32 +250,7 @@ public class HelmChartsFlowTests : IClassFixture<WebApplicationFactory<Program>>
         using var call = client.Open(
             new OpenDiagramRequest { ProjectId = projectId, WatchId = ShortGuid.NewShortGuid(), Path = ChartPath() },
             headers, cancellationToken: cts.Token);
-        return await ReadAddAsync(call.ResponseStream, cts.Token);
-    }
-
-    private static async Task<IReadOnlyList<Element>> ReadAddAsync(
-        IAsyncStreamReader<Delta> stream, CancellationToken cancellationToken)
-    {
-        try
-        {
-            while (await stream.MoveNext(cancellationToken))
-            {
-                if (stream.Current.ActionCase == Delta.ActionOneofCase.Add)
-                {
-                    return [.. stream.Current.Add.Elements];
-                }
-            }
-        }
-        catch (RpcException exception) when (exception.StatusCode == StatusCode.Cancelled)
-        {
-            // Reading stopped at the deadline, which is how this helper ends normally.
-        }
-        catch (OperationCanceledException)
-        {
-            // Same story, thrown the other way.
-        }
-
-        return [];
+        return await call.ResponseStream.ReadAddAsync(cts.Token);
     }
 
     private static Task<ExecuteActionResponse> ExecuteProjectActionAsync(
@@ -308,30 +276,5 @@ public class HelmChartsFlowTests : IClassFixture<WebApplicationFactory<Program>>
         var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
         cts.CancelAfter(MessageTimeout);
         return cts;
-    }
-
-    private GrpcChannel CreateChannel()
-    {
-        var httpClient = _factory.CreateDefaultClient();
-        return GrpcChannel.ForAddress(httpClient.BaseAddress!, new GrpcChannelOptions { HttpClient = httpClient });
-    }
-
-    private static async Task<Metadata> LoginAsync(GrpcChannel channel)
-    {
-        var authClient = new AuthenticationService.AuthenticationServiceClient(channel);
-        var response = await authClient.LoginAsync(
-            new LoginRequest { Username = DeveloperUsername, Credential = DeveloperCredential },
-            cancellationToken: TestContext.Current.CancellationToken);
-        return new Metadata { { SessionTokenHeader, response.Session.Value } };
-    }
-
-    private async Task<Documents.Wire.ShortGuid> AddProjectAsync(GrpcChannel channel, Metadata headers)
-    {
-        var projectClient = new ProjectService.ProjectServiceClient(channel);
-        var pathMessage = new Path();
-        pathMessage.Segments.AddRange(_projectFolder.Split(IoPath.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries));
-        var response = await projectClient.AddProjectAsync(
-            new AddProjectRequest { Path = pathMessage }, headers, cancellationToken: TestContext.Current.CancellationToken);
-        return response.Added.Id;
     }
 }

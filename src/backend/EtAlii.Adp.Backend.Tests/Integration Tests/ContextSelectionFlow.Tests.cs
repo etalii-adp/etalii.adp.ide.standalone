@@ -1,13 +1,10 @@
-using EtAlii.Adp.Authentication.Wire;
 using EtAlii.Adp.Context.Wire;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.Hierarchy.Wire;
 using EtAlii.Adp.Projects;
-using EtAlii.Adp.Projects.Wire;
 using EtAlii.Adp.TestSupport.Host;
 using Grpc.Core;
-using Grpc.Net.Client;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
@@ -16,7 +13,6 @@ using Xunit;
 using HierarchyService = EtAlii.Adp.Hierarchy.Wire.HierarchyService;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 using Path = EtAlii.Adp.Documents.Wire.Path;
-using ProjectService = EtAlii.Adp.Projects.Wire.ProjectService;
 
 namespace EtAlii.Adp.Backend.Tests;
 
@@ -28,8 +24,6 @@ namespace EtAlii.Adp.Backend.Tests;
 /// </summary>
 public class ContextSelectionFlowTests : IClassFixture<WebApplicationFactory<Program>>, IDisposable
 {
-    private const string DeveloperUsername = "admin";
-    private const string DeveloperCredential = "changeme";
     private const string SessionTokenHeader = "session-token";
     private static readonly TimeSpan MessageTimeout = TimeSpan.FromSeconds(10);
 
@@ -79,33 +73,11 @@ public class ContextSelectionFlowTests : IClassFixture<WebApplicationFactory<Pro
         return cts;
     }
 
-    private GrpcChannel CreateChannel()
-    {
-        var httpClient = _factory.CreateDefaultClient();
-        return GrpcChannel.ForAddress(httpClient.BaseAddress!, new GrpcChannelOptions { HttpClient = httpClient });
-    }
-
-    private static async Task<Metadata> LoginAsync(GrpcChannel channel)
-    {
-        var authClient = new AuthenticationService.AuthenticationServiceClient(channel);
-        var response = await authClient.LoginAsync(new LoginRequest { Username = DeveloperUsername, Credential = DeveloperCredential }, cancellationToken: TestContext.Current.CancellationToken);
-        return new Metadata { { SessionTokenHeader, response.Session.Value } };
-    }
-
-    private async Task<ShortGuid> AddProjectAsync(GrpcChannel channel, Metadata headers)
-    {
-        var projectClient = new ProjectService.ProjectServiceClient(channel);
-        var pathMessage = new Path();
-        pathMessage.Segments.AddRange(_projectFolder.Split(IoPath.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries));
-        var response = await projectClient.AddProjectAsync(new AddProjectRequest { Path = pathMessage }, headers, cancellationToken: TestContext.Current.CancellationToken);
-        return response.Added.Id;
-    }
-
     private async Task<ContextSelectionFlowSession> OpenSessionAsync()
     {
-        var channel = CreateChannel();
-        var headers = await LoginAsync(channel);
-        var projectId = await AddProjectAsync(channel, headers);
+        var channel = _factory.CreateGrpcChannel();
+        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
+        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
         return new ContextSelectionFlowSession(
             channel, headers, projectId, ShortGuid.NewShortGuid(),
             new HierarchyService.HierarchyServiceClient(channel),
@@ -425,7 +397,7 @@ public class ContextSelectionFlowTests : IClassFixture<WebApplicationFactory<Pro
     {
         // Arrange.
         using var owner = await OpenSessionAsync();
-        using var otherChannel = CreateChannel();
+        using var otherChannel = _factory.CreateGrpcChannel();
         var otherHeaders = new Metadata { { SessionTokenHeader, "not-a-valid-session" } };
         var otherClient = new ContextService.ContextServiceClient(otherChannel);
 

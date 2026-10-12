@@ -1,10 +1,8 @@
-using EtAlii.Adp.Authentication.Wire;
 using EtAlii.Adp.Diagram.Wire;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Projects;
-using EtAlii.Adp.Projects.Wire;
+using EtAlii.Adp.TestSupport.Host;
 using Grpc.Core;
-using Grpc.Net.Client;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
@@ -12,7 +10,6 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 using Path = EtAlii.Adp.Documents.Wire.Path;
-using ProjectService = EtAlii.Adp.Projects.Wire.ProjectService;
 
 namespace EtAlii.Adp.Backend.Tests;
 
@@ -22,9 +19,6 @@ namespace EtAlii.Adp.Backend.Tests;
 /// </summary>
 public class C4SharedModelFlowTests : IClassFixture<WebApplicationFactory<Program>>, IDisposable
 {
-    private const string DeveloperUsername = "admin";
-    private const string DeveloperCredential = "changeme";
-    private const string SessionTokenHeader = "session-token";
     private static readonly TimeSpan MessageTimeout = TimeSpan.FromSeconds(10);
 
     private readonly WebApplicationFactory<Program> _factory;
@@ -94,9 +88,9 @@ public class C4SharedModelFlowTests : IClassFixture<WebApplicationFactory<Progra
     public async Task TwoRegistrationsOverOneDocument_EachOpenTheirOwnView()
     {
         // Arrange.
-        using var channel = CreateChannel();
-        var headers = await LoginAsync(channel);
-        var projectId = await AddProjectAsync(channel, headers);
+        using var channel = _factory.CreateGrpcChannel();
+        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
+        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
         var client = new DiagramService.DiagramServiceClient(channel);
 
         // Arrange, continued.
@@ -122,9 +116,9 @@ public class C4SharedModelFlowTests : IClassFixture<WebApplicationFactory<Progra
         // Arrange.
         // Requirement 2.6: a document dropped into the project on its own is still openable,
         // and shows the first view it declares.
-        using var channel = CreateChannel();
-        var headers = await LoginAsync(channel);
-        var projectId = await AddProjectAsync(channel, headers);
+        using var channel = _factory.CreateGrpcChannel();
+        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
+        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
         var client = new DiagramService.DiagramServiceClient(channel);
 
         // Act.
@@ -139,9 +133,9 @@ public class C4SharedModelFlowTests : IClassFixture<WebApplicationFactory<Progra
     public async Task EveryViewCarriesItsOwnTitle_SoTwoTabsOfOneModelAreTellableApart()
     {
         // Arrange.
-        using var channel = CreateChannel();
-        var headers = await LoginAsync(channel);
-        var projectId = await AddProjectAsync(channel, headers);
+        using var channel = _factory.CreateGrpcChannel();
+        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
+        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
         var client = new DiagramService.DiagramServiceClient(channel);
 
         // Act.
@@ -194,8 +188,7 @@ public class C4SharedModelFlowTests : IClassFixture<WebApplicationFactory<Progra
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
         cts.CancelAfter(MessageTimeout);
 
-        var path = new Path();
-        path.Segments.Add(fileName);
+        var path = Path.Of(fileName);
         using var call = client.Open(
             new OpenDiagramRequest { ProjectId = projectId, WatchId = ShortGuid.NewShortGuid(), Path = path },
             headers, cancellationToken: cts.Token);
@@ -217,31 +210,5 @@ public class C4SharedModelFlowTests : IClassFixture<WebApplicationFactory<Progra
         }
 
         return [];
-    }
-
-    private GrpcChannel CreateChannel()
-    {
-        var httpClient = _factory.CreateDefaultClient();
-        return GrpcChannel.ForAddress(httpClient.BaseAddress!, new GrpcChannelOptions { HttpClient = httpClient });
-    }
-
-    private static async Task<Metadata> LoginAsync(GrpcChannel channel)
-    {
-        var authClient = new AuthenticationService.AuthenticationServiceClient(channel);
-        var response = await authClient.LoginAsync(
-            new LoginRequest { Username = DeveloperUsername, Credential = DeveloperCredential },
-            cancellationToken: TestContext.Current.CancellationToken);
-        return new Metadata { { SessionTokenHeader, response.Session.Value } };
-    }
-
-    private async Task<Documents.Wire.ShortGuid> AddProjectAsync(GrpcChannel channel, Metadata headers)
-    {
-        var projectClient = new ProjectService.ProjectServiceClient(channel);
-        var pathMessage = new Path();
-        pathMessage.Segments.AddRange(_projectFolder.Split(IoPath.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries));
-        var response = await projectClient.AddProjectAsync(
-            new AddProjectRequest { Path = pathMessage }, headers,
-            cancellationToken: TestContext.Current.CancellationToken);
-        return response.Added.Id;
     }
 }

@@ -5,6 +5,7 @@ using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.Projects;
 using EtAlii.Adp.Projects.Wire;
+using EtAlii.Adp.TestSupport.Host;
 using Grpc.Core;
 using Grpc.Net.Client;
 using Microsoft.AspNetCore.Hosting;
@@ -198,8 +199,7 @@ public sealed class FilePromptFlowTests : IClassFixture<WebApplicationFactory<Pr
             new LoginRequest { Username = DeveloperUsername, Credential = DeveloperCredential }, cancellationToken: TestContext.Current.CancellationToken);
         var headers = new Metadata { { SessionTokenHeader, login.Session.Value } };
 
-        var pathMessage = new Path();
-        pathMessage.Segments.AddRange(_projectFolder.Split(IoPath.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries));
+        var pathMessage = Path.OfLocation(_projectFolder);
         var added = await new ProjectService.ProjectServiceClient(channel).AddProjectAsync(new AddProjectRequest { Path = pathMessage }, headers, cancellationToken: TestContext.Current.CancellationToken);
 
         var context = new ContextService.ContextServiceClient(channel);
@@ -210,7 +210,7 @@ public sealed class FilePromptFlowTests : IClassFixture<WebApplicationFactory<Pr
 
         var watch = context.Watch(new WatchContextRequest { ProjectId = added.Added.Id, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
         Assert.True(await watch.ResponseStream.MoveNext(cts.Token), "The stream ended before the baseline arrived.");
-        var pendingPrompt = ReadUntilPromptAsync(watch.ResponseStream, cts.Token);
+        var pendingPrompt = watch.ResponseStream.ReadUntilPromptAsync(cts.Token);
 
         // No source: the project root.
         var executed = await context.ExecuteActionAsync(
@@ -220,19 +220,6 @@ public sealed class FilePromptFlowTests : IClassFixture<WebApplicationFactory<Pr
         Assert.True(executed.Accepted, executed.Error);
 
         return new Asked(context, headers, interactionId, await pendingPrompt);
-    }
-
-    private static async Task<ContextPrompt> ReadUntilPromptAsync(IAsyncStreamReader<ContextMessage> stream, CancellationToken cancellationToken)
-    {
-        while (await stream.MoveNext(cancellationToken))
-        {
-            if (stream.Current.MessageCase == ContextMessage.MessageOneofCase.Prompt)
-            {
-                return stream.Current.Prompt;
-            }
-        }
-
-        throw new InvalidOperationException("The stream ended before a prompt arrived.");
     }
 
     private sealed record Asked(ContextService.ContextServiceClient Context, Metadata Headers, Documents.Wire.ShortGuid InteractionId, ContextPrompt Prompt);

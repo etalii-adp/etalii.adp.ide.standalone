@@ -279,8 +279,7 @@ public sealed class TableStreamFlowTests : IClassFixture<WebApplicationFactory<P
 
     private static Proto.OpenTableRequest OpenRequest(Session session, Documents.Wire.ShortGuid streamId, string fileName)
     {
-        var path = new Path();
-        path.Segments.Add(fileName);
+        var path = Path.Of(fileName);
         return new Proto.OpenTableRequest { ProjectId = session.ProjectId, WatchId = session.WatchId, StreamId = streamId, Path = path };
     }
 
@@ -333,8 +332,7 @@ public sealed class TableStreamFlowTests : IClassFixture<WebApplicationFactory<P
         var login = await authClient.LoginAsync(new LoginRequest { Username = DeveloperUsername, Credential = DeveloperCredential }, cancellationToken: TestContext.Current.CancellationToken);
         var headers = new Metadata { { SessionTokenHeader, login.Session.Value } };
 
-        var pathMessage = new Path();
-        pathMessage.Segments.AddRange(_projectFolder.Split(IoPath.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries));
+        var pathMessage = Path.OfLocation(_projectFolder);
         var added = await new ProjectService.ProjectServiceClient(channel).AddProjectAsync(new AddProjectRequest { Path = pathMessage }, headers, cancellationToken: TestContext.Current.CancellationToken);
 
         return new Session(

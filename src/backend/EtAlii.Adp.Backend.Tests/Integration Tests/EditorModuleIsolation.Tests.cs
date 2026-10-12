@@ -1,11 +1,9 @@
 using System.Text;
-using EtAlii.Adp.Authentication.Wire;
 using EtAlii.Adp.Diagram.Wire;
 using EtAlii.Adp.Editor;
 using EtAlii.Adp.Projects;
-using EtAlii.Adp.Projects.Wire;
+using EtAlii.Adp.TestSupport.Host;
 using Grpc.Core;
-using Grpc.Net.Client;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
@@ -13,7 +11,6 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 using Path = EtAlii.Adp.Documents.Wire.Path;
-using ProjectService = EtAlii.Adp.Projects.Wire.ProjectService;
 
 namespace EtAlii.Adp.Backend.Tests;
 
@@ -25,10 +22,6 @@ namespace EtAlii.Adp.Backend.Tests;
 /// </summary>
 public class EditorModuleIsolationTests : IClassFixture<WebApplicationFactory<Program>>, IDisposable
 {
-    private const string DeveloperUsername = "admin";
-    private const string DeveloperCredential = "changeme";
-    private const string SessionTokenHeader = "session-token";
-
     private readonly string _appDataRoot;
     private readonly string _projectFolder;
     private readonly WebApplicationFactory<Program> _factory;
@@ -100,15 +93,14 @@ public class EditorModuleIsolationTests : IClassFixture<WebApplicationFactory<Pr
     public async Task AThrowingEditorModule_CostsItsOwnTabAndNothingElse()
     {
         // Arrange.
-        using var channel = CreateChannel();
-        var headers = await LoginAsync(channel);
-        var projectId = await AddProjectAsync(channel, headers);
+        using var channel = _factory.CreateGrpcChannel();
+        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
+        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
         var diagramClient = new DiagramService.DiagramServiceClient(channel);
         var watchId = ShortGuid.NewShortGuid();
 
         // Act 1: the broken module's file. Its stream fails - that tab shows an error.
-        var boomPath = new Path();
-        boomPath.Segments.Add("device.boom");
+        var boomPath = Path.Of("device.boom");
         using var boomCall = diagramClient.Open(new OpenDiagramRequest { ProjectId = projectId, WatchId = watchId, Path = boomPath }, headers, deadline: DateTime.UtcNow.AddSeconds(30), cancellationToken: TestContext.Current.CancellationToken);
         await Assert.ThrowsAsync<RpcException>(async () =>
         {
@@ -118,8 +110,7 @@ public class EditorModuleIsolationTests : IClassFixture<WebApplicationFactory<Pr
         });
 
         // Act 2: the same connection opens a healthy file afterwards.
-        var notesPath = new Path();
-        notesPath.Segments.Add("notes.txt");
+        var notesPath = Path.Of("notes.txt");
         using var notesCall = diagramClient.Open(new OpenDiagramRequest { ProjectId = projectId, WatchId = watchId, Path = notesPath }, headers, deadline: DateTime.UtcNow.AddSeconds(30), cancellationToken: TestContext.Current.CancellationToken);
         Assert.True(await notesCall.ResponseStream.MoveNext(TestContext.Current.CancellationToken));
 
@@ -128,32 +119,5 @@ public class EditorModuleIsolationTests : IClassFixture<WebApplicationFactory<Pr
         var element = Assert.Single(add.Elements);
         Assert.Equal("editor/plain", element.Type);
         Assert.Equal("still standing\n", Encoding.UTF8.GetString(element.Payload!.Value.Span));
-    }
-
-    private GrpcChannel CreateChannel()
-    {
-        var httpClient = _factory.CreateDefaultClient();
-        return GrpcChannel.ForAddress(httpClient.BaseAddress!, new GrpcChannelOptions { HttpClient = httpClient });
-    }
-
-    private static async Task<Metadata> LoginAsync(GrpcChannel channel)
-    {
-        var authClient = new AuthenticationService.AuthenticationServiceClient(channel);
-        var response = await authClient.LoginAsync(
-            new LoginRequest { Username = DeveloperUsername, Credential = DeveloperCredential },
-            cancellationToken: TestContext.Current.CancellationToken);
-        return new Metadata { { SessionTokenHeader, response.Session.Value } };
-    }
-
-    private async Task<Documents.Wire.ShortGuid> AddProjectAsync(GrpcChannel channel, Metadata headers)
-    {
-        var projectClient = new ProjectService.ProjectServiceClient(channel);
-        var pathMessage = new Path();
-        pathMessage.Segments.AddRange(_projectFolder.Split(IoPath.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries));
-        var response = await projectClient.AddProjectAsync(
-            new AddProjectRequest { Path = pathMessage },
-            headers,
-            cancellationToken: TestContext.Current.CancellationToken);
-        return response.Added.Id;
     }
 }

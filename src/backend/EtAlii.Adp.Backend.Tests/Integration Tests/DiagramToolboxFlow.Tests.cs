@@ -1,9 +1,6 @@
-using EtAlii.Adp.Authentication.Wire;
 using EtAlii.Adp.Diagram.Wire;
 using EtAlii.Adp.Projects;
-using EtAlii.Adp.Projects.Wire;
-using Grpc.Core;
-using Grpc.Net.Client;
+using EtAlii.Adp.TestSupport.Host;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
@@ -11,7 +8,6 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 using Path = EtAlii.Adp.Documents.Wire.Path;
-using ProjectService = EtAlii.Adp.Projects.Wire.ProjectService;
 
 namespace EtAlii.Adp.Backend.Tests;
 
@@ -23,10 +19,6 @@ namespace EtAlii.Adp.Backend.Tests;
 /// </summary>
 public class DiagramToolboxFlowTests : IClassFixture<WebApplicationFactory<Program>>, IDisposable
 {
-    private const string DeveloperUsername = "admin";
-    private const string DeveloperCredential = "changeme";
-    private const string SessionTokenHeader = "session-token";
-
     private readonly WebApplicationFactory<Program> _factory;
     private readonly string _appDataRoot;
     private readonly string _projectFolder;
@@ -81,14 +73,14 @@ public class DiagramToolboxFlowTests : IClassFixture<WebApplicationFactory<Progr
     public async Task AMindmapAnswersWithTheModulesPalette_AndItsDropRunsTheAddChildAction()
     {
         // Arrange.
-        using var channel = CreateChannel();
+        using var channel = _factory.CreateGrpcChannel();
         var diagramClient = new DiagramService.DiagramServiceClient(channel);
-        var headers = await LoginAsync(channel);
-        var projectId = await AddProjectAsync(channel, headers);
+        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
+        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
 
         // Act.
         var response = await diagramClient.DescribeToolboxAsync(
-            new DescribeToolboxRequest { ProjectId = projectId, Path = PathOf("roadmap.adp") },
+            new DescribeToolboxRequest { ProjectId = projectId, Path = Path.Of("roadmap.adp") },
             headers, cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert.
@@ -103,17 +95,17 @@ public class DiagramToolboxFlowTests : IClassFixture<WebApplicationFactory<Progr
     public async Task AFileNoDiagramTypeClaims_AnswersWithAnEmptyPalette()
     {
         // Arrange.
-        using var channel = CreateChannel();
+        using var channel = _factory.CreateGrpcChannel();
         var diagramClient = new DiagramService.DiagramServiceClient(channel);
-        var headers = await LoginAsync(channel);
-        var projectId = await AddProjectAsync(channel, headers);
+        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
+        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
 
         // Act: unroutable and non-existent both answer the same, non-revealing way.
         var unroutable = await diagramClient.DescribeToolboxAsync(
-            new DescribeToolboxRequest { ProjectId = projectId, Path = PathOf("notes.txt") },
+            new DescribeToolboxRequest { ProjectId = projectId, Path = Path.Of("notes.txt") },
             headers, cancellationToken: TestContext.Current.CancellationToken);
         var missing = await diagramClient.DescribeToolboxAsync(
-            new DescribeToolboxRequest { ProjectId = projectId, Path = PathOf("gone.adp") },
+            new DescribeToolboxRequest { ProjectId = projectId, Path = Path.Of("gone.adp") },
             headers, cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert.
@@ -125,14 +117,12 @@ public class DiagramToolboxFlowTests : IClassFixture<WebApplicationFactory<Progr
     public async Task AWardleyMapInASubfolderWithASpace_AnswersWithTheModulesPalette()
     {
         // Arrange.
-        using var channel = CreateChannel();
+        using var channel = _factory.CreateGrpcChannel();
         var diagramClient = new DiagramService.DiagramServiceClient(channel);
-        var headers = await LoginAsync(channel);
-        var projectId = await AddProjectAsync(channel, headers);
+        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
+        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
 
-        var path = new Path();
-        path.Segments.Add("example 1");
-        path.Segments.Add("tea.adp");
+        var path = Path.Of("example 1", "tea.adp");
 
         // Act.
         var response = await diagramClient.DescribeToolboxAsync(
@@ -144,34 +134,5 @@ public class DiagramToolboxFlowTests : IClassFixture<WebApplicationFactory<Progr
             ["Component", "Anchor", "Market", "Ecosystem", "Submap", "Pipeline", "Note", "Annotation"],
             response.Items.Select(item => item.Label));
         Assert.DoesNotContain(response.Items, item => item.DropActionId.Length == 0);
-    }
-
-    private static Path PathOf(string fileName)
-    {
-        var path = new Path();
-        path.Segments.Add(fileName);
-        return path;
-    }
-
-    private GrpcChannel CreateChannel()
-    {
-        var httpClient = _factory.CreateDefaultClient();
-        return GrpcChannel.ForAddress(httpClient.BaseAddress!, new GrpcChannelOptions { HttpClient = httpClient });
-    }
-
-    private static async Task<Metadata> LoginAsync(GrpcChannel channel)
-    {
-        var authClient = new AuthenticationService.AuthenticationServiceClient(channel);
-        var response = await authClient.LoginAsync(new LoginRequest { Username = DeveloperUsername, Credential = DeveloperCredential }, cancellationToken: TestContext.Current.CancellationToken);
-        return new Metadata { { SessionTokenHeader, response.Session.Value } };
-    }
-
-    private async Task<ShortGuid> AddProjectAsync(GrpcChannel channel, Metadata headers)
-    {
-        var projectClient = new ProjectService.ProjectServiceClient(channel);
-        var pathMessage = new Path();
-        pathMessage.Segments.AddRange(_projectFolder.Split(IoPath.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries));
-        var response = await projectClient.AddProjectAsync(new AddProjectRequest { Path = pathMessage }, headers, cancellationToken: TestContext.Current.CancellationToken);
-        return response.Added.Id;
     }
 }

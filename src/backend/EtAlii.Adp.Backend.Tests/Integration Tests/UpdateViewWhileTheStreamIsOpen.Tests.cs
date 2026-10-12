@@ -119,8 +119,7 @@ public sealed class UpdateViewWhileTheStreamIsOpenTests : IDisposable
         var project = _projects.Add(userId, "wedge", new PathRecord(_projectFolder.Split(IoPath.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries)));
         var watchId = ShortGuid.NewShortGuid();
 
-        var registration = new Path();
-        registration.Segments.Add("bottling-mes.plant-landscape.adp");
+        var registration = Path.Of("bottling-mes.plant-landscape.adp");
 
         // Act, part one. Open streams until cancelled, so it runs alongside rather than being
         // awaited - exactly as it does for a browser holding the stream open.

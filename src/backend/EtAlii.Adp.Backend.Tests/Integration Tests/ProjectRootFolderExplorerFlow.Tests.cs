@@ -1,10 +1,8 @@
-using EtAlii.Adp.Authentication.Wire;
 using EtAlii.Adp.Hierarchy.Wire;
 using EtAlii.Adp.Projects;
 using EtAlii.Adp.Projects.Wire;
 using EtAlii.Adp.TestSupport.Host;
 using Grpc.Core;
-using Grpc.Net.Client;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
@@ -24,9 +22,6 @@ namespace EtAlii.Adp.Backend.Tests;
 /// </summary>
 public class ProjectRootFolderExplorerFlowTests : IClassFixture<WebApplicationFactory<Program>>, IDisposable
 {
-    private const string DeveloperUsername = "admin";
-    private const string DeveloperCredential = "changeme";
-    private const string SessionTokenHeader = "session-token";
     private static readonly TimeSpan MessageTimeout = TimeSpan.FromSeconds(10);
 
     private readonly WebApplicationFactory<Program> _factory;
@@ -75,22 +70,9 @@ public class ProjectRootFolderExplorerFlowTests : IClassFixture<WebApplicationFa
         return cts;
     }
 
-    private GrpcChannel CreateChannel()
-    {
-        var httpClient = _factory.CreateDefaultClient();
-        return GrpcChannel.ForAddress(httpClient.BaseAddress!, new GrpcChannelOptions { HttpClient = httpClient });
-    }
-
-    private static async Task<Metadata> LoginAsync(AuthenticationService.AuthenticationServiceClient authClient)
-    {
-        var response = await authClient.LoginAsync(new LoginRequest { Username = DeveloperUsername, Credential = DeveloperCredential }, cancellationToken: TestContext.Current.CancellationToken);
-        return new Metadata { { SessionTokenHeader, response.Session.Value } };
-    }
-
     private async Task<ShortGuid> AddProjectAsync(ProjectService.ProjectServiceClient projectClient, Metadata headers)
     {
-        var pathMessage = new Path();
-        pathMessage.Segments.AddRange(_projectFolder.Split(IoPath.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries));
+        var pathMessage = Path.OfLocation(_projectFolder);
         var response = await projectClient.AddProjectAsync(new AddProjectRequest { Path = pathMessage }, headers, cancellationToken: TestContext.Current.CancellationToken);
         return response.Added.Id;
     }
@@ -107,22 +89,7 @@ public class ProjectRootFolderExplorerFlowTests : IClassFixture<WebApplicationFa
         await StreamProbe.WaitUntilHierarchyLiveAsync(call.ResponseStream, _projectFolder, cts.Token);
         triggerChange();
 
-        return await ReadUntilChangeAsync(call.ResponseStream, change => change.ChangeCase == wanted, cts.Token);
-    }
-
-    private static async Task<HierarchyChange> ReadUntilChangeAsync(
-        IAsyncStreamReader<HierarchyMessage> stream, Func<HierarchyChange, bool> wanted, CancellationToken cancellationToken)
-    {
-        while (await stream.MoveNext(cancellationToken))
-        {
-            var message = stream.Current;
-            if (message.MessageCase == HierarchyMessage.MessageOneofCase.Change && wanted(message.Change))
-            {
-                return message.Change;
-            }
-        }
-
-        throw new InvalidOperationException("The stream ended before the expected change arrived.");
+        return await call.ResponseStream.ReadUntilChangeAsync(change => change.ChangeCase == wanted, cts.Token);
     }
 
     [Fact]
@@ -134,10 +101,10 @@ public class ProjectRootFolderExplorerFlowTests : IClassFixture<WebApplicationFa
         await File.WriteAllTextAsync(IoPath.Combine(_projectFolder, "top.txt"), "", TestContext.Current.CancellationToken);
 
         // Arrange, continued.
-        using var channel = CreateChannel();
+        using var channel = _factory.CreateGrpcChannel();
         var projectClient = new ProjectService.ProjectServiceClient(channel);
         var hierarchyClient = new HierarchyService.HierarchyServiceClient(channel);
-        var headers = await LoginAsync(new AuthenticationService.AuthenticationServiceClient(channel));
+        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
         var projectId = await AddProjectAsync(projectClient, headers);
 
         // Act.
@@ -161,10 +128,10 @@ public class ProjectRootFolderExplorerFlowTests : IClassFixture<WebApplicationFa
         await File.WriteAllTextAsync(IoPath.Combine(_projectFolder, "shared.txt"), "", TestContext.Current.CancellationToken);
 
         // Arrange, continued.
-        using var channel = CreateChannel();
+        using var channel = _factory.CreateGrpcChannel();
         var projectClient = new ProjectService.ProjectServiceClient(channel);
         var hierarchyClient = new HierarchyService.HierarchyServiceClient(channel);
-        var headers = await LoginAsync(new AuthenticationService.AuthenticationServiceClient(channel));
+        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
         var projectId = await AddProjectAsync(projectClient, headers);
 
         // Arrange, continued.
@@ -194,8 +161,8 @@ public class ProjectRootFolderExplorerFlowTests : IClassFixture<WebApplicationFa
 
         // Act.
         await File.WriteAllTextAsync(IoPath.Combine(_projectFolder, "new.txt"), "", TestContext.Current.CancellationToken);
-        var changeA = await ReadUntilChangeAsync(callA.ResponseStream, IsTheNewFile, ctsA.Token);
-        var changeB = await ReadUntilChangeAsync(callB.ResponseStream, IsTheNewFile, ctsB.Token);
+        var changeA = await callA.ResponseStream.ReadUntilChangeAsync(IsTheNewFile, ctsA.Token);
+        var changeB = await callB.ResponseStream.ReadUntilChangeAsync(IsTheNewFile, ctsB.Token);
 
         // Assert.
         Assert.Equal(HierarchyChange.ChangeOneofCase.Created, changeA.ChangeCase);
@@ -216,10 +183,10 @@ public class ProjectRootFolderExplorerFlowTests : IClassFixture<WebApplicationFa
         await File.WriteAllTextAsync(originalPath, "", TestContext.Current.CancellationToken);
 
         // Arrange, continued.
-        using var channel = CreateChannel();
+        using var channel = _factory.CreateGrpcChannel();
         var projectClient = new ProjectService.ProjectServiceClient(channel);
         var hierarchyClient = new HierarchyService.HierarchyServiceClient(channel);
-        var headers = await LoginAsync(new AuthenticationService.AuthenticationServiceClient(channel));
+        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
         var projectId = await AddProjectAsync(projectClient, headers);
         var watchId = ShortGuid.NewShortGuid();
 
@@ -245,10 +212,10 @@ public class ProjectRootFolderExplorerFlowTests : IClassFixture<WebApplicationFa
     public async Task RootFolderDeletedWhileWatched_PushesRootUnavailable_AndRecoversOnceRecreated()
     {
         // Arrange.
-        using var channel = CreateChannel();
+        using var channel = _factory.CreateGrpcChannel();
         var projectClient = new ProjectService.ProjectServiceClient(channel);
         var hierarchyClient = new HierarchyService.HierarchyServiceClient(channel);
-        var headers = await LoginAsync(new AuthenticationService.AuthenticationServiceClient(channel));
+        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
         var projectId = await AddProjectAsync(projectClient, headers);
         var watchId = ShortGuid.NewShortGuid();
 

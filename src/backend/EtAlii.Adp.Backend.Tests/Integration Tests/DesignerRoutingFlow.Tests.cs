@@ -1,12 +1,10 @@
 using System.Text;
-using EtAlii.Adp.Authentication.Wire;
 using EtAlii.Adp.Designer;
 using EtAlii.Adp.Diagram.Wire;
 using EtAlii.Adp.Problems;
 using EtAlii.Adp.Projects;
-using EtAlii.Adp.Projects.Wire;
+using EtAlii.Adp.TestSupport.Host;
 using Grpc.Core;
-using Grpc.Net.Client;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
@@ -14,7 +12,6 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 using Path = EtAlii.Adp.Documents.Wire.Path;
-using ProjectService = EtAlii.Adp.Projects.Wire.ProjectService;
 
 namespace EtAlii.Adp.Backend.Tests;
 
@@ -31,10 +28,6 @@ namespace EtAlii.Adp.Backend.Tests;
 /// </remarks>
 public class DesignerRoutingFlowTests : IClassFixture<WebApplicationFactory<Program>>, IDisposable
 {
-    private const string DeveloperUsername = "admin";
-    private const string DeveloperCredential = "changeme";
-    private const string SessionTokenHeader = "session-token";
-
     private static readonly DesignerDefinition Sheet =
         new("fixture/sheet", "Fixture sheet", Formats: [new DesignerFormat("YAML", ".yaml")]);
 
@@ -86,9 +79,9 @@ public class DesignerRoutingFlowTests : IClassFixture<WebApplicationFactory<Prog
     public async Task OpeningADesignersDocument_IsRefusedByName_AndNeverOpensAsText(string file)
     {
         // Arrange.
-        using var channel = CreateChannel();
-        var headers = await LoginAsync(channel);
-        var projectId = await AddProjectAsync(channel, headers);
+        using var channel = _factory.CreateGrpcChannel();
+        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
+        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
         var client = new DiagramService.DiagramServiceClient(channel);
 
         // Act.
@@ -111,9 +104,9 @@ public class DesignerRoutingFlowTests : IClassFixture<WebApplicationFactory<Prog
     public async Task AFileOfTheSameKindThatNoRegistrationNames_StillOpensInItsEditor()
     {
         // Arrange.
-        using var channel = CreateChannel();
-        var headers = await LoginAsync(channel);
-        var projectId = await AddProjectAsync(channel, headers);
+        using var channel = _factory.CreateGrpcChannel();
+        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
+        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
         var client = new DiagramService.DiagramServiceClient(channel);
 
         // Act.
@@ -144,35 +137,7 @@ public class DesignerRoutingFlowTests : IClassFixture<WebApplicationFactory<Prog
 
     private static OpenDiagramRequest Request(Documents.Wire.ShortGuid projectId, string file)
     {
-        var path = new Path();
-        path.Segments.Add(file);
+        var path = Path.Of(file);
         return new OpenDiagramRequest { ProjectId = projectId, WatchId = ShortGuid.NewShortGuid(), Path = path };
-    }
-
-    private GrpcChannel CreateChannel()
-    {
-        var httpClient = _factory.CreateDefaultClient();
-        return GrpcChannel.ForAddress(httpClient.BaseAddress!, new GrpcChannelOptions { HttpClient = httpClient });
-    }
-
-    private static async Task<Metadata> LoginAsync(GrpcChannel channel)
-    {
-        var authClient = new AuthenticationService.AuthenticationServiceClient(channel);
-        var response = await authClient.LoginAsync(
-            new LoginRequest { Username = DeveloperUsername, Credential = DeveloperCredential },
-            cancellationToken: TestContext.Current.CancellationToken);
-        return new Metadata { { SessionTokenHeader, response.Session.Value } };
-    }
-
-    private async Task<Documents.Wire.ShortGuid> AddProjectAsync(GrpcChannel channel, Metadata headers)
-    {
-        var projectClient = new ProjectService.ProjectServiceClient(channel);
-        var pathMessage = new Path();
-        pathMessage.Segments.AddRange(_projectFolder.Split(IoPath.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries));
-        var response = await projectClient.AddProjectAsync(
-            new AddProjectRequest { Path = pathMessage },
-            headers,
-            cancellationToken: TestContext.Current.CancellationToken);
-        return response.Added.Id;
     }
 }

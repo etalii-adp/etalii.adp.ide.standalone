@@ -1,15 +1,12 @@
-using EtAlii.Adp.Authentication.Wire;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Context.Wire;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.Hierarchy.Wire;
 using EtAlii.Adp.Projects;
-using EtAlii.Adp.Projects.Wire;
 using EtAlii.Adp.TestSupport.Host;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
-using Grpc.Net.Client;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
@@ -18,8 +15,6 @@ using Xunit;
 using ContextService = EtAlii.Adp.Context.Wire.ContextService;
 using HierarchyService = EtAlii.Adp.Hierarchy.Wire.HierarchyService;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
-using Path = EtAlii.Adp.Documents.Wire.Path;
-using ProjectService = EtAlii.Adp.Projects.Wire.ProjectService;
 
 namespace EtAlii.Adp.Backend.Tests;
 
@@ -33,9 +28,6 @@ namespace EtAlii.Adp.Backend.Tests;
 /// </summary>
 public class UndoRedoFlowTests : IClassFixture<WebApplicationFactory<Program>>, IDisposable
 {
-    private const string DeveloperUsername = "admin";
-    private const string DeveloperCredential = "changeme";
-    private const string SessionTokenHeader = "session-token";
     private static readonly TimeSpan MessageTimeout = TimeSpan.FromSeconds(10);
 
     private readonly WebApplicationFactory<Program> _factory;
@@ -80,11 +72,11 @@ public class UndoRedoFlowTests : IClassFixture<WebApplicationFactory<Program>>, 
     {
         // Arrange.
         await File.WriteAllTextAsync(IoPath.Combine(_projectFolder, "original.txt"), "content", TestContext.Current.CancellationToken);
-        using var channel = CreateChannel();
+        using var channel = _factory.CreateGrpcChannel();
         var hierarchyClient = new HierarchyService.HierarchyServiceClient(channel);
         var contextClient = new ContextService.ContextServiceClient(channel);
-        var headers = await LoginAsync(channel);
-        var projectId = await AddProjectAsync(channel, headers);
+        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
+        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
         var watchId = ShortGuid.NewShortGuid();
         var entryId = await EntryIdOfAsync(hierarchyClient, projectId, watchId, headers, "original.txt");
 
@@ -97,7 +89,7 @@ public class UndoRedoFlowTests : IClassFixture<WebApplicationFactory<Program>>, 
         // Act and assert, step by step.
         // Rename original.txt -> renamed.txt through the context action, then let the first
         // (forward) rename change drain off the hierarchy stream.
-        var pendingForward = ReadUntilChangeAsync(hierarchyCall.ResponseStream, HierarchyChange.ChangeOneofCase.Renamed, cts.Token);
+        var pendingForward = hierarchyCall.ResponseStream.ReadUntilChangeAsync(HierarchyChange.ChangeOneofCase.Renamed, cts.Token);
         await RenameViaContextAsync(contextClient, projectId, watchId, headers, entryId, contextCall.ResponseStream, cts.Token, "renamed.txt");
         await pendingForward;
         Assert.True(File.Exists(IoPath.Combine(_projectFolder, "renamed.txt")));
@@ -107,7 +99,7 @@ public class UndoRedoFlowTests : IClassFixture<WebApplicationFactory<Program>>, 
         Assert.True(UndoOf(afterRename).Available);
 
         // Undo through the project-scoped action, with no prompt: it completes at once.
-        var pendingReverse = ReadUntilChangeAsync(hierarchyCall.ResponseStream, HierarchyChange.ChangeOneofCase.Renamed, cts.Token);
+        var pendingReverse = hierarchyCall.ResponseStream.ReadUntilChangeAsync(HierarchyChange.ChangeOneofCase.Renamed, cts.Token);
         var undone = await ExecuteProjectActionAsync(contextClient, projectId, watchId, headers, HistoryContextActionProvider.UndoActionId);
         Assert.True(undone.Accepted, undone.Error);
 
@@ -126,12 +118,12 @@ public class UndoRedoFlowTests : IClassFixture<WebApplicationFactory<Program>>, 
         await File.WriteAllTextAsync(IoPath.Combine(_projectFolder, "a.txt"), "", TestContext.Current.CancellationToken);
         await File.WriteAllTextAsync(IoPath.Combine(otherFolder, "b.txt"), "", TestContext.Current.CancellationToken);
 
-        using var channel = CreateChannel();
+        using var channel = _factory.CreateGrpcChannel();
         var hierarchyClient = new HierarchyService.HierarchyServiceClient(channel);
         var contextClient = new ContextService.ContextServiceClient(channel);
-        var headers = await LoginAsync(channel);
-        var projectA = await AddProjectAsync(channel, headers, _projectFolder);
-        var projectB = await AddProjectAsync(channel, headers, otherFolder);
+        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
+        var projectA = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
+        var projectB = await channel.AddProjectAsync(headers, otherFolder, TestContext.Current.CancellationToken);
         var watchA = ShortGuid.NewShortGuid();
         var watchB = ShortGuid.NewShortGuid();
         var entryA = await EntryIdOfAsync(hierarchyClient, projectA, watchA, headers, "a.txt");
@@ -166,11 +158,11 @@ public class UndoRedoFlowTests : IClassFixture<WebApplicationFactory<Program>>, 
         // Arrange.
         await File.WriteAllTextAsync(IoPath.Combine(_projectFolder, "shared.txt"), "content", TestContext.Current.CancellationToken);
 
-        using var channel = CreateChannel();
+        using var channel = _factory.CreateGrpcChannel();
         var hierarchyClient = new HierarchyService.HierarchyServiceClient(channel);
         var contextClient = new ContextService.ContextServiceClient(channel);
-        var headers = await LoginAsync(channel);
-        var projectId = await AddProjectAsync(channel, headers);
+        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
+        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
         var watchA = ShortGuid.NewShortGuid();
         var watchB = ShortGuid.NewShortGuid();
         var entryId = await EntryIdOfAsync(hierarchyClient, projectId, watchA, headers, "shared.txt");
@@ -208,11 +200,11 @@ public class UndoRedoFlowTests : IClassFixture<WebApplicationFactory<Program>>, 
         await File.WriteAllTextAsync(IoPath.Combine(_projectFolder, "keep.txt"), "content", TestContext.Current.CancellationToken);
         await File.WriteAllTextAsync(IoPath.Combine(_projectFolder, "doomed.txt"), "", TestContext.Current.CancellationToken);
 
-        using var channel = CreateChannel();
+        using var channel = _factory.CreateGrpcChannel();
         var hierarchyClient = new HierarchyService.HierarchyServiceClient(channel);
         var contextClient = new ContextService.ContextServiceClient(channel);
-        var headers = await LoginAsync(channel);
-        var projectId = await AddProjectAsync(channel, headers);
+        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
+        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
         var watchId = ShortGuid.NewShortGuid();
         var keepId = await EntryIdOfAsync(hierarchyClient, projectId, watchId, headers, "keep.txt");
         var doomedId = await EntryIdOfAsync(hierarchyClient, projectId, watchId, headers, "doomed.txt");
@@ -249,28 +241,6 @@ public class UndoRedoFlowTests : IClassFixture<WebApplicationFactory<Program>>, 
         return cts;
     }
 
-    private GrpcChannel CreateChannel()
-    {
-        var httpClient = _factory.CreateDefaultClient();
-        return GrpcChannel.ForAddress(httpClient.BaseAddress!, new GrpcChannelOptions { HttpClient = httpClient });
-    }
-
-    private static async Task<Metadata> LoginAsync(GrpcChannel channel)
-    {
-        var authClient = new AuthenticationService.AuthenticationServiceClient(channel);
-        var response = await authClient.LoginAsync(new LoginRequest { Username = DeveloperUsername, Credential = DeveloperCredential }, cancellationToken: TestContext.Current.CancellationToken);
-        return new Metadata { { SessionTokenHeader, response.Session.Value } };
-    }
-
-    private async Task<ShortGuid> AddProjectAsync(GrpcChannel channel, Metadata headers, string? folder = null)
-    {
-        var projectClient = new ProjectService.ProjectServiceClient(channel);
-        var pathMessage = new Path();
-        pathMessage.Segments.AddRange((folder ?? _projectFolder).Split(IoPath.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries));
-        var response = await projectClient.AddProjectAsync(new AddProjectRequest { Path = pathMessage }, headers, cancellationToken: TestContext.Current.CancellationToken);
-        return response.Added.Id;
-    }
-
     private static async Task<ShortGuid> EntryIdOfAsync(
         HierarchyService.HierarchyServiceClient client, ShortGuid projectId, ShortGuid watchId, Metadata headers, string name)
     {
@@ -284,7 +254,7 @@ public class UndoRedoFlowTests : IClassFixture<WebApplicationFactory<Program>>, 
         ShortGuid entryId, IAsyncStreamReader<ContextMessage> contextStream, CancellationToken cancellationToken, string newName)
     {
         var interactionId = ShortGuid.NewShortGuid();
-        var pendingPrompt = ReadUntilPromptAsync(contextStream, cancellationToken);
+        var pendingPrompt = contextStream.ReadUntilPromptAsync(cancellationToken);
 
         var executed = await contextClient.ExecuteActionAsync(
             new ExecuteActionRequest
@@ -313,7 +283,7 @@ public class UndoRedoFlowTests : IClassFixture<WebApplicationFactory<Program>>, 
         ShortGuid entryId, IAsyncStreamReader<ContextMessage> contextStream, CancellationToken cancellationToken)
     {
         var interactionId = ShortGuid.NewShortGuid();
-        var pendingPrompt = ReadUntilPromptAsync(contextStream, cancellationToken);
+        var pendingPrompt = contextStream.ReadUntilPromptAsync(cancellationToken);
 
         var executed = await contextClient.ExecuteActionAsync(
             new ExecuteActionRequest
@@ -350,19 +320,6 @@ public class UndoRedoFlowTests : IClassFixture<WebApplicationFactory<Program>>, 
             headers,
             cancellationToken: TestContext.Current.CancellationToken).ResponseAsync;
 
-    private static async Task<ContextPrompt> ReadUntilPromptAsync(IAsyncStreamReader<ContextMessage> stream, CancellationToken cancellationToken)
-    {
-        while (await stream.MoveNext(cancellationToken))
-        {
-            if (stream.Current.MessageCase == ContextMessage.MessageOneofCase.Prompt)
-            {
-                return stream.Current.Prompt;
-            }
-        }
-
-        throw new InvalidOperationException("The stream ended before a prompt arrived.");
-    }
-
     /// <summary>
     /// Reads project-actions messages until one matches the wanted Undo availability (or the
     /// first, when none is asked for) - so a test can wait past the baseline for the push a
@@ -386,21 +343,6 @@ public class UndoRedoFlowTests : IClassFixture<WebApplicationFactory<Program>>, 
         }
 
         throw new InvalidOperationException("The stream ended before the expected project-actions message arrived.");
-    }
-
-    private static async Task<HierarchyChange> ReadUntilChangeAsync(
-        IAsyncStreamReader<HierarchyMessage> stream, HierarchyChange.ChangeOneofCase wanted, CancellationToken cancellationToken)
-    {
-        while (await stream.MoveNext(cancellationToken))
-        {
-            var message = stream.Current;
-            if (message.MessageCase == HierarchyMessage.MessageOneofCase.Change && message.Change.ChangeCase == wanted)
-            {
-                return message.Change;
-            }
-        }
-
-        throw new InvalidOperationException($"The stream ended before a {wanted} change arrived.");
     }
 
     private static ContextAction UndoOf(ContextProjectActions actions) =>

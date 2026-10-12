@@ -1,4 +1,3 @@
-using EtAlii.Adp.Authentication.Wire;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Context.Wire;
 using EtAlii.Adp.Diagram.WardleyMap;
@@ -7,11 +6,9 @@ using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.Hierarchy.Wire;
 using EtAlii.Adp.Projects;
-using EtAlii.Adp.Projects.Wire;
 using EtAlii.Adp.TestSupport.Host;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
-using Grpc.Net.Client;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
@@ -21,7 +18,6 @@ using ContextService = EtAlii.Adp.Context.Wire.ContextService;
 using HierarchyService = EtAlii.Adp.Hierarchy.Wire.HierarchyService;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 using Path = EtAlii.Adp.Documents.Wire.Path;
-using ProjectService = EtAlii.Adp.Projects.Wire.ProjectService;
 
 namespace EtAlii.Adp.Backend.Tests;
 
@@ -45,9 +41,6 @@ namespace EtAlii.Adp.Backend.Tests;
 /// </remarks>
 public class WardleyMapFlowTests : IClassFixture<WebApplicationFactory<Program>>, IDisposable
 {
-    private const string DeveloperUsername = "admin";
-    private const string DeveloperCredential = "changeme";
-    private const string SessionTokenHeader = "session-token";
     private static readonly TimeSpan MessageTimeout = TimeSpan.FromSeconds(10);
 
     private const string Map = """
@@ -109,9 +102,9 @@ public class WardleyMapFlowTests : IClassFixture<WebApplicationFactory<Program>>
     public async Task AMapOpens_AndDeliversItsElementsAndItsEvolutionAxis()
     {
         // Arrange.
-        using var channel = CreateChannel();
-        var headers = await LoginAsync(channel);
-        var projectId = await AddProjectAsync(channel, headers);
+        using var channel = _factory.CreateGrpcChannel();
+        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
+        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
         var client = new DiagramService.DiagramServiceClient(channel);
 
         // Act.
@@ -129,9 +122,9 @@ public class WardleyMapFlowTests : IClassFixture<WebApplicationFactory<Program>>
     {
         // Arrange. Requirement 2.5 - the extension is declared, so the body is openable on its
         // own without a registration being invented for it.
-        using var channel = CreateChannel();
-        var headers = await LoginAsync(channel);
-        var projectId = await AddProjectAsync(channel, headers);
+        using var channel = _factory.CreateGrpcChannel();
+        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
+        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
         var client = new DiagramService.DiagramServiceClient(channel);
 
         // Act.
@@ -146,9 +139,9 @@ public class WardleyMapFlowTests : IClassFixture<WebApplicationFactory<Program>>
     {
         // Arrange. Requirement 1.6 - the `.adp` carries the MIME line and the `.owm` sibling is
         // created beside it by this module's document factory, through the shared command.
-        using var channel = CreateChannel();
-        var headers = await LoginAsync(channel);
-        var projectId = await AddProjectAsync(channel, headers);
+        using var channel = _factory.CreateGrpcChannel();
+        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
+        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
         var watchId = ShortGuid.NewShortGuid();
         var contextClient = new ContextService.ContextServiceClient(channel);
 
@@ -157,7 +150,7 @@ public class WardleyMapFlowTests : IClassFixture<WebApplicationFactory<Program>>
             new WatchContextRequest { ProjectId = projectId, WatchId = watchId },
             headers, cancellationToken: TestContext.Current.CancellationToken);
         await StreamProbe.WaitUntilContextLiveAsync(contextCall.ResponseStream, cts.Token);
-        var pendingPrompt = ReadUntilPromptAsync(contextCall.ResponseStream, cts.Token);
+        var pendingPrompt = contextCall.ResponseStream.ReadUntilPromptAsync(cts.Token);
 
         // No source: the add lands on the connection's current selection, which with nothing
         // selected is the project's root folder - where a user's first "add a diagram" happens.
@@ -195,9 +188,9 @@ public class WardleyMapFlowTests : IClassFixture<WebApplicationFactory<Program>>
     {
         // Arrange. Requirement 7.2 - position is meaning here, so a drag goes through the
         // history like every other edit and lands in the `.owm`.
-        using var channel = CreateChannel();
-        var headers = await LoginAsync(channel);
-        var projectId = await AddProjectAsync(channel, headers);
+        using var channel = _factory.CreateGrpcChannel();
+        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
+        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
         var watchId = ShortGuid.NewShortGuid();
         var client = new DiagramService.DiagramServiceClient(channel);
         var contextClient = new ContextService.ContextServiceClient(channel);
@@ -206,13 +199,12 @@ public class WardleyMapFlowTests : IClassFixture<WebApplicationFactory<Program>>
         // connection - core will not edit a document a caller is not looking at - so the stream
         // stays open for the length of the test.
         using var cts = CreateMessageTimeout();
-        var path = new Path();
-        path.Segments.Add("tea.adp");
+        var path = Path.Of("tea.adp");
         using var call = client.Open(
             new OpenDiagramRequest { ProjectId = projectId, WatchId = watchId, Path = path },
             headers, cancellationToken: cts.Token);
 
-        var elements = await ReadAddAsync(call.ResponseStream, cts.Token);
+        var elements = await call.ResponseStream.ReadAddAsync(cts.Token);
         var kettle = elements.Single(element =>
             element.Type == WardleyElementTypes.Element &&
             WardleyElementPayload.Parser.ParseFrom(element.Payload.Value.Span).Name == "Kettle");
@@ -249,14 +241,13 @@ public class WardleyMapFlowTests : IClassFixture<WebApplicationFactory<Program>>
     {
         // Arrange. Requirement 10.6 - two connections hold ONE document between them, so an
         // edit through either is visible to the other without a reload.
-        using var channel = CreateChannel();
-        var headers = await LoginAsync(channel);
-        var projectId = await AddProjectAsync(channel, headers);
+        using var channel = _factory.CreateGrpcChannel();
+        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
+        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
         var client = new DiagramService.DiagramServiceClient(channel);
 
         using var cts = CreateMessageTimeout();
-        var path = new Path();
-        path.Segments.Add("tea.adp");
+        var path = Path.Of("tea.adp");
 
         // Two connections, each with the map open: the one that watches, and the one that drags.
         var watching = ShortGuid.NewShortGuid();
@@ -269,14 +260,14 @@ public class WardleyMapFlowTests : IClassFixture<WebApplicationFactory<Program>>
             new OpenDiagramRequest { ProjectId = projectId, WatchId = dragging, Path = path },
             headers, cancellationToken: cts.Token);
 
-        var baseline = await ReadAddAsync(watcher.ResponseStream, cts.Token);
-        await ReadAddAsync(dragger.ResponseStream, cts.Token);
+        var baseline = await watcher.ResponseStream.ReadAddAsync(cts.Token);
+        await dragger.ResponseStream.ReadAddAsync(cts.Token);
         var kettle = baseline.Single(element =>
             element.Type == WardleyElementTypes.Element &&
             WardleyElementPayload.Parser.ParseFrom(element.Payload.Value.Span).Name == "Kettle");
 
         // Act. The drag happens on the second connection; the first never asked for it.
-        var pendingUpdate = ReadAddAsync(watcher.ResponseStream, cts.Token);
+        var pendingUpdate = watcher.ResponseStream.ReadAddAsync(cts.Token);
         await client.MoveElementAsync(
             new MoveElementRequest
             {
@@ -311,9 +302,9 @@ public class WardleyMapFlowTests : IClassFixture<WebApplicationFactory<Program>>
         // The UNDO half is true today and is what this asserts: an edit ADP did not make never
         // became a command, so there is nothing on the history to step back through and the
         // other editor's work is not silently reverted.
-        using var channel = CreateChannel();
-        var headers = await LoginAsync(channel);
-        var projectId = await AddProjectAsync(channel, headers);
+        using var channel = _factory.CreateGrpcChannel();
+        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
+        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
         var watchId = ShortGuid.NewShortGuid();
         var contextClient = new ContextService.ContextServiceClient(channel);
 
@@ -339,9 +330,9 @@ public class WardleyMapFlowTests : IClassFixture<WebApplicationFactory<Program>>
     public async Task SelectingAnElement_PushesItsDetail_ItsActions_AndItsProperties()
     {
         // Arrange. Requirements 11.1-11.4 and 15: one click, and three panels can answer.
-        using var channel = CreateChannel();
-        var headers = await LoginAsync(channel);
-        var projectId = await AddProjectAsync(channel, headers);
+        using var channel = _factory.CreateGrpcChannel();
+        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
+        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
         var watchId = ShortGuid.NewShortGuid();
         var hierarchyClient = new HierarchyService.HierarchyServiceClient(channel);
         var contextClient = new ContextService.ContextServiceClient(channel);
@@ -418,9 +409,9 @@ public class WardleyMapFlowTests : IClassFixture<WebApplicationFactory<Program>>
         // watcher events reload it, and every module's selection track re-finds the element in
         // whatever the reload holds - so a reload observed mid-swap reads as "element gone"
         // and clears a selection whose element never went anywhere.
-        using var channel = CreateChannel();
-        var headers = await LoginAsync(channel);
-        var projectId = await AddProjectAsync(channel, headers);
+        using var channel = _factory.CreateGrpcChannel();
+        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
+        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
         var watchId = ShortGuid.NewShortGuid();
         var hierarchyClient = new HierarchyService.HierarchyServiceClient(channel);
         var contextClient = new ContextService.ContextServiceClient(channel);
@@ -489,13 +480,12 @@ public class WardleyMapFlowTests : IClassFixture<WebApplicationFactory<Program>>
     {
         // Arrange. Requirement 13 - the palette is data the client renders without
         // understanding, and it is answerable before the panel that shows it exists.
-        using var channel = CreateChannel();
-        var headers = await LoginAsync(channel);
-        var projectId = await AddProjectAsync(channel, headers);
+        using var channel = _factory.CreateGrpcChannel();
+        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
+        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
         var client = new DiagramService.DiagramServiceClient(channel);
 
-        var path = new Path();
-        path.Segments.Add("tea.adp");
+        var path = Path.Of("tea.adp");
 
         // Act.
         var described = await client.DescribeToolboxAsync(
@@ -574,51 +564,12 @@ public class WardleyMapFlowTests : IClassFixture<WebApplicationFactory<Program>>
     {
         using var cts = CreateMessageTimeout();
 
-        var path = new Path();
-        path.Segments.Add(fileName);
+        var path = Path.Of(fileName);
         using var call = client.Open(
             new OpenDiagramRequest { ProjectId = projectId, WatchId = ShortGuid.NewShortGuid(), Path = path },
             headers, cancellationToken: cts.Token);
 
-        return await ReadAddAsync(call.ResponseStream, cts.Token);
-    }
-
-    /// <summary>The elements of the next add on a stream - a baseline, or the deltas of a change.</summary>
-    private static async Task<IReadOnlyList<Element>> ReadAddAsync(
-        IAsyncStreamReader<Delta> stream,
-        CancellationToken cancellationToken)
-    {
-        try
-        {
-            while (await stream.MoveNext(cancellationToken))
-            {
-                if (stream.Current.ActionCase == Delta.ActionOneofCase.Add)
-                {
-                    return [.. stream.Current.Add.Elements];
-                }
-            }
-        }
-        catch (RpcException exception) when (exception.StatusCode == StatusCode.Cancelled)
-        {
-            // Reading stopped at the deadline, which is how this helper ends when nothing came.
-        }
-
-        return [];
-    }
-
-    private static async Task<ContextPrompt> ReadUntilPromptAsync(
-        IAsyncStreamReader<ContextMessage> stream,
-        CancellationToken cancellationToken)
-    {
-        while (await stream.MoveNext(cancellationToken))
-        {
-            if (stream.Current.MessageCase == ContextMessage.MessageOneofCase.Prompt)
-            {
-                return stream.Current.Prompt;
-            }
-        }
-
-        throw new InvalidOperationException("The stream ended before a prompt arrived.");
+        return await call.ResponseStream.ReadAddAsync(cts.Token);
     }
 
     private static async Task<ContextSelectionChanged> ReadUntilSelectionWithActionsAsync(
@@ -643,31 +594,5 @@ public class WardleyMapFlowTests : IClassFixture<WebApplicationFactory<Program>>
         var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
         cts.CancelAfter(MessageTimeout);
         return cts;
-    }
-
-    private GrpcChannel CreateChannel()
-    {
-        var httpClient = _factory.CreateDefaultClient();
-        return GrpcChannel.ForAddress(httpClient.BaseAddress!, new GrpcChannelOptions { HttpClient = httpClient });
-    }
-
-    private static async Task<Metadata> LoginAsync(GrpcChannel channel)
-    {
-        var authClient = new AuthenticationService.AuthenticationServiceClient(channel);
-        var response = await authClient.LoginAsync(
-            new LoginRequest { Username = DeveloperUsername, Credential = DeveloperCredential },
-            cancellationToken: TestContext.Current.CancellationToken);
-        return new Metadata { { SessionTokenHeader, response.Session.Value } };
-    }
-
-    private async Task<Documents.Wire.ShortGuid> AddProjectAsync(GrpcChannel channel, Metadata headers)
-    {
-        var projectClient = new ProjectService.ProjectServiceClient(channel);
-        var pathMessage = new Path();
-        pathMessage.Segments.AddRange(_projectFolder.Split(IoPath.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries));
-        var response = await projectClient.AddProjectAsync(
-            new AddProjectRequest { Path = pathMessage }, headers,
-            cancellationToken: TestContext.Current.CancellationToken);
-        return response.Added.Id;
     }
 }

@@ -1,13 +1,11 @@
-using EtAlii.Adp.Authentication.Wire;
 using EtAlii.Adp.Diagram;
 using EtAlii.Adp.Diagram.Wire;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 using EtAlii.Adp.Projects;
-using EtAlii.Adp.Projects.Wire;
+using EtAlii.Adp.TestSupport.Host;
 using Grpc.Core;
-using Grpc.Net.Client;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
@@ -16,7 +14,6 @@ using Xunit;
 using DiagramService = EtAlii.Adp.Diagram.Wire.DiagramService;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 using Path = EtAlii.Adp.Documents.Wire.Path;
-using ProjectService = EtAlii.Adp.Projects.Wire.ProjectService;
 using Wire = EtAlii.Adp.Diagram.AnsibleStructure.Wire;
 
 namespace EtAlii.Adp.Backend.Tests;
@@ -32,9 +29,6 @@ namespace EtAlii.Adp.Backend.Tests;
 /// </remarks>
 public class AnsibleStructureFlowTests : IClassFixture<WebApplicationFactory<Program>>, IDisposable
 {
-    private const string DeveloperUsername = "admin";
-    private const string DeveloperCredential = "changeme";
-    private const string SessionTokenHeader = "session-token";
     private static readonly TimeSpan MessageTimeout = TimeSpan.FromSeconds(15);
 
     private readonly WebApplicationFactory<Program> _factory;
@@ -79,9 +73,9 @@ public class AnsibleStructureFlowTests : IClassFixture<WebApplicationFactory<Pro
     public async Task ARegisteredFolder_OpensAndDeliversItsStructure()
     {
         // Arrange.
-        using var channel = CreateChannel();
-        var headers = await LoginAsync(channel);
-        var projectId = await AddProjectAsync(channel, headers);
+        using var channel = _factory.CreateGrpcChannel();
+        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
+        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
         var client = new DiagramService.DiagramServiceClient(channel);
 
         // Act.
@@ -101,9 +95,9 @@ public class AnsibleStructureFlowTests : IClassFixture<WebApplicationFactory<Pro
     public async Task ANodesPayload_CarriesWhatTheCanvasNeeds()
     {
         // Arrange.
-        using var channel = CreateChannel();
-        var headers = await LoginAsync(channel);
-        var projectId = await AddProjectAsync(channel, headers);
+        using var channel = _factory.CreateGrpcChannel();
+        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
+        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
         var client = new DiagramService.DiagramServiceClient(channel);
 
         // Act.
@@ -123,17 +117,15 @@ public class AnsibleStructureFlowTests : IClassFixture<WebApplicationFactory<Pro
     public async Task AChangeInTheFolder_ReachesAnOpenDiagram()
     {
         // Arrange.
-        using var channel = CreateChannel();
-        var headers = await LoginAsync(channel);
-        var projectId = await AddProjectAsync(channel, headers);
+        using var channel = _factory.CreateGrpcChannel();
+        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
+        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
         var client = new DiagramService.DiagramServiceClient(channel);
 
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
         cts.CancelAfter(MessageTimeout);
 
-        var path = new Path();
-        path.Segments.Add("infrastructure");
-        path.Segments.Add("infrastructure.adp");
+        var path = Path.Of("infrastructure", "infrastructure.adp");
         using var call = client.Open(
             new OpenDiagramRequest { ProjectId = projectId, WatchId = ShortGuid.NewShortGuid(), Path = path },
             headers, cancellationToken: cts.Token);
@@ -162,9 +154,9 @@ public class AnsibleStructureFlowTests : IClassFixture<WebApplicationFactory<Pro
         // Arrange.
         // The end-to-end form of Requirement 1.1: not just the module's own components, but the
         // whole host serving a real gRPC open.
-        using var channel = CreateChannel();
-        var headers = await LoginAsync(channel);
-        var projectId = await AddProjectAsync(channel, headers);
+        using var channel = _factory.CreateGrpcChannel();
+        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
+        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
         var client = new DiagramService.DiagramServiceClient(channel);
         var before = Snapshot();
 
@@ -189,9 +181,9 @@ public class AnsibleStructureFlowTests : IClassFixture<WebApplicationFactory<Pro
         // gRPC, the position lands in the .adp, the reopened diagram shows it, undo puts the
         // registration's bytes back, and nothing Ansible owns is written at any point
         // (Requirements 2.2, 2.3, 2.4, 2.5).
-        using var channel = CreateChannel();
-        var headers = await LoginAsync(channel);
-        var projectId = await AddProjectAsync(channel, headers);
+        using var channel = _factory.CreateGrpcChannel();
+        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
+        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
         var client = new DiagramService.DiagramServiceClient(channel);
 
         var registration = IoPath.Combine(_infrastructure, "infrastructure.adp");
@@ -200,9 +192,7 @@ public class AnsibleStructureFlowTests : IClassFixture<WebApplicationFactory<Pro
             .Where(entry => !string.Equals(entry.Key, registration, StringComparison.OrdinalIgnoreCase))
             .ToDictionary(entry => entry.Key, entry => entry.Value, StringComparer.OrdinalIgnoreCase);
 
-        var path = new Path();
-        path.Segments.Add("infrastructure");
-        path.Segments.Add("infrastructure.adp");
+        var path = Path.Of("infrastructure", "infrastructure.adp");
         var watchId = ShortGuid.NewShortGuid();
 
         // The diagram must be open for the move to reach a session: the unary leg finds it
@@ -285,9 +275,7 @@ public class AnsibleStructureFlowTests : IClassFixture<WebApplicationFactory<Pro
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
         cts.CancelAfter(MessageTimeout);
 
-        var path = new Path();
-        path.Segments.Add("infrastructure");
-        path.Segments.Add("infrastructure.adp");
+        var path = Path.Of("infrastructure", "infrastructure.adp");
         using var call = client.Open(
             new OpenDiagramRequest { ProjectId = projectId, WatchId = ShortGuid.NewShortGuid(), Path = path },
             headers, cancellationToken: cts.Token);
@@ -308,30 +296,5 @@ public class AnsibleStructureFlowTests : IClassFixture<WebApplicationFactory<Pro
         }
 
         return [];
-    }
-
-    private GrpcChannel CreateChannel()
-    {
-        var httpClient = _factory.CreateDefaultClient();
-        return GrpcChannel.ForAddress(httpClient.BaseAddress!, new GrpcChannelOptions { HttpClient = httpClient });
-    }
-
-    private static async Task<Metadata> LoginAsync(GrpcChannel channel)
-    {
-        var authClient = new AuthenticationService.AuthenticationServiceClient(channel);
-        var response = await authClient.LoginAsync(
-            new LoginRequest { Username = DeveloperUsername, Credential = DeveloperCredential },
-            cancellationToken: TestContext.Current.CancellationToken);
-        return new Metadata { { SessionTokenHeader, response.Session.Value } };
-    }
-
-    private async Task<Documents.Wire.ShortGuid> AddProjectAsync(GrpcChannel channel, Metadata headers)
-    {
-        var projectClient = new ProjectService.ProjectServiceClient(channel);
-        var pathMessage = new Path();
-        pathMessage.Segments.AddRange(_projectFolder.Split(IoPath.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries));
-        var response = await projectClient.AddProjectAsync(
-            new AddProjectRequest { Path = pathMessage }, headers, cancellationToken: TestContext.Current.CancellationToken);
-        return response.Added.Id;
     }
 }
