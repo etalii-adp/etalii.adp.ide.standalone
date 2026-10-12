@@ -19,6 +19,10 @@
 #
 # The report and the inspector's console log are kept in `.inspect/` at the repository root
 # (git-ignored), so a finding can be read in full after the summary has scrolled away.
+#
+# INSPECT_CACHES_HOME, when set, names the folder the inspector keeps its caches in, so a later run
+# can start from them; the Build workflow sets it and keeps the folder between runs. Unset, the
+# inspector uses its own default location, as it always has.
 set -u
 
 REPORT_MODE=
@@ -77,6 +81,7 @@ echo "inspect.sh: inspecting with SDK $SDK_VERSION ($TOOLSET)"
   --dotnetcoresdk="$SDK_VERSION" \
   --toolset-path="$TOOLSET" \
   --severity=SUGGESTION \
+  ${INSPECT_CACHES_HOME:+--caches-home="$INSPECT_CACHES_HOME"} \
   --output="$REPORT") > "$LOG" 2>&1
 INSPECT_EXIT=$?
 if [ "$INSPECT_EXIT" -ne 0 ]; then
