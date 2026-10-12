@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/fbl-written-text/design.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-10-12T09:37:45.280Z",
+      "trigger": "initial",
+      "approvalId": "approval_1791797864528_pqedzzli3",
+      "approvalTitle": "design.md: FBL 0.5 in the standalone library, seven steps (proposes one new requirement: attribute types derived from DISL, step 7)"
+    }
+  ]
+}

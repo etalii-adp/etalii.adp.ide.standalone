@@ -562,7 +562,6 @@ public sealed class HierarchyModel
         }
 
         var currentPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        //var results = new List<EntryNode>();
 
         foreach (var entryPath in diskEntries)
         {
@@ -581,14 +580,11 @@ public sealed class HierarchyModel
                     existing = existing with { Available = true, HasChildren = refreshedHasChildren };
                     _entriesById[existingId] = existing;
                 }
-
-                //results.Add(existing);
             }
             else
             {
                 var isFolder = Directory.Exists(entryPath);
                 var node = AddEntry(folderId, IoPath.GetFileName(entryPath), isFolder, entryPath);
-                //results.Add(node);
 
                 if (raiseEvents)
                 {

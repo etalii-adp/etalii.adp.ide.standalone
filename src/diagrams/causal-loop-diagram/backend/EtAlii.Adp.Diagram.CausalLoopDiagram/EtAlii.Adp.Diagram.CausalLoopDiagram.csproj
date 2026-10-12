@@ -9,7 +9,6 @@
       other module. What it consumes from the family - the canvas conventions and the .adp
       layout block - arrives through core alone.
     -->
-    <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Backend\EtAlii.Adp.Backend.csproj" />
   </ItemGroup>
 
   <ItemGroup>

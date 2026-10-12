@@ -135,32 +135,38 @@ public sealed partial class ContextService : Wire.ContextService.ContextServiceB
         // here and carried on every "nothing selected" message for this connection.
         var rootActions = await _contextActionResolver.DiscoverAsync(RootTarget(rootPath, watchId), cancellationToken);
 
-        // The project's own actions - undo and redo - which belong to the project rather than
-        // the selection and travel on their own message (diagram-undo-redo Deviation 1). The
-        // connection's lifetime drives the project's history: retained here, released below.
-        _historyStacks.Retain(rootPath);
-        var projectActions = await _contextActionResolver.DiscoverAsync(
-            HistoryActionsBroadcaster.ProjectTarget(rootPath), cancellationToken);
-
-        // An open project's problems stay current without anyone asking: the maintenance
-        // watcher follows its files, and if the startup pass is still working through the
-        // backlog this project's turn moves to the front - its freshness is the one the
-        // user can see (errors-and-warnings-panel Requirements 4.2, 5).
-        _watchHooks.ProjectWatched(rootPath);
-
-        // Registering writes the baseline first, so a late subscriber is consistent
-        // before anything else can arrive. The problems ride along as data: only the
-        // broadcaster knows both stores.
-        _selectionStore.Register(watchId, rootPath, channel.Writer, rootActions, projectActions, _watchHooks.CurrentFor(rootPath));
-        _contextInteractionStore.Register(watchId, channel.Writer);
-        _logger.Information(
-            "Context stream open on watch {WatchId} for project {ProjectId}, with {GroupCount} root action groups",
-            watchId,
-            request.ProjectId,
-            rootActions.Count);
-
+        // What this connection holds, so the finally gives back exactly that: a discovery that
+        // fails or is cancelled after the retain must still release it.
+        var retained = false;
+        var registered = false;
         try
         {
+            // The project's own actions - undo and redo - which belong to the project rather than
+            // the selection and travel on their own message (diagram-undo-redo Deviation 1). The
+            // connection's lifetime drives the project's history: retained here, released below.
+            _historyStacks.Retain(rootPath);
+            retained = true;
+            var projectActions = await _contextActionResolver.DiscoverAsync(
+                HistoryActionsBroadcaster.ProjectTarget(rootPath), cancellationToken);
+
+            // An open project's problems stay current without anyone asking: the maintenance
+            // watcher follows its files, and if the startup pass is still working through the
+            // backlog this project's turn moves to the front - its freshness is the one the
+            // user can see (errors-and-warnings-panel Requirements 4.2, 5).
+            _watchHooks.ProjectWatched(rootPath);
+
+            // Registering writes the baseline first, so a late subscriber is consistent
+            // before anything else can arrive. The problems ride along as data: only the
+            // broadcaster knows both stores.
+            _selectionStore.Register(watchId, rootPath, channel.Writer, rootActions, projectActions, _watchHooks.CurrentFor(rootPath));
+            _contextInteractionStore.Register(watchId, channel.Writer);
+            registered = true;
+            _logger.Information(
+                "Context stream open on watch {WatchId} for project {ProjectId}, with {GroupCount} root action groups",
+                watchId,
+                request.ProjectId,
+                rootActions.Count);
+
             await foreach (var message in channel.Reader.ReadAllAsync(cancellationToken))
             {
                 await write(message, cancellationToken);
@@ -173,9 +179,18 @@ public sealed partial class ContextService : Wire.ContextService.ContextServiceB
         }
         finally
         {
-            _contextInteractionStore.Remove(watchId);
-            _selectionStore.Remove(watchId);
-            _historyStacks.Release(rootPath);
+            // A watch that never registered removes nothing: its id may be another connection's.
+            if (registered)
+            {
+                _contextInteractionStore.Remove(watchId);
+                _selectionStore.Remove(watchId);
+            }
+
+            if (retained)
+            {
+                _historyStacks.Release(rootPath);
+            }
+
             _logger.Information("Context stream closed on watch {WatchId}", watchId);
         }
     }

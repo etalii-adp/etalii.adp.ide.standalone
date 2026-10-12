@@ -9,7 +9,6 @@
       with this module absent (structure.md's dependency direction), and core learns no .NET,
       MSBuild, NuGet or solution vocabulary from it.
     -->
-    <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Backend\EtAlii.Adp.Backend.csproj" />
     <!-- The property rows are derived from the bundled DISL definition. -->
     <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Specification.Disl\EtAlii.Adp.Specification.Disl.csproj" />
   </ItemGroup>

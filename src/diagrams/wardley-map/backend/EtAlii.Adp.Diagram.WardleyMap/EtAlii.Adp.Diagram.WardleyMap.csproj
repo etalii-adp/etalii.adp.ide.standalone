@@ -9,7 +9,6 @@
       dependency runs this way and never back - core must compile and test with this module
       absent (Requirement 12.4).
     -->
-    <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Backend\EtAlii.Adp.Backend.csproj" />
   </ItemGroup>
 
   <ItemGroup>

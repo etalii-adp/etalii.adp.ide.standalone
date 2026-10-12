@@ -7,7 +7,6 @@
       Core abstractions only. The dependency runs module -> core and never back: core must
       compile and test with this module absent (azure-pipeline-diagram Requirement 14.4).
     -->
-    <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Backend\EtAlii.Adp.Backend.csproj" />
   </ItemGroup>
 
   <ItemGroup>

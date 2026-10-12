@@ -15,7 +15,7 @@ Two classes carry the conversion, in the shape the hype cycle graph has:
 - `TimelineBody`: one `.tml` body opened through the embedded binding, giving the binding's reading, the DISL model built from it, and `Change(ModelChange)`.
 - `TimelineReading`: the projection of that reading onto the module's `TimelineModel`, which the mapper, the session, the scale and the arrangement keep reading.
 
-**Two points of the approved requirements are proposed for a small amendment** in *Amendment proposed*. Three findings the requirements do not list were found while verifying (B13 to B15, under *Data Models*); each gets a fixture in step 1 as Requirement 1 asks of a finding.
+**Two points of the approved requirements were small amendments**, ruled by the user in chat on 2026-10-11, in *Amendments ruled*. Three findings the requirements do not list were found while verifying (B13 to B15, under *Data Models*); each gets a fixture in step 1 as Requirement 1 asks of a finding.
 
 ## Steering Document Alignment
 
@@ -159,9 +159,9 @@ The module's `timeline.fbl` is at FBL 0.5 and differs from the example in these 
 
 Unchanged in shape. It grows by the fixtures of step 1. At step 5 its `hunks` change (Q1) and its `undoAll` lines change from "the original text is NOT back" to "the original text is back" where they say so today (Amendment 2). Nothing else changes in any step.
 
-## Amendment proposed
+## Amendments ruled
 
-Both are small amendments in the sense of the ruling of 2026-09-25, to be put to the user as selections before the tasks are written. This design is written against the recommended option of each.
+Both are small amendments in the sense of the ruling of 2026-09-25. They were put to the user as selections and **ruled by the user in chat, 2026-10-11: the first option of each**, which this design was written against; Requirements 4.2 and 1.3 carry the rulings. The options stay listed, so that the record shows what was chosen from.
 
 **1. The sentence of `timeline.unparseable` is YamlDotNet's.** Requirements 2.5, 2.6 and 2.7 keep the finding's sentence, line and the transcript byte for byte; Requirement 4.1 and the modularity rule remove the parser and name what stays. The transcript's entry for `unparseable.tml` reads "This is not YAML that can be read: While scanning a plain scalar value, found invalid mapping." at line 4: the reason is YamlDotNet's exception text, and which files are refused is YamlDotNet's decision (finding B10 rests on it). The library has its own YAML reader with its own reasons. Options:
 
@@ -169,11 +169,15 @@ Both are small amendments in the sense of the ruling of 2026-09-25, to be put to
 - **Let the library decide and word it.** The parser's last trace goes now. The cost is a changed sentence for every file that is not YAML, a file with a repeated key that now opens with the first key bound and no word said, and Requirement 1.3 naming one more change.
 - Other.
 
+**Ruled by the user in chat, 2026-10-11: the first option.**
+
 **2. Requirement 3.6 changes the transcript, and Requirement 1.3 names only Q1 and Q2.** Undo through the shared restore puts the bytes back, so the transcript's `undoAll` lines that today record "the original text is NOT back" (for `simple.tml`, after 25 undone steps, among others) become "is back". Options:
 
 - **Requirement 1.3 also names what Requirement 3.6 demands (recommended):** the `undoAll` lines are regenerated with the hunks at step 5 and reviewed in the same diff. The cost is none; it is what 3.6 asks.
 - **The commands keep their own inverses** and `undoAll` stays as recorded. The cost is that Requirement 3.6 is not met.
 - Other.
+
+**Ruled by the user in chat, 2026-10-11: the first option.**
 
 ## Error Handling
 
