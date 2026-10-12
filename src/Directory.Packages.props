@@ -35,6 +35,10 @@
     -->
     <PackageVersion Include="YamlDotNet" Version="18.1.0" />
     <PackageVersion Include="xunit.v3" Version="4.0.1" />
+    <!-- EtAlii.Adp.TestSupport holds abstract test classes (the store and reloader contracts), so it
+         needs xUnit's attributes and assertions without becoming a test project itself. -->
+    <PackageVersion Include="xunit.v3.assert" Version="4.0.1" />
+    <PackageVersion Include="xunit.v3.extensibility.core" Version="4.0.1" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="4.0.0" />
   </ItemGroup>
 </Project>

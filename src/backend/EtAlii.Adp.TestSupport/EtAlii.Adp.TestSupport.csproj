@@ -13,6 +13,9 @@
 
   <ItemGroup>
     <PackageReference Include="Serilog" />
+    <!-- The contracts every module's store and reloader tests derive from (code-structure FR-035). -->
+    <PackageReference Include="xunit.v3.assert" />
+    <PackageReference Include="xunit.v3.extensibility.core" />
     <ProjectReference Include="..\EtAlii.Adp\EtAlii.Adp.csproj" />
     <ProjectReference Include="..\EtAlii.Adp.Hierarchy\EtAlii.Adp.Hierarchy.csproj" />
     <ProjectReference Include="..\EtAlii.Adp.History\EtAlii.Adp.History.csproj" />
