@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent } from "react";
 import { SearchList } from "../../../components/SearchList";
 import type { TableCell, TableColumn } from "../api/tableModel";
 import type { TableEditorKind } from "../definition/tableDefinition";
@@ -135,6 +135,39 @@ function InputCellEditor({ editor, column, cell, replace, commit, onClose }: Cel
 
 function ListCellEditor({ editor, column, cell, commit, onClose }: CellEditorProps) {
   const [reason, setReason] = useState("");
+  const editorRef = useRef<HTMLDivElement>(null);
+  // True when the list would run past the bottom of the table and there is room above: it then opens upwards.
+  const [upwards, setUpwards] = useState(false);
+
+  // The search field has the focus from the start, so typing searches at once and no selection is
+  // left behind on the page under it.
+  useEffect(() => {
+    editorRef.current?.querySelector<HTMLInputElement>("input")?.focus();
+  }, []);
+
+  useLayoutEffect(() => {
+    const element = editorRef.current;
+    const surface = element?.closest(".table-surface");
+    if (element === null || element === undefined || surface === null || surface === undefined) {
+      return;
+    }
+    const list = element.getBoundingClientRect();
+    const room = surface.getBoundingClientRect();
+    const cellHeight = element.parentElement?.getBoundingClientRect().height ?? 0;
+    setUpwards(list.bottom > room.bottom && list.top + cellHeight - list.height >= room.top);
+  }, []);
+
+  // Pressing anywhere outside the list leaves it, as leaving any other cell editor does: what was
+  // picked is already written, so nothing more is sent.
+  useEffect(() => {
+    const onPress = (event: PointerEvent) => {
+      if (editorRef.current !== null && event.target instanceof Node && !editorRef.current.contains(event.target)) {
+        onClose("leave");
+      }
+    };
+    document.addEventListener("pointerdown", onPress);
+    return () => document.removeEventListener("pointerdown", onPress);
+  }, [onClose]);
   const chosen = cell?.values ?? [];
   // One choice for an option, and for a relation whose column says it holds one row: picking another replaces it.
   const several = editor !== "option" && !(editor === "rows" && column.settings.limit === "one");
@@ -171,7 +204,8 @@ function ListCellEditor({ editor, column, cell, commit, onClose }: CellEditorPro
 
   return (
     <div
-      className="table-cell-editor table-cell-list-editor"
+      ref={editorRef}
+      className={upwards ? "table-cell-editor table-cell-list-editor table-cell-list-editor-up" : "table-cell-editor table-cell-list-editor"}
       // A key typed in the list is the list's; Tab leaves it for the next cell.
       onKeyDown={(event) => {
         event.stopPropagation();

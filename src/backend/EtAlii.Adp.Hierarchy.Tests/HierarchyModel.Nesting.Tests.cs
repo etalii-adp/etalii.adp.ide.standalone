@@ -1,3 +1,4 @@
+using EtAlii.Adp.Designer;
 using EtAlii.Adp.Documents;
 using Xunit;
 using IoPath = System.IO.Path;
@@ -60,6 +61,27 @@ public class HierarchyModelNestingTests : IDisposable
         var nested = Assert.Single(model.ListChildren(subject.Id));
         Assert.Equal("test.adp", nested.Name);
         Assert.Equal(subject.Id, nested.ParentId);
+    }
+
+    [Fact]
+    public void ListChildren_NestsADesignersRegistrationUnderItsDataFile()
+    {
+        // Arrange: a knowledge-like table is two files, its data and its registration, as a
+        // mind map is; the tree shows them as one entry with the registration under it.
+        var sheet = new DesignerDefinition("fixture/sheet", "Fixture sheet", Formats: [new DesignerFormat("YAML", ".yaml")]);
+        File.WriteAllText(IoPath.Combine(_root, "cities.yaml"), "name: Cities\n");
+        File.WriteAllText(IoPath.Combine(_root, "cities.adp"), "fixture/sheet\n");
+        var model = new HierarchyModel(_root, _catalog, designerRouter: new DesignerFileRouter(new DesignerDefinitionCatalog { All = [sheet] }));
+
+        // Act.
+        var rootChildren = model.ListChildren(null);
+
+        // Assert.
+        var subject = Assert.Single(rootChildren);
+        Assert.Equal("cities.yaml", subject.Name);
+        Assert.True(subject.HasChildren, "a data file with a registration must be expandable");
+        var nested = Assert.Single(model.ListChildren(subject.Id));
+        Assert.Equal("cities.adp", nested.Name);
     }
 
     [Fact]

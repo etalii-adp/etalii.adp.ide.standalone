@@ -332,6 +332,19 @@ describe("TableSurface", () => {
     expect(within(bodyRows()[0]!).getAllByRole("gridcell")[1]!.textContent).toBe("Noord-Holland, zh");
   });
 
+  it("puts the checkbox that selects every row in the first header, before its icon, as a row's stands before its value", () => {
+    // Arrange.
+    const editing: TableDefinition = { kinds: { text: { icon: "mdi-format-text", label: "Text", editor: "text" }, number: { icon: "mdi-pound", label: "Number", editor: "number" } }, rowActions: ["delete"] };
+    render(<TableSurface model={tableOf(1, 0, [row("r1", { p1: "Amsterdam" })])} definition={editing} onGesture={vi.fn(async () => "")} />);
+
+    // Assert: in the header's own flow, so it takes room beside the icon instead of lying over it.
+    const header = screen.getAllByRole("columnheader")[0]!;
+    const all = screen.getByRole("checkbox", { name: "Select all rows" });
+    expect(header.contains(all)).toBe(true);
+    const icon = within(header).getByRole("img", { name: "Text" });
+    expect(all.compareDocumentPosition(icon) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   it("selects every row by the checkbox in the header, and sets one property for all selected rows at once", async () => {
     // Arrange: a table with a text and a number column, both of which can be edited.
     const onGesture = vi.fn(async (_gesture: TableGesture) => "");
@@ -446,12 +459,23 @@ describe("TableSurface", () => {
     const { rerender } = render(<TableSurface model={tableOf(0, 0, [])} definition={definition} pendingEdits={1} />);
 
     // Assert.
-    expect(screen.getByRole("note").textContent).toBe("1 change is being saved…");
+    expect(screen.getByRole("status").textContent).toBe("1 change is being saved…");
 
     // Act.
     rerender(<TableSurface model={tableOf(0, 0, [])} definition={definition} pendingEdits={3} />);
 
     // Assert.
-    expect(screen.getByRole("note").textContent).toBe("3 changes are being saved…");
+    expect(screen.getByRole("status").textContent).toBe("3 changes are being saved…");
+  });
+
+  it("says edits are being saved over the table, not above it, so no row moves while they are", () => {
+    // Act.
+    render(<TableSurface model={tableOf(0, 0, [])} definition={definition} pendingEdits={1} />);
+
+    // Assert: the line comes after the grid, floating in the frame's corner, and is no note above the rows.
+    const saving = screen.getByRole("status");
+    expect(screen.getByRole("grid").compareDocumentPosition(saving) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(saving.classList.contains("table-saving")).toBe(true);
+    expect(screen.queryByRole("note")).toBeNull();
   });
 });

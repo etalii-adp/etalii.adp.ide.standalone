@@ -387,7 +387,7 @@ export function TableSurface({ model, definition, pendingEdits = 0, selectedRow,
     <div className="table-frame">
       {model.views.length > 0 && <ViewTabs views={model.views} activeViewId={model.settings.viewId} editable={editable} onView={onView} raise={raise} />}
       {model.views.length > 0 && <ViewBar model={model} definition={definition} editable={editable} raise={raise} />}
-      <TableNote model={model} pendingEdits={pendingEdits} />
+      <TableNote model={model} />
       {editable && selectedRows.size > 0 && (
         // What is done to the selected rows together: a property set for all of them, or all of them deleted.
         <div className="table-selection-bar" role="toolbar" aria-label="Selected rows">
@@ -453,16 +453,20 @@ export function TableSurface({ model, definition, pendingEdits = 0, selectedRow,
       onKeyDown={onKeyDown}
     >
       <div className="table-header-row" role="row" aria-rowindex={1} style={headerStyle}>
-        {rowsSelectable && heldRows.length > 0 && (
-          <span className="table-select-all" role="presentation">
-            <input type="checkbox" className="table-row-check" aria-label="Select all rows" checked={allSelected} onChange={() => selectRows(new Set(allSelected ? [] : heldRows))} />
-          </span>
-        )}
         {columns.map((column, index) => (
           <ColumnHeader
             key={column.id}
             column={column}
             index={index}
+            leading={
+              index === 0 && rowsSelectable && heldRows.length > 0 ? (
+                // In the first header's own flow, where a row's handle and checkbox stand in its first cell: beside the icon, never over it.
+                <>
+                  {rowsMovable && <span className="mdi mdi-drag-vertical table-row-handle table-header-handle-room" aria-hidden="true" />}
+                  <input type="checkbox" className="table-row-check" aria-label="Select all rows" checked={allSelected} onChange={() => selectRows(new Set(allSelected ? [] : heldRows))} />
+                </>
+              ) : undefined
+            }
             width={widths[index]!}
             definition={definition}
             editable={editable}
@@ -564,6 +568,12 @@ export function TableSurface({ model, definition, pendingEdits = 0, selectedRow,
                       setActive({ row: index, column: columnIndex });
                     }
                   }}
+                  // The second press of a double click opens the editor; the browser would also select the word under it. An open editor keeps its own double click.
+                  onMouseDown={(event) => {
+                    if (event.detail > 1 && editor === undefined) {
+                      event.preventDefault();
+                    }
+                  }}
                   onDoubleClick={() => startEdit({ row: index, column: columnIndex })}
                 >
                   {editor !== undefined ? (
@@ -657,27 +667,27 @@ export function TableSurface({ model, definition, pendingEdits = 0, selectedRow,
         onClose={() => setRowMenu(null)}
       />
     </div>
+    {model.readOnlyReason === "" && pendingEdits > 0 && (
+      // Over the table in the frame's corner, never above its rows: a line that came and went above
+      // them moved every row down and back up with each edit.
+      <p className="table-saving" role="status">
+        {pendingEdits === 1 ? "1 change is being saved…" : `${pendingEdits} changes are being saved…`}
+      </p>
+    )}
     </div>
   );
 }
 
 /**
- * What the table has to say about itself, above its rows: that it cannot be changed and why, or
- * that some edits are not written yet. Opening, unavailable and a refused edit are not said here:
- * the frame around every tool says those, in one appearance.
+ * What the table has to say about itself above its rows: that it cannot be changed, and why. It
+ * stays as long as that is so, so its line moves nothing. Opening, unavailable and a refused edit
+ * are not said here: the frame around every tool says those, in one appearance.
  */
-function TableNote({ model, pendingEdits }: { model: TableModel; pendingEdits: number }) {
+function TableNote({ model }: { model: TableModel }) {
   if (model.readOnlyReason !== "") {
     return (
       <p className="table-note table-note-read-only" role="note">
         {model.readOnlyReason}
-      </p>
-    );
-  }
-  if (pendingEdits > 0) {
-    return (
-      <p className="table-note" role="note">
-        {pendingEdits === 1 ? "1 change is being saved…" : `${pendingEdits} changes are being saved…`}
       </p>
     );
   }

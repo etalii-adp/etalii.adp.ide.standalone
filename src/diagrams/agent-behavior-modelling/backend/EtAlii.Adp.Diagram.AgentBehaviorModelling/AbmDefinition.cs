@@ -24,10 +24,11 @@ namespace EtAlii.Adp.Diagram.AgentBehaviorModelling;
 /// from. A node's id is its place, which the definition derives and the module addresses it by.
 /// </para>
 /// <para>
-/// <b>The code wins where the two would differ</b>, and three host choices stay here: <c>env.readOnly</c>
-/// is always false, because the module never offered a read-only menu; a shortcut is passed as the text
-/// the definition writes (<c>Alt+Up</c>), as the module always sent it; and Arrange carries its sentence
-/// even while it is available.
+/// <b>The code wins where the two would differ</b>, and two host choices stay here: <c>env.readOnly</c>
+/// is always false, because the module never offered a read-only menu; and Arrange carries its sentence
+/// even while it is available. A shortcut is sent as a keypress reports it - the definition's
+/// <c>Alt+Up</c> is the key <c>ArrowUp</c> with Alt held - where the module once passed the text whole,
+/// which matched no keypress (spec 025, T033).
 /// </para>
 /// </remarks>
 internal static class AbmDefinition
@@ -138,7 +139,7 @@ internal static class AbmDefinition
         entry.Id,
         entry.Label,
         entry.Icon,
-        entry.Shortcut is { } key ? new ContextShortcutDefinition(key.Text) : null,
+        entry.Shortcut is { } key ? new ContextShortcutDefinition(key.EventKey, key.Ctrl, key.Shift, key.Alt, key.Meta) : null,
         entry.Available,
         // Arrange carries its sentence even while it is available, as the hand-written menu did; the
         // client shows a reason only for an unavailable action.

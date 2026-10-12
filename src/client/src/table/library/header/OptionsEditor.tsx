@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type HTMLAttributes } from "react";
+import { createPortal } from "react-dom";
 import { usePointerGesture } from "../../../canvas/gesture/usePointerGesture";
 import type { TableGesture } from "../api/tableEvents";
 import type { TableColumn, TableOption } from "../api/tableModel";
@@ -81,7 +82,9 @@ export function OptionsEditor({ column, position, raise, onClose }: OptionsEdito
     }
   };
 
-  return (
+  // Drawn at the document's top, as a menu is: inside its header it is painted in the header's
+  // layer, under the rows that scroll past and the frozen cells beside it.
+  return createPortal(
     // Under its header - and inside the window when the header is scrolled out of it to the left.
     <div ref={panelRef} className="table-options-editor" role="dialog" aria-label={`Options of ${column.name}`} style={{ left: Math.max(PANEL_MARGIN, position.x), top: position.y }}>
       <ul className="table-options-list" ref={listRef}>
@@ -107,7 +110,8 @@ export function OptionsEditor({ column, position, raise, onClose }: OptionsEdito
           Add
         </button>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 

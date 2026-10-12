@@ -22,6 +22,7 @@ public sealed class HierarchyModel
     private readonly IDiagramDefinitionCatalog? _catalog;
     private readonly DiagramFileRouter? _router;
     private readonly EditorResolver? _editorResolver;
+    private readonly DesignerFileRouter? _designerRouter;
     private readonly Dictionary<ShortGuid, EntryNode> _entriesById = new();
     private readonly Dictionary<ShortGuid, string> _pathById = new();
     private readonly Dictionary<string, ShortGuid> _idByPath = new(StringComparer.OrdinalIgnoreCase);
@@ -38,12 +39,13 @@ public sealed class HierarchyModel
     private static readonly TimeSpan RenameEchoWindow = TimeSpan.FromSeconds(5);
     private readonly List<(string OldPath, string NewPath, long Ticks)> _appliedRenames = new();
 
-    public HierarchyModel(string rootPath, IDiagramDefinitionCatalog? catalog = null, DiagramFileRouter? router = null, EditorResolver? editorResolver = null)
+    public HierarchyModel(string rootPath, IDiagramDefinitionCatalog? catalog = null, DiagramFileRouter? router = null, EditorResolver? editorResolver = null, DesignerFileRouter? designerRouter = null)
     {
         RootPath = IoPath.GetFullPath(rootPath);
         _catalog = catalog;
         _router = router;
         _editorResolver = editorResolver;
+        _designerRouter = designerRouter;
     }
 
     /// <summary>The absolute project root this model views; what the store matches on to route a rename to it.</summary>
@@ -807,8 +809,10 @@ public sealed class HierarchyModel
     /// <summary>
     /// The body file name a registration resolves inside its own folder, or null: no catalog,
     /// no resolution, or a body living elsewhere. The resolution itself is
-    /// <see cref="DiagramFilePair"/>'s; only same-folder bodies nest, since a header can point
-    /// across folders and relocating an entry into another folder's subtree is not this spec.
+    /// <see cref="DiagramFilePair"/>'s for a diagram and <see cref="DesignerFileRouter"/>'s for a
+    /// designer, whose document is two files just the same and is shown as one entry the same way;
+    /// only same-folder bodies nest, since a header can point across folders and relocating an
+    /// entry into another folder's subtree is not this spec.
     /// </summary>
     private string? ResolvedBodyNameOf(string folderPath, string fileName)
     {
@@ -817,14 +821,20 @@ public sealed class HierarchyModel
             return null;
         }
 
-        var body = DiagramFilePair.BodyOf(IoPath.Combine(folderPath, fileName), _catalog, RootPath);
-        if (body is not { } resolved || resolved.Path.Length == 0)
+        var registration = IoPath.Combine(folderPath, fileName);
+        var bodyPath = DiagramFilePair.BodyOf(registration, _catalog, RootPath)?.Path;
+        if (string.IsNullOrEmpty(bodyPath) && DiagramFilePair.IsRegistrationFile(fileName))
+        {
+            bodyPath = (_designerRouter?.Route(registration, RootPath) as DesignerRouted)?.BodyPath;
+        }
+
+        if (string.IsNullOrEmpty(bodyPath))
         {
             return null;
         }
 
-        return string.Equals(IoPath.GetDirectoryName(resolved.Path), folderPath, StringComparison.OrdinalIgnoreCase)
-            ? IoPath.GetFileName(resolved.Path)
+        return string.Equals(IoPath.GetDirectoryName(bodyPath), folderPath, StringComparison.OrdinalIgnoreCase)
+            ? IoPath.GetFileName(bodyPath)
             : null;
     }
 

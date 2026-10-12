@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { choicesOf, type TableGesture } from "../api/tableEvents";
 import { kindOf, type TableDefinition } from "../definition/tableDefinition";
 import { addableKinds } from "./columnActions";
@@ -107,7 +108,9 @@ export function NewColumnPanel({ definition, position, beside, raise, ask, onClo
     onClose();
   };
 
-  return (
+  // Drawn at the document's top, as a menu is: inside its header it is painted in the header's
+  // layer, under the rows that scroll past and the frozen cells beside it.
+  return createPortal(
     <div ref={panelRef} className="table-options-editor table-new-column" role="dialog" aria-label="New property" style={{ left: Math.max(PANEL_MARGIN, Math.min(position.x, window.innerWidth - PANEL_WIDTH - PANEL_MARGIN)), top: position.y }}>
       <input ref={nameRef} type="text" aria-label="Property name" placeholder="Property name" value={name} onChange={(event) => setName(event.target.value)} onKeyDown={(event) => event.stopPropagation()} />
       {relation === null ? (
@@ -183,6 +186,7 @@ export function NewColumnPanel({ definition, position, beside, raise, ask, onClo
           {refusal}
         </p>
       )}
-    </div>
+    </div>,
+    document.body,
   );
 }

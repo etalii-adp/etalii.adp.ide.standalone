@@ -239,6 +239,13 @@ describe("formatShortcut / tooltipFor", () => {
     expect(formatShortcut(create(ContextShortcutSchema, { key: "Delete" }))).toBe("Delete");
   });
 
+  it("names a key by the word a person reads rather than its KeyboardEvent.key", () => {
+    // Arrange, act and assert.
+    expect(formatShortcut(create(ContextShortcutSchema, { key: "ArrowUp", alt: true }))).toBe("Alt+Up");
+    expect(formatShortcut(create(ContextShortcutSchema, { key: "ArrowDown", alt: true }))).toBe("Alt+Down");
+    expect(formatShortcut(create(ContextShortcutSchema, { key: " " }))).toBe("Space");
+  });
+
   it("uses the label alone when there is no shortcut", () => {
     // Arrange and act.
     const action = renameAndDelete()[0]!.actions[1]!;

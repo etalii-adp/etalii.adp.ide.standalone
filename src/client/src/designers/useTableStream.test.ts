@@ -164,6 +164,32 @@ describe("useTableStream", () => {
     expect(calls.setTableWindow.mock.calls[1]![0]).toMatchObject({ first: 40, count: 25 });
   });
 
+  it("sends one window at a time, so the backend cannot be left on an older one", async () => {
+    // Arrange: the backend answers window calls only when the test says so. Two calls in flight
+    // at once may be served in either order, and the one served last is the window the backend
+    // keeps: a cold backend served the empty window of the first render last, and the rows of a
+    // table that had just opened stayed blank.
+    const answers: (() => void)[] = [];
+    calls.setTableWindow.mockImplementation(() => new Promise((resolve) => answers.push(() => resolve({}))));
+    const { result } = renderHook(() => useTableStream(["cities.adp"]));
+    act(() => result.current.setWindow({ first: 0, count: 0 }));
+    await act(async () => streamAt(0).push(baseline(18)));
+    expect(calls.setTableWindow).toHaveBeenCalledTimes(1);
+
+    // Act: the surface asks for two more windows while the first call is unanswered.
+    act(() => result.current.setWindow({ first: 0, count: 18 }));
+    act(() => result.current.setWindow({ first: 0, count: 17 }));
+
+    // Assert: nothing more goes out until the first is answered, and then only the latest.
+    expect(calls.setTableWindow).toHaveBeenCalledTimes(1);
+    await act(async () => answers.shift()!());
+    expect(calls.setTableWindow).toHaveBeenCalledTimes(2);
+    expect(calls.setTableWindow.mock.calls[1]![0]).toMatchObject({ first: 0, count: 17 });
+    await act(async () => answers.shift()!());
+    expect(calls.setTableWindow).toHaveBeenCalledTimes(2);
+    calls.setTableWindow.mockImplementation(async () => ({}));
+  });
+
   it("starts over after the stream drops, and asks for the window again on the new stream", async () => {
     // Arrange.
     vi.useFakeTimers();

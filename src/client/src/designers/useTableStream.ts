@@ -88,13 +88,33 @@ export function useTableStream(path: readonly string[]): TableStreamResult {
 
   const pathKey = path.join("/");
 
+  // The window waiting to go out, and whether a call is out now. One call at a time: two calls in
+  // flight may be served in either order, and the backend keeps the window it served last - a
+  // cold backend served the empty window of the first render after the real one, and a table
+  // that had just opened showed blank rows until it was scrolled.
+  const wantedWindowRef = useRef<{ streamId: Uint8Array; window: RowWindow } | null>(null);
+  const sendingWindowRef = useRef(false);
+
   const sendWindow = useCallback(
     (streamId: Uint8Array, window: RowWindow) => {
-      void client
-        .setTableWindow({ watchId: { value: watchId }, streamId: { value: streamId }, first: window.first, count: window.count })
-        .catch(() => {
-          // The stream is gone or going; the reconnect sends the window again.
-        });
+      wantedWindowRef.current = { streamId, window };
+      if (sendingWindowRef.current) {
+        return;
+      }
+
+      sendingWindowRef.current = true;
+      void (async () => {
+        // Only the latest window is worth sending: one asked for while a call was out replaces any before it.
+        for (let wanted = wantedWindowRef.current; wanted !== null; wanted = wantedWindowRef.current) {
+          wantedWindowRef.current = null;
+          try {
+            await client.setTableWindow({ watchId: { value: watchId }, streamId: { value: wanted.streamId }, first: wanted.window.first, count: wanted.window.count });
+          } catch {
+            // The stream is gone or going; the reconnect sends the window again.
+          }
+        }
+        sendingWindowRef.current = false;
+      })();
     },
     [client, watchId],
   );
