@@ -27,7 +27,6 @@ public abstract class DocumentReloaderContract<TStore> : IDisposable
     where TStore : IDiagramDocumentStore
 {
     private readonly TestFolder _folder = TestFolder.Create("EtAlii.Adp.DocumentReloaderContract");
-    private string? _body;
 
     /// <summary>The module's diagram type.</summary>
     protected abstract DiagramOrigin Origin { get; }
@@ -36,7 +35,7 @@ public abstract class DocumentReloaderContract<TStore> : IDisposable
     protected abstract string Example { get; }
 
     /// <summary>The copy of <see cref="Example"/> the test works on, made on first use.</summary>
-    protected string Body => _body ??= CopyExample();
+    protected string Body => field ??= CopyExample();
 
     /// <summary>A new store, with nothing loaded.</summary>
     protected abstract TStore CreateStore();
