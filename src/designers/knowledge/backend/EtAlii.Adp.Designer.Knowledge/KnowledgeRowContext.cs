@@ -136,7 +136,6 @@ internal sealed class KnowledgeRowPropertyProvider(IHistoryStackStore histories)
     private static ContextPropertyDefinition Row(KnowledgeBody body, KnowledgeProperty property, KnowledgeRow row)
     {
         var values = row.Cells.FirstOrDefault(cell => cell.PropertyId == property.Id)?.Values ?? [];
-        string NameOf(string optionId) => property.Options.FirstOrDefault(option => option.Id == optionId)?.Name ?? optionId;
         return property.ValueType switch
         {
             "checkbox" => new ContextPropertyDefinition(property.Id, property.Name, values.FirstOrDefault() == "true" ? "true" : "false", ContextPropertyEditor.Toggle, body.ReadOnlyReason),
@@ -145,6 +144,7 @@ internal sealed class KnowledgeRowPropertyProvider(IHistoryStackStore histories)
             "relation" => new ContextPropertyDefinition(property.Id, property.Name, string.Join(", ", values), ContextPropertyEditor.Line, property.IsComputed ? ComputedStays : RelationStays),
             _ => new ContextPropertyDefinition(property.Id, property.Name, values.FirstOrDefault() ?? "", ContextPropertyEditor.Line, body.ReadOnlyReason),
         };
+        string NameOf(string optionId) => property.Options.FirstOrDefault(option => option.Id == optionId)?.Name ?? optionId;
     }
 
     public async ValueTask<ContextPropertyResult> SetAsync(ContextTarget target, string propertyId, string value, CancellationToken cancellationToken)

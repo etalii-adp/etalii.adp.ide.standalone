@@ -114,11 +114,6 @@ internal sealed class KnowledgeBody
     /// <summary>A change with every made-up id it names replaced by the id that entry was just given: in what it is about, where it goes, and what its values name.</summary>
     private static ModelChange Renamed(ModelChange change, Dictionary<string, string> given)
     {
-        // An id made from its parents' ids holds theirs between slashes.
-        string Of(string id) => string.Join('/', id.Split('/').Select(part => given.GetValueOrDefault(part, part)));
-        Dictionary<string, object?> Values(IReadOnlyDictionary<string, object?> attributes) =>
-            attributes.ToDictionary(attribute => attribute.Key, attribute => attribute.Value is string text ? given.GetValueOrDefault(text, text) : attribute.Value);
-
         return change switch
         {
             ModelChange.Add add => add with { Attributes = Values(add.Attributes), ParentId = add.ParentId is null ? null : Of(add.ParentId) },
@@ -127,6 +122,11 @@ internal sealed class KnowledgeBody
             ModelChange.Move move => new ModelChange.Move(Of(move.Id), move.NewParentId is null ? null : Of(move.NewParentId), move.Index),
             _ => change,
         };
+
+        // An id made from its parents' ids holds theirs between slashes.
+        string Of(string id) => string.Join('/', id.Split('/').Select(part => given.GetValueOrDefault(part, part)));
+
+        Dictionary<string, object?> Values(IReadOnlyDictionary<string, object?> attributes) => attributes.ToDictionary(attribute => attribute.Key, attribute => attribute.Value is string text ? given.GetValueOrDefault(text, text) : attribute.Value);
     }
 
     /// <summary>
