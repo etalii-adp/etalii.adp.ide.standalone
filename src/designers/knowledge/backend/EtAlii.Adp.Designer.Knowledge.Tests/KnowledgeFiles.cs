@@ -30,16 +30,27 @@ internal static class KnowledgeFiles
         IoPath.GetFullPath(IoPath.Combine(_examples.Value, "..", "backend", "EtAlii.Adp.Designer.Knowledge", "KnowledgeSession.cs"));
 
     /// <summary>
-    /// A copy of a shipped example that was left in its second view, which filters, sorts and groups
-    /// nothing: every row, in the file's order. The example itself is left in a view that does all three.
+    /// A copy of a shipped example left in its second view, which filters, sorts and groups nothing: every
+    /// row, in the file's order. The view the example itself is left in is whatever its file says.
     /// </summary>
-    public static string CopyPlain(string name, string folder)
+    public static string CopyPlain(string name, string folder) => CopyInView(name, folder, "v2");
+
+    /// <summary>
+    /// A copy of a shipped example left in its first view, which filters, sorts and groups its rows. The view
+    /// the example itself is left in is whatever its file says.
+    /// </summary>
+    public static string CopyGrouped(string name, string folder) => CopyInView(name, folder, "v1");
+
+    /// <summary>A copy of a shipped example, left in <paramref name="view"/> whichever view its file names.</summary>
+    private static string CopyInView(string name, string folder, string view)
     {
         var path = CopyExample(name, folder);
         var text = File.ReadAllText(path);
-        var plain = System.Text.RegularExpressions.Regex.Replace(text, "(activeView\"?[:=] ?\"?)v1", "${1}v2");
-        Assert.NotEqual(text, plain);
-        File.WriteAllText(path, plain);
+        var active = new System.Text.RegularExpressions.Regex("(activeView\"?[:=] ?\"?)v[0-9]+");
+
+        // The pattern has to have found the one place the file names its view, or the copy is left as it was.
+        Assert.Single(active.Matches(text));
+        File.WriteAllText(path, active.Replace(text, "${1}" + view));
         return path;
     }
 
