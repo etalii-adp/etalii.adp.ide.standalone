@@ -141,7 +141,7 @@
   - _Leverage: `LayoutToggleDeclaration`, `DiagramCanvas.filter.test.tsx`_
   - _Requirements: 4.6_
 
-- [-] 15. The two DISL readers learn DISL 0.4
+- [x] 15. The two DISL readers learn DISL 0.4
   - File: `src/backend/EtAlii.Adp.Specification.Disl`, `src/client/src/canvas/library/disl` (`compileNotation.ts`, `disTypes.ts`)
   - Backend: read the constructs of task 2; derive menu entries for pin, unpin and unpin all and for rows; evaluate the declared gesture constraint a connect needs. Client: compile compartments with `groupBy`, activatable symbols, `itemLink`, the kept filter, `tiers` and `respect: "pinned"` into the declarations of tasks 8 to 14.
   - Waits on: 2, 8, 10, 11, 12, 14.
@@ -197,7 +197,7 @@
   - _Leverage: `OperationInterpreter`, the hype cycle graph's nested entries_
   - _Requirements: 4.9, 9.3_
 
-- [-] 21. View commands: lock, unlock, groups and the switch
+- [x] 21. View commands: lock, unlock, groups and the switch
   - File: `backend/…/Commands/`, `AadSession.MoveElementToAsync`
   - A drag stores a placement and locks; *Lock position* stores the layout's position, which the client supplies; *Unlock position* removes the placement; *Unlock all positions* removes them all and is offered only when there is one; an element added from the toolbox is locked where it was dropped and one written into the file is not. A heading click stores the group's state while it differs from its default and removes the entry when it returns; defaults are Progressing and Input Required expanded, Pending, Finished and pull requests collapsed. The switch is stored under `view`, off when absent; hiding archived specifications changes nothing in the model.
   - Waits on: 18.
@@ -262,7 +262,7 @@
   - _Leverage: the rows for `etalii/functional-decomposition-graph` and `gartner/hypecycle-graph`_
   - _Requirements: 10.8_
 
-- [-] 28. The browser pass
+- [x] 28. The browser pass
   - File: `tests.md`
   - Write and run the entry Requirement 11.1 lists, in a real browser and both themes, against a build from a fresh worktree. Nothing here is taken from jsdom.
   - Waits on: 24, 25.
@@ -271,7 +271,7 @@
   - _Leverage: `tests.md`, `CLAUDE.md` (*Bugs found during implementation or verification*)_
   - _Requirements: 11.1, 11.3_
 
-- [-] 29. Coverage, before and after
+- [x] 29. Coverage, before and after
   - File: this document, the requirements
   - Before the card: extract every requirement reference from this document, list every acceptance criterion in the requirements, and diff the two sets. After implementing: trace each criterion to files and strings, and read two traces back to their artefacts to ask whether the evidence is that criterion's. Check that no task lacks a *Seen to fail against* line.
   - Guard: the diff is empty in both directions.
