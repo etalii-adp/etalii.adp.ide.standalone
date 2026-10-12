@@ -12,6 +12,15 @@
     <!-- xUnit v3 test projects are executables: the test host is the project itself. -->
     <OutputType>Exe</OutputType>
     <IsPackable>false</IsPackable>
+    <!--
+      The Build workflow's backend-tests job passes -p:AdpExcludeClientTests=true, because its
+      client job runs the same vitest suite as `npm test` (the user's ruling of 2026-10-12: one
+      vitest run per CI run). A project that is neither a test project nor a testing-platform
+      application is built but not run by `dotnet test`. Unset - every local run - this project
+      runs as before.
+    -->
+    <IsTestProject Condition="'$(AdpExcludeClientTests)' == 'true'">false</IsTestProject>
+    <IsTestingPlatformApplication Condition="'$(AdpExcludeClientTests)' == 'true'">false</IsTestingPlatformApplication>
   </PropertyGroup>
 
   <ItemGroup>
