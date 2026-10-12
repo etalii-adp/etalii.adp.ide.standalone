@@ -106,6 +106,7 @@ internal static partial class KnowledgeEdits
             "moveView" => ForView(table, gesture, target => MoveTo(target.Id, null, table.Views.Select(candidate => candidate.Id).ToList(), gesture.Index)),
 
             _ when view is null => Refused(ViewGone),
+            "moveRows" => MoveRows(table, view, gesture),
             "moveColumn" => MoveColumn(table, view, gesture),
             "resizeColumn" => ResizeColumn(table, view, gesture),
             "hideColumn" => ShowColumn(table, view, gesture, visible: false),
@@ -374,6 +375,49 @@ internal static partial class KnowledgeEdits
     {
         var ids = (gesture.Values.Count > 0 ? gesture.Values : [gesture.RowId]).Where(id => table.Rows.Any(row => row.Id == id)).Distinct().ToList();
         return ids.Count == 0 ? Refused(RowGone) : new KnowledgeEdit([.. ids.Select(id => new ModelChange.Remove(id))]);
+    }
+
+    public const string SortedRowsStay = "Rows are in the order of this view's sort, so they cannot be moved here.";
+
+    /// <summary>
+    /// Moves rows to stand before or after another row, together and in the order they were in.
+    /// The order is the file's, which a view without a sort shows; a sorted view has an order of
+    /// its own, so nothing is moved from one.
+    /// </summary>
+    private static KnowledgeEdit MoveRows(KnowledgeTable table, KnowledgeView view, TableGesture gesture)
+    {
+        if (view.Sorts.Count > 0)
+        {
+            return Refused(SortedRowsStay);
+        }
+
+        List<string> order = [.. table.Rows.Select(row => row.Id)];
+        List<string> moved = [.. order.Where((gesture.Values.Count > 0 ? gesture.Values : [gesture.RowId]).Contains)];
+        if (moved.Count == 0 || !order.Contains(gesture.TargetId))
+        {
+            return Refused(RowGone);
+        }
+
+        if (moved.Contains(gesture.TargetId))
+        {
+            return KnowledgeEdit.Nothing;
+        }
+
+        // One row at a time: the first to its place beside the target, each next one right after the one before it.
+        List<ModelChange> changes = [];
+        var anchor = gesture.TargetId;
+        var after = gesture.Settings.GetValueOrDefault("place") == "after";
+        foreach (var id in moved)
+        {
+            List<string> without = [.. order.Where(candidate => candidate != id)];
+            var to = without.IndexOf(anchor) + (after ? 1 : 0);
+            changes.AddRange(MoveTo(id, null, order, to).Changes);
+            without.Insert(to, id);
+            order = without;
+            (anchor, after) = (id, true);
+        }
+
+        return new KnowledgeEdit(changes);
     }
 
     // ---- properties ----

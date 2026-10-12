@@ -28,7 +28,7 @@ export type ColumnAction =
   | "delete";
 
 /** What a row's menu may offer. A module's definition lists the ones its table has. */
-export type RowAction = "delete";
+export type RowAction = "delete" | "move";
 
 /** One way a kind of value can be compared in a filter. */
 export interface TableComparison {

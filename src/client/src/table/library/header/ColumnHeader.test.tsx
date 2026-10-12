@@ -291,10 +291,45 @@ describe("adding a column", () => {
 
     // Act: named.
     fireEvent.change(field, { target: { value: "People" } });
-    fireEvent.keyDown(field, { key: "Enter" });
+    await act(async () => {
+      fireEvent.keyDown(field, { key: "Enter" });
+    });
 
     // Assert.
     expect(onGesture).toHaveBeenLastCalledWith({ kind: "renameColumn", columnId: "p9", values: ["People"] });
+    expect(screen.queryByRole("textbox", { name: "Name" })).toBeNull();
+  });
+
+  it("refuses a name where it is typed, keeps what was typed, and gives it up when the field is left", async () => {
+    // Arrange: a table that refuses the first name it is given.
+    const answers = ["A property named 'Country' is already there.", ""];
+    const onGesture = vi.fn(async (_gesture: TableGesture) => answers.shift() ?? "");
+    render(<TableSurface model={table()} definition={definition} onGesture={onGesture} />);
+    openMenu("Population");
+    await choose("Rename");
+    const field = screen.getByRole("textbox", { name: "Name" }) as HTMLInputElement;
+
+    // Act: a name that is taken.
+    fireEvent.change(field, { target: { value: "Country" } });
+    await act(async () => {
+      fireEvent.keyDown(field, { key: "Enter" });
+    });
+
+    // Assert: said under the field, which is still there with what was typed; and not on the table's own line.
+    const header = field.closest("[role=columnheader]") as HTMLElement;
+    expect(within(header).getByRole("alert").textContent).toBe("A property named 'Country' is already there.");
+    expect((screen.getByRole("textbox", { name: "Name" }) as HTMLInputElement).value).toBe("Country");
+    expect(screen.getAllByRole("alert")).toHaveLength(1);
+
+    // Act: typing clears the reason; another name is taken.
+    fireEvent.change(field, { target: { value: "People" } });
+    expect(within(header).queryByRole("alert")).toBeNull();
+    await act(async () => {
+      fireEvent.keyDown(field, { key: "Enter" });
+    });
+
+    // Assert.
+    expect(onGesture).toHaveBeenLastCalledWith({ kind: "renameColumn", columnId: "p2", values: ["People"] });
     expect(screen.queryByRole("textbox", { name: "Name" })).toBeNull();
   });
 

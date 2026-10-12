@@ -22,7 +22,14 @@ vi.mock("@client/designers/useTableStream", () => ({
   },
 }));
 
-const surface = vi.hoisted(() => ({ onGesture: undefined as ((gesture: TableGesture) => Promise<string>) | undefined }));
+const surface = vi.hoisted(() => ({
+  onGesture: undefined as ((gesture: TableGesture) => Promise<string>) | undefined,
+  onSelectRows: undefined as ((rowIds: readonly string[]) => void) | undefined,
+}));
+
+const connection = vi.hoisted(() => ({ select: vi.fn() }));
+
+vi.mock("@client/shell/context/ContextConnectionProvider", () => ({ useContextConnection: () => connection }));
 
 vi.mock("@client/table/library/TableSurface", async (original) => {
   const actual = await original<typeof import("@client/table/library/TableSurface")>();
@@ -30,6 +37,7 @@ vi.mock("@client/table/library/TableSurface", async (original) => {
     ...actual,
     TableSurface: (props: Parameters<typeof actual.TableSurface>[0]) => {
       surface.onGesture = props.onGesture;
+      surface.onSelectRows = props.onSelectRows;
       return actual.TableSurface(props);
     },
   };
@@ -98,6 +106,23 @@ describe("KnowledgePanel", () => {
 
     // Assert.
     expect(current.edit).toHaveBeenCalledWith({ kind: "addRow", viewId: "v2" });
+  });
+
+  it("makes one selected row the application's selection, as an element of its file, and several or none no selection", () => {
+    // Arrange.
+    stream.current = streamOf(cities("v1"));
+    render(<KnowledgePanel projectId={ID} entryId={ID} path={["tables", "cities.adp"]} />);
+
+    // Act.
+    surface.onSelectRows!(["r1"]);
+    surface.onSelectRows!(["r1", "r2"]);
+    surface.onSelectRows!([]);
+
+    // Assert: the row under its file, by its id; then nothing, twice.
+    const selections = connection.select.mock.calls.map((call) => call[0]);
+    expect(selections[0].path.segments).toEqual(["tables", "cities.adp"]);
+    expect(selections[0].detail.value.id.source.value.value).toBe("r1");
+    expect(selections.slice(1)).toEqual([null, null]);
   });
 
   it("leaves a view an edit names itself alone", async () => {

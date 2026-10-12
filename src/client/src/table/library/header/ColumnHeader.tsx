@@ -19,6 +19,8 @@ export interface ColumnHeaderProps {
   raise: (gesture: TableGesture) => void;
   /** The width a drag of the border would give, while it is dragged; null when the drag ends. */
   onResizePreview: (columnId: string, width: number | null) => void;
+  /** Makes a gesture and answers with its refusal, or with nothing when it was accepted: for a name that is refused where it is typed. */
+  ask?: (gesture: TableGesture) => Promise<string>;
   /** True for a column that was just added: its name is asked for at once, as if Rename had been chosen. */
   nameAtOnce?: boolean;
   /** Told when that naming has begun, so that it begins once. */
@@ -33,7 +35,7 @@ export interface ColumnHeaderProps {
  * the pointer as a preview the table draws, and the width is sent once on release - a resize
  * that wrote on every pointer move would be a write per pixel.
  */
-export function ColumnHeader({ column, index, width, definition, editable, raise, onResizePreview, nameAtOnce = false, onNamingStarted }: ColumnHeaderProps) {
+export function ColumnHeader({ column, index, width, definition, editable, raise, ask, onResizePreview, nameAtOnce = false, onNamingStarted }: ColumnHeaderProps) {
   const kind = kindOf(definition, column.kind);
   const cellRef = useRef<HTMLDivElement>(null);
   const [menuAt, setMenuAt] = useState<{ x: number; y: number } | null>(null);
@@ -113,12 +115,18 @@ export function ColumnHeader({ column, index, width, definition, editable, raise
       {renaming ? (
         <RenameField
           name={column.name}
-          onDone={(name) => {
-            setRenaming(false);
-            if (name !== null && name !== column.name) {
-              raise({ kind: "renameColumn", columnId: column.id, values: [name] });
+          onSubmit={(name) => {
+            if (name === column.name) {
+              return Promise.resolve("");
             }
+            const gesture: TableGesture = { kind: "renameColumn", columnId: column.id, values: [name] };
+            if (ask === undefined) {
+              raise(gesture);
+              return Promise.resolve("");
+            }
+            return ask(gesture);
           }}
+          onClose={() => setRenaming(false)}
         />
       ) : editable && groups.length > 0 ? (
         <button type="button" className="table-header-button" aria-haspopup="menu" aria-expanded={menuAt !== null} {...move.press(null)}>
@@ -138,9 +146,14 @@ export function ColumnHeader({ column, index, width, definition, editable, raise
   );
 }
 
-/** The column's name as a field, in the header's place. Enter keeps the name, Escape drops it, and so does nothing typed. */
-function RenameField({ name, onDone }: { name: string; onDone: (name: string | null) => void }) {
+/**
+ * The column's name as a field, in the header's place. Enter keeps the name, Escape drops it, and
+ * so does nothing typed. A name that is refused is refused here, under the field, which stays
+ * open with what was typed; leaving it then leaves the column the name it had.
+ */
+function RenameField({ name, onSubmit, onClose }: { name: string; onSubmit: (name: string) => Promise<string>; onClose: () => void }) {
   const [value, setValue] = useState(name);
+  const [refusal, setRefusal] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   // Set once the field has been left for good, so the blur that follows a key does nothing more.
   const settledRef = useRef(false);
@@ -150,24 +163,41 @@ function RenameField({ name, onDone }: { name: string; onDone: (name: string | n
     inputRef.current?.select();
   }, []);
 
-  const finish = (result: string | null) => {
+  const finish = (result: string | null, leaving = false) => {
     if (settledRef.current) {
       return;
     }
     settledRef.current = true;
-    const trimmed = result?.trim() ?? null;
-    // A name of nothing is no name: the column keeps the one it has.
-    onDone(trimmed === "" ? null : trimmed);
+    const trimmed = result?.trim() ?? "";
+    // A name of nothing is no name, and a field left after a refusal is given up: the column keeps the name it has.
+    if (trimmed === "" || (leaving && refusal !== "")) {
+      onClose();
+      return;
+    }
+    void onSubmit(trimmed).then((answer) => {
+      if (answer === "") {
+        onClose();
+        return;
+      }
+      settledRef.current = false;
+      setRefusal(answer);
+      inputRef.current?.focus();
+    });
   };
 
   return (
+    <>
     <input
       ref={inputRef}
       className="table-header-rename"
       type="text"
       aria-label="Name"
+      aria-invalid={refusal !== "" ? true : undefined}
       value={value}
-      onChange={(event) => setValue(event.target.value)}
+      onChange={(event) => {
+        setValue(event.target.value);
+        setRefusal("");
+      }}
       onKeyDown={(event) => {
         event.stopPropagation();
         if (event.key === "Enter") {
@@ -178,7 +208,13 @@ function RenameField({ name, onDone }: { name: string; onDone: (name: string | n
           finish(null);
         }
       }}
-      onBlur={() => finish(value)}
+      onBlur={() => finish(value, true)}
     />
+    {refusal !== "" && (
+      <span className="table-header-refusal" role="alert">
+        {refusal}
+      </span>
+    )}
+    </>
   );
 }

@@ -24,5 +24,7 @@ public static class ServiceCollectionAddKnowledgeExtension
         services.AddSingleton<IContextActionProvider, KnowledgeContextActionProvider>();
         services.AddSingleton<IDesignerDocumentTemplate, KnowledgeDocumentTemplate>();
         services.AddSingleton<IEntryRenameFollower, KnowledgeTargetRename>();
+        services.AddSingleton<IContextSourceResolver, KnowledgeRowSourceResolver>();
+        services.AddSingleton<IContextPropertyProvider, KnowledgeRowPropertyProvider>();
     }
 }

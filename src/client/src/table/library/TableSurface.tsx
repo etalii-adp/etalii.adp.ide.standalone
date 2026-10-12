@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
+import { usePointerGesture } from "../../canvas/gesture/usePointerGesture";
 import { ContextMenu } from "../../shell/context/ContextMenu";
 import { CONFIRM_PREFIX, type TableEvents, type TableGesture } from "./api/tableEvents";
 import { cellText, type TableCell, type TableColumn, type TableModel, type TableRow } from "./api/tableModel";
@@ -22,6 +23,8 @@ const SEVERITY_ORDER: readonly string[] = ["info", "warning", "error"];
 export interface TableSurfaceProps extends TableEvents {
   model: TableModel;
   definition: TableDefinition;
+  /** Told which rows are selected, whenever that changes: for what shows a selected row's properties. */
+  onSelectRows?: (rowIds: readonly string[]) => void;
   /** How many edits are shown and not written yet, when the table comes from a stream that writes behind. */
   pendingEdits?: number;
   /**
@@ -60,7 +63,7 @@ const FALLBACK_VIEWPORT_HEIGHT = 660;
  * gesture the backend refuses changes nothing here - the reason is shown, and the cell is still
  * what the model says it is.
  */
-export function TableSurface({ model, definition, pendingEdits = 0, onWindow, onView, onGesture, fallbackViewportHeight = FALLBACK_VIEWPORT_HEIGHT }: TableSurfaceProps) {
+export function TableSurface({ model, definition, pendingEdits = 0, onSelectRows, onWindow, onView, onGesture, fallbackViewportHeight = FALLBACK_VIEWPORT_HEIGHT }: TableSurfaceProps) {
   const rowHeight = definition.rowHeight ?? DEFAULT_ROW_HEIGHT;
   const columns = useMemo(() => model.columns.filter((column) => column.visible), [model.columns]);
   const scrollerRef = useRef<HTMLDivElement>(null);
@@ -306,6 +309,41 @@ export function TableSurface({ model, definition, pendingEdits = 0, onWindow, on
     return byCell;
   }, [model.findings]);
   const rowMenuOffered = editable && (definition.rowActions ?? []).includes("delete");
+  // Rows are moved where the view shows the file's own order: one with a sort has an order of its own.
+  const rowsMovable = editable && (definition.rowActions ?? []).includes("move") && model.settings.sorts.length === 0;
+  const rowsSelectable = rowMenuOffered || rowsMovable || onSelectRows !== undefined;
+
+  // The rows that are selected, by id: pressing a row's handle selects it, or no longer.
+  const [selectedRows, setSelectedRows] = useState<ReadonlySet<string>>(() => new Set());
+  const selectRows = useCallback(
+    (next: ReadonlySet<string>) => {
+      setSelectedRows(next);
+      onSelectRows?.([...next]);
+    },
+    [onSelectRows],
+  );
+  /** The rows a gesture on one row is about: all that are selected when it is one of them, else that row alone. */
+  const rowsOf = (rowId: string) => (selectedRows.has(rowId) && selectedRows.size > 1 ? [...selectedRows] : [rowId]);
+
+  const rowHandle = usePointerGesture<{ rowId: string; index: number }>({
+    onPress: ({ rowId }) => {
+      const next = new Set(selectedRows);
+      if (!next.delete(rowId)) {
+        next.add(rowId);
+      }
+      selectRows(next);
+    },
+    onDragEnd: ({ rowId, index }, _dx, dy) => {
+      // The line the row is let go over, by the height every line has; a heading or the new-row line is no place for a row.
+      const over = model.rows.get(index + Math.round(dy / rowHeight));
+      if (!rowsMovable || over === undefined || over.isGroup || over.isNewRow || over.id === rowId) {
+        return;
+      }
+      const ids = rowsOf(rowId);
+      const settings = { place: dy > 0 ? "after" : "before" };
+      raise(ids.length === 1 ? { kind: "moveRows", rowId, targetId: over.id, settings } : { kind: "moveRows", values: ids, targetId: over.id, settings });
+    },
+  });
   const template = widths.map((width) => `${width}px`).join(" ");
   const rowStyle = { gridTemplateColumns: template, height: rowHeight };
   // The header has one more track than the rows: the room of the button that adds a column.
@@ -339,6 +377,7 @@ export function TableSurface({ model, definition, pendingEdits = 0, onWindow, on
             definition={definition}
             editable={editable}
             raise={raise}
+            ask={onGesture}
             onResizePreview={onResizePreview}
             nameAtOnce={naming === column.id}
             onNamingStarted={namingStarted}
@@ -377,9 +416,10 @@ export function TableSurface({ model, definition, pendingEdits = 0, onWindow, on
         return (
           <div
             key={index}
-            className="table-row"
+            className={selectedRows.has(row.id) ? "table-row table-row-selected" : "table-row"}
             role="row"
             aria-rowindex={rowIndex}
+            aria-selected={rowsSelectable ? selectedRows.has(row.id) : undefined}
             data-row-id={row.id}
             style={rowStyle}
             onContextMenu={
@@ -440,6 +480,17 @@ export function TableSurface({ model, definition, pendingEdits = 0, onWindow, on
                     />
                   ) : (
                     <>
+                      {columnIndex === 0 && rowsSelectable && (
+                        // The row's handle: pressed, it selects the row or no longer; dragged, it moves the row.
+                        <span
+                          className="mdi mdi-drag-vertical table-row-handle"
+                          role="checkbox"
+                          aria-checked={selectedRows.has(row.id)}
+                          aria-label={`Select row ${index + 1}`}
+                          onDoubleClick={(event) => event.stopPropagation()}
+                          {...rowHandle.press({ rowId: row.id, index })}
+                        />
+                      )}
                       {column.isTitle && <NestedRowToggle row={row} title={cellText(cell)} editable={editable} raise={raise} />}
                       <CellValue cell={cell} column={column} shows={kind.editor === "checkbox" ? "tick" : kind.editor === "option" || kind.editor === "options" ? "tags" : "text"} />
                     </>
@@ -476,7 +527,24 @@ export function TableSurface({ model, definition, pendingEdits = 0, onWindow, on
       )}
       <ContextMenu
         open={rowMenu !== null}
-        groups={[[{ id: "delete", label: "Delete row", icon: "mdi-trash-can-outline", onSelect: () => rowMenu !== null && raiseAsking({ kind: "deleteRows", rowId: rowMenu.rowId }) }]]}
+        groups={[
+          [
+            {
+              id: "delete",
+              // Several selected rows go together when the menu is one of theirs.
+              label: rowMenu !== null && rowsOf(rowMenu.rowId).length > 1 ? `Delete ${rowsOf(rowMenu.rowId).length} rows` : "Delete row",
+              icon: "mdi-trash-can-outline",
+              onSelect: () => {
+                if (rowMenu === null) {
+                  return;
+                }
+                const ids = rowsOf(rowMenu.rowId);
+                raiseAsking(ids.length === 1 ? { kind: "deleteRows", rowId: rowMenu.rowId } : { kind: "deleteRows", values: ids });
+                selectRows(new Set());
+              },
+            },
+          ],
+        ]}
         position={rowMenu ?? { x: 0, y: 0 }}
         onClose={() => setRowMenu(null)}
       />

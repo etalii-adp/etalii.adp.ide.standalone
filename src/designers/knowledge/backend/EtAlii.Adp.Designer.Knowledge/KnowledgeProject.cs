@@ -13,6 +13,9 @@ internal static class KnowledgeProject
 
     private static readonly string[] _extensions = [".yaml", ".yml", ".json", ".xml"];
 
+    /// <summary>The knowledge file an entry of the explorer stands for: the file itself, or the one its registration names; null when it is neither.</summary>
+    public static string? BodyOf(string path) => KnowledgeContextActionProvider.BodyOf(path);
+
     /// <summary>The files under a folder that say they are knowledge files, folders of tools' own left out.</summary>
     public static IEnumerable<string> Files(string folder)
     {

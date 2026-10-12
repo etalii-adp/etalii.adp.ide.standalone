@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { pointer } from "../../../canvas/library/testing/canvasHarness";
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import type { TableColumn } from "../api/tableModel";
 import type { TableDefinition } from "../definition/tableDefinition";
@@ -124,6 +125,26 @@ describe("OptionsEditor", () => {
       { kind: "moveOption", columnId: "p2", targetId: "o1", index: 1 },
       { kind: "deleteOption", columnId: "p2", targetId: "o2" },
     ]);
+  });
+
+  it("puts an option in its place by dragging its handle, as one gesture when the drag ends", () => {
+    // Arrange: two lines of thirty pixels each.
+    const { raise } = open();
+    screen.getAllByRole("listitem").forEach((line, index) => {
+      line.getBoundingClientRect = () => ({ left: 0, right: 200, top: index * 30, bottom: index * 30 + 30, width: 200, height: 30, x: 0, y: index * 30, toJSON: () => ({}) });
+    });
+    const handle = screen.getByRole("img", { name: "Move option Netherlands" });
+
+    // Act: dragged down past the middle of the line under it.
+    fireEvent(handle, pointer("pointerdown", { pointerId: 1, button: 0, clientX: 5, clientY: 15 }));
+    fireEvent(handle, pointer("pointermove", { pointerId: 1, clientX: 5, clientY: 35 }));
+    expect(raise).not.toHaveBeenCalled();
+    fireEvent(handle, pointer("pointermove", { pointerId: 1, clientX: 5, clientY: 55 }));
+    fireEvent(handle, pointer("pointerup", { pointerId: 1, button: 0, clientX: 5, clientY: 55 }));
+
+    // Assert.
+    expect(raise).toHaveBeenCalledTimes(1);
+    expect(raise).toHaveBeenCalledWith({ kind: "moveOption", columnId: "p2", targetId: "o1", index: 1 });
   });
 
   it("tells how many rows have an option before deleting it, and deletes only when that is confirmed", () => {

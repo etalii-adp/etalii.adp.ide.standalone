@@ -14,6 +14,7 @@ public sealed class HierarchyContextSourceResolver : IContextSourceResolver
 {
     private readonly IHierarchyModelStore _hierarchyModelStore;
     private readonly DiagramFileRouter _router;
+    private readonly DesignerFileRouter? _designerRouter;
     private readonly EditorResolver _editorResolver;
 
     /// <param name="hierarchyModelStore">The hierarchy model store.</param>
@@ -23,8 +24,9 @@ public sealed class HierarchyContextSourceResolver : IContextSourceResolver
     /// text editor's tab through the same mime-keyed mechanism a diagram uses
     /// (modular-text-editors Requirement 5.2).
     /// </param>
-    public HierarchyContextSourceResolver(IHierarchyModelStore hierarchyModelStore, DiagramFileRouter router, EditorResolver editorResolver)
+    public HierarchyContextSourceResolver(IHierarchyModelStore hierarchyModelStore, DiagramFileRouter router, EditorResolver editorResolver, DesignerFileRouter? designerRouter = null)
     {
+        _designerRouter = designerRouter;
         ArgumentNullException.ThrowIfNull(router);
         ArgumentNullException.ThrowIfNull(editorResolver);
         _hierarchyModelStore = hierarchyModelStore;
@@ -94,10 +96,11 @@ public sealed class HierarchyContextSourceResolver : IContextSourceResolver
     /// A folder contains entries. A file contains nothing of this kind - unless it is a
     /// diagram, which contains elements: a node selected on the canvas nests under its
     /// .adp file (mindmap-diagram Requirement 10.1), resolved by the diagram type's own
-    /// resolver rather than this one.
+    /// resolver rather than this one. A designer's file contains what its designer lets be
+    /// selected in it, a row of a table say, resolved by the designer type's resolver likewise.
     /// </summary>
     public ContextNesting NestingOf(ContextResolvedLevel level) =>
-        level.Target.IsContainer || _router.Route(level.Target.ResolvedFullPath) is DiagramRouted
+        level.Target.IsContainer || _router.Route(level.Target.ResolvedFullPath) is DiagramRouted || _designerRouter?.Route(level.Target.ResolvedFullPath) is DesignerRouted
             ? ContextNesting.Contained
             : ContextNesting.NotNestable;
 
