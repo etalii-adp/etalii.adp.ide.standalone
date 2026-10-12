@@ -27,3 +27,27 @@ public interface IDiagramDocumentStore : IReloadableDocumentStore
     /// <summary>Drops the loaded document at <paramref name="path"/>, so the next open reads the file afresh.</summary>
     void Forget(string path);
 }
+
+/// <summary>
+/// A diagram module's document store as its sessions, resolvers and commands use it: one document
+/// per body path, loaded once and shared, saved as the caller edited it, and a change event.
+/// </summary>
+/// <remarks>
+/// <see cref="LifecycleDocumentStore{TBody, TModel}"/> implements it, so a module's own store
+/// interface extends this and declares nothing; it stays as the distinct type the module's
+/// registrations and its restore command resolve.
+/// </remarks>
+/// <typeparam name="TBody">The type a body is read into and edited as, such as <see cref="LineDocument"/>.</typeparam>
+/// <typeparam name="TModel">What the module's parser reads from a body.</typeparam>
+public interface IDiagramDocumentStore<TBody, TModel> : IDiagramDocumentStore
+{
+    /// <summary>The document whose body is at <paramref name="path"/>, loaded once and kept.</summary>
+    DocumentEntry<TBody, TModel> GetOrLoad(string path);
+
+    /// <summary>Writes <paramref name="document"/>, the one the caller edited, to <paramref name="path"/>.</summary>
+    /// <remarks><b>A document that could not be read is refused, never written.</b></remarks>
+    DocumentSaveResult Save(string path, TBody document);
+
+    /// <summary>Raised when the document at a path has been replaced, for the sessions on it.</summary>
+    event EventHandler<DocumentChangedEventArgs>? Changed;
+}
