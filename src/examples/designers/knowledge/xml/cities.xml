@@ -33,6 +33,9 @@
     <view id="v2" name="Map">
       <column property="p2" width="166"/>
       <column property="p1" width="143"/>
+      <column property="p3"/>
+      <column property="p4"/>
+      <column property="p5" calculate="count-unique"/>
     </view>
   </views>
   <rows>
@@ -93,6 +96,17 @@
     <row id="1dytemy0l8cen9xxkpcxzlgwq">
       <cell property="p1" text="Ahlen"/>
       <cell property="p2" option="b4ff5lo4rezgty4ge7siqndey"/>
+    </row>
+    <row id="9jh7yjm443uvm99io0nc6ekpi">
+      <cell property="p1" text="Koeln"/>
+      <cell property="p2" option="b4ff5lo4rezgty4ge7siqndey"/>
+    </row>
+    <row id="9cwydn1h89znwl1wlxblxselj">
+      <cell property="p2" option="o1"/>
+      <cell property="p1" text="Enschede"/>
+      <cell property="p5">
+        <item row="cdns3i0ehcr45q7zh0z15iqzt"/>
+      </cell>
     </row>
   </rows>
 </ded>

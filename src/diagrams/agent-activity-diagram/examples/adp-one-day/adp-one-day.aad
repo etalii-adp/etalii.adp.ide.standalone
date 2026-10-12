@@ -180,3 +180,9 @@ view:
     - element: s-definitions
       group: finished
       collapsed: false
+    - element: l-knowledge
+      group: pullRequests
+      collapsed: false
+    - element: l-activity
+      group: pullRequests
+      collapsed: false

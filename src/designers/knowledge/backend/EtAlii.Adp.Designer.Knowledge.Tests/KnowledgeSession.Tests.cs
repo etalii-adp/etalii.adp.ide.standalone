@@ -71,10 +71,10 @@ public sealed class KnowledgeSessionTests : IDisposable
         Assert.NotEmpty(baseline.Views);
         Assert.Equal("v2", baseline.Settings.ViewId);
 
-        // The lines of that view, which filters, sorts and groups nothing: the nine cities, and the line
+        // The lines of that view, which filters, sorts and groups nothing: the eleven cities, and the line
         // a new row is added at.
         Assert.Equal("", baseline.Settings.GroupBy);
-        Assert.Equal(9 + 1, baseline.RowCount);
+        Assert.Equal(11 + 1, baseline.RowCount);
     }
 
     [Fact]

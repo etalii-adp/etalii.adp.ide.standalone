@@ -111,12 +111,12 @@ public sealed class KnowledgeOptionsTests : IDisposable
     [MemberData(nameof(KnowledgeFiles.Extensions), MemberType = typeof(KnowledgeFiles))]
     public async Task AnOptionSomeRowsHave_SaysHowMany_SoItsAuthorIsToldBeforeDeletingIt(string extension)
     {
-        // Arrange: Port is a tag of three rows, Capital of one; Netherlands is three rows' country, Belgium one's.
+        // Arrange: Port is a tag of three rows, Capital of one; Netherlands is four rows' country, Belgium one's.
         await using var table = Open(extension);
 
         // Assert.
         Assert.Equal(("3", "1"), (Settings("p4")["uses:o3"], Settings("p4")["uses:o4"]));
-        Assert.Equal(("3", "1"), (Settings("p2")["uses:o1"], Settings("p2")["uses:o2"]));
+        Assert.Equal(("4", "1"), (Settings("p2")["uses:o1"], Settings("p2")["uses:o2"]));
 
         // Act: an option nobody has says nothing, and the count follows the rows.
         await table.Edit(Option("addOption", "p2", name: "Luxembourg"));
