@@ -1,0 +1,10 @@
+{
+  "id": "approval_1791838771205_qrhzc2jrt",
+  "title": "YAML editor design (asks ruling A1: one alias in the client's shared Vite config)",
+  "filePath": ".spec-workflow/specs/yaml-editor/design.md",
+  "type": "document",
+  "status": "pending",
+  "createdAt": "2026-10-12T20:59:31.205Z",
+  "category": "spec",
+  "categoryName": "yaml-editor"
+}

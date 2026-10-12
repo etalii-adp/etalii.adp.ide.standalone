@@ -67,7 +67,7 @@ public sealed class KnowledgeDesignerTests(HostFixture host) : IClassFixture<Hos
         Assert.Equal(["All cities", "Map"], first.Baseline.Views.Select(view => view.Name));
         var province = first.Baseline.Columns.Single(column => column.Name == "Province");
         Assert.Equal("relation", province.Kind);
-        Assert.Equal(["Noord-Holland", "Zuid-Holland", "Antwerpen"], province.Options.Select(option => option.Name));
+        Assert.Equal(["Noord-Holland", "Zuid-Holland", "Antwerpen", "Limburg", "Overijssel"], province.Options.Select(option => option.Name));
 
         // Act: the plain view, and a window of it.
         await session.Designer.SetTableViewAsync(new Proto.SetTableViewRequest { WatchId = session.WatchId, StreamId = streamId, ViewId = "v2" }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);

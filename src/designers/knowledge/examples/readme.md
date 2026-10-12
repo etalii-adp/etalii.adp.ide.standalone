@@ -5,7 +5,9 @@ The files here are copied, byte for byte, from [`etalii-adp/etalii.adp`](https:/
 - `cities.yaml`, `cities.json` and `cities.xml`: one table, *Cities*, written in each of the three formats a knowledge file comes in;
 - `LICENSE.md`: that repository's `LICENSE`, verbatim.
 
-One file is not copied from there but written for ADP: `provinces.yaml`, the table the cities' relation *Province* names as its target. It exists so that the relation resolves: a city's province is shown by its name, not by the id the file holds.
+The three cities files no longer match that commit byte for byte: they carry the data the maintainer added to the showcase's `cities.yaml` and `provinces.yaml` on 2026-10-12 (ruling in chat that day, "Rewrite fixtures"), written in each format. The view *All cities* lists four columns, *Map* lists two, the table is left in *Map*, and Venlo relates to Limburg.
+
+One file is not copied from there but written for ADP: `provinces.yaml`, the table the cities' relation *Province* names as its target. It exists so that the relation resolves: a city's province is shown by its name, not by the id the file holds. It is the showcase's `yaml/provinces.yaml`, with Limburg and Overijssel among its rows.
 
 `.gitattributes` keeps this folder from line-ending conversion, because the module's tests read these bytes and compare them.
 

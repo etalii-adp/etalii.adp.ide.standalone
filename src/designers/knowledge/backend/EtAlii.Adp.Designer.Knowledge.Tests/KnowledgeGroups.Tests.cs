@@ -27,7 +27,7 @@ public sealed class KnowledgeGroupsTests : IDisposable
     /// <summary>The example: its first view is grouped by the country its cities are in.</summary>
     private EditingTable Grouped(string extension)
     {
-        var table = new EditingTable(KnowledgeFiles.CopyExample("cities" + extension, _root));
+        var table = new EditingTable(KnowledgeFiles.CopyGrouped("cities" + extension, _root));
         Assert.Equal("p2", table.OnDisk().Views.Single(view => view.Id == "v1").GroupBy);
         return table;
     }
