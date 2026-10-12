@@ -127,6 +127,27 @@ import "./dependency-graph.css";
 
 **Related.** [The shape of a module client](#the-shape-of-a-module-client) for where this sits in the whole.
 
+## What an editor module brings to the shared text panel
+
+**Declarations:** `EditorAnalysis`, `EditorFinding`, `EditorCompletion`, `EditorCompletionList`, `EditorHover`, `editorHighlight`, `resolveSchemaReference`, `SchemaFiles`, `SchemaFile`, `schemaFileKey`
+
+**What it is for.** An editor module hands `TextEditorPanel` what it knows about its format, and the panel presents it the same way for every editor: an editor module draws no underline, list or tooltip of its own. [creating-an-editor-module.md](creating-an-editor-module.md), *The shared editor pieces*, says how they fit together.
+
+**Whether a module needs it.** Only an editor module whose format has findings, completion or a schema. A diagram module never does.
+
+**Its shape.** An `EditorAnalysis` answers `findings` for a text with `EditorFinding`s, each a `from` and `to`, a `severity`, a `message` set as text and a `source`; its optional `completions` answers an `EditorCompletionList` of `items`, each `EditorCompletion` a `label`, an optional `filterText`, `detail`, `info` and `boost`, and the `from`, `to` and `insert` it applies; its optional `hover` answers an `EditorHover`, a `from`, `to` and `text`; its optional `status` is what the status line says after the counts. `editorHighlight` is the one colour scheme, whose classes a module may put on text but never restyle. `resolveSchemaReference` decides where a schema reference a document holds points, against the document's path. `SchemaFiles` reads the project files an analysis needs over the tab's own stream and reports each as a `SchemaFile`, keyed by `schemaFileKey` of its path.
+
+Source: [`src/editors/yaml/client/register.ts`](../src/editors/yaml/client/register.ts)
+
+```ts
+export const registrations: ToolPanelRegistration[] = [
+  {
+    matches: (mimeType) => mimeType === "editor/yaml",
+    Panel: YamlEditorPanel,
+  },
+];
+```
+
 ## The stream and the model
 
 **Declarations:** `useDiagramStream`, `DiagramModel`, `DiagramModelElement`, `DiagramModelConnection`, `Delta`, `Element`

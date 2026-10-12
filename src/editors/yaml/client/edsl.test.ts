@@ -1,6 +1,7 @@
-import { readdirSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import { describe, expect, it } from "vitest";
+import { sourceFiles } from "@client/sourceFiles";
 
 /**
  * EDSL is a placeholder, so no `.eds` file is invented for this editor and no code reads one
@@ -8,15 +9,9 @@ import { describe, expect, it } from "vitest";
  */
 const module = join(__dirname, "..");
 
-function filesUnder(folder: string): string[] {
-  return readdirSync(folder, { withFileTypes: true }).flatMap((entry) =>
-    entry.name === "bin" || entry.name === "obj" || entry.name === "node_modules" ? [] : entry.isDirectory() ? filesUnder(join(folder, entry.name)) : [join(folder, entry.name)],
-  );
-}
-
 describe("EDSL", () => {
   it("has no .eds file in the module, and no code that names one", () => {
-    const files = filesUnder(module);
+    const files = sourceFiles(module);
     expect(files.length).toBeGreaterThan(10);
     expect(files.filter((file) => file.toLowerCase().endsWith(".eds")).map((file) => relative(module, file))).toEqual([]);
 
