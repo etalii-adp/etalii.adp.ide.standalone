@@ -3,8 +3,10 @@
   "title": "YAML editor requirements (builds on json-editor Requirement 9)",
   "filePath": ".spec-workflow/specs/yaml-editor/requirements.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-10-12T20:44:39.097Z",
   "category": "spec",
-  "categoryName": "yaml-editor"
+  "categoryName": "yaml-editor",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-10-12T20:47:18.754Z"
 }

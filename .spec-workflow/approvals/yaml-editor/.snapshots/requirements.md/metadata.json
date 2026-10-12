@@ -1,12 +1,20 @@
 {
   "filePath": ".spec-workflow/specs/yaml-editor/requirements.md",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "snapshots": [
     {
       "version": 1,
       "filename": "snapshot-001.json",
       "timestamp": "2026-10-12T20:44:40.015Z",
       "trigger": "initial",
+      "approvalId": "approval_1791837879097_xkfbzudg7",
+      "approvalTitle": "YAML editor requirements (builds on json-editor Requirement 9)"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-10-12T20:47:18.749Z",
+      "trigger": "approved",
       "approvalId": "approval_1791837879097_xkfbzudg7",
       "approvalTitle": "YAML editor requirements (builds on json-editor Requirement 9)"
     }

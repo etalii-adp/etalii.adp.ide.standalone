@@ -3,8 +3,10 @@
   "title": "XML editor requirements (builds on json-editor Requirement 9; schema work in the backend)",
   "filePath": ".spec-workflow/specs/xml-editor/requirements.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-10-12T20:44:40.066Z",
   "category": "spec",
-  "categoryName": "xml-editor"
+  "categoryName": "xml-editor",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-10-12T20:47:17.039Z"
 }
