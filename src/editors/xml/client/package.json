@@ -1,0 +1,10 @@
+{
+  "name": "@adp/editor-xml-client",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "XML editor client: the panel, its analysis over the editor service, and the registration the shell discovers.",
+  "dependencies": {
+    "@codemirror/lang-xml": "^6.1.0"
+  }
+}

@@ -220,3 +220,9 @@ src/backend/EtAlii.Adp.Specification.Fbl.Tests/Conformance/fixtures/**/*.yaml -t
 # *.yaml, *.json or *.xml would exempt ordinary files of this repository too (knowledge-designer
 # Requirement 9.5).
 src/backend/EtAlii.Adp.Specification.Fbl.Tests/Conformance/etalii.adp/** -text
+
+# The XML editor's example in an encoding other than UTF-8 (xml-editor Requirement 8.5), and its replica.
+# Its declaration names the encoding its bytes are stored in, so git must not rewrite them: named by
+# file, since every other XML file here is ordinary text.
+src/editors/xml/examples/latin1.xml -text
+src/examples/editors/xml/latin1.xml -text
