@@ -1,5 +1,5 @@
 """Fixed waits and polling helpers (spec 025, T006): every Task.Delay and Thread.Sleep in test and in
-production code with its file and line, and every declaration of a polling helper (a method whose name
+production code with its file and line (the testing projects are test code, common.py), and every declaration of a polling helper (a method whose name
 says it waits until something holds: Eventually, WaitUntil..., ...UntilAsync, Poll...)."""
 
 import re
