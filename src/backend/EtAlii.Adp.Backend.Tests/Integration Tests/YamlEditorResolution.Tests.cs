@@ -1,7 +1,6 @@
 using System.Text;
 using EtAlii.Adp.Diagram.AzureDevOpsPipeline;
 using EtAlii.Adp.Diagram.Wire;
-using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Editor;
 using EtAlii.Adp.Editor.Wire;
 using EtAlii.Adp.Hierarchy;
@@ -81,14 +80,14 @@ public class YamlEditorResolutionTests(HostFixture host) : IClassFixture<HostFix
         // other write (Requirement 2.4 - this editor adds no path of its own).
         var store = host.Services.GetRequiredService<IPipelineDocumentStore>();
         var reloaded = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
-        EventHandler<PipelineDocumentChangedEventArgs> onChanged = (_, args) =>
+        void OnChanged(object? _, PipelineDocumentChangedEventArgs args)
         {
             if (args.Path.EndsWith("pipeline.yml", StringComparison.Ordinal))
             {
                 reloaded.TrySetResult(args.Path);
             }
-        };
-        store.Changed += onChanged;
+        }
+        store.Changed += OnChanged;
         try
         {
             var original = await File.ReadAllTextAsync(IoPath.Combine(_projectFolder, "pipeline.yml"), TestContext.Current.CancellationToken);
@@ -105,7 +104,7 @@ public class YamlEditorResolutionTests(HostFixture host) : IClassFixture<HostFix
         }
         finally
         {
-            store.Changed -= onChanged;
+            store.Changed -= OnChanged;
         }
     }
 
