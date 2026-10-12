@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/yaml-editor/design.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-10-12T20:59:31.994Z",
+      "trigger": "initial",
+      "approvalId": "approval_1791838771205_qrhzc2jrt",
+      "approvalTitle": "YAML editor design (asks ruling A1: one alias in the client's shared Vite config)"
+    }
+  ]
+}

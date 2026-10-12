@@ -26,7 +26,7 @@ public class KnowledgeBodyTests
 
         // The table and its properties, with what each type has.
         Assert.Equal("Cities", table.Name);
-        Assert.Equal("v1", table.ActiveViewId);
+        Assert.Equal("v2", table.ActiveViewId);
         Assert.Equal(
             ["p1 Name text", "p2 Country selection", "p3 Population number", "p4 Tags multipleSelection", "p5 Province relation", "p6 Visited checkbox"],
             table.Properties.Take(6).Select(property => $"{property.Id} {property.Name} {property.ValueType}"));
@@ -41,7 +41,7 @@ public class KnowledgeBodyTests
         // At least one view, the one the file was left in among them.
         Assert.NotEmpty(table.Views);
         Assert.Contains(table.Views, view => view.Id == table.ActiveViewId);
-        Assert.Same(table.Views.Single(view => view.Id == "v1"), table.ViewOrDefault(""));
+        Assert.Same(table.Views.Single(view => view.Id == "v2"), table.ViewOrDefault(""));
 
         // Rows with their cells, by property.
         Assert.NotEmpty(table.Rows);

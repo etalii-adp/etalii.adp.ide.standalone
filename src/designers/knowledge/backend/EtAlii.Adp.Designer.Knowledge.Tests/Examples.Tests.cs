@@ -45,9 +45,9 @@ public sealed class ExamplesTests : IDisposable
     public void TheExamples_AreFound_InTheModuleAndInTheShowcase()
     {
         // Assert: the canary. The table in three formats and the table it relates to in the module, and the
-        // two of them in each of the showcase's three folders, and the two tables of its folder of relations;
-        // a walk that found fewer has stopped looking.
-        Assert.Equal(4 + 6 + 2, DataFiles().Count);
+        // two of them in each of the showcase's three folders with the countries its yaml folder adds, and the
+        // two tables of its folder of relations; a walk that found fewer has stopped looking.
+        Assert.Equal(4 + 6 + 1 + 2, DataFiles().Count);
     }
 
     [Theory]
@@ -140,7 +140,7 @@ public sealed class ExamplesTests : IDisposable
         var bodies = Directory.EnumerateFiles(KnowledgeFiles.ShowcaseFolder, "*", SearchOption.AllDirectories).Where(file => IoPath.GetExtension(file) is ".yaml" or ".json" or ".xml").ToList();
 
         // Assert: beside each data file, a registration of two lines - the designer's origin, and the file it is the registration of.
-        Assert.Equal(8, bodies.Count);
+        Assert.Equal(9, bodies.Count);
         foreach (var body in bodies)
         {
             var registration = IoPath.ChangeExtension(body, ".adp");

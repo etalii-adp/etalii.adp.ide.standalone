@@ -17,8 +17,8 @@ A knowledge file is two files. The data file holds everything: the properties, t
 views with their columns, sorts, filter and grouping. The `.adp` file beside it holds two lines
 and exists only to say which file is a table and of which kind.
 
-The table opens in its view *All cities*, which shows the cities of the Netherlands, largest
-first, grouped by country. The view *Map* shows every row as the file has it.
+The table opens in its view *Map*, which shows every row as the file has it. The view
+*All cities* shows the cities of the Netherlands, largest first, grouped by country.
 
 What you change here is written to the data file as you change it, and the application's undo
 takes it back. These are the showcase's copies, so editing them changes files under version
