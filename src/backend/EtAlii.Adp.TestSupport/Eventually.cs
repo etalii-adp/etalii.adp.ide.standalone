@@ -12,10 +12,10 @@ namespace EtAlii.Adp.TestSupport;
 public static class Eventually
 {
     /// <summary>How long a wait lasts when the caller names no patience.</summary>
-    public static readonly TimeSpan DefaultPatience = TimeSpan.FromSeconds(10);
+    private static readonly TimeSpan DefaultPatience = TimeSpan.FromSeconds(10);
 
     /// <summary>How long between two looks when the caller names no interval.</summary>
-    public static readonly TimeSpan DefaultInterval = TimeSpan.FromMilliseconds(25);
+    private static readonly TimeSpan DefaultInterval = TimeSpan.FromMilliseconds(25);
 
     /// <summary>
     /// The first non-null value <paramref name="probe"/> returns, or null when
@@ -49,20 +49,5 @@ public static class Eventually
 
             await Task.Delay(interval ?? DefaultInterval, time, cancellationToken);
         }
-    }
-
-    /// <summary>
-    /// Whether <paramref name="condition"/> came to hold before <paramref name="patience"/> ran out.
-    /// </summary>
-    public static async Task<bool> HoldsAsync(
-        Func<bool> condition,
-        CancellationToken cancellationToken,
-        TimeSpan? patience = null,
-        TimeSpan? interval = null,
-        TimeProvider? time = null)
-    {
-        ArgumentNullException.ThrowIfNull(condition);
-        var held = await ValueAsync(() => condition() ? (object?)true : null, cancellationToken, patience, interval, time);
-        return held is not null;
     }
 }

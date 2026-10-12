@@ -15,13 +15,10 @@ public static class RepositoryPaths
     private static readonly Lazy<string> _root = new(Locate);
 
     /// <summary>The repository root.</summary>
-    public static string Root => _root.Value;
+    private static string Root => _root.Value;
 
     /// <summary><c>src/</c>.</summary>
-    public static string Source => IoPath.Combine(Root, "src");
-
-    /// <summary><c>src/examples/</c>, the showcase documents.</summary>
-    public static string Examples => IoPath.Combine(Source, "examples");
+    private static string Source => IoPath.Combine(Root, "src");
 
     /// <summary><c>src/fixtures/</c>, the test data both suites read.</summary>
     public static string Fixtures => IoPath.Combine(Source, "fixtures");
