@@ -62,9 +62,18 @@ jobs:
           dotnet test --solution EtAlii.Adp.slnx 2>&1 | tee "$RUNNER_TEMP/test.log"
           status=${PIPESTATUS[0]}
           set -e
-          failed=$(grep -E '^failed ' "$RUNNER_TEMP/test.log" | sed -E 's/ \([0-9].*$//' || true)
+          # The runner colours its output, so the escape codes go before the match. The names are
+          # printed again as the step's last lines too: a job log read through the API is cut to
+          # its last lines, and the failure is otherwise far above them.
+          sed -E 's/\x1b\[[0-9;]*m//g' "$RUNNER_TEMP/test.log" > "$RUNNER_TEMP/test.plain.log"
+          failed=$(grep -E '^ *failed ' "$RUNNER_TEMP/test.plain.log" | sed -E 's/^ *//; s/ \([0-9].*$//' || true)
           {
             echo "### Run ${{ matrix.run }}: exit $status"
             if [ -n "$failed" ]; then echo; echo '```'; echo "$failed"; echo '```'; fi
           } >> "$GITHUB_STEP_SUMMARY"
+          if [ -n "$failed" ]; then
+            echo "Failed tests in run ${{ matrix.run }}:"
+            echo "$failed"
+            grep -E -A 25 '^ *failed ' "$RUNNER_TEMP/test.plain.log" | head -n 200
+          fi
           exit "$status"
