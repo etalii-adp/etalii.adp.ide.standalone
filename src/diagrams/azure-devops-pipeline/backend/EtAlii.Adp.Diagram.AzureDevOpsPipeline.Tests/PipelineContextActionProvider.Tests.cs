@@ -168,6 +168,31 @@ public class PipelineContextActionProviderTests : IDisposable
         Assert.Equal("F2", rename.Shortcut?.Key);
     }
 
+    /// <summary>
+    /// Move up and Move down answer to the keypress a person makes for <c>Alt+Up</c> and
+    /// <c>Alt+Down</c>, in the shape a <c>KeyboardEvent</c> gives it: the key <c>ArrowUp</c> with Alt
+    /// held. Sent as the key <c>"Alt+Up"</c> with no modifier, they matched no keypress at all
+    /// (spec 025, T268/T269).
+    /// </summary>
+    [Theory]
+    [InlineData(PipelineContextActionProvider.MoveStepUpActionId, "Build/Compile/step-1", "ArrowUp")]
+    [InlineData(PipelineContextActionProvider.MoveStepDownActionId, "Build/Compile/step-0", "ArrowDown")]
+    public async Task AStepMove_AnswersToAltAndTheArrowKey_AsTheBrowserReportsIt(string actionId, string stepId, string key)
+    {
+        // Arrange.
+        var path = Write();
+        var pressed = new ContextShortcutDefinition(key, Alt: true);
+
+        // Act.
+        var groups = await _provider.DiscoverAsync(Target(path, stepId), TestContext.Current.CancellationToken);
+        var action = groups.Actions().Single(action => action.Id == actionId);
+
+        // Assert.
+        Assert.NotNull(action.Shortcut);
+        Assert.True(action.Shortcut.Matches(pressed), $"{actionId} carries {action.Shortcut}, which does not match {pressed}.");
+        Assert.False(action.Shortcut.Matches(new ContextShortcutDefinition(key)), $"{actionId} also answers to a bare {key}.");
+    }
+
     [Fact]
     public async Task TheOnlyStage_IsNotOfferedRemove()
     {

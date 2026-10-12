@@ -13,6 +13,7 @@ import {
   EDGE_TYPE,
   JOB_TYPE,
   STAGE_TYPE,
+  STEP_TYPE,
   TEMPLATE_TYPE,
   type PipelineModel,
 } from "./pipelineModel";
@@ -23,6 +24,7 @@ import { fakeContextConnection, idsPushed, pointer } from "@client/canvas/librar
 
 const select = vi.fn();
 const executeShortcut = vi.fn(async () => ({ accepted: true, error: "" }));
+const executeAction = vi.fn(async () => ({ accepted: true, error: "" }));
 const submitLabel = vi.fn(async () => ({ accepted: true, error: "" }));
 let currentSelectionKey: string | null = null;
 let currentPrompt: unknown = null;
@@ -53,7 +55,7 @@ vi.mock("@client/shell/context/ContextConnectionProvider", async (importOriginal
   };
 });
 
-const connection = fakeContextConnection({ select, executeShortcut });
+const connection = fakeContextConnection({ select, executeShortcut, executeAction });
 
 let currentToolboxItems: ToolboxItem[] = [];
 let toolboxRequests: (readonly string[])[] = [];
@@ -155,6 +157,7 @@ describe("PipelineCanvas", () => {
     currentSelectionKey = null;
     currentPrompt = null;
     executeShortcut.mockClear();
+    executeAction.mockClear();
     currentLoading = false;
     currentFailed = false;
     currentProblems = null;
@@ -620,6 +623,53 @@ describe("PipelineCanvas", () => {
     expect(executeShortcut).toHaveBeenCalledTimes(1);
     expect(container.textContent).not.toContain("A template's stage is renamed in its template.");
     expect(container.querySelector(".canvas-rejection")).toBeNull();
+  });
+
+  // ---- Move up and Move down, by Alt and an arrow key (spec 025, T268/T269) ----------------
+
+  function step(id: string, parentId: string, displayName: string) {
+    return element(
+      id,
+      STEP_TYPE,
+      payload({ name: displayName, displayName, parentId, kind: PipelineElementKindProto.PIPELINE_ELEMENT_KIND_STEP }),
+    );
+  }
+
+  it.each([
+    ["ArrowUp", "azure-pipeline.move-step-up"],
+    ["ArrowDown", "azure-pipeline.move-step-down"],
+  ])("sends the selected step's move for Alt+%s, as the browser reports the press", (key, actionId) => {
+    // Arrange. The backend offers Move up as Alt+Up; a browser reports that press as the key
+    // ArrowUp with altKey set. Nothing on this canvas listened for it, so the press went nowhere.
+    currentModel = applyDelta(emptyModel, add(stage("Build", "Build"), job("Build/Compile", "Build", "Compile"), step("Build/Compile/step-0", "Build/Compile", "dotnet build")));
+    currentSelectionKey = "element:Build/Compile/step-0";
+    const { container } = draw();
+
+    // Act.
+    fireEvent.keyDown(container.querySelector("svg.library-canvas-surface") as SVGSVGElement, { key, altKey: true });
+
+    // Assert: the move went over by its id, addressed to the selected step.
+    expect(executeAction).toHaveBeenCalledTimes(1);
+    const [sent, source] = executeAction.mock.calls[0] as unknown as [string, { source: { value: { value: string } } }];
+    expect(sent).toBe(actionId);
+    expect(source.source.value.value).toBe("Build/Compile/step-0");
+  });
+
+  it("moves nothing for a bare arrow key, or for Alt and an arrow on a stage", () => {
+    // Arrange.
+    currentModel = applyDelta(emptyModel, add(stage("Build", "Build"), job("Build/Compile", "Build", "Compile"), step("Build/Compile/step-0", "Build/Compile", "dotnet build")));
+    currentSelectionKey = "element:Build/Compile/step-0";
+    const { container, unmount } = draw();
+
+    // Act.
+    fireEvent.keyDown(container.querySelector("svg.library-canvas-surface") as SVGSVGElement, { key: "ArrowUp" });
+    unmount();
+    currentSelectionKey = "element:Build";
+    const stageView = draw();
+    fireEvent.keyDown(stageView.container.querySelector("svg.library-canvas-surface") as SVGSVGElement, { key: "ArrowUp", altKey: true });
+
+    // Assert.
+    expect(executeAction).not.toHaveBeenCalled();
   });
 
   it("forwards nothing while no element is selected", () => {
