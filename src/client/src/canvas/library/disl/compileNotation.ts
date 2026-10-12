@@ -145,7 +145,7 @@ export interface NotationBindings {
   customRoutes?: Readonly<Record<string, CustomRouteRef>>;
   /**
    * An action as the module dispatches it, given the compiled declaration and the shortcut its menu
-   * entry writes (as a `KeyboardEvent.key`): where a module's backend resolves an action by its key
+   * entry writes (its `KeyboardEvent.key`, without the modifiers, which a `backendKey` cannot carry): where a module's backend resolves an action by its key
    * (`backendKey`), or a second key invokes it, which DISL's one `shortcut` per entry cannot say.
    */
   action?: (action: ActionDeclaration, entry: { shortcut?: string }) => ActionDeclaration;
@@ -175,11 +175,45 @@ const RUNG_STEPS: Readonly<Record<string, { calendar: CalendarStep; count?: numb
 };
 
 /** DISL's key names (§7.3) that are not their `KeyboardEvent.key`. */
-const KEY_VALUES: Readonly<Record<string, string>> = { Space: " " };
+const KEY_VALUES: Readonly<Record<string, string>> = {
+  Space: " ",
+  Up: "ArrowUp",
+  Down: "ArrowDown",
+  Left: "ArrowLeft",
+  Right: "ArrowRight",
+  Esc: "Escape",
+};
 
-/** A shortcut as the library matches it: the key a DISL entry names, as `KeyboardEvent.key` spells it. */
-function keyOf(shortcut: string): string {
-  return KEY_VALUES[shortcut] ?? shortcut;
+/** The modifiers a DISL shortcut writes before its key, as the backend's `DerivedShortcut.Parse` reads them. */
+const MODIFIERS: Readonly<Record<string, "ctrl" | "shift" | "alt" | "meta">> = {
+  ctrl: "ctrl", control: "ctrl", shift: "shift", alt: "alt", option: "alt", meta: "meta", cmd: "meta", command: "meta",
+};
+
+type ShortcutInvocation = Extract<ActionInvocation, { kind: "shortcut" }>;
+
+/**
+ * A shortcut as the library matches it, in the shape a `KeyboardEvent` reports the press: `Alt+Up` is
+ * the key `ArrowUp` with `alt` held. Kept whole, `"Alt+Up"` was a key no keypress ever has.
+ */
+function shortcutOf(text: string): ShortcutInvocation {
+  const parts = text.split("+");
+  const shortcut: ShortcutInvocation = { kind: "shortcut", key: "" };
+  let used = 0;
+  for (; used < parts.length - 1; used++) {
+    const modifier = MODIFIERS[parts[used].trim().toLowerCase()];
+    if (modifier === undefined) {
+      break;
+    }
+    shortcut[modifier] = true;
+  }
+  const key = parts.slice(used).join("+");
+  shortcut.key = KEY_VALUES[key] ?? key;
+  return shortcut;
+}
+
+/** Whether two shortcuts are the same press. */
+function samePress(a: ShortcutInvocation, b: ShortcutInvocation): boolean {
+  return a.key === b.key && !a.ctrl === !b.ctrl && !a.shift === !b.shift && !a.alt === !b.alt && !a.meta === !b.meta;
 }
 
 /** The compass positions as fractions of the bounds. */
@@ -974,7 +1008,7 @@ class Compiler {
    * first, then those only a shortcut invokes, each in menu order.
    */
   private actions(): ActionDeclaration[] {
-    const found: { id: string; kind: "element" | "connection"; types: Set<string>; keys: string[]; gestures: ("activate" | "delete")[]; rank: number; shortcut?: string; pins?: true }[] = [];
+    const found: { id: string; kind: "element" | "connection"; types: Set<string>; keys: ShortcutInvocation[]; gestures: ("activate" | "delete")[]; rank: number; shortcut?: string; pins?: true }[] = [];
     for (const menu of this.spec.toolbox?.contextMenus ?? []) {
       const targets = this.menuTargets(menu);
       if (targets === null) {
@@ -984,7 +1018,7 @@ class Compiler {
       for (const tool of menu.tools) {
         const activates = tool.kind === (targets.kind === "element" ? this.doubleClickOf(targets.types) : undefined);
         const deletes = tool.kind === "delete";
-        const keys = tool.shortcut !== undefined && !(deletes && tool.shortcut === "Delete") ? [keyOf(tool.shortcut)] : [];
+        const keys = tool.shortcut !== undefined && !(deletes && tool.shortcut === "Delete") ? [shortcutOf(tool.shortcut)] : [];
         // DISL 0.4's `pin` entry keeps an element where the layout drew it, which the canvas alone can say.
         const pins = tool.kind === "pin" && targets.kind === "element";
         if (!activates && !deletes && !pins && keys.length === 0) {
@@ -1000,10 +1034,10 @@ class Compiler {
             found.push(action);
           }
           if (action.shortcut === undefined && tool.shortcut !== undefined) {
-            action.shortcut = keyOf(tool.shortcut);
+            action.shortcut = shortcutOf(tool.shortcut).key;
           }
           (targets.kind === "element" ? this.concreteTypes(forType) : [forType]).forEach((type) => action!.types.add(type));
-          keys.filter((each) => !action!.keys.includes(each)).forEach((each) => action!.keys.push(each));
+          keys.filter((each) => !action!.keys.some((known) => samePress(known, each))).forEach((each) => action!.keys.push(each));
           if (activates && !action.gestures.includes("activate")) {
             action.gestures.push("activate");
           }
@@ -1039,7 +1073,7 @@ class Compiler {
     const allNodes = new Set(this.nodeNames);
     return [...found].sort((a, b) => a.rank - b.rank).map((action): ActionDeclaration => {
       const invokedBy: ActionInvocation[] = [
-        ...action.keys.map((key): ActionInvocation => ({ kind: "shortcut", key })),
+        ...action.keys,
         ...action.gestures.map((gesture): ActionInvocation => ({ kind: "gesture", gesture })),
         ...(action.pins === true ? [{ kind: "menu" } as const] : []),
       ];

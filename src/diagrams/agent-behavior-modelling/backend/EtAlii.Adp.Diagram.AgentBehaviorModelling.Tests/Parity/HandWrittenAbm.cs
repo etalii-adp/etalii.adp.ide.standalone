@@ -50,8 +50,9 @@ internal static class HandWrittenAbm
                 [
                     new ContextActionDefinition(AbmContextActionProvider.RenameActionId, "Rename…", "mdi-pencil-outline", new ContextShortcutDefinition("F2")),
                     new ContextActionDefinition(AbmContextActionProvider.EditNotesActionId, "Edit notes…", "mdi-note-text-outline"),
-                    new ContextActionDefinition(AbmContextActionProvider.MoveEarlierActionId, "Move earlier", "mdi-arrow-left", new ContextShortcutDefinition("Alt+Up"), place > 0, place > 0 ? "" : "It is already the first of its siblings."),
-                    new ContextActionDefinition(AbmContextActionProvider.MoveLaterActionId, "Move later", "mdi-arrow-right", new ContextShortcutDefinition("Alt+Down"), place < siblings.Count - 1, place < siblings.Count - 1 ? "" : "It is already the last of its siblings."),
+                    // The moves as a keypress reports them (spec 025, T033); the hand-written module sent "Alt+Up" whole, which matched none.
+                    new ContextActionDefinition(AbmContextActionProvider.MoveEarlierActionId, "Move earlier", "mdi-arrow-left", new ContextShortcutDefinition("ArrowUp", Alt: true), place > 0, place > 0 ? "" : "It is already the first of its siblings."),
+                    new ContextActionDefinition(AbmContextActionProvider.MoveLaterActionId, "Move later", "mdi-arrow-right", new ContextShortcutDefinition("ArrowDown", Alt: true), place < siblings.Count - 1, place < siblings.Count - 1 ? "" : "It is already the last of its siblings."),
                     new ContextActionDefinition(AbmContextActionProvider.RemoveActionId, "Remove", "mdi-delete-outline", new ContextShortcutDefinition("Delete")),
                 ]),
             ];
