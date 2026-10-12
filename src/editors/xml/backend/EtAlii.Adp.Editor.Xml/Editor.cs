@@ -18,7 +18,11 @@ public static class Editor
         Icon: "mdi-xml",
         Extensions: [".xml", ".xsd", ".xsl", ".xslt"],
         FileNames: [],
-        Build: builder => builder.Services.AddSingleton<IEditorSessionFactory, XmlEditorSessionFactory>());
+        Build: builder =>
+        {
+            builder.Services.AddSingleton<IEditorSessionFactory, XmlEditorSessionFactory>();
+            builder.Services.AddSingleton<IEditorAnalyzer, XmlAnalyzer>();
+        });
 
     /// <summary>What discovery reads. One entry: this module carries one editor.</summary>
     public static EditorDefinition[] Definitions { get; } = [Xml];
