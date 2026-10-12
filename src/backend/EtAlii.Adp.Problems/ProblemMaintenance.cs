@@ -126,6 +126,14 @@ public sealed class ProblemMaintenance : IDisposable
                 continue; // Deleted since; OnDeleted already spoke.
             }
 
+            // A link inside the root that leads out of it does not make what lies beyond it the
+            // project's (D6), so nothing is validated or recorded for it.
+            if (!PathContainment.IsInside(root.Path, path))
+            {
+                _logger.Warning("Not revalidating {Path}: it leads outside the project root", path);
+                continue;
+            }
+
             var relative = IoPath.GetRelativePath(root.Path, path);
 
             // What a validation of this file speaks for - the file, and the pair it belongs
@@ -239,11 +247,9 @@ public sealed class ProblemMaintenance : IDisposable
     /// <summary>Every path currently carrying a problem that lives inside <paramref name="folder"/>.</summary>
     private string[] ProblemPathsUnder(string rootPath, string folder)
     {
-        var prefix = IoPath.GetFullPath(folder).TrimEnd(IoPath.DirectorySeparatorChar, IoPath.AltDirectorySeparatorChar)
-                     + IoPath.DirectorySeparatorChar;
         return [.. _store.Get(rootPath).Problems
             .Select(problem => problem.RelativePath)
-            .Where(path => IoPath.GetFullPath(IoPath.Combine(rootPath, path)).StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            .Where(path => PathContainment.IsInside(folder, IoPath.Combine(rootPath, path)))
             .Distinct(StringComparer.OrdinalIgnoreCase)];
     }
 

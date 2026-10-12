@@ -176,6 +176,42 @@ public class ProblemMaintenanceTests : IDisposable
 
     // ---- plumbing ----------------------------------------------------------------------
 
+    [Fact]
+    public async Task AChangeReachedThroughALinkThatLeavesTheRoot_IsNotRevalidated()
+    {
+        // Arrange: a link inside the project that leads to a diagram outside it (D6). The
+        // maintenance itself refuses it, rather than leaving the refusal to the validator and
+        // then recording what the validator said about a file that is not the project's.
+        var elsewhere = Directory.CreateTempSubdirectory("problem-maintenance-elsewhere-").FullName;
+        try
+        {
+            await File.WriteAllTextAsync(IoPath.Combine(elsewhere, "outside.adp"), "freeplane/mindmap\n", TestContext.Current.CancellationToken);
+            await File.WriteAllTextAsync(IoPath.Combine(elsewhere, "outside.mm"), "the document", TestContext.Current.CancellationToken);
+            var link = IoPath.Combine(_root, "escape");
+            try
+            {
+                Directory.CreateSymbolicLink(link, elsewhere);
+            }
+            catch (Exception exception) when (exception is UnauthorizedAccessException or IOException && OperatingSystem.IsWindows())
+            {
+                Assert.Skip($"This process may not create a symbolic link: {exception.Message}");
+            }
+
+            using var root = new TrackedProblemRoot(_root, _maintenance);
+
+            // Act.
+            await _maintenance.RevalidateAsync(root, [IoPath.Combine(link, "outside.adp")]);
+
+            // Assert.
+            Assert.Equal(0, _validator.Calls);
+            Assert.DoesNotContain(_store.Mutations, mutation => mutation.Kind == "ReplaceFor");
+        }
+        finally
+        {
+            TestFolder.TryDelete(elsewhere);
+        }
+    }
+
     private void CreatePair(string baseName)
     {
         File.WriteAllText(IoPath.Combine(_root, baseName + ".adp"), "freeplane/mindmap\n");
