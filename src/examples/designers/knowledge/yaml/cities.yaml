@@ -2,7 +2,7 @@ ded: "0.1"
 designer: etalii/knowledge
 # Cities of the Low Countries, kept by hand and by ADP.
 name: Cities
-activeView: v1
+activeView: v2
 properties:
   - id: p1
     name: Name
@@ -60,7 +60,13 @@ views:
     name: All cities
     columns:
       - property: p3
-        width: 120
+        width: 175
+      - property: p2
+        width: 126
+      - property: p6
+        width: 104
+      - property: p7
+        width: 112
     sorts:
       - property: p3
         direction: descending
@@ -71,6 +77,11 @@ views:
     groupBy: p2
   - id: v2
     name: Map
+    columns:
+      - property: p2
+        width: 166
+      - property: p1
+        width: 143
 rows:
   - id: r1
     cells:
@@ -121,6 +132,9 @@ rows:
         option: o1
       - property: p1
         text: Venlo
+      - property: p5
+        rows:
+          - row: 9wvrdvjn4ob2f2nw421bouq7y
   - id: 8heh3sdyy0a63fyq7gicize5a
     cells:
       - property: p2
