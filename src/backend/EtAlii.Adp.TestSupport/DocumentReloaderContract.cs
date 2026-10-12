@@ -35,7 +35,7 @@ public abstract class DocumentReloaderContract<TStore> : IDisposable
     protected abstract string Example { get; }
 
     /// <summary>The copy of <see cref="Example"/> the test works on, made on first use.</summary>
-    protected string Body => field ??= CopyExample();
+    private string Body => field ??= CopyExample();
 
     /// <summary>A new store, with nothing loaded.</summary>
     protected abstract TStore CreateStore();
