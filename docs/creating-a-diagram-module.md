@@ -66,7 +66,7 @@ public static class Diagram
 | `IDiagramDocumentFactory` | `TimelineDocumentFactory` | **Mandatory once you declare an extension** — startup fails, naming your type, if the factory that writes an empty body is missing. |
 | `IDiagramSessionFactory` | `TimelineSessionFactory` | Mandatory to open the diagram at all. |
 | `ICommandHandler<T>` per command | the `Commands/` folder | For every edit the type supports. |
-| `IDiagramDocumentReloader` | `TimelineDocumentReloader` | So an external write to the body (another editor, a `git pull`) reaches every open session. |
+| `IDiagramDocumentReloader` | `TimelineDocumentReloader` | So an external write to the body (another editor, a `git pull`) reaches every open session. A store whose interface extends [`IDiagramDocumentStore`](../src/backend/EtAlii.Adp.Documents/IDiagramDocumentStore.cs) writes no reloader: `services.AddDiagramDocumentReloader<ISankeyDocumentStore>(Diagram.Sankey.Origin)` registers the shared [`DiagramDocumentReloader<TStore>`](../src/backend/EtAlii.Adp.Diagram/DiagramDocumentReloader.cs), as sankey does, and its tests derive from [`DocumentReloaderContract<TStore>`](../src/backend/EtAlii.Adp.TestSupport/DocumentReloaderContract.cs). Timeline follows when its store does. |
 | `IContextSourceResolver` | `TimelineContextSourceResolver` | To make elements selectable. |
 | `IContextActionProvider` | `TimelineContextActionProvider` | To offer verbs — reaching the ribbon, right-click menu and keyboard through one path. |
 | `IContextPropertyProvider` | `TimelineContextPropertyProvider` | To fill the property grid. |

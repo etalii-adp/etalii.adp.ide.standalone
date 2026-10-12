@@ -24,7 +24,7 @@ public static class ServiceCollectionAddSankeyExtension
         services.TryAddSingleton<ISankeyDocumentStore, SankeyDocumentStore>();
 
         services.AddSingleton<IDiagramSessionFactory, SankeySessionFactory>();
-        services.AddSingleton<IDiagramDocumentReloader, SankeyDocumentReloader>();
+        services.AddDiagramDocumentReloader<ISankeyDocumentStore>(Diagram.Sankey.Origin);
         services.AddSingleton<IContextSourceResolver, SankeyContextSourceResolver>();
 
         services.AddSingleton<IDiagramToolboxProvider, SankeyToolboxProvider>();

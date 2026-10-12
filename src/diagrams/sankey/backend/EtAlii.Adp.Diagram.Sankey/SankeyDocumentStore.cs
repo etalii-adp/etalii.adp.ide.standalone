@@ -64,4 +64,7 @@ public sealed class SankeyDocumentStore : ISankeyDocumentStore
             Changed?.Invoke(this, new SankeyDocumentChangedEventArgs(path));
         }
     }
+
+    /// <inheritdoc />
+    public void Forget(string path) => _lifecycle.Forget(path);
 }
