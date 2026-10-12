@@ -33,7 +33,7 @@ public abstract class DocumentStoreContract<TStore, TBody, TModel> : IDisposable
     protected abstract string Example { get; }
 
     /// <summary>The copy of <see cref="Example"/> the test works on, made on first use.</summary>
-    protected string Body => field ??= CopyExample();
+    private string Body => field ??= CopyExample();
 
     /// <summary>A text that <see cref="Edit"/> puts into a body, and that is in no example.</summary>
     protected abstract string EditMarker { get; }
