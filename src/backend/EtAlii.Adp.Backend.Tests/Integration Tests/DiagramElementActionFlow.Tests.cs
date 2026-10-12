@@ -5,6 +5,7 @@ using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Hierarchy.Wire;
 using EtAlii.Adp.Projects;
 using EtAlii.Adp.Projects.Wire;
+using EtAlii.Adp.TestSupport.Host;
 using Grpc.Core;
 using Grpc.Net.Client;
 using Microsoft.AspNetCore.Hosting;
@@ -31,7 +32,6 @@ public class DiagramElementActionFlowTests : IClassFixture<WebApplicationFactory
     private const string DeveloperCredential = "changeme";
     private const string SessionTokenHeader = "session-token";
     private static readonly TimeSpan MessageTimeout = TimeSpan.FromSeconds(10);
-    private static readonly TimeSpan StreamStartupGrace = TimeSpan.FromMilliseconds(500);
 
     private readonly WebApplicationFactory<Program> _factory;
     private readonly string _appDataRoot;
@@ -92,8 +92,8 @@ public class DiagramElementActionFlowTests : IClassFixture<WebApplicationFactory
         // Arrange, continued.
         using var cts = CreateMessageTimeout();
         using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
+        await StreamProbe.WaitUntilContextLiveAsync(contextCall.ResponseStream, cts.Token);
         var pendingPrompt = ReadUntilPromptAsync(contextCall.ResponseStream, cts.Token);
-        await Task.Delay(StreamStartupGrace, TestContext.Current.CancellationToken);
 
         // Arrange, continued.
         // The canvas's click: the nested file -> node selection.
@@ -155,8 +155,8 @@ public class DiagramElementActionFlowTests : IClassFixture<WebApplicationFactory
 
         using var cts = CreateMessageTimeout();
         using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
+        await StreamProbe.WaitUntilContextLiveAsync(contextCall.ResponseStream, cts.Token);
         var pendingPrompt = ReadUntilPromptAsync(contextCall.ResponseStream, cts.Token);
-        await Task.Delay(StreamStartupGrace, TestContext.Current.CancellationToken);
 
         await contextClient.SelectAsync(
             new SelectRequest { ProjectId = projectId, WatchId = watchId, Selection = NodeChain(entryId, "ID_1") },
@@ -223,8 +223,8 @@ public class DiagramElementActionFlowTests : IClassFixture<WebApplicationFactory
         // Arrange, continued.
         using var cts = CreateMessageTimeout();
         using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
+        await StreamProbe.WaitUntilContextLiveAsync(contextCall.ResponseStream, cts.Token);
         var pendingPrompt = ReadUntilPromptAsync(contextCall.ResponseStream, cts.Token);
-        await Task.Delay(StreamStartupGrace, TestContext.Current.CancellationToken);
 
         // Arrange, continued.
         // Only the file is selected - no node level in the chain.
@@ -279,8 +279,8 @@ public class DiagramElementActionFlowTests : IClassFixture<WebApplicationFactory
 
         using var cts = CreateMessageTimeout();
         using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
+        await StreamProbe.WaitUntilContextLiveAsync(contextCall.ResponseStream, cts.Token);
         var pendingPrompt = ReadUntilPromptAsync(contextCall.ResponseStream, cts.Token);
-        await Task.Delay(StreamStartupGrace, TestContext.Current.CancellationToken);
 
         // The tab the user left: its file is still the selection.
         await contextClient.SelectAsync(
@@ -324,8 +324,8 @@ public class DiagramElementActionFlowTests : IClassFixture<WebApplicationFactory
 
         using var cts = CreateMessageTimeout();
         using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
+        await StreamProbe.WaitUntilContextLiveAsync(contextCall.ResponseStream, cts.Token);
         var pendingPrompt = ReadUntilPromptAsync(contextCall.ResponseStream, cts.Token);
-        await Task.Delay(StreamStartupGrace, TestContext.Current.CancellationToken);
 
         // Act. Nothing is selected.
         var executed = await contextClient.ExecuteActionAsync(
@@ -462,7 +462,7 @@ public class DiagramElementActionFlowTests : IClassFixture<WebApplicationFactory
         // Arrange, continued.
         using var cts = CreateMessageTimeout();
         using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
-        await Task.Delay(StreamStartupGrace, TestContext.Current.CancellationToken);
+        await StreamProbe.WaitUntilContextLiveAsync(contextCall.ResponseStream, cts.Token);
 
         // Arrange, continued.
         await contextClient.SelectAsync(

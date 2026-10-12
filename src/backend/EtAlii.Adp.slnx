@@ -43,6 +43,7 @@
   <Project Path="EtAlii.Adp.History/EtAlii.Adp.History.csproj" />
   <Project Path="EtAlii.Adp.History.Tests/EtAlii.Adp.History.Tests.csproj" />
   <Project Path="EtAlii.Adp.TestSupport/EtAlii.Adp.TestSupport.csproj" />
+  <Project Path="EtAlii.Adp.TestSupport.Host/EtAlii.Adp.TestSupport.Host.csproj" />
   <Project Path="EtAlii.Adp.Projects.Tests/EtAlii.Adp.Projects.Tests.csproj" />
   <Project Path="EtAlii.Adp.Sessions.Tests/EtAlii.Adp.Sessions.Tests.csproj" />
   <Project Path="EtAlii.Adp.Repository.Tests/EtAlii.Adp.Repository.Tests.csproj" />

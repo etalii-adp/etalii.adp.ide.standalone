@@ -31,7 +31,6 @@ public class AddDiagramFlowTests : IClassFixture<WebApplicationFactory<Program>>
     private const string DeveloperCredential = "changeme";
     private const string SessionTokenHeader = "session-token";
     private static readonly TimeSpan MessageTimeout = TimeSpan.FromSeconds(10);
-    private static readonly TimeSpan StreamStartupGrace = TimeSpan.FromMilliseconds(500);
 
     private readonly WebApplicationFactory<Program> _factory;
     private readonly string _appDataRoot;
@@ -216,7 +215,6 @@ public class AddDiagramFlowTests : IClassFixture<WebApplicationFactory<Program>>
         using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
         await ReadBaselineAsync(contextCall.ResponseStream, cts.Token);
         var pendingPrompt = ReadUntilPromptAsync(contextCall.ResponseStream, cts.Token);
-        await Task.Delay(StreamStartupGrace, TestContext.Current.CancellationToken);
 
         // Arrange, continued.
         // No source: the explorer's empty space.
@@ -276,7 +274,6 @@ public class AddDiagramFlowTests : IClassFixture<WebApplicationFactory<Program>>
         using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
         await ReadBaselineAsync(contextCall.ResponseStream, cts.Token);
         var pendingPrompt = ReadUntilPromptAsync(contextCall.ResponseStream, cts.Token);
-        await Task.Delay(StreamStartupGrace, TestContext.Current.CancellationToken);
 
         // Act and assert, step by step.
         var discovered = await contextClient.DiscoverActionsAsync(
@@ -357,7 +354,6 @@ public class AddDiagramFlowTests : IClassFixture<WebApplicationFactory<Program>>
         using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
         await ReadBaselineAsync(contextCall.ResponseStream, cts.Token);
         var pendingPrompt = ReadUntilPromptAsync(contextCall.ResponseStream, cts.Token);
-        await Task.Delay(StreamStartupGrace, TestContext.Current.CancellationToken);
 
         // Arrange, continued.
         var interactionId = ShortGuid.NewShortGuid();

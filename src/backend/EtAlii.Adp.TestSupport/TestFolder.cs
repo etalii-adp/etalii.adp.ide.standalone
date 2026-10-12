@@ -40,7 +40,7 @@ public sealed class TestFolder : IDisposable
     }
 
     /// <summary>The folder's full path. It exists until the folder is disposed.</summary>
-    private string Path { get; }
+    public string Path { get; }
 
     /// <summary>
     /// A new, empty scratch folder under the temporary folder, named <paramref name="prefix"/> and a

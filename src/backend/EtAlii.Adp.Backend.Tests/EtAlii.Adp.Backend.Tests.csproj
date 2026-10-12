@@ -29,6 +29,7 @@
     <ProjectReference Include="..\..\diagrams\supply-chain\backend\EtAlii.Adp.Diagram.SupplyChain\EtAlii.Adp.Diagram.SupplyChain.csproj" />
     <ProjectReference Include="..\EtAlii.Adp.Backend\EtAlii.Adp.Backend.csproj" />
     <ProjectReference Include="..\EtAlii.Adp.Backend.Service\EtAlii.Adp.Backend.Service.csproj" />
+    <ProjectReference Include="..\EtAlii.Adp.TestSupport.Host\EtAlii.Adp.TestSupport.Host.csproj" />
   </ItemGroup>
 
 </Project>

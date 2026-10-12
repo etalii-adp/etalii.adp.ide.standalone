@@ -1,12 +1,7 @@
 using EtAlii.Adp.Authentication.Wire;
-using EtAlii.Adp.Projects;
 using EtAlii.Adp.Projects.Wire;
+using EtAlii.Adp.TestSupport.Host;
 using Grpc.Core;
-using Grpc.Net.Client;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 using Path = EtAlii.Adp.Documents.Wire.Path;
@@ -23,62 +18,16 @@ namespace EtAlii.Adp.Backend.Tests;
 /// consistency is verified across AuthenticationService/ProjectService only;
 /// extend this once that spec adds a real DiagramService implementation.
 /// </summary>
-public class LoginProjectSelectionFlowTests : IClassFixture<WebApplicationFactory<Program>>, IDisposable
+public class LoginProjectSelectionFlowTests(HostFixture host) : IClassFixture<HostFixture>
 {
-    private const string DeveloperUsername = "admin";
-    private const string DeveloperCredential = "changeme";
-    private const string SessionTokenHeader = "session-token";
-
-    private readonly WebApplicationFactory<Program> _factory;
-    private readonly string _appDataRoot;
-    private readonly string _sampleProjectFolder;
-
-    public LoginProjectSelectionFlowTests(WebApplicationFactory<Program> baseFactory)
-    {
-        _appDataRoot = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.IntegrationTests", Guid.NewGuid().ToString("N"));
-        _sampleProjectFolder = IoPath.Combine(_appDataRoot, "sample-project");
-        Directory.CreateDirectory(_sampleProjectFolder);
-
-        _factory = baseFactory.WithWebHostBuilder(builder =>
-        {
-            // appsettings.developer.json supplies the local-mode credential (task 9).
-            builder.UseEnvironment("developer");
-            builder.ConfigureServices(services =>
-            {
-                // Isolate each test run's persisted project list from the real
-                // ApplicationData folder and from other test runs.
-                services.RemoveAll<IProjectStore>();
-                services.AddSingleton<IProjectStore>(new FileProjectStore(_appDataRoot));
-                // The problem cache must live and die with this test, not in the real user
-                // profile the host's AddProblems registration points at (found by the
-                // errors-and-warnings-panel manual pass: every run left a cache file behind).
-                services.RemoveAll<Problems.IProblemStore>();
-                services.AddSingleton<Problems.IProblemStore>(provider => new Problems.ProblemStore(
-                    _appDataRoot,
-                    provider.GetRequiredService<Hierarchy.DiagramFileRouter>(),
-                    provider.GetRequiredService<Diagram.DiagramValidators>()));
-            });
-        });
-    }
-
-    public void Dispose()
-    {
-        _factory.Dispose();
-        TestFolder.TryDelete(_appDataRoot);
-    }
-
-    private GrpcChannel CreateChannel()
-    {
-        var httpClient = _factory.CreateDefaultClient();
-        return GrpcChannel.ForAddress(httpClient.BaseAddress!, new GrpcChannelOptions { HttpClient = httpClient });
-    }
+    private readonly string _sampleProjectFolder = host.NewProjectFolder();
 
     private static async Task<string> LoginAsDeveloperAsync(AuthenticationService.AuthenticationServiceClient authClient)
     {
         var response = await authClient.LoginAsync(new LoginRequest
         {
-            Username = DeveloperUsername,
-            Credential = DeveloperCredential,
+            Username = FlowConstants.DeveloperUsername,
+            Credential = FlowConstants.DeveloperCredential,
         }, cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(LoginResponse.ResultOneofCase.Session, response.ResultCase);
         return response.Session.Value;
@@ -89,7 +38,7 @@ public class LoginProjectSelectionFlowTests : IClassFixture<WebApplicationFactor
     {
         // Arrange: no login, no token - the login page asks before any session exists
         // (github-build-pipeline R2.3, R3.2), so the exemption must hold end-to-end.
-        using var channel = CreateChannel();
+        using var channel = host.CreateChannel();
         var authClient = new AuthenticationService.AuthenticationServiceClient(channel);
 
         // Act.
@@ -104,12 +53,12 @@ public class LoginProjectSelectionFlowTests : IClassFixture<WebApplicationFactor
     public async Task FullFlow_LoginThenAddSelectRemove_Works()
     {
         // Arrange.
-        using var channel = CreateChannel();
+        using var channel = host.CreateChannel();
         var authClient = new AuthenticationService.AuthenticationServiceClient(channel);
         var projectClient = new ProjectService.ProjectServiceClient(channel);
 
         var token = await LoginAsDeveloperAsync(authClient);
-        var headers = new Metadata { { SessionTokenHeader, token } };
+        var headers = new Metadata { { FlowConstants.SessionTokenHeader, token } };
 
         // Act and assert, step by step.
         var emptyList = await projectClient.ListProjectsAsync(new ListProjectsRequest(), headers, cancellationToken: TestContext.Current.CancellationToken);
@@ -136,12 +85,12 @@ public class LoginProjectSelectionFlowTests : IClassFixture<WebApplicationFactor
     public async Task Session_PersistsAcrossAuthenticationAndProjectService_AndIsRejectedAfterLogout()
     {
         // Arrange.
-        using var channel = CreateChannel();
+        using var channel = host.CreateChannel();
         var authClient = new AuthenticationService.AuthenticationServiceClient(channel);
         var projectClient = new ProjectService.ProjectServiceClient(channel);
 
         var token = await LoginAsDeveloperAsync(authClient);
-        var headers = new Metadata { { SessionTokenHeader, token } };
+        var headers = new Metadata { { FlowConstants.SessionTokenHeader, token } };
 
         // Same token, multiple calls, no re-authentication needed.
         await projectClient.ListProjectsAsync(new ListProjectsRequest(), headers, cancellationToken: TestContext.Current.CancellationToken);
@@ -159,13 +108,13 @@ public class LoginProjectSelectionFlowTests : IClassFixture<WebApplicationFactor
     public async Task InvalidCredentials_AreRejectedWithoutIssuingASession()
     {
         // Arrange.
-        using var channel = CreateChannel();
+        using var channel = host.CreateChannel();
         var authClient = new AuthenticationService.AuthenticationServiceClient(channel);
 
         // Act.
         var response = await authClient.LoginAsync(new LoginRequest
         {
-            Username = DeveloperUsername,
+            Username = FlowConstants.DeveloperUsername,
             Credential = "not-the-right-credential",
         }, cancellationToken: TestContext.Current.CancellationToken);
 

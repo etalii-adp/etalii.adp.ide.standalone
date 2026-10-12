@@ -22,20 +22,20 @@ flowchart LR
 
 ## The solution, with its counts
 
-`src/backend/EtAlii.Adp.slnx` holds **129** projects, as a flat list rather than a folder hierarchy, so the whole thing opens and builds as one solution in Rider:
+`src/backend/EtAlii.Adp.slnx` holds **130** projects, as a flat list rather than a folder hierarchy, so the whole thing opens and builds as one solution in Rider:
 
 | Split | Count |
 | --- | --- |
-| core | **37** |
+| core | **38** |
 | diagram | **86** |
 | editor | **4** |
 | designer | **2** |
-| production | **88** |
+| production | **89** |
 | test | **41** |
 
-Those are **two different splits of the same 129**, and a figure appearing in both tables is a coincidence rather than a correspondence, which is exactly what makes a wrong classification look right.
+Those are **two different splits of the same 130**, and a figure appearing in both tables is a coincidence rather than a correspondence, which is exactly what makes a wrong classification look right.
 
-There are **144** tracked `.csproj` files under `src/`, which is **15** more than the solution holds. Every one of the 15 is fixture or example data belonging to `src/diagrams/dotnet-dependency-graph` — a module whose subject matter *is* reading `.csproj` files, so its test fixtures and its showcase project are themselves `.csproj`. **A page claiming "144 projects" would be wrong in the confident direction.**
+There are **145** tracked `.csproj` files under `src/`, which is **15** more than the solution holds. Every one of the 15 is fixture or example data belonging to `src/diagrams/dotnet-dependency-graph` — a module whose subject matter *is* reading `.csproj` files, so its test fixtures and its showcase project are themselves `.csproj`. **A page claiming "145 projects" would be wrong in the confident direction.**
 
 ## The relative-path trap
 
@@ -45,7 +45,7 @@ Classifying by path segment — "count the ones containing `backend`" — yields
 
 ## The core projects
 
-**18** production:
+**19** production:
 
 | Concern | Project |
 | --- | --- |
@@ -63,6 +63,7 @@ Classifying by path segment — "count the ones containing `backend`" — yields
 | Editor-family abstractions | `EtAlii.Adp.Editor` |
 | Designer-family abstractions: the definition, its discovery and its catalog | `EtAlii.Adp.Designer` |
 | Test helpers shipped as a project, referenced by every test project | `EtAlii.Adp.TestSupport` |
+| The in-process host the flow tests drive: one host per test class, a signed-in session, stream probes | `EtAlii.Adp.TestSupport.Host` |
 | Reading and writing bodies through FBL bindings (Format Binding Language) | `EtAlii.Adp.Specification.Fbl` |
 | Evaluating CEL expressions (Common Expression Language), for FBL and DISL alike | `EtAlii.Adp.Specification.Cel` |
 | Loading DISL specifications (Diagram Specification Language) and the bundled definitions, building a diagram's model from a reading, and deriving its toolbox, context menus, property rows, findings and gesture refusals, and running its operations, hooks and deletion policy | `EtAlii.Adp.Specification.Disl` |
