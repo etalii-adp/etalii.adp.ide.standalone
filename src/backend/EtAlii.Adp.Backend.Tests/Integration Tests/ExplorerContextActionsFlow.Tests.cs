@@ -5,6 +5,7 @@ using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.Hierarchy.Wire;
 using EtAlii.Adp.Projects;
 using EtAlii.Adp.Projects.Wire;
+using EtAlii.Adp.TestSupport.Host;
 using Grpc.Core;
 using Grpc.Net.Client;
 using Microsoft.AspNetCore.Hosting;
@@ -162,7 +163,7 @@ public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFacto
 
         using var call = hierarchyClient.WatchHierarchy(new WatchHierarchyRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
         using var cts = CreateMessageTimeout();
-        await HierarchyWatchProbe.WaitUntilLiveAsync(call.ResponseStream, _projectFolder, cts.Token);
+        await StreamProbe.WaitUntilHierarchyLiveAsync(call.ResponseStream, _projectFolder, cts.Token);
         using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
         var pendingPrompt = ReadUntilPromptAsync(contextCall.ResponseStream, cts.Token);
         await Task.Delay(StreamStartupGrace, TestContext.Current.CancellationToken);
@@ -238,7 +239,7 @@ public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFacto
 
         using var call = hierarchyClient.WatchHierarchy(new WatchHierarchyRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
         using var cts = CreateMessageTimeout();
-        await HierarchyWatchProbe.WaitUntilLiveAsync(call.ResponseStream, _projectFolder, cts.Token);
+        await StreamProbe.WaitUntilHierarchyLiveAsync(call.ResponseStream, _projectFolder, cts.Token);
         using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
         var pendingPrompt = ReadUntilPromptAsync(contextCall.ResponseStream, cts.Token);
         await Task.Delay(StreamStartupGrace, TestContext.Current.CancellationToken);

@@ -2,6 +2,7 @@ using EtAlii.Adp.Authentication.Wire;
 using EtAlii.Adp.Hierarchy.Wire;
 using EtAlii.Adp.Projects;
 using EtAlii.Adp.Projects.Wire;
+using EtAlii.Adp.TestSupport.Host;
 using Grpc.Core;
 using Grpc.Net.Client;
 using Microsoft.AspNetCore.Hosting;
@@ -97,13 +98,13 @@ public class ProjectRootFolderExplorerFlowTests : IClassFixture<WebApplicationFa
     /// <summary>
     /// Triggers a change once the watch is really running, and returns the first change of the
     /// wanted kind. The watch is proven live with probe files first (see
-    /// <see cref="HierarchyWatchProbe"/>), which is why this reads until the wanted kind rather
+    /// <see cref="StreamProbe.WaitUntilHierarchyLiveAsync"/>), which is why this reads until the wanted kind rather
     /// than taking the next message: what the probes leave behind may be reported in between.
     /// </summary>
     private async Task<HierarchyChange> AwaitTriggeredChangeAsync(
         AsyncServerStreamingCall<HierarchyMessage> call, CancellationTokenSource cts, HierarchyChange.ChangeOneofCase wanted, Action triggerChange)
     {
-        await HierarchyWatchProbe.WaitUntilLiveAsync(call.ResponseStream, _projectFolder, cts.Token);
+        await StreamProbe.WaitUntilHierarchyLiveAsync(call.ResponseStream, _projectFolder, cts.Token);
         triggerChange();
 
         return await ReadUntilChangeAsync(call.ResponseStream, change => change.ChangeCase == wanted, cts.Token);
@@ -188,8 +189,8 @@ public class ProjectRootFolderExplorerFlowTests : IClassFixture<WebApplicationFa
         // Arrange, continued.
         // Both watches share the folder, so each also reports the other's probes: the read below
         // looks for the one file the test itself creates.
-        await HierarchyWatchProbe.WaitUntilLiveAsync(callA.ResponseStream, _projectFolder, ctsA.Token);
-        await HierarchyWatchProbe.WaitUntilLiveAsync(callB.ResponseStream, _projectFolder, ctsB.Token);
+        await StreamProbe.WaitUntilHierarchyLiveAsync(callA.ResponseStream, _projectFolder, ctsA.Token);
+        await StreamProbe.WaitUntilHierarchyLiveAsync(callB.ResponseStream, _projectFolder, ctsB.Token);
 
         // Act.
         await File.WriteAllTextAsync(IoPath.Combine(_projectFolder, "new.txt"), "", TestContext.Current.CancellationToken);

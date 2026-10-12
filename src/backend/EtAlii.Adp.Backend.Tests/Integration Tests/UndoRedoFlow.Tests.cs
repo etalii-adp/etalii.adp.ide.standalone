@@ -6,6 +6,7 @@ using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.Hierarchy.Wire;
 using EtAlii.Adp.Projects;
 using EtAlii.Adp.Projects.Wire;
+using EtAlii.Adp.TestSupport.Host;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using Grpc.Net.Client;
@@ -91,7 +92,7 @@ public class UndoRedoFlowTests : IClassFixture<WebApplicationFactory<Program>>, 
         using var hierarchyCall = hierarchyClient.WatchHierarchy(new WatchHierarchyRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
         using var cts = CreateMessageTimeout();
         using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
-        await HierarchyWatchProbe.WaitUntilLiveAsync(hierarchyCall.ResponseStream, _projectFolder, cts.Token);
+        await StreamProbe.WaitUntilHierarchyLiveAsync(hierarchyCall.ResponseStream, _projectFolder, cts.Token);
 
         // Act and assert, step by step.
         // Rename original.txt -> renamed.txt through the context action, then let the first

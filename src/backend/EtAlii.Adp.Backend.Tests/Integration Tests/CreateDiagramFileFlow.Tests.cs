@@ -1,3 +1,4 @@
+using EtAlii.Adp.TestSupport.Host;
 using System.Text;
 using EtAlii.Adp.Authentication.Wire;
 using EtAlii.Adp.Context.Wire;
@@ -264,7 +265,7 @@ public class CreateDiagramFileFlowTests : IClassFixture<WebApplicationFactory<Pr
             new ListEntriesRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         using var hierarchyCall = session.Hierarchy.WatchHierarchy(
             new WatchHierarchyRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
-        await HierarchyWatchProbe.WaitUntilLiveAsync(hierarchyCall.ResponseStream, _projectFolder, cts.Token);
+        await StreamProbe.WaitUntilHierarchyLiveAsync(hierarchyCall.ResponseStream, _projectFolder, cts.Token);
         var pendingCreate = ReadUntilChangeAsync(hierarchyCall.ResponseStream, HierarchyChange.ChangeOneofCase.Created, cts.Token);
 
         // Act and assert, step by step.
