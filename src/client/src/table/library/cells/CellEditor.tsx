@@ -136,7 +136,8 @@ function InputCellEditor({ editor, column, cell, replace, commit, onClose }: Cel
 function ListCellEditor({ editor, column, cell, commit, onClose }: CellEditorProps) {
   const [reason, setReason] = useState("");
   const chosen = cell?.values ?? [];
-  const several = editor !== "option";
+  // One choice for an option, and for a relation whose column says it holds one row: picking another replaces it.
+  const several = editor !== "option" && !(editor === "rows" && column.settings.limit === "one");
 
   // The list of a relation is what the backend offers as the column's options: the rows that can
   // be related. A value the list does not hold keeps the label the cell gave it.

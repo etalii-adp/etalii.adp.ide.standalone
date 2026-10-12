@@ -41,7 +41,7 @@ registration. Between them they show what the cities do not:
   `regions.yaml` only; the countries' side holds none of its own.
 - **A one-way relation.** A region's *Borders on* names countries too, and no country shows it.
 - **A parent relation.** A country's *Part of* names another country of the same table, and the
-  view *Nested* shows the Netherlands and Belgium under Benelux.
+  view *Nested*, which is grouped by that relation, shows the Netherlands and Belgium under Benelux.
 - **Each kind of grouping.** The countries are grouped by a selection (*By continent*, which also
   hides a property, sets widths, sorts, filters and leaves out empty groups), by a multiple
   selection (*By language*, where Belgium stands under three headings) and by a checkbox

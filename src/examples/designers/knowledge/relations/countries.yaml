@@ -56,6 +56,7 @@ views:
         width: 220
       - property: c-part-of
         visible: false
+    groupBy: c-part-of
   - id: c-continents
     name: By continent
     columns:

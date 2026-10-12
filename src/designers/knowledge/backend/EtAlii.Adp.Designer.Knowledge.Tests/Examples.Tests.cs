@@ -111,13 +111,15 @@ public sealed class ExamplesTests : IDisposable
         // Assert: every property type.
         Assert.Equal(KnowledgeVocabulary.ValueTypes.Order(StringComparer.Ordinal), properties.Select(property => property.Property.ValueType).Distinct().Order(StringComparer.Ordinal));
 
-        // A one-way and a two-way relation between two files, each side naming the other; and a parent relation.
+        // A one-way and a two-way relation between two files, each side naming the other; and a parent relation,
+        // with a view grouped by it, which is what shows its rows nested.
         Assert.Contains(properties, property => property.Property is { ValueType: "relation", Counterpart: "", IsParent: false, TargetFile: not (KnowledgeRelations.Self or "") });
         var held = Assert.Single(properties, property => property.Property is { ValueType: "relation", Counterpart.Length: > 0, IsComputed: false });
         var other = KnowledgeBody.Read(File.ReadAllBytes(KnowledgeRelations.TargetPath(held.Path, held.Property.TargetFile)), held.Property.TargetFile).Table;
         var shown = Assert.Single(other.Properties, property => property.Id == held.Property.Counterpart);
         Assert.Equal((true, held.Property.Id), (shown.IsComputed, shown.Counterpart));
         Assert.Contains(properties, property => property.Property is { IsParent: true, Limit: "one", TargetFile: KnowledgeRelations.Self });
+        Assert.Contains(views, view => view.Table.Properties.Any(property => property.IsParent && property.Id == view.View.GroupBy));
 
         // Views that hide a property, give one a width, sort, filter, and group by each kind a view can be grouped by.
         Assert.Contains(views, view => view.View.Columns.Any(column => !column.Visible));
