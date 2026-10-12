@@ -14,6 +14,7 @@ public sealed class RootFolderWatcher : IDisposable
     private static readonly ILogger _logger = Log.ForContext<RootFolderWatcher>();
 
     private readonly FileSystemWatcher _watcher;
+    private readonly SplitMoveJoiner? _joiner;
 
     public RootFolderWatcher(string rootPath, ChangeCallback onChange, Action<Exception> onError, bool includeContentChanges = false)
     {
@@ -32,16 +33,32 @@ public sealed class RootFolderWatcher : IDisposable
         // diagram-workspace-tabs manual pass, when a handler probed a file a multi-file
         // delete had already taken). One change that cannot be applied loses that change and
         // says so; the model's next reconcile catches it up.
-        _watcher.Created += (_, e) => Dispatch(onChange, WatcherChangeTypes.Created, null, e.FullPath);
-        _watcher.Deleted += (_, e) => Dispatch(onChange, WatcherChangeTypes.Deleted, e.FullPath, null);
-        _watcher.Renamed += (_, e) => Dispatch(onChange, WatcherChangeTypes.Renamed, e.OldFullPath, e.FullPath);
-        _watcher.Error += (_, e) => onError(e.GetException());
+        // Off Windows a move can arrive split into a Deleted and a Created, which would cost the
+        // moved entry its id and a selection on it its existence; the joiner puts such a move
+        // back together. Windows reports every move as one Renamed, so there a Deleted followed
+        // by a Created is exactly that, and is delivered as it came.
+        _joiner = OperatingSystem.IsWindows() ? null : new SplitMoveJoiner(Deliver);
+        ChangeCallback receive = _joiner is null ? Deliver : _joiner.Post;
+
+        _watcher.Created += (_, e) => receive(WatcherChangeTypes.Created, null, e.FullPath);
+        _watcher.Deleted += (_, e) => receive(WatcherChangeTypes.Deleted, e.FullPath, null);
+        _watcher.Renamed += (_, e) => receive(WatcherChangeTypes.Renamed, e.OldFullPath, e.FullPath);
+        _watcher.Error += (_, e) =>
+        {
+            // A deletion still held for its move is older than whatever the error recovers.
+            _joiner?.Flush();
+            onError(e.GetException());
+        };
         if (includeContentChanges)
         {
-            _watcher.Changed += (_, e) => Dispatch(onChange, WatcherChangeTypes.Changed, null, e.FullPath);
+            _watcher.Changed += (_, e) => receive(WatcherChangeTypes.Changed, null, e.FullPath);
         }
 
         _watcher.EnableRaisingEvents = true;
+
+        return;
+
+        void Deliver(WatcherChangeTypes changeType, string? oldPath, string? newPath) => Dispatch(onChange, changeType, oldPath, newPath);
     }
 
     private static void Dispatch(ChangeCallback onChange, WatcherChangeTypes changeType, string? oldPath, string? newPath)
@@ -56,5 +73,9 @@ public sealed class RootFolderWatcher : IDisposable
         }
     }
 
-    public void Dispose() => _watcher.Dispose();
+    public void Dispose()
+    {
+        _watcher.Dispose();
+        _joiner?.Dispose();
+    }
 }
