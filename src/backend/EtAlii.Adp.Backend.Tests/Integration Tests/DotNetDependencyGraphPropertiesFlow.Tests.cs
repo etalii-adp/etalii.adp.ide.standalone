@@ -3,6 +3,7 @@ using EtAlii.Adp.Context.Wire;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Projects;
 using EtAlii.Adp.Projects.Wire;
+using EtAlii.Adp.TestSupport.Host;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using Grpc.Net.Client;
@@ -46,7 +47,6 @@ public class DotNetDependencyGraphPropertiesFlowTests : IClassFixture<WebApplica
     private const string SessionTokenHeader = "session-token";
     private const string CoreProjectId = "project:src/Pipeline.Core/Pipeline.Core.csproj";
     private static readonly TimeSpan MessageTimeout = TimeSpan.FromSeconds(10);
-    private static readonly TimeSpan StreamStartupGrace = TimeSpan.FromMilliseconds(250);
 
     private readonly WebApplicationFactory<Program> _factory;
     private readonly string _appDataRoot;
@@ -118,8 +118,8 @@ public class DotNetDependencyGraphPropertiesFlowTests : IClassFixture<WebApplica
         using var watch = context.Watch(
             new WatchContextRequest { ProjectId = projectId, WatchId = watchId },
             headers, cancellationToken: TestContext.Current.CancellationToken);
+        await StreamProbe.WaitUntilContextLiveAsync(watch.ResponseStream, cts.Token);
         var pendingSelection = ReadUntilElementSelectedAsync(watch.ResponseStream, cts.Token);
-        await Task.Delay(StreamStartupGrace, TestContext.Current.CancellationToken);
 
         // Act: the project node, selected under the file the tab was opened at.
         var selected = await context.SelectAsync(

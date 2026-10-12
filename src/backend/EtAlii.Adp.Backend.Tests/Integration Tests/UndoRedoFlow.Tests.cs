@@ -37,7 +37,6 @@ public class UndoRedoFlowTests : IClassFixture<WebApplicationFactory<Program>>, 
     private const string DeveloperCredential = "changeme";
     private const string SessionTokenHeader = "session-token";
     private static readonly TimeSpan MessageTimeout = TimeSpan.FromSeconds(10);
-    private static readonly TimeSpan StreamStartupGrace = TimeSpan.FromMilliseconds(500);
 
     private readonly WebApplicationFactory<Program> _factory;
     private readonly string _appDataRoot;
@@ -92,6 +91,7 @@ public class UndoRedoFlowTests : IClassFixture<WebApplicationFactory<Program>>, 
         using var hierarchyCall = hierarchyClient.WatchHierarchy(new WatchHierarchyRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
         using var cts = CreateMessageTimeout();
         using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
+        await StreamProbe.WaitUntilContextLiveAsync(contextCall.ResponseStream, cts.Token);
         await StreamProbe.WaitUntilHierarchyLiveAsync(hierarchyCall.ResponseStream, _projectFolder, cts.Token);
 
         // Act and assert, step by step.
@@ -139,7 +139,9 @@ public class UndoRedoFlowTests : IClassFixture<WebApplicationFactory<Program>>, 
 
         using var cts = CreateMessageTimeout();
         using var contextA = contextClient.Watch(new WatchContextRequest { ProjectId = projectA, WatchId = watchA }, headers, cancellationToken: TestContext.Current.CancellationToken);
+        await StreamProbe.WaitUntilContextLiveAsync(contextA.ResponseStream, cts.Token);
         using var contextB = contextClient.Watch(new WatchContextRequest { ProjectId = projectB, WatchId = watchB }, headers, cancellationToken: TestContext.Current.CancellationToken);
+        await StreamProbe.WaitUntilContextLiveAsync(contextB.ResponseStream, cts.Token);
 
         // Act and assert, step by step.
         await RenameViaContextAsync(contextClient, projectA, watchA, headers, entryA, contextA.ResponseStream, cts.Token, "a-renamed.txt");
@@ -175,10 +177,11 @@ public class UndoRedoFlowTests : IClassFixture<WebApplicationFactory<Program>>, 
 
         using var cts = CreateMessageTimeout();
         using var contextA = contextClient.Watch(new WatchContextRequest { ProjectId = projectId, WatchId = watchA }, headers, cancellationToken: TestContext.Current.CancellationToken);
+        await StreamProbe.WaitUntilContextLiveAsync(contextA.ResponseStream, cts.Token);
         using var contextB = contextClient.Watch(new WatchContextRequest { ProjectId = projectId, WatchId = watchB }, headers, cancellationToken: TestContext.Current.CancellationToken);
+        await StreamProbe.WaitUntilContextLiveAsync(contextB.ResponseStream, cts.Token);
         // B starts reading its stream so the server has its writer registered before A acts.
         var pendingUndoAvailableOnB = ReadUntilProjectActionsAsync(contextB.ResponseStream, cts.Token, undoAvailable: true);
-        await Task.Delay(StreamStartupGrace, TestContext.Current.CancellationToken);
 
         await RenameViaContextAsync(contextClient, projectId, watchA, headers, entryId, contextA.ResponseStream, cts.Token, "shared-renamed.txt");
 
@@ -216,6 +219,7 @@ public class UndoRedoFlowTests : IClassFixture<WebApplicationFactory<Program>>, 
 
         using var cts = CreateMessageTimeout();
         using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
+        await StreamProbe.WaitUntilContextLiveAsync(contextCall.ResponseStream, cts.Token);
 
         // Act and assert, step by step.
         // Rename keep.txt (recorded), then delete doomed.txt (a one-way action that records nothing).
@@ -281,7 +285,6 @@ public class UndoRedoFlowTests : IClassFixture<WebApplicationFactory<Program>>, 
     {
         var interactionId = ShortGuid.NewShortGuid();
         var pendingPrompt = ReadUntilPromptAsync(contextStream, cancellationToken);
-        await Task.Delay(StreamStartupGrace, TestContext.Current.CancellationToken);
 
         var executed = await contextClient.ExecuteActionAsync(
             new ExecuteActionRequest
@@ -311,7 +314,6 @@ public class UndoRedoFlowTests : IClassFixture<WebApplicationFactory<Program>>, 
     {
         var interactionId = ShortGuid.NewShortGuid();
         var pendingPrompt = ReadUntilPromptAsync(contextStream, cancellationToken);
-        await Task.Delay(StreamStartupGrace, TestContext.Current.CancellationToken);
 
         var executed = await contextClient.ExecuteActionAsync(
             new ExecuteActionRequest

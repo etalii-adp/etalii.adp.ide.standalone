@@ -6,6 +6,7 @@ using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 using EtAlii.Adp.Projects;
 using EtAlii.Adp.Projects.Wire;
+using EtAlii.Adp.TestSupport.Host;
 using Grpc.Core;
 using Grpc.Net.Client;
 using Microsoft.AspNetCore.Hosting;
@@ -264,7 +265,8 @@ public sealed class KnowledgeDesignerTests : IClassFixture<WebApplicationFactory
         var context = new ContextService.ContextServiceClient(session.Channel);
         var entryId = await NestedEntryLookup.EntryIdOfAsync(hierarchy, session.ProjectId, session.WatchId, session.Headers, "cities.adp");
         using var watch = context.Watch(new WatchContextRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
-        await Task.Delay(TimeSpan.FromMilliseconds(500), TestContext.Current.CancellationToken);
+        using var cts = CreateMessageTimeout();
+        await StreamProbe.WaitUntilContextLiveAsync(watch.ResponseStream, cts.Token);
 
         // Act: the row, selected under the file as an element of a diagram is.
         var selection = new ContextSelection

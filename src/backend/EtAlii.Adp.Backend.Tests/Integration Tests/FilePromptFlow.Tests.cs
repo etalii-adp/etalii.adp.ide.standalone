@@ -31,7 +31,6 @@ public sealed class FilePromptFlowTests : IClassFixture<WebApplicationFactory<Pr
     private const string DeveloperCredential = "changeme";
     private const string SessionTokenHeader = "session-token";
     private static readonly TimeSpan MessageTimeout = TimeSpan.FromSeconds(10);
-    private static readonly TimeSpan StreamStartupGrace = TimeSpan.FromMilliseconds(500);
 
     private readonly WebApplicationFactory<Program> _factory;
     private readonly string _appDataRoot;
@@ -212,7 +211,6 @@ public sealed class FilePromptFlowTests : IClassFixture<WebApplicationFactory<Pr
         var watch = context.Watch(new WatchContextRequest { ProjectId = added.Added.Id, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
         Assert.True(await watch.ResponseStream.MoveNext(cts.Token), "The stream ended before the baseline arrived.");
         var pendingPrompt = ReadUntilPromptAsync(watch.ResponseStream, cts.Token);
-        await Task.Delay(StreamStartupGrace, TestContext.Current.CancellationToken);
 
         // No source: the project root.
         var executed = await context.ExecuteActionAsync(

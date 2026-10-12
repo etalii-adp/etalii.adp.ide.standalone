@@ -33,11 +33,6 @@ public class ContextSelectionFlowTests : IClassFixture<WebApplicationFactory<Pro
     private const string SessionTokenHeader = "session-token";
     private static readonly TimeSpan MessageTimeout = TimeSpan.FromSeconds(10);
 
-    // The hierarchy watcher only runs while a WatchHierarchy stream is open, and Grpc.Net
-    // only starts a server stream on its first read - so disk-change tests open that
-    // stream, start reading it, and give the watcher this long to come up.
-    private static readonly TimeSpan StreamStartupGrace = TimeSpan.FromMilliseconds(500);
-
     private readonly WebApplicationFactory<Program> _factory;
     private readonly string _appDataRoot;
     private readonly string _projectFolder;
@@ -344,7 +339,6 @@ public class ContextSelectionFlowTests : IClassFixture<WebApplicationFactory<Pro
         await session.Context.SelectAsync(
             new SelectRequest { ProjectId = session.ProjectId, WatchId = session.WatchId, Selection = Selection(entryId) }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         await ReadSelectionAsync(call.ResponseStream, cts.Token);
-        await Task.Delay(StreamStartupGrace, TestContext.Current.CancellationToken);
 
         File.Move(original, IoPath.Combine(_projectFolder, "renamed.txt"));
 
@@ -372,7 +366,6 @@ public class ContextSelectionFlowTests : IClassFixture<WebApplicationFactory<Pro
         await session.Context.SelectAsync(
             new SelectRequest { ProjectId = session.ProjectId, WatchId = session.WatchId, Selection = Selection(entryId) }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         await ReadSelectionAsync(call.ResponseStream, cts.Token);
-        await Task.Delay(StreamStartupGrace, TestContext.Current.CancellationToken);
 
         File.Delete(file);
 

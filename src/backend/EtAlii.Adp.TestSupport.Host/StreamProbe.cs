@@ -1,3 +1,4 @@
+using EtAlii.Adp.Context.Wire;
 using EtAlii.Adp.Hierarchy.Wire;
 using Grpc.Core;
 using IoPath = System.IO.Path;
@@ -18,7 +19,8 @@ namespace EtAlii.Adp.TestSupport.Host;
 /// </para>
 /// <para>
 /// A stream that sends nothing when it opens can only be seen running by making it report
-/// something. So a probe is provoked, and provoked again, until the stream reports one.
+/// something. So a probe is provoked, and provoked again, until the stream reports one. A stream
+/// that sends a baseline when it opens provokes itself: its first message is the probe.
 /// </para>
 /// </remarks>
 public static class StreamProbe
@@ -103,6 +105,28 @@ public static class StreamProbe
             },
             IsCreationOf,
             cancellationToken);
+
+    /// <summary>
+    /// Returns once a context watch has sent its first message, which proves the server has
+    /// registered the connection: selections, prompts and the project's actions all reach it from
+    /// then on.
+    /// </summary>
+    /// <remarks>
+    /// The context watch provokes itself. Registering the connection queues its baseline before the
+    /// server starts writing the stream, and the selection and the prompt writers are both
+    /// registered by then, so the baseline's first message cannot arrive before either. Only that
+    /// first message is read; the rest of the baseline stays on the stream, and a test reads past
+    /// it to the message it wants.
+    /// </remarks>
+    public static async Task WaitUntilContextLiveAsync(IAsyncStreamReader<ContextMessage> stream, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(stream);
+
+        if (!await stream.MoveNext(cancellationToken))
+        {
+            throw new InvalidOperationException("The context stream ended before its baseline arrived.");
+        }
+    }
 
     private static bool IsCreationOf(HierarchyMessage message, string probe) =>
         message.MessageCase == HierarchyMessage.MessageOneofCase.Change

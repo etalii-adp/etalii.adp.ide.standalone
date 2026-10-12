@@ -35,7 +35,6 @@ public class CreateDiagramFileFlowTests : IClassFixture<WebApplicationFactory<Pr
     private const string DeveloperCredential = "changeme";
     private const string SessionTokenHeader = "session-token";
     private static readonly TimeSpan MessageTimeout = TimeSpan.FromSeconds(10);
-    private static readonly TimeSpan StreamStartupGrace = TimeSpan.FromMilliseconds(500);
 
     private readonly WebApplicationFactory<Program> _factory;
     private readonly string _appDataRoot;
@@ -186,7 +185,6 @@ public class CreateDiagramFileFlowTests : IClassFixture<WebApplicationFactory<Pr
         CreateDiagramFileFlowSession session, IAsyncStreamReader<ContextMessage> stream, CancellationToken cancellationToken, Documents.Wire.ShortGuid? folderId = null)
     {
         var pendingPrompt = ReadUntilPromptAsync(stream, cancellationToken);
-        await Task.Delay(StreamStartupGrace, TestContext.Current.CancellationToken);
 
         var interactionId = ShortGuid.NewShortGuid();
         var request = new ExecuteActionRequest
