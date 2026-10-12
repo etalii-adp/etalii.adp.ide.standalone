@@ -100,7 +100,7 @@ A graph is one `.dgr` file. In standalone it may also have an `.adp` registratio
 
 ## 3. Validation
 
-Every rule reports a **warning** naming its element, because the rest of the graph still draws. The one **error** is a file that is not YAML, reported as a single problem at the parser's line instead of running the rules over an empty model ([`DependencyGraphRuleSet.cs`](https://github.com/etalii-adp/etalii.adp.ide.standalone/blob/develop/src/diagrams/dependency-graph/backend/EtAlii.Adp.Diagram.DependencyGraph/DependencyGraphRuleSet.cs), [`DependencyGraphValidator.cs`](https://github.com/etalii-adp/etalii.adp.ide.standalone/blob/develop/src/diagrams/dependency-graph/backend/EtAlii.Adp.Diagram.DependencyGraph/DependencyGraphValidator.cs)).
+Every rule reports a **warning** naming its element, because the rest of the graph still draws. The one **error** is a file that is not YAML, reported as a single problem at the parser's line instead of running the rules over an empty model ([`DependencyGraphFindings.cs`](https://github.com/etalii-adp/etalii.adp.ide.standalone/blob/develop/src/diagrams/dependency-graph/backend/EtAlii.Adp.Diagram.DependencyGraph/DependencyGraphFindings.cs), [`DependencyGraphValidator.cs`](https://github.com/etalii-adp/etalii.adp.ide.standalone/blob/develop/src/diagrams/dependency-graph/backend/EtAlii.Adp.Diagram.DependencyGraph/DependencyGraphValidator.cs)).
 
 | ADP rule id | Severity | Message | Located at | In the `.dis` |
 |---|---|---|---|---|

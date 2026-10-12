@@ -7,10 +7,10 @@ namespace EtAlii.Adp.Diagram.DependencyGraph.Tests;
 /// The mistakes a dependency graph hides, one test per rule, each from a plain YAML string with
 /// no file, canvas or connection.
 /// </summary>
-public class DependencyGraphRuleSetTests
+public class DependencyGraphFindingsTests
 {
     private static IReadOnlyList<DiagramProblem> Judge(string yaml) =>
-        DependencyGraphRuleSet.Judge(DependencyGraphParser.Parse(LineDocument.Parse(yaml)));
+        DependencyGraphFindings.Judge(DependencyGraphParser.Parse(LineDocument.Parse(yaml)));
 
     private static IEnumerable<DiagramProblem> Of(string yaml, string ruleId) =>
         Judge(yaml).Where(problem => problem.RuleId == ruleId);

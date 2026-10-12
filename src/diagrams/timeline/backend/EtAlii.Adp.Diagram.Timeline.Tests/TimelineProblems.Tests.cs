@@ -7,10 +7,10 @@ namespace EtAlii.Adp.Diagram.Timeline.Tests;
 /// The mistakes a timeline hides, one test per rule, each from a plain YAML string with no
 /// file, canvas or connection (Requirement 12.1).
 /// </summary>
-public class TimelineRuleSetTests
+public class TimelineProblemsTests
 {
     private static IReadOnlyList<DiagramProblem> Judge(string yaml) =>
-        TimelineRuleSet.Judge(TimelineParser.Parse(LineDocument.Parse(yaml)));
+        TimelineDefinition.Problems(TimelineParser.Parse(LineDocument.Parse(yaml)));
 
     private static IEnumerable<DiagramProblem> Of(string yaml, string ruleId) =>
         Judge(yaml).Where(problem => problem.RuleId == ruleId);

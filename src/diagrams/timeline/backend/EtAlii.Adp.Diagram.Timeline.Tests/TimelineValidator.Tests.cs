@@ -26,7 +26,7 @@ public class TimelineValidatorTests
     public async Task AFlawedTimeline_ReportsTheRuleThatFired()
     {
         // Arrange & act.
-        // The wording is TimelineRuleSetTests' business; this proves the document got there.
+        // The wording is TimelineProblemsTests' business; this proves the document got there.
         var problems = await JudgeAsync("timeline: 1\nelements:\n  - id: aaa\n    begin: 2026-02-01\n    end: 2026-01-01\n    row: 0\n");
 
         // Assert.
