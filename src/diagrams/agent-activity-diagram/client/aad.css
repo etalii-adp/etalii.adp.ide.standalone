@@ -77,3 +77,9 @@
 .aad-relation .canvas-connection-line {
   stroke: var(--color-border-strong);
 }
+
+/* A relation a file written outside ADP has, and the diagram's rules do not allow: drawn, and marked. */
+.aad-relation.aad-breach .canvas-connection-line {
+  stroke: var(--color-danger);
+  stroke-dasharray: 6 4;
+}

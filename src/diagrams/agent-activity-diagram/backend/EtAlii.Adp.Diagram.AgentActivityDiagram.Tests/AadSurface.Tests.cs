@@ -61,11 +61,14 @@ public sealed class AadSurfaceTests : IDisposable
         var free = await MenuAsync("a-dev2");
         var task = await MenuAsync("t-k2");
 
-        // Assert: no Lock (a drag locks) and no Open link (its symbol opens it); Unlock only where there is a lock.
+        // Assert: no Open link (its symbol opens it); Unlock position where there is a lock and Lock position
+        // where there is none, each available (Requirement 6.2).
         Assert.Equal(["editLabel", "create-child", "unpin", "delete"], locked.Select(action => action.Id));
         Assert.True(locked.Single(action => action.Id == "unpin").Available);
-        Assert.False(free.Single(action => action.Id == "unpin").Available);
-        Assert.Equal("Its position is not locked: the layout places it.", free.Single(action => action.Id == "unpin").UnavailableReason);
+        Assert.Contains("pin", free.Select(action => action.Id));
+        Assert.DoesNotContain("unpin", free.Select(action => action.Id));
+        Assert.Equal("Lock position", free.Single(action => action.Id == "pin").Label);
+        Assert.True(free.Single(action => action.Id == "pin").Available);
 
         // A task is not placed, and its status is chosen from a submenu of the definition's statuses, in its order.
         Assert.Equal(["editLabel", "setTaskStatus", "delete"], task.Select(action => action.Id));

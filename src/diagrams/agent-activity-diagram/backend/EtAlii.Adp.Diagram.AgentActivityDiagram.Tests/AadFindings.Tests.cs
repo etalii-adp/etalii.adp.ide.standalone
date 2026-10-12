@@ -57,6 +57,44 @@ public sealed class AadFindingsTests : IDisposable
     }
 
     [Fact]
+    public void ARelationToAnElementOfTheWrongType_IsAnError_AndIsDrawnMarkedAsABreach()
+    {
+        // Arrange: an agent whose specification names a project.
+        var text = Fixture("wrong-type-reference");
+
+        // Act.
+        var entry = AadDocumentEntry.Read(text);
+        var problems = AadValidator.Validate(entry.Document);
+        var drawn = new AadElementMapper().Visible(entry.Model, DiagramViewport.Unbounded);
+
+        // Assert: said once as an error on the key's line; both ends drawn, and the relation with them, marked.
+        var found = Assert.Single(problems, problem => problem.Severity == DiagramProblemSeverity.Error);
+        Assert.Equal(new DiagramProblemLineLocation(9), found.Location);
+        Assert.Contains(drawn, element => element.Id == "p");
+        Assert.Contains(drawn, element => element.Id == "a");
+        var relation = AadRelationPayload.Parser.ParseFrom(Assert.Single(drawn, element => element.Type == AadElementMapper.RelationType).Payload.Span);
+        Assert.Equal(("p", "a", "SpecificationAgent", true), (relation.FromElementId, relation.ToElementId, relation.Type, relation.Breach));
+        Assert.Equal(text, entry.Document.Text);
+    }
+
+    [Fact]
+    public void ARelationTheRulesAllow_IsNotMarked()
+    {
+        // Arrange.
+        var entry = AadDocumentEntry.Read(AadDocumentTests.Fixture("one-day.aad"));
+
+        // Act.
+        var relations = new AadElementMapper().Visible(entry.Model with { ShowArchived = true }, DiagramViewport.Unbounded)
+            .Where(element => element.Type == AadElementMapper.RelationType)
+            .Select(element => AadRelationPayload.Parser.ParseFrom(element.Payload.Span))
+            .ToList();
+
+        // Assert.
+        Assert.NotEmpty(relations);
+        Assert.All(relations, relation => Assert.False(relation.Breach, $"{relation.Type} {relation.FromElementId} > {relation.ToElementId}"));
+    }
+
+    [Fact]
     public async Task AFileOfANewerVersion_IsShownAndNeverChanged()
     {
         // Arrange.

@@ -129,8 +129,9 @@ const RULED_BUT_NOT_DRAWN_AT_REST: readonly Listed[] = [
     ],
   },
   {
-    reason: "set by a payload flag no shipped example raises: an unresolved or unreadable target, a hollow node, a broken or implicit edge, a blank or deactivated shape, a SPARQL-constrained row, a malformed axiom, an alternate or fallback label, a language chip, an ordered collection, a mapping, a behavior step written without a keyword",
+    reason: "set by a payload flag no shipped example raises: an unresolved or unreadable target, a hollow node, a broken or implicit edge, a blank or deactivated shape, a SPARQL-constrained row, a malformed axiom, an alternate or fallback label, a language chip, an ordered collection, a mapping, a behavior step written without a keyword, a relation that breaks a rule of its diagram",
     classes: [
+      "aad-breach",
       "ansible-edge-unresolved",
       "ansible-edge-label",
       "ansible-node-hollow",

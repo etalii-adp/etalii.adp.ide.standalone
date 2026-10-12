@@ -6,10 +6,21 @@ using EtAlii.Adp.Specification.Fbl.Planning;
 namespace EtAlii.Adp.Diagram.AgentActivityDiagram;
 
 /// <summary>Drops a toolbox tool: a new element with the tool's initial values, locked where it was dropped (Requirement 6.11).</summary>
-public sealed record AddAadElementCommand(string BodyPath, string Tool, double X, double Y) : ICommand;
+/// <remarks>
+/// The new element's id is the command's, minted when the gesture is made. Redo runs the command
+/// again, and what was added, joined and undone must come back as the element the later edits name.
+/// </remarks>
+public sealed record AddAadElementCommand(string BodyPath, string Tool, double X, double Y) : ICommand
+{
+    public string NewId { get; } = AadDefinition.NewIds.Next(Tool);
+}
 
 /// <summary>Adds a task to a specification or a pull request to a location, updated now.</summary>
-public sealed record AddAadRowCommand(string BodyPath, string ParentId) : ICommand;
+/// <remarks>The row's id is the command's, for the reason <see cref="AddAadElementCommand"/> gives.</remarks>
+public sealed record AddAadRowCommand(string BodyPath, string ParentId) : ICommand
+{
+    public string NewId { get; } = AadDefinition.NewIds.Next("row");
+}
 
 /// <summary>Removes an element or a row, with what the definition's deletion policy takes or clears with it.</summary>
 public sealed record RemoveAadElementCommand(string BodyPath, string ElementId) : ICommand;
@@ -48,7 +59,7 @@ public sealed class AddAadElementCommandHandler(IAadDocumentStore documents) : I
         return AadEdits.Run(documents, command.BodyPath, command, document =>
         {
             var position = new Dictionary<string, object?>(StringComparer.Ordinal) { ["x"] = command.X, ["y"] = command.Y };
-            var transaction = OperationInterpreter.Drop(AadDefinition.Specification, command.Tool, document.Disl.Diagram, position, AadDefinition.NewIds, AadDefinition.Env());
+            var transaction = OperationInterpreter.Drop(AadDefinition.Specification, command.Tool, document.Disl.Diagram, position, DislIds.Fixed(command.NewId), AadDefinition.Env());
             var added = AadDefinition.Apply(document, transaction);
             if (!added.WasApplied || transaction.Changes.OfType<DislChange.Create>().FirstOrDefault() is not { } created)
             {
@@ -81,7 +92,7 @@ public sealed class AddAadRowCommandHandler(IAadDocumentStore documents) : IComm
                     ? ("PullRequest", new Dictionary<string, object?>(StringComparer.Ordinal) { ["title"] = "New pull request", ["updated"] = now })
                     : null;
             return row is { } add
-                ? AadDefinition.Apply(document, new DislTransaction([new DislChange.Create(add.Type, AadDefinition.NewIds.Next(add.Type), add.Attributes, parent.Id, null)], [], null))
+                ? AadDefinition.Apply(document, new DislTransaction([new DislChange.Create(add.Type, command.NewId, add.Attributes, parent.Id, null)], [], null))
                 : AadEdit.Refused("Only a specification lists tasks, and only a location lists pull requests.");
         });
     }

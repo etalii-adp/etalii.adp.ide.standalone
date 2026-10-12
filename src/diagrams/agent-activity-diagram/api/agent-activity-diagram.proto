@@ -50,6 +50,10 @@ message AadElementPayload {
 message AadRelationPayload {
   string from_element_id = 1;
   string to_element_id = 2;
+  // The relation's name in the definition, which the two ends' types say by themselves unless it is a breach.
+  string type = 3;
+  // An end is not of the type this relation joins: a file written outside ADP. Drawn, and marked.
+  bool breach = 4;
 }
 
 // What is set for the diagram as a whole.

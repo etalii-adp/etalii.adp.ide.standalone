@@ -97,6 +97,35 @@ internal static class AadDefinition
     private static string WordsOf(string typeName) =>
         (TypeJson(typeName) is { } type && type.TryGetProperty("label", out var label) && label.ValueKind == JsonValueKind.String ? label.GetString()! : typeName).ToLowerInvariant();
 
+    /// <summary>Whether the named relation joins an element of the one type to an element of the other, in that order.</summary>
+    public static bool Joins(string relationType, string sourceType, string targetType) =>
+        LoadedRelations.Value.Any(relation => relation.Type == relationType && relation.Source == sourceType && relation.Target == targetType);
+
+    /// <summary>
+    /// The keys that name an element of another type than their relation joins, each as the relation
+    /// it was written to be: its id as a derived relation has it, its type, and its two ends in the
+    /// relation's order. The language derives no relation from such a key, and the file still has it.
+    /// </summary>
+    public static IEnumerable<(string Id, string Type, string From, string To)> Misjoined(DislDiagram diagram)
+    {
+        ArgumentNullException.ThrowIfNull(diagram);
+        foreach (var relation in LoadedRelations.Value)
+        {
+            (string holderType, string otherType) = relation.HeldBySource ? (relation.Source, relation.Target) : (relation.Target, relation.Source);
+            foreach (var holder in diagram.NodesOfType(holderType))
+            {
+                if (holder.ValueOf(relation.Attribute) is not DislElement other || other.Type.IsRelation || other.IsA(otherType))
+                {
+                    continue;
+                }
+
+                yield return relation.HeldBySource
+                    ? ($"{relation.Attribute}:{holder.Id}", relation.Type, holder.Id, other.Id)
+                    : ($"{relation.Attribute}:{holder.Id}", relation.Type, other.Id, holder.Id);
+            }
+        }
+    }
+
     /// <summary>The one relation the two elements' types allow, with its ends in the order the file has them.</summary>
     public static AadDrawnRelation? RelationBetween(DislElement from, DislElement to)
     {

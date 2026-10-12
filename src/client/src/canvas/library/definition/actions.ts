@@ -103,6 +103,13 @@ export interface ActionDeclaration {
    * ones.
    */
   backendKey?: string;
+  /**
+   * The action is "keep this element where it is drawn". Chosen from the menu, the library raises
+   * `element-moved` for the selected element with the position it is drawn at, in place of
+   * `action-invoked`: where a layout has put an element is something only the canvas knows, and a
+   * module that keeps a dragged element where it was dropped already answers that event.
+   */
+  keepsWhereDrawn?: true;
 }
 
 /** One action the library has decided to dispatch. */

@@ -90,6 +90,8 @@ public sealed record AadModel(
             .. diagram.Relations
                 .Where(relation => relation is { SourceId.Length: > 0, TargetId.Length: > 0 })
                 .Select(relation => new AadRelation(relation.Id, relation.Type.Name, relation.SourceId!, relation.TargetId!)),
+            // A key naming an element of the wrong type is still what the file says: kept, and drawn as a breach.
+            .. AadDefinition.Misjoined(diagram).Select(relation => new AadRelation(relation.Id, relation.Type, relation.From, relation.To)),
         ];
 
         var reading = body.Model;

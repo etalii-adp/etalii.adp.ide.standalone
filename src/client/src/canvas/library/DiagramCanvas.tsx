@@ -1300,6 +1300,8 @@ export function DiagramCanvasCore({
               ...anchorNamesOf(preview, elementTypes),
               ...attachmentsOf(preview),
             });
+          } else if (preview !== null && refusedTargetOf(preview) !== undefined) {
+            raise({ kind: "connection-refused", relationType: preview.relation.id, sourceElementId: preview.sourceId, targetElementId: refusedTargetOf(preview)! });
           } else if (preview !== null && preview.relation.emptyRelease === "complete" && elementAt(preview.point) === undefined) {
             // The definition declared an empty release meaningful - the create-and-relate
             // gesture - so the point travels to the module instead of dissolving.
@@ -1470,6 +1472,15 @@ export function DiagramCanvasCore({
   const rightConnectRef = useRef<{ element: DiagramModelElement; relation: RelationTypeDefinition; from: Point; pressX: number; pressY: number } | null>(null);
   const rightConnectMovedRef = useRef(false);
 
+  /** The other element a refused connect gesture was released over, if it was released over one. */
+  const refusedTargetOf = useCallback((preview: ConnectPreview): string | undefined => {
+    if (preview.valid) {
+      return undefined;
+    }
+    const over = elementAt(preview.point);
+    return over === undefined || over.id === preview.sourceId ? undefined : over.id;
+  }, [elementAt]);
+
   const beginRightConnect = useCallback((event: React.PointerEvent) => {
     if (event.button !== 2 || definition.connectOnRightDrag !== true) {
       return;
@@ -1551,8 +1562,10 @@ export function DiagramCanvasCore({
         ...anchorNamesOf(preview, elementTypes),
         ...attachmentsOf(preview),
       });
+    } else if (rightConnectMovedRef.current && preview !== null && refusedTargetOf(preview) !== undefined) {
+      raise({ kind: "connection-refused", relationType: preview.relation.id, sourceElementId: preview.sourceId, targetElementId: refusedTargetOf(preview)! });
     }
-  }, [connectValue, raise, elementTypes]);
+  }, [connectValue, raise, elementTypes, refusedTargetOf]);
 
   // An interrupted right draw (pointer cancel, capture lost) reverts the shared connect frame
   // rather than committing it: were it left set, the next anchor drag's `??=` would reuse this
@@ -2350,6 +2363,12 @@ export function DiagramCanvasCore({
           open={menuPosition !== null}
           groups={toMenuGroups(context.actions, (action) => {
             closeMenu();
+            // "Keep it where it is drawn" is answered here: only the canvas knows where a layout drew it.
+            const kept = selection.length === 1 && selection[0]!.kind === "element" ? elementsById.get(selection[0]!.id) : undefined;
+            if (kept !== undefined && (definition.actions ?? []).some((declared) => declared.id === action.id && declared.keepsWhereDrawn === true)) {
+              raise({ kind: "element-moved", elementId: kept.id, position: { x: kept.x, y: kept.y } });
+              return;
+            }
             void context.executeAction(action.id);
           })}
           position={menuPosition ?? { x: 0, y: 0 }}

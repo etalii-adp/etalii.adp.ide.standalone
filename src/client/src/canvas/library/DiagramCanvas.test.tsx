@@ -324,14 +324,26 @@ describe("DiagramCanvas", () => {
     expect(onConnectionDrawn).not.toHaveBeenCalled();
   });
 
-  it("a right-button draw onto a forbidden target raises nothing", () => {
+  it("a right-button draw onto a forbidden target draws nothing, and tells the module which target refused it", () => {
     const onConnectionDrawn = vi.fn();
-    const { container } = renderCanvas({ onConnectionDrawn }, definitionOf({ connectOnRightDrag: true }));
+    const onConnectionRefused = vi.fn();
+    const { container } = renderCanvas({ onConnectionDrawn, onConnectionRefused }, definitionOf({ connectOnRightDrag: true }));
 
-    // The store is no legal target of `calls`; the release over it states nothing.
+    // The store is no legal target of `calls`; the release over it draws nothing, and says where it ended.
     rightDraw(elementOn(container, "a"), 0, 0, 150, 200);
 
     expect(onConnectionDrawn).not.toHaveBeenCalled();
+    expect(onConnectionRefused).toHaveBeenCalledExactlyOnceWith({ kind: "connection-refused", relationType: "calls", sourceElementId: "a", targetElementId: "s" });
+  });
+
+  it("a right-button draw released over empty canvas, or allowed, is not a refusal", () => {
+    const onConnectionRefused = vi.fn();
+    const { container } = renderCanvas({ onConnectionRefused }, definitionOf({ connectOnRightDrag: true }));
+
+    rightDraw(elementOn(container, "a"), 0, 0, 900, 900);
+    rightDraw(elementOn(container, "a"), 0, 0, 260, 0);
+
+    expect(onConnectionRefused).not.toHaveBeenCalled();
   });
 
   it("a right press that does not move raises nothing, leaving the body press to the menu", () => {

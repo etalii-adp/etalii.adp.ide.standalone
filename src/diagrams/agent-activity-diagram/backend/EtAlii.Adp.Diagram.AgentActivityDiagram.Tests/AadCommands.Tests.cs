@@ -66,6 +66,34 @@ public sealed class AadCommandsTests : IDisposable
     }
 
     [Fact]
+    public async Task ARedoneAdd_IsTheElementItWas_SoThatWhatWasJoinedToItComesBackToo()
+    {
+        // Arrange: a project and a specification are dropped and joined.
+        await GivenAsync("agent-activity-diagram: 1\r\n");
+        Assert.True((await RunAsync(new AddAadElementCommand(Body, "project", 0, 0))).IsSuccess);
+        Assert.True((await RunAsync(new AddAadElementCommand(Body, "specification", 100, 0))).IsSuccess);
+        var model = Documents.GetOrLoad(Body).Model;
+        Assert.True((await RunAsync(new ConnectAadCommand(Body, model.Elements[0].Id, model.Elements[1].Id))).IsSuccess);
+        var joined = await ReadAsync();
+
+        // Act: all three are undone, and done again.
+        for (var step = 0; step < 3; step++)
+        {
+            Assert.True((await History.UndoAsync(TestContext.Current.CancellationToken)).IsSuccess);
+        }
+        var undone = await ReadAsync();
+        for (var step = 0; step < 3; step++)
+        {
+            var redone = await History.RedoAsync(TestContext.Current.CancellationToken);
+            Assert.True(redone.IsSuccess, redone.Error);
+        }
+
+        // Assert: the file is what it was, ids and all.
+        Assert.Equal("agent-activity-diagram: 1\r\n", undone);
+        Assert.Equal(joined, await ReadAsync());
+    }
+
+    [Fact]
     public async Task AnAddedTask_GoesLastInItsSpecification_StampedNow()
     {
         // Arrange.
