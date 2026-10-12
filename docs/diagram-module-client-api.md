@@ -127,6 +127,24 @@ import "./dependency-graph.css";
 
 **Related.** [The shape of a module client](#the-shape-of-a-module-client) for where this sits in the whole.
 
+## Editor analysis and schemas
+
+**Declarations:** `EditorAnalysis`, `EditorFinding`, `EditorFindingSeverity`, `EditorCompletion`, `SchemaFiles`, `SchemaFile`, `schemaFileKey`, `resolveSchemaReference`
+
+**What it is for.** An editor module tells `TextEditorPanel` what it knows about its format through one asynchronous interface, and the panel draws everything: the underlines, the gutter marks, the counts on the status line, the completion list and the hover text. A module never draws any of them itself, so JSON, YAML and XML look and behave alike.
+
+**Whether a module needs it.** Only an editor module that checks or completes its text. A diagram module never does; an editor that only colours its text passes `extensions` and no `analysis`.
+
+**Its shape.** `EditorAnalysis` has `findings` (required), and `completions`, `hover` and `status` (each optional). Offsets are into the text as CodeMirror holds it, which is LF-only. An `EditorFinding` is `from`, `to`, `severity`, `message` (plain text, never markup) and `source` (who found it, such as `json-schema`). `EditorFindingSeverity` is `error`, `warning` or `info`. An `EditorCompletion` is `label`, `filterText`, `detail`, `info`, `from`, `to`, `insert` (with `${1}` tab stops applied as a snippet) and `boost`, which sorts an item up the list.
+
+`SchemaFiles` is a component that renders nothing: given the paths a document's schema references lead to, it reads each file over the tab's existing stream and reports every arrival, change and failure as a new map of `SchemaFile` (`loading`, `loaded` with its text and revision, or `failed` with its reason), keyed by `schemaFileKey` of the path. `resolveSchemaReference` decides where a reference points, before any URL arithmetic: a file of the project, a bundled schema, or no file with the reason, refusing a `..` that steps above the project root and anything with a scheme it does not bundle.
+
+Source: [`src/editors/json/client/JsonEditorPanel.tsx`](../src/editors/json/client/JsonEditorPanel.tsx)
+
+**The guards.** `resolveSchemaReference` is held to `src/fixtures/schema-reference-cases.json`, the cases the XML editor's C# twin is held to as well. `src/client/src/editors/analysisExtensions.test.tsx` checks that each severity carries a line style and a gutter mark as well as a colour.
+
+**Related.** [Registration and discovery](#registration-and-discovery) for `TextEditorPanel`, and [creating-an-editor-module.md](creating-an-editor-module.md) for the JSON editor as the worked example.
+
 ## The stream and the model
 
 **Declarations:** `useDiagramStream`, `DiagramModel`, `DiagramModelElement`, `DiagramModelConnection`, `Delta`, `Element`
