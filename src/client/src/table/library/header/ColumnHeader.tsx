@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { usePointerGesture } from "../../../canvas/gesture/usePointerGesture";
 import { ContextMenu } from "../../../shell/context/ContextMenu";
 import type { TableGesture } from "../api/tableEvents";
@@ -31,6 +31,8 @@ export interface ColumnHeaderProps {
   nameAtOnce?: boolean;
   /** Told when that naming has begun, so that it begins once. */
   onNamingStarted?: () => void;
+  /** What stands before the column's icon and name: the first column's checkbox that selects every row. */
+  leading?: ReactNode;
 }
 
 /**
@@ -41,7 +43,7 @@ export interface ColumnHeaderProps {
  * the pointer as a preview the table draws, and the width is sent once on release - a resize
  * that wrote on every pointer move would be a write per pixel.
  */
-export function ColumnHeader({ column, index, width, definition, editable, raise, ask, onResizePreview, nameAtOnce = false, onNamingStarted, frozenAt, frozenUpToThis = false }: ColumnHeaderProps) {
+export function ColumnHeader({ column, index, width, definition, editable, raise, ask, onResizePreview, nameAtOnce = false, onNamingStarted, frozenAt, frozenUpToThis = false, leading }: ColumnHeaderProps) {
   const kind = kindOf(definition, column.kind);
   const cellRef = useRef<HTMLDivElement>(null);
   const [menuAt, setMenuAt] = useState<{ x: number; y: number } | null>(null);
@@ -134,6 +136,7 @@ export function ColumnHeader({ column, index, width, definition, editable, raise
 
   return (
     <div ref={cellRef} className={classes} role="columnheader" aria-colindex={index + 1} data-column-id={column.id} style={frozenAt !== undefined ? { left: frozenAt } : undefined}>
+      {leading}
       {renaming ? (
         <RenameField
           name={column.name}

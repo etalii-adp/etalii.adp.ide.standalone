@@ -60,10 +60,25 @@ export interface TableKindDefinition {
   needsTarget?: boolean;
   /** The comparisons a filter offers for this kind; *is empty* and *is not empty* are offered for every kind besides. */
   comparisons?: readonly TableComparison[];
+  /**
+   * The entries this kind is offered under where a new property's type is chosen, each with the
+   * settings a property made from it starts with: one kind shown as two types, as Notion shows a
+   * relation that holds one row and one that holds several. Left out, it is offered once, under its own label.
+   */
+  offeredAs?: readonly TableKindOffer[];
   /** False for a kind a view cannot be sorted by. */
   sortable?: boolean;
   /** True for a kind a view can be grouped by. */
   groupable?: boolean;
+}
+
+/** One entry a kind is offered under where a new property's type is chosen. */
+export interface TableKindOffer {
+  label: string;
+  /** The @mdi/font class of the entry's icon. */
+  icon: string;
+  /** What a property made from this entry starts with: for a relation, its `limit`. */
+  settings: Readonly<Record<string, string>>;
 }
 
 export interface TableDefinition {

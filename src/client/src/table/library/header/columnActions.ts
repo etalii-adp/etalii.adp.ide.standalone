@@ -12,6 +12,17 @@ import { kindOf, type ColumnAction, type TableDefinition } from "../definition/t
 /** A column's narrowest width, in pixels: wide enough for its icon and a few letters. */
 export const MINIMUM_COLUMN_WIDTH = 60;
 
+/**
+ * The types a new property's panel lists: every kind that may be added, once under its own name
+ * or once per entry it is offered under, each with the settings a property made from it starts with.
+ */
+export function offeredKinds(definition: TableDefinition): { id: string; kind: string; label: string; icon: string; settings: Readonly<Record<string, string>> }[] {
+  return addableKinds(definition).flatMap(({ kind, label, icon }) => {
+    const offers = kindOf(definition, kind).offeredAs ?? [];
+    return offers.length === 0 ? [{ id: kind, kind, label, icon, settings: {} }] : offers.map((offer, index) => ({ id: `${kind}:${index}`, kind, ...offer }));
+  });
+}
+
 /** The kinds a new column, or a column changing its type, may be given: all but those the definition holds back. */
 export function addableKinds(definition: TableDefinition): { kind: string; label: string; icon: string }[] {
   return Object.entries(definition.kinds)

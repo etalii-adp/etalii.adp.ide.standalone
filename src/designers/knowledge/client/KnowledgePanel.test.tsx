@@ -94,7 +94,7 @@ describe("KnowledgePanel", () => {
     render(<KnowledgePanel projectId={ID} entryId={ID} path={["cities.adp"]} />);
 
     // Assert.
-    expect(screen.getByRole("note").textContent).toBe("2 changes are being saved…");
+    expect(screen.getByRole("status").textContent).toBe("2 changes are being saved…");
   });
 
   it("sends an edit with the view it was made in", async () => {

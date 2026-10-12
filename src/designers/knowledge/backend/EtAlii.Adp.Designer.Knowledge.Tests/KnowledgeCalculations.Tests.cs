@@ -37,6 +37,26 @@ public sealed class KnowledgeCalculationsTests : IDisposable
 
     [Theory]
     [MemberData(nameof(KnowledgeFiles.Extensions), MemberType = typeof(KnowledgeFiles))]
+    public async Task ACalculation_LeavesItsColumnWhereItWas(string extension)
+    {
+        // Arrange: a view that lists none of its columns shows them in the file's order. A setting
+        // given to one used to list it on its own, after the columns the view listed and before
+        // every other: the column jumped to the left, and its figure stood where another had been.
+        await using var table = Open(extension);
+        await table.Edit(new TableGesture("resizeColumn", ColumnId: "p3", ViewId: "v2", Settings: Settings(("width", "120"))));
+        var before = table.Session.Baseline().Columns.Select(column => column.Id).ToList();
+
+        // Act: a calculation and a width for columns the view does not list yet, further along.
+        await table.Edit(new TableGesture("setColumnCalculation", ColumnId: "p6", ViewId: "v2", Settings: Settings(("calculate", "countAll"))));
+        await table.Edit(new TableGesture("resizeColumn", ColumnId: "p8", ViewId: "v2", Settings: Settings(("width", "200"))));
+
+        // Assert: the columns are shown in the order they were, and the figure is the column's own.
+        Assert.Equal(before, table.Session.Baseline().Columns.Select(column => column.Id));
+        Assert.NotEqual("(none)", Shown(table, "p6"));
+    }
+
+    [Theory]
+    [MemberData(nameof(KnowledgeFiles.Extensions), MemberType = typeof(KnowledgeFiles))]
     public async Task AColumn_ShowsUnderItWhatItsCalculationComesTo_AndTheFileNamesIt(string extension)
     {
         // Arrange: nothing is calculated, and the population says which calculations it can have. Two more

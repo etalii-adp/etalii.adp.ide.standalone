@@ -58,8 +58,21 @@ export const knowledgeTable: TableDefinition = {
     selection: { icon: "mdi-chevron-down-circle-outline", label: "Selection", editor: "option", comparisons: [is, isNot], groupable: true },
     multipleSelection: { icon: "mdi-format-list-bulleted", label: "Multiple selection", editor: "options", comparisons: SEVERAL, groupable: true },
     // A relation is a property as any other, as in Notion: it is offered where a new property's type is
-    // chosen, and the table it relates to is asked for there. No property is changed into one.
-    relation: { icon: "mdi-arrow-top-right", label: "Relation", editor: "rows", comparisons: SEVERAL, groupable: true, needsTarget: true },
+    // chosen, and the table it relates to is asked for there. No property is changed into one. It is
+    // offered as two types, as a selection is: one that holds one row, and one that holds several -
+    // both a relation in the file, told apart by its limit, which either can still be changed to.
+    relation: {
+      icon: "mdi-arrow-top-right",
+      label: "Relation",
+      editor: "rows",
+      comparisons: SEVERAL,
+      groupable: true,
+      needsTarget: true,
+      offeredAs: [
+        { label: "Relation", icon: "mdi-arrow-top-right", settings: { limit: "one" } },
+        { label: "Multiple relation", icon: "mdi-call-split", settings: { limit: "none" } },
+      ],
+    },
   },
   columnActions: ["rename", "changeType", "options", "relation", "filter", "sortAscending", "sortDescending", "group", "nest", "hide", "wrap", "freeze", "insertLeft", "insertRight", "duplicate", "delete"],
   rowActions: ["delete", "move"],

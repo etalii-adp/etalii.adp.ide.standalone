@@ -299,4 +299,29 @@ describe("the editors on a searchable list", () => {
     expect(onClose.mock.calls.map((call) => call[0])).toEqual(["next", "stay"]);
     expect(commit).not.toHaveBeenCalled();
   });
+
+  it("takes the focus into its search field when it opens", () => {
+    // Act.
+    open("option", { column: kinds });
+
+    // Assert: typing searches at once; nothing else on the page is left holding a selection.
+    expect(document.activeElement).toBe(field());
+  });
+
+  it("closes, writing nothing, when something outside it is pressed", () => {
+    // Arrange.
+    const outside = document.createElement("button");
+    document.body.appendChild(outside);
+    const { commit, onClose } = open("option", { column: kinds });
+
+    // Act: a press inside the list keeps it open; one outside it closes it.
+    fireEvent.pointerDown(field());
+    expect(onClose).not.toHaveBeenCalled();
+    fireEvent.pointerDown(outside);
+
+    // Assert.
+    expect(onClose).toHaveBeenCalledWith("leave");
+    expect(commit).not.toHaveBeenCalled();
+    outside.remove();
+  });
 });

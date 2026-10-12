@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { choicesOf, type TableGesture } from "../api/tableEvents";
 import { kindOf, type TableDefinition } from "../definition/tableDefinition";
-import { addableKinds } from "./columnActions";
+import { offeredKinds } from "./columnActions";
 
 /** How near the window's left edge the panel may stand, in pixels. */
 const PANEL_MARGIN = 8;
@@ -83,7 +84,7 @@ export function NewColumnPanel({ definition, position, beside, raise, ask, onClo
     };
   };
 
-  const add = (kind: string) => {
+  const add = (kind: string, preset: Readonly<Record<string, string>>) => {
     if (ask !== undefined && kindOf(definition, kind).needsTarget === true) {
       // Which tables are there to relate to? The answer is the list; anything else is why there is none.
       void ask(relationGesture(null)).then((answer) => {
@@ -92,7 +93,8 @@ export function NewColumnPanel({ definition, position, beside, raise, ask, onClo
           setRefusal(answer === "" ? "There is no table to relate to." : answer);
         } else {
           setRefusal("");
-          setRelation({ targets, target: null, limit: "none", twoWay: false, otherName: "" });
+          // How many rows a cell holds starts as the type chosen says, and can still be changed here.
+          setRelation({ targets, target: null, limit: preset.limit ?? "none", twoWay: false, otherName: "" });
         }
       });
       return;
@@ -102,21 +104,23 @@ export function NewColumnPanel({ definition, position, beside, raise, ask, onClo
       kind: "addColumn",
       ...(beside === undefined ? {} : { targetId: beside.columnId }),
       ...(typed === "" ? {} : { values: [typed] }),
-      settings: beside === undefined ? { type: kind } : { side: beside.side, type: kind },
+      settings: beside === undefined ? { ...preset, type: kind } : { ...preset, side: beside.side, type: kind },
     });
     onClose();
   };
 
-  return (
+  // Drawn at the document's top, as a menu is: inside its header it is painted in the header's
+  // layer, under the rows that scroll past and the frozen cells beside it.
+  return createPortal(
     <div ref={panelRef} className="table-options-editor table-new-column" role="dialog" aria-label="New property" style={{ left: Math.max(PANEL_MARGIN, Math.min(position.x, window.innerWidth - PANEL_WIDTH - PANEL_MARGIN)), top: position.y }}>
       <input ref={nameRef} type="text" aria-label="Property name" placeholder="Property name" value={name} onChange={(event) => setName(event.target.value)} onKeyDown={(event) => event.stopPropagation()} />
       {relation === null ? (
         <ul className="table-new-column-kinds" role="menu" aria-label="Type">
-          {addableKinds(definition)
+          {offeredKinds(definition)
             .filter((kind) => ask !== undefined || kindOf(definition, kind.kind).needsTarget !== true)
             .map((kind) => (
-              <li key={kind.kind} role="none">
-                <button type="button" role="menuitem" className="table-new-column-kind" onClick={() => add(kind.kind)}>
+              <li key={kind.id} role="none">
+                <button type="button" role="menuitem" className="table-new-column-kind" onClick={() => add(kind.kind, kind.settings)}>
                   <span className={`mdi ${kind.icon}`} aria-hidden="true" />
                   <span>{kind.label}</span>
                 </button>
@@ -183,6 +187,7 @@ export function NewColumnPanel({ definition, position, beside, raise, ask, onClo
           {refusal}
         </p>
       )}
-    </div>
+    </div>,
+    document.body,
   );
 }

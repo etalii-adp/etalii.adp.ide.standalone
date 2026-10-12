@@ -7,6 +7,7 @@ import {
   useState,
   type KeyboardEvent as ReactKeyboardEvent,
 } from "react";
+import { createPortal } from "react-dom";
 
 interface ContextMenuItemBase {
   id: string;
@@ -355,7 +356,10 @@ export function ContextMenu({ open, groups, position, onClose }: ContextMenuProp
     return null;
   }
 
-  return (
+  // Drawn at the document's top, never inside its opener: a fixed menu inside an element that
+  // makes its own stacking context - a sticky table header, a frozen column - is painted in that
+  // element's layer, under whatever later layer overlaps it, however high its own z-index is.
+  return createPortal(
     <div
       className="context-menu-catcher"
       onMouseDown={(event) => {
@@ -365,6 +369,7 @@ export function ContextMenu({ open, groups, position, onClose }: ContextMenuProp
       }}
     >
       <ContextMenuLevel groups={groups} anchor={{ point: position }} onSelectItem={handleSelectItem} />
-    </div>
+    </div>,
+    document.body,
   );
 }

@@ -3606,3 +3606,29 @@ writes a size - is evidenced by the module's own suites. Requirements 13.1 and 1
   - (e) The checkbox that selects every row stood in the header. The rows' own checkboxes and the bar that edits one property of all selected rows were not pressed in this pass: they are held by `TableSurface.test.tsx` and `KnowledgeEditing.Tests.cs`. *Select all* selects the rows the table holds, which in a table of thousands are those near what is in sight.
   - (f) *Relation* is a type in the *New property* panel. Named *Shire* and chosen, the panel listed *This table*, *Provinces* and the project's other tables; *Provinces*, *Two-way relation* with no name and *Add relation* wrote the relation in `cities.yaml` and its other side, *Cities*, in `provinces.yaml`, each naming the other. *Edit relation* in the column's menu said *Related to provinces.yaml* and *Shown in the other table as Cities*; *1 row* set the limit, and unticking *Two-way relation* took the other side out of `provinces.yaml`.
   - **Two defects found in this pass, and fixed.** The list of tables came back as an answer that begins `choose:`, and the frame showed it in red as a refused edit, as it would have shown a `confirm:` question: an answer that asks something is no longer reported as a refusal (`useTableStream.test.ts`, seen to fail first). And the panel of a property added at the far right opened outside the window: it is kept within the window's right edge, which no test can hold, since jsdom lays nothing out; this step is its guard.
+
+## The Knowledge designer's fixes, in a browser (Peter's report, 2026-10-12)
+
+**Why this is a browser pass and not only tests:** four of the ten fixes exist only where CSS lays things out and paints: the saving note no longer moving the rows, the menus drawn over everything, the date and time pickers' icons in the dark theme, and a selection list that turns upwards near the bottom. jsdom lays out and paints nothing. The others have tests, each seen to fail first: one window call at a time (`useTableStream.test.ts`), the saving note inside the frame and the header checkbox before its icon (`TableSurface.test.tsx`), menus drawn at the document's top (`ContextMenu.test.tsx`), the selection list taking focus and closing on an outside press (`CellEditor.test.tsx`), *Multiple relation* offered (`ColumnHeader.test.tsx`), a registration nested under its data file (`HierarchyModel.Nesting.Tests.cs`) and a calculation leaving its column where it was (`KnowledgeCalculations.Tests.cs`).
+
+- **Preconditions**: a developer build, signed in, a scratch project holding a copy of the Knowledge examples' `cities.yaml` and `provinces.yaml` with their registrations.
+- **Rows**:
+  1. **Tree.** Expand the folder: it lists `cities.yaml` and `provinces.yaml`, and each registration is nested under its data file, not beside it.
+  2. **First open.** Open `cities.yaml` with the first window call held back 700 ms: the rows show their data, no row is left loading.
+  3. **Saving note.** Hold every edit back 1.5 s and tick a checkbox: *1 change is being saved* shows at the bottom right of the table, over the rows, and the first row's top does not move.
+  4. **Header checkbox.** Hover the header: the checkbox that selects every row stands before the first column's icon, not over it.
+  5. **Menus.** Open the first column's menu: it is drawn over the calculation line, the selection tags and the panel under the table.
+  6. **Selection list.** Double-click a *Country* cell: the list opens over the rows below, its search box has focus and no text is selected; press outside it and it closes. On a row near the bottom it opens upwards.
+  7. **Pickers.** In the dark theme open a *Date and time* cell and a *Time* cell: their calendar and clock icons are light on the dark field.
+  8. **Calculation.** On a view that does not list *Country*, choose *Count all* under it: the figure stands under *Country*, at its left, and the columns keep their order.
+  9. **Types.** *Add a property* lists *Relation* and *Multiple relation*.
+- **Result 2026-10-12, agent-1-knowledge-designer-fixes, `features/knowledge-designer-fixes-y0zhgg` on `d5278a3c6` with the fixes, a developer build (backend on 5080, Vite on 5174), headless Chromium driven by Playwright at 1400 by 850, the light theme and then the dark one: all nine rows pass.**
+  1. The tree read `relations`, `yaml`, `cities.yaml`, `provinces.yaml`; before the fix it also listed `cities.adp` and `provinces.adp` beside them.
+  2. Two window calls were made, the second after the first had answered; 0 loading rows and 10 rows with data. Before the fix the same delay left every row loading until the table was scrolled.
+  3. The note showed once, and the first row's top read 277.7 before and during the save. Before the fix the note was a line above the grid and the rows moved down by its height and back.
+  4. The checkbox stood before the *Population* icon, in the same header cell.
+  5. The menu was drawn whole, over the calculation line and the tags.
+  6. Focus was in `search-list-field`, the selection was empty, and after a press outside 0 lists were open.
+  7. The calendar and the clock were drawn light on the dark field; before the fix they were dark on it.
+  8. *Count all 3* stood at the left of *Country*, and the headings still read *Population*, *Name*, *Country*, *Tags*, *Province*. Before the fix the calculation listed *Country* in the view on its own, which moved it to second, beside *Population*.
+  9. The types read *Text*, *Number*, *Checkbox*, *Date*, *Date and time*, *Time*, *Selection*, *Multiple selection*, *Relation*, *Multiple relation*.
