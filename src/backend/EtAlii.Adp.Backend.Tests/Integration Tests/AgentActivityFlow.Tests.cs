@@ -4,17 +4,11 @@ using EtAlii.Adp.Diagram.AgentActivityDiagram;
 using EtAlii.Adp.Diagram.Wire;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Hierarchy.Wire;
-using EtAlii.Adp.Projects;
 using EtAlii.Adp.TestSupport.Host;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Xunit;
 using ContextService = EtAlii.Adp.Context.Wire.ContextService;
-using HierarchyService = EtAlii.Adp.Hierarchy.Wire.HierarchyService;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 using Path = EtAlii.Adp.Documents.Wire.Path;
 
@@ -25,10 +19,8 @@ namespace EtAlii.Adp.Backend.Tests;
 /// agent writes to the file reaches a canvas that has it open, a gesture on the canvas is written
 /// to the file, and an undo never takes an agent's write with it.
 /// </summary>
-public class AgentActivityFlowTests : IClassFixture<WebApplicationFactory<Program>>, IDisposable
+public class AgentActivityFlowTests(HostFixture host) : IClassFixture<HostFixture>
 {
-    private static readonly TimeSpan MessageTimeout = TimeSpan.FromSeconds(20);
-
     private const string Work =
         "agent-activity-diagram: 1\r\n" +
         "projects:\r\n" +
@@ -44,54 +36,26 @@ public class AgentActivityFlowTests : IClassFixture<WebApplicationFactory<Progra
         "        title: The module's client\r\n" +
         "        status: progressing\r\n";
 
-    private readonly WebApplicationFactory<Program> _factory;
-    private readonly string _appDataRoot;
-    private readonly string _projectFolder;
+    private readonly string _projectFolder = Seed(host.NewProjectFolder());
 
-    public AgentActivityFlowTests(WebApplicationFactory<Program> baseFactory)
+    private static string Seed(string projectFolder)
     {
-        _appDataRoot = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.IntegrationTests", Guid.NewGuid().ToString("N"));
-        _projectFolder = IoPath.Combine(_appDataRoot, "sample-project");
-        Directory.CreateDirectory(_projectFolder);
-        File.WriteAllText(IoPath.Combine(_projectFolder, "work.adp"), "etalii/agent-activity-diagram\r\nbody: work.aad\r\n");
-        File.WriteAllText(Body, Work);
-
-        _factory = baseFactory.WithWebHostBuilder(builder =>
-        {
-            builder.UseEnvironment("developer");
-            builder.ConfigureServices(services =>
-            {
-                services.RemoveAll<IProjectStore>();
-                services.AddSingleton<IProjectStore>(new FileProjectStore(_appDataRoot));
-                // The problem cache lives and dies with this test, not in the real user profile.
-                services.RemoveAll<Problems.IProblemStore>();
-                services.AddSingleton<Problems.IProblemStore>(provider => new Problems.ProblemStore(
-                    _appDataRoot,
-                    provider.GetRequiredService<Hierarchy.DiagramFileRouter>(),
-                    provider.GetRequiredService<Diagram.DiagramValidators>()));
-            });
-        });
+        File.WriteAllText(IoPath.Combine(projectFolder, "work.adp"), "etalii/agent-activity-diagram\r\nbody: work.aad\r\n");
+        File.WriteAllText(IoPath.Combine(projectFolder, "work.aad"), Work);
+        return projectFolder;
     }
 
     private string Body => IoPath.Combine(_projectFolder, "work.aad");
-
-    public void Dispose()
-    {
-        _factory.Dispose();
-        TestFolder.TryDelete(_appDataRoot);
-    }
 
     [Fact]
     public async Task WhatAnAgentWrites_ReachesTheCanvasThatHasTheFileOpen()
     {
         // Arrange: a canvas with the file open.
-        using var channel = _factory.CreateGrpcChannel();
-        var client = new DiagramService.DiagramServiceClient(channel);
-        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
-        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
-        using var cts = CreateMessageTimeout();
-        using var call = client.Open(new OpenDiagramRequest { ProjectId = projectId, WatchId = ShortGuid.NewShortGuid(), Path = WorkPath() }, headers, cancellationToken: cts.Token);
-        var baseline = await call.ResponseStream.ReadAddAsync(cts.Token);
+        using var session = await FlowSession.OpenAsync(host, _projectFolder, TestContext.Current.CancellationToken);
+        var client = new DiagramService.DiagramServiceClient(session.Channel);
+        using var cts = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken);
+        using var call = client.Open(new OpenDiagramRequest { ProjectId = session.ProjectId, WatchId = ShortGuid.NewShortGuid(), Path = WorkPath() }, session.Headers, cancellationToken: cts.Token);
+        var baseline = await ReadAddAsync(call.ResponseStream, cts.Token);
         Assert.Equal("progressing", Payload(baseline, "s-activity").Tasks.Single().Status);
 
         // Act: an agent finishes its task and says so in the file, as it would from any program.
@@ -103,7 +67,7 @@ public class AgentActivityFlowTests : IClassFixture<WebApplicationFactory<Progra
         string? status = null;
         while (status != "finished")
         {
-            var update = await call.ResponseStream.ReadAddAsync(cts.Token);
+            var update = await ReadAddAsync(call.ResponseStream, cts.Token);
             Assert.True(update.Count > 0, "The stream ended, or the deadline passed, before the agent's change arrived.");
             if (update.Any(element => element.Id.Value == "s-activity"))
             {
@@ -116,26 +80,24 @@ public class AgentActivityFlowTests : IClassFixture<WebApplicationFactory<Progra
     public async Task AGestureOnTheCanvas_IsWrittenToTheFile_AndUndoneOnlyWhileNoAgentWroteAfterIt()
     {
         // Arrange: a canvas with the file open and the file selected, as a canvas has it.
-        using var channel = _factory.CreateGrpcChannel();
-        var client = new DiagramService.DiagramServiceClient(channel);
-        var hierarchyClient = new HierarchyService.HierarchyServiceClient(channel);
-        var contextClient = new ContextService.ContextServiceClient(channel);
-        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
-        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
+        using var session = await FlowSession.OpenAsync(host, _projectFolder, TestContext.Current.CancellationToken);
+        var client = new DiagramService.DiagramServiceClient(session.Channel);
+        var hierarchyClient = session.Hierarchy;
+        var contextClient = session.Context;
         var watchId = ShortGuid.NewShortGuid();
-        await hierarchyClient.ListEntriesAsync(new ListEntriesRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
-        var entryId = await NestedEntryLookup.EntryIdOfAsync(hierarchyClient, projectId, watchId, headers, "work.adp");
-        using var cts = CreateMessageTimeout();
-        using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: cts.Token);
-        using var call = client.Open(new OpenDiagramRequest { ProjectId = projectId, WatchId = watchId, Path = WorkPath() }, headers, cancellationToken: cts.Token);
-        await call.ResponseStream.ReadAddAsync(cts.Token);
-        var selected = await contextClient.SelectAsync(new SelectRequest { ProjectId = projectId, WatchId = watchId, Selection = FileChain(entryId) }, headers, cancellationToken: TestContext.Current.CancellationToken);
+        await hierarchyClient.ListEntriesAsync(new ListEntriesRequest { ProjectId = session.ProjectId, WatchId = watchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
+        var entryId = await NestedEntryLookup.EntryIdOfAsync(hierarchyClient, session.ProjectId, watchId, session.Headers, "work.adp");
+        using var cts = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken);
+        using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = session.ProjectId, WatchId = watchId }, session.Headers, cancellationToken: cts.Token);
+        using var call = client.Open(new OpenDiagramRequest { ProjectId = session.ProjectId, WatchId = watchId, Path = WorkPath() }, session.Headers, cancellationToken: cts.Token);
+        await ReadAddAsync(call.ResponseStream, cts.Token);
+        var selected = await contextClient.SelectAsync(new SelectRequest { ProjectId = session.ProjectId, WatchId = watchId, Selection = FileChain(entryId) }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal("", selected.Error);
 
         // Act: a drag locks the specification where it was let go.
         var moved = await client.MoveElementAsync(
-            new MoveElementRequest { ProjectId = projectId, WatchId = watchId, Path = WorkPath(), ElementId = "s-activity", Position = new Point2D { X = 240, Y = -80 } },
-            headers, cancellationToken: TestContext.Current.CancellationToken);
+            new MoveElementRequest { ProjectId = session.ProjectId, WatchId = watchId, Path = WorkPath(), ElementId = "s-activity", Position = new Point2D { X = 240, Y = -80 } },
+            session.Headers, cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert: the lock is the reader's part of the file, created with its first entry.
         Assert.Equal("", moved.Error);
@@ -146,26 +108,26 @@ public class AgentActivityFlowTests : IClassFixture<WebApplicationFactory<Progra
         var switched = await contextClient.ExecuteActionAsync(
             new ExecuteActionRequest
             {
-                ProjectId = projectId,
+                ProjectId = session.ProjectId,
                 WatchId = watchId,
                 Source = new ContextSource { ElementId = new ElementId { Value = AadElementMapper.ViewId } },
                 InteractionId = ShortGuid.NewShortGuid(),
                 ActionId = AadContextActionProvider.ShowArchivedActionId,
             },
-            headers, cancellationToken: TestContext.Current.CancellationToken);
+            session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         Assert.True(switched.Accepted, switched.Error);
         var shown = locked.Replace("view:\r\n", "view:\r\n  showArchived: true\r\n", StringComparison.Ordinal);
         Assert.Equal(shown, await File.ReadAllTextAsync(Body, TestContext.Current.CancellationToken));
 
         // Undo takes the switch back, and the lock stays.
-        var undone = await ExecuteProjectActionAsync(contextClient, projectId, watchId, headers, HistoryContextActionProvider.UndoActionId);
+        var undone = await ExecuteProjectActionAsync(contextClient, session.ProjectId, watchId, session.Headers, HistoryContextActionProvider.UndoActionId);
         Assert.True(undone.Accepted, undone.Error);
         Assert.Equal(locked, await File.ReadAllTextAsync(Body, TestContext.Current.CancellationToken));
 
         // Act: an agent writes the file; the edit before that can no longer be undone over it.
         var agents = locked.Replace("    name: ADP\r\n", "    name: ADP, renamed by an agent\r\n", StringComparison.Ordinal);
         await File.WriteAllTextAsync(Body, agents, TestContext.Current.CancellationToken);
-        var refused = await ExecuteProjectActionAsync(contextClient, projectId, watchId, headers, HistoryContextActionProvider.UndoActionId);
+        var refused = await ExecuteProjectActionAsync(contextClient, session.ProjectId, watchId, session.Headers, HistoryContextActionProvider.UndoActionId);
 
         // Assert: nothing is written, and the agent's rename is still there (Requirement 8.7).
         Assert.False(refused.Accepted);
@@ -189,13 +151,6 @@ public class AgentActivityFlowTests : IClassFixture<WebApplicationFactory<Progra
         return chain;
     }
 
-    private static CancellationTokenSource CreateMessageTimeout()
-    {
-        var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
-        cts.CancelAfter(MessageTimeout);
-        return cts;
-    }
-
     private static Task<ExecuteActionResponse> ExecuteProjectActionAsync(
         ContextService.ContextServiceClient contextClient,
         Documents.Wire.ShortGuid projectId,
@@ -213,4 +168,25 @@ public class AgentActivityFlowTests : IClassFixture<WebApplicationFactory<Progra
             },
             headers,
             cancellationToken: TestContext.Current.CancellationToken).ResponseAsync;
+
+    /// <summary>The next delta that adds or replaces elements; an empty list when none came before the deadline.</summary>
+    private static async Task<IReadOnlyList<Element>> ReadAddAsync(IAsyncStreamReader<Delta> stream, CancellationToken cancellationToken)
+    {
+        try
+        {
+            while (await stream.MoveNext(cancellationToken))
+            {
+                if (stream.Current.ActionCase == Delta.ActionOneofCase.Add)
+                {
+                    return [.. stream.Current.Add.Elements];
+                }
+            }
+        }
+        catch (RpcException exception) when (exception.StatusCode == StatusCode.Cancelled)
+        {
+            // Reading stopped at the deadline, which is how this helper ends when nothing came.
+        }
+
+        return [];
+    }
 }

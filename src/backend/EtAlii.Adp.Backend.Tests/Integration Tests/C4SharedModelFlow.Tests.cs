@@ -1,12 +1,7 @@
 using EtAlii.Adp.Diagram.Wire;
 using EtAlii.Adp.Documents.Wire;
-using EtAlii.Adp.Projects;
 using EtAlii.Adp.TestSupport.Host;
 using Grpc.Core;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 using Path = EtAlii.Adp.Documents.Wire.Path;
@@ -17,14 +12,8 @@ namespace EtAlii.Adp.Backend.Tests;
 /// C4's central premise, over the real host: two <c>.adp</c> files naming one <c>.dsl</c> are
 /// two views of one model, not two drawings (c4-diagrams Requirements 1.2, 2.4, 2.6).
 /// </summary>
-public class C4SharedModelFlowTests : IClassFixture<WebApplicationFactory<Program>>, IDisposable
+public class C4SharedModelFlowTests(HostFixture host) : IClassFixture<HostFixture>
 {
-    private static readonly TimeSpan MessageTimeout = TimeSpan.FromSeconds(10);
-
-    private readonly WebApplicationFactory<Program> _factory;
-    private readonly string _appDataRoot;
-    private readonly string _projectFolder;
-
     private const string Model = """
         workspace "Bank" {
             model {
@@ -45,57 +34,27 @@ public class C4SharedModelFlowTests : IClassFixture<WebApplicationFactory<Progra
         }
         """;
 
-    public C4SharedModelFlowTests(WebApplicationFactory<Program> baseFactory)
-    {
-        _appDataRoot = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.IntegrationTests", Guid.NewGuid().ToString("N"));
-        _projectFolder = IoPath.Combine(_appDataRoot, "c4-project");
-        Directory.CreateDirectory(_projectFolder);
+    private readonly string _projectFolder = Seed(host.NewProjectFolder("c4-project"));
 
-        File.WriteAllText(IoPath.Combine(_projectFolder, "banking.dsl"), Model);
+    private static string Seed(string projectFolder)
+    {
+        File.WriteAllText(IoPath.Combine(projectFolder, "banking.dsl"), Model);
         // Two registrations, one body: the shape Requirement 2.4 exists for.
-        File.WriteAllText(IoPath.Combine(_projectFolder, "context.adp"), "c4/context\nbody: banking.dsl\nview: context\n");
-        File.WriteAllText(IoPath.Combine(_projectFolder, "containers.adp"), "c4/container\nbody: banking.dsl\nview: containers\n");
-
-        _factory = baseFactory.WithWebHostBuilder(builder =>
-        {
-            builder.UseEnvironment("developer");
-            builder.ConfigureServices(services =>
-            {
-                services.RemoveAll<IProjectStore>();
-                services.AddSingleton<IProjectStore>(new FileProjectStore(_appDataRoot));
-                // The problem cache must live and die with this test, not in the real user
-                // profile the host's AddProblems registration points at. A host booted without
-                // this override leaves a cache file behind naming a temp folder that is deleted
-                // moments later, and every later run then walks that dead root at startup: 605
-                // such files had accumulated, costing the suite 22,591 warnings and an apparent
-                // hang. DiagramToolboxFlowTests fixed this for itself; it never generalised.
-                services.RemoveAll<Problems.IProblemStore>();
-                services.AddSingleton<Problems.IProblemStore>(provider => new Problems.ProblemStore(
-                    _appDataRoot,
-                    provider.GetRequiredService<Hierarchy.DiagramFileRouter>(),
-                    provider.GetRequiredService<Diagram.DiagramValidators>()));
-            });
-        });
-    }
-
-    public void Dispose()
-    {
-        _factory.Dispose();
-        TestFolder.TryDelete(_appDataRoot);
+        File.WriteAllText(IoPath.Combine(projectFolder, "context.adp"), "c4/context\nbody: banking.dsl\nview: context\n");
+        File.WriteAllText(IoPath.Combine(projectFolder, "containers.adp"), "c4/container\nbody: banking.dsl\nview: containers\n");
+        return projectFolder;
     }
 
     [Fact]
     public async Task TwoRegistrationsOverOneDocument_EachOpenTheirOwnView()
     {
         // Arrange.
-        using var channel = _factory.CreateGrpcChannel();
-        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
-        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
-        var client = new DiagramService.DiagramServiceClient(channel);
+        using var session = await FlowSession.OpenAsync(host, _projectFolder, TestContext.Current.CancellationToken);
+        var client = new DiagramService.DiagramServiceClient(session.Channel);
 
         // Arrange, continued.
-        var context = await ElementIdsAsync(client, headers, projectId, "context.adp");
-        var containers = await ElementIdsAsync(client, headers, projectId, "containers.adp");
+        var context = await ElementIdsAsync(client, session.Headers, session.ProjectId, "context.adp");
+        var containers = await ElementIdsAsync(client, session.Headers, session.ProjectId, "containers.adp");
 
         // Act.
         // A context view shows people and software systems; a container view shows the
@@ -116,13 +75,11 @@ public class C4SharedModelFlowTests : IClassFixture<WebApplicationFactory<Progra
         // Arrange.
         // Requirement 2.6: a document dropped into the project on its own is still openable,
         // and shows the first view it declares.
-        using var channel = _factory.CreateGrpcChannel();
-        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
-        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
-        var client = new DiagramService.DiagramServiceClient(channel);
+        using var session = await FlowSession.OpenAsync(host, _projectFolder, TestContext.Current.CancellationToken);
+        var client = new DiagramService.DiagramServiceClient(session.Channel);
 
         // Act.
-        var ids = await ElementIdsAsync(client, headers, projectId, "banking.dsl");
+        var ids = await ElementIdsAsync(client, session.Headers, session.ProjectId, "banking.dsl");
 
         // Assert.
         Assert.Contains("s", ids);
@@ -133,14 +90,12 @@ public class C4SharedModelFlowTests : IClassFixture<WebApplicationFactory<Progra
     public async Task EveryViewCarriesItsOwnTitle_SoTwoTabsOfOneModelAreTellableApart()
     {
         // Arrange.
-        using var channel = _factory.CreateGrpcChannel();
-        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
-        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
-        var client = new DiagramService.DiagramServiceClient(channel);
+        using var session = await FlowSession.OpenAsync(host, _projectFolder, TestContext.Current.CancellationToken);
+        var client = new DiagramService.DiagramServiceClient(session.Channel);
 
         // Act.
-        var context = await TitleOfAsync(client, headers, projectId, "context.adp");
-        var containers = await TitleOfAsync(client, headers, projectId, "containers.adp");
+        var context = await TitleOfAsync(client, session.Headers, session.ProjectId, "context.adp");
+        var containers = await TitleOfAsync(client, session.Headers, session.ProjectId, "containers.adp");
 
         // Assert.
         Assert.Equal("System Context diagram for Banking", context);
@@ -185,8 +140,7 @@ public class C4SharedModelFlowTests : IClassFixture<WebApplicationFactory<Progra
         Documents.Wire.ShortGuid projectId,
         string fileName)
     {
-        using var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
-        cts.CancelAfter(MessageTimeout);
+        using var cts = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken);
 
         var path = Path.Of(fileName);
         using var call = client.Open(

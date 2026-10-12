@@ -20,10 +20,8 @@ using EtAlii.Adp.Diagram.SupplyChain;
 using EtAlii.Adp.Diagram.Timeline;
 using EtAlii.Adp.Diagram.WardleyMap;
 using EtAlii.Adp.Hierarchy;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc.Testing;
+using EtAlii.Adp.TestSupport.Host;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Xunit;
 using IoPath = System.IO.Path;
 // `Diagram.Timeline` would read as the namespace rather than the module's Diagram class, so the class is aliased.
@@ -47,29 +45,8 @@ namespace EtAlii.Adp.Backend.Tests;
 /// fails the day such an element appears, so someone must name it then.
 /// </para>
 /// </remarks>
-public class DrawnConnectionsTests : IClassFixture<WebApplicationFactory<Program>>
+public class DrawnConnectionsTests(HostFixture host) : IClassFixture<HostFixture>
 {
-    private readonly WebApplicationFactory<Program> _factory;
-
-    private readonly string _appDataRoot = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.IntegrationTests", Guid.NewGuid().ToString("N"));
-
-    public DrawnConnectionsTests(WebApplicationFactory<Program> baseFactory) =>
-        _factory = baseFactory.WithWebHostBuilder(builder =>
-        {
-            builder.UseEnvironment("developer");
-            builder.ConfigureServices(services =>
-            {
-                // The problem cache lives and dies with this test rather than in the real user
-                // profile the host's AddProblems registration points at - the leak
-                // ProblemStoreIsolationTests exists to stop, and which it caught here.
-                services.RemoveAll<Problems.IProblemStore>();
-                services.AddSingleton<Problems.IProblemStore>(provider => new Problems.ProblemStore(
-                    _appDataRoot,
-                    provider.GetRequiredService<DiagramFileRouter>(),
-                    provider.GetRequiredService<DiagramValidators>()));
-            });
-        });
-
     /// <summary>
     /// Opens every stage and job the pipeline drew that is still shut - shared with
     /// <see cref="ShippedExampleModelsTests"/>, which exports what a fully opened pipeline sends.
@@ -182,7 +159,7 @@ public class DrawnConnectionsTests : IClassFixture<WebApplicationFactory<Program
         // Act.
         foreach (var module in Modules)
         {
-            problems.AddRange(await DrawnConnections.ProblemsAsync(_factory.Services, module));
+            problems.AddRange(await DrawnConnections.ProblemsAsync(host.Services, module));
         }
 
         // Assert.
@@ -213,7 +190,7 @@ public class DrawnConnectionsTests : IClassFixture<WebApplicationFactory<Program
     {
         // Arrange: the other direction, from the composition itself - every session factory the host
         // registers is a canvas that draws, and must be among the types the checked examples open.
-        var services = _factory.Services;
+        var services = host.Services;
         var opened = services.GetServices<IDiagramSessionFactory>().Select(factory => factory.Origin.MimeType).ToHashSet(StringComparer.Ordinal);
 
         // Act.

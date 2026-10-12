@@ -1,12 +1,9 @@
 using System.Net;
 using System.Reflection;
 using System.Text.RegularExpressions;
-using EtAlii.Adp.Diagram;
 using EtAlii.Adp.Documents;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc.Testing;
+using EtAlii.Adp.TestSupport.Host;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -18,42 +15,8 @@ namespace EtAlii.Adp.Backend.Tests;
 /// never references - end up in <see cref="DiagramDefinitionCatalog"/>. This is the test that
 /// would have failed with an unseeded walk, which returns nothing here.
 /// </summary>
-public class DiagramDiscoveryStartupTests : IClassFixture<WebApplicationFactory<Program>>, IDisposable
+public class DiagramDiscoveryStartupTests(HostFixture host) : IClassFixture<HostFixture>
 {
-    private readonly WebApplicationFactory<Program> _factory;
-    private readonly string _appDataRoot;
-
-    public DiagramDiscoveryStartupTests(WebApplicationFactory<Program> factory)
-    {
-        _appDataRoot = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.IntegrationTests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_appDataRoot);
-
-        _factory = factory.WithWebHostBuilder(builder =>
-        {
-            builder.UseEnvironment("developer");
-            builder.ConfigureServices(services =>
-            {
-                // The problem cache must live and die with this test, not in the real user
-                // profile the host's AddProblems registration points at. A host booted without
-                // this override leaves a cache file behind naming a temp folder that is deleted
-                // moments later, and every later run then walks that dead root at startup: 605
-                // such files had accumulated, costing the suite 22,591 warnings and an apparent
-                // hang. DiagramToolboxFlowTests fixed this for itself; it never generalised.
-                services.RemoveAll<Problems.IProblemStore>();
-                services.AddSingleton<Problems.IProblemStore>(provider => new Problems.ProblemStore(
-                    _appDataRoot,
-                    provider.GetRequiredService<Hierarchy.DiagramFileRouter>(),
-                    provider.GetRequiredService<DiagramValidators>()));
-            });
-        });
-    }
-
-    public void Dispose()
-    {
-        _factory.Dispose();
-        TestFolder.TryDelete(_appDataRoot);
-    }
-
     [Fact]
     public void AfterStartup_AllHoldsTheDeployedDiagramTypes()
     {
@@ -61,10 +24,10 @@ public class DiagramDiscoveryStartupTests : IClassFixture<WebApplicationFactory<
         // Building the server is what runs Program.cs, and with it discovery. The cache is
         // per process and other test classes build hosts too, so this reads it rather than
         // calling Initialize - whichever host ran first filled it from the same deployment.
-        using var _ = _factory.CreateClient();
+        using var _ = host.CreateChannel();
 
         // Assert.
-        var catalog = _factory.Services.GetRequiredService<IDiagramDefinitionCatalog>();
+        var catalog = host.Services.GetRequiredService<IDiagramDefinitionCatalog>();
         Assert.NotEmpty(catalog.All);
 
         // A scaffolded module known to declare a Definition, found by origin not by type -
@@ -76,10 +39,10 @@ public class DiagramDiscoveryStartupTests : IClassFixture<WebApplicationFactory<
     public void AfterStartup_AllIsOrderedByOriginAndFreeOfDuplicates()
     {
         // Arrange.
-        using var _ = _factory.CreateClient();
+        using var _ = host.CreateChannel();
 
         // Act.
-        var catalog = _factory.Services.GetRequiredService<IDiagramDefinitionCatalog>();
+        var catalog = host.Services.GetRequiredService<IDiagramDefinitionCatalog>();
         var origins = catalog.All.Select(definition => definition.Origin).ToList();
 
         // Assert.
@@ -114,7 +77,7 @@ public class DiagramDiscoveryStartupTests : IClassFixture<WebApplicationFactory<
         // those arrays pins this test to the deployment rather than to a number that goes stale
         // as modules are added - and it counts definitions rather than assemblies, which is not
         // the same thing since C4 carries seven notations in one module.
-        using var _ = _factory.CreateClient();
+        using var _ = host.CreateChannel();
 
         // Act.
         var declared = Directory.GetFiles(AppContext.BaseDirectory, "EtAlii.Adp.Diagram.*.dll")
@@ -126,7 +89,7 @@ public class DiagramDiscoveryStartupTests : IClassFixture<WebApplicationFactory<
             .SelectMany(type => (DiagramDefinition[])type!.GetProperty("Definitions")!.GetValue(null)!)
             .Select(definition => definition.Origin.Key)
             .ToList();
-        var catalog = _factory.Services.GetRequiredService<IDiagramDefinitionCatalog>();
+        var catalog = host.Services.GetRequiredService<IDiagramDefinitionCatalog>();
 
         // Assert.
         // What this test is for is that nothing deployed goes missing, so it compares the two
@@ -145,10 +108,10 @@ public class DiagramDiscoveryStartupTests : IClassFixture<WebApplicationFactory<
         // Arrange.
         // C4 is the reason discovery reads an array. One module, seven notations - and a
         // regression to a singular read would show up here as one of them rather than all.
-        using var _ = _factory.CreateClient();
+        using var _ = host.CreateChannel();
 
         // Act.
-        var catalog = _factory.Services.GetRequiredService<IDiagramDefinitionCatalog>();
+        var catalog = host.Services.GetRequiredService<IDiagramDefinitionCatalog>();
         var c4 = catalog.All
             .Where(definition => definition.Origin.Vendor == "c4")
             .Select(definition => definition.Origin.Key)
@@ -170,10 +133,10 @@ public class DiagramDiscoveryStartupTests : IClassFixture<WebApplicationFactory<
         // the host from task 9 onwards and declared none, so that test was green the whole time FDG
         // could not be opened. The key is a string rather than the module's own constant so that
         // removing the definition fails this test when it runs, instead of breaking the build.
-        using var _ = _factory.CreateClient();
+        using var _ = host.CreateChannel();
 
         // Act.
-        var catalog = _factory.Services.GetRequiredService<IDiagramDefinitionCatalog>();
+        var catalog = host.Services.GetRequiredService<IDiagramDefinitionCatalog>();
 
         // Assert.
         Assert.Contains("etalii/functional-decomposition-graph", catalog.All.Select(definition => definition.Origin.Key));
@@ -185,10 +148,10 @@ public class DiagramDiscoveryStartupTests : IClassFixture<WebApplicationFactory<
         // Arrange.
         // The same guard as FDG's above, for the same reason: a module that declares no definitions is
         // missing from both sides of the every-module comparison, so only a named origin catches it.
-        using var _ = _factory.CreateClient();
+        using var _ = host.CreateChannel();
 
         // Act.
-        var catalog = _factory.Services.GetRequiredService<IDiagramDefinitionCatalog>();
+        var catalog = host.Services.GetRequiredService<IDiagramDefinitionCatalog>();
 
         // Assert.
         Assert.Contains("gartner/hypecycle-graph", catalog.All.Select(definition => definition.Origin.Key));
@@ -199,10 +162,10 @@ public class DiagramDiscoveryStartupTests : IClassFixture<WebApplicationFactory<
     {
         // Arrange.
         // The same guard as FDG's above: only a named origin catches a module that declares nothing.
-        using var _ = _factory.CreateClient();
+        using var _ = host.CreateChannel();
 
         // Act.
-        var catalog = _factory.Services.GetRequiredService<IDiagramDefinitionCatalog>();
+        var catalog = host.Services.GetRequiredService<IDiagramDefinitionCatalog>();
 
         // Assert.
         Assert.Contains("etalii/agent-behavior-modelling", catalog.All.Select(definition => definition.Origin.Key));
@@ -216,10 +179,10 @@ public class DiagramDiscoveryStartupTests : IClassFixture<WebApplicationFactory<
         // when a user selects the type. A module shipping without one leaves a blank panel,
         // which is worse than no panel at all. Checked here, against the real deployed set,
         // because this is the one place that sees every module without core naming any of them.
-        using var _ = _factory.CreateClient();
+        using var _ = host.CreateChannel();
 
         // Act.
-        var catalog = _factory.Services.GetRequiredService<IDiagramDefinitionCatalog>();
+        var catalog = host.Services.GetRequiredService<IDiagramDefinitionCatalog>();
         var undescribed = catalog.All.Where(definition => string.IsNullOrWhiteSpace(definition.Description)).ToList();
 
         // Assert.
@@ -230,10 +193,10 @@ public class DiagramDiscoveryStartupTests : IClassFixture<WebApplicationFactory<
     public void AfterStartup_NoDeployedDescriptionMerelyEchoesItsTitle()
     {
         // Arrange: a description that merely repeats the title tells a user nothing new.
-        using var _ = _factory.CreateClient();
+        using var _ = host.CreateChannel();
 
         // Act.
-        var catalog = _factory.Services.GetRequiredService<IDiagramDefinitionCatalog>();
+        var catalog = host.Services.GetRequiredService<IDiagramDefinitionCatalog>();
         var echoes = catalog.All
             .Where(definition => string.Equals(definition.Description.Trim(), definition.Title.Trim(), StringComparison.OrdinalIgnoreCase))
             .ToList();
@@ -262,10 +225,10 @@ public class DiagramDiscoveryStartupTests : IClassFixture<WebApplicationFactory<
         // stubs do (their catalog row carries the plain title), but calling them stubs is
         // wrong, and a reader who trusts that name concludes seven shipped diagram types are
         // unimplemented.
-        using var _ = _factory.CreateClient();
+        using var _ = host.CreateChannel();
 
         // Act.
-        var catalog = _factory.Services.GetRequiredService<IDiagramDefinitionCatalog>();
+        var catalog = host.Services.GetRequiredService<IDiagramDefinitionCatalog>();
         var cataloged = CatalogedTitles();
         var missing = catalog.All
             .Where(definition => definition.Build is null)
@@ -281,10 +244,10 @@ public class DiagramDiscoveryStartupTests : IClassFixture<WebApplicationFactory<
     public void AfterStartup_EveryDefinitionWithoutItsOwnRegistrationMatchesItsCatalogedName()
     {
         // Arrange.
-        using var _ = _factory.CreateClient();
+        using var _ = host.CreateChannel();
 
         // Act.
-        var catalog = _factory.Services.GetRequiredService<IDiagramDefinitionCatalog>();
+        var catalog = host.Services.GetRequiredService<IDiagramDefinitionCatalog>();
         var cataloged = CatalogedTitles();
         var mismatched = catalog.All
             .Where(definition => definition.Build is null)

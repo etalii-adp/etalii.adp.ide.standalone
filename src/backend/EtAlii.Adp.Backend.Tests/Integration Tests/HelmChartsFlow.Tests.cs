@@ -3,14 +3,9 @@ using EtAlii.Adp.Context.Wire;
 using EtAlii.Adp.Diagram.Wire;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Hierarchy;
-using EtAlii.Adp.Projects;
 using EtAlii.Adp.TestSupport.Host;
 using Grpc.Core;
 using Grpc.Net.Client;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Xunit;
 using ContextService = EtAlii.Adp.Context.Wire.ContextService;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
@@ -30,59 +25,32 @@ namespace EtAlii.Adp.Backend.Tests;
 /// that the subject is a folder - while this type additionally writes authored positions into
 /// the registration through core's own layout command.
 /// </remarks>
-public class HelmChartsFlowTests : IClassFixture<WebApplicationFactory<Program>>, IDisposable
+public class HelmChartsFlowTests : IClassFixture<HostFixture>
 {
-    private static readonly TimeSpan MessageTimeout = TimeSpan.FromSeconds(15);
-
-    private readonly WebApplicationFactory<Program> _factory;
-    private readonly string _appDataRoot;
+    private readonly HostFixture _host;
     private readonly string _projectFolder;
     private readonly string _chart;
 
-    public HelmChartsFlowTests(WebApplicationFactory<Program> factory)
+    public HelmChartsFlowTests(HostFixture host)
     {
-        _appDataRoot = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.IntegrationTests", Guid.NewGuid().ToString("N"));
-        _projectFolder = IoPath.Combine(_appDataRoot, "sample-project");
+        _host = host;
+        _projectFolder = host.NewProjectFolder();
         _chart = IoPath.Combine(_projectFolder, "web-shop");
-        Directory.CreateDirectory(_projectFolder);
 
         // A real chart inside the project folder, registered the way Add would - the .adp
         // sits inside the chart root, beside Chart.yaml (Requirement 2.2).
         HelmFixture.CopyTo(_chart);
         File.WriteAllText(IoPath.Combine(_chart, "web-shop.adp"), "helm/chart\r\n");
-
-        _factory = factory.WithWebHostBuilder(builder =>
-        {
-            builder.UseEnvironment("developer");
-            builder.ConfigureServices(services =>
-            {
-                services.RemoveAll<IProjectStore>();
-                services.AddSingleton<IProjectStore>(new FileProjectStore(_appDataRoot));
-                services.RemoveAll<Problems.IProblemStore>();
-                services.AddSingleton<Problems.IProblemStore>(provider => new Problems.ProblemStore(
-                    _appDataRoot,
-                    provider.GetRequiredService<DiagramFileRouter>(),
-                    provider.GetRequiredService<Diagram.DiagramValidators>()));
-            });
-        });
-    }
-
-    public void Dispose()
-    {
-        _factory.Dispose();
-        TestFolder.TryDelete(_appDataRoot);
     }
 
     [Fact]
     public async Task ARegisteredChart_OpensAndDeliversItsAnatomy()
     {
         // Arrange.
-        using var channel = _factory.CreateGrpcChannel();
-        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
-        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
+        using var session = await FlowSession.OpenAsync(_host, _projectFolder, TestContext.Current.CancellationToken);
 
         // Act.
-        var elements = await BaselineAsync(channel, headers, projectId);
+        var elements = await BaselineAsync(session.Channel, session.Headers, session.ProjectId);
 
         // Assert.
         // Core routed a registration whose body is itself, resolved this module's session
@@ -101,12 +69,10 @@ public class HelmChartsFlowTests : IClassFixture<WebApplicationFactory<Program>>
     public async Task ADependencysPayload_CarriesItsWiring()
     {
         // Arrange.
-        using var channel = _factory.CreateGrpcChannel();
-        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
-        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
+        using var session = await FlowSession.OpenAsync(_host, _projectFolder, TestContext.Current.CancellationToken);
 
         // Act.
-        var elements = await BaselineAsync(channel, headers, projectId);
+        var elements = await BaselineAsync(session.Channel, session.Headers, session.ProjectId);
         var cache = elements.Single(element => element.Id.Value == "dep:cache");
         var payload = Wire.HelmElementPayload.Parser.ParseFrom(cache.Payload.Value.Span);
 
@@ -123,15 +89,13 @@ public class HelmChartsFlowTests : IClassFixture<WebApplicationFactory<Program>>
     public async Task AChangeInTheChart_ReachesAnOpenDiagram()
     {
         // Arrange.
-        using var channel = _factory.CreateGrpcChannel();
-        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
-        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
-        var client = new DiagramService.DiagramServiceClient(channel);
+        using var session = await FlowSession.OpenAsync(_host, _projectFolder, TestContext.Current.CancellationToken);
+        var client = new DiagramService.DiagramServiceClient(session.Channel);
 
-        using var cts = CreateMessageTimeout();
+        using var cts = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken);
         using var call = client.Open(
-            new OpenDiagramRequest { ProjectId = projectId, WatchId = ShortGuid.NewShortGuid(), Path = ChartPath() },
-            headers, cancellationToken: cts.Token);
+            new OpenDiagramRequest { ProjectId = session.ProjectId, WatchId = ShortGuid.NewShortGuid(), Path = ChartPath() },
+            session.Headers, cancellationToken: cts.Token);
 
         // The baseline first, so the change that follows is the one being observed.
         Assert.True(await call.ResponseStream.MoveNext(cts.Token));
@@ -153,33 +117,31 @@ public class HelmChartsFlowTests : IClassFixture<WebApplicationFactory<Program>>
         // Arrange: the layout-persistence promise (Requirement 6), end to end. The diagram
         // must be open on the SAME connection, because core will not edit a document a caller
         // is not looking at.
-        using var channel = _factory.CreateGrpcChannel();
-        var client = new DiagramService.DiagramServiceClient(channel);
-        var contextClient = new ContextService.ContextServiceClient(channel);
-        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
-        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
+        using var session = await FlowSession.OpenAsync(_host, _projectFolder, TestContext.Current.CancellationToken);
+        var client = new DiagramService.DiagramServiceClient(session.Channel);
+        var contextClient = session.Context;
         var watchId = ShortGuid.NewShortGuid();
         var adpPath = IoPath.Combine(_chart, "web-shop.adp");
         var adpBefore = await File.ReadAllTextAsync(adpPath, TestContext.Current.CancellationToken);
         var chartBefore = Snapshot(except: adpPath);
 
-        using var cts = CreateMessageTimeout();
+        using var cts = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken);
         using var call = client.Open(
-            new OpenDiagramRequest { ProjectId = projectId, WatchId = watchId, Path = ChartPath() },
-            headers, cancellationToken: cts.Token);
-        await call.ResponseStream.ReadAddAsync(cts.Token);
+            new OpenDiagramRequest { ProjectId = session.ProjectId, WatchId = watchId, Path = ChartPath() },
+            session.Headers, cancellationToken: cts.Token);
+        await ReadAddAsync(call.ResponseStream, cts.Token);
 
         // Act: drag the chart node to an authored spot.
         var moved = await client.MoveElementAsync(
             new MoveElementRequest
             {
-                ProjectId = projectId,
+                ProjectId = session.ProjectId,
                 WatchId = watchId,
                 Path = ChartPath(),
                 ElementId = "chart",
                 Position = new Point2D { X = 480, Y = 260 },
             },
-            headers, cancellationToken: TestContext.Current.CancellationToken);
+            session.Headers, cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert: the position is in the registration, and nowhere near the chart (6.2, 7.1).
         Assert.Equal("", moved.Error);
@@ -188,12 +150,12 @@ public class HelmChartsFlowTests : IClassFixture<WebApplicationFactory<Program>>
         AssertUnchanged(chartBefore);
 
         // Act, continued: a fresh open sees the stored position overlaid (6.3).
-        var reopened = await BaselineAsync(channel, headers, projectId);
+        var reopened = await BaselineAsync(session.Channel, session.Headers, session.ProjectId);
         var chartNode = reopened.Single(element => element.Id.Value == "chart");
         Assert.Equal((480d, 260d), (chartNode.Position.X, chartNode.Position.Y));
 
         // Act, continued: one undo returns the registration byte for byte (6.4).
-        var undone = await ExecuteProjectActionAsync(contextClient, projectId, watchId, headers, HistoryContextActionProvider.UndoActionId);
+        var undone = await ExecuteProjectActionAsync(contextClient, session.ProjectId, watchId, session.Headers, HistoryContextActionProvider.UndoActionId);
 
         // Assert.
         Assert.True(undone.Accepted, undone.Error);
@@ -246,11 +208,36 @@ public class HelmChartsFlowTests : IClassFixture<WebApplicationFactory<Program>>
     private async Task<IReadOnlyList<Element>> BaselineAsync(GrpcChannel channel, Metadata headers, Documents.Wire.ShortGuid projectId)
     {
         var client = new DiagramService.DiagramServiceClient(channel);
-        using var cts = CreateMessageTimeout();
+        using var cts = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken);
         using var call = client.Open(
             new OpenDiagramRequest { ProjectId = projectId, WatchId = ShortGuid.NewShortGuid(), Path = ChartPath() },
             headers, cancellationToken: cts.Token);
-        return await call.ResponseStream.ReadAddAsync(cts.Token);
+        return await ReadAddAsync(call.ResponseStream, cts.Token);
+    }
+
+    private static async Task<IReadOnlyList<Element>> ReadAddAsync(
+        IAsyncStreamReader<Delta> stream, CancellationToken cancellationToken)
+    {
+        try
+        {
+            while (await stream.MoveNext(cancellationToken))
+            {
+                if (stream.Current.ActionCase == Delta.ActionOneofCase.Add)
+                {
+                    return [.. stream.Current.Add.Elements];
+                }
+            }
+        }
+        catch (RpcException exception) when (exception.StatusCode == StatusCode.Cancelled)
+        {
+            // Reading stopped at the deadline, which is how this helper ends normally.
+        }
+        catch (OperationCanceledException)
+        {
+            // Same story, thrown the other way.
+        }
+
+        return [];
     }
 
     private static Task<ExecuteActionResponse> ExecuteProjectActionAsync(
@@ -271,10 +258,4 @@ public class HelmChartsFlowTests : IClassFixture<WebApplicationFactory<Program>>
             headers,
             cancellationToken: TestContext.Current.CancellationToken).ResponseAsync;
 
-    private static CancellationTokenSource CreateMessageTimeout()
-    {
-        var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
-        cts.CancelAfter(MessageTimeout);
-        return cts;
-    }
 }

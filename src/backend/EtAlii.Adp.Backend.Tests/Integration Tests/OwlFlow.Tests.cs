@@ -4,20 +4,9 @@ using EtAlii.Adp.Diagram.Rdf;
 using EtAlii.Adp.Diagram.Wire;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Hierarchy;
-using EtAlii.Adp.Hierarchy.Wire;
-using EtAlii.Adp.Projects;
 using EtAlii.Adp.TestSupport.Host;
-using Grpc.Core;
-using Grpc.Net.Client;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Xunit;
-using ContextService = EtAlii.Adp.Context.Wire.ContextService;
-using HierarchyService = EtAlii.Adp.Hierarchy.Wire.HierarchyService;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
-using Path = EtAlii.Adp.Documents.Wire.Path;
 
 namespace EtAlii.Adp.Backend.Tests;
 
@@ -28,10 +17,8 @@ namespace EtAlii.Adp.Backend.Tests;
 /// one file open under both family readings sharing one document and one history (owl-diagram
 /// Requirements 3.2, 4.1, 8.1-8.4).
 /// </summary>
-public class OwlFlowTests : IClassFixture<WebApplicationFactory<Program>>, IDisposable
+public class OwlFlowTests(HostFixture host) : IClassFixture<HostFixture>
 {
-    private static readonly TimeSpan MessageTimeout = TimeSpan.FromSeconds(20);
-
     private const string Ns = "http://example.org/pizza#";
     private const string PizzaId = $"res:{Ns}Pizza";
     private const string ExpressionId = $"expr:{Ns}Vegetarian|http://www.w3.org/2000/01/rdf-schema#subClassOf|1";
@@ -58,60 +45,30 @@ public class OwlFlowTests : IClassFixture<WebApplicationFactory<Program>>, IDisp
             rdfs:range :Topping .
         """;
 
-    private readonly WebApplicationFactory<Program> _factory;
-    private readonly string _appDataRoot;
-    private readonly string _projectFolder;
+    private readonly string _projectFolder = Seed(host.NewProjectFolder());
 
-    public OwlFlowTests(WebApplicationFactory<Program> baseFactory)
+    private static string Seed(string projectFolder)
     {
-        _appDataRoot = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.IntegrationTests", Guid.NewGuid().ToString("N"));
-        _projectFolder = IoPath.Combine(_appDataRoot, "sample-project");
-        Directory.CreateDirectory(_projectFolder);
-
         // One body, two readings of it - the ontology reading and the family's graph reading.
-        File.WriteAllText(IoPath.Combine(_projectFolder, "pizza.ttl"), Ontology);
-        File.WriteAllText(IoPath.Combine(_projectFolder, "pizza.adp"), "w3c/owl\nbody: pizza.ttl\n");
-        File.WriteAllText(IoPath.Combine(_projectFolder, "pizza.graph.adp"), "w3c/rdf\nbody: pizza.ttl\n");
+        File.WriteAllText(IoPath.Combine(projectFolder, "pizza.ttl"), Ontology);
+        File.WriteAllText(IoPath.Combine(projectFolder, "pizza.adp"), "w3c/owl\nbody: pizza.ttl\n");
+        File.WriteAllText(IoPath.Combine(projectFolder, "pizza.graph.adp"), "w3c/rdf\nbody: pizza.ttl\n");
 
         // A body with no registration beside it, to prove what a BARE file of this family opens
         // as - marker triple and all.
-        File.WriteAllText(IoPath.Combine(_projectFolder, "bare.ttl"), Ontology);
-
-        _factory = baseFactory.WithWebHostBuilder(builder =>
-        {
-            builder.UseEnvironment("developer");
-            builder.ConfigureServices(services =>
-            {
-                services.RemoveAll<IProjectStore>();
-                services.AddSingleton<IProjectStore>(new FileProjectStore(_appDataRoot));
-                services.RemoveAll<Problems.IProblemStore>();
-                services.AddSingleton<Problems.IProblemStore>(provider => new Problems.ProblemStore(
-                    _appDataRoot,
-                    provider.GetRequiredService<DiagramFileRouter>(),
-                    provider.GetRequiredService<Diagram.DiagramValidators>()));
-            });
-        });
-    }
-
-    public void Dispose()
-    {
-        _factory.Dispose();
-        TestFolder.TryDelete(_appDataRoot);
-
-        GC.SuppressFinalize(this);
+        File.WriteAllText(IoPath.Combine(projectFolder, "bare.ttl"), Ontology);
+        return projectFolder;
     }
 
     [Fact]
     public async Task ARegisteredOntology_StreamsItsShapesAndAxioms_AndABareBodyStaysTheGraphReadings()
     {
         // Arrange.
-        using var channel = _factory.CreateGrpcChannel();
-        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
-        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
+        using var session = await FlowSession.OpenAsync(host, _projectFolder, TestContext.Current.CancellationToken);
 
         // Act.
-        var ontology = await BaselineAsync(channel, headers, projectId, "pizza.adp");
-        var bare = await BaselineAsync(channel, headers, projectId, "bare.ttl");
+        var ontology = await DiagramFlow.BaselineAsync(session, "pizza.adp");
+        var bare = await DiagramFlow.BaselineAsync(session, "bare.ttl");
 
         // Assert: the ontology's own element types, the expression node among them (R1, R3.1).
         Assert.Contains(ontology, element => element.Id.Value == PizzaId && element.Type == OwlElementMapper.NodeType);
@@ -130,34 +87,31 @@ public class OwlFlowTests : IClassFixture<WebApplicationFactory<Program>>, IDisp
     public async Task AClassReposition_LandsInTheAdp_SurvivesReopen_AndTheOntologyNeverChanges()
     {
         // Arrange.
-        using var channel = _factory.CreateGrpcChannel();
-        var client = new DiagramService.DiagramServiceClient(channel);
-        var contextClient = new ContextService.ContextServiceClient(channel);
-        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
-        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
+        using var session = await FlowSession.OpenAsync(host, _projectFolder, TestContext.Current.CancellationToken);
+        var client = new DiagramService.DiagramServiceClient(session.Channel);
         var watchId = ShortGuid.NewShortGuid();
         var bodyPath = IoPath.Combine(_projectFolder, "pizza.ttl");
         var adpPath = IoPath.Combine(_projectFolder, "pizza.adp");
         var bodyBefore = await File.ReadAllBytesAsync(bodyPath, TestContext.Current.CancellationToken);
         var adpBefore = await File.ReadAllTextAsync(adpPath, TestContext.Current.CancellationToken);
 
-        using var cts = CreateMessageTimeout();
+        using var cts = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken);
         using var call = client.Open(
-            new OpenDiagramRequest { ProjectId = projectId, WatchId = watchId, Path = Path.Of("pizza.adp") },
-            headers, cancellationToken: cts.Token);
-        await call.ResponseStream.ReadAddAsync(cts.Token);
+            new OpenDiagramRequest { ProjectId = session.ProjectId, WatchId = watchId, Path = DiagramFlow.PathOf("pizza.adp") },
+            session.Headers, cancellationToken: cts.Token);
+        await DiagramFlow.ReadAddAsync(call.ResponseStream, cts.Token);
 
         // Act.
         var moved = await client.MoveElementAsync(
             new MoveElementRequest
             {
-                ProjectId = projectId,
+                ProjectId = session.ProjectId,
                 WatchId = watchId,
-                Path = Path.Of("pizza.adp"),
+                Path = DiagramFlow.PathOf("pizza.adp"),
                 ElementId = PizzaId,
                 Position = new Point2D { X = 420, Y = 260 },
             },
-            headers, cancellationToken: TestContext.Current.CancellationToken);
+            session.Headers, cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert: the position is in the registration, and nowhere near the ontology (R4.1).
         Assert.Equal("", moved.Error);
@@ -165,12 +119,12 @@ public class OwlFlowTests : IClassFixture<WebApplicationFactory<Program>>, IDisp
         Assert.Equal(bodyBefore, await File.ReadAllBytesAsync(bodyPath, TestContext.Current.CancellationToken));
 
         // Act, continued: a fresh open sees the stored position overlaid.
-        var reopened = await BaselineAsync(channel, headers, projectId, "pizza.adp");
+        var reopened = await DiagramFlow.BaselineAsync(session, "pizza.adp");
         var drawn = reopened.Single(element => element.Id.Value == PizzaId);
         Assert.Equal((420d, 260d), (drawn.Position.X, drawn.Position.Y));
 
         // Act, continued: one undo returns the registration byte for byte.
-        var undone = await ExecuteProjectActionAsync(contextClient, projectId, watchId, headers, HistoryContextActionProvider.UndoActionId);
+        var undone = await DiagramFlow.ExecuteProjectActionAsync(session, watchId, HistoryContextActionProvider.UndoActionId);
 
         // Assert.
         Assert.True(undone.Accepted, undone.Error);
@@ -182,31 +136,29 @@ public class OwlFlowTests : IClassFixture<WebApplicationFactory<Program>>, IDisp
     public async Task AnExpressionNode_RefusesTheReposition_WithTheBoundarysSentence()
     {
         // Arrange: the identity boundary, end to end - the refusal a user actually reads (R3.2).
-        using var channel = _factory.CreateGrpcChannel();
-        var client = new DiagramService.DiagramServiceClient(channel);
-        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
-        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
+        using var session = await FlowSession.OpenAsync(host, _projectFolder, TestContext.Current.CancellationToken);
+        var client = new DiagramService.DiagramServiceClient(session.Channel);
         var watchId = ShortGuid.NewShortGuid();
         var adpPath = IoPath.Combine(_projectFolder, "pizza.adp");
 
-        using var cts = CreateMessageTimeout();
+        using var cts = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken);
         using var call = client.Open(
-            new OpenDiagramRequest { ProjectId = projectId, WatchId = watchId, Path = Path.Of("pizza.adp") },
-            headers, cancellationToken: cts.Token);
-        var elements = await call.ResponseStream.ReadAddAsync(cts.Token);
+            new OpenDiagramRequest { ProjectId = session.ProjectId, WatchId = watchId, Path = DiagramFlow.PathOf("pizza.adp") },
+            session.Headers, cancellationToken: cts.Token);
+        var elements = await DiagramFlow.ReadAddAsync(call.ResponseStream, cts.Token);
         Assert.Contains(elements, element => element.Id.Value == ExpressionId);
 
         // Act.
         var moved = await client.MoveElementAsync(
             new MoveElementRequest
             {
-                ProjectId = projectId,
+                ProjectId = session.ProjectId,
                 WatchId = watchId,
-                Path = Path.Of("pizza.adp"),
+                Path = DiagramFlow.PathOf("pizza.adp"),
                 ElementId = ExpressionId,
                 Position = new Point2D { X = 10, Y = 20 },
             },
-            headers, cancellationToken: TestContext.Current.CancellationToken);
+            session.Headers, cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert: refused with the reason, and nothing stored for it.
         Assert.Contains("does not survive an edit", moved.Error, StringComparison.Ordinal);
@@ -217,120 +169,37 @@ public class OwlFlowTests : IClassFixture<WebApplicationFactory<Program>>, IDisp
     public async Task TwoReadingsOfOneOntology_ShareTheEditedDocument()
     {
         // Arrange: one body under w3c/owl and w3c/rdf at once (R8.4).
-        using var channel = _factory.CreateGrpcChannel();
-        var contextClient = new ContextService.ContextServiceClient(channel);
-        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
-        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
+        using var session = await FlowSession.OpenAsync(host, _projectFolder, TestContext.Current.CancellationToken);
+        var contextClient = session.Context;
         var watchId = ShortGuid.NewShortGuid();
-        var entries = await EntriesAsync(channel, headers, projectId, watchId);
+        var entries = await DiagramFlow.EntriesAsync(session, watchId);
 
         var selected = await contextClient.SelectAsync(
             new SelectRequest
             {
-                ProjectId = projectId,
+                ProjectId = session.ProjectId,
                 WatchId = watchId,
-                Selection = ElementChain(entries["pizza.adp"], PizzaId),
+                Selection = DiagramFlow.ElementChain(entries["pizza.adp"], PizzaId),
             },
-            headers, cancellationToken: TestContext.Current.CancellationToken);
+            session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         Assert.Empty(selected.Error);
 
         // Act: a label edit through the ontology reading, riding the family's writer…
         var result = await contextClient.SetPropertyAsync(
             new SetPropertyRequest
             {
-                ProjectId = projectId,
+                ProjectId = session.ProjectId,
                 WatchId = watchId,
                 PropertyId = RdfContextPropertyProvider.LabelProperty,
                 Value = "Pizza (round)",
             },
-            headers, cancellationToken: TestContext.Current.CancellationToken);
+            session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         Assert.True(result.Accepted, result.Error);
 
         // …and the graph reading of the same body already carries it.
-        var graph = await BaselineAsync(channel, headers, projectId, "pizza.graph.adp");
+        var graph = await DiagramFlow.BaselineAsync(session, "pizza.graph.adp");
         var card = graph.Single(element => element.Id.Value == PizzaId && element.Type == RdfElementMapper.ResourceType);
         var decoded = RdfResourcePayload.Parser.ParseFrom(card.Payload.Value);
         Assert.Contains(decoded.Rows, row => row.Value == "Pizza (round)");
-    }
-
-    /// <summary>The baseline elements of one open diagram, on a fresh connection.</summary>
-    private async Task<IReadOnlyList<Element>> BaselineAsync(
-        GrpcChannel channel,
-        Metadata headers,
-        ShortGuid projectId,
-        string fileName)
-    {
-        var diagramClient = new DiagramService.DiagramServiceClient(channel);
-        using var cts = CreateMessageTimeout();
-        using var call = diagramClient.Open(
-            new OpenDiagramRequest { ProjectId = projectId, WatchId = ShortGuid.NewShortGuid(), Path = Path.Of(fileName) },
-            headers, cancellationToken: cts.Token);
-        return await call.ResponseStream.ReadAddAsync(cts.Token);
-    }
-
-    /// <summary>Every entry of the project, by name - one nested level deep, because a registration is a child of the subject it names.</summary>
-    private static async Task<IReadOnlyDictionary<string, Documents.Wire.ShortGuid>> EntriesAsync(
-        GrpcChannel channel,
-        Metadata headers,
-        ShortGuid projectId,
-        ShortGuid watchId)
-    {
-        var hierarchyClient = new HierarchyService.HierarchyServiceClient(channel);
-        var response = await hierarchyClient.ListEntriesAsync(
-            new ListEntriesRequest { ProjectId = projectId, WatchId = watchId },
-            headers, cancellationToken: TestContext.Current.CancellationToken);
-
-        var byName = response.Entries.Entries_.ToDictionary(entry => entry.Name, entry => entry.Id, StringComparer.Ordinal);
-        foreach (var parent in response.Entries.Entries_.Where(entry => entry.HasChildren && entry.Kind != EntryKind.Folder))
-        {
-            var children = await hierarchyClient.ListEntriesAsync(
-                new ListEntriesRequest { ProjectId = projectId, WatchId = watchId, FolderId = parent.Id },
-                headers, cancellationToken: TestContext.Current.CancellationToken);
-            foreach (var child in children.Entries.Entries_)
-            {
-                byName[child.Name] = child.Id;
-            }
-        }
-
-        return byName;
-    }
-
-    private static ContextSelection ElementChain(Documents.Wire.ShortGuid entryId, string elementId) =>
-        new()
-        {
-            Source = ContextSelectionSource.Explorer,
-            Id = new ContextSource { EntryId = entryId },
-            Path = new Path(),
-            Child = new ContextSelection
-            {
-                Source = ContextSelectionSource.DiagramCanvas,
-                Id = new ContextSource { ElementId = new ElementId { Value = elementId } },
-                Path = new Path(),
-            },
-        };
-
-    private static Task<ExecuteActionResponse> ExecuteProjectActionAsync(
-        ContextService.ContextServiceClient contextClient,
-        Documents.Wire.ShortGuid projectId,
-        Documents.Wire.ShortGuid watchId,
-        Metadata headers,
-        string actionId) =>
-        contextClient.ExecuteActionAsync(
-            new ExecuteActionRequest
-            {
-                ProjectId = projectId,
-                WatchId = watchId,
-                Source = new ContextSource { Project = new Google.Protobuf.WellKnownTypes.Empty() },
-                InteractionId = ShortGuid.NewShortGuid(),
-                ActionId = actionId,
-            },
-            headers,
-            cancellationToken: TestContext.Current.CancellationToken).ResponseAsync;
-
-    private static CancellationTokenSource CreateMessageTimeout()
-    {
-        var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
-        cts.CancelAfter(MessageTimeout);
-        return cts;
     }
 }

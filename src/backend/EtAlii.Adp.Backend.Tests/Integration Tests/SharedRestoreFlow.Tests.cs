@@ -1,11 +1,8 @@
 using EtAlii.Adp.Diagram.CausalLoopDiagram;
 using EtAlii.Adp.Diagram.Rdf;
-using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc.Testing;
+using EtAlii.Adp.TestSupport.Host;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -24,7 +21,7 @@ namespace EtAlii.Adp.Backend.Tests;
 /// document the next read serves. A restore that reached another module's store would write the
 /// file and leave this store serving the edited document, which is what the store assertions catch.
 /// </remarks>
-public sealed class SharedRestoreFlowTests : IClassFixture<WebApplicationFactory<Program>>, IDisposable
+public sealed class SharedRestoreFlowTests(HostFixture host) : IClassFixture<HostFixture>
 {
     private const string CausalLoop =
         "causal-loop 1\r\n"
@@ -38,32 +35,7 @@ public sealed class SharedRestoreFlowTests : IClassFixture<WebApplicationFactory
         + "# a comment the restore must keep\r\n"
         + "ex:curie ex:discovered ex:radium .\r\n";
 
-    private readonly WebApplicationFactory<Program> _factory;
-    private readonly string _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.IntegrationTests", Guid.NewGuid().ToString("N"));
-
-    public SharedRestoreFlowTests(WebApplicationFactory<Program> baseFactory)
-    {
-        Directory.CreateDirectory(_root);
-        _factory = baseFactory.WithWebHostBuilder(builder =>
-        {
-            builder.UseEnvironment("developer");
-            builder.ConfigureServices(services =>
-            {
-                // The problem cache under this test's temp root, not the real user profile.
-                services.RemoveAll<Problems.IProblemStore>();
-                services.AddSingleton<Problems.IProblemStore>(provider => new Problems.ProblemStore(
-                    _root,
-                    provider.GetRequiredService<DiagramFileRouter>(),
-                    provider.GetRequiredService<Diagram.DiagramValidators>()));
-            });
-        });
-    }
-
-    public void Dispose()
-    {
-        _factory.Dispose();
-        TestFolder.TryDelete(_root);
-    }
+    private readonly string _root = host.NewProjectFolder();
 
     [Fact]
     public async Task ACausalLoopEdit_UndoesAndRedoes_ThroughItsOwnStore()
@@ -71,7 +43,7 @@ public sealed class SharedRestoreFlowTests : IClassFixture<WebApplicationFactory
         // Arrange.
         var path = IoPath.Combine(_root, "feedback.cld");
         await File.WriteAllTextAsync(path, CausalLoop, TestContext.Current.CancellationToken);
-        var store = _factory.Services.GetRequiredService<ICausalLoopDocumentStore>();
+        var store = host.Services.GetRequiredService<ICausalLoopDocumentStore>();
 
         // Act and assert.
         await AssertUndoAndRedo(
@@ -87,7 +59,7 @@ public sealed class SharedRestoreFlowTests : IClassFixture<WebApplicationFactory
         // Arrange.
         var path = IoPath.Combine(_root, "graph.ttl");
         await File.WriteAllTextAsync(path, Turtle, TestContext.Current.CancellationToken);
-        var store = _factory.Services.GetRequiredService<IRdfDocumentStore>();
+        var store = host.Services.GetRequiredService<IRdfDocumentStore>();
 
         // Act and assert.
         await AssertUndoAndRedo(
@@ -99,7 +71,7 @@ public sealed class SharedRestoreFlowTests : IClassFixture<WebApplicationFactory
 
     private async Task AssertUndoAndRedo(string path, string original, ICommand edit, Func<string> storeText)
     {
-        var dispatcher = _factory.Services.GetRequiredService<ICommandDispatcher>();
+        var dispatcher = host.Services.GetRequiredService<ICommandDispatcher>();
         var cancellationToken = TestContext.Current.CancellationToken;
 
         // The store holds the document before the edit, as it does once a canvas has opened it.

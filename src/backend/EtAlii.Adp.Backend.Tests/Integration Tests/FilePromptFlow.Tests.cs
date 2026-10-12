@@ -1,22 +1,12 @@
-using EtAlii.Adp.Authentication.Wire;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Context.Wire;
 using EtAlii.Adp.Documents.Wire;
-using EtAlii.Adp.Hierarchy;
-using EtAlii.Adp.Projects;
-using EtAlii.Adp.Projects.Wire;
 using EtAlii.Adp.TestSupport.Host;
 using Grpc.Core;
-using Grpc.Net.Client;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Xunit;
 using ContextService = EtAlii.Adp.Context.Wire.ContextService;
 using IoPath = System.IO.Path;
-using Path = EtAlii.Adp.Documents.Wire.Path;
-using ProjectService = EtAlii.Adp.Projects.Wire.ProjectService;
 
 namespace EtAlii.Adp.Backend.Tests;
 
@@ -26,22 +16,17 @@ namespace EtAlii.Adp.Backend.Tests;
 /// that the predicate accepts and no other, with the pinned entries first; the chosen path
 /// reaches the provider; a path that was not offered never does; and cancelling changes nothing.
 /// </summary>
-public sealed class FilePromptFlowTests : IClassFixture<WebApplicationFactory<Program>>, IDisposable
+public sealed class FilePromptFlowTests : IClassFixture<FilePromptFlowTests.Host>
 {
-    private const string DeveloperUsername = "admin";
-    private const string DeveloperCredential = "changeme";
-    private const string SessionTokenHeader = "session-token";
-    private static readonly TimeSpan MessageTimeout = TimeSpan.FromSeconds(10);
-
-    private readonly WebApplicationFactory<Program> _factory;
-    private readonly string _appDataRoot;
+    private readonly Host _host;
     private readonly string _projectFolder;
     private readonly PickFileProvider _provider;
 
-    public FilePromptFlowTests(WebApplicationFactory<Program> baseFactory)
+    public FilePromptFlowTests(Host host)
     {
-        _appDataRoot = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.IntegrationTests", Guid.NewGuid().ToString("N"));
-        _projectFolder = IoPath.Combine(_appDataRoot, "sample-project");
+        // One host serves the class, so the provider it holds is told which test it now serves.
+        _host = host;
+        _projectFolder = host.NewProjectFolder();
         Directory.CreateDirectory(IoPath.Combine(_projectFolder, "data", "deep"));
         Directory.CreateDirectory(IoPath.Combine(_projectFolder, "docs"));
         Directory.CreateDirectory(IoPath.Combine(_projectFolder, ".hidden"));
@@ -52,29 +37,8 @@ public sealed class FilePromptFlowTests : IClassFixture<WebApplicationFactory<Pr
         File.WriteAllText(IoPath.Combine(_projectFolder, "data", "deep", "rivers.yaml"), "x");
         File.WriteAllText(IoPath.Combine(_projectFolder, "docs", "guide.md"), "x");
         File.WriteAllText(IoPath.Combine(_projectFolder, ".hidden", "secret.yaml"), "x");
-        _provider = new PickFileProvider(IoPath.Combine(_projectFolder, "notes.txt"));
-
-        _factory = baseFactory.WithWebHostBuilder(builder =>
-        {
-            builder.UseEnvironment("developer");
-            builder.ConfigureServices(services =>
-            {
-                services.RemoveAll<IProjectStore>();
-                services.AddSingleton<IProjectStore>(new FileProjectStore(_appDataRoot));
-                services.RemoveAll<Problems.IProblemStore>();
-                services.AddSingleton<Problems.IProblemStore>(provider => new Problems.ProblemStore(
-                    _appDataRoot,
-                    provider.GetRequiredService<DiagramFileRouter>(),
-                    provider.GetRequiredService<Diagram.DiagramValidators>()));
-                services.AddSingleton<IContextActionProvider>(_provider);
-            });
-        });
-    }
-
-    public void Dispose()
-    {
-        _factory.Dispose();
-        TestFolder.TryDelete(_appDataRoot);
+        _provider = host.Provider;
+        _provider.Begin(IoPath.Combine(_projectFolder, "notes.txt"));
     }
 
     [Fact]
@@ -193,28 +157,22 @@ public sealed class FilePromptFlowTests : IClassFixture<WebApplicationFactory<Pr
     /// <summary>Signs in, watches, runs the fixture's action on the project root and returns the prompt it pushed.</summary>
     private async Task<Asked> AskAsync()
     {
-        var httpClient = _factory.CreateDefaultClient();
-        var channel = GrpcChannel.ForAddress(httpClient.BaseAddress!, new GrpcChannelOptions { HttpClient = httpClient });
-        var login = await new AuthenticationService.AuthenticationServiceClient(channel).LoginAsync(
-            new LoginRequest { Username = DeveloperUsername, Credential = DeveloperCredential }, cancellationToken: TestContext.Current.CancellationToken);
-        var headers = new Metadata { { SessionTokenHeader, login.Session.Value } };
-
-        var pathMessage = Path.OfLocation(_projectFolder);
-        var added = await new ProjectService.ProjectServiceClient(channel).AddProjectAsync(new AddProjectRequest { Path = pathMessage }, headers, cancellationToken: TestContext.Current.CancellationToken);
-
-        var context = new ContextService.ContextServiceClient(channel);
-        Documents.Wire.ShortGuid watchId = ShortGuid.NewShortGuid();
+        // The session lives as long as the test: its channel carries every call the test makes
+        // through the returned client.
+        var session = await FlowSession.OpenAsync(_host, _projectFolder, TestContext.Current.CancellationToken);
+        var headers = session.Headers;
+        var context = session.Context;
+        var watchId = session.WatchId;
         Documents.Wire.ShortGuid interactionId = ShortGuid.NewShortGuid();
-        using var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
-        cts.CancelAfter(MessageTimeout);
+        using var cts = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken);
 
-        var watch = context.Watch(new WatchContextRequest { ProjectId = added.Added.Id, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
+        var watch = context.Watch(new WatchContextRequest { ProjectId = session.ProjectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
         Assert.True(await watch.ResponseStream.MoveNext(cts.Token), "The stream ended before the baseline arrived.");
-        var pendingPrompt = watch.ResponseStream.ReadUntilPromptAsync(cts.Token);
+        var pendingPrompt = ReadUntilPromptAsync(watch.ResponseStream, cts.Token);
 
         // No source: the project root.
         var executed = await context.ExecuteActionAsync(
-            new ExecuteActionRequest { ProjectId = added.Added.Id, WatchId = watchId, InteractionId = interactionId, ActionId = PickFileProvider.ActionId },
+            new ExecuteActionRequest { ProjectId = session.ProjectId, WatchId = watchId, InteractionId = interactionId, ActionId = PickFileProvider.ActionId },
             headers,
             cancellationToken: TestContext.Current.CancellationToken);
         Assert.True(executed.Accepted, executed.Error);
@@ -222,11 +180,34 @@ public sealed class FilePromptFlowTests : IClassFixture<WebApplicationFactory<Pr
         return new Asked(context, headers, interactionId, await pendingPrompt);
     }
 
+    private static async Task<ContextPrompt> ReadUntilPromptAsync(IAsyncStreamReader<ContextMessage> stream, CancellationToken cancellationToken)
+    {
+        while (await stream.MoveNext(cancellationToken))
+        {
+            if (stream.Current.MessageCase == ContextMessage.MessageOneofCase.Prompt)
+            {
+                return stream.Current.Prompt;
+            }
+        }
+
+        throw new InvalidOperationException("The stream ended before a prompt arrived.");
+    }
+
     private sealed record Asked(ContextService.ContextServiceClient Context, Metadata Headers, Documents.Wire.ShortGuid InteractionId, ContextPrompt Prompt);
 
-    /// <summary>Asks for a YAML file of the project, with one pinned file its own rule would refuse.</summary>
-    private sealed class PickFileProvider(string pinnedPath) : IContextActionProvider
+    /// <summary>The shared host, with the fixture's file-asking action registered.</summary>
+    public sealed class Host : HostFixture
     {
+        internal PickFileProvider Provider { get; } = new();
+
+        protected override void ConfigureServices(IServiceCollection services) =>
+            services.AddSingleton<IContextActionProvider>(Provider);
+    }
+
+    /// <summary>Asks for a YAML file of the project, with one pinned file its own rule would refuse.</summary>
+    internal sealed class PickFileProvider : IContextActionProvider
+    {
+        private string _pinnedPath = "";
         public const string ActionId = "fixture.pick-file";
         public const string FollowUpId = "fixture.pick-file.then:";
 
@@ -240,6 +221,15 @@ public sealed class FilePromptFlowTests : IClassFixture<WebApplicationFactory<Pr
 
         public ContextScope Scope => ContextScope.Hierarchy;
 
+        /// <summary>Forgets what an earlier test committed and pins the given test's file.</summary>
+        public void Begin(string pinnedPath)
+        {
+            _pinnedPath = pinnedPath;
+            Under.Clear();
+            Committed.Clear();
+            Named.Clear();
+        }
+
         public ValueTask<IReadOnlyList<ContextActionGroupDefinition>> DiscoverAsync(ContextTarget target, CancellationToken cancellationToken) =>
             ValueTask.FromResult<IReadOnlyList<ContextActionGroupDefinition>>(
                 target.IsContainer ? [new ContextActionGroupDefinition([new ContextActionDefinition(ActionId, "Pick a file", "mdi-link-variant")])] : []);
@@ -251,7 +241,7 @@ public sealed class FilePromptFlowTests : IClassFixture<WebApplicationFactory<Pr
                 "Choose",
                 path => path.EndsWith(".yaml", StringComparison.OrdinalIgnoreCase),
                 "No table in this project.",
-                [new ContextPinnedFile("This file", pinnedPath)],
+                [new ContextPinnedFile("This file", _pinnedPath)],
                 new ContextTextFieldRequest("Name there", "Cities"))));
 
         public ValueTask<ContextValidationResult> ValidateAsync(ContextTarget target, string actionId, string value, CancellationToken cancellationToken) =>

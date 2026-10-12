@@ -1,16 +1,9 @@
 using EtAlii.Adp.Context.Wire;
 using EtAlii.Adp.Documents.Wire;
-using EtAlii.Adp.Projects;
 using EtAlii.Adp.TestSupport.Host;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Xunit;
-using ContextService = EtAlii.Adp.Context.Wire.ContextService;
-using HierarchyService = EtAlii.Adp.Hierarchy.Wire.HierarchyService;
 using IoPath = System.IO.Path;
 using Path = EtAlii.Adp.Documents.Wire.Path;
 
@@ -36,43 +29,11 @@ namespace EtAlii.Adp.Backend.Tests;
 /// centralized-selection task 26 found loading the registration as a solution and resolving nothing.
 /// </para>
 /// </remarks>
-public class DotNetDependencyGraphPropertiesFlowTests : IClassFixture<WebApplicationFactory<Program>>, IDisposable
+public class DotNetDependencyGraphPropertiesFlowTests(HostFixture host) : IClassFixture<HostFixture>
 {
     private const string CoreProjectId = "project:src/Pipeline.Core/Pipeline.Core.csproj";
-    private static readonly TimeSpan MessageTimeout = TimeSpan.FromSeconds(10);
 
-    private readonly WebApplicationFactory<Program> _factory;
-    private readonly string _appDataRoot;
-    private readonly string _projectFolder;
-
-    public DotNetDependencyGraphPropertiesFlowTests(WebApplicationFactory<Program> baseFactory)
-    {
-        _appDataRoot = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.IntegrationTests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_appDataRoot);
-        _projectFolder = ShowcaseFolder();
-
-        _factory = baseFactory.WithWebHostBuilder(builder =>
-        {
-            builder.UseEnvironment("developer");
-            builder.ConfigureServices(services =>
-            {
-                services.RemoveAll<IProjectStore>();
-                services.AddSingleton<IProjectStore>(new FileProjectStore(_appDataRoot));
-                services.RemoveAll<Problems.IProblemStore>();
-                services.AddSingleton<Problems.IProblemStore>(provider => new Problems.ProblemStore(
-                    _appDataRoot,
-                    provider.GetRequiredService<Hierarchy.DiagramFileRouter>(),
-                    provider.GetRequiredService<Diagram.DiagramValidators>()));
-            });
-        });
-    }
-
-    public void Dispose()
-    {
-        _factory.Dispose();
-        TestFolder.TryDelete(_appDataRoot);
-        GC.SuppressFinalize(this);
-    }
+    private readonly string _projectFolder = ShowcaseFolder();
 
     /// <summary>
     /// The shipped showcase, read only: nothing here writes, because a .NET dependency graph changes
@@ -99,25 +60,23 @@ public class DotNetDependencyGraphPropertiesFlowTests : IClassFixture<WebApplica
     public async Task AProjectNode_SelectedThroughTheHost_AnswersThePropertyGrid(string openedAt)
     {
         // Arrange.
-        using var channel = _factory.CreateGrpcChannel();
-        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
-        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
+        using var session = await FlowSession.OpenAsync(host, _projectFolder, TestContext.Current.CancellationToken);
         var watchId = ShortGuid.NewShortGuid();
-        var hierarchy = new HierarchyService.HierarchyServiceClient(channel);
-        var context = new ContextService.ContextServiceClient(channel);
-        var entryId = await NestedEntryLookup.EntryIdOfAsync(hierarchy, projectId, watchId, headers, openedAt);
+        var hierarchy = session.Hierarchy;
+        var context = session.Context;
+        var entryId = await NestedEntryLookup.EntryIdOfAsync(hierarchy, session.ProjectId, watchId, session.Headers, openedAt);
 
-        using var cts = CreateMessageTimeout();
+        using var cts = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken);
         using var watch = context.Watch(
-            new WatchContextRequest { ProjectId = projectId, WatchId = watchId },
-            headers, cancellationToken: TestContext.Current.CancellationToken);
+            new WatchContextRequest { ProjectId = session.ProjectId, WatchId = watchId },
+            session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         await StreamProbe.WaitUntilContextLiveAsync(watch.ResponseStream, cts.Token);
         var pendingSelection = ReadUntilElementSelectedAsync(watch.ResponseStream, cts.Token);
 
         // Act: the project node, selected under the file the tab was opened at.
         var selected = await context.SelectAsync(
-            new SelectRequest { ProjectId = projectId, WatchId = watchId, Selection = ElementChain(entryId, CoreProjectId) },
-            headers, cancellationToken: TestContext.Current.CancellationToken);
+            new SelectRequest { ProjectId = session.ProjectId, WatchId = watchId, Selection = ElementChain(entryId, CoreProjectId) },
+            session.Headers, cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert: the selection resolved to the project...
         Assert.Equal("", selected.Error);
@@ -127,8 +86,8 @@ public class DotNetDependencyGraphPropertiesFlowTests : IClassFixture<WebApplica
         // ...and the property grid, asking the provider with the target the resolver built, reads
         // the project out of the SOLUTION - which it can only do if that target is the solution body.
         var described = await context.DescribePropertiesAsync(
-            new DescribePropertiesRequest { ProjectId = projectId, WatchId = watchId },
-            headers, cancellationToken: TestContext.Current.CancellationToken);
+            new DescribePropertiesRequest { ProjectId = session.ProjectId, WatchId = watchId },
+            session.Headers, cancellationToken: TestContext.Current.CancellationToken);
 
         var rows = described.Properties.ToDictionary(property => property.Id, property => property.Value);
         Assert.True(rows.Count > 0, $"Opened at {openedAt}, the project node answered no property rows.");
@@ -168,12 +127,5 @@ public class DotNetDependencyGraphPropertiesFlowTests : IClassFixture<WebApplica
         }
 
         throw new InvalidOperationException("The stream ended before an element selection arrived.");
-    }
-
-    private static CancellationTokenSource CreateMessageTimeout()
-    {
-        var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
-        cts.CancelAfter(MessageTimeout);
-        return cts;
     }
 }

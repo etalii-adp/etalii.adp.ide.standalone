@@ -1,15 +1,10 @@
-using EtAlii.Adp.Diagram;
 using EtAlii.Adp.Diagram.Wire;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
-using EtAlii.Adp.Projects;
 using EtAlii.Adp.TestSupport.Host;
 using Grpc.Core;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Xunit;
 using DiagramService = EtAlii.Adp.Diagram.Wire.DiagramService;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
@@ -27,59 +22,32 @@ namespace EtAlii.Adp.Backend.Tests;
 /// is where the folder-subject novelty actually gets tested: core routes the registration,
 /// resolves the session factory by origin, and never learns that the subject is a folder.
 /// </remarks>
-public class AnsibleStructureFlowTests : IClassFixture<WebApplicationFactory<Program>>, IDisposable
+public class AnsibleStructureFlowTests : IClassFixture<HostFixture>
 {
-    private static readonly TimeSpan MessageTimeout = TimeSpan.FromSeconds(15);
-
-    private readonly WebApplicationFactory<Program> _factory;
-    private readonly string _appDataRoot;
+    private readonly HostFixture _host;
     private readonly string _projectFolder;
     private readonly string _infrastructure;
 
-    public AnsibleStructureFlowTests(WebApplicationFactory<Program> factory)
+    public AnsibleStructureFlowTests(HostFixture host)
     {
-        _appDataRoot = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.IntegrationTests", Guid.NewGuid().ToString("N"));
-        _projectFolder = IoPath.Combine(_appDataRoot, "sample-project");
+        _host = host;
+        _projectFolder = host.NewProjectFolder();
         _infrastructure = IoPath.Combine(_projectFolder, "infrastructure");
-        Directory.CreateDirectory(_projectFolder);
 
         // A real Ansible project inside the project folder, registered the way Add would.
         AnsibleFixture.CopyTo(_infrastructure);
         File.WriteAllText(IoPath.Combine(_infrastructure, "infrastructure.adp"), "ansible/structure\n");
-
-        _factory = factory.WithWebHostBuilder(builder =>
-        {
-            builder.UseEnvironment("developer");
-            builder.ConfigureServices(services =>
-            {
-                services.RemoveAll<IProjectStore>();
-                services.AddSingleton<IProjectStore>(new FileProjectStore(_appDataRoot));
-                services.RemoveAll<Problems.IProblemStore>();
-                services.AddSingleton<Problems.IProblemStore>(provider => new Problems.ProblemStore(
-                    _appDataRoot,
-                    provider.GetRequiredService<DiagramFileRouter>(),
-                    provider.GetRequiredService<DiagramValidators>()));
-            });
-        });
-    }
-
-    public void Dispose()
-    {
-        _factory.Dispose();
-        TestFolder.TryDelete(_appDataRoot);
     }
 
     [Fact]
     public async Task ARegisteredFolder_OpensAndDeliversItsStructure()
     {
         // Arrange.
-        using var channel = _factory.CreateGrpcChannel();
-        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
-        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
-        var client = new DiagramService.DiagramServiceClient(channel);
+        using var session = await FlowSession.OpenAsync(_host, _projectFolder, TestContext.Current.CancellationToken);
+        var client = new DiagramService.DiagramServiceClient(session.Channel);
 
         // Act.
-        var elements = await BaselineAsync(client, headers, projectId);
+        var elements = await BaselineAsync(client, session.Headers, session.ProjectId);
 
         // Assert.
         // Core routed a registration whose body is itself, resolved this module's session
@@ -95,13 +63,11 @@ public class AnsibleStructureFlowTests : IClassFixture<WebApplicationFactory<Pro
     public async Task ANodesPayload_CarriesWhatTheCanvasNeeds()
     {
         // Arrange.
-        using var channel = _factory.CreateGrpcChannel();
-        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
-        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
-        var client = new DiagramService.DiagramServiceClient(channel);
+        using var session = await FlowSession.OpenAsync(_host, _projectFolder, TestContext.Current.CancellationToken);
+        var client = new DiagramService.DiagramServiceClient(session.Channel);
 
         // Act.
-        var elements = await BaselineAsync(client, headers, projectId);
+        var elements = await BaselineAsync(client, session.Headers, session.ProjectId);
         var nginx = elements.Single(element => element.Id.Value == "role:nginx");
         var payload = Wire.AnsibleElementPayload.Parser.ParseFrom(nginx.Payload.Value.Span);
 
@@ -117,18 +83,15 @@ public class AnsibleStructureFlowTests : IClassFixture<WebApplicationFactory<Pro
     public async Task AChangeInTheFolder_ReachesAnOpenDiagram()
     {
         // Arrange.
-        using var channel = _factory.CreateGrpcChannel();
-        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
-        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
-        var client = new DiagramService.DiagramServiceClient(channel);
+        using var session = await FlowSession.OpenAsync(_host, _projectFolder, TestContext.Current.CancellationToken);
+        var client = new DiagramService.DiagramServiceClient(session.Channel);
 
-        using var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
-        cts.CancelAfter(MessageTimeout);
+        using var cts = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken);
 
         var path = Path.Of("infrastructure", "infrastructure.adp");
         using var call = client.Open(
-            new OpenDiagramRequest { ProjectId = projectId, WatchId = ShortGuid.NewShortGuid(), Path = path },
-            headers, cancellationToken: cts.Token);
+            new OpenDiagramRequest { ProjectId = session.ProjectId, WatchId = ShortGuid.NewShortGuid(), Path = path },
+            session.Headers, cancellationToken: cts.Token);
 
         // The baseline first, so the change that follows is the one being observed.
         Assert.True(await call.ResponseStream.MoveNext(cts.Token));
@@ -154,14 +117,12 @@ public class AnsibleStructureFlowTests : IClassFixture<WebApplicationFactory<Pro
         // Arrange.
         // The end-to-end form of Requirement 1.1: not just the module's own components, but the
         // whole host serving a real gRPC open.
-        using var channel = _factory.CreateGrpcChannel();
-        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
-        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
-        var client = new DiagramService.DiagramServiceClient(channel);
+        using var session = await FlowSession.OpenAsync(_host, _projectFolder, TestContext.Current.CancellationToken);
+        var client = new DiagramService.DiagramServiceClient(session.Channel);
         var before = Snapshot();
 
         // Act.
-        await BaselineAsync(client, headers, projectId);
+        await BaselineAsync(client, session.Headers, session.ProjectId);
 
         // Assert.
         Assert.Equal(before.Keys.Order(StringComparer.Ordinal), Snapshot().Keys.Order(StringComparer.Ordinal));
@@ -181,10 +142,8 @@ public class AnsibleStructureFlowTests : IClassFixture<WebApplicationFactory<Pro
         // gRPC, the position lands in the .adp, the reopened diagram shows it, undo puts the
         // registration's bytes back, and nothing Ansible owns is written at any point
         // (Requirements 2.2, 2.3, 2.4, 2.5).
-        using var channel = _factory.CreateGrpcChannel();
-        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
-        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
-        var client = new DiagramService.DiagramServiceClient(channel);
+        using var session = await FlowSession.OpenAsync(_host, _projectFolder, TestContext.Current.CancellationToken);
+        var client = new DiagramService.DiagramServiceClient(session.Channel);
 
         var registration = IoPath.Combine(_infrastructure, "infrastructure.adp");
         var registrationBefore = await File.ReadAllBytesAsync(registration, TestContext.Current.CancellationToken);
@@ -197,24 +156,23 @@ public class AnsibleStructureFlowTests : IClassFixture<WebApplicationFactory<Pro
 
         // The diagram must be open for the move to reach a session: the unary leg finds it
         // through the viewport registry the stream registered.
-        using var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
-        cts.CancelAfter(MessageTimeout);
+        using var cts = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken);
         using var call = client.Open(
-            new OpenDiagramRequest { ProjectId = projectId, WatchId = watchId, Path = path },
-            headers, cancellationToken: cts.Token);
+            new OpenDiagramRequest { ProjectId = session.ProjectId, WatchId = watchId, Path = path },
+            session.Headers, cancellationToken: cts.Token);
         Assert.True(await call.ResponseStream.MoveNext(cts.Token));
 
         // Act.
         var moved = await client.MoveElementAsync(
             new MoveElementRequest
             {
-                ProjectId = projectId,
+                ProjectId = session.ProjectId,
                 WatchId = watchId,
                 Path = path,
                 ElementId = "role:nginx",
                 Position = new Point2D { X = 321, Y = 123 },
             },
-            headers,
+            session.Headers,
             cancellationToken: cts.Token);
 
         // Assert 1: the write landed where the layout rule says it must, and nowhere else.
@@ -231,13 +189,13 @@ public class AnsibleStructureFlowTests : IClassFixture<WebApplicationFactory<Pro
 
         // Assert 2: a diagram opened afresh draws the node where the user put it - the overlay
         // outlives the session, which is what makes the position authored rather than local.
-        var reopened = await BaselineAsync(client, headers, projectId);
+        var reopened = await BaselineAsync(client, session.Headers, session.ProjectId);
         var nginx = reopened.Single(element => element.Id.Value == "role:nginx");
         Assert.Equal(321, nginx.Position.X);
         Assert.Equal(123, nginx.Position.Y);
 
         // Assert 3: one undo, and the registration is byte-for-byte what it was.
-        var history = _factory.Services.GetRequiredService<IHistoryStackStore>().Get(_projectFolder);
+        var history = _host.Services.GetRequiredService<IHistoryStackStore>().Get(_projectFolder);
         await history.UndoAsync(TestContext.Current.CancellationToken);
         Assert.Equal(registrationBefore, await File.ReadAllBytesAsync(registration, TestContext.Current.CancellationToken));
     }
@@ -272,8 +230,7 @@ public class AnsibleStructureFlowTests : IClassFixture<WebApplicationFactory<Pro
     private async Task<IReadOnlyList<Element>> BaselineAsync(
         DiagramService.DiagramServiceClient client, Metadata headers, Documents.Wire.ShortGuid projectId)
     {
-        using var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
-        cts.CancelAfter(MessageTimeout);
+        using var cts = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken);
 
         var path = Path.Of("infrastructure", "infrastructure.adp");
         using var call = client.Open(

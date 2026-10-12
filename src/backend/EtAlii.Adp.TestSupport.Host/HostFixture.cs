@@ -23,9 +23,13 @@ namespace EtAlii.Adp.TestSupport.Host;
 /// files. The project list is shared across the class's tests; a test that asserts on the whole
 /// list removes what it adds.
 /// </para>
+/// <para>
+/// A class whose host needs a registration of its own derives a fixture from this one and
+/// overrides <see cref="ConfigureServices"/>.
+/// </para>
 /// </remarks>
 [UsedImplicitly] // Instantiated by xUnit for each class that declares IClassFixture<HostFixture>.
-public sealed class HostFixture : IDisposable
+public class HostFixture : IDisposable
 {
     private readonly TestFolder _appData;
     private readonly WebApplicationFactory<Program> _factory;
@@ -48,8 +52,17 @@ public sealed class HostFixture : IDisposable
                     AppDataRoot,
                     provider.GetRequiredService<DiagramFileRouter>(),
                     provider.GetRequiredService<DiagramValidators>()));
+                ConfigureServices(services);
             });
         });
+    }
+
+    /// <summary>
+    /// Adds a derived fixture's registrations after the standard ones, so a registration made
+    /// here replaces or joins what the host registers. Runs when the host is first built.
+    /// </summary>
+    protected virtual void ConfigureServices(IServiceCollection services)
+    {
     }
 
     /// <summary>The scratch folder that stands in for the application data folder.</summary>

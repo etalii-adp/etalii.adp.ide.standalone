@@ -1,10 +1,5 @@
 using EtAlii.Adp.Diagram.Wire;
-using EtAlii.Adp.Projects;
 using EtAlii.Adp.TestSupport.Host;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 using Path = EtAlii.Adp.Documents.Wire.Path;
@@ -17,71 +12,40 @@ namespace EtAlii.Adp.Backend.Tests;
 /// entry's drop action id names the same add-child action the menu and the keyboard run -
 /// one implementation behind every trigger (tech.md's "Specifying a diagram type").
 /// </summary>
-public class DiagramToolboxFlowTests : IClassFixture<WebApplicationFactory<Program>>, IDisposable
+public class DiagramToolboxFlowTests(HostFixture host) : IClassFixture<HostFixture>
 {
-    private readonly WebApplicationFactory<Program> _factory;
-    private readonly string _appDataRoot;
-    private readonly string _projectFolder;
+    private readonly string _projectFolder = Seed(host.NewProjectFolder());
 
-    public DiagramToolboxFlowTests(WebApplicationFactory<Program> baseFactory)
+    private static string Seed(string projectFolder)
     {
-        _appDataRoot = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.IntegrationTests", Guid.NewGuid().ToString("N"));
-        _projectFolder = IoPath.Combine(_appDataRoot, "sample-project");
-        Directory.CreateDirectory(_projectFolder);
-
         // A registered mindmap, and a plain file no diagram type claims.
-        File.WriteAllText(IoPath.Combine(_projectFolder, "roadmap.adp"), "freeplane/mindmap\n");
+        File.WriteAllText(IoPath.Combine(projectFolder, "roadmap.adp"), "freeplane/mindmap\n");
         File.WriteAllText(
-            IoPath.Combine(_projectFolder, "roadmap.mm"),
+            IoPath.Combine(projectFolder, "roadmap.mm"),
             "<map version=\"freeplane 1.11.5\">\n<node TEXT=\"roadmap\" ID=\"ID_1\"/>\n</map>\n");
-        File.WriteAllText(IoPath.Combine(_projectFolder, "notes.txt"), "not a diagram\n");
+        File.WriteAllText(IoPath.Combine(projectFolder, "notes.txt"), "not a diagram\n");
         // The shape the combined examples project actually uses: a registration in a subfolder
         // whose name contains a space. Documentation task 9's manual pass found the Toolbox
         // panel empty for exactly this shape and named the space as a candidate cause; the test
         // below rules that out at this seam (the defect was the canvas never registering).
-        var subfolder = IoPath.Combine(_projectFolder, "example 1");
+        var subfolder = IoPath.Combine(projectFolder, "example 1");
         Directory.CreateDirectory(subfolder);
         File.WriteAllText(IoPath.Combine(subfolder, "tea.adp"), "wardley/map\n");
         File.WriteAllText(IoPath.Combine(subfolder, "tea.owm"), "anchor Need [0.9, 0.5]\ncomponent Thing [0.4, 0.4]\n");
-
-        _factory = baseFactory.WithWebHostBuilder(builder =>
-        {
-            builder.UseEnvironment("developer");
-            builder.ConfigureServices(services =>
-            {
-                services.RemoveAll<IProjectStore>();
-                services.AddSingleton<IProjectStore>(new FileProjectStore(_appDataRoot));
-                // The problem cache must live and die with this test, not in the real user
-                // profile the host's AddProblems registration points at (found by the
-                // errors-and-warnings-panel manual pass: every run left a cache file behind).
-                services.RemoveAll<Problems.IProblemStore>();
-                services.AddSingleton<Problems.IProblemStore>(provider => new Problems.ProblemStore(
-                    _appDataRoot,
-                    provider.GetRequiredService<Hierarchy.DiagramFileRouter>(),
-                    provider.GetRequiredService<Diagram.DiagramValidators>()));
-            });
-        });
-    }
-
-    public void Dispose()
-    {
-        _factory.Dispose();
-        TestFolder.TryDelete(_appDataRoot);
+        return projectFolder;
     }
 
     [Fact]
     public async Task AMindmapAnswersWithTheModulesPalette_AndItsDropRunsTheAddChildAction()
     {
         // Arrange.
-        using var channel = _factory.CreateGrpcChannel();
-        var diagramClient = new DiagramService.DiagramServiceClient(channel);
-        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
-        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
+        using var session = await FlowSession.OpenAsync(host, _projectFolder, TestContext.Current.CancellationToken);
+        var diagramClient = new DiagramService.DiagramServiceClient(session.Channel);
 
         // Act.
         var response = await diagramClient.DescribeToolboxAsync(
-            new DescribeToolboxRequest { ProjectId = projectId, Path = Path.Of("roadmap.adp") },
-            headers, cancellationToken: TestContext.Current.CancellationToken);
+            new DescribeToolboxRequest { ProjectId = session.ProjectId, Path = PathOf("roadmap.adp") },
+            session.Headers, cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert.
         var item = Assert.Single(response.Items);
@@ -95,18 +59,16 @@ public class DiagramToolboxFlowTests : IClassFixture<WebApplicationFactory<Progr
     public async Task AFileNoDiagramTypeClaims_AnswersWithAnEmptyPalette()
     {
         // Arrange.
-        using var channel = _factory.CreateGrpcChannel();
-        var diagramClient = new DiagramService.DiagramServiceClient(channel);
-        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
-        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
+        using var session = await FlowSession.OpenAsync(host, _projectFolder, TestContext.Current.CancellationToken);
+        var diagramClient = new DiagramService.DiagramServiceClient(session.Channel);
 
         // Act: unroutable and non-existent both answer the same, non-revealing way.
         var unroutable = await diagramClient.DescribeToolboxAsync(
-            new DescribeToolboxRequest { ProjectId = projectId, Path = Path.Of("notes.txt") },
-            headers, cancellationToken: TestContext.Current.CancellationToken);
+            new DescribeToolboxRequest { ProjectId = session.ProjectId, Path = PathOf("notes.txt") },
+            session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         var missing = await diagramClient.DescribeToolboxAsync(
-            new DescribeToolboxRequest { ProjectId = projectId, Path = Path.Of("gone.adp") },
-            headers, cancellationToken: TestContext.Current.CancellationToken);
+            new DescribeToolboxRequest { ProjectId = session.ProjectId, Path = PathOf("gone.adp") },
+            session.Headers, cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Empty(unroutable.Items);
@@ -117,22 +79,26 @@ public class DiagramToolboxFlowTests : IClassFixture<WebApplicationFactory<Progr
     public async Task AWardleyMapInASubfolderWithASpace_AnswersWithTheModulesPalette()
     {
         // Arrange.
-        using var channel = _factory.CreateGrpcChannel();
-        var diagramClient = new DiagramService.DiagramServiceClient(channel);
-        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
-        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
+        using var session = await FlowSession.OpenAsync(host, _projectFolder, TestContext.Current.CancellationToken);
+        var diagramClient = new DiagramService.DiagramServiceClient(session.Channel);
 
         var path = Path.Of("example 1", "tea.adp");
 
         // Act.
         var response = await diagramClient.DescribeToolboxAsync(
-            new DescribeToolboxRequest { ProjectId = projectId, Path = path },
-            headers, cancellationToken: TestContext.Current.CancellationToken);
+            new DescribeToolboxRequest { ProjectId = session.ProjectId, Path = path },
+            session.Headers, cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert: the module's whole palette, unimpressed by where the document lives.
         Assert.Equal(
             ["Component", "Anchor", "Market", "Ecosystem", "Submap", "Pipeline", "Note", "Annotation"],
             response.Items.Select(item => item.Label));
         Assert.DoesNotContain(response.Items, item => item.DropActionId.Length == 0);
+    }
+
+    private static Path PathOf(string fileName)
+    {
+        var path = Path.Of(fileName);
+        return path;
     }
 }

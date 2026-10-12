@@ -4,20 +4,9 @@ using EtAlii.Adp.Diagram.Databricks;
 using EtAlii.Adp.Diagram.Wire;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Hierarchy;
-using EtAlii.Adp.Hierarchy.Wire;
-using EtAlii.Adp.Projects;
 using EtAlii.Adp.TestSupport.Host;
-using Grpc.Core;
-using Grpc.Net.Client;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Xunit;
-using ContextService = EtAlii.Adp.Context.Wire.ContextService;
-using HierarchyService = EtAlii.Adp.Hierarchy.Wire.HierarchyService;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
-using Path = EtAlii.Adp.Documents.Wire.Path;
 
 namespace EtAlii.Adp.Backend.Tests;
 
@@ -34,10 +23,8 @@ namespace EtAlii.Adp.Backend.Tests;
 /// position survives, undo returns the registration byte for byte with the body untouched
 /// throughout.
 /// </remarks>
-public class DatabricksFlowTests : IClassFixture<WebApplicationFactory<Program>>, IDisposable
+public class DatabricksFlowTests(HostFixture host) : IClassFixture<HostFixture>
 {
-    private static readonly TimeSpan MessageTimeout = TimeSpan.FromSeconds(20);
-
     private const string Lakehouse = """
         bundle:
           name: lakehouse
@@ -70,46 +57,18 @@ public class DatabricksFlowTests : IClassFixture<WebApplicationFactory<Program>>
             default: true
         """;
 
-    private readonly WebApplicationFactory<Program> _factory;
-    private readonly string _appDataRoot;
-    private readonly string _projectFolder;
+    private readonly string _projectFolder = Seed(host.NewProjectFolder());
 
-    public DatabricksFlowTests(WebApplicationFactory<Program> baseFactory)
+    private static string Seed(string projectFolder)
     {
-        _appDataRoot = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.IntegrationTests", Guid.NewGuid().ToString("N"));
-        _projectFolder = IoPath.Combine(_appDataRoot, "sample-project");
-        Directory.CreateDirectory(_projectFolder);
-
         // One body, three registrations - the family's whole routing story in one folder.
-        File.WriteAllText(IoPath.Combine(_projectFolder, "lakehouse.yml"), Lakehouse);
-        File.WriteAllText(IoPath.Combine(_projectFolder, "lakehouse.adp"), "databricks/bundle\nbody: lakehouse.yml\n");
-        File.WriteAllText(IoPath.Combine(_projectFolder, "lakehouse.job.adp"), "databricks/job\nbody: lakehouse.yml\n");
+        File.WriteAllText(IoPath.Combine(projectFolder, "lakehouse.yml"), Lakehouse);
+        File.WriteAllText(IoPath.Combine(projectFolder, "lakehouse.adp"), "databricks/bundle\nbody: lakehouse.yml\n");
+        File.WriteAllText(IoPath.Combine(projectFolder, "lakehouse.job.adp"), "databricks/job\nbody: lakehouse.yml\n");
         File.WriteAllText(
-            IoPath.Combine(_projectFolder, "lakehouse.pipeline.adp"),
+            IoPath.Combine(projectFolder, "lakehouse.pipeline.adp"),
             "databricks/pipeline\nbody: lakehouse.yml\nresource: bronze\n");
-
-        _factory = baseFactory.WithWebHostBuilder(builder =>
-        {
-            builder.UseEnvironment("developer");
-            builder.ConfigureServices(services =>
-            {
-                services.RemoveAll<IProjectStore>();
-                services.AddSingleton<IProjectStore>(new FileProjectStore(_appDataRoot));
-                services.RemoveAll<Problems.IProblemStore>();
-                services.AddSingleton<Problems.IProblemStore>(provider => new Problems.ProblemStore(
-                    _appDataRoot,
-                    provider.GetRequiredService<DiagramFileRouter>(),
-                    provider.GetRequiredService<Diagram.DiagramValidators>()));
-            });
-        });
-    }
-
-    public void Dispose()
-    {
-        _factory.Dispose();
-        TestFolder.TryDelete(_appDataRoot);
-
-        GC.SuppressFinalize(this);
+        return projectFolder;
     }
 
     [Fact]
@@ -117,14 +76,12 @@ public class DatabricksFlowTests : IClassFixture<WebApplicationFactory<Program>>
     {
         // Arrange: Requirement 1.4 - three MIME types over one file, each registration opening
         // its own projection; the pipeline one selected by its resource: header (Requirement 1.3).
-        using var channel = _factory.CreateGrpcChannel();
-        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
-        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
+        using var session = await FlowSession.OpenAsync(host, _projectFolder, TestContext.Current.CancellationToken);
 
         // Act.
-        var bundle = await BaselineAsync(channel, headers, projectId, "lakehouse.adp");
-        var job = await BaselineAsync(channel, headers, projectId, "lakehouse.job.adp");
-        var pipeline = await BaselineAsync(channel, headers, projectId, "lakehouse.pipeline.adp");
+        var bundle = await DiagramFlow.BaselineAsync(session, "lakehouse.adp");
+        var job = await DiagramFlow.BaselineAsync(session, "lakehouse.job.adp");
+        var pipeline = await DiagramFlow.BaselineAsync(session, "lakehouse.pipeline.adp");
 
         // Assert.
         Assert.Contains(bundle, element => element.Id.Value == "bundle");
@@ -143,34 +100,31 @@ public class DatabricksFlowTests : IClassFixture<WebApplicationFactory<Program>>
         // Arrange: the layout-persistence promise (Requirement 7), end to end. The diagram must
         // be open on the SAME connection, because core will not edit a document a caller is not
         // looking at.
-        using var channel = _factory.CreateGrpcChannel();
-        var client = new DiagramService.DiagramServiceClient(channel);
-        var contextClient = new ContextService.ContextServiceClient(channel);
-        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
-        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
+        using var session = await FlowSession.OpenAsync(host, _projectFolder, TestContext.Current.CancellationToken);
+        var client = new DiagramService.DiagramServiceClient(session.Channel);
         var watchId = ShortGuid.NewShortGuid();
         var bodyPath = IoPath.Combine(_projectFolder, "lakehouse.yml");
         var adpPath = IoPath.Combine(_projectFolder, "lakehouse.job.adp");
         var bodyBefore = await File.ReadAllBytesAsync(bodyPath, TestContext.Current.CancellationToken);
         var adpBefore = await File.ReadAllTextAsync(adpPath, TestContext.Current.CancellationToken);
 
-        using var cts = CreateMessageTimeout();
+        using var cts = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken);
         using var call = client.Open(
-            new OpenDiagramRequest { ProjectId = projectId, WatchId = watchId, Path = Path.Of("lakehouse.job.adp") },
-            headers, cancellationToken: cts.Token);
-        await call.ResponseStream.ReadAddAsync(cts.Token);
+            new OpenDiagramRequest { ProjectId = session.ProjectId, WatchId = watchId, Path = DiagramFlow.PathOf("lakehouse.job.adp") },
+            session.Headers, cancellationToken: cts.Token);
+        await DiagramFlow.ReadAddAsync(call.ResponseStream, cts.Token);
 
         // Act: drag the ingest task to an authored spot.
         var moved = await client.MoveElementAsync(
             new MoveElementRequest
             {
-                ProjectId = projectId,
+                ProjectId = session.ProjectId,
                 WatchId = watchId,
-                Path = Path.Of("lakehouse.job.adp"),
+                Path = DiagramFlow.PathOf("lakehouse.job.adp"),
                 ElementId = "task:ingest",
                 Position = new Point2D { X = 300, Y = 180 },
             },
-            headers, cancellationToken: TestContext.Current.CancellationToken);
+            session.Headers, cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert: the position is in the registration, and nowhere near the body (7.3, 7.7).
         Assert.Equal("", moved.Error);
@@ -179,12 +133,12 @@ public class DatabricksFlowTests : IClassFixture<WebApplicationFactory<Program>>
         Assert.Equal(bodyBefore, await File.ReadAllBytesAsync(bodyPath, TestContext.Current.CancellationToken));
 
         // Act, continued: a fresh open sees the stored position overlaid (7.4).
-        var reopened = await BaselineAsync(channel, headers, projectId, "lakehouse.job.adp");
+        var reopened = await DiagramFlow.BaselineAsync(session, "lakehouse.job.adp");
         var ingest = reopened.Single(element => element.Id.Value == "task:ingest");
         Assert.Equal((300d, 180d), (ingest.Position.X, ingest.Position.Y));
 
         // Act, continued: one undo returns the registration byte for byte (7.6).
-        var undone = await ExecuteProjectActionAsync(contextClient, projectId, watchId, headers, HistoryContextActionProvider.UndoActionId);
+        var undone = await DiagramFlow.ExecuteProjectActionAsync(session, watchId, HistoryContextActionProvider.UndoActionId);
 
         // Assert.
         Assert.True(undone.Accepted, undone.Error);
@@ -198,42 +152,40 @@ public class DatabricksFlowTests : IClassFixture<WebApplicationFactory<Program>>
         // Arrange: the property path over the real selection chain - which also proves a
         // databricks element resolves while every other module's resolver is registered beside
         // this one (Requirement 10.5, 12's integration half).
-        using var channel = _factory.CreateGrpcChannel();
-        var contextClient = new ContextService.ContextServiceClient(channel);
-        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
-        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
+        using var session = await FlowSession.OpenAsync(host, _projectFolder, TestContext.Current.CancellationToken);
+        var contextClient = session.Context;
         var watchId = ShortGuid.NewShortGuid();
-        var entries = await EntriesAsync(channel, headers, projectId, watchId);
+        var entries = await DiagramFlow.EntriesAsync(session, watchId);
         var bodyPath = IoPath.Combine(_projectFolder, "lakehouse.yml");
         var before = await File.ReadAllTextAsync(bodyPath, TestContext.Current.CancellationToken);
 
         var selected = await contextClient.SelectAsync(
             new SelectRequest
             {
-                ProjectId = projectId,
+                ProjectId = session.ProjectId,
                 WatchId = watchId,
-                Selection = ElementChain(entries["lakehouse.job.adp"], "task:transform"),
+                Selection = DiagramFlow.ElementChain(entries["lakehouse.job.adp"], "task:transform"),
             },
-            headers, cancellationToken: TestContext.Current.CancellationToken);
+            session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         Assert.Empty(selected.Error);
 
         // Act.
         var result = await contextClient.SetPropertyAsync(
             new SetPropertyRequest
             {
-                ProjectId = projectId,
+                ProjectId = session.ProjectId,
                 WatchId = watchId,
                 PropertyId = DatabricksContextPropertyProvider.RunIfProperty,
                 Value = "ALL_DONE",
             },
-            headers, cancellationToken: TestContext.Current.CancellationToken);
+            session.Headers, cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.True(result.Accepted, result.Error);
         Assert.Contains("run_if: ALL_DONE", await File.ReadAllTextAsync(bodyPath, TestContext.Current.CancellationToken), StringComparison.Ordinal);
 
         // Act, continued: one undo returns the body byte for byte.
-        var undone = await ExecuteProjectActionAsync(contextClient, projectId, watchId, headers, HistoryContextActionProvider.UndoActionId);
+        var undone = await DiagramFlow.ExecuteProjectActionAsync(session, watchId, HistoryContextActionProvider.UndoActionId);
 
         // Assert.
         Assert.True(undone.Accepted, undone.Error);
@@ -245,127 +197,40 @@ public class DatabricksFlowTests : IClassFixture<WebApplicationFactory<Program>>
     {
         // Arrange: the same body edited through the pipeline registration - the shared-store
         // half of Requirement 1.4: three diagram types, one document, one history.
-        using var channel = _factory.CreateGrpcChannel();
-        var contextClient = new ContextService.ContextServiceClient(channel);
-        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
-        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
+        using var session = await FlowSession.OpenAsync(host, _projectFolder, TestContext.Current.CancellationToken);
+        var contextClient = session.Context;
         var watchId = ShortGuid.NewShortGuid();
-        var entries = await EntriesAsync(channel, headers, projectId, watchId);
+        var entries = await DiagramFlow.EntriesAsync(session, watchId);
         var bodyPath = IoPath.Combine(_projectFolder, "lakehouse.yml");
         var before = await File.ReadAllTextAsync(bodyPath, TestContext.Current.CancellationToken);
 
         var selected = await contextClient.SelectAsync(
             new SelectRequest
             {
-                ProjectId = projectId,
+                ProjectId = session.ProjectId,
                 WatchId = watchId,
-                Selection = ElementChain(entries["lakehouse.pipeline.adp"], "pipeline"),
+                Selection = DiagramFlow.ElementChain(entries["lakehouse.pipeline.adp"], "pipeline"),
             },
-            headers, cancellationToken: TestContext.Current.CancellationToken);
+            session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         Assert.Empty(selected.Error);
 
         // Act.
         var result = await contextClient.SetPropertyAsync(
             new SetPropertyRequest
             {
-                ProjectId = projectId,
+                ProjectId = session.ProjectId,
                 WatchId = watchId,
                 PropertyId = $"{DatabricksContextPropertyProvider.PipelineScalarPrefix}catalog",
                 Value = "lakehouse_prod",
             },
-            headers, cancellationToken: TestContext.Current.CancellationToken);
+            session.Headers, cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.True(result.Accepted, result.Error);
         Assert.Contains("catalog: lakehouse_prod", await File.ReadAllTextAsync(bodyPath, TestContext.Current.CancellationToken), StringComparison.Ordinal);
 
-        var undone = await ExecuteProjectActionAsync(contextClient, projectId, watchId, headers, HistoryContextActionProvider.UndoActionId);
+        var undone = await DiagramFlow.ExecuteProjectActionAsync(session, watchId, HistoryContextActionProvider.UndoActionId);
         Assert.True(undone.Accepted, undone.Error);
         Assert.Equal(before, await File.ReadAllTextAsync(bodyPath, TestContext.Current.CancellationToken));
-    }
-
-    /// <summary>The baseline elements of one open diagram, on a fresh connection.</summary>
-    private async Task<IReadOnlyList<Element>> BaselineAsync(
-        GrpcChannel channel,
-        Metadata headers,
-        ShortGuid projectId,
-        string fileName)
-    {
-        var diagramClient = new DiagramService.DiagramServiceClient(channel);
-        using var cts = CreateMessageTimeout();
-        using var call = diagramClient.Open(
-            new OpenDiagramRequest { ProjectId = projectId, WatchId = ShortGuid.NewShortGuid(), Path = Path.Of(fileName) },
-            headers, cancellationToken: cts.Token);
-        return await call.ResponseStream.ReadAddAsync(cts.Token);
-    }
-
-    /// <summary>
-    /// Every entry of the project, by name - one nested level deep, because a registration is a
-    /// child of the subject it names.
-    /// </summary>
-    private static async Task<IReadOnlyDictionary<string, Documents.Wire.ShortGuid>> EntriesAsync(
-        GrpcChannel channel,
-        Metadata headers,
-        ShortGuid projectId,
-        ShortGuid watchId)
-    {
-        var hierarchyClient = new HierarchyService.HierarchyServiceClient(channel);
-        var response = await hierarchyClient.ListEntriesAsync(
-            new ListEntriesRequest { ProjectId = projectId, WatchId = watchId },
-            headers, cancellationToken: TestContext.Current.CancellationToken);
-
-        var byName = response.Entries.Entries_.ToDictionary(entry => entry.Name, entry => entry.Id, StringComparer.Ordinal);
-        foreach (var parent in response.Entries.Entries_.Where(entry => entry.HasChildren && entry.Kind != EntryKind.Folder))
-        {
-            var children = await hierarchyClient.ListEntriesAsync(
-                new ListEntriesRequest { ProjectId = projectId, WatchId = watchId, FolderId = parent.Id },
-                headers, cancellationToken: TestContext.Current.CancellationToken);
-            foreach (var child in children.Entries.Entries_)
-            {
-                byName[child.Name] = child.Id;
-            }
-        }
-
-        return byName;
-    }
-
-    /// <summary>The canvas's own selection shape: the <c>.adp</c> file, then the element as its child.</summary>
-    private static ContextSelection ElementChain(Documents.Wire.ShortGuid entryId, string elementId) =>
-        new()
-        {
-            Source = ContextSelectionSource.Explorer,
-            Id = new ContextSource { EntryId = entryId },
-            Path = new Path(),
-            Child = new ContextSelection
-            {
-                Source = ContextSelectionSource.DiagramCanvas,
-                Id = new ContextSource { ElementId = new ElementId { Value = elementId } },
-                Path = new Path(),
-            },
-        };
-
-    private static Task<ExecuteActionResponse> ExecuteProjectActionAsync(
-        ContextService.ContextServiceClient contextClient,
-        Documents.Wire.ShortGuid projectId,
-        Documents.Wire.ShortGuid watchId,
-        Metadata headers,
-        string actionId) =>
-        contextClient.ExecuteActionAsync(
-            new ExecuteActionRequest
-            {
-                ProjectId = projectId,
-                WatchId = watchId,
-                Source = new ContextSource { Project = new Google.Protobuf.WellKnownTypes.Empty() },
-                InteractionId = ShortGuid.NewShortGuid(),
-                ActionId = actionId,
-            },
-            headers,
-            cancellationToken: TestContext.Current.CancellationToken).ResponseAsync;
-
-    private static CancellationTokenSource CreateMessageTimeout()
-    {
-        var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
-        cts.CancelAfter(MessageTimeout);
-        return cts;
     }
 }

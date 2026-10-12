@@ -1,22 +1,16 @@
-using EtAlii.Adp.Authentication.Wire;
 using EtAlii.Adp.Designer;
 using EtAlii.Adp.Designer.TableModel;
 using EtAlii.Adp.Diagram;
 using EtAlii.Adp.Diagram.Wire;
-using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.Projects;
-using EtAlii.Adp.Projects.Wire;
+using EtAlii.Adp.TestSupport.Host;
 using Grpc.Core;
-using Grpc.Net.Client;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Xunit;
 using DesignerService = EtAlii.Adp.Designer.Wire.DesignerService;
 using IoPath = System.IO.Path;
 using Path = EtAlii.Adp.Documents.Wire.Path;
-using ProjectService = EtAlii.Adp.Projects.Wire.ProjectService;
 using Proto = EtAlii.Adp.Designer.Wire;
 using WorkspaceService = EtAlii.Adp.Diagram.Wire.WorkspaceService;
 
@@ -32,62 +26,30 @@ namespace EtAlii.Adp.Backend.Tests;
 /// The session is a test double. What this covers is the carrying and the lifetimes, which are
 /// the host's; what a designer's session does with a window or a gesture is its module's.
 /// </remarks>
-public sealed class TableStreamFlowTests : IClassFixture<WebApplicationFactory<Program>>, IDisposable
+public sealed class TableStreamFlowTests : IClassFixture<TableStreamFlowTests.Host>
 {
-    private const string DeveloperUsername = "admin";
-    private const string DeveloperCredential = "changeme";
-    private const string SessionTokenHeader = "session-token";
-    private static readonly TimeSpan MessageTimeout = TimeSpan.FromSeconds(10);
-
     private static readonly DesignerDefinition Sheet = new("fixture/sheet", "Fixture sheet", Formats: [new DesignerFormat("YAML", ".yaml")]);
 
     /// <summary>Routed, and no module serves it.</summary>
     private static readonly DesignerDefinition Orphan = new("fixture/orphan", "Fixture orphan", Formats: [new DesignerFormat("YAML", ".yaml")]);
 
-    private readonly WebApplicationFactory<Program> _factory;
-    private readonly string _appDataRoot;
+    private readonly Host _host;
     private readonly string _projectFolder;
-    private readonly FakeSessionFactory _sessions = new();
+    private readonly FakeSessionFactory _sessions;
 
-    public TableStreamFlowTests(WebApplicationFactory<Program> baseFactory)
+    public TableStreamFlowTests(Host host)
     {
-        _appDataRoot = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.IntegrationTests", Guid.NewGuid().ToString("N"));
-        _projectFolder = IoPath.Combine(_appDataRoot, "sample-project");
-        Directory.CreateDirectory(_projectFolder);
+        _host = host;
+        _projectFolder = host.NewProjectFolder();
         File.WriteAllText(IoPath.Combine(_projectFolder, "cities.adp"), "fixture/sheet\r\nbody: cities.yaml\r\n");
         File.WriteAllText(IoPath.Combine(_projectFolder, "cities.yaml"), "name: Cities\r\n");
         File.WriteAllText(IoPath.Combine(_projectFolder, "lost.adp"), "fixture/orphan\r\nbody: lost.yaml\r\n");
         File.WriteAllText(IoPath.Combine(_projectFolder, "lost.yaml"), "name: Lost\r\n");
         File.WriteAllText(IoPath.Combine(_projectFolder, "notes.txt"), "not a table\r\n");
 
-        _factory = baseFactory.WithWebHostBuilder(builder =>
-        {
-            builder.UseEnvironment("developer");
-            builder.ConfigureServices(services =>
-            {
-                services.RemoveAll<IProjectStore>();
-                services.AddSingleton<IProjectStore>(new FileProjectStore(_appDataRoot));
-                services.RemoveAll<Problems.IProblemStore>();
-                services.AddSingleton<Problems.IProblemStore>(provider => new Problems.ProblemStore(
-                    _appDataRoot,
-                    provider.GetRequiredService<DiagramFileRouter>(),
-                    provider.GetRequiredService<DiagramValidators>()));
-
-                // The test-double designers ride in beside whatever discovery found.
-                services.RemoveAll<IDesignerDefinitionCatalog>();
-                services.AddSingleton<IDesignerDefinitionCatalog>(provider => new DesignerDefinitionCatalog
-                {
-                    All = [.. provider.GetService<IReadOnlyList<DesignerDefinition>>() ?? [], Sheet, Orphan],
-                });
-                services.AddSingleton<IDesignerSessionFactory>(_sessions);
-            });
-        });
-    }
-
-    public void Dispose()
-    {
-        _factory.Dispose();
-        TestFolder.TryDelete(_appDataRoot);
+        // One host serves the class, so the sessions an earlier test opened are forgotten here.
+        _sessions = host.Sessions;
+        _sessions.Opened.Clear();
     }
 
     [Fact]
@@ -95,7 +57,7 @@ public sealed class TableStreamFlowTests : IClassFixture<WebApplicationFactory<P
     {
         // Arrange.
         var session = await OpenSessionAsync();
-        using var cts = CreateMessageTimeout();
+        using var cts = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken);
         using var watch = Watch(session, TestContext.Current.CancellationToken);
         await ReadAsync(watch.ResponseStream, cts.Token);
 
@@ -175,7 +137,7 @@ public sealed class TableStreamFlowTests : IClassFixture<WebApplicationFactory<P
 
         // Closing the table disposes its session and leaves the connection open.
         await session.Designer.CloseTableAsync(new Proto.CloseTableRequest { WatchId = session.WatchId, StreamId = streamId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
-        Assert.True(await Eventually.TrueAsync(() => opened.Disposed, TestContext.Current.CancellationToken, MessageTimeout), "The session was not disposed when its stream was closed.");
+        Assert.True(await Eventually.TrueAsync(() => opened.Disposed, TestContext.Current.CancellationToken, FlowConstants.MessageTimeout), "The session was not disposed when its stream was closed.");
         Assert.Equal(0, Streams().Count);
         Assert.NotNull(Connections().Find((ShortGuid)session.WatchId));
     }
@@ -185,7 +147,7 @@ public sealed class TableStreamFlowTests : IClassFixture<WebApplicationFactory<P
     {
         // Arrange.
         var session = await OpenSessionAsync();
-        using var cts = CreateMessageTimeout();
+        using var cts = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken);
         using var watchCancellation = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
         var watch = Watch(session, watchCancellation.Token);
         await ReadAsync(watch.ResponseStream, cts.Token);
@@ -199,8 +161,8 @@ public sealed class TableStreamFlowTests : IClassFixture<WebApplicationFactory<P
         watch.Dispose();
 
         // Assert: a session is per connection and dies with its stream.
-        Assert.True(await Eventually.TrueAsync(() => opened.Disposed, TestContext.Current.CancellationToken, MessageTimeout), "A table session outlived the connection that carried it.");
-        Assert.True(await Eventually.TrueAsync(() => Streams().Count == 0, TestContext.Current.CancellationToken, MessageTimeout), "A table stream was still registered after its connection ended.");
+        Assert.True(await Eventually.TrueAsync(() => opened.Disposed, TestContext.Current.CancellationToken, FlowConstants.MessageTimeout), "A table session outlived the connection that carried it.");
+        Assert.True(await Eventually.TrueAsync(() => Streams().Count == 0, TestContext.Current.CancellationToken, FlowConstants.MessageTimeout), "A table stream was still registered after its connection ended.");
     }
 
     [Fact]
@@ -208,7 +170,7 @@ public sealed class TableStreamFlowTests : IClassFixture<WebApplicationFactory<P
     {
         // Arrange.
         var session = await OpenSessionAsync();
-        using var cts = CreateMessageTimeout();
+        using var cts = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken);
         using var watch = Watch(session, TestContext.Current.CancellationToken);
         await ReadAsync(watch.ResponseStream, cts.Token);
 
@@ -230,7 +192,7 @@ public sealed class TableStreamFlowTests : IClassFixture<WebApplicationFactory<P
     {
         // Arrange.
         var session = await OpenSessionAsync();
-        using var cts = CreateMessageTimeout();
+        using var cts = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken);
         using var watch = Watch(session, TestContext.Current.CancellationToken);
         await ReadAsync(watch.ResponseStream, cts.Token);
 
@@ -270,9 +232,9 @@ public sealed class TableStreamFlowTests : IClassFixture<WebApplicationFactory<P
         Assert.Empty(methods.Where(method => method.IsServerStreaming || method.IsClientStreaming).Select(method => method.Name));
     }
 
-    private WorkspaceConnections Connections() => _factory.Services.GetRequiredService<WorkspaceConnections>();
+    private WorkspaceConnections Connections() => _host.Services.GetRequiredService<WorkspaceConnections>();
 
-    private TableStreams Streams() => _factory.Services.GetRequiredService<TableStreams>();
+    private TableStreams Streams() => _host.Services.GetRequiredService<TableStreams>();
 
     private static AsyncServerStreamingCall<WorkspaceMessage> Watch(Session session, CancellationToken cancellationToken) =>
         session.Workspace.Watch(new WatchWorkspaceRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers, cancellationToken: cancellationToken);
@@ -281,13 +243,6 @@ public sealed class TableStreamFlowTests : IClassFixture<WebApplicationFactory<P
     {
         var path = Path.Of(fileName);
         return new Proto.OpenTableRequest { ProjectId = session.ProjectId, WatchId = session.WatchId, StreamId = streamId, Path = path };
-    }
-
-    private static CancellationTokenSource CreateMessageTimeout()
-    {
-        var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
-        cts.CancelAfter(MessageTimeout);
-        return cts;
     }
 
     private static async Task<WorkspaceMessage> ReadAsync(IAsyncStreamReader<WorkspaceMessage> stream, CancellationToken cancellationToken)
@@ -310,21 +265,14 @@ public sealed class TableStreamFlowTests : IClassFixture<WebApplicationFactory<P
 
     private async Task<Session> OpenSessionAsync()
     {
-        var httpClient = _factory.CreateDefaultClient();
-        var channel = GrpcChannel.ForAddress(httpClient.BaseAddress!, new GrpcChannelOptions { HttpClient = httpClient });
-        var authClient = new AuthenticationService.AuthenticationServiceClient(channel);
-        var login = await authClient.LoginAsync(new LoginRequest { Username = DeveloperUsername, Credential = DeveloperCredential }, cancellationToken: TestContext.Current.CancellationToken);
-        var headers = new Metadata { { SessionTokenHeader, login.Session.Value } };
-
-        var pathMessage = Path.OfLocation(_projectFolder);
-        var added = await new ProjectService.ProjectServiceClient(channel).AddProjectAsync(new AddProjectRequest { Path = pathMessage }, headers, cancellationToken: TestContext.Current.CancellationToken);
-
+        // The connection stays open for the rest of the test: the clients below ride its channel.
+        var flow = await FlowSession.OpenAsync(_host, _projectFolder, TestContext.Current.CancellationToken);
         return new Session(
-            headers,
-            added.Added.Id,
-            ShortGuid.NewShortGuid(),
-            new WorkspaceService.WorkspaceServiceClient(channel),
-            new DesignerService.DesignerServiceClient(channel));
+            flow.Headers,
+            flow.ProjectId,
+            flow.WatchId,
+            new WorkspaceService.WorkspaceServiceClient(flow.Channel),
+            new DesignerService.DesignerServiceClient(flow.Channel));
     }
 
     private sealed record Session(
@@ -334,7 +282,23 @@ public sealed class TableStreamFlowTests : IClassFixture<WebApplicationFactory<P
         WorkspaceService.WorkspaceServiceClient Workspace,
         DesignerService.DesignerServiceClient Designer);
 
-    private sealed class FakeSessionFactory : IDesignerSessionFactory
+    /// <summary>The shared host, with the test-double designers riding in beside whatever discovery found.</summary>
+    public sealed class Host : HostFixture
+    {
+        internal FakeSessionFactory Sessions { get; } = new();
+
+        protected override void ConfigureServices(IServiceCollection services)
+        {
+            services.RemoveAll<IDesignerDefinitionCatalog>();
+            services.AddSingleton<IDesignerDefinitionCatalog>(provider => new DesignerDefinitionCatalog
+            {
+                All = [.. provider.GetService<IReadOnlyList<DesignerDefinition>>() ?? [], Sheet, Orphan],
+            });
+            services.AddSingleton<IDesignerSessionFactory>(Sessions);
+        }
+    }
+
+    internal sealed class FakeSessionFactory : IDesignerSessionFactory
     {
         public List<FakeSession> Opened { get; } = [];
 
@@ -349,7 +313,7 @@ public sealed class TableStreamFlowTests : IClassFixture<WebApplicationFactory<P
     }
 
     /// <summary>A two-row table that answers each call with one change, at once.</summary>
-    private sealed class FakeSession(ShortGuid watchId, string rootPath, string registrationPath, string bodyPath) : IDesignerSession
+    internal sealed class FakeSession(ShortGuid watchId, string rootPath, string registrationPath, string bodyPath) : IDesignerSession
     {
         private static readonly TableColumn[] Columns =
         [

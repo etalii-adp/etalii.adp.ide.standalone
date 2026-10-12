@@ -5,8 +5,6 @@ using EtAlii.Adp.Problems;
 using EtAlii.Adp.Projects;
 using EtAlii.Adp.TestSupport.Host;
 using Grpc.Core;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Xunit;
@@ -26,51 +24,32 @@ namespace EtAlii.Adp.Backend.Tests;
 /// no designer module yet. It has no session: until the designer family has one on this stream,
 /// opening its document is refused by name, which is what these tests pin.
 /// </remarks>
-public class DesignerRoutingFlowTests : IClassFixture<WebApplicationFactory<Program>>, IDisposable
+public class DesignerRoutingFlowTests(DesignerRoutingFlowTests.Host host) : IClassFixture<DesignerRoutingFlowTests.Host>
 {
     private static readonly DesignerDefinition Sheet =
         new("fixture/sheet", "Fixture sheet", Formats: [new DesignerFormat("YAML", ".yaml")]);
 
-    private readonly string _appDataRoot;
-    private readonly string _projectFolder;
-    private readonly WebApplicationFactory<Program> _factory;
+    private readonly string _projectFolder = Seed(host.NewProjectFolder());
 
-    public DesignerRoutingFlowTests(WebApplicationFactory<Program> baseFactory)
+    /// <summary>The shared host, with the test-double designer riding in beside whatever discovery found.</summary>
+    public sealed class Host : HostFixture
     {
-        _appDataRoot = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.IntegrationTests", Guid.NewGuid().ToString("N"));
-        _projectFolder = IoPath.Combine(_appDataRoot, "sample-project");
-        Directory.CreateDirectory(_projectFolder);
-        File.WriteAllText(IoPath.Combine(_projectFolder, "cities.adp"), "fixture/sheet\n");
-        File.WriteAllText(IoPath.Combine(_projectFolder, "cities.yaml"), "name: Cities\n");
-        File.WriteAllText(IoPath.Combine(_projectFolder, "values.yaml"), "replicas: 2\n");
-
-        _factory = baseFactory.WithWebHostBuilder(builder =>
+        protected override void ConfigureServices(IServiceCollection services)
         {
-            builder.UseEnvironment("developer");
-            builder.ConfigureServices(services =>
+            services.RemoveAll<IDesignerDefinitionCatalog>();
+            services.AddSingleton<IDesignerDefinitionCatalog>(provider => new DesignerDefinitionCatalog
             {
-                services.RemoveAll<IProjectStore>();
-                services.AddSingleton<IProjectStore>(new FileProjectStore(_appDataRoot));
-                services.RemoveAll<IProblemStore>();
-                services.AddSingleton<IProblemStore>(provider => new ProblemStore(
-                    _appDataRoot,
-                    provider.GetRequiredService<Hierarchy.DiagramFileRouter>(),
-                    provider.GetRequiredService<Diagram.DiagramValidators>()));
-
-                // The test-double designer rides in beside whatever discovery found.
-                services.RemoveAll<IDesignerDefinitionCatalog>();
-                services.AddSingleton<IDesignerDefinitionCatalog>(provider => new DesignerDefinitionCatalog
-                {
-                    All = [.. provider.GetService<IReadOnlyList<DesignerDefinition>>() ?? [], Sheet],
-                });
+                All = [.. provider.GetService<IReadOnlyList<DesignerDefinition>>() ?? [], Sheet],
             });
-        });
+        }
     }
 
-    public void Dispose()
+    private static string Seed(string projectFolder)
     {
-        _factory.Dispose();
-        TestFolder.TryDelete(_appDataRoot);
+        File.WriteAllText(IoPath.Combine(projectFolder, "cities.adp"), "fixture/sheet\n");
+        File.WriteAllText(IoPath.Combine(projectFolder, "cities.yaml"), "name: Cities\n");
+        File.WriteAllText(IoPath.Combine(projectFolder, "values.yaml"), "replicas: 2\n");
+        return projectFolder;
     }
 
     [Theory]
@@ -79,13 +58,11 @@ public class DesignerRoutingFlowTests : IClassFixture<WebApplicationFactory<Prog
     public async Task OpeningADesignersDocument_IsRefusedByName_AndNeverOpensAsText(string file)
     {
         // Arrange.
-        using var channel = _factory.CreateGrpcChannel();
-        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
-        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
-        var client = new DiagramService.DiagramServiceClient(channel);
+        using var session = await FlowSession.OpenAsync(host, _projectFolder, TestContext.Current.CancellationToken);
+        var client = new DiagramService.DiagramServiceClient(session.Channel);
 
         // Act.
-        using var call = client.Open(Request(projectId, file), headers, deadline: DateTime.UtcNow.AddSeconds(30), cancellationToken: TestContext.Current.CancellationToken);
+        using var call = client.Open(Request(session.ProjectId, file), session.Headers, deadline: DateTime.UtcNow.AddSeconds(30), cancellationToken: TestContext.Current.CancellationToken);
         var refusal = await Assert.ThrowsAsync<RpcException>(async () =>
         {
             while (await call.ResponseStream.MoveNext(TestContext.Current.CancellationToken))
@@ -104,13 +81,11 @@ public class DesignerRoutingFlowTests : IClassFixture<WebApplicationFactory<Prog
     public async Task AFileOfTheSameKindThatNoRegistrationNames_StillOpensInItsEditor()
     {
         // Arrange.
-        using var channel = _factory.CreateGrpcChannel();
-        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
-        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
-        var client = new DiagramService.DiagramServiceClient(channel);
+        using var session = await FlowSession.OpenAsync(host, _projectFolder, TestContext.Current.CancellationToken);
+        var client = new DiagramService.DiagramServiceClient(session.Channel);
 
         // Act.
-        using var call = client.Open(Request(projectId, "values.yaml"), headers, deadline: DateTime.UtcNow.AddSeconds(30), cancellationToken: TestContext.Current.CancellationToken);
+        using var call = client.Open(Request(session.ProjectId, "values.yaml"), session.Headers, deadline: DateTime.UtcNow.AddSeconds(30), cancellationToken: TestContext.Current.CancellationToken);
         Assert.True(await call.ResponseStream.MoveNext(TestContext.Current.CancellationToken));
 
         // Assert: an editor's content, as before the designer family existed.
@@ -124,8 +99,8 @@ public class DesignerRoutingFlowTests : IClassFixture<WebApplicationFactory<Prog
     {
         // Arrange: the host's own validator, built by its container - so this also pins that
         // the container hands it the designer router.
-        using var _ = _factory.CreateClient();
-        var validator = _factory.Services.GetRequiredService<ProjectValidator>();
+        using var _ = host.CreateChannel();
+        var validator = host.Services.GetRequiredService<ProjectValidator>();
 
         // Act.
         var outcome = await validator.ValidateAsync(new ProjectValidationScope(_projectFolder), TestContext.Current.CancellationToken);

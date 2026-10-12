@@ -2,13 +2,8 @@ using System.Text.RegularExpressions;
 using EtAlii.Adp.Context.Wire;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Hierarchy.Wire;
-using EtAlii.Adp.Projects;
 using EtAlii.Adp.TestSupport.Host;
 using Grpc.Core;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 using Path = EtAlii.Adp.Documents.Wire.Path;
@@ -22,77 +17,44 @@ namespace EtAlii.Adp.Backend.Tests;
 /// "an unrecognised source resolved to nothing" for every element source - so this proves the
 /// shape over the real host: the element resolves within the connection's current selection.
 /// </summary>
-public class DiagramElementActionFlowTests : IClassFixture<WebApplicationFactory<Program>>, IDisposable
+public class DiagramElementActionFlowTests(HostFixture host) : IClassFixture<HostFixture>
 {
-    private static readonly TimeSpan MessageTimeout = TimeSpan.FromSeconds(10);
+    private readonly string _projectFolder = Seed(host.NewProjectFolder());
 
-    private readonly WebApplicationFactory<Program> _factory;
-    private readonly string _appDataRoot;
-    private readonly string _projectFolder;
-
-    public DiagramElementActionFlowTests(WebApplicationFactory<Program> baseFactory)
+    private static string Seed(string projectFolder)
     {
-        _appDataRoot = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.IntegrationTests", Guid.NewGuid().ToString("N"));
-        _projectFolder = IoPath.Combine(_appDataRoot, "sample-project");
-        Directory.CreateDirectory(_projectFolder);
-
         // A registered mindmap with one known root node - what the canvas would be showing.
-        File.WriteAllText(IoPath.Combine(_projectFolder, "roadmap.adp"), "freeplane/mindmap\n");
+        File.WriteAllText(IoPath.Combine(projectFolder, "roadmap.adp"), "freeplane/mindmap\n");
         File.WriteAllText(
-            IoPath.Combine(_projectFolder, "roadmap.mm"),
+            IoPath.Combine(projectFolder, "roadmap.mm"),
             "<map version=\"freeplane 1.11.5\">\n<node TEXT=\"roadmap\" ID=\"ID_1\"/>\n</map>\n");
-
-        _factory = baseFactory.WithWebHostBuilder(builder =>
-        {
-            builder.UseEnvironment("developer");
-            builder.ConfigureServices(services =>
-            {
-                services.RemoveAll<IProjectStore>();
-                services.AddSingleton<IProjectStore>(new FileProjectStore(_appDataRoot));
-                // The problem cache must live and die with this test, not in the real user
-                // profile the host's AddProblems registration points at (found by the
-                // errors-and-warnings-panel manual pass: every run left a cache file behind).
-                services.RemoveAll<Problems.IProblemStore>();
-                services.AddSingleton<Problems.IProblemStore>(provider => new Problems.ProblemStore(
-                    _appDataRoot,
-                    provider.GetRequiredService<Hierarchy.DiagramFileRouter>(),
-                    provider.GetRequiredService<Diagram.DiagramValidators>()));
-            });
-        });
-    }
-
-    public void Dispose()
-    {
-        _factory.Dispose();
-        TestFolder.TryDelete(_appDataRoot);
+        return projectFolder;
     }
 
     [Fact]
     public async Task AKeystrokeAgainstTheSelectedNode_ReachesItsActionAndPromptsForTheChild()
     {
         // Arrange.
-        using var channel = _factory.CreateGrpcChannel();
-        var hierarchyClient = new HierarchyService.HierarchyServiceClient(channel);
-        var contextClient = new ContextService.ContextServiceClient(channel);
-        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
-        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
+        using var session = await FlowSession.OpenAsync(host, _projectFolder, TestContext.Current.CancellationToken);
+        var hierarchyClient = session.Hierarchy;
+        var contextClient = session.Context;
         var watchId = ShortGuid.NewShortGuid();
 
         // Arrange, continued.
-        var entries = await hierarchyClient.ListEntriesAsync(new ListEntriesRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
-        var entryId = await NestedEntryLookup.EntryIdOfAsync(hierarchyClient, projectId, watchId, headers, "roadmap.adp");
+        var entries = await hierarchyClient.ListEntriesAsync(new ListEntriesRequest { ProjectId = session.ProjectId, WatchId = watchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
+        var entryId = await NestedEntryLookup.EntryIdOfAsync(hierarchyClient, session.ProjectId, watchId, session.Headers, "roadmap.adp");
 
         // Arrange, continued.
-        using var cts = CreateMessageTimeout();
-        using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
+        using var cts = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken);
+        using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = session.ProjectId, WatchId = watchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         await StreamProbe.WaitUntilContextLiveAsync(contextCall.ResponseStream, cts.Token);
-        var pendingPrompt = contextCall.ResponseStream.ReadUntilPromptAsync(cts.Token);
+        var pendingPrompt = ReadUntilPromptAsync(contextCall.ResponseStream, cts.Token);
 
         // Arrange, continued.
         // The canvas's click: the nested file -> node selection.
         var selectResponse = await contextClient.SelectAsync(
-            new SelectRequest { ProjectId = projectId, WatchId = watchId, Selection = NodeChain(entryId, "ID_1") },
-            headers, cancellationToken: TestContext.Current.CancellationToken);
+            new SelectRequest { ProjectId = session.ProjectId, WatchId = watchId, Selection = NodeChain(entryId, "ID_1") },
+            session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal("", selectResponse.Error);
 
         // Act.
@@ -100,13 +62,13 @@ public class DiagramElementActionFlowTests : IClassFixture<WebApplicationFactory
         var executed = await contextClient.ExecuteActionAsync(
             new ExecuteActionRequest
             {
-                ProjectId = projectId,
+                ProjectId = session.ProjectId,
                 WatchId = watchId,
                 Source = new ContextSource { ElementId = new ElementId { Value = "ID_1" } },
                 InteractionId = ShortGuid.NewShortGuid(),
                 Shortcut = new ContextShortcut { Key = "Insert" },
             },
-            headers, cancellationToken: TestContext.Current.CancellationToken);
+            session.Headers, cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.NotNull(entries);
@@ -137,35 +99,33 @@ public class DiagramElementActionFlowTests : IClassFixture<WebApplicationFactory
         // Left unhandled, the submit re-runs "add child" against the ORIGINAL node - so the
         // map quietly grows a second child named after whatever was typed, and the node the
         // user was editing keeps its generated name. That is the failure this guards.
-        using var channel = _factory.CreateGrpcChannel();
-        var hierarchyClient = new HierarchyService.HierarchyServiceClient(channel);
-        var contextClient = new ContextService.ContextServiceClient(channel);
-        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
-        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
+        using var session = await FlowSession.OpenAsync(host, _projectFolder, TestContext.Current.CancellationToken);
+        var hierarchyClient = session.Hierarchy;
+        var contextClient = session.Context;
         var watchId = ShortGuid.NewShortGuid();
 
-        var entryId = await NestedEntryLookup.EntryIdOfAsync(hierarchyClient, projectId, watchId, headers, "roadmap.adp");
+        var entryId = await NestedEntryLookup.EntryIdOfAsync(hierarchyClient, session.ProjectId, watchId, session.Headers, "roadmap.adp");
 
-        using var cts = CreateMessageTimeout();
-        using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
+        using var cts = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken);
+        using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = session.ProjectId, WatchId = watchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         await StreamProbe.WaitUntilContextLiveAsync(contextCall.ResponseStream, cts.Token);
-        var pendingPrompt = contextCall.ResponseStream.ReadUntilPromptAsync(cts.Token);
+        var pendingPrompt = ReadUntilPromptAsync(contextCall.ResponseStream, cts.Token);
 
         await contextClient.SelectAsync(
-            new SelectRequest { ProjectId = projectId, WatchId = watchId, Selection = NodeChain(entryId, "ID_1") },
-            headers, cancellationToken: TestContext.Current.CancellationToken);
+            new SelectRequest { ProjectId = session.ProjectId, WatchId = watchId, Selection = NodeChain(entryId, "ID_1") },
+            session.Headers, cancellationToken: TestContext.Current.CancellationToken);
 
         // Act. Insert, then answer the editor that opens.
         var executed = await contextClient.ExecuteActionAsync(
             new ExecuteActionRequest
             {
-                ProjectId = projectId,
+                ProjectId = session.ProjectId,
                 WatchId = watchId,
                 Source = new ContextSource { ElementId = new ElementId { Value = "ID_1" } },
                 InteractionId = ShortGuid.NewShortGuid(),
                 Shortcut = new ContextShortcut { Key = "Insert" },
             },
-            headers, cancellationToken: TestContext.Current.CancellationToken);
+            session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         Assert.True(executed.Accepted, executed.Error);
 
         var prompt = await pendingPrompt;
@@ -173,7 +133,7 @@ public class DiagramElementActionFlowTests : IClassFixture<WebApplicationFactory
 
         var submitted = await contextClient.SubmitInteractionAsync(
             new SubmitInteractionRequest { InteractionId = prompt.InteractionId, Value = "Chosen by the user", Text = "Chosen by the user" },
-            headers, cancellationToken: TestContext.Current.CancellationToken);
+            session.Headers, cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.True(submitted.Completed, submitted.Error);
@@ -202,40 +162,38 @@ public class DiagramElementActionFlowTests : IClassFixture<WebApplicationFactory
             TestContext.Current.CancellationToken);
 
         // Arrange, continued.
-        using var channel = _factory.CreateGrpcChannel();
-        var hierarchyClient = new HierarchyService.HierarchyServiceClient(channel);
-        var contextClient = new ContextService.ContextServiceClient(channel);
-        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
-        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
+        using var session = await FlowSession.OpenAsync(host, _projectFolder, TestContext.Current.CancellationToken);
+        var hierarchyClient = session.Hierarchy;
+        var contextClient = session.Context;
         var watchId = ShortGuid.NewShortGuid();
 
         // Arrange, continued.
-        var entries = await hierarchyClient.ListEntriesAsync(new ListEntriesRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
-        var entryId = await NestedEntryLookup.EntryIdOfAsync(hierarchyClient, projectId, watchId, headers, "wide.adp");
+        var entries = await hierarchyClient.ListEntriesAsync(new ListEntriesRequest { ProjectId = session.ProjectId, WatchId = watchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
+        var entryId = await NestedEntryLookup.EntryIdOfAsync(hierarchyClient, session.ProjectId, watchId, session.Headers, "wide.adp");
 
         // Arrange, continued.
-        using var cts = CreateMessageTimeout();
-        using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
+        using var cts = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken);
+        using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = session.ProjectId, WatchId = watchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         await StreamProbe.WaitUntilContextLiveAsync(contextCall.ResponseStream, cts.Token);
-        var pendingPrompt = contextCall.ResponseStream.ReadUntilPromptAsync(cts.Token);
+        var pendingPrompt = ReadUntilPromptAsync(contextCall.ResponseStream, cts.Token);
 
         // Arrange, continued.
         // Only the file is selected - no node level in the chain.
         await contextClient.SelectAsync(
-            new SelectRequest { ProjectId = projectId, WatchId = watchId, Selection = FileChain(entryId) },
-            headers, cancellationToken: TestContext.Current.CancellationToken);
+            new SelectRequest { ProjectId = session.ProjectId, WatchId = watchId, Selection = FileChain(entryId) },
+            session.Headers, cancellationToken: TestContext.Current.CancellationToken);
 
         // Act.
         var executed = await contextClient.ExecuteActionAsync(
             new ExecuteActionRequest
             {
-                ProjectId = projectId,
+                ProjectId = session.ProjectId,
                 WatchId = watchId,
                 Source = new ContextSource { ElementId = new ElementId { Value = "ID_child" } },
                 InteractionId = ShortGuid.NewShortGuid(),
                 Shortcut = new ContextShortcut { Key = "F2" },
             },
-            headers, cancellationToken: TestContext.Current.CancellationToken);
+            session.Headers, cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.NotNull(entries);
@@ -260,38 +218,36 @@ public class DiagramElementActionFlowTests : IClassFixture<WebApplicationFactory
             "<map version=\"freeplane 1.11.5\">\n<node TEXT=\"other\" ID=\"ID_1\"/>\n</map>\n",
             TestContext.Current.CancellationToken);
 
-        using var channel = _factory.CreateGrpcChannel();
-        var hierarchyClient = new HierarchyService.HierarchyServiceClient(channel);
-        var contextClient = new ContextService.ContextServiceClient(channel);
-        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
-        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
+        using var session = await FlowSession.OpenAsync(host, _projectFolder, TestContext.Current.CancellationToken);
+        var hierarchyClient = session.Hierarchy;
+        var contextClient = session.Context;
         var watchId = ShortGuid.NewShortGuid();
 
-        var roadmapId = await NestedEntryLookup.EntryIdOfAsync(hierarchyClient, projectId, watchId, headers, "roadmap.adp");
-        var otherId = await NestedEntryLookup.EntryIdOfAsync(hierarchyClient, projectId, watchId, headers, "other.adp");
+        var roadmapId = await NestedEntryLookup.EntryIdOfAsync(hierarchyClient, session.ProjectId, watchId, session.Headers, "roadmap.adp");
+        var otherId = await NestedEntryLookup.EntryIdOfAsync(hierarchyClient, session.ProjectId, watchId, session.Headers, "other.adp");
 
-        using var cts = CreateMessageTimeout();
-        using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
+        using var cts = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken);
+        using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = session.ProjectId, WatchId = watchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         await StreamProbe.WaitUntilContextLiveAsync(contextCall.ResponseStream, cts.Token);
-        var pendingPrompt = contextCall.ResponseStream.ReadUntilPromptAsync(cts.Token);
+        var pendingPrompt = ReadUntilPromptAsync(contextCall.ResponseStream, cts.Token);
 
         // The tab the user left: its file is still the selection.
         await contextClient.SelectAsync(
-            new SelectRequest { ProjectId = projectId, WatchId = watchId, Selection = NodeChain(roadmapId, "ID_1") },
-            headers, cancellationToken: TestContext.Current.CancellationToken);
+            new SelectRequest { ProjectId = session.ProjectId, WatchId = watchId, Selection = NodeChain(roadmapId, "ID_1") },
+            session.Headers, cancellationToken: TestContext.Current.CancellationToken);
 
         // Act.
         // The canvas now in front names its own diagram with the element.
         var executed = await contextClient.ExecuteActionAsync(
             new ExecuteActionRequest
             {
-                ProjectId = projectId,
+                ProjectId = session.ProjectId,
                 WatchId = watchId,
                 Source = new ContextSource { ElementId = new ElementId { Value = "ID_1" }, DiagramEntryId = otherId },
                 InteractionId = ShortGuid.NewShortGuid(),
                 Shortcut = new ContextShortcut { Key = "F2" },
             },
-            headers, cancellationToken: TestContext.Current.CancellationToken);
+            session.Headers, cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.True(executed.Accepted, executed.Error);
@@ -306,31 +262,29 @@ public class DiagramElementActionFlowTests : IClassFixture<WebApplicationFactory
         // Found by the same pass: a canvas clears the selection when the selected element leaves
         // the drawn area, and every action it raised after that was refused as "This item is no
         // longer available." until something was clicked.
-        using var channel = _factory.CreateGrpcChannel();
-        var hierarchyClient = new HierarchyService.HierarchyServiceClient(channel);
-        var contextClient = new ContextService.ContextServiceClient(channel);
-        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
-        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
+        using var session = await FlowSession.OpenAsync(host, _projectFolder, TestContext.Current.CancellationToken);
+        var hierarchyClient = session.Hierarchy;
+        var contextClient = session.Context;
         var watchId = ShortGuid.NewShortGuid();
 
-        var roadmapId = await NestedEntryLookup.EntryIdOfAsync(hierarchyClient, projectId, watchId, headers, "roadmap.adp");
+        var roadmapId = await NestedEntryLookup.EntryIdOfAsync(hierarchyClient, session.ProjectId, watchId, session.Headers, "roadmap.adp");
 
-        using var cts = CreateMessageTimeout();
-        using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
+        using var cts = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken);
+        using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = session.ProjectId, WatchId = watchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         await StreamProbe.WaitUntilContextLiveAsync(contextCall.ResponseStream, cts.Token);
-        var pendingPrompt = contextCall.ResponseStream.ReadUntilPromptAsync(cts.Token);
+        var pendingPrompt = ReadUntilPromptAsync(contextCall.ResponseStream, cts.Token);
 
         // Act. Nothing is selected.
         var executed = await contextClient.ExecuteActionAsync(
             new ExecuteActionRequest
             {
-                ProjectId = projectId,
+                ProjectId = session.ProjectId,
                 WatchId = watchId,
                 Source = new ContextSource { ElementId = new ElementId { Value = "ID_1" }, DiagramEntryId = roadmapId },
                 InteractionId = ShortGuid.NewShortGuid(),
                 Shortcut = new ContextShortcut { Key = "F2" },
             },
-            headers, cancellationToken: TestContext.Current.CancellationToken);
+            session.Headers, cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.True(executed.Accepted, executed.Error);
@@ -339,13 +293,6 @@ public class DiagramElementActionFlowTests : IClassFixture<WebApplicationFactory
     }
 
     // ---- helpers ----------------------------------------------------------------------
-
-    private static CancellationTokenSource CreateMessageTimeout()
-    {
-        var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
-        cts.CancelAfter(MessageTimeout);
-        return cts;
-    }
 
     /// <summary>The canvas's nested selection: the .adp file, then the node as its child.</summary>
     private static ContextSelection NodeChain(ShortGuid entryId, string nodeId, string[]? filePath = null, string[]? nodePath = null)
@@ -377,29 +324,27 @@ public class DiagramElementActionFlowTests : IClassFixture<WebApplicationFactory
             "<map version=\"freeplane 1.11.5\">\n<node TEXT=\"deep\" ID=\"ID_d0\">\n<node TEXT=\"Alpha\" ID=\"ID_d1\"/>\n</node>\n</map>\n",
             TestContext.Current.CancellationToken);
 
-        using var channel = _factory.CreateGrpcChannel();
-        var hierarchyClient = new HierarchyService.HierarchyServiceClient(channel);
-        var contextClient = new ContextService.ContextServiceClient(channel);
-        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
-        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
+        using var session = await FlowSession.OpenAsync(host, _projectFolder, TestContext.Current.CancellationToken);
+        var hierarchyClient = session.Hierarchy;
+        var contextClient = session.Context;
         var watchId = ShortGuid.NewShortGuid();
 
-        var entries = await hierarchyClient.ListEntriesAsync(new ListEntriesRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
-        var entryId = await NestedEntryLookup.EntryIdOfAsync(hierarchyClient, projectId, watchId, headers, "deep.adp");
+        var entries = await hierarchyClient.ListEntriesAsync(new ListEntriesRequest { ProjectId = session.ProjectId, WatchId = watchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
+        var entryId = await NestedEntryLookup.EntryIdOfAsync(hierarchyClient, session.ProjectId, watchId, session.Headers, "deep.adp");
 
         // Act and assert, step by step.
         // The canvas's shape: the file with its project-relative path, the node with an empty
         // path that asks the backend to fill in the full text chain.
         var canvasShape = await contextClient.SelectAsync(
-            new SelectRequest { ProjectId = projectId, WatchId = watchId, Selection = NodeChain(entryId, "ID_d1", filePath: ["deep.adp"]) },
-            headers, cancellationToken: TestContext.Current.CancellationToken);
+            new SelectRequest { ProjectId = session.ProjectId, WatchId = watchId, Selection = NodeChain(entryId, "ID_d1", filePath: ["deep.adp"]) },
+            session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal("", canvasShape.Error);
 
         // A partial node path - the node's own text without its ancestors - is not the node's
         // path and stays refused: the resolver checks the chain, it does not guess at it.
         var partialPath = await contextClient.SelectAsync(
-            new SelectRequest { ProjectId = projectId, WatchId = watchId, Selection = NodeChain(entryId, "ID_d1", filePath: ["deep.adp"], nodePath: ["Alpha"]) },
-            headers, cancellationToken: TestContext.Current.CancellationToken);
+            new SelectRequest { ProjectId = session.ProjectId, WatchId = watchId, Selection = NodeChain(entryId, "ID_d1", filePath: ["deep.adp"], nodePath: ["Alpha"]) },
+            session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         Assert.NotNull(entries);
         Assert.NotEqual("", partialPath.Error);
     }
@@ -419,39 +364,37 @@ public class DiagramElementActionFlowTests : IClassFixture<WebApplicationFactory
             TestContext.Current.CancellationToken);
 
         // Arrange, continued.
-        using var channel = _factory.CreateGrpcChannel();
-        var hierarchyClient = new HierarchyService.HierarchyServiceClient(channel);
-        var contextClient = new ContextService.ContextServiceClient(channel);
-        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
-        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
+        using var session = await FlowSession.OpenAsync(host, _projectFolder, TestContext.Current.CancellationToken);
+        var hierarchyClient = session.Hierarchy;
+        var contextClient = session.Context;
         var watchId = ShortGuid.NewShortGuid();
 
         // Arrange, continued.
-        var entries = await hierarchyClient.ListEntriesAsync(new ListEntriesRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
-        var entryId = await NestedEntryLookup.EntryIdOfAsync(hierarchyClient, projectId, watchId, headers, "fold.adp");
+        var entries = await hierarchyClient.ListEntriesAsync(new ListEntriesRequest { ProjectId = session.ProjectId, WatchId = watchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
+        var entryId = await NestedEntryLookup.EntryIdOfAsync(hierarchyClient, session.ProjectId, watchId, session.Headers, "fold.adp");
 
         // Arrange, continued.
-        using var cts = CreateMessageTimeout();
-        using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
+        using var cts = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken);
+        using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = session.ProjectId, WatchId = watchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         await StreamProbe.WaitUntilContextLiveAsync(contextCall.ResponseStream, cts.Token);
 
         // Arrange, continued.
         await contextClient.SelectAsync(
-            new SelectRequest { ProjectId = projectId, WatchId = watchId, Selection = NodeChain(entryId, "ID_f1", filePath: ["fold.adp"]) },
-            headers, cancellationToken: TestContext.Current.CancellationToken);
+            new SelectRequest { ProjectId = session.ProjectId, WatchId = watchId, Selection = NodeChain(entryId, "ID_f1", filePath: ["fold.adp"]) },
+            session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         Assert.Contains("Collapse", ActionLabels(await ReadUntilSelectionActionsAsync(contextCall.ResponseStream, cts.Token)));
 
         // Act.
         var executed = await contextClient.ExecuteActionAsync(
             new ExecuteActionRequest
             {
-                ProjectId = projectId,
+                ProjectId = session.ProjectId,
                 WatchId = watchId,
                 Source = new ContextSource { ElementId = new ElementId { Value = "ID_f1" } },
                 InteractionId = ShortGuid.NewShortGuid(),
                 ActionId = "mindmap.toggle-fold",
             },
-            headers, cancellationToken: TestContext.Current.CancellationToken);
+            session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         Assert.True(executed.Accepted, executed.Error);
 
         // Assert.
@@ -482,5 +425,18 @@ public class DiagramElementActionFlowTests : IClassFixture<WebApplicationFactory
         }
 
         throw new InvalidOperationException("The stream ended before a selection with actions arrived.");
+    }
+
+    private static async Task<ContextPrompt> ReadUntilPromptAsync(IAsyncStreamReader<ContextMessage> stream, CancellationToken cancellationToken)
+    {
+        while (await stream.MoveNext(cancellationToken))
+        {
+            if (stream.Current.MessageCase == ContextMessage.MessageOneofCase.Prompt)
+            {
+                return stream.Current.Prompt;
+            }
+        }
+
+        throw new InvalidOperationException("The stream ended before a prompt arrived.");
     }
 }

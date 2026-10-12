@@ -2,13 +2,8 @@ using System.Text;
 using EtAlii.Adp.Diagram.Wire;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Editor.Wire;
-using EtAlii.Adp.Projects;
 using EtAlii.Adp.TestSupport.Host;
 using Grpc.Core;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 using Path = EtAlii.Adp.Documents.Wire.Path;
@@ -24,58 +19,30 @@ namespace EtAlii.Adp.Backend.Tests;
 /// what streams: a diagram baselines its own elements, an editor baselines exactly one
 /// synthetic <c>"content"</c> element.
 /// </summary>
-public class EditorResolutionTests : IClassFixture<WebApplicationFactory<Program>>, IDisposable
+public class EditorResolutionTests(HostFixture host) : IClassFixture<HostFixture>
 {
-    private readonly string _appDataRoot;
-    private readonly string _projectFolder;
-    private readonly WebApplicationFactory<Program> _factory;
+    private readonly string _projectFolder = Seed(host.NewProjectFolder());
 
-    public EditorResolutionTests(WebApplicationFactory<Program> baseFactory)
+    private static string Seed(string projectFolder)
     {
-        _appDataRoot = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.IntegrationTests", Guid.NewGuid().ToString("N"));
-        _projectFolder = IoPath.Combine(_appDataRoot, "sample-project");
-        Directory.CreateDirectory(_projectFolder);
-
         // A bare .dsl - no .adp beside it, deliberately: adding one would test the wrong
         // scenario - and a file no diagram type claims.
         File.WriteAllText(
-            IoPath.Combine(_projectFolder, "design.dsl"),
+            IoPath.Combine(projectFolder, "design.dsl"),
             "workspace \"W\" {\n  model {\n    p = person \"P\"\n  }\n  views {\n    systemLandscape \"sl\" {\n      include *\n    }\n  }\n}\n");
-        File.WriteAllText(IoPath.Combine(_projectFolder, "notes.txt"), "just some notes\n");
-
-        _factory = baseFactory.WithWebHostBuilder(builder =>
-        {
-            builder.UseEnvironment("developer");
-            builder.ConfigureServices(services =>
-            {
-                services.RemoveAll<IProjectStore>();
-                services.AddSingleton<IProjectStore>(new FileProjectStore(_appDataRoot));
-                services.RemoveAll<Problems.IProblemStore>();
-                services.AddSingleton<Problems.IProblemStore>(provider => new Problems.ProblemStore(
-                    _appDataRoot,
-                    provider.GetRequiredService<Hierarchy.DiagramFileRouter>(),
-                    provider.GetRequiredService<Diagram.DiagramValidators>()));
-            });
-        });
-    }
-
-    public void Dispose()
-    {
-        _factory.Dispose();
-        TestFolder.TryDelete(_appDataRoot);
+        File.WriteAllText(IoPath.Combine(projectFolder, "notes.txt"), "just some notes\n");
+        return projectFolder;
     }
 
     [Fact]
     public async Task ABareUnregisteredDsl_StillOpensAsAC4Diagram()
     {
         // Arrange.
-        using var channel = _factory.CreateGrpcChannel();
-        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
-        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
-        var diagramClient = new DiagramService.DiagramServiceClient(channel);
+        using var session = await FlowSession.OpenAsync(host, _projectFolder, TestContext.Current.CancellationToken);
+        var diagramClient = new DiagramService.DiagramServiceClient(session.Channel);
 
         // Act.
-        var firstAdd = await FirstAddDeltaAsync(diagramClient, headers, projectId, "design.dsl");
+        var firstAdd = await FirstAddDeltaAsync(diagramClient, session.Headers, session.ProjectId, "design.dsl");
 
         // Assert: the baseline is the DIAGRAM's own elements - were resolution ever inverted,
         // the editor's one synthetic "content" element would arrive here instead.
@@ -87,13 +54,11 @@ public class EditorResolutionTests : IClassFixture<WebApplicationFactory<Program
     public async Task AFileNoDiagramClaims_OpensInThePlainEditor()
     {
         // Arrange (Requirements 3.1, 5.4: no registration, no ceremony - the fallback answers).
-        using var channel = _factory.CreateGrpcChannel();
-        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
-        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
-        var diagramClient = new DiagramService.DiagramServiceClient(channel);
+        using var session = await FlowSession.OpenAsync(host, _projectFolder, TestContext.Current.CancellationToken);
+        var diagramClient = new DiagramService.DiagramServiceClient(session.Channel);
 
         // Act.
-        var firstAdd = await FirstAddDeltaAsync(diagramClient, headers, projectId, "notes.txt");
+        var firstAdd = await FirstAddDeltaAsync(diagramClient, session.Headers, session.ProjectId, "notes.txt");
 
         // Assert: one synthetic element carrying the whole file.
         var element = Assert.Single(firstAdd.Elements);
@@ -250,30 +215,28 @@ public class EditorResolutionTests : IClassFixture<WebApplicationFactory<Program
         var originalText = "workspace \"W\" {\n  model {\n    p = person \"Postman\"\n  }\n  views {\n    systemLandscape \"sl\" {\n      include *\n    }\n  }\n}\n";
         await File.WriteAllTextAsync(IoPath.Combine(_projectFolder, "both.dsl"), originalText, TestContext.Current.CancellationToken);
 
-        using var channel = _factory.CreateGrpcChannel();
-        var headers = await channel.SignInAsync(TestContext.Current.CancellationToken);
-        var projectId = await channel.AddProjectAsync(headers, _projectFolder, TestContext.Current.CancellationToken);
-        var diagramClient = new DiagramService.DiagramServiceClient(channel);
+        using var session = await FlowSession.OpenAsync(host, _projectFolder, TestContext.Current.CancellationToken);
+        var diagramClient = new DiagramService.DiagramServiceClient(session.Channel);
         var watchId = ShortGuid.NewShortGuid();
         var path = Path.Of("both.dsl");
 
         // The diagram view: the router claims the path, exactly as it always has (R5.1).
-        using var diagramCall = diagramClient.Open(new OpenDiagramRequest { ProjectId = projectId, WatchId = watchId, Path = path }, headers, deadline: DateTime.UtcNow.AddSeconds(60), cancellationToken: TestContext.Current.CancellationToken);
+        using var diagramCall = diagramClient.Open(new OpenDiagramRequest { ProjectId = session.ProjectId, WatchId = watchId, Path = path }, session.Headers, deadline: DateTime.UtcNow.AddSeconds(60), cancellationToken: TestContext.Current.CancellationToken);
         var diagramBaseline = await NextAddAsync(diagramCall.ResponseStream, add => add.Elements.Count > 0, "the diagram baseline");
         Assert.DoesNotContain(diagramBaseline.Elements, element => element.Id?.Value == "content");
 
         // The text view of the same path, on the same connection: editor_id forces the editor
         // family - the "Open as text" tab's stream (R5.2) - and both stay open at once.
-        using var textCall = diagramClient.Open(new OpenDiagramRequest { ProjectId = projectId, WatchId = watchId, Path = path, EditorId = "*" }, headers, deadline: DateTime.UtcNow.AddSeconds(60), cancellationToken: TestContext.Current.CancellationToken);
+        using var textCall = diagramClient.Open(new OpenDiagramRequest { ProjectId = session.ProjectId, WatchId = watchId, Path = path, EditorId = "*" }, session.Headers, deadline: DateTime.UtcNow.AddSeconds(60), cancellationToken: TestContext.Current.CancellationToken);
         var textBaseline = await NextAddAsync(textCall.ResponseStream, add => add.Elements.Any(element => element.Id?.Value == "content"), "the text baseline");
         Assert.Equal(originalText, ContentOf(textBaseline));
 
         // Act 1: save through the text wire, renaming the person.
         var editedText = originalText.Replace("Postman", "Quartermaster");
-        var editorClient = new EditorService.EditorServiceClient(channel);
+        var editorClient = new EditorService.EditorServiceClient(session.Channel);
         var saved = await editorClient.SaveTextAsync(
-            new SaveTextRequest { ProjectId = projectId, WatchId = watchId, Path = path, Content = editedText },
-            headers,
+            new SaveTextRequest { ProjectId = session.ProjectId, WatchId = watchId, Path = path, Content = editedText },
+            session.Headers,
             cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal("", saved.Error);
 
