@@ -1,4 +1,4 @@
-<ded version="0.1" designer="etalii/knowledge" name="Cities" activeView="v1">
+<ded version="0.1" designer="etalii/knowledge" name="Cities" activeView="v2">
   <!-- Cities of the Low Countries, kept by hand and by ADP. -->
   <properties>
     <property id="p1" name="Name" type="text" title="true"/>
@@ -23,11 +23,17 @@
   </properties>
   <views>
     <view id="v1" name="All cities" groupBy="p2">
-      <column property="p3" width="120"/>
+      <column property="p3" width="175"/>
+      <column property="p2" width="126"/>
+      <column property="p6" width="104"/>
+      <column property="p7" width="112"/>
       <sort property="p3" direction="descending"/>
       <condition property="p2" operator="is" option="o1"/>
     </view>
-    <view id="v2" name="Map"/>
+    <view id="v2" name="Map">
+      <column property="p2" width="166"/>
+      <column property="p1" width="143"/>
+    </view>
   </views>
   <rows>
     <row id="r1">
@@ -64,6 +70,9 @@
     <row id="a8q7ddqb6zyubcyf5vuky6iwb">
       <cell property="p2" option="o1"/>
       <cell property="p1" text="Venlo"/>
+      <cell property="p5">
+        <item row="9wvrdvjn4ob2f2nw421bouq7y"/>
+      </cell>
     </row>
     <row id="8heh3sdyy0a63fyq7gicize5a">
       <cell property="p2" option="b4ff5lo4rezgty4ge7siqndey"/>

@@ -245,7 +245,7 @@ public sealed class KnowledgeEditingTests : IDisposable
         // The view that had an order of its own has them beside the column they were put beside.
         var text = disk.Properties.Single(property => property.Name == "Text").Id;
         var checkbox = disk.Properties.Single(property => property.Name == "Checkbox").Id;
-        Assert.Equal([text, "p3", checkbox], disk.Views.Single(view => view.Id == "v1").Columns.Select(column => column.PropertyId));
+        Assert.Equal([text, "p3", checkbox, "p2", "p6", "p7"], disk.Views.Single(view => view.Id == "v1").Columns.Select(column => column.PropertyId));
     }
 
     [Fact]

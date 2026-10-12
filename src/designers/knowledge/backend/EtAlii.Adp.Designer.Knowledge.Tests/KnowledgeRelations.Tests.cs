@@ -57,7 +57,7 @@ public sealed class KnowledgeRelationsTests : IDisposable
         Assert.Equal(["nh"], cell?.Values);
         Assert.Equal(["Noord-Holland"], cell?.Labels);
         var column = baseline.Columns.Single(candidate => candidate.Id == "p5");
-        Assert.Equal(["nh:Noord-Holland", "zh:Zuid-Holland", "an:Antwerpen"], column.Options.Select(option => $"{option.Id}:{option.Name}"));
+        Assert.Equal(["nh:Noord-Holland", "zh:Zuid-Holland", "an:Antwerpen", "9wvrdvjn4ob2f2nw421bouq7y:Limburg", "cdns3i0ehcr45q7zh0z15iqzt:Overijssel"], column.Options.Select(option => $"{option.Id}:{option.Name}"));
         Assert.False(column.Settings.ContainsKey("unresolved"));
         Assert.Empty(baseline.Findings);
     }
@@ -425,7 +425,7 @@ public sealed class KnowledgeRelationsTests : IDisposable
         await provinces.Edit(new TableGesture("deleteRows", RowId: "nh", Settings: Settings(("confirmed", "true"))));
 
         // Assert.
-        Assert.Equal(["zh"], provinces.OnDisk().Rows.Select(row => row.Id));
+        Assert.Equal(["zh", "9wvrdvjn4ob2f2nw421bouq7y", "cdns3i0ehcr45q7zh0z15iqzt"], provinces.OnDisk().Rows.Select(row => row.Id));
     }
 
     [Fact]
