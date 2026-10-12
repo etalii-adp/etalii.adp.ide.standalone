@@ -1,0 +1,70 @@
+# Runs the backend suite twenty times on the GitHub runner, so a flaky test shows as a count
+# rather than as one unlucky pull request (etalii.adp spec 025, T026, SC-002). Started by hand
+# from the Actions tab, against any branch.
+#
+# Twenty jobs side by side rather than twenty runs in one job: each run's result is its own row
+# on the run's page, and one hung run cannot hold up the other nineteen. fail-fast is off for
+# the same reason - a red run must not cancel the rest of the sample.
+name: Stability
+
+on:
+  workflow_dispatch:
+
+jobs:
+  backend-tests:
+    name: dotnet test, run ${{ matrix.run }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        run: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
+    steps:
+      # fetch-depth: 0 because Nerdbank.GitVersioning fails the build on a shallow clone.
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: src/global.json
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: src/package-lock.json
+
+      - uses: actions/cache@v6
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('src/Directory.Packages.props', 'src/global.json') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      # The same two preparation steps as Build's gates job: EtAlii.Adp.Client.Tests runs the
+      # client test files, which need the generated contracts.
+      - name: Install client dependencies
+        working-directory: src
+        run: npm ci
+
+      - name: Generate client contracts
+        working-directory: src/client
+        run: npm run generate
+
+      # Judged by the runner's own exit code, captured before anything else runs; the summary
+      # line is what the run's page shows for this run.
+      - name: Backend tests
+        working-directory: src/backend
+        run: |
+          set +e
+          dotnet test --solution EtAlii.Adp.slnx 2>&1 | tee "$RUNNER_TEMP/test.log"
+          status=${PIPESTATUS[0]}
+          set -e
+          failed=$(grep -E '^failed ' "$RUNNER_TEMP/test.log" | sed -E 's/ \([0-9].*$//' || true)
+          {
+            echo "### Run ${{ matrix.run }}: exit $status"
+            if [ -n "$failed" ]; then echo; echo '```'; echo "$failed"; echo '```'; fi
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit "$status"
