@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <PackageReference Include="Serilog" />
+    <InternalsVisibleTo Include="EtAlii.Adp.Diagram.Alpha" />
+  </ItemGroup>
+</Project>

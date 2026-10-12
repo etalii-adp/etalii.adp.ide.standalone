@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\EtAlii.Adp.Diagram.Alpha\EtAlii.Adp.Diagram.Alpha.csproj" />
+  </ItemGroup>
+</Project>

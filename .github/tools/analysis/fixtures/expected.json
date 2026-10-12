@@ -1,0 +1,292 @@
+{
+  "commit": "fixture",
+  "lines": {
+    "totals": {
+      "all": {
+        "projects": 5,
+        "files": 8,
+        "lines": 142,
+        "code_lines": 126
+      },
+      "core": {
+        "projects": 2,
+        "files": 1,
+        "lines": 73,
+        "code_lines": 70
+      },
+      "core/production": {
+        "projects": 2,
+        "files": 1,
+        "lines": 73,
+        "code_lines": 70
+      },
+      "diagram": {
+        "projects": 3,
+        "files": 7,
+        "lines": 69,
+        "code_lines": 56
+      },
+      "diagram/production": {
+        "projects": 2,
+        "files": 6,
+        "lines": 52,
+        "code_lines": 42
+      },
+      "diagram/test": {
+        "projects": 1,
+        "files": 1,
+        "lines": 17,
+        "code_lines": 14
+      },
+      "production": {
+        "projects": 4,
+        "files": 7,
+        "lines": 125,
+        "code_lines": 112
+      },
+      "test": {
+        "projects": 1,
+        "files": 1,
+        "lines": 17,
+        "code_lines": 14
+      }
+    },
+    "production_lines_per_module": {
+      "diagram/alpha": 26,
+      "diagram/beta-gamma": 26
+    },
+    "projects": [
+      {
+        "project": "EtAlii.Adp.Core",
+        "kind": "core",
+        "group": "production",
+        "module": null,
+        "files": 1,
+        "lines": 73,
+        "code_lines": 70
+      },
+      {
+        "project": "EtAlii.Adp.Empty",
+        "kind": "core",
+        "group": "production",
+        "module": null,
+        "files": 0,
+        "lines": 0,
+        "code_lines": 0
+      },
+      {
+        "project": "EtAlii.Adp.Diagram.Alpha",
+        "kind": "diagram",
+        "group": "production",
+        "module": "alpha",
+        "files": 3,
+        "lines": 26,
+        "code_lines": 21
+      },
+      {
+        "project": "EtAlii.Adp.Diagram.Alpha.Tests",
+        "kind": "diagram",
+        "group": "test",
+        "module": "alpha",
+        "files": 1,
+        "lines": 17,
+        "code_lines": 14
+      },
+      {
+        "project": "EtAlii.Adp.Diagram.BetaGamma",
+        "kind": "diagram",
+        "group": "production",
+        "module": "beta-gamma",
+        "files": 3,
+        "lines": 26,
+        "code_lines": 21
+      }
+    ]
+  },
+  "clones_production": {
+    "scope": "production",
+    "window_lines": 10,
+    "shared_windows": 8,
+    "files_with_shared_windows": 2,
+    "role_pairs": [
+      {
+        "roles": "ContextSourceResolver",
+        "windows": 8,
+        "file_pairs": 8
+      }
+    ],
+    "largest_clone_families": [
+      {
+        "shared_windows": 8,
+        "files": [
+          "src/diagrams/alpha/backend/EtAlii.Adp.Diagram.Alpha/AlphaContextSourceResolver.cs",
+          "src/diagrams/beta-gamma/backend/EtAlii.Adp.Diagram.BetaGamma/BgContextSourceResolver.cs"
+        ]
+      }
+    ]
+  },
+  "clones_test": {
+    "scope": "test",
+    "window_lines": 10,
+    "shared_windows": 0,
+    "files_with_shared_windows": 0,
+    "role_pairs": [],
+    "largest_clone_families": []
+  },
+  "methods": {
+    "scope": "production",
+    "methods": 3,
+    "over_50": 1,
+    "over_80": 0,
+    "longest": [
+      {
+        "method": "Sum",
+        "file": "src/backend/EtAlii.Adp.Core/Long.cs",
+        "line": 6,
+        "code_lines": 65
+      },
+      {
+        "method": "Resolve",
+        "file": "src/diagrams/alpha/backend/EtAlii.Adp.Diagram.Alpha/AlphaContextSourceResolver.cs",
+        "line": 8,
+        "code_lines": 12
+      },
+      {
+        "method": "Resolve",
+        "file": "src/diagrams/beta-gamma/backend/EtAlii.Adp.Diagram.BetaGamma/BgContextSourceResolver.cs",
+        "line": 8,
+        "code_lines": 12
+      }
+    ],
+    "largest_types_per_project": {
+      "EtAlii.Adp.Core": [
+        {
+          "type": "Long",
+          "file": "src/backend/EtAlii.Adp.Core/Long.cs",
+          "code_lines": 69
+        }
+      ],
+      "EtAlii.Adp.Diagram.Alpha": [
+        {
+          "type": "AlphaContextSourceResolver",
+          "file": "src/diagrams/alpha/backend/EtAlii.Adp.Diagram.Alpha/AlphaContextSourceResolver.cs",
+          "code_lines": 16
+        },
+        {
+          "type": "AlphaSession",
+          "file": "src/diagrams/alpha/backend/EtAlii.Adp.Diagram.Alpha/AlphaSession.cs",
+          "code_lines": 1
+        },
+        {
+          "type": "AlphaStore",
+          "file": "src/diagrams/alpha/backend/EtAlii.Adp.Diagram.Alpha/AlphaStore.cs",
+          "code_lines": 1
+        }
+      ],
+      "EtAlii.Adp.Diagram.BetaGamma": [
+        {
+          "type": "BgContextSourceResolver",
+          "file": "src/diagrams/beta-gamma/backend/EtAlii.Adp.Diagram.BetaGamma/BgContextSourceResolver.cs",
+          "code_lines": 16
+        },
+        {
+          "type": "BgSession",
+          "file": "src/diagrams/beta-gamma/backend/EtAlii.Adp.Diagram.BetaGamma/BgSession.cs",
+          "code_lines": 1
+        },
+        {
+          "type": "BgStore",
+          "file": "src/diagrams/beta-gamma/backend/EtAlii.Adp.Diagram.BetaGamma/BgStore.cs",
+          "code_lines": 1
+        }
+      ]
+    }
+  },
+  "graph": {
+    "projects": 5,
+    "edges_per_kind": {
+      "ProjectReference": 3,
+      "PackageReference": 1,
+      "FrameworkReference": 1,
+      "InternalsVisibleTo": 1
+    },
+    "referenced_by": {
+      "EtAlii.Adp.Core": 2,
+      "EtAlii.Adp.Diagram.Alpha": 1,
+      "EtAlii.Adp.Diagram.Alpha.Tests": 0,
+      "EtAlii.Adp.Diagram.BetaGamma": 0,
+      "EtAlii.Adp.Empty": 0
+    },
+    "without_cs_file": [
+      "EtAlii.Adp.Empty"
+    ],
+    "core_naming_a_tool_module": [
+      {
+        "from": "EtAlii.Adp.Core",
+        "kind": "InternalsVisibleTo",
+        "to": "EtAlii.Adp.Diagram.Alpha"
+      }
+    ],
+    "edges": [
+      {
+        "from": "EtAlii.Adp.Core",
+        "kind": "PackageReference",
+        "to": "Serilog"
+      },
+      {
+        "from": "EtAlii.Adp.Core",
+        "kind": "InternalsVisibleTo",
+        "to": "EtAlii.Adp.Diagram.Alpha"
+      },
+      {
+        "from": "EtAlii.Adp.Empty",
+        "kind": "FrameworkReference",
+        "to": "Microsoft.AspNetCore.App"
+      },
+      {
+        "from": "EtAlii.Adp.Diagram.Alpha",
+        "kind": "ProjectReference",
+        "to": "EtAlii.Adp.Core"
+      },
+      {
+        "from": "EtAlii.Adp.Diagram.Alpha.Tests",
+        "kind": "ProjectReference",
+        "to": "EtAlii.Adp.Diagram.Alpha"
+      },
+      {
+        "from": "EtAlii.Adp.Diagram.BetaGamma",
+        "kind": "ProjectReference",
+        "to": "EtAlii.Adp.Core"
+      }
+    ]
+  },
+  "waits": {
+    "waits": {
+      "test": 2,
+      "production": 0
+    },
+    "polling_helpers": 1,
+    "wait_sites": {
+      "test": [
+        {
+          "file": "src/diagrams/alpha/backend/EtAlii.Adp.Diagram.Alpha.Tests/AlphaTests.cs",
+          "line": 7,
+          "call": "Task.Delay"
+        },
+        {
+          "file": "src/diagrams/alpha/backend/EtAlii.Adp.Diagram.Alpha.Tests/AlphaTests.cs",
+          "line": 8,
+          "call": "Thread.Sleep"
+        }
+      ],
+      "production": []
+    },
+    "helper_sites": [
+      {
+        "file": "src/diagrams/alpha/backend/EtAlii.Adp.Diagram.Alpha.Tests/AlphaTests.cs",
+        "line": 13,
+        "helper": "Eventually"
+      }
+    ]
+  }
+}
