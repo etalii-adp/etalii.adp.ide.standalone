@@ -15,26 +15,21 @@ namespace EtAlii.Adp.TestSupport.Host;
 /// </summary>
 public sealed class FlowSession : IDisposable
 {
-    private FlowSession(GrpcChannel channel, Metadata headers, ShortGuid projectId, string projectFolder)
+    private readonly GrpcChannel _channel;
+
+    private FlowSession(GrpcChannel channel, Metadata headers, ShortGuid projectId)
     {
-        Channel = channel;
+        _channel = channel;
         Headers = headers;
         ProjectId = projectId;
-        ProjectFolder = projectFolder;
         Hierarchy = new HierarchyService.HierarchyServiceClient(channel);
         Context = new ContextService.ContextServiceClient(channel);
-        Projects = new ProjectService.ProjectServiceClient(channel);
     }
-
-    public GrpcChannel Channel { get; }
 
     /// <summary>The signed-in session's token, as every call sends it.</summary>
     public Metadata Headers { get; }
 
     public ShortGuid ProjectId { get; }
-
-    /// <summary>The folder <see cref="ProjectId"/> was added from.</summary>
-    public string ProjectFolder { get; }
 
     /// <summary>This connection's watch id; a test that needs a second one makes it.</summary>
     public ShortGuid WatchId { get; } = ShortGuid.NewShortGuid();
@@ -43,8 +38,6 @@ public sealed class FlowSession : IDisposable
 
     public ContextService.ContextServiceClient Context { get; }
 
-    public ProjectService.ProjectServiceClient Projects { get; }
-
     /// <summary>Signs in on a new channel to <paramref name="host"/> and adds <paramref name="projectFolder"/>.</summary>
     public static async Task<FlowSession> OpenAsync(HostFixture host, string projectFolder, CancellationToken cancellationToken)
     {
@@ -52,11 +45,11 @@ public sealed class FlowSession : IDisposable
         var channel = host.CreateChannel();
         var headers = await SignInAsync(channel, cancellationToken);
         var projectId = await AddProjectAsync(channel, headers, projectFolder, cancellationToken);
-        return new FlowSession(channel, headers, projectId, projectFolder);
+        return new FlowSession(channel, headers, projectId);
     }
 
     /// <summary>Signs in as the developer on <paramref name="channel"/> and returns the headers a call carries.</summary>
-    public static async Task<Metadata> SignInAsync(GrpcChannel channel, CancellationToken cancellationToken)
+    private static async Task<Metadata> SignInAsync(GrpcChannel channel, CancellationToken cancellationToken)
     {
         var client = new AuthenticationService.AuthenticationServiceClient(channel);
         var response = await client.LoginAsync(
@@ -66,7 +59,7 @@ public sealed class FlowSession : IDisposable
     }
 
     /// <summary>Adds <paramref name="folder"/> as a project and returns its id.</summary>
-    public static async Task<ShortGuid> AddProjectAsync(GrpcChannel channel, Metadata headers, string folder, CancellationToken cancellationToken)
+    private static async Task<ShortGuid> AddProjectAsync(GrpcChannel channel, Metadata headers, string folder, CancellationToken cancellationToken)
     {
         var client = new ProjectService.ProjectServiceClient(channel);
         var path = new Path();
@@ -75,12 +68,17 @@ public sealed class FlowSession : IDisposable
         return response.Added.Id;
     }
 
-    /// <summary>Adds another project on this session's connection.</summary>
-    public Task<ShortGuid> AddProjectAsync(string folder, CancellationToken cancellationToken) =>
-        AddProjectAsync(Channel, Headers, folder, cancellationToken);
+    /// <summary>
+    /// A token that cancels after <see cref="FlowConstants.MessageTimeout"/>, for reading a stream,
+    /// or as soon as <paramref name="testCancellation"/> does, so a stream that never delivers gives
+    /// up when the test is cancelled rather than waiting the timeout out.
+    /// </summary>
+    public static CancellationTokenSource CreateMessageTimeout(CancellationToken testCancellation)
+    {
+        var timeout = CancellationTokenSource.CreateLinkedTokenSource(testCancellation);
+        timeout.CancelAfter(FlowConstants.MessageTimeout);
+        return timeout;
+    }
 
-    /// <summary>A token that cancels after <see cref="FlowConstants.MessageTimeout"/>, for reading a stream.</summary>
-    public static CancellationTokenSource CreateMessageTimeout() => new(FlowConstants.MessageTimeout);
-
-    public void Dispose() => Channel.Dispose();
+    public void Dispose() => _channel.Dispose();
 }

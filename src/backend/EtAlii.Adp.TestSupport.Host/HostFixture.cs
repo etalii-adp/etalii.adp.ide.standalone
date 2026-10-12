@@ -22,12 +22,8 @@ namespace EtAlii.Adp.TestSupport.Host;
 /// files. The project list is shared across the class's tests; a test that asserts on the whole
 /// list removes what it adds.
 /// </para>
-/// <para>
-/// A class that needs more registrations derives from this fixture and overrides
-/// <see cref="ConfigureServices"/>.
-/// </para>
 /// </remarks>
-public class HostFixture : IDisposable
+public sealed class HostFixture : IDisposable
 {
     private readonly TestFolder _appData;
     private readonly WebApplicationFactory<Program> _factory;
@@ -50,7 +46,6 @@ public class HostFixture : IDisposable
                     AppDataRoot,
                     provider.GetRequiredService<DiagramFileRouter>(),
                     provider.GetRequiredService<DiagramValidators>()));
-                ConfigureServices(services);
             });
         });
     }
@@ -76,15 +71,9 @@ public class HostFixture : IDisposable
         return GrpcChannel.ForAddress(httpClient.BaseAddress!, new GrpcChannelOptions { HttpClient = httpClient });
     }
 
-    /// <summary>Registrations a deriving fixture adds after the ones every flow host has.</summary>
-    protected virtual void ConfigureServices(IServiceCollection services)
-    {
-    }
-
     public void Dispose()
     {
         _factory.Dispose();
         _appData.Dispose();
-        GC.SuppressFinalize(this);
     }
 }
