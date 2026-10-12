@@ -3,8 +3,10 @@
   "title": "XML editor tasks (10 tasks; waits on json-editor tasks 1 to 6)",
   "filePath": ".spec-workflow/specs/xml-editor/tasks.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-10-12T21:52:47.324Z",
   "category": "spec",
-  "categoryName": "xml-editor"
+  "categoryName": "xml-editor",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-10-12T21:56:28.293Z"
 }
