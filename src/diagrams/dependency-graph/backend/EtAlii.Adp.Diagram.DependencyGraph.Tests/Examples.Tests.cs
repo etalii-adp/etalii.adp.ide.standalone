@@ -112,7 +112,7 @@ public class ExamplesTests
         var model = DependencyGraphParser.Parse(LineDocument.Parse(text));
 
         // Act.
-        var problems = DependencyGraphRuleSet.Judge(model);
+        var problems = DependencyGraphFindings.Judge(model);
 
         // Assert.
         // Shipped material that lights up the problems panel teaches the first-time user to

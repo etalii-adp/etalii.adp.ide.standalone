@@ -9,9 +9,8 @@ public static class HostApplicationBuilderAddDiagramDefinitionsExtension
     extension(IHostApplicationBuilder builder)
     {
         /// <summary>
-        /// Builds and adds the diagram definitions.
+        /// Registers the diagram definitions as a singleton and runs each one's <c>Build</c> hook.
         /// </summary>
-        /// <returns><c>true</c> when this call ran the scan and filled the cache; <c>false</c> when it was already filled.</returns>
         public void AddDiagramDefinitions(IReadOnlyList<DiagramDefinition> definitions)
         {
             ArgumentNullException.ThrowIfNull(definitions);

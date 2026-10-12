@@ -5,6 +5,7 @@ using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.Hierarchy.Wire;
 using EtAlii.Adp.Projects;
 using EtAlii.Adp.Projects.Wire;
+using EtAlii.Adp.TestSupport.Host;
 using Grpc.Core;
 using Grpc.Net.Client;
 using Microsoft.AspNetCore.Hosting;
@@ -31,11 +32,6 @@ public class ContextSelectionFlowTests : IClassFixture<WebApplicationFactory<Pro
     private const string DeveloperCredential = "changeme";
     private const string SessionTokenHeader = "session-token";
     private static readonly TimeSpan MessageTimeout = TimeSpan.FromSeconds(10);
-
-    // The hierarchy watcher only runs while a WatchHierarchy stream is open, and Grpc.Net
-    // only starts a server stream on its first read - so disk-change tests open that
-    // stream, start reading it, and give the watcher this long to come up.
-    private static readonly TimeSpan StreamStartupGrace = TimeSpan.FromMilliseconds(500);
 
     private readonly WebApplicationFactory<Program> _factory;
     private readonly string _appDataRoot;
@@ -336,14 +332,13 @@ public class ContextSelectionFlowTests : IClassFixture<WebApplicationFactory<Pro
         var entryId = await EntryIdOfAsync(session, "original.txt");
 
         using var hierarchyCall = session.Hierarchy.WatchHierarchy(new WatchHierarchyRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
-        await HierarchyWatchProbe.WaitUntilLiveAsync(hierarchyCall.ResponseStream, _projectFolder, cts.Token);
+        await StreamProbe.WaitUntilHierarchyLiveAsync(hierarchyCall.ResponseStream, _projectFolder, cts.Token);
         _ = hierarchyCall.ResponseStream.MoveNext(cts.Token);
         using var call = session.Context.Watch(new WatchContextRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         await ReadSelectionAsync(call.ResponseStream, cts.Token);
         await session.Context.SelectAsync(
             new SelectRequest { ProjectId = session.ProjectId, WatchId = session.WatchId, Selection = Selection(entryId) }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         await ReadSelectionAsync(call.ResponseStream, cts.Token);
-        await Task.Delay(StreamStartupGrace, TestContext.Current.CancellationToken);
 
         File.Move(original, IoPath.Combine(_projectFolder, "renamed.txt"));
 
@@ -364,14 +359,13 @@ public class ContextSelectionFlowTests : IClassFixture<WebApplicationFactory<Pro
         var entryId = await EntryIdOfAsync(session, "doomed.txt");
 
         using var hierarchyCall = session.Hierarchy.WatchHierarchy(new WatchHierarchyRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
-        await HierarchyWatchProbe.WaitUntilLiveAsync(hierarchyCall.ResponseStream, _projectFolder, cts.Token);
+        await StreamProbe.WaitUntilHierarchyLiveAsync(hierarchyCall.ResponseStream, _projectFolder, cts.Token);
         _ = hierarchyCall.ResponseStream.MoveNext(cts.Token);
         using var call = session.Context.Watch(new WatchContextRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         await ReadSelectionAsync(call.ResponseStream, cts.Token);
         await session.Context.SelectAsync(
             new SelectRequest { ProjectId = session.ProjectId, WatchId = session.WatchId, Selection = Selection(entryId) }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         await ReadSelectionAsync(call.ResponseStream, cts.Token);
-        await Task.Delay(StreamStartupGrace, TestContext.Current.CancellationToken);
 
         File.Delete(file);
 

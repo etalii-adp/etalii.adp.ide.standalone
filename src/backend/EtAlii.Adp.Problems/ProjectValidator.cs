@@ -463,11 +463,8 @@ public sealed class ProjectValidator
         }
     }
 
-    private static bool IsInside(string rootPath, string fullPath)
-    {
-        var root = IoPath.GetFullPath(rootPath)
-            .TrimEnd(IoPath.DirectorySeparatorChar, IoPath.AltDirectorySeparatorChar) + IoPath.DirectorySeparatorChar;
-        return fullPath.StartsWith(root, StringComparison.OrdinalIgnoreCase);
-    }
+    // Followed links and the file system's own case (D6): a link inside the root that leads out
+    // of it does not make what lies beyond it the project's.
+    private static bool IsInside(string rootPath, string fullPath) => PathContainment.IsInside(rootPath, fullPath);
 
 }

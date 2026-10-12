@@ -126,11 +126,7 @@ public static class DiagramFilePair
             return null;
         }
 
-        var normalizedRoot = fullRoot.EndsWith(IoPath.DirectorySeparatorChar)
-            ? fullRoot
-            : fullRoot + IoPath.DirectorySeparatorChar;
-
-        return fullPath.StartsWith(normalizedRoot, StringComparison.OrdinalIgnoreCase) ? fullPath : null;
+        return PathContainment.IsInside(fullRoot, fullPath) ? fullPath : null;
     }
 
     /// <summary>

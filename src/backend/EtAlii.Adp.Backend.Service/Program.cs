@@ -71,11 +71,10 @@ builder.Services.AddClientAppHosting(builder.Configuration);
 // AuthenticationService.Login (Requirement 1.6).
 builder.Services.AddGrpc(options => options.Interceptors.Add<SessionInterceptor>());
 
-// Once per process: after Build so the Serilog pipeline is fully configured, before anything
-// can serve a request that reads DiagramDefinition.All. Not a DI service - it runs once and its result
-// is the static cache, so there is nothing for a container to hand out. A second host in
-// the same process (a test process builds one per test) finds the cache filled and the
-// scan is not repeated; Initialize owns that guarantee, under a lock.
+// The diagram types, found by walking the application's own assemblies for each module's
+// Diagram.Definitions. The list is registered as a singleton and each definition's Build hook
+// adds that module's services, so the container is the only place the result is kept: there is
+// no static cache, and a test process that builds a host per test scans once per host.
 
 var diagramDefinitions = DiagramDefinitionDiscovery.Discover();
 builder.AddDiagramDefinitions(diagramDefinitions);

@@ -64,12 +64,7 @@ public static class BodyLocator
             new SourceLocation(Path.GetFileName(registrationFull), line, column, text.CodePoints(span.Start, span.End)));
     }
 
-    private static bool Within(string root, string path)
-    {
-        var comparison = Routing.Glob.PlatformIgnoresCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
-        var prefix = root.EndsWith(Path.DirectorySeparatorChar) ? root : root + Path.DirectorySeparatorChar;
-        return string.Equals(path, root, comparison) || path.StartsWith(prefix, comparison);
-    }
+    private static bool Within(string root, string path) => PathContainment.IsAtOrInside(root, path);
 
     /// <summary>Whether any existing component from below the root to the path itself is a reparse point.</summary>
     private static bool ThroughReparsePoint(string root, string path)

@@ -8,6 +8,7 @@ using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.Hierarchy.Wire;
 using EtAlii.Adp.Projects;
 using EtAlii.Adp.Projects.Wire;
+using EtAlii.Adp.TestSupport.Host;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using Grpc.Net.Client;
@@ -48,7 +49,6 @@ public class WardleyMapFlowTests : IClassFixture<WebApplicationFactory<Program>>
     private const string DeveloperCredential = "changeme";
     private const string SessionTokenHeader = "session-token";
     private static readonly TimeSpan MessageTimeout = TimeSpan.FromSeconds(10);
-    private static readonly TimeSpan StreamStartupGrace = TimeSpan.FromMilliseconds(250);
 
     private const string Map = """
         title Tea Shop
@@ -156,8 +156,8 @@ public class WardleyMapFlowTests : IClassFixture<WebApplicationFactory<Program>>
         using var contextCall = contextClient.Watch(
             new WatchContextRequest { ProjectId = projectId, WatchId = watchId },
             headers, cancellationToken: TestContext.Current.CancellationToken);
+        await StreamProbe.WaitUntilContextLiveAsync(contextCall.ResponseStream, cts.Token);
         var pendingPrompt = ReadUntilPromptAsync(contextCall.ResponseStream, cts.Token);
-        await Task.Delay(StreamStartupGrace, TestContext.Current.CancellationToken);
 
         // No source: the add lands on the connection's current selection, which with nothing
         // selected is the project's root folder - where a user's first "add a diagram" happens.
@@ -361,8 +361,8 @@ public class WardleyMapFlowTests : IClassFixture<WebApplicationFactory<Program>>
         using var contextCall = contextClient.Watch(
             new WatchContextRequest { ProjectId = projectId, WatchId = watchId },
             headers, cancellationToken: TestContext.Current.CancellationToken);
+        await StreamProbe.WaitUntilContextLiveAsync(contextCall.ResponseStream, cts.Token);
         var pendingSelection = ReadUntilSelectionWithActionsAsync(contextCall.ResponseStream, cts.Token);
-        await Task.Delay(StreamStartupGrace, TestContext.Current.CancellationToken);
 
         // Act.
         var selected = await contextClient.SelectAsync(
@@ -436,8 +436,8 @@ public class WardleyMapFlowTests : IClassFixture<WebApplicationFactory<Program>>
         using var contextCall = contextClient.Watch(
             new WatchContextRequest { ProjectId = projectId, WatchId = watchId },
             headers, cancellationToken: TestContext.Current.CancellationToken);
+        await StreamProbe.WaitUntilContextLiveAsync(contextCall.ResponseStream, cts.Token);
         var pendingSelection = ReadUntilSelectionWithActionsAsync(contextCall.ResponseStream, cts.Token);
-        await Task.Delay(StreamStartupGrace, TestContext.Current.CancellationToken);
 
         var selected = await contextClient.SelectAsync(
             new SelectRequest { ProjectId = projectId, WatchId = watchId, Selection = ElementChain(entryId, kettle.Id.Value) },

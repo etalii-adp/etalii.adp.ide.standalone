@@ -5,7 +5,6 @@
     <ProjectReference Include="..\EtAlii.Adp.Context\EtAlii.Adp.Context.csproj" />
     <ProjectReference Include="..\EtAlii.Adp.Hierarchy\EtAlii.Adp.Hierarchy.csproj" />
     <ProjectReference Include="..\EtAlii.Adp.Projects\EtAlii.Adp.Projects.csproj" />
-    <ProjectReference Include="..\EtAlii.Adp.Backend\EtAlii.Adp.Backend.csproj" />
     <ProjectReference Include="..\EtAlii.Adp.Editor\EtAlii.Adp.Editor.csproj" />
     <ProjectReference Include="..\EtAlii.Adp.Designer\EtAlii.Adp.Designer.csproj" />
     <ProjectReference Include="..\EtAlii.Adp.Documents\EtAlii.Adp.Documents.csproj" />
@@ -44,8 +43,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- DiagramDefinition.Initialize is internal: only the host fills the cache, and only the tests may reset it. -->
-    <InternalsVisibleTo Include="EtAlii.Adp.Backend.Service" />
+    <!-- The tests reach EditorSessionAdapter, which is internal to this project. -->
     <InternalsVisibleTo Include="EtAlii.Adp.Diagram.Tests" />
   </ItemGroup>
 </Project>

@@ -9,7 +9,7 @@ namespace EtAlii.Adp.Diagram.Timeline;
 /// Warnings panel by (Requirement 12.1).
 /// </summary>
 /// <remarks>
-/// Text in, problems out: parse, and hand the model to <see cref="TimelineRuleSet"/>. A file
+/// Text in, problems out: parse, and hand the model to <see cref="TimelineDefinition.Problems"/>. A file
 /// that will not parse is reported as one <b>error</b> naming the line - the definition's
 /// <c>std.unparseable</c>, with the parser's message as its reason, and the same message the
 /// unavailable state shows, so the panel and the canvas never disagree (Requirement 12.3) -
@@ -45,6 +45,6 @@ public sealed class TimelineValidator : IDiagramValidator
             return ValueTask.FromResult(TimelineDefinition.Unparseable(exception.Message, (int)line));
         }
 
-        return ValueTask.FromResult(TimelineRuleSet.Judge(model));
+        return ValueTask.FromResult(TimelineDefinition.Problems(model));
     }
 }

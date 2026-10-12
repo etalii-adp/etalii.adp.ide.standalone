@@ -5,6 +5,7 @@ using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.Hierarchy.Wire;
 using EtAlii.Adp.Projects;
 using EtAlii.Adp.Projects.Wire;
+using EtAlii.Adp.TestSupport.Host;
 using Grpc.Core;
 using Grpc.Net.Client;
 using Microsoft.AspNetCore.Hosting;
@@ -32,11 +33,6 @@ public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFacto
     private const string DeveloperCredential = "changeme";
     private const string SessionTokenHeader = "session-token";
     private static readonly TimeSpan MessageTimeout = TimeSpan.FromSeconds(10);
-
-    // Grpc.Net.Client only invokes a server-streaming method on the first read, so every
-    // test starts reading (MoveNext, not awaited) before triggering anything, then gives
-    // the server this long to get as far as registering its prompt writer.
-    private static readonly TimeSpan StreamStartupGrace = TimeSpan.FromMilliseconds(500);
 
     private readonly WebApplicationFactory<Program> _factory;
     private readonly string _appDataRoot;
@@ -162,10 +158,10 @@ public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFacto
 
         using var call = hierarchyClient.WatchHierarchy(new WatchHierarchyRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
         using var cts = CreateMessageTimeout();
-        await HierarchyWatchProbe.WaitUntilLiveAsync(call.ResponseStream, _projectFolder, cts.Token);
+        await StreamProbe.WaitUntilHierarchyLiveAsync(call.ResponseStream, _projectFolder, cts.Token);
         using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
+        await StreamProbe.WaitUntilContextLiveAsync(contextCall.ResponseStream, cts.Token);
         var pendingPrompt = ReadUntilPromptAsync(contextCall.ResponseStream, cts.Token);
-        await Task.Delay(StreamStartupGrace, TestContext.Current.CancellationToken);
 
         // Act and assert, step by step.
         var source = new ContextSource { EntryId = entryId };
@@ -238,10 +234,10 @@ public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFacto
 
         using var call = hierarchyClient.WatchHierarchy(new WatchHierarchyRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
         using var cts = CreateMessageTimeout();
-        await HierarchyWatchProbe.WaitUntilLiveAsync(call.ResponseStream, _projectFolder, cts.Token);
+        await StreamProbe.WaitUntilHierarchyLiveAsync(call.ResponseStream, _projectFolder, cts.Token);
         using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
+        await StreamProbe.WaitUntilContextLiveAsync(contextCall.ResponseStream, cts.Token);
         var pendingPrompt = ReadUntilPromptAsync(contextCall.ResponseStream, cts.Token);
-        await Task.Delay(StreamStartupGrace, TestContext.Current.CancellationToken);
 
         // Act and assert, step by step.
         var interactionId = ShortGuid.NewShortGuid();
@@ -296,8 +292,8 @@ public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFacto
         using var call = hierarchyClient.WatchHierarchy(new WatchHierarchyRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
         using var cts = CreateMessageTimeout();
         using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
+        await StreamProbe.WaitUntilContextLiveAsync(contextCall.ResponseStream, cts.Token);
         var pendingPrompt = ReadUntilPromptAsync(contextCall.ResponseStream, cts.Token);
-        await Task.Delay(StreamStartupGrace, TestContext.Current.CancellationToken);
 
         // Act.
         var executed = await contextClient.ExecuteActionAsync(
@@ -474,8 +470,8 @@ public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFacto
         // Arrange, continued.
         using var cts = CreateMessageTimeout();
         using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
+        await StreamProbe.WaitUntilContextLiveAsync(contextCall.ResponseStream, cts.Token);
         var pendingPrompt = ReadUntilPromptAsync(contextCall.ResponseStream, cts.Token);
-        await Task.Delay(StreamStartupGrace, TestContext.Current.CancellationToken);
 
         // Arrange, continued.
         var nothingSelected = await contextClient.ExecuteActionAsync(
@@ -535,8 +531,8 @@ public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFacto
         using var call = hierarchyClient.WatchHierarchy(new WatchHierarchyRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
         using var cts = CreateMessageTimeout();
         using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
+        await StreamProbe.WaitUntilContextLiveAsync(contextCall.ResponseStream, cts.Token);
         var pendingPrompt = ReadUntilPromptAsync(contextCall.ResponseStream, cts.Token);
-        await Task.Delay(StreamStartupGrace, TestContext.Current.CancellationToken);
 
         // Arrange, continued.
         var interactionId = ShortGuid.NewShortGuid();
