@@ -43,8 +43,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- DiagramDefinition.Initialize is internal: only the host fills the cache, and only the tests may reset it. -->
-    <InternalsVisibleTo Include="EtAlii.Adp.Backend.Service" />
+    <!-- The tests reach EditorSessionAdapter, which is internal to this project. -->
     <InternalsVisibleTo Include="EtAlii.Adp.Diagram.Tests" />
   </ItemGroup>
 </Project>
