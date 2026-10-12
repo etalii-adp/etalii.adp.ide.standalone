@@ -19,18 +19,23 @@ public static class ServiceCollectionAddFunctionalDecompositionGraphExtension
 
         // Without a document factory the host refuses to start: a type that declares an extension
         // must be creatable from the Add dialog.
-        services.AddSingleton<IDiagramDocumentFactory, FdgDocumentFactory>();
+        services.AddEmptyDocument(Diagram.FunctionalDecompositionGraph.Origin, FdgParser.EmptyDocument("\r\n"));
         services.AddSingleton<FdgElementMapper>();
 
         // One document per path, shared by every connection viewing it. TryAdd rather than Add so a
         // test that registers its own store keeps it.
         services.TryAddSingleton<IFdgDocumentStore, FdgDocumentStore>();
 
-        services.AddSingleton<IDiagramSessionFactory, FdgSessionFactory>();
+        // The project's history, so a drag is one undo away like every other edit.
+        services.AddDiagramSession(Diagram.FunctionalDecompositionGraph.Origin, (provider, opening) => new FdgSession(
+            opening.BodyPath,
+            provider.GetRequiredService<IFdgDocumentStore>(),
+            provider.GetRequiredService<FdgElementMapper>(),
+            provider.GetRequiredService<IHistoryStackStore>().Get(opening.RootPath)));
 
         // The reload seam: an external write to an .fdg body reaches the store, and through it every
         // open session - and a deleted body reaches it as a deletion, not as a reload.
-        services.AddSingleton<IDiagramDocumentReloader, FdgDocumentReloader>();
+        services.AddDiagramDocumentReloader<IFdgDocumentStore>(Diagram.FunctionalDecompositionGraph.Origin);
 
         // Selection: an element or connection of an .fdg resolves to a selection the panels read.
         services.AddSingleton<IContextSourceResolver, FdgContextSourceResolver>();
