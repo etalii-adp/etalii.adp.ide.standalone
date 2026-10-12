@@ -14,7 +14,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\EtAlii.Adp.Specification.Fbl\EtAlii.Adp.Specification.Fbl.csproj" />
-    <ProjectReference Include="..\EtAlii.Adp.TestSupport\EtAlii.Adp.TestSupport.csproj" />
     <!-- Read-only use of the public parsers of four modules, for the cross-check of Requirement 11.6. -->
     <ProjectReference Include="..\..\diagrams\timeline\backend\EtAlii.Adp.Diagram.Timeline\EtAlii.Adp.Diagram.Timeline.csproj" />
     <ProjectReference Include="..\..\diagrams\causal-loop-diagram\backend\EtAlii.Adp.Diagram.CausalLoopDiagram\EtAlii.Adp.Diagram.CausalLoopDiagram.csproj" />

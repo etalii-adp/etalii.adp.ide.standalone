@@ -157,24 +157,10 @@ public class GestureIdsTests
 
     private static GestureFixture Load()
     {
-        var path = IoPath.Combine(LocateRepositoryRoot(), "src", "fixtures", "cross-tier", "gesture-ids.json");
+        var path = IoPath.Combine(RepositoryPaths.Fixtures, "cross-tier", "gesture-ids.json");
         var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
         return JsonSerializer.Deserialize<GestureFixture>(File.ReadAllText(path), options)
             ?? throw new InvalidOperationException($"{path} deserialised to nothing.");
-    }
-
-    private static string LocateRepositoryRoot()
-    {
-        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
-        {
-            if (Directory.Exists(IoPath.Combine(directory.FullName, "src", "diagrams")) &&
-                Directory.Exists(IoPath.Combine(directory.FullName, "docs")))
-            {
-                return directory.FullName;
-            }
-        }
-
-        throw new InvalidOperationException("The repository root (src/diagrams beside docs) was not found above the test binary.");
     }
 
     private sealed record GestureFixture(string Reason, PlacementCases Placements, CaseSet<RelationCase> Relations);

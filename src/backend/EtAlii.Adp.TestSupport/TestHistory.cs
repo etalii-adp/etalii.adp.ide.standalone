@@ -55,6 +55,25 @@ public static class TestHistory
     }
 
     /// <summary>
+    /// The per-project store of a host whose command pipeline is the real one, with the
+    /// registrations <paramref name="configure"/> adds: <c>TestHistory.For(s => s.AddTimeline())</c>
+    /// gives a module test the dispatcher the host builds, so a command with no handler fails
+    /// here as it would in the application. A test that drives a store it holds registers that
+    /// store first; a module that registers its store with TryAdd then keeps it.
+    /// </summary>
+    public static IHistoryStackStore For(Action<IServiceCollection> configure)
+    {
+        ArgumentNullException.ThrowIfNull(configure);
+        var services = new ServiceCollection()
+            .AddSingleton<IDiagramDefinitionCatalog>(new TestDiagramDefinitionCatalog());
+        configure(services);
+        return services
+            .AddCommands().AddHierarchyCommandHandlers()
+            .BuildServiceProvider()
+            .GetRequiredService<IHistoryStackStore>();
+    }
+
+    /// <summary>
     /// The handlers ask the catalog whether a file is a diagram's registration file with a
     /// body sibling; a test that cares hands in the definitions it wants known, and one that
     /// does not gets an empty catalog rather than the process-wide cache.

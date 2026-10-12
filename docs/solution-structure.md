@@ -15,10 +15,10 @@ flowchart LR
     src --> editors["editors/<br/>one folder per editor type"]
     src --> examples["examples/<br/>the showcase documents"]
     src --> fixtures["fixtures/<br/>test data both suites read"]
-    src --> testsupport["TestSupport/<br/>sources compiled into every test project"]
+    src --> testsupport["TestSupport/<br/>the log capture, compiled into every test project"]
 ```
 
-`src/TestSupport` is **not** a project. It holds three source files that `src/Directory.Build.targets` compiles *into* each `*.Tests` project, deliberately rather than as a referenced assembly — the reasoning is in that file and is load-bearing. Do not confuse it with `EtAlii.Adp.TestSupport`, which **is** a project, under `src/backend`.
+`src/TestSupport` is **not** a project. It holds two source files, the log capture, that `src/Directory.Build.targets` compiles *into* each `*.Tests` project, deliberately rather than as a referenced assembly — the reasoning is in that file and is load-bearing. Do not confuse it with `EtAlii.Adp.TestSupport`, which **is** a project, under `src/backend`, and which the same file attaches to every `*.Tests` project as a project reference: helpers that do not install themselves per assembly (`TestFolder` among them) live there, where every core and module test project reaches them, its namespace a global using of each.
 
 ## The solution, with its counts
 
@@ -62,7 +62,7 @@ Classifying by path segment — "count the ones containing `backend`" — yields
 | Diagram-type abstractions, including the validation contract | `EtAlii.Adp.Diagram` |
 | Editor-family abstractions | `EtAlii.Adp.Editor` |
 | Designer-family abstractions: the definition, its discovery and its catalog | `EtAlii.Adp.Designer` |
-| Test helpers shipped as a project | `EtAlii.Adp.TestSupport` |
+| Test helpers shipped as a project, referenced by every test project | `EtAlii.Adp.TestSupport` |
 | Reading and writing bodies through FBL bindings (Format Binding Language) | `EtAlii.Adp.Specification.Fbl` |
 | Evaluating CEL expressions (Common Expression Language), for FBL and DISL alike | `EtAlii.Adp.Specification.Cel` |
 | Loading DISL specifications (Diagram Specification Language) and the bundled definitions, building a diagram's model from a reading, and deriving its toolbox, context menus, property rows, findings and gesture refusals, and running its operations, hooks and deletion policy | `EtAlii.Adp.Specification.Disl` |
