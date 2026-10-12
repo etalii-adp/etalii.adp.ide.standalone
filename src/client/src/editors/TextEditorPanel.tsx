@@ -1,9 +1,12 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Extension } from "@codemirror/state";
+import { EditorView } from "@codemirror/view";
 import type { ToolContentProps } from "@client/shell/panels/toolPanelRegistration";
 import { markTabDirty } from "@client/shell/panels/dirtyTabs";
 import { BaseTextEditor, scrollToLine } from "./BaseTextEditor";
 import { useEditorText } from "./useEditorText";
+import { analysisExtensions, reanalyse } from "./analysisExtensions";
+import { describeFindingCounts, type EditorAnalysis, type EditorFindingCounts } from "./editorAnalysis";
 import { useCanvasRefusal } from "@client/canvas/library/surface/useCanvasRefusal";
 import "./editors.css";
 
@@ -26,6 +29,20 @@ export interface TextEditorPanelProps extends ToolContentProps {
   aside?: (text: string) => React.ReactNode;
   /** Chrome above the editor - markdown's heading outline. */
   header?: (text: string, goToLine: (line: number) => void) => React.ReactNode;
+  /**
+   * What the module knows about its format: findings, completions and hover text, presented
+   * by the shared panel (json-editor Requirement 9.3 and 9.4). Read through a reference, so a
+   * module may hand over a new one at any render.
+   */
+  analysis?: EditorAnalysis;
+  /**
+   * Changes whenever something the analysis reads besides the text has changed - a schema
+   * file arriving or changing on disk - so the text is analysed again without an edit
+   * (json-editor Requirement 5.8).
+   */
+  analysisRevision?: number;
+  /** How long typing must pause before the text is analysed; tests shorten it. */
+  analysisDelay?: number;
 }
 
 /**
@@ -39,7 +56,19 @@ function normalizeLineEndings(text: string): string {
   return text.replace(/\r\n|\r/g, "\n");
 }
 
-export function TextEditorPanel({ projectId, path, editorId, initialLine, extensions, onSave, aside, header }: TextEditorPanelProps) {
+export function TextEditorPanel({
+  projectId,
+  path,
+  editorId,
+  initialLine,
+  extensions,
+  onSave,
+  aside,
+  header,
+  analysis,
+  analysisRevision,
+  analysisDelay,
+}: TextEditorPanelProps) {
   const { model, loading, failed, save: streamSave } = useEditorText(projectId, path, editorId);
   const [localText, setLocalText] = useState<string | null>(null);
   const [conflict, setConflict] = useState(false);
@@ -50,6 +79,17 @@ export function TextEditorPanel({ projectId, path, editorId, initialLine, extens
   const baselineRevision = useRef(0);
   const appliedInitialLine = useRef<number | undefined>(undefined);
   const hostRef = useRef<HTMLDivElement | null>(null);
+  const [counts, setCounts] = useState<EditorFindingCounts>({ errors: 0, warnings: 0 });
+  const analysisRef = useRef(analysis);
+  analysisRef.current = analysis;
+  const onCountsRef = useRef<((next: EditorFindingCounts) => void) | undefined>(setCounts);
+  // Built once, as the base editor builds its state once: what changes is read through the refs.
+  const hasAnalysis = analysis !== undefined;
+  const allExtensions = useMemo(
+    () => [...(extensions ?? []), ...(hasAnalysis ? analysisExtensions({ analysis: analysisRef, onCounts: onCountsRef }, { delay: analysisDelay }) : [])],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
 
   const baseText = normalizeLineEndings(model.text);
   const dirty = localText !== null && localText !== baseText;
@@ -95,6 +135,16 @@ export function TextEditorPanel({ projectId, path, editorId, initialLine, extens
       }
     }
   }, [initialLine, model.loaded, model.text]);
+
+  // A schema arrived or changed: analyse the unchanged text again.
+  useEffect(() => {
+    if (analysisRevision === undefined) {
+      return;
+    }
+    const editor = hostRef.current?.querySelector(".cm-editor");
+    const view = editor instanceof HTMLElement ? EditorView.findFromDOM(editor) : null;
+    view?.dispatch({ effects: reanalyse.of(null) });
+  }, [analysisRevision]);
 
   const save = useCallback(async () => {
     const performSave = onSave ?? streamSave;
@@ -151,7 +201,7 @@ export function TextEditorPanel({ projectId, path, editorId, initialLine, extens
           <BaseTextEditor
             content={shown}
             onChange={setLocalText}
-            extensions={extensions}
+            extensions={allExtensions}
             onSave={() => void save()}
           />
         </div>
@@ -161,6 +211,16 @@ export function TextEditorPanel({ projectId, path, editorId, initialLine, extens
         <span data-testid="dirty-indicator" className={dirty ? "text-editor-dirty" : "text-editor-clean"}>
           {dirty ? "● Unsaved changes" : "Saved"}
         </span>
+        {describeFindingCounts(counts) !== "" && (
+          <span data-testid="finding-counts" className="text-editor-counts">
+            {describeFindingCounts(counts)}
+          </span>
+        )}
+        {analysis?.status && (
+          <span data-testid="analysis-status" className="text-editor-analysis-status">
+            {analysis.status(shown)}
+          </span>
+        )}
       </div>
     </div>
   );

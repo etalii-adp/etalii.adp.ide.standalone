@@ -185,7 +185,8 @@ const shots = [
   // The industrial plant's landscape holds one system of its own, so it draws the same picture as
   // its context view; the courier reference shows what a landscape adds.
   { name: "c4-system-landscape.png", path: ["diagrams", "c4", "reference", "architecture", "courier.dsl", "courier.landscape.adp"], collapse: ["diagrams", "c4"] },
-  // No c4/dynamic or c4/deployment image: see the readme's "Not captured" section.
+  { name: "c4-dynamic.png", path: ["diagrams", "c4", "industrial-plant", "architecture", "bottling-mes.dsl", "bottling-mes.batch-release.adp"] },
+  { name: "c4-deployment.png", path: ["diagrams", "c4", "reference", "architecture", "courier.dsl", "courier.production.adp"], zoomIn: 1, collapse: ["diagrams", "c4"] },
 
   { name: "mindmap.png", path: ["diagrams", "mindmap", "example 1", "mindmap.mm", "mindmap.adp"], collapse: ["diagrams", "mindmap"] },
   { name: "wardley-map.png", path: ["diagrams", "wardley-map", "example 1", "tea.owm", "tea.adp"], collapse: ["diagrams", "wardley-map"] },
@@ -207,7 +208,7 @@ const shots = [
 
   { name: "rdf.png", path: ["diagrams", "rdf", "w3c-turtle", "example-1.ttl", "example-1.adp"], collapse: ["diagrams", "rdf"] },
   { name: "owl.png", path: ["diagrams", "owl", "prov-o", "prov-o.ttl", "prov-o.adp"], zoomIn: 2, collapse: ["diagrams", "owl"] },
-  // No w3c/skos image: see the readme's "Not captured" section.
+  { name: "skos.png", path: ["diagrams", "skos", "stw", "geographic-names.ttl", "geographic-names.adp"], zoomIn: 5, collapse: ["diagrams", "skos"] },
   { name: "shacl.png", path: ["diagrams", "shacl", "fair-data-point", "navigation-shapes.ttl", "navigation-shapes.adp"], collapse: ["diagrams", "shacl"] },
   { name: "sparql.png", path: ["diagrams", "sparql", "w3c-sparql", "optional.rq", "optional.adp"], collapse: ["diagrams", "sparql"] },
 
@@ -221,6 +222,11 @@ const shots = [
   { name: "agent-behavior-modelling-pull-request-reviewer.png", path: ["diagrams", "agent-behavior-modelling", "pull-request-reviewer", "pull-request-reviewer.md", "pull-request-reviewer.adp"] },
   { name: "agent-behavior-modelling-research-assistant.png", path: ["diagrams", "agent-behavior-modelling", "research-assistant", "research-assistant.md", "research-assistant.adp"] },
   { name: "agent-behavior-modelling-bug-fixer-light.png", path: ["diagrams", "agent-behavior-modelling", "bug-fixer", "bug-fixer.md", "bug-fixer.adp"], theme: "light", collapse: ["diagrams", "agent-behavior-modelling"] },
+
+  { name: "agent-activity-diagram.png", path: ["diagrams", "agent-activity-diagram", "adp-one-day", "adp-one-day.aad", "adp-one-day.adp"], collapse: ["diagrams", "agent-activity-diagram"] },
+
+  // The knowledge designer: a table, not a canvas, so nothing to wait for or fit.
+  { name: "knowledge.png", path: ["designers", "knowledge", "yaml", "cities.yaml", "cities.adp"], fit: false, expectDrawing: false, collapse: ["designers"] },
 
   // The text editors: no canvas, so nothing to wait for or fit.
   { name: "markdown-editor.png", path: ["editors", "markdown", "guide.md"], fit: false, expectDrawing: false },

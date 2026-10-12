@@ -2,6 +2,8 @@ import { useEffect, useRef } from "react";
 import { EditorState, type Extension } from "@codemirror/state";
 import { EditorView, keymap, lineNumbers } from "@codemirror/view";
 import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
+import { bracketMatching, foldGutter, foldKeymap, syntaxHighlighting } from "@codemirror/language";
+import { editorHighlight } from "./editorHighlight";
 
 /**
  * The editor surface in the application's own colors. Without this, CodeMirror runs its
@@ -68,6 +70,12 @@ export function BaseTextEditor({ content, onChange, extensions = [], onSave }: B
         extensions: [
           appTheme,
           lineNumbers(),
+          // The family's one colour scheme, the partner of the brace beside the caret, and the
+          // fold markers of the gutter (json-editor Requirement 3.5, 3.6 and 9.2): every editor
+          // gets them, so a module brings a grammar and nothing else.
+          foldGutter(),
+          syntaxHighlighting(editorHighlight),
+          bracketMatching(),
           history(),
           keymap.of([
             // Ctrl+S dispatches the module's save rather than the browser's dialog.
@@ -80,6 +88,7 @@ export function BaseTextEditor({ content, onChange, extensions = [], onSave }: B
             },
             ...defaultKeymap,
             ...historyKeymap,
+            ...foldKeymap,
           ]),
           EditorView.updateListener.of((update) => {
             if (update.docChanged) {
