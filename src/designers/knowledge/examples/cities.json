@@ -16,7 +16,7 @@
   ],
   "views": [
     { "id": "v1", "name": "All cities", "columns": [{ "property": "p3", "width": 175 }, { "property": "p2", "width": 126 }, { "property": "p6", "width": 104 }, { "property": "p7", "width": 112 }], "sorts": [{ "property": "p3", "direction": "descending" }], "filter": [{ "property": "p2", "operator": "is", "option": "o1" }], "groupBy": "p2" },
-    { "id": "v2", "name": "Map", "columns": [{ "property": "p2", "width": 166 }, { "property": "p1", "width": 143 }] }
+    { "id": "v2", "name": "Map", "columns": [{ "property": "p2", "width": 166 }, { "property": "p1", "width": 143 }, { "property": "p3" }, { "property": "p4" }, { "property": "p5", "calculate": "count-unique" }] }
   ],
   "rows": [
     { "id": "r1", "cells": [{ "property": "p1", "text": "Amsterdam" }, { "property": "p2", "option": "o1" }, { "property": "p3", "number": 931298 }, { "property": "p4", "options": [{ "option": "o3" }, { "option": "o4" }] }, { "property": "p5", "rows": [{ "row": "nh" }] }, { "property": "p6", "checked": true }, { "property": "p7", "date": "1275-10-27" }, { "property": "p8", "dateTime": "2026-10-08T09:30:00Z" }, { "property": "p9", "time": "09:00" }] },
@@ -27,6 +27,8 @@
     { "id": "7pa30fmuw51bv1vyl5jnmf5jh", "cells": [{ "property": "p2", "option": "dn1qx45l0fu88pip2l9ua7joz" }, { "property": "p1", "text": "Paris" }] },
     { "id": "8rj09k224141g98x6rguz7f5h", "cells": [{ "property": "p2", "option": "7h1eyx85f462uj3sb6jlxdxvu" }, { "property": "p1", "text": "Helsinki" }] },
     { "id": "e1v5f01oi4bx1syl7x6ty3zeo", "cells": [{ "property": "p2", "option": "2xc52nefzictwc49wy8ldxh7t" }, { "property": "p1", "text": "Venice" }] },
-    { "id": "1dytemy0l8cen9xxkpcxzlgwq", "cells": [{ "property": "p1", "text": "Ahlen" }, { "property": "p2", "option": "b4ff5lo4rezgty4ge7siqndey" }] }
+    { "id": "1dytemy0l8cen9xxkpcxzlgwq", "cells": [{ "property": "p1", "text": "Ahlen" }, { "property": "p2", "option": "b4ff5lo4rezgty4ge7siqndey" }] },
+    { "id": "9jh7yjm443uvm99io0nc6ekpi", "cells": [{ "property": "p1", "text": "Koeln" }, { "property": "p2", "option": "b4ff5lo4rezgty4ge7siqndey" }] },
+    { "id": "9cwydn1h89znwl1wlxblxselj", "cells": [{ "property": "p2", "option": "o1" }, { "property": "p1", "text": "Enschede" }, { "property": "p5", "rows": [{ "row": "cdns3i0ehcr45q7zh0z15iqzt" }] }] }
   ]
 }

@@ -192,12 +192,12 @@ public sealed class KnowledgeEditingTests : IDisposable
         await table.Edit(new TableGesture("addRow", TargetId: "r1"));
         await table.Edit(new TableGesture("addRow", ViewId: "v1", Settings: Settings(("group", "o2"))));
 
-        // Assert: three new rows beside the example's nine, each with an id never used; one after r1, the others at the end.
+        // Assert: three new rows beside the example's eleven, each with an id never used; one after r1, the others at the end.
         var rows = table.OnDisk().Rows;
-        Assert.Equal(12, rows.Count);
+        Assert.Equal(14, rows.Count);
         Assert.Equal("r1", rows[0].Id);
         Assert.Equal("r2", rows[2].Id);
-        Assert.Equal(12, rows.Select(row => row.Id).Distinct().Count());
+        Assert.Equal(14, rows.Select(row => row.Id).Distinct().Count());
 
         // The row added in the group of Belgium is a row of Belgium.
         Assert.Equal(["o2"], Cell(table.OnDisk(), rows[^1].Id, "p2"));
@@ -414,8 +414,9 @@ public sealed class KnowledgeEditingTests : IDisposable
         // Arrange.
         await using var table = Open(extension);
         var other = table.OnDisk().Views.Single(view => view.Id == "v1");
+        var calculated = table.OnDisk().Views.Single(view => view.Id == "v2").Columns.Single(column => column.PropertyId == "p5");
 
-        // Act: all in the view that says nothing of its columns yet.
+        // Act: all in the second view.
         await table.Edit(new TableGesture("hideColumn", ColumnId: "p4", ViewId: "v2"));
         await table.Edit(new TableGesture("resizeColumn", ColumnId: "p2", ViewId: "v2", Settings: Settings(("width", "240"))));
         await table.Edit(new TableGesture("setColumnWrap", ColumnId: "p2", ViewId: "v2", Settings: Settings(("wrap", "true"))));
@@ -427,7 +428,8 @@ public sealed class KnowledgeEditingTests : IDisposable
         Assert.Equal("p3", view.Columns.First(column => column.Visible).PropertyId);
         Assert.Equal(new KnowledgeColumn("p4", Visible: false, Width: 0, Wrap: false), view.Columns.Single(column => column.PropertyId == "p4"));
         Assert.Equal(new KnowledgeColumn("p2", Visible: true, Width: 240, Wrap: true), view.Columns.Single(column => column.PropertyId == "p2"));
-        Assert.DoesNotContain(view.Columns, column => column.PropertyId is "p5" or "p6" or "p7" or "p8" or "p9");
+        Assert.Equal(calculated, view.Columns.Single(column => column.PropertyId == "p5"));
+        Assert.DoesNotContain(view.Columns, column => column.PropertyId is "p6" or "p7" or "p8" or "p9");
 
         // The other view, the properties and the rows are as they were.
         Assert.Equal(other.Columns, disk.Views.Single(candidate => candidate.Id == "v1").Columns);
@@ -638,7 +640,7 @@ public sealed class KnowledgeEditingTests : IDisposable
         (ShortGuid first, _) = table.Begin(SetCell("r2", "p1", "Antwerpen"));
         (ShortGuid second, _) = table.Begin(SetCell("r2", "p3", "529247"));
         (ShortGuid third, _) = table.Begin(new TableGesture("addRow"));
-        Assert.Equal(11, table.Lines().Count);
+        Assert.Equal(13, table.Lines().Count);
         table.Release();
         var settled = await table.Settled(first);
 
@@ -647,7 +649,7 @@ public sealed class KnowledgeEditingTests : IDisposable
         Assert.Equal("cities.yaml could not be written: the disk is full.", settled.Error);
         Assert.Equal([second, third], settled.TakenBack);
         var lines = table.Lines();
-        Assert.Equal(10, lines.Count);
+        Assert.Equal(12, lines.Count);
         Assert.Equal(["Antwerp"], lines.Single(line => line.Id == "r2").Cells.Single(cell => cell.ColumnId == "p1").Values);
 
         // And none of the later edits was written after all.
