@@ -1,12 +1,15 @@
 using EtAlii.Adp.Documents;
+using JetBrains.Annotations;
 
 namespace EtAlii.Adp.Diagram;
 
+// Modules read the members their session needs: supply-chain the watch id, c4 the registration.
 /// <summary>What a session is opened on: the connection, the project, the body and the registration it was opened through.</summary>
 /// <param name="WatchId">The connection that opened the session.</param>
 /// <param name="RootPath">The root path of the project.</param>
 /// <param name="BodyPath">The path to the diagram body file.</param>
 /// <param name="RegistrationPath">The <c>.adp</c> file it was opened through, or null for a body opened without one.</param>
+[UsedImplicitly(ImplicitUseTargetFlags.WithMembers)]
 public sealed record DiagramSessionOpening(ShortGuid WatchId, string RootPath, string BodyPath, string? RegistrationPath);
 
 /// <summary>
