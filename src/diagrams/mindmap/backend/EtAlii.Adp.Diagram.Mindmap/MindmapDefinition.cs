@@ -156,12 +156,9 @@ internal static class MindmapDefinition
         entry.Id,
         entry.Label,
         entry.Icon,
-        entry.Shortcut is { } key ? new ContextShortcutDefinition(KeyOf(key)) : null,
+        entry.Shortcut is { } key ? new ContextShortcutDefinition(key.EventKey, key.Ctrl, key.Shift, key.Alt, key.Meta) : null,
         entry.Available,
         entry.UnavailableReason);
-
-    /// <summary>A shortcut as the client sends and matches it: the definition's text, with <c>Space</c> as the key it is.</summary>
-    private static string KeyOf(DerivedShortcut shortcut) => shortcut.Text == "Space" ? " " : shortcut.Text;
 
     /// <summary>A row as the grid draws it: a <c>textarea</c> is the Text editor, anything else a line.</summary>
     private static ContextPropertyDefinition Row(DerivedRow row) =>

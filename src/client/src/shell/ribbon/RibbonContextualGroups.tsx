@@ -3,6 +3,15 @@ import type { ContextAction, ContextActionGroup, ContextShortcut } from "../../g
 import { innermostKey, useContextConnection, useContextSelection } from "../context/ContextConnectionProvider";
 import { RibbonDropdownButton } from "./RibbonDropdownButton";
 
+/** The `KeyboardEvent.key` values a person reads by another name. */
+const KEY_NAMES: Readonly<Record<string, string>> = {
+  " ": "Space",
+  ArrowUp: "Up",
+  ArrowDown: "Down",
+  ArrowLeft: "Left",
+  ArrowRight: "Right",
+};
+
 /** "Ctrl+Shift+X" - the shortcut as a tooltip reads it. */
 export function formatShortcut(shortcut: ContextShortcut): string {
   const parts: string[] = [];
@@ -18,7 +27,7 @@ export function formatShortcut(shortcut: ContextShortcut): string {
   if (shortcut.meta) {
     parts.push("Meta");
   }
-  parts.push(shortcut.key.length === 1 ? shortcut.key.toUpperCase() : shortcut.key);
+  parts.push(KEY_NAMES[shortcut.key] ?? (shortcut.key.length === 1 ? shortcut.key.toUpperCase() : shortcut.key));
   return parts.join("+");
 }
 

@@ -93,11 +93,11 @@ export const AbmProperties = {
 
 export const ABM_PROPERTY_IDS: readonly string[] = Object.values(AbmProperties);
 
-/** The keys the declared actions listen for. */
+/** The keys the declared actions listen for, as `KeyboardEvent.key` spells them; the moves are pressed with Alt held. */
 export const AbmShortcuts = {
   rename: "F2",
-  moveEarlier: "Alt+Up",
-  moveLater: "Alt+Down",
+  moveEarlier: "ArrowUp",
+  moveLater: "ArrowDown",
 } as const;
 
 /**

@@ -63,6 +63,22 @@ public sealed record DerivedShortcut(string Text, string Key, bool Ctrl, bool Sh
         }
         return new DerivedShortcut(text, parts[^1], ctrl, shift, alt, meta);
     }
+
+    /// <summary>
+    /// <see cref="Key"/> as a browser's <c>KeyboardEvent.key</c> spells it, which is how a host sends and
+    /// matches a keypress: <c>Space</c> is <c>" "</c>, <c>Up</c> is <c>ArrowUp</c>, <c>Esc</c> is
+    /// <c>Escape</c>; every other key is spelled the same.
+    /// </summary>
+    public string EventKey => Key switch
+    {
+        "Space" => " ",
+        "Up" => "ArrowUp",
+        "Down" => "ArrowDown",
+        "Left" => "ArrowLeft",
+        "Right" => "ArrowRight",
+        "Esc" => "Escape",
+        _ => Key,
+    };
 }
 
 /// <summary>One entry of a context menu as a host shows it, its id mapped by a <see cref="WireIdMap"/>.</summary>

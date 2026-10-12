@@ -23,8 +23,8 @@
         [
           "g1 abm.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g1 abm.edit-notes | Edit notes… | mdi-note-text-outline | - | on",
-          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+Up | off (It is already the first of its siblings.)",
-          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+Down | off (It is already the last of its siblings.)",
+          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+ArrowUp | off (It is already the first of its siblings.)",
+          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+ArrowDown | off (It is already the last of its siblings.)",
           "g1 abm.remove | Remove | mdi-delete-outline | Delete | on",
           "g2 abm.add.sequence | Add child: Do in order | mdi-plus | - | on",
           "g2 abm.add.fallback | Add child: Try in order | mdi-plus | - | on",
@@ -42,8 +42,8 @@
         [
           "g1 abm.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g1 abm.edit-notes | Edit notes… | mdi-note-text-outline | - | on",
-          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+Up | off (It is already the first of its siblings.)",
-          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+Down | on",
+          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+ArrowUp | off (It is already the first of its siblings.)",
+          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+ArrowDown | on",
           "g1 abm.remove | Remove | mdi-delete-outline | Delete | on",
           "g2 abm.add.sequence | Add child: Do in order | mdi-plus | - | on",
           "g2 abm.add.fallback | Add child: Try in order | mdi-plus | - | on",
@@ -61,32 +61,32 @@
         [
           "g1 abm.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g1 abm.edit-notes | Edit notes… | mdi-note-text-outline | - | on",
-          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+Up | off (It is already the first of its siblings.)",
-          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+Down | on",
+          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+ArrowUp | off (It is already the first of its siblings.)",
+          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+ArrowDown | on",
           "g1 abm.remove | Remove | mdi-delete-outline | Delete | on",
           "g2 abm.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this behavior model has a node.)"
         ],
         [
           "g1 abm.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g1 abm.edit-notes | Edit notes… | mdi-note-text-outline | - | on",
-          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+Up | on",
-          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+Down | off (It is already the last of its siblings.)",
+          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+ArrowUp | on",
+          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+ArrowDown | off (It is already the last of its siblings.)",
           "g1 abm.remove | Remove | mdi-delete-outline | Delete | on",
           "g2 abm.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this behavior model has a node.)"
         ],
         [
           "g1 abm.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g1 abm.edit-notes | Edit notes… | mdi-note-text-outline | - | on",
-          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+Up | on",
-          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+Down | on",
+          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+ArrowUp | on",
+          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+ArrowDown | on",
           "g1 abm.remove | Remove | mdi-delete-outline | Delete | on",
           "g2 abm.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this behavior model has a node.)"
         ],
         [
           "g1 abm.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g1 abm.edit-notes | Edit notes… | mdi-note-text-outline | - | on",
-          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+Up | off (It is already the first of its siblings.)",
-          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+Down | off (It is already the last of its siblings.)",
+          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+ArrowUp | off (It is already the first of its siblings.)",
+          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+ArrowDown | off (It is already the last of its siblings.)",
           "g1 abm.remove | Remove | mdi-delete-outline | Delete | on",
           "g2 abm.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this behavior model has a node.)"
         ],
@@ -522,8 +522,8 @@
         [
           "g1 abm.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g1 abm.edit-notes | Edit notes… | mdi-note-text-outline | - | on",
-          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+Up | off (It is already the first of its siblings.)",
-          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+Down | off (It is already the last of its siblings.)",
+          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+ArrowUp | off (It is already the first of its siblings.)",
+          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+ArrowDown | off (It is already the last of its siblings.)",
           "g1 abm.remove | Remove | mdi-delete-outline | Delete | on",
           "g2 abm.add.sequence | Add child: Do in order | mdi-plus | - | on",
           "g2 abm.add.fallback | Add child: Try in order | mdi-plus | - | on",
@@ -541,8 +541,8 @@
         [
           "g1 abm.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g1 abm.edit-notes | Edit notes… | mdi-note-text-outline | - | on",
-          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+Up | off (It is already the first of its siblings.)",
-          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+Down | on",
+          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+ArrowUp | off (It is already the first of its siblings.)",
+          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+ArrowDown | on",
           "g1 abm.remove | Remove | mdi-delete-outline | Delete | on",
           "g2 abm.add.sequence | Add child: Do in order | mdi-plus | - | on",
           "g2 abm.add.fallback | Add child: Try in order | mdi-plus | - | on",
@@ -560,24 +560,24 @@
         [
           "g1 abm.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g1 abm.edit-notes | Edit notes… | mdi-note-text-outline | - | on",
-          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+Up | off (It is already the first of its siblings.)",
-          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+Down | on",
+          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+ArrowUp | off (It is already the first of its siblings.)",
+          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+ArrowDown | on",
           "g1 abm.remove | Remove | mdi-delete-outline | Delete | on",
           "g2 abm.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this behavior model has a node.)"
         ],
         [
           "g1 abm.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g1 abm.edit-notes | Edit notes… | mdi-note-text-outline | - | on",
-          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+Up | on",
-          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+Down | off (It is already the last of its siblings.)",
+          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+ArrowUp | on",
+          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+ArrowDown | off (It is already the last of its siblings.)",
           "g1 abm.remove | Remove | mdi-delete-outline | Delete | on",
           "g2 abm.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this behavior model has a node.)"
         ],
         [
           "g1 abm.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g1 abm.edit-notes | Edit notes… | mdi-note-text-outline | - | on",
-          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+Up | on",
-          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+Down | on",
+          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+ArrowUp | on",
+          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+ArrowDown | on",
           "g1 abm.remove | Remove | mdi-delete-outline | Delete | on",
           "g2 abm.add.sequence | Add child: Do in order | mdi-plus | - | on",
           "g2 abm.add.fallback | Add child: Try in order | mdi-plus | - | on",
@@ -595,16 +595,16 @@
         [
           "g1 abm.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g1 abm.edit-notes | Edit notes… | mdi-note-text-outline | - | on",
-          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+Up | on",
-          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+Down | on",
+          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+ArrowUp | on",
+          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+ArrowDown | on",
           "g1 abm.remove | Remove | mdi-delete-outline | Delete | on",
           "g2 abm.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this behavior model has a node.)"
         ],
         [
           "g1 abm.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g1 abm.edit-notes | Edit notes… | mdi-note-text-outline | - | on",
-          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+Up | on",
-          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+Down | off (It is already the last of its siblings.)",
+          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+ArrowUp | on",
+          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+ArrowDown | off (It is already the last of its siblings.)",
           "g1 abm.remove | Remove | mdi-delete-outline | Delete | on",
           "g2 abm.add.sequence | Add child: Do in order | mdi-plus | - | on",
           "g2 abm.add.fallback | Add child: Try in order | mdi-plus | - | on",
@@ -622,8 +622,8 @@
         [
           "g1 abm.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g1 abm.edit-notes | Edit notes… | mdi-note-text-outline | - | on",
-          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+Up | off (It is already the first of its siblings.)",
-          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+Down | off (It is already the last of its siblings.)",
+          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+ArrowUp | off (It is already the first of its siblings.)",
+          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+ArrowDown | off (It is already the last of its siblings.)",
           "g1 abm.remove | Remove | mdi-delete-outline | Delete | on",
           "g2 abm.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this behavior model has a node.)"
         ],
@@ -1168,8 +1168,8 @@
         [
           "g1 abm.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g1 abm.edit-notes | Edit notes… | mdi-note-text-outline | - | on",
-          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+Up | off (It is already the first of its siblings.)",
-          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+Down | off (It is already the last of its siblings.)",
+          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+ArrowUp | off (It is already the first of its siblings.)",
+          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+ArrowDown | off (It is already the last of its siblings.)",
           "g1 abm.remove | Remove | mdi-delete-outline | Delete | on",
           "g2 abm.add.sequence | Add child: Do in order | mdi-plus | - | on",
           "g2 abm.add.fallback | Add child: Try in order | mdi-plus | - | on",
@@ -1187,8 +1187,8 @@
         [
           "g1 abm.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g1 abm.edit-notes | Edit notes… | mdi-note-text-outline | - | on",
-          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+Up | off (It is already the first of its siblings.)",
-          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+Down | on",
+          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+ArrowUp | off (It is already the first of its siblings.)",
+          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+ArrowDown | on",
           "g1 abm.remove | Remove | mdi-delete-outline | Delete | on",
           "g2 abm.add.sequence | Add child: Do in order | mdi-plus | - | on",
           "g2 abm.add.fallback | Add child: Try in order | mdi-plus | - | on",
@@ -1206,24 +1206,24 @@
         [
           "g1 abm.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g1 abm.edit-notes | Edit notes… | mdi-note-text-outline | - | on",
-          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+Up | off (It is already the first of its siblings.)",
-          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+Down | on",
+          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+ArrowUp | off (It is already the first of its siblings.)",
+          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+ArrowDown | on",
           "g1 abm.remove | Remove | mdi-delete-outline | Delete | on",
           "g2 abm.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this behavior model has a node.)"
         ],
         [
           "g1 abm.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g1 abm.edit-notes | Edit notes… | mdi-note-text-outline | - | on",
-          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+Up | on",
-          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+Down | off (It is already the last of its siblings.)",
+          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+ArrowUp | on",
+          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+ArrowDown | off (It is already the last of its siblings.)",
           "g1 abm.remove | Remove | mdi-delete-outline | Delete | on",
           "g2 abm.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this behavior model has a node.)"
         ],
         [
           "g1 abm.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g1 abm.edit-notes | Edit notes… | mdi-note-text-outline | - | on",
-          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+Up | on",
-          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+Down | off (It is already the last of its siblings.)",
+          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+ArrowUp | on",
+          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+ArrowDown | off (It is already the last of its siblings.)",
           "g1 abm.remove | Remove | mdi-delete-outline | Delete | on",
           "g2 abm.add.sequence | Add child: Do in order | mdi-plus | - | on",
           "g2 abm.add.fallback | Add child: Try in order | mdi-plus | - | on",
@@ -1241,16 +1241,16 @@
         [
           "g1 abm.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g1 abm.edit-notes | Edit notes… | mdi-note-text-outline | - | on",
-          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+Up | on",
-          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+Down | on",
+          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+ArrowUp | on",
+          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+ArrowDown | on",
           "g1 abm.remove | Remove | mdi-delete-outline | Delete | on",
           "g2 abm.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this behavior model has a node.)"
         ],
         [
           "g1 abm.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g1 abm.edit-notes | Edit notes… | mdi-note-text-outline | - | on",
-          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+Up | off (It is already the first of its siblings.)",
-          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+Down | off (It is already the last of its siblings.)",
+          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+ArrowUp | off (It is already the first of its siblings.)",
+          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+ArrowDown | off (It is already the last of its siblings.)",
           "g1 abm.remove | Remove | mdi-delete-outline | Delete | on",
           "g2 abm.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this behavior model has a node.)"
         ],
@@ -1683,8 +1683,8 @@
         [
           "g1 abm.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g1 abm.edit-notes | Edit notes… | mdi-note-text-outline | - | on",
-          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+Up | off (It is already the first of its siblings.)",
-          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+Down | off (It is already the last of its siblings.)",
+          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+ArrowUp | off (It is already the first of its siblings.)",
+          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+ArrowDown | off (It is already the last of its siblings.)",
           "g1 abm.remove | Remove | mdi-delete-outline | Delete | on",
           "g2 abm.add.sequence | Add child: Do in order | mdi-plus | - | on",
           "g2 abm.add.fallback | Add child: Try in order | mdi-plus | - | on",
@@ -1702,8 +1702,8 @@
         [
           "g1 abm.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g1 abm.edit-notes | Edit notes… | mdi-note-text-outline | - | on",
-          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+Up | off (It is already the first of its siblings.)",
-          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+Down | on",
+          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+ArrowUp | off (It is already the first of its siblings.)",
+          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+ArrowDown | on",
           "g1 abm.remove | Remove | mdi-delete-outline | Delete | on",
           "g2 abm.add.sequence | Add child: Do in order | mdi-plus | - | on",
           "g2 abm.add.fallback | Add child: Try in order | mdi-plus | - | on",
@@ -1721,24 +1721,24 @@
         [
           "g1 abm.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g1 abm.edit-notes | Edit notes… | mdi-note-text-outline | - | on",
-          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+Up | off (It is already the first of its siblings.)",
-          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+Down | on",
+          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+ArrowUp | off (It is already the first of its siblings.)",
+          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+ArrowDown | on",
           "g1 abm.remove | Remove | mdi-delete-outline | Delete | on",
           "g2 abm.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this behavior model has a node.)"
         ],
         [
           "g1 abm.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g1 abm.edit-notes | Edit notes… | mdi-note-text-outline | - | on",
-          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+Up | on",
-          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+Down | off (It is already the last of its siblings.)",
+          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+ArrowUp | on",
+          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+ArrowDown | off (It is already the last of its siblings.)",
           "g1 abm.remove | Remove | mdi-delete-outline | Delete | on",
           "g2 abm.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this behavior model has a node.)"
         ],
         [
           "g1 abm.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g1 abm.edit-notes | Edit notes… | mdi-note-text-outline | - | on",
-          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+Up | on",
-          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+Down | on",
+          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+ArrowUp | on",
+          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+ArrowDown | on",
           "g1 abm.remove | Remove | mdi-delete-outline | Delete | on",
           "g2 abm.add.sequence | Add child: Do in order | mdi-plus | - | on",
           "g2 abm.add.fallback | Add child: Try in order | mdi-plus | - | on",
@@ -1756,8 +1756,8 @@
         [
           "g1 abm.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g1 abm.edit-notes | Edit notes… | mdi-note-text-outline | - | on",
-          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+Up | on",
-          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+Down | on",
+          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+ArrowUp | on",
+          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+ArrowDown | on",
           "g1 abm.remove | Remove | mdi-delete-outline | Delete | on",
           "g2 abm.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this behavior model has a node.)"
         ],
@@ -2182,8 +2182,8 @@
         [
           "g1 abm.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g1 abm.edit-notes | Edit notes… | mdi-note-text-outline | - | on",
-          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+Up | off (It is already the first of its siblings.)",
-          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+Down | off (It is already the last of its siblings.)",
+          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+ArrowUp | off (It is already the first of its siblings.)",
+          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+ArrowDown | off (It is already the last of its siblings.)",
           "g1 abm.remove | Remove | mdi-delete-outline | Delete | on",
           "g2 abm.add.sequence | Add child: Do in order | mdi-plus | - | on",
           "g2 abm.add.fallback | Add child: Try in order | mdi-plus | - | on",
@@ -2201,16 +2201,16 @@
         [
           "g1 abm.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g1 abm.edit-notes | Edit notes… | mdi-note-text-outline | - | on",
-          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+Up | off (It is already the first of its siblings.)",
-          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+Down | on",
+          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+ArrowUp | off (It is already the first of its siblings.)",
+          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+ArrowDown | on",
           "g1 abm.remove | Remove | mdi-delete-outline | Delete | on",
           "g2 abm.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this behavior model has a node.)"
         ],
         [
           "g1 abm.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g1 abm.edit-notes | Edit notes… | mdi-note-text-outline | - | on",
-          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+Up | on",
-          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+Down | off (It is already the last of its siblings.)",
+          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+ArrowUp | on",
+          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+ArrowDown | off (It is already the last of its siblings.)",
           "g1 abm.remove | Remove | mdi-delete-outline | Delete | on",
           "g2 abm.add.sequence | Add child: Do in order | mdi-plus | - | on",
           "g2 abm.add.fallback | Add child: Try in order | mdi-plus | - | on",
@@ -2228,16 +2228,16 @@
         [
           "g1 abm.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g1 abm.edit-notes | Edit notes… | mdi-note-text-outline | - | on",
-          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+Up | on",
-          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+Down | off (It is already the last of its siblings.)",
+          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+ArrowUp | on",
+          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+ArrowDown | off (It is already the last of its siblings.)",
           "g1 abm.remove | Remove | mdi-delete-outline | Delete | on",
           "g2 abm.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this behavior model has a node.)"
         ],
         [
           "g1 abm.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g1 abm.edit-notes | Edit notes… | mdi-note-text-outline | - | on",
-          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+Up | off (It is already the first of its siblings.)",
-          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+Down | off (It is already the last of its siblings.)",
+          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+ArrowUp | off (It is already the first of its siblings.)",
+          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+ArrowDown | off (It is already the last of its siblings.)",
           "g1 abm.remove | Remove | mdi-delete-outline | Delete | on",
           "g2 abm.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this behavior model has a node.)"
         ],
@@ -2555,8 +2555,8 @@
         [
           "g1 abm.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g1 abm.edit-notes | Edit notes… | mdi-note-text-outline | - | on",
-          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+Up | off (It is already the first of its siblings.)",
-          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+Down | off (It is already the last of its siblings.)",
+          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+ArrowUp | off (It is already the first of its siblings.)",
+          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+ArrowDown | off (It is already the last of its siblings.)",
           "g1 abm.remove | Remove | mdi-delete-outline | Delete | on",
           "g2 abm.add.sequence | Add child: Do in order | mdi-plus | - | on",
           "g2 abm.add.fallback | Add child: Try in order | mdi-plus | - | on",
@@ -2574,8 +2574,8 @@
         [
           "g1 abm.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g1 abm.edit-notes | Edit notes… | mdi-note-text-outline | - | on",
-          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+Up | off (It is already the first of its siblings.)",
-          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+Down | off (It is already the last of its siblings.)",
+          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+ArrowUp | off (It is already the first of its siblings.)",
+          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+ArrowDown | off (It is already the last of its siblings.)",
           "g1 abm.remove | Remove | mdi-delete-outline | Delete | on",
           "g2 abm.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this behavior model has a node.)"
         ],
@@ -2813,8 +2813,8 @@
         [
           "g1 abm.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g1 abm.edit-notes | Edit notes… | mdi-note-text-outline | - | on",
-          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+Up | off (It is already the first of its siblings.)",
-          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+Down | off (It is already the last of its siblings.)",
+          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+ArrowUp | off (It is already the first of its siblings.)",
+          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+ArrowDown | off (It is already the last of its siblings.)",
           "g1 abm.remove | Remove | mdi-delete-outline | Delete | on",
           "g2 abm.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this behavior model has a node.)"
         ],
@@ -2968,8 +2968,8 @@
         [
           "g1 abm.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g1 abm.edit-notes | Edit notes… | mdi-note-text-outline | - | on",
-          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+Up | off (It is already the first of its siblings.)",
-          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+Down | off (It is already the last of its siblings.)",
+          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+ArrowUp | off (It is already the first of its siblings.)",
+          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+ArrowDown | off (It is already the last of its siblings.)",
           "g1 abm.remove | Remove | mdi-delete-outline | Delete | on",
           "g2 abm.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this behavior model has a node.)"
         ],
@@ -3123,8 +3123,8 @@
         [
           "g1 abm.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g1 abm.edit-notes | Edit notes… | mdi-note-text-outline | - | on",
-          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+Up | off (It is already the first of its siblings.)",
-          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+Down | off (It is already the last of its siblings.)",
+          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+ArrowUp | off (It is already the first of its siblings.)",
+          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+ArrowDown | off (It is already the last of its siblings.)",
           "g1 abm.remove | Remove | mdi-delete-outline | Delete | on",
           "g2 abm.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this behavior model has a node.)"
         ],
@@ -3278,8 +3278,8 @@
         [
           "g1 abm.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g1 abm.edit-notes | Edit notes… | mdi-note-text-outline | - | on",
-          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+Up | off (It is already the first of its siblings.)",
-          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+Down | off (It is already the last of its siblings.)",
+          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+ArrowUp | off (It is already the first of its siblings.)",
+          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+ArrowDown | off (It is already the last of its siblings.)",
           "g1 abm.remove | Remove | mdi-delete-outline | Delete | on",
           "g2 abm.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this behavior model has a node.)"
         ],
@@ -3433,8 +3433,8 @@
         [
           "g1 abm.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g1 abm.edit-notes | Edit notes… | mdi-note-text-outline | - | on",
-          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+Up | off (It is already the first of its siblings.)",
-          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+Down | off (It is already the last of its siblings.)",
+          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+ArrowUp | off (It is already the first of its siblings.)",
+          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+ArrowDown | off (It is already the last of its siblings.)",
           "g1 abm.remove | Remove | mdi-delete-outline | Delete | on",
           "g2 abm.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this behavior model has a node.)"
         ],
@@ -3590,8 +3590,8 @@
         [
           "g1 abm.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g1 abm.edit-notes | Edit notes… | mdi-note-text-outline | - | on",
-          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+Up | off (It is already the first of its siblings.)",
-          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+Down | off (It is already the last of its siblings.)",
+          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+ArrowUp | off (It is already the first of its siblings.)",
+          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+ArrowDown | off (It is already the last of its siblings.)",
           "g1 abm.remove | Remove | mdi-delete-outline | Delete | on",
           "g2 abm.add.sequence | Add child: Do in order | mdi-plus | - | on",
           "g2 abm.add.fallback | Add child: Try in order | mdi-plus | - | on",
@@ -3609,8 +3609,8 @@
         [
           "g1 abm.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g1 abm.edit-notes | Edit notes… | mdi-note-text-outline | - | on",
-          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+Up | off (It is already the first of its siblings.)",
-          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+Down | off (It is already the last of its siblings.)",
+          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+ArrowUp | off (It is already the first of its siblings.)",
+          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+ArrowDown | off (It is already the last of its siblings.)",
           "g1 abm.remove | Remove | mdi-delete-outline | Delete | on",
           "g2 abm.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this behavior model has a node.)"
         ],
@@ -4544,8 +4544,8 @@
         [
           "g1 abm.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g1 abm.edit-notes | Edit notes… | mdi-note-text-outline | - | on",
-          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+Up | off (It is already the first of its siblings.)",
-          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+Down | off (It is already the last of its siblings.)",
+          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+ArrowUp | off (It is already the first of its siblings.)",
+          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+ArrowDown | off (It is already the last of its siblings.)",
           "g1 abm.remove | Remove | mdi-delete-outline | Delete | on",
           "g2 abm.add.sequence | Add child: Do in order | mdi-plus | - | on",
           "g2 abm.add.fallback | Add child: Try in order | mdi-plus | - | on",
@@ -4563,16 +4563,16 @@
         [
           "g1 abm.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g1 abm.edit-notes | Edit notes… | mdi-note-text-outline | - | on",
-          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+Up | off (It is already the first of its siblings.)",
-          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+Down | on",
+          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+ArrowUp | off (It is already the first of its siblings.)",
+          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+ArrowDown | on",
           "g1 abm.remove | Remove | mdi-delete-outline | Delete | on",
           "g2 abm.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this behavior model has a node.)"
         ],
         [
           "g1 abm.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g1 abm.edit-notes | Edit notes… | mdi-note-text-outline | - | on",
-          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+Up | on",
-          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+Down | on",
+          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+ArrowUp | on",
+          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+ArrowDown | on",
           "g1 abm.remove | Remove | mdi-delete-outline | Delete | on",
           "g2 abm.add.sequence | Add child: Do in order | mdi-plus | - | on",
           "g2 abm.add.fallback | Add child: Try in order | mdi-plus | - | on",
@@ -4590,8 +4590,8 @@
         [
           "g1 abm.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g1 abm.edit-notes | Edit notes… | mdi-note-text-outline | - | on",
-          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+Up | on",
-          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+Down | off (It is already the last of its siblings.)",
+          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+ArrowUp | on",
+          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+ArrowDown | off (It is already the last of its siblings.)",
           "g1 abm.remove | Remove | mdi-delete-outline | Delete | on",
           "g2 abm.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this behavior model has a node.)"
         ],
@@ -4889,8 +4889,8 @@
         [
           "g1 abm.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g1 abm.edit-notes | Edit notes… | mdi-note-text-outline | - | on",
-          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+Up | off (It is already the first of its siblings.)",
-          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+Down | off (It is already the last of its siblings.)",
+          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+ArrowUp | off (It is already the first of its siblings.)",
+          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+ArrowDown | off (It is already the last of its siblings.)",
           "g1 abm.remove | Remove | mdi-delete-outline | Delete | on",
           "g2 abm.add.sequence | Add child: Do in order | mdi-plus | - | on",
           "g2 abm.add.fallback | Add child: Try in order | mdi-plus | - | on",
@@ -4908,8 +4908,8 @@
         [
           "g1 abm.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g1 abm.edit-notes | Edit notes… | mdi-note-text-outline | - | on",
-          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+Up | off (It is already the first of its siblings.)",
-          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+Down | off (It is already the last of its siblings.)",
+          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+ArrowUp | off (It is already the first of its siblings.)",
+          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+ArrowDown | off (It is already the last of its siblings.)",
           "g1 abm.remove | Remove | mdi-delete-outline | Delete | on",
           "g2 abm.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this behavior model has a node.)"
         ],
@@ -5147,8 +5147,8 @@
         [
           "g1 abm.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g1 abm.edit-notes | Edit notes… | mdi-note-text-outline | - | on",
-          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+Up | off (It is already the first of its siblings.)",
-          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+Down | off (It is already the last of its siblings.)",
+          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+ArrowUp | off (It is already the first of its siblings.)",
+          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+ArrowDown | off (It is already the last of its siblings.)",
           "g1 abm.remove | Remove | mdi-delete-outline | Delete | on",
           "g2 abm.add.sequence | Add child: Do in order | mdi-plus | - | on",
           "g2 abm.add.fallback | Add child: Try in order | mdi-plus | - | on",
@@ -5166,8 +5166,8 @@
         [
           "g1 abm.rename | Rename… | mdi-pencil-outline | F2 | on",
           "g1 abm.edit-notes | Edit notes… | mdi-note-text-outline | - | on",
-          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+Up | off (It is already the first of its siblings.)",
-          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+Down | off (It is already the last of its siblings.)",
+          "g1 abm.move-earlier | Move earlier | mdi-arrow-left | Alt+ArrowUp | off (It is already the first of its siblings.)",
+          "g1 abm.move-later | Move later | mdi-arrow-right | Alt+ArrowDown | off (It is already the last of its siblings.)",
           "g1 abm.remove | Remove | mdi-delete-outline | Delete | on",
           "g2 abm.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this behavior model has a node.)"
         ],
