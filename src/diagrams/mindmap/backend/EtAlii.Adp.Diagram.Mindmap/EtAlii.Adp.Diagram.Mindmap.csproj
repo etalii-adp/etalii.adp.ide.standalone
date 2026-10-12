@@ -8,7 +8,6 @@
       seams, the diagram session seam. The dependency runs this way and never back - core must
       compile and test with this module absent (mindmap-diagram Requirement 13.4).
     -->
-    <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Backend\EtAlii.Adp.Backend.csproj" />
     <!-- The body is read through FBL: the binding below, whose reader is the module's persistence plugin. -->
     <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Specification.Fbl\EtAlii.Adp.Specification.Fbl.csproj" />
     <!-- What is derived from the bundled DISL definition. -->

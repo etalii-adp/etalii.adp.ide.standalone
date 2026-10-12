@@ -10,7 +10,6 @@
       two family pieces it consumes (the canvas conventions and the .adp layout block) arrive
       through core alone.
     -->
-    <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Backend\EtAlii.Adp.Backend.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -9,7 +9,6 @@
       RegistrationLayout and its command - lives in core because the .adp format is core's,
       not because this module asked for a hook.
     -->
-    <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Backend\EtAlii.Adp.Backend.csproj" />
   </ItemGroup>
 
   <ItemGroup>

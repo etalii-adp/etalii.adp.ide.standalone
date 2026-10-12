@@ -8,7 +8,6 @@
       compile and test with this module absent, which is what the timeline-diagram spec's
       "What this spec changes in core: nothing" claim rests on.
     -->
-    <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Backend\EtAlii.Adp.Backend.csproj" />
     <!-- The toolbox, the context menus, the property rows, the findings and the placement additions are derived from the bundled DISL definition. -->
     <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Specification.Fbl\EtAlii.Adp.Specification.Fbl.csproj" />
     <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Specification.Disl\EtAlii.Adp.Specification.Disl.csproj" />

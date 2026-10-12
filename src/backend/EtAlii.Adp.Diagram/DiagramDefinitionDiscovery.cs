@@ -12,8 +12,8 @@ namespace EtAlii.Adp.Diagram;
 /// </summary>
 /// <remarks>
 /// This is a static class without state  so it can be handed a
-/// test-controlled set of assemblies. The host runs it once at startup and stores the
-/// result in all DiagramDefinitions, nothing else should call it.
+/// test-controlled set of assemblies. The host runs it once at startup and registers the
+/// result in its container; nothing else should call it.
 /// <para>
 /// It never throws for a bad assembly or a bad candidate. A module that cannot be loaded or
 /// that declares its definition wrongly costs exactly one entry in the result and one
