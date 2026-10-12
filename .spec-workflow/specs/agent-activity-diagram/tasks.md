@@ -43,7 +43,7 @@
   - _Leverage: `definitions/designers/knowledge.fbl`, the hype cycle graph's binding in this host_
   - _Requirements: 1.1_
 
-- [-] 4. `agent-activity-diagram.dis`, `.md`, the schema and the Notion page
+- [x] 4. `agent-activity-diagram.dis`, `.md`, the schema and the Notion page
   - File (etalii.adp): `definitions/diagrams/agent-activity-diagram.dis`, `agent-activity-diagram.md`, `agent-activity-diagram.schema.json`; the tool's page in the Notion "Tools" database
   - Write the specification as the design outlines it (*The DISL specification*), with origin `etalii/agent-activity-diagram`, language id `net.etalii.adp.etalii.agent-activity-diagram` and extension `aad`.
   - Write the companion under its siblings' headings: what the diagram is for; the file in full with one complete example, enough to write one by hand; the reference layout algorithm with its numbers; how a host opens each kind of link; the instruction text for agents; the examples; what DISL 0.4 still cannot state; and the rule that these files win over this specification.
