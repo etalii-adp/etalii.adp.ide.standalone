@@ -229,7 +229,6 @@ public sealed class KnowledgeCalculationsTests : IDisposable
         var onDisk = table.OnDisk();
         var first = onDisk.Rows[0];
         var name = first.Cells.Single(cell => cell.PropertyId == "p1").Values[0];
-        List<string> Found() => [.. table.Lines().Where(line => line.Id.Length > 0).Select(line => line.Id)];
         await table.Edit(Calculate("p1", "countAll"));
         var bytes = table.Bytes();
 
@@ -272,5 +271,8 @@ public sealed class KnowledgeCalculationsTests : IDisposable
         Assert.Equal(all, Found());
         Assert.False(table.Session.Baseline().Settings.Settings.ContainsKey("search"));
         Assert.Equal(bytes, table.Bytes());
+        return;
+
+        List<string> Found() => [.. table.Lines().Where(line => line.Id.Length > 0).Select(line => line.Id)];
     }
 }

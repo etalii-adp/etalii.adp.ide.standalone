@@ -312,8 +312,6 @@ internal static partial class KnowledgeEdits
     /// </summary>
     private static KnowledgeEdit SetMutual(KnowledgeTable table, KnowledgeRow row, KnowledgeProperty property, List<string> values, List<ModelChange> changes)
     {
-        IReadOnlyList<string> Held(KnowledgeRow of) => of.Cells.FirstOrDefault(candidate => candidate.PropertyId == property.Id && candidate.Key == "rows")?.Values ?? [];
-
         var own = Held(row);
         List<string> stays = [.. own.Where(values.Contains)];
         List<string> added = [];
@@ -353,6 +351,8 @@ internal static partial class KnowledgeEdits
         changes.AddRange(own.Where(value => !values.Contains(value)).Select(value => (ModelChange)new ModelChange.Remove($"{cellId}/{value}")));
         changes.AddRange(added.Select(value => (ModelChange)new ModelChange.Add("CellItem", null, Attributes(("row", value)), cellId)));
         return new KnowledgeEdit(changes);
+
+        IReadOnlyList<string> Held(KnowledgeRow of) => of.Cells.FirstOrDefault(candidate => candidate.PropertyId == property.Id && candidate.Key == "rows")?.Values ?? [];
     }
 
     /// <summary>
@@ -1430,8 +1430,6 @@ internal static partial class KnowledgeEdits
     /// </summary>
     private static KnowledgeEdit Reordered(KnowledgeView view, List<string> order, List<string> desired)
     {
-        string Id(string key) => $"{view.Id}/groupOrder/{key}";
-
         // What the file holds, and will hold once the groups it does not name are added behind them.
         List<string> named = [.. view.GroupOrder.Distinct()];
         List<ModelChange> changes = [.. order.Where(key => !named.Contains(key)).Select(key => (ModelChange)new ModelChange.Add("GroupSetting", null, Attributes(("key", key)), view.Id, Slot: "groupOrder"))];
@@ -1451,6 +1449,8 @@ internal static partial class KnowledgeEdits
         }
 
         return new KnowledgeEdit(changes);
+
+        string Id(string key) => $"{view.Id}/groupOrder/{key}";
     }
 
     private static KnowledgeEdit Collapse(KnowledgeView view, string key, bool collapsed)

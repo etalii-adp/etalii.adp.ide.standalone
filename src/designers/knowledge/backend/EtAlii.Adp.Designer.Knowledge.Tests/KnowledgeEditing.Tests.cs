@@ -682,7 +682,6 @@ public sealed class KnowledgeEditingTests : IDisposable
         // Arrange.
         await using var table = Open(extension);
         var before = table.Bytes();
-        IReadOnlyList<string>? Held(string rowId, string propertyId) => table.OnDisk().Rows.Single(row => row.Id == rowId).Cells.FirstOrDefault(cell => cell.PropertyId == propertyId)?.Values;
 
         // Act: both rows get the same country, in one gesture.
         await table.Edit(new TableGesture("setCells", ColumnId: "p2", Values: ["o2"], Settings: Settings(("rows", "r1,r2"))));
@@ -703,6 +702,9 @@ public sealed class KnowledgeEditingTests : IDisposable
         Assert.Equal(KnowledgeEdits.NumberExpected, word);
         Assert.Equal(KnowledgeEdits.OptionFirst, made);
         Assert.Equal(before, table.Bytes());
+        return;
+
+        IReadOnlyList<string>? Held(string rowId, string propertyId) => table.OnDisk().Rows.Single(row => row.Id == rowId).Cells.FirstOrDefault(cell => cell.PropertyId == propertyId)?.Values;
     }
 
     /// <summary>

@@ -487,7 +487,6 @@ public sealed class KnowledgeRelationsTests : IDisposable
     {
         // Arrange: the province of a city, which holds one row and is shown in this table only.
         await using var table = Open(extension);
-        KnowledgeProperty Province() => table.OnDisk().Properties.Single(property => property.Id == "p5");
         Assert.Equal(("one", ""), (Province().Limit, Province().Counterpart));
         var rows = KnowledgeFiles.Describe(table.OnDisk() with { Properties = [], Views = [] });
         var theirs = KnowledgeFiles.Describe(KnowledgeDocumentStore.Read(Provinces).Body!.Table);
@@ -534,6 +533,9 @@ public sealed class KnowledgeRelationsTests : IDisposable
         await table.Edit(new TableGesture("setColumnParent", ColumnId: partOf, Settings: Settings(("parent", "true"))));
         (_, string parent) = table.Begin(new TableGesture("setRelationLimit", ColumnId: partOf, Settings: Settings(("limit", "none"))));
         Assert.Equal(KnowledgeEdits.ParentHoldsOne, parent);
+        return;
+
+        KnowledgeProperty Province() => table.OnDisk().Properties.Single(property => property.Id == "p5");
     }
 
     [Fact]
@@ -607,7 +609,6 @@ public sealed class KnowledgeRelationsTests : IDisposable
         await using var table = Open(extension);
         await table.Edit(new TableGesture("addRelation", Values: ["Twinned with"], Settings: Settings(("target", KnowledgeRelations.Self))));
         var twinned = Property(table, "Twinned with").Id;
-        IReadOnlyList<string>? Held(string rowId) => table.OnDisk().Rows.Single(row => row.Id == rowId).Cells.FirstOrDefault(cell => cell.PropertyId == twinned)?.Values;
 
         // Act: Amsterdam is twinned with Antwerp.
         await table.Edit(new TableGesture("setCell", RowId: "r1", ColumnId: twinned, Values: ["r2"]));
@@ -638,6 +639,9 @@ public sealed class KnowledgeRelationsTests : IDisposable
         await table.Edit(new TableGesture("setColumnParent", ColumnId: partOf, Settings: Settings(("parent", "true"))));
         await table.Edit(new TableGesture("setCell", RowId: "r2", ColumnId: partOf, Values: ["r1"]));
         Assert.Null(Cell(table.Lines(), "r1", partOf));
+        return;
+
+        IReadOnlyList<string>? Held(string rowId) => table.OnDisk().Rows.Single(row => row.Id == rowId).Cells.FirstOrDefault(cell => cell.PropertyId == twinned)?.Values;
     }
 
     [Fact]
