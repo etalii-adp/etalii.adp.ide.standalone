@@ -3,6 +3,7 @@ using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.Problems;
 using EtAlii.Adp.Projects;
 using Grpc.Net.Client;
+using JetBrains.Annotations;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
@@ -23,6 +24,7 @@ namespace EtAlii.Adp.TestSupport.Host;
 /// list removes what it adds.
 /// </para>
 /// </remarks>
+[UsedImplicitly] // Instantiated by xUnit for each class that declares IClassFixture<HostFixture>.
 public sealed class HostFixture : IDisposable
 {
     private readonly TestFolder _appData;
@@ -51,7 +53,7 @@ public sealed class HostFixture : IDisposable
     }
 
     /// <summary>The scratch folder that stands in for the application data folder.</summary>
-    public string AppDataRoot => _appData.Path;
+    private string AppDataRoot => _appData.Path;
 
     /// <summary>The host's services, for a test that asserts on what the host holds.</summary>
     public IServiceProvider Services => _factory.Services;

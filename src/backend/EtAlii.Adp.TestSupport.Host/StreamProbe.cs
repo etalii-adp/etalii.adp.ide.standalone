@@ -44,7 +44,7 @@ public static class StreamProbe
     /// <param name="provoke">Makes the server report something on the stream and returns what identifies that report.</param>
     /// <param name="recognize">Whether a message on the stream is the report of the given probe.</param>
     /// <param name="cancellationToken">Cancels the wait; a test passes its message timeout.</param>
-    public static async Task WaitUntilLiveAsync<TMessage, TProbe>(
+    private static async Task WaitUntilLiveAsync<TMessage, TProbe>(
         IAsyncStreamReader<TMessage> stream,
         Func<CancellationToken, Task<TProbe>> provoke,
         Func<TMessage, TProbe, bool> recognize,
