@@ -45,6 +45,12 @@ public abstract record ModelChange
     /// <summary>Stores the id of the element with a natural key in the registration's <c>identities</c> (FBL §8.6).</summary>
     public sealed record Identify(string Key, string Id) : ModelChange;
 
+    /// <summary>
+    /// Writes an id into an entry of the body that keeps its id in the body and has none yet: the
+    /// entry is from then on found by <paramref name="NewId"/>, and can be named by it.
+    /// </summary>
+    public sealed record StoreId(string Id, string NewId) : ModelChange;
+
     /// <summary>Saves without a change: no splice (FBL §15.3).</summary>
     public sealed record Save : ModelChange;
 }

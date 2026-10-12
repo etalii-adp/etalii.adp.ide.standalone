@@ -13,11 +13,11 @@ namespace EtAlii.Adp.Designer.Knowledge;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>Four entries rather than four questions.</b> An action asks one thing of its author, and
-/// what this one asks is the file. How many rows a relation holds and whether the other table
-/// shows it too are therefore chosen with the entry: one row or any number, one-way or two-way.
-/// The names it starts with - the target's for this side, this table's for the other - are
-/// changed afterwards like any property's.
+/// <b>One entry, and its questions in the order Notion asks them</b> (knowledge-designer
+/// Requirement 7.6): the table to relate to; whether a cell holds one row or any number; whether
+/// the other table shows the relation too, and under which name there. Each answer leads to the
+/// next question, and nothing is written before the last one is confirmed. What was answered so
+/// far travels in the id the next answer is committed under, so nothing is kept between them.
 /// </para>
 /// <para>
 /// <b>The edit is the table's own.</b> The relation is made by the same gesture, the same plan and
@@ -27,10 +27,22 @@ namespace EtAlii.Adp.Designer.Knowledge;
 /// </remarks>
 internal sealed class KnowledgeContextActionProvider(IHistoryStackStore histories) : IContextActionProvider
 {
-    public const string ManyOneWay = "knowledge.relate.many";
-    public const string OneOneWay = "knowledge.relate.one";
-    public const string ManyTwoWay = "knowledge.relate.many.two-way";
-    public const string OneTwoWay = "knowledge.relate.one.two-way";
+    /// <summary>The entry, and the id its first answer - the table - is committed under.</summary>
+    public const string Relate = "knowledge.relate";
+
+    /// <summary>The id the second answer is committed under, followed by the table chosen.</summary>
+    private const string LimitStep = "knowledge.relate.limit";
+
+    /// <summary>The id the third answer is committed under, followed by the limit and the table chosen.</summary>
+    private const string SideStep = "knowledge.relate.side";
+
+    public const string One = "one";
+    public const string Many = "many";
+    public const string OneWay = "one-way";
+    public const string TwoWay = "two-way";
+
+    /// <summary>What keeps the parts of a step's id apart: no file name holds it.</summary>
+    private const char Part = '|';
 
     private const string Icon = "mdi-arrow-top-right";
 
@@ -57,26 +69,7 @@ internal sealed class KnowledgeContextActionProvider(IHistoryStackStore historie
 
         return ValueTask.FromResult<IReadOnlyList<ContextActionGroupDefinition>>(
         [
-            new ContextActionGroupDefinition(
-            [
-                new ContextActionDefinition(
-                    "knowledge.relate",
-                    "Add relation",
-                    Icon,
-                    Children:
-                    [
-                        new ContextActionGroupDefinition(
-                        [
-                            new ContextActionDefinition(ManyOneWay, "To any number of rows…", Icon),
-                            new ContextActionDefinition(OneOneWay, "To one row…", Icon),
-                        ]),
-                        new ContextActionGroupDefinition(
-                        [
-                            new ContextActionDefinition(ManyTwoWay, "To any number of rows, shown in both tables…", "mdi-swap-horizontal"),
-                            new ContextActionDefinition(OneTwoWay, "To one row, shown in both tables…", "mdi-swap-horizontal"),
-                        ]),
-                    ]),
-            ]),
+            new ContextActionGroupDefinition([new ContextActionDefinition(Relate, "Add relation…", Icon)]),
         ]);
     }
 
@@ -93,38 +86,34 @@ internal sealed class KnowledgeContextActionProvider(IHistoryStackStore historie
         return ValueTask.FromResult<ContextExecutionResult>(new ContextExecutionRequiresFile(new ContextFileRequest(
             "Relate to",
             Icon,
-            "Relate",
+            "Next",
             IsKnowledgeFile,
             "There is no other table in this project.",
-            [new ContextPinnedFile("This table", body)],
-            // A relation shown in both tables is a property of the other table too: its name there is its author's to give.
-            actionId is ManyTwoWay or OneTwoWay ? new ContextTextFieldRequest(OtherSideLabel, OtherSideName(body)) : null)));
+            [new ContextPinnedFile("This table", body)])));
     }
 
     public ValueTask<ContextValidationResult> ValidateAsync(ContextTarget target, string actionId, string value, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(target);
-        // What is typed in a dialog with a name field is the name; the file is checked against what the dialog offered.
-        return actionId is ManyTwoWay or OneTwoWay
+        ArgumentNullException.ThrowIfNull(actionId);
+
+        // What is typed in the last step is the relation's name in the other table; the choices are checked against what their dialogs offered.
+        return actionId.StartsWith(SideStep, StringComparison.Ordinal)
             ? ValueTask.FromResult(value.Trim().Length > 0
                 ? ContextValidationResult.Accepted
                 : ContextValidationResult.Rejected(OtherSideNeedsName))
-            : ValueTask.FromResult(IsKnowledgeFile(Chosen(target, value))
+            : ValueTask.FromResult(actionId != Relate || IsKnowledgeFile(Chosen(target, value))
                 ? ContextValidationResult.Accepted
                 : ContextValidationResult.Rejected("That file is not a table."));
     }
 
-    /// <summary>
-    /// The file that was chosen, as a full path. The dialog names a file by its path from the
-    /// project's root, with forward slashes - never by a full path, and never from wherever this
-    /// process happens to have been started.
-    /// </summary>
     private static string Chosen(ContextTarget target, string value) =>
         Path.GetFullPath(Path.IsPathRooted(value) ? value : Path.Combine(target.RootPath, value.Replace('/', Path.DirectorySeparatorChar)));
 
     public async ValueTask<ContextCommitResult> CommitAsync(ContextTarget target, string actionId, string value, string text, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(target);
+        ArgumentNullException.ThrowIfNull(actionId);
 
         if (BodyOf(target.ResolvedFullPath) is not { } bodyPath || KnowledgeDocumentStore.Read(bodyPath).Body is not { } body)
         {
@@ -136,17 +125,54 @@ internal sealed class KnowledgeContextActionProvider(IHistoryStackStore historie
             return ContextCommitResult.Failed(body.ReadOnlyReason);
         }
 
-        var chosen = Chosen(target, value);
-        var twoWay = actionId is ManyTwoWay or OneTwoWay;
+        var parts = actionId.Split(Part);
+        return parts[0] switch
+        {
+            // The table is chosen: how many rows may a cell hold?
+            Relate => IsKnowledgeFile(Chosen(target, value))
+                    ? ContextCommitResult.Asks(
+                        new ContextExecutionRequiresChoice(new ContextChoiceRequest(
+                            "A cell holds",
+                            Icon,
+                            "Next",
+                            [new ContextOptionNode(Many, "Any number of rows", Selectable: true), new ContextOptionNode(One, "One row", Selectable: true)],
+                            "")),
+                        string.Join(Part, LimitStep, value))
+                    : ContextCommitResult.Failed("That file is not a table."),
+
+            // And is it shown in the other table too, under which name?
+            LimitStep when parts.Length == 2 && value is One or Many => ContextCommitResult.Asks(
+                    new ContextExecutionRequiresChoice(new ContextChoiceRequest(
+                        "Show the relation",
+                        Icon,
+                        "Add relation",
+                        [
+                            new ContextOptionNode(OneWay, "In this table only", Selectable: true, NameSuppressedReason: "A relation shown in this table only has no name in the other."),
+                            new ContextOptionNode(TwoWay, "In both tables", Selectable: true, SuggestedValue: OtherSideName(bodyPath)),
+                        ],
+                        "",
+                        new ContextTextFieldRequest(OtherSideLabel, OtherSideName(bodyPath)))),
+                    string.Join(Part, SideStep, value, parts[1])),
+
+            SideStep when parts.Length == 3 && value is OneWay or TwoWay =>
+                await MakeAsync(target, bodyPath, body, Chosen(target, parts[2]), parts[1] == One, value == TwoWay, text, cancellationToken).ConfigureAwait(false),
+
+            _ => ContextCommitResult.Failed("That is not a step of adding a relation."),
+        };
+    }
+
+    /// <summary>Makes the relation the answers describe, as one step of the project's history.</summary>
+    private async ValueTask<ContextCommitResult> MakeAsync(ContextTarget target, string bodyPath, KnowledgeBody body, string chosen, bool one, bool twoWay, string name, CancellationToken cancellationToken)
+    {
         var settings = new Dictionary<string, string>
         {
             ["target"] = KnowledgeRelations.TargetName(bodyPath, chosen),
-            ["limit"] = actionId is OneOneWay or OneTwoWay ? "one" : "none",
+            ["limit"] = one ? "one" : "none",
             // The other side has the name its author gave it; this table's name when none was given.
-            ["counterpart"] = !twoWay ? "" : text.Trim().Length > 0 ? text.Trim() : OtherSideName(bodyPath),
+            ["counterpart"] = !twoWay ? "" : name.Trim().Length > 0 ? name.Trim() : OtherSideName(bodyPath),
         };
 
-        var surroundings = new KnowledgeSurroundings(bodyPath, property => TargetAt(bodyPath, body.Table, property.TargetFile), name => TargetAt(bodyPath, body.Table, name));
+        var surroundings = new KnowledgeSurroundings(bodyPath, property => TargetAt(bodyPath, body.Table, property.TargetFile), targetName => TargetAt(bodyPath, body.Table, targetName));
         var edit = KnowledgeEdits.Plan(
             body.Table,
             "",

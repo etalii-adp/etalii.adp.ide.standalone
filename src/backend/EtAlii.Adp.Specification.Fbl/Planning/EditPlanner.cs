@@ -33,6 +33,9 @@ internal static class EditPlanner
                 case ModelChange.Move move:
                     PlanMove(plan, move);
                     break;
+                case ModelChange.StoreId store:
+                    PlanStoreId(plan, store);
+                    break;
                 case ModelChange.Retype:
                     return new PlanResult.Refused("This file's binding cannot change an element's type; only a persistence plugin can.");
                 case ModelChange.Place or ModelChange.Identify:
@@ -57,6 +60,25 @@ internal static class EditPlanner
     }
 
     // ---- set ----
+
+    /// <summary>The id of an entry that has none, written where its rule reads it from.</summary>
+    private static void PlanStoreId(Plan plan, ModelChange.StoreId store)
+    {
+        var reading = plan.Reading;
+        var element = Element(reading, store.Id);
+        RefuseReadOnly(element.Rule, "changed");
+        if (element.Rule.Id?.From is not { } from)
+        {
+            Planning.Plan.Refuse($"A {element.Rule.Type} keeps no id of its own in this file.");
+            return;
+        }
+        if (element.IdRead is { Present: true }) Planning.Plan.Refuse($"This {element.Rule.Type} has an id already.");
+        if (store.NewId.Length == 0 || reading.Find(store.NewId) is not null) Planning.Plan.Refuse($"'{store.NewId}' cannot be the id of a {element.Rule.Type} here.");
+
+        // The slot an id is read from, written as an attribute's is: the family puts it where an absent value goes.
+        var binding = new AttributeBinding { Key = from.Key, XmlAttribute = from.XmlAttribute, Child = from.Child, Group = from.Group };
+        reading.Family.Write(plan, element, [new SlotChange("id", binding, element.Rule, element.IdRead ?? SlotRead.Absent, store.NewId, false)]);
+    }
 
     private static void PlanSet(Plan plan, ModelChange.Set set)
     {

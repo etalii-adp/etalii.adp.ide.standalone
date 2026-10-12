@@ -23,6 +23,10 @@ const SEVERITY_ORDER: readonly string[] = ["info", "warning", "error"];
 export interface TableSurfaceProps extends TableEvents {
   model: TableModel;
   definition: TableDefinition;
+  /** Opens what one value of a cell names, where a kind's values name something that can be opened: a related row. Left out, such values are text. */
+  onOpenValue?: (column: TableColumn, value: string) => void;
+  /** A row to select from outside, by its id: when this changes to a row, that row alone is selected. For a row that is opened from elsewhere. */
+  selectedRow?: string;
   /** Told which rows are selected, whenever that changes: for what shows a selected row's properties. */
   onSelectRows?: (rowIds: readonly string[]) => void;
   /** How many edits are shown and not written yet, when the table comes from a stream that writes behind. */
@@ -63,7 +67,7 @@ const FALLBACK_VIEWPORT_HEIGHT = 660;
  * gesture the backend refuses changes nothing here - the reason is shown, and the cell is still
  * what the model says it is.
  */
-export function TableSurface({ model, definition, pendingEdits = 0, onSelectRows, onWindow, onView, onGesture, fallbackViewportHeight = FALLBACK_VIEWPORT_HEIGHT }: TableSurfaceProps) {
+export function TableSurface({ model, definition, pendingEdits = 0, selectedRow, onSelectRows, onOpenValue, onWindow, onView, onGesture, fallbackViewportHeight = FALLBACK_VIEWPORT_HEIGHT }: TableSurfaceProps) {
   const rowHeight = definition.rowHeight ?? DEFAULT_ROW_HEIGHT;
   const columns = useMemo(() => model.columns.filter((column) => column.visible), [model.columns]);
   const scrollerRef = useRef<HTMLDivElement>(null);
@@ -322,6 +326,13 @@ export function TableSurface({ model, definition, pendingEdits = 0, onSelectRows
     },
     [onSelectRows],
   );
+  // A row named from outside is the selection from then on; its author changes it as any other.
+  useEffect(() => {
+    if (selectedRow !== undefined && selectedRow !== "") {
+      setSelectedRows(new Set([selectedRow]));
+    }
+  }, [selectedRow]);
+
   /** The rows a gesture on one row is about: all that are selected when it is one of them, else that row alone. */
   const rowsOf = (rowId: string) => (selectedRows.has(rowId) && selectedRows.size > 1 ? [...selectedRows] : [rowId]);
 
@@ -492,7 +503,12 @@ export function TableSurface({ model, definition, pendingEdits = 0, onSelectRows
                         />
                       )}
                       {column.isTitle && <NestedRowToggle row={row} title={cellText(cell)} editable={editable} raise={raise} />}
-                      <CellValue cell={cell} column={column} shows={kind.editor === "checkbox" ? "tick" : kind.editor === "option" || kind.editor === "options" ? "tags" : "text"} />
+                      <CellValue
+                        cell={cell}
+                        column={column}
+                        shows={kind.editor === "checkbox" ? "tick" : kind.editor === "option" || kind.editor === "options" ? "tags" : kind.editor === "rows" && onOpenValue !== undefined ? "links" : "text"}
+                        onOpen={onOpenValue}
+                      />
                     </>
                   )}
                 </div>
@@ -577,10 +593,10 @@ function TableNote({ model, pendingEdits }: { model: TableModel; pendingEdits: n
 }
 
 /**
- * What a cell shows while it is not being edited: its text, a tick for a kind that is one, or a
- * tag per option for a kind that chooses among options.
+ * What a cell shows while it is not being edited: its text, a tick for a kind that is one, a
+ * tag per option for a kind that chooses among options, or a link per row for a kind that names rows.
  */
-function CellValue({ cell, column, shows }: { cell: TableCell | undefined; column: TableColumn; shows: "text" | "tick" | "tags" }) {
+function CellValue({ cell, column, shows, onOpen }: { cell: TableCell | undefined; column: TableColumn; shows: "text" | "tick" | "tags" | "links"; onOpen?: (column: TableColumn, value: string) => void }) {
   if (shows === "tick") {
     const ticked = cell?.values[0] === "true";
     return <span className={`mdi ${ticked ? "mdi-checkbox-marked" : "mdi-checkbox-blank-outline"} table-cell-tick`} role="checkbox" aria-checked={ticked} />;
@@ -594,6 +610,27 @@ function CellValue({ cell, column, shows }: { cell: TableCell | undefined; colum
           const option = column.options.find((candidate) => candidate.id === value);
           return <OptionTag key={value} label={option?.name ?? (cell.labels[index] || value)} color={option?.color ?? ""} />;
         })}
+      </>
+    );
+  }
+
+  if (shows === "links" && cell !== undefined) {
+    return (
+      <>
+        {cell.values.map((value, index) => (
+          // A value that names a row is a way to that row: pressed, it is opened where it lives.
+          <button
+            key={value}
+            type="button"
+            className="table-cell-link"
+            // The link is not the cell: pressing it neither starts an edit nor moves the focus.
+            onMouseDown={(event) => event.preventDefault()}
+            onDoubleClick={(event) => event.stopPropagation()}
+            onClick={() => onOpen?.(column, value)}
+          >
+            {cell.labels[index] || value}
+          </button>
+        ))}
       </>
     );
   }

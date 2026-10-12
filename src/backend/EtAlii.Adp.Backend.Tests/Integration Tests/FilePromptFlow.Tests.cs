@@ -111,6 +111,35 @@ public sealed class FilePromptFlowTests : IClassFixture<WebApplicationFactory<Pr
         Assert.Equal(["Seats"], _provider.Named);
     }
 
+    [Fact]
+    public async Task AnAnswerThatLeadsToAFurtherQuestion_BringsItsDialogWithIt_AsAnInteractionOfItsOwn()
+    {
+        // Arrange.
+        var asked = await AskAsync();
+
+        // Act: the file whose choice the provider follows with a question.
+        var first = await asked.Context.SubmitInteractionAsync(
+            new SubmitInteractionRequest { InteractionId = asked.InteractionId, Value = "cities.yaml" }, asked.Headers, cancellationToken: TestContext.Current.CancellationToken);
+
+        // Assert: taken, and the next dialog comes on the answer, under an interaction of its own.
+        Assert.True(first.Completed, first.Error);
+        Assert.Equal(ContextPrompt.PromptOneofCase.ConfirmDialog, first.NextPrompt.PromptCase);
+        Assert.Equal(("Both ways?", "Yes"), (first.NextPrompt.ConfirmDialog.Message, first.NextPrompt.ConfirmDialog.ConfirmLabel));
+        Assert.NotEqual(asked.InteractionId, first.NextPrompt.InteractionId);
+
+        // Act: the further question is answered; the first interaction is over.
+        var second = await asked.Context.SubmitInteractionAsync(
+            new SubmitInteractionRequest { InteractionId = first.NextPrompt.InteractionId, Value = "" }, asked.Headers, cancellationToken: TestContext.Current.CancellationToken);
+        var again = await asked.Context.SubmitInteractionAsync(
+            new SubmitInteractionRequest { InteractionId = asked.InteractionId, Value = "cities.yaml" }, asked.Headers, cancellationToken: TestContext.Current.CancellationToken);
+
+        // Assert: committed under the id the provider gave, with nothing more to ask.
+        Assert.True(second.Completed, second.Error);
+        Assert.Null(second.NextPrompt);
+        Assert.False(again.Completed);
+        Assert.Equal([PickFileProvider.ActionId, PickFileProvider.FollowUpId + "cities.yaml"], _provider.Under);
+    }
+
     [Theory]
     [InlineData("data/readme.md")]
     [InlineData("docs/guide.md")]
@@ -214,6 +243,10 @@ public sealed class FilePromptFlowTests : IClassFixture<WebApplicationFactory<Pr
     private sealed class PickFileProvider(string pinnedPath) : IContextActionProvider
     {
         public const string ActionId = "fixture.pick-file";
+        public const string FollowUpId = "fixture.pick-file.then:";
+
+        /// <summary>The action id each commit came under.</summary>
+        public List<string> Under { get; } = [];
 
         public List<string> Committed { get; } = [];
 
@@ -243,7 +276,12 @@ public sealed class FilePromptFlowTests : IClassFixture<WebApplicationFactory<Pr
         {
             Committed.Add(value);
             Named.Add(text);
-            return ValueTask.FromResult(ContextCommitResult.Succeeded);
+            Under.Add(actionId);
+
+            // One file leads to a further question, answered under an id that carries the file.
+            return ValueTask.FromResult(actionId == ActionId && value == "cities.yaml"
+                ? ContextCommitResult.Asks(new ContextExecutionRequiresConfirmation(new ContextConfirmationRequest("Relate", "mdi-link-variant", "Both ways?", "Yes", Danger: false)), FollowUpId + value)
+                : ContextCommitResult.Succeeded);
         }
     }
 }

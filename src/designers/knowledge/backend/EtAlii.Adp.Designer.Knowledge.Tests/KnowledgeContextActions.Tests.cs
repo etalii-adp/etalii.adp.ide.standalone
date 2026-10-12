@@ -61,11 +61,26 @@ public sealed class KnowledgeContextActionsTests : IDisposable
 
     private ContextTarget Target(string path, bool container = false) => new(ContextScope.Hierarchy, path, container, ShortGuid.NewShortGuid(), _root);
 
+    /// <summary>Adds a relation as its author does: the table, how many rows, and where it is shown - three answers, the last of which makes it.</summary>
+    private async Task<ContextCommitResult> Related(ContextTarget target, string file, string holds, bool twoWay, string name = "")
+    {
+        var first = await _provider.CommitAsync(target, KnowledgeContextActionProvider.Relate, file, "", TestContext.Current.CancellationToken);
+        if (first.Next is null)
+        {
+            return first;
+        }
+
+        var second = await _provider.CommitAsync(target, first.NextActionId, holds, "", TestContext.Current.CancellationToken);
+        return second.Next is null
+            ? second
+            : await _provider.CommitAsync(target, second.NextActionId, twoWay ? KnowledgeContextActionProvider.TwoWay : KnowledgeContextActionProvider.OneWay, name, TestContext.Current.CancellationToken);
+    }
+
     private static List<ContextActionDefinition> Leaves(IEnumerable<ContextActionGroupDefinition> groups) =>
         [.. groups.SelectMany(group => group.Actions).SelectMany(action => action.Children is { Count: > 0 } children ? Leaves(children) : [action])];
 
     [Fact]
-    public async Task AKnowledgeFile_OffersARelation_FourWays_FromItsRegistrationAndFromItsDataFile()
+    public async Task AKnowledgeFile_OffersARelation_AsOneEntry_FromItsRegistrationAndFromItsDataFile()
     {
         // Arrange.
         var registration = Registered();
@@ -75,9 +90,9 @@ public sealed class KnowledgeContextActionsTests : IDisposable
         var fromData = await _provider.DiscoverAsync(Target(Cities), TestContext.Current.CancellationToken);
         var byName = await _provider.DiscoverAsync(Target(IoPath.Combine(_root, "provinces.adp")), TestContext.Current.CancellationToken);
 
-        // Assert: one entry, with the four ways under it.
-        string[] ways = [KnowledgeContextActionProvider.ManyOneWay, KnowledgeContextActionProvider.OneOneWay, KnowledgeContextActionProvider.ManyTwoWay, KnowledgeContextActionProvider.OneTwoWay];
-        Assert.Equal("Add relation", Assert.Single(Assert.Single(fromRegistration).Actions).Label);
+        // Assert: one entry, which asks what it needs to know after it is chosen.
+        string[] ways = [KnowledgeContextActionProvider.Relate];
+        Assert.Equal("Add relation…", Assert.Single(Assert.Single(fromRegistration).Actions).Label);
         Assert.Equal(ways, Leaves(fromRegistration).Select(action => action.Id));
         Assert.Equal(ways, Leaves(fromData).Select(action => action.Id));
 
@@ -111,7 +126,7 @@ public sealed class KnowledgeContextActionsTests : IDisposable
         var registration = Registered();
 
         // Act.
-        var asked = await _provider.ExecuteAsync(Target(registration), KnowledgeContextActionProvider.ManyOneWay, TestContext.Current.CancellationToken);
+        var asked = await _provider.ExecuteAsync(Target(registration), KnowledgeContextActionProvider.Relate, TestContext.Current.CancellationToken);
 
         // Assert.
         var request = Assert.IsType<ContextExecutionRequiresFile>(asked).Request;
@@ -125,25 +140,25 @@ public sealed class KnowledgeContextActionsTests : IDisposable
 
         // And what is chosen is judged by the same rule.
         // And what is chosen is judged by the same rule - named as the dialog names it, by its path from the project's root.
-        Assert.True((await _provider.ValidateAsync(Target(registration), KnowledgeContextActionProvider.ManyOneWay, KnowledgeFiles.Related, TestContext.Current.CancellationToken)).Valid);
-        Assert.False((await _provider.ValidateAsync(Target(registration), KnowledgeContextActionProvider.ManyOneWay, "notes.yaml", TestContext.Current.CancellationToken)).Valid);
+        Assert.True((await _provider.ValidateAsync(Target(registration), KnowledgeContextActionProvider.Relate, KnowledgeFiles.Related, TestContext.Current.CancellationToken)).Valid);
+        Assert.False((await _provider.ValidateAsync(Target(registration), KnowledgeContextActionProvider.Relate, "notes.yaml", TestContext.Current.CancellationToken)).Valid);
     }
 
     [Theory]
-    [InlineData(KnowledgeContextActionProvider.ManyOneWay, "none", false)]
-    [InlineData(KnowledgeContextActionProvider.OneOneWay, "one", false)]
-    [InlineData(KnowledgeContextActionProvider.ManyTwoWay, "none", true)]
-    [InlineData(KnowledgeContextActionProvider.OneTwoWay, "one", true)]
-    public async Task TheRelation_IsMadeAsItsEntrySays_InOneUndoableStep(string actionId, string limit, bool twoWay)
+    [InlineData(KnowledgeContextActionProvider.Many, "none", false)]
+    [InlineData(KnowledgeContextActionProvider.One, "one", false)]
+    [InlineData(KnowledgeContextActionProvider.Many, "none", true)]
+    [InlineData(KnowledgeContextActionProvider.One, "one", true)]
+    public async Task TheRelation_IsMadeAsItsAnswersSay_InOneUndoableStep(string holds, string limit, bool twoWay)
     {
         // Arrange.
         var registration = Registered();
         (byte[] ours, byte[] theirs) = (await File.ReadAllBytesAsync(Cities, TestContext.Current.CancellationToken), await File.ReadAllBytesAsync(Provinces, TestContext.Current.CancellationToken));
 
         // Act.
-        var committed = await _provider.CommitAsync(Target(registration), actionId, KnowledgeFiles.Related, "", TestContext.Current.CancellationToken);
+        var committed = await Related(Target(registration), KnowledgeFiles.Related, holds, twoWay);
 
-        // Assert: a relation to the other table under its name, holding what the entry said.
+        // Assert: a relation to the other table under its name, holding what was answered.
         Assert.True(committed.Completed, committed.Error);
         var relation = KnowledgeDocumentStore.Read(Cities).Body!.Table.Properties.Single(property => property.Name == "Provinces");
         Assert.Equal(("relation", KnowledgeFiles.Related, limit), (relation.ValueType, relation.TargetFile, relation.Limit));
@@ -172,30 +187,50 @@ public sealed class KnowledgeContextActionsTests : IDisposable
     }
 
     [Fact]
-    public async Task ARelationShownInBothTables_AsksForItsNameInTheOtherTable_AndIsMadeUnderIt()
+    public async Task ARelation_IsAskedForInNotionsOrder_TheTable_HowManyRows_AndWhetherBothTablesShowIt()
     {
         // Arrange.
         var registration = Registered();
+        (byte[] ours, byte[] theirs) = (await File.ReadAllBytesAsync(Cities, TestContext.Current.CancellationToken), await File.ReadAllBytesAsync(Provinces, TestContext.Current.CancellationToken));
 
-        // Act: asked for, both ways.
-        var twoWay = Assert.IsType<ContextExecutionRequiresFile>(await _provider.ExecuteAsync(Target(registration), KnowledgeContextActionProvider.ManyTwoWay, TestContext.Current.CancellationToken)).Request;
-        var oneWay = Assert.IsType<ContextExecutionRequiresFile>(await _provider.ExecuteAsync(Target(registration), KnowledgeContextActionProvider.ManyOneWay, TestContext.Current.CancellationToken)).Request;
+        // Act: the table is answered.
+        var first = await _provider.CommitAsync(Target(registration), KnowledgeContextActionProvider.Relate, KnowledgeFiles.Related, "", TestContext.Current.CancellationToken);
 
-        // Assert: only the relation shown in both tables has a name to give, and it starts as this table's name.
-        Assert.Equal(new ContextTextFieldRequest(KnowledgeContextActionProvider.OtherSideLabel, "Cities"), twoWay.NameField);
-        Assert.Null(oneWay.NameField);
+        // Assert: taken, and followed by how many rows a cell holds; nothing is written yet.
+        Assert.True(first.Completed, first.Error);
+        var holds = Assert.IsType<ContextExecutionRequiresChoice>(first.Next).Request;
+        Assert.Equal([KnowledgeContextActionProvider.Many, KnowledgeContextActionProvider.One], holds.Options.Select(option => option.Id));
+        Assert.Null(holds.NameField);
+        Assert.Equal(ours, await File.ReadAllBytesAsync(Cities, TestContext.Current.CancellationToken));
+
+        // Act: one row is answered.
+        var second = await _provider.CommitAsync(Target(registration), first.NextActionId, KnowledgeContextActionProvider.One, "", TestContext.Current.CancellationToken);
+
+        // Assert: followed by where it is shown, with a name to give for the other table only when it is shown there.
+        var shown = Assert.IsType<ContextExecutionRequiresChoice>(second.Next).Request;
+        Assert.Equal([KnowledgeContextActionProvider.OneWay, KnowledgeContextActionProvider.TwoWay], shown.Options.Select(option => option.Id));
+        Assert.Equal(new ContextTextFieldRequest(KnowledgeContextActionProvider.OtherSideLabel, "Cities"), shown.NameField);
+        Assert.NotEqual("", shown.Options[0].NameSuppressedReason);
+        Assert.Equal(("", "Cities"), (shown.Options[1].NameSuppressedReason, shown.Options[1].SuggestedValue));
+        Assert.Equal(theirs, await File.ReadAllBytesAsync(Provinces, TestContext.Current.CancellationToken));
 
         // What is typed there is judged as a name.
-        Assert.True((await _provider.ValidateAsync(Target(registration), KnowledgeContextActionProvider.ManyTwoWay, "Seats", TestContext.Current.CancellationToken)).Valid);
-        var empty = await _provider.ValidateAsync(Target(registration), KnowledgeContextActionProvider.ManyTwoWay, "  ", TestContext.Current.CancellationToken);
+        Assert.True((await _provider.ValidateAsync(Target(registration), second.NextActionId, "Seats", TestContext.Current.CancellationToken)).Valid);
+        var empty = await _provider.ValidateAsync(Target(registration), second.NextActionId, "  ", TestContext.Current.CancellationToken);
         Assert.Equal((false, KnowledgeContextActionProvider.OtherSideNeedsName), (empty.Valid, empty.Reason));
 
-        // Act: made, with a name given.
-        var committed = await _provider.CommitAsync(Target(registration), KnowledgeContextActionProvider.ManyTwoWay, KnowledgeFiles.Related, " Seats ", TestContext.Current.CancellationToken);
+        // Act: both tables, under a name.
+        var last = await _provider.CommitAsync(Target(registration), second.NextActionId, KnowledgeContextActionProvider.TwoWay, " Seats ", TestContext.Current.CancellationToken);
 
-        // Assert: the other table has the property under that name.
-        Assert.True(committed.Completed, committed.Error);
+        // Assert: made, with nothing more to ask: one row per cell here, and the other table has its side under that name.
+        Assert.True(last.Completed, last.Error);
+        Assert.Null(last.Next);
+        Assert.Contains(KnowledgeDocumentStore.Read(Cities).Body!.Table.Properties, property => property is { ValueType: "relation", Limit: "one", TargetFile: KnowledgeFiles.Related, Counterpart.Length: > 0 });
         Assert.Contains(KnowledgeDocumentStore.Read(Provinces).Body!.Table.Properties, property => property is { Name: "Seats", IsComputed: true });
+
+        // An answer that is none of a step's is refused.
+        var odd = await _provider.CommitAsync(Target(registration), first.NextActionId, "several", "", TestContext.Current.CancellationToken);
+        Assert.False(odd.Completed);
     }
 
     [Fact]
@@ -205,7 +240,7 @@ public sealed class KnowledgeContextActionsTests : IDisposable
         var registration = Registered();
 
         // Act.
-        var committed = await _provider.CommitAsync(Target(registration), KnowledgeContextActionProvider.OneOneWay, "cities.yaml", "", TestContext.Current.CancellationToken);
+        var committed = await Related(Target(registration), "cities.yaml", KnowledgeContextActionProvider.One, twoWay: false);
 
         // Assert.
         Assert.True(committed.Completed, committed.Error);
@@ -228,7 +263,7 @@ public sealed class KnowledgeContextActionsTests : IDisposable
         var table = IoPath.Combine(_root, "here", "cities.yaml");
 
         // Act: chosen as the dialog hands it over.
-        var committed = await _provider.CommitAsync(Target(table), KnowledgeContextActionProvider.ManyOneWay, "there/regions.yaml", "", TestContext.Current.CancellationToken);
+        var committed = await Related(Target(table), "there/regions.yaml", KnowledgeContextActionProvider.Many, twoWay: false);
 
         // Assert: related, and named in the file by its path from the file itself.
         Assert.True(committed.Completed, committed.Error);
@@ -244,7 +279,7 @@ public sealed class KnowledgeContextActionsTests : IDisposable
         await using var session = new KnowledgeSession(Cities, KnowledgeDocumentStore.Read, command => _histories.Get(_root).ExecuteAsync(command), _documents);
 
         // Act.
-        await _provider.CommitAsync(Target(registration), KnowledgeContextActionProvider.ManyOneWay, KnowledgeFiles.Related, "", TestContext.Current.CancellationToken);
+        await Related(Target(registration), KnowledgeFiles.Related, KnowledgeContextActionProvider.Many, twoWay: false);
 
         // Assert.
         Assert.Contains(session.Baseline().Columns, column => column is { Name: "Provinces", Kind: "relation" });

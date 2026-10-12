@@ -76,15 +76,57 @@ internal sealed class KnowledgeBody
         }
 
         var copy = _body.Fork();
-        foreach (var change in changes)
+
+        // The first edit made here gives every entry without an id one, in the same step, so that
+        // it can be named from then on (Requirement 8.5). From the last line up: an id is a line
+        // more, and an entry without one is found by the line it is on.
+        var given = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var element in Model.Elements.Where(element => !element.IdIsStored && KnowledgeValidator.Identified.Contains(element.Type)).OrderByDescending(element => element.Line))
         {
-            if (copy.Change(change) is PlanResult.Refused refused)
+            var id = ShortGuid.NewShortGuid().ToString();
+            if (copy.Change(new ModelChange.StoreId(element.Id, id)) is PlanResult.Refused unnamed)
             {
-                return (null, refused.Reason);
+                return (null, unnamed.Reason);
             }
+
+            given[element.Id] = id;
+        }
+
+        try
+        {
+            foreach (var change in changes)
+            {
+                if (copy.Change(given.Count == 0 ? change : Renamed(change, given)) is PlanResult.Refused refused)
+                {
+                    return (null, refused.Reason);
+                }
+            }
+        }
+        catch (ArgumentException)
+        {
+            // What the edit names is not in the file as it is now: it was planned against an earlier state of it.
+            return (null, "The file has changed since this edit was made, so it was not written.");
         }
 
         return (copy.Bytes, "");
+    }
+
+    /// <summary>A change with every made-up id it names replaced by the id that entry was just given: in what it is about, where it goes, and what its values name.</summary>
+    private static ModelChange Renamed(ModelChange change, Dictionary<string, string> given)
+    {
+        // An id made from its parents' ids holds theirs between slashes.
+        string Of(string id) => string.Join('/', id.Split('/').Select(part => given.GetValueOrDefault(part, part)));
+        Dictionary<string, object?> Values(IReadOnlyDictionary<string, object?> attributes) =>
+            attributes.ToDictionary(attribute => attribute.Key, attribute => attribute.Value is string text ? given.GetValueOrDefault(text, text) : attribute.Value);
+
+        return change switch
+        {
+            ModelChange.Add add => add with { Attributes = Values(add.Attributes), ParentId = add.ParentId is null ? null : Of(add.ParentId) },
+            ModelChange.Set set => new ModelChange.Set(Of(set.Id), Values(set.Attributes)),
+            ModelChange.Remove remove => new ModelChange.Remove(Of(remove.Id)),
+            ModelChange.Move move => new ModelChange.Move(Of(move.Id), move.NewParentId is null ? null : Of(move.NewParentId), move.Index),
+            _ => change,
+        };
     }
 
     /// <summary>

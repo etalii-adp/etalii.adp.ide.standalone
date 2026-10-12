@@ -344,6 +344,9 @@ message SubmitInteractionResponse {
   // relative, like every other path on this contract - absolute paths never leave the
   // backend.
   Path created_path = 3;
+  // Set when the answer leads to a further question of the same action: the dialog that asks it,
+  // as its own interaction. The client shows it in the place of the one just answered.
+  ContextPrompt next_prompt = 4;
 }
 
 message CancelInteractionRequest {

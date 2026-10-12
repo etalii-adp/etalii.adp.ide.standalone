@@ -605,7 +605,8 @@ export function ContextConnectionProvider({ projectId, children }: ContextConnec
         return { completed: false, error: faultMessage(caught) };
       }
       if (response.completed) {
-        setPrompt(null);
+        // An answer that leads to a further question brings that question's dialog with it: it takes the place of the one just answered.
+        setPrompt(response.nextPrompt ?? null);
 
         // An "Open with…" choice was just confirmed: the submitted value is the chosen
         // editor's id, and the file was remembered when the dialog was asked for (R4.4).

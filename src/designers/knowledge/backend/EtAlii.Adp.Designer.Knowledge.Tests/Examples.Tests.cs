@@ -45,8 +45,9 @@ public sealed class ExamplesTests : IDisposable
     public void TheExamples_AreFound_InTheModuleAndInTheShowcase()
     {
         // Assert: the canary. The table in three formats and the table it relates to in the module, and the
-        // two of them in each of the showcase's three folders; a walk that found fewer has stopped looking.
-        Assert.Equal(4 + 6, DataFiles().Count);
+        // two of them in each of the showcase's three folders, and the two tables of its folder of relations;
+        // a walk that found fewer has stopped looking.
+        Assert.Equal(4 + 6 + 2, DataFiles().Count);
     }
 
     [Theory]
@@ -63,7 +64,7 @@ public sealed class ExamplesTests : IDisposable
         // Assert: readable, editable, and neither the reading nor the designer's rules have anything to say.
         Assert.Equal("", body.ReadOnlyReason);
         Assert.Empty(body.Model.Findings);
-        Assert.Empty(KnowledgeValidator.Validate(body.Table, body.Model));
+        Assert.Empty(KnowledgeValidator.Validate(body.Table, body.Model, property => Target(path, body.Table, property)));
         Assert.NotEmpty(body.Table.Rows);
 
         // Written with nothing changed, it is the bytes it was.
@@ -84,6 +85,54 @@ public sealed class ExamplesTests : IDisposable
         }
     }
 
+    /// <summary>What a relation of an example points at: the table itself, or the file beside it that it names.</summary>
+    private static KnowledgeTarget Target(string path, KnowledgeTable own, KnowledgeProperty property)
+    {
+        if (property.TargetFile is KnowledgeRelations.Self or "")
+        {
+            return new KnowledgeTarget(path, own);
+        }
+
+        var target = KnowledgeRelations.TargetPath(path, property.TargetFile);
+        return new KnowledgeTarget(target, File.Exists(target) ? KnowledgeBody.Read(File.ReadAllBytes(target), target).Table : null);
+    }
+
+    [Fact]
+    public void TheShowcase_ShowsBetweenItsExamples_WhatTheSpecificationSaysItShows()
+    {
+        // Arrange: every table of the showcase, with the file it is in (knowledge-designer Requirement 9.1).
+        var tables = Directory.EnumerateFiles(KnowledgeFiles.ShowcaseFolder, "*", SearchOption.AllDirectories)
+            .Where(file => IoPath.GetExtension(file) is ".yaml" or ".json" or ".xml")
+            .Select(file => (Path: file, KnowledgeBody.Read(File.ReadAllBytes(file), file).Table))
+            .ToList();
+        var properties = tables.SelectMany(table => table.Table.Properties.Select(property => (table.Path, table.Table, Property: property))).ToList();
+        var views = tables.SelectMany(table => table.Table.Views.Select(view => (table.Table, View: view))).ToList();
+
+        // Assert: every property type.
+        Assert.Equal(KnowledgeVocabulary.ValueTypes.Order(StringComparer.Ordinal), properties.Select(property => property.Property.ValueType).Distinct().Order(StringComparer.Ordinal));
+
+        // A one-way and a two-way relation between two files, each side naming the other; and a parent relation,
+        // with a view grouped by it, which is what shows its rows nested.
+        Assert.Contains(properties, property => property.Property is { ValueType: "relation", Counterpart: "", IsParent: false, TargetFile: not (KnowledgeRelations.Self or "") });
+        var held = Assert.Single(properties, property => property.Property is { ValueType: "relation", Counterpart.Length: > 0, IsComputed: false });
+        var other = KnowledgeBody.Read(File.ReadAllBytes(KnowledgeRelations.TargetPath(held.Path, held.Property.TargetFile)), held.Property.TargetFile).Table;
+        var shown = Assert.Single(other.Properties, property => property.Id == held.Property.Counterpart);
+        Assert.Equal((true, held.Property.Id), (shown.IsComputed, shown.Counterpart));
+        Assert.Contains(properties, property => property.Property is { IsParent: true, Limit: "one", TargetFile: KnowledgeRelations.Self });
+        Assert.Contains(views, view => view.Table.Properties.Any(property => property.IsParent && property.Id == view.View.GroupBy));
+
+        // Views that hide a property, give one a width, sort, filter, and group by each kind a view can be grouped by.
+        Assert.Contains(views, view => view.View.Columns.Any(column => !column.Visible));
+        Assert.Contains(views, view => view.View.Columns.Any(column => column.Width > 0));
+        Assert.Contains(views, view => view.View.Sorts.Count > 0);
+        Assert.Contains(views, view => view.View.Filter.Items.Count > 0);
+        var grouped = views.Where(view => view.View.GroupBy.Length > 0).Select(view => view.Table.Properties.Single(property => property.Id == view.View.GroupBy).ValueType).Distinct().Order(StringComparer.Ordinal);
+        Assert.Equal(["checkbox", "multipleSelection", "relation", "selection"], grouped);
+
+        // And one example in all three formats.
+        Assert.Equal([".json", ".xml", ".yaml"], tables.Where(table => IoPath.GetFileNameWithoutExtension(table.Path) == "cities").Select(table => IoPath.GetExtension(table.Path)).Order(StringComparer.Ordinal));
+    }
+
     [Fact]
     public void EveryExampleInTheShowcase_IsRegistered_ByAFileThatNamesItAndTheDesigner()
     {
@@ -91,7 +140,7 @@ public sealed class ExamplesTests : IDisposable
         var bodies = Directory.EnumerateFiles(KnowledgeFiles.ShowcaseFolder, "*", SearchOption.AllDirectories).Where(file => IoPath.GetExtension(file) is ".yaml" or ".json" or ".xml").ToList();
 
         // Assert: beside each data file, a registration of two lines - the designer's origin, and the file it is the registration of.
-        Assert.Equal(6, bodies.Count);
+        Assert.Equal(8, bodies.Count);
         foreach (var body in bodies)
         {
             var registration = IoPath.ChangeExtension(body, ".adp");

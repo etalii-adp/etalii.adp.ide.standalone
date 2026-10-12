@@ -247,6 +247,32 @@ describe("the editors on a searchable list", () => {
     expect(commit).not.toHaveBeenCalled();
   });
 
+  it("replaces the related row in a relation that holds one, and adds in one that holds any number", async () => {
+    // Arrange: a relation to one row, which holds Japan.
+    const rows = [
+      { id: "jp", name: "Japan" },
+      { id: "be", name: "Belgium" },
+    ];
+    const one = open("rows", { held: cell(["jp"]), column: { ...column("relation", rows), settings: { limit: "one" } } });
+
+    // Act.
+    await act(async () => {
+      fireEvent.click(screen.getByRole("option", { name: "Belgium" }));
+    });
+
+    // Assert: Belgium alone, and the editor closes as it does after any single choice.
+    expect(one.commit).toHaveBeenCalledWith(["be"], undefined);
+    expect(one.onClose).toHaveBeenCalledWith("stay");
+    cleanup();
+
+    // A relation without that limit adds to what it holds.
+    const many = open("rows", { held: cell(["jp"]), column: { ...column("relation", rows), settings: { limit: "none" } } });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("option", { name: "Belgium" }));
+    });
+    expect(many.commit).toHaveBeenCalledWith(["jp", "be"], undefined);
+  });
+
   it("stays open with the backend's reason when a pick is refused", async () => {
     // Arrange.
     const { onClose } = open("option", { column: kinds, refusal: "This table is read-only." });

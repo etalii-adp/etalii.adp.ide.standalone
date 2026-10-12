@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, render, screen, waitFor } from "@testing-library/react";
 import { create } from "@bufbuild/protobuf";
 import { ContextSelectionSource } from "../../generated/context-contract_pb";
-import { ContextMessageSchema, ContextSelectionAction, type ContextMessage } from "../../generated/context_pb";
+import { ContextMessageSchema, ContextPromptSchema, ContextSelectionAction, type ContextMessage } from "../../generated/context_pb";
 import { ProblemSetState, ProblemSeverity } from "../../generated/problems_pb";
 import { WorkspaceMessageSchema, type WorkspaceMessage } from "../../generated/workspace_pb";
 import {
@@ -216,6 +216,32 @@ describe("ContextConnectionProvider", () => {
 
     // Assert.
     expect(submitInteraction).toHaveBeenCalled();
+    expect(screen.getByTestId("prompt").textContent).toBe("none");
+  });
+
+  it("puts the dialog an answer brings with it in the place of the one just answered", async () => {
+    // Arrange: the answer to the first dialog leads to a second one; the answer to that leads nowhere.
+    renderProvider();
+    await flush();
+    streams[0]!.push(promptMessage());
+    await waitFor(() => expect(screen.getByTestId("prompt").textContent).toBe("inputDialog"));
+    const next = create(ContextPromptSchema, {
+      interactionId: { value: new Uint8Array(16).fill(7) },
+      prompt: { case: "confirmDialog", value: { title: "Relate", message: "Both ways?", confirmLabel: "Yes" } },
+    });
+    submitInteraction.mockResolvedValueOnce({ completed: true, error: "", nextPrompt: next } as never);
+
+    // Act.
+    await act(async () => {
+      await promptValue!.onSubmit("b.txt");
+    });
+
+    // Assert: the next dialog is the prompt now, and its answer is sent under its own interaction.
+    expect(screen.getByTestId("prompt").textContent).toBe("confirmDialog");
+    await act(async () => {
+      await promptValue!.onSubmit("");
+    });
+    expect((submitInteraction.mock.lastCall as unknown as [{ interactionId: { value: Uint8Array } }])[0].interactionId.value).toEqual(new Uint8Array(16).fill(7));
     expect(screen.getByTestId("prompt").textContent).toBe("none");
   });
 

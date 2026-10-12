@@ -313,6 +313,29 @@ describe("TableSurface", () => {
     expect(onGesture).toHaveBeenCalledTimes(2);
   });
 
+  it("draws each row a cell names as a link that opens it, where the table is given a way to open one", () => {
+    // Arrange: a kind whose values name rows, shown by their titles.
+    const onOpenValue = vi.fn();
+    const relating: TableDefinition = { kinds: { ...definition.kinds, number: { icon: "mdi-arrow-top-right", label: "Relation", editor: "rows" } } };
+    const cell = { columnId: "p2", values: ["nh", "zh"], labels: ["Noord-Holland", ""], pending: false };
+    const model = tableOf(1, 0, [{ ...row("r1", { p1: "Amsterdam" }), cells: [{ columnId: "p1", values: ["Amsterdam"], labels: [], pending: false }, cell] }]);
+    const { rerender } = render(<TableSurface model={model} definition={relating} onOpenValue={onOpenValue} />);
+
+    // Act.
+    const links = within(bodyRows()[0]!).getAllByRole("button");
+    fireEvent.click(links[1]!);
+
+    // Assert: by its title, or by its id when it has none; and opened by its id.
+    expect(links.map((link) => link.textContent)).toEqual(["Noord-Holland", "zh"]);
+    expect(onOpenValue).toHaveBeenCalledTimes(1);
+    expect(onOpenValue.mock.calls[0]![1]).toBe("zh");
+
+    // Without a way to open one, the values are text.
+    rerender(<TableSurface model={model} definition={relating} />);
+    expect(within(bodyRows()[0]!).queryAllByRole("button")).toHaveLength(0);
+    expect(within(bodyRows()[0]!).getAllByRole("gridcell")[1]!.textContent).toBe("Noord-Holland, zh");
+  });
+
   it("says nothing about itself while all is well", () => {
     // Act.
     render(<TableSurface model={tableOf(0, 0, [])} definition={definition} pendingEdits={0} />);
