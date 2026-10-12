@@ -57,11 +57,12 @@ export const knowledgeTable: TableDefinition = {
     time: { icon: "mdi-clock-outline", label: "Time", editor: "time", comparisons: MOMENT },
     selection: { icon: "mdi-chevron-down-circle-outline", label: "Selection", editor: "option", comparisons: [is, isNot], groupable: true },
     multipleSelection: { icon: "mdi-format-list-bulleted", label: "Multiple selection", editor: "options", comparisons: SEVERAL, groupable: true },
-    // A relation is made by choosing its target file, which a menu entry cannot ask: it is not
-    // offered where a type is picked from a list, and is added through its own flow.
-    relation: { icon: "mdi-arrow-top-right", label: "Relation", editor: "rows", comparisons: SEVERAL, groupable: true, addable: false },
+    // A relation is a property as any other, as in Notion: it is offered where a new property's type is
+    // chosen, and the table it relates to is asked for there. No property is changed into one.
+    relation: { icon: "mdi-arrow-top-right", label: "Relation", editor: "rows", comparisons: SEVERAL, groupable: true, needsTarget: true },
   },
-  columnActions: ["rename", "changeType", "options", "filter", "sortAscending", "sortDescending", "group", "nest", "hide", "wrap", "insertLeft", "insertRight", "duplicate", "delete"],
+  columnActions: ["rename", "changeType", "options", "relation", "filter", "sortAscending", "sortDescending", "group", "nest", "hide", "wrap", "freeze", "insertLeft", "insertRight", "duplicate", "delete"],
   rowActions: ["delete", "move"],
   defaultKind: "text",
+  searchable: true,
 };

@@ -257,6 +257,12 @@ public sealed class KnowledgeEditingTests : IDisposable
         // Act.
         (_, string answer) = table.Begin(new TableGesture("addColumn", Settings: Settings(("type", "relation"))));
 
+        // A property is made under the name it is given, and not under one another property has.
+        await table.Edit(new TableGesture("addColumn", Values: [" Mayor "], Settings: Settings(("type", "text"))));
+        (_, string taken) = table.Begin(new TableGesture("addColumn", Values: ["mayor"], Settings: Settings(("type", "number"))));
+        Assert.Contains(table.OnDisk().Properties, property => property is { Name: "Mayor", ValueType: "text" });
+        Assert.Equal("Another property is already called 'mayor'.", taken);
+
         // Assert.
         Assert.Equal(KnowledgeEdits.RelationNeedsTarget, answer);
     }
@@ -667,6 +673,38 @@ public sealed class KnowledgeEditingTests : IDisposable
         // Assert.
         Assert.False(closedEarly);
         Assert.Equal(["Antwerpen"], Cell(table.OnDisk(), "r2", "p1"));
+    }
+
+    [Theory]
+    [MemberData(nameof(KnowledgeFiles.Extensions), MemberType = typeof(KnowledgeFiles))]
+    public async Task OneProperty_IsSetInSeveralRowsAtOnce_AsOneStep_AndForNoneWhenOneRefusesIt(string extension)
+    {
+        // Arrange.
+        await using var table = Open(extension);
+        var before = table.Bytes();
+
+        // Act: both rows get the same country, in one gesture.
+        await table.Edit(new TableGesture("setCells", ColumnId: "p2", Values: ["o2"], Settings: Settings(("rows", "r1,r2"))));
+
+        // Assert.
+        Assert.Equal(["o2"], Held("r1", "p2"));
+        Assert.Equal(["o2"], Held("r2", "p2"));
+
+        // Act: one undo.
+        Assert.True((await table.History.UndoAsync(TestContext.Current.CancellationToken)).IsSuccess);
+
+        // Assert: both back, in that one step.
+        Assert.Equal(before, table.Bytes());
+
+        // A value one of the rows cannot hold is given to none, and an option is not made on the way.
+        (_, string word) = table.Begin(new TableGesture("setCells", ColumnId: "p3", Values: ["a great many"], Settings: Settings(("rows", "r1,r2"))));
+        (_, string made) = table.Begin(new TableGesture("setCells", ColumnId: "p2", Settings: Settings(("rows", "r1,r2"), ("newOption", "Luxembourg"))));
+        Assert.Equal(KnowledgeEdits.NumberExpected, word);
+        Assert.Equal(KnowledgeEdits.OptionFirst, made);
+        Assert.Equal(before, table.Bytes());
+        return;
+
+        IReadOnlyList<string>? Held(string rowId, string propertyId) => table.OnDisk().Rows.Single(row => row.Id == rowId).Cells.FirstOrDefault(cell => cell.PropertyId == propertyId)?.Values;
     }
 
     /// <summary>

@@ -99,6 +99,65 @@ public sealed class KnowledgeGroupsTests : IDisposable
         Assert.Equal(before[2], Headings(table)[0]);
     }
 
+    /// <summary>The groups the view says it has, as the group menu reads them: key, name and whether it is hidden.</summary>
+    private static List<(string Key, string Label, bool Hidden)> Listed(EditingTable table) =>
+        [.. System.Text.Json.JsonDocument.Parse(table.Session.Baseline().Settings.Settings["groups"]).RootElement.EnumerateArray().Select(group => (group.GetProperty("key").GetString()!, group.GetProperty("label").GetString()!, group.GetProperty("hidden").GetBoolean()))];
+
+    [Theory]
+    [MemberData(nameof(KnowledgeFiles.Extensions), MemberType = typeof(KnowledgeFiles))]
+    public async Task TheViewListsItsGroups_HiddenOnesToo_AndOneOfThemIsShownAgainByItself(string extension)
+    {
+        // Arrange: two groups hidden.
+        await using var table = Grouped(extension);
+        var before = Headings(table);
+        Assert.Equal(before, Listed(table).Select(group => group.Key));
+        Assert.Equal(("o1", "Netherlands", false), Listed(table)[0]);
+        Assert.Equal((KnowledgeViewEngine.NoValue, "No Country"), (Listed(table)[^1].Key, Listed(table)[^1].Label));
+        await table.Edit(new TableGesture("hideGroup", ViewId: "v1", TargetId: before[0]));
+        await table.Edit(new TableGesture("hideGroup", ViewId: "v1", TargetId: before[1]));
+
+        // Assert: both are still listed, as hidden, where they stand.
+        Assert.Equal(before, Listed(table).Select(group => group.Key));
+        Assert.Equal([true, true], Listed(table).Take(2).Select(group => group.Hidden));
+
+        // Act: the second one is shown again.
+        await table.Edit(new TableGesture("showGroup", ViewId: "v1", TargetId: before[1]));
+
+        // Assert: it alone.
+        Assert.Equal([before[0]], table.OnDisk().Views.Single(view => view.Id == "v1").HiddenGroups);
+        Assert.Equal(before.Skip(1), Headings(table));
+    }
+
+    [Theory]
+    [MemberData(nameof(KnowledgeFiles.Extensions), MemberType = typeof(KnowledgeFiles))]
+    public async Task Groups_ArePutInAPlaceAmongAllOfThem_AndInTheOrderOfTheirNames_WithTheRowsWithoutAValueLast(string extension)
+    {
+        // Arrange.
+        await using var table = Grouped(extension);
+        var before = Headings(table);
+        var names = Listed(table).ToDictionary(group => group.Key, group => group.Label);
+
+        // Act: the first group is dropped at the third place.
+        await table.Edit(new TableGesture("moveGroup", ViewId: "v1", TargetId: before[0], Index: 2));
+
+        // Assert.
+        List<string> moved = [before[1], before[2], before[0], .. before.Skip(3)];
+        Assert.Equal(moved, Headings(table));
+        Assert.Equal(moved, table.OnDisk().Views.Single(view => view.Id == "v1").GroupOrder);
+
+        // Act: by name, and by name backwards.
+        await table.Edit(new TableGesture("sortGroups", ViewId: "v1", Settings: new Dictionary<string, string> { ["order"] = "ascending" }));
+        var ascending = Headings(table);
+        await table.Edit(new TableGesture("sortGroups", ViewId: "v1", Settings: new Dictionary<string, string> { ["order"] = "descending" }));
+        var descending = Headings(table);
+
+        // Assert: the named groups in the order of their names, and the rows without a country last both times.
+        List<string> named = [.. before.Where(key => key != KnowledgeViewEngine.NoValue).OrderBy(key => names[key], StringComparer.CurrentCultureIgnoreCase)];
+        Assert.Equal([.. named, KnowledgeViewEngine.NoValue], ascending);
+        Assert.Equal([.. named.AsEnumerable().Reverse(), KnowledgeViewEngine.NoValue], descending);
+        Assert.Equal(descending, table.OnDisk().Views.Single(view => view.Id == "v1").GroupOrder);
+    }
+
     [Theory]
     [MemberData(nameof(KnowledgeFiles.Extensions), MemberType = typeof(KnowledgeFiles))]
     public async Task Rows_AreMovedTogetherBesideAnotherRow_InAViewWithoutASort_AndNotInOneWithASort(string extension)

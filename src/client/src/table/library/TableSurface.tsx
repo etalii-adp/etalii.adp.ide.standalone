@@ -9,6 +9,7 @@ import { OptionTag } from "./cells/OptionTag";
 import { DEFAULT_COLUMN_WIDTH, kindOf, type TableDefinition } from "./definition/tableDefinition";
 import { AddColumn } from "./header/AddColumn";
 import { ColumnHeader } from "./header/ColumnHeader";
+import { CalculationRow, showsCalculations } from "./rows/CalculationRow";
 import { GroupHeading } from "./rows/GroupHeading";
 import { NestedRowToggle } from "./rows/NestedRow";
 import { NewRow } from "./rows/NewRow";
@@ -87,8 +88,9 @@ export function TableSurface({ model, definition, pendingEdits = 0, selectedRow,
   const measure = useCallback(() => {
     const scroller = scrollerRef.current;
     if (scroller !== null) {
-      // The header row is inside the scroller and stays in sight, so it is not room for rows.
-      setScroll({ top: scroller.scrollTop, height: Math.max(0, scroller.clientHeight - rowHeight) });
+      // The header row is inside the scroller and stays in sight, so it is not room for rows; nor is the line of calculations, where there is one.
+      const kept = scroller.querySelector(".table-calculation-row") === null ? rowHeight : 2 * rowHeight;
+      setScroll({ top: scroller.scrollTop, height: Math.max(0, scroller.clientHeight - kept) });
     }
   }, [rowHeight]);
 
@@ -168,7 +170,8 @@ export function TableSurface({ model, definition, pendingEdits = 0, selectedRow,
   const raise = useCallback(
     (gesture: TableGesture) => {
       setRefusal("");
-      if (gesture.kind === "addColumn") {
+      // A property made without a name has its type's: its own is asked for in its header once it is there.
+      if (gesture.kind === "addColumn" && (gesture.values?.[0] ?? "") === "") {
         columnsBeforeAdd.current = new Set(columnsRef.current.map((column) => column.id));
       }
       void onGesture?.(gesture).then((answer) => {
@@ -336,14 +339,27 @@ export function TableSurface({ model, definition, pendingEdits = 0, selectedRow,
   /** The rows a gesture on one row is about: all that are selected when it is one of them, else that row alone. */
   const rowsOf = (rowId: string) => (selectedRows.has(rowId) && selectedRows.size > 1 ? [...selectedRows] : [rowId]);
 
+  const toggleRow = (rowId: string) => {
+    const next = new Set(selectedRows);
+    if (!next.delete(rowId)) {
+      next.add(rowId);
+    }
+    selectRows(next);
+  };
+
+  // Every row the table holds, for the checkbox that selects them all: the lines that are rows, not headings.
+  const heldRows = useMemo(() => [...model.rows.values()].filter((row) => !row.isGroup && !row.isNewRow).map((row) => row.id), [model.rows]);
+  const allSelected = heldRows.length > 0 && heldRows.every((id) => selectedRows.has(id));
+
+  // The property of the selected rows that is being edited for all of them at once, if one is.
+  const [bulk, setBulk] = useState<string | null>(null);
+  const bulkColumn = bulk === null ? undefined : columns.find((column) => column.id === bulk);
+  const setSelected = (columnId: string, values: readonly string[], settings?: Readonly<Record<string, string>>) =>
+    onGesture?.({ kind: "setCells", columnId, values, settings: { ...settings, rows: [...selectedRows].join(",") } }) ?? Promise.resolve("");
+
   const rowHandle = usePointerGesture<{ rowId: string; index: number }>({
-    onPress: ({ rowId }) => {
-      const next = new Set(selectedRows);
-      if (!next.delete(rowId)) {
-        next.add(rowId);
-      }
-      selectRows(next);
-    },
+    // The handle moves a row; selecting one is its checkbox's.
+    onPress: () => {},
     onDragEnd: ({ rowId, index }, _dx, dy) => {
       // The line the row is let go over, by the height every line has; a heading or the new-row line is no place for a row.
       const over = model.rows.get(index + Math.round(dy / rowHeight));
@@ -355,6 +371,11 @@ export function TableSurface({ model, definition, pendingEdits = 0, selectedRow,
       raise(ids.length === 1 ? { kind: "moveRows", rowId, targetId: over.id, settings } : { kind: "moveRows", values: ids, targetId: over.id, settings });
     },
   });
+  // The columns the view freezes: up to and including the one it names, each kept where it stands
+  // while the table scrolls sideways. The first column stays in sight whatever the view says.
+  const frozenUpTo = columns.findIndex((column) => column.id === model.settings.settings.freeze);
+  const frozenAt = (index: number) => (index > 0 && index <= frozenUpTo ? widths.slice(0, index).reduce((sum, width) => sum + width, 0) : undefined);
+  const calculates = showsCalculations(columns, editable);
   const template = widths.map((width) => `${width}px`).join(" ");
   const rowStyle = { gridTemplateColumns: template, height: rowHeight };
   // The header has one more track than the rows: the room of the button that adds a column.
@@ -367,18 +388,76 @@ export function TableSurface({ model, definition, pendingEdits = 0, selectedRow,
       {model.views.length > 0 && <ViewTabs views={model.views} activeViewId={model.settings.viewId} editable={editable} onView={onView} raise={raise} />}
       {model.views.length > 0 && <ViewBar model={model} definition={definition} editable={editable} raise={raise} />}
       <TableNote model={model} pendingEdits={pendingEdits} />
+      {editable && selectedRows.size > 0 && (
+        // What is done to the selected rows together: a property set for all of them, or all of them deleted.
+        <div className="table-selection-bar" role="toolbar" aria-label="Selected rows">
+          <span>{selectedRows.size === 1 ? "1 row selected" : `${selectedRows.size} rows selected`}</span>
+          <select aria-label="Edit a property of the selected rows" value={bulk ?? ""} onChange={(event) => setBulk(event.target.value === "" ? null : event.target.value)}>
+            <option value="">Edit a property…</option>
+            {columns
+              .filter((column) => kindOf(definition, column.kind).editor !== undefined && column.settings.computed !== "true")
+              .map((column) => (
+                <option key={column.id} value={column.id}>
+                  {column.name}
+                </option>
+              ))}
+          </select>
+          {rowMenuOffered && (
+            <button
+              type="button"
+              onClick={() => {
+                raiseAsking(selectedRows.size === 1 ? { kind: "deleteRows", rowId: [...selectedRows][0] } : { kind: "deleteRows", values: [...selectedRows] });
+                selectRows(new Set());
+              }}
+            >
+              {selectedRows.size === 1 ? "Delete row" : `Delete ${selectedRows.size} rows`}
+            </button>
+          )}
+          <button type="button" onClick={() => selectRows(new Set())}>
+            Clear selection
+          </button>
+          {bulkColumn !== undefined && (
+            <div className="table-bulk-editor" role="group" aria-label={`${bulkColumn.name} of the selected rows`}>
+              {kindOf(definition, bulkColumn.kind).editor === "checkbox" ? (
+                <>
+                  <button type="button" onClick={() => void setSelected(bulkColumn.id, ["true"]).then(setRefusal)}>
+                    Check
+                  </button>
+                  <button type="button" onClick={() => void setSelected(bulkColumn.id, []).then(setRefusal)}>
+                    Uncheck
+                  </button>
+                </>
+              ) : (
+                <CellEditor
+                  key={bulkColumn.id}
+                  editor={kindOf(definition, bulkColumn.kind).editor as Exclude<typeof definition.kinds[string]["editor"], "checkbox" | undefined>}
+                  column={bulkColumn}
+                  cell={undefined}
+                  commit={(values, settings) => setSelected(bulkColumn.id, values, settings)}
+                  onClose={() => setBulk(null)}
+                />
+              )}
+            </div>
+          )}
+        </div>
+      )}
     <div
       ref={scrollerRef}
       className="table-surface"
       role="grid"
       aria-label={model.title}
-      aria-rowcount={model.rowCount + 1}
+      aria-rowcount={model.rowCount + (calculates ? 2 : 1)}
       aria-colcount={columns.length}
       aria-readonly={model.readOnlyReason !== "" ? true : undefined}
       onScroll={measure}
       onKeyDown={onKeyDown}
     >
       <div className="table-header-row" role="row" aria-rowindex={1} style={headerStyle}>
+        {rowsSelectable && heldRows.length > 0 && (
+          <span className="table-select-all" role="presentation">
+            <input type="checkbox" className="table-row-check" aria-label="Select all rows" checked={allSelected} onChange={() => selectRows(new Set(allSelected ? [] : heldRows))} />
+          </span>
+        )}
         {columns.map((column, index) => (
           <ColumnHeader
             key={column.id}
@@ -390,11 +469,13 @@ export function TableSurface({ model, definition, pendingEdits = 0, selectedRow,
             raise={raise}
             ask={onGesture}
             onResizePreview={onResizePreview}
+            frozenAt={frozenAt(index)}
+            frozenUpToThis={index === frozenUpTo}
             nameAtOnce={naming === column.id}
             onNamingStarted={namingStarted}
           />
         ))}
-        {editable && <AddColumn definition={definition} raise={raise} />}
+        {editable && <AddColumn definition={definition} raise={raise} ask={onGesture} />}
       </div>
       {spacers.before > 0 && <div className="table-spacer" style={{ height: spacers.before }} aria-hidden="true" />}
       {indexesOf(window).map((index) => {
@@ -451,6 +532,8 @@ export function TableSurface({ model, definition, pendingEdits = 0, selectedRow,
               const classes = [
                 "table-cell",
                 columnIndex === 0 ? "table-cell-first" : "",
+                frozenAt(columnIndex) !== undefined ? "table-cell-frozen" : "",
+                columnIndex === frozenUpTo ? "table-cell-frozen-edge" : "",
                 column.wraps ? "table-cell-wraps" : "",
                 cell?.pending ? "table-cell-pending" : "",
                 told !== undefined ? `table-cell-finding table-cell-finding-${told.severity}` : "",
@@ -472,7 +555,10 @@ export function TableSurface({ model, definition, pendingEdits = 0, selectedRow,
                   title={told?.messages.join("\n")}
                   aria-invalid={told !== undefined && told.severity !== "info" ? true : undefined}
                   tabIndex={entry.row === index && entry.column === columnIndex ? 0 : -1}
-                  style={column.isTitle && row.depth > 0 ? { paddingInlineStart: CELL_PADDING + row.depth * INDENT } : undefined}
+                  style={{
+                    ...(column.isTitle && row.depth > 0 ? { paddingInlineStart: CELL_PADDING + row.depth * INDENT } : undefined),
+                    ...(frozenAt(columnIndex) !== undefined ? { left: frozenAt(columnIndex) } : undefined),
+                  }}
                   onFocus={() => {
                     if (!isActive) {
                       setActive({ row: index, column: columnIndex });
@@ -492,15 +578,20 @@ export function TableSurface({ model, definition, pendingEdits = 0, selectedRow,
                   ) : (
                     <>
                       {columnIndex === 0 && rowsSelectable && (
-                        // The row's handle: pressed, it selects the row or no longer; dragged, it moves the row.
-                        <span
-                          className="mdi mdi-drag-vertical table-row-handle"
-                          role="checkbox"
-                          aria-checked={selectedRows.has(row.id)}
-                          aria-label={`Select row ${index + 1}`}
-                          onDoubleClick={(event) => event.stopPropagation()}
-                          {...rowHandle.press({ rowId: row.id, index })}
-                        />
+                        // As in Notion: a handle that moves the row when it is dragged, and a checkbox that selects it.
+                        <>
+                          {rowsMovable && (
+                            <span className="mdi mdi-drag-vertical table-row-handle" role="img" aria-label={`Move row ${index + 1}`} onDoubleClick={(event) => event.stopPropagation()} {...rowHandle.press({ rowId: row.id, index })} />
+                          )}
+                          <input
+                            type="checkbox"
+                            className="table-row-check"
+                            aria-label={`Select row ${index + 1}`}
+                            checked={selectedRows.has(row.id)}
+                            onChange={() => toggleRow(row.id)}
+                            onDoubleClick={(event) => event.stopPropagation()}
+                          />
+                        </>
                       )}
                       {column.isTitle && <NestedRowToggle row={row} title={cellText(cell)} editable={editable} raise={raise} />}
                       <CellValue
@@ -518,6 +609,7 @@ export function TableSurface({ model, definition, pendingEdits = 0, selectedRow,
         );
       })}
       {spacers.after > 0 && <div className="table-spacer" style={{ height: spacers.after }} aria-hidden="true" />}
+      {calculates && <CalculationRow columns={columns} style={rowStyle} rowIndex={model.rowCount + 2} editable={editable} raise={raise} frozenAt={frozenAt} frozenUpTo={frozenUpTo} />}
       {refusal !== "" && (
         <p className="table-refusal" role="alert">
           {refusal}

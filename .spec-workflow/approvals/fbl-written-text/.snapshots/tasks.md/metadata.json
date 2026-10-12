@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/fbl-written-text/tasks.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-10-12T11:30:23.381Z",
+      "trigger": "initial",
+      "approvalId": "approval_1791804622634_85uecv4wo",
+      "approvalTitle": "tasks.md: FBL 0.5 in the standalone library, seven tasks (35 of 35 criteria, Requirement 8 included)"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-10-12T11:33:11.865Z",
+      "trigger": "approved",
+      "approvalId": "approval_1791804622634_85uecv4wo",
+      "approvalTitle": "tasks.md: FBL 0.5 in the standalone library, seven tasks (35 of 35 criteria, Requirement 8 included)"
+    }
+  ]
+}

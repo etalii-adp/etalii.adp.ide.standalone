@@ -383,6 +383,28 @@ describe("useTableStream inside a tool's frame", () => {
     expect(said).toEqual(["attempted", "refused: A number is expected."]);
   });
 
+  it("gives an answer that is a question to whoever asked, and says no refusal of it", async () => {
+    // Arrange: an edit answered with a question to confirm, and one answered with things to choose from.
+    const answers = ["confirm:3 rows of other tables relate to this row.", 'choose:[{"id":".","label":"This table"}]'];
+    calls.edit.mockImplementation(async () => ({ error: answers.shift() ?? "" }));
+    const { said, wrapper } = frame();
+    const { result } = renderHook(() => useTableStream(["cities.adp"]), { wrapper });
+    await act(async () => streamAt(0).push(baseline(1)));
+
+    // Act.
+    let confirm = "";
+    let choose = "";
+    await act(async () => { confirm = await result.current.edit({ kind: "deleteRows", rowId: "r1" }); });
+    await act(async () => { choose = await result.current.edit({ kind: "addRelation" }); });
+
+    // Assert: the asker has both answers whole; the frame was told of two attempts and of no refusal, and nothing waits to be written.
+    expect(confirm).toBe("confirm:3 rows of other tables relate to this row.");
+    expect(choose).toBe('choose:[{"id":".","label":"This table"}]');
+    expect(said).toEqual(["attempted", "attempted"]);
+    expect(result.current.refusal).toBe("");
+    expect(result.current.pendingEdits).toBe(0);
+  });
+
   it("says a write was refused when its outcome arrives", async () => {
     // Arrange.
     const { said, wrapper } = frame();

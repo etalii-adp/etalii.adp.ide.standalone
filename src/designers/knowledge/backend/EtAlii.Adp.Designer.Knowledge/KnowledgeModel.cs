@@ -55,10 +55,11 @@ internal sealed record KnowledgeView(
     bool HideEmptyGroups,
     IReadOnlyList<string> GroupOrder,
     IReadOnlyList<string> HiddenGroups,
-    IReadOnlyList<string> Collapsed);
+    IReadOnlyList<string> Collapsed,
+    string Freeze = "");
 
-/// <summary>What a view says about one property: whether it shows, how wide, whether it wraps.</summary>
-internal sealed record KnowledgeColumn(string PropertyId, bool Visible, int Width, bool Wrap);
+/// <summary>What a view says about one property: whether it shows, how wide, whether it wraps, and what the line under it calculates.</summary>
+internal sealed record KnowledgeColumn(string PropertyId, bool Visible, int Width, bool Wrap, string Calculate = "");
 
 internal sealed record KnowledgeSort(string PropertyId, bool Descending);
 
@@ -122,14 +123,16 @@ internal static class KnowledgeModelReader
                 // A column that does not say is shown: the binding's default, restated for a family that gives none.
                 !column.Attributes.TryGetValue("visible", out var visible) || visible is null || KnowledgeValues.IsTrue(visible),
                 KnowledgeValues.Whole(column.Attributes.GetValueOrDefault("width")) ?? 0,
-                KnowledgeValues.IsTrue(column.Attributes.GetValueOrDefault("wrap"))))],
+                KnowledgeValues.IsTrue(column.Attributes.GetValueOrDefault("wrap")),
+                Text(column, "calculate")))],
             [.. ChildrenOf(view, "sorts").Select(sort => new KnowledgeSort(Text(sort, "property"), Text(sort, "direction") == "descending"))],
             new KnowledgeFilterGroup(Text(view, "filterMatch") == "any", [.. ChildrenOf(view, "filter").Select(FilterItemOf)]),
             Text(view, "groupBy"),
             KnowledgeValues.IsTrue(view.Attributes.GetValueOrDefault("hideEmptyGroups")),
             [.. ChildrenOf(view, "groupOrder").Select(setting => Text(setting, "key"))],
             [.. ChildrenOf(view, "hiddenGroups").Select(setting => Text(setting, "key"))],
-            [.. ChildrenOf(view, "collapsed").Select(setting => Text(setting, "key"))])).ToList();
+            [.. ChildrenOf(view, "collapsed").Select(setting => Text(setting, "key"))],
+            Text(view, "freeze"))).ToList();
 
         var rows = model.Elements.Where(element => element.Type == "Row").Select(row => new KnowledgeRow(
             row.Id,

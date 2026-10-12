@@ -126,7 +126,6 @@ public sealed class KnowledgeRowContextTests : IDisposable
         // Arrange.
         var row = await Row("r1");
         var before = await File.ReadAllBytesAsync(Cities, TestContext.Current.CancellationToken);
-        async Task<ContextPropertyResult> Set(string propertyId, string value) => await _provider.SetAsync(row, propertyId, value, TestContext.Current.CancellationToken);
 
         // Act: a text, an option by its name, two tags by their names, and a checkbox.
         Assert.True((await Set("p1", "Amsterdam (NH)")).IsSuccess);
@@ -163,6 +162,9 @@ public sealed class KnowledgeRowContextTests : IDisposable
 
         // Assert: the file as it was.
         Assert.Equal(before, await File.ReadAllBytesAsync(Cities, TestContext.Current.CancellationToken));
+        return;
+
+        async Task<ContextPropertyResult> Set(string propertyId, string value) => await _provider.SetAsync(row, propertyId, value, TestContext.Current.CancellationToken);
     }
 
     [Fact]

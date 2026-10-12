@@ -6,7 +6,7 @@
 
 Most of the written text is already in the reading. `TreeValue.Text` holds a scalar's decoded text beside `TreeValue.Typed`, and `SlotRead.Wire` already carries it for a scalar member (`Rules/TreeFamily.cs`, `ReadMember`). What the library lacks is using it: `BodyReading.ReadSlots` takes `SlotRead.Value`, which is the typed value, and `AssignId`, `KeyOf`, `End`, `CheckReferences` and `ReferencedBy` all turn that typed value back into text with `NewText.Plain`, which is where `007` becomes `7`. So the Performance requirement (one pass, no second parse) is met by construction.
 
-**One item is outside the approved requirements** and is put as a selection under *Amendment proposed*: deriving `FblOptions.AttributeType` from a DISL specification. This design is written against its recommended option, as step 7, and steps 1 to 6 do not depend on it.
+**One item was outside the approved requirements** and was put as a selection under *Amendment approved*: deriving `FblOptions.AttributeType` from a DISL specification. Its option 1 was approved with this design's card on 2026-10-12, and it is Requirement 8 since that day. This design is written against it, as step 7, and steps 1 to 6 do not depend on it.
 
 ## Steering Document Alignment
 
@@ -75,7 +75,7 @@ graph TD
 | 4 | **A slot reads text**: by `read: "text"`, or by a type given as `string`. `map` translates the written text. Writing reads back as the same text; `style: "plain"`. | 2.2, 2.3, 2.5, 2.6 | Every caller that hands over no types (hype cycle, agent activity: their tests above). The Knowledge designer is the one caller reached; its tests and the `knowledge-*` fixtures are the measure (Requirement 6.2). |
 | 5 | **Conversion.** A slot read as typed converts to its attribute's type; `quoted`; `fallback`; `fbl.unconverted-value`. | 3 | The same as step 4. |
 | 6 | **The corpus vendored again; the runner compares attribute values.** `timeline.fbl` at 0.5 and `timeline-written-text` enter; the runner is given the timeline's attribute types; the self-test of Requirement 5.5; the readme; `divergences.json`. | 5.2 to 5.5, 6.3, 7.1 | The eleven earlier fixtures pass with what they expect unchanged. No product code changes in this step. |
-| 7 | **Attribute types derived from a DISL specification** (*Amendment proposed*, option 1); the delivery report. | Proposed requirement; 7.3 | Everything: a new class nobody calls yet. |
+| 7 | **Attribute types derived from a DISL specification** (*Amendment approved*, option 1); the delivery report. | 8, 7.3 | Everything: a new class nobody calls yet. |
 
 Steps 3, 4 and 5 are separate on purpose, as derivation and reading are in a conversion: step 3 is the only one that can move the hype cycle's or the agent activity diagram's transcript, and steps 4 and 5 are the only ones that can move a Knowledge designer attribute.
 
@@ -145,7 +145,9 @@ A quoted YAML scalar converts to `int`, `number` or `bool` only with `quoted: "c
 
 `FindingCodes.UnconvertedValue` is `fbl.unconverted-value`, a warning at the value's span. `Finding` gains an init property `Detail` (a map with `attribute` and `text`); its positional constructor does not change, so no caller is touched. The message: "'wide' is not a whole number, so Row is read as 0. Write a whole number to change it."
 
-## Amendment proposed
+## Amendment approved
+
+**The record.** Option 1 below was approved with this design's card in the dashboard on 2026-10-12. Requirement 8 was added to the requirements on that day, and their Code Architecture sentence was widened to name `EtAlii.Adp.Specification.Disl` for that requirement only; that amendment has a card of its own, because an approval covers only its own file. The rest of this section is kept as it was put, and describes the requirements as they stood before Requirement 8.
 
 **The requirement.** Requirement 2.2 reads the written text for "an attribute whose type the caller gives as a string", and the Code Architecture requirement keeps the change "inside `EtAlii.Adp.Specification.Fbl` and its test project". So the requirements leave it to each caller to hand over a list.
 
@@ -153,12 +155,12 @@ A quoted YAML scalar converts to `int`, `number` or `bool` only with `quoted: "c
 
 **The options.**
 
-1. **Add it here as a requirement, built as step 7 in `EtAlii.Adp.Specification.Disl` (recommended).** One owner, delivered once, before any of the seven conversions needs it. It costs an amendment of the approved requirements: one new requirement and the architecture sentence widened to name that library. That is a change of scope, so it is a card and not a chat ruling.
+1. **Add it here as a requirement, built as step 7 in `EtAlii.Adp.Specification.Disl` (recommended, and approved on 2026-10-12 as Requirement 8).** One owner, delivered once, before any of the seven conversions needs it. It costs an amendment of the approved requirements: one new requirement and the architecture sentence widened to name that library. That is a change of scope, so it is a card and not a chat ruling.
 2. **Leave it to `timeline-disl-fbl`**, as its design says. Nothing changes here; the six other conversions then wait on the timeline's reading step for a class that is not the timeline's.
 3. **A small specification of its own.** Clean ownership, at the cost of one more approval round for about a hundred lines.
 4. Other.
 
-**Designed against option 1.** `DislAttributeTypes`, a public static class: `Of(DislSpecification)` returns the function `FblOptions.AttributeType` takes, and `TimeAttributes(DislSpecification, FblBinding)` the set `FblOptions.TimeAttributes` takes, keyed `rule.attribute` as `YamlFamily` reads it. A binding type is resolved through `DislTypeMap.For`: its `As` to `Metamodel.TypeOf`, or to `Metamodel.DiagramAttributes` for `diagram`; a renamed attribute through `Attributes`; a host attribute is `string`, which FBL 5.2 reads as text; `header` and `unreadable` give no type. Tested against a specification with `extends`, a rename and a host attribute, each seen to fail first.
+**Designed against option 1, which is Requirement 8.** `DislAttributeTypes`, a public static class: `Of(DislSpecification)` returns the function `FblOptions.AttributeType` takes, and `TimeAttributes(DislSpecification, FblBinding)` the set `FblOptions.TimeAttributes` takes, keyed `rule.attribute` as `YamlFamily` reads it. A binding type is resolved through `DislTypeMap.For`: its `As` to `Metamodel.TypeOf`, or to `Metamodel.DiagramAttributes` for `diagram`; a renamed attribute through `Attributes`; a host attribute is `string`, which FBL 5.2 reads as text; `header` and `unreadable` give no type. Tested against a specification with `extends`, a rename and a host attribute, each seen to fail first.
 
 ## What each waiting specification gets
 
@@ -263,4 +265,5 @@ Found by searching `.spec-workflow/specs/*-disl-fbl/` for `fbl-written-text`, "w
 | 7.2 | Every step |
 | 7.3 | Step 7; *What each waiting specification gets*; *What FBL 0.5 leaves unclear* |
 | 7.4 | The tasks document; this table is its input |
+| 8.1 to 8.7 | Step 7; *Amendment approved*; `DislAttributeTypes` |
 | Non-functional | Overview (one pass); Modular Design Principles; *The finding* (the message) |
