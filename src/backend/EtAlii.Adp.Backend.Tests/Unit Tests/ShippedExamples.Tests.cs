@@ -1,8 +1,11 @@
 using System.Text.RegularExpressions;
+using EtAlii.Adp.Designer;
+using EtAlii.Adp.Diagram;
+using EtAlii.Adp.Hierarchy;
 using Xunit;
 using IoPath = System.IO.Path;
 
-namespace EtAlii.Adp.Repository.Tests;
+namespace EtAlii.Adp.Backend.Tests;
 
 /// <summary>
 /// The shipped example documents carry no placeholder junk.
@@ -41,6 +44,16 @@ namespace EtAlii.Adp.Repository.Tests;
 /// week. Over the 101 documents ADP writes, it has no false positives at all.
 /// </para>
 /// <para>
+/// <b>The extensions are the tool definitions', not a list kept here</b> (spec 025, T030). The
+/// list this guard started with named five, and a module added twenty days later - the hype
+/// cycle graph's <c>.ghg</c>, eighteen documents ADP wrote - went unswept because nobody added
+/// a sixth. Every extension a discovered diagram or designer declares is swept now, which is
+/// why this guard lives in a project that references every module. What that widening brings
+/// in that is not ADP's is left out by what it is rather than by its extension: a readme is
+/// prose about a document, and a folder carrying its own <c>LICENSE</c> is upstream data,
+/// vendored as the repository's rule says.
+/// </para>
+/// <para>
 /// <b>What it cannot see</b>, stated rather than implied: prose that is wrong rather than
 /// junk, a node named after the button that made it, a diagram that draws nothing. Those need
 /// a person, and <c>tests.md</c> carries the step - this guard exists to stop the mechanical
@@ -49,8 +62,25 @@ namespace EtAlii.Adp.Repository.Tests;
 /// </remarks>
 public partial class ShippedExamplesTests
 {
-    /// <summary>The document extensions ADP reads and writes as its own, lower-case.</summary>
-    private static readonly string[] AuthoredExtensions = [".mm", ".cld", ".owm", ".adp", ".tml"];
+    /// <summary>
+    /// The document extensions ADP reads and writes as its own, lower-case: every extension a
+    /// discovered diagram or designer declares, and the registration file's.
+    /// </summary>
+    private static readonly HashSet<string> AuthoredExtensions = Discover();
+
+    /// <summary>The licence file a vendored folder carries beside its data.</summary>
+    private static readonly string[] LicenceFiles = ["LICENSE.md", "LICENSE"];
+
+    private static HashSet<string> Discover()
+    {
+        var diagrams = DiagramDefinitionDiscovery.Discover()
+            .SelectMany(definition => new[] { definition.Extension, definition.AlternateExtension });
+        var designers = DesignerDefinitionDiscovery.Discover()
+            .SelectMany(definition => definition.Formats.Select(format => format.Extension));
+        return [.. diagrams.Concat(designers).Append(DiagramFileName.Extension)
+            .Where(extension => extension.Length > 0)
+            .Select(extension => extension.ToLowerInvariant())];
+    }
 
     private static string RepositoryRoot { get; } = Locate();
 
@@ -102,10 +132,27 @@ public partial class ShippedExamplesTests
 
     private static string[] AuthoredDocuments() =>
         [.. ExampleRoots()
-            .SelectMany(root => Directory.EnumerateFiles(root, "*", SearchOption.AllDirectories))
+            .SelectMany(root => Directory
+                .EnumerateFiles(root, "*", SearchOption.AllDirectories)
+                .Where(file => !IsVendored(root, file)))
             .Where(file => AuthoredExtensions.Contains(IoPath.GetExtension(file).ToLowerInvariant()))
+            .Where(file => !string.Equals(IoPath.GetFileName(file), "readme.md", StringComparison.OrdinalIgnoreCase))
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .Order(StringComparer.Ordinal)];
+
+    /// <summary>Whether a folder between <paramref name="file"/> and its example root carries a licence of its own.</summary>
+    private static bool IsVendored(string root, string file)
+    {
+        for (var folder = IoPath.GetDirectoryName(file); folder is not null && folder.Length >= root.Length; folder = IoPath.GetDirectoryName(folder))
+        {
+            if (LicenceFiles.Any(licence => File.Exists(IoPath.Combine(folder, licence))))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
 
     [Fact]
     public void TheSweepActuallyReachesTheDocuments()
@@ -130,6 +177,9 @@ public partial class ShippedExamplesTests
         Assert.Contains(
             documents,
             file => file.EndsWith(IoPath.Combine("src", "diagrams", "mindmap", "examples", "example 1", "mindmap.mm"), StringComparison.Ordinal));
+
+        // And one of the extension the hand-kept list left out, which only the definitions bring in.
+        Assert.Contains(documents, file => file.EndsWith(".ghg", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -176,6 +226,11 @@ public partial class ShippedExamplesTests
     /// the way the client's unstyled-class guard does it - not deleting the rule.
     /// </para>
     /// <para>
+    /// <b>The repeated fragment is letters, and never a colour.</b> Over the wider sweep a digit
+    /// fragment fired on every year (<c>2020</c>) and a hex one on every colour
+    /// (<c>#ffffff</c>), all of them correct; <c>1212</c> typed as junk is the price.
+    /// </para>
+    /// <para>
     /// <b>One rule is deliberately absent, and this paragraph is here so it is not "fixed"
     /// back in.</b> The acceptance criterion this guard enforces names <c>AAA</c> among the
     /// junk to catch, and a repeated-single-letter rule is the obvious way to write it. It
@@ -186,7 +241,7 @@ public partial class ShippedExamplesTests
     /// </para>
     /// </remarks>
     [GeneratedRegex(
-        @"\b(?:asdf\w*|sdfsdf\w*|qwerty\w*|hjkl\w*|zxcv\w*|lorem\w*|foo|bar|baz|blah|xxx+|todo|tbd|fixme|Test\s*\d+|(?<fragment>\w{2,4})\k<fragment>|New (?:Element|Node|Item|Diagram))\b",
+        @"(?<!#)\b(?:asdf\w*|sdfsdf\w*|qwerty\w*|hjkl\w*|zxcv\w*|lorem\w*|foo|bar|baz|blah|xxx+|todo|tbd|fixme|Test\s*\d+|(?<fragment>\p{L}{2,4})\k<fragment>|New (?:Element|Node|Item|Diagram))\b",
         RegexOptions.IgnoreCase)]
     private static partial Regex PlaceholderExpression();
 }
