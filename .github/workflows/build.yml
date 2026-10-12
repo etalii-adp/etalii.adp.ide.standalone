@@ -219,12 +219,15 @@ jobs:
           key: nuget-${{ runner.os }}-${{ hashFiles('src/Directory.Packages.props', 'src/global.json') }}
           restore-keys: nuget-${{ runner.os }}-
 
+      # The project set is part of the key: caches restored from a run that had fewer projects left
+      # the inspector unable to resolve even System types in the added ones (BLIND), while a cold run
+      # of the same tree was clean. A change to the project set therefore starts from no cache.
       - uses: actions/cache@v6
         if: steps.scope.outputs.inspect == 'true'
         with:
           path: ${{ runner.temp }}/inspectcode-caches
-          key: inspectcode-${{ runner.os }}-${{ hashFiles('.config/dotnet-tools.json') }}-${{ github.sha }}
-          restore-keys: inspectcode-${{ runner.os }}-${{ hashFiles('.config/dotnet-tools.json') }}-
+          key: inspectcode-${{ runner.os }}-${{ hashFiles('.config/dotnet-tools.json') }}-${{ hashFiles('src/backend/EtAlii.Adp.slnx') }}-${{ github.sha }}
+          restore-keys: inspectcode-${{ runner.os }}-${{ hashFiles('.config/dotnet-tools.json') }}-${{ hashFiles('src/backend/EtAlii.Adp.slnx') }}-
 
       # The inspector's version is the one .config/dotnet-tools.json pins.
       - name: Restore the inspector
