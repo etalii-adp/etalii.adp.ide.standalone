@@ -1,6 +1,7 @@
 # Runs the backend suite twenty times on the GitHub runner, so a flaky test shows as a count
-# rather than as one unlucky pull request (etalii.adp spec 025, T026, SC-002). Started by hand
-# from the Actions tab, against any branch.
+# rather than as one unlucky pull request (etalii.adp spec 025, T026, SC-002). Runs nightly
+# against develop, so a flake shows within a day of the merge that brought it (T271, ruled
+# 2026-10-12), and can still be started by hand from the Actions tab, against any branch.
 #
 # Twenty jobs side by side rather than twenty runs in one job: each run's result is its own row
 # on the run's page, and one hung run cannot hold up the other nineteen. fail-fast is off for
@@ -9,6 +10,9 @@ name: Stability
 
 on:
   workflow_dispatch:
+  # 02:30 UTC, when no pull request is usually running; a schedule always runs on the default branch.
+  schedule:
+    - cron: "30 2 * * *"
 
 jobs:
   backend-tests:

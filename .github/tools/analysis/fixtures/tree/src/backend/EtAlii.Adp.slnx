@@ -1,6 +1,8 @@
 <Solution>
   <Project Path="EtAlii.Adp.Core/EtAlii.Adp.Core.csproj" />
   <Project Path="EtAlii.Adp.Empty/EtAlii.Adp.Empty.csproj" />
+  <Project Path="EtAlii.Adp.TestSupport/EtAlii.Adp.TestSupport.csproj" />
+  <Project Path="EtAlii.Adp.TestSupport.Host/EtAlii.Adp.TestSupport.Host.csproj" />
   <Project Path="../diagrams/alpha/backend/EtAlii.Adp.Diagram.Alpha/EtAlii.Adp.Diagram.Alpha.csproj" />
   <Project Path="../diagrams/alpha/backend/EtAlii.Adp.Diagram.Alpha.Tests/EtAlii.Adp.Diagram.Alpha.Tests.csproj" />
   <Project Path="../diagrams/beta-gamma/backend/EtAlii.Adp.Diagram.BetaGamma/EtAlii.Adp.Diagram.BetaGamma.csproj" />

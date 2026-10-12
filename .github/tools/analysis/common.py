@@ -2,7 +2,9 @@
 
 A project is classified the way docs/solution-structure.md says it must be: core by the absence of a
 leading '../' in its solution path, otherwise by the tool kind folder it sits under (diagrams, designers,
-editors). A project is a test project when its name ends in '.Tests'.
+editors). A project is a test project when its name ends in '.Tests'. Test code is the test projects and
+the two testing projects they reference, EtAlii.Adp.TestSupport and EtAlii.Adp.TestSupport.Host: a helper
+moved out of a test project into them is still test code.
 """
 
 import argparse
@@ -14,6 +16,8 @@ import sys
 SOLUTION = os.path.join("src", "backend", "EtAlii.Adp.slnx")
 SKIPPED_FOLDERS = {"bin", "obj", "node_modules", ".git"}
 KINDS = {"diagrams": "diagram", "designers": "designer", "editors": "editor"}
+# Not named *.Tests, so not test projects, and nothing in them is production code.
+TESTING_PROJECTS = {"EtAlii.Adp.TestSupport", "EtAlii.Adp.TestSupport.Host"}
 
 
 class Project:
@@ -23,6 +27,9 @@ class Project:
         self.folder = os.path.dirname(self.path)
         self.name = os.path.splitext(os.path.basename(self.path))[0]
         self.test = self.name.endswith(".Tests")
+        # Test code: a test project or one of the testing projects. lines.py, methods.py and waits.py split by
+        # this; clones.py keeps scanning the test projects alone, by self.test.
+        self.test_code = self.test or self.name in TESTING_PROJECTS
         if not self.solution_path.startswith("../"):
             self.kind = "core"
         else:
@@ -30,7 +37,7 @@ class Project:
             self.kind = KINDS.get(parts[1], "other")
         # The module a tool project belongs to: the folder under diagrams/, designers/ or editors/.
         self.module = self.solution_path.split("/")[2] if self.kind not in ("core", "other") else None
-        self.group = ("test" if self.test else "production")
+        self.group = ("test" if self.test_code else "production")
 
 
 def projects(root):
