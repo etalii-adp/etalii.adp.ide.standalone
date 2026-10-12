@@ -374,46 +374,6 @@ describe("adding a column", () => {
     expect(screen.queryByRole("dialog", { name: "New property" })).toBeNull();
   });
 
-  it("offers a kind under each entry it is offered as, and starts a property made from one with that entry's settings", async () => {
-    // Arrange: a relation offered as one that holds one row and one that holds several, as the Knowledge designer offers it.
-    const relating: TableDefinition = {
-      ...definition,
-      kinds: {
-        ...definition.kinds,
-        relation: {
-          icon: "mdi-arrow-top-right",
-          label: "Relation",
-          editor: "rows",
-          needsTarget: true,
-          offeredAs: [
-            { label: "Relation", icon: "mdi-arrow-top-right", settings: { limit: "one" } },
-            { label: "Multiple relation", icon: "mdi-call-split", settings: { limit: "none" } },
-          ],
-        },
-      },
-    };
-    const onGesture = vi.fn(async (_gesture: TableGesture) => 'choose:[{"id":"provinces.yaml","label":"Provinces"}]');
-    render(<TableSurface model={table()} definition={relating} onGesture={onGesture} />);
-    fireEvent.click(screen.getByRole("button", { name: "Add a property" }));
-    const panel = screen.getByRole("dialog", { name: "New property" });
-
-    // Assert: both are listed among the types.
-    expect(screen.getAllByRole("menuitem").map((item) => item.textContent)).toEqual(["Text", "Number", "Relation", "Multiple relation"]);
-
-    // Act: the one that holds several, and a table.
-    await choose("Multiple relation");
-    await choose("Provinces");
-
-    // Assert: it starts with no limit; the one that holds one row would start with one.
-    expect((within(panel).getByRole("combobox", { name: "Limit" }) as HTMLSelectElement).value).toBe("none");
-    cleanup();
-    render(<TableSurface model={table()} definition={relating} onGesture={onGesture} />);
-    fireEvent.click(screen.getByRole("button", { name: "Add a property" }));
-    await choose("Relation");
-    await choose("Provinces");
-    expect((within(screen.getByRole("dialog", { name: "New property" })).getByRole("combobox", { name: "Limit" }) as HTMLSelectElement).value).toBe("one");
-  });
-
   it("edits a relation's limit and its other side from the column's menu, and changes no column into a relation", async () => {
     // Arrange: a relation that holds one row and is shown in this table only, and the side of one another table holds.
     const relating: TableDefinition = {

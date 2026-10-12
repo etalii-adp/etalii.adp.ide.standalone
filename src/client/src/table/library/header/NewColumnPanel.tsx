@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { choicesOf, type TableGesture } from "../api/tableEvents";
 import { kindOf, type TableDefinition } from "../definition/tableDefinition";
-import { offeredKinds } from "./columnActions";
+import { addableKinds } from "./columnActions";
 
 /** How near the window's left edge the panel may stand, in pixels. */
 const PANEL_MARGIN = 8;
@@ -84,7 +84,7 @@ export function NewColumnPanel({ definition, position, beside, raise, ask, onClo
     };
   };
 
-  const add = (kind: string, preset: Readonly<Record<string, string>>) => {
+  const add = (kind: string) => {
     if (ask !== undefined && kindOf(definition, kind).needsTarget === true) {
       // Which tables are there to relate to? The answer is the list; anything else is why there is none.
       void ask(relationGesture(null)).then((answer) => {
@@ -93,8 +93,7 @@ export function NewColumnPanel({ definition, position, beside, raise, ask, onClo
           setRefusal(answer === "" ? "There is no table to relate to." : answer);
         } else {
           setRefusal("");
-          // How many rows a cell holds starts as the type chosen says, and can still be changed here.
-          setRelation({ targets, target: null, limit: preset.limit ?? "none", twoWay: false, otherName: "" });
+          setRelation({ targets, target: null, limit: "none", twoWay: false, otherName: "" });
         }
       });
       return;
@@ -104,7 +103,7 @@ export function NewColumnPanel({ definition, position, beside, raise, ask, onClo
       kind: "addColumn",
       ...(beside === undefined ? {} : { targetId: beside.columnId }),
       ...(typed === "" ? {} : { values: [typed] }),
-      settings: beside === undefined ? { ...preset, type: kind } : { ...preset, side: beside.side, type: kind },
+      settings: beside === undefined ? { type: kind } : { side: beside.side, type: kind },
     });
     onClose();
   };
@@ -116,11 +115,11 @@ export function NewColumnPanel({ definition, position, beside, raise, ask, onClo
       <input ref={nameRef} type="text" aria-label="Property name" placeholder="Property name" value={name} onChange={(event) => setName(event.target.value)} onKeyDown={(event) => event.stopPropagation()} />
       {relation === null ? (
         <ul className="table-new-column-kinds" role="menu" aria-label="Type">
-          {offeredKinds(definition)
+          {addableKinds(definition)
             .filter((kind) => ask !== undefined || kindOf(definition, kind.kind).needsTarget !== true)
             .map((kind) => (
-              <li key={kind.id} role="none">
-                <button type="button" role="menuitem" className="table-new-column-kind" onClick={() => add(kind.kind, kind.settings)}>
+              <li key={kind.kind} role="none">
+                <button type="button" role="menuitem" className="table-new-column-kind" onClick={() => add(kind.kind)}>
                   <span className={`mdi ${kind.icon}`} aria-hidden="true" />
                   <span>{kind.label}</span>
                 </button>

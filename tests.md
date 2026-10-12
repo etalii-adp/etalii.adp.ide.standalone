@@ -3609,7 +3609,7 @@ writes a size - is evidenced by the module's own suites. Requirements 13.1 and 1
 
 ## The Knowledge designer's fixes, in a browser (Peter's report, 2026-10-12)
 
-**Why this is a browser pass and not only tests:** four of the ten fixes exist only where CSS lays things out and paints: the saving note no longer moving the rows, the menus drawn over everything, the date and time pickers' icons in the dark theme, and a selection list that turns upwards near the bottom. jsdom lays out and paints nothing. The others have tests, each seen to fail first: one window call at a time (`useTableStream.test.ts`), the saving note inside the frame and the header checkbox before its icon (`TableSurface.test.tsx`), menus drawn at the document's top (`ContextMenu.test.tsx`), the selection list taking focus and closing on an outside press (`CellEditor.test.tsx`), *Multiple relation* offered (`ColumnHeader.test.tsx`), a registration nested under its data file (`HierarchyModel.Nesting.Tests.cs`) and a calculation leaving its column where it was (`KnowledgeCalculations.Tests.cs`).
+**Why this is a browser pass and not only tests:** four of the ten fixes exist only where CSS lays things out and paints: the saving note no longer moving the rows, the menus drawn over everything, the date and time pickers' icons in the dark theme, and a selection list that turns upwards near the bottom. jsdom lays out and paints nothing. The others have tests, each seen to fail first: one window call at a time (`useTableStream.test.ts`), the saving note inside the frame and the header checkbox before its icon (`TableSurface.test.tsx`), menus drawn at the document's top (`ContextMenu.test.tsx`), the selection list taking focus and closing on an outside press (`CellEditor.test.tsx`), a registration nested under its data file (`HierarchyModel.Nesting.Tests.cs`) and a calculation leaving its column where it was (`KnowledgeCalculations.Tests.cs`).
 
 - **Preconditions**: a developer build, signed in, a scratch project holding a copy of the Knowledge examples' `cities.yaml` and `provinces.yaml` with their registrations.
 - **Rows**:
@@ -3621,7 +3621,7 @@ writes a size - is evidenced by the module's own suites. Requirements 13.1 and 1
   6. **Selection list.** Double-click a *Country* cell: the list opens over the rows below, its search box has focus and no text is selected; press outside it and it closes. On a row near the bottom it opens upwards.
   7. **Pickers.** In the dark theme open a *Date and time* cell and a *Time* cell: their calendar and clock icons are light on the dark field.
   8. **Calculation.** On a view that does not list *Country*, choose *Count all* under it: the figure stands under *Country*, at its left, and the columns keep their order.
-  9. **Types.** *Add a property* lists *Relation* and *Multiple relation*.
+  9. **Relations.** *Add a property* lists one *Relation* type; chosen, and a table chosen, it asks the *Limit*: *No limit* or *1 row* (Peter's choice on the thread's card, 2026-10-12: one type that asks the limit, not two types).
 - **Result 2026-10-12, agent-1-knowledge-designer-fixes, `features/knowledge-designer-fixes-y0zhgg` on `d5278a3c6` with the fixes, a developer build (backend on 5080, Vite on 5174), headless Chromium driven by Playwright at 1400 by 850, the light theme and then the dark one: all nine rows pass.**
   1. The tree read `relations`, `yaml`, `cities.yaml`, `provinces.yaml`; before the fix it also listed `cities.adp` and `provinces.adp` beside them.
   2. Two window calls were made, the second after the first had answered; 0 loading rows and 10 rows with data. Before the fix the same delay left every row loading until the table was scrolled.
@@ -3631,4 +3631,4 @@ writes a size - is evidenced by the module's own suites. Requirements 13.1 and 1
   6. Focus was in `search-list-field`, the selection was empty, and after a press outside 0 lists were open.
   7. The calendar and the clock were drawn light on the dark field; before the fix they were dark on it.
   8. *Count all 3* stood at the left of *Country*, and the headings still read *Population*, *Name*, *Country*, *Tags*, *Province*. Before the fix the calculation listed *Country* in the view on its own, which moved it to second, beside *Population*.
-  9. The types read *Text*, *Number*, *Checkbox*, *Date*, *Date and time*, *Time*, *Selection*, *Multiple selection*, *Relation*, *Multiple relation*.
+  9. The types read *Text*, *Number*, *Checkbox*, *Date*, *Date and time*, *Time*, *Selection*, *Multiple selection*, *Relation*; *Relation* and then *Provinces* showed *Limit* with *No limit* and *1 row*.
