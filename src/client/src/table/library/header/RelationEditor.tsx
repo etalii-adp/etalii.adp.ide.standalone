@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import type { TableGesture } from "../api/tableEvents";
 import type { TableColumn } from "../api/tableModel";
 import { OTHER_SIDE } from "./columnActions";
@@ -63,7 +64,9 @@ export function RelationEditor({ column, position, ask, onClose }: RelationEdito
 
   const make = (gesture: TableGesture) => void ask(gesture).then(setRefusal);
 
-  return (
+  // Drawn at the document's top, as a menu is: inside its header it is painted in the header's
+  // layer, under the rows that scroll past and the frozen cells beside it.
+  return createPortal(
     <div ref={panelRef} className="table-options-editor table-relation-editor" role="dialog" aria-label={`Relation ${column.name}`} style={{ left: Math.max(PANEL_MARGIN, Math.min(position.x, window.innerWidth - PANEL_WIDTH - PANEL_MARGIN)), top: position.y }}>
       <p className="table-relation-target">
         <span>Related to</span>
@@ -97,6 +100,7 @@ export function RelationEditor({ column, position, ask, onClose }: RelationEdito
           {refusal}
         </p>
       )}
-    </div>
+    </div>,
+    document.body,
   );
 }

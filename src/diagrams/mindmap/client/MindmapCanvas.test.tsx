@@ -546,7 +546,7 @@ describe("MindmapCanvas", () => {
     expect(inner.detail.case).toBe("action");
     expect(inner.detail.value).toBe(ContextSelectionAction.CONTEXT_MENU);
     // ...and no menu is open yet: it shows the backend's actions, never a client-side guess.
-    expect(container.querySelector(".context-menu")).toBeNull();
+    expect(document.querySelector(".context-menu")).toBeNull();
 
     // The push comes back naming the node, with its actions.
     currentSelection = {
@@ -556,14 +556,14 @@ describe("MindmapCanvas", () => {
     currentActions = [{ actions: [{ id: "mindmap.rename", label: "Rename", icon: "", available: true, unavailableReason: "", items: [] }] }];
     rerender(<MindmapCanvas {...props} />);
 
-    expect(container.querySelector(".context-menu")).not.toBeNull();
-    expect(container.textContent).toContain("Rename");
+    expect(document.querySelector(".context-menu")).not.toBeNull();
+    expect(document.body.textContent).toContain("Rename");
 
     // Choosing the entry executes the pushed action and the menu closes.
-    fireEvent.click(container.querySelector(".context-menu-item")!);
+    fireEvent.click(document.querySelector(".context-menu-item")!);
     expect(executeAction).toHaveBeenCalledTimes(1);
     expect((executeAction as ReturnType<typeof vi.fn>).mock.calls[0][0]).toBe("mindmap.rename");
-    expect(container.querySelector(".context-menu")).toBeNull();
+    expect(document.querySelector(".context-menu")).toBeNull();
   });
 
   // ---- pan, zoom and fit -------------------------------------------------------------

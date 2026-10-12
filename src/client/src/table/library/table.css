@@ -198,14 +198,16 @@
   opacity: 1;
 }
 
-.table-select-all {
-  position: absolute;
-  top: 0;
-  left: 2px;
-  z-index: 3;
-  display: flex;
-  align-items: center;
-  height: 100%;
+/* The room a row's handle takes, kept in the first header so its checkbox and icon line up with the rows' own. */
+.table-header-handle-room {
+  margin-inline-end: -4px; /* a row's handle stands 2px from its checkbox; the header's gap is 6px */
+  opacity: 0; /* not visibility, which an element inside would inherit */
+  pointer-events: none;
+}
+
+/* The header's checkbox stands as a row's does, with only the margin the header's gap does not already give. */
+.table-header-cell > .table-row-check {
+  margin: 0 -2px 0 0; /* a row's checkbox stands 4px from its value; the header's gap is 6px */
 }
 
 .table-selection-bar {
@@ -256,12 +258,16 @@
   outline-offset: -2px;
 }
 
-/* A cell being edited lets its editor - a list, a refusal - reach past its own box. */
+/*
+ * A cell being edited lets its editor - a list, a refusal - reach past its own box, over every
+ * other layer of the table: the sticky header (1, and 2 where frozen) and the line of
+ * calculations at its foot (2, and 3 where frozen).
+ */
 .table-cell-editing {
   position: relative;
   overflow: visible;
   padding: 0;
-  z-index: 2;
+  z-index: 5;
 }
 
 .table-cell-editor {
@@ -285,6 +291,12 @@
 
 .table-cell-list-editor {
   inset: 0 auto auto 0;
+}
+
+/* A list that would run past the table's foot opens upwards, ending where its cell ends. */
+.table-cell-list-editor-up {
+  inset: auto auto 0 0;
+  flex-direction: column-reverse;
 }
 
 .table-cell-refusal,
@@ -351,8 +363,9 @@
   font-size: 0.8125rem;
 }
 
+/* A column's figure starts where its header's name does, so it reads as that column's and not its neighbour's. */
 .table-calculation-cell {
-  justify-content: flex-end;
+  justify-content: flex-start;
   gap: 6px;
   border-right-color: transparent;
 }
@@ -365,7 +378,7 @@
 .table-calculation-button {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: flex-start;
   gap: 6px;
   width: 100%;
   height: 100%;
@@ -543,7 +556,13 @@
 
 /* The table with what stands above it: the views, their bar, and the grid taking the room that is left. */
 .table-frame {
+  position: relative;
   display: flex;
+  /*
+   * The browser's own controls - a date's calendar icon, a time's clock, a checkbox - follow the
+   * theme, which follows the system's: without this they are drawn for a light page, dark on a dark one.
+   */
+  color-scheme: light dark;
   flex-direction: column;
   height: 100%;
   min-height: 0;
@@ -731,13 +750,33 @@
   color: var(--color-text-muted);
 }
 
-/* What the table says about itself above its rows: that it is read-only, or that edits are not written yet. */
+/* What the table says about itself above its rows: that it is read-only. */
 .table-note {
   margin: 0;
   padding: 4px 8px;
   border-bottom: 1px solid var(--color-border);
   color: var(--color-text-muted);
   font-size: 0.8125rem;
+}
+
+/*
+ * That edits are not written yet: in the frame's bottom-right corner, over everything else in it.
+ * It floats, so its coming and going moves no row; it lets the pointer through to what is under it.
+ */
+.table-saving {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  z-index: 1000;
+  margin: 0;
+  padding: 4px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface-raised);
+  box-shadow: var(--shadow);
+  color: var(--color-text-muted);
+  font-size: 0.8125rem;
+  pointer-events: none;
 }
 
 .table-note-read-only {
@@ -758,6 +797,10 @@
   border-radius: 6px;
   background: var(--color-surface);
   box-shadow: var(--shadow);
+  color: var(--color-text);
+  color-scheme: light dark; /* drawn outside the frame, so it says this itself */
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
   white-space: normal;
 }
 

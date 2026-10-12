@@ -16,13 +16,15 @@ public sealed class HierarchyModelStore : IHierarchyModelStore, IDisposable
     private readonly IDiagramDefinitionCatalog? _catalog;
     private readonly DiagramFileRouter? _router;
     private readonly EditorResolver? _editorResolver;
+    private readonly DesignerFileRouter? _designerRouter;
 
-    public HierarchyModelStore(IDiagramDefinitionCatalog? catalog = null, TimeSpan? idleTimeout = null, DiagramFileRouter? router = null, EditorResolver? editorResolver = null)
+    public HierarchyModelStore(IDiagramDefinitionCatalog? catalog = null, TimeSpan? idleTimeout = null, DiagramFileRouter? router = null, EditorResolver? editorResolver = null, DesignerFileRouter? designerRouter = null)
     {
         _catalog = catalog;
         _idleTimeout = idleTimeout ?? DefaultIdleTimeout;
         _router = router;
         _editorResolver = editorResolver;
+        _designerRouter = designerRouter;
     }
 
     public HierarchyModel GetOrCreate(ShortGuid watchId, string rootPath) =>
@@ -101,7 +103,7 @@ public sealed class HierarchyModelStore : IHierarchyModelStore, IDisposable
     {
         var entry = new HierarchyModelEntry
         {
-            Model = new HierarchyModel(rootPath, _catalog, _router, _editorResolver),
+            Model = new HierarchyModel(rootPath, _catalog, _router, _editorResolver, _designerRouter),
             IdleTimer = new Timer(_ => EvictIfIdle(watchId), null, _idleTimeout, Timeout.InfiniteTimeSpan),
         };
         return entry;

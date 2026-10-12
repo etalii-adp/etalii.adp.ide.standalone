@@ -300,15 +300,29 @@ describe("ContextMenu", () => {
     // Arrange.
     const { groups } = sampleGroups();
     const onClose = vi.fn();
-    const { container } = render(
-      <ContextMenu open groups={groups} position={{ x: 0, y: 0 }} onClose={onClose} />,
-    );
+    render(<ContextMenu open groups={groups} position={{ x: 0, y: 0 }} onClose={onClose} />);
 
     // Act.
-    fireEvent.mouseDown(container.querySelector(".context-menu-catcher") as HTMLElement);
+    fireEvent.mouseDown(document.querySelector(".context-menu-catcher") as HTMLElement);
 
     // Assert.
     expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("is drawn at the document's top, outside the element that opens it", () => {
+    // Arrange: an opener that makes a stacking context of its own, as a sticky table header does.
+    const { groups } = sampleGroups();
+    const { container } = render(
+      <div style={{ position: "sticky", zIndex: 1 }}>
+        <ContextMenu open groups={groups} position={{ x: 0, y: 0 }} onClose={() => {}} />
+      </div>,
+    );
+
+    // Assert: a menu inside its opener is painted in the opener's layer, under whatever overlaps that.
+    const catcher = document.querySelector(".context-menu-catcher");
+    expect(catcher).not.toBeNull();
+    expect(container.contains(catcher)).toBe(false);
+    expect(catcher!.parentElement).toBe(document.body);
   });
 
   it("does not close when clicking inside the menu itself", () => {

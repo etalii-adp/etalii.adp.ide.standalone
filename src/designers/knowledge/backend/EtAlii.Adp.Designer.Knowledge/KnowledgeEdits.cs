@@ -1206,7 +1206,13 @@ internal static partial class KnowledgeEdits
         return gesture.ColumnId == view.Freeze ? KnowledgeEdit.Nothing : KnowledgeEdit.Of(Set(view.Id, ("freeze", gesture.ColumnId.Length > 0 ? gesture.ColumnId : null)));
     }
 
-    /// <summary>One setting of one column of one view: set on its entry, which is written only when there is something to say.</summary>
+    /// <summary>
+    /// One setting of one column of one view: set on its entry, which is written only when there is
+    /// something to say. A view shows what it lists first and every other property after, in the
+    /// file's order; so a column it does not list yet is listed together with the unlisted ones
+    /// shown before it, each by its property alone, and stays where it was shown. Listed on its own,
+    /// it moved in front of them: a calculation or a width given to a column moved that column.
+    /// </summary>
     private static KnowledgeEdit ColumnSetting(KnowledgeTable table, KnowledgeView view, string propertyId, string name, object? value)
     {
         if (table.Properties.All(property => property.Id != propertyId))
@@ -1219,7 +1225,22 @@ internal static partial class KnowledgeEdits
             return KnowledgeEdit.Of(Set(ColumnId(view, propertyId), (name, value)));
         }
 
-        return value is null ? KnowledgeEdit.Nothing : KnowledgeEdit.Of(new ModelChange.Add("Column", null, Attributes(("property", propertyId), (name, value)), view.Id));
+        if (value is null)
+        {
+            return KnowledgeEdit.Nothing;
+        }
+
+        var listed = view.Columns.Select(column => column.PropertyId).ToHashSet(StringComparer.Ordinal);
+        List<ModelChange> changes =
+        [
+            .. table.Properties
+                .Select(property => property.Id)
+                .TakeWhile(id => id != propertyId)
+                .Where(id => !listed.Contains(id))
+                .Select(id => (ModelChange)new ModelChange.Add("Column", null, Attributes(("property", id)), view.Id)),
+            new ModelChange.Add("Column", null, Attributes(("property", propertyId), (name, value)), view.Id),
+        ];
+        return new KnowledgeEdit(changes);
     }
 
     // ---- views ----
