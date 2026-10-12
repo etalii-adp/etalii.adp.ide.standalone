@@ -1,21 +1,14 @@
-using EtAlii.Adp.Authentication.Wire;
 using EtAlii.Adp.Diagram;
 using EtAlii.Adp.Diagram.Wire;
-using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.Hierarchy.Wire;
 using EtAlii.Adp.Projects;
-using EtAlii.Adp.Projects.Wire;
+using EtAlii.Adp.TestSupport.Host;
 using Grpc.Core;
-using Grpc.Net.Client;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Xunit;
 using HierarchyService = EtAlii.Adp.Hierarchy.Wire.HierarchyService;
 using IoPath = System.IO.Path;
 using Path = EtAlii.Adp.Documents.Wire.Path;
-using ProjectService = EtAlii.Adp.Projects.Wire.ProjectService;
 using WorkspaceService = EtAlii.Adp.Diagram.Wire.WorkspaceService;
 
 namespace EtAlii.Adp.Backend.Tests;
@@ -31,45 +24,9 @@ namespace EtAlii.Adp.Backend.Tests;
 /// RPCs. What is new, and what this covers, is the carrying: which member a message arrives as,
 /// that a diagram stream is told apart by its id, and the lifetimes.
 /// </remarks>
-public sealed class WorkspaceStreamFlowTests : IClassFixture<WebApplicationFactory<Program>>, IDisposable
+public sealed class WorkspaceStreamFlowTests(HostFixture host) : IClassFixture<HostFixture>
 {
-    private const string DeveloperUsername = "admin";
-    private const string DeveloperCredential = "changeme";
-    private const string SessionTokenHeader = "session-token";
-    private static readonly TimeSpan MessageTimeout = TimeSpan.FromSeconds(10);
-
-    private readonly WebApplicationFactory<Program> _factory;
-    private readonly string _appDataRoot;
-    private readonly string _projectFolder;
-
-    public WorkspaceStreamFlowTests(WebApplicationFactory<Program> baseFactory)
-    {
-        _appDataRoot = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.IntegrationTests", Guid.NewGuid().ToString("N"));
-        _projectFolder = IoPath.Combine(_appDataRoot, "sample-project");
-        Directory.CreateDirectory(_projectFolder);
-
-        _factory = baseFactory.WithWebHostBuilder(builder =>
-        {
-            builder.UseEnvironment("developer");
-            builder.ConfigureServices(services =>
-            {
-                services.RemoveAll<IProjectStore>();
-                services.AddSingleton<IProjectStore>(new FileProjectStore(_appDataRoot));
-                // The problem cache lives and dies with this test, as in the other flow tests.
-                services.RemoveAll<Problems.IProblemStore>();
-                services.AddSingleton<Problems.IProblemStore>(provider => new Problems.ProblemStore(
-                    _appDataRoot,
-                    provider.GetRequiredService<DiagramFileRouter>(),
-                    provider.GetRequiredService<DiagramValidators>()));
-            });
-        });
-    }
-
-    public void Dispose()
-    {
-        _factory.Dispose();
-        TestFolder.TryDelete(_appDataRoot);
-    }
+    private readonly string _projectFolder = host.NewProjectFolder();
 
     [Fact]
     public async Task Watch_CarriesTheContextTheHierarchyAndADiagram_OnOneStream()
@@ -77,7 +34,7 @@ public sealed class WorkspaceStreamFlowTests : IClassFixture<WebApplicationFacto
         // Arrange.
         await File.WriteAllTextAsync(IoPath.Combine(_projectFolder, "notes.txt"), "one\r\ntwo\r\n", TestContext.Current.CancellationToken);
         var session = await OpenSessionAsync();
-        using var cts = CreateMessageTimeout();
+        using var cts = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken);
         using var watch = session.Workspace.Watch(new WatchWorkspaceRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
 
         // Act and assert, step by step. The context's baseline comes first: it is the client's sign
@@ -118,7 +75,7 @@ public sealed class WorkspaceStreamFlowTests : IClassFixture<WebApplicationFacto
         // Arrange.
         await File.WriteAllTextAsync(IoPath.Combine(_projectFolder, "notes.txt"), "one\r\n", TestContext.Current.CancellationToken);
         var session = await OpenSessionAsync();
-        using var cts = CreateMessageTimeout();
+        using var cts = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken);
         using var watchCancellation = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
         var watch = session.Workspace.Watch(new WatchWorkspaceRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers, cancellationToken: watchCancellation.Token);
         await ReadAsync(watch.ResponseStream, cts.Token);
@@ -143,7 +100,7 @@ public sealed class WorkspaceStreamFlowTests : IClassFixture<WebApplicationFacto
     {
         // Arrange.
         var session = await OpenSessionAsync();
-        using var cts = CreateMessageTimeout();
+        using var cts = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken);
         using var watch = session.Workspace.Watch(new WatchWorkspaceRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         await ReadAsync(watch.ResponseStream, cts.Token);
 
@@ -177,20 +134,13 @@ public sealed class WorkspaceStreamFlowTests : IClassFixture<WebApplicationFacto
         Assert.Equal(StatusCode.Unavailable, refusal.StatusCode);
     }
 
-    private WorkspaceConnections Connections() => _factory.Services.GetRequiredService<WorkspaceConnections>();
+    private WorkspaceConnections Connections() => host.Services.GetRequiredService<WorkspaceConnections>();
 
     private static OpenDiagramRequest OpenRequest(Session session, string fileName)
     {
         var path = new Path();
         path.Segments.Add(fileName);
         return new OpenDiagramRequest { ProjectId = session.ProjectId, WatchId = session.WatchId, Path = path };
-    }
-
-    private static CancellationTokenSource CreateMessageTimeout()
-    {
-        var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
-        cts.CancelAfter(MessageTimeout);
-        return cts;
     }
 
     private static async Task<WorkspaceMessage> ReadAsync(IAsyncStreamReader<WorkspaceMessage> stream, CancellationToken cancellationToken)
@@ -213,7 +163,7 @@ public sealed class WorkspaceStreamFlowTests : IClassFixture<WebApplicationFacto
 
     private static async Task<bool> EventuallyAsync(Func<bool> condition)
     {
-        var deadline = DateTime.UtcNow + MessageTimeout;
+        var deadline = DateTime.UtcNow + FlowConstants.MessageTimeout;
         while (DateTime.UtcNow < deadline)
         {
             if (condition())
@@ -229,22 +179,14 @@ public sealed class WorkspaceStreamFlowTests : IClassFixture<WebApplicationFacto
 
     private async Task<Session> OpenSessionAsync()
     {
-        var httpClient = _factory.CreateDefaultClient();
-        var channel = GrpcChannel.ForAddress(httpClient.BaseAddress!, new GrpcChannelOptions { HttpClient = httpClient });
-        var authClient = new AuthenticationService.AuthenticationServiceClient(channel);
-        var login = await authClient.LoginAsync(new LoginRequest { Username = DeveloperUsername, Credential = DeveloperCredential }, cancellationToken: TestContext.Current.CancellationToken);
-        var headers = new Metadata { { SessionTokenHeader, login.Session.Value } };
-
-        var pathMessage = new Path();
-        pathMessage.Segments.AddRange(_projectFolder.Split(IoPath.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries));
-        var added = await new ProjectService.ProjectServiceClient(channel).AddProjectAsync(new AddProjectRequest { Path = pathMessage }, headers, cancellationToken: TestContext.Current.CancellationToken);
-
+        // The connection stays open for the rest of the test: the clients below ride its channel.
+        var flow = await FlowSession.OpenAsync(host, _projectFolder, TestContext.Current.CancellationToken);
         return new Session(
-            headers,
-            added.Added.Id,
-            ShortGuid.NewShortGuid(),
-            new WorkspaceService.WorkspaceServiceClient(channel),
-            new HierarchyService.HierarchyServiceClient(channel));
+            flow.Headers,
+            flow.ProjectId,
+            flow.WatchId,
+            new WorkspaceService.WorkspaceServiceClient(flow.Channel),
+            flow.Hierarchy);
     }
 
     private sealed record Session(

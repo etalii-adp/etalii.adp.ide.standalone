@@ -1,21 +1,11 @@
-using EtAlii.Adp.Authentication.Wire;
 using EtAlii.Adp.Context.Wire;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.Hierarchy.Wire;
-using EtAlii.Adp.Projects;
-using EtAlii.Adp.Projects.Wire;
+using EtAlii.Adp.TestSupport.Host;
 using Grpc.Core;
-using Grpc.Net.Client;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Xunit;
-using HierarchyService = EtAlii.Adp.Hierarchy.Wire.HierarchyService;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
-using Path = EtAlii.Adp.Documents.Wire.Path;
-using ProjectService = EtAlii.Adp.Projects.Wire.ProjectService;
 
 namespace EtAlii.Adp.Backend.Tests;
 
@@ -25,80 +15,9 @@ namespace EtAlii.Adp.Backend.Tests;
 /// "not supported yet" answer on submit with the folder untouched, no Add for a file, and
 /// the folder vanishing between the prompt and the submit.
 /// </summary>
-public class AddDiagramFlowTests : IClassFixture<WebApplicationFactory<Program>>, IDisposable
+public class AddDiagramFlowTests(HostFixture host) : IClassFixture<HostFixture>
 {
-    private const string DeveloperUsername = "admin";
-    private const string DeveloperCredential = "changeme";
-    private const string SessionTokenHeader = "session-token";
-    private static readonly TimeSpan MessageTimeout = TimeSpan.FromSeconds(10);
-
-    private readonly WebApplicationFactory<Program> _factory;
-    private readonly string _appDataRoot;
-    private readonly string _projectFolder;
-
-    public AddDiagramFlowTests(WebApplicationFactory<Program> baseFactory)
-    {
-        _appDataRoot = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.IntegrationTests", Guid.NewGuid().ToString("N"));
-        _projectFolder = IoPath.Combine(_appDataRoot, "sample-project");
-        Directory.CreateDirectory(_projectFolder);
-
-        _factory = baseFactory.WithWebHostBuilder(builder =>
-        {
-            builder.UseEnvironment("developer");
-            builder.ConfigureServices(services =>
-            {
-                services.RemoveAll<IProjectStore>();
-                services.AddSingleton<IProjectStore>(new FileProjectStore(_appDataRoot));
-                // The problem cache must live and die with this test, not in the real user
-                // profile the host's AddProblems registration points at (found by the
-                // errors-and-warnings-panel manual pass: every run left a cache file behind).
-                services.RemoveAll<Problems.IProblemStore>();
-                services.AddSingleton<Problems.IProblemStore>(provider => new Problems.ProblemStore(
-                    _appDataRoot,
-                    provider.GetRequiredService<DiagramFileRouter>(),
-                    provider.GetRequiredService<Diagram.DiagramValidators>()));
-            });
-        });
-    }
-
-    public void Dispose()
-    {
-        _factory.Dispose();
-        TestFolder.TryDelete(_appDataRoot);
-    }
-
-    /// <summary>
-    /// The per-message timeout, linked to the test's own cancellation token so a stream that
-    /// never delivers gives up as soon as the test is cancelled rather than waiting it out.
-    /// </summary>
-    private static CancellationTokenSource CreateMessageTimeout()
-    {
-        var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
-        cts.CancelAfter(MessageTimeout);
-        return cts;
-    }
-
-    private GrpcChannel CreateChannel()
-    {
-        var httpClient = _factory.CreateDefaultClient();
-        return GrpcChannel.ForAddress(httpClient.BaseAddress!, new GrpcChannelOptions { HttpClient = httpClient });
-    }
-
-    private static async Task<Metadata> LoginAsync(GrpcChannel channel)
-    {
-        var authClient = new AuthenticationService.AuthenticationServiceClient(channel);
-        var response = await authClient.LoginAsync(new LoginRequest { Username = DeveloperUsername, Credential = DeveloperCredential }, cancellationToken: TestContext.Current.CancellationToken);
-        return new Metadata { { SessionTokenHeader, response.Session.Value } };
-    }
-
-    private async Task<ShortGuid> AddProjectAsync(GrpcChannel channel, Metadata headers)
-    {
-        var projectClient = new ProjectService.ProjectServiceClient(channel);
-        var pathMessage = new Path();
-        pathMessage.Segments.AddRange(_projectFolder.Split(IoPath.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries));
-        var response = await projectClient.AddProjectAsync(new AddProjectRequest { Path = pathMessage }, headers, cancellationToken: TestContext.Current.CancellationToken);
-        return response.Added.Id;
-    }
+    private readonly string _projectFolder = host.NewProjectFolder();
 
     private static async Task<ContextSelectionChanged> ReadBaselineAsync(IAsyncStreamReader<ContextMessage> stream, CancellationToken cancellationToken)
     {
@@ -161,15 +80,13 @@ public class AddDiagramFlowTests : IClassFixture<WebApplicationFactory<Program>>
     public async Task Baseline_WithNothingSelected_CarriesAddForTheRoot_EnabledBesideGreyedRenameAndDelete()
     {
         // Arrange.
-        using var channel = CreateChannel();
-        var headers = await LoginAsync(channel);
-        var projectId = await AddProjectAsync(channel, headers);
-        var contextClient = new ContextService.ContextServiceClient(channel);
+        using var session = await FlowSession.OpenAsync(host, _projectFolder, TestContext.Current.CancellationToken);
+        var contextClient = session.Context;
         var watchId = ShortGuid.NewShortGuid();
 
         // Act.
-        using var cts = CreateMessageTimeout();
-        using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
+        using var cts = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken);
+        using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = session.ProjectId, WatchId = watchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         var baseline = await ReadBaselineAsync(contextCall.ResponseStream, cts.Token);
 
         // Assert.
@@ -204,15 +121,13 @@ public class AddDiagramFlowTests : IClassFixture<WebApplicationFactory<Program>>
         await File.WriteAllTextAsync(IoPath.Combine(_projectFolder, "existing.txt"), "x", TestContext.Current.CancellationToken);
 
         // Arrange, continued.
-        using var channel = CreateChannel();
-        var headers = await LoginAsync(channel);
-        var projectId = await AddProjectAsync(channel, headers);
-        var contextClient = new ContextService.ContextServiceClient(channel);
+        using var session = await FlowSession.OpenAsync(host, _projectFolder, TestContext.Current.CancellationToken);
+        var contextClient = session.Context;
         var watchId = ShortGuid.NewShortGuid();
 
         // Arrange, continued.
-        using var cts = CreateMessageTimeout();
-        using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
+        using var cts = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken);
+        using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = session.ProjectId, WatchId = watchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         await ReadBaselineAsync(contextCall.ResponseStream, cts.Token);
         var pendingPrompt = ReadUntilPromptAsync(contextCall.ResponseStream, cts.Token);
 
@@ -220,8 +135,8 @@ public class AddDiagramFlowTests : IClassFixture<WebApplicationFactory<Program>>
         // No source: the explorer's empty space.
         var interactionId = ShortGuid.NewShortGuid();
         var executed = await contextClient.ExecuteActionAsync(
-            new ExecuteActionRequest { ProjectId = projectId, WatchId = watchId, InteractionId = interactionId, ActionId = AddDiagramContextActionProvider.AddActionId },
-            headers,
+            new ExecuteActionRequest { ProjectId = session.ProjectId, WatchId = watchId, InteractionId = interactionId, ActionId = AddDiagramContextActionProvider.AddActionId },
+            session.Headers,
             cancellationToken: TestContext.Current.CancellationToken);
         Assert.True(executed.Accepted, executed.Error);
 
@@ -243,7 +158,7 @@ public class AddDiagramFlowTests : IClassFixture<WebApplicationFactory<Program>>
         // Act.
         var submitted = await contextClient.SubmitInteractionAsync(
             new SubmitInteractionRequest { InteractionId = interactionId, Value = leaf.Id, Text = leaf.SuggestedValue },
-            headers,
+            session.Headers,
             cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert.
@@ -260,25 +175,23 @@ public class AddDiagramFlowTests : IClassFixture<WebApplicationFactory<Program>>
         // Arrange.
         Directory.CreateDirectory(IoPath.Combine(_projectFolder, "docs"));
 
-        using var channel = CreateChannel();
-        var headers = await LoginAsync(channel);
-        var projectId = await AddProjectAsync(channel, headers);
-        var hierarchyClient = new HierarchyService.HierarchyServiceClient(channel);
-        var contextClient = new ContextService.ContextServiceClient(channel);
+        using var session = await FlowSession.OpenAsync(host, _projectFolder, TestContext.Current.CancellationToken);
+        var hierarchyClient = session.Hierarchy;
+        var contextClient = session.Context;
         var watchId = ShortGuid.NewShortGuid();
 
-        var entries = await hierarchyClient.ListEntriesAsync(new ListEntriesRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
+        var entries = await hierarchyClient.ListEntriesAsync(new ListEntriesRequest { ProjectId = session.ProjectId, WatchId = watchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         var folderId = entries.Entries.Entries_.Single(e => e.Name == "docs").Id;
 
-        using var cts = CreateMessageTimeout();
-        using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
+        using var cts = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken);
+        using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = session.ProjectId, WatchId = watchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         await ReadBaselineAsync(contextCall.ResponseStream, cts.Token);
         var pendingPrompt = ReadUntilPromptAsync(contextCall.ResponseStream, cts.Token);
 
         // Act and assert, step by step.
         var discovered = await contextClient.DiscoverActionsAsync(
-            new DiscoverActionsRequest { ProjectId = projectId, WatchId = watchId, Source = new ContextSource { EntryId = folderId } },
-            headers,
+            new DiscoverActionsRequest { ProjectId = session.ProjectId, WatchId = watchId, Source = new ContextSource { EntryId = folderId } },
+            session.Headers,
             cancellationToken: TestContext.Current.CancellationToken);
         var add = Assert.Single(discovered.Groups.SelectMany(g => g.Actions), a => a.Id == AddDiagramContextActionProvider.AddActionId);
         Assert.True(add.Available);
@@ -286,13 +199,13 @@ public class AddDiagramFlowTests : IClassFixture<WebApplicationFactory<Program>>
         var executed = await contextClient.ExecuteActionAsync(
             new ExecuteActionRequest
             {
-                ProjectId = projectId,
+                ProjectId = session.ProjectId,
                 WatchId = watchId,
                 InteractionId = ShortGuid.NewShortGuid(),
                 Source = new ContextSource { EntryId = folderId },
                 ActionId = AddDiagramContextActionProvider.AddActionId,
             },
-            headers,
+            session.Headers,
             cancellationToken: TestContext.Current.CancellationToken);
         Assert.True(executed.Accepted, executed.Error);
 
@@ -307,21 +220,19 @@ public class AddDiagramFlowTests : IClassFixture<WebApplicationFactory<Program>>
         await File.WriteAllTextAsync(IoPath.Combine(_projectFolder, "a.txt"), "x", TestContext.Current.CancellationToken);
 
         // Arrange, continued.
-        using var channel = CreateChannel();
-        var headers = await LoginAsync(channel);
-        var projectId = await AddProjectAsync(channel, headers);
-        var hierarchyClient = new HierarchyService.HierarchyServiceClient(channel);
-        var contextClient = new ContextService.ContextServiceClient(channel);
+        using var session = await FlowSession.OpenAsync(host, _projectFolder, TestContext.Current.CancellationToken);
+        var hierarchyClient = session.Hierarchy;
+        var contextClient = session.Context;
         var watchId = ShortGuid.NewShortGuid();
 
         // Arrange, continued.
-        var entries = await hierarchyClient.ListEntriesAsync(new ListEntriesRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
+        var entries = await hierarchyClient.ListEntriesAsync(new ListEntriesRequest { ProjectId = session.ProjectId, WatchId = watchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         var fileId = entries.Entries.Entries_.Single(e => e.Name == "a.txt").Id;
 
         // Act.
         var discovered = await contextClient.DiscoverActionsAsync(
-            new DiscoverActionsRequest { ProjectId = projectId, WatchId = watchId, Source = new ContextSource { EntryId = fileId } },
-            headers,
+            new DiscoverActionsRequest { ProjectId = session.ProjectId, WatchId = watchId, Source = new ContextSource { EntryId = fileId } },
+            session.Headers,
             cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert.
@@ -338,20 +249,18 @@ public class AddDiagramFlowTests : IClassFixture<WebApplicationFactory<Program>>
         Directory.CreateDirectory(folder);
 
         // Arrange, continued.
-        using var channel = CreateChannel();
-        var headers = await LoginAsync(channel);
-        var projectId = await AddProjectAsync(channel, headers);
-        var hierarchyClient = new HierarchyService.HierarchyServiceClient(channel);
-        var contextClient = new ContextService.ContextServiceClient(channel);
+        using var session = await FlowSession.OpenAsync(host, _projectFolder, TestContext.Current.CancellationToken);
+        var hierarchyClient = session.Hierarchy;
+        var contextClient = session.Context;
         var watchId = ShortGuid.NewShortGuid();
 
         // Arrange, continued.
-        var entries = await hierarchyClient.ListEntriesAsync(new ListEntriesRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
+        var entries = await hierarchyClient.ListEntriesAsync(new ListEntriesRequest { ProjectId = session.ProjectId, WatchId = watchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         var folderId = entries.Entries.Entries_.Single(e => e.Name == "doomed").Id;
 
         // Arrange, continued.
-        using var cts = CreateMessageTimeout();
-        using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
+        using var cts = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken);
+        using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = session.ProjectId, WatchId = watchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         await ReadBaselineAsync(contextCall.ResponseStream, cts.Token);
         var pendingPrompt = ReadUntilPromptAsync(contextCall.ResponseStream, cts.Token);
 
@@ -360,13 +269,13 @@ public class AddDiagramFlowTests : IClassFixture<WebApplicationFactory<Program>>
         var executed = await contextClient.ExecuteActionAsync(
             new ExecuteActionRequest
             {
-                ProjectId = projectId,
+                ProjectId = session.ProjectId,
                 WatchId = watchId,
                 InteractionId = interactionId,
                 Source = new ContextSource { EntryId = folderId },
                 ActionId = AddDiagramContextActionProvider.AddActionId,
             },
-            headers,
+            session.Headers,
             cancellationToken: TestContext.Current.CancellationToken);
         Assert.True(executed.Accepted, executed.Error);
         var prompt = await pendingPrompt;
@@ -379,7 +288,7 @@ public class AddDiagramFlowTests : IClassFixture<WebApplicationFactory<Program>>
         // Act.
         var submitted = await contextClient.SubmitInteractionAsync(
             new SubmitInteractionRequest { InteractionId = interactionId, Value = leaf.Id },
-            headers,
+            session.Headers,
             cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert.

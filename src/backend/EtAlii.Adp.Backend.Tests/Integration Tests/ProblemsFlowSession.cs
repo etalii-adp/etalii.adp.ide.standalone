@@ -1,25 +1,19 @@
 using EtAlii.Adp.Context.Wire;
+using EtAlii.Adp.TestSupport.Host;
 using Grpc.Core;
-using Grpc.Net.Client;
-
-// EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
 namespace EtAlii.Adp.Backend.Tests;
 
-/// <summary>One authenticated connection with its context stream open.</summary>
-internal sealed class ProblemsFlowSession : IDisposable
+/// <summary>One signed-in connection to a project, with its context stream open.</summary>
+internal sealed class ProblemsFlowSession(FlowSession flow, AsyncServerStreamingCall<ContextMessage> call) : IDisposable
 {
-    public required GrpcChannel Channel { get; init; }
-    public required Metadata Headers { get; init; }
-    public required ShortGuid ProjectId { get; init; }
-    public required ShortGuid WatchId { get; init; }
-    public required AsyncServerStreamingCall<ContextMessage> Call { get; init; }
+    public FlowSession Flow => flow;
 
-    public IAsyncStreamReader<ContextMessage> Stream => Call.ResponseStream;
+    public IAsyncStreamReader<ContextMessage> Stream => call.ResponseStream;
 
     public void Dispose()
     {
-        Call.Dispose();
-        Channel.Dispose();
+        call.Dispose();
+        flow.Dispose();
     }
 }

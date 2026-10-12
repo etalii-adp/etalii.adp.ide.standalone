@@ -1,23 +1,14 @@
-using EtAlii.Adp.Authentication.Wire;
 using EtAlii.Adp.Context.Wire;
 using EtAlii.Adp.Diagram;
 using EtAlii.Adp.Documents.Wire;
-using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.Hierarchy.Wire;
 using EtAlii.Adp.Problems;
-using EtAlii.Adp.Projects;
-using EtAlii.Adp.Projects.Wire;
+using EtAlii.Adp.TestSupport.Host;
 using Grpc.Core;
-using Grpc.Net.Client;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Xunit;
-using HierarchyService = EtAlii.Adp.Hierarchy.Wire.HierarchyService;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
-using Path = EtAlii.Adp.Documents.Wire.Path;
-using ProjectService = EtAlii.Adp.Projects.Wire.ProjectService;
 
 namespace EtAlii.Adp.Backend.Tests;
 
@@ -27,46 +18,9 @@ namespace EtAlii.Adp.Backend.Tests;
 /// Validate on a folder touching only that folder, deletion dropping and rename carrying
 /// entries, and the project folder byte-for-byte unchanged throughout.
 /// </summary>
-public class ProblemsFlowTests : IClassFixture<WebApplicationFactory<Program>>, IDisposable
+public class ProblemsFlowTests(HostFixture host) : IClassFixture<HostFixture>
 {
-    private const string DeveloperUsername = "admin";
-    private const string DeveloperCredential = "changeme";
-    private const string SessionTokenHeader = "session-token";
-    private static readonly TimeSpan MessageTimeout = TimeSpan.FromSeconds(10);
-
-    private readonly WebApplicationFactory<Program> _factory;
-    private readonly string _appDataRoot;
-    private readonly string _projectFolder;
-
-    public ProblemsFlowTests(WebApplicationFactory<Program> baseFactory)
-    {
-        _appDataRoot = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.IntegrationTests", Guid.NewGuid().ToString("N"));
-        _projectFolder = IoPath.Combine(_appDataRoot, "sample-project");
-        Directory.CreateDirectory(_projectFolder);
-
-        _factory = baseFactory.WithWebHostBuilder(builder =>
-        {
-            builder.UseEnvironment("developer");
-            builder.ConfigureServices(services =>
-            {
-                services.RemoveAll<IProjectStore>();
-                services.AddSingleton<IProjectStore>(new FileProjectStore(_appDataRoot));
-                // The problem cache must live and die with this test, not in the real
-                // user profile the host's AddProblems registration points at.
-                services.RemoveAll<IProblemStore>();
-                services.AddSingleton<IProblemStore>(provider => new ProblemStore(
-                    _appDataRoot,
-                    provider.GetRequiredService<DiagramFileRouter>(),
-                    provider.GetRequiredService<DiagramValidators>()));
-            });
-        });
-    }
-
-    public void Dispose()
-    {
-        _factory.Dispose();
-        TestFolder.TryDelete(_appDataRoot);
-    }
+    private readonly string _projectFolder = host.NewProjectFolder();
 
     // ---- the flows ---------------------------------------------------------------------
 
@@ -75,7 +29,7 @@ public class ProblemsFlowTests : IClassFixture<WebApplicationFactory<Program>>, 
     {
         // Arrange.
         using var session = await OpenAsync();
-        using var cts = CreateMessageTimeout();
+        using var cts = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken);
 
         // Act.
         var problems = await ReadProblemsAsync(session.Stream, cts.Token);
@@ -98,7 +52,7 @@ public class ProblemsFlowTests : IClassFixture<WebApplicationFactory<Program>>, 
         // Arrange, continued.
         using var session = await OpenAsync();
         using var second = await OpenAsync(session);
-        using (var baselines = CreateMessageTimeout())
+        using (var baselines = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken))
         {
             await ReadProblemsAsync(session.Stream, baselines.Token);
             await ReadProblemsAsync(second.Stream, baselines.Token);
@@ -108,7 +62,7 @@ public class ProblemsFlowTests : IClassFixture<WebApplicationFactory<Program>>, 
         await ExecuteAsync(session, ValidateAllContextActionProvider.ValidateAllActionId, ProblemsSource());
 
         // Arrange, continued.
-        using var cts = CreateMessageTimeout();
+        using var cts = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken);
         var mine = await ReadValidatedProblemsAsync(session.Stream, cts.Token);
         var theirs = await ReadValidatedProblemsAsync(second.Stream, cts.Token);
 
@@ -135,7 +89,7 @@ public class ProblemsFlowTests : IClassFixture<WebApplicationFactory<Program>>, 
         await File.WriteAllTextAsync(IoPath.Combine(_projectFolder, "also-bad.adp"), "vendor/unheard-of\n", TestContext.Current.CancellationToken);
 
         using var session = await OpenAsync();
-        using (var baseline = CreateMessageTimeout())
+        using (var baseline = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken))
         {
             await ReadProblemsAsync(session.Stream, baseline.Token);
         }
@@ -144,7 +98,7 @@ public class ProblemsFlowTests : IClassFixture<WebApplicationFactory<Program>>, 
         await ExecuteAsync(session, ValidateContextActionProvider.ValidateActionId, new ContextSource { EntryId = folderId });
 
         // Act and assert, step by step.
-        using var cts = CreateMessageTimeout();
+        using var cts = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken);
         var set = await ReadValidatedProblemsAsync(session.Stream, cts.Token);
         var problem = Assert.Single(set.Problems);
         Assert.Equal(["inside", "bad.adp"], problem.Path.Segments); // also-bad.adp was outside the scope and stays unjudged
@@ -158,12 +112,12 @@ public class ProblemsFlowTests : IClassFixture<WebApplicationFactory<Program>>, 
 
         // Act and assert, step by step.
         using var session = await OpenAsync();
-        using (var baseline = CreateMessageTimeout())
+        using (var baseline = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken))
         {
             await ReadProblemsAsync(session.Stream, baseline.Token);
         }
         await ExecuteAsync(session, ValidateAllContextActionProvider.ValidateAllActionId, ProblemsSource());
-        using (var validated = CreateMessageTimeout())
+        using (var validated = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken))
         {
             var set = await ReadValidatedProblemsAsync(session.Stream, validated.Token);
             Assert.Single(set.Problems);
@@ -171,7 +125,7 @@ public class ProblemsFlowTests : IClassFixture<WebApplicationFactory<Program>>, 
 
         File.Delete(IoPath.Combine(_projectFolder, "doomed.adp"));
 
-        using var cts = CreateMessageTimeout();
+        using var cts = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken);
         var after = await ReadUntilAsync(session.Stream, cts.Token, problems => problems.Problems.Count == 0);
         Assert.Equal(0u, after.ErrorCount);
     }
@@ -183,12 +137,12 @@ public class ProblemsFlowTests : IClassFixture<WebApplicationFactory<Program>>, 
         await File.WriteAllTextAsync(IoPath.Combine(_projectFolder, "old.adp"), "vendor/unheard-of\n", TestContext.Current.CancellationToken);
 
         using var session = await OpenAsync();
-        using (var baseline = CreateMessageTimeout())
+        using (var baseline = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken))
         {
             await ReadProblemsAsync(session.Stream, baseline.Token);
         }
         await ExecuteAsync(session, ValidateAllContextActionProvider.ValidateAllActionId, ProblemsSource());
-        using (var validated = CreateMessageTimeout())
+        using (var validated = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken))
         {
             await ReadValidatedProblemsAsync(session.Stream, validated.Token);
         }
@@ -196,7 +150,7 @@ public class ProblemsFlowTests : IClassFixture<WebApplicationFactory<Program>>, 
         File.Move(IoPath.Combine(_projectFolder, "old.adp"), IoPath.Combine(_projectFolder, "new.adp"));
 
         // Act and assert, step by step.
-        using var cts = CreateMessageTimeout();
+        using var cts = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken);
         var after = await ReadUntilAsync(session.Stream, cts.Token,
             problems => problems.Problems.Count == 1 && problems.Problems[0].Path.Segments.Single() == "new.adp");
         // Carried, not re-reported as unchecked: still the same verdict, at the new path.
@@ -207,38 +161,36 @@ public class ProblemsFlowTests : IClassFixture<WebApplicationFactory<Program>>, 
 
     private async Task<ProblemsFlowSession> OpenAsync(ProblemsFlowSession? existing = null)
     {
-        var channel = CreateChannel();
-        var headers = await LoginAsync(channel);
-        var projectId = existing?.ProjectId ?? await AddProjectAsync(channel, headers);
-        var watchId = ShortGuid.NewShortGuid();
-        var contextClient = new ContextService.ContextServiceClient(channel);
-        var call = contextClient.Watch(new WatchContextRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
-        return new ProblemsFlowSession { Channel = channel, Headers = headers, ProjectId = projectId, WatchId = watchId, Call = call };
+        var flow = existing is null
+            ? await FlowSession.OpenAsync(host, _projectFolder, TestContext.Current.CancellationToken)
+            : await FlowSession.JoinAsync(host, existing.Flow, TestContext.Current.CancellationToken);
+        var call = flow.Context.Watch(new WatchContextRequest { ProjectId = flow.ProjectId, WatchId = flow.WatchId }, flow.Headers, cancellationToken: TestContext.Current.CancellationToken);
+        return new ProblemsFlowSession(flow, call);
     }
 
     private static async Task ExecuteAsync(ProblemsFlowSession session, string actionId, ContextSource source)
     {
-        var contextClient = new ContextService.ContextServiceClient(session.Channel);
-        var response = await contextClient.ExecuteActionAsync(
+        var flow = session.Flow;
+        var response = await flow.Context.ExecuteActionAsync(
             new ExecuteActionRequest
             {
-                ProjectId = session.ProjectId,
-                WatchId = session.WatchId,
+                ProjectId = flow.ProjectId,
+                WatchId = flow.WatchId,
                 Source = source,
                 InteractionId = ShortGuid.NewShortGuid(),
                 ActionId = actionId,
             },
-            session.Headers,
+            flow.Headers,
             cancellationToken: TestContext.Current.CancellationToken);
         Assert.True(response.Accepted, $"Executing {actionId} was rejected: {response.Error}");
     }
 
     private async Task<ShortGuid> EntryIdAsync(ProblemsFlowSession session, string name)
     {
-        var hierarchyClient = new HierarchyService.HierarchyServiceClient(session.Channel);
-        var entries = await hierarchyClient.ListEntriesAsync(
-            new ListEntriesRequest { ProjectId = session.ProjectId, WatchId = session.WatchId },
-            session.Headers,
+        var flow = session.Flow;
+        var entries = await flow.Hierarchy.ListEntriesAsync(
+            new ListEntriesRequest { ProjectId = flow.ProjectId, WatchId = flow.WatchId },
+            flow.Headers,
             cancellationToken: TestContext.Current.CancellationToken);
         return entries.Entries.Entries_.Single(entry => entry.Name == name).Id;
     }
@@ -284,33 +236,4 @@ public class ProblemsFlowTests : IClassFixture<WebApplicationFactory<Program>>, 
     private Dictionary<string, byte[]> Snapshot() =>
         Directory.GetFiles(_projectFolder, "*", SearchOption.AllDirectories)
             .ToDictionary(path => path, File.ReadAllBytes);
-
-    private static CancellationTokenSource CreateMessageTimeout()
-    {
-        var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
-        cts.CancelAfter(MessageTimeout);
-        return cts;
-    }
-
-    private GrpcChannel CreateChannel()
-    {
-        var httpClient = _factory.CreateDefaultClient();
-        return GrpcChannel.ForAddress(httpClient.BaseAddress!, new GrpcChannelOptions { HttpClient = httpClient });
-    }
-
-    private static async Task<Metadata> LoginAsync(GrpcChannel channel)
-    {
-        var authClient = new AuthenticationService.AuthenticationServiceClient(channel);
-        var response = await authClient.LoginAsync(new LoginRequest { Username = DeveloperUsername, Credential = DeveloperCredential }, cancellationToken: TestContext.Current.CancellationToken);
-        return new Metadata { { SessionTokenHeader, response.Session.Value } };
-    }
-
-    private async Task<ShortGuid> AddProjectAsync(GrpcChannel channel, Metadata headers)
-    {
-        var projectClient = new ProjectService.ProjectServiceClient(channel);
-        var pathMessage = new Path();
-        pathMessage.Segments.AddRange(_projectFolder.Split(IoPath.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries));
-        var response = await projectClient.AddProjectAsync(new AddProjectRequest { Path = pathMessage }, headers, cancellationToken: TestContext.Current.CancellationToken);
-        return response.Added.Id;
-    }
 }

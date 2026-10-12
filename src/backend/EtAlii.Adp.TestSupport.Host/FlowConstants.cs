@@ -13,5 +13,10 @@ public static class FlowConstants
     public const string SessionTokenHeader = "session-token";
 
     /// <summary>How long a flow test waits for one message on a stream before it fails.</summary>
-    public static readonly TimeSpan MessageTimeout = TimeSpan.FromSeconds(10);
+    /// <remarks>
+    /// The longest any flow class used before the harness: the module flows that open a diagram
+    /// and read its first baseline needed twenty seconds on a loaded runner. Only a failing test
+    /// waits it out.
+    /// </remarks>
+    public static readonly TimeSpan MessageTimeout = TimeSpan.FromSeconds(20);
 }

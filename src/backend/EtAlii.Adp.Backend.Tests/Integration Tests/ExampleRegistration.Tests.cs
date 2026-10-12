@@ -1,10 +1,8 @@
 using EtAlii.Adp.Diagram;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Hierarchy;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc.Testing;
+using EtAlii.Adp.TestSupport.Host;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -22,42 +20,8 @@ namespace EtAlii.Adp.Backend.Tests;
 /// change what these files mean. The walk is live rather than a hard-coded list, so an example
 /// set a later spec adds is covered on arrival.
 /// </remarks>
-public class ExampleRegistrationTests : IClassFixture<WebApplicationFactory<Program>>, IDisposable
+public class ExampleRegistrationTests(HostFixture host) : IClassFixture<HostFixture>
 {
-    private readonly WebApplicationFactory<Program> _factory;
-    private readonly string _appDataRoot;
-
-    public ExampleRegistrationTests(WebApplicationFactory<Program> factory)
-    {
-        _appDataRoot = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.IntegrationTests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_appDataRoot);
-
-        _factory = factory.WithWebHostBuilder(builder =>
-        {
-            builder.UseEnvironment("developer");
-            builder.ConfigureServices(services =>
-            {
-                // The problem cache must live and die with this test, not in the real user
-                // profile the host's AddProblems registration points at. A host booted without
-                // this override leaves a cache file behind naming a temp folder that is deleted
-                // moments later, and every later run then walks that dead root at startup: 605
-                // such files had accumulated, costing the suite 22,591 warnings and an apparent
-                // hang. DiagramToolboxFlowTests fixed this for itself; it never generalised.
-                services.RemoveAll<Problems.IProblemStore>();
-                services.AddSingleton<Problems.IProblemStore>(provider => new Problems.ProblemStore(
-                    _appDataRoot,
-                    provider.GetRequiredService<DiagramFileRouter>(),
-                    provider.GetRequiredService<DiagramValidators>()));
-            });
-        });
-    }
-
-    public void Dispose()
-    {
-        _factory.Dispose();
-        TestFolder.TryDelete(_appDataRoot);
-    }
-
     /// <summary>
     /// The `src/diagrams` folder, found by walking up from the test binary rather than by
     /// counting `..` segments - the count changes with the build layout, the folder name
@@ -137,8 +101,8 @@ public class ExampleRegistrationTests : IClassFixture<WebApplicationFactory<Prog
     public void EveryDesignerExampleRegistration_IsRoutedToItsDesigner(string relativePath)
     {
         // Arrange.
-        using var _ = _factory.CreateClient();
-        var router = _factory.Services.GetRequiredService<DesignerFileRouter>();
+        using var _ = host.CreateChannel();
+        var router = host.Services.GetRequiredService<DesignerFileRouter>();
         var adpPath = IoPath.GetFullPath(IoPath.Combine(DiagramsRoot, relativePath));
 
         // Act.
@@ -189,8 +153,8 @@ public class ExampleRegistrationTests : IClassFixture<WebApplicationFactory<Prog
         // Arrange.
         // Building the server runs Program.cs and with it discovery, so the catalog holds the
         // real deployed set.
-        using var _ = _factory.CreateClient();
-        var catalog = _factory.Services.GetRequiredService<IDiagramDefinitionCatalog>();
+        using var _ = host.CreateChannel();
+        var catalog = host.Services.GetRequiredService<IDiagramDefinitionCatalog>();
         var adpPath = IoPath.Combine(DiagramsRoot, relativePath);
 
         // Act.
@@ -205,8 +169,8 @@ public class ExampleRegistrationTests : IClassFixture<WebApplicationFactory<Prog
     public void EveryExampleRegistrationWithABody_ResolvesToAFileThatExists(string relativePath)
     {
         // Arrange.
-        using var _ = _factory.CreateClient();
-        var catalog = _factory.Services.GetRequiredService<IDiagramDefinitionCatalog>();
+        using var _ = host.CreateChannel();
+        var catalog = host.Services.GetRequiredService<IDiagramDefinitionCatalog>();
         var adpPath = IoPath.Combine(DiagramsRoot, relativePath);
         var definition = DiagramFilePair.DefinitionOf(adpPath, catalog);
         if (definition is not { HasDocumentSibling: true })
@@ -283,8 +247,8 @@ public class ExampleRegistrationTests : IClassFixture<WebApplicationFactory<Prog
     public void EveryExampleDirectory_NestsEachRegistrationUnderTheSubjectItNames(string relativeDirectory)
     {
         // Arrange.
-        using var _ = _factory.CreateClient();
-        var catalog = _factory.Services.GetRequiredService<IDiagramDefinitionCatalog>();
+        using var _ = host.CreateChannel();
+        var catalog = host.Services.GetRequiredService<IDiagramDefinitionCatalog>();
         var directory = IoPath.Combine(DiagramsRoot, relativeDirectory);
         var siblings = Directory.EnumerateFileSystemEntries(directory)
             .Select(entry => (Name: IoPath.GetFileName(entry), IsFolder: Directory.Exists(entry)))
@@ -378,8 +342,8 @@ public class ExampleRegistrationTests : IClassFixture<WebApplicationFactory<Prog
     public void EveryQualifiedExampleRegistrationsHeader_IsStillAuthoritative(string relativePath)
     {
         // Arrange.
-        using var _ = _factory.CreateClient();
-        var catalog = _factory.Services.GetRequiredService<IDiagramDefinitionCatalog>();
+        using var _ = host.CreateChannel();
+        var catalog = host.Services.GetRequiredService<IDiagramDefinitionCatalog>();
         var adpPath = IoPath.Combine(DiagramsRoot, relativePath);
         var name = DiagramRegistrationName.TryParse(IoPath.GetFileName(adpPath));
         if (name is not { IsQualified: true })
@@ -439,8 +403,8 @@ public class ExampleRegistrationTests : IClassFixture<WebApplicationFactory<Prog
         // Arrange: folder-subject-ness comes from the DEPLOYED catalog, per file, never from a
         // module list - so a third folder-subject module is covered the day it ships rather
         // than the day someone remembers this test exists (Requirement 5.1).
-        using var _ = _factory.CreateClient();
-        var catalog = _factory.Services.GetRequiredService<IDiagramDefinitionCatalog>();
+        using var _ = host.CreateChannel();
+        var catalog = host.Services.GetRequiredService<IDiagramDefinitionCatalog>();
 
         // Act.
         var inspected = 0;

@@ -1,18 +1,8 @@
-using EtAlii.Adp.Authentication.Wire;
 using EtAlii.Adp.Hierarchy.Wire;
-using EtAlii.Adp.Projects;
-using EtAlii.Adp.Projects.Wire;
 using EtAlii.Adp.TestSupport.Host;
 using Grpc.Core;
-using Grpc.Net.Client;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
-using Path = EtAlii.Adp.Documents.Wire.Path;
-using ProjectService = EtAlii.Adp.Projects.Wire.ProjectService;
 
 namespace EtAlii.Adp.Backend.Tests;
 
@@ -22,78 +12,9 @@ namespace EtAlii.Adp.Backend.Tests;
 /// strategy — especially the isolation-not-sharing property between two
 /// simultaneous connections to the same project.
 /// </summary>
-public class ProjectRootFolderExplorerFlowTests : IClassFixture<WebApplicationFactory<Program>>, IDisposable
+public class ProjectRootFolderExplorerFlowTests(HostFixture host) : IClassFixture<HostFixture>
 {
-    private const string DeveloperUsername = "admin";
-    private const string DeveloperCredential = "changeme";
-    private const string SessionTokenHeader = "session-token";
-    private static readonly TimeSpan MessageTimeout = TimeSpan.FromSeconds(10);
-
-    private readonly WebApplicationFactory<Program> _factory;
-    private readonly string _appDataRoot;
-    private readonly string _projectFolder;
-
-    public ProjectRootFolderExplorerFlowTests(WebApplicationFactory<Program> baseFactory)
-    {
-        _appDataRoot = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.IntegrationTests", Guid.NewGuid().ToString("N"));
-        _projectFolder = IoPath.Combine(_appDataRoot, "sample-project");
-        Directory.CreateDirectory(_projectFolder);
-
-        _factory = baseFactory.WithWebHostBuilder(builder =>
-        {
-            builder.UseEnvironment("developer");
-            builder.ConfigureServices(services =>
-            {
-                services.RemoveAll<IProjectStore>();
-                services.AddSingleton<IProjectStore>(new FileProjectStore(_appDataRoot));
-                // The problem cache must live and die with this test, not in the real user
-                // profile the host's AddProblems registration points at (found by the
-                // errors-and-warnings-panel manual pass: every run left a cache file behind).
-                services.RemoveAll<Problems.IProblemStore>();
-                services.AddSingleton<Problems.IProblemStore>(provider => new Problems.ProblemStore(
-                    _appDataRoot,
-                    provider.GetRequiredService<Hierarchy.DiagramFileRouter>(),
-                    provider.GetRequiredService<Diagram.DiagramValidators>()));
-            });
-        });
-    }
-
-    public void Dispose()
-    {
-        _factory.Dispose();
-        TestFolder.TryDelete(_appDataRoot);
-    }
-
-    /// <summary>
-    /// The per-message timeout, linked to the test's own cancellation token so a stream that
-    /// never delivers gives up as soon as the test is cancelled rather than waiting it out.
-    /// </summary>
-    private static CancellationTokenSource CreateMessageTimeout()
-    {
-        var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
-        cts.CancelAfter(MessageTimeout);
-        return cts;
-    }
-
-    private GrpcChannel CreateChannel()
-    {
-        var httpClient = _factory.CreateDefaultClient();
-        return GrpcChannel.ForAddress(httpClient.BaseAddress!, new GrpcChannelOptions { HttpClient = httpClient });
-    }
-
-    private static async Task<Metadata> LoginAsync(AuthenticationService.AuthenticationServiceClient authClient)
-    {
-        var response = await authClient.LoginAsync(new LoginRequest { Username = DeveloperUsername, Credential = DeveloperCredential }, cancellationToken: TestContext.Current.CancellationToken);
-        return new Metadata { { SessionTokenHeader, response.Session.Value } };
-    }
-
-    private async Task<ShortGuid> AddProjectAsync(ProjectService.ProjectServiceClient projectClient, Metadata headers)
-    {
-        var pathMessage = new Path();
-        pathMessage.Segments.AddRange(_projectFolder.Split(IoPath.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries));
-        var response = await projectClient.AddProjectAsync(new AddProjectRequest { Path = pathMessage }, headers, cancellationToken: TestContext.Current.CancellationToken);
-        return response.Added.Id;
-    }
+    private readonly string _projectFolder = host.NewProjectFolder();
 
     /// <summary>
     /// Triggers a change once the watch is really running, and returns the first change of the
@@ -134,16 +55,13 @@ public class ProjectRootFolderExplorerFlowTests : IClassFixture<WebApplicationFa
         await File.WriteAllTextAsync(IoPath.Combine(_projectFolder, "top.txt"), "", TestContext.Current.CancellationToken);
 
         // Arrange, continued.
-        using var channel = CreateChannel();
-        var projectClient = new ProjectService.ProjectServiceClient(channel);
-        var hierarchyClient = new HierarchyService.HierarchyServiceClient(channel);
-        var headers = await LoginAsync(new AuthenticationService.AuthenticationServiceClient(channel));
-        var projectId = await AddProjectAsync(projectClient, headers);
+        using var session = await FlowSession.OpenAsync(host, _projectFolder, TestContext.Current.CancellationToken);
+        var hierarchyClient = session.Hierarchy;
 
         // Act.
         var response = await hierarchyClient.ListEntriesAsync(
-            new ListEntriesRequest { ProjectId = projectId, WatchId = ShortGuid.NewShortGuid() },
-            headers,
+            new ListEntriesRequest { ProjectId = session.ProjectId, WatchId = ShortGuid.NewShortGuid() },
+            session.Headers,
             cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert.
@@ -161,19 +79,16 @@ public class ProjectRootFolderExplorerFlowTests : IClassFixture<WebApplicationFa
         await File.WriteAllTextAsync(IoPath.Combine(_projectFolder, "shared.txt"), "", TestContext.Current.CancellationToken);
 
         // Arrange, continued.
-        using var channel = CreateChannel();
-        var projectClient = new ProjectService.ProjectServiceClient(channel);
-        var hierarchyClient = new HierarchyService.HierarchyServiceClient(channel);
-        var headers = await LoginAsync(new AuthenticationService.AuthenticationServiceClient(channel));
-        var projectId = await AddProjectAsync(projectClient, headers);
+        using var session = await FlowSession.OpenAsync(host, _projectFolder, TestContext.Current.CancellationToken);
+        var hierarchyClient = session.Hierarchy;
 
         // Arrange, continued.
         var watchIdA = ShortGuid.NewShortGuid();
         var watchIdB = ShortGuid.NewShortGuid();
 
         // Arrange, continued.
-        var entriesA = await hierarchyClient.ListEntriesAsync(new ListEntriesRequest { ProjectId = projectId, WatchId = watchIdA }, headers, cancellationToken: TestContext.Current.CancellationToken);
-        var entriesB = await hierarchyClient.ListEntriesAsync(new ListEntriesRequest { ProjectId = projectId, WatchId = watchIdB }, headers, cancellationToken: TestContext.Current.CancellationToken);
+        var entriesA = await hierarchyClient.ListEntriesAsync(new ListEntriesRequest { ProjectId = session.ProjectId, WatchId = watchIdA }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
+        var entriesB = await hierarchyClient.ListEntriesAsync(new ListEntriesRequest { ProjectId = session.ProjectId, WatchId = watchIdB }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
 
         // Arrange, continued.
         var idA = entriesA.Entries.Entries_.Single(e => e.Name == "shared.txt").Id;
@@ -181,10 +96,10 @@ public class ProjectRootFolderExplorerFlowTests : IClassFixture<WebApplicationFa
         Assert.NotEqual((ShortGuid)idA, (ShortGuid)idB);
 
         // Arrange, continued.
-        using var callA = hierarchyClient.WatchHierarchy(new WatchHierarchyRequest { ProjectId = projectId, WatchId = watchIdA }, headers, cancellationToken: TestContext.Current.CancellationToken);
-        using var callB = hierarchyClient.WatchHierarchy(new WatchHierarchyRequest { ProjectId = projectId, WatchId = watchIdB }, headers, cancellationToken: TestContext.Current.CancellationToken);
-        using var ctsA = CreateMessageTimeout();
-        using var ctsB = CreateMessageTimeout();
+        using var callA = hierarchyClient.WatchHierarchy(new WatchHierarchyRequest { ProjectId = session.ProjectId, WatchId = watchIdA }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
+        using var callB = hierarchyClient.WatchHierarchy(new WatchHierarchyRequest { ProjectId = session.ProjectId, WatchId = watchIdB }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
+        using var ctsA = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken);
+        using var ctsB = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken);
 
         // Arrange, continued.
         // Both watches share the folder, so each also reports the other's probes: the read below
@@ -216,20 +131,17 @@ public class ProjectRootFolderExplorerFlowTests : IClassFixture<WebApplicationFa
         await File.WriteAllTextAsync(originalPath, "", TestContext.Current.CancellationToken);
 
         // Arrange, continued.
-        using var channel = CreateChannel();
-        var projectClient = new ProjectService.ProjectServiceClient(channel);
-        var hierarchyClient = new HierarchyService.HierarchyServiceClient(channel);
-        var headers = await LoginAsync(new AuthenticationService.AuthenticationServiceClient(channel));
-        var projectId = await AddProjectAsync(projectClient, headers);
+        using var session = await FlowSession.OpenAsync(host, _projectFolder, TestContext.Current.CancellationToken);
+        var hierarchyClient = session.Hierarchy;
         var watchId = ShortGuid.NewShortGuid();
 
         // Arrange, continued.
-        var entries = await hierarchyClient.ListEntriesAsync(new ListEntriesRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
+        var entries = await hierarchyClient.ListEntriesAsync(new ListEntriesRequest { ProjectId = session.ProjectId, WatchId = watchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         var originalId = (ShortGuid)entries.Entries.Entries_.Single(e => e.Name == "original.txt").Id;
 
         // Arrange, continued.
-        using var call = hierarchyClient.WatchHierarchy(new WatchHierarchyRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
-        using var cts = CreateMessageTimeout();
+        using var call = hierarchyClient.WatchHierarchy(new WatchHierarchyRequest { ProjectId = session.ProjectId, WatchId = watchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
+        using var cts = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken);
 
         // Act.
         var change = await AwaitTriggeredChangeAsync(call, cts, HierarchyChange.ChangeOneofCase.Renamed, () =>
@@ -245,16 +157,13 @@ public class ProjectRootFolderExplorerFlowTests : IClassFixture<WebApplicationFa
     public async Task RootFolderDeletedWhileWatched_PushesRootUnavailable_AndRecoversOnceRecreated()
     {
         // Arrange.
-        using var channel = CreateChannel();
-        var projectClient = new ProjectService.ProjectServiceClient(channel);
-        var hierarchyClient = new HierarchyService.HierarchyServiceClient(channel);
-        var headers = await LoginAsync(new AuthenticationService.AuthenticationServiceClient(channel));
-        var projectId = await AddProjectAsync(projectClient, headers);
+        using var session = await FlowSession.OpenAsync(host, _projectFolder, TestContext.Current.CancellationToken);
+        var hierarchyClient = session.Hierarchy;
         var watchId = ShortGuid.NewShortGuid();
 
-        await hierarchyClient.ListEntriesAsync(new ListEntriesRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
-        using var call = hierarchyClient.WatchHierarchy(new WatchHierarchyRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
-        using var cts = CreateMessageTimeout();
+        await hierarchyClient.ListEntriesAsync(new ListEntriesRequest { ProjectId = session.ProjectId, WatchId = watchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
+        using var call = hierarchyClient.WatchHierarchy(new WatchHierarchyRequest { ProjectId = session.ProjectId, WatchId = watchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
+        using var cts = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken);
 
         var change = await AwaitTriggeredChangeAsync(call, cts, HierarchyChange.ChangeOneofCase.RootUnavailable, () =>
             Directory.Delete(_projectFolder, recursive: true));

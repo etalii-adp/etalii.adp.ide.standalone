@@ -2,11 +2,9 @@ using System.Text;
 using System.Text.Json;
 using EtAlii.Adp.Diagram;
 using EtAlii.Adp.Hierarchy;
+using EtAlii.Adp.TestSupport.Host;
 using Google.Protobuf;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -40,7 +38,7 @@ namespace EtAlii.Adp.Backend.Tests;
 /// mapper or payload is one re-run and one commit away, and CI refuses a copy nobody regenerated.
 /// </para>
 /// </remarks>
-public class ShippedExampleModelsTests : IClassFixture<WebApplicationFactory<Program>>
+public class ShippedExampleModelsTests(HostFixture host) : IClassFixture<HostFixture>
 {
     private const string Reason =
         "Written by ShippedExampleModelsTests from src/examples/diagrams (showcase-*) and src/diagrams/*/examples " +
@@ -48,25 +46,6 @@ public class ShippedExampleModelsTests : IClassFixture<WebApplicationFactory<Pro
         "opened, as the base64 protobuf Delta messages DiagramService.Open streams to a canvas. The client's " +
         "noStylesheetRuleWithoutAnEmitter guard mounts every canvas on these (client-centralization R11.2). " +
         "Do not edit by hand: re-run the test and commit what it writes.";
-
-    private readonly WebApplicationFactory<Program> _factory;
-
-    private readonly string _appDataRoot = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.IntegrationTests", Guid.NewGuid().ToString("N"));
-
-    public ShippedExampleModelsTests(WebApplicationFactory<Program> baseFactory) =>
-        _factory = baseFactory.WithWebHostBuilder(builder =>
-        {
-            builder.UseEnvironment("developer");
-            builder.ConfigureServices(services =>
-            {
-                // As DrawnConnectionsTests: the problem cache stays out of the real user profile.
-                services.RemoveAll<Problems.IProblemStore>();
-                services.AddSingleton<Problems.IProblemStore>(provider => new Problems.ProblemStore(
-                    _appDataRoot,
-                    provider.GetRequiredService<DiagramFileRouter>(),
-                    provider.GetRequiredService<DiagramValidators>()));
-            });
-        });
 
     /// <summary>The modules whose canvas draws more once a view is opened, by module or showcase folder name.</summary>
     private static readonly Dictionary<string, Action<IServiceProvider, DrawnView>> Expansions = new(StringComparer.Ordinal)
@@ -78,7 +57,7 @@ public class ShippedExampleModelsTests : IClassFixture<WebApplicationFactory<Pro
     public async Task EveryShippedExample_IsExportedAsTheModelItsCanvasReceives()
     {
         // Arrange.
-        var services = _factory.Services;
+        var services = host.Services;
         var target = IoPath.Combine(RepositoryRoot(), "src", "fixtures", "cross-tier", "example-models");
         // Both trees a user can open: the showcase, and each module's own examples. A diagram the two
         // share is exported once, from the showcase, which is enumerated first.
