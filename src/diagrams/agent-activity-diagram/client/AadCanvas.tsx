@@ -55,15 +55,31 @@ function drawn(element: AadElement): DiagramModelElement {
   };
 }
 
+/** The relations the definition has, by the id the canvas draws each with. */
+const AAD_RELATION_TYPES: ReadonlySet<string> = new Set(AAD_DEFINITION.relationTypes.map((type) => type.id));
+
 /** The stream's model as the library draws one. Exported for the tests that draw a model directly. */
 export function diagramModelOf(model: AadModel): DiagramModel {
   const elements = [...model.elements.values()].map(drawn);
   const connections = [...model.relations.values()].flatMap((relation): DiagramModelConnection[] => {
     const from = model.elements.get(relation.payload.fromElementId);
     const to = model.elements.get(relation.payload.toElementId);
-    const type = from === undefined || to === undefined ? undefined : AAD_RELATION_BY_ENDS.get(`${from.type}>${to.type}`);
-    // An end that is not drawn, or a pair no relation joins: a line to nothing is worse than none.
-    return type === undefined ? [] : [{ id: relation.id, type, sourceId: relation.payload.fromElementId, targetId: relation.payload.toElementId }];
+    if (from === undefined || to === undefined) {
+      // An end that is not drawn: a line to nothing is worse than none.
+      return [];
+    }
+    // A breach joins a pair its relation does not: it is drawn as the relation the file says it is, marked.
+    const breach = relation.payload.breach;
+    const type = breach ? relation.payload.type.toLowerCase() : AAD_RELATION_BY_ENDS.get(`${from.type}>${to.type}`);
+    return type === undefined || !AAD_RELATION_TYPES.has(type)
+      ? []
+      : [{
+          id: relation.id,
+          type,
+          sourceId: relation.payload.fromElementId,
+          targetId: relation.payload.toElementId,
+          ...(breach ? { className: "aad-breach", title: "This relation breaks a rule of the diagram. The errors panel says which." } : {}),
+        }];
   });
   return { elements, connections, background: { showArchived: model.showArchived } };
 }
@@ -99,6 +115,11 @@ export function AadCanvas({ projectId, entryId, path }: ToolContentProps) {
       void moveElementTo(elementId, position.x, position.y);
     },
     onConnectionDrawn: ({ sourceElementId, targetElementId }) => {
+      runAction(AadActions.connect, relationId(sourceElementId, targetElementId));
+    },
+    // A line the definition refuses is asked of the backend all the same: it draws nothing, and
+    // its answer is the rule that refused it, shown where every refusal is (Requirement 3.6).
+    onConnectionRefused: ({ sourceElementId, targetElementId }) => {
       runAction(AadActions.connect, relationId(sourceElementId, targetElementId));
     },
     onElementDropped: ({ elementType, position }) => {

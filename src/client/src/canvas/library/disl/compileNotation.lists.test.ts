@@ -58,7 +58,7 @@ function specOf(overrides: Partial<DislDocument> = {}): DislDocument {
     },
     toolbox: {
       contextMenus: [
-        { for: ["Board", "Card"], tools: [{ kind: "editLabel", shortcut: "F2" }, { kind: "delete", shortcut: "Delete" }] },
+        { for: ["Board", "Card"], tools: [{ kind: "editLabel", shortcut: "F2" }, { kind: "pin" }, { kind: "unpin" }, { kind: "delete", shortcut: "Delete" }] },
         { for: ["Item"], tools: [{ kind: "editLabel", shortcut: "F2" }, { kind: "delete", shortcut: "Delete" }] },
       ],
     },
@@ -99,6 +99,8 @@ describe("compileNotation, DISL 0.4", () => {
     expect(definition.actions).toEqual([
       { id: "editLabel", invokedBy: [{ kind: "shortcut", key: "F2" }, { kind: "gesture", gesture: "activate" }], appliesTo: [{ kind: "element" }] },
       { id: "delete", invokedBy: [{ kind: "gesture", gesture: "delete" }], appliesTo: [{ kind: "element" }] },
+      // Lock position is the canvas's to answer, from the menu; Unlock position is the backend's and declares nothing.
+      { id: "pin", invokedBy: [{ kind: "menu" }], appliesTo: [{ kind: "element" }], keepsWhereDrawn: true },
     ]);
   });
 

@@ -974,7 +974,7 @@ class Compiler {
    * first, then those only a shortcut invokes, each in menu order.
    */
   private actions(): ActionDeclaration[] {
-    const found: { id: string; kind: "element" | "connection"; types: Set<string>; keys: string[]; gestures: ("activate" | "delete")[]; rank: number; shortcut?: string }[] = [];
+    const found: { id: string; kind: "element" | "connection"; types: Set<string>; keys: string[]; gestures: ("activate" | "delete")[]; rank: number; shortcut?: string; pins?: true }[] = [];
     for (const menu of this.spec.toolbox?.contextMenus ?? []) {
       const targets = this.menuTargets(menu);
       if (targets === null) {
@@ -985,7 +985,9 @@ class Compiler {
         const activates = tool.kind === (targets.kind === "element" ? this.doubleClickOf(targets.types) : undefined);
         const deletes = tool.kind === "delete";
         const keys = tool.shortcut !== undefined && !(deletes && tool.shortcut === "Delete") ? [keyOf(tool.shortcut)] : [];
-        if (!activates && !deletes && keys.length === 0) {
+        // DISL 0.4's `pin` entry keeps an element where the layout drew it, which the canvas alone can say.
+        const pins = tool.kind === "pin" && targets.kind === "element";
+        if (!activates && !deletes && !pins && keys.length === 0) {
           continue;
         }
 
@@ -1007,6 +1009,9 @@ class Compiler {
           }
           if (deletes && !action.gestures.includes("delete")) {
             action.gestures.push("delete");
+          }
+          if (pins) {
+            action.pins = true;
           }
         }
       }
@@ -1036,6 +1041,7 @@ class Compiler {
       const invokedBy: ActionInvocation[] = [
         ...action.keys.map((key): ActionInvocation => ({ kind: "shortcut", key })),
         ...action.gestures.map((gesture): ActionInvocation => ({ kind: "gesture", gesture })),
+        ...(action.pins === true ? [{ kind: "menu" } as const] : []),
       ];
       const narrowed = action.kind === "element" && [...allNodes].some((type) => !action.types.has(type));
       const declaration: ActionDeclaration = {
@@ -1046,6 +1052,7 @@ class Compiler {
             ? { kind: "element", ...(narrowed ? { elementTypes: [...action.types].map((type) => this.typeId(type)) } : {}) }
             : { kind: "connection" },
         ],
+        ...(action.pins === true ? { keepsWhereDrawn: true as const } : {}),
       };
       return this.bindings.action?.(declaration, action.shortcut !== undefined ? { shortcut: action.shortcut } : {}) ?? declaration;
     });

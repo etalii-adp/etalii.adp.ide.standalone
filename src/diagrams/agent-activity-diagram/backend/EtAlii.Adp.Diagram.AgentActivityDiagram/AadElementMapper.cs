@@ -17,6 +17,10 @@ namespace EtAlii.Adp.Diagram.AgentActivityDiagram;
 /// <b>An archived specification is left out unless the switch is on</b>, with the relations at
 /// either end of it and nothing else (Requirement 4.7): its agents, if it still has any, stay.
 /// </para>
+/// <para>
+/// <b>A relation whose end is of the wrong type is still a relation here</b>, flagged as a breach
+/// so the canvas draws it marked (Requirement 3.8). Nothing is left out for being wrong.
+/// </para>
 /// </remarks>
 public sealed class AadElementMapper
 {
@@ -44,15 +48,23 @@ public sealed class AadElementMapper
         var shown = model.Elements
             .Where(element => model.ShowArchived || element.Kind != AadKind.Specification || element.Status != Archived)
             .ToList();
-        var shownIds = shown.Select(element => element.Id).ToHashSet(StringComparer.Ordinal);
+        var shownKinds = shown.ToDictionary(element => element.Id, element => element.Kind.ToString(), StringComparer.Ordinal);
 
         return
         [
             Pack(ViewId, 0, 0, ViewType, new AadViewPayload { ShowArchived = model.ShowArchived }),
             .. shown.Select(element => Element(element, model)),
             .. model.Relations
-                .Where(relation => shownIds.Contains(relation.From) && shownIds.Contains(relation.To))
-                .Select(relation => Pack(relation.Id, 0, 0, RelationType, new AadRelationPayload { FromElementId = relation.From, ToElementId = relation.To })),
+                .Where(relation => shownKinds.ContainsKey(relation.From) && shownKinds.ContainsKey(relation.To))
+                .Select(relation => Pack(relation.Id, 0, 0, RelationType, new AadRelationPayload
+                {
+                    FromElementId = relation.From,
+                    ToElementId = relation.To,
+                    Type = relation.Type,
+                    // A key that names an element of another type than its relation joins is kept, drawn
+                    // and marked (Requirement 3.8); the finding beside it says where it is.
+                    Breach = !AadDefinition.Joins(relation.Type, shownKinds[relation.From], shownKinds[relation.To]),
+                })),
         ];
     }
 

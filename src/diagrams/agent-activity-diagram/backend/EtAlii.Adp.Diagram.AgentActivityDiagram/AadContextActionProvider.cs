@@ -247,11 +247,18 @@ public sealed class AadContextActionProvider : IContextActionProvider
         ContextShortcutDefinition? shortcut = entry.Shortcut is { } key ? new ContextShortcutDefinition(key.Key, key.Ctrl, key.Shift, key.Alt, key.Meta) : null;
         switch (entry)
         {
-            case { Kind: "pin" } or { Kind: "operation", Operation: "openLink" or "openBranchLink" or "openFolderLink" }:
+            case { Kind: "operation", Operation: "openLink" or "openBranchLink" or "openFolderLink" }:
                 yield break;
 
-            case { Kind: "unpin" }:
-                yield return new ContextActionDefinition(entry.Id, entry.Label, entry.Icon, shortcut, pinned, pinned ? "" : "Its position is not locked: the layout places it.");
+            // One of the two is offered, by whether the element is locked (Requirement 6.2). Lock position
+            // is answered by the canvas, which alone knows where the layout drew the element: it reports
+            // that position as a move, and a move locks.
+            case { Kind: "pin" } when !pinned:
+            case { Kind: "unpin" } when pinned:
+                yield return new ContextActionDefinition(entry.Id, entry.Label, entry.Icon, shortcut);
+                yield break;
+
+            case { Kind: "pin" or "unpin" }:
                 yield break;
 
             case { Operation: SetTaskStatusOperation }:

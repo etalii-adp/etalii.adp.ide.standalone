@@ -109,6 +109,23 @@ beforeEach(() => {
 });
 
 describe("the agent activity diagram canvas, mounted", () => {
+  it("draws a relation that breaks a rule, marked, and draws no line for a pair nothing says is joined", () => {
+    // Arrange: a file written outside ADP has an agent whose specification names the project.
+    const model = modelWith();
+    const breach = { id: "specification:a", payload: create(AadRelationPayloadSchema, { fromElementId: "p", toElementId: "a", type: "SpecificationAgent", breach: true }) };
+    const stray = { id: "stray", payload: create(AadRelationPayloadSchema, { fromElementId: "p", toElementId: "e" }) };
+    currentModel = { ...model, relations: new Map([...model.relations, [breach.id, breach], [stray.id, stray]]) };
+
+    // Act.
+    const { container } = renderCanvas();
+
+    // Assert.
+    expect(container.querySelectorAll(".aad-relation")).toHaveLength(5);
+    const marked = container.querySelectorAll(".aad-relation.aad-breach");
+    expect(marked).toHaveLength(1);
+    expect(marked[0]!.getAttribute("data-connection-id")).toBe("specification:a");
+  });
+
   it("draws the five kinds, each in its own class, joined by the four relations", () => {
     // Act.
     const { container } = renderCanvas();

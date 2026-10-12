@@ -23,6 +23,7 @@ export type DiagramEvent =
   | ElementPreviewed
   | ConnectionDrawn
   | ConnectionReleasedOnEmpty
+  | ConnectionRefused
   | ConnectionDeleted
   | ConnectionAdjusted
   | ConnectionEndMoved
@@ -121,6 +122,20 @@ export interface ConnectionReleasedOnEmpty {
   sourceAnchor?: string;
   /** Where the gesture ended, in canvas units. */
   position: ShapePoint;
+}
+
+/**
+ * A connect gesture was released over an element the definition does not admit as its target: a
+ * pair no relation joins, or an end that already holds what it may hold. Nothing was drawn and
+ * nothing is asked of the module. It is told so that it can say why, where it shows a refusal,
+ * since the rule that refused the gesture is the definition's and its wording is the module's.
+ */
+export interface ConnectionRefused {
+  kind: "connection-refused";
+  /** The relation the gesture was drawing - a definition `relationTypes` id. */
+  relationType: string;
+  sourceElementId: string;
+  targetElementId: string;
 }
 
 /**

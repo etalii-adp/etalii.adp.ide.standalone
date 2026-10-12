@@ -373,6 +373,23 @@ describe("a menu entry the module runs itself", () => {
     expect(channel.executed).toEqual([]);
   });
 
+  it("answers an entry that keeps an element where it is drawn with that position, as a move", async () => {
+    // Lock position: the backend offers it and cannot run it, since where a layout drew an element is the canvas's to say.
+    channel.pushed = elementSelectionOf(ENTRY, PATH, "b");
+    channel.actions = actionsOf("pin");
+    const onElementMoved = vi.fn();
+    const onActionInvoked = vi.fn();
+    const pin: ActionDeclaration = { id: "pin", invokedBy: [{ kind: "menu" }], appliesTo: [{ kind: "element" }], keepsWhereDrawn: true };
+    const { container } = mount({ onElementMoved, onActionInvoked }, definitionOf({ actions: [pin] }));
+
+    fireEvent.contextMenu(elementOn(container, "b"), { clientX: 10, clientY: 10 });
+    fireEvent.click(await screen.findByRole("menuitem", { name: /Do pin/ }));
+
+    expect(onElementMoved).toHaveBeenCalledWith({ kind: "element-moved", elementId: "b", position: { x: 300, y: 0 } });
+    expect(onActionInvoked).not.toHaveBeenCalled();
+    expect(channel.executed).toEqual([]);
+  });
+
   it("leaves every entry the definition does not claim to the backend", async () => {
     channel.pushed = elementSelectionOf(ENTRY, PATH, "a");
     channel.actions = actionsOf("service.restart");

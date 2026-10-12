@@ -95,7 +95,9 @@ describe("the agent activity diagram's canvas definition, held to the bundled .d
       ["locationenvironment", { maxFromSource: 1 }],
     ]);
     // F2 and a double-click rename, Delete deletes: the ids are the definition's, which the backend answers to.
-    expect((AAD_DEFINITION.actions ?? []).map((action) => action.id)).toEqual(["editLabel", "delete"]);
+    expect((AAD_DEFINITION.actions ?? []).map((action) => action.id)).toEqual(["editLabel", "delete", "pin"]);
+    // Lock position locks an element where the layout drew it, which the canvas reports as a move (Requirement 6.2).
+    expect(AAD_DEFINITION.actions!.find((action) => action.id === "pin")).toMatchObject({ invokedBy: [{ kind: "menu" }], keepsWhereDrawn: true });
     expect(AAD_DEFINITION.backgroundMenu).toBe(true);
   });
 
