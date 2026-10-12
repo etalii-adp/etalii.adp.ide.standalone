@@ -22,7 +22,7 @@ namespace EtAlii.Adp.Diagram;
 /// </summary>
 public sealed class EditorService : Editor.Wire.EditorService.EditorServiceBase
 {
-    private static readonly ILogger _logger = Log.ForContext<EditorService>();
+    private readonly ILogger _logger;
 
     private readonly IProjectStore _projectStore;
     private readonly IHistoryStackStore _historyStacks;
@@ -40,7 +40,19 @@ public sealed class EditorService : Editor.Wire.EditorService.EditorServiceBase
     public const string NoAnalysis = "This editor has no analysis.";
 
     public EditorService(IProjectStore projectStore, IHistoryStackStore historyStacks, EditorAnalyzers analyzers)
+        : this(projectStore, historyStacks, analyzers, Log.ForContext<EditorService>())
     {
+    }
+
+    /// <summary>
+    /// The logger is injectable, as <c>EditorResolver</c>'s is, so the once-with-the-path
+    /// contract of a failed analysis stays assertable: an integration test that builds a real
+    /// host replaces the shared pipeline, and a static field would bind to whichever pipeline
+    /// was current when it was first touched.
+    /// </summary>
+    internal EditorService(IProjectStore projectStore, IHistoryStackStore historyStacks, EditorAnalyzers analyzers, ILogger logger)
+    {
+        _logger = logger;
         _projectStore = projectStore;
         _historyStacks = historyStacks;
         _analyzers = analyzers;
@@ -164,7 +176,7 @@ public sealed class EditorService : Editor.Wire.EditorService.EditorServiceBase
     /// An analyser that throws is answered with its sentence and logged once, naming the file by
     /// its project-relative path and never logging the text (xml-editor Reliability).
     /// </summary>
-    private static string Stopped(Exception exception, Path path)
+    private string Stopped(Exception exception, Path path)
     {
         _logger.Error(exception, "Checking {Path} stopped", string.Join('/', path.Segments));
         return $"Checking stopped: {exception.Message}";

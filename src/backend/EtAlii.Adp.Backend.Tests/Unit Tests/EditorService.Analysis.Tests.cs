@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.RegularExpressions;
 using EtAlii.Adp.Authentication;
 using EtAlii.Adp.Diagram;
@@ -7,6 +8,9 @@ using EtAlii.Adp.History;
 using EtAlii.Adp.Projects;
 using Grpc.Core;
 using Grpc.Core.Testing;
+using Serilog;
+using Serilog.Core;
+using Serilog.Events;
 using Xunit;
 using EditorService = EtAlii.Adp.Diagram.EditorService;
 using Path = EtAlii.Adp.Documents.Wire.Path;
@@ -136,15 +140,16 @@ public sealed class EditorServiceAnalysisTests : IDisposable
     public async Task AnAnalyzerThatThrows_IsAnsweredWithItsSentence_AndLoggedOnceWithThePathAndNeverTheText()
     {
         // Arrange.
-        using var logs = LogCapture.Start();
-        var service = Service(new FakeAnalyzer("fake") { Throws = new InvalidOperationException("The reader broke.") });
+        var events = new List<LogEvent>();
+        var logger = new LoggerConfiguration().WriteTo.Sink(new ListSink(events)).CreateLogger();
+        var service = Service(logger, new FakeAnalyzer("fake") { Throws = new InvalidOperationException("The reader broke.") });
 
         // Act.
         var response = await service.Analyze(AnalyzeRequest("fake", "secret text"), Context());
 
         // Assert.
         Assert.Equal("Checking stopped: The reader broke.", response.Error);
-        var logged = Assert.Single(logs.Errors);
+        var logged = Assert.Single(events.Where(logEvent => logEvent.Level == LogEventLevel.Error)).RenderMessage(CultureInfo.InvariantCulture);
         Assert.Contains("notes.txt", logged, StringComparison.Ordinal);
         Assert.DoesNotContain("secret text", logged, StringComparison.Ordinal);
     }
@@ -175,11 +180,19 @@ public sealed class EditorServiceAnalysisTests : IDisposable
         }
     }
 
-    private EditorService Service(params IEditorAnalyzer[] analyzers) =>
+    private EditorService Service(params IEditorAnalyzer[] analyzers) => Service(Serilog.Core.Logger.None, analyzers);
+
+    private EditorService Service(ILogger logger, params IEditorAnalyzer[] analyzers) =>
         new(
             new OneProjectStore(new ProjectRecord(ProjectId, "project", new PathRecord(_root.Path.Split(System.IO.Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries)))),
             new UnusedHistory(),
-            new EditorAnalyzers(analyzers));
+            new EditorAnalyzers(analyzers),
+            logger);
+
+    private sealed class ListSink(List<LogEvent> events) : ILogEventSink
+    {
+        public void Emit(LogEvent logEvent) => events.Add(logEvent);
+    }
 
     private static AnalyzeTextRequest AnalyzeRequest(string editorId, string content) =>
         new() { ProjectId = ProjectId, Path = new Path { Segments = { "notes.txt" } }, EditorId = editorId, Content = content };

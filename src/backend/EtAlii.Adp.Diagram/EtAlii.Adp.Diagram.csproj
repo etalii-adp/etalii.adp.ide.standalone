@@ -45,5 +45,6 @@
   <ItemGroup>
     <!-- The tests reach EditorSessionAdapter, which is internal to this project. -->
     <InternalsVisibleTo Include="EtAlii.Adp.Diagram.Tests" />
+    <InternalsVisibleTo Include="EtAlii.Adp.Backend.Tests" />
   </ItemGroup>
 </Project>
