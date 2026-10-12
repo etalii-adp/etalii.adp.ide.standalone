@@ -40,5 +40,13 @@ internal sealed class ExampleProject : IDisposable
     public Task<TextAnalysis> AnalyzeAsync(string name, string? text = null) =>
         Analyzer.AnalyzeAsync(Root, PathOf(name), text ?? Text(name), TestContext.Current.CancellationToken);
 
+    /// <summary>Asks for completion where <paramref name="text"/> holds a <c>|</c>, which is taken out first.</summary>
+    public Task<IReadOnlyList<TextCompletion>> CompleteAsync(string name, string text, bool isExplicit = false)
+    {
+        var offset = text.IndexOf('|', StringComparison.Ordinal);
+        Assert.True(offset >= 0, "the text marks no caret");
+        return Analyzer.CompleteAsync(Root, PathOf(name), text.Remove(offset, 1), offset, isExplicit, TestContext.Current.CancellationToken);
+    }
+
     public void Dispose() => _folder.Dispose();
 }

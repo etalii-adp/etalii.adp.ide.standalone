@@ -72,8 +72,28 @@ public sealed class XmlAnalyzer : IEditorAnalyzer
             dependsOn.Distinct(StringComparer.Ordinal).Where(path => !string.Equals(path, Path.GetFullPath(filePath), StringComparison.Ordinal)).ToArray()));
     }
 
-    public Task<IReadOnlyList<TextCompletion>> CompleteAsync(string rootPath, string filePath, string content, int offset, bool isExplicit, CancellationToken cancellationToken) =>
-        Task.FromResult<IReadOnlyList<TextCompletion>>([]);
+    public Task<IReadOnlyList<TextCompletion>> CompleteAsync(string rootPath, string filePath, string content, int offset, bool isExplicit, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        // Only an XSD the document names offers anything: a DTD validates and offers nothing
+        // (ruling A2), and with no schema the end tag is the client's (Requirement 7.8).
+        var resolver = new ProjectXmlResolver(rootPath);
+        var association = SchemaAssociation.Read(content, filePath, resolver, new TextPositions(content));
+        if (association.IsSchema || association.Xsd.Count == 0)
+        {
+            return Task.FromResult<IReadOnlyList<TextCompletion>>([]);
+        }
+
+        var resolved = ResolvedXsd(association, filePath, resolver, [], []);
+        var compiled = resolved.Count == 0 ? null : _schemas.Get(rootPath, Roots(resolved));
+        if (compiled is not { Set: { } set, Problem: null, Version11: null })
+        {
+            return Task.FromResult<IReadOnlyList<TextCompletion>>([]);
+        }
+
+        return Task.FromResult(XmlCompletion.Complete(content, offset, isExplicit, set, filePath, resolver));
+    }
 
     /// <summary>Which schema applies, and whether the document is to be validated against it.</summary>
     private sealed record Application(string Status, bool Validate, CompiledSchema? Set);
@@ -125,31 +145,13 @@ public sealed class XmlAnalyzer : IEditorAnalyzer
         List<TextFinding> findings,
         List<string> dependsOn)
     {
-        var documentPath = resolver.ProjectPathOf(filePath) ?? [Path.GetFileName(filePath)];
-        var resolved = new List<(SchemaReference Reference, string FullPath)>();
-        foreach (var reference in association.Xsd)
-        {
-            switch (SchemaReferenceRules.Resolve(reference.Location, documentPath, new HashSet<string>()))
-            {
-                case SchemaTarget.Project project when File.Exists(resolver.FullPathOf(project.Path)):
-                    resolved.Add((reference, Path.GetFullPath(resolver.FullPathOf(project.Path))));
-                    break;
-                case SchemaTarget.Project project:
-                    dependsOn.Add(Path.GetFullPath(resolver.FullPathOf(project.Path)));
-                    findings.Add(Info(reference, $"'{reference.Location}' is not in the project, so no schema is checked from it."));
-                    break;
-                case SchemaTarget.None none:
-                    findings.Add(Info(reference, $"'{reference.Location}' {none.Reason}."));
-                    break;
-            }
-        }
-
+        var resolved = ResolvedXsd(association, filePath, resolver, findings, dependsOn);
         if (resolved.Count == 0)
         {
             return new Application(NoSchema, false, null);
         }
 
-        var compiled = _schemas.Get(rootPath, resolved.Select(schema => schema.FullPath).Distinct(StringComparer.Ordinal).ToArray());
+        var compiled = _schemas.Get(rootPath, Roots(resolved));
         dependsOn.AddRange(compiled.Files);
         if (compiled.Version11 is { } version11)
         {
@@ -170,6 +172,39 @@ public sealed class XmlAnalyzer : IEditorAnalyzer
             .Distinct(StringComparer.Ordinal);
         return new Application($"Schema: {string.Join(", ", names)}", true, compiled);
     }
+
+    /// <summary>The XSDs the document names that are in the project; the rest become information findings where they are named.</summary>
+    private static List<(SchemaReference Reference, string FullPath)> ResolvedXsd(
+        SchemaAssociation association,
+        string filePath,
+        ProjectXmlResolver resolver,
+        List<TextFinding> findings,
+        List<string> dependsOn)
+    {
+        var documentPath = resolver.ProjectPathOf(filePath) ?? [Path.GetFileName(filePath)];
+        var resolved = new List<(SchemaReference Reference, string FullPath)>();
+        foreach (var reference in association.Xsd)
+        {
+            switch (SchemaReferenceRules.Resolve(reference.Location, documentPath, new HashSet<string>()))
+            {
+                case SchemaTarget.Project project when File.Exists(resolver.FullPathOf(project.Path)):
+                    resolved.Add((reference, Path.GetFullPath(resolver.FullPathOf(project.Path))));
+                    break;
+                case SchemaTarget.Project project:
+                    dependsOn.Add(Path.GetFullPath(resolver.FullPathOf(project.Path)));
+                    findings.Add(Info(reference, $"'{reference.Location}' is not in the project, so no schema is checked from it."));
+                    break;
+                case SchemaTarget.None none:
+                    findings.Add(Info(reference, $"'{reference.Location}' {none.Reason}."));
+                    break;
+            }
+        }
+
+        return resolved;
+    }
+
+    private static string[] Roots(List<(SchemaReference Reference, string FullPath)> resolved) =>
+        resolved.Select(schema => schema.FullPath).Distinct(StringComparer.Ordinal).ToArray();
 
     private static TextFinding Info(SchemaReference reference, string message) =>
         new(reference.From, reference.To, TextFindingSeverity.Info, message, SchemaValidation.Source);
