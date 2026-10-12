@@ -9,7 +9,7 @@ namespace EtAlii.Adp.Diagram.DependencyGraph;
 /// Errors and Warnings panel by.
 /// </summary>
 /// <remarks>
-/// Text in, problems out: parse, and hand the model to <see cref="DependencyGraphRuleSet"/>. A
+/// Text in, problems out: parse, and hand the model to <see cref="DependencyGraphFindings"/>. A
 /// file that will not parse is reported as one <b>error</b> naming the line - the same message
 /// the unavailable state shows, so the panel and the canvas never disagree - because running
 /// rules over a model that is empty only because the parse failed would bury that one fact under
@@ -44,6 +44,6 @@ public sealed class DependencyGraphValidator : IDiagramValidator
             return ValueTask.FromResult(DependencyGraphFindings.Unparseable(exception.Message, (int)line));
         }
 
-        return ValueTask.FromResult(DependencyGraphRuleSet.Judge(model));
+        return ValueTask.FromResult(DependencyGraphFindings.Judge(model));
     }
 }

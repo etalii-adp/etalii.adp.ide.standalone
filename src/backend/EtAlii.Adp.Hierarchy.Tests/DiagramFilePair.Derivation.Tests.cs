@@ -203,4 +203,37 @@ public class DiagramFilePairDerivationTests : IDisposable
         // Assert.
         Assert.Null(body);
     }
+
+    [Fact]
+    public void ABodyHeaderReachingOutThroughALink_IsRefused()
+    {
+        // Arrange.
+        // The header names a path inside the project, but a link on the way leads out of it
+        // (spec 025, D6): reading it would read a file that is not the project's, exactly as a
+        // `..` would.
+        var elsewhere = Directory.CreateTempSubdirectory("diagram-file-pair-elsewhere-").FullName;
+        try
+        {
+            File.WriteAllText(IoPath.Combine(elsewhere, "model.dsl"), "workspace {}");
+            try
+            {
+                Directory.CreateSymbolicLink(IoPath.Combine(_root, "escape"), elsewhere);
+            }
+            catch (Exception exception) when (exception is UnauthorizedAccessException or IOException && OperatingSystem.IsWindows())
+            {
+                Assert.Skip($"This process may not create a symbolic link: {exception.Message}");
+            }
+            var adp = Write("test.first.adp", "c4/context\nbody: escape/model.dsl");
+
+            // Act.
+            var body = DiagramFilePair.BodyOf(adp, _catalog, _root);
+
+            // Assert.
+            Assert.Null(body);
+        }
+        finally
+        {
+            TestFolder.TryDelete(elsewhere);
+        }
+    }
 }

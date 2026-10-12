@@ -26,7 +26,7 @@ public class DependencyGraphValidatorTests
     public async Task AFlawedGraph_ReportsTheRuleThatFired()
     {
         // Arrange & act.
-        // The wording is DependencyGraphRuleSetTests' business; this proves the document got
+        // The wording is DependencyGraphFindingsTests' business; this proves the document got
         // there. A relation naming a node that is not in the graph, at the offending line.
         var problems = await JudgeAsync(
             "dependencies: 1\nelements:\n  - id: aaa\n    x: 0\n    row: 0\nrelations:\n  - id: ccc\n    from: aaa\n    to: ghost\n");

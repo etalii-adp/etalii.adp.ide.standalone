@@ -368,6 +368,69 @@ public class ProjectValidatorTests : IDisposable
         }
     }
 
+    [Fact]
+    public async Task ValidateAsync_RefusesAFileReachedThroughALinkThatLeavesTheRoot()
+    {
+        // Arrange: a link inside the project that leads to a diagram outside it (D6).
+        var elsewhere = Directory.CreateTempSubdirectory("project-validator-elsewhere-").FullName;
+        try
+        {
+            await File.WriteAllTextAsync(IoPath.Combine(elsewhere, "outside.adp"), "freeplane/mindmap\n", TestContext.Current.CancellationToken);
+            await File.WriteAllTextAsync(IoPath.Combine(elsewhere, "outside.mm"), "the document", TestContext.Current.CancellationToken);
+            CreateLinkOrSkip(IoPath.Combine(_root, "escape"), elsewhere);
+            var validator = Validator(problems: []);
+
+            // Act.
+            var outcome = await Validate(validator, new FileValidationScope(_root, IoPath.Combine("escape", "outside.adp")));
+
+            // Assert.
+            Assert.Equal(1, outcome.Skipped);
+            Assert.Equal(0, validator.Calls);
+        }
+        finally
+        {
+            TestFolder.TryDelete(elsewhere);
+        }
+    }
+
+    [Fact]
+    public async Task ValidateAsync_RefusesAFolderReachedThroughALinkThatLeavesTheRoot()
+    {
+        // Arrange.
+        var elsewhere = Directory.CreateTempSubdirectory("project-validator-elsewhere-").FullName;
+        try
+        {
+            await File.WriteAllTextAsync(IoPath.Combine(elsewhere, "outside.adp"), "freeplane/mindmap\n", TestContext.Current.CancellationToken);
+            await File.WriteAllTextAsync(IoPath.Combine(elsewhere, "outside.mm"), "the document", TestContext.Current.CancellationToken);
+            CreateLinkOrSkip(IoPath.Combine(_root, "escape"), elsewhere);
+            var validator = Validator(problems: []);
+
+            // Act.
+            var outcome = await Validate(validator, new FolderValidationScope(_root, "escape"));
+
+            // Assert.
+            Assert.Equal(1, outcome.Skipped);
+            Assert.Equal(0, validator.Calls);
+        }
+        finally
+        {
+            TestFolder.TryDelete(elsewhere);
+        }
+    }
+
+    // Windows lets only an elevated process or one in developer mode create a symbolic link.
+    private static void CreateLinkOrSkip(string link, string target)
+    {
+        try
+        {
+            Directory.CreateSymbolicLink(link, target);
+        }
+        catch (Exception exception) when (exception is UnauthorizedAccessException or IOException && OperatingSystem.IsWindows())
+        {
+            Assert.Skip($"This process may not create a symbolic link: {exception.Message}");
+        }
+    }
+
     // ---- the project folder is sacred --------------------------------------------------
 
     [Fact]

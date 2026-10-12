@@ -149,11 +149,7 @@ public sealed class HierarchyContextSourceResolver : IContextSourceResolver
     private static ValueTask<ContextLevelResolution> Rejected(string reason) =>
         ValueTask.FromResult<ContextLevelResolution>(new RejectedContextLevel(reason));
 
-    private static bool IsInside(string parentFullPath, string fullPath)
-    {
-        var prefix = parentFullPath.TrimEnd(IoPath.DirectorySeparatorChar, IoPath.AltDirectorySeparatorChar) + IoPath.DirectorySeparatorChar;
-        return fullPath.StartsWith(prefix, StringComparison.OrdinalIgnoreCase);
-    }
+    private static bool IsInside(string parentFullPath, string fullPath) => PathContainment.IsInside(parentFullPath, fullPath);
 
     private static string[] RelativeSegments(string basePath, string fullPath) =>
         IoPath.GetRelativePath(basePath, fullPath)

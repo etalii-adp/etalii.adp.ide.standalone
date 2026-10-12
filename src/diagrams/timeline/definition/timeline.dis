@@ -88,7 +88,7 @@
       "params": [ { "name": "e", "type": "dyn" } ],
       "returns": "string",
       "cel": "e.label != '' ? '\\'' + e.label + '\\'' : '\\'' + e.id + '\\''",
-      "doc": "An element as a finding names it: its label in quotes, or its id when the label is empty (`TimelineRuleSet.NameOf`)."
+      "doc": "An element as a finding names it: its label in quotes, or its id when the label is empty."
     },
     "shownLabel": {
       "params": [ { "name": "e", "type": "dyn" } ],

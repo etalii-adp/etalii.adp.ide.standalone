@@ -880,35 +880,15 @@ public sealed class HierarchyModel
         _pathById[id] = newPath;
     }
 
-    private bool IsContained(string path)
-    {
-        var fullPath = IoPath.GetFullPath(path);
-        var normalizedRoot = RootPath.EndsWith(IoPath.DirectorySeparatorChar)
-            ? RootPath
-            : RootPath + IoPath.DirectorySeparatorChar;
-
-        if (!fullPath.StartsWith(normalizedRoot, StringComparison.OrdinalIgnoreCase))
-        {
-            return false;
-        }
-
-        // The link probe touches the disk, and the entry may be gone by the time it runs: a
-        // multi-file delete (a git checkout, say) raises one watcher event per file, and each
-        // event re-resolves every tracked selection - whose files may already have vanished
-        // while their model entries have not. Probing a vanished path throws, and this runs
-        // on the watcher's thread, where an unhandled exception kills the whole process
-        // (found by the diagram-workspace-tabs manual pass). A path that cannot be probed is
-        // simply not contained: a gone entry resolves to nothing, same as an unknown one.
-        string? linkTarget;
-        try
-        {
-            linkTarget = File.ResolveLinkTarget(fullPath, returnFinalTarget: true)?.FullName;
-        }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-        {
-            return false;
-        }
-
-        return linkTarget is null || linkTarget.StartsWith(normalizedRoot, StringComparison.OrdinalIgnoreCase);
-    }
+    // The link probe touches the disk, and the entry may be gone by the time it runs: a
+    // multi-file delete (a git checkout, say) raises one watcher event per file, and each
+    // event re-resolves every tracked selection - whose files may already have vanished
+    // while their model entries have not. This runs on the watcher's thread, where an
+    // unhandled exception kills the whole process (found by the diagram-workspace-tabs manual
+    // pass). A gone entry is therefore not contained - it resolves to nothing, same as an
+    // unknown one - which PathContainment alone would not say, since it keeps the missing part
+    // of a path as written; and PathContainment answers a path it cannot probe with "not
+    // inside" rather than throwing.
+    private bool IsContained(string path) =>
+        (File.Exists(path) || Directory.Exists(path)) && PathContainment.IsInside(RootPath, path);
 }

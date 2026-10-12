@@ -63,8 +63,7 @@ public sealed class WardleyValidator : IDiagramValidator
             // Containment is core's job everywhere else, and it is this rule's here: a `..`
             // walking out of the project is not a reference this reports on, it is one it
             // refuses to go looking for.
-            var root = IoPath.GetFullPath(request.RootPath);
-            var inside = full.StartsWith(root, StringComparison.OrdinalIgnoreCase);
+            var inside = PathContainment.IsInside(request.RootPath, full);
 
             if (!inside || File.Exists(full))
             {
