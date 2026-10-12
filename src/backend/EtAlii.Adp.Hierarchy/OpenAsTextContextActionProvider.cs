@@ -7,15 +7,15 @@ using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would othe
 namespace EtAlii.Adp.Hierarchy;
 
 /// <summary>
-/// Offers <b>Open as text</b> on a file the diagram family claims - the way to reach the text
-/// underneath a diagram when the canvas cannot express what is needed (modular-text-editors
-/// Requirement 5.2) - and <b>Open with…</b> when two editors legitimately share the file's
+/// Offers <b>Open as text</b> on a file the diagram or designer family claims - the way to reach
+/// the text underneath a diagram or a designer's document when its canvas cannot express what is
+/// needed (modular-text-editors Requirement 5.2) - and <b>Open with…</b> when two editors legitimately share the file's
 /// extension with a declared default (Requirement 4.4).
 /// </summary>
 /// <remarks>
 /// Mirrors <see cref="AddDiagramContextActionProvider"/>'s shape: resolved by
-/// <see cref="ContextScope"/>, routing through <see cref="DiagramFileRouter"/> and
-/// <see cref="EditorResolver"/> - core types both, never a specific module. The execute is
+/// <see cref="ContextScope"/>, routing through <see cref="DiagramFileRouter"/>,
+/// <see cref="DesignerFileRouter"/> and <see cref="EditorResolver"/> - core types both, never a specific module. The execute is
 /// deliberately thin: the workspace's tabs are per-connection client state (like the
 /// selection-driven tab open), so completing the action tells the client its request stands
 /// and the client opens the tab, whose stream then forces the editor family through
@@ -31,13 +31,16 @@ public sealed class OpenAsTextContextActionProvider : IContextActionProvider
     private static readonly ILogger _logger = Log.ForContext<OpenAsTextContextActionProvider>();
 
     private readonly DiagramFileRouter _router;
+    private readonly DesignerFileRouter _designerRouter;
     private readonly EditorResolver _editorResolver;
 
-    public OpenAsTextContextActionProvider(DiagramFileRouter router, EditorResolver editorResolver)
+    public OpenAsTextContextActionProvider(DiagramFileRouter router, DesignerFileRouter designerRouter, EditorResolver editorResolver)
     {
         ArgumentNullException.ThrowIfNull(router);
+        ArgumentNullException.ThrowIfNull(designerRouter);
         ArgumentNullException.ThrowIfNull(editorResolver);
         _router = router;
+        _designerRouter = designerRouter;
         _editorResolver = editorResolver;
     }
 
@@ -48,9 +51,10 @@ public sealed class OpenAsTextContextActionProvider : IContextActionProvider
         // Folders have no text underneath, and a file that is not a diagram already opens as
         // text on activation (Requirement 5.4) - offering "Open as text" there would promise
         // something double-click does not already deliver only on the files where it is
-        // meaningless. The action belongs exactly where the diagram claimed the double-click.
-        if (target.IsContainer || !HierarchyTargets.Exists(target)
-            || _router.Route(target.ResolvedFullPath, target.RootPath) is not DiagramRouted)
+        // meaningless. The action belongs exactly where a diagram or a designer claimed the
+        // double-click: a designer's registration and its body both open in the designer, so
+        // their text is as unreachable without it as a diagram's.
+        if (target.IsContainer || !HierarchyTargets.Exists(target) || !IsClaimedByATool(target))
         {
             return ValueTask.FromResult<IReadOnlyList<ContextActionGroupDefinition>>([]);
         }
@@ -159,6 +163,10 @@ public sealed class OpenAsTextContextActionProvider : IContextActionProvider
         // the chosen editor on the stream it opens.
         return ValueTask.FromResult(ContextCommitResult.Succeeded);
     }
+
+    private bool IsClaimedByATool(ContextTarget target) =>
+        _router.Route(target.ResolvedFullPath, target.RootPath) is DiagramRouted
+        || _designerRouter.Route(target.ResolvedFullPath, target.RootPath) is DesignerRouted;
 
     private IReadOnlyList<EditorDefinition> ClaimantsFor(ContextTarget target) =>
         _editorResolver.ClaimantsOf(target.ResolvedFullPath);

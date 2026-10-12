@@ -56,7 +56,7 @@ public static class ServiceCollectionAddHierarchyExtension
         );
 
         // The editor family's contributions to the hierarchy scope: "Open as text"/"Open
-        // with…" on diagram-claimed files, and the read-only file facts of any text file.
+        // with…" on diagram- and designer-claimed files, and the read-only file facts of any text file.
         // Registered once for the whole family, never per editor module (modular-text-editors
         // Requirements 5.2, 4.4, 9.1).
         services.AddSingleton<IContextActionProvider, OpenAsTextContextActionProvider>();

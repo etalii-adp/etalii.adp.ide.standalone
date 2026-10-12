@@ -1,4 +1,5 @@
 using EtAlii.Adp.Context;
+using EtAlii.Adp.Designer;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Editor;
@@ -9,7 +10,7 @@ namespace EtAlii.Adp.Hierarchy.Tests;
 
 /// <summary>
 /// "Open as text" and "Open with…" (modular-text-editors Requirements 5.2, 4.4): offered
-/// exactly where the diagram family claimed the double-click, dispatching to the editor
+/// exactly where the diagram or designer family claimed the double-click, dispatching to the editor
 /// family's resolver, with the choice dialog reserved for a legitimately shared extension.
 /// </summary>
 public class OpenAsTextContextActionProviderTests : IDisposable
@@ -30,6 +31,11 @@ public class OpenAsTextContextActionProviderTests : IDisposable
     private static readonly DiagramDefinition Mindmap =
         new(new DiagramOrigin("freeplane", "mindmap"), "Mind map", Extension: ".mm");
 
+    private static readonly DesignerDefinition Sheet = new(
+        "fixture/sheet",
+        "Fixture sheet",
+        Formats: [new DesignerFormat("YAML", ".yaml")]);
+
     private static readonly EditorDefinition Plain = new("plain", "Plain Text", IsFallback: true);
     private static readonly EditorDefinition RawMm = new("raw-mm", "Raw mind map text", Extensions: [".mm"]);
     private static readonly EditorDefinition FancyMm =
@@ -43,6 +49,7 @@ public class OpenAsTextContextActionProviderTests : IDisposable
     private OpenAsTextContextActionProvider Provider(params EditorDefinition[] editors) =>
         new(
             new DiagramFileRouter(new TestDiagramDefinitionCatalog(Mindmap)),
+            new DesignerFileRouter(new DesignerDefinitionCatalog { All = [Sheet] }),
             new EditorResolver(new StubEditorCatalog(editors)));
 
     private ContextTarget FileTarget(string fileName, string content = "root\n")
@@ -65,6 +72,37 @@ public class OpenAsTextContextActionProviderTests : IDisposable
         var action = Assert.Single(ActionsOf(groups));
         Assert.Equal(OpenAsTextContextActionProvider.OpenAsTextActionId, action.Id);
         Assert.True(action.Available);
+    }
+
+    [Theory]
+    [InlineData("cities.adp")]
+    [InlineData("cities.yaml")]
+    public async Task Discover_ADesignerClaimedFile_OffersOpenAsText(string fileName)
+    {
+        // Arrange: a designer's registration and the body it names, both of which open in the
+        // designer on double-click.
+        FileTarget("cities.adp", "fixture/sheet\n");
+        FileTarget("cities.yaml", "a: 1\n");
+        var target = new ContextTarget(ContextScope.Hierarchy, IoPath.Combine(_root, fileName), IsContainer: false, ShortGuid.NewShortGuid(), RootPath: _root);
+
+        // Act.
+        var groups = await Provider(Plain).DiscoverAsync(target, TestContext.Current.CancellationToken);
+
+        // Assert.
+        var action = Assert.Single(ActionsOf(groups));
+        Assert.Equal(OpenAsTextContextActionProvider.OpenAsTextActionId, action.Id);
+        Assert.True(action.Available);
+    }
+
+    [Fact]
+    public async Task Discover_AYamlFileNoRegistrationNames_OffersNothing()
+    {
+        // Arrange and act: a designer's format alone claims nothing - a project is full of
+        // YAML that double-click opens as text already.
+        var groups = await Provider(Plain).DiscoverAsync(FileTarget("config.yaml", "a: 1\n"), TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.Empty(groups);
     }
 
     [Fact]
