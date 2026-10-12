@@ -1,5 +1,6 @@
 """Lines and files per project of the solution, split into production and test and into core and the
-three tool kinds (spec 025, T002). Lines are physical lines of the .cs files; code lines leave out blank
+three tool kinds (spec 025, T002). The testing projects EtAlii.Adp.TestSupport and EtAlii.Adp.TestSupport.Host
+are test code, not production code (common.py). Lines are physical lines of the .cs files; code lines leave out blank
 lines and lines holding only a comment."""
 
 import common
