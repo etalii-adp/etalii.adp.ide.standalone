@@ -203,6 +203,11 @@ src/backend/EtAlii.Adp.Specification.Fbl.Tests/Conformance/**/*.yml -text
 src/backend/EtAlii.Adp.Specification.Fbl.Tests/Conformance/**/*.json -text
 src/backend/EtAlii.Adp.Specification.Fbl.Tests/Conformance/**/*.cld -text
 src/backend/EtAlii.Adp.Specification.Fbl.Tests/Conformance/**/*.adp -text
+# The two insert-empty fixtures of FBL 0.6 carry their own binding and a yaml input, both CRLF in
+# etalii.adp and kept so: the binding beside its fixture is part of the fixture. Scoped to the fixtures
+# folder, so the bindings beside the readme (ordinary text) are not exempted with them.
+src/backend/EtAlii.Adp.Specification.Fbl.Tests/Conformance/fixtures/**/*.fbl -text
+src/backend/EtAlii.Adp.Specification.Fbl.Tests/Conformance/fixtures/**/*.yaml -text
 
 # `.owm` and the ansible-structure fixture tree are covered by `.gitattributes` files inside those
 # modules rather than from here. Both are scoped more narrowly than an extension rule would be -
