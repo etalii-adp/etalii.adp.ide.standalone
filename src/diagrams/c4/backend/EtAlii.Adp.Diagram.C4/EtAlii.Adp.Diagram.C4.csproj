@@ -9,7 +9,6 @@
       reference this library; this library references none of them (c4-diagrams design,
       "Project Structure").
     -->
-    <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Backend\EtAlii.Adp.Backend.csproj" />
   </ItemGroup>
 
   <ItemGroup>

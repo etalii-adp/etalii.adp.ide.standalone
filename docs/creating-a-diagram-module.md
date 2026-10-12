@@ -16,7 +16,7 @@ A diagram type is a folder under `src/diagrams/<diagram>/` with up to four subfo
 - `examples/` — documents a reader can open and click around in.
 - `definition/` — `timeline.dis`, the type's DISL specification, with `timeline.md` beside it and the `provenance.json` that names the etalii-adp/etalii.adp revision it was copied from. It is bundled by [`bundle-disl.sh`](../src/diagrams/tools/bundle-disl.sh), never edited here, and embedded in the backend project.
 
-The dependency direction is absolute: a module depends on core abstractions (`EtAlii.Adp.Backend`, `EtAlii.Adp.Diagram`, the shared contracts), and **nothing in core depends on any module**. Core compiles and runs with your module's assembly absent. Everything below is a consequence of that rule.
+The dependency direction is absolute: a module depends on core abstractions (`EtAlii.Adp.Diagram` and the shared contracts), and **nothing in core depends on any module**. Core compiles and runs with your module's assembly absent. Everything below is a consequence of that rule.
 
 ## Specify first
 
