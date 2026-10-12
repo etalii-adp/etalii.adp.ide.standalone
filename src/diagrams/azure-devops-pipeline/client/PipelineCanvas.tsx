@@ -11,6 +11,7 @@ import type {
 import type { DiagramEventHandlers } from "@client/canvas/library/api/diagramEvents";
 import type { DiagramModel, DiagramModelElement } from "@client/canvas/library/api/diagramModel";
 import { useContextConnection, useContextProblems } from "@client/shell/context/ContextConnectionProvider";
+import { elementSourceOf } from "@client/canvas/selection";
 import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
 import { useViewReport } from "@client/diagrams/useViewReport";
 import { PipelineElementKindProto } from "@client/generated/azure-pipeline_pb";
@@ -24,6 +25,15 @@ import {
 } from "./pipelineModel";
 import { usePipelineStream } from "./usePipelineStream";
 
+
+/**
+ * Moving a step within its job, by Alt and an arrow key. The ids are the backend's
+ * (`PipelineContextActionProvider`), which also offers them in the menu and withholds them at the
+ * ends of a job; the keys are the press as a browser reports it - the key `ArrowUp` with Alt held.
+ */
+const MOVE_STEP_UP = "azure-pipeline.move-step-up";
+const MOVE_STEP_DOWN = "azure-pipeline.move-step-down";
+const MOVE_STEP_ACTIONS: ReadonlySet<string> = new Set([MOVE_STEP_UP, MOVE_STEP_DOWN]);
 
 /** The fixed control reach the "waits for" arrows have always had. */
 const EDGE_REACH = 30;
@@ -224,6 +234,9 @@ const PIPELINE_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
   // handed it. Declared, the library derives the key set and dispatches an action id.
   actions: [
     { id: "rename", backendKey: "F2", invokedBy: [{ kind: "shortcut", key: "F2" }], appliesTo: [{ kind: "element" }] },
+    // A move is sent by its id rather than a backendKey, which carries a key without its modifier.
+    { id: MOVE_STEP_UP, invokedBy: [{ kind: "shortcut", key: "ArrowUp", alt: true }], appliesTo: [{ kind: "element", elementTypes: ["step"] }] },
+    { id: MOVE_STEP_DOWN, invokedBy: [{ kind: "shortcut", key: "ArrowDown", alt: true }], appliesTo: [{ kind: "element", elementTypes: ["step"] }] },
   ],
   layout: { modes: ["manual"] },
   dragging: "disabled",
@@ -245,7 +258,7 @@ function elementTypeOf(node: PipelineNode): string {
  */
 export function PipelineCanvas({ projectId, entryId, path }: PipelineCanvasProps) {
   const { model, loading, failed, reportView } = usePipelineStream(projectId, path);
-  const {  } = useContextConnection();
+  const { executeAction } = useContextConnection();
   const toolboxItems = useToolboxItems(projectId, path);
   // Problems arrive for the whole project, so an element only wears the ones that name it and
   // this file - two pipelines may each have a stage called Build (Requirement 8.7).
@@ -307,6 +320,11 @@ export function PipelineCanvas({ projectId, entryId, path }: PipelineCanvasProps
   // The library sends the declared keystroke and shows its refusal on the one line it draws around
   // every canvas, clearing it when the next gesture is sent (client-centralization Requirement 2).
   const events: DiagramEventHandlers = {
+    onActionInvoked: ({ actionId, targetId }) => {
+      if (targetId !== undefined && MOVE_STEP_ACTIONS.has(actionId)) {
+        void executeAction(actionId, elementSourceOf(targetId, entryId));
+      }
+    },
     // Selection is the library's (centralized-selection), and so is its highlight: this canvas
     // used to draw a private `focusedId` it set on a press, beside the backend's selection -
     // two answers to "what is selected", with the drawing following the wrong one.

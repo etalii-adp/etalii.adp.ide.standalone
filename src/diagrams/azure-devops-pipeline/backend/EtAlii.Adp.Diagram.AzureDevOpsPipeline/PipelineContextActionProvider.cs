@@ -300,6 +300,9 @@ public sealed class PipelineContextActionProvider : IContextActionProvider
     /// Withheld at the ends: a first step has nowhere to move up to. Withheld entirely where any
     /// of the job's steps came from a template, because then the order on the canvas is not the
     /// order in this file and moving by position would move the wrong lines.
+    ///
+    /// The shortcuts are Alt+Up and Alt+Down in the shape a <c>KeyboardEvent</c> reports the press:
+    /// the key <c>ArrowUp</c> with Alt held. The text <c>"Alt+Up"</c> as a key matched no keypress.
     /// </remarks>
     private static List<ContextActionDefinition> OrderingFor(PipelineElementLocation location)
     {
@@ -313,13 +316,13 @@ public sealed class PipelineContextActionProvider : IContextActionProvider
         if (index > 0)
         {
             actions.Add(new ContextActionDefinition(
-                MoveStepUpActionId, "Move up", "mdi-arrow-up", new ContextShortcutDefinition("Alt+Up")));
+                MoveStepUpActionId, "Move up", "mdi-arrow-up", new ContextShortcutDefinition("ArrowUp", Alt: true)));
         }
 
         if (index < location.Job.Steps.Count - 1)
         {
             actions.Add(new ContextActionDefinition(
-                MoveStepDownActionId, "Move down", "mdi-arrow-down", new ContextShortcutDefinition("Alt+Down")));
+                MoveStepDownActionId, "Move down", "mdi-arrow-down", new ContextShortcutDefinition("ArrowDown", Alt: true)));
         }
 
         return actions;
