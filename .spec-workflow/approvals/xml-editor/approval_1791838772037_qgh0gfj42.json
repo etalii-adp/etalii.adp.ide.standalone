@@ -1,0 +1,10 @@
+{
+  "id": "approval_1791838772037_qgh0gfj42",
+  "title": "XML editor design (asks rulings A1: two format-free calls on EditorService; A2: a DTD validates, no completion)",
+  "filePath": ".spec-workflow/specs/xml-editor/design.md",
+  "type": "document",
+  "status": "pending",
+  "createdAt": "2026-10-12T20:59:32.037Z",
+  "category": "spec",
+  "categoryName": "xml-editor"
+}
