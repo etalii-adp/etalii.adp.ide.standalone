@@ -1,0 +1,114 @@
+using Xunit;
+using IoPath = System.IO.Path;
+
+namespace EtAlii.Adp.Editor.Yaml.Tests;
+
+/// <summary>
+/// The module's shipped examples, opened by the module's own code (modular-text-editors
+/// Requirement 10.4: "the examples cannot drift from what the code supports"). The walk is
+/// live, so a file added to <c>examples/</c> is covered on arrival - and a file nothing
+/// opens cannot exist here, which is exactly what R10.4 forbids.
+/// </summary>
+public class ExamplesTests
+{
+    /// <summary>
+    /// The module's <c>examples/</c> folder, found by walking up from the test binary rather
+    /// than by counting <c>..</c> segments - the count changes with the build layout, the
+    /// folder name does not (the shape ExampleRegistrationTests already uses).
+    /// </summary>
+    private static string ExamplesRoot { get; } = RepositoryPaths.Under("src", "editors", "yaml", "examples");
+
+    /// <summary>The combined project's replica of this module's examples (structure.md's replication rule).</summary>
+    private static string ReplicaRoot { get; } = RepositoryPaths.Under("src", "examples", "editors", "yaml");
+
+    public static TheoryData<string> EveryExampleFile()
+    {
+        var data = new TheoryData<string>();
+        foreach (var file in Directory.EnumerateFiles(ExamplesRoot, "*", SearchOption.AllDirectories))
+        {
+            data.Add(IoPath.GetRelativePath(ExamplesRoot, file));
+        }
+
+        return data;
+    }
+
+    [Fact]
+    public void TheWalk_FindsTheTrackedExampleSet()
+    {
+        // Arrange and act: 8 files at the time of writing. The count moving down unexpectedly
+        // is what this guards - a vanished example silently shrinks the theories below.
+        Assert.True(EveryExampleFile().Count >= 8, "the examples walk lost files");
+    }
+
+    [Theory]
+    [MemberData(nameof(EveryExampleFile))]
+    public async Task EveryExample_OpensInThisEditor_AndRoundTripsByteIdentically(string relativePath)
+    {
+        // Arrange: a temp copy, so the unchanged-save proof never writes into the source tree.
+        var source = IoPath.Combine(ExamplesRoot, relativePath);
+        var temp = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"), IoPath.GetFileName(relativePath));
+        Directory.CreateDirectory(IoPath.GetDirectoryName(temp)!);
+        try
+        {
+            var original = await File.ReadAllBytesAsync(source, TestContext.Current.CancellationToken);
+            await File.WriteAllBytesAsync(temp, original, TestContext.Current.CancellationToken);
+
+            // Act: the module's own session opens it, and what it read is written back the way
+            // every editor's save writes - the shared save command's TextFileBuffer.
+            await using var session = new YamlEditorSession(temp);
+            Assert.Equal("", session.Refusal);
+            var opened = TextFileBuffer.Open(temp);
+            Assert.NotNull(opened.Buffer);
+            var error = await opened.Buffer.SaveAsync(session.Content, TestContext.Current.CancellationToken);
+
+            // Assert: the family's headline guarantee, held by the shipped material itself.
+            Assert.Equal("", error);
+            Assert.Equal(original, await File.ReadAllBytesAsync(temp, TestContext.Current.CancellationToken));
+        }
+        finally
+        {
+            TestFolder.TryDelete(IoPath.GetDirectoryName(temp)!);
+        }
+    }
+
+    [Fact]
+    public void TheCrlfExample_IsDetectedAsCrlf()
+    {
+        // Arrange and act: the edge case this example exists to exercise (yaml-editor
+        // Requirement 8.5). `.gitattributes` (* text=auto eol=crlf) guarantees the working-tree
+        // bytes are CRLF on any machine.
+        var buffer = TextFileBuffer.Open(IoPath.Combine(ExamplesRoot, "crlf.yaml")).Buffer;
+
+        // Assert.
+        Assert.NotNull(buffer);
+        Assert.Equal("CRLF", buffer.LineEndingStyle);
+    }
+
+    [Fact]
+    public async Task TheExamples_IncludeAFileOfSeveralDocuments()
+    {
+        // Arrange and act: the other place a YAML reader commonly loses bytes (Requirement 8.5),
+        // round-tripped by the theory above like every other example.
+        var text = await File.ReadAllTextAsync(IoPath.Combine(ExamplesRoot, "several-documents.yaml"), TestContext.Current.CancellationToken);
+
+        // Assert: a document marker at the start of a line, more than once.
+        Assert.True(text.Split('\n').Count(line => line.TrimEnd('\r') == "---") >= 2, "several-documents.yaml holds fewer than three documents");
+    }
+
+    [Theory]
+    [MemberData(nameof(EveryExampleFile))]
+    public async Task EveryExample_HasAByteIdenticalReplicaInTheCombinedProject(string relativePath)
+    {
+        // Arrange: structure.md's rule - a module's examples and the combined project's copy
+        // must never drift. Byte-identical is achievable here because a text editor's example
+        // has no project-relative `body:` header to rewrite (unlike a diagram's `.adp`).
+        var moduleCopy = IoPath.Combine(ExamplesRoot, relativePath);
+        var replica = IoPath.Combine(ReplicaRoot, relativePath);
+
+        // Act and assert.
+        Assert.True(File.Exists(replica), $"{relativePath} has no replica under src/examples/editors/yaml");
+        Assert.Equal(
+            await File.ReadAllBytesAsync(moduleCopy, TestContext.Current.CancellationToken),
+            await File.ReadAllBytesAsync(replica, TestContext.Current.CancellationToken));
+    }
+}
