@@ -192,7 +192,7 @@ The property grid shows, for an element: **Label** (group Identity), **Begin** a
 
 ## Diagnostics
 
-Problems reach the Errors and Warnings panel, not a canvas overlay (R12). All are **warnings**, and the rest of the diagram still draws; only an unparseable file is an **error**, reported as one problem with the same message the unavailable state shows. The specification's `constraints` state every one of them with the tool's own code and sentence, and the standalone module evaluates them (`TimelineRuleSet.cs`, `TimelineValidator.cs`, `TimelineDefinition.cs`).
+Problems reach the Errors and Warnings panel, not a canvas overlay (R12). All are **warnings**, and the rest of the diagram still draws; only an unparseable file is an **error**, reported as one problem with the same message the unavailable state shows. The specification's `constraints` state every one of them with the tool's own code and sentence, and the standalone module evaluates them (`TimelineValidator.cs`, `TimelineDefinition.cs`).
 
 | Code | When | In timeline.dis | Located at |
 | --- | --- | --- | --- |
