@@ -41,6 +41,17 @@
   </ItemGroup>
 
   <!--
+    Everything that does not install itself per assembly is shared by reference instead:
+    EtAlii.Adp.TestSupport (TestHistory, the test catalog, DrawnConnections and the helpers spec 025
+    adds) is attached to every test project here, module test projects included, so a helper is
+    written once and reached from anywhere rather than copied into the module that first needs it.
+    The project is not named *.Tests, so it does not reference itself.
+  -->
+  <ItemGroup Condition="'$(MSBuildProjectName.EndsWith(`.Tests`))' == 'true'">
+    <ProjectReference Include="$(MSBuildThisFileDirectory)backend\EtAlii.Adp.TestSupport\EtAlii.Adp.TestSupport.csproj" />
+  </ItemGroup>
+
+  <!--
     Windows MAX_PATH guard.
 
     On Windows without effective long-path support, MSBuild's Exists() silently returns false
