@@ -7,13 +7,17 @@ using EtAlii.Adp.Context;
 using Google.Protobuf;
 using Google.Protobuf.Reflection;
 
-namespace EtAlii.Adp.Diagram.DependencyGraph.Tests.Parity;
+namespace EtAlii.Adp.TestSupport;
 
 /// <summary>
 /// How a parity transcript writes what today's code answers: one canonical line per action, row,
 /// finding and payload, so a change to any of them is a one-line diff of the checked-in file.
 /// </summary>
 /// <remarks>
+/// <para>
+/// One copy for every module's transcript. It lived in six, five of them identical but for a
+/// method one or two lacked; a fix to the hunk writer had to be made six times or it drifted.
+/// </para>
 /// <para>
 /// <b>Deterministic by construction</b>: no timestamps, no paths but the corpus's own relative
 /// ones, invariant number formatting, and every list in the order the code produced it.
@@ -23,7 +27,7 @@ namespace EtAlii.Adp.Diagram.DependencyGraph.Tests.Parity;
 /// equal to the working file on every machine.
 /// </para>
 /// </remarks>
-internal static class TranscriptText
+public static class TranscriptText
 {
     /// <summary>The writer every transcript uses.</summary>
     public static JsonWriterOptions WriterOptions { get; } = new()
@@ -46,13 +50,13 @@ internal static class TranscriptText
     public static string Decode(byte[] bytes) => _strictUtf8.GetString(bytes);
 
     /// <summary>The bytes of a (masked) text, for hashing.</summary>
-    private static byte[] Encode(string text) => _strictUtf8.GetBytes(text);
+    public static byte[] Encode(string text) => _strictUtf8.GetBytes(text);
 
     /// <summary>A number as the transcript writes it: shortest round-trip, invariant.</summary>
     private static string Number(double value) => value.ToString("R", CultureInfo.InvariantCulture);
 
     /// <summary>A menu as lines: one per action, prefixed by its group's number, children indented below it.</summary>
-    public static IReadOnlyList<string> MenuLines(IReadOnlyList<ContextActionGroupDefinition> groups)
+    public static IReadOnlyList<string> MenuLines(this IReadOnlyList<ContextActionGroupDefinition> groups)
     {
         var lines = new List<string>();
         AddMenuLines(lines, groups, "");
@@ -65,7 +69,7 @@ internal static class TranscriptText
         {
             foreach (var action in groups[group].Actions)
             {
-                var shortcut = action.Shortcut is { } key ? Shortcut(key) : "-";
+                var shortcut = action.Shortcut is { } key ? key.ToShortcutText() : "-";
                 var availability = action.Available ? "on" : "off";
                 var reason = action.UnavailableReason.Length > 0 ? $" ({action.UnavailableReason})" : "";
                 lines.Add($"{indent}g{group + 1} {action.Id} | {action.Label} | {action.Icon} | {shortcut} | {availability}{reason}");
@@ -77,7 +81,8 @@ internal static class TranscriptText
         }
     }
 
-    private static string Shortcut(ContextShortcutDefinition key)
+    /// <summary>A shortcut as a person reads it: its modifiers in a fixed order, then its key ("Ctrl+Shift+Z").</summary>
+    public static string ToShortcutText(this ContextShortcutDefinition key)
     {
         var builder = new StringBuilder();
         if (key.Ctrl)
@@ -104,23 +109,37 @@ internal static class TranscriptText
     }
 
     /// <summary>A property row as one line; its candidates, when it has any, as an index into <paramref name="choices"/>.</summary>
-    public static string RowLine(ContextPropertyDefinition row, List<IReadOnlyList<string>> choices)
+    public static string RowLine(this ContextPropertyDefinition row, List<IReadOnlyList<string>> choices)
     {
-        var editable = row.ReadOnlyReason.Length > 0 ? $"read-only ({row.ReadOnlyReason})" : "editable";
-        var candidates = "";
-        if (row.Candidates is { } list)
-        {
-            var index = choices.FindIndex(known => known.SequenceEqual(list, StringComparer.Ordinal));
-            if (index < 0)
-            {
-                choices.Add(list);
-                index = choices.Count - 1;
-            }
+        var candidates = row.Candidates is { } list ? $" | choices #{choices.IndexOfOrAdd(list)}" : "";
+        return $"{row.Id} | {row.Label} | {Quoted(row.Value)} | {row.Editor} | {Editability(row)} | group {row.Group}{candidates}";
+    }
 
-            candidates = $" | choices #{index}";
+    /// <summary>A property row as one line, its candidates written out in full.</summary>
+    public static string RowLine(this ContextPropertyDefinition row)
+    {
+        var candidates = row.Candidates is { } list ? $" | choices [{string.Join(", ", list.Select(Quoted))}]" : "";
+        return $"{row.Id} | {row.Label} | {Quoted(row.Value)} | {row.Editor} | {Editability(row)} | group {row.Group}{candidates}";
+    }
+
+    private static string Editability(ContextPropertyDefinition row) =>
+        row.ReadOnlyReason.Length > 0 ? $"read-only ({row.ReadOnlyReason})" : "editable";
+
+    /// <summary>
+    /// The index of <paramref name="list"/> among <paramref name="known"/>, compared element by element,
+    /// adding it at the end when it is not there yet: how a transcript writes a repeated list once and
+    /// refers to it by number.
+    /// </summary>
+    public static int IndexOfOrAdd(this List<IReadOnlyList<string>> known, IReadOnlyList<string> list)
+    {
+        var index = known.FindIndex(candidate => candidate.SequenceEqual(list, StringComparer.Ordinal));
+        if (index >= 0)
+        {
+            return index;
         }
 
-        return $"{row.Id} | {row.Label} | {JsonSerializer.Serialize(row.Value, StringOptions)} | {row.Editor} | {editable} | group {row.Group}{candidates}";
+        known.Add(list);
+        return known.Count - 1;
     }
 
     /// <summary>
@@ -152,6 +171,9 @@ internal static class TranscriptText
     /// <summary>A string as a JSON literal, so a value's newlines and quotes stay on its line.</summary>
     public static JsonSerializerOptions StringOptions { get; } = new() { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
 
+    /// <summary>A text as a JSON string literal; <c>null</c> for no text.</summary>
+    public static string Quoted(string? value) => value is null ? "null" : JsonSerializer.Serialize(value, StringOptions);
+
     /// <summary>A mapped element as one line, its payload decoded to protobuf JSON.</summary>
     public static string PayloadLine(string id, double x, double y, string type, string typeUrl, ReadOnlyMemory<byte> payload, TypeRegistry registry)
     {
@@ -178,7 +200,7 @@ internal static class TranscriptText
     /// pinned to the byte, no longer replayable from the transcript.
     /// </para>
     /// </remarks>
-    public static void WriteChange(Utf8JsonWriter json, string before, string after)
+    public static void WriteChange(this Utf8JsonWriter json, string before, string after)
     {
         if (string.Equals(before, after, StringComparison.Ordinal))
         {
@@ -196,13 +218,25 @@ internal static class TranscriptText
             json.WriteStartArray("hunks");
             foreach ((int line, int removed, string inserted) in hunks)
             {
-                json.WriteStringValue($"@{line} -{removed} +{JsonSerializer.Serialize(inserted, StringOptions)}");
+                json.WriteStringValue($"@{line} -{removed} +{Quoted(inserted)}");
             }
 
             json.WriteEndArray();
         }
 
         json.WriteString("sha256", Sha256(Encode(after)));
+    }
+
+    /// <summary>Writes <paramref name="lines"/> as one JSON array of strings.</summary>
+    public static void WriteLines(this Utf8JsonWriter json, IEnumerable<string> lines)
+    {
+        json.WriteStartArray();
+        foreach (var line in lines)
+        {
+            json.WriteStringValue(line);
+        }
+
+        json.WriteEndArray();
     }
 
     /// <summary>The most hunk text a step writes before it is summarised instead.</summary>

@@ -91,7 +91,7 @@ internal static partial class DotNetTranscript
             json.WriteString("regenerate", "ADP_WRITE_PARITY_TRANSCRIPTS=1 dotnet test --project <this test project> (then review the diff)");
 
             json.WritePropertyName("registrations");
-            WriteLines(json, Registrations());
+            json.WriteLines(Registrations());
 
             json.WriteStartArray("solutions");
             var recorded = new Dictionary<string, string>(StringComparer.Ordinal);
@@ -175,20 +175,20 @@ internal static partial class DotNetTranscript
     private static async Task WriteGraphAsync(Utf8JsonWriter json, DependencyGraphModel graph, string solutionPath, CancellationToken cancellationToken)
     {
         json.WritePropertyName("projects");
-        WriteLines(json, [.. graph.Projects.Select(project => $"{project.Id} | {project.Name} | {project.RelativePath} | [{string.Join(", ", project.TargetFrameworks)}] | {TranscriptText.Quoted(project.DotNetVersion)}")]);
+        json.WriteLines([.. graph.Projects.Select(project => $"{project.Id} | {project.Name} | {project.RelativePath} | [{string.Join(", ", project.TargetFrameworks)}] | {TranscriptText.Quoted(project.DotNetVersion)}")]);
 
         json.WritePropertyName("packages");
-        WriteLines(json, [.. graph.Packages.Select(package =>
+        json.WriteLines([.. graph.Packages.Select(package =>
             $"{package.Id} | {package.PackageId} | [{string.Join(", ", package.Versions)}] | conflict {package.HasVersionConflict} | dependents {package.DependentProjectCount} | ambient {package.IsAmbient} | {TranscriptText.Quoted(package.Description)}")]);
 
         json.WritePropertyName("references");
-        WriteLines(json, [.. graph.Edges.Select(edge => $"{edge.Id} | {edge.Kind} | {edge.FromElementId} -> {edge.ToElementId}")]);
+        json.WriteLines([.. graph.Edges.Select(edge => $"{edge.Id} | {edge.Kind} | {edge.FromElementId} -> {edge.ToElementId}")]);
 
         json.WritePropertyName("failures");
-        WriteLines(json, [.. graph.Failures.Select(failure => Mask($"{failure.Path} | {failure.Reason}"))]);
+        json.WriteLines([.. graph.Failures.Select(failure => Mask($"{failure.Path} | {failure.Reason}"))]);
 
         json.WritePropertyName("payloads");
-        WriteLines(json, [.. new DependencyElementMapper().Elements(graph)
+        json.WriteLines([.. new DependencyElementMapper().Elements(graph)
             .Select(element => TranscriptText.PayloadLine(element.Id, element.X, element.Y, element.Type, element.PayloadTypeUrl, element.Payload, _payloadTypes))]);
 
         // A stored position wins over the computed one, element by element; an id matching nothing is not applied.
@@ -200,7 +200,7 @@ internal static partial class DotNetTranscript
                 ["project:gone.csproj"] = new(1, 1),
             };
             json.WritePropertyName("payloadsWithAStoredPosition");
-            WriteLines(json, [.. new DependencyElementMapper().Elements(graph, stored)
+            json.WriteLines([.. new DependencyElementMapper().Elements(graph, stored)
                 .Where(element => element.Id == graph.Projects[0].Id)
                 .Select(element => TranscriptText.PayloadLine(element.Id, element.X, element.Y, element.Type, element.PayloadTypeUrl, element.Payload, _payloadTypes))]);
         }
@@ -222,7 +222,7 @@ internal static partial class DotNetTranscript
             json.WriteStartObject();
             json.WriteString("target", target);
             json.WritePropertyName("rows");
-            WriteLines(json, [.. rows.Select(TranscriptText.RowLine)]);
+            json.WriteLines([.. rows.Select(TranscriptText.RowLine)]);
             json.WriteEndObject();
         }
 
@@ -307,17 +307,6 @@ internal static partial class DotNetTranscript
 
     [GeneratedRegex(@"\{src\}[^\s'""]*")]
     private static partial Regex SourcePath();
-
-    private static void WriteLines(Utf8JsonWriter json, IEnumerable<string> lines)
-    {
-        json.WriteStartArray();
-        foreach (var line in lines)
-        {
-            json.WriteStringValue(line);
-        }
-
-        json.WriteEndArray();
-    }
 
     private static string FindModuleFolder()
     {

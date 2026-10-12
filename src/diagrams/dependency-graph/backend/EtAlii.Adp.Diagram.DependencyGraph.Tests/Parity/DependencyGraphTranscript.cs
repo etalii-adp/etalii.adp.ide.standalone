@@ -181,10 +181,10 @@ internal static class DependencyGraphTranscript
         var lines = new List<(string Target, int Menu, int MenuReadOnly, IReadOnlyList<string> Rows, IReadOnlyList<string> RowsReadOnly)>();
         foreach (var target in targets)
         {
-            var menu = MenuIndex(menus, TranscriptText.MenuLines(await session.Actions.DiscoverAsync(session.Target(target), cancellationToken)));
-            var menuReadOnly = MenuIndex(menus, TranscriptText.MenuLines(await session.ReadOnlyActions.DiscoverAsync(session.Target(target), cancellationToken)));
-            IReadOnlyList<string> rows = [.. (await session.Properties.DescribeAsync(session.Target(target), cancellationToken)).Select(row => TranscriptText.RowLine(row, choices))];
-            IReadOnlyList<string> rowsReadOnly = [.. (await session.ReadOnlyProperties.DescribeAsync(session.Target(target), cancellationToken)).Select(row => TranscriptText.RowLine(row, choices))];
+            var menu = menus.IndexOfOrAdd(TranscriptText.MenuLines(await session.Actions.DiscoverAsync(session.Target(target), cancellationToken)));
+            var menuReadOnly = menus.IndexOfOrAdd(TranscriptText.MenuLines(await session.ReadOnlyActions.DiscoverAsync(session.Target(target), cancellationToken)));
+            IReadOnlyList<string> rows = [.. (await session.Properties.DescribeAsync(session.Target(target), cancellationToken)).Select(row => row.RowLine(choices))];
+            IReadOnlyList<string> rowsReadOnly = [.. (await session.ReadOnlyProperties.DescribeAsync(session.Target(target), cancellationToken)).Select(row => row.RowLine(choices))];
             lines.Add((target, menu, menuReadOnly, rows, rowsReadOnly));
         }
 
@@ -193,7 +193,7 @@ internal static class DependencyGraphTranscript
         json.WriteStartArray("menus");
         foreach (var menu in menus)
         {
-            WriteLines(json, menu);
+            json.WriteLines(menu);
         }
 
         json.WriteEndArray();
@@ -201,7 +201,7 @@ internal static class DependencyGraphTranscript
         json.WriteStartArray("choices");
         foreach (var list in choices)
         {
-            WriteLines(json, list);
+            json.WriteLines(list);
         }
 
         json.WriteEndArray();
@@ -209,7 +209,7 @@ internal static class DependencyGraphTranscript
         json.WriteStartArray("targets");
         foreach ((string target, int menu, int menuReadOnly, _, _) in lines)
         {
-            json.WriteStringValue($"{JsonSerializer.Serialize(target, TranscriptText.StringOptions)} => menu #{menu}, read-only #{menuReadOnly}");
+            json.WriteStringValue($"{TranscriptText.Quoted(target)} => menu #{menu}, read-only #{menuReadOnly}");
         }
 
         json.WriteEndArray();
@@ -225,7 +225,7 @@ internal static class DependencyGraphTranscript
             json.WriteStartObject();
             json.WriteString("target", target);
             json.WritePropertyName("rows");
-            WriteLines(json, rows);
+            json.WriteLines(rows);
             if (TranscriptText.ReadOnlyVariant(rows, rowsReadOnly) is { } same)
             {
                 json.WriteString("rowsReadOnly", same);
@@ -233,7 +233,7 @@ internal static class DependencyGraphTranscript
             else
             {
                 json.WritePropertyName("rowsReadOnly");
-                WriteLines(json, rowsReadOnly);
+                json.WriteLines(rowsReadOnly);
             }
 
             json.WriteEndObject();
@@ -245,17 +245,17 @@ internal static class DependencyGraphTranscript
             new DiagramValidationRequest(TranscriptText.Decode(bytes), Path.GetFileNameWithoutExtension(session.Body), session.Folder, session.Body, null),
             cancellationToken);
         json.WritePropertyName("findings");
-        WriteLines(json, [.. problems.Select(problem => $"{Location(problem.Location)} | {problem.Severity} | {problem.RuleId} | {problem.Message}")]);
+        json.WriteLines([.. problems.Select(problem => $"{Location(problem.Location)} | {problem.Severity} | {problem.RuleId} | {problem.Message}")]);
 
         json.WritePropertyName("payloads");
-        WriteLines(json, [.. new DependencyGraphElementMapper().Elements(model)
+        json.WriteLines([.. new DependencyGraphElementMapper().Elements(model)
             .Select(element => TranscriptText.PayloadLine(element.Id, element.X, element.Y, element.Type, element.PayloadTypeUrl, element.Payload, _payloadTypes))]);
     }
 
     private static string Location(DiagramProblemLocation? location) => location switch
     {
         DiagramProblemLineLocation line => $"line {line.Number}",
-        DiagramProblemElementLocation element => $"element {JsonSerializer.Serialize(element.Id, TranscriptText.StringOptions)}",
+        DiagramProblemElementLocation element => $"element {TranscriptText.Quoted(element.Id)}",
         null => "nowhere",
         _ => location.ToString() ?? "",
     };
@@ -333,29 +333,6 @@ internal static class DependencyGraphTranscript
         }
 
         await script.EndAsync(original);
-    }
-
-    private static int MenuIndex(List<IReadOnlyList<string>> menus, IReadOnlyList<string> menu)
-    {
-        var index = menus.FindIndex(known => known.SequenceEqual(menu, StringComparer.Ordinal));
-        if (index >= 0)
-        {
-            return index;
-        }
-
-        menus.Add(menu);
-        return menus.Count - 1;
-    }
-
-    private static void WriteLines(Utf8JsonWriter json, IEnumerable<string> lines)
-    {
-        json.WriteStartArray();
-        foreach (var line in lines)
-        {
-            json.WriteStringValue(line);
-        }
-
-        json.WriteEndArray();
     }
 
     private static string FindModuleFolder()
@@ -466,7 +443,7 @@ internal static class DependencyGraphTranscript
                 var result = await session.Properties.SetAsync(session.Target(target), propertyId, value, cancellationToken);
                 return result.IsSuccess ? "ok" : $"refused: {result.Error}";
             });
-            await RecordAsync($"set {Mask(target)} {propertyId} = {JsonSerializer.Serialize(value, TranscriptText.StringOptions)}", answer, before);
+            await RecordAsync($"set {Mask(target)} {propertyId} = {TranscriptText.Quoted(value)}", answer, before);
         }
 
         /// <summary>Runs an action; answers "confirm" when it asked for a confirmation, else null.</summary>
@@ -487,7 +464,7 @@ internal static class DependencyGraphTranscript
                 var result = await session.Actions.CommitAsync(session.Target(target), actionId, value, "", cancellationToken);
                 return result.Completed ? "ok" : $"refused: {result.Error}";
             });
-            await RecordAsync($"commit {actionId} on {Mask(target)} = {JsonSerializer.Serialize(value, TranscriptText.StringOptions)}", answer, before);
+            await RecordAsync($"commit {actionId} on {Mask(target)} = {TranscriptText.Quoted(value)}", answer, before);
         }
 
         public async Task CommandAsync(string description, ICommand command)
@@ -529,7 +506,7 @@ internal static class DependencyGraphTranscript
             json.WriteStartObject();
             json.WriteString("do", step);
             json.WriteString("answer", Mask(answer));
-            TranscriptText.WriteChange(json, Mask(_text), Mask(after));
+            json.WriteChange(Mask(_text), Mask(after));
             json.WriteEndObject();
             _text = after;
         }
