@@ -1,5 +1,7 @@
 # Requirements Document
 
+**Amended 2026-10-12:** Requirement 8 added, as the approved design proposed (its card was approved in the dashboard on 2026-10-12). The Code Architecture requirement is widened for that requirement only, to name `EtAlii.Adp.Specification.Disl`.
+
 ## Introduction
 
 FBL 0.5 (etalii-adp/etalii.adp, pull request 115, merged 2026-10-10 as `42da8ee`) says what a slot reads from a YAML or JSON scalar: its **written text** for a text attribute, an id and a reference, and its typed value for every other attribute, with three new options on an attribute binding (`read`, `quoted`, `fallback`), two new CEL variables (`text`, `style`), one new finding (`fbl.unconverted-value`) and attribute values in a fixture's `read`.
@@ -104,11 +106,25 @@ One definition per tool, interpreted by a core in each host, needs the core to r
 3. The delivery report SHALL say, for each of the seven waiting specifications, which of its tasks this unblocks, and SHALL list anything in FBL 0.5 the implementation found unclear, as a candidate change for etalii.adp.
 4. WHEN the tasks document is written THEN every acceptance criterion here SHALL be claimed by a task, established by diffing the two sets, and two traces SHALL be read back to their artefacts.
 
+### Requirement 8: Attribute types from a DISL specification
+
+**User Story:** As a tool engineer whose tool reads a declared binding under a DISL specification, I want the types of its attributes to come from that specification, so that no module hands the library a list of its own.
+
+#### Acceptance Criteria
+
+1. `EtAlii.Adp.Specification.Disl` SHALL give, from a DISL specification, the function `FblOptions.AttributeType` takes, and, from a DISL specification and a binding, the set `FblOptions.TimeAttributes` takes, each of its entries keyed `rule.attribute`.
+2. A binding type SHALL be resolved through the specification's `persistence.typeMap`: to the element type its entry names, or to the diagram's own attributes where the entry names `diagram`. An attribute the entry renames SHALL be resolved to the attribute it is renamed to, and an attribute declared on a type the element type extends SHALL be found.
+3. An attribute the `typeMap` keeps for the host SHALL be given the type `string`, so that it reads its written text (FBL 0.5 section 5.2).
+4. A binding type the `typeMap` maps to `header` or to `unreadable` SHALL be given no type. A binding type the `typeMap` does not name SHALL be resolved as the `typeMap` resolves it everywhere else in that library, to the element type of its own name.
+5. It SHALL be delivered once, in `EtAlii.Adp.Specification.Disl`, which references the FBL library and is not referenced by it, and SHALL need nothing from its caller but the specification and, for the time attributes, the binding, so that a module, and each of the seven waiting specifications, supplies no list of attribute types or of time attributes of its own.
+6. `FblOptions.AttributeType` and `FblOptions.TimeAttributes` SHALL stay what the caller hands over: the library SHALL NOT apply the derivation by itself, and nothing SHALL call it within this specification, so that no caller changes and Requirement 6 holds for it as for every other step.
+7. The derivation SHALL be tested against a specification with `extends`, with a renamed attribute and with a host attribute, and each test SHALL be seen to fail first.
+
 ## Non-Functional Requirements
 
 ### Code Architecture and Modularity
 
-- The change is inside `EtAlii.Adp.Specification.Fbl` and its test project. No module name appears in the library. The house rules of `src/.editorconfig` and the three rules the gates refuse apply.
+- The change is inside `EtAlii.Adp.Specification.Fbl` and its test project and, for Requirement 8 only, inside `EtAlii.Adp.Specification.Disl` and its test project. No module name appears in either library. The house rules of `src/.editorconfig` and the three rules the gates refuse apply.
 
 ### Performance
 
