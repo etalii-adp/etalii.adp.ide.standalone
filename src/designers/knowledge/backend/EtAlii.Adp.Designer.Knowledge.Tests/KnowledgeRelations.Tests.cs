@@ -295,10 +295,12 @@ public sealed class KnowledgeRelationsTests : IDisposable
         var provinces = KnowledgeDocumentStore.Read(Provinces).Body!.Table;
         var nearby = provinces.Properties.Single(property => property.Name == "Cities nearby");
         Assert.Equal(("", false, "relation", "cities" + extension), (nearby.Counterpart, nearby.IsComputed, nearby.ValueType, nearby.TargetFile));
-        IReadOnlyList<string>? Held(string rowId) => provinces.Rows.Single(row => row.Id == rowId).Cells.FirstOrDefault(cell => cell.PropertyId == nearby.Id)?.Values;
         Assert.Equal(["r1"], Held("nh"));
         Assert.Equal(["r1", "r2"], Held("zh"));
         Assert.Null(Held("an"));
+        return;
+
+        IReadOnlyList<string>? Held(string rowId) => provinces.Rows.Single(row => row.Id == rowId).Cells.FirstOrDefault(cell => cell.PropertyId == nearby.Id)?.Values;
     }
 
     [Fact]
@@ -497,7 +499,6 @@ public sealed class KnowledgeRelationsTests : IDisposable
         await using var table = Open();
         await table.Edit(new TableGesture("addRelation", Values: ["Part of"], Settings: Settings(("target", KnowledgeRelations.Self), ("limit", "one"))));
         await table.Edit(new TableGesture("addRelation", Values: ["Twinned with"], Settings: Settings(("target", KnowledgeRelations.Self))));
-        IReadOnlyDictionary<string, string> Of(string name) => table.Session.Baseline().Columns.Single(column => column.Name == name).Settings;
 
         // Assert.
         Assert.Equal("true", Of("Part of")["nestable"]);
@@ -510,6 +511,9 @@ public sealed class KnowledgeRelationsTests : IDisposable
 
         // Assert.
         Assert.Equal("true", Of("Part of")["parent"]);
+        return;
+
+        IReadOnlyDictionary<string, string> Of(string name) => table.Session.Baseline().Columns.Single(column => column.Name == name).Settings;
     }
 
     [Fact]

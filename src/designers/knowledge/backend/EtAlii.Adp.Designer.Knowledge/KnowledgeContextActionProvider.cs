@@ -105,12 +105,13 @@ internal sealed class KnowledgeContextActionProvider(IHistoryStackStore historie
     {
         ArgumentNullException.ThrowIfNull(target);
         // What is typed in a dialog with a name field is the name; the file is checked against what the dialog offered.
-        if (actionId is ManyTwoWay or OneTwoWay)
-        {
-            return ValueTask.FromResult(value.Trim().Length > 0 ? ContextValidationResult.Accepted : ContextValidationResult.Rejected(OtherSideNeedsName));
-        }
-
-        return ValueTask.FromResult(IsKnowledgeFile(Chosen(target, value)) ? ContextValidationResult.Accepted : ContextValidationResult.Rejected("That file is not a table."));
+        return actionId is ManyTwoWay or OneTwoWay
+            ? ValueTask.FromResult(value.Trim().Length > 0
+                ? ContextValidationResult.Accepted
+                : ContextValidationResult.Rejected(OtherSideNeedsName))
+            : ValueTask.FromResult(IsKnowledgeFile(Chosen(target, value))
+                ? ContextValidationResult.Accepted
+                : ContextValidationResult.Rejected("That file is not a table."));
     }
 
     /// <summary>

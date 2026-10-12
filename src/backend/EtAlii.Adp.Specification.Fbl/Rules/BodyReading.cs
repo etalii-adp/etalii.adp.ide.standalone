@@ -194,14 +194,6 @@ internal sealed class BodyReading
         var children = new HashSet<string>(StringComparer.Ordinal);
         var anyChild = false;
 
-        void Step(string path)
-        {
-            var step = path.Split('/')[0];
-            var name = step.Split('[')[0];
-            if (name.Length == 0 || name == "*" || name.Contains('{', StringComparison.Ordinal)) anyChild = true;
-            else children.Add(name);
-        }
-
         var prefix = at.EndsWith('/') ? at : at + "/";
         foreach (var rule in Binding.AllRules)
         {
@@ -227,6 +219,14 @@ internal sealed class BodyReading
             keys.Add("$schema");
         }
         return (keys, children, anyChild);
+
+        void Step(string path)
+        {
+            var step = path.Split('/')[0];
+            var name = step.Split('[')[0];
+            if (name.Length == 0 || name == "*" || name.Contains('{', StringComparison.Ordinal)) anyChild = true;
+            else children.Add(name);
+        }
     }
 
     private BodyReading MakeUnreadable(int offset, string message)

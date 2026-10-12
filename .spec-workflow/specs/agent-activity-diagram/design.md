@@ -193,7 +193,7 @@ Backend, after the hype cycle graph's classes with an `Aad` prefix: `Diagram`, `
 
 Client: `register.ts`, `AadCanvas.tsx`, `aadBindings.ts`, ids, model and a stylesheet; `assertValidDiagramDefinition(compileNotation(SPEC, BINDINGS))`. No drawing of its own.
 
-`api/agent-activity-diagram.proto` carries an element's payload: its fields, its rows and its links. `pinned`, group states and the switch travel in the core contract, since any module may use them.
+`api/agent-activity-diagram.proto` carries an element's payload: its fields, its rows and its links. `pinned`, group states and the switch were to travel in the core contract, since any module may use them. **Ruled by the user in chat, 2026-10-11:** they travel in the module's payload (`AadElementPayload.pinned` and `.collapsed`, `AadViewPayload.show_archived`), which works without a change to the core contract, and task 7 is retired.
 
 ### Writing beside another writer
 
