@@ -57,8 +57,71 @@ internal static class KnowledgeRelations
     /// of the other table whose relation names it. Nothing of this is in the file, and nothing of it
     /// is ever written.
     /// </summary>
+    /// <summary>
+    /// Whether a relation shows both directions in its one property, as Notion's relation of a
+    /// database to itself does: a relation of the table to itself that has no other side of its own
+    /// and is not the parent relation, which has a direction by what it is.
+    /// </summary>
+    public static bool IsMutual(KnowledgeProperty property) =>
+        property is { ValueType: "relation", TargetFile: Self, Counterpart: "", IsParent: false, IsComputed: false };
+
+    /// <summary>The table with each mutual relation shown from both ends: a row also shows the rows that name it.</summary>
+    private static KnowledgeTable WithMutual(KnowledgeTable table)
+    {
+        var mutual = table.Properties.Where(IsMutual).Select(property => property.Id).ToHashSet(StringComparer.Ordinal);
+        if (mutual.Count == 0)
+        {
+            return table;
+        }
+
+        // Per property: the rows that name each row.
+        var namedBy = new Dictionary<(string PropertyId, string RowId), List<string>>();
+        foreach (var row in table.Rows)
+        {
+            foreach (var cell in row.Cells.Where(cell => cell.Key == "rows" && mutual.Contains(cell.PropertyId)))
+            {
+                foreach (var value in cell.Values.Where(value => value != row.Id))
+                {
+                    if (!namedBy.TryGetValue((cell.PropertyId, value), out var naming))
+                    {
+                        naming = [];
+                        namedBy[(cell.PropertyId, value)] = naming;
+                    }
+
+                    naming.Add(row.Id);
+                }
+            }
+        }
+
+        var rows = table.Rows.Select(row =>
+        {
+            var cells = row.Cells.ToList();
+            foreach (var propertyId in mutual)
+            {
+                if (!namedBy.TryGetValue((propertyId, row.Id), out var naming))
+                {
+                    continue;
+                }
+
+                var at = cells.FindIndex(cell => cell.PropertyId == propertyId && cell.Key == "rows");
+                if (at < 0)
+                {
+                    cells.Add(new KnowledgeCell(propertyId, naming, "rows"));
+                }
+                else
+                {
+                    cells[at] = cells[at] with { Values = [.. cells[at].Values, .. naming.Where(id => !cells[at].Values.Contains(id))] };
+                }
+            }
+
+            return row with { Cells = cells };
+        }).ToList();
+        return table with { Rows = rows };
+    }
+
     public static KnowledgeTable WithComputed(KnowledgeTable table, Func<KnowledgeProperty, KnowledgeTarget?> targetOf)
     {
+        table = WithMutual(table);
         var computed = table.Properties.Where(property => property is { ValueType: "relation", IsComputed: true, Counterpart.Length: > 0 }).ToList();
         if (computed.Count == 0)
         {

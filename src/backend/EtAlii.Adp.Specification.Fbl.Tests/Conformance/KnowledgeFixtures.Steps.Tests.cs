@@ -31,9 +31,9 @@ public class KnowledgeFixtureStepsTests
     public static TheoryData<string, int, int> StepsThatPass => new()
     {
         { "knowledge-kept", 11, 11 },
-        { "knowledge-yaml", 138, 138 },
-        { "knowledge-json", 138, 138 },
-        { "knowledge-xml", 138, 138 },
+        { "knowledge-yaml", 150, 150 },
+        { "knowledge-json", 150, 150 },
+        { "knowledge-xml", 150, 150 },
     };
 
     [Theory]

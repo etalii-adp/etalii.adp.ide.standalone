@@ -43,6 +43,30 @@ internal static class KnowledgeProject
     }
 
     /// <summary>
+    /// The tables a relation of one file can relate to: the file itself first, then the project's other
+    /// knowledge files that can be read, each as the file names it and under its table's name.
+    /// </summary>
+    public static List<(string Target, string Name)> Targets(string rootPath, string bodyPath)
+    {
+        List<(string Target, string Name)> targets = [(KnowledgeRelations.Self, "This table")];
+        var own = Path.GetFullPath(bodyPath);
+        if (rootPath.Length == 0)
+        {
+            return targets;
+        }
+
+        foreach (var path in Files(rootPath).Where(path => !string.Equals(Path.GetFullPath(path), own, StringComparison.OrdinalIgnoreCase)).Order(StringComparer.OrdinalIgnoreCase))
+        {
+            if (KnowledgeDocumentStore.Read(path).Body is { Unreadable.Length: 0 } body)
+            {
+                targets.Add((KnowledgeRelations.TargetName(own, path), body.Table.Name.Length > 0 ? body.Table.Name : Path.GetFileNameWithoutExtension(path)));
+            }
+        }
+
+        return targets;
+    }
+
+    /// <summary>
     /// How many rows of the project's other knowledge files relate to any of the given rows of one
     /// file: what deleting those rows would leave pointing at nothing.
     /// </summary>

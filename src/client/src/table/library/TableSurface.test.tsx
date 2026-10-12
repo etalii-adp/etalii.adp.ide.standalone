@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { applyTableEvent, EMPTY_TABLE, type TableColumn, type TableModel, type TableRow } from "./api/tableModel";
 import type { TableDefinition } from "./definition/tableDefinition";
 import { DEFAULT_MARGIN, DEFAULT_ROW_HEIGHT } from "./rows/windowing";
@@ -247,17 +247,13 @@ describe("TableSurface", () => {
     expect(screen.getAllByRole("gridcell").filter((cell) => cell.className.includes("table-cell-finding"))).toHaveLength(1);
   });
 
-  it("selects rows by their handles, says which, and deletes those selected together", async () => {
+  it("selects rows by their checkboxes, says which, and deletes those selected together", async () => {
     // Arrange.
     const onGesture = vi.fn(async () => "");
     const onSelectRows = vi.fn();
     const rows = [row("r1", { p1: "Amsterdam" }), row("r2", { p1: "Antwerp" }), row("r3", { p1: "Utrecht" })];
     render(<TableSurface model={tableOf(3, 0, rows)} definition={{ ...definition, rowActions: ["delete", "move"] }} onGesture={onGesture} onSelectRows={onSelectRows} />);
-    const press = (name: string) => {
-      const handle = screen.getByRole("checkbox", { name });
-      fireEvent(handle, pointer("pointerdown", { pointerId: 1, button: 0, clientX: 5, clientY: 5 }));
-      fireEvent(handle, pointer("pointerup", { pointerId: 1, button: 0, clientX: 5, clientY: 5 }));
-    };
+    const press = (name: string) => fireEvent.click(screen.getByRole("checkbox", { name }));
 
     // Act: two rows selected, one after the other.
     press("Select row 1");
@@ -290,15 +286,15 @@ describe("TableSurface", () => {
     const moving = { ...definition, rowActions: ["move"] as const };
     const { rerender } = render(<TableSurface model={tableOf(3, 0, rows)} definition={moving} onGesture={onGesture} />);
     const dragBy = (name: string, dy: number) => {
-      const handle = screen.getByRole("checkbox", { name });
+      const handle = screen.getByRole("img", { name });
       fireEvent(handle, pointer("pointerdown", { pointerId: 1, button: 0, clientX: 5, clientY: 5 }));
       fireEvent(handle, pointer("pointermove", { pointerId: 1, clientX: 5, clientY: 5 + dy }));
       fireEvent(handle, pointer("pointerup", { pointerId: 1, button: 0, clientX: 5, clientY: 5 + dy }));
     };
 
     // Act: the first row is let go two lines further down, and the last one line up.
-    dragBy("Select row 1", 2 * DEFAULT_ROW_HEIGHT);
-    dragBy("Select row 3", -DEFAULT_ROW_HEIGHT);
+    dragBy("Move row 1", 2 * DEFAULT_ROW_HEIGHT);
+    dragBy("Move row 3", -DEFAULT_ROW_HEIGHT);
 
     // Assert: one gesture each, naming the row it lands beside and on which side.
     expect(onGesture.mock.calls.map((call) => call[0])).toEqual([
@@ -309,7 +305,7 @@ describe("TableSurface", () => {
     // A sorted view has its own order: a drag there moves nothing.
     const sorted = tableOf(3, 0, rows);
     rerender(<TableSurface model={{ ...sorted, settings: { ...sorted.settings, sorts: [{ columnId: "p1", descending: false }] } }} definition={{ ...moving, rowActions: ["move", "delete"] }} onGesture={onGesture} />);
-    dragBy("Select row 1", 2 * DEFAULT_ROW_HEIGHT);
+    expect(screen.queryByRole("img", { name: "Move row 1" })).toBeNull();
     expect(onGesture).toHaveBeenCalledTimes(2);
   });
 
@@ -334,6 +330,99 @@ describe("TableSurface", () => {
     rerender(<TableSurface model={model} definition={relating} />);
     expect(within(bodyRows()[0]!).queryAllByRole("button")).toHaveLength(0);
     expect(within(bodyRows()[0]!).getAllByRole("gridcell")[1]!.textContent).toBe("Noord-Holland, zh");
+  });
+
+  it("selects every row by the checkbox in the header, and sets one property for all selected rows at once", async () => {
+    // Arrange: a table with a text and a number column, both of which can be edited.
+    const onGesture = vi.fn(async (_gesture: TableGesture) => "");
+    const editing: TableDefinition = { kinds: { text: { icon: "mdi-format-text", label: "Text", editor: "text" }, number: { icon: "mdi-pound", label: "Number", editor: "number" } }, rowActions: ["delete"] };
+    const rows = [row("r1", { p1: "Amsterdam" }), row("r2", { p1: "Antwerp" }), row("r3", { p1: "Utrecht" })];
+    render(<TableSurface model={tableOf(3, 0, rows)} definition={editing} onGesture={onGesture} />);
+    expect(screen.queryByRole("toolbar", { name: "Selected rows" })).toBeNull();
+
+    // Act: all of them, then one of them no longer.
+    fireEvent.click(screen.getByRole("checkbox", { name: "Select all rows" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: "Select row 2" }));
+
+    // Assert: the bar says how many, and offers the properties that can be edited.
+    const bar = screen.getByRole("toolbar", { name: "Selected rows" });
+    expect(bar.textContent).toContain("2 rows selected");
+    const choose = within(bar).getByRole("combobox", { name: "Edit a property of the selected rows" });
+    expect(within(choose).getAllByRole("option").map((option) => option.textContent)).toEqual(["Edit a property…", "Name", "Population"]);
+
+    // Act: the number is set for both.
+    fireEvent.change(choose, { target: { value: "p2" } });
+    const field = within(screen.getByRole("group", { name: "Population of the selected rows" })).getByRole("textbox");
+    fireEvent.change(field, { target: { value: "12" } });
+    await act(async () => {
+      fireEvent.keyDown(field, { key: "Enter" });
+    });
+
+    // Assert: one gesture, naming the property, the value and the rows.
+    expect(onGesture).toHaveBeenCalledTimes(1);
+    expect(onGesture).toHaveBeenCalledWith({ kind: "setCells", columnId: "p2", values: ["12"], settings: { rows: "r1,r3" } });
+
+    // Act: and deleted together from the bar.
+    fireEvent.click(within(bar).getByRole("button", { name: "Delete 2 rows" }));
+
+    // Assert.
+    expect(onGesture).toHaveBeenLastCalledWith({ kind: "deleteRows", values: ["r1", "r3"] });
+    expect(screen.queryByRole("toolbar", { name: "Selected rows" })).toBeNull();
+  });
+
+  it("shows under each column what it calculates, and gives a column a calculation from the list its type has", () => {
+    // Arrange: three columns that can calculate, the second of which does.
+    const columns = [
+      column("p1", "Name", "text", { isTitle: true, width: 200, settings: { calculations: "countAll,countValues" } }),
+      column("p2", "Population", "number", { width: 120, settings: { calculations: "countAll,sum,average", calculate: "sum", calculation: "1276643" } }),
+      column("p3", "Area", "number", { width: 90, settings: { calculations: "countAll,sum" } }),
+    ];
+    const structure = { title: "Cities", columns, views: [{ id: "v1", name: "All" }], settings: { ...EMPTY_TABLE.settings, viewId: "v1", settings: { freeze: "p2" } }, rowCount: 1, readOnlyReason: "" };
+    const model = applyTableEvent(applyTableEvent(EMPTY_TABLE, { kind: "baseline", structure, findings: [] }), { kind: "rows", first: 0, rows: [row("r1", { p1: "Amsterdam", p2: "931298" })], rowCount: 1 });
+    const onGesture = vi.fn(async (_gesture: TableGesture) => "");
+    render(<TableSurface model={model} definition={definition} onGesture={onGesture} />);
+
+    // Assert: the line is the grid's last row, and says the sum under the population and nothing under the others.
+    const line = screen.getByRole("row", { name: "Calculations" });
+    expect(line.getAttribute("aria-rowindex")).toBe("3");
+    expect(screen.getByRole("grid").getAttribute("aria-rowcount")).toBe("3");
+    expect(within(line).getByRole("button", { name: "Calculate Population" }).textContent).toBe("Sum1276643");
+    expect(within(line).getByRole("button", { name: "Calculate Name" }).textContent).toBe("Calculate");
+
+    // The columns up to the one the view freezes stay where they stand: the second after the first's width, the third not at all.
+    const cells = within(screen.getAllByRole("row")[1]!).getAllByRole("gridcell");
+    expect(cells.map((cell) => cell.classList.contains("table-cell-frozen"))).toEqual([false, true, false]);
+    expect(cells[1]!.style.left).toBe("200px");
+    expect(cells[1]!.classList.contains("table-cell-frozen-edge")).toBe(true);
+    expect(screen.getByRole("columnheader", { name: /Population/ }).style.left).toBe("200px");
+
+    // Act: the area's list is opened, and its sum chosen; then the population's calculation is taken away.
+    fireEvent.click(within(line).getByRole("button", { name: "Calculate Area" }));
+    expect(screen.getAllByRole("menuitem").map((item) => item.textContent)).toEqual(["None", "Count all", "Sum"]);
+    fireEvent.click(screen.getByRole("menuitem", { name: "Sum" }));
+    fireEvent.click(within(line).getByRole("button", { name: "Calculate Population" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "None" }));
+
+    // Assert.
+    expect(onGesture.mock.calls.map((call) => call[0])).toEqual([
+      { kind: "setColumnCalculation", columnId: "p3", settings: { calculate: "sum" } },
+      { kind: "setColumnCalculation", columnId: "p2", settings: { calculate: "" } },
+    ]);
+  });
+
+  it("has no line of calculations where no column can calculate, and shows one that cannot be changed in a table that cannot be edited", () => {
+    // Arrange and act: the plain table, then one of a file that cannot be edited whose column calculates.
+    const { unmount } = render(<TableSurface model={tableOf(1, 0, [row("r1", { p1: "Amsterdam" })])} definition={definition} onGesture={vi.fn(async () => "")} />);
+    expect(screen.queryByRole("row", { name: "Calculations" })).toBeNull();
+    unmount();
+    const columns = [column("p1", "Name", "text", { isTitle: true, settings: { calculations: "countAll", calculate: "countAll", calculation: "9" } })];
+    const structure = { title: "Cities", columns, views: [], settings: EMPTY_TABLE.settings, rowCount: 0, readOnlyReason: "The file is of a newer version." };
+    render(<TableSurface model={applyTableEvent(EMPTY_TABLE, { kind: "baseline", structure, findings: [] })} definition={definition} onGesture={vi.fn(async () => "")} />);
+
+    // Assert: said, with nothing to press.
+    const line = screen.getByRole("row", { name: "Calculations" });
+    expect(line.textContent).toBe("Count all9");
+    expect(within(line).queryByRole("button")).toBeNull();
   });
 
   it("says nothing about itself while all is well", () => {

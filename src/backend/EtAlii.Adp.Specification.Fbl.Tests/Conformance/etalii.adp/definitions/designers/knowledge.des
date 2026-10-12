@@ -62,7 +62,28 @@
       },
       "Limit": { "values": { "none": { "label": "No limit" }, "one": { "label": "1 row" } }, "doc": "How many rows a relation cell may hold." },
       "Direction": { "values": { "ascending": { "label": "Ascending" }, "descending": { "label": "Descending" } } },
-      "Match": { "values": { "all": { "label": "All" }, "any": { "label": "Any" } }, "doc": "Whether a filter's conditions must all hold or any one." }
+      "Match": { "values": { "all": { "label": "All" }, "any": { "label": "Any" } }, "doc": "Whether a filter's conditions must all hold or any one." },
+      "Calculation": {
+        "values": {
+          "countAll": { "label": "Count all" },
+          "countValues": { "label": "Count values" },
+          "countUnique": { "label": "Count unique values" },
+          "countEmpty": { "label": "Count empty" },
+          "countNotEmpty": { "label": "Count not empty" },
+          "percentEmpty": { "label": "Percent empty" },
+          "percentNotEmpty": { "label": "Percent not empty" },
+          "earliest": { "label": "Earliest date" },
+          "latest": { "label": "Latest date" },
+          "dateRange": { "label": "Date range" },
+          "sum": { "label": "Sum" },
+          "average": { "label": "Average" },
+          "median": { "label": "Median" },
+          "min": { "label": "Min" },
+          "max": { "label": "Max" },
+          "range": { "label": "Range" }
+        },
+        "doc": "What the line under a column shows of the rows in sight, as Notion's calculations do; the bindings write each as Notion's name, `countAll` as `count-all`. The counts and percentages suit every value type, earliest, latest and dateRange the dates, and sum to range the numbers (knowledge.md)."
+      }
     },
     "types": {
       "Property": {
@@ -113,7 +134,8 @@
             "type": "Property",
             "doc": "The property the rows are grouped by: a selection, a multiple selection, a checkbox, a relation, or the parent relation for nesting (Requirements 6.6, 6.7)."
           },
-          "hideEmptyGroups": { "type": "bool", "default": false }
+          "hideEmptyGroups": { "type": "bool", "default": false },
+          "freeze": { "type": "Property", "doc": "The columns up to and including this property's column stay in sight when the table scrolls sideways." }
         },
         "children": {
           "allowed": ["Column", "Sort", "Condition", "FilterGroup", "GroupSetting"],
@@ -134,9 +156,10 @@
           "property": { "type": "Property", "required": true },
           "visible": { "type": "bool", "default": true },
           "width": { "type": "int", "min": 32, "doc": "In pixels at 100% zoom." },
-          "wrap": { "type": "bool", "default": false }
+          "wrap": { "type": "bool", "default": false },
+          "calculate": { "type": "Calculation", "doc": "The calculation shown under the column; none when absent." }
         },
-        "doc": "A property's place, visibility, width and wrapping in one view. Listed columns come first, in their order; the rest follow in property order."
+        "doc": "A property's place, visibility, width, wrapping and calculation in one view. Listed columns come first, in their order; the rest follow in property order."
       },
       "Sort": {
         "attributes": { "property": { "type": "Property", "required": true }, "direction": { "type": "Direction", "default": "ascending" } },
@@ -340,6 +363,15 @@
         "severity": "warning",
         "rule": "self.groupBy != null",
         "message": "This view is grouped by a property the table does not have; it opens ungrouped."
+      },
+      {
+        "id": "freezeMissingProperty",
+        "code": "knowledge.view-names-missing-property",
+        "scope": ["View"],
+        "when": "has(self.freeze)",
+        "severity": "warning",
+        "rule": "self.freeze != null",
+        "message": "This view freezes columns up to a property the table does not have; it opens with none frozen."
       },
       {
         "id": "filterDepth",
@@ -558,9 +590,10 @@
           "as": "v",
           "do": [{ "forEach": "v.childrenOfType('GroupSetting')", "as": "g", "do": [{ "delete": "g" }] }, { "unset": ["groupBy"], "target": "v" }]
         },
+        { "forEach": "document.elementsOfType('View').filter(v, v.freeze == self)", "as": "v", "do": [{ "unset": ["freeze"], "target": "v" }] },
         { "delete": "self" }
       ],
-      "doc": "The binding's cascade removes its cells, columns, sorts and conditions (Requirement 3.8); a view grouped by it is ungrouped first."
+      "doc": "The binding's cascade removes its cells, columns, sorts and conditions (Requirement 3.8); a view grouped by it is ungrouped first, and a view frozen up to it freezes none."
     },
     "setTitleProperty": {
       "label": "Use as title",
@@ -820,7 +853,13 @@
         {
           "create": {
             "type": "'View'",
-            "attributes": { "name": "self.name + ' copy'", "filterMatch": "self.filterMatch", "groupBy": "self.groupBy", "hideEmptyGroups": "self.hideEmptyGroups" },
+            "attributes": {
+              "name": "self.name + ' copy'",
+              "filterMatch": "self.filterMatch",
+              "groupBy": "self.groupBy",
+              "hideEmptyGroups": "self.hideEmptyGroups",
+              "freeze": "self.freeze"
+            },
             "after": "self"
           },
           "as": "v"
@@ -834,7 +873,7 @@
                 "type": "'Column'",
                 "parent": "v",
                 "slot": "'columns'",
-                "attributes": { "property": "c.property", "visible": "c.visible", "width": "c.width", "wrap": "c.wrap" }
+                "attributes": { "property": "c.property", "visible": "c.visible", "width": "c.width", "wrap": "c.wrap", "calculate": "c.calculate" }
               }
             }
           ]
@@ -1019,7 +1058,39 @@
       ],
       "doc": "Dragging a column in one view. A property with no column setting gets one first, by `setColumn`."
     },
-    "resetColumn": { "label": "Reset", "for": ["Column"], "actions": [{ "delete": "self" }], "doc": "Back to the default: visible, default width, no wrap." },
+    "resetColumn": {
+      "label": "Reset",
+      "for": ["Column"],
+      "actions": [{ "delete": "self" }],
+      "doc": "Back to the default: visible, default width, no wrap, no calculation."
+    },
+    "calculate": {
+      "label": "Calculate",
+      "for": ["View"],
+      "params": { "property": { "type": "Property", "required": true }, "calculation": { "type": "Calculation", "required": true } },
+      "actions": [
+        { "let": { "column": "self.childrenOfType('Column').filter(c, c.property == p.property)" } },
+        {
+          "if": "column.size() == 0",
+          "then": [
+            {
+              "create": { "type": "'Column'", "parent": "self", "slot": "'columns'", "attributes": { "property": "p.property", "calculate": "p.calculation" } }
+            }
+          ],
+          "else": [{ "set": { "calculate": "p.calculation" }, "target": "column[0]" }]
+        }
+      ],
+      "doc": "Choosing a calculation from the line under a column: the view gets a column setting when it has none for the property."
+    },
+    "removeCalculation": { "label": "None", "for": ["Column"], "actions": [{ "unset": ["calculate"] }], "doc": "Choosing None under a column." },
+    "freeze": {
+      "label": "Freeze up to column",
+      "for": ["View"],
+      "params": { "property": { "type": "Property", "required": true } },
+      "actions": [{ "set": { "freeze": "p.property" } }],
+      "doc": "The columns up to and including the property stay in sight when the table scrolls sideways."
+    },
+    "unfreeze": { "label": "Unfreeze columns", "for": ["View"], "actions": [{ "unset": ["freeze"] }], "doc": "" },
     "addSort": {
       "label": "Sort",
       "for": ["View"],

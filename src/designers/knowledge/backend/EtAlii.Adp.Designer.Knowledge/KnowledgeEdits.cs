@@ -81,6 +81,7 @@ internal static partial class KnowledgeEdits
         return gesture.Kind switch
         {
             "setCell" => SetCell(table, gesture, newId, files),
+            "setCells" => SetCells(table, gesture, newId, files),
             "addRow" => AddRow(table, view, gesture, newId),
             "deleteRows" => DeleteRows(table, gesture),
 
@@ -92,6 +93,8 @@ internal static partial class KnowledgeEdits
 
             "addRelation" => AddRelation(table, view, gesture, newId, files),
             "setColumnParent" => SetParent(table, gesture),
+            "setRelationLimit" => SetLimit(table, gesture),
+            "setRelationOtherSide" => SetOtherSide(table, gesture, newId, files),
 
             "addOption" => AddOption(table, gesture, newId),
             "renameOption" => ForOption(table, gesture, (property, option) => RenameOption(property, option, gesture)),
@@ -112,6 +115,8 @@ internal static partial class KnowledgeEdits
             "hideColumn" => ShowColumn(table, view, gesture, visible: false),
             "showColumn" => ShowColumn(table, view, gesture, visible: true),
             "setColumnWrap" => WrapColumn(table, view, gesture),
+            "setColumnCalculation" => Calculate(table, view, gesture),
+            "freezeColumns" => Freeze(table, view, gesture),
 
             "addSort" => AddSort(table, view, gesture),
             "setSort" => SetSort(view, gesture),
@@ -128,7 +133,9 @@ internal static partial class KnowledgeEdits
                 ? KnowledgeEdit.Nothing
                 : KnowledgeEdit.Of(new ModelChange.Add("GroupSetting", null, Attributes(("key", gesture.TargetId)), view.Id, Slot: "hiddenGroups")),
             "showGroups" => new KnowledgeEdit([.. view.HiddenGroups.Select(key => (ModelChange)new ModelChange.Remove($"{view.Id}/hiddenGroups/{key}"))]),
+            "showGroup" => view.HiddenGroups.Contains(gesture.TargetId) ? KnowledgeEdit.Of(new ModelChange.Remove($"{view.Id}/hiddenGroups/{gesture.TargetId}")) : KnowledgeEdit.Nothing,
             "moveGroup" => MoveGroup(table, view, gesture),
+            "sortGroups" => SortGroups(table, view, gesture, files),
 
             "addFilter" => AddFilter(table, view, gesture, besideItsRule),
             "addFilterGroup" => AddFilterGroup(view, gesture, besideItsRule),
@@ -141,6 +148,40 @@ internal static partial class KnowledgeEdits
     }
 
     // ---- cells and rows ----
+
+    public const string OptionFirst = "Make the option in one row first; it can then be given to several.";
+
+    /// <summary>
+    /// One property set to the same value in several rows, as one step: what Notion does when the
+    /// property of several selected rows is edited. Any row that refuses the value refuses it for all.
+    /// </summary>
+    private static KnowledgeEdit SetCells(KnowledgeTable table, TableGesture gesture, Func<string> newId, KnowledgeSurroundings? files)
+    {
+        if (gesture.Settings.ContainsKey("newOption"))
+        {
+            return Refused(OptionFirst);
+        }
+
+        List<string> rows = [.. (gesture.Settings.GetValueOrDefault("rows") ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Distinct()];
+        if (rows.Count == 0)
+        {
+            return Refused(RowGone);
+        }
+
+        List<ModelChange> changes = [];
+        foreach (var rowId in rows)
+        {
+            var one = SetCell(table, new TableGesture("setCell", RowId: rowId, ColumnId: gesture.ColumnId, Values: gesture.Values), newId, files);
+            if (one.IsRefused)
+            {
+                return one;
+            }
+
+            changes.AddRange(one.Changes);
+        }
+
+        return new KnowledgeEdit(changes);
+    }
 
     private static KnowledgeEdit SetCell(KnowledgeTable table, TableGesture gesture, Func<string> newId, KnowledgeSurroundings? files)
     {
@@ -176,7 +217,7 @@ internal static partial class KnowledgeEdits
             var optionId = existing?.Id ?? newId();
             if (existing is null)
             {
-                changes.Add(new ModelChange.Add("Option", optionId, Attributes(("name", optionName.Trim())), property.Id));
+                changes.Add(new ModelChange.Add("Option", optionId, Attributes(("name", optionName.Trim()), ("colour", ColourFor(property, optionName.Trim()))), property.Id));
             }
 
             if (property.ValueType == "selection")
@@ -215,6 +256,11 @@ internal static partial class KnowledgeEdits
                 {
                     return Refused(ParentCycle);
                 }
+            }
+
+            if (KnowledgeRelations.IsMutual(property))
+            {
+                return SetMutual(table, row, property, values, changes);
             }
 
             var key = property.ValueType == "relation" ? "row" : "option";
@@ -256,6 +302,56 @@ internal static partial class KnowledgeEdits
             : cell.Key.Length > 0 && cell.Key != name && cell.Key is not ("options" or "rows")
                 ? Set(cellId, (cell.Key, null), (name, written))
                 : Set(cellId, (name, written)));
+        return new KnowledgeEdit(changes);
+    }
+
+    /// <summary>
+    /// Sets what a row is related to in a relation that shows both directions in one property.
+    /// A pair of rows is related when either names the other, so relating two rows writes one of
+    /// them - the one being edited - and unrelating them takes the pair out of whichever holds it.
+    /// </summary>
+    private static KnowledgeEdit SetMutual(KnowledgeTable table, KnowledgeRow row, KnowledgeProperty property, List<string> values, List<ModelChange> changes)
+    {
+        IReadOnlyList<string> Held(KnowledgeRow of) => of.Cells.FirstOrDefault(candidate => candidate.PropertyId == property.Id && candidate.Key == "rows")?.Values ?? [];
+
+        var own = Held(row);
+        List<string> stays = [.. own.Where(values.Contains)];
+        List<string> added = [];
+        foreach (var other in table.Rows.Where(other => other.Id != row.Id))
+        {
+            var names = Held(other).Contains(row.Id);
+            if (values.Contains(other.Id))
+            {
+                if (!names && !own.Contains(other.Id))
+                {
+                    added.Add(other.Id);
+                }
+            }
+            else if (names)
+            {
+                // The other end holds the pair: it goes there, with the cell when it was all the cell held.
+                changes.Add(new ModelChange.Remove(Held(other).Count == 1 ? CellId(other.Id, property.Id) : $"{CellId(other.Id, property.Id)}/{row.Id}"));
+            }
+        }
+
+        var cellId = CellId(row.Id, property.Id);
+        if (stays.Count + added.Count == 0)
+        {
+            if (own.Count > 0)
+            {
+                changes.Add(new ModelChange.Remove(cellId));
+            }
+
+            return new KnowledgeEdit(changes);
+        }
+
+        if (own.Count == 0)
+        {
+            changes.Add(new ModelChange.Add("Cell", null, Attributes(("property", property.Id)), row.Id));
+        }
+
+        changes.AddRange(own.Where(value => !values.Contains(value)).Select(value => (ModelChange)new ModelChange.Remove($"{cellId}/{value}")));
+        changes.AddRange(added.Select(value => (ModelChange)new ModelChange.Add("CellItem", null, Attributes(("row", value)), cellId)));
         return new KnowledgeEdit(changes);
     }
 
@@ -435,8 +531,15 @@ internal static partial class KnowledgeEdits
             return Refused($"'{type}' is not a type a property can have.");
         }
 
+        // A name given with the property is its name, refused like a rename's when another property has it; without one it takes its type's.
+        var given = (gesture.Values.FirstOrDefault() ?? "").Trim();
+        if (given.Length > 0 && table.Properties.Any(other => string.Equals(other.Name, given, StringComparison.OrdinalIgnoreCase)))
+        {
+            return Refused($"Another property is already called '{given}'.");
+        }
+
         var id = newId();
-        var name = UniqueName(table.Properties.Select(property => property.Name), label);
+        var name = given.Length > 0 ? given : UniqueName(table.Properties.Select(property => property.Name), label);
         return new KnowledgeEdit(Place(table, view, id, Attributes(("name", name), ("valueType", type)), gesture.TargetId, gesture.Settings.GetValueOrDefault("side") == "left"));
     }
 
@@ -535,6 +638,9 @@ internal static partial class KnowledgeEdits
             changes.Add(Set(view.Id, ("groupBy", null)));
         }
 
+        // A view frozen up to the property is no longer frozen: it has no column to be frozen up to.
+        changes.AddRange(table.Views.Where(view => view.Freeze == property.Id).Select(view => (ModelChange)Set(view.Id, ("freeze", null))));
+
         changes.Add(new ModelChange.Remove(property.Id));
 
         // One side of a two-way relation: what becomes of the other side is its author's choice, never a guess.
@@ -612,10 +718,17 @@ internal static partial class KnowledgeEdits
             ("targetFile", self ? KnowledgeRelations.Self : KnowledgeRelations.TargetName(files.BodyPath, target.Path)),
             ("limit", gesture.Settings.GetValueOrDefault("limit") == "one" ? "one" : null));
 
+        // A relation asked for as two-way without a name for its other side is called there after this table.
+        var left = gesture.Settings.GetValueOrDefault("side") == "left";
         var otherName = (gesture.Settings.GetValueOrDefault("counterpart") ?? "").Trim();
+        if (otherName.Length == 0 && Flag(gesture, "twoWay"))
+        {
+            otherName = OtherSideName(table);
+        }
+
         if (otherName.Length == 0)
         {
-            return new KnowledgeEdit(Place(table, view, id, attributes, gesture.TargetId, left: false));
+            return new KnowledgeEdit(Place(table, view, id, attributes, gesture.TargetId, left));
         }
 
         // The other side: in the target, computed, naming this one - and this one naming it.
@@ -631,7 +744,7 @@ internal static partial class KnowledgeEdits
                 ("targetFile", self ? KnowledgeRelations.Self : KnowledgeRelations.TargetName(target.Path, files.BodyPath)),
                 ("computed", true),
                 ("counterpart", id)));
-        var changes = Place(table, view, id, attributes, gesture.TargetId, left: false);
+        var changes = Place(table, view, id, attributes, gesture.TargetId, left);
         if (self)
         {
             changes.Add(other);
@@ -645,6 +758,106 @@ internal static partial class KnowledgeEdits
     /// Makes a relation the parent relation, or no longer that: the one a view nests its rows by.
     /// Only a relation to the table itself that holds one row can be it, and a table has one.
     /// </summary>
+    /// <summary>What the other side of a two-way relation is called until its author says otherwise: this table's name.</summary>
+    private static string OtherSideName(KnowledgeTable table) => table.Name.Length > 0 ? table.Name : "Relation";
+
+    public const string NotARelation = "That property is not a relation of this table's own.";
+    public const string ParentHoldsOne = "The parent relation holds one row.";
+
+    /// <summary>The relation of this table a gesture is about: one that holds its own values, not the shown side of another table's.</summary>
+    private static KnowledgeProperty? OwnRelation(KnowledgeTable table, string propertyId) =>
+        table.Properties.FirstOrDefault(candidate => candidate.Id == propertyId) is { ValueType: "relation", IsComputed: false } property ? property : null;
+
+    /// <summary>
+    /// How many rows a relation's cell may hold: one, or any number. Cells that hold more than a new
+    /// limit of one are kept as they are, and the table says so of each (<c>knowledge.relation-over-limit</c>).
+    /// </summary>
+    private static KnowledgeEdit SetLimit(KnowledgeTable table, TableGesture gesture)
+    {
+        if (table.Properties.All(candidate => candidate.Id != gesture.ColumnId))
+        {
+            return Refused(PropertyGone);
+        }
+
+        if (OwnRelation(table, gesture.ColumnId) is not { } property)
+        {
+            return Refused(NotARelation);
+        }
+
+        var limit = gesture.Settings.GetValueOrDefault("limit") == "one" ? "one" : "none";
+        if (limit == property.Limit)
+        {
+            return KnowledgeEdit.Nothing;
+        }
+
+        return property.IsParent ? Refused(ParentHoldsOne) : KnowledgeEdit.Of(Set(property.Id, ("limit", limit == "one" ? "one" : null)));
+    }
+
+    /// <summary>
+    /// Whether a relation is shown in the table it relates to as well: made two-way, its other side is
+    /// added there under the name given, or under this table's; made one-way, that side is removed.
+    /// The values are this side's own either way, so no row changes.
+    /// </summary>
+    private static KnowledgeEdit SetOtherSide(KnowledgeTable table, TableGesture gesture, Func<string> newId, KnowledgeSurroundings? files)
+    {
+        if (table.Properties.All(candidate => candidate.Id != gesture.ColumnId))
+        {
+            return Refused(PropertyGone);
+        }
+
+        if (OwnRelation(table, gesture.ColumnId) is not { } property)
+        {
+            return Refused(NotARelation);
+        }
+
+        var self = property.TargetFile is KnowledgeRelations.Self or "";
+        var target = self ? null : files?.TargetOf(property);
+        if (!self && target?.Table is null)
+        {
+            return Refused(target?.Problem is { Length: > 0 } problem ? problem : RelationNeedsTarget);
+        }
+
+        var related = self ? table : target!.Table!;
+        var other = related.Properties.FirstOrDefault(candidate => candidate.Id == property.Counterpart && property.Counterpart.Length > 0);
+        var twoWay = Flag(gesture, "twoWay");
+        if (twoWay == (other is not null))
+        {
+            return KnowledgeEdit.Nothing;
+        }
+
+        ModelChange mine;
+        ModelChange theirs;
+        if (other is not null)
+        {
+            mine = Set(property.Id, ("counterpart", null));
+            theirs = new ModelChange.Remove(other.Id);
+        }
+        else
+        {
+            var otherId = newId();
+            var asked = (gesture.Settings.GetValueOrDefault("counterpart") ?? "").Trim();
+            mine = Set(property.Id, ("counterpart", otherId));
+            theirs = new ModelChange.Add(
+                "Property",
+                otherId,
+                Attributes(
+                    ("name", UniqueName(related.Properties.Select(candidate => candidate.Name), asked.Length > 0 ? asked : OtherSideName(table))),
+                    ("valueType", "relation"),
+                    ("targetFile", self ? KnowledgeRelations.Self : KnowledgeRelations.TargetName(target!.Path, files!.BodyPath)),
+                    ("computed", true),
+                    ("counterpart", property.Id)));
+        }
+
+        return self ? new KnowledgeEdit([mine, theirs]) : new KnowledgeEdit([mine], Others: [new KnowledgeOtherFile(target!.Path, [theirs])]);
+    }
+
+    /// <summary>What an answer starts with when it is a choice to make and not a refusal: the things to choose from follow, as a list of ids and names.</summary>
+    private const string ChoosePrefix = "choose:";
+
+    /// <summary>The tables a new relation can relate to, as the answer to a relation asked for without one.</summary>
+    public static string ChooseTarget(IEnumerable<(string Target, string Name)> tables) =>
+        ChoosePrefix + System.Text.Json.JsonSerializer.Serialize(tables.Select(table => new { id = table.Target, label = table.Name }));
+
     private static KnowledgeEdit SetParent(KnowledgeTable table, TableGesture gesture)
     {
         if (table.Properties.FirstOrDefault(candidate => candidate.Id == gesture.ColumnId) is not { } property)
@@ -717,6 +930,20 @@ internal static partial class KnowledgeEdits
             : "";
     }
 
+    /// <summary>
+    /// The colour a new option starts with, as Notion gives one: any of the palette's colours, and
+    /// one the property's options do not have yet while there is one. Which one follows from the
+    /// option's name, so the same option made in two files, or made again after an undo, looks the same.
+    /// </summary>
+    internal static string ColourFor(KnowledgeProperty property, string name)
+    {
+        List<string> palette = [.. KnowledgeVocabulary.Colours.Where(colour => colour != "default")];
+        List<string> free = [.. palette.Where(colour => property.Options.All(option => option.Colour != colour))];
+        var pool = free.Count > 0 ? free : palette;
+        var sum = name.ToUpperInvariant().Aggregate(17, (total, letter) => unchecked((total * 31) + letter));
+        return pool[(int)((uint)sum % (uint)pool.Count)];
+    }
+
     private static KnowledgeEdit AddOption(KnowledgeTable table, TableGesture gesture, Func<string> newId)
     {
         if (table.Properties.FirstOrDefault(candidate => candidate.Id == gesture.ColumnId) is not { } property)
@@ -731,7 +958,7 @@ internal static partial class KnowledgeEdits
 
         return OptionName(property, null, gesture, out var name) is { Length: > 0 } refusal
             ? Refused(refusal)
-            : KnowledgeEdit.Of(new ModelChange.Add("Option", newId(), Attributes(("name", name)), property.Id));
+            : KnowledgeEdit.Of(new ModelChange.Add("Option", newId(), Attributes(("name", name), ("colour", ColourFor(property, name))), property.Id));
     }
 
     /// <summary>A rename is one place in the file: rows hold an option's id, never its name.</summary>
@@ -950,6 +1177,35 @@ internal static partial class KnowledgeEdits
     private static KnowledgeEdit WrapColumn(KnowledgeTable table, KnowledgeView view, TableGesture gesture) =>
         ColumnSetting(table, view, gesture.ColumnId, "wrap", Flag(gesture, "wrap") ? true : null);
 
+    /// <summary>What the line under a column shows: one of the calculations its property's type has, or none.</summary>
+    private static KnowledgeEdit Calculate(KnowledgeTable table, KnowledgeView view, TableGesture gesture)
+    {
+        var calculation = gesture.Settings.GetValueOrDefault("calculate") ?? "";
+        if (table.Properties.FirstOrDefault(candidate => candidate.Id == gesture.ColumnId) is not { } property)
+        {
+            return Refused(PropertyGone);
+        }
+
+        if (calculation.Length > 0 && !KnowledgeCalculations.For(property.ValueType).Contains(calculation))
+        {
+            return Refused(KnowledgeCalculations.IsKnown(calculation) ? $"'{property.Name}' is not of a type that calculation is for." : "That is not a calculation.");
+        }
+
+        var now = view.Columns.FirstOrDefault(column => column.PropertyId == property.Id)?.Calculate ?? "";
+        return now == calculation ? KnowledgeEdit.Nothing : ColumnSetting(table, view, property.Id, "calculate", calculation.Length > 0 ? calculation : null);
+    }
+
+    /// <summary>The columns up to and including one stay in sight when the table scrolls sideways; with no column named, none does.</summary>
+    private static KnowledgeEdit Freeze(KnowledgeTable table, KnowledgeView view, TableGesture gesture)
+    {
+        if (gesture.ColumnId.Length > 0 && table.Properties.All(property => property.Id != gesture.ColumnId))
+        {
+            return Refused(PropertyGone);
+        }
+
+        return gesture.ColumnId == view.Freeze ? KnowledgeEdit.Nothing : KnowledgeEdit.Of(Set(view.Id, ("freeze", gesture.ColumnId.Length > 0 ? gesture.ColumnId : null)));
+    }
+
     /// <summary>One setting of one column of one view: set on its entry, which is written only when there is something to say.</summary>
     private static KnowledgeEdit ColumnSetting(KnowledgeTable table, KnowledgeView view, string propertyId, string name, object? value)
     {
@@ -996,7 +1252,8 @@ internal static partial class KnowledgeEdits
                     ("name", UniqueName(table.Views.Select(candidate => candidate.Name), view.Name)),
                     ("filterMatch", view.Filter.Any ? "any" : null),
                     ("groupBy", view.GroupBy.Length > 0 ? view.GroupBy : null),
-                    ("hideEmptyGroups", view.HideEmptyGroups ? true : null)),
+                    ("hideEmptyGroups", view.HideEmptyGroups ? true : null),
+                    ("freeze", view.Freeze.Length > 0 ? view.Freeze : null)),
                 null,
                 at,
                 table.Views.Count,
@@ -1004,7 +1261,7 @@ internal static partial class KnowledgeEdits
             .. view.Columns.Select(column => (ModelChange)new ModelChange.Add(
                 "Column",
                 null,
-                Attributes(("property", column.PropertyId), ("visible", column.Visible ? null : false), ("width", column.Width > 0 ? (long)column.Width : null), ("wrap", column.Wrap ? true : null)),
+                Attributes(("property", column.PropertyId), ("visible", column.Visible ? null : false), ("width", column.Width > 0 ? (long)column.Width : null), ("wrap", column.Wrap ? true : null), ("calculate", column.Calculate.Length > 0 ? column.Calculate : null)),
                 id)),
             .. view.Sorts.Select(sort => (ModelChange)new ModelChange.Add("Sort", null, Attributes(("property", sort.PropertyId), ("direction", sort.Descending ? "descending" : null)), id)),
         ];
@@ -1106,44 +1363,94 @@ internal static partial class KnowledgeEdits
             .Concat(view.Collapsed.Select(key => $"{view.Id}/collapsed/{key}"))
             .Select(id => (ModelChange)new ModelChange.Remove(id));
 
+    private const string NotGrouped = "This view is not grouped.";
+
     /// <summary>
-    /// Moves a group one place up or down among the groups that are shown. The view's order names
-    /// every group from then on: those it did not name yet are added in the order they stood in.
+    /// Moves a group: one place up or down among the groups that are shown, or to a place among
+    /// all of them. The view's order names every group from then on: those it did not name yet are
+    /// added in the order they stood in.
     /// </summary>
     private static KnowledgeEdit MoveGroup(KnowledgeTable table, KnowledgeView view, TableGesture gesture)
     {
         if (table.Properties.FirstOrDefault(candidate => candidate.Id == view.GroupBy) is not { } grouped)
         {
-            return Refused("This view is not grouped.");
+            return Refused(NotGrouped);
         }
 
-        // The groups there are, as the view shows them: an option each, unticked and ticked, or a related row each; then the rows without a value.
-        List<string> natural = grouped.ValueType switch
-        {
-            "selection" or "multipleSelection" => [.. grouped.Options.Select(option => option.Id)],
-            "checkbox" => ["false", "true"],
-            _ => [.. table.Rows.SelectMany(row => row.Cells.Where(cell => cell.PropertyId == grouped.Id && cell.Key == KeyOf(grouped.ValueType)).SelectMany(cell => cell.Values)).Distinct()],
-        };
-        if (grouped.ValueType != "checkbox")
-        {
-            natural.Add(KnowledgeViewEngine.NoValue);
-        }
-
-        List<string> missing = [.. natural.Where(key => !view.GroupOrder.Contains(key))];
-        List<string> order = [.. view.GroupOrder, .. missing];
-        List<string> shown = [.. order.Where(key => natural.Contains(key) && !view.HiddenGroups.Contains(key))];
-        var at = shown.IndexOf(gesture.TargetId);
-        var beside = at + (gesture.Settings.GetValueOrDefault("direction") == "up" ? -1 : 1);
-        if (at < 0 || beside < 0 || beside >= shown.Count)
+        List<string> order = [.. KnowledgeGroups.Of(table, view, grouped).Select(group => group.Key)];
+        var from = order.IndexOf(gesture.TargetId);
+        if (from < 0)
         {
             return KnowledgeEdit.Nothing;
         }
 
-        return new KnowledgeEdit(
-        [
-            .. missing.Select(key => (ModelChange)new ModelChange.Add("GroupSetting", null, Attributes(("key", key)), view.Id, Slot: "groupOrder")),
-            .. MoveTo($"{view.Id}/groupOrder/{gesture.TargetId}", view.Id, [.. order.Select(key => $"{view.Id}/groupOrder/{key}")], order.IndexOf(shown[beside])).Changes,
-        ]);
+        int to;
+        if (gesture.Settings.TryGetValue("direction", out var direction))
+        {
+            // Beside the next group that is shown: a hidden one is stepped over.
+            List<string> shown = [.. order.Where(key => !view.HiddenGroups.Contains(key))];
+            var beside = shown.IndexOf(gesture.TargetId) + (direction == "up" ? -1 : 1);
+            if (beside < 0 || beside >= shown.Count)
+            {
+                return KnowledgeEdit.Nothing;
+            }
+
+            to = order.IndexOf(shown[beside]);
+        }
+        else
+        {
+            to = Math.Clamp(gesture.Index, 0, order.Count - 1);
+        }
+
+        List<string> desired = [.. order];
+        desired.RemoveAt(from);
+        desired.Insert(to, gesture.TargetId);
+        return Reordered(view, order, desired);
+    }
+
+    /// <summary>Puts the groups in the order of their names, forwards or backwards; the rows without a value stay last.</summary>
+    private static KnowledgeEdit SortGroups(KnowledgeTable table, KnowledgeView view, TableGesture gesture, KnowledgeSurroundings? files)
+    {
+        if (table.Properties.FirstOrDefault(candidate => candidate.Id == view.GroupBy) is not { } grouped)
+        {
+            return Refused(NotGrouped);
+        }
+
+        var target = grouped.ValueType == "relation" ? files?.TargetOf(grouped) : null;
+        var groups = KnowledgeGroups.Of(table, view, grouped, target is null ? null : id => KnowledgeRelations.LabelOf(target, id));
+        var named = groups.Where(group => group.Key != KnowledgeViewEngine.NoValue).OrderBy(group => group.Label, StringComparer.CurrentCultureIgnoreCase).Select(group => group.Key);
+        List<string> desired = [.. gesture.Settings.GetValueOrDefault("order") == "descending" ? named.Reverse() : named, .. groups.Where(group => group.Key == KnowledgeViewEngine.NoValue).Select(group => group.Key)];
+        return Reordered(view, [.. groups.Select(group => group.Key)], desired);
+    }
+
+    /// <summary>
+    /// The changes that give a view's groups an order: an entry for each group the view does not
+    /// name yet, in the place it stands in now, and then one move per group that is not where it
+    /// is wanted. Entries for groups that are no longer there stay behind the others.
+    /// </summary>
+    private static KnowledgeEdit Reordered(KnowledgeView view, List<string> order, List<string> desired)
+    {
+        string Id(string key) => $"{view.Id}/groupOrder/{key}";
+
+        // What the file holds, and will hold once the groups it does not name are added behind them.
+        List<string> named = [.. view.GroupOrder.Distinct()];
+        List<ModelChange> changes = [.. order.Where(key => !named.Contains(key)).Select(key => (ModelChange)new ModelChange.Add("GroupSetting", null, Attributes(("key", key)), view.Id, Slot: "groupOrder"))];
+        List<string> work = [.. named, .. order.Where(key => !named.Contains(key))];
+        List<string> wanted = [.. desired, .. work.Where(key => !desired.Contains(key))];
+        for (var place = 0; place < wanted.Count; place++)
+        {
+            var from = work.IndexOf(wanted[place]);
+            if (from == place)
+            {
+                continue;
+            }
+
+            changes.AddRange(MoveTo(Id(wanted[place]), view.Id, [.. work.Select(Id)], place).Changes);
+            work.RemoveAt(from);
+            work.Insert(place, wanted[place]);
+        }
+
+        return new KnowledgeEdit(changes);
     }
 
     private static KnowledgeEdit Collapse(KnowledgeView view, string key, bool collapsed)
