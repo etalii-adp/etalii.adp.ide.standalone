@@ -112,7 +112,7 @@ public class DatabricksFlowTests(HostFixture host) : IClassFixture<HostFixture>
         using var call = client.Open(
             new OpenDiagramRequest { ProjectId = session.ProjectId, WatchId = watchId, Path = DiagramFlow.PathOf("lakehouse.job.adp") },
             session.Headers, cancellationToken: cts.Token);
-        await DiagramFlow.ReadAddAsync(call.ResponseStream, cts.Token);
+        await call.ResponseStream.ReadAddAsync(cts.Token);
 
         // Act: drag the ingest task to an authored spot.
         var moved = await client.MoveElementAsync(

@@ -1,6 +1,5 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
-using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 using Microsoft.Extensions.DependencyInjection;
@@ -49,8 +48,7 @@ public class DatabricksContextPropertyProviderTests : IDisposable
         return destination;
     }
 
-    private ContextTarget Target(string bodyPath, string elementId) => new(
-        ContextScope.DiagramElement, bodyPath, IsContainer: false, SourceId: default, _root, default, elementId);
+    private ContextTarget Target(string bodyPath, string elementId) => ContextTarget.ForElement(bodyPath, elementId, _root);
 
     [Fact]
     public async Task ATask_ShowsItsGrid_WithThePlaceholderAndSimulationRows()

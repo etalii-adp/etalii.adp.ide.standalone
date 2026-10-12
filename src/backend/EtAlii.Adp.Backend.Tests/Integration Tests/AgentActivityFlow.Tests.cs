@@ -55,7 +55,7 @@ public class AgentActivityFlowTests(HostFixture host) : IClassFixture<HostFixtur
         var client = new DiagramService.DiagramServiceClient(session.Channel);
         using var cts = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken);
         using var call = client.Open(new OpenDiagramRequest { ProjectId = session.ProjectId, WatchId = ShortGuid.NewShortGuid(), Path = WorkPath() }, session.Headers, cancellationToken: cts.Token);
-        var baseline = await ReadAddAsync(call.ResponseStream, cts.Token);
+        var baseline = await call.ResponseStream.ReadAddAsync(cts.Token);
         Assert.Equal("progressing", Payload(baseline, "s-activity").Tasks.Single().Status);
 
         // Act: an agent finishes its task and says so in the file, as it would from any program.
@@ -67,7 +67,7 @@ public class AgentActivityFlowTests(HostFixture host) : IClassFixture<HostFixtur
         string? status = null;
         while (status != "finished")
         {
-            var update = await ReadAddAsync(call.ResponseStream, cts.Token);
+            var update = await call.ResponseStream.ReadAddAsync(cts.Token);
             Assert.True(update.Count > 0, "The stream ended, or the deadline passed, before the agent's change arrived.");
             if (update.Any(element => element.Id.Value == "s-activity"))
             {
@@ -90,7 +90,7 @@ public class AgentActivityFlowTests(HostFixture host) : IClassFixture<HostFixtur
         using var cts = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken);
         using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = session.ProjectId, WatchId = watchId }, session.Headers, cancellationToken: cts.Token);
         using var call = client.Open(new OpenDiagramRequest { ProjectId = session.ProjectId, WatchId = watchId, Path = WorkPath() }, session.Headers, cancellationToken: cts.Token);
-        await ReadAddAsync(call.ResponseStream, cts.Token);
+        await call.ResponseStream.ReadAddAsync(cts.Token);
         var selected = await contextClient.SelectAsync(new SelectRequest { ProjectId = session.ProjectId, WatchId = watchId, Selection = FileChain(entryId) }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal("", selected.Error);
 
@@ -137,8 +137,7 @@ public class AgentActivityFlowTests(HostFixture host) : IClassFixture<HostFixtur
 
     private static Path WorkPath()
     {
-        var path = new Path();
-        path.Segments.Add("work.adp");
+        var path = Path.Of("work.adp");
         return path;
     }
 
@@ -169,25 +168,4 @@ public class AgentActivityFlowTests(HostFixture host) : IClassFixture<HostFixtur
             },
             headers,
             cancellationToken: TestContext.Current.CancellationToken).ResponseAsync;
-
-    /// <summary>The next delta that adds or replaces elements; an empty list when none came before the deadline.</summary>
-    private static async Task<IReadOnlyList<Element>> ReadAddAsync(IAsyncStreamReader<Delta> stream, CancellationToken cancellationToken)
-    {
-        try
-        {
-            while (await stream.MoveNext(cancellationToken))
-            {
-                if (stream.Current.ActionCase == Delta.ActionOneofCase.Add)
-                {
-                    return [.. stream.Current.Add.Elements];
-                }
-            }
-        }
-        catch (RpcException exception) when (exception.StatusCode == StatusCode.Cancelled)
-        {
-            // Reading stopped at the deadline, which is how this helper ends when nothing came.
-        }
-
-        return [];
-    }
 }

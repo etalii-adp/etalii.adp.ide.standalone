@@ -1,6 +1,5 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
-using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.History;
 using Xunit;
 using IoPath = System.IO.Path;
@@ -52,7 +51,7 @@ public sealed class GhgTriggersAndNotesEditingTests : IDisposable
     private GhgModel Parse() => GhgParser.Parse(GhgBody.Parse(File.ReadAllText(Body)));
 
     private ContextTarget Target(string elementId) =>
-        new(ContextScope.DiagramElement, Body, IsContainer: false, SourceId: default, _folder, ShortGuid.NewShortGuid(), elementId);
+        ContextTarget.ForElement(Body, elementId, _folder, ShortGuid.NewShortGuid());
 
     public static TheoryData<string> EveryEdit =>
     [
@@ -270,7 +269,7 @@ public sealed class GhgTriggersAndNotesEditingTests : IDisposable
         Assert.Equal(("Text", "Dates are illustrative.\n\nSee the readme.", "note-1"), (input.Request.FieldLabel, input.Request.InitialValue, input.Request.InlineLabelElementId));
         return;
 
-        async Task<IReadOnlyList<string>> IdsOf(string id) => [.. (await actions.DiscoverAsync(Target(id), TestContext.Current.CancellationToken)).SelectMany(group => group.Actions).Select(action => action.Id)];
+        async Task<IReadOnlyList<string>> IdsOf(string id) => [.. (await actions.DiscoverAsync(Target(id), TestContext.Current.CancellationToken)).ActionIds()];
     }
 
     /// <summary>Requirement 7.5: a graph that could not be read offers nothing that edits, and every new command refuses.</summary>

@@ -26,21 +26,7 @@ public class ExamplesTests
     /// The examples folder, found by walking up from the test binary rather than by counting
     /// `..` segments - the count changes with the build layout, the folder name does not.
     /// </summary>
-    private static string ExamplesRoot { get; } = Locate();
-
-    private static string Locate()
-    {
-        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
-        {
-            var candidate = IoPath.Combine(directory.FullName, "examples");
-            if (Directory.Exists(candidate) && Directory.Exists(IoPath.Combine(directory.FullName, "backend")))
-            {
-                return candidate;
-            }
-        }
-
-        throw new DirectoryNotFoundException("The c4 module's examples folder could not be found from " + AppContext.BaseDirectory);
-    }
+    private static string ExamplesRoot { get; } = RepositoryPaths.Under("src", "diagrams", "c4", "examples");
 
     public static TheoryData<string> EveryProject() => ["reference", "industrial-plant"];
 

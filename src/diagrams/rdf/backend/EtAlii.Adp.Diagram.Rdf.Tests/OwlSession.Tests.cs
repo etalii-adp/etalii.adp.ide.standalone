@@ -61,12 +61,6 @@ public class OwlSessionTests : IDisposable
     private IDiagramSession OpenOwl(string bodyPath, string? registrationPath) =>
         Open(ServiceCollectionAddRdfExtension.OwlOrigin, bodyPath, registrationPath);
 
-    private static IReadOnlyList<DiagramElement> ElementsOf(IDiagramSession session)
-    {
-        var baseline = Assert.Single(session.Baseline());
-        return Assert.IsType<DiagramAddDelta>(baseline).Elements.ToList();
-    }
-
     [Fact]
     public async Task ARegisteredOntology_OpensWithTheVowlElements()
     {
@@ -75,7 +69,7 @@ public class OwlSessionTests : IDisposable
 
         // Act.
         await using var session = OpenOwl(body, WriteRegistration("owl-ontology.ttl"));
-        var elements = ElementsOf(session);
+        var elements = session.BaselineElements();
 
         // Assert: class nodes, axiom edges and expression nodes, in this reading's own types.
         Assert.Contains(elements, element => element is { Id: $"res:{Ns}Pizza", Type: OwlElementMapper.NodeType });
@@ -96,7 +90,7 @@ public class OwlSessionTests : IDisposable
 
         // Act.
         await using var session = OpenOwl(body, adp);
-        var elements = ElementsOf(session);
+        var elements = session.BaselineElements();
 
         // Assert: the class takes its authored place; the expression keeps its computed one -
         // its id does not survive an edit, the identity boundary's reason (Requirement 3.2).
@@ -164,8 +158,8 @@ public class OwlSessionTests : IDisposable
         var body = CopyFixture("owl-ontology.ttl");
         await using var rdfSession = Open(ServiceCollectionAddRdfExtension.RdfOrigin, body, null);
         await using var owlSession = OpenOwl(body, null);
-        _ = ElementsOf(rdfSession);
-        _ = ElementsOf(owlSession);
+        _ = rdfSession.BaselineElements();
+        _ = owlSession.BaselineElements();
 
         var rdfHeard = false;
         var owlHeard = false;

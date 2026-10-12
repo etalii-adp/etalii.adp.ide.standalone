@@ -58,13 +58,13 @@ public class ShippedExampleModelsTests(HostFixture host) : IClassFixture<HostFix
     {
         // Arrange.
         var services = host.Services;
-        var target = IoPath.Combine(RepositoryRoot(), "src", "fixtures", "cross-tier", "example-models");
+        var target = IoPath.Combine(RepositoryPaths.Root, "src", "fixtures", "cross-tier", "example-models");
         // Both trees a user can open: the showcase, and each module's own examples. A diagram the two
         // share is exported once, from the showcase, which is enumerated first.
         var sources = Directory.EnumerateDirectories(IoPath.Combine(DrawnConnections.ExamplesRoot(), "diagrams"))
             .Order(StringComparer.Ordinal)
             .Select(folder => (File: "showcase-" + IoPath.GetFileName(folder), Module: IoPath.GetFileName(folder), Folder: folder))
-            .Concat(Directory.EnumerateDirectories(IoPath.Combine(RepositoryRoot(), "src", "diagrams"))
+            .Concat(Directory.EnumerateDirectories(IoPath.Combine(RepositoryPaths.Root, "src", "diagrams"))
                 .Order(StringComparer.Ordinal)
                 .Where(module => Directory.Exists(IoPath.Combine(module, "examples")))
                 .Select(module => (File: "module-" + IoPath.GetFileName(module), Module: IoPath.GetFileName(module), Folder: IoPath.Combine(module, "examples"))))
@@ -198,7 +198,7 @@ public class ShippedExampleModelsTests(HostFixture host) : IClassFixture<HostFix
         try
         {
             // A copy, so opening a diagram can never write into the shipped examples.
-            DrawnConnections.CopyTree(source, workspace);
+            TestFolder.CopyTree(source, workspace);
             var router = services.GetRequiredService<DiagramFileRouter>();
             var factories = services.GetServices<IDiagramSessionFactory>().ToList();
             var opened = new List<Opened>();
@@ -243,17 +243,4 @@ public class ShippedExampleModelsTests(HostFixture host) : IClassFixture<HostFix
 
     private static List<DiagramElement> AddedBy(IReadOnlyList<DiagramDelta> deltas) =>
         [.. deltas.OfType<DiagramAddDelta>().SelectMany(add => add.Elements)];
-
-    private static string RepositoryRoot()
-    {
-        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
-        {
-            if (Directory.Exists(IoPath.Combine(directory.FullName, "src", "fixtures", "cross-tier")))
-            {
-                return directory.FullName;
-            }
-        }
-
-        throw new InvalidOperationException("The repository root (src/fixtures/cross-tier) was not found above the test binary.");
-    }
 }

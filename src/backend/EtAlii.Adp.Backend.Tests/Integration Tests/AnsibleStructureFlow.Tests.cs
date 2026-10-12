@@ -88,9 +88,7 @@ public class AnsibleStructureFlowTests : IClassFixture<HostFixture>
 
         using var cts = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken);
 
-        var path = new Path();
-        path.Segments.Add("infrastructure");
-        path.Segments.Add("infrastructure.adp");
+        var path = Path.Of("infrastructure", "infrastructure.adp");
         using var call = client.Open(
             new OpenDiagramRequest { ProjectId = session.ProjectId, WatchId = ShortGuid.NewShortGuid(), Path = path },
             session.Headers, cancellationToken: cts.Token);
@@ -153,9 +151,7 @@ public class AnsibleStructureFlowTests : IClassFixture<HostFixture>
             .Where(entry => !string.Equals(entry.Key, registration, StringComparison.OrdinalIgnoreCase))
             .ToDictionary(entry => entry.Key, entry => entry.Value, StringComparer.OrdinalIgnoreCase);
 
-        var path = new Path();
-        path.Segments.Add("infrastructure");
-        path.Segments.Add("infrastructure.adp");
+        var path = Path.Of("infrastructure", "infrastructure.adp");
         var watchId = ShortGuid.NewShortGuid();
 
         // The diagram must be open for the move to reach a session: the unary leg finds it
@@ -236,9 +232,7 @@ public class AnsibleStructureFlowTests : IClassFixture<HostFixture>
     {
         using var cts = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken);
 
-        var path = new Path();
-        path.Segments.Add("infrastructure");
-        path.Segments.Add("infrastructure.adp");
+        var path = Path.Of("infrastructure", "infrastructure.adp");
         using var call = client.Open(
             new OpenDiagramRequest { ProjectId = projectId, WatchId = ShortGuid.NewShortGuid(), Path = path },
             headers, cancellationToken: cts.Token);

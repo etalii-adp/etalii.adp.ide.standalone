@@ -26,19 +26,6 @@ public class AddDiagramFlowTests(HostFixture host) : IClassFixture<HostFixture>
         return stream.Current.Selection;
     }
 
-    private static async Task<ContextPrompt> ReadUntilPromptAsync(IAsyncStreamReader<ContextMessage> stream, CancellationToken cancellationToken)
-    {
-        while (await stream.MoveNext(cancellationToken))
-        {
-            if (stream.Current.MessageCase == ContextMessage.MessageOneofCase.Prompt)
-            {
-                return stream.Current.Prompt;
-            }
-        }
-
-        throw new InvalidOperationException("The stream ended before a prompt arrived.");
-    }
-
     //private string[] ProjectListing() => Directory.GetFileSystemEntries(_projectFolder, "*", SearchOption.AllDirectories).Order(StringComparer.Ordinal).ToArray();
 
     /// <summary>
@@ -91,7 +78,7 @@ public class AddDiagramFlowTests(HostFixture host) : IClassFixture<HostFixture>
 
         // Assert.
         Assert.Null(baseline.Selection);
-        var actions = baseline.Actions.SelectMany(group => group.Actions).ToList();
+        var actions = baseline.Actions.Actions();
         var add = Assert.Single(actions, action => action.Id == AddDiagramContextActionProvider.AddActionId);
         Assert.True(add.Available);
         Assert.Equal("Insert", add.Shortcut.Key);
@@ -129,7 +116,7 @@ public class AddDiagramFlowTests(HostFixture host) : IClassFixture<HostFixture>
         using var cts = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken);
         using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = session.ProjectId, WatchId = watchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         await ReadBaselineAsync(contextCall.ResponseStream, cts.Token);
-        var pendingPrompt = ReadUntilPromptAsync(contextCall.ResponseStream, cts.Token);
+        var pendingPrompt = contextCall.ResponseStream.ReadUntilPromptAsync(cts.Token);
 
         // Arrange, continued.
         // No source: the explorer's empty space.
@@ -186,14 +173,14 @@ public class AddDiagramFlowTests(HostFixture host) : IClassFixture<HostFixture>
         using var cts = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken);
         using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = session.ProjectId, WatchId = watchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         await ReadBaselineAsync(contextCall.ResponseStream, cts.Token);
-        var pendingPrompt = ReadUntilPromptAsync(contextCall.ResponseStream, cts.Token);
+        var pendingPrompt = contextCall.ResponseStream.ReadUntilPromptAsync(cts.Token);
 
         // Act and assert, step by step.
         var discovered = await contextClient.DiscoverActionsAsync(
             new DiscoverActionsRequest { ProjectId = session.ProjectId, WatchId = watchId, Source = new ContextSource { EntryId = folderId } },
             session.Headers,
             cancellationToken: TestContext.Current.CancellationToken);
-        var add = Assert.Single(discovered.Groups.SelectMany(g => g.Actions), a => a.Id == AddDiagramContextActionProvider.AddActionId);
+        var add = Assert.Single(discovered.Groups.Actions(), a => a.Id == AddDiagramContextActionProvider.AddActionId);
         Assert.True(add.Available);
 
         var executed = await contextClient.ExecuteActionAsync(
@@ -236,9 +223,9 @@ public class AddDiagramFlowTests(HostFixture host) : IClassFixture<HostFixture>
             cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert.
-        Assert.DoesNotContain(discovered.Groups.SelectMany(g => g.Actions), a => a.Id == AddDiagramContextActionProvider.AddActionId);
+        Assert.DoesNotContain(discovered.Groups.Actions(), a => a.Id == AddDiagramContextActionProvider.AddActionId);
         // ...while the file's own actions are still there.
-        Assert.Contains(discovered.Groups.SelectMany(g => g.Actions), a => a.Id == HierarchyContextActionProvider.RenameActionId);
+        Assert.Contains(discovered.Groups.Actions(), a => a.Id == HierarchyContextActionProvider.RenameActionId);
     }
 
     [Fact]
@@ -262,7 +249,7 @@ public class AddDiagramFlowTests(HostFixture host) : IClassFixture<HostFixture>
         using var cts = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken);
         using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = session.ProjectId, WatchId = watchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         await ReadBaselineAsync(contextCall.ResponseStream, cts.Token);
-        var pendingPrompt = ReadUntilPromptAsync(contextCall.ResponseStream, cts.Token);
+        var pendingPrompt = contextCall.ResponseStream.ReadUntilPromptAsync(cts.Token);
 
         // Arrange, continued.
         var interactionId = ShortGuid.NewShortGuid();

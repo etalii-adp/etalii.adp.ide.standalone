@@ -105,7 +105,7 @@ public partial class ElementTypesTests
     public void EveryCataloguedModule_IsADiagramFolder()
     {
         // Arrange: the fixture's keys are what the client looks its modules up by.
-        var diagrams = IoPath.Combine(RepositoryRoot(), "src", "diagrams");
+        var diagrams = IoPath.Combine(RepositoryPaths.Root, "src", "diagrams");
 
         // Act.
         var strangers = ElementTypeCatalog.Modules
@@ -156,20 +156,7 @@ public partial class ElementTypesTests
         json.WriteEndArray();
     }
 
-    private static string FixturePath() => IoPath.Combine(RepositoryRoot(), "src", "fixtures", "cross-tier", "element-types.json");
-
-    private static string RepositoryRoot()
-    {
-        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
-        {
-            if (Directory.Exists(IoPath.Combine(directory.FullName, "src", "fixtures", "cross-tier")))
-            {
-                return directory.FullName;
-            }
-        }
-
-        throw new InvalidOperationException("The repository root (src/fixtures/cross-tier) was not found above the test binary.");
-    }
+    private static string FixturePath() => IoPath.Combine(RepositoryPaths.Root, "src", "fixtures", "cross-tier", "element-types.json");
 
     /// <summary>The shape every module's element type takes on the wire: <c>vendor/type+kind</c>.</summary>
     [GeneratedRegex(@"^[a-z0-9-]+/[a-z0-9-]+\+[a-z0-9-]+$")]

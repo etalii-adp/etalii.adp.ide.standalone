@@ -288,7 +288,7 @@ public class AzurePipelineFlowTests(HostFixture host) : IClassFixture<HostFixtur
             headers,
             cancellationToken: TestContext.Current.CancellationToken);
 
-        return response.Groups.SelectMany(group => group.Actions).Select(action => action.Id).ToList();
+        return response.Groups.ActionIds();
     }
 
     /// <summary>
@@ -321,8 +321,7 @@ public class AzurePipelineFlowTests(HostFixture host) : IClassFixture<HostFixtur
 
     private static Path PathOf(string fileName)
     {
-        var path = new Path();
-        path.Segments.Add(fileName);
+        var path = Path.Of(fileName);
         return path;
     }
 }

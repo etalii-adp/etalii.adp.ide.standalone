@@ -77,7 +77,7 @@ public sealed class KnowledgeContextActionsTests : IDisposable
     }
 
     private static List<ContextActionDefinition> Leaves(IEnumerable<ContextActionGroupDefinition> groups) =>
-        [.. groups.SelectMany(group => group.Actions).SelectMany(action => action.Children is { Count: > 0 } children ? Leaves(children) : [action])];
+        [.. groups.Actions().SelectMany(action => action.Children is { Count: > 0 } children ? Leaves(children) : [action])];
 
     [Fact]
     public async Task AKnowledgeFile_OffersARelation_AsOneEntry_FromItsRegistrationAndFromItsDataFile()

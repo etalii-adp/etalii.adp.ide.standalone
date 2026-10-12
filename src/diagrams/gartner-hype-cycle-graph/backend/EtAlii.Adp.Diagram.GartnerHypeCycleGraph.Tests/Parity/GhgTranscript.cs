@@ -1,7 +1,6 @@
 using System.Text.Json;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
-using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.History;
 using Google.Protobuf.Reflection;
 using Path = System.IO.Path;
@@ -59,7 +58,7 @@ internal static class GhgTranscript
     private static readonly TypeRegistry _payloadTypes = TypeRegistry.FromFiles(GartnerHypecycleGraphReflection.Descriptor);
 
     /// <summary>The module's folder, <c>src/diagrams/gartner-hype-cycle-graph</c>.</summary>
-    public static string ModuleFolder { get; } = FindModuleFolder();
+    public static string ModuleFolder { get; } = RepositoryPaths.Under("src", "diagrams", "gartner-hype-cycle-graph");
 
     /// <summary>The checked-in transcript.</summary>
     public static string CheckedInPath => Path.Combine(ModuleFolder, "backend", TestProject, "Parity", FileName);
@@ -180,14 +179,14 @@ internal static class GhgTranscript
         var lines = new List<(string Target, int Menu, int MenuReadOnly, IReadOnlyList<string>? Rows, IReadOnlyList<string>? RowsReadOnly)>();
         foreach (var target in targets)
         {
-            var menu = MenuIndex(menus, TranscriptText.MenuLines(await session.Actions.DiscoverAsync(session.Target(target), cancellationToken)));
-            var menuReadOnly = MenuIndex(menus, TranscriptText.MenuLines(await session.ReadOnlyActions.DiscoverAsync(session.Target(target), cancellationToken)));
+            var menu = menus.IndexOfOrAdd((await session.Actions.DiscoverAsync(session.Target(target), cancellationToken)).MenuLines());
+            var menuReadOnly = menus.IndexOfOrAdd((await session.ReadOnlyActions.DiscoverAsync(session.Target(target), cancellationToken)).MenuLines());
             IReadOnlyList<string>? rows = null;
             IReadOnlyList<string>? rowsReadOnly = null;
             if (withRows.Contains(target, StringComparer.Ordinal))
             {
-                rows = [.. (await session.Properties.DescribeAsync(session.Target(target), cancellationToken)).Select(row => TranscriptText.RowLine(row, choices))];
-                rowsReadOnly = [.. (await session.ReadOnlyProperties.DescribeAsync(session.Target(target), cancellationToken)).Select(row => TranscriptText.RowLine(row, choices))];
+                rows = [.. (await session.Properties.DescribeAsync(session.Target(target), cancellationToken)).Select(row => row.RowLine(choices))];
+                rowsReadOnly = [.. (await session.ReadOnlyProperties.DescribeAsync(session.Target(target), cancellationToken)).Select(row => row.RowLine(choices))];
             }
 
             lines.Add((target, menu, menuReadOnly, rows, rowsReadOnly));
@@ -198,7 +197,7 @@ internal static class GhgTranscript
         json.WriteStartArray("menus");
         foreach (var menu in menus)
         {
-            WriteLines(json, menu);
+            json.WriteLines(menu);
         }
 
         json.WriteEndArray();
@@ -206,7 +205,7 @@ internal static class GhgTranscript
         json.WriteStartArray("choices");
         foreach (var list in choices)
         {
-            WriteLines(json, list);
+            json.WriteLines(list);
         }
 
         json.WriteEndArray();
@@ -214,7 +213,7 @@ internal static class GhgTranscript
         json.WriteStartArray("targets");
         foreach ((string target, int menu, int menuReadOnly, _, _) in lines)
         {
-            json.WriteStringValue($"{JsonSerializer.Serialize(target, TranscriptText.StringOptions)} => menu #{menu}, read-only #{menuReadOnly}");
+            json.WriteStringValue($"{TranscriptText.Quoted(target)} => menu #{menu}, read-only #{menuReadOnly}");
         }
 
         json.WriteEndArray();
@@ -230,7 +229,7 @@ internal static class GhgTranscript
             json.WriteStartObject();
             json.WriteString("target", target);
             json.WritePropertyName("rows");
-            WriteLines(json, rows);
+            json.WriteLines(rows);
             if (TranscriptText.ReadOnlyVariant(rows, rowsReadOnly!) is { } same)
             {
                 json.WriteString("rowsReadOnly", same);
@@ -238,7 +237,7 @@ internal static class GhgTranscript
             else
             {
                 json.WritePropertyName("rowsReadOnly");
-                WriteLines(json, rowsReadOnly!);
+                json.WriteLines(rowsReadOnly!);
             }
 
             json.WriteEndObject();
@@ -250,10 +249,10 @@ internal static class GhgTranscript
             new DiagramValidationRequest(TranscriptText.Decode(bytes), Path.GetFileNameWithoutExtension(session.Body), session.Folder, session.Body, null),
             cancellationToken);
         json.WritePropertyName("findings");
-        WriteLines(json, [.. problems.Select(problem => $"line {(problem.Location as DiagramProblemLineLocation)?.Number} | {problem.Severity} | {problem.RuleId} | {problem.Message}")]);
+        json.WriteLines([.. problems.Select(problem => $"line {(problem.Location as DiagramProblemLineLocation)?.Number} | {problem.Severity} | {problem.RuleId} | {problem.Message}")]);
 
         json.WritePropertyName("payloads");
-        WriteLines(json, [.. new GhgElementMapper().Visible(model, DiagramViewport.Unbounded)
+        json.WriteLines([.. new GhgElementMapper().Visible(model, DiagramViewport.Unbounded)
             .Select(element => TranscriptText.PayloadLine(element.Id, element.X, element.Y, element.Type, element.PayloadTypeUrl, element.Payload, _payloadTypes))]);
     }
 
@@ -386,42 +385,6 @@ internal static class GhgTranscript
 
     private static int ElementCount(GhgModel model) => model.Trends.Count + model.Triggers.Count + model.Notes.Count + model.Influences.Count;
 
-    private static int MenuIndex(List<IReadOnlyList<string>> menus, IReadOnlyList<string> menu)
-    {
-        var index = menus.FindIndex(known => known.SequenceEqual(menu, StringComparer.Ordinal));
-        if (index >= 0)
-        {
-            return index;
-        }
-
-        menus.Add(menu);
-        return menus.Count - 1;
-    }
-
-    private static void WriteLines(Utf8JsonWriter json, IEnumerable<string> lines)
-    {
-        json.WriteStartArray();
-        foreach (var line in lines)
-        {
-            json.WriteStringValue(line);
-        }
-
-        json.WriteEndArray();
-    }
-
-    private static string FindModuleFolder()
-    {
-        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
-        {
-            if (directory.Name == "gartner-hype-cycle-graph")
-            {
-                return directory.FullName;
-            }
-        }
-
-        throw new InvalidOperationException($"No gartner-hype-cycle-graph folder above {AppContext.BaseDirectory}. That is a failure, not a skip.");
-    }
-
     /// <summary>One document's store, history and providers, readable and read-only.</summary>
     private sealed class Session : IDisposable
     {
@@ -456,7 +419,7 @@ internal static class GhgTranscript
         public GhgModel Model => Store.GetOrLoad(Body).Model;
 
         public ContextTarget Target(string elementId) =>
-            new(ContextScope.DiagramElement, Body, IsContainer: false, SourceId: default, Folder, default, elementId, Diagram.HypeCycleGraph.Origin);
+            ContextTarget.ForElement(Body, elementId, Folder, origin: Diagram.HypeCycleGraph.Origin);
 
         public void Dispose() => History.Dispose();
     }
@@ -512,7 +475,7 @@ internal static class GhgTranscript
         public async Task SetAsync(string target, string propertyId, string value)
         {
             var result = await session.Properties.SetAsync(session.Target(target), propertyId, value, cancellationToken);
-            await RecordAsync($"set {Mask(target)} {propertyId} = {JsonSerializer.Serialize(value, TranscriptText.StringOptions)}", result.IsSuccess ? "ok" : $"refused: {result.Error}", mints: false);
+            await RecordAsync($"set {Mask(target)} {propertyId} = {TranscriptText.Quoted(value)}", result.IsSuccess ? "ok" : $"refused: {result.Error}", mints: false);
         }
 
         /// <summary>Runs an action; answers "confirm" when it asked for a confirmation, else the minted id of an add, else null.</summary>
@@ -528,7 +491,7 @@ internal static class GhgTranscript
         {
             var result = await session.Actions.CommitAsync(session.Target(target), actionId, value, "", cancellationToken);
             await RecordAsync(
-                $"commit {actionId} on {Mask(target)} = {JsonSerializer.Serialize(value, TranscriptText.StringOptions)}",
+                $"commit {actionId} on {Mask(target)} = {TranscriptText.Quoted(value)}",
                 result.Completed ? "ok" : $"refused: {result.Error}",
                 mints: false);
         }
@@ -556,7 +519,7 @@ internal static class GhgTranscript
             json.WriteStartObject();
             json.WriteString("do", step);
             json.WriteString("answer", Mask(answer));
-            TranscriptText.WriteChange(json, Mask(_text), Mask(after));
+            json.WriteChange(Mask(_text), Mask(after));
             json.WriteEndObject();
             _text = after;
             return minted;

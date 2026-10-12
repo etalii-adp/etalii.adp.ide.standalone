@@ -23,7 +23,7 @@ public sealed class SankeySessionTests : IDisposable
         await using var session = new SankeySession(_folder.Body, _store, new SankeyElementMapper());
 
         // Act.
-        var delivered = Delivered(session.Baseline());
+        var delivered = session.Baseline().AddedElements();
 
         // Assert.
         Assert.Equal(model.Nodes.Select(node => node.Id).Concat(model.Flows.Select(flow => flow.Id)), delivered.Select(element => element.Id));
@@ -38,7 +38,7 @@ public sealed class SankeySessionTests : IDisposable
         await using var session = new SankeySession(_folder.Body, _store, new SankeyElementMapper());
 
         // Act.
-        var delivered = Delivered(session.Baseline());
+        var delivered = session.Baseline().AddedElements();
 
         // Assert.
         var cafes = Node(delivered, "cafes");
@@ -53,7 +53,7 @@ public sealed class SankeySessionTests : IDisposable
     {
         // Arrange.
         await using var session = new SankeySession(_folder.Body, _store, new SankeyElementMapper());
-        var delivered = Delivered(session.Baseline());
+        var delivered = session.Baseline().AddedElements();
 
         // Act.
         var cost = Flow(delivered, "revenue->cost-of-revenue");
@@ -133,9 +133,6 @@ public sealed class SankeySessionTests : IDisposable
     }
 
     private SankeyModel Parse() => SankeyParser.Parse(LineDocument.Parse(File.ReadAllText(_folder.Body)));
-
-    private static IReadOnlyList<DiagramElement> Delivered(IReadOnlyList<DiagramDelta> baseline) =>
-        Assert.IsType<DiagramAddDelta>(Assert.Single(baseline)).Elements;
 
     private static SankeyNodePayload Node(IReadOnlyList<DiagramElement> delivered, string id) =>
         SankeyNodePayload.Parser.ParseFrom(delivered.Single(element => element.Id == id).Payload.ToArray());

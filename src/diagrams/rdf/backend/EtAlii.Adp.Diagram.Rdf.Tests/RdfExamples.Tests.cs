@@ -13,21 +13,7 @@ namespace EtAlii.Adp.Diagram.Rdf.Tests;
 public class RdfExamplesTests
 {
     /// <summary>The module's examples folder, found by walking up from the test binary.</summary>
-    private static string ExamplesFolder { get; } = Locate();
-
-    private static string Locate()
-    {
-        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
-        {
-            var candidate = IoPath.Combine(directory.FullName, "src", "diagrams", "rdf", "examples");
-            if (Directory.Exists(candidate))
-            {
-                return candidate;
-            }
-        }
-
-        throw new InvalidOperationException("src/diagrams/rdf/examples was not found above the test binary.");
-    }
+    private static string ExamplesFolder { get; } = RepositoryPaths.Under("src", "diagrams", "rdf", "examples");
 
     private static IEnumerable<string> Documents() =>
         Directory.EnumerateFiles(ExamplesFolder, "*.*", SearchOption.AllDirectories)

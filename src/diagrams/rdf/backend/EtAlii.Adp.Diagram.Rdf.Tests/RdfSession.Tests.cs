@@ -58,12 +58,6 @@ public class RdfSessionTests : IDisposable
         return factory.Open(ShortGuid.NewShortGuid(), _root, bodyPath, registrationPath);
     }
 
-    private static IReadOnlyList<DiagramElement> ElementsOf(IDiagramSession session)
-    {
-        var baseline = Assert.Single(session.Baseline());
-        return Assert.IsType<DiagramAddDelta>(baseline).Elements.ToList();
-    }
-
     [Fact]
     public async Task ARegisteredTurtleFile_OpensWithCardsAndEdges()
     {
@@ -72,7 +66,7 @@ public class RdfSessionTests : IDisposable
 
         // Act.
         await using var session = Open(body, WriteRegistration("constructs.ttl"));
-        var elements = ElementsOf(session);
+        var elements = session.BaselineElements();
 
         // Assert.
         Assert.Contains(elements, element => element is { Id: "res:http://example.org/alice", Type: RdfElementMapper.ResourceType });
@@ -90,7 +84,7 @@ public class RdfSessionTests : IDisposable
 
         // Act.
         await using var session = Open(body, adp);
-        var elements = ElementsOf(session);
+        var elements = session.BaselineElements();
 
         // Assert.
         var moved = elements.Single(element => element.Id == "res:http://example.org/a");
@@ -157,7 +151,7 @@ public class RdfSessionTests : IDisposable
         // It is invisible until somebody edits a document while zoomed in.
         var body = CopyFixture("constructs.ttl");
         await using var session = Open(body, WriteRegistration("constructs.ttl"));
-        var all = ElementsOf(session).Where(element => element.Type == RdfElementMapper.ResourceType).ToList();
+        var all = session.BaselineElements().Where(element => element.Type == RdfElementMapper.ResourceType).ToList();
         var first = all.OrderBy(element => element.Y).ThenBy(element => element.X).First();
 
         var narrowed = session.UpdateView(new DiagramViewport(first.X, first.Y, first.X + 1, first.Y + 1));
@@ -189,7 +183,7 @@ public class RdfSessionTests : IDisposable
         // both of its endpoints did, so a dangling edge cannot be produced.
         var body = CopyFixture("constructs.ttl");
         await using var session = Open(body, WriteRegistration("constructs.ttl"));
-        var drawn = ElementsOf(session);
+        var drawn = session.BaselineElements();
         var anchor = drawn.Where(element => element.Type == RdfElementMapper.ResourceType)
             .OrderBy(element => element.Y).ThenBy(element => element.X).First();
 
@@ -257,7 +251,7 @@ public class RdfSessionTests : IDisposable
         await File.WriteAllTextAsync(body, text.ToString(), TestContext.Current.CancellationToken);
 
         await using var session = Open(body, WriteRegistration("large.ttl"));
-        var atOpen = ElementsOf(session)
+        var atOpen = session.BaselineElements()
             .Where(element => element.Type == RdfElementMapper.ResourceType)
             .ToList();
 
@@ -305,7 +299,7 @@ public class RdfSessionTests : IDisposable
         await using var session = Open(body, WriteRegistration("large.ttl"));
 
         // Act.
-        var atOpen = ElementsOf(session);
+        var atOpen = session.BaselineElements();
         var narrowed = session.UpdateView(new DiagramViewport(0, 0, 300, 200));
 
         // Assert.
@@ -323,7 +317,7 @@ public class RdfSessionTests : IDisposable
         // whose UpdateView returns an empty list, which no client-side assertion can catch.
         var body = CopyFixture("constructs.ttl");
         await using var session = Open(body, WriteRegistration("constructs.ttl"));
-        var all = ElementsOf(session).Where(element => element.Type == RdfElementMapper.ResourceType).ToList();
+        var all = session.BaselineElements().Where(element => element.Type == RdfElementMapper.ResourceType).ToList();
         Assert.True(all.Count >= 2, "the fixture must hold at least two resources for this to mean anything");
 
         var first = all.OrderBy(element => element.Y).ThenBy(element => element.X).First();
@@ -353,7 +347,7 @@ public class RdfSessionTests : IDisposable
         // actually exercised - a widening only adds, and would pass against either order.
         var body = CopyFixture("constructs.ttl");
         await using var session = Open(body, WriteRegistration("constructs.ttl"));
-        var all = ElementsOf(session).Where(element => element.Type == RdfElementMapper.ResourceType).ToList();
+        var all = session.BaselineElements().Where(element => element.Type == RdfElementMapper.ResourceType).ToList();
         var first = all.OrderBy(element => element.Y).ThenBy(element => element.X).First();
         var last = all.OrderBy(element => element.Y).ThenBy(element => element.X).Last();
 
@@ -396,7 +390,7 @@ public class RdfSessionTests : IDisposable
         // every node would shift as the reader panned - the diagram would crawl.
         var body = CopyFixture("constructs.ttl");
         await using var session = Open(body, WriteRegistration("constructs.ttl"));
-        var atOpen = ElementsOf(session).ToDictionary(element => element.Id, element => (element.X, element.Y), StringComparer.Ordinal);
+        var atOpen = session.BaselineElements().ToDictionary(element => element.Id, element => (element.X, element.Y), StringComparer.Ordinal);
 
         // Act.
         session.UpdateView(new DiagramViewport(0, 0, 1, 1));

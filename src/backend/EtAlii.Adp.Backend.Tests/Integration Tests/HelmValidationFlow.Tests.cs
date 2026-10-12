@@ -101,7 +101,7 @@ public class HelmValidationFlowTests : IDisposable
         HelmFixture.RepairIn(_chart);
 
         // Assert.
-        var cleared = await WaitUntil(() => store.Get(_projectFolder).Problems.Count == 0);
+        var cleared = await Eventually.TrueAsync(() => store.Get(_projectFolder).Problems.Count == 0, TestContext.Current.CancellationToken, WaitLimit);
         Assert.True(cleared, "The problem was still there after the file that declared it was fixed.");
     }
 
@@ -124,8 +124,8 @@ public class HelmValidationFlowTests : IDisposable
         HelmFixture.CopyBrokenTo(_chart);
 
         // Assert.
-        var returned = await WaitUntil(() =>
-            store.Get(_projectFolder).Problems.Any(problem => problem.Problem.RuleId == HelmRules.MissingVersion));
+        var returned = await Eventually.TrueAsync(() =>
+            store.Get(_projectFolder).Problems.Any(problem => problem.Problem.RuleId == HelmRules.MissingVersion), TestContext.Current.CancellationToken, WaitLimit);
         Assert.True(returned, "The problem never came back after the file was broken again.");
     }
 
@@ -146,19 +146,5 @@ public class HelmValidationFlowTests : IDisposable
             var bytesToCheck = await File.ReadAllBytesAsync(path, TestContext.Current.CancellationToken);
             Assert.True(bytes.SequenceEqual(bytesToCheck), $"{path} changed during validation.");
         }
-    }
-
-    private static async Task<bool> WaitUntil(Func<bool> condition)
-    {
-        var start = DateTime.UtcNow;
-        while (DateTime.UtcNow - start < WaitLimit)
-        {
-            if (condition())
-            {
-                return true;
-            }
-            await Task.Delay(50, TestContext.Current.CancellationToken);
-        }
-        return false;
     }
 }

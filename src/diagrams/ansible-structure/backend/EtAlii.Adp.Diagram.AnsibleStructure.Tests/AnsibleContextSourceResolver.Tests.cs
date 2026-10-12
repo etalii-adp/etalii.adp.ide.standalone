@@ -23,7 +23,7 @@ public class AnsibleContextSourceResolverTests : IDisposable
     public AnsibleContextSourceResolverTests()
     {
         _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        CopyTree(IoPath.Combine("Fixtures", "infrastructure"), _root);
+        TestFolder.CopyTree(IoPath.Combine("Fixtures", "infrastructure"), _root);
         _registration = IoPath.Combine(_root, "infrastructure.adp");
         File.WriteAllText(_registration, "ansible/structure\n");
 
@@ -203,18 +203,5 @@ public class AnsibleContextSourceResolverTests : IDisposable
             ShortGuid.NewShortGuid(), _root,
             new ContextSource { ElementId = new ElementId { Value = elementId } },
             clientPath ?? [], parent, TestContext.Current.CancellationToken);
-    }
-
-    private static void CopyTree(string source, string destination)
-    {
-        Directory.CreateDirectory(destination);
-        foreach (var folder in Directory.GetDirectories(source, "*", SearchOption.AllDirectories))
-        {
-            Directory.CreateDirectory(IoPath.Combine(destination, IoPath.GetRelativePath(source, folder)));
-        }
-        foreach (var file in Directory.GetFiles(source, "*", SearchOption.AllDirectories))
-        {
-            File.Copy(file, IoPath.Combine(destination, IoPath.GetRelativePath(source, file)));
-        }
     }
 }

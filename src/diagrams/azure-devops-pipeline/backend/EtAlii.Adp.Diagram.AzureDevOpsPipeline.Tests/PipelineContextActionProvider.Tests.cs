@@ -77,12 +77,12 @@ public class PipelineContextActionProviderTests : IDisposable
     }
 
     private ContextTarget Target(string path, string elementId) =>
-        new(ContextScope.DiagramElement, path, IsContainer: false, SourceId: default, _workspace, ShortGuid.NewShortGuid(), elementId);
+        ContextTarget.ForElement(path, elementId, _workspace, ShortGuid.NewShortGuid());
 
     private async Task<IReadOnlyList<string>> ActionsOn(string path, string elementId)
     {
         var groups = await _provider.DiscoverAsync(Target(path, elementId), CancellationToken.None);
-        return groups.SelectMany(group => group.Actions).Select(action => action.Id).ToList();
+        return groups.ActionIds();
     }
 
     private async Task<ContextCommitResult> CommitAsync(string path, string elementId, string actionId, string value = "") =>
@@ -161,7 +161,7 @@ public class PipelineContextActionProviderTests : IDisposable
 
         // Act.
         var groups = await _provider.DiscoverAsync(Target(path, "Build"), CancellationToken.None);
-        var rename = groups.SelectMany(group => group.Actions)
+        var rename = groups.Actions()
             .Single(action => action.Id == PipelineContextActionProvider.RenameActionId);
 
         // Assert.
@@ -582,7 +582,7 @@ public class PipelineContextActionProviderTests : IDisposable
     private async Task<string> LabelOf(string path, string elementId, string actionId)
     {
         var groups = await _provider.DiscoverAsync(Target(path, elementId), CancellationToken.None);
-        return groups.SelectMany(group => group.Actions).Single(action => action.Id == actionId).Label;
+        return groups.Actions().Single(action => action.Id == actionId).Label;
     }
 
     /// <summary>The id the canvas gives the Build -> Test arrow, from the module's own graph.</summary>

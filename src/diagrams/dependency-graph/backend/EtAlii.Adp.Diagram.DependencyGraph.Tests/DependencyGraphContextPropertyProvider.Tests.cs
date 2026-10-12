@@ -1,5 +1,4 @@
 using EtAlii.Adp.Context;
-using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.History;
 using Xunit;
 using IoPath = System.IO.Path;
@@ -61,7 +60,7 @@ public class DependencyGraphContextPropertyProviderTests : IDisposable
     }
 
     private ContextTarget Target(string path, string elementId) =>
-        new(ContextScope.DiagramElement, path, IsContainer: false, SourceId: default, _workspace, ShortGuid.NewShortGuid(), elementId);
+        ContextTarget.ForElement(path, elementId, _workspace, ShortGuid.NewShortGuid());
 
     [Fact]
     public async Task ANode_ContributesLabelXAndRow_AndNothingElse()

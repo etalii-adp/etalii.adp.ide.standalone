@@ -83,7 +83,7 @@ public class RdfFlowTests(HostFixture host) : IClassFixture<HostFixture>
         using var call = client.Open(
             new OpenDiagramRequest { ProjectId = session.ProjectId, WatchId = watchId, Path = DiagramFlow.PathOf("curie.adp") },
             session.Headers, cancellationToken: cts.Token);
-        await DiagramFlow.ReadAddAsync(call.ResponseStream, cts.Token);
+        await call.ResponseStream.ReadAddAsync(cts.Token);
 
         // Act: drag the card to an authored spot.
         var moved = await client.MoveElementAsync(

@@ -47,7 +47,7 @@ public class UndoRedoFlowTests(HostFixture host) : IClassFixture<HostFixture>
         // Act and assert, step by step.
         // Rename original.txt -> renamed.txt through the context action, then let the first
         // (forward) rename change drain off the hierarchy stream.
-        var pendingForward = ReadUntilChangeAsync(hierarchyCall.ResponseStream, HierarchyChange.ChangeOneofCase.Renamed, cts.Token);
+        var pendingForward = hierarchyCall.ResponseStream.ReadUntilChangeAsync(HierarchyChange.ChangeOneofCase.Renamed, cts.Token);
         await RenameViaContextAsync(contextClient, session.ProjectId, watchId, session.Headers, entryId, contextCall.ResponseStream, cts.Token, "renamed.txt");
         await pendingForward;
         Assert.True(File.Exists(IoPath.Combine(_projectFolder, "renamed.txt")));
@@ -57,7 +57,7 @@ public class UndoRedoFlowTests(HostFixture host) : IClassFixture<HostFixture>
         Assert.True(UndoOf(afterRename).Available);
 
         // Undo through the project-scoped action, with no prompt: it completes at once.
-        var pendingReverse = ReadUntilChangeAsync(hierarchyCall.ResponseStream, HierarchyChange.ChangeOneofCase.Renamed, cts.Token);
+        var pendingReverse = hierarchyCall.ResponseStream.ReadUntilChangeAsync(HierarchyChange.ChangeOneofCase.Renamed, cts.Token);
         var undone = await ExecuteProjectActionAsync(contextClient, session.ProjectId, watchId, session.Headers, HistoryContextActionProvider.UndoActionId);
         Assert.True(undone.Accepted, undone.Error);
 
@@ -201,7 +201,7 @@ public class UndoRedoFlowTests(HostFixture host) : IClassFixture<HostFixture>
         ShortGuid entryId, IAsyncStreamReader<ContextMessage> contextStream, CancellationToken cancellationToken, string newName)
     {
         var interactionId = ShortGuid.NewShortGuid();
-        var pendingPrompt = ReadUntilPromptAsync(contextStream, cancellationToken);
+        var pendingPrompt = contextStream.ReadUntilPromptAsync(cancellationToken);
 
         var executed = await contextClient.ExecuteActionAsync(
             new ExecuteActionRequest
@@ -230,7 +230,7 @@ public class UndoRedoFlowTests(HostFixture host) : IClassFixture<HostFixture>
         ShortGuid entryId, IAsyncStreamReader<ContextMessage> contextStream, CancellationToken cancellationToken)
     {
         var interactionId = ShortGuid.NewShortGuid();
-        var pendingPrompt = ReadUntilPromptAsync(contextStream, cancellationToken);
+        var pendingPrompt = contextStream.ReadUntilPromptAsync(cancellationToken);
 
         var executed = await contextClient.ExecuteActionAsync(
             new ExecuteActionRequest
@@ -267,19 +267,6 @@ public class UndoRedoFlowTests(HostFixture host) : IClassFixture<HostFixture>
             headers,
             cancellationToken: TestContext.Current.CancellationToken).ResponseAsync;
 
-    private static async Task<ContextPrompt> ReadUntilPromptAsync(IAsyncStreamReader<ContextMessage> stream, CancellationToken cancellationToken)
-    {
-        while (await stream.MoveNext(cancellationToken))
-        {
-            if (stream.Current.MessageCase == ContextMessage.MessageOneofCase.Prompt)
-            {
-                return stream.Current.Prompt;
-            }
-        }
-
-        throw new InvalidOperationException("The stream ended before a prompt arrived.");
-    }
-
     /// <summary>
     /// Reads project-actions messages until one matches the wanted Undo availability (or the
     /// first, when none is asked for) - so a test can wait past the baseline for the push a
@@ -305,23 +292,8 @@ public class UndoRedoFlowTests(HostFixture host) : IClassFixture<HostFixture>
         throw new InvalidOperationException("The stream ended before the expected project-actions message arrived.");
     }
 
-    private static async Task<HierarchyChange> ReadUntilChangeAsync(
-        IAsyncStreamReader<HierarchyMessage> stream, HierarchyChange.ChangeOneofCase wanted, CancellationToken cancellationToken)
-    {
-        while (await stream.MoveNext(cancellationToken))
-        {
-            var message = stream.Current;
-            if (message.MessageCase == HierarchyMessage.MessageOneofCase.Change && message.Change.ChangeCase == wanted)
-            {
-                return message.Change;
-            }
-        }
-
-        throw new InvalidOperationException($"The stream ended before a {wanted} change arrived.");
-    }
-
     private static ContextAction UndoOf(ContextProjectActions actions) =>
-        actions.Actions.SelectMany(group => group.Actions).Single(action => action.Id == HistoryContextActionProvider.UndoActionId);
+        actions.Actions.Actions().Single(action => action.Id == HistoryContextActionProvider.UndoActionId);
 
     private static async Task WaitUntilAsync(Func<bool> condition)
     {

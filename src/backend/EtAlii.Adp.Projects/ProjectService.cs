@@ -66,13 +66,11 @@ public sealed class ProjectService : Wire.ProjectService.ProjectServiceBase
 
     private static Project ToProto(ProjectRecord record)
     {
-        var path = new Path();
-        path.Segments.AddRange(record.Path.Segments);
         return new Project
         {
             Id = record.Id,
             Name = record.Name,
-            Path = path,
+            Path = Path.Of(record.Path.Segments),
             DisplayPath = PathTruncator.Truncate(record.Path.Segments)
         };
     }

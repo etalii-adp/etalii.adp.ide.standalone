@@ -1,6 +1,5 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
-using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 using Microsoft.Extensions.DependencyInjection;
@@ -61,8 +60,7 @@ public class SkosActionsTests : IDisposable
         return path;
     }
 
-    private ContextTarget Target(string bodyPath, string elementId) => new(
-        ContextScope.DiagramElement, bodyPath, IsContainer: false, SourceId: default, _root, default, elementId);
+    private ContextTarget Target(string bodyPath, string elementId) => ContextTarget.ForElement(bodyPath, elementId, _root);
 
     private const string Tea = "res:http://example.org/tea";
     private const string Milk = "res:http://example.org/milk";
@@ -76,7 +74,7 @@ public class SkosActionsTests : IDisposable
 
         // Act.
         var groups = await _actions.DiscoverAsync(Target(body, gesture), TestContext.Current.CancellationToken);
-        var ids = groups.SelectMany(group => group.Actions).Select(action => action.Id).ToList();
+        var ids = groups.ActionIds();
 
         // Assert: skos first, the family's generic predicate dialog still beneath.
         Assert.Equal(SkosActions.FileUnderActionId, ids[0]);
@@ -145,7 +143,7 @@ public class SkosActionsTests : IDisposable
 
         // Act: discovery names both directions; execute asks; the confirmed leg commits.
         var groups = await _actions.DiscoverAsync(Target(body, edgeId), TestContext.Current.CancellationToken);
-        Assert.Contains("both directions", groups.SelectMany(g => g.Actions).Single().Label, StringComparison.Ordinal);
+        Assert.Contains("both directions", groups.Actions().Single().Label, StringComparison.Ordinal);
         var asked = await _actions.ExecuteAsync(Target(body, edgeId), SkosActions.DisconnectActionId, TestContext.Current.CancellationToken);
         Assert.IsType<ContextExecutionRequiresConfirmation>(asked);
         var committed = await _actions.CommitAsync(Target(body, edgeId), SkosActions.DisconnectActionId, "", "", TestContext.Current.CancellationToken);
@@ -169,7 +167,7 @@ public class SkosActionsTests : IDisposable
 
         // Act & assert: offered where the file asserts a scheme.
         var groups = await _actions.DiscoverAsync(Target(body, placement), TestContext.Current.CancellationToken);
-        Assert.Contains(SkosActions.AddConceptActionId, groups.SelectMany(g => g.Actions).Select(a => a.Id));
+        Assert.Contains(SkosActions.AddConceptActionId, groups.ActionIds());
 
         // A colliding label is refused before any splice (the minted IRI already names ex:tea).
         var collision = await _actions.ValidateAsync(Target(body, placement), SkosActions.AddConceptActionId, "tea", TestContext.Current.CancellationToken);

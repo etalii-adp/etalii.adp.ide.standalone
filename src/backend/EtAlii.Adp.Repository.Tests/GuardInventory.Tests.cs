@@ -41,21 +41,7 @@ public partial class GuardInventoryTests
     /// </summary>
     private const int KnownFloor = 25;
 
-    private static string RepositoryRoot { get; } = Locate();
-
-    private static string Locate()
-    {
-        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
-        {
-            if (Directory.Exists(IoPath.Combine(directory.FullName, "src", "diagrams")) &&
-                Directory.Exists(IoPath.Combine(directory.FullName, "docs")))
-            {
-                return directory.FullName;
-            }
-        }
-
-        throw new InvalidOperationException("The repository root (src/diagrams beside docs) was not found above the test binary.");
-    }
+    private static string RepositoryRoot { get; } = RepositoryPaths.Root;
 
     /// <summary>Backticked paths that look like a file in this repository: a slash, and an extension we guard in.</summary>
     [GeneratedRegex(@"`([A-Za-z0-9_./\- ]+\.(?:cs|ts|tsx|sh|md|props|editorconfig))`")]

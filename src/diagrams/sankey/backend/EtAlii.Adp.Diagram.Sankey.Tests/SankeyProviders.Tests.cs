@@ -1,6 +1,5 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
-using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.History;
 using Xunit;
 
@@ -9,7 +8,7 @@ namespace EtAlii.Adp.Diagram.Sankey.Tests;
 /// <summary>The menus, the property grid and the palette, each editing through the commands.</summary>
 public sealed class SankeyProvidersTests : IDisposable
 {
-    private readonly SankeyTestFolder _folder = new(System.IO.Path.Combine(AppContext.BaseDirectory, "Fixtures", "lf-line-endings.skv"), "small.skv");
+    private readonly SankeyTestFolder _folder = new(Path.Combine(AppContext.BaseDirectory, "Fixtures", "lf-line-endings.skv"), "small.skv");
     private readonly SankeyDocumentStore _store = new();
     private readonly HistoryStackStore _historyStacks;
     private readonly SankeyContextPropertyProvider _properties;
@@ -116,7 +115,7 @@ public sealed class SankeyProvidersTests : IDisposable
         var increased = await _actions.ExecuteAsync(Target("m->x"), SankeyContextActionProvider.IncreaseActionId, TestContext.Current.CancellationToken);
 
         // Assert.
-        var actions = groups.SelectMany(group => group.Actions).ToList();
+        var actions = groups.Actions();
         Assert.Equal("+", actions.Single(action => action.Id == SankeyContextActionProvider.IncreaseActionId).Shortcut?.Key);
         Assert.Equal("-", actions.Single(action => action.Id == SankeyContextActionProvider.DecreaseActionId).Shortcut?.Key);
         Assert.Contains(actions, action => action.Id == SankeyContextActionProvider.ThickerActionId);
@@ -156,7 +155,7 @@ public sealed class SankeyProvidersTests : IDisposable
     public async Task ADropAndAGesture_DiscoverTheAddAndTheConnect_AndExecuteThem()
     {
         // Act.
-        var offered = (await _actions.DiscoverAsync(Target(GestureIds.Placement(700, 900)), TestContext.Current.CancellationToken)).SelectMany(group => group.Actions).Select(action => action.Id).ToList();
+        var offered = (await _actions.DiscoverAsync(Target(GestureIds.Placement(700, 900)), TestContext.Current.CancellationToken)).ActionIds();
         var added = await _actions.ExecuteAsync(Target(GestureIds.Placement(700, 900)), SankeyContextActionProvider.AddActionId, TestContext.Current.CancellationToken);
         var connected = await _actions.ExecuteAsync(Target(GestureIds.Relation("a", "x")), SankeyContextActionProvider.ConnectActionId, TestContext.Current.CancellationToken);
 
@@ -191,7 +190,7 @@ public sealed class SankeyProvidersTests : IDisposable
     }
 
     private ContextTarget Target(string elementId) =>
-        new(ContextScope.DiagramElement, _folder.Body, IsContainer: false, SourceId: default, _folder.Folder, ShortGuid.NewShortGuid(), elementId);
+        ContextTarget.ForElement(_folder.Body, elementId, _folder.Folder, ShortGuid.NewShortGuid());
 
     private SankeyModel Parse() => SankeyParser.Parse(LineDocument.Parse(File.ReadAllText(_folder.Body)));
 }

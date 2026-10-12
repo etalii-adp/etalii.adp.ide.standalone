@@ -1,7 +1,6 @@
 using System.Text.Json;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
-using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 using Google.Protobuf.Reflection;
@@ -47,7 +46,7 @@ internal static class AbmTranscript
     private static readonly TypeRegistry _payloadTypes = TypeRegistry.FromFiles(AgentBehaviorModellingReflection.Descriptor);
 
     /// <summary>The module's folder, <c>src/diagrams/agent-behavior-modelling</c>.</summary>
-    private static string ModuleFolder { get; } = FindModuleFolder();
+    private static string ModuleFolder { get; } = RepositoryPaths.Under("src", "diagrams", "agent-behavior-modelling");
 
     /// <summary>The checked-in transcript.</summary>
     public static string CheckedInPath => Path.Combine(ModuleFolder, "backend", TestProject, "Parity", FileName);
@@ -182,17 +181,17 @@ internal static class AbmTranscript
         var lines = new List<(string Target, int Menu, int MenuReadOnly, IReadOnlyList<string> Rows, IReadOnlyList<string> RowsReadOnly)>();
         foreach (var target in targets)
         {
-            var menu = MenuIndex(menus, TranscriptText.MenuLines(await session.Actions.DiscoverAsync(session.Target(target), cancellationToken)));
-            var menuReadOnly = MenuIndex(menus, TranscriptText.MenuLines(await session.ReadOnlyActions.DiscoverAsync(session.Target(target), cancellationToken)));
-            IReadOnlyList<string> rows = [.. (await session.Properties.DescribeAsync(session.Target(target), cancellationToken)).Select(row => TranscriptText.RowLine(row, choices))];
-            IReadOnlyList<string> rowsReadOnly = [.. (await session.ReadOnlyProperties.DescribeAsync(session.Target(target), cancellationToken)).Select(row => TranscriptText.RowLine(row, choices))];
+            var menu = menus.IndexOfOrAdd((await session.Actions.DiscoverAsync(session.Target(target), cancellationToken)).MenuLines());
+            var menuReadOnly = menus.IndexOfOrAdd((await session.ReadOnlyActions.DiscoverAsync(session.Target(target), cancellationToken)).MenuLines());
+            IReadOnlyList<string> rows = [.. (await session.Properties.DescribeAsync(session.Target(target), cancellationToken)).Select(row => row.RowLine(choices))];
+            IReadOnlyList<string> rowsReadOnly = [.. (await session.ReadOnlyProperties.DescribeAsync(session.Target(target), cancellationToken)).Select(row => row.RowLine(choices))];
             lines.Add((target, menu, menuReadOnly, rows, rowsReadOnly));
         }
 
         json.WriteStartArray("menus");
         foreach (var menu in menus)
         {
-            WriteLines(json, menu);
+            json.WriteLines(menu);
         }
 
         json.WriteEndArray();
@@ -200,7 +199,7 @@ internal static class AbmTranscript
         json.WriteStartArray("choices");
         foreach (var list in choices)
         {
-            WriteLines(json, list);
+            json.WriteLines(list);
         }
 
         json.WriteEndArray();
@@ -208,7 +207,7 @@ internal static class AbmTranscript
         json.WriteStartArray("targets");
         foreach ((string target, int menu, int menuReadOnly, _, _) in lines)
         {
-            json.WriteStringValue($"{JsonSerializer.Serialize(target, TranscriptText.StringOptions)} => menu #{menu}, read-only #{menuReadOnly}");
+            json.WriteStringValue($"{TranscriptText.Quoted(target)} => menu #{menu}, read-only #{menuReadOnly}");
         }
 
         json.WriteEndArray();
@@ -224,7 +223,7 @@ internal static class AbmTranscript
             json.WriteStartObject();
             json.WriteString("target", target);
             json.WritePropertyName("rows");
-            WriteLines(json, rows);
+            json.WriteLines(rows);
             if (TranscriptText.ReadOnlyVariant(rows, rowsReadOnly) is { } same)
             {
                 json.WriteString("rowsReadOnly", same);
@@ -232,7 +231,7 @@ internal static class AbmTranscript
             else
             {
                 json.WritePropertyName("rowsReadOnly");
-                WriteLines(json, rowsReadOnly);
+                json.WriteLines(rowsReadOnly);
             }
 
             json.WriteEndObject();
@@ -244,10 +243,10 @@ internal static class AbmTranscript
             new DiagramValidationRequest(TranscriptText.Decode(bytes), Path.GetFileNameWithoutExtension(session.Body), session.Folder, session.Body, null),
             cancellationToken);
         json.WritePropertyName("findings");
-        WriteLines(json, [.. problems.Select(problem => $"line {(problem.Location as DiagramProblemLineLocation)?.Number} | {problem.Severity} | {problem.RuleId} | {problem.Message}")]);
+        json.WriteLines([.. problems.Select(problem => $"line {(problem.Location as DiagramProblemLineLocation)?.Number} | {problem.Severity} | {problem.RuleId} | {problem.Message}")]);
 
         json.WritePropertyName("payloads");
-        WriteLines(json, [.. new AbmElementMapper().Visible(model, RegistrationLayout.Read(session.Registration), DiagramViewport.Unbounded)
+        json.WriteLines([.. new AbmElementMapper().Visible(model, RegistrationLayout.Read(session.Registration), DiagramViewport.Unbounded)
             .Select(element => TranscriptText.PayloadLine(element.Id, element.X, element.Y, element.Type, element.PayloadTypeUrl, element.Payload, _payloadTypes))]);
     }
 
@@ -336,42 +335,6 @@ internal static class AbmTranscript
         AbmNode? Root() => session.Model.Roots.FirstOrDefault();
     }
 
-    private static int MenuIndex(List<IReadOnlyList<string>> menus, IReadOnlyList<string> menu)
-    {
-        var index = menus.FindIndex(known => known.SequenceEqual(menu, StringComparer.Ordinal));
-        if (index >= 0)
-        {
-            return index;
-        }
-
-        menus.Add(menu);
-        return menus.Count - 1;
-    }
-
-    private static void WriteLines(Utf8JsonWriter json, IEnumerable<string> lines)
-    {
-        json.WriteStartArray();
-        foreach (var line in lines)
-        {
-            json.WriteStringValue(line);
-        }
-
-        json.WriteEndArray();
-    }
-
-    private static string FindModuleFolder()
-    {
-        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
-        {
-            if (directory.Name == "agent-behavior-modelling")
-            {
-                return directory.FullName;
-            }
-        }
-
-        throw new InvalidOperationException($"No agent-behavior-modelling folder above {AppContext.BaseDirectory}. That is a failure, not a skip.");
-    }
-
     /// <summary>One document's store, history and providers, readable and read-only.</summary>
     private sealed class Session : IDisposable
     {
@@ -408,7 +371,7 @@ internal static class AbmTranscript
         public AbmModel Model => Store.GetOrLoad(Body).Model;
 
         public ContextTarget Target(string elementId) =>
-            new(ContextScope.DiagramElement, Body, IsContainer: false, SourceId: default, Folder, default, elementId, Diagram.AgentBehaviorModelling.Origin);
+            ContextTarget.ForElement(Body, elementId, Folder, origin: Diagram.AgentBehaviorModelling.Origin);
 
         public void Dispose() => History.Dispose();
     }
@@ -463,7 +426,7 @@ internal static class AbmTranscript
         public async Task SetAsync(string target, string propertyId, string value)
         {
             var result = await session.Properties.SetAsync(session.Target(target), propertyId, value, cancellationToken);
-            await RecordAsync($"set {target} {propertyId} = {JsonSerializer.Serialize(value, TranscriptText.StringOptions)}", result.IsSuccess ? "ok" : $"refused: {result.Error}");
+            await RecordAsync($"set {target} {propertyId} = {TranscriptText.Quoted(value)}", result.IsSuccess ? "ok" : $"refused: {result.Error}");
         }
 
         /// <summary>Runs an action; answers "confirm" when it asked for a confirmation, the new node's id when an add asks for its name, else null.</summary>
@@ -483,7 +446,7 @@ internal static class AbmTranscript
         {
             var result = await session.Actions.CommitAsync(session.Target(target), actionId, value, "", cancellationToken);
             await RecordAsync(
-                $"commit {actionId} on {target} = {JsonSerializer.Serialize(value, TranscriptText.StringOptions)}",
+                $"commit {actionId} on {target} = {TranscriptText.Quoted(value)}",
                 result.Completed ? "ok" : $"refused: {result.Error}");
         }
 
@@ -493,7 +456,7 @@ internal static class AbmTranscript
             json.WriteStartObject();
             json.WriteString("do", step);
             json.WriteString("answer", answer);
-            TranscriptText.WriteChange(json, _text, after);
+            json.WriteChange(_text, after);
             json.WriteEndObject();
             _text = after;
         }

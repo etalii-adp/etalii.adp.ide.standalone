@@ -114,7 +114,7 @@ public class InspectScriptTests
     private static async Task<(int ExitCode, string Output)> Evaluate(string report, string log, params string[] options)
     {
         var cancellation = TestContext.Current.CancellationToken;
-        var tool = IoPath.Combine(LocateRepositoryRoot(), ".github", "tools", "inspect");
+        var tool = IoPath.Combine(RepositoryPaths.Root, ".github", "tools", "inspect");
         var fixtures = IoPath.Combine(tool, "fixtures");
         string[] arguments =
         [
@@ -153,19 +153,5 @@ public class InspectScriptTests
         }
 
         return (process.ExitCode, await standardOutput + await standardError);
-    }
-
-    private static string LocateRepositoryRoot()
-    {
-        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
-        {
-            if (Directory.Exists(IoPath.Combine(directory.FullName, ".github", "tools", "inspect")) &&
-                Directory.Exists(IoPath.Combine(directory.FullName, "src", "backend")))
-            {
-                return directory.FullName;
-            }
-        }
-
-        throw new InvalidOperationException("The repository root (.github/tools/inspect beside src/backend) was not found above the test binary.");
     }
 }

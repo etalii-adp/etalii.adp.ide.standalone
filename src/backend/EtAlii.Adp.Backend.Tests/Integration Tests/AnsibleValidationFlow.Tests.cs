@@ -125,7 +125,7 @@ public class AnsibleValidationFlowTests : IDisposable
         AnsibleFixture.RepairIn(_infrastructure);
 
         // Assert.
-        var cleared = await WaitUntil(() => store.Get(_projectFolder).Problems.Count == 0);
+        var cleared = await Eventually.TrueAsync(() => store.Get(_projectFolder).Problems.Count == 0, TestContext.Current.CancellationToken, WaitLimit);
         Assert.True(cleared, "The problem was still there after the file that declared it was fixed.");
     }
 
@@ -154,8 +154,8 @@ public class AnsibleValidationFlowTests : IDisposable
             TestContext.Current.CancellationToken);
 
         // Assert.
-        var returned = await WaitUntil(() =>
-            store.Get(_projectFolder).Problems.Any(problem => problem.Problem.RuleId == "ansible.role-missing"));
+        var returned = await Eventually.TrueAsync(() =>
+            store.Get(_projectFolder).Problems.Any(problem => problem.Problem.RuleId == "ansible.role-missing"), TestContext.Current.CancellationToken, WaitLimit);
         Assert.True(returned, "The problem never came back after the file was broken again.");
     }
 
@@ -176,19 +176,5 @@ public class AnsibleValidationFlowTests : IDisposable
             var bytesToCheck = await File.ReadAllBytesAsync(path, TestContext.Current.CancellationToken);
             Assert.True(bytes.SequenceEqual(bytesToCheck), $"{path} changed during validation.");
         }
-    }
-
-    private static async Task<bool> WaitUntil(Func<bool> condition)
-    {
-        var start = DateTime.UtcNow;
-        while (DateTime.UtcNow - start < WaitLimit)
-        {
-            if (condition())
-            {
-                return true;
-            }
-            await Task.Delay(50, TestContext.Current.CancellationToken);
-        }
-        return false;
     }
 }

@@ -256,8 +256,8 @@ public class ShaclSessionTests : IDisposable
             .Single(candidate => candidate.Origin == ServiceCollectionAddRdfExtension.RdfOrigin);
         await using var graph = rdfFactory.Open(ShortGuid.NewShortGuid(), _root, body, null);
 
-        var shapeElements = Assert.IsType<DiagramAddDelta>(Assert.Single(shapes.Baseline())).Elements;
-        var graphElements = Assert.IsType<DiagramAddDelta>(Assert.Single(graph.Baseline())).Elements;
+        var shapeElements = shapes.BaselineElements();
+        var graphElements = graph.BaselineElements();
 
         // The shapes reading draws one card; the data-graph reading draws the resources and
         // their edges - more elements, and none of them a shapes card.

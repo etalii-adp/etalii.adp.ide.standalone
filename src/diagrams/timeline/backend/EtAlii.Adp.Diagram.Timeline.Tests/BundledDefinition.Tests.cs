@@ -1,6 +1,5 @@
 using System.Reflection;
 using System.Security.Cryptography;
-using System.Text.Json;
 using System.Text.RegularExpressions;
 using EtAlii.Adp.Specification.Disl;
 using Xunit;
@@ -20,17 +19,6 @@ public sealed partial class BundledDefinitionTests
 {
     private static readonly Assembly _module = typeof(Diagram).Assembly;
 
-    private static byte[] Resource(string logicalName)
-    {
-        using var stream = _module.GetManifestResourceStream(logicalName)
-            ?? throw new InvalidOperationException($"The module embeds no resource {logicalName}.");
-        using var copy = new MemoryStream();
-        stream.CopyTo(copy);
-        return copy.ToArray();
-    }
-
-    private static JsonElement Json(string logicalName) => JsonDocument.Parse(Resource(logicalName)).RootElement;
-
     [GeneratedRegex("^[0-9a-f]{40}$")]
     private static partial Regex FullRevision();
 
@@ -38,9 +26,9 @@ public sealed partial class BundledDefinitionTests
     [Fact]
     public void TheBundledDefinition_HashesToItsProvenance()
     {
-        var provenance = Json("timeline.provenance.json");
+        var provenance = _module.ResourceJson("timeline.provenance.json");
 
-        var actual = Convert.ToHexStringLower(SHA256.HashData(Resource("timeline.dis")));
+        var actual = Convert.ToHexStringLower(SHA256.HashData(_module.ResourceBytes("timeline.dis")));
 
         Assert.Equal(provenance.GetProperty("sha256").GetString(), actual);
     }
@@ -49,7 +37,7 @@ public sealed partial class BundledDefinitionTests
     [Fact]
     public void TheProvenance_NamesAFullRevisionOfTheUpstreamFile()
     {
-        var provenance = Json("timeline.provenance.json");
+        var provenance = _module.ResourceJson("timeline.provenance.json");
 
         Assert.Equal("etalii-adp/etalii.adp", provenance.GetProperty("repository").GetString());
         Assert.Equal("definitions/diagrams/timeline.dis", provenance.GetProperty("path").GetString());
@@ -60,7 +48,7 @@ public sealed partial class BundledDefinitionTests
     [Fact]
     public void TheBundledDefinition_IsThisModulesLanguage()
     {
-        var language = Json("timeline.dis").GetProperty("language");
+        var language = _module.ResourceJson("timeline.dis").GetProperty("language");
 
         Assert.Equal("net.etalii.adp.generic.timeline", language.GetProperty("id").GetString());
         Assert.Equal(Diagram.Timeline.Origin.Key, language.GetProperty("origin").GetString());

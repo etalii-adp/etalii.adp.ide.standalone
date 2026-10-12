@@ -48,7 +48,7 @@ public class PlainEditorSessionWatcherObligationsTests : IDisposable
 
         // Learned means the session stops claiming the file opens and says why, while keeping the last
         // good content. A real watcher, so this waits - passing the moment the session hears.
-        Assert.True(await Eventually(() => session.Refusal.Length > 0), "The session never learned its file was deleted.");
+        Assert.True(await Eventually.TrueAsync(() => session.Refusal.Length > 0, TestContext.Current.CancellationToken, Patience), "The session never learned its file was deleted.");
         Assert.Equal("content", session.Content);
     }
 
@@ -65,7 +65,7 @@ public class PlainEditorSessionWatcherObligationsTests : IDisposable
         watcher.EnableRaisingEvents = false;
         await File.WriteAllTextAsync(path, "after", TestContext.Current.CancellationToken);
 
-        RaiseOverflow(watcher);
+        watcher.RaiseOverflow();
 
         Assert.Equal("after", delivered);
         Assert.Equal("after", session.Content);
@@ -76,26 +76,6 @@ public class PlainEditorSessionWatcherObligationsTests : IDisposable
         ?? throw new InvalidOperationException("PlainEditorSession no longer keeps its watcher in _watcher; this test must follow it.");
 
     // The one signal a watcher gives when it has dropped events, raised the way the watcher raises it.
-    private static void RaiseOverflow(FileSystemWatcher watcher) =>
-        (typeof(FileSystemWatcher).GetMethod("OnError", BindingFlags.Instance | BindingFlags.NonPublic)
-            ?? throw new InvalidOperationException("FileSystemWatcher.OnError was not found."))
-        .Invoke(watcher, [new ErrorEventArgs(new InternalBufferOverflowException())]);
-
-    private static async Task<bool> Eventually(Func<bool> condition)
-    {
-        var deadline = DateTime.UtcNow + Patience;
-        while (!condition())
-        {
-            if (DateTime.UtcNow > deadline)
-            {
-                return false;
-            }
-
-            await Task.Delay(20, TestContext.Current.CancellationToken);
-        }
-
-        return true;
-    }
 
     private string Write(string name, string text)
     {

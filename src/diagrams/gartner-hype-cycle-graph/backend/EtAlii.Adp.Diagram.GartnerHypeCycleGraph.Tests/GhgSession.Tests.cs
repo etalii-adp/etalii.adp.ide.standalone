@@ -43,7 +43,7 @@ public sealed class GhgSessionTests : IDisposable
         var model = Parse();
         await using var session = Open();
 
-        var delivered = Delivered(session.Baseline());
+        var delivered = session.Baseline().AddedElements();
 
         var trends = delivered.Where(element => element.Type == GhgElementMapper.TrendType).ToDictionary(element => element.Id);
         Assert.Equal(model.Trends.Count, trends.Count);
@@ -76,7 +76,7 @@ public sealed class GhgSessionTests : IDisposable
             model.Trends.SingleOrDefault(trend => trend.Id == influence.From) is { } from && influence.FromEnd.PhaseIndex >= from.VisiblePhases);
         await using var session = Open();
 
-        var delivered = Delivered(session.Baseline()).Single(element => element.Id == hidden.Id);
+        var delivered = session.Baseline().AddedElements().Single(element => element.Id == hidden.Id);
 
         var payload = GhgInfluencePayload.Parser.ParseFrom(delivered.Payload.ToArray());
         Assert.Equal(hidden.From, payload.FromElementId);
@@ -111,7 +111,7 @@ public sealed class GhgSessionTests : IDisposable
     public async Task APhaseCountLoweredOnDisk_ArrivesAsADelta()
     {
         await using var session = Open();
-        var before = Delivered(session.Baseline()).Count;
+        var before = session.Baseline().AddedElements().Count;
 
         Edit(document => GhgWriter.SetPhases(document, Trend(document, "steam-engine"), 1));
 
@@ -158,9 +158,6 @@ public sealed class GhgSessionTests : IDisposable
         File.WriteAllText(Body, document.Text);
         _store.Reload(Body);
     }
-
-    private static IReadOnlyList<DiagramElement> Delivered(IReadOnlyList<DiagramDelta> baseline) =>
-        Assert.IsType<DiagramAddDelta>(Assert.Single(baseline)).Elements;
 
     private static GhgTrendPayload TrendPayload(DiagramElement element) =>
         GhgTrendPayload.Parser.ParseFrom(element.Payload.ToArray());

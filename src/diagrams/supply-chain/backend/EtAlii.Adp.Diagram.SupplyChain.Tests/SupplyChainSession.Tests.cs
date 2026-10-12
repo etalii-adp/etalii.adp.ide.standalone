@@ -24,7 +24,7 @@ public sealed class SupplyChainSessionTests : IDisposable
         await using var session = Open();
 
         // Act.
-        var delivered = Delivered(session.Baseline());
+        var delivered = session.Baseline().AddedElements();
 
         // Assert.
         var expected = model.Groups.Select(group => group.Id).Concat(model.Nodes.Select(node => node.Id)).Concat(model.Flows.Select(flow => flow.Id));
@@ -40,7 +40,7 @@ public sealed class SupplyChainSessionTests : IDisposable
         await using var session = Open();
 
         // Act.
-        var delivered = Delivered(session.Baseline());
+        var delivered = session.Baseline().AddedElements();
 
         // Assert.
         var plant = delivered.Single(element => element.Id == "vehicle-plant");
@@ -137,9 +137,6 @@ public sealed class SupplyChainSessionTests : IDisposable
 
     private static Dictionary<string, DiagramElement> Changed(DiagramDeltasEventArgs args) =>
         args.Deltas.OfType<DiagramAddDelta>().SelectMany(delta => delta.Elements).ToDictionary(element => element.Id, StringComparer.Ordinal);
-
-    private static IReadOnlyList<DiagramElement> Delivered(IReadOnlyList<DiagramDelta> baseline) =>
-        Assert.IsType<DiagramAddDelta>(Assert.Single(baseline)).Elements;
 
     private static SupplyChainFlowPayload Flow(IReadOnlyList<DiagramElement> delivered, string id) =>
         SupplyChainFlowPayload.Parser.ParseFrom(delivered.Single(element => element.Id == id).Payload.ToArray());

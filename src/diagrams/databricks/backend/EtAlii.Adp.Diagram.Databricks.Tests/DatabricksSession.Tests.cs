@@ -55,12 +55,6 @@ public class DatabricksSessionTests : IDisposable
         return factory.Open(ShortGuid.NewShortGuid(), _root, bodyPath, registrationPath);
     }
 
-    private static IReadOnlyList<DiagramElement> ElementsOf(IDiagramSession session)
-    {
-        var baseline = Assert.Single(session.Baseline());
-        return Assert.IsType<DiagramAddDelta>(baseline).Elements.ToList();
-    }
-
     [Fact]
     public async Task EachType_OpensFromARegisteredFixture_WithItsElements()
     {
@@ -72,7 +66,7 @@ public class DatabricksSessionTests : IDisposable
         // Act & assert.
         await using (var session = Open("databricks/job", job, WriteRegistration("databricks/job", "job.yml")))
         {
-            var elements = ElementsOf(session);
+            var elements = session.BaselineElements();
             Assert.Contains(elements, element => element.Id == "task:ingest");
             Assert.Contains(elements, element => element.Id == "edge:quality_gate->publish");
             Assert.Contains(elements, element => element.Id == "cluster:ingest_cluster");
@@ -80,7 +74,7 @@ public class DatabricksSessionTests : IDisposable
 
         await using (var session = Open("databricks/bundle", bundle, null))
         {
-            var elements = ElementsOf(session);
+            var elements = session.BaselineElements();
             Assert.Contains(elements, element => element.Id == "bundle");
             Assert.Contains(elements, element => element.Id == "resource:pipelines/bronze_to_gold");
             Assert.Contains(elements, element => element.Id == "override:prod/jobs/nightly_ingest");
@@ -88,7 +82,7 @@ public class DatabricksSessionTests : IDisposable
 
         await using (var session = Open("databricks/pipeline", pipeline, null))
         {
-            var elements = ElementsOf(session);
+            var elements = session.BaselineElements();
             Assert.Contains(elements, element => element.Id == "pipeline");
             Assert.Contains(elements, element => element.Id == "library:transformations/bronze");
             Assert.Contains(elements, element => element.Id == "flow:pipeline->target");
@@ -104,7 +98,7 @@ public class DatabricksSessionTests : IDisposable
 
         // Act.
         await using var session = Open("databricks/job", body, adp);
-        var elements = ElementsOf(session);
+        var elements = session.BaselineElements();
 
         // Assert.
         var moved = elements.Single(element => element.Id == "task:ingest");
@@ -151,7 +145,7 @@ public class DatabricksSessionTests : IDisposable
 
         // Act.
         await using var session = Open("databricks/job", path, adp);
-        var elements = ElementsOf(session);
+        var elements = session.BaselineElements();
 
         // Assert.
         Assert.Contains(elements, element => element.Id == "task:b");
@@ -166,7 +160,7 @@ public class DatabricksSessionTests : IDisposable
 
         // Act.
         await using var session = Open("databricks/job", body, WriteRegistration("databricks/job", "job.yml"));
-        var elements = ElementsOf(session);
+        var elements = session.BaselineElements();
 
         // Assert.
         var edge = elements.Single(element => element.Id == "edge:quality_gate->publish");
@@ -285,7 +279,7 @@ public class DatabricksSessionTests : IDisposable
 
         // Assert: the viewport starts unbounded, so adopting the loop changed nothing for a
         // client that has not reported yet - including the far end of the column.
-        var elements = ElementsOf(session).Select(element => element.Id).ToList();
+        var elements = session.BaselineElements().Select(element => element.Id).ToList();
         Assert.Contains("task:ingest", elements);
         Assert.Contains("cluster:ingest_cluster", elements);
     }

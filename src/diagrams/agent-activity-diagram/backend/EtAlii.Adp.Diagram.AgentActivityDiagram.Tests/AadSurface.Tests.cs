@@ -34,13 +34,12 @@ public sealed class AadSurfaceTests : IDisposable
 
     private Task GivenOneDayAsync() => File.WriteAllTextAsync(Body, AadDocumentTests.Fixture("one-day.aad"), TestContext.Current.CancellationToken);
 
-    private ContextTarget Target(string elementId) => new(
-        ContextScope.DiagramElement, Body, IsContainer: false, SourceId: default, _root, default, elementId, Diagram.AgentActivity.Origin);
+    private ContextTarget Target(string elementId) => ContextTarget.ForElement(Body, elementId, _root, origin: Diagram.AgentActivity.Origin);
 
     private AadContextActionProvider Actions => new(_services.GetRequiredService<IHistoryStackStore>(), _services.GetRequiredService<IAadDocumentStore>());
 
     private async Task<List<ContextActionDefinition>> MenuAsync(string elementId) =>
-        [.. (await Actions.DiscoverAsync(Target(elementId), TestContext.Current.CancellationToken)).SelectMany(group => group.Actions)];
+        [.. (await Actions.DiscoverAsync(Target(elementId), TestContext.Current.CancellationToken)).Actions()];
 
     [Fact]
     public void ThePalette_HasOneToolPerKindOfElement_EachDroppingItsOwnAdd()
@@ -74,7 +73,7 @@ public sealed class AadSurfaceTests : IDisposable
         Assert.Equal(["editLabel", "setTaskStatus", "delete"], task.Select(action => action.Id));
         Assert.Equal(
             ["setTaskStatus:progressing=Progressing", "setTaskStatus:pending=Pending", "setTaskStatus:inputRequired=Input Required", "setTaskStatus:finished=Finished"],
-            task.Single(action => action.Id == "setTaskStatus").Children!.SelectMany(group => group.Actions).Select(action => $"{action.Id}={action.Label}"));
+            task.Single(action => action.Id == "setTaskStatus").Children!.Actions().Select(action => $"{action.Id}={action.Label}"));
     }
 
     [Fact]

@@ -87,24 +87,10 @@ public class TextMetricTests
 
     private static TextMetricFixture Load()
     {
-        var path = IoPath.Combine(LocateRepositoryRoot(), "src", "fixtures", "cross-tier", "text-metric.json");
+        var path = IoPath.Combine(RepositoryPaths.Root, "src", "fixtures", "cross-tier", "text-metric.json");
         var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
         return JsonSerializer.Deserialize<TextMetricFixture>(File.ReadAllText(path), options)
             ?? throw new InvalidOperationException($"The fixture at {path} is empty.");
-    }
-
-    private static string LocateRepositoryRoot()
-    {
-        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
-        {
-            if (Directory.Exists(IoPath.Combine(directory.FullName, "src", "diagrams")) &&
-                Directory.Exists(IoPath.Combine(directory.FullName, "docs")))
-            {
-                return directory.FullName;
-            }
-        }
-
-        throw new InvalidOperationException("The repository root was not found above the test assembly.");
     }
 
     private sealed record TextMetricFixture(string Reason, double AverageAdvance, double DefaultFontSize, double Tolerance, IReadOnlyList<TextCase> Cases);

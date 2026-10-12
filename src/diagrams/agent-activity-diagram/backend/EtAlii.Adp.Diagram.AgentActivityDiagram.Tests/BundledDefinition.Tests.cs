@@ -1,6 +1,5 @@
 using System.Reflection;
 using System.Security.Cryptography;
-using System.Text.Json;
 using System.Text.RegularExpressions;
 using Xunit;
 
@@ -14,17 +13,6 @@ public sealed partial class BundledDefinitionTests
 {
     private static readonly Assembly _module = typeof(Diagram).Assembly;
 
-    private static byte[] Resource(string logicalName)
-    {
-        using var stream = _module.GetManifestResourceStream(logicalName)
-            ?? throw new InvalidOperationException($"The module embeds no resource {logicalName}.");
-        using var copy = new MemoryStream();
-        stream.CopyTo(copy);
-        return copy.ToArray();
-    }
-
-    private static JsonElement Json(string logicalName) => JsonDocument.Parse(Resource(logicalName)).RootElement;
-
     [GeneratedRegex("^[0-9a-f]{40}$")]
     private static partial Regex FullRevision();
 
@@ -32,9 +20,9 @@ public sealed partial class BundledDefinitionTests
     public void TheBundledDefinition_HashesToItsProvenance()
     {
         // Seen to fail against one byte changed in the bundled `.dis`.
-        var provenance = Json("agent-activity-diagram.provenance.json");
+        var provenance = _module.ResourceJson("agent-activity-diagram.provenance.json");
 
-        var actual = Convert.ToHexStringLower(SHA256.HashData(Resource("agent-activity-diagram.dis")));
+        var actual = Convert.ToHexStringLower(SHA256.HashData(_module.ResourceBytes("agent-activity-diagram.dis")));
 
         Assert.Equal(provenance.GetProperty("sha256").GetString(), actual);
     }
@@ -42,9 +30,9 @@ public sealed partial class BundledDefinitionTests
     [Fact]
     public void TheBundledBinding_HashesToItsProvenance()
     {
-        var provenance = Json("agent-activity-diagram.provenance.json");
+        var provenance = _module.ResourceJson("agent-activity-diagram.provenance.json");
 
-        var actual = Convert.ToHexStringLower(SHA256.HashData(Resource("agent-activity-diagram.fbl")));
+        var actual = Convert.ToHexStringLower(SHA256.HashData(_module.ResourceBytes("agent-activity-diagram.fbl")));
 
         Assert.Equal("definitions/diagrams/agent-activity-diagram.fbl", provenance.GetProperty("binding").GetString());
         Assert.Equal(provenance.GetProperty("bindingSha256").GetString(), actual);
@@ -53,7 +41,7 @@ public sealed partial class BundledDefinitionTests
     [Fact]
     public void TheProvenance_NamesAFullRevisionOfTheUpstreamFile()
     {
-        var provenance = Json("agent-activity-diagram.provenance.json");
+        var provenance = _module.ResourceJson("agent-activity-diagram.provenance.json");
 
         Assert.Equal("etalii-adp/etalii.adp", provenance.GetProperty("repository").GetString());
         Assert.Equal("definitions/diagrams/agent-activity-diagram.dis", provenance.GetProperty("path").GetString());
@@ -63,7 +51,7 @@ public sealed partial class BundledDefinitionTests
     [Fact]
     public void TheBundledDefinition_IsThisModulesLanguage()
     {
-        var language = Json("agent-activity-diagram.dis").GetProperty("language");
+        var language = _module.ResourceJson("agent-activity-diagram.dis").GetProperty("language");
 
         Assert.Equal("net.etalii.adp.etalii.agent-activity-diagram", language.GetProperty("id").GetString());
         Assert.Equal(Diagram.AgentActivity.Origin.Key, language.GetProperty("origin").GetString());

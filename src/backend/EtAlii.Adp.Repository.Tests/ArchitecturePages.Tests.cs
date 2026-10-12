@@ -49,21 +49,7 @@ public partial class ArchitecturePagesTests
 
     private const int CountFloor = 4;
 
-    private static string RepositoryRoot { get; } = Locate();
-
-    private static string Locate()
-    {
-        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
-        {
-            if (Directory.Exists(IoPath.Combine(directory.FullName, "src", "diagrams")) &&
-                Directory.Exists(IoPath.Combine(directory.FullName, "docs")))
-            {
-                return directory.FullName;
-            }
-        }
-
-        throw new InvalidOperationException("The repository root (src/diagrams beside docs) was not found above the test binary.");
-    }
+    private static string RepositoryRoot { get; } = RepositoryPaths.Root;
 
     private static string Read(string relativePath) =>
         File.ReadAllText(IoPath.Combine(RepositoryRoot, relativePath.Replace('/', IoPath.DirectorySeparatorChar)));

@@ -1,11 +1,7 @@
-using EtAlii.Adp.Authentication.Wire;
 using EtAlii.Adp.Context.Wire;
 using EtAlii.Adp.Hierarchy.Wire;
-using EtAlii.Adp.Projects.Wire;
 using Grpc.Core;
 using Grpc.Net.Client;
-using IoPath = System.IO.Path;
-using Path = EtAlii.Adp.Documents.Wire.Path;
 
 namespace EtAlii.Adp.TestSupport.Host;
 
@@ -44,8 +40,8 @@ public sealed class FlowSession : IDisposable
     {
         ArgumentNullException.ThrowIfNull(host);
         var channel = host.CreateChannel();
-        var headers = await SignInAsync(channel, cancellationToken);
-        var projectId = await AddProjectAsync(channel, headers, projectFolder, cancellationToken);
+        var headers = await channel.SignInAsync(cancellationToken);
+        var projectId = await channel.AddProjectAsync(headers, projectFolder, cancellationToken);
         return new FlowSession(channel, headers, projectId);
     }
 
@@ -58,28 +54,8 @@ public sealed class FlowSession : IDisposable
         ArgumentNullException.ThrowIfNull(host);
         ArgumentNullException.ThrowIfNull(joined);
         var channel = host.CreateChannel();
-        var headers = await SignInAsync(channel, cancellationToken);
+        var headers = await channel.SignInAsync(cancellationToken);
         return new FlowSession(channel, headers, joined.ProjectId);
-    }
-
-    /// <summary>Signs in as the developer on <paramref name="channel"/> and returns the headers a call carries.</summary>
-    private static async Task<Metadata> SignInAsync(GrpcChannel channel, CancellationToken cancellationToken)
-    {
-        var client = new AuthenticationService.AuthenticationServiceClient(channel);
-        var response = await client.LoginAsync(
-            new LoginRequest { Username = FlowConstants.DeveloperUsername, Credential = FlowConstants.DeveloperCredential },
-            cancellationToken: cancellationToken);
-        return new Metadata { { FlowConstants.SessionTokenHeader, response.Session.Value } };
-    }
-
-    /// <summary>Adds <paramref name="folder"/> as a project and returns its id.</summary>
-    private static async Task<ShortGuid> AddProjectAsync(GrpcChannel channel, Metadata headers, string folder, CancellationToken cancellationToken)
-    {
-        var client = new ProjectService.ProjectServiceClient(channel);
-        var path = new Path();
-        path.Segments.AddRange(folder.Split(IoPath.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries));
-        var response = await client.AddProjectAsync(new AddProjectRequest { Path = path }, headers, cancellationToken: cancellationToken);
-        return response.Added.Id;
     }
 
     /// <summary>

@@ -63,24 +63,10 @@ public class RowRoundingTests
 
     private static RowRoundingFixture Load()
     {
-        var path = IoPath.Combine(LocateRepositoryRoot(), "src", "fixtures", "cross-tier", "row-rounding.json");
+        var path = IoPath.Combine(RepositoryPaths.Root, "src", "fixtures", "cross-tier", "row-rounding.json");
         var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
         return JsonSerializer.Deserialize<RowRoundingFixture>(File.ReadAllText(path), options)
             ?? throw new InvalidOperationException($"{path} deserialised to nothing.");
-    }
-
-    private static string LocateRepositoryRoot()
-    {
-        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
-        {
-            if (Directory.Exists(IoPath.Combine(directory.FullName, "src", "diagrams")) &&
-                Directory.Exists(IoPath.Combine(directory.FullName, "docs")))
-            {
-                return directory.FullName;
-            }
-        }
-
-        throw new InvalidOperationException("The repository root (src/diagrams beside docs) was not found above the test binary.");
     }
 
     private sealed record RowRoundingFixture(string Reason, IReadOnlyList<RowCase> Cases);

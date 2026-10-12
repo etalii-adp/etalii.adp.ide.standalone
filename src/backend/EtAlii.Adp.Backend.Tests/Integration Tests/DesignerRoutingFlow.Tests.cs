@@ -112,8 +112,7 @@ public class DesignerRoutingFlowTests(DesignerRoutingFlowTests.Host host) : ICla
 
     private static OpenDiagramRequest Request(Documents.Wire.ShortGuid projectId, string file)
     {
-        var path = new Path();
-        path.Segments.Add(file);
+        var path = Path.Of(file);
         return new OpenDiagramRequest { ProjectId = projectId, WatchId = ShortGuid.NewShortGuid(), Path = path };
     }
 }

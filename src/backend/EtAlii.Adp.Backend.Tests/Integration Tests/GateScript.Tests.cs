@@ -80,7 +80,7 @@ public class GateScriptTests
     {
         // Arrange.
         var cancellation = TestContext.Current.CancellationToken;
-        var root = LocateRepositoryRoot();
+        var root = RepositoryPaths.Root;
         var script = IoPath.Combine(root, ".github", "tools", "gate", "gate.test.sh");
         Assert.True(File.Exists(script), $"The shared gate's self-test is missing: {script}");
         var bash = await LocateBash(cancellation);
@@ -159,20 +159,6 @@ public class GateScriptTests
             root,
             cancellation);
         return exitCode != 0 || output.Trim().Length > 0;
-    }
-
-    private static string LocateRepositoryRoot()
-    {
-        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
-        {
-            if (Directory.Exists(IoPath.Combine(directory.FullName, ".github", "tools", "gate")) &&
-                Directory.Exists(IoPath.Combine(directory.FullName, "src", "backend")))
-            {
-                return directory.FullName;
-            }
-        }
-
-        throw new InvalidOperationException("The repository root (.github/tools/gate beside src/backend) was not found above the test binary.");
     }
 
     private static async Task<string> LocateBash(CancellationToken cancellation)

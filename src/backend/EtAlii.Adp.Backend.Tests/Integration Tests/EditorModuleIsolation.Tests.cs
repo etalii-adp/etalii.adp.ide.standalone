@@ -76,8 +76,7 @@ public class EditorModuleIsolationTests(EditorModuleIsolationTests.Host host) : 
         var watchId = ShortGuid.NewShortGuid();
 
         // Act 1: the broken module's file. Its stream fails - that tab shows an error.
-        var boomPath = new Path();
-        boomPath.Segments.Add("device.boom");
+        var boomPath = Path.Of("device.boom");
         using var boomCall = diagramClient.Open(new OpenDiagramRequest { ProjectId = session.ProjectId, WatchId = watchId, Path = boomPath }, session.Headers, deadline: DateTime.UtcNow.AddSeconds(30), cancellationToken: TestContext.Current.CancellationToken);
         await Assert.ThrowsAsync<RpcException>(async () =>
         {
@@ -87,8 +86,7 @@ public class EditorModuleIsolationTests(EditorModuleIsolationTests.Host host) : 
         });
 
         // Act 2: the same connection opens a healthy file afterwards.
-        var notesPath = new Path();
-        notesPath.Segments.Add("notes.txt");
+        var notesPath = Path.Of("notes.txt");
         using var notesCall = diagramClient.Open(new OpenDiagramRequest { ProjectId = session.ProjectId, WatchId = watchId, Path = notesPath }, session.Headers, deadline: DateTime.UtcNow.AddSeconds(30), cancellationToken: TestContext.Current.CancellationToken);
         Assert.True(await notesCall.ResponseStream.MoveNext(TestContext.Current.CancellationToken));
 

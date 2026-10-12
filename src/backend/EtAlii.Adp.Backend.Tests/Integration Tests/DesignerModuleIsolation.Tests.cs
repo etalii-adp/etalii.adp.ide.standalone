@@ -25,22 +25,8 @@ public sealed class DesignerModuleIsolationTests
     /// <summary>What a core file would have to write to depend on the module.</summary>
     private static readonly string[] Names = ["EtAlii.Adp.Designer.Knowledge", "etalii/knowledge"];
 
-    private static string Backend()
-    {
-        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
-        {
-            var candidate = IoPath.Combine(directory.FullName, "src", "backend");
-            if (Directory.Exists(candidate) && Directory.Exists(IoPath.Combine(directory.FullName, "src", "designers")))
-            {
-                return candidate;
-            }
-        }
-
-        throw new InvalidOperationException("The src/backend folder was not found above the test binary.");
-    }
-
     private static IEnumerable<string> CoreSources() =>
-        Directory.EnumerateDirectories(Backend())
+        Directory.EnumerateDirectories(RepositoryPaths.Under("src", "backend"))
             .Where(project => !IoPath.GetFileName(project).EndsWith(".Tests", StringComparison.Ordinal) && IoPath.GetFileName(project) != "EtAlii.Adp.TestSupport")
             .SelectMany(project => Directory.EnumerateFiles(project, "*", SearchOption.AllDirectories))
             .Where(file => IoPath.GetExtension(file) is ".cs" or ".csproj" or ".json" or ".props" or ".targets")
@@ -76,7 +62,7 @@ public sealed class DesignerModuleIsolationTests
     public void NoCoreFile_NamesTheKnowledgeDesigner()
     {
         // Act.
-        var naming = Naming(CoreSources().Select(file => (IoPath.GetRelativePath(Backend(), file), File.ReadAllText(file))));
+        var naming = Naming(CoreSources().Select(file => (IoPath.GetRelativePath(RepositoryPaths.Under("src", "backend"), file), File.ReadAllText(file))));
 
         // Assert: every one named at once.
         Assert.Empty(naming);

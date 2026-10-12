@@ -119,8 +119,7 @@ public sealed class UpdateViewWhileTheStreamIsOpenTests : IDisposable
         var project = _projects.Add(userId, "wedge", new PathRecord(_projectFolder.Split(IoPath.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries)));
         var watchId = ShortGuid.NewShortGuid();
 
-        var registration = new Path();
-        registration.Segments.Add("bottling-mes.plant-landscape.adp");
+        var registration = Path.Of("bottling-mes.plant-landscape.adp");
 
         // Act, part one. Open streams until cancelled, so it runs alongside rather than being
         // awaited - exactly as it does for a browser holding the stream open.
@@ -143,7 +142,7 @@ public sealed class UpdateViewWhileTheStreamIsOpenTests : IDisposable
         // BEFORE it streams the baseline, so a wait on the registration can win the race and
         // measure a stream that has produced nothing. Caught by the writer check below on the
         // first run of this harness, which is exactly the weakness it was written to catch.
-        var registered = await Eventually(() => _viewports.Find(watchId, bodyPath) is not null && writer.Count > 0);
+        var registered = await Eventually.TrueAsync(() => _viewports.Find(watchId, bodyPath) is not null && writer.Count > 0, TestContext.Current.CancellationToken, Patience);
         Assert.True(
             registered,
             $"The Open stream never registered a viewport for {bodyPath}, so UpdateView would have answered its guard clause and this test would have measured nothing. Open faulted: {open.Exception?.GetBaseException().Message ?? "no"}.");
@@ -205,22 +204,6 @@ public sealed class UpdateViewWhileTheStreamIsOpenTests : IDisposable
         await openCancellation.CancelAsync();
     }
 
-    private static async Task<bool> Eventually(Func<bool> condition)
-    {
-        var deadline = DateTime.UtcNow + Patience;
-        while (DateTime.UtcNow < deadline)
-        {
-            if (condition())
-            {
-                return true;
-            }
-
-            await Task.Delay(25, TestContext.Current.CancellationToken);
-        }
-
-        return false;
-    }
-
     private static ServerCallContext CallContext(string method, CancellationToken cancellationToken) =>
         TestServerCallContext.Create(
             method: method,
@@ -237,24 +220,11 @@ public sealed class UpdateViewWhileTheStreamIsOpenTests : IDisposable
 
     private void CopyCorpus()
     {
-        var source = IoPath.Combine(RepositoryRoot(), "src", "diagrams", "c4", "examples", "industrial-plant", "architecture");
+        var source = IoPath.Combine(RepositoryPaths.Root, "src", "diagrams", "c4", "examples", "industrial-plant", "architecture");
         foreach (var file in Directory.GetFiles(source))
         {
             File.Copy(file, IoPath.Combine(_projectFolder, IoPath.GetFileName(file)));
         }
-    }
-
-    private static string RepositoryRoot()
-    {
-        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
-        {
-            if (Directory.Exists(IoPath.Combine(directory.FullName, "src", "diagrams")))
-            {
-                return directory.FullName;
-            }
-        }
-
-        throw new DirectoryNotFoundException("The repository root could not be found from " + AppContext.BaseDirectory);
     }
 
     private static void TryDelete(string folder)

@@ -66,9 +66,6 @@ public class CausalLoopContextPropertiesTests : IDisposable
     private async Task<IReadOnlyList<ContextPropertyDefinition>> Describe(string elementId) =>
         await _properties.DescribeAsync(Target(elementId), TestContext.Current.CancellationToken);
 
-    private static ContextPropertyDefinition Row(IReadOnlyList<ContextPropertyDefinition> rows, string id) =>
-        Assert.Single(rows, row => row.Id == id);
-
     // ---- a variable --------------------------------------------------------------------------
 
     [Fact]
@@ -80,11 +77,11 @@ public class CausalLoopContextPropertiesTests : IDisposable
         // Assert. The visible name is the label, renamed in place; the identifier is the stable
         // key a link refers to, editable here for the author who wants to restate it - which
         // carries every link and loop with it.
-        var label = Row(rows, CausalLoopContextPropertyProvider.VariableLabelProperty);
+        var label = rows.Row(CausalLoopContextPropertyProvider.VariableLabelProperty);
         Assert.Equal("Population", label.Value);
         Assert.True(label.IsEditable);
 
-        var id = Row(rows, CausalLoopContextPropertyProvider.VariableIdProperty);
+        var id = rows.Row(CausalLoopContextPropertyProvider.VariableIdProperty);
         Assert.Equal("population", id.Value);
         Assert.True(id.IsEditable);
     }
@@ -122,21 +119,21 @@ public class CausalLoopContextPropertiesTests : IDisposable
 
         // Assert.
         // Requirement 8.2: the weight is settable, and the other two are readable there.
-        var weight = Row(rows, CausalLoopContextPropertyProvider.LinkWeightProperty);
+        var weight = rows.Row(CausalLoopContextPropertyProvider.LinkWeightProperty);
         Assert.Equal("1.5", weight.Value);
         Assert.True(weight.IsEditable);
 
-        var polarity = Row(rows, CausalLoopContextPropertyProvider.LinkPolarityProperty);
+        var polarity = rows.Row(CausalLoopContextPropertyProvider.LinkPolarityProperty);
         Assert.Equal("positive", polarity.Value);
         Assert.Equal(ContextPropertyEditor.Choice, polarity.Editor);
         Assert.Contains("negative", polarity.Choices);
 
-        var delayed = Row(rows, CausalLoopContextPropertyProvider.LinkDelayedProperty);
+        var delayed = rows.Row(CausalLoopContextPropertyProvider.LinkDelayedProperty);
         Assert.Equal("false", delayed.Value);
         Assert.Equal(ContextPropertyEditor.Toggle, delayed.Editor);
 
         // The ends are the link's identity, and the row says so.
-        var from = Row(rows, CausalLoopContextPropertyProvider.LinkFromProperty);
+        var from = rows.Row(CausalLoopContextPropertyProvider.LinkFromProperty);
         Assert.False(from.IsEditable);
         Assert.NotEqual("", from.ReadOnlyReason);
     }
@@ -149,9 +146,7 @@ public class CausalLoopContextPropertiesTests : IDisposable
     public async Task AnUnweightedLink_ShowsAnEmptyWeightRatherThanZero()
     {
         // Act.
-        var weight = Row(
-            await Describe("link:births|population"),
-            CausalLoopContextPropertyProvider.LinkWeightProperty);
+        var weight = (await Describe("link:births|population")).Row(CausalLoopContextPropertyProvider.LinkWeightProperty);
 
         // Assert.
         Assert.Equal("", weight.Value);
@@ -240,9 +235,9 @@ public class CausalLoopContextPropertiesTests : IDisposable
         var rows = await Describe("loop:B2");
 
         // Assert.
-        Assert.Equal("reinforcing", Row(rows, CausalLoopContextPropertyProvider.LoopComputedProperty).Value);
+        Assert.Equal("reinforcing", rows.Row(CausalLoopContextPropertyProvider.LoopComputedProperty).Value);
 
-        var stated = Row(rows, CausalLoopContextPropertyProvider.LoopStatedProperty);
+        var stated = rows.Row(CausalLoopContextPropertyProvider.LoopStatedProperty);
         Assert.Equal("balancing", stated.Value);
         Assert.Contains("Neither is corrected for you", stated.ReadOnlyReason, StringComparison.Ordinal);
 
@@ -261,7 +256,7 @@ public class CausalLoopContextPropertiesTests : IDisposable
         var rows = await Describe("loop:R1");
 
         // Assert.
-        Assert.Equal("reinforcing", Row(rows, CausalLoopContextPropertyProvider.LoopComputedProperty).Value);
+        Assert.Equal("reinforcing", rows.Row(CausalLoopContextPropertyProvider.LoopComputedProperty).Value);
         Assert.DoesNotContain(rows, row => row.Id == CausalLoopContextPropertyProvider.LoopStatedProperty);
     }
 
@@ -269,8 +264,7 @@ public class CausalLoopContextPropertiesTests : IDisposable
     public async Task TheComputedPolarity_IsNeverEditable_BecauseItIsArithmetic()
     {
         // Act.
-        var computed = Row(
-            await Describe("loop:R1"), CausalLoopContextPropertyProvider.LoopComputedProperty);
+        var computed = (await Describe("loop:R1")).Row(CausalLoopContextPropertyProvider.LoopComputedProperty);
 
         var result = await _properties.SetAsync(
             Target("loop:R1"),
@@ -320,8 +314,7 @@ public class CausalLoopContextPropertiesTests : IDisposable
         _store.Reload(_path);
 
         // Act.
-        var computed = Row(
-            await Describe("loop:R1"), CausalLoopContextPropertyProvider.LoopComputedProperty);
+        var computed = (await Describe("loop:R1")).Row(CausalLoopContextPropertyProvider.LoopComputedProperty);
 
         // Assert.
         // "Unknown" is not "none": a parity that cannot be counted is not a count of zero.
@@ -373,7 +366,7 @@ public class CausalLoopContextPropertiesTests : IDisposable
         await UseTheOnCallExampleWithoutR2();
 
         // Act.
-        var row = Row(await Describe("loop:R3"), CausalLoopContextPropertyProvider.LoopVariablesProperty);
+        var row = (await Describe("loop:R3")).Row(CausalLoopContextPropertyProvider.LoopVariablesProperty);
 
         // Assert.
         Assert.True(row.IsEditable, row.ReadOnlyReason);

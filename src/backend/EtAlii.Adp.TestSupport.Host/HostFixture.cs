@@ -80,11 +80,7 @@ public class HostFixture : IDisposable
     }
 
     /// <summary>A gRPC channel to the host. The caller disposes it.</summary>
-    public GrpcChannel CreateChannel()
-    {
-        var httpClient = _factory.CreateDefaultClient();
-        return GrpcChannel.ForAddress(httpClient.BaseAddress!, new GrpcChannelOptions { HttpClient = httpClient });
-    }
+    public GrpcChannel CreateChannel() => _factory.CreateGrpcChannel();
 
     public void Dispose()
     {

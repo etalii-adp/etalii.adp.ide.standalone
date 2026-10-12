@@ -85,7 +85,7 @@ public class HelmSessionTests : IAsyncDisposable, IDisposable
         // Arrange: the whole chart, and the two elements furthest apart on the x axis - the
         // layout lays its kinds out in columns, so those two are never in one narrow viewport.
         var session = Session();
-        var all = Assert.IsType<DiagramAddDelta>(Assert.Single(session.Baseline())).Elements;
+        var all = session.BaselineElements();
         var leftmost = all.MinBy(element => element.X)!;
         var rightmost = all.MaxBy(element => element.X)!;
         Assert.NotEqual(leftmost.Id, rightmost.Id);
@@ -233,7 +233,7 @@ public class HelmSessionTests : IAsyncDisposable, IDisposable
     {
         // Arrange.
         await using var session = Session();
-        var delivered = Assert.IsType<DiagramAddDelta>(Assert.Single(session.Baseline())).Elements
+        var delivered = session.BaselineElements()
             .ToDictionary(element => element.Id, StringComparer.Ordinal);
         using var pushed = new ManualResetEventSlim();
         IReadOnlyList<DiagramDelta>? deltas = null;

@@ -82,9 +82,7 @@ public class DiagramToolboxFlowTests(HostFixture host) : IClassFixture<HostFixtu
         using var session = await FlowSession.OpenAsync(host, _projectFolder, TestContext.Current.CancellationToken);
         var diagramClient = new DiagramService.DiagramServiceClient(session.Channel);
 
-        var path = new Path();
-        path.Segments.Add("example 1");
-        path.Segments.Add("tea.adp");
+        var path = Path.Of("example 1", "tea.adp");
 
         // Act.
         var response = await diagramClient.DescribeToolboxAsync(
@@ -100,8 +98,7 @@ public class DiagramToolboxFlowTests(HostFixture host) : IClassFixture<HostFixtu
 
     private static Path PathOf(string fileName)
     {
-        var path = new Path();
-        path.Segments.Add(fileName);
+        var path = Path.Of(fileName);
         return path;
     }
 }

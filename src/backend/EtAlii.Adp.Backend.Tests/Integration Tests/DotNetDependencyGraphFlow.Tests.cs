@@ -62,11 +62,7 @@ public class DotNetDependencyGraphFlowTests(HostFixture host) : IClassFixture<Ho
         var examplesRoot = IoPath.GetFullPath(IoPath.Combine(_projectFolder, "..", "..", ".."));
         using var session = await FlowSession.OpenAsync(host, examplesRoot, TestContext.Current.CancellationToken);
 
-        var diagramPath = new Path();
-        diagramPath.Segments.Add("diagrams");
-        diagramPath.Segments.Add("dotnet-dependency-graph");
-        diagramPath.Segments.Add("pipeline-toolkit");
-        diagramPath.Segments.Add("PipelineToolkit.adp");
+        var diagramPath = Path.Of("diagrams", "dotnet-dependency-graph", "pipeline-toolkit", "PipelineToolkit.adp");
 
         var diagrams = new DiagramService.DiagramServiceClient(session.Channel);
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
@@ -107,8 +103,7 @@ public class DotNetDependencyGraphFlowTests(HostFixture host) : IClassFixture<Ho
     {
         using var session = await FlowSession.OpenAsync(host, _projectFolder, TestContext.Current.CancellationToken);
 
-        var diagramPath = new Path();
-        diagramPath.Segments.Add("PipelineToolkit.adp");
+        var diagramPath = Path.Of("PipelineToolkit.adp");
 
         var diagrams = new DiagramService.DiagramServiceClient(session.Channel);
 

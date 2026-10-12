@@ -86,7 +86,7 @@ public partial class PermanentRefusalTests
     public void EveryRefusalCoreRaises_UsesANameFromTheOneList()
     {
         // Arrange: every production source file under src/backend and each module's backend.
-        var root = RepositoryRoot();
+        var root = RepositoryPaths.Root;
         var sources = new[] { IoPath.Combine(root, "src", "backend"), IoPath.Combine(root, "src", "diagrams") }
             .SelectMany(folder => Directory.EnumerateFiles(folder, "*.cs", SearchOption.AllDirectories))
             .Select(path => (Path: path, Relative: IoPath.GetRelativePath(root, path).Replace('\\', '/')))
@@ -132,23 +132,10 @@ public partial class PermanentRefusalTests
 
     private static StatusFixture Load()
     {
-        var path = IoPath.Combine(RepositoryRoot(), "src", "fixtures", "cross-tier", "permanent-statuses.json");
+        var path = IoPath.Combine(RepositoryPaths.Root, "src", "fixtures", "cross-tier", "permanent-statuses.json");
         var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
         return JsonSerializer.Deserialize<StatusFixture>(File.ReadAllText(path), options)
             ?? throw new InvalidOperationException($"{path} deserialised to nothing.");
-    }
-
-    private static string RepositoryRoot()
-    {
-        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
-        {
-            if (Directory.Exists(IoPath.Combine(directory.FullName, "src", "fixtures", "cross-tier")))
-            {
-                return directory.FullName;
-            }
-        }
-
-        throw new InvalidOperationException("The repository root (src/fixtures/cross-tier) was not found above the test binary.");
     }
 
     [GeneratedRegex(@"new\s+Status\s*\(\s*StatusCode\.(\w+)")]

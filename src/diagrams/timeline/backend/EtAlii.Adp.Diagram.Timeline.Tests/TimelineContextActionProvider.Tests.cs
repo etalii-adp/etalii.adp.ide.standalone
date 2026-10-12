@@ -1,5 +1,4 @@
 using EtAlii.Adp.Context;
-using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.History;
 using Xunit;
 using IoPath = System.IO.Path;
@@ -66,12 +65,12 @@ public class TimelineContextActionProviderTests : IDisposable
     private readonly ShortGuid _watchId = ShortGuid.NewShortGuid();
 
     private ContextTarget Target(string path, string elementId) =>
-        new(ContextScope.DiagramElement, path, IsContainer: false, SourceId: default, _workspace, _watchId, elementId);
+        ContextTarget.ForElement(path, elementId, _workspace, _watchId);
 
     private async Task<IReadOnlyList<string>> ActionIdsFor(string path, string elementId)
     {
         var groups = await _actions.DiscoverAsync(Target(path, elementId), CancellationToken.None);
-        return groups.SelectMany(group => group.Actions).Select(action => action.Id).ToList();
+        return groups.ActionIds();
     }
 
     [Fact]
@@ -368,7 +367,7 @@ public class TimelineActionRealityTests : IDisposable
     }
 
     private ContextTarget Target(string path, string elementId) =>
-        new(ContextScope.DiagramElement, path, IsContainer: false, SourceId: default, _workspace, _watchId, elementId);
+        ContextTarget.ForElement(path, elementId, _workspace, _watchId);
 
     [Fact]
     public async Task APlacement_DiscoversItsActions_OrNoDropCouldEverResolve()
@@ -378,7 +377,7 @@ public class TimelineActionRealityTests : IDisposable
         // discovered nothing made every drop answer "not available for this item" in the app.
         var path = Write();
         var groups = await _actions.DiscoverAsync(Target(path, TimelineNewPlacement.IdFor(0, 0)), CancellationToken.None);
-        var ids = groups.SelectMany(group => group.Actions).Select(action => action.Id).ToList();
+        var ids = groups.ActionIds();
 
         // Assert.
         Assert.Contains(TimelineContextActionProvider.AddElementActionId, ids);
@@ -472,7 +471,7 @@ public class TimelineRelationGestureTests : IDisposable
     }
 
     private ContextTarget Target(string path, string elementId) =>
-        new(ContextScope.DiagramElement, path, IsContainer: false, SourceId: default, _workspace, _watchId, elementId);
+        ContextTarget.ForElement(path, elementId, _workspace, _watchId);
 
     [Fact]
     public async Task OneCall_RelatesTwoElements_InTheStatedDirection()
@@ -609,7 +608,7 @@ public class TimelineRelationGestureTests : IDisposable
         // Assert.
         Assert.Contains(
             TimelineContextActionProvider.ConnectActionId,
-            groups.SelectMany(group => group.Actions).Select(action => action.Id));
+            groups.ActionIds());
     }
 
     [Fact]

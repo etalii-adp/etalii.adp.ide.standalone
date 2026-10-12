@@ -72,9 +72,6 @@ public class C4ContextPropertyProviderTests : IDisposable
     private async Task<IReadOnlyList<ContextPropertyDefinition>> DescribeAsync(string elementId) =>
         await _provider.DescribeAsync(Target(elementId), TestContext.Current.CancellationToken);
 
-    private static ContextPropertyDefinition Property(IReadOnlyList<ContextPropertyDefinition> properties, string id) =>
-        Assert.Single(properties, property => property.Id == id);
-
     [Fact]
     public async Task AContainer_OffersItsName_DescriptionAndTechnology()
     {
@@ -82,9 +79,9 @@ public class C4ContextPropertyProviderTests : IDisposable
         var properties = await DescribeAsync("web");
 
         // Assert.
-        Assert.Equal("Web", Property(properties, C4ContextPropertyProvider.NamePropertyId).Value);
-        Assert.Equal("Serves pages.", Property(properties, C4ContextPropertyProvider.DescriptionPropertyId).Value);
-        Assert.Equal("React", Property(properties, C4ContextPropertyProvider.TechnologyPropertyId).Value);
+        Assert.Equal("Web", properties.Row(C4ContextPropertyProvider.NamePropertyId).Value);
+        Assert.Equal("Serves pages.", properties.Row(C4ContextPropertyProvider.DescriptionPropertyId).Value);
+        Assert.Equal("React", properties.Row(C4ContextPropertyProvider.TechnologyPropertyId).Value);
     }
 
     [Fact]
@@ -94,8 +91,8 @@ public class C4ContextPropertyProviderTests : IDisposable
         var properties = await DescribeAsync("web");
 
         // Assert.
-        Assert.Equal(ContextPropertyEditor.Text, Property(properties, C4ContextPropertyProvider.DescriptionPropertyId).Editor);
-        Assert.Equal(ContextPropertyEditor.Line, Property(properties, C4ContextPropertyProvider.NamePropertyId).Editor);
+        Assert.Equal(ContextPropertyEditor.Text, properties.Row(C4ContextPropertyProvider.DescriptionPropertyId).Editor);
+        Assert.Equal(ContextPropertyEditor.Line, properties.Row(C4ContextPropertyProvider.NamePropertyId).Editor);
     }
 
     [Fact]
@@ -109,7 +106,7 @@ public class C4ContextPropertyProviderTests : IDisposable
         var properties = await DescribeAsync("batch");
 
         // Assert.
-        Assert.Equal("", Property(properties, C4ContextPropertyProvider.TechnologyPropertyId).Value);
+        Assert.Equal("", properties.Row(C4ContextPropertyProvider.TechnologyPropertyId).Value);
     }
 
     [Fact]
@@ -122,7 +119,7 @@ public class C4ContextPropertyProviderTests : IDisposable
 
         // Assert.
         Assert.DoesNotContain(properties, property => property.Id == C4ContextPropertyProvider.TechnologyPropertyId);
-        Assert.Equal("Customer", Property(properties, C4ContextPropertyProvider.NamePropertyId).Value);
+        Assert.Equal("Customer", properties.Row(C4ContextPropertyProvider.NamePropertyId).Value);
     }
 
     [Fact]
@@ -132,12 +129,12 @@ public class C4ContextPropertyProviderTests : IDisposable
         var properties = await DescribeAsync("web");
 
         // Assert.
-        var kind = Property(properties, C4ContextPropertyProvider.KindPropertyId);
+        var kind = properties.Row(C4ContextPropertyProvider.KindPropertyId);
         Assert.Equal("Container", kind.Value);
         Assert.False(kind.IsEditable);
         Assert.NotEmpty(kind.ReadOnlyReason);
         Assert.Equal("Model", kind.Group);
-        Assert.False(Property(properties, C4ContextPropertyProvider.IdentifierPropertyId).IsEditable);
+        Assert.False(properties.Row(C4ContextPropertyProvider.IdentifierPropertyId).IsEditable);
     }
 
     [Fact]
@@ -151,11 +148,11 @@ public class C4ContextPropertyProviderTests : IDisposable
         var properties = await DescribeAsync(relationship.Id);
 
         // Assert.
-        Assert.Equal("Uses", Property(properties, C4ContextPropertyProvider.RelationshipDescriptionPropertyId).Value);
-        Assert.Equal("HTTPS", Property(properties, C4ContextPropertyProvider.RelationshipTechnologyPropertyId).Value);
+        Assert.Equal("Uses", properties.Row(C4ContextPropertyProvider.RelationshipDescriptionPropertyId).Value);
+        Assert.Equal("HTTPS", properties.Row(C4ContextPropertyProvider.RelationshipTechnologyPropertyId).Value);
         // Named, not identified: "Customer" reads where "u" does not.
-        Assert.Equal("Customer", Property(properties, C4ContextPropertyProvider.RelationshipSourcePropertyId).Value);
-        Assert.False(Property(properties, C4ContextPropertyProvider.RelationshipDestinationPropertyId).IsEditable);
+        Assert.Equal("Customer", properties.Row(C4ContextPropertyProvider.RelationshipSourcePropertyId).Value);
+        Assert.False(properties.Row(C4ContextPropertyProvider.RelationshipDestinationPropertyId).IsEditable);
     }
 
     [Fact]

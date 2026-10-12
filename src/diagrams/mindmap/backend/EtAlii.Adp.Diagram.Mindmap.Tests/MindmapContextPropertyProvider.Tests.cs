@@ -12,9 +12,6 @@ public class MindmapContextPropertyProviderTests
     private const string RootNodeId = "ID_1730044821";
     private const string BackendNodeId = "ID_411002937";
 
-    private static ContextPropertyDefinition Property(IReadOnlyList<ContextPropertyDefinition> properties, string id) =>
-        Assert.Single(properties, property => property.Id == id);
-
     [Fact]
     public async Task ANode_OffersItsTextNotesAndLink()
     {
@@ -26,8 +23,8 @@ public class MindmapContextPropertyProviderTests
             project.NodeTarget(BackendNodeId), TestContext.Current.CancellationToken);
 
         // Assert.
-        Assert.Equal("Backend", Property(properties, MindmapContextPropertyProvider.TextPropertyId).Value);
-        Assert.Equal(ContextPropertyEditor.Text, Property(properties, MindmapContextPropertyProvider.NotesPropertyId).Editor);
+        Assert.Equal("Backend", properties.Row(MindmapContextPropertyProvider.TextPropertyId).Value);
+        Assert.Equal(ContextPropertyEditor.Text, properties.Row(MindmapContextPropertyProvider.NotesPropertyId).Editor);
         Assert.Contains(properties, property => property.Id == MindmapContextPropertyProvider.LinkPropertyId);
     }
 
@@ -40,8 +37,7 @@ public class MindmapContextPropertyProviderTests
         using var project = new MindmapTestProject();
         var foreignPath = System.IO.Path.Combine(project.Root, "docs", "roadmap.tml");
         await File.WriteAllTextAsync(foreignPath, "timeline: 1\r\nelements:\r\n  - id: aaa\r\n    label: First\r\n    begin: 2026-01-01\r\n    row: 0\r\n", TestContext.Current.CancellationToken);
-        var target = new ContextTarget(
-            ContextScope.DiagramElement, foreignPath, IsContainer: false, SourceId: default, project.Root, project.WatchId, "aaa");
+        var target = ContextTarget.ForElement(foreignPath, "aaa", project.Root, project.WatchId);
 
         // Act.
         var properties = await project.Properties.DescribeAsync(target, TestContext.Current.CancellationToken);
@@ -64,7 +60,7 @@ public class MindmapContextPropertyProviderTests
             project.NodeTarget(RootNodeId), TestContext.Current.CancellationToken);
 
         // Assert.
-        var folded = Property(properties, MindmapContextPropertyProvider.FoldedPropertyId);
+        var folded = properties.Row(MindmapContextPropertyProvider.FoldedPropertyId);
         Assert.False(folded.IsEditable);
         Assert.Contains("view setting", folded.ReadOnlyReason, StringComparison.Ordinal);
         Assert.Equal("View", folded.Group);
@@ -81,7 +77,7 @@ public class MindmapContextPropertyProviderTests
             project.NodeTarget(BackendNodeId), TestContext.Current.CancellationToken);
 
         // Assert.
-        var identifier = Property(properties, MindmapContextPropertyProvider.IdentifierPropertyId);
+        var identifier = properties.Row(MindmapContextPropertyProvider.IdentifierPropertyId);
         Assert.Equal(BackendNodeId, identifier.Value);
         Assert.False(identifier.IsEditable);
     }

@@ -240,19 +240,5 @@ public partial class SaveResultIsNeverDiscardedTests
     /// <c>ShapeOfFileAccessTests</c> does - rather than reaching into another test assembly's helper
     /// for it.
     /// </summary>
-    private static string RepositoryRoot { get; } = Locate();
-
-    private static string Locate()
-    {
-        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
-        {
-            if (Directory.Exists(IoPath.Combine(directory.FullName, "src", "diagrams")) &&
-                Directory.Exists(IoPath.Combine(directory.FullName, "src", "backend")))
-            {
-                return directory.FullName;
-            }
-        }
-
-        throw new DirectoryNotFoundException($"No repository root above {AppContext.BaseDirectory}.");
-    }
+    private static string RepositoryRoot { get; } = RepositoryPaths.Root;
 }

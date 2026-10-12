@@ -101,7 +101,7 @@ public class WardleyMapFlowTests(HostFixture host) : IClassFixture<HostFixture>
             new WatchContextRequest { ProjectId = session.ProjectId, WatchId = watchId },
             session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         await StreamProbe.WaitUntilContextLiveAsync(contextCall.ResponseStream, cts.Token);
-        var pendingPrompt = ReadUntilPromptAsync(contextCall.ResponseStream, cts.Token);
+        var pendingPrompt = contextCall.ResponseStream.ReadUntilPromptAsync(cts.Token);
 
         // No source: the add lands on the connection's current selection, which with nothing
         // selected is the project's root folder - where a user's first "add a diagram" happens.
@@ -147,13 +147,12 @@ public class WardleyMapFlowTests(HostFixture host) : IClassFixture<HostFixture>
         // connection - core will not edit a document a caller is not looking at - so the stream
         // stays open for the length of the test.
         using var cts = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken);
-        var path = new Path();
-        path.Segments.Add("tea.adp");
+        var path = Path.Of("tea.adp");
         using var call = client.Open(
             new OpenDiagramRequest { ProjectId = session.ProjectId, WatchId = watchId, Path = path },
             session.Headers, cancellationToken: cts.Token);
 
-        var elements = await ReadAddAsync(call.ResponseStream, cts.Token);
+        var elements = await call.ResponseStream.ReadAddAsync(cts.Token);
         var kettle = elements.Single(element =>
             element.Type == WardleyElementTypes.Element &&
             WardleyElementPayload.Parser.ParseFrom(element.Payload.Value.Span).Name == "Kettle");
@@ -194,8 +193,7 @@ public class WardleyMapFlowTests(HostFixture host) : IClassFixture<HostFixture>
         var client = new DiagramService.DiagramServiceClient(session.Channel);
 
         using var cts = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken);
-        var path = new Path();
-        path.Segments.Add("tea.adp");
+        var path = Path.Of("tea.adp");
 
         // Two connections, each with the map open: the one that watches, and the one that drags.
         var watching = ShortGuid.NewShortGuid();
@@ -208,14 +206,14 @@ public class WardleyMapFlowTests(HostFixture host) : IClassFixture<HostFixture>
             new OpenDiagramRequest { ProjectId = session.ProjectId, WatchId = dragging, Path = path },
             session.Headers, cancellationToken: cts.Token);
 
-        var baseline = await ReadAddAsync(watcher.ResponseStream, cts.Token);
-        await ReadAddAsync(dragger.ResponseStream, cts.Token);
+        var baseline = await watcher.ResponseStream.ReadAddAsync(cts.Token);
+        await dragger.ResponseStream.ReadAddAsync(cts.Token);
         var kettle = baseline.Single(element =>
             element.Type == WardleyElementTypes.Element &&
             WardleyElementPayload.Parser.ParseFrom(element.Payload.Value.Span).Name == "Kettle");
 
         // Act. The drag happens on the second connection; the first never asked for it.
-        var pendingUpdate = ReadAddAsync(watcher.ResponseStream, cts.Token);
+        var pendingUpdate = watcher.ResponseStream.ReadAddAsync(cts.Token);
         await client.MoveElementAsync(
             new MoveElementRequest
             {
@@ -316,7 +314,7 @@ public class WardleyMapFlowTests(HostFixture host) : IClassFixture<HostFixture>
 
         // Assert, continued. The actions arrive with the selection, described by the backend
         // down to their shortcuts (Requirements 11.4, 11.5).
-        var actions = changed.Actions.SelectMany(group => group.Actions).ToArray();
+        var actions = changed.Actions.Actions().ToArray();
         Assert.Contains(actions, action => action.Id == WardleyContextActionProvider.RenameActionId && action.Shortcut.Key == "F2");
         Assert.Contains(actions, action => action.Id == WardleyContextActionProvider.LinkActionId);
 
@@ -422,8 +420,7 @@ public class WardleyMapFlowTests(HostFixture host) : IClassFixture<HostFixture>
         using var session = await FlowSession.OpenAsync(host, _projectFolder, TestContext.Current.CancellationToken);
         var client = new DiagramService.DiagramServiceClient(session.Channel);
 
-        var path = new Path();
-        path.Segments.Add("tea.adp");
+        var path = Path.Of("tea.adp");
 
         // Act.
         var described = await client.DescribeToolboxAsync(
@@ -474,44 +471,6 @@ public class WardleyMapFlowTests(HostFixture host) : IClassFixture<HostFixture>
         }
 
         return null;
-    }
-
-    /// <summary>The elements of the next add on a stream - a baseline, or the deltas of a change.</summary>
-    private static async Task<IReadOnlyList<Element>> ReadAddAsync(
-        IAsyncStreamReader<Delta> stream,
-        CancellationToken cancellationToken)
-    {
-        try
-        {
-            while (await stream.MoveNext(cancellationToken))
-            {
-                if (stream.Current.ActionCase == Delta.ActionOneofCase.Add)
-                {
-                    return [.. stream.Current.Add.Elements];
-                }
-            }
-        }
-        catch (RpcException exception) when (exception.StatusCode == StatusCode.Cancelled)
-        {
-            // Reading stopped at the deadline, which is how this helper ends when nothing came.
-        }
-
-        return [];
-    }
-
-    private static async Task<ContextPrompt> ReadUntilPromptAsync(
-        IAsyncStreamReader<ContextMessage> stream,
-        CancellationToken cancellationToken)
-    {
-        while (await stream.MoveNext(cancellationToken))
-        {
-            if (stream.Current.MessageCase == ContextMessage.MessageOneofCase.Prompt)
-            {
-                return stream.Current.Prompt;
-            }
-        }
-
-        throw new InvalidOperationException("The stream ended before a prompt arrived.");
     }
 
     private static async Task<ContextSelectionChanged> ReadUntilSelectionWithActionsAsync(

@@ -94,7 +94,7 @@ public class CausalLoopSessionTests : IDisposable
             registrationPath,
             "systems/causal-loop-diagram\r\nbody: coasts.cld\r\nlayout:\r\n  variable:near: 0 0\r\n  variable:far: 10000 0\r\n");
         var session = new CausalLoopSession(bodyPath, registrationPath, _store, new CausalLoopElementMapper());
-        var all = Assert.IsType<DiagramAddDelta>(Assert.Single(session.Baseline())).Elements;
+        var all = session.BaselineElements();
         var near = all.Single(element => element.Id == "variable:near");
         var far = all.Single(element => element.Id == "variable:far");
 
@@ -139,7 +139,7 @@ public class CausalLoopSessionTests : IDisposable
     {
         // Arrange.
         var session = Session();
-        var before = Assert.IsType<DiagramAddDelta>(Assert.Single(session.Baseline())).Elements
+        var before = session.BaselineElements()
             .ToDictionary(element => element.Id, element => (element.X, element.Y), StringComparer.Ordinal);
 
         var anchor = before.First(entry => entry.Key.StartsWith("variable:", StringComparison.Ordinal));
@@ -247,7 +247,7 @@ public class CausalLoopSessionTests : IDisposable
     {
         // Arrange.
         var session = Session();
-        var all = Assert.IsType<DiagramAddDelta>(Assert.Single(session.Baseline())).Elements;
+        var all = session.BaselineElements();
         var one = all.First(element => element.Type == CausalLoopElementMapper.VariableType);
         session.UpdateView(Around(one));
 

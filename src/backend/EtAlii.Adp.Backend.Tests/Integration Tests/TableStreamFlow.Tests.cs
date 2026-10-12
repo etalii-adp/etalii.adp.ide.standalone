@@ -137,7 +137,7 @@ public sealed class TableStreamFlowTests : IClassFixture<TableStreamFlowTests.Ho
 
         // Closing the table disposes its session and leaves the connection open.
         await session.Designer.CloseTableAsync(new Proto.CloseTableRequest { WatchId = session.WatchId, StreamId = streamId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
-        Assert.True(await EventuallyAsync(() => opened.Disposed), "The session was not disposed when its stream was closed.");
+        Assert.True(await Eventually.TrueAsync(() => opened.Disposed, TestContext.Current.CancellationToken, FlowConstants.MessageTimeout), "The session was not disposed when its stream was closed.");
         Assert.Equal(0, Streams().Count);
         Assert.NotNull(Connections().Find((ShortGuid)session.WatchId));
     }
@@ -161,8 +161,8 @@ public sealed class TableStreamFlowTests : IClassFixture<TableStreamFlowTests.Ho
         watch.Dispose();
 
         // Assert: a session is per connection and dies with its stream.
-        Assert.True(await EventuallyAsync(() => opened.Disposed), "A table session outlived the connection that carried it.");
-        Assert.True(await EventuallyAsync(() => Streams().Count == 0), "A table stream was still registered after its connection ended.");
+        Assert.True(await Eventually.TrueAsync(() => opened.Disposed, TestContext.Current.CancellationToken, FlowConstants.MessageTimeout), "A table session outlived the connection that carried it.");
+        Assert.True(await Eventually.TrueAsync(() => Streams().Count == 0, TestContext.Current.CancellationToken, FlowConstants.MessageTimeout), "A table stream was still registered after its connection ended.");
     }
 
     [Fact]
@@ -241,8 +241,7 @@ public sealed class TableStreamFlowTests : IClassFixture<TableStreamFlowTests.Ho
 
     private static Proto.OpenTableRequest OpenRequest(Session session, Documents.Wire.ShortGuid streamId, string fileName)
     {
-        var path = new Path();
-        path.Segments.Add(fileName);
+        var path = Path.Of(fileName);
         return new Proto.OpenTableRequest { ProjectId = session.ProjectId, WatchId = session.WatchId, StreamId = streamId, Path = path };
     }
 
@@ -262,22 +261,6 @@ public sealed class TableStreamFlowTests : IClassFixture<TableStreamFlowTests.Ho
                 return message.Table;
             }
         }
-    }
-
-    private static async Task<bool> EventuallyAsync(Func<bool> condition)
-    {
-        var deadline = DateTime.UtcNow + FlowConstants.MessageTimeout;
-        while (DateTime.UtcNow < deadline)
-        {
-            if (condition())
-            {
-                return true;
-            }
-
-            await Task.Delay(25, TestContext.Current.CancellationToken);
-        }
-
-        return condition();
     }
 
     private async Task<Session> OpenSessionAsync()

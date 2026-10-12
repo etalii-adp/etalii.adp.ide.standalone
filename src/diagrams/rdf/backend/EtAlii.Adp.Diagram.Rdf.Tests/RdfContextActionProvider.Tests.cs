@@ -1,7 +1,6 @@
 using System.Text;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
-using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 using Microsoft.Extensions.DependencyInjection;
@@ -58,13 +57,12 @@ public class RdfContextActionProviderTests : IDisposable
         return path;
     }
 
-    private ContextTarget Target(string bodyPath, string elementId) => new(
-        ContextScope.DiagramElement, bodyPath, IsContainer: false, SourceId: default, _root, default, elementId);
+    private ContextTarget Target(string bodyPath, string elementId) => ContextTarget.ForElement(bodyPath, elementId, _root);
 
     private async Task<IReadOnlyList<string>> ActionIds(string bodyPath, string elementId)
     {
         var groups = await _actions.DiscoverAsync(Target(bodyPath, elementId), TestContext.Current.CancellationToken);
-        return groups.SelectMany(group => group.Actions).Select(action => action.Id).ToList();
+        return groups.ActionIds();
     }
 
     [Fact]

@@ -23,7 +23,7 @@ public class AnsibleSessionTests : IDisposable
     public AnsibleSessionTests()
     {
         _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        CopyTree(IoPath.Combine("Fixtures", "infrastructure"), _root);
+        TestFolder.CopyTree(IoPath.Combine("Fixtures", "infrastructure"), _root);
         // The registration a real Add would have written. Nothing else is added to the folder.
         File.WriteAllText(IoPath.Combine(_root, "infrastructure.adp"), "ansible/structure\n");
         _provider = new ServiceCollection().AddCommands().AddHierarchyCommandHandlers().AddAnsibleStructure().BuildServiceProvider();
@@ -151,7 +151,7 @@ public class AnsibleSessionTests : IDisposable
     {
         // Arrange.
         await using var session = Open();
-        var delivered = Assert.IsType<DiagramAddDelta>(Assert.Single(session.Baseline())).Elements
+        var delivered = session.BaselineElements()
             .ToDictionary(element => element.Id, StringComparer.Ordinal);
         var pushes = new List<IReadOnlyList<DiagramDelta>>();
         session.Changed += (_, args) =>
@@ -408,18 +408,5 @@ public class AnsibleSessionTests : IDisposable
         var moved = elements.Single(element => element.Id == "role:common");
         Assert.Equal(321, moved.X);
         Assert.Equal(123, moved.Y);
-    }
-
-    private static void CopyTree(string source, string destination)
-    {
-        Directory.CreateDirectory(destination);
-        foreach (var folder in Directory.GetDirectories(source, "*", SearchOption.AllDirectories))
-        {
-            Directory.CreateDirectory(IoPath.Combine(destination, IoPath.GetRelativePath(source, folder)));
-        }
-        foreach (var file in Directory.GetFiles(source, "*", SearchOption.AllDirectories))
-        {
-            File.Copy(file, IoPath.Combine(destination, IoPath.GetRelativePath(source, file)));
-        }
     }
 }

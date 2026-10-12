@@ -10,24 +10,10 @@ namespace EtAlii.Adp.Editor.Markdown.Tests;
 /// </summary>
 public class ExamplesTests
 {
-    private static string ExamplesRoot { get; } = Locate("src", "editors", "markdown", "examples");
+    private static string ExamplesRoot { get; } = RepositoryPaths.Under("src", "editors", "markdown", "examples");
 
     /// <summary>The combined project's replica of this module's examples (structure.md's replication rule).</summary>
-    private static string ReplicaRoot { get; } = Locate("src", "examples", "editors", "markdown");
-
-    private static string Locate(params string[] segments)
-    {
-        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
-        {
-            var candidate = IoPath.Combine([directory.FullName, .. segments]);
-            if (Directory.Exists(candidate))
-            {
-                return candidate;
-            }
-        }
-
-        throw new InvalidOperationException($"The {string.Join('/', segments)} folder was not found above the test binary.");
-    }
+    private static string ReplicaRoot { get; } = RepositoryPaths.Under("src", "examples", "editors", "markdown");
 
     public static TheoryData<string> EveryExampleFile()
     {

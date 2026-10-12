@@ -102,7 +102,7 @@ public partial class DocumentationLinksTests
         ".spec-workflow/steering/roles.md",
     ];
 
-    private static string RepositoryRoot { get; } = Locate();
+    private static string RepositoryRoot { get; } = RepositoryPaths.Root;
 
     /// <summary>Every <c>readme.md</c> under <c>src/</c>, repo-relative - discovered, not listed.</summary>
     private static IReadOnlyList<string> InTreeReadmes { get; } = DiscoverInTreeReadmes();
@@ -157,20 +157,6 @@ public partial class DocumentationLinksTests
         }
 
         return found;
-    }
-
-    private static string Locate()
-    {
-        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
-        {
-            if (Directory.Exists(IoPath.Combine(directory.FullName, "src", "diagrams")) &&
-                Directory.Exists(IoPath.Combine(directory.FullName, "docs")))
-            {
-                return directory.FullName;
-            }
-        }
-
-        throw new InvalidOperationException("The repository root (src/diagrams beside docs) was not found above the test binary.");
     }
 
     [Fact]

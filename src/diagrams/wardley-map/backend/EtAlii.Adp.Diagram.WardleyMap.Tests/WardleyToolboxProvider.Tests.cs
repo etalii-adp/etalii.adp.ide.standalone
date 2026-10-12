@@ -1,5 +1,4 @@
 using EtAlii.Adp.Context;
-using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 using Microsoft.Extensions.DependencyInjection;
@@ -249,13 +248,12 @@ public sealed class WardleyToolboxProviderTests : IDisposable
         .Single(entry => entry.Kind == WardleyIdentityKind.Component && entry.Key == name)
         .Id;
 
-    private ContextTarget Target(string elementId) => new(
-        ContextScope.DiagramElement, _path, IsContainer: false, SourceId: default, _root, default, elementId);
+    private ContextTarget Target(string elementId) => ContextTarget.ForElement(_path, elementId, _root);
 
     private async Task<IReadOnlyList<string>> OfferedIds(string elementId)
     {
         var groups = await _actions.DiscoverAsync(Target(elementId), TestContext.Current.CancellationToken);
-        return groups.SelectMany(group => group.Actions).Select(action => action.Id).ToArray();
+        return groups.ActionIds();
     }
 
     private Task<ContextCommitResult> Execute(string actionId, string value) =>

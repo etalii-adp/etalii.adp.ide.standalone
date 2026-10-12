@@ -1,5 +1,4 @@
 using EtAlii.Adp.Context;
-using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.History;
 using Xunit;
 using IoPath = System.IO.Path;
@@ -93,9 +92,7 @@ public class TimelineToolboxProviderTests : IDisposable
         _store.Forget(path);
         var item = _toolbox.Items.Single(candidate => candidate.Id == "timeline.toolbox.element");
         var seconds = TimelineScale.ToSeconds(new DateTimeOffset(2026, 9, 1, 0, 0, 0, TimeSpan.Zero));
-        var target = new ContextTarget(
-            ContextScope.DiagramElement, path, IsContainer: false, SourceId: default, _workspace,
-            ShortGuid.NewShortGuid(), TimelineNewPlacement.IdFor(seconds, 3));
+        var target = ContextTarget.ForElement(path, TimelineNewPlacement.IdFor(seconds, 3), _workspace, ShortGuid.NewShortGuid());
 
         // Act: the drop names a placement, and the element appears there with nothing asked.
         var result = await _actions.ExecuteAsync(target, item.DropActionId, CancellationToken.None);

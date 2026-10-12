@@ -218,8 +218,7 @@ public class EditorResolutionTests(HostFixture host) : IClassFixture<HostFixture
         using var session = await FlowSession.OpenAsync(host, _projectFolder, TestContext.Current.CancellationToken);
         var diagramClient = new DiagramService.DiagramServiceClient(session.Channel);
         var watchId = ShortGuid.NewShortGuid();
-        var path = new Path();
-        path.Segments.Add("both.dsl");
+        var path = Path.Of("both.dsl");
 
         // The diagram view: the router claims the path, exactly as it always has (R5.1).
         using var diagramCall = diagramClient.Open(new OpenDiagramRequest { ProjectId = session.ProjectId, WatchId = watchId, Path = path }, session.Headers, deadline: DateTime.UtcNow.AddSeconds(60), cancellationToken: TestContext.Current.CancellationToken);
@@ -411,8 +410,7 @@ public class EditorResolutionTests(HostFixture host) : IClassFixture<HostFixture
         Documents.Wire.ShortGuid projectId,
         string fileName)
     {
-        var path = new Path();
-        path.Segments.Add(fileName);
+        var path = Path.Of(fileName);
         using var call = diagramClient.Open(
             new OpenDiagramRequest { ProjectId = projectId, WatchId = ShortGuid.NewShortGuid(), Path = path },
             headers,

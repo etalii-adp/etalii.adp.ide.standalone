@@ -113,7 +113,7 @@ public static class DrawnConnections
             {
                 return [.. problems, $"{name}: no examples folder at {source}."];
             }
-            CopyTree(source, workspace);
+            TestFolder.CopyTree(source, workspace);
 
             var router = services.GetRequiredService<DiagramFileRouter>();
             var factories = services.GetServices<IDiagramSessionFactory>().ToList();
@@ -327,16 +327,5 @@ public static class DrawnConnections
             directory = directory.Parent;
         }
         throw new DirectoryNotFoundException($"No src/examples/diagrams folder above {AppContext.BaseDirectory}.");
-    }
-
-    /// <summary>Copies every file under <paramref name="from"/> to the same place under <paramref name="to"/>.</summary>
-    public static void CopyTree(string from, string to)
-    {
-        foreach (var file in Directory.EnumerateFiles(from, "*", SearchOption.AllDirectories))
-        {
-            var target = IoPath.Combine(to, IoPath.GetRelativePath(from, file));
-            Directory.CreateDirectory(IoPath.GetDirectoryName(target)!);
-            File.Copy(file, target);
-        }
     }
 }

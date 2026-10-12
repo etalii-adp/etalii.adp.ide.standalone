@@ -144,7 +144,7 @@ public class TimelineFlowTests(HostFixture host) : IClassFixture<HostFixture>
         using var call = client.Open(
             new OpenDiagramRequest { ProjectId = session.ProjectId, WatchId = watchId, Path = DiagramFlow.PathOf("plan.tml") },
             session.Headers, cancellationToken: cts.Token);
-        await DiagramFlow.ReadAddAsync(call.ResponseStream, cts.Token);
+        await call.ResponseStream.ReadAddAsync(cts.Token);
 
         // Act: land the period at 2026-03-01 on row 4. 39 days of duration must survive.
         var landing = (new DateTimeOffset(2026, 3, 1, 0, 0, 0, TimeSpan.Zero) - DateTimeOffset.UnixEpoch).TotalSeconds;

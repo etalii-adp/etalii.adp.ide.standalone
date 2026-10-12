@@ -34,7 +34,7 @@ public class HistoryContextActionProviderTests : IDisposable
         new(ContextScope.Project, _root, IsContainer: true, SourceId: default, RootPath: _root);
 
     private async Task<IReadOnlyList<ContextActionDefinition>> DiscoverAsync() =>
-        (await _provider.DiscoverAsync(ProjectTarget(), TestContext.Current.CancellationToken)).SelectMany(g => g.Actions).ToList();
+        (await _provider.DiscoverAsync(ProjectTarget(), TestContext.Current.CancellationToken)).Actions();
 
     /// <summary>Records one real, reversible change so the history has something to undo.</summary>
     private async Task RecordARenameAsync()

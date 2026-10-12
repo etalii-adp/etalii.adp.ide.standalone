@@ -3,7 +3,6 @@ using EtAlii.Adp.Diagram.Wire;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Hierarchy.Wire;
 using EtAlii.Adp.TestSupport.Host;
-using Grpc.Core;
 using Xunit;
 using Path = EtAlii.Adp.Documents.Wire.Path;
 
@@ -27,34 +26,7 @@ internal static class DiagramFlow
         using var call = diagramClient.Open(
             new OpenDiagramRequest { ProjectId = session.ProjectId, WatchId = ShortGuid.NewShortGuid(), Path = PathOf(fileName) },
             session.Headers, cancellationToken: cts.Token);
-        return await ReadAddAsync(call.ResponseStream, cts.Token);
-    }
-
-    /// <summary>The next delta that adds or replaces elements; an empty list when none came before the deadline.</summary>
-    public static async Task<IReadOnlyList<Element>> ReadAddAsync(
-        IAsyncStreamReader<Delta> stream,
-        CancellationToken cancellationToken)
-    {
-        try
-        {
-            while (await stream.MoveNext(cancellationToken))
-            {
-                if (stream.Current.ActionCase == Delta.ActionOneofCase.Add)
-                {
-                    return [.. stream.Current.Add.Elements];
-                }
-            }
-        }
-        catch (RpcException exception) when (exception.StatusCode == StatusCode.Cancelled)
-        {
-            // Reading stopped at the deadline; the caller's assertion reports the empty baseline.
-        }
-        catch (OperationCanceledException)
-        {
-            // Same story, thrown the other way.
-        }
-
-        return [];
+        return await call.ResponseStream.ReadAddAsync(cts.Token);
     }
 
     /// <summary>
@@ -114,8 +86,7 @@ internal static class DiagramFlow
     /// <summary>A project-relative path of one segment.</summary>
     public static Path PathOf(string fileName)
     {
-        var path = new Path();
-        path.Segments.Add(fileName);
+        var path = Path.Of(fileName);
         return path;
     }
 }

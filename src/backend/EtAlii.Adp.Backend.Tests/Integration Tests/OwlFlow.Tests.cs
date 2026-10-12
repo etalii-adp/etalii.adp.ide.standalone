@@ -99,7 +99,7 @@ public class OwlFlowTests(HostFixture host) : IClassFixture<HostFixture>
         using var call = client.Open(
             new OpenDiagramRequest { ProjectId = session.ProjectId, WatchId = watchId, Path = DiagramFlow.PathOf("pizza.adp") },
             session.Headers, cancellationToken: cts.Token);
-        await DiagramFlow.ReadAddAsync(call.ResponseStream, cts.Token);
+        await call.ResponseStream.ReadAddAsync(cts.Token);
 
         // Act.
         var moved = await client.MoveElementAsync(
@@ -145,7 +145,7 @@ public class OwlFlowTests(HostFixture host) : IClassFixture<HostFixture>
         using var call = client.Open(
             new OpenDiagramRequest { ProjectId = session.ProjectId, WatchId = watchId, Path = DiagramFlow.PathOf("pizza.adp") },
             session.Headers, cancellationToken: cts.Token);
-        var elements = await DiagramFlow.ReadAddAsync(call.ResponseStream, cts.Token);
+        var elements = await call.ResponseStream.ReadAddAsync(cts.Token);
         Assert.Contains(elements, element => element.Id.Value == ExpressionId);
 
         // Act.

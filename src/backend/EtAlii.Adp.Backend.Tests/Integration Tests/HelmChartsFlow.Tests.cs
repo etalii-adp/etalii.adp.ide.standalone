@@ -129,7 +129,7 @@ public class HelmChartsFlowTests : IClassFixture<HostFixture>
         using var call = client.Open(
             new OpenDiagramRequest { ProjectId = session.ProjectId, WatchId = watchId, Path = ChartPath() },
             session.Headers, cancellationToken: cts.Token);
-        await ReadAddAsync(call.ResponseStream, cts.Token);
+        await call.ResponseStream.ReadAddAsync(cts.Token);
 
         // Act: drag the chart node to an authored spot.
         var moved = await client.MoveElementAsync(
@@ -180,9 +180,7 @@ public class HelmChartsFlowTests : IClassFixture<HostFixture>
 
     private static Path ChartPath()
     {
-        var path = new Path();
-        path.Segments.Add("web-shop");
-        path.Segments.Add("web-shop.adp");
+        var path = Path.Of("web-shop", "web-shop.adp");
         return path;
     }
 
@@ -214,32 +212,7 @@ public class HelmChartsFlowTests : IClassFixture<HostFixture>
         using var call = client.Open(
             new OpenDiagramRequest { ProjectId = projectId, WatchId = ShortGuid.NewShortGuid(), Path = ChartPath() },
             headers, cancellationToken: cts.Token);
-        return await ReadAddAsync(call.ResponseStream, cts.Token);
-    }
-
-    private static async Task<IReadOnlyList<Element>> ReadAddAsync(
-        IAsyncStreamReader<Delta> stream, CancellationToken cancellationToken)
-    {
-        try
-        {
-            while (await stream.MoveNext(cancellationToken))
-            {
-                if (stream.Current.ActionCase == Delta.ActionOneofCase.Add)
-                {
-                    return [.. stream.Current.Add.Elements];
-                }
-            }
-        }
-        catch (RpcException exception) when (exception.StatusCode == StatusCode.Cancelled)
-        {
-            // Reading stopped at the deadline, which is how this helper ends normally.
-        }
-        catch (OperationCanceledException)
-        {
-            // Same story, thrown the other way.
-        }
-
-        return [];
+        return await call.ResponseStream.ReadAddAsync(cts.Token);
     }
 
     private static Task<ExecuteActionResponse> ExecuteProjectActionAsync(

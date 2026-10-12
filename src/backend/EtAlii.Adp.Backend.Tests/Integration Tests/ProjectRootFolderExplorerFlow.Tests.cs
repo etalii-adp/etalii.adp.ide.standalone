@@ -28,22 +28,7 @@ public class ProjectRootFolderExplorerFlowTests(HostFixture host) : IClassFixtur
         await StreamProbe.WaitUntilHierarchyLiveAsync(call.ResponseStream, _projectFolder, cts.Token);
         triggerChange();
 
-        return await ReadUntilChangeAsync(call.ResponseStream, change => change.ChangeCase == wanted, cts.Token);
-    }
-
-    private static async Task<HierarchyChange> ReadUntilChangeAsync(
-        IAsyncStreamReader<HierarchyMessage> stream, Func<HierarchyChange, bool> wanted, CancellationToken cancellationToken)
-    {
-        while (await stream.MoveNext(cancellationToken))
-        {
-            var message = stream.Current;
-            if (message.MessageCase == HierarchyMessage.MessageOneofCase.Change && wanted(message.Change))
-            {
-                return message.Change;
-            }
-        }
-
-        throw new InvalidOperationException("The stream ended before the expected change arrived.");
+        return await call.ResponseStream.ReadUntilChangeAsync(change => change.ChangeCase == wanted, cts.Token);
     }
 
     [Fact]
@@ -109,8 +94,8 @@ public class ProjectRootFolderExplorerFlowTests(HostFixture host) : IClassFixtur
 
         // Act.
         await File.WriteAllTextAsync(IoPath.Combine(_projectFolder, "new.txt"), "", TestContext.Current.CancellationToken);
-        var changeA = await ReadUntilChangeAsync(callA.ResponseStream, IsTheNewFile, ctsA.Token);
-        var changeB = await ReadUntilChangeAsync(callB.ResponseStream, IsTheNewFile, ctsB.Token);
+        var changeA = await callA.ResponseStream.ReadUntilChangeAsync(IsTheNewFile, ctsA.Token);
+        var changeB = await callB.ResponseStream.ReadUntilChangeAsync(IsTheNewFile, ctsB.Token);
 
         // Assert.
         Assert.Equal(HierarchyChange.ChangeOneofCase.Created, changeA.ChangeCase);

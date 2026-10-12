@@ -411,13 +411,8 @@ public sealed partial class ContextService
     /// The project-relative form of an absolute path the backend produced - the one shape a
     /// path is ever allowed to take on the wire, and the same one a selection carries.
     /// </summary>
-    private static Path ToRelativePath(string rootPath, string fullPath)
-    {
-        var relative = new Path();
-        relative.Segments.AddRange(IoPath.GetRelativePath(rootPath, fullPath)
-            .Split([IoPath.DirectorySeparatorChar, IoPath.AltDirectorySeparatorChar], StringSplitOptions.RemoveEmptyEntries));
-        return relative;
-    }
+    private static Path ToRelativePath(string rootPath, string fullPath) =>
+        Path.OfLocation(IoPath.GetRelativePath(rootPath, fullPath));
 
     internal static ContextTarget RootTarget(string rootPath, ShortGuid watchId = default) =>
         new(ContextScope.Hierarchy, rootPath, IsContainer: true, SourceId: default, RootPath: rootPath, WatchId: watchId);

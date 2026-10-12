@@ -1,5 +1,4 @@
 using EtAlii.Adp.Context;
-using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 using Microsoft.Extensions.DependencyInjection;
@@ -48,7 +47,7 @@ public class ZeroWritesTests : IDisposable
         _provider = new ServiceCollection().AddCommands().AddHierarchyCommandHandlers().AddAnsibleStructure().BuildServiceProvider();
         _historyStacks = _provider.GetRequiredService<IHistoryStackStore>();
         _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        CopyTree(IoPath.Combine("Fixtures", "infrastructure"), _root);
+        TestFolder.CopyTree(IoPath.Combine("Fixtures", "infrastructure"), _root);
         File.WriteAllText(IoPath.Combine(_root, "infrastructure.adp"), "ansible/structure\n");
     }
 
@@ -95,7 +94,7 @@ public class ZeroWritesTests : IDisposable
 
             foreach (var id in ids)
             {
-                var target = new ContextTarget(ContextScope.DiagramElement, _root, false, default, _root, default, id);
+                var target = ContextTarget.ForElement(_root, id, _root);
                 await properties.DescribeAsync(target, TestContext.Current.CancellationToken);
 
                 // The refused write. Included on purpose: this is the path most likely to grow
@@ -270,17 +269,4 @@ public class ZeroWritesTests : IDisposable
     private Dictionary<string, (byte[] Bytes, DateTime Written)> Snapshot() =>
         Directory.GetFiles(_root, "*", SearchOption.AllDirectories)
             .ToDictionary(path => path, path => (File.ReadAllBytes(path), File.GetLastWriteTimeUtc(path)));
-
-    private static void CopyTree(string source, string destination)
-    {
-        Directory.CreateDirectory(destination);
-        foreach (var folder in Directory.GetDirectories(source, "*", SearchOption.AllDirectories))
-        {
-            Directory.CreateDirectory(IoPath.Combine(destination, IoPath.GetRelativePath(source, folder)));
-        }
-        foreach (var file in Directory.GetFiles(source, "*", SearchOption.AllDirectories))
-        {
-            File.Copy(file, IoPath.Combine(destination, IoPath.GetRelativePath(source, file)));
-        }
-    }
 }

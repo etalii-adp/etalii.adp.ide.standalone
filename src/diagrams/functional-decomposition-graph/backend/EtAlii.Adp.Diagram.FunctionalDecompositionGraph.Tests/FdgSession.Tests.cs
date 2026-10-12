@@ -52,7 +52,7 @@ public sealed class FdgSessionTests : IDisposable
         await using var session = Open();
 
         // Act.
-        var delivered = Delivered(session.Baseline());
+        var delivered = session.Baseline().AddedElements();
 
         // Assert.
         var expected = model.Elements.Select(element => element.Id).Concat(model.Connections.Select(connection => connection.Id));
@@ -66,7 +66,7 @@ public sealed class FdgSessionTests : IDisposable
         await using var session = Open();
 
         // Act.
-        var delivered = Delivered(session.Baseline()).Where(element => !IsConnection(element)).ToList();
+        var delivered = session.Baseline().AddedElements().Where(element => !IsConnection(element)).ToList();
 
         // Assert.
         Assert.NotEmpty(delivered);
@@ -91,7 +91,7 @@ public sealed class FdgSessionTests : IDisposable
         await using var session = Open();
 
         // Act.
-        var planning = Delivered(session.Baseline()).Single(element => element.Id == "planning");
+        var planning = session.Baseline().AddedElements().Single(element => element.Id == "planning");
         var payload = ElementPayload(planning);
 
         // Assert.
@@ -172,9 +172,6 @@ public sealed class FdgSessionTests : IDisposable
         File.WriteAllText(Body, document.Text);
         _store.Reload(Body);
     }
-
-    private static IReadOnlyList<DiagramElement> Delivered(IReadOnlyList<DiagramDelta> baseline) =>
-        Assert.IsType<DiagramAddDelta>(Assert.Single(baseline)).Elements;
 
     private static bool IsConnection(DiagramElement element) =>
         FdgConnectionTypes.All.Any(relation => element.Type == FdgElementMapper.ConnectionTypeOf(relation));

@@ -1,5 +1,4 @@
 using EtAlii.Adp.Context;
-using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.History;
 using Xunit;
 using IoPath = System.IO.Path;
@@ -54,7 +53,7 @@ public class PipelineToolboxProviderTests : IDisposable
     }
 
     private ContextTarget Target(string path, string elementId) =>
-        new(ContextScope.DiagramElement, path, IsContainer: false, SourceId: default, _workspace, ShortGuid.NewShortGuid(), elementId);
+        ContextTarget.ForElement(path, elementId, _workspace, ShortGuid.NewShortGuid());
 
     /// <summary>Dropping an entry on an element is committing the action the entry names.</summary>
     private async Task<ContextCommitResult> DropAsync(string entryId, string path, string ontoElementId)

@@ -50,7 +50,7 @@ public class HierarchyContextActionProviderTests : IDisposable
         new(ContextScope.Hierarchy, path, IsContainer: true, ShortGuid.NewShortGuid(), RootPath: _root);
 
     private async Task<IReadOnlyList<ContextActionDefinition>> DiscoverAsync(ContextTarget target) =>
-        (await _provider.DiscoverAsync(target, TestContext.Current.CancellationToken)).SelectMany(g => g.Actions).ToList();
+        (await _provider.DiscoverAsync(target, TestContext.Current.CancellationToken)).Actions();
 
     [Fact]
     public async Task DiscoverAsync_ForAnExistingFile_ReportsRenameAndDeleteWithTheirShortcuts()
@@ -408,7 +408,7 @@ public class HierarchyContextActionProviderTests : IDisposable
         var groups = await _provider.DiscoverAsync(RootTarget(_root), TestContext.Current.CancellationToken);
 
         // Act and assert, step by step.
-        var actions = groups.SelectMany(group => group.Actions).ToList();
+        var actions = groups.Actions();
         var untouchable = actions
             .Where(action => action.Id != HierarchyContextActionProvider.AddFolderActionId)
             .ToList();

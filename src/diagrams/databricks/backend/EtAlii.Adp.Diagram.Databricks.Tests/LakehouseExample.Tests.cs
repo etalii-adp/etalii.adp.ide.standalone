@@ -13,21 +13,7 @@ namespace EtAlii.Adp.Diagram.Databricks.Tests;
 public class LakehouseExampleTests
 {
     /// <summary>The example folder, found by walking up from the test binary.</summary>
-    private static string Lakehouse { get; } = Locate();
-
-    private static string Locate()
-    {
-        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
-        {
-            var candidate = IoPath.Combine(directory.FullName, "src", "diagrams", "databricks", "examples", "lakehouse");
-            if (Directory.Exists(candidate))
-            {
-                return candidate;
-            }
-        }
-
-        throw new InvalidOperationException("The lakehouse example was not found above the test binary.");
-    }
+    private static string Lakehouse { get; } = RepositoryPaths.Under("src", "diagrams", "databricks", "examples", "lakehouse");
 
     private static DatabricksDocumentEntry Load(string relativePath)
     {

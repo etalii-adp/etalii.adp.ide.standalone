@@ -1,5 +1,4 @@
 using EtAlii.Adp.Context;
-using EtAlii.Adp.Documents.Wire;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
@@ -25,7 +24,7 @@ public class AnsibleContextPropertyProviderTests : IDisposable
 
     private async Task<IReadOnlyList<ContextPropertyDefinition>> Describe(string elementId, string? folder = null) =>
         await _provider.DescribeAsync(
-            new ContextTarget(ContextScope.DiagramElement, folder ?? _root, IsContainer: false, SourceId: default, _root, default, elementId),
+            ContextTarget.ForElement(folder ?? _root, elementId, _root),
             TestContext.Current.CancellationToken);
 
     // ---- the headline: nothing is editable, and every reason names a real file ---------------
@@ -78,7 +77,7 @@ public class AnsibleContextPropertyProviderTests : IDisposable
         // Unreachable through the grid - the resolver stops a write to a read-only property
         // first - and written to refuse anyway, so it stays safe if that ever changes.
         var result = await _provider.SetAsync(
-            new ContextTarget(ContextScope.DiagramElement, _root, false, default, _root, default, "role:nginx"),
+            ContextTarget.ForElement(_root, "role:nginx", _root),
             "ansible.name", "something-else", TestContext.Current.CancellationToken);
 
         // Assert.
@@ -96,11 +95,11 @@ public class AnsibleContextPropertyProviderTests : IDisposable
 
         // Assert.
         Assert.Equal(["Identity", "Contents", "Relationships"], properties.Select(p => p.Group).Distinct());
-        Assert.Equal("nginx", Value(properties, "ansible.name"));
-        Assert.Equal("2", Value(properties, "ansible.tasks"));
-        Assert.Equal("1", Value(properties, "ansible.handlers"));
-        Assert.Equal("common", Value(properties, "ansible.dependencies"));
-        Assert.Contains("webservers.yml", Value(properties, "ansible.used-by"), StringComparison.Ordinal);
+        Assert.Equal("nginx", properties.Row("ansible.name").Value);
+        Assert.Equal("2", properties.Row("ansible.tasks").Value);
+        Assert.Equal("1", properties.Row("ansible.handlers").Value);
+        Assert.Equal("common", properties.Row("ansible.dependencies").Value);
+        Assert.Contains("webservers.yml", properties.Row("ansible.used-by").Value, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -124,9 +123,9 @@ public class AnsibleContextPropertyProviderTests : IDisposable
 
         // Assert.
         Assert.Equal(["Identity", "Runs", "Targets"], properties.Select(p => p.Group).Distinct());
-        Assert.Equal("common, nginx", Value(properties, "ansible.roles"));
-        Assert.Equal("web", Value(properties, "ansible.hosts"));
-        Assert.Contains("production", Value(properties, "ansible.inventories"), StringComparison.Ordinal);
+        Assert.Equal("common, nginx", properties.Row("ansible.roles").Value);
+        Assert.Equal("web", properties.Row("ansible.hosts").Value);
+        Assert.Contains("production", properties.Row("ansible.inventories").Value, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -136,7 +135,7 @@ public class AnsibleContextPropertyProviderTests : IDisposable
         var properties = await Describe("playbook:site.yml");
 
         // Assert.
-        Assert.Equal("webservers.yml, dbservers.yml", Value(properties, "ansible.imports"));
+        Assert.Equal("webservers.yml, dbservers.yml", properties.Row("ansible.imports").Value);
     }
 
     [Fact]
@@ -147,9 +146,9 @@ public class AnsibleContextPropertyProviderTests : IDisposable
 
         // Assert.
         Assert.Equal(["Identity", "Groups", "Variables"], properties.Select(p => p.Group).Distinct());
-        Assert.Equal("2 hosts", Value(properties, "ansible.group.web"));
-        Assert.Equal("1 host", Value(properties, "ansible.group.db"));
-        Assert.Equal("2 files", Value(properties, "ansible.vars.group_vars"));
+        Assert.Equal("2 hosts", properties.Row("ansible.group.web").Value);
+        Assert.Equal("1 host", properties.Row("ansible.group.db").Value);
+        Assert.Equal("2 files", properties.Row("ansible.vars.group_vars").Value);
     }
 
     [Fact]
@@ -164,10 +163,10 @@ public class AnsibleContextPropertyProviderTests : IDisposable
         // Assert.
         // The answer to "why is this here" (Requirement 10.6).
         Assert.Equal(["Declaration"], properties.Select(p => p.Group).Distinct());
-        Assert.StartsWith("roles/nginx/tasks/main.yml:", Value(properties, "ansible.declared-in"), StringComparison.Ordinal);
-        Assert.Equal("include_tasks", Value(properties, "ansible.directive"));
-        Assert.Equal("tls.yml", Value(properties, "ansible.target"));
-        Assert.Equal("nginx_tls_enabled | default(false)", Value(properties, "ansible.condition"));
+        Assert.StartsWith("roles/nginx/tasks/main.yml:", properties.Row("ansible.declared-in").Value, StringComparison.Ordinal);
+        Assert.Equal("include_tasks", properties.Row("ansible.directive").Value);
+        Assert.Equal("tls.yml", properties.Row("ansible.target").Value);
+        Assert.Equal("nginx_tls_enabled | default(false)", properties.Row("ansible.condition").Value);
     }
 
     // ---- absent is absent, not empty ---------------------------------------------------------------
@@ -186,8 +185,8 @@ public class AnsibleContextPropertyProviderTests : IDisposable
         Assert.DoesNotContain(properties, p => p.Id == "ansible.handlers");
         Assert.DoesNotContain(properties, p => p.Id == "ansible.dependencies");
         // What it does have is there.
-        Assert.Equal("1", Value(properties, "ansible.tasks"));
-        Assert.Equal("1", Value(properties, "ansible.defaults"));
+        Assert.Equal("1", properties.Row("ansible.tasks").Value);
+        Assert.Equal("1", properties.Row("ansible.defaults").Value);
     }
 
     [Fact]
@@ -214,7 +213,7 @@ public class AnsibleContextPropertyProviderTests : IDisposable
         var properties = await Describe("role:hollow", broken);
 
         // Assert.
-        Assert.Contains("nothing to run", Value(properties, "ansible.hollow"), StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("nothing to run", properties.Row("ansible.hollow").Value, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -229,8 +228,8 @@ public class AnsibleContextPropertyProviderTests : IDisposable
         var expression = await Describe(edges.Single(e => e.Directive.IsExpression).Id, broken);
 
         // Assert.
-        Assert.Equal("nothing in this folder", Value(missing, "ansible.resolution"));
-        Assert.Contains("not knowable", Value(expression, "ansible.resolution"), StringComparison.Ordinal);
+        Assert.Equal("nothing in this folder", missing.Row("ansible.resolution").Value);
+        Assert.Contains("not knowable", expression.Row("ansible.resolution").Value, StringComparison.Ordinal);
     }
 
     // ---- targets that no longer resolve ---------------------------------------------------------------
@@ -254,7 +253,4 @@ public class AnsibleContextPropertyProviderTests : IDisposable
         // Assert.
         Assert.Empty(properties);
     }
-
-    private static string Value(IReadOnlyList<ContextPropertyDefinition> properties, string id) =>
-        properties.Single(property => property.Id == id).Value;
 }

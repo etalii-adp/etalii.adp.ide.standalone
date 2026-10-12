@@ -82,21 +82,7 @@ public partial class ShippedExamplesTests
             .Select(extension => extension.ToLowerInvariant())];
     }
 
-    private static string RepositoryRoot { get; } = Locate();
-
-    private static string Locate()
-    {
-        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
-        {
-            if (Directory.Exists(IoPath.Combine(directory.FullName, "src", "diagrams")) &&
-                Directory.Exists(IoPath.Combine(directory.FullName, "src", "examples")))
-            {
-                return directory.FullName;
-            }
-        }
-
-        throw new InvalidOperationException("The repository root (src/diagrams beside src/examples) was not found above the test binary.");
-    }
+    private static string RepositoryRoot { get; } = RepositoryPaths.Root;
 
     /// <summary>
     /// Every example folder the shipped corpus lives in: the showcase, and each module's and

@@ -2,7 +2,6 @@ using System.Globalization;
 using System.Text.Json;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
-using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.History;
 using Google.Protobuf.Reflection;
 using Path = System.IO.Path;
@@ -53,7 +52,7 @@ internal static class TimelineTranscript
     private static readonly TypeRegistry _payloadTypes = TypeRegistry.FromFiles(TimelineReflection.Descriptor);
 
     /// <summary>The module's folder, <c>src/diagrams/timeline</c>.</summary>
-    private static string ModuleFolder { get; } = FindModuleFolder();
+    private static string ModuleFolder { get; } = RepositoryPaths.Under("src", "diagrams", "timeline");
 
     /// <summary>The checked-in transcript.</summary>
     public static string CheckedInPath => Path.Combine(ModuleFolder, "backend", TestProject, "Parity", FileName);
@@ -173,15 +172,15 @@ internal static class TimelineTranscript
         var lines = new List<(string Target, int Menu, IReadOnlyList<string> Rows)>();
         foreach (var target in targets)
         {
-            var menu = MenuIndex(menus, TranscriptText.MenuLines(await session.Actions.DiscoverAsync(session.Target(target), cancellationToken)));
-            IReadOnlyList<string> rows = [.. (await session.Properties.DescribeAsync(session.Target(target), cancellationToken)).Select(row => TranscriptText.RowLine(row, choices))];
+            var menu = menus.IndexOfOrAdd((await session.Actions.DiscoverAsync(session.Target(target), cancellationToken)).MenuLines());
+            IReadOnlyList<string> rows = [.. (await session.Properties.DescribeAsync(session.Target(target), cancellationToken)).Select(row => row.RowLine(choices))];
             lines.Add((target, menu, rows));
         }
 
         json.WriteStartArray("menus");
         foreach (var menu in menus)
         {
-            WriteLines(json, menu);
+            json.WriteLines(menu);
         }
 
         json.WriteEndArray();
@@ -189,7 +188,7 @@ internal static class TimelineTranscript
         json.WriteStartArray("choices");
         foreach (var list in choices)
         {
-            WriteLines(json, list);
+            json.WriteLines(list);
         }
 
         json.WriteEndArray();
@@ -197,7 +196,7 @@ internal static class TimelineTranscript
         json.WriteStartArray("targets");
         foreach ((string target, int menu, _) in lines)
         {
-            json.WriteStringValue($"{JsonSerializer.Serialize(target, TranscriptText.StringOptions)} => menu #{menu}");
+            json.WriteStringValue($"{TranscriptText.Quoted(target)} => menu #{menu}");
         }
 
         json.WriteEndArray();
@@ -213,7 +212,7 @@ internal static class TimelineTranscript
             json.WriteStartObject();
             json.WriteString("target", target);
             json.WritePropertyName("rows");
-            WriteLines(json, rows);
+            json.WriteLines(rows);
             json.WriteEndObject();
         }
 
@@ -223,17 +222,17 @@ internal static class TimelineTranscript
             new DiagramValidationRequest(TranscriptText.Decode(bytes), Path.GetFileNameWithoutExtension(session.Body), session.Folder, session.Body, null),
             cancellationToken);
         json.WritePropertyName("findings");
-        WriteLines(json, [.. problems.Select(problem => $"{Location(problem.Location)} | {problem.Severity} | {problem.RuleId} | {problem.Message}")]);
+        json.WriteLines([.. problems.Select(problem => $"{Location(problem.Location)} | {problem.Severity} | {problem.RuleId} | {problem.Message}")]);
 
         json.WritePropertyName("payloads");
-        WriteLines(json, [.. new TimelineElementMapper().Visible(model, DiagramViewport.Unbounded)
+        json.WriteLines([.. new TimelineElementMapper().Visible(model, DiagramViewport.Unbounded)
             .Select(element => TranscriptText.PayloadLine(element.Id, element.X, element.Y, element.Type, element.PayloadTypeUrl, element.Payload, _payloadTypes))]);
     }
 
     private static string Location(DiagramProblemLocation? location) => location switch
     {
         DiagramProblemLineLocation line => $"line {line.Number}",
-        DiagramProblemElementLocation element => $"element {JsonSerializer.Serialize(element.Id, TranscriptText.StringOptions)}",
+        DiagramProblemElementLocation element => $"element {TranscriptText.Quoted(element.Id)}",
         null => "nowhere",
         _ => location.ToString(),
     };
@@ -352,42 +351,6 @@ internal static class TimelineTranscript
         await script.EndAsync(original);
     }
 
-    private static int MenuIndex(List<IReadOnlyList<string>> menus, IReadOnlyList<string> menu)
-    {
-        var index = menus.FindIndex(known => known.SequenceEqual(menu, StringComparer.Ordinal));
-        if (index >= 0)
-        {
-            return index;
-        }
-
-        menus.Add(menu);
-        return menus.Count - 1;
-    }
-
-    private static void WriteLines(Utf8JsonWriter json, IEnumerable<string> lines)
-    {
-        json.WriteStartArray();
-        foreach (var line in lines)
-        {
-            json.WriteStringValue(line);
-        }
-
-        json.WriteEndArray();
-    }
-
-    private static string FindModuleFolder()
-    {
-        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
-        {
-            if (directory.Name == "timeline" && Directory.Exists(Path.Combine(directory.FullName, "backend", TestProject)))
-            {
-                return directory.FullName;
-            }
-        }
-
-        throw new InvalidOperationException($"No timeline module folder above {AppContext.BaseDirectory}. That is a failure, not a skip.");
-    }
-
     /// <summary>One document's store, history and providers.</summary>
     private sealed class Session : IDisposable
     {
@@ -415,7 +378,7 @@ internal static class TimelineTranscript
         public TimelineModel Model => Store.GetOrLoad(Body).Model;
 
         public ContextTarget Target(string elementId) =>
-            new(ContextScope.DiagramElement, Body, IsContainer: false, SourceId: default, Folder, default, elementId, Diagram.Timeline.Origin);
+            ContextTarget.ForElement(Body, elementId, Folder, origin: Diagram.Timeline.Origin);
 
         public void Dispose() => History.Dispose();
     }
@@ -451,7 +414,7 @@ internal static class TimelineTranscript
                 // What undoing everything left different, so a change in it is visible rather than
                 // hidden behind the same sentence.
                 json.WriteStartObject("undoAllLeaves");
-                TranscriptText.WriteChange(json, Mask(original), Mask(restored));
+                json.WriteChange(Mask(original), Mask(restored));
                 json.WriteEndObject();
             }
         }
@@ -459,14 +422,14 @@ internal static class TimelineTranscript
         public async Task SetAsync(string target, string propertyId, string value)
         {
             var result = await session.Properties.SetAsync(session.Target(target), propertyId, value, cancellationToken);
-            await RecordAsync($"set {Mask(target)} {propertyId} = {JsonSerializer.Serialize(value, TranscriptText.StringOptions)}", result.IsSuccess ? "ok" : $"refused: {result.Error}", mints: false);
+            await RecordAsync($"set {Mask(target)} {propertyId} = {TranscriptText.Quoted(value)}", result.IsSuccess ? "ok" : $"refused: {result.Error}", mints: false);
         }
 
         public async Task ValidateAsync(string target, string actionId, string value)
         {
             var result = await session.Actions.ValidateAsync(session.Target(target), actionId, value, cancellationToken);
             await RecordAsync(
-                $"validate {actionId} on {Mask(target)} = {JsonSerializer.Serialize(value, TranscriptText.StringOptions)}",
+                $"validate {actionId} on {Mask(target)} = {TranscriptText.Quoted(value)}",
                 result.Valid ? "accepted" : $"rejected: {result.Reason}",
                 mints: false);
         }
@@ -485,7 +448,7 @@ internal static class TimelineTranscript
             var before = session.Model;
             var result = await session.Actions.CommitAsync(session.Target(target), actionId, value, "", cancellationToken);
             await RecordAsync(
-                $"commit {actionId} on {Mask(target)} = {JsonSerializer.Serialize(value, TranscriptText.StringOptions)}",
+                $"commit {actionId} on {Mask(target)} = {TranscriptText.Quoted(value)}",
                 result.Completed ? "ok" : $"refused: {result.Error}",
                 mints: true,
                 before);
@@ -508,7 +471,7 @@ internal static class TimelineTranscript
             json.WriteStartObject();
             json.WriteString("do", step);
             json.WriteString("answer", Mask(answer));
-            TranscriptText.WriteChange(json, Mask(_text), Mask(after));
+            json.WriteChange(Mask(_text), Mask(after));
             json.WriteEndObject();
             _text = after;
             return minted;

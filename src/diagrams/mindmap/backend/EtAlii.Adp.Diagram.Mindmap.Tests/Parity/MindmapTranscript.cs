@@ -44,7 +44,7 @@ internal static partial class MindmapTranscript
     private static readonly TypeRegistry _payloadTypes = TypeRegistry.FromFiles(MindmapReflection.Descriptor);
 
     /// <summary>The module's folder, <c>src/diagrams/mindmap</c>.</summary>
-    private static string ModuleFolder { get; } = FindModuleFolder();
+    private static string ModuleFolder { get; } = RepositoryPaths.Under("src", "diagrams", "mindmap");
 
     /// <summary>The checked-in transcript.</summary>
     public static string CheckedInPath => Path.Combine(ModuleFolder, "backend", TestProject, "Parity", FileName);
@@ -157,16 +157,16 @@ internal static partial class MindmapTranscript
         var lines = new List<(string Target, int Menu, int MenuFlipped, IReadOnlyList<string> Rows)>();
         foreach (var target in targets)
         {
-            var menu = MenuIndex(menus, session.Mask(TranscriptText.MenuLines(await session.Actions.DiscoverAsync(session.Target(target), cancellationToken))));
-            var flipped = MenuIndex(menus, session.Mask(TranscriptText.MenuLines(await session.Actions.DiscoverAsync(session.Target(target, flipped: true), cancellationToken))));
-            IReadOnlyList<string> rows = session.Mask([.. (await session.Properties.DescribeAsync(session.Target(target), cancellationToken)).Select(row => TranscriptText.RowLine(row, []))]);
+            var menu = menus.IndexOfOrAdd(session.Mask((await session.Actions.DiscoverAsync(session.Target(target), cancellationToken)).MenuLines()));
+            var flipped = menus.IndexOfOrAdd(session.Mask((await session.Actions.DiscoverAsync(session.Target(target, flipped: true), cancellationToken)).MenuLines()));
+            IReadOnlyList<string> rows = session.Mask([.. (await session.Properties.DescribeAsync(session.Target(target), cancellationToken)).Select(row => row.RowLine([]))]);
             lines.Add((target, menu, flipped, rows));
         }
 
         json.WriteStartArray("menus");
         foreach (var menu in menus)
         {
-            WriteLines(json, menu);
+            json.WriteLines(menu);
         }
 
         json.WriteEndArray();
@@ -190,7 +190,7 @@ internal static partial class MindmapTranscript
             json.WriteStartObject();
             json.WriteString("target", session.Mask(target));
             json.WritePropertyName("rows");
-            WriteLines(json, rows);
+            json.WriteLines(rows);
             json.WriteEndObject();
         }
 
@@ -200,17 +200,17 @@ internal static partial class MindmapTranscript
             new DiagramValidationRequest(session.Original, Path.GetFileNameWithoutExtension(session.Body), session.Folder, session.Body, Path.ChangeExtension(session.Body, ".adp")),
             cancellationToken);
         json.WritePropertyName("findings");
-        WriteLines(json, [.. problems.Select(problem => $"{Location(problem.Location)} | {problem.Severity} | {problem.RuleId} | {problem.Message}")]);
+        json.WriteLines([.. problems.Select(problem => $"{Location(problem.Location)} | {problem.Severity} | {problem.RuleId} | {problem.Message}")]);
 
         json.WritePropertyName("payloads");
         if (document is null)
         {
-            WriteLines(json, []);
+            json.WriteLines([]);
         }
         else
         {
             var view = session.Views.For(session.Watch, session.Body, document);
-            WriteLines(json, session.Mask([.. new MindmapElementMapper(MindmapMetrics.Default).Visible(document, view, DiagramViewport.Unbounded)
+            json.WriteLines(session.Mask([.. new MindmapElementMapper(MindmapMetrics.Default).Visible(document, view, DiagramViewport.Unbounded)
                 .Select(element => TranscriptText.PayloadLine(element.Id, element.X, element.Y, element.Type, element.PayloadTypeUrl, element.Payload, _payloadTypes))]));
         }
     }
@@ -313,48 +313,6 @@ internal static partial class MindmapTranscript
         MindmapNode? Root() => Document()?.Root;
 
         MindmapDocument? Document() => session.TryDocument();
-    }
-
-    private static int MenuIndex(List<IReadOnlyList<string>> menus, IReadOnlyList<string> menu)
-    {
-        var index = menus.FindIndex(known => known.SequenceEqual(menu, StringComparer.Ordinal));
-        if (index >= 0)
-        {
-            return index;
-        }
-
-        menus.Add(menu);
-        return menus.Count - 1;
-    }
-
-    private static void WriteLines(Utf8JsonWriter json, IEnumerable<string> lines)
-    {
-        json.WriteStartArray();
-        foreach (var line in lines)
-        {
-            json.WriteStringValue(line);
-        }
-
-        json.WriteEndArray();
-    }
-
-    private static string FindModuleFolder()
-    {
-        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
-        {
-            var candidate = Path.Combine(directory.FullName, "src", "diagrams", "mindmap");
-            if (directory.Name == "mindmap" && Directory.Exists(Path.Combine(directory.FullName, "backend", TestProject)))
-            {
-                return directory.FullName;
-            }
-
-            if (Directory.Exists(Path.Combine(candidate, "backend", TestProject)))
-            {
-                return candidate;
-            }
-        }
-
-        throw new InvalidOperationException($"No mindmap module folder above {AppContext.BaseDirectory}. That is a failure, not a skip.");
     }
 
     [GeneratedRegex("ID=\"([^\"]*)\"", RegexOptions.CultureInvariant)]
@@ -480,7 +438,7 @@ internal static partial class MindmapTranscript
         public async Task SetAsync(string target, string propertyId, string value)
         {
             var result = await session.Properties.SetAsync(session.Target(target), propertyId, value, cancellationToken);
-            await RecordAsync($"set {target} {propertyId} = {JsonSerializer.Serialize(value, TranscriptText.StringOptions)}", result.IsSuccess ? "ok" : $"refused: {result.Error}");
+            await RecordAsync($"set {target} {propertyId} = {TranscriptText.Quoted(value)}", result.IsSuccess ? "ok" : $"refused: {result.Error}");
         }
 
         /// <summary>Runs an action; answers "confirm" when it asked for a confirmation, the new node's id when an add asks for its name, else null.</summary>
@@ -505,7 +463,7 @@ internal static partial class MindmapTranscript
         {
             var result = await session.Actions.CommitAsync(session.Target(target), actionId, value, "", cancellationToken);
             await RecordAsync(
-                $"commit {actionId} on {target} = {JsonSerializer.Serialize(value, TranscriptText.StringOptions)}",
+                $"commit {actionId} on {target} = {TranscriptText.Quoted(value)}",
                 result.Completed ? "ok" : $"refused: {result.Error}");
         }
 
@@ -523,7 +481,7 @@ internal static partial class MindmapTranscript
             json.WriteStartObject();
             json.WriteString("do", session.Mask(step));
             json.WriteString("answer", session.Mask(answer));
-            TranscriptText.WriteChange(json, session.Mask(_text), session.Mask(after));
+            json.WriteChange(session.Mask(_text), session.Mask(after));
             json.WriteEndObject();
             _text = after;
         }

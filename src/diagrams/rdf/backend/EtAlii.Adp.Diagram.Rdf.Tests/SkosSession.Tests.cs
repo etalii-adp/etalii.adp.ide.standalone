@@ -241,7 +241,7 @@ public class SkosSessionTests : IDisposable
         // re-reasoned. A related link is an EDGE, produced only when both of its concepts are in
         // the file; and edges are filtered structurally here, on whether both endpoints survived,
         // never on a position of their own.
-        var source = IoPath.Combine(ThesaurusFolder(), "business-economics.ttl");
+        var source = IoPath.Combine(RepositoryPaths.Under("src", "diagrams", "rdf", "examples", "stw"), "business-economics.ttl");
         var body = IoPath.Combine(_root, "business-economics.ttl");
         File.Copy(source, body);
 
@@ -314,7 +314,7 @@ public class SkosSessionTests : IDisposable
         // position. If that ever stops being true, an unplaced concept is admitted by every
         // viewport rather than culled by all of them, which is the safe direction but not a
         // silent one.
-        var text = File.ReadAllText(IoPath.Combine(ThesaurusFolder(), "business-economics.ttl"));
+        var text = File.ReadAllText(IoPath.Combine(RepositoryPaths.Under("src", "diagrams", "rdf", "examples", "stw"), "business-economics.ttl"));
         var model = RdfParser.Parse(LineDocument.Parse(text));
         var projection = SkosProjection.Project(model, int.MaxValue);
 
@@ -328,20 +328,5 @@ public class SkosSessionTests : IDisposable
             .Where(id => !positions.ContainsKey(id))
             .ToList();
         Assert.Empty(unplaced);
-    }
-
-    /// <summary>The vendored STW thesaurus, found by walking up from the test binary.</summary>
-    private static string ThesaurusFolder()
-    {
-        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
-        {
-            var candidate = IoPath.Combine(directory.FullName, "src", "diagrams", "rdf", "examples", "stw");
-            if (Directory.Exists(candidate))
-            {
-                return candidate;
-            }
-        }
-
-        throw new InvalidOperationException("src/diagrams/rdf/examples/stw was not found above the test binary.");
     }
 }

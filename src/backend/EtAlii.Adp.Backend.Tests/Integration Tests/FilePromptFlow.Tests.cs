@@ -168,7 +168,7 @@ public sealed class FilePromptFlowTests : IClassFixture<FilePromptFlowTests.Host
 
         var watch = context.Watch(new WatchContextRequest { ProjectId = session.ProjectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
         Assert.True(await watch.ResponseStream.MoveNext(cts.Token), "The stream ended before the baseline arrived.");
-        var pendingPrompt = ReadUntilPromptAsync(watch.ResponseStream, cts.Token);
+        var pendingPrompt = watch.ResponseStream.ReadUntilPromptAsync(cts.Token);
 
         // No source: the project root.
         var executed = await context.ExecuteActionAsync(
@@ -178,19 +178,6 @@ public sealed class FilePromptFlowTests : IClassFixture<FilePromptFlowTests.Host
         Assert.True(executed.Accepted, executed.Error);
 
         return new Asked(context, headers, interactionId, await pendingPrompt);
-    }
-
-    private static async Task<ContextPrompt> ReadUntilPromptAsync(IAsyncStreamReader<ContextMessage> stream, CancellationToken cancellationToken)
-    {
-        while (await stream.MoveNext(cancellationToken))
-        {
-            if (stream.Current.MessageCase == ContextMessage.MessageOneofCase.Prompt)
-            {
-                return stream.Current.Prompt;
-            }
-        }
-
-        throw new InvalidOperationException("The stream ended before a prompt arrived.");
     }
 
     private sealed record Asked(ContextService.ContextServiceClient Context, Metadata Headers, Documents.Wire.ShortGuid InteractionId, ContextPrompt Prompt);

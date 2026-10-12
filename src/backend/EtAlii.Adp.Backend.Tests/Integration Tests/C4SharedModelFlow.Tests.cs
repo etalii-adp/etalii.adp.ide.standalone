@@ -142,8 +142,7 @@ public class C4SharedModelFlowTests(HostFixture host) : IClassFixture<HostFixtur
     {
         using var cts = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken);
 
-        var path = new Path();
-        path.Segments.Add(fileName);
+        var path = Path.Of(fileName);
         using var call = client.Open(
             new OpenDiagramRequest { ProjectId = projectId, WatchId = ShortGuid.NewShortGuid(), Path = path },
             headers, cancellationToken: cts.Token);

@@ -46,14 +46,7 @@ internal sealed class ContextSelectionResolverRefusingStubResolver : IContextSou
             id,
             clientPath,
             ContextScope.DiagramElement,
-            new ContextTarget(
-                ContextScope.DiagramElement,
-                System.IO.Path.Combine(rootPath, "diagram.adp"),
-                IsContainer: false,
-                SourceId: default,
-                rootPath,
-                watchId,
-                id.ElementId.Value),
+            ContextTarget.ForElement(System.IO.Path.Combine(rootPath, "diagram.adp"), id.ElementId.Value, rootPath, watchId),
             new ContextLevelDetail(),
             this);
 

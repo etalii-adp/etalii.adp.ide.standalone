@@ -3,7 +3,6 @@ using EtAlii.Adp.Projects.Wire;
 using EtAlii.Adp.TestSupport.Host;
 using Grpc.Core;
 using Xunit;
-using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 using Path = EtAlii.Adp.Documents.Wire.Path;
 using ProjectService = EtAlii.Adp.Projects.Wire.ProjectService;
 
@@ -64,9 +63,8 @@ public class LoginProjectSelectionFlowTests(HostFixture host) : IClassFixture<Ho
         var emptyList = await projectClient.ListProjectsAsync(new ListProjectsRequest(), headers, cancellationToken: TestContext.Current.CancellationToken);
         Assert.Empty(emptyList.Projects);
 
-        var pathMessage = new Path();
-        pathMessage.Segments.AddRange(
-            _sampleProjectFolder.Split(IoPath.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries));
+        var pathMessage = Path.OfLocation(
+            _sampleProjectFolder);
 
         var addResponse = await projectClient.AddProjectAsync(new AddProjectRequest { Path = pathMessage }, headers, cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(AddProjectResponse.ResultOneofCase.Added, addResponse.ResultCase);
