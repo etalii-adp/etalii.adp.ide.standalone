@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/timeline-disl-fbl/tasks.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-10-12T09:34:04.873Z",
+      "trigger": "initial",
+      "approvalId": "approval_1791797643845_2gkiuy59c",
+      "approvalTitle": "tasks.md: the timeline through FBL, seven tasks (two wait on fbl-written-text)"
+    }
+  ]
+}
