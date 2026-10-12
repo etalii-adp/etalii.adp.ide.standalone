@@ -1,6 +1,5 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
-using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.History;
 using Xunit;
 
@@ -9,7 +8,7 @@ namespace EtAlii.Adp.Diagram.SupplyChain.Tests;
 /// <summary>The menus, the property grid and the palette, each editing through the commands.</summary>
 public sealed class SupplyChainProvidersTests : IDisposable
 {
-    private readonly SupplyChainTestFolder _folder = new(System.IO.Path.Combine(AppContext.BaseDirectory, "Fixtures", "lf-line-endings.supply"), "small.supply");
+    private readonly SupplyChainTestFolder _folder = new(Path.Combine(AppContext.BaseDirectory, "Fixtures", "lf-line-endings.supply"), "small.supply");
     private readonly SupplyChainDocumentStore _store = new();
     private readonly HistoryStackStore _historyStacks;
     private readonly SupplyChainContextPropertyProvider _properties;

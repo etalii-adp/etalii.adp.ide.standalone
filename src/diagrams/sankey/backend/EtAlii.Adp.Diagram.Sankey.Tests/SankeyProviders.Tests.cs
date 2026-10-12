@@ -1,6 +1,5 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
-using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.History;
 using Xunit;
 
@@ -9,7 +8,7 @@ namespace EtAlii.Adp.Diagram.Sankey.Tests;
 /// <summary>The menus, the property grid and the palette, each editing through the commands.</summary>
 public sealed class SankeyProvidersTests : IDisposable
 {
-    private readonly SankeyTestFolder _folder = new(System.IO.Path.Combine(AppContext.BaseDirectory, "Fixtures", "lf-line-endings.skv"), "small.skv");
+    private readonly SankeyTestFolder _folder = new(Path.Combine(AppContext.BaseDirectory, "Fixtures", "lf-line-endings.skv"), "small.skv");
     private readonly SankeyDocumentStore _store = new();
     private readonly HistoryStackStore _historyStacks;
     private readonly SankeyContextPropertyProvider _properties;

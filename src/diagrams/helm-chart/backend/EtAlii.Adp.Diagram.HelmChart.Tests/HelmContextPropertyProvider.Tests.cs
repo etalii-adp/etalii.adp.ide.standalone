@@ -1,5 +1,4 @@
 using EtAlii.Adp.Context;
-using EtAlii.Adp.Documents.Wire;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
