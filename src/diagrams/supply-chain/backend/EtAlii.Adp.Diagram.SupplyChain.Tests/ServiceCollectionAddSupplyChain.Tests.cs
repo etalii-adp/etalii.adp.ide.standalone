@@ -37,7 +37,7 @@ public sealed class ServiceCollectionAddSupplyChainTests
         var services = new ServiceCollection();
         services.AddSupplyChain();
         services.AddSingleton(TestHistory.For(_ => { }));
-        using var provider = services.BuildServiceProvider();
+        await using var provider = services.BuildServiceProvider();
         var factory = new DiagramSessionFactories(provider.GetServices<IDiagramSessionFactory>()).Find(Diagram.SupplyChain.Origin)!;
 
         // Act.
