@@ -668,7 +668,7 @@ public sealed class KnowledgeRelationsTests : IDisposable
         await table.Edit(new TableGesture("groupBy", ColumnId: part, ViewId: "v2"));
 
         // Assert: each row under its parent, a level deeper, and the rows that have none at the top.
-        Assert.Equal(["r1:0", "r2:1", $"{third}:2", .. new[] { "45ako65f2m2wasyxq3mam8ikt", "a8q7ddqb6zyubcyf5vuky6iwb", "8heh3sdyy0a63fyq7gicize5a", "7pa30fmuw51bv1vyl5jnmf5jh", "8rj09k224141g98x6rguz7f5h", "e1v5f01oi4bx1syl7x6ty3zeo", "1dytemy0l8cen9xxkpcxzlgwq" }.Select(id => $"{id}:0")], table.Lines().Where(line => !line.IsNewRow).Select(line => $"{line.Id}:{line.Depth}"));
+        Assert.Equal(["r1:0", "r2:1", $"{third}:2", .. new[] { "45ako65f2m2wasyxq3mam8ikt", "a8q7ddqb6zyubcyf5vuky6iwb", "8heh3sdyy0a63fyq7gicize5a", "7pa30fmuw51bv1vyl5jnmf5jh", "8rj09k224141g98x6rguz7f5h", "e1v5f01oi4bx1syl7x6ty3zeo", "1dytemy0l8cen9xxkpcxzlgwq", "9jh7yjm443uvm99io0nc6ekpi", "9cwydn1h89znwl1wlxblxselj" }.Select(id => $"{id}:0")], table.Lines().Where(line => !line.IsNewRow).Select(line => $"{line.Id}:{line.Depth}"));
         Assert.Empty(table.Session.Baseline().Findings);
     }
 

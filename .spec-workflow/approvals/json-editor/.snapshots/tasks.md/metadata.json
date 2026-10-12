@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/json-editor/tasks.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-10-12T21:52:46.380Z",
+      "trigger": "initial",
+      "approvalId": "approval_1791841965424_mci9i3bs3",
+      "approvalTitle": "JSON editor tasks (11 tasks, two landings; tasks 1 to 6 unblock YAML and XML)"
+    }
+  ]
+}

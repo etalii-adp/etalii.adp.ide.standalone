@@ -82,6 +82,10 @@ views:
         width: 166
       - property: p1
         width: 143
+      - property: p3
+      - property: p4
+      - property: p5
+        calculate: count-unique
 rows:
   - id: r1
     cells:
@@ -165,3 +169,18 @@ rows:
         text: Ahlen
       - property: p2
         option: b4ff5lo4rezgty4ge7siqndey
+  - id: 9jh7yjm443uvm99io0nc6ekpi
+    cells:
+      - property: p1
+        text: Koeln
+      - property: p2
+        option: b4ff5lo4rezgty4ge7siqndey
+  - id: 9cwydn1h89znwl1wlxblxselj
+    cells:
+      - property: p2
+        option: o1
+      - property: p1
+        text: Enschede
+      - property: p5
+        rows:
+          - row: cdns3i0ehcr45q7zh0z15iqzt

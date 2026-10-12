@@ -40,6 +40,8 @@ Each is a small amendment to an approved requirement, asked in chat as the rules
 | --- | --- | --- | --- |
 | A1 | 9.6: "the client SHALL get the text from the backend ... on a unary call" | How does the client read a schema that is a file of the project? | **(recommended) Over the stream every tab already uses**: the schema file is opened as one more document on the connection's existing stream, exactly as a text tab opens its file. Nothing is added to the backend, the path is confined to the project by the code that already confines a tab's path, and a change on disk arrives by itself, which is Requirement 5.8 for free. The sentence becomes "over the connection's existing stream". · **A new unary call** `EditorService.ReadText`, as written. Costs a call, its tests, and a second mechanism to learn that the file changed, which the call does not give. · Other. |
 
+**Ruled by the user in chat on 2026-10-12: the first option.** The requirements were amended the same day.
+
 ## Steering Document Alignment
 
 ### Technical Standards (tech.md)

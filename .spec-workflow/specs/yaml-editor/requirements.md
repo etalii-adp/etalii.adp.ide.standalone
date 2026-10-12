@@ -81,7 +81,7 @@ Each is a selection with a default. The requirements below are written for the d
 2. WHEN a YAML file that no diagram claims is opened THEN it SHALL open in this editor, with no registration written to the project.
 3. WHEN a YAML file is the body of a diagram THEN opening it SHALL open the diagram, as today, and "Open as text" SHALL open it in this editor.
 4. WHEN a save is made in this editor on a file a diagram also shows THEN the diagram SHALL learn of it as it learns of any change on disk; this editor adds no path of its own.
-5. WHEN the module is added THEN no core file and no shell file SHALL change for it.
+5. WHEN the module is added THEN no core file and no shell file SHALL change for it, apart from one alias in the client's build configuration, `path` to `path-browserify`, which the language service needs to run in a browser. *(Amended 2026-10-12 by the user's chat ruling A1 on the design.)*
 6. WHEN the backend starts THEN no claim conflict SHALL be reported.
 
 ### Requirement 3: Colour and editing that respects indentation

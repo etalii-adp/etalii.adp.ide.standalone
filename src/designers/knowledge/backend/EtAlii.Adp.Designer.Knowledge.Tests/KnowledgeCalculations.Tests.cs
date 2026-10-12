@@ -62,6 +62,8 @@ public sealed class KnowledgeCalculationsTests : IDisposable
         // Arrange: nothing is calculated, and the population says which calculations it can have. Two more
         // cities are given one, the second the same as another has, so a count of values is not a count of different ones.
         await using var table = Open(extension);
+        // Another column may already count different values: the file is judged by how often it says so.
+        var countsUnique = CountUniqueIn(await File.ReadAllTextAsync(table.Path, TestContext.Current.CancellationToken));
         await table.Edit(new TableGesture("setCell", RowId: "r2", ColumnId: "p3", Values: ["1000.5"]));
         await table.Edit(new TableGesture("setCell", RowId: "a8q7ddqb6zyubcyf5vuky6iwb", ColumnId: "p3", Values: ["345345"]));
         var rows = table.OnDisk().Rows.Count;
@@ -98,15 +100,17 @@ public sealed class KnowledgeCalculationsTests : IDisposable
         // The file says it in its own words: the name with a hyphen, as the definition writes it.
         Assert.Contains("range", await File.ReadAllTextAsync(table.Path, TestContext.Current.CancellationToken), StringComparison.Ordinal);
         await table.Edit(Calculate("p3", "countUnique"));
-        Assert.Contains("count-unique", await File.ReadAllTextAsync(table.Path, TestContext.Current.CancellationToken), StringComparison.Ordinal);
+        Assert.Equal(countsUnique + 1, CountUniqueIn(await File.ReadAllTextAsync(table.Path, TestContext.Current.CancellationToken)));
 
         // Act: taken away again.
         await table.Edit(Calculate("p3", ""));
 
         // Assert: the line shows nothing and the file says nothing.
         Assert.Equal("(none)", Shown(table, "p3"));
-        Assert.DoesNotContain("count-unique", await File.ReadAllTextAsync(table.Path, TestContext.Current.CancellationToken), StringComparison.Ordinal);
+        Assert.Equal(countsUnique, CountUniqueIn(await File.ReadAllTextAsync(table.Path, TestContext.Current.CancellationToken)));
     }
+
+    private static int CountUniqueIn(string text) => text.Split("count-unique").Length - 1;
 
     [Theory]
     [MemberData(nameof(KnowledgeFiles.Extensions), MemberType = typeof(KnowledgeFiles))]

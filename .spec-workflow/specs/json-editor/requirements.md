@@ -180,7 +180,7 @@ Each is a selection with a default. The requirements below are written for the d
 3. WHEN any editor shows findings THEN it SHALL hand them to the shared panel in one shape (range, severity, sentence, source) and the panel SHALL show them as Requirement 4.4 and 4.5 say. No module SHALL draw its own underline.
 4. WHEN any editor offers completions or hover text THEN it SHALL do so through one shared presentation with the keys of Requirement 7.5.
 5. WHEN any editor resolves a schema reference THEN it SHALL ask one shared resolver, which holds the rules of Requirement 5.2, 5.3, 5.8 and 5.9 and knows nothing of JSON, YAML or XML: it is given a reference and the document's path, and answers with the schema's text or the reason there is none.
-6. WHEN the client needs a schema that is a file of the project THEN it SHALL get the text from the backend, by project-relative path, on a unary call, and SHALL learn of a change to it through the watcher that already exists. No new stream SHALL be added.
+6. WHEN the client needs a schema that is a file of the project THEN it SHALL get the text from the backend, by project-relative path, over the connection's existing stream, as a text tab reads its file, and SHALL learn of a change to it the same way. No new stream and no new call SHALL be added. *(Amended 2026-10-12 by the user's chat ruling A1 on the design.)*
 7. WHEN these pieces merge THEN `docs/creating-an-editor-module.md` SHALL describe them in the same change, since each is a touch point a module author now has.
 
 ### Requirement 10: What EDSL would have to state

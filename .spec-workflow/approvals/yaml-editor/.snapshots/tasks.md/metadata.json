@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/yaml-editor/tasks.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-10-12T21:52:47.283Z",
+      "trigger": "initial",
+      "approvalId": "approval_1791841966422_v8dj4rgw3",
+      "approvalTitle": "YAML editor tasks (8 tasks; waits on json-editor tasks 1 to 6)"
+    }
+  ]
+}

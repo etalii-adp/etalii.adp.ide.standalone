@@ -8,7 +8,7 @@ The request, as the project's coordinator relayed it on 2026-10-12:
 
 **This is the XML editor.** It is an **editor** in ADP's terms: typing text is the core interaction. Its origin is `editor/xml`, its module is `src/editors/xml/`, and its specification language is EDSL (`.eds`), which is a placeholder today (Requirement 10).
 
-**What the tool is.** An `.xml` file opens in the plain editor today: one colour, no word about a tag that was never closed. The XML editor is the same text surface with colour, with mistakes marked where they are made, and, where the document names an XSD or a DTD, with what that schema allows offered while typing.
+**What the tool is.** An `.xml` file opens in the plain editor today: one colour, no word about a tag that was never closed. The XML editor is the same text surface with colour, with mistakes marked where they are made, and, where the document names an XSD or a DTD, checked against it; for an XSD, what the schema allows is also offered while typing.
 
 **The series.** This is one of three specifications: [`json-editor`](../json-editor/requirements.md), [`yaml-editor`](../yaml-editor/requirements.md) and this one, each worked by one Developer. **This one starts after `json-editor` Requirement 9 has merged**: the shared colour scheme, the shared presentation of findings and completions, the shared schema resolver and the `editors/*/client` workspace are that specification's. It does not wait for `yaml-editor`.
 
@@ -84,7 +84,7 @@ Each is a selection with a default. The requirements below are written for the d
 1. WHEN the module is organised THEN it SHALL be `src/editors/xml/` in the family's four folders, with the editor id `xml`, the client mime `editor/xml`, the title "XML editor", and the claims `.xml`, `.xsd`, `.xsl` and `.xslt` (Q1).
 2. WHEN a claimed file that no diagram claims is opened THEN it SHALL open in this editor, with no registration written to the project.
 3. WHEN a claimed file is shown by a diagram or a designer THEN opening it SHALL do what it does today, and "Open as text" SHALL open it in this editor.
-4. WHEN the module is added THEN no core file and no shell file SHALL change for it. Its calls (Requirement 9) are its own, in its own `api/` folder.
+4. WHEN the module is added THEN no core file and no shell file SHALL change for it, apart from the family's seam of Requirement 9.2. *(Amended 2026-10-12 by the user's chat ruling A1 on the design.)*
 5. WHEN the backend starts THEN no claim conflict SHALL be reported.
 
 ### Requirement 3: Colour and tags that stay matched
@@ -156,7 +156,7 @@ Each is a selection with a default. The requirements below are written for the d
 5. WHEN an offered element belongs to a namespace THEN it SHALL be offered with the prefix the document declares for that namespace; an element whose namespace the document does not declare SHALL be offered with a note saying so and SHALL NOT silently add a declaration.
 6. WHEN an offered item has documentation in the schema (`xs:annotation` with `xs:documentation`) THEN it SHALL be shown beside the item, and on hover and on keyboard focus for a name already in the document.
 7. WHEN the text before the caret is not well-formed in a way that hides where the caret is THEN no schema completion SHALL be offered, and none SHALL be guessed.
-8. WHEN no schema applies THEN the only completion SHALL be the end tag of Requirement 3.6.
+8. WHEN no schema applies, or the only schema is a DTD, THEN the only completion SHALL be the end tag of Requirement 3.6; for a DTD the status line SHALL say that it is checked and offers no suggestions. *(Amended 2026-10-12 by the user's chat ruling A2 on the design.)*
 
 ### Requirement 8: The family's contract holds
 
@@ -177,7 +177,7 @@ Each is a selection with a default. The requirements below are written for the d
 #### Acceptance Criteria
 
 1. WHEN the editor needs findings or completions THEN it SHALL ask on unary calls that carry the text as typed and, for completion, the position. No new stream SHALL be added.
-2. WHEN the calls are defined THEN they SHALL be the module's own, in `src/editors/xml/api/`, and the shared `EditorService` SHALL NOT learn what XML is.
+2. WHEN the calls are defined THEN they SHALL be the family's, on the shared `EditorService`, and SHALL carry no format: the module answers them through a seam of the family, and the shared `EditorService` SHALL NOT learn what XML is. *(Amended 2026-10-12 by the user's chat ruling A1 on the design.)*
 3. WHEN an answer arrives for a text that has since changed THEN it SHALL be dropped; an answer SHALL be shown only against the text it was asked about.
 4. WHEN the user keeps typing THEN at most one request for findings SHALL be waiting, and an older one still in flight SHALL be abandoned.
 5. WHEN the backend cannot be reached THEN the editor SHALL keep colour and tag matching, and SHALL say once in its status line that checking is unavailable, with the shell's own wording for a lost connection.
