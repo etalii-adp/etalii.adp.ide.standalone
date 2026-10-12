@@ -76,8 +76,6 @@ describe("a column's menu", () => {
     ["Group", { kind: "groupBy", columnId: "p2" }],
     ["Hide in view", { kind: "hideColumn", columnId: "p2" }],
     ["Wrap text", { kind: "setColumnWrap", columnId: "p2", settings: { wrap: "true" } }],
-    ["Insert left", { kind: "addColumn", targetId: "p2", settings: { side: "left", type: "text" } }],
-    ["Insert right", { kind: "addColumn", targetId: "p2", settings: { side: "right", type: "text" } }],
     ["Duplicate", { kind: "duplicateColumn", columnId: "p2" }],
     ["Delete", { kind: "deleteColumn", columnId: "p2" }],
   ] as const)("raises its gesture for %s", async (label, gesture) => {
@@ -267,6 +265,50 @@ describe("adding a column", () => {
     // Assert.
     expect(onGesture).toHaveBeenCalledTimes(1);
     expect(onGesture).toHaveBeenCalledWith({ kind: "addColumn", settings: { type: "number" } });
+  });
+
+  it("asks for the name first and the type second, and makes the property under that name", async () => {
+    // Arrange.
+    const { onGesture } = renderTable();
+    fireEvent.click(screen.getByRole("button", { name: "Add a property" }));
+    const panel = screen.getByRole("dialog", { name: "New property" });
+    const name = within(panel).getByRole("textbox", { name: "Property name" });
+
+    // Assert: the name is where typing goes, before any type is chosen.
+    expect(document.activeElement).toBe(name);
+
+    // Act.
+    fireEvent.change(name, { target: { value: " Mayor " } });
+    await choose("Text");
+
+    // Assert: one gesture with the name, the panel gone, and no name asked for a second time.
+    expect(onGesture).toHaveBeenCalledTimes(1);
+    expect(onGesture).toHaveBeenCalledWith({ kind: "addColumn", values: ["Mayor"], settings: { type: "text" } });
+    expect(screen.queryByRole("dialog", { name: "New property" })).toBeNull();
+  });
+
+  it("asks the same of a property inserted beside another, and puts it on the side that was chosen", async () => {
+    // Arrange.
+    const { onGesture } = renderTable();
+    openMenu("Population");
+    await choose("Insert left");
+    const panel = screen.getByRole("dialog", { name: "New property" });
+
+    // Act.
+    fireEvent.change(within(panel).getByRole("textbox", { name: "Property name" }), { target: { value: "Area" } });
+    await choose("Number");
+
+    // Assert.
+    expect(onGesture).toHaveBeenCalledTimes(1);
+    expect(onGesture).toHaveBeenCalledWith({ kind: "addColumn", targetId: "p2", values: ["Area"], settings: { side: "left", type: "number" } });
+
+    // Act: and to the right, with no name typed.
+    openMenu("Population");
+    await choose("Insert right");
+    await choose("Text");
+
+    // Assert.
+    expect(onGesture).toHaveBeenLastCalledWith({ kind: "addColumn", targetId: "p2", settings: { side: "right", type: "text" } });
   });
 
   it("asks for the name of the column that was added, as soon as it is there", async () => {

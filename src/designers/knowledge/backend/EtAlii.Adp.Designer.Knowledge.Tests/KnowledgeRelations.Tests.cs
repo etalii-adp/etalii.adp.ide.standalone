@@ -516,6 +516,47 @@ public sealed class KnowledgeRelationsTests : IDisposable
         IReadOnlyDictionary<string, string> Of(string name) => table.Session.Baseline().Columns.Single(column => column.Name == name).Settings;
     }
 
+    [Theory]
+    [MemberData(nameof(KnowledgeFiles.Extensions), MemberType = typeof(KnowledgeFiles))]
+    public async Task ARelationOfATableToItself_ShowsBothDirectionsInItsOneProperty(string extension)
+    {
+        // Arrange: a relation of the cities to the cities, with no other side asked for.
+        await using var table = Open(extension);
+        await table.Edit(new TableGesture("addRelation", Values: ["Twinned with"], Settings: Settings(("target", KnowledgeRelations.Self))));
+        var twinned = Property(table, "Twinned with").Id;
+        IReadOnlyList<string>? Held(string rowId) => table.OnDisk().Rows.Single(row => row.Id == rowId).Cells.FirstOrDefault(cell => cell.PropertyId == twinned)?.Values;
+
+        // Act: Amsterdam is twinned with Antwerp.
+        await table.Edit(new TableGesture("setCell", RowId: "r1", ColumnId: twinned, Values: ["r2"]));
+
+        // Assert: one of the two holds the pair, and both show it.
+        Assert.Equal(["r2"], Held("r1"));
+        Assert.Null(Held("r2"));
+        var lines = table.Lines();
+        Assert.Equal(["r2"], Cell(lines, "r1", twinned)?.Values);
+        Assert.Equal(["r1"], Cell(lines, "r2", twinned)?.Values);
+        Assert.Equal(["Amsterdam"], Cell(lines, "r2", twinned)?.Labels);
+
+        // Act: confirmed from the other end, which changes nothing; then taken away there.
+        var bytes = table.Bytes();
+        (_, string same) = table.Begin(new TableGesture("setCell", RowId: "r2", ColumnId: twinned, Values: ["r1"]));
+        Assert.Equal("", same);
+        Assert.Equal(bytes, table.Bytes());
+        await table.Edit(new TableGesture("setCell", RowId: "r2", ColumnId: twinned, Values: []));
+
+        // Assert: gone from the end that held it, and from both rows on the screen.
+        Assert.Null(Held("r1"));
+        Assert.Null(Held("r2"));
+        Assert.Null(Cell(table.Lines(), "r1", twinned));
+
+        // The parent relation keeps its direction: a row under another does not put that one under it.
+        await table.Edit(new TableGesture("addRelation", Values: ["Part of"], Settings: Settings(("target", KnowledgeRelations.Self), ("limit", "one"))));
+        var partOf = Property(table, "Part of").Id;
+        await table.Edit(new TableGesture("setColumnParent", ColumnId: partOf, Settings: Settings(("parent", "true"))));
+        await table.Edit(new TableGesture("setCell", RowId: "r2", ColumnId: partOf, Values: ["r1"]));
+        Assert.Null(Cell(table.Lines(), "r1", partOf));
+    }
+
     [Fact]
     public async Task TheParentRelation_NestsRows_AndNeverMakesARowItsOwnAncestor()
     {

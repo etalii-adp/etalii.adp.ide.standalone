@@ -23,7 +23,7 @@ internal static class KnowledgeTableMapper
             table.Name,
             Columns(table, view, targetOf, Uses(table)),
             [.. table.Views.Select(candidate => new TableView(candidate.Id, candidate.Name))],
-            Settings(view),
+            Settings(table, view, targetOf),
             rowCount,
             readOnlyReason);
     }
@@ -68,7 +68,30 @@ internal static class KnowledgeTableMapper
         return columns;
     }
 
-    private static TableViewSettings Settings(KnowledgeView? view) => view is null
+    /// <summary>The setting a view lists its groups under: each with its key, what it is called and whether it is hidden, in the view's order.</summary>
+    private const string Groups = "groups";
+
+    private static Dictionary<string, string>? GroupSettings(KnowledgeTable table, KnowledgeView view, Func<KnowledgeProperty, KnowledgeTarget?>? targetOf)
+    {
+        var settings = new Dictionary<string, string>(StringComparer.Ordinal);
+        if (view.HiddenGroups.Count > 0)
+        {
+            // How many groups the view hides: what there is to show again.
+            settings["hiddenGroups"] = view.HiddenGroups.Count.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        }
+
+        // A view that nests its rows by the parent relation has no groups to list.
+        if (table.Properties.FirstOrDefault(property => property.Id == view.GroupBy) is { IsParent: false } grouped)
+        {
+            var target = grouped.ValueType == "relation" ? targetOf?.Invoke(grouped) : null;
+            var groups = KnowledgeGroups.Of(table, view, grouped, target is null ? null : id => KnowledgeRelations.LabelOf(target, id));
+            settings[Groups] = System.Text.Json.JsonSerializer.Serialize(groups.Select(group => new { key = group.Key, label = group.Label, hidden = view.HiddenGroups.Contains(group.Key) }));
+        }
+
+        return settings.Count == 0 ? null : settings;
+    }
+
+    private static TableViewSettings Settings(KnowledgeTable table, KnowledgeView? view, Func<KnowledgeProperty, KnowledgeTarget?>? targetOf) => view is null
         ? new TableViewSettings("")
         : new TableViewSettings(
             view.Id,
@@ -76,8 +99,7 @@ internal static class KnowledgeTableMapper
             view.Filter.Items.Count == 0 ? null : Filter(view.Filter),
             view.GroupBy,
             view.HideEmptyGroups,
-            // How many groups the view hides: what there is to show again.
-            view.HiddenGroups.Count == 0 ? null : new Dictionary<string, string> { ["hiddenGroups"] = view.HiddenGroups.Count.ToString(System.Globalization.CultureInfo.InvariantCulture) });
+            GroupSettings(table, view, targetOf));
 
     /// <summary>
     /// One row as a line of the view, holding the cells that have a value. A cell among

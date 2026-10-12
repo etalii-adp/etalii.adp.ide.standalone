@@ -168,7 +168,8 @@ export function TableSurface({ model, definition, pendingEdits = 0, selectedRow,
   const raise = useCallback(
     (gesture: TableGesture) => {
       setRefusal("");
-      if (gesture.kind === "addColumn") {
+      // A property made without a name has its type's: its own is asked for in its header once it is there.
+      if (gesture.kind === "addColumn" && (gesture.values?.[0] ?? "") === "") {
         columnsBeforeAdd.current = new Set(columnsRef.current.map((column) => column.id));
       }
       void onGesture?.(gesture).then((answer) => {

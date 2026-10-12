@@ -46,18 +46,28 @@ internal static class KnowledgeViewEngine
 
         var shown = rows.ToList();
 
+        // A table with a parent relation shows its rows under their parents in every view, as Notion
+        // shows sub-items: in a view without groups, and under each heading of one with them.
+        var parent = table.Properties.FirstOrDefault(property => property.IsParent);
         List<TableRow> lines = [];
-        if (view is null || !properties.TryGetValue(view.GroupBy, out var grouped))
+        if (view is null)
         {
             lines.AddRange(shown.Select(row => Line(row)));
         }
-        else if (grouped.IsParent)
+        else if (!properties.TryGetValue(view.GroupBy, out var grouped) || grouped.IsParent)
         {
-            Nest(shown, grouped, view, Line, lines);
+            if (parent is null)
+            {
+                lines.AddRange(shown.Select(row => Line(row)));
+            }
+            else
+            {
+                Nest(shown, parent, view, Line, lines);
+            }
         }
         else
         {
-            Group(shown, grouped, view, Line, lines, editable, labelOf);
+            Group(shown, grouped, view, Line, lines, editable, labelOf, parent);
             return lines;
         }
 
@@ -302,7 +312,7 @@ internal static class KnowledgeViewEngine
 
     // ---- groups ----
 
-    private static void Group(List<KnowledgeRow> rows, KnowledgeProperty grouped, KnowledgeView view, Func<KnowledgeRow, int, bool, bool, TableRow> line, List<TableRow> lines, bool editable, Func<string, string, string>? labelOf)
+    private static void Group(List<KnowledgeRow> rows, KnowledgeProperty grouped, KnowledgeView view, Func<KnowledgeRow, int, bool, bool, TableRow> line, List<TableRow> lines, bool editable, Func<string, string, string>? labelOf, KnowledgeProperty? parent = null)
     {
         // The groups there are, in their natural order: an option each, in the options' order; unticked
         // and ticked; a related row each, as they are first met. The rows without a value come last.
@@ -374,7 +384,14 @@ internal static class KnowledgeViewEngine
                 return;
             }
 
-            lines.AddRange(under.Select(row => line(row, 0, false, false)));
+            if (parent is null)
+            {
+                lines.AddRange(under.Select(row => line(row, 0, false, false)));
+            }
+            else
+            {
+                Nest(under, parent, view, line, lines);
+            }
             if (editable)
             {
                 lines.Add(new TableRow(key, IsNewRow: true));

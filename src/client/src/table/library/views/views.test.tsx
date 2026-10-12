@@ -535,6 +535,39 @@ describe("grouping and which properties are shown", () => {
     expect(hiding.onGesture).toHaveBeenCalledWith({ kind: "showGroups" });
   });
 
+  it("lists the view's groups, each with an eye that hides or shows it, a handle that moves it, and an order by name", () => {
+    // Arrange: three groups, the second hidden, each line thirty pixels high.
+    const groups = JSON.stringify([
+      { key: "o1", label: "Capital", hidden: false },
+      { key: "o2", label: "Port", hidden: true },
+      { key: "none", label: "No Kind", hidden: false },
+    ]);
+    const { onGesture } = renderTable(table({ groupBy: "p3", settings: { groups, hiddenGroups: "1" } }));
+    open("Group");
+    const lines = screen.getAllByRole("listitem").filter((item) => item.hasAttribute("data-group-key"));
+    lines.forEach((item, index) => {
+      item.getBoundingClientRect = () => rect(0, index * 30, 200, 30);
+    });
+
+    // Assert: in the view's order, the hidden one said to be.
+    expect(lines.map((item) => item.textContent)).toEqual(["Capital", "Port", "No Kind"]);
+    expect(screen.getByRole("button", { name: "Show Port" }).getAttribute("aria-pressed")).toBe("false");
+
+    // Act: one hidden, one shown, one dragged two lines down, and all put in the order of their names.
+    fireEvent.click(screen.getByRole("button", { name: "Hide Capital" }));
+    fireEvent.click(screen.getByRole("button", { name: "Show Port" }));
+    drag(screen.getByRole("img", { name: "Move group Capital" }), { dy: 70 });
+    fireEvent.change(screen.getByRole("combobox", { name: "Order of groups" }), { target: { value: "ascending" } });
+
+    // Assert: one gesture each.
+    expect(onGesture.mock.calls.map((call) => call[0])).toEqual([
+      { kind: "hideGroup", targetId: "o1" },
+      { kind: "showGroup", targetId: "o2" },
+      { kind: "moveGroup", targetId: "o1", index: 2 },
+      { kind: "sortGroups", settings: { order: "ascending" } },
+    ]);
+  });
+
   it("shows and hides a property, and never the one that names a row", () => {
     // Arrange.
     const { onGesture } = renderTable();

@@ -5,6 +5,7 @@ import type { TableGesture } from "../api/tableEvents";
 import type { TableColumn } from "../api/tableModel";
 import { kindOf, type TableDefinition } from "../definition/tableDefinition";
 import { columnMenuGroups, dropIndex, resizedWidth } from "./columnActions";
+import { NewColumnPanel } from "./NewColumnPanel";
 import { OptionsEditor } from "./OptionsEditor";
 
 export interface ColumnHeaderProps {
@@ -50,6 +51,8 @@ export function ColumnHeader({ column, index, width, definition, editable, raise
   }, [nameAtOnce, editable, onNamingStarted]);
   // Where the panel of the column's options stands while it is open: under the header, in the window.
   const [optionsAt, setOptionsAt] = useState<{ x: number; y: number } | null>(null);
+  // Where the panel for a property inserted beside this one stands, and on which side the property goes.
+  const [insertAt, setInsertAt] = useState<{ x: number; y: number; side: "left" | "right" } | null>(null);
 
   const move = usePointerGesture<null>({
     onPress: () => {
@@ -107,6 +110,10 @@ export function ColumnHeader({ column, index, width, definition, editable, raise
       const rect = cellRef.current?.getBoundingClientRect();
       setOptionsAt({ x: rect?.left ?? 0, y: rect?.bottom ?? 0 });
     },
+    insertBeside: (side) => {
+      const rect = cellRef.current?.getBoundingClientRect();
+      setInsertAt({ x: (side === "left" ? rect?.left : rect?.right) ?? 0, y: rect?.bottom ?? 0, side });
+    },
   });
   const classes = ["table-header-cell", index === 0 ? "table-cell-first" : ""].filter(Boolean).join(" ");
 
@@ -141,6 +148,9 @@ export function ColumnHeader({ column, index, width, definition, editable, raise
       )}
       {editable && <span className="table-header-resize" role="separator" aria-orientation="vertical" aria-label={`Resize ${column.name}`} {...resize.press(null)} />}
       <ContextMenu open={menuAt !== null} groups={groups} position={menuAt ?? { x: 0, y: 0 }} onClose={() => setMenuAt(null)} />
+      {editable && insertAt !== null && (
+        <NewColumnPanel definition={definition} position={insertAt} beside={{ columnId: column.id, side: insertAt.side }} raise={raise} onClose={() => setInsertAt(null)} />
+      )}
       {editable && optionsAt !== null && <OptionsEditor column={column} position={optionsAt} raise={raise} onClose={() => setOptionsAt(null)} />}
     </div>
   );

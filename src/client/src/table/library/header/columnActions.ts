@@ -59,12 +59,14 @@ export interface ColumnMenuHandlers {
   raise: (gesture: TableGesture) => void;
   /** Renaming is done in the header itself; the menu only starts it. */
   startRename: () => void;
+  /** A column inserted beside this one is asked for in a panel, name first; the menu only opens it. Left out, the column is made at once under its type's name. */
+  insertBeside?: (side: "left" | "right") => void;
   /** A column's options are edited in a panel of their own; the menu only opens it. Left out, the menu has no such entry. */
   editOptions?: () => void;
 }
 
 /** The menu of one column: the entries the definition offers, grouped, each bound to its gesture. */
-export function columnMenuGroups(column: TableColumn, definition: TableDefinition, { raise, startRename, editOptions }: ColumnMenuHandlers): ContextMenuGroup[] {
+export function columnMenuGroups(column: TableColumn, definition: TableDefinition, { raise, startRename, editOptions, insertBeside }: ColumnMenuHandlers): ContextMenuGroup[] {
   const offered = new Set(definition.columnActions ?? []);
   // Only a column whose values are chosen from options has options to edit.
   const editor = kindOf(definition, column.kind).editor;
@@ -130,9 +132,9 @@ export function columnMenuGroups(column: TableColumn, definition: TableDefinitio
           onSelect: () => raise({ kind: "setColumnParent", columnId: column.id, settings: { parent: nests ? "false" : "true" } }),
         };
       case "insertLeft":
-        return { id: action, label: "Insert left", icon: "mdi-table-column-plus-before", onSelect: () => raise({ kind: "addColumn", targetId: column.id, settings: { side: "left", type: defaultKind(definition) } }) };
+        return { id: action, label: "Insert left", icon: "mdi-table-column-plus-before", onSelect: () => (insertBeside === undefined ? raise({ kind: "addColumn", targetId: column.id, settings: { side: "left", type: defaultKind(definition) } }) : insertBeside("left")) };
       case "insertRight":
-        return { id: action, label: "Insert right", icon: "mdi-table-column-plus-after", onSelect: () => raise({ kind: "addColumn", targetId: column.id, settings: { side: "right", type: defaultKind(definition) } }) };
+        return { id: action, label: "Insert right", icon: "mdi-table-column-plus-after", onSelect: () => (insertBeside === undefined ? raise({ kind: "addColumn", targetId: column.id, settings: { side: "right", type: defaultKind(definition) } }) : insertBeside("right")) };
       case "duplicate":
         return { id: action, label: "Duplicate", icon: "mdi-content-duplicate", onSelect: () => raise({ kind: "duplicateColumn", columnId: column.id }) };
       case "delete": {

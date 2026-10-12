@@ -128,7 +128,9 @@ internal static partial class KnowledgeEdits
                 ? KnowledgeEdit.Nothing
                 : KnowledgeEdit.Of(new ModelChange.Add("GroupSetting", null, Attributes(("key", gesture.TargetId)), view.Id, Slot: "hiddenGroups")),
             "showGroups" => new KnowledgeEdit([.. view.HiddenGroups.Select(key => (ModelChange)new ModelChange.Remove($"{view.Id}/hiddenGroups/{key}"))]),
+            "showGroup" => view.HiddenGroups.Contains(gesture.TargetId) ? KnowledgeEdit.Of(new ModelChange.Remove($"{view.Id}/hiddenGroups/{gesture.TargetId}")) : KnowledgeEdit.Nothing,
             "moveGroup" => MoveGroup(table, view, gesture),
+            "sortGroups" => SortGroups(table, view, gesture, files),
 
             "addFilter" => AddFilter(table, view, gesture, besideItsRule),
             "addFilterGroup" => AddFilterGroup(view, gesture, besideItsRule),
@@ -176,7 +178,7 @@ internal static partial class KnowledgeEdits
             var optionId = existing?.Id ?? newId();
             if (existing is null)
             {
-                changes.Add(new ModelChange.Add("Option", optionId, Attributes(("name", optionName.Trim())), property.Id));
+                changes.Add(new ModelChange.Add("Option", optionId, Attributes(("name", optionName.Trim()), ("colour", ColourFor(property, optionName.Trim()))), property.Id));
             }
 
             if (property.ValueType == "selection")
@@ -215,6 +217,11 @@ internal static partial class KnowledgeEdits
                 {
                     return Refused(ParentCycle);
                 }
+            }
+
+            if (KnowledgeRelations.IsMutual(property))
+            {
+                return SetMutual(table, row, property, values, changes);
             }
 
             var key = property.ValueType == "relation" ? "row" : "option";
@@ -256,6 +263,56 @@ internal static partial class KnowledgeEdits
             : cell.Key.Length > 0 && cell.Key != name && cell.Key is not ("options" or "rows")
                 ? Set(cellId, (cell.Key, null), (name, written))
                 : Set(cellId, (name, written)));
+        return new KnowledgeEdit(changes);
+    }
+
+    /// <summary>
+    /// Sets what a row is related to in a relation that shows both directions in one property.
+    /// A pair of rows is related when either names the other, so relating two rows writes one of
+    /// them - the one being edited - and unrelating them takes the pair out of whichever holds it.
+    /// </summary>
+    private static KnowledgeEdit SetMutual(KnowledgeTable table, KnowledgeRow row, KnowledgeProperty property, List<string> values, List<ModelChange> changes)
+    {
+        IReadOnlyList<string> Held(KnowledgeRow of) => of.Cells.FirstOrDefault(candidate => candidate.PropertyId == property.Id && candidate.Key == "rows")?.Values ?? [];
+
+        var own = Held(row);
+        List<string> stays = [.. own.Where(values.Contains)];
+        List<string> added = [];
+        foreach (var other in table.Rows.Where(other => other.Id != row.Id))
+        {
+            var names = Held(other).Contains(row.Id);
+            if (values.Contains(other.Id))
+            {
+                if (!names && !own.Contains(other.Id))
+                {
+                    added.Add(other.Id);
+                }
+            }
+            else if (names)
+            {
+                // The other end holds the pair: it goes there, with the cell when it was all the cell held.
+                changes.Add(new ModelChange.Remove(Held(other).Count == 1 ? CellId(other.Id, property.Id) : $"{CellId(other.Id, property.Id)}/{row.Id}"));
+            }
+        }
+
+        var cellId = CellId(row.Id, property.Id);
+        if (stays.Count + added.Count == 0)
+        {
+            if (own.Count > 0)
+            {
+                changes.Add(new ModelChange.Remove(cellId));
+            }
+
+            return new KnowledgeEdit(changes);
+        }
+
+        if (own.Count == 0)
+        {
+            changes.Add(new ModelChange.Add("Cell", null, Attributes(("property", property.Id)), row.Id));
+        }
+
+        changes.AddRange(own.Where(value => !values.Contains(value)).Select(value => (ModelChange)new ModelChange.Remove($"{cellId}/{value}")));
+        changes.AddRange(added.Select(value => (ModelChange)new ModelChange.Add("CellItem", null, Attributes(("row", value)), cellId)));
         return new KnowledgeEdit(changes);
     }
 
@@ -435,8 +492,15 @@ internal static partial class KnowledgeEdits
             return Refused($"'{type}' is not a type a property can have.");
         }
 
+        // A name given with the property is its name, refused like a rename's when another property has it; without one it takes its type's.
+        var given = (gesture.Values.FirstOrDefault() ?? "").Trim();
+        if (given.Length > 0 && table.Properties.Any(other => string.Equals(other.Name, given, StringComparison.OrdinalIgnoreCase)))
+        {
+            return Refused($"Another property is already called '{given}'.");
+        }
+
         var id = newId();
-        var name = UniqueName(table.Properties.Select(property => property.Name), label);
+        var name = given.Length > 0 ? given : UniqueName(table.Properties.Select(property => property.Name), label);
         return new KnowledgeEdit(Place(table, view, id, Attributes(("name", name), ("valueType", type)), gesture.TargetId, gesture.Settings.GetValueOrDefault("side") == "left"));
     }
 
@@ -717,6 +781,20 @@ internal static partial class KnowledgeEdits
             : "";
     }
 
+    /// <summary>
+    /// The colour a new option starts with, as Notion gives one: any of the palette's colours, and
+    /// one the property's options do not have yet while there is one. Which one follows from the
+    /// option's name, so the same option made in two files, or made again after an undo, looks the same.
+    /// </summary>
+    internal static string ColourFor(KnowledgeProperty property, string name)
+    {
+        List<string> palette = [.. KnowledgeVocabulary.Colours.Where(colour => colour != "default")];
+        List<string> free = [.. palette.Where(colour => property.Options.All(option => option.Colour != colour))];
+        var pool = free.Count > 0 ? free : palette;
+        var sum = name.ToUpperInvariant().Aggregate(17, (total, letter) => unchecked((total * 31) + letter));
+        return pool[(int)((uint)sum % (uint)pool.Count)];
+    }
+
     private static KnowledgeEdit AddOption(KnowledgeTable table, TableGesture gesture, Func<string> newId)
     {
         if (table.Properties.FirstOrDefault(candidate => candidate.Id == gesture.ColumnId) is not { } property)
@@ -731,7 +809,7 @@ internal static partial class KnowledgeEdits
 
         return OptionName(property, null, gesture, out var name) is { Length: > 0 } refusal
             ? Refused(refusal)
-            : KnowledgeEdit.Of(new ModelChange.Add("Option", newId(), Attributes(("name", name)), property.Id));
+            : KnowledgeEdit.Of(new ModelChange.Add("Option", newId(), Attributes(("name", name), ("colour", ColourFor(property, name))), property.Id));
     }
 
     /// <summary>A rename is one place in the file: rows hold an option's id, never its name.</summary>
@@ -1106,44 +1184,94 @@ internal static partial class KnowledgeEdits
             .Concat(view.Collapsed.Select(key => $"{view.Id}/collapsed/{key}"))
             .Select(id => (ModelChange)new ModelChange.Remove(id));
 
+    private const string NotGrouped = "This view is not grouped.";
+
     /// <summary>
-    /// Moves a group one place up or down among the groups that are shown. The view's order names
-    /// every group from then on: those it did not name yet are added in the order they stood in.
+    /// Moves a group: one place up or down among the groups that are shown, or to a place among
+    /// all of them. The view's order names every group from then on: those it did not name yet are
+    /// added in the order they stood in.
     /// </summary>
     private static KnowledgeEdit MoveGroup(KnowledgeTable table, KnowledgeView view, TableGesture gesture)
     {
         if (table.Properties.FirstOrDefault(candidate => candidate.Id == view.GroupBy) is not { } grouped)
         {
-            return Refused("This view is not grouped.");
+            return Refused(NotGrouped);
         }
 
-        // The groups there are, as the view shows them: an option each, unticked and ticked, or a related row each; then the rows without a value.
-        List<string> natural = grouped.ValueType switch
-        {
-            "selection" or "multipleSelection" => [.. grouped.Options.Select(option => option.Id)],
-            "checkbox" => ["false", "true"],
-            _ => [.. table.Rows.SelectMany(row => row.Cells.Where(cell => cell.PropertyId == grouped.Id && cell.Key == KeyOf(grouped.ValueType)).SelectMany(cell => cell.Values)).Distinct()],
-        };
-        if (grouped.ValueType != "checkbox")
-        {
-            natural.Add(KnowledgeViewEngine.NoValue);
-        }
-
-        List<string> missing = [.. natural.Where(key => !view.GroupOrder.Contains(key))];
-        List<string> order = [.. view.GroupOrder, .. missing];
-        List<string> shown = [.. order.Where(key => natural.Contains(key) && !view.HiddenGroups.Contains(key))];
-        var at = shown.IndexOf(gesture.TargetId);
-        var beside = at + (gesture.Settings.GetValueOrDefault("direction") == "up" ? -1 : 1);
-        if (at < 0 || beside < 0 || beside >= shown.Count)
+        List<string> order = [.. KnowledgeGroups.Of(table, view, grouped).Select(group => group.Key)];
+        var from = order.IndexOf(gesture.TargetId);
+        if (from < 0)
         {
             return KnowledgeEdit.Nothing;
         }
 
-        return new KnowledgeEdit(
-        [
-            .. missing.Select(key => (ModelChange)new ModelChange.Add("GroupSetting", null, Attributes(("key", key)), view.Id, Slot: "groupOrder")),
-            .. MoveTo($"{view.Id}/groupOrder/{gesture.TargetId}", view.Id, [.. order.Select(key => $"{view.Id}/groupOrder/{key}")], order.IndexOf(shown[beside])).Changes,
-        ]);
+        int to;
+        if (gesture.Settings.TryGetValue("direction", out var direction))
+        {
+            // Beside the next group that is shown: a hidden one is stepped over.
+            List<string> shown = [.. order.Where(key => !view.HiddenGroups.Contains(key))];
+            var beside = shown.IndexOf(gesture.TargetId) + (direction == "up" ? -1 : 1);
+            if (beside < 0 || beside >= shown.Count)
+            {
+                return KnowledgeEdit.Nothing;
+            }
+
+            to = order.IndexOf(shown[beside]);
+        }
+        else
+        {
+            to = Math.Clamp(gesture.Index, 0, order.Count - 1);
+        }
+
+        List<string> desired = [.. order];
+        desired.RemoveAt(from);
+        desired.Insert(to, gesture.TargetId);
+        return Reordered(view, order, desired);
+    }
+
+    /// <summary>Puts the groups in the order of their names, forwards or backwards; the rows without a value stay last.</summary>
+    private static KnowledgeEdit SortGroups(KnowledgeTable table, KnowledgeView view, TableGesture gesture, KnowledgeSurroundings? files)
+    {
+        if (table.Properties.FirstOrDefault(candidate => candidate.Id == view.GroupBy) is not { } grouped)
+        {
+            return Refused(NotGrouped);
+        }
+
+        var target = grouped.ValueType == "relation" ? files?.TargetOf(grouped) : null;
+        var groups = KnowledgeGroups.Of(table, view, grouped, target is null ? null : id => KnowledgeRelations.LabelOf(target, id));
+        var named = groups.Where(group => group.Key != KnowledgeViewEngine.NoValue).OrderBy(group => group.Label, StringComparer.CurrentCultureIgnoreCase).Select(group => group.Key);
+        List<string> desired = [.. gesture.Settings.GetValueOrDefault("order") == "descending" ? named.Reverse() : named, .. groups.Where(group => group.Key == KnowledgeViewEngine.NoValue).Select(group => group.Key)];
+        return Reordered(view, [.. groups.Select(group => group.Key)], desired);
+    }
+
+    /// <summary>
+    /// The changes that give a view's groups an order: an entry for each group the view does not
+    /// name yet, in the place it stands in now, and then one move per group that is not where it
+    /// is wanted. Entries for groups that are no longer there stay behind the others.
+    /// </summary>
+    private static KnowledgeEdit Reordered(KnowledgeView view, List<string> order, List<string> desired)
+    {
+        string Id(string key) => $"{view.Id}/groupOrder/{key}";
+
+        // What the file holds, and will hold once the groups it does not name are added behind them.
+        List<string> named = [.. view.GroupOrder.Distinct()];
+        List<ModelChange> changes = [.. order.Where(key => !named.Contains(key)).Select(key => (ModelChange)new ModelChange.Add("GroupSetting", null, Attributes(("key", key)), view.Id, Slot: "groupOrder"))];
+        List<string> work = [.. named, .. order.Where(key => !named.Contains(key))];
+        List<string> wanted = [.. desired, .. work.Where(key => !desired.Contains(key))];
+        for (var place = 0; place < wanted.Count; place++)
+        {
+            var from = work.IndexOf(wanted[place]);
+            if (from == place)
+            {
+                continue;
+            }
+
+            changes.AddRange(MoveTo(Id(wanted[place]), view.Id, [.. work.Select(Id)], place).Changes);
+            work.RemoveAt(from);
+            work.Insert(place, wanted[place]);
+        }
+
+        return new KnowledgeEdit(changes);
     }
 
     private static KnowledgeEdit Collapse(KnowledgeView view, string key, bool collapsed)

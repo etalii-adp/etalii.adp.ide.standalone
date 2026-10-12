@@ -130,6 +130,30 @@ public sealed class KnowledgeOptionsTests : IDisposable
         IReadOnlyDictionary<string, string> Settings(string id) => table.Session.Baseline().Columns.Single(column => column.Id == id).Settings;
     }
 
+    [Theory]
+    [MemberData(nameof(KnowledgeFiles.Extensions), MemberType = typeof(KnowledgeFiles))]
+    public async Task ANewOption_StartsWithAColourOfThePalette_ThatItsPropertyDoesNotHaveYet(string extension)
+    {
+        // Arrange: Country has a blue and a yellow option, and others without a colour.
+        await using var table = Open(extension);
+        var taken = Options(table, "p2").Select(option => option.Colour).Where(colour => colour != "default").ToHashSet();
+
+        // Act: one made in the options panel, and one made while filling in a cell.
+        await table.Edit(Option("addOption", "p2", name: "Luxembourg"));
+        await table.Edit(new TableGesture("setCell", RowId: "r2", ColumnId: "p2", Settings: new Dictionary<string, string> { ["newOption"] = "Denmark" }));
+
+        // Assert: each has a colour of the palette that is not the default and that no option had; and the two differ.
+        var made = Options(table, "p2").Where(option => option.Name is "Luxembourg" or "Denmark").ToList();
+        Assert.Equal(2, made.Count);
+        Assert.All(made, option => Assert.Contains(option.Colour, KnowledgeVocabulary.Colours));
+        Assert.All(made, option => Assert.NotEqual("default", option.Colour));
+        Assert.All(made, option => Assert.DoesNotContain(option.Colour, taken));
+        Assert.NotEqual(made[0].Colour, made[1].Colour);
+
+        // The colour follows from the name: the same option made anywhere starts the same.
+        Assert.Equal(KnowledgeEdits.ColourFor(table.OnDisk().Properties.Single(property => property.Id == "p4"), "Harbour"), KnowledgeEdits.ColourFor(table.OnDisk().Properties.Single(property => property.Id == "p4"), "harbour"));
+    }
+
     [Fact]
     public async Task AnOption_NeedsAName_ThatNoOtherOptionOfItsPropertyHas_AndAColourThereIs()
     {

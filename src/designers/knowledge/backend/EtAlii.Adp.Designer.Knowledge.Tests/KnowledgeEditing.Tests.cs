@@ -257,6 +257,12 @@ public sealed class KnowledgeEditingTests : IDisposable
         // Act.
         (_, string answer) = table.Begin(new TableGesture("addColumn", Settings: Settings(("type", "relation"))));
 
+        // A property is made under the name it is given, and not under one another property has.
+        await table.Edit(new TableGesture("addColumn", Values: [" Mayor "], Settings: Settings(("type", "text"))));
+        (_, string taken) = table.Begin(new TableGesture("addColumn", Values: ["mayor"], Settings: Settings(("type", "number"))));
+        Assert.Contains(table.OnDisk().Properties, property => property is { Name: "Mayor", ValueType: "text" });
+        Assert.Equal("Another property is already called 'mayor'.", taken);
+
         // Assert.
         Assert.Equal(KnowledgeEdits.RelationNeedsTarget, answer);
     }
