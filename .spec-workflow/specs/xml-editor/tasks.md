@@ -38,7 +38,7 @@ One Developer owns this specification, per CLAUDE.md's one-owner-per-specificati
 
 ## The tasks
 
-- [ ] 1. Settle what the platform's validator can answer
+- [x] 1. Settle what the platform's validator can answer
   - Files: `src/editors/xml/backend/EtAlii.Adp.Editor.Xml.Tests/Spike/ExpectedAtTheCaret.Tests.cs` (new), the test project file, `src/backend/EtAlii.Adp.slnx`
   - Create the test project and write the spike as tests that stay: `XmlSchemaValidator` fed a document that stops in the middle of an element, asked which elements and which attributes are expected, for a sequence, a choice and an all-group. The nine caret positions and the two attribute cases of the design's table are the cases.
   - Add what the scratch run did not try: a wildcard (`xs:any`), a substitution group, an element whose type is derived by extension, a document with two namespaces.
@@ -49,7 +49,7 @@ One Developer owns this specification, per CLAUDE.md's one-owner-per-specificati
   - _Requirements: 1.1, 1.2, 1.3, 1.4_
   - _Prompt: Implement the task for spec xml-editor, first run spec-workflow-guide to get the workflow guide then implement the task: Role: .NET developer who verifies a platform API before building on it | Task: Write the spike as xUnit tests that stay: ask XmlSchemaValidator what it expects at a caret for sequence, choice, all-group, wildcard, substitution group, derived type and two namespaces, measure validation, completion and compilation on the sizes the requirement names, and record the results in the design by a small amendment | Restrictions: Build nothing else on the answers in this task; do not work around a failure, stop and raise Q2 again; tests pass TestContext.Current.CancellationToken; no blocking call in an async method | _Leverage: the design's scratch run | _Requirements: 1.1, 1.2, 1.3, 1.4 | Success: every case has a test with its observed answer, timings are measured and in the design, four gates exit zero | Instructions: set this task to [-] in tasks.md before starting, log the work with log-implementation when done, then set it to [x]._
 
-- [ ] 2. The family's seam: an editor can be asked about its text
+- [x] 2. The family's seam: an editor can be asked about its text
   - Files: `src/api/editors.proto`, `src/client/src/generated/editors_pb.ts` (generated, committed), `src/backend/EtAlii.Adp.Editor/IEditorAnalyzer.cs` (new), `src/backend/EtAlii.Adp.Editor/_Model/TextAnalysis.cs` and `TextCompletion.cs` (new), `src/backend/EtAlii.Adp.Diagram/EditorAnalyzers.cs` (new), `src/backend/EtAlii.Adp.Diagram/EditorService.cs`, the tests of `EditorService`, `docs/architecture.md` (the call legs), `docs/creating-an-editor-module.md`
   - Add `Analyze` and `Complete` to `EditorService` with the messages of the design. Offsets are UTF-16 units into the content as sent.
   - `IEditorAnalyzer` keyed by editor id; `EditorAnalyzers` resolves one, in the shape of `EditorSessionFactories`.
