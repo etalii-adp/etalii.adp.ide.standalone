@@ -31,20 +31,13 @@ internal static class KnowledgeViewEngine
     /// <param name="unwritten">The cells whose value is an edit not yet written.</param>
     /// <param name="editable">Whether a line to add a row at is given, at the bottom and under every group.</param>
     /// <param name="labelOf">What a related row is called, by the relation's property and the row's id; null where relations are not resolved.</param>
-    public static List<TableRow> Lines(KnowledgeTable table, KnowledgeView? view, IReadOnlySet<string> kept, IReadOnlySet<(string RowId, string ColumnId)> unwritten, bool editable, Func<string, string, string>? labelOf = null)
+    /// <param name="search">What the rows are searched for: only those with it in one of their values are shown. Empty for all of them.</param>
+    public static List<TableRow> Lines(KnowledgeTable table, KnowledgeView? view, IReadOnlySet<string> kept, IReadOnlySet<(string RowId, string ColumnId)> unwritten, bool editable, Func<string, string, string>? labelOf = null, string search = "")
     {
-        ArgumentNullException.ThrowIfNull(table);
-        ArgumentNullException.ThrowIfNull(kept);
         ArgumentNullException.ThrowIfNull(unwritten);
 
         var properties = table.Properties.ToDictionary(property => property.Id, StringComparer.Ordinal);
-        IEnumerable<KnowledgeRow> rows = table.Rows;
-        if (view is not null)
-        {
-            rows = Sorted([.. rows.Where(row => kept.Contains(row.Id) || Passes(view.Filter, row, properties))], view.Sorts, properties);
-        }
-
-        var shown = rows.ToList();
+        var shown = InSight(table, view, kept, labelOf, search);
 
         // A table with a parent relation shows its rows under their parents in every view, as Notion
         // shows sub-items: in a view without groups, and under each heading of one with them.
@@ -82,6 +75,44 @@ internal static class KnowledgeViewEngine
             KnowledgeTableMapper.Row(row, unwritten, labelOf) with { Depth = depth, HasChildren = hasChildren, Collapsed = collapsed };
     }
 
+    /// <summary>
+    /// The rows a view has in sight, in its order: those its filter lets through and the search finds.
+    /// They are what its lines are made of, and what the line under a column calculates over.
+    /// </summary>
+    public static List<KnowledgeRow> InSight(KnowledgeTable table, KnowledgeView? view, IReadOnlySet<string> kept, Func<string, string, string>? labelOf = null, string search = "")
+    {
+        ArgumentNullException.ThrowIfNull(table);
+        ArgumentNullException.ThrowIfNull(kept);
+        ArgumentNullException.ThrowIfNull(search);
+
+        var properties = table.Properties.ToDictionary(property => property.Id, StringComparer.Ordinal);
+        IEnumerable<KnowledgeRow> rows = table.Rows;
+        var sought = search.Trim();
+        if (sought.Length > 0)
+        {
+            rows = rows.Where(row => kept.Contains(row.Id) || Mentions(row, sought, properties, labelOf));
+        }
+
+        return view is null
+            ? [.. rows]
+            : [.. Sorted([.. rows.Where(row => kept.Contains(row.Id) || Passes(view.Filter, row, properties))], view.Sorts, properties)];
+    }
+
+    /// <summary>
+    /// Whether a row has the text in what one of its cells shows: a value as written, an option by its
+    /// name, a related row by its title. A checkbox shows no text, and is never what a search finds.
+    /// </summary>
+    private static bool Mentions(KnowledgeRow row, string sought, Dictionary<string, KnowledgeProperty> properties, Func<string, string, string>? labelOf) =>
+        row.Cells.Any(cell => properties.TryGetValue(cell.PropertyId, out var property) && property.ValueType != "checkbox" && ValuesOf(row, property).Any(value => Shown(property, value, labelOf).Contains(sought, StringComparison.CurrentCultureIgnoreCase)));
+
+    /// <summary>A value as its cell shows it.</summary>
+    private static string Shown(KnowledgeProperty property, string value, Func<string, string, string>? labelOf) => property.ValueType switch
+    {
+        "selection" or "multipleSelection" => property.Options.FirstOrDefault(option => option.Id == value)?.Name ?? "",
+        "relation" => labelOf?.Invoke(property.Id, value) ?? "",
+        _ => value,
+    };
+
     // ---- the filter ----
 
     private static bool Passes(KnowledgeFilterGroup group, KnowledgeRow row, Dictionary<string, KnowledgeProperty> properties)
@@ -102,7 +133,7 @@ internal static class KnowledgeViewEngine
     }
 
     /// <summary>The values a row has for a property, as values of the property's own type: none when the cell holds none, or holds one of another type.</summary>
-    private static IReadOnlyList<string> ValuesOf(KnowledgeRow row, KnowledgeProperty property) =>
+    public static IReadOnlyList<string> ValuesOf(KnowledgeRow row, KnowledgeProperty property) =>
         row.Cells.FirstOrDefault(candidate => candidate.PropertyId == property.Id) is { } cell && cell.Key == KnowledgeEdits.KeyOf(property.ValueType) ? cell.Values : [];
 
     private static bool Holds(KnowledgeCondition condition, KnowledgeRow row, Dictionary<string, KnowledgeProperty> properties)
@@ -217,7 +248,7 @@ internal static class KnowledgeViewEngine
     /// A date, a date and time or a time as a point to compare: ticks of the day, of the instant in
     /// UTC, or of the time of day. Null for what is not one.
     /// </summary>
-    private static long? Moment(string valueType, string value) => valueType switch
+    public static long? Moment(string valueType, string value) => valueType switch
     {
         "date" when DateOnly.TryParseExact(value, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var date) => date.DayNumber,
         "dateTime" when DateTimeOffset.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, out var instant) => instant.UtcTicks,

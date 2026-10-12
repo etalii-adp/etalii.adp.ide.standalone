@@ -675,6 +675,36 @@ public sealed class KnowledgeEditingTests : IDisposable
         Assert.Equal(["Antwerpen"], Cell(table.OnDisk(), "r2", "p1"));
     }
 
+    [Theory]
+    [MemberData(nameof(KnowledgeFiles.Extensions), MemberType = typeof(KnowledgeFiles))]
+    public async Task OneProperty_IsSetInSeveralRowsAtOnce_AsOneStep_AndForNoneWhenOneRefusesIt(string extension)
+    {
+        // Arrange.
+        await using var table = Open(extension);
+        var before = table.Bytes();
+        IReadOnlyList<string>? Held(string rowId, string propertyId) => table.OnDisk().Rows.Single(row => row.Id == rowId).Cells.FirstOrDefault(cell => cell.PropertyId == propertyId)?.Values;
+
+        // Act: both rows get the same country, in one gesture.
+        await table.Edit(new TableGesture("setCells", ColumnId: "p2", Values: ["o2"], Settings: Settings(("rows", "r1,r2"))));
+
+        // Assert.
+        Assert.Equal(["o2"], Held("r1", "p2"));
+        Assert.Equal(["o2"], Held("r2", "p2"));
+
+        // Act: one undo.
+        Assert.True((await table.History.UndoAsync(TestContext.Current.CancellationToken)).IsSuccess);
+
+        // Assert: both back, in that one step.
+        Assert.Equal(before, table.Bytes());
+
+        // A value one of the rows cannot hold is given to none, and an option is not made on the way.
+        (_, string word) = table.Begin(new TableGesture("setCells", ColumnId: "p3", Values: ["a great many"], Settings: Settings(("rows", "r1,r2"))));
+        (_, string made) = table.Begin(new TableGesture("setCells", ColumnId: "p2", Settings: Settings(("rows", "r1,r2"), ("newOption", "Luxembourg"))));
+        Assert.Equal(KnowledgeEdits.NumberExpected, word);
+        Assert.Equal(KnowledgeEdits.OptionFirst, made);
+        Assert.Equal(before, table.Bytes());
+    }
+
     /// <summary>
     /// What is shown before a write and what the file holds after it are the same table. The two
     /// are made by different code - a projection in memory, and the FBL runtime on the bytes - and

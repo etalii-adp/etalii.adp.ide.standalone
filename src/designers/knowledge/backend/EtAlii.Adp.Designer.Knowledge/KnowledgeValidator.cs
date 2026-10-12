@@ -166,6 +166,7 @@ internal static class KnowledgeValidator
                 .Concat(view.Sorts.Select(sort => sort.PropertyId))
                 .Concat(Conditions(view.Filter).Select(condition => condition.PropertyId))
                 .Append(view.GroupBy)
+                .Append(view.Freeze)
                 .Where(id => id.Length > 0 && !properties.ContainsKey(id))
                 .Distinct(StringComparer.Ordinal);
             foreach (var id in missing)

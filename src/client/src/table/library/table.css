@@ -185,6 +185,48 @@
   background: var(--color-surface-raised);
 }
 
+.table-row-check {
+  flex: none;
+  margin: 0 4px 0 0;
+  opacity: 0;
+}
+
+.table-row:hover .table-row-check,
+.table-row-check:checked,
+.table-row-check:focus-visible,
+.table-header-row:hover .table-row-check {
+  opacity: 1;
+}
+
+.table-select-all {
+  position: absolute;
+  top: 0;
+  left: 2px;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  height: 100%;
+}
+
+.table-selection-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface-raised);
+  font-size: 0.8125rem;
+}
+
+.table-bulk-editor {
+  position: relative;
+  display: flex;
+  flex-basis: 100%;
+  gap: 6px;
+  min-height: 28px;
+}
+
 .table-row-handle {
   flex: none;
   margin-inline-end: 2px;
@@ -273,8 +315,101 @@
   background: var(--color-surface);
 }
 
+/* The columns a view freezes stay too, each where it stands: TableSurface.tsx gives each its own `left`. */
+.table-cell-frozen {
+  position: sticky;
+  z-index: 1;
+  background: var(--color-surface);
+}
+
+.table-cell-frozen-edge {
+  border-right: 2px solid var(--color-border-strong, var(--color-border));
+}
+
+.table-row-selected .table-cell-frozen {
+  background: inherit;
+}
+
 .table-header-cell {
   position: relative;
+}
+
+.table-header-cell.table-cell-frozen {
+  position: sticky;
+  z-index: 2;
+}
+
+/* The line of calculations stays at the foot of the table, as the header stays at its head. */
+.table-calculation-row {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  border-top: 1px solid var(--color-border);
+  border-bottom: 0;
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font-size: 0.8125rem;
+}
+
+.table-calculation-cell {
+  justify-content: flex-end;
+  gap: 6px;
+  border-right-color: transparent;
+}
+
+.table-calculation-cell.table-cell-first,
+.table-calculation-cell.table-cell-frozen {
+  z-index: 3;
+}
+
+.table-calculation-button {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.table-calculation-label {
+  font-size: 0.6875rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.table-calculation-value {
+  overflow: hidden;
+  color: var(--color-text);
+  text-overflow: ellipsis;
+}
+
+/* A column that calculates nothing says so only where the pointer or the keyboard is. */
+.table-calculation-none {
+  opacity: 0;
+}
+
+.table-calculation-button:hover .table-calculation-none,
+.table-calculation-button:focus-visible .table-calculation-none,
+.table-calculation-button[aria-expanded="true"] .table-calculation-none {
+  opacity: 1;
+}
+
+.table-view-search {
+  flex: 0 1 220px;
+  min-width: 80px;
+  padding: 2px 6px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
 }
 
 .table-header-cell.table-cell-first {
@@ -628,6 +763,37 @@
 
 .table-new-column {
   min-width: 220px;
+}
+
+.table-new-relation,
+.table-relation-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.table-new-relation label,
+.table-relation-editor label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.table-relation-target,
+.table-relation-other,
+.table-relation-refusal {
+  display: flex;
+  gap: 6px;
+  margin: 0;
+}
+
+.table-relation-refusal {
+  color: var(--color-danger);
+  font-size: 0.8125rem;
+}
+
+.table-relation-editor {
+  min-width: 240px;
 }
 
 .table-new-column-kinds {

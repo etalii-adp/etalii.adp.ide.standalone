@@ -15,12 +15,14 @@ export type ColumnAction =
   | "rename"
   | "changeType"
   | "options"
+  | "relation"
   | "filter"
   | "sortAscending"
   | "sortDescending"
   | "group"
   | "hide"
   | "wrap"
+  | "freeze"
   | "nest"
   | "insertLeft"
   | "insertRight"
@@ -50,6 +52,12 @@ export interface TableKindDefinition {
   editor?: TableEditorKind;
   /** False for a kind a column cannot be given by hand: it is read, shown, and never offered. */
   addable?: boolean;
+  /**
+   * True for a kind whose values name rows of a table: a relation. A new property of it is asked which
+   * table it relates to, how many rows a cell holds and whether the other table shows it too; its
+   * column's menu edits the last two; and no column is changed into it.
+   */
+  needsTarget?: boolean;
   /** The comparisons a filter offers for this kind; *is empty* and *is not empty* are offered for every kind besides. */
   comparisons?: readonly TableComparison[];
   /** False for a kind a view cannot be sorted by. */
@@ -67,6 +75,8 @@ export interface TableDefinition {
   rowActions?: readonly RowAction[];
   /** The kind a column inserted beside another starts as; the first that can be added when left out. */
   defaultKind?: string;
+  /** True for a table whose rows can be searched: the bar above it then has a search box, and what is typed is raised as a `search` gesture. */
+  searchable?: boolean;
   /** The height of every row in pixels; the library's default when left out. */
   rowHeight?: number;
   /** A column's width in pixels when the model gives none; the library's default when left out. */

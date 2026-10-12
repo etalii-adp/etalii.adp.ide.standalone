@@ -16,14 +16,16 @@ internal static class KnowledgeTableMapper
     /// <param name="viewId">The view the connection shows.</param>
     /// <param name="rowCount">The lines of that view.</param>
     /// <param name="targetOf">What a relation property points at, or null where relations are not resolved.</param>
-    public static TableStructureChanged Structure(KnowledgeTable table, string readOnlyReason, string viewId, int rowCount, Func<KnowledgeProperty, KnowledgeTarget?>? targetOf = null)
+    /// <param name="inSight">The rows the view has in sight, which the line under a column calculates over; null for every row of the table.</param>
+    /// <param name="search">What the connection searches the rows for, or empty.</param>
+    public static TableStructureChanged Structure(KnowledgeTable table, string readOnlyReason, string viewId, int rowCount, Func<KnowledgeProperty, KnowledgeTarget?>? targetOf = null, IReadOnlyList<KnowledgeRow>? inSight = null, string search = "")
     {
         var view = table.ViewOrDefault(viewId);
         return new TableStructureChanged(
             table.Name,
-            Columns(table, view, targetOf, Uses(table)),
+            Columns(table, view, targetOf, Uses(table), inSight ?? table.Rows),
             [.. table.Views.Select(candidate => new TableView(candidate.Id, candidate.Name))],
-            Settings(table, view, targetOf),
+            Settings(table, view, targetOf, search),
             rowCount,
             readOnlyReason);
     }
@@ -50,7 +52,7 @@ internal static class KnowledgeTableMapper
         return uses;
     }
 
-    private static IReadOnlyList<TableColumn> Columns(KnowledgeTable table, KnowledgeView? view, Func<KnowledgeProperty, KnowledgeTarget?>? targetOf, Dictionary<(string PropertyId, string OptionId), int> uses)
+    private static IReadOnlyList<TableColumn> Columns(KnowledgeTable table, KnowledgeView? view, Func<KnowledgeProperty, KnowledgeTarget?>? targetOf, Dictionary<(string PropertyId, string OptionId), int> uses, IReadOnlyList<KnowledgeRow> inSight)
     {
         var listed = view?.Columns ?? [];
         var byId = table.Properties.ToDictionary(property => property.Id);
@@ -60,20 +62,38 @@ internal static class KnowledgeTableMapper
             // A view naming a property that is gone still opens, without that setting.
             if (byId.Remove(column.PropertyId, out var property))
             {
-                columns.Add(Column(table, property, column, targetOf, uses));
+                columns.Add(Column(table, property, column, targetOf, uses, inSight));
             }
         }
 
-        columns.AddRange(table.Properties.Where(property => byId.ContainsKey(property.Id)).Select(property => Column(table, property, null, targetOf, uses)));
+        columns.AddRange(table.Properties.Where(property => byId.ContainsKey(property.Id)).Select(property => Column(table, property, null, targetOf, uses, inSight)));
         return columns;
     }
 
     /// <summary>The setting a view lists its groups under: each with its key, what it is called and whether it is hidden, in the view's order.</summary>
     private const string Groups = "groups";
 
-    private static Dictionary<string, string>? GroupSettings(KnowledgeTable table, KnowledgeView view, Func<KnowledgeProperty, KnowledgeTarget?>? targetOf)
+    /// <summary>The setting a view names the property under that its columns are frozen up to.</summary>
+    private const string Freeze = "freeze";
+
+    /// <summary>The setting that says what the connection searches the rows for. It is the connection's own, and in no file.</summary>
+    private const string Search = "search";
+
+    private static Dictionary<string, string>? ViewSettings(KnowledgeTable table, KnowledgeView view, Func<KnowledgeProperty, KnowledgeTarget?>? targetOf, string search)
     {
         var settings = new Dictionary<string, string>(StringComparer.Ordinal);
+
+        // A freeze naming a property that is gone is a setting the view opens without.
+        if (table.Properties.Any(property => property.Id == view.Freeze))
+        {
+            settings[Freeze] = view.Freeze;
+        }
+
+        if (search.Length > 0)
+        {
+            settings[Search] = search;
+        }
+
         if (view.HiddenGroups.Count > 0)
         {
             // How many groups the view hides: what there is to show again.
@@ -91,15 +111,15 @@ internal static class KnowledgeTableMapper
         return settings.Count == 0 ? null : settings;
     }
 
-    private static TableViewSettings Settings(KnowledgeTable table, KnowledgeView? view, Func<KnowledgeProperty, KnowledgeTarget?>? targetOf) => view is null
-        ? new TableViewSettings("")
+    private static TableViewSettings Settings(KnowledgeTable table, KnowledgeView? view, Func<KnowledgeProperty, KnowledgeTarget?>? targetOf, string search) => view is null
+        ? new TableViewSettings("", Settings: search.Length > 0 ? new Dictionary<string, string>(StringComparer.Ordinal) { [Search] = search } : null)
         : new TableViewSettings(
             view.Id,
             [.. view.Sorts.Select(sort => new TableSort(sort.PropertyId, sort.Descending))],
             view.Filter.Items.Count == 0 ? null : Filter(view.Filter),
             view.GroupBy,
             view.HideEmptyGroups,
-            GroupSettings(table, view, targetOf));
+            ViewSettings(table, view, targetOf, search));
 
     /// <summary>
     /// One row as a line of the view, holding the cells that have a value. A cell among
@@ -135,9 +155,19 @@ internal static class KnowledgeTableMapper
             finding.Location is { } at ? $"{finding.Message} (line {at.Line})" : finding.Message)),
     ];
 
-    private static TableColumn Column(KnowledgeTable table, KnowledgeProperty property, KnowledgeColumn? column, Func<KnowledgeProperty, KnowledgeTarget?>? targetOf, Dictionary<(string PropertyId, string OptionId), int> uses)
+    private static TableColumn Column(KnowledgeTable table, KnowledgeProperty property, KnowledgeColumn? column, Func<KnowledgeProperty, KnowledgeTarget?>? targetOf, Dictionary<(string PropertyId, string OptionId), int> uses, IReadOnlyList<KnowledgeRow> inSight)
     {
-        var settings = new Dictionary<string, string>(StringComparer.Ordinal);
+        // The calculations a column of this type can be given, what this one is given, and what it comes to.
+        var settings = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["calculations"] = string.Join(',', KnowledgeCalculations.For(property.ValueType)),
+        };
+        if (column is { Calculate.Length: > 0 })
+        {
+            settings["calculate"] = column.Calculate;
+            settings["calculation"] = KnowledgeCalculations.Of(property, column.Calculate, inSight);
+        }
+
         if (property.TargetFile.Length > 0)
         {
             settings["targetFile"] = property.TargetFile;

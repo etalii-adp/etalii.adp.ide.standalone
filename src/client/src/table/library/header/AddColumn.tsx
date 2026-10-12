@@ -7,6 +7,8 @@ import { NewColumnPanel } from "./NewColumnPanel";
 export interface AddColumnProps {
   definition: TableDefinition;
   raise: (gesture: TableGesture) => void;
+  /** Makes a gesture and answers with what it was answered with: for a property that asks something before it is made. */
+  ask?: (gesture: TableGesture) => Promise<string>;
 }
 
 /**
@@ -14,7 +16,7 @@ export interface AddColumnProps {
  * then its type, and raises one gesture for it. It offers the kinds the module's definition lets
  * be added and no others, and is not shown at all when there is none.
  */
-export function AddColumn({ definition, raise }: AddColumnProps) {
+export function AddColumn({ definition, raise, ask }: AddColumnProps) {
   const buttonRef = useRef<HTMLButtonElement>(null);
   const [panelAt, setPanelAt] = useState<{ x: number; y: number } | null>(null);
 
@@ -38,7 +40,7 @@ export function AddColumn({ definition, raise }: AddColumnProps) {
       >
         <span className="mdi mdi-plus" aria-hidden="true" />
       </button>
-      {panelAt !== null && <NewColumnPanel definition={definition} position={panelAt} raise={raise} onClose={() => setPanelAt(null)} />}
+      {panelAt !== null && <NewColumnPanel definition={definition} position={panelAt} raise={raise} ask={ask} onClose={() => setPanelAt(null)} />}
     </div>
   );
 }
