@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/json-editor/requirements.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-10-12T20:44:39.041Z",
+      "trigger": "initial",
+      "approvalId": "approval_1791837877976_scddce28m",
+      "approvalTitle": "JSON editor requirements (first of three; owns the pieces the XML and YAML editors share)"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-10-12T20:47:19.824Z",
+      "trigger": "approved",
+      "approvalId": "approval_1791837877976_scddce28m",
+      "approvalTitle": "JSON editor requirements (first of three; owns the pieces the XML and YAML editors share)"
+    }
+  ]
+}

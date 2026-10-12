@@ -69,13 +69,12 @@ public sealed class KnowledgeSessionTests : IDisposable
 
         // The views, and the settings of the one the file was left in.
         Assert.NotEmpty(baseline.Views);
-        Assert.Equal("v1", baseline.Settings.ViewId);
+        Assert.Equal("v2", baseline.Settings.ViewId);
 
-        // The lines of that view, which shows the cities of the Netherlands grouped by country: a
-        // heading for each of the six countries and for the cities without one, the three cities the
-        // filter lets through, and under every heading the line a new row is added at.
-        Assert.Equal("p2", baseline.Settings.GroupBy);
-        Assert.Equal(7 + 3 + 7, baseline.RowCount);
+        // The lines of that view, which filters, sorts and groups nothing: the nine cities, and the line
+        // a new row is added at.
+        Assert.Equal("", baseline.Settings.GroupBy);
+        Assert.Equal(9 + 1, baseline.RowCount);
     }
 
     [Fact]
@@ -134,17 +133,19 @@ public sealed class KnowledgeSessionTests : IDisposable
         await using var other = new KnowledgeSession(path);
         var views = one.Baseline().Views;
         Assert.True(views.Count > 1, "The example needs a second view for this test.");
+        var left = one.Baseline().Settings.ViewId;
+        var another = views.First(view => view.Id != left).Id;
         var pushed = Collect(one);
 
         // Act.
-        one.SetActiveView(views[1].Id);
+        one.SetActiveView(another);
         one.SetActiveView("no-such-view");
 
-        // Assert: the structure for that view, once; the other connection is where it was.
+        // Assert: the structure for that view, once; the other connection is where it was, in the view the file was left in.
         var structure = Assert.IsType<TableStructureChanged>(Assert.Single(pushed));
-        Assert.Equal(views[1].Id, structure.Settings.ViewId);
-        Assert.Equal(views[1].Id, one.Baseline().Settings.ViewId);
-        Assert.Equal("v1", other.Baseline().Settings.ViewId);
+        Assert.Equal(another, structure.Settings.ViewId);
+        Assert.Equal(another, one.Baseline().Settings.ViewId);
+        Assert.Equal(left, other.Baseline().Settings.ViewId);
     }
 
     // ---- opening writes nothing ---------------------------------------------------------------

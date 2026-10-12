@@ -3,22 +3,28 @@
   "lines": {
     "totals": {
       "all": {
-        "projects": 5,
-        "files": 8,
-        "lines": 142,
-        "code_lines": 126
+        "projects": 7,
+        "files": 10,
+        "lines": 164,
+        "code_lines": 145
       },
       "core": {
-        "projects": 2,
-        "files": 1,
-        "lines": 73,
-        "code_lines": 70
+        "projects": 4,
+        "files": 3,
+        "lines": 95,
+        "code_lines": 89
       },
       "core/production": {
         "projects": 2,
         "files": 1,
         "lines": 73,
         "code_lines": 70
+      },
+      "core/test": {
+        "projects": 2,
+        "files": 2,
+        "lines": 22,
+        "code_lines": 19
       },
       "diagram": {
         "projects": 3,
@@ -45,10 +51,10 @@
         "code_lines": 112
       },
       "test": {
-        "projects": 1,
-        "files": 1,
-        "lines": 17,
-        "code_lines": 14
+        "projects": 3,
+        "files": 3,
+        "lines": 39,
+        "code_lines": 33
       }
     },
     "production_lines_per_module": {
@@ -73,6 +79,24 @@
         "files": 0,
         "lines": 0,
         "code_lines": 0
+      },
+      {
+        "project": "EtAlii.Adp.TestSupport",
+        "kind": "core",
+        "group": "test",
+        "module": null,
+        "files": 1,
+        "lines": 13,
+        "code_lines": 11
+      },
+      {
+        "project": "EtAlii.Adp.TestSupport.Host",
+        "kind": "core",
+        "group": "test",
+        "module": null,
+        "files": 1,
+        "lines": 9,
+        "code_lines": 8
       },
       {
         "project": "EtAlii.Adp.Diagram.Alpha",
@@ -203,19 +227,21 @@
     }
   },
   "graph": {
-    "projects": 5,
+    "projects": 7,
     "edges_per_kind": {
-      "ProjectReference": 3,
-      "PackageReference": 1,
+      "ProjectReference": 6,
+      "PackageReference": 2,
       "FrameworkReference": 1,
       "InternalsVisibleTo": 1
     },
     "referenced_by": {
-      "EtAlii.Adp.Core": 2,
+      "EtAlii.Adp.Core": 3,
+      "EtAlii.Adp.TestSupport": 2,
       "EtAlii.Adp.Diagram.Alpha": 1,
       "EtAlii.Adp.Diagram.Alpha.Tests": 0,
       "EtAlii.Adp.Diagram.BetaGamma": 0,
-      "EtAlii.Adp.Empty": 0
+      "EtAlii.Adp.Empty": 0,
+      "EtAlii.Adp.TestSupport.Host": 0
     },
     "without_cs_file": [
       "EtAlii.Adp.Empty"
@@ -244,6 +270,21 @@
         "to": "Microsoft.AspNetCore.App"
       },
       {
+        "from": "EtAlii.Adp.TestSupport",
+        "kind": "ProjectReference",
+        "to": "EtAlii.Adp.Core"
+      },
+      {
+        "from": "EtAlii.Adp.TestSupport.Host",
+        "kind": "ProjectReference",
+        "to": "EtAlii.Adp.TestSupport"
+      },
+      {
+        "from": "EtAlii.Adp.TestSupport.Host",
+        "kind": "PackageReference",
+        "to": "Microsoft.AspNetCore.Mvc.Testing"
+      },
+      {
         "from": "EtAlii.Adp.Diagram.Alpha",
         "kind": "ProjectReference",
         "to": "EtAlii.Adp.Core"
@@ -254,6 +295,12 @@
         "to": "EtAlii.Adp.Diagram.Alpha"
       },
       {
+        "from": "EtAlii.Adp.Diagram.Alpha.Tests",
+        "kind": "ProjectReference",
+        "to": "EtAlii.Adp.TestSupport",
+        "via": "src/Directory.Build.targets"
+      },
+      {
         "from": "EtAlii.Adp.Diagram.BetaGamma",
         "kind": "ProjectReference",
         "to": "EtAlii.Adp.Core"
@@ -262,12 +309,22 @@
   },
   "waits": {
     "waits": {
-      "test": 2,
+      "test": 4,
       "production": 0
     },
-    "polling_helpers": 1,
+    "polling_helpers": 2,
     "wait_sites": {
       "test": [
+        {
+          "file": "src/backend/EtAlii.Adp.TestSupport/Polling.cs",
+          "line": 10,
+          "call": "Thread.Sleep"
+        },
+        {
+          "file": "src/backend/EtAlii.Adp.TestSupport.Host/Host.cs",
+          "line": 7,
+          "call": "Task.Delay"
+        },
         {
           "file": "src/diagrams/alpha/backend/EtAlii.Adp.Diagram.Alpha.Tests/AlphaTests.cs",
           "line": 7,
@@ -282,6 +339,11 @@
       "production": []
     },
     "helper_sites": [
+      {
+        "file": "src/backend/EtAlii.Adp.TestSupport/Polling.cs",
+        "line": 6,
+        "helper": "WaitUntil"
+      },
       {
         "file": "src/diagrams/alpha/backend/EtAlii.Adp.Diagram.Alpha.Tests/AlphaTests.cs",
         "line": 13,

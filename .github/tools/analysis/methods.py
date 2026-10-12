@@ -6,6 +6,8 @@ to the line of its closing brace, comments and blank lines left out. Braces are 
 with comments and literals blanked, so a brace in a string does not count. Expression-bodied members
 are left out: they are one expression, however long.
 
+Only production code is measured: the test projects and the testing projects are left out.
+
 A type is a class, record, struct or interface; its size is its code lines, nested types included.
 """
 
@@ -114,7 +116,7 @@ def measure(root, longest=20):
     methods = []
     types = collections.defaultdict(list)
     for project in common.projects(root):
-        if project.test:
+        if project.test_code:
             continue
         for path in common.cs_files(project):
             text = common.read(path)
