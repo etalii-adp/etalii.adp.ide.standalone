@@ -206,5 +206,8 @@ describe("drag cost", () => {
 
     expect(repositionRatio).toBeLessThan(RATIO_TOLERANCE);
     expect(panRatio).toBeLessThan(RATIO_TOLERANCE);
-  });
+    // The ratio is the bound, not the clock: the six mounts take about a second alone, but
+    // beside the whole backend suite they outran the runner's default five seconds (stability
+    // run 7 of 2026-10-12), so this test names its own deadline.
+  }, 60_000);
 });
