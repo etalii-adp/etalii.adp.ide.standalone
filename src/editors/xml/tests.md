@@ -1,0 +1,12 @@
+# XML editor: browser checks
+
+What only a running application shows, from the End-to-End section of the [design](../../../.spec-workflow/specs/xml-editor/design.md). Run them against a local build, signed in with the checked-in `admin`/`changeme` placeholder, with `src/examples/` open as the project. Every check is done in the light theme and again in the dark theme.
+
+| # | Check | Steps | Expected | Result |
+| --- | --- | --- | --- | --- |
+| 1 | Colour in both themes | Open `editors/xml/order.xml`. Switch the theme. | Element names, attribute names and values, the comment, the declaration and the `p:` prefixes each in their own colour; the colours follow the switch without reopening the tab. | Not run (2026-10-12): written in a cloud session that did not start the application. |
+| 2 | A tag closing as it is typed, and one undo | In `notes.xml`, inside `<notes>`, type `<note>`. Press Ctrl+Z. Type `<note>text</`. | `</note>` appears after the caret as `>` is typed, and one undo takes it away; after `</` the name of the open element is completed. | Not run (2026-10-12), as above. |
+| 3 | A broken XSD constraint's three carriers | Open `library-broken.xml`. | The missing `isbn`, the missing `year`, `soon` as a year and the `publisher` element are each marked where they are, with an underline, a gutter mark and the sentence on hover and on F8; the status line counts the errors and names `library.xsd`. | Not run (2026-10-12), as above. |
+| 4 | Completion from the keyboard alone | In `library.xml`, after the last `</book>`, type `<`, choose `book` with the arrow keys and Enter, then Tab; inside the start tag press Ctrl+Space and choose `format`; inside its quotes press Ctrl+Space. | `book` is inserted with `isbn=""` and the caret in it, then between the tags; `format` is offered with `isbn` already written left out; `hardback`, `paperback` and `ebook` are offered, and the schema's documentation is beside each item that has one. | Not run (2026-10-12), as above. |
+| 5 | Editing the XSD in a second tab | Open `library.xml` and `library.xsd`. In `library.xsd` make `year` optional and save. | `library.xml` is checked again with no edit of its own, and a document that lacked a year is no longer marked for it. | Not run (2026-10-12), as above. |
+| 6 | The backend stopped | With `library.xml` open, stop the backend. Type in the document. | Colour, the tag at the caret's partner and folding stay; the status line says "Checking is unavailable." once. | Not run (2026-10-12), as above. |

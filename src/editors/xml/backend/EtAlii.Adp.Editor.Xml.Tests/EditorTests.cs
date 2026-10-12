@@ -21,4 +21,25 @@ public class EditorTests
         Assert.False(Definition.IsFallback);
         Assert.NotNull(Definition.Build);
     }
+
+    [Fact]
+    public void NoEdslSpecification_IsWrittenOrRead()
+    {
+        // Arrange: the module's folder, every file in it.
+        var module = RepositoryPaths.Under("src", "editors", "xml");
+
+        // Act.
+        var written = Directory.EnumerateFiles(module, "*.eds", SearchOption.AllDirectories)
+            .Where(path => !path.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
+            .ToArray();
+        var read = Directory.EnumerateFiles(Path.Combine(module, "backend", "EtAlii.Adp.Editor.Xml"), "*.cs")
+            .Concat(Directory.EnumerateFiles(Path.Combine(module, "client"), "*.ts*"))
+            .Where(path => File.ReadAllText(path).Contains(".eds", StringComparison.Ordinal))
+            .ToArray();
+
+        // Assert: xml-editor Requirement 10.3 - EDSL has no content to write one in, and the
+        // module is code until it has; what a specification would state is in the readme.
+        Assert.Empty(written);
+        Assert.Empty(read);
+    }
 }
