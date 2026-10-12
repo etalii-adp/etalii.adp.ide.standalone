@@ -40,9 +40,9 @@ export function resizedWidth(start: number, dx: number): number {
 
 /** The order the menu shows its entries in, and where a line separates them. */
 const MENU_ORDER: readonly (readonly ColumnAction[])[] = [
-  ["rename", "changeType", "options"],
+  ["rename", "changeType", "options", "relation"],
   ["filter", "sortAscending", "sortDescending", "group", "nest"],
-  ["hide", "wrap"],
+  ["hide", "wrap", "freeze"],
   ["insertLeft", "insertRight", "duplicate", "delete"],
 ];
 
@@ -59,17 +59,27 @@ export interface ColumnMenuHandlers {
   raise: (gesture: TableGesture) => void;
   /** Renaming is done in the header itself; the menu only starts it. */
   startRename: () => void;
+  /** A column inserted beside this one is asked for in a panel, name first; the menu only opens it. Left out, the column is made at once under its type's name. */
+  insertBeside?: (side: "left" | "right") => void;
+  /** A relation's limit and its other side are edited in a panel of their own; the menu only opens it. Left out, the menu has no such entry. */
+  editRelation?: () => void;
+  /** True for the column the view's columns are frozen up to: its entry then unfreezes them. */
+  frozenUpToThis?: boolean;
   /** A column's options are edited in a panel of their own; the menu only opens it. Left out, the menu has no such entry. */
   editOptions?: () => void;
 }
 
 /** The menu of one column: the entries the definition offers, grouped, each bound to its gesture. */
-export function columnMenuGroups(column: TableColumn, definition: TableDefinition, { raise, startRename, editOptions }: ColumnMenuHandlers): ContextMenuGroup[] {
+export function columnMenuGroups(column: TableColumn, definition: TableDefinition, { raise, startRename, editOptions, editRelation, insertBeside, frozenUpToThis = false }: ColumnMenuHandlers): ContextMenuGroup[] {
   const offered = new Set(definition.columnActions ?? []);
   // Only a column whose values are chosen from options has options to edit.
   const editor = kindOf(definition, column.kind).editor;
   if (editOptions === undefined || (editor !== "option" && editor !== "options")) {
     offered.delete("options");
+  }
+  // Only a relation that holds its own values has a limit and another side to edit: the side another table shows here is edited there.
+  if (editRelation === undefined || kindOf(definition, column.kind).needsTarget !== true || column.settings.computed === "true") {
+    offered.delete("relation");
   }
   // Only a column that says its rows can be nested by it has the entry that does so.
   if (column.settings[NESTABLE] !== "true") {
@@ -86,7 +96,8 @@ export function columnMenuGroups(column: TableColumn, definition: TableDefinitio
           label: "Change type",
           icon: "mdi-swap-horizontal",
           items: [
-            addableKinds(definition).map((kind) => ({
+            // A kind that relates to another table is given to a new property only: nothing is changed into it.
+            addableKinds(definition).filter((kind) => kindOf(definition, kind.kind).needsTarget !== true).map((kind) => ({
               id: `changeType:${kind.kind}`,
               label: kind.label,
               icon: kind.icon,
@@ -96,6 +107,8 @@ export function columnMenuGroups(column: TableColumn, definition: TableDefinitio
             })),
           ],
         };
+      case "relation":
+        return { id: action, label: "Edit relation", icon: "mdi-arrow-top-right", onSelect: () => editRelation?.() };
       case "options":
         return { id: action, label: "Edit options", icon: "mdi-format-list-bulleted-square", onSelect: () => editOptions?.() };
       case "filter":
@@ -122,6 +135,14 @@ export function columnMenuGroups(column: TableColumn, definition: TableDefinitio
           icon: "mdi-wrap",
           onSelect: () => raise({ kind: "setColumnWrap", columnId: column.id, settings: { wrap: column.wraps ? "false" : "true" } }),
         };
+      case "freeze":
+        // As in Notion: the columns up to and including this one stay in sight when the table scrolls sideways.
+        return {
+          id: action,
+          label: frozenUpToThis ? "Unfreeze columns" : "Freeze up to column",
+          icon: frozenUpToThis ? "mdi-pin-off-outline" : "mdi-pin-outline",
+          onSelect: () => raise(frozenUpToThis ? { kind: "freezeColumns" } : { kind: "freezeColumns", columnId: column.id }),
+        };
       case "nest":
         return {
           id: action,
@@ -130,9 +151,9 @@ export function columnMenuGroups(column: TableColumn, definition: TableDefinitio
           onSelect: () => raise({ kind: "setColumnParent", columnId: column.id, settings: { parent: nests ? "false" : "true" } }),
         };
       case "insertLeft":
-        return { id: action, label: "Insert left", icon: "mdi-table-column-plus-before", onSelect: () => raise({ kind: "addColumn", targetId: column.id, settings: { side: "left", type: defaultKind(definition) } }) };
+        return { id: action, label: "Insert left", icon: "mdi-table-column-plus-before", onSelect: () => (insertBeside === undefined ? raise({ kind: "addColumn", targetId: column.id, settings: { side: "left", type: defaultKind(definition) } }) : insertBeside("left")) };
       case "insertRight":
-        return { id: action, label: "Insert right", icon: "mdi-table-column-plus-after", onSelect: () => raise({ kind: "addColumn", targetId: column.id, settings: { side: "right", type: defaultKind(definition) } }) };
+        return { id: action, label: "Insert right", icon: "mdi-table-column-plus-after", onSelect: () => (insertBeside === undefined ? raise({ kind: "addColumn", targetId: column.id, settings: { side: "right", type: defaultKind(definition) } }) : insertBeside("right")) };
       case "duplicate":
         return { id: action, label: "Duplicate", icon: "mdi-content-duplicate", onSelect: () => raise({ kind: "duplicateColumn", columnId: column.id }) };
       case "delete": {

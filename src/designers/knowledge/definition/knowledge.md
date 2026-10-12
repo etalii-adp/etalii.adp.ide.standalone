@@ -38,7 +38,7 @@ The model is the same in every format; only the writing differs. Names in bracke
 | The root | DED's envelope, `ded` (`0.1`) and `designer` (`etalii/knowledge`), then `name`, `activeView` (a view's id) | none: it is the table |
 | `properties` | One entry per property, in column order: `id`, `name`, `type` (valueType), `title`, `target` (targetFile), `limit`, `counterpart`, `computed`, `parent` (isParent), and `options` for a selection | stored |
 | `properties/*/options` | One entry per option, in order: `id`, `name`, `colour` | stored |
-| `views` | One entry per view, in tab order: `id`, `name`, `filterMatch`, `columns`, `sorts`, `filter`, `groupBy`, `hideEmptyGroups`, `groupOrder`, `hiddenGroups`, `collapsed` | stored |
+| `views` | One entry per view, in tab order: `id`, `name`, `filterMatch`, `columns`, `sorts`, `filter`, `groupBy`, `hideEmptyGroups`, `freeze`, `groupOrder`, `hiddenGroups`, `collapsed` | stored |
 | `rows` | One entry per row: `id`, `cells` | stored |
 | `rows/*/cells` | One entry per value: `property` and the value under its type's key | derived: `<row>/<property>` |
 | `rows/*/cells/*/options`, `rows/*/cells/*/rows` | One entry per value of several: `option` or `row` | derived: `<cell>/<value>` |
@@ -100,30 +100,33 @@ Every type also offers `is-empty` and `is-not-empty`. A filter condition stores 
 
 A file has at least one view. A view stores only what differs from the default:
 
-- **Columns.** A property without a `columns` entry is visible, at the default width, without wrapping. The listed columns come first, in their order; the others follow in property order. `width` is in pixels at 100% zoom, at least 32.
+- **Columns.** A property without a `columns` entry is visible, at the default width, without wrapping and without a calculation. The listed columns come first, in their order; the others follow in property order. `width` is in pixels at 100% zoom, at least 32.
+- **Calculations.** A column's `calculate` names what the line under it shows of the rows in sight, as Notion's calculations do: `count-all`, `count-values`, `count-unique`, `count-empty`, `count-not-empty`, `percent-empty` and `percent-not-empty` for every type; `earliest`, `latest` and `date-range` for dates and dates and times; `sum`, `average`, `median`, `min`, `max` and `range` for numbers. Absent, the column shows none. In `knowledge.des` these are the enum `Calculation`, whose identifiers are the same names in camel case (`countAll`); the bindings map one to the other. A calculation that does not suit its property's type, as after a change of type, shows nothing and is kept as written.
+- **Frozen columns.** `freeze` names a property by id: the columns up to and including it, in the view's order, stay in sight when the table scrolls sideways. Absent, none is frozen.
 - **Sorts.** In order: the first sorts first. A view with sorts does not let rows be dragged.
 - **Filter.** A list of conditions and groups combined by `filterMatch`. A group (`match: all` or `any`, and `conditions`) nests to three levels counting the view's own list.
 - **Grouping.** `groupBy` names a selection, multiple selection, checkbox or relation property, or the parent relation. Each value is a group, plus one for rows without a value; a row with several values appears under each. A group's **key** is the option's id, the related row's id, `true` or `false`, or `none` for rows without a value. `groupOrder` lists keys in the order shown (unlisted groups follow in their natural order), `hiddenGroups` the groups not shown, `collapsed` the groups shown collapsed, and `hideEmptyGroups` hides groups without rows. Grouped by the parent relation, rows are nested under their parents to any depth, and `collapsed` lists the parent rows whose children are hidden.
 - `activeView` on the root names the view the file was last left in; absent, the first view. Switching views is an edit, saved and undoable like any other (standalone Requirement 6.10).
-- Scroll position, the selection and the cell being edited are never stored.
+- Scroll position, the selection, the cell being edited and a search typed in the bar are never stored.
 
-Group settings belong to the grouping: grouping by another property, or ungrouping, removes them. Deleting an option removes the group settings keyed by it.
+Group settings belong to the grouping: grouping by another property, or ungrouping, removes them. Deleting an option removes the group settings keyed by it. Deleting a property removes its columns, and with them their calculations, and a `freeze` naming it.
 
 ## Layout and behaviour
 
 The Knowledge designer looks and works as Notion's table view does (standalone Requirement 7), drawn with the host's own theme, fonts and controls in both themes. It copies none of Notion's icons, fonts or artwork.
 
 - **Views as tabs** above the table, with a `+` to add one. A tab's menu renames, duplicates and deletes; tabs are reordered by dragging.
-- **The bar** beside the tabs: filter, sort, group and property visibility. Under it, each sort and each filter is a removable item; clicking one opens it for editing.
+- **The bar** beside the tabs: search, filter, sort, group and property visibility. Search shows only the rows with a value containing the typed text, for as long as the view is open. Under it, each sort and each filter is a removable item; clicking one opens it for editing.
 - **The header row**: one header per visible column with its type's icon (`knowledge.des`, enum `ValueType`) and name. Dragging a header moves the property; dragging its right border sets the view's width. A `+` after the last column adds a property.
-- **A column's menu**: rename, change type, filter by it, sort ascending, sort descending, group by it, hide in this view, wrap, insert left, insert right, duplicate and delete. A selection's menu also lists its options, to rename, recolour, reorder by dragging and delete.
+- **A column's menu**: rename, change type, filter by it, sort ascending, sort descending, group by it, hide in this view, wrap, freeze up to this column, insert left, insert right, duplicate and delete. A selection's menu also lists its options, to rename, recolour, reorder by dragging and delete.
+- **The calculation line** under the last row of the table and of every group: under each column, its calculation or, on hover, a menu to choose one.
 - **Rows** beneath, and a *new* row at the bottom of the table and of every group. A row added in a group gets the value that puts it there. A new row stays visible in the view until the view is next opened, even when the filter would hide it.
 - **Cells** are edited in place, over the cell, by their type's editor. Options and relations open a searchable list that also creates: typing a name that is not an option and confirming creates the option. Selection values are rounded tags in their option's colour.
 - **Relations** are created as in Notion: choose the target file (in a dialog that offers only knowledge files, *this file* first), one row or no limit, optionally show it on the target too and name that side, then confirm.
 - **Keyboard**: the arrow keys move between cells, Enter starts and commits an edit, Escape cancels it, Tab moves to the next cell, and a key adds a row. Selected rows are deleted with Delete. The table exposes the roles of a grid.
 - **Selection**: one or more rows; a single selected row's properties appear in the host's property grid.
 
-**Where it differs from Notion** (standalone Requirement 7.7), and only here: properties, views and files are local and plain text; there are no pages inside rows, no people, no comments and no sharing; the property types are the nine above; only the table view exists (no board, calendar, gallery, list, timeline or chart), with no sub-groups, no calculations under a column and no frozen columns.
+**Where it differs from Notion** (standalone Requirement 7.7), and only here: properties, views and files are local and plain text; there are no pages inside rows, no people, no comments and no sharing; the property types are the nine above; only the table view exists (no board, calendar, gallery, list, timeline or chart), with no sub-groups.
 
 ## Findings
 
@@ -139,7 +142,7 @@ Reading never fails on content: what cannot be accepted is a finding at its plac
 | `knowledge.value-of-another-type` | warning | a cell whose value is under another type's key | constraint `valueOfAnotherType` |
 | `knowledge.unknown-option` | warning | a value naming no option of its property | constraints `unknownOption`, `unknownItemOption` |
 | `knowledge.relation-over-limit` | warning | a cell holding several rows of a relation limited to one | constraint `relationOverLimit` |
-| `knowledge.view-names-missing-property` | warning | a column, sort, condition or grouping naming no property; the view opens without it | constraints `viewNamesMissingProperty`, `groupByMissingProperty` |
+| `knowledge.view-names-missing-property` | warning | a column, sort, condition, grouping or freeze naming no property; the view opens without it | constraints `viewNamesMissingProperty`, `groupByMissingProperty`, `freezeMissingProperty` |
 | `knowledge.filter-too-deep` | warning | a filter group nested deeper than three levels | constraint `filterDepth` |
 | `knowledge.no-view` | warning | the table; it opens as if it had one view with no settings | constraint `lastView` |
 | `knowledge.unknown-type` | warning | a property whose `type` is none of the nine; its cells are shown as text and cannot be edited | the host |
@@ -206,6 +209,8 @@ A property, option, view or row written without an id (by hand or by a language 
 | Editing a cell | `setText`, `setNumber`, `setChecked`, `setDate`, `setDateTime`, `setTime`, `setOption`, `addItem`, `removeItem`, `clearCell` |
 | View tab: `+`, rename, duplicate, delete, drag, click | `addView`, `renameView`, `duplicateView`, `deleteView`, `moveView`, `switchView` |
 | Hide, show, resize, wrap, reorder a column in a view | `setColumn`, `moveColumn`, `resetColumn` |
+| The calculation line | `calculate`, `removeCalculation` |
+| Column menu: freeze up to this column, unfreeze | `freeze`, `unfreeze` |
 | Sort bar | `addSort`, `setSortDirection`, `moveSort`, `removeSort` |
 | Filter bar | `addCondition`, `setCondition`, `removeCondition`, `addFilterGroup`, `setMatch` |
 | Group menu, group headings | `groupBy`, `ungroup`, `hideEmptyGroups`, `setGroup`, `unsetGroup`, `moveGroup` |

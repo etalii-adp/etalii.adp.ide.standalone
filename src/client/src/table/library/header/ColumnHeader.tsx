@@ -5,7 +5,9 @@ import type { TableGesture } from "../api/tableEvents";
 import type { TableColumn } from "../api/tableModel";
 import { kindOf, type TableDefinition } from "../definition/tableDefinition";
 import { columnMenuGroups, dropIndex, resizedWidth } from "./columnActions";
+import { NewColumnPanel } from "./NewColumnPanel";
 import { OptionsEditor } from "./OptionsEditor";
+import { RelationEditor } from "./RelationEditor";
 
 export interface ColumnHeaderProps {
   column: TableColumn;
@@ -21,6 +23,10 @@ export interface ColumnHeaderProps {
   onResizePreview: (columnId: string, width: number | null) => void;
   /** Makes a gesture and answers with its refusal, or with nothing when it was accepted: for a name that is refused where it is typed. */
   ask?: (gesture: TableGesture) => Promise<string>;
+  /** How far from the table's left edge the column stays while the table scrolls sideways, in pixels, when the view freezes it. */
+  frozenAt?: number;
+  /** True for the column the view's columns are frozen up to. */
+  frozenUpToThis?: boolean;
   /** True for a column that was just added: its name is asked for at once, as if Rename had been chosen. */
   nameAtOnce?: boolean;
   /** Told when that naming has begun, so that it begins once. */
@@ -35,7 +41,7 @@ export interface ColumnHeaderProps {
  * the pointer as a preview the table draws, and the width is sent once on release - a resize
  * that wrote on every pointer move would be a write per pixel.
  */
-export function ColumnHeader({ column, index, width, definition, editable, raise, ask, onResizePreview, nameAtOnce = false, onNamingStarted }: ColumnHeaderProps) {
+export function ColumnHeader({ column, index, width, definition, editable, raise, ask, onResizePreview, nameAtOnce = false, onNamingStarted, frozenAt, frozenUpToThis = false }: ColumnHeaderProps) {
   const kind = kindOf(definition, column.kind);
   const cellRef = useRef<HTMLDivElement>(null);
   const [menuAt, setMenuAt] = useState<{ x: number; y: number } | null>(null);
@@ -50,6 +56,10 @@ export function ColumnHeader({ column, index, width, definition, editable, raise
   }, [nameAtOnce, editable, onNamingStarted]);
   // Where the panel of the column's options stands while it is open: under the header, in the window.
   const [optionsAt, setOptionsAt] = useState<{ x: number; y: number } | null>(null);
+  // Where the panel of the column's relation stands while it is open.
+  const [relationAt, setRelationAt] = useState<{ x: number; y: number } | null>(null);
+  // Where the panel for a property inserted beside this one stands, and on which side the property goes.
+  const [insertAt, setInsertAt] = useState<{ x: number; y: number; side: "left" | "right" } | null>(null);
 
   const move = usePointerGesture<null>({
     onPress: () => {
@@ -103,15 +113,27 @@ export function ColumnHeader({ column, index, width, definition, editable, raise
   const groups = columnMenuGroups(column, definition, {
     raise,
     startRename: () => setRenaming(true),
+    frozenUpToThis,
     editOptions: () => {
       const rect = cellRef.current?.getBoundingClientRect();
       setOptionsAt({ x: rect?.left ?? 0, y: rect?.bottom ?? 0 });
     },
+    editRelation:
+      ask === undefined
+        ? undefined
+        : () => {
+            const rect = cellRef.current?.getBoundingClientRect();
+            setRelationAt({ x: rect?.left ?? 0, y: rect?.bottom ?? 0 });
+          },
+    insertBeside: (side) => {
+      const rect = cellRef.current?.getBoundingClientRect();
+      setInsertAt({ x: (side === "left" ? rect?.left : rect?.right) ?? 0, y: rect?.bottom ?? 0, side });
+    },
   });
-  const classes = ["table-header-cell", index === 0 ? "table-cell-first" : ""].filter(Boolean).join(" ");
+  const classes = ["table-header-cell", index === 0 ? "table-cell-first" : "", frozenAt !== undefined ? "table-cell-frozen" : "", frozenUpToThis ? "table-cell-frozen-edge" : ""].filter(Boolean).join(" ");
 
   return (
-    <div ref={cellRef} className={classes} role="columnheader" aria-colindex={index + 1} data-column-id={column.id}>
+    <div ref={cellRef} className={classes} role="columnheader" aria-colindex={index + 1} data-column-id={column.id} style={frozenAt !== undefined ? { left: frozenAt } : undefined}>
       {renaming ? (
         <RenameField
           name={column.name}
@@ -141,6 +163,10 @@ export function ColumnHeader({ column, index, width, definition, editable, raise
       )}
       {editable && <span className="table-header-resize" role="separator" aria-orientation="vertical" aria-label={`Resize ${column.name}`} {...resize.press(null)} />}
       <ContextMenu open={menuAt !== null} groups={groups} position={menuAt ?? { x: 0, y: 0 }} onClose={() => setMenuAt(null)} />
+      {editable && insertAt !== null && (
+        <NewColumnPanel definition={definition} position={insertAt} beside={{ columnId: column.id, side: insertAt.side }} raise={raise} ask={ask} onClose={() => setInsertAt(null)} />
+      )}
+      {editable && relationAt !== null && ask !== undefined && <RelationEditor column={column} position={relationAt} ask={ask} onClose={() => setRelationAt(null)} />}
       {editable && optionsAt !== null && <OptionsEditor column={column} position={optionsAt} raise={raise} onClose={() => setOptionsAt(null)} />}
     </div>
   );

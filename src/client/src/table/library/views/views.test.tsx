@@ -81,7 +81,11 @@ const choose = async (label: string) => {
     fireEvent.click(screen.getByRole("menuitem", { name: label }));
   });
 };
-const open = (control: string) => fireEvent.click(screen.getByRole("button", { name: control }));
+/** Opens one of a view's settings as its author does: the settings control, then the entry of its menu. */
+const open = (control: string) => {
+  fireEvent.click(screen.getByRole("button", { name: "View settings" }));
+  fireEvent.click(screen.getByRole("menuitem", { name: control }));
+};
 const rect = (left: number, top: number, width: number, height: number) => ({ left, top, right: left + width, bottom: top + height, width, height, x: left, y: top, toJSON: () => ({}) });
 
 afterEach(cleanup);
@@ -193,7 +197,32 @@ describe("the views as tabs", () => {
     expect(screen.queryByRole("button", { name: "Add a view" })).toBeNull();
     expect(onView).toHaveBeenCalledWith("v3");
     expect(onGesture).not.toHaveBeenCalled();
-    expect((screen.getByRole("button", { name: "Filter" }) as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByRole("button", { name: "View settings" }) as HTMLButtonElement).disabled).toBe(true);
+  });
+});
+
+describe("the view's settings", () => {
+  it("are behind one control, whose menu lists them under Notion's names and opens the one that is chosen", () => {
+    // Arrange.
+    renderTable(table());
+
+    // Assert: one control, and no editor until something is chosen.
+    expect(within(screen.getByRole("toolbar", { name: "View" })).getAllByRole("button").map((button) => button.getAttribute("aria-label"))).toEqual(["View settings"]);
+    expect(screen.queryByRole("group", { name: "Sort" })).toBeNull();
+
+    // Act.
+    fireEvent.click(screen.getByRole("button", { name: "View settings" }));
+
+    // Assert.
+    expect(screen.getAllByRole("menuitem").map((item) => item.textContent)).toEqual(["Property visibility", "Filter", "Sort", "Group"]);
+
+    // Act: one is chosen, and then closed.
+    fireEvent.click(screen.getByRole("menuitem", { name: "Sort" }));
+    expect(screen.getByRole("group", { name: "Sort" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Close view settings" }));
+
+    // Assert.
+    expect(screen.queryByRole("group", { name: "Sort" })).toBeNull();
   });
 });
 
@@ -535,10 +564,73 @@ describe("grouping and which properties are shown", () => {
     expect(hiding.onGesture).toHaveBeenCalledWith({ kind: "showGroups" });
   });
 
+  it("lists the view's groups, each with an eye that hides or shows it, a handle that moves it, and an order by name", () => {
+    // Arrange: three groups, the second hidden, each line thirty pixels high.
+    const groups = JSON.stringify([
+      { key: "o1", label: "Capital", hidden: false },
+      { key: "o2", label: "Port", hidden: true },
+      { key: "none", label: "No Kind", hidden: false },
+    ]);
+    const { onGesture } = renderTable(table({ groupBy: "p3", settings: { groups, hiddenGroups: "1" } }));
+    open("Group");
+    const lines = screen.getAllByRole("listitem").filter((item) => item.hasAttribute("data-group-key"));
+    lines.forEach((item, index) => {
+      item.getBoundingClientRect = () => rect(0, index * 30, 200, 30);
+    });
+
+    // Assert: in the view's order, the hidden one said to be.
+    expect(lines.map((item) => item.textContent)).toEqual(["Capital", "Port", "No Kind"]);
+    expect(screen.getByRole("button", { name: "Show Port" }).getAttribute("aria-pressed")).toBe("false");
+
+    // Act: one hidden, one shown, one dragged two lines down, and all put in the order of their names.
+    fireEvent.click(screen.getByRole("button", { name: "Hide Capital" }));
+    fireEvent.click(screen.getByRole("button", { name: "Show Port" }));
+    drag(screen.getByRole("img", { name: "Move group Capital" }), { dy: 70 });
+    fireEvent.change(screen.getByRole("combobox", { name: "Order of groups" }), { target: { value: "ascending" } });
+
+    // Assert: one gesture each.
+    expect(onGesture.mock.calls.map((call) => call[0])).toEqual([
+      { kind: "hideGroup", targetId: "o1" },
+      { kind: "showGroup", targetId: "o2" },
+      { kind: "moveGroup", targetId: "o1", index: 2 },
+      { kind: "sortGroups", settings: { order: "ascending" } },
+    ]);
+  });
+
+  it("searches the rows from a box its button opens, and stops searching when the box is closed", () => {
+    // Arrange: a table that can be searched, and one that cannot.
+    const onGesture = vi.fn(async (_gesture: TableGesture) => "");
+    const { unmount } = render(<TableSurface model={table()} definition={definition} onGesture={onGesture} />);
+    expect(screen.queryByRole("button", { name: "Search" })).toBeNull();
+    unmount();
+    render(<TableSurface model={table()} definition={{ ...definition, searchable: true }} onGesture={onGesture} />);
+    expect(screen.queryByRole("searchbox")).toBeNull();
+
+    // Act: opened, typed in, and left with Escape.
+    fireEvent.click(screen.getByRole("button", { name: "Search" }));
+    fireEvent.change(screen.getByRole("searchbox", { name: "Search rows" }), { target: { value: "ams" } });
+    fireEvent.keyDown(screen.getByRole("searchbox", { name: "Search rows" }), { key: "Escape" });
+
+    // Assert: opening asks for nothing, what is typed is searched for, and leaving searches for nothing.
+    expect(onGesture.mock.calls.map((call) => call[0])).toEqual([
+      { kind: "search", values: ["ams"] },
+      { kind: "search", values: [""] },
+    ]);
+    expect(screen.queryByRole("searchbox")).toBeNull();
+  });
+
+  it("opens with the search box showing what the view says is searched for, in a table that cannot be edited too", () => {
+    // Act.
+    render(<TableSurface model={table({ settings: { search: "port" } }, [], "The file is of a newer version.")} definition={{ ...definition, searchable: true }} onGesture={vi.fn(async () => "")} />);
+
+    // Assert.
+    expect((screen.getByRole("searchbox", { name: "Search rows" }) as HTMLInputElement).value).toBe("port");
+  });
+
   it("shows and hides a property, and never the one that names a row", () => {
     // Arrange.
     const { onGesture } = renderTable();
-    open("Properties");
+    open("Property visibility");
     const list = screen.getByRole("group", { name: "Properties" });
 
     // Assert: every property is listed, the hidden one too.

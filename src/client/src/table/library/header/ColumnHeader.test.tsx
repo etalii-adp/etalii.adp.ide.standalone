@@ -76,8 +76,6 @@ describe("a column's menu", () => {
     ["Group", { kind: "groupBy", columnId: "p2" }],
     ["Hide in view", { kind: "hideColumn", columnId: "p2" }],
     ["Wrap text", { kind: "setColumnWrap", columnId: "p2", settings: { wrap: "true" } }],
-    ["Insert left", { kind: "addColumn", targetId: "p2", settings: { side: "left", type: "text" } }],
-    ["Insert right", { kind: "addColumn", targetId: "p2", settings: { side: "right", type: "text" } }],
     ["Duplicate", { kind: "duplicateColumn", columnId: "p2" }],
     ["Delete", { kind: "deleteColumn", columnId: "p2" }],
   ] as const)("raises its gesture for %s", async (label, gesture) => {
@@ -191,6 +189,24 @@ describe("columnMenuGroups", () => {
     expect(raise).toHaveBeenLastCalledWith({ kind: "setColumnType", columnId: "p2", settings: { type: "text" } });
   });
 
+  it("freezes the columns up to one, and unfreezes them from the one they are frozen up to", () => {
+    // Arrange: a table whose column menu has the entry.
+    const offered: TableDefinition = { ...definition, columnActions: [...ALL_ACTIONS, "freeze"] };
+    const freeze = (frozenUpToThis: boolean) =>
+      columnMenuGroups(column("p2", "Population", "number"), offered, { raise, startRename, frozenUpToThis }).flat().find((candidate) => candidate.id === "freeze")!;
+
+    // Assert: a table that does not offer it has no such entry.
+    expect(flat(column("p2", "Population", "number")).find((candidate) => candidate.id === "freeze")).toBeUndefined();
+
+    // Act and assert: up to this column, and none when it is the one.
+    expect(freeze(false).label).toBe("Freeze up to column");
+    freeze(false).onSelect!();
+    expect(raise).toHaveBeenLastCalledWith({ kind: "freezeColumns", columnId: "p2" });
+    expect(freeze(true).label).toBe("Unfreeze columns");
+    freeze(true).onSelect!();
+    expect(raise).toHaveBeenLastCalledWith({ kind: "freezeColumns" });
+  });
+
   it("offers to stop wrapping a column that wraps", () => {
     // Act.
     const wrap = flat(column("p2", "Notes", "text", { wraps: true })).find((candidate) => candidate.id === "wrap")!;
@@ -267,6 +283,162 @@ describe("adding a column", () => {
     // Assert.
     expect(onGesture).toHaveBeenCalledTimes(1);
     expect(onGesture).toHaveBeenCalledWith({ kind: "addColumn", settings: { type: "number" } });
+  });
+
+  it("asks for the name first and the type second, and makes the property under that name", async () => {
+    // Arrange.
+    const { onGesture } = renderTable();
+    fireEvent.click(screen.getByRole("button", { name: "Add a property" }));
+    const panel = screen.getByRole("dialog", { name: "New property" });
+    const name = within(panel).getByRole("textbox", { name: "Property name" });
+
+    // Assert: the name is where typing goes, before any type is chosen.
+    expect(document.activeElement).toBe(name);
+
+    // Act.
+    fireEvent.change(name, { target: { value: " Mayor " } });
+    await choose("Text");
+
+    // Assert: one gesture with the name, the panel gone, and no name asked for a second time.
+    expect(onGesture).toHaveBeenCalledTimes(1);
+    expect(onGesture).toHaveBeenCalledWith({ kind: "addColumn", values: ["Mayor"], settings: { type: "text" } });
+    expect(screen.queryByRole("dialog", { name: "New property" })).toBeNull();
+  });
+
+  it("asks the same of a property inserted beside another, and puts it on the side that was chosen", async () => {
+    // Arrange.
+    const { onGesture } = renderTable();
+    openMenu("Population");
+    await choose("Insert left");
+    const panel = screen.getByRole("dialog", { name: "New property" });
+
+    // Act.
+    fireEvent.change(within(panel).getByRole("textbox", { name: "Property name" }), { target: { value: "Area" } });
+    await choose("Number");
+
+    // Assert.
+    expect(onGesture).toHaveBeenCalledTimes(1);
+    expect(onGesture).toHaveBeenCalledWith({ kind: "addColumn", targetId: "p2", values: ["Area"], settings: { side: "left", type: "number" } });
+
+    // Act: and to the right, with no name typed.
+    openMenu("Population");
+    await choose("Insert right");
+    await choose("Text");
+
+    // Assert.
+    expect(onGesture).toHaveBeenLastCalledWith({ kind: "addColumn", targetId: "p2", settings: { side: "right", type: "text" } });
+  });
+
+  it("offers a relation among the types, asks which table, how many rows and whether it is two-way, and makes it on Add relation", async () => {
+    // Arrange: a table with a kind that relates, whose backend says which tables there are and refuses the first try.
+    const relating: TableDefinition = { ...definition, kinds: { ...definition.kinds, relation: { icon: "mdi-arrow-top-right", label: "Relation", editor: "rows", needsTarget: true } } };
+    const answers = ['choose:[{"id":".","label":"This table"},{"id":"provinces.yaml","label":"Provinces"}]', "That table cannot be read.", ""];
+    const onGesture = vi.fn(async (_gesture: TableGesture) => answers.shift() ?? "");
+    render(<TableSurface model={table()} definition={relating} onGesture={onGesture} />);
+    fireEvent.click(screen.getByRole("button", { name: "Add a property" }));
+    const panel = screen.getByRole("dialog", { name: "New property" });
+    fireEvent.change(within(panel).getByRole("textbox", { name: "Property name" }), { target: { value: "Region" } });
+
+    // Act: the type is chosen.
+    expect(screen.getAllByRole("menuitem").map((item) => item.textContent)).toEqual(["Text", "Number", "Relation"]);
+    await choose("Relation");
+
+    // Assert: nothing is made; the tables are asked for and listed.
+    expect(onGesture).toHaveBeenLastCalledWith({ kind: "addRelation", values: ["Region"], settings: {} });
+    expect(within(panel).getByRole("menu", { name: "Relate to" })).toBeTruthy();
+    expect(screen.getAllByRole("menuitem").map((item) => item.textContent)).toEqual(["This table", "Provinces"]);
+
+    // Act: the table, one row, two-way under a name; then Add relation, twice.
+    await choose("Provinces");
+    expect(within(panel).getByRole("group", { name: "Relation" }).textContent).toContain("Related toProvinces");
+    expect(within(panel).queryByRole("textbox", { name: "Name in the other table" })).toBeNull();
+    fireEvent.change(within(panel).getByRole("combobox", { name: "Limit" }), { target: { value: "one" } });
+    fireEvent.click(within(panel).getByRole("checkbox", { name: "Two-way relation" }));
+    fireEvent.change(within(panel).getByRole("textbox", { name: "Name in the other table" }), { target: { value: " Towns " } });
+    const made = { kind: "addRelation", values: ["Region"], settings: { target: "provinces.yaml", limit: "one", twoWay: "true", counterpart: "Towns" } };
+    await act(async () => {
+      fireEvent.click(within(panel).getByRole("button", { name: "Add relation" }));
+    });
+
+    // Assert: refused, which is said in the panel, which stays.
+    expect(onGesture).toHaveBeenLastCalledWith(made);
+    expect(within(panel).getByRole("alert").textContent).toBe("That table cannot be read.");
+
+    // Act: again, accepted.
+    await act(async () => {
+      fireEvent.click(within(panel).getByRole("button", { name: "Add relation" }));
+    });
+
+    // Assert: three gestures in all, and the panel gone.
+    expect(onGesture).toHaveBeenCalledTimes(3);
+    expect(screen.queryByRole("dialog", { name: "New property" })).toBeNull();
+  });
+
+  it("edits a relation's limit and its other side from the column's menu, and changes no column into a relation", async () => {
+    // Arrange: a relation that holds one row and is shown in this table only, and the side of one another table holds.
+    const relating: TableDefinition = {
+      ...definition,
+      kinds: { ...definition.kinds, relation: { icon: "mdi-arrow-top-right", label: "Relation", editor: "rows", needsTarget: true } },
+      columnActions: [...ALL_ACTIONS, "relation"],
+    };
+    const structure = {
+      title: "Cities",
+      columns: [
+        column("p1", "Name", "text", { isTitle: true }),
+        column("p5", "Province", "relation", { settings: { targetFile: "provinces.yaml", limit: "one" } }),
+        column("p6", "Twinned", "relation", { settings: { targetFile: ".", limit: "none", otherSide: "Twin of" } }),
+        column("p7", "Seat of", "relation", { settings: { targetFile: "provinces.yaml", computed: "true" } }),
+      ],
+      views: [],
+      settings: EMPTY_TABLE.settings,
+      rowCount: 0,
+      readOnlyReason: "",
+    };
+    const answers = ["", "The parent relation holds one row."];
+    const onGesture = vi.fn(async (_gesture: TableGesture) => answers.shift() ?? "");
+    render(<TableSurface model={applyTableEvent(EMPTY_TABLE, { kind: "baseline", structure, findings: [] })} definition={relating} onGesture={onGesture} />);
+
+    // Assert: the side another table holds is not edited here, and a number is not changed into a relation.
+    openMenu("Seat of");
+    expect(screen.queryByRole("menuitem", { name: "Edit relation" })).toBeNull();
+    fireEvent.keyDown(document, { key: "Escape" });
+    const kinds = columnMenuGroups(column("p2", "Population", "number"), relating, { raise: vi.fn(), startRename: vi.fn() }).flat().find((item) => item.id === "changeType")!;
+    expect(kinds.items!.flat().map((item) => item.label)).toEqual(["Text", "Number"]);
+
+    // Act: the province's relation is opened, made two-way under a name, and given no limit - which is refused.
+    openMenu("Province");
+    await choose("Edit relation");
+    const panel = screen.getByRole("dialog", { name: "Relation Province" });
+    expect(panel.textContent).toContain("Related toprovinces.yaml");
+    expect((within(panel).getByRole("combobox", { name: "Limit" }) as HTMLSelectElement).value).toBe("one");
+    fireEvent.change(within(panel).getByRole("textbox", { name: "Name in the other table" }), { target: { value: "Towns" } });
+    await act(async () => {
+      fireEvent.click(within(panel).getByRole("checkbox", { name: "Two-way relation" }));
+    });
+    await act(async () => {
+      fireEvent.change(within(panel).getByRole("combobox", { name: "Limit" }), { target: { value: "none" } });
+    });
+
+    // Assert: one gesture each, and the refusal said in the panel.
+    expect(onGesture.mock.calls.map((call) => call[0])).toEqual([
+      { kind: "setRelationOtherSide", columnId: "p5", settings: { twoWay: "true", counterpart: "Towns" } },
+      { kind: "setRelationLimit", columnId: "p5", settings: { limit: "none" } },
+    ]);
+    expect(within(panel).getByRole("alert").textContent).toBe("The parent relation holds one row.");
+    fireEvent.keyDown(document, { key: "Escape" });
+
+    // Act: a relation that is two-way says under which name, and is made one-way by the same box.
+    openMenu("Twinned");
+    await choose("Edit relation");
+    const twinned = screen.getByRole("dialog", { name: "Relation Twinned" });
+    expect(twinned.textContent).toContain("Related toThis table");
+    expect(twinned.textContent).toContain("Shown in the other table as Twin of.");
+    await act(async () => {
+      fireEvent.click(within(twinned).getByRole("checkbox", { name: "Two-way relation" }));
+    });
+
+    // Assert.
+    expect(onGesture).toHaveBeenLastCalledWith({ kind: "setRelationOtherSide", columnId: "p6", settings: { twoWay: "false" } });
   });
 
   it("asks for the name of the column that was added, as soon as it is there", async () => {

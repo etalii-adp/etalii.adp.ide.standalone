@@ -92,7 +92,7 @@ internal static class KnowledgeFiles
 
         foreach (var view in table.Views)
         {
-            text.AppendLine(CultureInfo.InvariantCulture, $"view {view.Id} {view.Name} groupBy={view.GroupBy} hideEmpty={view.HideEmptyGroups}");
+            text.AppendLine(CultureInfo.InvariantCulture, $"view {view.Id} {view.Name} groupBy={view.GroupBy} hideEmpty={view.HideEmptyGroups} freeze={view.Freeze}");
             text.AppendLine(CultureInfo.InvariantCulture, $"  columns {string.Join(", ", view.Columns)}");
             text.AppendLine(CultureInfo.InvariantCulture, $"  sorts {string.Join(", ", view.Sorts)}");
             text.AppendLine(CultureInfo.InvariantCulture, $"  filter {Describe(view.Filter)}");

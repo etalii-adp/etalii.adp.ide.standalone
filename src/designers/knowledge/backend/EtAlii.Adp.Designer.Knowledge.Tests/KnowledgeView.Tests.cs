@@ -483,6 +483,26 @@ public sealed class KnowledgeViewTests
         [.. rows.Select(row => new KnowledgeRow(row.Id, row.Under.Length > 0 ? [new KnowledgeCell("name", [row.Id], "text"), new KnowledgeCell("under", [row.Under], "rows")] : [new KnowledgeCell("name", [row.Id], "text")]))]);
 
     [Fact]
+    public void ATableWithAParentRelation_NestsItsRows_InAViewThatIsNotGrouped_AndUnderEachHeadingOfOneThatIs()
+    {
+        // Arrange: a country with two provinces, one of them large.
+        var family = Family(("nl", ""), ("south", "nl"), ("north", "nl"), ("be", ""));
+        var table = family with { Rows = [.. family.Rows.Select(row => row.Id is "nl" or "south" ? row with { Cells = [.. row.Cells, new KnowledgeCell("size", ["large"], "option")] } : row)] };
+
+        // Act: a view that groups by nothing, and one that groups by size.
+        var plain = Lines(table, View());
+        var grouped = Lines(table, View(groupBy: "size"));
+
+        // Assert: under their parent in the first; in the second under it where both stand under the same heading, and at the top where they do not.
+        Assert.Equal(["nl:0", "south:1", "north:1", "be:0"], plain.Select(line => $"{line.Id}:{line.Depth}"));
+        Assert.Equal(
+            ["large", "nl:0", "south:1", NoValueOrOther(grouped), "north:0", "be:0"],
+            grouped.Where(line => line.IsGroup ? line.Count > 0 : !line.IsNewRow).Select(line => line.IsGroup ? line.Id : $"{line.Id}:{line.Depth}"));
+    }
+
+    private static string NoValueOrOther(IEnumerable<TableRow> lines) => lines.Last(line => line is { IsGroup: true, Count: > 0 }).Id;
+
+    [Fact]
     public void GroupedByTheParentRelation_RowsAreNestedUnderTheirParents_ToAnyDepth()
     {
         // Arrange: a country, its provinces, their cities - listed out of order.

@@ -7,7 +7,7 @@ import { useAuth } from "@client/auth/AuthContext";
 import { PathSchema } from "@client/generated/connection_pb";
 import { DesignerService } from "@client/generated/designers_pb";
 import { useContextConnection, useWorkspaceStreams } from "@client/shell/context/ContextConnectionProvider";
-import type { TableGesture } from "@client/table/library/api/tableEvents";
+import { isQuestion, type TableGesture } from "@client/table/library/api/tableEvents";
 import { applyTableEvent, EMPTY_TABLE, type TableModel } from "@client/table/library/api/tableModel";
 import type { RowWindow } from "@client/table/library/rows/windowing";
 import { editKey, fromWire } from "./tableWire";
@@ -237,8 +237,11 @@ export function useTableStream(path: readonly string[]): TableStreamResult {
             next.delete(key);
             return next;
           });
-          setRefusal(error);
-          refusalsRef.current?.refused(error);
+          // An answer that asks its author something is theirs to read where they asked: nothing was refused.
+          if (!isQuestion(error)) {
+            setRefusal(error);
+            refusalsRef.current?.refused(error);
+          }
         }
         return error;
       };

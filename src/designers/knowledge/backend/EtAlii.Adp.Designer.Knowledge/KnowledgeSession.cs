@@ -74,6 +74,9 @@ internal sealed class KnowledgeSession : IDesignerSession
 
     /// <summary>The rows added while this view was open: they stay in sight until it is next opened, whatever its filter says.</summary>
     private readonly HashSet<string> _kept = new(StringComparer.Ordinal);
+
+    /// <summary>What this connection searches the rows for; empty for all of them. It is in no file.</summary>
+    private string _search = "";
     private (int First, int Count)? _window;
 
     /// <summary>The writes still to come, each waiting for the one before it.</summary>
@@ -239,6 +242,23 @@ internal sealed class KnowledgeSession : IDesignerSession
                 return Refusal.Length > 0 ? Refusal : "The file cannot be read.";
             }
 
+            // A search is this connection's own and changes no file: a table that cannot be edited is searched all the same.
+            if (gesture.Kind == "search")
+            {
+                _search = gesture.Values.Count > 0 ? gesture.Values[0].Trim() : "";
+                changes.Add(new TableEditSettled(editId, Written: true));
+                changes.AddRange(Everything());
+            }
+        }
+
+        if (changes.Count > 0)
+        {
+            Raise([.. changes]);
+            return "";
+        }
+
+        lock (_gate)
+        {
             // A file that cannot be read, or is of another version, refuses every edit and is never written.
             if (_body.ReadOnlyReason is { Length: > 0 } reason)
             {
@@ -258,6 +278,12 @@ internal sealed class KnowledgeSession : IDesignerSession
                 {
                     return KnowledgeEdits.AskFirst(relating, ids.Count);
                 }
+            }
+
+            // A relation asked for without the table it relates to is answered with the tables there are to choose from.
+            if (gesture.Kind == "addRelation" && string.IsNullOrWhiteSpace(gesture.Settings.GetValueOrDefault("target")))
+            {
+                return KnowledgeEdits.ChooseTarget(KnowledgeProject.Targets(_rootPath, _bodyPath));
             }
 
             var files = new KnowledgeSurroundings(_bodyPath, TargetOf, TargetOf);
@@ -559,7 +585,14 @@ internal sealed class KnowledgeSession : IDesignerSession
         body.Unreadable == KnowledgeBody.AnotherVersion ? [new TableFinding(KnowledgeValidator.NewerVersion, TableFindingSeverity.Warning, KnowledgeBody.AnotherVersion)]
         : body.Unreadable.Length > 0 ? [.. KnowledgeTableMapper.Findings(body.Model)] : [.. KnowledgeTableMapper.Findings(body.Model), .. KnowledgeValidator.Validate(_view, _shownModel, TargetOf)];
 
-    private TableStructureChanged Structure() => KnowledgeTableMapper.Structure(_view, _body?.ReadOnlyReason ?? "", _viewId, Lines().Count, TargetOf);
+    private TableStructureChanged Structure() => KnowledgeTableMapper.Structure(
+        _view,
+        _body?.ReadOnlyReason ?? "",
+        _viewId,
+        Lines().Count,
+        TargetOf,
+        KnowledgeViewEngine.InSight(_view, _view.ViewOrDefault(_viewId), _kept, LabelOf, _search),
+        _search);
 
     /// <summary>
     /// The lines of the view this connection shows, in order: its rows filtered, sorted and grouped
@@ -568,7 +601,7 @@ internal sealed class KnowledgeSession : IDesignerSession
     private List<TableRow> Lines()
     {
         var unwritten = _pending.Where(pending => pending.Cell is not null).Select(pending => pending.Cell!.Value).ToHashSet();
-        return KnowledgeViewEngine.Lines(_view, _view.ViewOrDefault(_viewId), _kept, unwritten, editable: _body is { ReadOnlyReason.Length: 0 }, LabelOf);
+        return KnowledgeViewEngine.Lines(_view, _view.ViewOrDefault(_viewId), _kept, unwritten, editable: _body is { ReadOnlyReason.Length: 0 }, LabelOf, _search);
     }
 
     /// <summary>The lines the connection has in sight, or null while it has not said which.</summary>

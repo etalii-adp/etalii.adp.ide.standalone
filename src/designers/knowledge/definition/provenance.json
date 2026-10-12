@@ -1,8 +1,8 @@
 {
   "repository": "etalii-adp/etalii.adp",
-  "revision": "1559b53f13239c05b73748b151d3a2efad9dcc53",
+  "revision": "5893e7d1dcf87a73fb1087317b61a58ec9906d19",
   "files": [
-    { "path": "definitions/designers/knowledge.des", "sha256": "d0cf06be0354c9405cb6c6363e5b1a3bd7f91e35b83ee62f2a662f357ccb4a17" },
-    { "path": "definitions/designers/knowledge.fbl", "sha256": "6a742883420ee29bc8c5756b3f07f6fb86b04a50d0976d8219084f586990f141" }
+    { "path": "definitions/designers/knowledge.des", "sha256": "24b75a05019ed934279aa01bd62c0f47604e15a0c6d3d2fcfaff7b855c0a8ab8" },
+    { "path": "definitions/designers/knowledge.fbl", "sha256": "98e63288805ecd5878c990c070dea3ca5505ab422eeabf2daf509f5bbbac73d9" }
   ]
 }
