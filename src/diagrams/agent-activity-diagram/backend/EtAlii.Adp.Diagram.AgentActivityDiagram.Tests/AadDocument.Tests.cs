@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.AgentActivityDiagram.Tests;
@@ -11,14 +12,14 @@ public sealed class AadDocumentTests
     internal static string Fixture(string name) =>
         File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Fixtures", name));
 
-    private static AadDocumentEntry OneDay() => AadDocumentEntry.Read(Fixture("one-day.aad"));
+    private static DocumentEntry<AadBody, AadModel> OneDay() => AadEntries.Read(Fixture("one-day.aad"));
 
     [Fact]
     public void AFileNobodyEdited_IsWrittenBackByteForByte()
     {
         var text = Fixture("one-day.aad");
 
-        var entry = AadDocumentEntry.Read(text);
+        var entry = AadEntries.Read(text);
 
         Assert.True(entry.IsUsable, entry.Unreadable);
         Assert.Equal(text, entry.Document.Text);
@@ -101,7 +102,7 @@ public sealed class AadDocumentTests
     [Fact]
     public void AFolderLeftOut_IsTheMainCheckout()
     {
-        var entry = AadDocumentEntry.Read("agent-activity-diagram: 1\r\nlocations:\r\n  - id: l1\r\n    branch: develop\r\n");
+        var entry = AadEntries.Read("agent-activity-diagram: 1\r\nlocations:\r\n  - id: l1\r\n    branch: develop\r\n");
 
         Assert.Equal("Default", Assert.Single(entry.Model.Elements).Folder);
     }
@@ -109,9 +110,9 @@ public sealed class AadDocumentTests
     [Fact]
     public void ANewFile_IsTheHeaderAlone_AndReadsEmptyWithoutAFinding()
     {
-        var text = new AadDocumentFactory().CreateEmptyDocument("team");
+        var text = AadBody.EmptyDocument("\r\n");
 
-        var entry = AadDocumentEntry.Read(text);
+        var entry = AadEntries.Read(text);
 
         Assert.Equal("agent-activity-diagram: 1\r\n", text);
         Assert.True(entry.IsUsable, entry.Unreadable);
@@ -122,7 +123,7 @@ public sealed class AadDocumentTests
     [Fact]
     public void AFileThatIsNotAnActivityFile_IsHeldUnreadable_WithTheReadersReason()
     {
-        var entry = AadDocumentEntry.Read("projects: [unterminated\r\n");
+        var entry = AadEntries.Read("projects: [unterminated\r\n");
 
         Assert.False(entry.IsUsable);
         Assert.NotEqual("", entry.Unreadable);

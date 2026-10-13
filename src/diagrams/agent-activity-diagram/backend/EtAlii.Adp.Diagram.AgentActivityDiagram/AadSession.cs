@@ -93,36 +93,6 @@ public sealed class AadSession : IDiagramSession
     private void Raise(IReadOnlyList<DiagramDelta> deltas) =>
         Changed?.Invoke(this, new DiagramDeltasEventArgs(deltas));
 
-    private void OnDocumentChanged(object? sender, AadDocumentChangedEventArgs args) =>
+    private void OnDocumentChanged(object? sender, DocumentChangedEventArgs args) =>
         _changes.OnDocumentChanged(args.Path);
-}
-
-/// <summary>Opens an <see cref="AadSession"/> for a connection.</summary>
-public sealed class AadSessionFactory : IDiagramSessionFactory
-{
-    private readonly IAadDocumentStore _documents;
-    private readonly AadElementMapper _mapper;
-    private readonly IHistoryStackStore _historyStacks;
-
-    public AadSessionFactory(IAadDocumentStore documents, AadElementMapper mapper, IHistoryStackStore historyStacks)
-    {
-        ArgumentNullException.ThrowIfNull(documents);
-        ArgumentNullException.ThrowIfNull(mapper);
-        ArgumentNullException.ThrowIfNull(historyStacks);
-
-        _documents = documents;
-        _mapper = mapper;
-        _historyStacks = historyStacks;
-    }
-
-    public DiagramOrigin Origin => Diagram.AgentActivity.Origin;
-
-    public IDiagramSession Open(ShortGuid watchId, string rootPath, string bodyPath, string? registrationPath)
-    {
-        _ = watchId;
-        _ = registrationPath;
-
-        // The project's history, so a drag is one undo away like every other edit.
-        return new AadSession(bodyPath, _documents, _mapper, _historyStacks.Get(rootPath));
-    }
 }

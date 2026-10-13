@@ -51,7 +51,7 @@ public sealed class AadExamplesTests
         var text = Text(name);
 
         // Act.
-        var entry = AadDocumentEntry.Read(text);
+        var entry = AadEntries.Read(text);
         var problems = AadValidator.Validate(entry.Document);
 
         // Assert: what an example has to say for itself is information at most.
@@ -75,7 +75,7 @@ public sealed class AadExamplesTests
     public void BetweenThem_TheExamplesShowEverythingTheNotationHas()
     {
         // Arrange: every example's model, and the file's own words where the model has folded them away.
-        var models = Examples.Select(path => AadDocumentEntry.Read(File.ReadAllText(path)).Model).ToList();
+        var models = Examples.Select(path => AadEntries.Read(File.ReadAllText(path)).Model).ToList();
         var elements = models.SelectMany(model => model.Elements).ToList();
         var rows = elements.SelectMany(element => element.Rows).ToList();
         var links = elements.SelectMany(element => (string[])[element.Link, element.BranchLink, element.FolderLink]).Where(link => link.Length > 0).ToList();

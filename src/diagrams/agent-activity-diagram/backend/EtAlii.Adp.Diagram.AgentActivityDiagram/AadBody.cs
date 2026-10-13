@@ -86,9 +86,28 @@ public sealed class AadBody
         }
     }
 
+    /// <summary>
+    /// Empty for a file the binding could read; otherwise the reader's own sentence for why it could
+    /// not - not YAML, or not an activity file - which names the format's error and its place.
+    /// </summary>
+    public string Unreadable =>
+        Disl.IsUnreadable ? Model.Findings.FirstOrDefault()?.Message ?? "the file could not be read as an activity file" : "";
+
     /// <summary>Reads <paramref name="text"/> as an activity file. Never throws for what the file holds: what cannot be read is a finding.</summary>
     /// <summary>The schema version this host knows; a file of a newer one is shown and never written (Requirement 2.8).</summary>
     public const long KnownVersion = 1;
+
+    /// <summary>
+    /// What a new activity file holds, for the Add dialog (Requirement 9.7): the header line alone.
+    /// No list is written empty: the binding creates each with its first entry and removes it with
+    /// its last, because an empty YAML list is a flow collection that nothing can be added to by a
+    /// splice (the definition's research note R5).
+    /// </summary>
+    public static string EmptyDocument(string lineEnding)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(lineEnding);
+        return $"agent-activity-diagram: {KnownVersion}{lineEnding}";
+    }
 
     /// <summary>The version the file declares, or the known one when it declares none that can be read.</summary>
     public long Version =>
