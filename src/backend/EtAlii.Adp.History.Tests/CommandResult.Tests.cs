@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using Xunit;
 
 namespace EtAlii.Adp.History.Tests;
@@ -37,6 +38,48 @@ public class CommandResultTests
     {
         // Arrange, act and assert.
         Assert.Throws<ArgumentNullException>(() => CommandResult.Success(null!));
+    }
+
+    [Fact]
+    public void FromSave_OfASaveThatLanded_SucceedsWithTheInverse_AndNoWarning()
+    {
+        // Arrange.
+        var inverse = new CommandResultSampleCommand();
+
+        // Act.
+        var result = CommandResult.FromSave(DocumentSaveResult.Ok, inverse);
+
+        // Assert.
+        Assert.True(result.IsSuccess);
+        Assert.Same(inverse, result.Inverse);
+        Assert.Equal("", result.Warning);
+    }
+
+    [Fact]
+    public void FromSave_OfASaveWithAWarning_SucceedsAndCarriesTheWarning()
+    {
+        // Arrange.
+        var inverse = new CommandResultSampleCommand();
+
+        // Act.
+        var result = CommandResult.FromSave(DocumentSaveResult.WithWarning("The layout was not kept."), inverse);
+
+        // Assert.
+        Assert.True(result.IsSuccess);
+        Assert.Same(inverse, result.Inverse);
+        Assert.Equal("The layout was not kept.", result.Warning);
+    }
+
+    [Fact]
+    public void FromSave_OfASaveThatFailed_FailsWithItsReason_AndNoInverse()
+    {
+        // Act.
+        var result = CommandResult.FromSave(DocumentSaveResult.Failure("plan.skv could not be written."), new CommandResultSampleCommand());
+
+        // Assert.
+        Assert.False(result.IsSuccess);
+        Assert.Equal("plan.skv could not be written.", result.Error);
+        Assert.Null(result.Inverse);
     }
 
     [Fact]
