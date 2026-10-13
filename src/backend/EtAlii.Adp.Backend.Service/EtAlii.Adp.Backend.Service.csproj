@@ -58,7 +58,10 @@
     dist/ never needs to exist for `dotnet build`/`dotnet run` - only for `dotnet publish`.
   -->
   <Target Name="BuildClientApp" BeforeTargets="Publish">
-    <Exec Command="npm ci" WorkingDirectory="$(MSBuildThisFileDirectory)..\..\client" />
+    <!-- From the workspace root, src/: run inside client/ it installs that workspace alone, so a
+         dependency a module declares in its own package.json (the JSON editor's language
+         service) is missing from the build. -->
+    <Exec Command="npm ci" WorkingDirectory="$(MSBuildThisFileDirectory)..\.." />
     <Exec Command="npm run build" WorkingDirectory="$(MSBuildThisFileDirectory)..\..\client" />
   </Target>
 
