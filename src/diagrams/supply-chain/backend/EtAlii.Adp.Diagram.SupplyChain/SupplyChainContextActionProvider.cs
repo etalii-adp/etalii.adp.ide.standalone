@@ -1,6 +1,5 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
-using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.SupplyChain;
@@ -15,12 +14,13 @@ namespace EtAlii.Adp.Diagram.SupplyChain;
 /// provider answers exactly those strings.
 /// </para>
 /// <para>
-/// <b>Every action that needs no input dispatches here, in <see cref="ExecuteAsync"/></b>: a
+/// <b>Every action that needs no input dispatches here, in <see cref="RunAsync"/></b>: a
 /// Completed execution never reaches the commit leg, so answering Completed without dispatching
 /// would do nothing at all.
 /// </para>
 /// </remarks>
-public sealed class SupplyChainContextActionProvider : IContextActionProvider
+public sealed class SupplyChainContextActionProvider(IHistoryStackStore historyStacks, ISupplyChainDocumentStore documents)
+    : DiagramActionProvider<LineDocument, SupplyChainModel>(historyStacks, documents)
 {
     /// <summary>Rename a node or a group in place, or a flow's product.</summary>
     private const string RenameActionId = "supply-chain.rename";
@@ -48,43 +48,24 @@ public sealed class SupplyChainContextActionProvider : IContextActionProvider
 
     private const string AddPrefix = "supply-chain.add.";
 
-    private readonly IHistoryStackStore _historyStacks;
-    private readonly ISupplyChainDocumentStore _documents;
-
-    public SupplyChainContextActionProvider(IHistoryStackStore historyStacks, ISupplyChainDocumentStore documents)
-    {
-        ArgumentNullException.ThrowIfNull(historyStacks);
-        ArgumentNullException.ThrowIfNull(documents);
-        _historyStacks = historyStacks;
-        _documents = documents;
-    }
-
     /// <summary>The add action for one stage.</summary>
     public static string AddActionId(string stage) => AddPrefix + stage;
 
     /// <inheritdoc />
-    public ContextScope Scope => ContextScope.DiagramElement;
+    protected override bool IsBody(string path) => Diagram.IsBody(path);
 
     /// <inheritdoc />
-    public ValueTask<IReadOnlyList<ContextActionGroupDefinition>> DiscoverAsync(ContextTarget target, CancellationToken cancellationToken)
+    protected override IReadOnlyList<ContextActionGroupDefinition> Discover(DocumentEntry<LineDocument, SupplyChainModel> entry, string elementId)
     {
-        ArgumentNullException.ThrowIfNull(target);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        if (!Diagram.IsBody(target.ResolvedFullPath))
-        {
-            return Result([]);
-        }
-
-        var model = _documents.GetOrLoad(target.ResolvedFullPath).Model;
+        var model = entry.Model;
         var arrange = new ContextActionDefinition(
             ArrangeActionId, "Arrange diagram", "mdi-sitemap-outline", null,
             model.Nodes.Count > 0, "There is nothing to arrange until this diagram has a node.");
 
-        if (SupplyChainEdits.NodeOf(model, target.ElementId) is { } node)
+        if (model.NodeOf(elementId) is { } node)
         {
             var atZero = (node.Quantity ?? 0) <= 0;
-            return Result(
+            return
             [
                 new ContextActionGroupDefinition(
                 [
@@ -98,13 +79,13 @@ public sealed class SupplyChainContextActionProvider : IContextActionProvider
                     new ContextActionDefinition(RemoveActionId, "Remove", "mdi-delete-outline", new ContextShortcutDefinition("Delete")),
                 ]),
                 new ContextActionGroupDefinition([arrange]),
-            ]);
+            ];
         }
 
-        if (SupplyChainEdits.FlowOf(model, target.ElementId) is { } flow)
+        if (model.FlowOf(elementId) is { } flow)
         {
             var atZero = (flow.Volume ?? 0) <= 0;
-            return Result(
+            return
             [
                 new ContextActionGroupDefinition(
                 [
@@ -116,12 +97,12 @@ public sealed class SupplyChainContextActionProvider : IContextActionProvider
                     new ContextActionDefinition(RenameActionId, "Rename product…", "mdi-pencil-outline", new ContextShortcutDefinition("F2")),
                     new ContextActionDefinition(RemoveActionId, "Remove flow", "mdi-vector-polyline-remove", new ContextShortcutDefinition("Delete")),
                 ]),
-            ]);
+            ];
         }
 
-        if (SupplyChainEdits.GroupOf(model, target.ElementId) is not null)
+        if (model.GroupOf(elementId) is not null)
         {
-            return Result(
+            return
             [
                 new ContextActionGroupDefinition(
                 [
@@ -129,39 +110,40 @@ public sealed class SupplyChainContextActionProvider : IContextActionProvider
                     new ContextActionDefinition(RemoveActionId, "Remove group", "mdi-ungroup", new ContextShortcutDefinition("Delete")),
                 ]),
                 new ContextActionGroupDefinition([arrange]),
-            ]);
+            ];
         }
 
         // A drop, a background menu and a finished gesture each discover what may be executed
         // against them, because executing an action by id only finds actions its target discovers.
-        if (GestureIds.TryParsePlacement(target.ElementId, out _, out _))
+        if (GestureIds.TryParsePlacement(elementId, out _, out _))
         {
-            return Result(
+            return
             [
                 new ContextActionGroupDefinition(
                     [.. SupplyChainNodeTypes.All.Select(stage => new ContextActionDefinition(AddActionId(stage), $"Add {SupplyChainNodeTypes.Display(stage).ToLowerInvariant()} here", SupplyChainStageIcons.Of(stage)))]),
                 new ContextActionGroupDefinition([new ContextActionDefinition(AddGroupActionId, "Add group here", SupplyChainStageIcons.Group)]),
                 new ContextActionGroupDefinition([arrange]),
-            ]);
+            ];
         }
 
-        return GestureIds.TryParseRelation(target.ElementId, out _, out _)
-            ? Result([new ContextActionGroupDefinition([new ContextActionDefinition(ConnectActionId, "Add flow", "mdi-arrow-right-thin")])])
-            : Result([]);
+        return GestureIds.TryParseRelation(elementId, out _, out _)
+            ? [new ContextActionGroupDefinition([new ContextActionDefinition(ConnectActionId, "Add flow", "mdi-arrow-right-thin")])]
+            : [];
     }
 
     /// <inheritdoc />
-    public async ValueTask<ContextExecutionResult> ExecuteAsync(ContextTarget target, string actionId, CancellationToken cancellationToken)
+    protected override async ValueTask<ContextExecutionResult> RunAsync(
+        ContextTarget target,
+        DocumentEntry<LineDocument, SupplyChainModel> entry,
+        string actionId,
+        CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(target);
-        cancellationToken.ThrowIfCancellationRequested();
-
         var body = target.ResolvedFullPath;
         var id = target.ElementId;
-        var model = _documents.GetOrLoad(body).Model;
-        var node = SupplyChainEdits.NodeOf(model, id);
-        var flow = SupplyChainEdits.FlowOf(model, id);
-        var group = SupplyChainEdits.GroupOf(model, id);
+        var model = entry.Model;
+        var node = model.NodeOf(id);
+        var flow = model.FlowOf(id);
+        var group = model.GroupOf(id);
 
         if (actionId.StartsWith(AddPrefix, StringComparison.Ordinal))
         {
@@ -206,16 +188,15 @@ public sealed class SupplyChainContextActionProvider : IContextActionProvider
             case RemoveActionId when node is not null:
             {
                 var going = model.Flows.Count(candidate => candidate.From == node.Id || candidate.To == node.Id);
-                return going == 0
-                    ? await DispatchAsync(target, new RemoveSupplyChainEntryCommand(body, id), cancellationToken)
-                    : new ContextExecutionRequiresConfirmation(new ContextConfirmationRequest(
+                var confirmation = going == 0
+                    ? null
+                    : new RemovalConfirmation(
                         "Remove",
-                        "mdi-delete-outline",
                         going == 1
                             ? "Removing this node also removes the 1 flow to or from it."
                             : $"Removing this node also removes the {going} flows to or from it.",
-                        "Remove",
-                        Danger: true));
+                        "Remove");
+                return await RemoveAsync(target, new RemoveSupplyChainEntryCommand(body, id), confirmation, cancellationToken);
             }
 
             case RemoveActionId when flow is not null || group is not null:
@@ -231,60 +212,29 @@ public sealed class SupplyChainContextActionProvider : IContextActionProvider
     }
 
     /// <inheritdoc />
-    public ValueTask<ContextValidationResult> ValidateAsync(ContextTarget target, string actionId, string value, CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(target);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        return ValueTask.FromResult(actionId == GroupActionId && string.IsNullOrWhiteSpace(value)
+    protected override ContextValidationResult Validate(string actionId, string value) =>
+        actionId == GroupActionId && string.IsNullOrWhiteSpace(value)
             ? ContextValidationResult.Rejected("A group needs a name.")
-            : ContextValidationResult.Accepted);
-    }
+            : ContextValidationResult.Accepted;
 
     /// <inheritdoc />
-    public async ValueTask<ContextCommitResult> CommitAsync(
-        ContextTarget target,
-        string actionId,
-        string value,
-        string text,
-        CancellationToken cancellationToken)
+    protected override ICommand? CommitCommand(ContextTarget target, SupplyChainModel model, string actionId, string value)
     {
-        ArgumentNullException.ThrowIfNull(target);
-        _ = text;
-
         var body = target.ResolvedFullPath;
         var id = target.ElementId;
-        var model = _documents.GetOrLoad(body).Model;
 
-        ICommand? command = actionId switch
+        return actionId switch
         {
-            RenameActionId when SupplyChainEdits.FlowOf(model, id) is not null => new SetSupplyChainPropertyCommand(body, id, SupplyChainKeys.Product, value),
-            RenameActionId when SupplyChainEdits.NodeOf(model, id) is not null || SupplyChainEdits.GroupOf(model, id) is not null =>
+            RenameActionId when model.FlowOf(id) is not null => new SetSupplyChainPropertyCommand(body, id, SupplyChainKeys.Product, value),
+            RenameActionId when model.NodeOf(id) is not null || model.GroupOf(id) is not null =>
                 new SetSupplyChainPropertyCommand(body, id, SupplyChainKeys.Name, value),
-            GroupActionId when SupplyChainEdits.NodeOf(model, id) is not null => new GroupSupplyChainNodeCommand(body, id, value),
-            RemoveActionId when SupplyChainEdits.NodeOf(model, id) is not null => new RemoveSupplyChainEntryCommand(body, id),
+            GroupActionId when model.NodeOf(id) is not null => new GroupSupplyChainNodeCommand(body, id, value),
+            RemoveActionId when model.NodeOf(id) is not null => new RemoveSupplyChainEntryCommand(body, id),
             _ => null,
         };
-
-        if (command is null)
-        {
-            return ContextCommitResult.Failed($"'{actionId}' does not apply to this selection.");
-        }
-
-        var result = await _historyStacks.Get(target.RootPath).ExecuteAsync(command, cancellationToken);
-        return result.IsSuccess ? ContextCommitResult.Succeeded : ContextCommitResult.Failed(result.Error);
     }
 
     /// <summary>An in-place edit over the element's own label - the name is what the canvas shows.</summary>
     private static ContextExecutionRequiresInput Input(string title, string field, string value, string confirm, string elementId) =>
         new(new ContextInputRequest(title, "mdi-pencil-outline", field, value, confirm, elementId));
-
-    private async ValueTask<ContextExecutionResult> DispatchAsync(ContextTarget target, ICommand command, CancellationToken cancellationToken)
-    {
-        var result = await _historyStacks.Get(target.RootPath).ExecuteAsync(command, cancellationToken);
-        return result.IsSuccess ? new ContextExecutionCompleted() : new ContextExecutionFailed(result.Error);
-    }
-
-    private static ValueTask<IReadOnlyList<ContextActionGroupDefinition>> Result(IReadOnlyList<ContextActionGroupDefinition> groups) =>
-        ValueTask.FromResult(groups);
 }

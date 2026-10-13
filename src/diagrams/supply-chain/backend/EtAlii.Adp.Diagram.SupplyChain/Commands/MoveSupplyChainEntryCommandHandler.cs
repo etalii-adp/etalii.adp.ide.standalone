@@ -22,29 +22,23 @@ namespace EtAlii.Adp.Diagram.SupplyChain;
 /// so it is still where it was left if its members later go.
 /// </para>
 /// </remarks>
-public sealed class MoveSupplyChainEntryCommandHandler(ISupplyChainDocumentStore documents) : ICommandHandler<MoveSupplyChainEntryCommand>
+public sealed class MoveSupplyChainEntryCommandHandler(ISupplyChainDocumentStore documents) : SupplyChainEditHandler<MoveSupplyChainEntryCommand>(documents)
 {
     /// <inheritdoc />
-    public Task<CommandResult> ExecuteAsync(MoveSupplyChainEntryCommand command, CancellationToken cancellationToken = default)
+    protected override EditOutcome Apply(LineDocument document, SupplyChainModel model, MoveSupplyChainEntryCommand command)
     {
-        ArgumentNullException.ThrowIfNull(command);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        return SupplyChainEdits.Run(documents, command.BodyPath, command, (document, model) =>
+        var layout = SupplyChainLayout.Of(model);
+        if (layout.NodeBoxes.ContainsKey(command.EntryId))
         {
-            var layout = SupplyChainLayout.Of(model);
-            if (layout.NodeBoxes.ContainsKey(command.EntryId))
-            {
-                return MoveNode(document, model, layout, command);
-            }
+            return MoveNode(document, model, layout, command);
+        }
 
-            return layout.GroupBoxes.TryGetValue(command.EntryId, out var frame)
-                ? MoveGroup(document, model, layout, frame, command)
-                : SupplyChainEdit.Refused("That is not something this diagram can move.");
-        });
+        return layout.GroupBoxes.TryGetValue(command.EntryId, out var frame)
+            ? MoveGroup(document, model, layout, frame, command)
+            : EditOutcome.Refused("That is not something this diagram can move.");
     }
 
-    private static SupplyChainEdit MoveNode(LineDocument document, SupplyChainModel model, SupplyChainLayout layout, MoveSupplyChainEntryCommand command)
+    private static EditOutcome MoveNode(LineDocument document, SupplyChainModel model, SupplyChainLayout layout, MoveSupplyChainEntryCommand command)
     {
         var node = layout.Nodes.First(candidate => candidate.Id == command.EntryId);
         var current = layout.GroupBoxes.ContainsKey(node.Group) ? node.Group : "";
@@ -53,22 +47,22 @@ public sealed class MoveSupplyChainEntryCommandHandler(ISupplyChainDocumentStore
         SupplyChainWriter.Place(document, model, new Dictionary<string, (double X, double Y)>(StringComparer.Ordinal) { [node.Id] = (command.X, command.Y) });
         if (joins is null)
         {
-            return SupplyChainEdit.Applied;
+            return EditOutcome.Applied;
         }
 
         // Every splice moves lines, so each next edit locates its entry in the document as it now is.
         var placed = SupplyChainParser.Parse(document);
-        SupplyChainWriter.SetText(document, SupplyChainEdits.NodeOf(placed, node.Id)!.Range, SupplyChainKeys.Group, joins, removeWhenEmpty: false);
+        SupplyChainWriter.SetText(document, placed.NodeOf(node.Id)!.Range, SupplyChainKeys.Group, joins, removeWhenEmpty: false);
 
         var left = current.Length > 0 && !layout.Nodes.Any(other => other.Id != node.Id && other.Group == current);
         if (left)
         {
             var frame = layout.GroupBoxes[current];
             var regrouped = SupplyChainParser.Parse(document);
-            SupplyChainWriter.PlaceGroup(document, SupplyChainEdits.GroupOf(regrouped, current)!, frame.X, frame.Y);
+            SupplyChainWriter.PlaceGroup(document, regrouped.GroupOf(current)!, frame.X, frame.Y);
         }
 
-        return SupplyChainEdit.Applied;
+        return EditOutcome.Applied;
     }
 
     /// <summary>
@@ -91,7 +85,7 @@ public sealed class MoveSupplyChainEntryCommandHandler(ISupplyChainDocumentStore
         static bool Holds(SupplyChainBox box, double x, double y) => x >= box.X && x <= box.Right && y >= box.Y && y <= box.Bottom;
     }
 
-    private static SupplyChainEdit MoveGroup(LineDocument document, SupplyChainModel model, SupplyChainLayout layout, SupplyChainBox frame, MoveSupplyChainEntryCommand command)
+    private static EditOutcome MoveGroup(LineDocument document, SupplyChainModel model, SupplyChainLayout layout, SupplyChainBox frame, MoveSupplyChainEntryCommand command)
     {
         var group = layout.Groups.First(candidate => candidate.Id == command.EntryId);
         (double dx, double dy) = (command.X - frame.X, command.Y - frame.Y);
@@ -110,9 +104,9 @@ public sealed class MoveSupplyChainEntryCommandHandler(ISupplyChainDocumentStore
         if (places.Count == 0 || group.IsPlaced)
         {
             (double x, double y) = places.Count == 0 ? (command.X, command.Y) : (group.X!.Value + dx, group.Y!.Value + dy);
-            SupplyChainWriter.PlaceGroup(document, SupplyChainEdits.GroupOf(SupplyChainParser.Parse(document), group.Id)!, x, y);
+            SupplyChainWriter.PlaceGroup(document, SupplyChainParser.Parse(document).GroupOf(group.Id)!, x, y);
         }
 
-        return SupplyChainEdit.Applied;
+        return EditOutcome.Applied;
     }
 }

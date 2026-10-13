@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.SupplyChain;
@@ -6,39 +7,32 @@ namespace EtAlii.Adp.Diagram.SupplyChain;
 /// The + and − of a node or a flow. The value never goes below zero: a decrement at zero is refused
 /// with a sentence rather than written as a negative stock nobody can have.
 /// </summary>
-public sealed class StepSupplyChainValueCommandHandler(ISupplyChainDocumentStore documents) : ICommandHandler<StepSupplyChainValueCommand>
+public sealed class StepSupplyChainValueCommandHandler(ISupplyChainDocumentStore documents) : SupplyChainEditHandler<StepSupplyChainValueCommand>(documents)
 {
     /// <inheritdoc />
-    public Task<CommandResult> ExecuteAsync(StepSupplyChainValueCommand command, CancellationToken cancellationToken = default)
-    {
-        ArgumentNullException.ThrowIfNull(command);
-        cancellationToken.ThrowIfCancellationRequested();
+    protected override CommandResult Execute(StepSupplyChainValueCommand command) =>
+        command.Steps == 0 ? CommandResult.Failure("A step of nothing changes nothing.") : base.Execute(command);
 
-        if (command.Steps == 0)
+    /// <inheritdoc />
+    protected override EditOutcome Apply(LineDocument document, SupplyChainModel model, StepSupplyChainValueCommand command)
+    {
+        if (model.NodeOf(command.EntryId) is { } node)
         {
-            return Task.FromResult(CommandResult.Failure("A step of nothing changes nothing."));
+            return Stepped(node.Quantity, node.Step, command.Steps, "quantity") is { } quantity
+                ? SupplyChainWriter.SetNumber(document, node.Range, SupplyChainKeys.Quantity, quantity)
+                : AtZero("quantity");
         }
 
-        return SupplyChainEdits.Run(documents, command.BodyPath, command, (document, model) =>
+        if (model.FlowOf(command.EntryId) is { } flow)
         {
-            if (SupplyChainEdits.NodeOf(model, command.EntryId) is { } node)
-            {
-                return Stepped(node.Quantity, node.Step, command.Steps, "quantity") is { } quantity
-                    ? SupplyChainWriter.SetNumber(document, node.Range, SupplyChainKeys.Quantity, quantity)
-                    : AtZero("quantity");
-            }
+            return Stepped(flow.Volume, flow.Step, command.Steps, "volume") is { } volume
+                ? SupplyChainWriter.SetNumber(document, flow.Range, SupplyChainKeys.Volume, volume)
+                : AtZero("volume");
+        }
 
-            if (SupplyChainEdits.FlowOf(model, command.EntryId) is { } flow)
-            {
-                return Stepped(flow.Volume, flow.Step, command.Steps, "volume") is { } volume
-                    ? SupplyChainWriter.SetNumber(document, flow.Range, SupplyChainKeys.Volume, volume)
-                    : AtZero("volume");
-            }
-
-            return SupplyChainEdits.GroupOf(model, command.EntryId) is not null
-                ? SupplyChainEdit.Refused("A group has no value of its own; its members do.")
-                : SupplyChainEdits.Gone();
-        });
+        return model.GroupOf(command.EntryId) is not null
+            ? EditOutcome.Refused("A group has no value of its own; its members do.")
+            : Gone;
     }
 
     /// <summary>The new value, or <c>null</c> when it is already zero and asked to go lower.</summary>
@@ -55,5 +49,5 @@ public sealed class StepSupplyChainValueCommandHandler(ISupplyChainDocumentStore
         return Math.Max(0, Math.Round(from + (steps * (step is > 0 ? step.Value : SupplyChainGeometry.DefaultStep)), 4));
     }
 
-    private static SupplyChainEdit AtZero(string what) => SupplyChainEdit.Refused($"The {what} is already zero.");
+    private static EditOutcome AtZero(string what) => EditOutcome.Refused($"The {what} is already zero.");
 }

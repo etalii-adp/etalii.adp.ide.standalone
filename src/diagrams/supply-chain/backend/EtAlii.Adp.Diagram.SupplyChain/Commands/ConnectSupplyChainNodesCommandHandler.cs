@@ -4,40 +4,36 @@ using EtAlii.Adp.History;
 namespace EtAlii.Adp.Diagram.SupplyChain;
 
 /// <summary>Adds a flow between two nodes, refusing one to itself or one that already exists.</summary>
-public sealed class ConnectSupplyChainNodesCommandHandler(ISupplyChainDocumentStore documents) : ICommandHandler<ConnectSupplyChainNodesCommand>
+public sealed class ConnectSupplyChainNodesCommandHandler(ISupplyChainDocumentStore documents) : SupplyChainEditHandler<ConnectSupplyChainNodesCommand>(documents)
 {
     /// <inheritdoc />
-    public Task<CommandResult> ExecuteAsync(ConnectSupplyChainNodesCommand command, CancellationToken cancellationToken = default)
+    protected override CommandResult Execute(ConnectSupplyChainNodesCommand command) =>
+        base.Execute(command.FlowId.Length > 0 ? command : command with { FlowId = ShortGuid.NewShortGuid().ToString() });
+
+    /// <inheritdoc />
+    protected override EditOutcome Apply(LineDocument document, SupplyChainModel model, ConnectSupplyChainNodesCommand command)
     {
-        ArgumentNullException.ThrowIfNull(command);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        var minted = command.FlowId.Length > 0 ? command : command with { FlowId = ShortGuid.NewShortGuid().ToString() };
-
-        return SupplyChainEdits.Run(documents, minted.BodyPath, minted, (document, model) =>
+        if (model.NodeOf(command.From) is null || model.NodeOf(command.To) is null)
         {
-            if (SupplyChainEdits.NodeOf(model, minted.From) is null || SupplyChainEdits.NodeOf(model, minted.To) is null)
-            {
-                return SupplyChainEdit.Refused("A flow runs from one node to another.");
-            }
+            return EditOutcome.Refused("A flow runs from one node to another.");
+        }
 
-            if (minted.From == minted.To)
-            {
-                return SupplyChainEdit.Refused("A node does not supply itself.");
-            }
+        if (command.From == command.To)
+        {
+            return EditOutcome.Refused("A node does not supply itself.");
+        }
 
-            if (model.Flows.Any(flow => flow.From == minted.From && flow.To == minted.To))
-            {
-                return SupplyChainEdit.Refused("These two are already connected by a flow in this direction.");
-            }
+        if (model.Flows.Any(flow => flow.From == command.From && flow.To == command.To))
+        {
+            return EditOutcome.Refused("These two are already connected by a flow in this direction.");
+        }
 
-            if (SupplyChainEdits.IsTaken(model, minted.FlowId))
-            {
-                return SupplyChainEdit.Refused("That id is already used in this diagram.");
-            }
+        if (model.IsTaken(command.FlowId))
+        {
+            return EditOutcome.Refused("That id is already used in this diagram.");
+        }
 
-            return SupplyChainWriter.AddFlow(document, model, new SupplyChainFlow(
-                minted.FlowId, minted.From, minted.To, Product: "", Description: "", Volume: null, Unit: "", Step: null, new LineRange(0, 0)));
-        });
+        return SupplyChainWriter.AddFlow(document, model, new SupplyChainFlow(
+            command.FlowId, command.From, command.To, Product: "", Description: "", Volume: null, Unit: "", Step: null, new LineRange(0, 0)));
     }
 }

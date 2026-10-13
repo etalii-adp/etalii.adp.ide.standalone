@@ -1,5 +1,6 @@
 using System.Globalization;
 using EtAlii.Adp.Context;
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.History;
 
@@ -20,7 +21,8 @@ namespace EtAlii.Adp.Diagram.SupplyChain;
 /// <c>taiwan</c>; the document keeps the id so a renamed group keeps its members.
 /// </para>
 /// </remarks>
-public sealed class SupplyChainContextPropertyProvider : IContextPropertyProvider
+public sealed class SupplyChainContextPropertyProvider(IHistoryStackStore historyStacks, ISupplyChainDocumentStore documents)
+    : DiagramPropertyProvider<LineDocument, SupplyChainModel>(historyStacks, documents)
 {
     /// <summary>The name of a node or a group.</summary>
     public const string NameProperty = "supply-chain.name";
@@ -55,37 +57,18 @@ public sealed class SupplyChainContextPropertyProvider : IContextPropertyProvide
     private const string IdentityGroup = "Identity";
     private const string AmountGroup = "Amount";
 
-    private readonly IHistoryStackStore _historyStacks;
-    private readonly ISupplyChainDocumentStore _documents;
-
-    public SupplyChainContextPropertyProvider(IHistoryStackStore historyStacks, ISupplyChainDocumentStore documents)
-    {
-        ArgumentNullException.ThrowIfNull(historyStacks);
-        ArgumentNullException.ThrowIfNull(documents);
-        _historyStacks = historyStacks;
-        _documents = documents;
-    }
+    /// <inheritdoc />
+    protected override bool IsBody(string path) => Diagram.IsBody(path);
 
     /// <inheritdoc />
-    public ContextScope Scope => ContextScope.DiagramElement;
-
-    /// <inheritdoc />
-    public ValueTask<IReadOnlyList<ContextPropertyDefinition>> DescribeAsync(ContextTarget target, CancellationToken cancellationToken)
+    protected override IReadOnlyList<ContextPropertyDefinition> Describe(DocumentEntry<LineDocument, SupplyChainModel> entry, string elementId)
     {
-        ArgumentNullException.ThrowIfNull(target);
-        cancellationToken.ThrowIfCancellationRequested();
+        var model = entry.Model;
 
-        if (!Diagram.IsBody(target.ResolvedFullPath))
+        if (model.NodeOf(elementId) is { } node)
         {
-            return Rows([]);
-        }
-
-        var model = _documents.GetOrLoad(target.ResolvedFullPath).Model;
-
-        if (SupplyChainEdits.NodeOf(model, target.ElementId) is { } node)
-        {
-            var group = SupplyChainEdits.GroupOf(model, node.Group);
-            return Rows(
+            var group = model.GroupOf(node.Group);
+            return
             [
                 new ContextPropertyDefinition(NameProperty, "Name", node.Name, Group: IdentityGroup),
                 new ContextPropertyDefinition(StageProperty, "Stage", node.Type, ContextPropertyEditor.Choice, Group: IdentityGroup, Candidates: SupplyChainNodeTypes.All),
@@ -94,45 +77,36 @@ public sealed class SupplyChainContextPropertyProvider : IContextPropertyProvide
                 new ContextPropertyDefinition(QuantityProperty, "Quantity", Number(node.Quantity), Group: AmountGroup),
                 new ContextPropertyDefinition(UnitProperty, "Unit", node.Unit, Group: AmountGroup),
                 new ContextPropertyDefinition(StepProperty, "Step", Number(node.Step ?? SupplyChainGeometry.DefaultStep), Group: AmountGroup),
-            ]);
+            ];
         }
 
-        if (SupplyChainEdits.FlowOf(model, target.ElementId) is { } flow)
+        if (model.FlowOf(elementId) is { } flow)
         {
-            return Rows(
+            return
             [
                 new ContextPropertyDefinition(ProductProperty, "Product", flow.Product, Group: IdentityGroup),
                 new ContextPropertyDefinition(DescriptionProperty, "Description", flow.Description, ContextPropertyEditor.Text, Group: IdentityGroup),
                 new ContextPropertyDefinition(VolumeProperty, "Volume", Number(flow.Volume), Group: AmountGroup),
                 new ContextPropertyDefinition(UnitProperty, "Unit", flow.Unit, Group: AmountGroup),
                 new ContextPropertyDefinition(StepProperty, "Step", Number(flow.Step ?? SupplyChainGeometry.DefaultStep), Group: AmountGroup),
-            ]);
+            ];
         }
 
-        if (SupplyChainEdits.GroupOf(model, target.ElementId) is { } frame)
+        if (model.GroupOf(elementId) is { } frame)
         {
-            return Rows(
+            return
             [
                 new ContextPropertyDefinition(NameProperty, "Name", frame.Name, Group: IdentityGroup),
                 new ContextPropertyDefinition(DescriptionProperty, "Description", frame.Description, ContextPropertyEditor.Text, Group: IdentityGroup),
-            ]);
+            ];
         }
 
-        return Rows([]);
+        return [];
     }
 
     /// <inheritdoc />
-    public async ValueTask<ContextPropertyResult> SetAsync(
-        ContextTarget target,
-        string propertyId,
-        string value,
-        CancellationToken cancellationToken)
+    protected override DiagramPropertyChange Change(ContextTarget target, SupplyChainModel model, string propertyId, string value)
     {
-        ArgumentNullException.ThrowIfNull(target);
-
-        var body = target.ResolvedFullPath;
-        var model = _documents.GetOrLoad(body).Model;
-
         string? key = propertyId switch
         {
             NameProperty => SupplyChainKeys.Name,
@@ -149,7 +123,7 @@ public sealed class SupplyChainContextPropertyProvider : IContextPropertyProvide
 
         if (key is null)
         {
-            return ContextPropertyResult.Failure($"'{propertyId}' cannot be edited on this selection.");
+            return DiagramPropertyChange.Refused($"'{propertyId}' cannot be edited on this selection.");
         }
 
         if (key == SupplyChainKeys.Group)
@@ -160,9 +134,7 @@ public sealed class SupplyChainContextPropertyProvider : IContextPropertyProvide
                 : model.Groups.FirstOrDefault(group => NameOf(group) == value)?.Id ?? value;
         }
 
-        var command = new SetSupplyChainPropertyCommand(body, target.ElementId, key, value);
-        var result = await _historyStacks.Get(target.RootPath).ExecuteAsync(command, cancellationToken);
-        return result.IsSuccess ? ContextPropertyResult.Success : ContextPropertyResult.Failure(result.Error);
+        return DiagramPropertyChange.By(new SetSupplyChainPropertyCommand(target.ResolvedFullPath, target.ElementId, key, value));
     }
 
     private static string NameOf(SupplyChainGroup group) => group.Name.Length > 0 ? group.Name : group.Id;
@@ -174,7 +146,4 @@ public sealed class SupplyChainContextPropertyProvider : IContextPropertyProvide
     ];
 
     private static string Number(double? value) => value is { } number ? number.ToString("0.####", CultureInfo.InvariantCulture) : "";
-
-    private static ValueTask<IReadOnlyList<ContextPropertyDefinition>> Rows(IReadOnlyList<ContextPropertyDefinition> rows) =>
-        ValueTask.FromResult(rows);
 }

@@ -1,31 +1,26 @@
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.SupplyChain;
 
 /// <summary>Removes whatever the id names.</summary>
-public sealed class RemoveSupplyChainEntryCommandHandler(ISupplyChainDocumentStore documents) : ICommandHandler<RemoveSupplyChainEntryCommand>
+public sealed class RemoveSupplyChainEntryCommandHandler(ISupplyChainDocumentStore documents) : SupplyChainEditHandler<RemoveSupplyChainEntryCommand>(documents)
 {
     /// <inheritdoc />
-    public Task<CommandResult> ExecuteAsync(RemoveSupplyChainEntryCommand command, CancellationToken cancellationToken = default)
+    protected override EditOutcome Apply(LineDocument document, SupplyChainModel model, RemoveSupplyChainEntryCommand command)
     {
-        ArgumentNullException.ThrowIfNull(command);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        return SupplyChainEdits.Run(documents, command.BodyPath, command, (document, model) =>
+        if (model.NodeOf(command.EntryId) is { } node)
         {
-            if (SupplyChainEdits.NodeOf(model, command.EntryId) is { } node)
-            {
-                return SupplyChainWriter.RemoveNode(document, model, node);
-            }
+            return SupplyChainWriter.RemoveNode(document, model, node);
+        }
 
-            if (SupplyChainEdits.FlowOf(model, command.EntryId) is { } flow)
-            {
-                return SupplyChainWriter.Remove(document, flow.Range);
-            }
+        if (model.FlowOf(command.EntryId) is { } flow)
+        {
+            return SupplyChainWriter.Remove(document, flow.Range);
+        }
 
-            return SupplyChainEdits.GroupOf(model, command.EntryId) is { } group
-                ? SupplyChainWriter.RemoveGroup(document, model, group)
-                : SupplyChainEdits.Gone();
-        });
+        return model.GroupOf(command.EntryId) is { } group
+            ? SupplyChainWriter.RemoveGroup(document, model, group)
+            : Gone;
     }
 }

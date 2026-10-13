@@ -7,7 +7,7 @@ namespace EtAlii.Adp.Diagram.SupplyChain;
 /// One command for every scalar edit, because each is the same act - one key of one entry - and
 /// differs only in how its value is checked, which <see cref="SupplyChainKeys"/> states once.
 /// </remarks>
-public sealed record SetSupplyChainPropertyCommand(string BodyPath, string EntryId, string Key, string Value) : ICommand;
+public sealed record SetSupplyChainPropertyCommand(string BodyPath, string EntryId, string Key, string Value) : IDocumentEditCommand;
 
 /// <summary>The keys an edit may set, as the document spells them.</summary>
 public static class SupplyChainKeys
