@@ -163,12 +163,15 @@ public sealed class FdgContextActionProvider(IHistoryStackStore historyStacks, I
                 // Says how many connections go with it before it runs; with none, no ceremony -
                 // and so the removal happens here.
                 var going = model.Connections.Count(connection => connection.From == element.Id || connection.To == element.Id);
-                return await RemoveAsync(target, new RemoveFdgElementCommand(body, element.Id), going == 0 ? null : new RemovalConfirmation(
-                    "Remove",
-                    going == 1
-                        ? "Removing this element also removes the 1 connection to or from it."
-                        : $"Removing this element also removes the {going} connections to or from it.",
-                    "Remove"), cancellationToken);
+                var confirmation = going == 0
+                    ? null
+                    : new RemovalConfirmation(
+                        "Remove",
+                        going == 1
+                            ? "Removing this element also removes the 1 connection to or from it."
+                            : $"Removing this element also removes the {going} connections to or from it.",
+                        "Remove");
+                return await RemoveAsync(target, new RemoveFdgElementCommand(body, element.Id), confirmation, cancellationToken);
             }
 
             case DisconnectActionId when model.ConnectionOf(target.ElementId) is not null:
