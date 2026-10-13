@@ -82,6 +82,63 @@ public class ServiceCollectionAddTimelineTests
     }
 
     [Fact]
+    public void TheEmptyDocument_IsTheSchemaMarkerAndAnEmptyListAndNothingElse()
+    {
+        // Arrange.
+        using var provider = Build();
+
+        // Act.
+        var text = EmptyDocument(provider, "plan");
+
+        // Assert.
+        var model = TimelineParser.Parse(LineDocument.Parse(text));
+        Assert.Empty(model.Elements);
+        Assert.Empty(model.Connections);
+        Assert.Equal("timeline: 1\r\nelements: []\r\n", text);
+    }
+
+    [Fact]
+    public void TheFirstElementAddedToTheEmptyDocument_ProducesValidYaml()
+    {
+        // Arrange.
+        // The trap this test exists for: `elements: []` already carries a value, and appending a
+        // block entry after it without opening the section leaves the key with two values and
+        // the file unparseable - a bug that would surface on the very first Add of every new
+        // timeline.
+        using var provider = Build();
+        var document = LineDocument.Parse(EmptyDocument(provider, "plan"));
+        var model = TimelineParser.Parse(document);
+
+        // Act.
+        TimelineWriter.InsertElement(document, model, "first001", "First", "2026-01-01", "2026-01-31", 0);
+
+        // Assert.
+        var reparsed = TimelineParser.Parse(LineDocument.Parse(document.Text));
+        var element = Assert.Single(reparsed.Elements);
+        Assert.Equal("First", element.Label);
+        Assert.DoesNotContain("[]", document.Text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ASession_IsOpenedOnTheBody()
+    {
+        // Arrange.
+        await using var provider = Build();
+        var factory = new DiagramSessionFactories(provider.GetServices<IDiagramSessionFactory>()).Find(Diagram.Timeline.Origin)!;
+
+        // Act.
+        await using var session = factory.Open(ShortGuid.NewShortGuid(), "root", TimelineDocumentStoreTests.Simple, null);
+
+        // Assert.
+        Assert.IsType<TimelineSession>(session);
+    }
+
+    private static string EmptyDocument(ServiceProvider provider, string baseName) =>
+        new DiagramDocumentFactories(provider.GetServices<IDiagramDocumentFactory>())
+            .Find(Diagram.Timeline.Origin)!
+            .CreateEmptyDocument(baseName);
+
+    [Fact]
     public void TheDefinitionsBuildHook_IsWhatCallsThis()
     {
         // Assert.

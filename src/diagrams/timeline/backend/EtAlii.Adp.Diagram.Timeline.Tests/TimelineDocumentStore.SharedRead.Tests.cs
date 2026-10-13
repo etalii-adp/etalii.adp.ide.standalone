@@ -54,6 +54,6 @@ public class TimelineDocumentStoreSharedReadTests : IDisposable
 
         // Assert.
         Assert.False(entry.IsUsable);
-        Assert.Equal(4, entry.ErrorLine);
+        Assert.Contains("line 4", entry.Unreadable, StringComparison.Ordinal);
     }
 }

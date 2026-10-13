@@ -56,7 +56,7 @@ public sealed class RemoveTimelineElementCommandHandler : ICommandHandler<Remove
             TimelineWriter.RemoveConnectionsSectionIfEmpty(entry.Document, TimelineParser.Parse(entry.Document));
         }
 
-        var saved = _documents.Save(command.BodyPath, entry);
+        var saved = _documents.Save(command.BodyPath, entry.Document);
         return Task.FromResult(!saved.Failed
             ? CommandResult.Success(new RestoreTimelineLinesCommand(command.BodyPath, command.ElementId, segments))
             : CommandResult.Failure(saved.Error));

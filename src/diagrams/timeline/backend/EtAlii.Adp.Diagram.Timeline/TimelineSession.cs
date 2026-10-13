@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 using Serilog;
 
@@ -165,7 +166,7 @@ public sealed class TimelineSession : IDiagramSession
     /// A save from any connection, or an edit made outside ADP, arrives here and goes out as
     /// the difference from what this connection was last sent.
     /// </summary>
-    private void OnDocumentChanged(object? sender, TimelineDocumentChangedEventArgs args)
+    private void OnDocumentChanged(object? sender, DocumentChangedEventArgs args)
     {
         if (!string.Equals(args.Path, _bodyPath, StringComparison.OrdinalIgnoreCase))
         {

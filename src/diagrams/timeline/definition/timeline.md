@@ -70,7 +70,7 @@ connections:
 ```
 
 - `timeline: 1` is the schema marker. `elements` is a sequence of mappings with `id`, `label`, `begin`, optional `end` and `row`. `connections` is a sequence of mappings with `id`, `from`, `to` and optional `label`. Keys are read with those exact names; a missing `connections` key means no connections, and a missing key in an entry reads as the empty text.
-- A new document is exactly `timeline: 1\r\nelements: []\r\n`: CRLF, a trailing newline, no title and no sample content (`backend/EtAlii.Adp.Diagram.Timeline/TimelineDocumentFactory.cs`, R1.3).
+- A new document is exactly `timeline: 1\r\nelements: []\r\n`: CRLF, a trailing newline, no title and no sample content (registered in `backend/EtAlii.Adp.Diagram.Timeline/ServiceCollection.AddTimeline.cs`, R1.3).
 - An empty file, or one whose root is not a mapping, is an empty timeline, not an error (`TimelineParser.Parse`).
 
 **Only the affected lines change (R2.1, R2.2).** Nothing ever serializes a model back to the file. Every write is a splice of the line range the parser recorded for that element or connection (`backend/EtAlii.Adp.Diagram.Timeline/TimelineWriter.cs`). Consequences an implementation must reproduce:
@@ -84,7 +84,7 @@ connections:
 
 **Ids.** Ids live in the file because the schema is ADP's own, and they are unique across elements and relations together. New ids are ShortGuids: a version 4 GUID written as 25 lowercase characters of base 36 (`src/backend/EtAlii.Adp/ShortGuid.cs`), for example `467lu0vgaiudevamnkpl6k052`, which `persistence.ids` states as `uuid-v4` with `encoding: "base36"`. Hand-written ids (`discovery`, `c1`) are equally valid. A command that creates an element generates its ids once, when the gesture happens, so a redo re-creates the element under the same ids.
 
-**An unreadable file** (not YAML) opens in the unavailable state naming the parser's message and line, and no edit is accepted until it is fixed, so a broken file is never made worse (R2.4, `_Model/TimelineDocumentEntry.cs`). The store keeps the last good document across a reload that cannot read, and a deleted body closes rather than lingering (`TimelineDocumentReloader.cs`). Changes made to the file outside ADP are picked up and pushed to every open view.
+**An unreadable file** (not YAML) opens in the unavailable state naming the parser's message and line, and no edit is accepted until it is fixed, so a broken file is never made worse (R2.4, `TimelineDocumentStore.cs`). The store keeps the last good document across a reload that cannot read, and a deleted body closes rather than lingering (the shared reloader, registered in `ServiceCollection.AddTimeline.cs`). Changes made to the file outside ADP are picked up and pushed to every open view.
 
 ## Times and the time plugin
 
