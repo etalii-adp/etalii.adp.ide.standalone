@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { render } from "@testing-library/react";
 import { EditorView } from "@codemirror/view";
+import { forceParsing } from "@codemirror/language";
 import { tags, type Tag } from "@lezer/highlight";
 import { parseDocument } from "yaml";
 import { BaseTextEditor } from "@client/editors/BaseTextEditor";
@@ -16,7 +17,11 @@ import { scalarTagOf, yamlScalarColour } from "./yamlScalarColour";
  */
 function mount(text: string) {
   const rendered = render(<BaseTextEditor content={text} onChange={vi.fn()} extensions={[yamlGrammar, yamlScalarColour]} />);
-  EditorView.findFromDOM(rendered.getByTestId("base-text-editor"));
+  // CodeMirror parses for a fixed time slice when the view is made and finishes later, when the
+  // browser is idle. On a cold, slow runner the first editor of the file can be checked before
+  // its tree exists (spec 025, T276), so the parse is completed before anything is asserted.
+  const view = EditorView.findFromDOM(rendered.getByTestId("base-text-editor"))!;
+  forceParsing(view, view.state.doc.length, 10_000);
   return rendered;
 }
 
