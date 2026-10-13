@@ -1,6 +1,7 @@
 using System.Text;
 using EtAlii.Adp.Diagram.AzureDevOpsPipeline;
 using EtAlii.Adp.Diagram.Wire;
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.Editor;
 using EtAlii.Adp.Editor.Wire;
 using EtAlii.Adp.Hierarchy;
@@ -102,7 +103,7 @@ public class YamlEditorResolutionTests(HostFixture host) : IClassFixture<HostFix
 
         return;
 
-        void OnChanged(object? _, PipelineDocumentChangedEventArgs args)
+        void OnChanged(object? _, DocumentChangedEventArgs args)
         {
             if (args.Path.EndsWith("pipeline.yml", StringComparison.Ordinal))
             {

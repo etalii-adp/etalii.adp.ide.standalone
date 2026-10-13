@@ -609,7 +609,7 @@ public class PipelineCommandsTests : IDisposable
 
         // Assert.
         var entry = _store.GetOrLoad(_workspace, path);
-        Assert.True(entry.IsUsable, entry.Error);
+        Assert.True(entry.IsUsable, entry.Unreadable);
         Assert.Equal(["Build", "Test", "Ship"], entry.Model.Stages.Select(stage => stage.Name));
         Assert.Equal(["Test"], entry.Model.Stages.Single(stage => stage.Name == "Ship").DependsOn);
     }

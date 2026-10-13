@@ -22,6 +22,7 @@ public static class ServiceCollectionAddAzurePipelineExtension
 
         // A type that declares a document extension must be able to write an empty one; the
         // host checks that at startup rather than at the first Add.
+        // Its class stays: the empty document names the diagram it was made for.
         services.AddSingleton<IDiagramDocumentFactory, PipelineDocumentFactory>();
 
         // One store for the process: two diagrams on one pipeline have to share its document, or
@@ -37,11 +38,17 @@ public static class ServiceCollectionAddAzurePipelineExtension
         // provider a user reaches - the two never meet otherwise (Requirement 8.2).
         services.AddSingleton<PipelineViewState>();
 
-        services.AddSingleton<IDiagramSessionFactory, PipelineSessionFactory>();
+        services.AddDiagramSession(Diagram.Pipeline.Origin, (provider, opening) => new PipelineSession(
+            opening.WatchId,
+            opening.RootPath,
+            opening.BodyPath,
+            provider.GetRequiredService<IPipelineDocumentStore>(),
+            provider.GetRequiredService<PipelineElementMapper>(),
+            provider.GetRequiredService<PipelineViewState>()));
 
         // The reload seam: an external write to a pipeline reaches the store, and through it
         // every open session (modular-text-editors Requirement 5.3).
-        services.AddSingleton<IDiagramDocumentReloader, PipelineDocumentReloader>();
+        services.AddDiagramDocumentReloader<IPipelineDocumentStore>(Diagram.Pipeline.Origin);
 
         // Making an element selectable is registering this and nothing else; the context service
         // is untouched (Requirement 12.2).

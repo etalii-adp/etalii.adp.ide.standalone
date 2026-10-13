@@ -32,7 +32,7 @@ internal sealed class RenamePipelineElementCommandHandler(IPipelineDocumentStore
         var entry = documents.GetOrLoad(command.RootPath, command.BodyPath);
         if (!entry.IsUsable)
         {
-            return Task.FromResult(CommandResult.Failure(entry.Error));
+            return Task.FromResult(CommandResult.Failure(entry.Unreadable));
         }
 
         var location = PipelineEdits.Locate(entry.Model, command.ElementId);

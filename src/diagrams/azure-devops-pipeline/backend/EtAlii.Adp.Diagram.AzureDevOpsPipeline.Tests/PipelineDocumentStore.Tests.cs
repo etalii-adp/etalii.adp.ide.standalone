@@ -78,8 +78,7 @@ public class PipelineDocumentStoreTests : IDisposable
 
         // Assert.
         Assert.False(entry.IsUsable);
-        Assert.NotEqual(0, entry.ErrorLine);
-        Assert.Contains("Line ", entry.Error);
+        Assert.StartsWith("Line 3: ", entry.Unreadable, StringComparison.Ordinal);
         Assert.Empty(entry.Model.Stages);
     }
 
@@ -144,16 +143,15 @@ public class PipelineDocumentStoreTests : IDisposable
         var store = new PipelineDocumentStore();
         var entry = store.GetOrLoad(_workspace, path);
         new PipelineWriter(entry.Document).SetDisplayName(PipelineEditTarget.For(entry.Model.Stages.Single()), "Build it");
-        var announced = new List<PipelineDocumentChangedEventArgs>();
-        store.Changed += (_, args) => announced.Add(args);
+        var announced = new List<string>();
+        store.Changed += (_, args) => announced.Add(args.Path);
 
         // Act.
         store.Save(_workspace, path, entry);
 
         // Assert.
-        var change = Assert.Single(announced);
-        Assert.Equal(path, change.Path);
-        Assert.Equal("Build it", change.Model.Stages.Single().DisplayName);
+        Assert.Equal([path], announced);
+        Assert.Equal("Build it", store.GetOrLoad(_workspace, path).Model.Stages.Single().DisplayName);
     }
 
     [Fact]
@@ -182,14 +180,14 @@ public class PipelineDocumentStoreTests : IDisposable
         var store = new PipelineDocumentStore();
         store.GetOrLoad(_workspace, path);
         File.WriteAllText(path, Simple.Replace("stage: Build", "stage: Rebuilt", StringComparison.Ordinal));
-        var announced = new List<PipelineDocumentChangedEventArgs>();
-        store.Changed += (_, args) => announced.Add(args);
+        var announced = new List<string>();
+        store.Changed += (_, args) => announced.Add(args.Path);
 
         // Act.
-        store.Reload(_workspace, path);
+        store.Reload(path);
 
         // Assert.
-        Assert.Equal("Rebuilt", Assert.Single(announced).Model.Stages.Single().Name);
+        Assert.Equal([path], announced);
         Assert.Equal("Rebuilt", store.GetOrLoad(_workspace, path).Model.Stages.Single().Name);
     }
 
@@ -205,7 +203,7 @@ public class PipelineDocumentStoreTests : IDisposable
 
         // Act.
         File.WriteAllText(template, "jobs:\n  - job: After\n    steps:\n      - script: x\n");
-        store.Reload(_workspace, path);
+        store.Reload(path);
 
         // Assert.
         Assert.Equal("After", store.GetOrLoad(_workspace, path).Model.Jobs.Single().Name);

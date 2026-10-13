@@ -1,4 +1,5 @@
 using EtAlii.Adp.Context;
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Hierarchy;
 
@@ -136,14 +137,14 @@ public sealed class PipelineContextSourceResolver : IContextSourceResolver
         _documents.Changed += OnChanged;
         return new PipelineChangeUnsubscriber(() => _documents.Changed -= OnChanged);
 
-        void OnChanged(object? sender, PipelineDocumentChangedEventArgs args)
+        void OnChanged(object? sender, DocumentChangedEventArgs args)
         {
             if (!string.Equals(args.Path, bodyPath, StringComparison.OrdinalIgnoreCase))
             {
                 return;
             }
 
-            onChange(Find(args.Model, elementId)?.Path);
+            onChange(Find(_documents.GetOrLoad(rootPath, bodyPath).Model, elementId)?.Path);
         }
     }
 

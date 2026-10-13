@@ -260,7 +260,7 @@ public class PipelineSessionTests : IDisposable
 
         // Act.
         await File.WriteAllTextAsync(path, "stages:\n  - stage: Build\n    jobs:\n      - job: Compile\n        steps:\n          - script: x\n", TestContext.Current.CancellationToken);
-        _store.Reload(_workspace, path);
+        _store.Reload(path);
 
         // Assert.
         Assert.NotNull(pushed);
@@ -280,7 +280,7 @@ public class PipelineSessionTests : IDisposable
 
         // Act.
         await File.WriteAllTextAsync(path, TwoStages + "\n  - stage: Ship\n    jobs:\n      - job: Deploy\n        steps:\n          - script: q\n", TestContext.Current.CancellationToken);
-        _store.Reload(_workspace, path);
+        _store.Reload(path);
 
         // Assert.
         Assert.NotNull(pushed);
