@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.Databricks;
@@ -6,35 +7,25 @@ namespace EtAlii.Adp.Diagram.Databricks;
 /// <param name="BodyPath">The databricks.yml.</param>
 /// <param name="Kind">The resource kind - <c>jobs</c> or <c>pipelines</c>.</param>
 /// <param name="Key">The new resource's key.</param>
-public sealed record AddDatabricksResourceCommand(string BodyPath, string Kind, string Key) : ICommand;
+public sealed record AddDatabricksResourceCommand(string BodyPath, string Kind, string Key) : IDocumentEditCommand;
 
 /// <summary>Renames the bundle.</summary>
-public sealed record SetDatabricksBundleNameCommand(string BodyPath, string Name) : ICommand;
+public sealed record SetDatabricksBundleNameCommand(string BodyPath, string Name) : IDocumentEditCommand;
 
 /// <inheritdoc cref="AddDatabricksResourceCommand" />
 public sealed class AddDatabricksResourceCommandHandler(IDatabricksDocumentStore documents)
-    : ICommandHandler<AddDatabricksResourceCommand>
+    : DatabricksEditHandler<AddDatabricksResourceCommand>(documents)
 {
-    public Task<CommandResult> ExecuteAsync(AddDatabricksResourceCommand command, CancellationToken cancellationToken = default)
-    {
-        ArgumentNullException.ThrowIfNull(command);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        return DatabricksEdits.Run(documents, command.BodyPath, command, entry =>
-            BundleWriter.AddResourceSkeleton(entry.Document, entry.Model.Bundle, command.Kind, command.Key));
-    }
+    /// <inheritdoc />
+    protected override EditOutcome Apply(LineDocument body, DatabricksModel model, AddDatabricksResourceCommand command) => Outcome(
+        BundleWriter.AddResourceSkeleton(body, model.Bundle, command.Kind, command.Key));
 }
 
 /// <inheritdoc cref="SetDatabricksBundleNameCommand" />
 public sealed class SetDatabricksBundleNameCommandHandler(IDatabricksDocumentStore documents)
-    : ICommandHandler<SetDatabricksBundleNameCommand>
+    : DatabricksEditHandler<SetDatabricksBundleNameCommand>(documents)
 {
-    public Task<CommandResult> ExecuteAsync(SetDatabricksBundleNameCommand command, CancellationToken cancellationToken = default)
-    {
-        ArgumentNullException.ThrowIfNull(command);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        return DatabricksEdits.Run(documents, command.BodyPath, command, entry =>
-            BundleWriter.SetName(entry.Document, entry.Model.Bundle, command.Name));
-    }
+    /// <inheritdoc />
+    protected override EditOutcome Apply(LineDocument body, DatabricksModel model, SetDatabricksBundleNameCommand command) => Outcome(
+        BundleWriter.SetName(body, model.Bundle, command.Name));
 }

@@ -1,5 +1,5 @@
 using EtAlii.Adp.Context;
-using EtAlii.Adp.Documents.Wire;
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.Databricks;
@@ -23,7 +23,7 @@ namespace EtAlii.Adp.Diagram.Databricks;
 /// context channel carries one element id per call and nothing else.
 /// </para>
 /// </remarks>
-public sealed class DatabricksContextActionProvider : IContextActionProvider
+public sealed class DatabricksContextActionProvider : DiagramActionProvider<LineDocument, DatabricksModel>
 {
     /// <summary>Rename a task, rewriting every reference with it (Requirement 11.4).</summary>
     public const string RenameTaskActionId = "databricks.rename-task";
@@ -77,60 +77,45 @@ public sealed class DatabricksContextActionProvider : IContextActionProvider
     /// <summary>Start a pipeline update as a mock (Requirement 8.5).</summary>
     public const string SimulatedUpdateActionId = "databricks.simulated.pipeline-update";
 
-    private readonly IHistoryStackStore _historyStacks;
-    private readonly IDatabricksDocumentStore _documents;
-
     public DatabricksContextActionProvider(IHistoryStackStore historyStacks, IDatabricksDocumentStore documents)
+        : base(historyStacks, documents)
     {
-        ArgumentNullException.ThrowIfNull(historyStacks);
-        ArgumentNullException.ThrowIfNull(documents);
-
-        _historyStacks = historyStacks;
-        _documents = documents;
     }
 
     /// <inheritdoc />
-    public ContextScope Scope => ContextScope.DiagramElement;
+    /// <remarks>Another type's element is answered with nothing rather than by parsing another notation's file.</remarks>
+    protected override bool IsBody(string path) => DatabricksSelection.CouldBeFamilyFile(path);
 
     /// <inheritdoc />
-    public ValueTask<IReadOnlyList<ContextActionGroupDefinition>> DiscoverAsync(ContextTarget target, CancellationToken cancellationToken)
+    protected override IReadOnlyList<ContextActionGroupDefinition> Discover(DocumentEntry<LineDocument, DatabricksModel> entry, string elementId)
     {
-        ArgumentNullException.ThrowIfNull(target);
-        cancellationToken.ThrowIfCancellationRequested();
+        ArgumentNullException.ThrowIfNull(entry);
 
-        if (!DatabricksSelection.CouldBeFamilyFile(target.ResolvedFullPath))
-        {
-            // Another type's element; a provider consulted for every element in its scope
-            // answers with nothing rather than parsing another notation's file.
-            return Result([]);
-        }
-
-        var entry = _documents.GetOrLoad(target.ResolvedFullPath);
         if (!entry.IsUsable)
         {
             // Requirement 2.3: a file that does not parse withholds every edit.
-            return Result([]);
+            return [];
         }
 
-        if (DatabricksSelection.TaskOf(entry.Model, target.ElementId) is { } selected)
+        if (DatabricksSelection.TaskOf(entry.Model, elementId) is { } selected)
         {
-            return Result(ForTask(selected.Task));
+            return ForTask(selected.Task);
         }
 
-        if (DatabricksSelection.TryEdge(target.ElementId, out _, out _))
+        if (DatabricksSelection.TryEdge(elementId, out _, out _))
         {
-            return Result(
+            return
             [
                 new ContextActionGroupDefinition(
                 [
                     new ContextActionDefinition(RemoveEdgeActionId, "Remove dependency", "mdi-vector-polyline-remove", new ContextShortcutDefinition("Delete")),
                 ]),
-            ]);
+            ];
         }
 
-        if (DatabricksSelection.IsBundle(target.ElementId))
+        if (DatabricksSelection.IsBundle(elementId))
         {
-            return Result(
+            return
             [
                 new ContextActionGroupDefinition(
                 [
@@ -141,24 +126,24 @@ public sealed class DatabricksContextActionProvider : IContextActionProvider
                     new ContextActionDefinition($"{AddResourceActionPrefix}jobs", "Add job resource…", "mdi-transit-connection-horizontal"),
                     new ContextActionDefinition($"{AddResourceActionPrefix}pipelines", "Add pipeline resource…", "mdi-pipe"),
                 ]),
-            ]);
+            ];
         }
 
-        if (DatabricksSelection.TargetOf(entry.Model, target.ElementId) is not null)
+        if (DatabricksSelection.TargetOf(entry.Model, elementId) is not null)
         {
             // The mocked domain action on a target frame (Requirement 8.4).
-            return Result(
+            return
             [
                 new ContextActionGroupDefinition(
                 [
                     new ContextActionDefinition(SimulatedDeployActionId, "Deploy here (simulated)", "mdi-rocket-launch-outline"),
                 ]),
-            ]);
+            ];
         }
 
-        if (DatabricksSelection.IsPipelineNode(target.ElementId))
+        if (DatabricksSelection.IsPipelineNode(elementId))
         {
-            return Result(
+            return
             [
                 new ContextActionGroupDefinition(
                 [
@@ -169,25 +154,25 @@ public sealed class DatabricksContextActionProvider : IContextActionProvider
                 [
                     new ContextActionDefinition(SimulatedUpdateActionId, "Start update (simulated)", "mdi-play-outline"),
                 ]),
-            ]);
+            ];
         }
 
-        if (DatabricksSelection.LibraryOf(entry.Model, target.ElementId) is not null)
+        if (DatabricksSelection.LibraryOf(entry.Model, elementId) is not null)
         {
-            return Result(
+            return
             [
                 new ContextActionGroupDefinition(
                 [
                     new ContextActionDefinition(RemoveLibraryActionId, "Remove library", "mdi-delete-outline", new ContextShortcutDefinition("Delete")),
                 ]),
-            ]);
+            ];
         }
 
-        if (DatabricksNewPlacement.IsPlacement(target.ElementId))
+        if (DatabricksNewPlacement.IsPlacement(elementId))
         {
             // Empty canvas discovers what can be dropped or added there, because executing an
             // action by id only finds actions its target discovers.
-            return Result(
+            return
             [
                 new ContextActionGroupDefinition(
                 [
@@ -195,26 +180,30 @@ public sealed class DatabricksContextActionProvider : IContextActionProvider
                     new ContextActionDefinition($"{AddTaskActionPrefix}python", "Add Python task here", "mdi-language-python"),
                     new ContextActionDefinition($"{AddTaskActionPrefix}condition", "Add condition task here", "mdi-call-split"),
                 ]),
-            ]);
+            ];
         }
 
-        if (DatabricksRelationGesture.TryParse(target.ElementId, out _, out _))
+        if (DatabricksRelationGesture.TryParse(elementId, out _, out _))
         {
-            return Result(
+            return
             [
                 new ContextActionGroupDefinition(
                     [new ContextActionDefinition(ConnectActionId, "Depend on", "mdi-ray-start-arrow")]),
-            ]);
+            ];
         }
 
-        return Result([]);
+        return [];
     }
 
     /// <inheritdoc />
-    public async ValueTask<ContextExecutionResult> ExecuteAsync(ContextTarget target, string actionId, CancellationToken cancellationToken)
+    protected override async ValueTask<ContextExecutionResult> RunAsync(
+        ContextTarget target,
+        DocumentEntry<LineDocument, DatabricksModel> entry,
+        string actionId,
+        CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(target);
-        cancellationToken.ThrowIfCancellationRequested();
+        ArgumentNullException.ThrowIfNull(entry);
 
         if (actionId.Contains(SimulatedMarker, StringComparison.Ordinal))
         {
@@ -223,7 +212,6 @@ public sealed class DatabricksContextActionProvider : IContextActionProvider
             return new ContextExecutionCompleted();
         }
 
-        var entry = _documents.GetOrLoad(target.ResolvedFullPath);
         var task = DatabricksSelection.TaskOf(entry.Model, target.ElementId);
 
         switch (actionId)
@@ -246,20 +234,18 @@ public sealed class DatabricksContextActionProvider : IContextActionProvider
                 // runs. An untouched task needs no ceremony - and no ceremony means the removal
                 // happens HERE, because a Completed execution never reaches the commit leg.
                 var going = selected.Task.DependsOn.Count + JobWriter.ReferencesTo(selected.Job, selected.Task.Key).Count;
-                if (going == 0)
-                {
-                    return await DispatchAsync(target, new RemoveDatabricksTaskCommand(
-                        target.ResolvedFullPath, selected.Job.Key, selected.Task.Key), cancellationToken);
-                }
-
-                return new ContextExecutionRequiresConfirmation(new ContextConfirmationRequest(
-                    "Remove task",
-                    "mdi-delete-outline",
-                    going == 1
-                        ? "Removing this task also removes the 1 dependency touching it."
-                        : $"Removing this task also removes the {going} dependencies touching it.",
-                    "Remove",
-                    Danger: true));
+                return await RemoveAsync(
+                    target,
+                    new RemoveDatabricksTaskCommand(target.ResolvedFullPath, selected.Job.Key, selected.Task.Key),
+                    going == 0
+                        ? null
+                        : new RemovalConfirmation(
+                            "Remove task",
+                            going == 1
+                                ? "Removing this task also removes the 1 dependency touching it."
+                                : $"Removing this task also removes the {going} dependencies touching it.",
+                            "Remove"),
+                    cancellationToken);
             }
 
             case var _ when actionId.StartsWith(DisconnectActionPrefix, StringComparison.Ordinal) && task is { } selected:
@@ -333,99 +319,73 @@ public sealed class DatabricksContextActionProvider : IContextActionProvider
     }
 
     /// <inheritdoc />
-    public ValueTask<ContextValidationResult> ValidateAsync(ContextTarget target, string actionId, string value, CancellationToken cancellationToken)
+    /// <remarks>The writers refuse on exactly these terms at commit; validating here lets the dialog refuse first (Requirement 6.4).</remarks>
+    protected override ContextValidationResult Validate(ContextTarget target, string actionId, string value)
     {
         ArgumentNullException.ThrowIfNull(target);
-        cancellationToken.ThrowIfCancellationRequested();
+        ArgumentNullException.ThrowIfNull(value);
 
-        // The writers refuse on exactly these terms at commit; validating here lets the dialog
-        // refuse first (Requirement 6.4).
         if (actionId == RenameTaskActionId || actionId.StartsWith(AddTaskActionPrefix, StringComparison.Ordinal))
         {
             if (value.Trim().Length == 0)
             {
-                return ValueTask.FromResult(ContextValidationResult.Rejected("A task needs a key."));
+                return ContextValidationResult.Rejected("A task needs a key.");
             }
 
-            var entry = _documents.GetOrLoad(target.ResolvedFullPath);
-            if (entry.Model.Jobs.SelectMany(job => job.Tasks).Any(task => task.Key == value.Trim()))
+            if (Load(target).Model.Jobs.SelectMany(job => job.Tasks).Any(task => task.Key == value.Trim()))
             {
-                return ValueTask.FromResult(ContextValidationResult.Rejected($"A task named '{value.Trim()}' is already there."));
+                return ContextValidationResult.Rejected($"A task named '{value.Trim()}' is already there.");
             }
         }
 
-        return ValueTask.FromResult(ContextValidationResult.Accepted);
+        return ContextValidationResult.Accepted;
     }
 
     /// <inheritdoc />
-    public async ValueTask<ContextCommitResult> CommitAsync(
-        ContextTarget target,
-        string actionId,
-        string value,
-        string text,
-        CancellationToken cancellationToken)
+    protected override ICommand? CommitCommand(ContextTarget target, DatabricksModel model, string actionId, string value)
     {
         ArgumentNullException.ThrowIfNull(target);
-        _ = text;
+        ArgumentNullException.ThrowIfNull(model);
+        ArgumentNullException.ThrowIfNull(value);
 
-        var command = CommandFor(target, actionId, value.Trim());
-        if (command is null)
-        {
-            return ContextCommitResult.Failed($"'{actionId}' does not apply to this selection.");
-        }
-
-        var result = await _historyStacks.Get(target.RootPath).ExecuteAsync(command, cancellationToken);
-        return result.IsSuccess ? ContextCommitResult.Succeeded : ContextCommitResult.Failed(result.Error);
-    }
-
-    private ICommand? CommandFor(ContextTarget target, string actionId, string value)
-    {
+        var trimmed = value.Trim();
         var body = target.ResolvedFullPath;
-        var entry = _documents.GetOrLoad(body);
-        var task = DatabricksSelection.TaskOf(entry.Model, target.ElementId);
+        var task = DatabricksSelection.TaskOf(model, target.ElementId);
 
         if (actionId.StartsWith(AddResourceActionPrefix, StringComparison.Ordinal))
         {
-            return new AddDatabricksResourceCommand(body, actionId[AddResourceActionPrefix.Length..], value);
+            return new AddDatabricksResourceCommand(body, actionId[AddResourceActionPrefix.Length..], trimmed);
         }
 
         if (actionId.StartsWith(AddLibraryActionPrefix, StringComparison.Ordinal))
         {
-            var pipeline = entry.Model.Pipelines.FirstOrDefault();
+            var pipeline = model.Pipelines.FirstOrDefault();
             return new InsertDatabricksLibraryCommand(
-                body, pipeline?.Key ?? "", actionId[AddLibraryActionPrefix.Length..], value);
+                body, pipeline?.Key ?? "", actionId[AddLibraryActionPrefix.Length..], trimmed);
         }
 
         if (actionId.StartsWith(AddTaskActionPrefix, StringComparison.Ordinal))
         {
-            var job = entry.Model.Jobs.FirstOrDefault();
+            var job = model.Jobs.FirstOrDefault();
             var taskType = actionId[AddTaskActionPrefix.Length..];
             return job is null
                 ? null
-                : new InsertDatabricksTaskCommand(body, job.Key, value, taskType, SourceFor(taskType, value));
+                : new InsertDatabricksTaskCommand(body, job.Key, trimmed, taskType, SourceFor(taskType, trimmed));
         }
 
         return actionId switch
         {
             RenameTaskActionId when task is { } selected =>
-                new RenameDatabricksTaskCommand(body, selected.Job.Key, selected.Task.Key, value),
+                new RenameDatabricksTaskCommand(body, selected.Job.Key, selected.Task.Key, trimmed),
             SetRunIfActionId when task is { } selected =>
-                new SetDatabricksRunIfCommand(body, selected.Job.Key, selected.Task.Key, value),
+                new SetDatabricksRunIfCommand(body, selected.Job.Key, selected.Task.Key, trimmed),
             AssignClusterActionId when task is { } selected =>
-                new SetDatabricksClusterCommand(body, selected.Job.Key, selected.Task.Key, value),
+                new SetDatabricksClusterCommand(body, selected.Job.Key, selected.Task.Key, trimmed),
             RemoveTaskActionId when task is { } selected =>
                 new RemoveDatabricksTaskCommand(body, selected.Job.Key, selected.Task.Key),
-            RenameBundleActionId => new SetDatabricksBundleNameCommand(body, value),
+            RenameBundleActionId => new SetDatabricksBundleNameCommand(body, trimmed),
             _ => null,
         };
-    }
-
-    private async ValueTask<ContextExecutionResult> DispatchAsync(ContextTarget target, ICommand command, CancellationToken cancellationToken)
-    {
-        var result = await _historyStacks.Get(target.RootPath).ExecuteAsync(command, cancellationToken);
-        return result.IsSuccess
-            ? new ContextExecutionCompleted()
-            : new ContextExecutionFailed(result.Error);
     }
 
     private static IReadOnlyList<ContextActionGroupDefinition> ForTask(JobTask task)
@@ -482,7 +442,4 @@ public sealed class DatabricksContextActionProvider : IContextActionProvider
         "python" => $"scripts/{key}.py",
         _ => key,
     };
-
-    private static ValueTask<IReadOnlyList<ContextActionGroupDefinition>> Result(IReadOnlyList<ContextActionGroupDefinition> groups) =>
-        ValueTask.FromResult(groups);
 }

@@ -1,5 +1,5 @@
 using EtAlii.Adp.Context;
-using EtAlii.Adp.Documents.Wire;
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.Databricks;
@@ -15,7 +15,7 @@ namespace EtAlii.Adp.Diagram.Databricks;
 /// backend (Requirement 8). Every write goes through the standard SetProperty path and the
 /// project's history - never written by the panel (Requirement 10.5).
 /// </remarks>
-public sealed class DatabricksContextPropertyProvider : IContextPropertyProvider
+public sealed class DatabricksContextPropertyProvider : DiagramPropertyProvider<LineDocument, DatabricksModel>
 {
     /// <summary>A task's key, read-only here: renaming rewrites references, so the menu owns it.</summary>
     public const string TaskKeyProperty = "databricks.task-key";
@@ -52,37 +52,22 @@ public sealed class DatabricksContextPropertyProvider : IContextPropertyProvider
     private const string WorkspacePlaceholder = "Not connected — a placeholder for the real workspace connection.";
     private const string SimulationIsClientSide = "Simulated runs play on the canvas and never touch the file.";
 
-    private readonly IHistoryStackStore _historyStacks;
-    private readonly IDatabricksDocumentStore _documents;
-
     public DatabricksContextPropertyProvider(IHistoryStackStore historyStacks, IDatabricksDocumentStore documents)
+        : base(historyStacks, documents)
     {
-        ArgumentNullException.ThrowIfNull(historyStacks);
-        ArgumentNullException.ThrowIfNull(documents);
-
-        _historyStacks = historyStacks;
-        _documents = documents;
     }
 
     /// <inheritdoc />
-    public ContextScope Scope => ContextScope.DiagramElement;
+    protected override bool IsBody(string path) => DatabricksSelection.CouldBeFamilyFile(path);
 
     /// <inheritdoc />
-    public ValueTask<IReadOnlyList<ContextPropertyDefinition>> DescribeAsync(ContextTarget target, CancellationToken cancellationToken)
+    protected override IReadOnlyList<ContextPropertyDefinition> Describe(DocumentEntry<LineDocument, DatabricksModel> entry, string elementId)
     {
-        ArgumentNullException.ThrowIfNull(target);
-        cancellationToken.ThrowIfCancellationRequested();
+        ArgumentNullException.ThrowIfNull(entry);
 
-        if (!DatabricksSelection.CouldBeFamilyFile(target.ResolvedFullPath))
+        if (DatabricksSelection.TaskOf(entry.Model, elementId) is { } selected)
         {
-            return Rows([]);
-        }
-
-        var entry = _documents.GetOrLoad(target.ResolvedFullPath);
-
-        if (DatabricksSelection.TaskOf(entry.Model, target.ElementId) is { } selected)
-        {
-            return Rows(
+            return
             [
                 new ContextPropertyDefinition(TaskKeyProperty, "Key", selected.Task.Key, ReadOnlyReason: RenameViaMenu, Group: IdentityGroup),
                 new ContextPropertyDefinition(TaskTypeProperty, "Type", selected.Task.Type, ReadOnlyReason: TypeIsTheFile, Group: IdentityGroup),
@@ -90,89 +75,79 @@ public sealed class DatabricksContextPropertyProvider : IContextPropertyProvider
                 new ContextPropertyDefinition(RunIfProperty, "Run if", selected.Task.RunIf, Group: ExecutionGroup),
                 new ContextPropertyDefinition(ClusterProperty, "Cluster", selected.Task.ClusterKey, Group: ExecutionGroup),
                 .. Placeholders(),
-            ]);
+            ];
         }
 
-        if (DatabricksSelection.IsBundle(target.ElementId))
+        if (DatabricksSelection.IsBundle(elementId))
         {
-            return Rows(
+            return
             [
                 new ContextPropertyDefinition(BundleNameProperty, "Name", entry.Model.Bundle.Name, Group: IdentityGroup),
                 .. Placeholders(),
-            ]);
+            ];
         }
 
-        if (DatabricksSelection.IsPipelineNode(target.ElementId) && entry.Model.Pipelines.FirstOrDefault() is { } pipeline)
+        if (DatabricksSelection.IsPipelineNode(elementId) && entry.Model.Pipelines.FirstOrDefault() is { } pipeline)
         {
-            return Rows(
+            return
             [
                 new ContextPropertyDefinition($"{PipelineScalarPrefix}name", "Name", pipeline.Name, Group: IdentityGroup),
                 new ContextPropertyDefinition($"{PipelineScalarPrefix}catalog", "Catalog", pipeline.Catalog, Group: IdentityGroup),
                 new ContextPropertyDefinition($"{PipelineScalarPrefix}schema", "Schema", pipeline.Schema, Group: IdentityGroup),
                 new ContextPropertyDefinition($"{PipelineScalarPrefix}channel", "Channel", pipeline.Channel, Group: ExecutionGroup),
                 .. Placeholders(),
-            ]);
+            ];
         }
 
-        if (DatabricksSelection.TargetOf(entry.Model, target.ElementId) is { } frame)
+        if (DatabricksSelection.TargetOf(entry.Model, elementId) is { } frame)
         {
-            return Rows(
+            return
             [
                 new ContextPropertyDefinition(TaskKeyProperty, "Target", frame.Name, ReadOnlyReason: "The target's key is the file's structure.", Group: IdentityGroup),
                 new ContextPropertyDefinition(TaskTypeProperty, "Mode", frame.Mode, ReadOnlyReason: "Change the mode in the file.", Group: IdentityGroup),
                 .. Placeholders(),
-            ]);
+            ];
         }
 
-        return Rows([]);
+        return [];
     }
 
     /// <inheritdoc />
-    public async ValueTask<ContextPropertyResult> SetAsync(
-        ContextTarget target,
-        string propertyId,
-        string value,
-        CancellationToken cancellationToken)
+    /// <remarks>Through the project's history and out through the delta stream (Requirement 10.5).</remarks>
+    protected override DiagramPropertyChange Change(ContextTarget target, DatabricksModel model, string propertyId, string value)
     {
         ArgumentNullException.ThrowIfNull(target);
+        ArgumentNullException.ThrowIfNull(model);
+        ArgumentNullException.ThrowIfNull(value);
 
-        var command = CommandFor(target, propertyId, value.Trim());
-        if (command is null)
-        {
-            return ContextPropertyResult.Failure($"'{propertyId}' cannot be edited on this selection.");
-        }
-
-        // Through the project's history and out through the delta stream (Requirement 10.5).
-        var result = await _historyStacks.Get(target.RootPath).ExecuteAsync(command, cancellationToken);
-        return result.IsSuccess ? ContextPropertyResult.Success : ContextPropertyResult.Failure(result.Error);
-    }
-
-    private ICommand? CommandFor(ContextTarget target, string propertyId, string value)
-    {
+        var trimmed = value.Trim();
         var body = target.ResolvedFullPath;
-        var entry = _documents.GetOrLoad(body);
-
+        ICommand? command;
         if (propertyId.StartsWith(PipelineScalarPrefix, StringComparison.Ordinal)
             && DatabricksSelection.IsPipelineNode(target.ElementId))
         {
-            var pipeline = entry.Model.Pipelines.FirstOrDefault();
-            return pipeline is null
-                ? null
-                : new SetDatabricksPipelineScalarCommand(
-                    body, pipeline.Key, propertyId[PipelineScalarPrefix.Length..], value);
+            command = model.Pipelines.FirstOrDefault() is { } pipeline
+                ? new SetDatabricksPipelineScalarCommand(body, pipeline.Key, propertyId[PipelineScalarPrefix.Length..], trimmed)
+                : null;
+        }
+        else
+        {
+            var task = DatabricksSelection.TaskOf(model, target.ElementId);
+            command = propertyId switch
+            {
+                RunIfProperty when task is { } selected =>
+                    new SetDatabricksRunIfCommand(body, selected.Job.Key, selected.Task.Key, trimmed),
+                ClusterProperty when task is { } selected =>
+                    new SetDatabricksClusterCommand(body, selected.Job.Key, selected.Task.Key, trimmed),
+                BundleNameProperty when DatabricksSelection.IsBundle(target.ElementId) =>
+                    new SetDatabricksBundleNameCommand(body, trimmed),
+                _ => null,
+            };
         }
 
-        var task = DatabricksSelection.TaskOf(entry.Model, target.ElementId);
-        return propertyId switch
-        {
-            RunIfProperty when task is { } selected =>
-                new SetDatabricksRunIfCommand(body, selected.Job.Key, selected.Task.Key, value),
-            ClusterProperty when task is { } selected =>
-                new SetDatabricksClusterCommand(body, selected.Job.Key, selected.Task.Key, value),
-            BundleNameProperty when DatabricksSelection.IsBundle(target.ElementId) =>
-                new SetDatabricksBundleNameCommand(body, value),
-            _ => null,
-        };
+        return command is null
+            ? DiagramPropertyChange.Refused($"'{propertyId}' cannot be edited on this selection.")
+            : DiagramPropertyChange.By(command);
     }
 
     /// <summary>The two rows every selection wears; see the class remarks.</summary>
@@ -181,7 +156,4 @@ public sealed class DatabricksContextPropertyProvider : IContextPropertyProvider
         new(WorkspaceProperty, "Workspace connection", "Not connected", ReadOnlyReason: WorkspacePlaceholder, Group: WorkspaceGroup),
         new(LastSimulatedRunProperty, "Last simulated run", "", ReadOnlyReason: SimulationIsClientSide, Group: WorkspaceGroup),
     ];
-
-    private static ValueTask<IReadOnlyList<ContextPropertyDefinition>> Rows(IReadOnlyList<ContextPropertyDefinition> rows) =>
-        ValueTask.FromResult(rows);
 }

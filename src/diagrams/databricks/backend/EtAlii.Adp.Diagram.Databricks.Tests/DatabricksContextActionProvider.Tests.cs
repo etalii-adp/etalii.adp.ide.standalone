@@ -150,6 +150,41 @@ public class DatabricksContextActionProviderTests : IDisposable
     }
 
     [Fact]
+    public async Task RemovingAnUntouchedTask_AsksNothing_AndIsOneUndo()
+    {
+        // Arrange: a task no edge touches.
+        var body = IoPath.Combine(_root, "solo.yml");
+        await File.WriteAllTextAsync(
+            body,
+            "resources:\r\n  jobs:\r\n    solo:\r\n      tasks:\r\n        - task_key: lonely\r\n          notebook_task:\r\n            notebook_path: notebooks/lonely\r\n",
+            TestContext.Current.CancellationToken);
+        var before = await File.ReadAllBytesAsync(body, TestContext.Current.CancellationToken);
+
+        // Act: no ceremony, so the removal happens at execution - a Completed execution never
+        // reaches the commit leg.
+        var execution = await _actions.ExecuteAsync(Target(body, "task:lonely"), DatabricksContextActionProvider.RemoveTaskActionId, TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.IsType<ContextExecutionCompleted>(execution);
+        Assert.DoesNotContain("lonely", await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken), StringComparison.Ordinal);
+        await _history.UndoAsync(TestContext.Current.CancellationToken);
+        Assert.Equal(before, await File.ReadAllBytesAsync(body, TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task AFileThatDoesNotParse_OffersNoEdit()
+    {
+        // Arrange.
+        var body = CopyFixture("broken.yml");
+
+        // Act.
+        var ids = await ActionIds(body, "bundle");
+
+        // Assert: Requirement 2.3 - nothing is offered on a file whose content is unknown.
+        Assert.Empty(ids);
+    }
+
+    [Fact]
     public async Task Rename_RewritesEveryReference_AndRedoRedoes()
     {
         // Arrange.
