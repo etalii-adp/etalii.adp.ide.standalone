@@ -1,6 +1,5 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
-using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.Sankey;
@@ -14,13 +13,9 @@ namespace EtAlii.Adp.Diagram.Sankey;
 /// <b>The ids are the client's</b>, stated once in the client module's <c>sankeyIds.ts</c>; this
 /// provider answers exactly those strings.
 /// </para>
-/// <para>
-/// <b>Every action that needs no input dispatches here, in <see cref="ExecuteAsync"/></b>: a
-/// Completed execution never reaches the commit leg, so answering Completed without dispatching
-/// would do nothing at all.
-/// </para>
 /// </remarks>
-public sealed class SankeyContextActionProvider : IContextActionProvider
+public sealed class SankeyContextActionProvider(IHistoryStackStore historyStacks, ISankeyDocumentStore documents)
+    : DiagramActionProvider<LineDocument, SankeyModel>(historyStacks, documents)
 {
     /// <summary>Add a node where the canvas was dropped on or clicked.</summary>
     public const string AddActionId = "sankey.add";
@@ -49,37 +44,18 @@ public sealed class SankeyContextActionProvider : IContextActionProvider
     /// <summary>Reorder every column's nodes so the bands cross least (<see cref="SankeyArrangement"/>).</summary>
     public const string ArrangeActionId = "sankey.arrange";
 
-    private readonly IHistoryStackStore _historyStacks;
-    private readonly ISankeyDocumentStore _documents;
-
-    public SankeyContextActionProvider(IHistoryStackStore historyStacks, ISankeyDocumentStore documents)
-    {
-        ArgumentNullException.ThrowIfNull(historyStacks);
-        ArgumentNullException.ThrowIfNull(documents);
-        _historyStacks = historyStacks;
-        _documents = documents;
-    }
+    /// <inheritdoc />
+    protected override bool IsBody(string path) => Diagram.IsBody(path);
 
     /// <inheritdoc />
-    public ContextScope Scope => ContextScope.DiagramElement;
-
-    /// <inheritdoc />
-    public ValueTask<IReadOnlyList<ContextActionGroupDefinition>> DiscoverAsync(ContextTarget target, CancellationToken cancellationToken)
+    protected override IReadOnlyList<ContextActionGroupDefinition> Discover(DocumentEntry<LineDocument, SankeyModel> entry, string elementId)
     {
-        ArgumentNullException.ThrowIfNull(target);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        if (!Diagram.IsBody(target.ResolvedFullPath))
-        {
-            return Result([]);
-        }
-
-        var model = _documents.GetOrLoad(target.ResolvedFullPath).Model;
+        var model = entry.Model;
         var thickness = Thickness(model);
 
-        if (model.NodeOf(target.ElementId) is not null)
+        if (model.NodeOf(elementId) is not null)
         {
-            return Result(
+            return
             [
                 new ContextActionGroupDefinition(
                 [
@@ -87,13 +63,13 @@ public sealed class SankeyContextActionProvider : IContextActionProvider
                     new ContextActionDefinition(RemoveActionId, "Remove", "mdi-delete-outline", new ContextShortcutDefinition("Delete")),
                 ]),
                 thickness,
-            ]);
+            ];
         }
 
-        if (model.FlowOf(target.ElementId) is { } flow)
+        if (model.FlowOf(elementId) is { } flow)
         {
             var atZero = (flow.Value ?? 0) <= 0;
-            return Result(
+            return
             [
                 new ContextActionGroupDefinition(
                 [
@@ -105,34 +81,33 @@ public sealed class SankeyContextActionProvider : IContextActionProvider
                     new ContextActionDefinition(RemoveActionId, "Remove flow", "mdi-vector-polyline-remove", new ContextShortcutDefinition("Delete")),
                 ]),
                 thickness,
-            ]);
+            ];
         }
 
-        // A drop, a background menu and a finished gesture each discover what may be executed
-        // against them, because executing an action by id only finds actions its target discovers.
-        if (GestureIds.TryParsePlacement(target.ElementId, out _, out _))
+        if (GestureIds.TryParsePlacement(elementId, out _, out _))
         {
-            return Result(
+            return
             [
                 new ContextActionGroupDefinition([new ContextActionDefinition(AddActionId, "Add node here", "mdi-plus")]),
                 thickness,
-            ]);
+            ];
         }
 
-        return GestureIds.TryParseRelation(target.ElementId, out _, out _)
-            ? Result([new ContextActionGroupDefinition([new ContextActionDefinition(ConnectActionId, "Add flow", "mdi-arrow-right-thin")])])
-            : Result([]);
+        return GestureIds.TryParseRelation(elementId, out _, out _)
+            ? [new ContextActionGroupDefinition([new ContextActionDefinition(ConnectActionId, "Add flow", "mdi-arrow-right-thin")])]
+            : [];
     }
 
     /// <inheritdoc />
-    public async ValueTask<ContextExecutionResult> ExecuteAsync(ContextTarget target, string actionId, CancellationToken cancellationToken)
+    protected override async ValueTask<ContextExecutionResult> RunAsync(
+        ContextTarget target,
+        DocumentEntry<LineDocument, SankeyModel> entry,
+        string actionId,
+        CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(target);
-        cancellationToken.ThrowIfCancellationRequested();
-
         var body = target.ResolvedFullPath;
         var id = target.ElementId;
-        var model = _documents.GetOrLoad(body).Model;
+        var model = entry.Model;
         var node = model.NodeOf(id);
         var flow = model.FlowOf(id);
 
@@ -163,16 +138,15 @@ public sealed class SankeyContextActionProvider : IContextActionProvider
             case RemoveActionId when node is not null:
             {
                 var going = model.Flows.Count(candidate => candidate.From == node.Id || candidate.To == node.Id);
-                return going == 0
-                    ? await DispatchAsync(target, new RemoveSankeyEntryCommand(body, id), cancellationToken)
-                    : new ContextExecutionRequiresConfirmation(new ContextConfirmationRequest(
+                var confirmation = going == 0
+                    ? null
+                    : new RemovalConfirmation(
                         "Remove",
-                        "mdi-delete-outline",
                         going == 1
                             ? "Removing this node also removes the 1 flow to or from it."
                             : $"Removing this node also removes the {going} flows to or from it.",
-                        "Remove",
-                        Danger: true));
+                        "Remove");
+                return await RemoveAsync(target, new RemoveSankeyEntryCommand(body, id), confirmation, cancellationToken);
             }
 
             case RemoveActionId when flow is not null:
@@ -187,46 +161,18 @@ public sealed class SankeyContextActionProvider : IContextActionProvider
     }
 
     /// <inheritdoc />
-    public ValueTask<ContextValidationResult> ValidateAsync(ContextTarget target, string actionId, string value, CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(target);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        return ValueTask.FromResult(actionId == RenameActionId && string.IsNullOrWhiteSpace(value)
+    protected override ContextValidationResult Validate(string actionId, string value) =>
+        actionId == RenameActionId && string.IsNullOrWhiteSpace(value)
             ? ContextValidationResult.Rejected("A node needs a name.")
-            : ContextValidationResult.Accepted);
-    }
+            : ContextValidationResult.Accepted;
 
     /// <inheritdoc />
-    public async ValueTask<ContextCommitResult> CommitAsync(
-        ContextTarget target,
-        string actionId,
-        string value,
-        string text,
-        CancellationToken cancellationToken)
+    protected override ICommand? CommitCommand(ContextTarget target, SankeyModel model, string actionId, string value) => actionId switch
     {
-        ArgumentNullException.ThrowIfNull(target);
-        _ = text;
-
-        var body = target.ResolvedFullPath;
-        var id = target.ElementId;
-        var model = _documents.GetOrLoad(body).Model;
-
-        ICommand? command = actionId switch
-        {
-            RenameActionId when model.NodeOf(id) is not null => new SetSankeyPropertyCommand(body, id, SankeyKeys.Name, value),
-            RemoveActionId when model.NodeOf(id) is not null => new RemoveSankeyEntryCommand(body, id),
-            _ => null,
-        };
-
-        if (command is null)
-        {
-            return ContextCommitResult.Failed($"'{actionId}' does not apply to this selection.");
-        }
-
-        var result = await _historyStacks.Get(target.RootPath).ExecuteAsync(command, cancellationToken);
-        return result.IsSuccess ? ContextCommitResult.Succeeded : ContextCommitResult.Failed(result.Error);
-    }
+        RenameActionId when model.NodeOf(target.ElementId) is not null => new SetSankeyPropertyCommand(target.ResolvedFullPath, target.ElementId, SankeyKeys.Name, value),
+        RemoveActionId when model.NodeOf(target.ElementId) is not null => new RemoveSankeyEntryCommand(target.ResolvedFullPath, target.ElementId),
+        _ => null,
+    };
 
     /// <summary>
     /// What applies to the whole diagram, offered wherever the reader is so it stays in the ribbon:
@@ -244,13 +190,4 @@ public sealed class SankeyContextActionProvider : IContextActionProvider
             ThinnerActionId, "Thinner bands", "mdi-arrow-collapse-vertical", null,
             model.Settings.Thickness > SankeyGeometry.MinimumScale, "The bands are already as thin as they go."),
     ]);
-
-    private async ValueTask<ContextExecutionResult> DispatchAsync(ContextTarget target, ICommand command, CancellationToken cancellationToken)
-    {
-        var result = await _historyStacks.Get(target.RootPath).ExecuteAsync(command, cancellationToken);
-        return result.IsSuccess ? new ContextExecutionCompleted() : new ContextExecutionFailed(result.Error);
-    }
-
-    private static ValueTask<IReadOnlyList<ContextActionGroupDefinition>> Result(IReadOnlyList<ContextActionGroupDefinition> groups) =>
-        ValueTask.FromResult(groups);
 }
