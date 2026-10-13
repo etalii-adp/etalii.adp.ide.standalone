@@ -25,6 +25,9 @@ export function scalarTagOf(text: string): Tag {
   return core.find((rule) => rule.pattern.test(text))?.tag ?? tags.string;
 }
 
+/** A standard tag decides the type whatever the text reads as: `!!str 5` is a string. */
+const standard: Record<string, Tag> = { "!!str": tags.string, "!!int": tags.number, "!!float": tags.number, "!!bool": tags.bool, "!!null": tags.null };
+
 function decorate(view: EditorView): DecorationSet {
   const builder = new RangeSetBuilder<Decoration>();
   const tree = syntaxTree(view.state);
@@ -38,7 +41,9 @@ function decorate(view: EditorView): DecorationSet {
         if (node.name !== "Literal" || node.from <= last || node.node.parent?.name === "Key") {
           return;
         }
-        const style = editorHighlight.style([scalarTagOf(view.state.sliceDoc(node.from, node.to).trim())]);
+        // Under a tag of its own the type is unknown, so the text decides, as it does untagged.
+        const tag = node.node.prevSibling?.name === "Tag" ? standard[view.state.sliceDoc(node.node.prevSibling.from, node.node.prevSibling.to)] : undefined;
+        const style = editorHighlight.style([tag ?? scalarTagOf(view.state.sliceDoc(node.from, node.to).trim())]);
         if (style) {
           builder.add(node.from, node.to, Decoration.mark({ class: style }));
         }

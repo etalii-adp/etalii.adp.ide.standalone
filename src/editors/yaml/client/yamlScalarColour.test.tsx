@@ -49,6 +49,24 @@ describe("plain scalars", () => {
     expect(coloured(container, tag)).toContain(text);
   });
 
+  it.each([
+    ["!!str 5", tags.string, "5"],
+    ["!!str true", tags.string, "true"],
+    ["!!str ~", tags.string, "~"],
+    ["!!int 7", tags.number, 7],
+    ["!!bool true", tags.bool, true],
+  ])("%s is coloured as its standard tag says, not as its text reads", (text, tag, read) => {
+    expect(parseDocument(`v: ${text}`, { version: "1.2" }).toJS().v).toEqual(read);
+
+    const { container } = mount(`v: ${text}\n`);
+    expect(coloured(container, tag)).toContain(text.slice(text.indexOf(" ") + 1));
+  });
+
+  it("reads a scalar under a tag of its own by its text", () => {
+    const { container } = mount("v: !custom 5\n");
+    expect(coloured(container, tags.number)).toContain("5");
+  });
+
   it("keeps a key in the key's colour, whatever its text", () => {
     const { container } = mount("80: http\ntrue: yes\n");
     const keys = coloured(container, tags.definition(tags.propertyName));
