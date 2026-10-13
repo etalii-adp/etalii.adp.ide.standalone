@@ -13,6 +13,7 @@ public static class FblCel
         [CelContext.Tree] = CelEnvironment.Standard().DeclareVariables("entry", "parent", "path", "line", "registration"),
         [CelContext.Lines] = CelEnvironment.Standard().DeclareVariables("entry", "parent", "groups", "line", "registration"),
         [CelContext.Insert] = CelEnvironment.Standard().DeclareVariables("attributes"),
+        [CelContext.Scalars] = CelEnvironment.Standard().DeclareVariables("entry", "text", "style", "parent", "path", "line", "registration"),
     };
 
     /// <summary>Compiles <paramref name="expression"/> for <paramref name="context"/>; a <see cref="CelException"/> names what it cannot use.</summary>

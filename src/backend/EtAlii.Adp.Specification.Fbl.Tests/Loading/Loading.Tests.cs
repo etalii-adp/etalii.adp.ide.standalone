@@ -56,11 +56,104 @@ public class LoadingTests
     public void ANewerMinorVersionLoadsWithAWarning()
     {
         // Act.
-        var problems = FblDocumentLoader.Load(Encoding.UTF8.GetBytes($$"""{ "fbl": "0.2", "bindings": { "t": {{Binding()}} } }"""), out var document);
+        var problems = FblDocumentLoader.Load(Encoding.UTF8.GetBytes($$"""{ "fbl": "0.6", "bindings": { "t": {{Binding()}} } }"""), out var document);
 
         // Assert.
         Assert.NotNull(document);
         Assert.Equal(ProblemSeverity.Warning, Assert.Single(problems).Severity);
+    }
+
+    [Theory]
+    [InlineData("0.2")]
+    [InlineData("0.5")]
+    public void AVersionThisLibraryKnowsLoadsWithoutAWarning(string version)
+    {
+        // Act.
+        var problems = Load(Binding(), version);
+
+        // Assert.
+        Assert.Empty(problems);
+    }
+
+    [Fact]
+    public void ReadQuotedAndFallbackAreReadFromAnAttributeBinding()
+    {
+        // Arrange.
+        var elements = """
+            [{ "name": "item", "type": "Item", "at": "/items/*", "attributes": {
+              "label": { "key": "label", "read": "text" },
+              "row": { "key": "row", "read": "typed", "quoted": "convert", "fallback": { "value": 0, "report": false } },
+              "size": { "key": "size", "fallback": { "value": "wide" } },
+              "plain": { "key": "plain" }
+            } }]
+            """;
+
+        // Act.
+        var problems = FblDocumentLoader.Load(Encoding.UTF8.GetBytes($$"""{ "fbl": "0.5", "bindings": { "t": {{Binding(elements: elements)}} } }"""), out var document);
+
+        // Assert.
+        Assert.Empty(problems);
+        var attributes = document!.Bindings["t"].Elements[0].Attributes.ToDictionary(a => a.Key, a => a.Value);
+        Assert.Equal(("text", null, null), (attributes["label"].Read, attributes["label"].Quoted, attributes["label"].Fallback));
+        Assert.Equal(("typed", "convert"), (attributes["row"].Read, attributes["row"].Quoted));
+        Assert.Equal((0, false), (attributes["row"].Fallback!.Value.GetInt32(), attributes["row"].Fallback!.Report));
+        Assert.Equal(("wide", true), (attributes["size"].Fallback!.Value.GetString(), attributes["size"].Fallback!.Report));
+        Assert.Equal((null, null, null), (attributes["plain"].Read, attributes["plain"].Quoted, attributes["plain"].Fallback));
+    }
+
+    [Theory]
+    [InlineData("xml", "\"at\": \"/items/item\"", "{ \"attribute\": \"label\", \"read\": \"text\" }", "read")]
+    [InlineData("xml", "\"at\": \"/items/item\"", "{ \"attribute\": \"label\", \"quoted\": \"convert\" }", "quoted")]
+    [InlineData("xml", "\"at\": \"/items/item\"", "{ \"attribute\": \"label\", \"fallback\": { \"value\": 0 } }", "fallback")]
+    [InlineData("lines", "\"line\": \"^(?<label>.*)$\"", "{ \"group\": \"label\", \"read\": \"text\" }", "read")]
+    [InlineData("blocks", "\"line\": \"^(?<label>.*)$\"", "{ \"group\": \"label\", \"fallback\": { \"value\": 0 } }", "fallback")]
+    [InlineData("yaml", "\"at\": \"/items/*\"", "{ \"value\": \"entry.label\", \"read\": \"text\" }", "read")]
+    [InlineData("json", "\"at\": \"/items/*\"", "{ \"value\": \"entry.label\", \"quoted\": \"convert\" }", "quoted")]
+    [InlineData("yaml", "\"at\": \"/{name}/*\"", "{ \"capture\": \"name\", \"fallback\": { \"value\": \"x\" } }", "fallback")]
+    public void ReadQuotedAndFallbackAreRefusedWhereFbl52ForbidsThem(string family, string match, string slot, string option)
+    {
+        // Arrange.
+        var binding = $$"""{ "claims": { "extensions": [".t"] }, "body": { "kind": "file", "family": "{{family}}" }, "reader": "declared", "elements": [{ "name": "item", "type": "Item", {{match}}, "attributes": { "label": {{slot}} } }] }""";
+
+        // Act.
+        var problems = Load(binding, "0.5");
+
+        // Assert: one error, at the option.
+        var problem = Assert.Single(problems);
+        Assert.Equal((ProblemSeverity.Error, "/bindings/t/elements/0/attributes/label/" + option), (problem.Severity, problem.Pointer));
+    }
+
+    [Theory]
+    [InlineData("yaml")]
+    [InlineData("json")]
+    public void TextAndStyleAreVariablesOfAYamlAndAJsonRule(string family)
+    {
+        // Arrange.
+        var binding = $$"""{ "claims": { "extensions": [".t"] }, "body": { "kind": "file", "family": "{{family}}" }, "reader": "declared", "elements": [{ "name": "item", "type": "Item", "at": "/items/*", "when": "text.label == 'yes' && style.label == 'plain'", "id": { "sidecar": { "key": "text.label" } }, "attributes": { "label": { "value": "style.label" } } }] }""";
+
+        // Act.
+        var problems = Load(binding, "0.5");
+
+        // Assert.
+        Assert.Empty(problems);
+    }
+
+    [Theory]
+    [InlineData("xml", "\"at\": \"/items/item\"", "text.label == 'x'", "when")]
+    [InlineData("xml", "\"at\": \"/items/item\"", "style.label == 'x'", "when")]
+    [InlineData("lines", "\"line\": \"^(?<label>.*)$\"", "text.label == 'x'", "when")]
+    [InlineData("blocks", "\"line\": \"^(?<label>.*)$\"", "style.label == 'x'", "when")]
+    public void TextAndStyleInAnotherFamilyAreALoadProblemAtTheExpression(string family, string match, string expression, string at)
+    {
+        // Arrange.
+        var binding = $$"""{ "claims": { "extensions": [".t"] }, "body": { "kind": "file", "family": "{{family}}" }, "reader": "declared", "elements": [{ "name": "item", "type": "Item", {{match}}, "{{at}}": "{{expression}}" }] }""";
+
+        // Act.
+        var problems = Load(binding, "0.5");
+
+        // Assert.
+        var problem = Assert.Single(problems);
+        Assert.Equal((ProblemSeverity.Error, "/bindings/t/elements/0/" + at), (problem.Severity, problem.Pointer));
     }
 
     [Theory]

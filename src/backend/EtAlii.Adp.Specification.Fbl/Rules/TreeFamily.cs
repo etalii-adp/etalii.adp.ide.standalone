@@ -52,6 +52,9 @@ internal sealed class TreeValue
     /// <summary>A flow collection's members as written (FBL §4.1.5), in the shape of <see cref="Flow"/>.</summary>
     public object? FlowText { get; init; }
 
+    /// <summary>The names of the styles a flow collection's members are written in (FBL §2.4), in the shape of <see cref="Flow"/>.</summary>
+    public object? FlowStyle { get; init; }
+
     /// <summary>Reached through an alias or a merge key: readable, never writable (FBL §4.3).</summary>
     public bool ViaAlias { get; init; }
 
@@ -111,7 +114,20 @@ internal abstract class TreeFamily(BodyText text, FblBinding binding, FblOptions
         return ("path", path);
     }
 
-    public static object? Cel(TreeValue value)
+    public override object? CelText(Candidate candidate) => CelText(((TreeEntry)candidate.Entry).Value);
+
+    public override object? CelStyle(Candidate candidate) => CelStyle(((TreeEntry)candidate.Entry).Value);
+
+    /// <summary>A value as CEL's <c>entry</c> sees it (FBL §4.1.4): every scalar by its typed value.</summary>
+    public static object? Cel(TreeValue value) => Walk(value, scalar => scalar.Flow ?? scalar.Typed);
+
+    /// <summary>A value as CEL's <c>text</c> sees it (FBL 0.5 §2.4): every scalar by its written text.</summary>
+    public static object? CelText(TreeValue value) => Walk(value, scalar => scalar.FlowText ?? scalar.Text);
+
+    /// <summary>A value as CEL's <c>style</c> sees it (FBL 0.5 §2.4): every scalar by the name of the style it is written in.</summary>
+    public static object? CelStyle(TreeValue value) => Walk(value, scalar => scalar.FlowStyle ?? StyleName(scalar.Style));
+
+    private static object? Walk(TreeValue value, Func<TreeValue, object?> scalar)
     {
         switch (value.Kind)
         {
@@ -119,21 +135,34 @@ internal abstract class TreeFamily(BodyText text, FblBinding binding, FblOptions
                 var map = new CelMap();
                 foreach (var merged in value.Merged)
                 {
-                    if (Cel(merged) is CelMap inherited)
+                    if (Walk(merged, scalar) is CelMap inherited)
                         foreach ((string k, object? v) in inherited)
                             map[k] = v;
                 }
                 foreach (var member in value.Entries)
                 {
-                    if (member.Name is not null && member.Name != "<<") map[member.Name] = Cel(member.Value);
+                    if (member.Name is not null && member.Name != "<<") map[member.Name] = Walk(member.Value, scalar);
                 }
                 return map;
             case ValueKind.Sequence:
-                return value.Entries.Select(e => Cel(e.Value)).ToList();
+                return value.Entries.Select(e => Walk(e.Value, scalar)).ToList();
             default:
-                return value.Flow ?? value.Typed;
+                return scalar(value);
         }
     }
+
+    /// <summary>
+    /// FBL 0.5 §2.4's names: a yaml scalar's style, a json string <c>double</c> and every other json
+    /// scalar <c>plain</c>. A key with no value is written as nothing, which reads as plain.
+    /// </summary>
+    private static string StyleName(ValueStyle style) => style switch
+    {
+        ValueStyle.Single => "single",
+        ValueStyle.Double or ValueStyle.JsonString => "double",
+        ValueStyle.Literal => "literal",
+        ValueStyle.Folded => "folded",
+        _ => "plain",
+    };
 
     public override bool HeaderHolds(HeaderSettings header)
     {

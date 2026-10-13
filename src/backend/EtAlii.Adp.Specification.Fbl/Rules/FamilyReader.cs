@@ -194,6 +194,12 @@ internal abstract class FamilyReader(BodyText text, FblBinding binding, FblOptio
     /// <summary>The entry as CEL sees it (FBL §4.1.4).</summary>
     public abstract object? CelValue(Candidate candidate);
 
+    /// <summary>The entry as CEL's <c>text</c> sees it (FBL 0.5 §2.4); null for a family that has no such variable.</summary>
+    public virtual object? CelText(Candidate candidate) => null;
+
+    /// <summary>The entry as CEL's <c>style</c> sees it (FBL 0.5 §2.4); null for a family that has no such variable.</summary>
+    public virtual object? CelStyle(Candidate candidate) => null;
+
     /// <summary>The variables a rule's CEL besides <c>entry</c>, <c>parent</c>, <c>line</c> and <c>registration</c>: <c>path</c> or <c>groups</c>.</summary>
     public abstract (string Name, object? Value) CelExtra(Candidate candidate);
 
