@@ -49,6 +49,9 @@ internal sealed class TreeValue
     /// <summary>A flow collection's members as CEL sees them: readable, but writable only as a whole (FBL §4.3).</summary>
     public object? Flow { get; init; }
 
+    /// <summary>A flow collection's members as written (FBL §4.1.5), in the shape of <see cref="Flow"/>.</summary>
+    public object? FlowText { get; init; }
+
     /// <summary>Reached through an alias or a merge key: readable, never writable (FBL §4.3).</summary>
     public bool ViaAlias { get; init; }
 
@@ -177,17 +180,26 @@ internal abstract class TreeFamily(BodyText text, FblBinding binding, FblOptions
             {
                 Node = member,
                 Wire = member.Value.Kind == ValueKind.Scalar ? member.Value.Text : null,
+                WrittenScalar = IsWrittenScalar(member.Value),
             };
         }
         foreach (var merged in mapping.Merged)
         {
             if (merged.Member(name) is { } inherited)
             {
-                return new SlotRead(Cel(inherited.Value), inherited.Value.Span, true, false, "The value is reached through a merge key, so it is read-only.") { Node = inherited };
+                return new SlotRead(Cel(inherited.Value), inherited.Value.Span, true, false, "The value is reached through a merge key, so it is read-only.")
+                {
+                    Node = inherited,
+                    Wire = inherited.Value.Kind == ValueKind.Scalar ? inherited.Value.Text : null,
+                    WrittenScalar = IsWrittenScalar(inherited.Value),
+                };
             }
         }
         return SlotRead.Absent with { Node = mapping };
     }
+
+    /// <summary>A scalar whose text is what was written: not a flow collection, nor an alias of a collection.</summary>
+    private static bool IsWrittenScalar(TreeValue value) => value is { Kind: ValueKind.Scalar, Flow: null, Style: not (ValueStyle.FlowSequence or ValueStyle.FlowMapping) };
 
     public override SlotRead ReadRaw(Entry entry, string name) =>
         entry is TreeEntry { Value.Kind: ValueKind.Mapping } tree ? ReadMember(tree.Value, name) : SlotRead.Absent;

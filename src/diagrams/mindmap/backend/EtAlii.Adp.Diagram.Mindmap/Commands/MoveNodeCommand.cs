@@ -45,8 +45,6 @@ internal sealed class MoveNodeCommandHandler(IMindmapDocumentStore documents)
         document.Move(node, newParent, command.Index);
         var saved = Documents.Save(command.BodyPath, document, MindmapStructureChanged.Nothing);
 
-        return Task.FromResult(saved.Failed
-            ? CommandResult.Failure(saved.Error)
-            : CommandResult.Success(command with { NewParentId = previousParent.Id, Index = previousIndex }));
+        return Task.FromResult(CommandResult.FromSave(saved, command with { NewParentId = previousParent.Id, Index = previousIndex }));
     }
 }

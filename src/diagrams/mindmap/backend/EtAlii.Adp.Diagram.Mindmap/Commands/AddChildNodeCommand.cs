@@ -31,8 +31,6 @@ internal sealed class AddChildNodeCommandHandler(IMindmapDocumentStore documents
         added.SetId(command.NodeId);
         var saved = Documents.Save(command.BodyPath, document, MindmapStructureChanged.Nothing);
 
-        return Task.FromResult(saved.Failed
-            ? CommandResult.Failure(saved.Error)
-            : CommandResult.Success(new RemoveNodeCommand(command.BodyPath, command.NodeId)));
+        return Task.FromResult(CommandResult.FromSave(saved, new RemoveNodeCommand(command.BodyPath, command.NodeId)));
     }
 }

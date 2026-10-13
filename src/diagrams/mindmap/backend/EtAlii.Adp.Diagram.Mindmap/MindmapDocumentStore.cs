@@ -41,6 +41,11 @@ namespace EtAlii.Adp.Diagram.Mindmap;
 /// <b>The sessions hear about a reload only when the lifecycle installed a document.</b> One that
 /// kept the last good document changed nothing a session shows.
 /// </para>
+/// <para>
+/// <b>Not on <see cref="LifecycleDocumentStore{TBody, TModel}"/></b> (code-structure FR-029): that base
+/// keeps a body and a model read from it and announces only a path, where a map is one tree and its
+/// event names the structural change, so the base would need a switch on this module to fit.
+/// </para>
 /// </remarks>
 public sealed class MindmapDocumentStore : IMindmapDocumentStore
 {
@@ -105,7 +110,12 @@ public sealed class MindmapDocumentStore : IMindmapDocumentStore
         return result;
     }
 
-    /// <summary>Re-reads a map changed on disk outside ADP and announces it (Requirement 11.8).</summary>
+    /// <summary>
+    /// Re-reads a map changed on disk outside ADP and announces it (Requirement 11.8). A no-op for a
+    /// map nothing loaded (departure 1), and while the store's own save of that path is in flight - its
+    /// own write is not an external change, and must not bounce back as one. A reload that cannot read
+    /// keeps the last good map and tells nobody (R2.4).
+    /// </summary>
     public void Reload(string bodyPath)
     {
         if (!IsLoaded(bodyPath))
@@ -132,6 +142,9 @@ public sealed class MindmapDocumentStore : IMindmapDocumentStore
             Changed?.Invoke(this, new MindmapChangedEventArgs(bodyPath, new MindmapReloaded()));
         }
     }
+
+    /// <summary>Drops the loaded map at <paramref name="bodyPath"/>, so the next open reads the file afresh.</summary>
+    public void Forget(string bodyPath) => _lifecycle.Forget(bodyPath);
 
     /// <summary>
     /// Departure 1 (R2.8): whether a map is open here at all. A reload or a deletion of one that is

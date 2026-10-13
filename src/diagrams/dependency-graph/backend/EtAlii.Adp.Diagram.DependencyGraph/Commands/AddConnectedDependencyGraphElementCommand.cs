@@ -33,4 +33,4 @@ public sealed record AddConnectedDependencyGraphElementCommand(
     double X,
     int Row,
     bool NewElementIsSource = false,
-    string? Label = null) : ICommand;
+    string? Label = null) : IDocumentEditCommand;

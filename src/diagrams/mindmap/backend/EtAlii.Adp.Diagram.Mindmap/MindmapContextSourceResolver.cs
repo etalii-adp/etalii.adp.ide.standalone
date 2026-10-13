@@ -11,6 +11,11 @@ namespace EtAlii.Adp.Diagram.Mindmap;
 /// it (Requirement 10.5). Registering this is the whole of
 /// it; the context service itself is untouched.
 /// </summary>
+/// <remarks>
+/// Not on <see cref="DiagramElementSourceResolver{TBody, TModel}"/> (code-structure FR-032): that base
+/// reads a store of a body and a model, which this module's store is not, and a mindmap's selection
+/// also unfolds the branches hiding the node for the connection that selected it.
+/// </remarks>
 public sealed class MindmapContextSourceResolver : IContextSourceResolver
 {
     private readonly DiagramFileRouter _router;
@@ -122,7 +127,7 @@ public sealed class MindmapContextSourceResolver : IContextSourceResolver
         var disposed = false;
 
         _documents.Changed += OnChanged;
-        return new MindmapNodeSubscription(() =>
+        return Disposable.From(() =>
         {
             disposed = true;
             _documents.Changed -= OnChanged;

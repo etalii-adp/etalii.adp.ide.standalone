@@ -1,44 +1,22 @@
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.DependencyGraph;
 
 /// <summary>Carries out a relabel. The inverse is the same command carrying the previous label.</summary>
-public sealed class RelabelDependencyGraphRelationCommandHandler : ICommandHandler<RelabelDependencyGraphRelationCommand>
+public sealed class RelabelDependencyGraphRelationCommandHandler(IDependencyGraphDocumentStore documents)
+    : DependencyGraphEditHandler<RelabelDependencyGraphRelationCommand>(documents)
 {
-    private readonly IDependencyGraphDocumentStore _documents;
-
-    /// <summary>Creates the handler over the one store that owns the documents.</summary>
-    public RelabelDependencyGraphRelationCommandHandler(IDependencyGraphDocumentStore documents)
-    {
-        ArgumentNullException.ThrowIfNull(documents);
-        _documents = documents;
-    }
-
     /// <inheritdoc />
-    public Task<CommandResult> ExecuteAsync(RelabelDependencyGraphRelationCommand command, CancellationToken cancellationToken)
+    protected override EditOutcome Apply(LineDocument body, DependencyGraphModel model, RelabelDependencyGraphRelationCommand command)
     {
-        ArgumentNullException.ThrowIfNull(command);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        var entry = _documents.GetOrLoad(command.BodyPath);
-        if (!entry.IsUsable)
-        {
-            return Task.FromResult(CommandResult.Failure(
-                "This graph does not parse, so nothing can be relabelled until the file is fixed."));
-        }
-
-        var relation = DependencyGraphEdits.RelationOf(entry.Model, command.RelationId);
+        var relation = DependencyGraphEdits.RelationOf(model, command.RelationId);
         if (relation is null)
         {
-            return Task.FromResult(CommandResult.Failure("That dependency is no longer in this graph."));
+            return EditOutcome.Refused("That dependency is no longer in this graph.");
         }
 
-        var inverse = command with { Label = relation.Label };
-        DependencyGraphWriter.SetRelationLabel(entry.Document, relation, command.Label);
-
-        var saved = _documents.Save(command.BodyPath, entry.Document);
-        return Task.FromResult(!saved.Failed
-            ? CommandResult.Success(inverse)
-            : CommandResult.Failure(saved.Error));
+        DependencyGraphWriter.SetRelationLabel(body, relation, command.Label);
+        return EditOutcome.UndoneBy(command with { Label = relation.Label });
     }
 }

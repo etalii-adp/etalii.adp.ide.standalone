@@ -15,4 +15,4 @@ namespace EtAlii.Adp.Diagram.DependencyGraph;
 public sealed record RenameDependencyGraphElementCommand(
     string BodyPath,
     string ElementId,
-    string Label) : ICommand;
+    string Label) : IDocumentEditCommand;

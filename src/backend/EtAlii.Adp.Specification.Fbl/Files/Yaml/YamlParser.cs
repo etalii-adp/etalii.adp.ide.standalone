@@ -310,6 +310,7 @@ internal sealed class YamlParser(BodyText text)
             Text = target.Text,
             Typed = target.Typed,
             Flow = target.Kind == ValueKind.Scalar ? target.Flow : TreeFamily.Cel(target),
+            FlowText = target.Kind == ValueKind.Scalar ? target.FlowText : null,
             ViaAlias = true,
         };
         if (target.Kind == ValueKind.Mapping) value.Merged.Add(target);
@@ -536,8 +537,8 @@ internal sealed class YamlParser(BodyText text)
         var span = new Span(q, p);
         Leaves.Add(span);
         var raw = text.Text(span);
-        var parser = new FlowReader(raw);
-        var flow = parser.Read();
+        var flow = new FlowReader(raw).Read();
+        var flowText = new FlowReader(raw, written: true).Read();
         return new TreeValue
         {
             Kind = ValueKind.Scalar,
@@ -545,6 +546,7 @@ internal sealed class YamlParser(BodyText text)
             Span = span,
             Text = raw,
             Flow = flow,
+            FlowText = flowText,
         };
     }
 }
