@@ -13,10 +13,11 @@ namespace EtAlii.Adp.Diagram;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>A module says what its elements are, and nothing else.</b> It loads its model, describes an
-/// element, maps the one element the canvas was sent and follows its document. Checking that the
-/// selection sits inside a file of this type, resolving a placement or a proposed relation, checking
-/// the client's path, building the payload and the target, and tracking a selection are here.
+/// <b>A module says what its elements are, and nothing else.</b> It describes an element and maps
+/// the one element the canvas was sent. Loading the model from the module's store, following its
+/// document, checking that the selection sits inside a file of this type, resolving a placement or
+/// a proposed relation, checking the client's path, building the payload and the target, and
+/// tracking a selection are here.
 /// </para>
 /// <para>
 /// <b>The element a selection describes is the one the canvas was sent</b>: its payload comes from
@@ -29,15 +30,19 @@ namespace EtAlii.Adp.Diagram;
 /// proposes. Each resolves to a target the action provider reads back out.
 /// </para>
 /// </remarks>
+/// <typeparam name="TBody">The text of a document as the module's store holds it.</typeparam>
 /// <typeparam name="TModel">What the module's parser reads from a body.</typeparam>
-public abstract class DiagramElementSourceResolver<TModel> : IContextSourceResolver
+public abstract class DiagramElementSourceResolver<TBody, TModel> : IContextSourceResolver
 {
     private readonly DiagramFileRouter _router;
+    private readonly IDiagramDocumentStore<TBody, TModel> _documents;
 
-    protected DiagramElementSourceResolver(DiagramFileRouter router)
+    protected DiagramElementSourceResolver(DiagramFileRouter router, IDiagramDocumentStore<TBody, TModel> documents)
     {
         ArgumentNullException.ThrowIfNull(router);
+        ArgumentNullException.ThrowIfNull(documents);
         _router = router;
+        _documents = documents;
     }
 
     /// <summary>The diagram type whose elements this resolves.</summary>
@@ -133,7 +138,7 @@ public abstract class DiagramElementSourceResolver<TModel> : IContextSourceResol
     }
 
     /// <summary>The model of the document whose body is at <paramref name="bodyPath"/>.</summary>
-    protected abstract TModel Load(string bodyPath);
+    private TModel Load(string bodyPath) => _documents.GetOrLoad(bodyPath).Model;
 
     /// <summary>What a selection of <paramref name="elementId"/> shows, or null when nothing has that id.</summary>
     protected abstract (IReadOnlyList<string> Path, string Text)? Describe(TModel model, string elementId);
@@ -142,22 +147,16 @@ public abstract class DiagramElementSourceResolver<TModel> : IContextSourceResol
     protected abstract DiagramElement? Drawn(TModel model, string elementId);
 
     /// <summary>
-    /// Calls <paramref name="changed"/> whenever the document at <paramref name="bodyPath"/> changes,
-    /// until the result is disposed. <paramref name="watchId"/> and <paramref name="elementId"/> are
-    /// for a module that also follows what each connection has selected, as supply chain does for
-    /// its trace.
+    /// Calls <paramref name="changed"/> whenever the document at <paramref name="bodyPath"/> changes
+    /// in the store, until the result is disposed. <paramref name="watchId"/> and
+    /// <paramref name="elementId"/> are for a module that also follows what each connection has
+    /// selected, as supply chain does for its trace; it overrides this and calls it as well.
     /// </summary>
-    protected abstract IDisposable Follow(ShortGuid watchId, string bodyPath, string elementId, Action changed);
-
-    /// <summary>
-    /// <see cref="Follow"/> for a module whose document lives in an <see cref="IDiagramDocumentStore{TBody, TModel}"/>:
-    /// <paramref name="changed"/> on every change to <paramref name="bodyPath"/>, until disposed.
-    /// </summary>
-    protected static IDisposable FollowStore<TBody>(IDiagramDocumentStore<TBody, TModel> documents, string bodyPath, Action changed)
+    protected virtual IDisposable Follow(ShortGuid watchId, string bodyPath, string elementId, Action changed)
     {
-        ArgumentNullException.ThrowIfNull(documents);
         ArgumentNullException.ThrowIfNull(changed);
 
+        var documents = _documents;
         documents.Changed += OnChanged;
         return Disposable.From(() => documents.Changed -= OnChanged);
 

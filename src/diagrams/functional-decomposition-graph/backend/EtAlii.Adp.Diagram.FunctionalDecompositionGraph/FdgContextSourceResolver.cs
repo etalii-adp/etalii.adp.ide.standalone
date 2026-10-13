@@ -26,17 +26,14 @@ namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph;
 /// or written.
 /// </para>
 /// </remarks>
-public sealed class FdgContextSourceResolver : DiagramElementSourceResolver<FdgModel>
+public sealed class FdgContextSourceResolver : DiagramElementSourceResolver<LineDocument, FdgModel>
 {
-    private readonly IFdgDocumentStore _documents;
     private readonly FdgElementMapper _mapper;
 
     public FdgContextSourceResolver(DiagramFileRouter router, IFdgDocumentStore documents, FdgElementMapper mapper)
-        : base(router)
+        : base(router, documents)
     {
-        ArgumentNullException.ThrowIfNull(documents);
         ArgumentNullException.ThrowIfNull(mapper);
-        _documents = documents;
         _mapper = mapper;
     }
 
@@ -51,15 +48,8 @@ public sealed class FdgContextSourceResolver : DiagramElementSourceResolver<FdgM
         "New connection");
 
     /// <inheritdoc />
-    protected override FdgModel Load(string bodyPath) => _documents.GetOrLoad(bodyPath).Model;
-
-    /// <inheritdoc />
     protected override DiagramElement? Drawn(FdgModel model, string elementId) =>
         _mapper.Visible(model, DiagramViewport.Unbounded).FirstOrDefault(candidate => candidate.Id == elementId);
-
-    /// <inheritdoc />
-    protected override IDisposable Follow(ShortGuid watchId, string bodyPath, string elementId, Action changed) =>
-        FollowStore(_documents, bodyPath, changed);
 
     /// <inheritdoc />
     protected override (IReadOnlyList<string> Path, string Text)? Describe(FdgModel model, string elementId)

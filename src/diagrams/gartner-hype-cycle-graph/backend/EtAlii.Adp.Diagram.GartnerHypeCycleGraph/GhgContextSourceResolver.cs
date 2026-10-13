@@ -24,17 +24,14 @@ namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
 /// action provider reads back out, and lives for one execution: never selected, tracked or written.
 /// </para>
 /// </remarks>
-public sealed class GhgContextSourceResolver : DiagramElementSourceResolver<GhgModel>
+public sealed class GhgContextSourceResolver : DiagramElementSourceResolver<GhgBody, GhgModel>
 {
-    private readonly IGhgDocumentStore _documents;
     private readonly GhgElementMapper _mapper;
 
     public GhgContextSourceResolver(DiagramFileRouter router, IGhgDocumentStore documents, GhgElementMapper mapper)
-        : base(router)
+        : base(router, documents)
     {
-        ArgumentNullException.ThrowIfNull(documents);
         ArgumentNullException.ThrowIfNull(mapper);
-        _documents = documents;
         _mapper = mapper;
     }
 
@@ -49,15 +46,8 @@ public sealed class GhgContextSourceResolver : DiagramElementSourceResolver<GhgM
         "New influence");
 
     /// <inheritdoc />
-    protected override GhgModel Load(string bodyPath) => _documents.GetOrLoad(bodyPath).Model;
-
-    /// <inheritdoc />
     protected override DiagramElement? Drawn(GhgModel model, string elementId) =>
         _mapper.Visible(model, DiagramViewport.Unbounded).FirstOrDefault(candidate => candidate.Id == elementId);
-
-    /// <inheritdoc />
-    protected override IDisposable Follow(ShortGuid watchId, string bodyPath, string elementId, Action changed) =>
-        FollowStore(_documents, bodyPath, changed);
 
     /// <inheritdoc />
     protected override (IReadOnlyList<string> Path, string Text)? Describe(GhgModel model, string elementId)
