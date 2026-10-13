@@ -169,8 +169,11 @@ public sealed class PipelineDocumentStore : IPipelineDocumentStore
         public DocumentEntry<LineDocument, PipelineModel> GetOrLoad(string path) => documents.GetOrLoad(rootPath, path);
 
         /// <remarks>Refused, as the store refuses it, while what the file holds does not parse.</remarks>
-        public DocumentSaveResult Save(string path, LineDocument document) =>
-            documents.Save(rootPath, path, documents.GetOrLoad(rootPath, path) with { Document = document });
+        public DocumentSaveResult Save(string path, LineDocument document)
+        {
+            var entry = documents.GetOrLoad(rootPath, path) with { Document = document };
+            return documents.Save(rootPath, path, entry);
+        }
 
         public void Reload(string path) => documents.Reload(path);
 
