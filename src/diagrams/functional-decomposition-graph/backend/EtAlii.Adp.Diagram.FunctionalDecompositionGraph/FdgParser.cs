@@ -37,6 +37,23 @@ namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph;
 /// </remarks>
 public static class FdgParser
 {
+    /// <summary>The text of a new, empty <c>.fdg</c> document, with the line ending the caller asks for.</summary>
+    /// <remarks>
+    /// The header and the two sections written flow-empty, because a bare <c>elements:</c> parses as a
+    /// null rather than an empty sequence. The host writes it with CRLF, the repository's house style,
+    /// because a new file has no style of its own to keep.
+    /// </remarks>
+    public static string EmptyDocument(string lineEnding)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(lineEnding);
+
+        return string.Join(
+            lineEnding,
+            $"functional-decomposition-graph: {FdgModel.CurrentVersion}",
+            "elements: []",
+            "connections: []") + lineEnding;
+    }
+
     private const string HeaderKey = "functional-decomposition-graph";
     private const string ElementsKey = "elements";
     private const string ConnectionsKey = "connections";

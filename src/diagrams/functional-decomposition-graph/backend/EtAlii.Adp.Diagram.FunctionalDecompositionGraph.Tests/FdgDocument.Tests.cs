@@ -209,7 +209,7 @@ public class FdgDocumentTests
     [Fact]
     public void TheEmptyDocument_IsAHeaderAndTwoEmptySections()
     {
-        var text = FdgDocumentFactory.EmptyDocument("\n");
+        var text = FdgParser.EmptyDocument("\n");
 
         Assert.Equal("functional-decomposition-graph: 1\nelements: []\nconnections: []\n", text);
 
@@ -226,7 +226,7 @@ public class FdgDocumentTests
     [Fact]
     public void AddingToAnEmptyDocument_OpensTheFlowSection()
     {
-        var document = LineDocument.Parse(FdgDocumentFactory.EmptyDocument("\n"));
+        var document = LineDocument.Parse(FdgParser.EmptyDocument("\n"));
         var model = FdgParser.Parse(document);
 
         var added = new FdgElement("first", FdgElementTypes.Function, "First", "", "", 10, 20, 100, null, default);

@@ -175,7 +175,7 @@ public sealed class FdgContextSourceResolver : IContextSourceResolver
         _documents.Changed += OnChanged;
         return new Unsubscriber(() => _documents.Changed -= OnChanged);
 
-        void OnChanged(object? sender, FdgDocumentChangedEventArgs args)
+        void OnChanged(object? sender, DocumentChangedEventArgs args)
         {
             if (!string.Equals(args.Path, bodyPath, StringComparison.OrdinalIgnoreCase))
             {

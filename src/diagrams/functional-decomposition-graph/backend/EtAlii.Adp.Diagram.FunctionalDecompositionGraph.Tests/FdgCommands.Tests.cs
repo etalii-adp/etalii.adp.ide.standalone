@@ -229,7 +229,7 @@ public sealed class FdgCommandsTests : IDisposable
     {
         // Arrange: another program holds the file, so the first open cannot read it.
         var store = new FdgDocumentStore();
-        FdgDocumentEntry entry;
+        DocumentEntry<LineDocument, FdgModel> entry;
         await using (new FileStream(Body, FileMode.Open, FileAccess.Read, FileShare.None))
         {
             entry = store.GetOrLoad(Body);
