@@ -29,7 +29,7 @@ public abstract class LifecycleDocumentStore<TBody, TModel> : IDiagramDocumentSt
     protected LifecycleDocumentStore()
     {
         _lifecycle = new WritableDocumentLifecycle<DocumentEntry<TBody, TModel>>(
-            (_, text) => Entry(Read(text)),
+            (_, text) => ReadEntry(text),
             entry => TextOf(entry.Document),
             (_, unavailability, reason) => Unavailable(unavailability, reason));
     }
@@ -56,6 +56,68 @@ public abstract class LifecycleDocumentStore<TBody, TModel> : IDiagramDocumentSt
         var result = _lifecycle.Save(path, Entry(document));
         OnChanged(path);
         return result;
+    }
+
+    /// <summary>
+    /// Applies <paramref name="edit"/> and writes the result - to what the file holds at that
+    /// moment, when another program changed it after <paramref name="basis"/> was read.
+    /// </summary>
+    /// <param name="path">The body path.</param>
+    /// <param name="basis">The entry the caller read.</param>
+    /// <param name="edit">
+    /// The edit, as a function of the body it is applied to, returning an empty text when it was
+    /// applied and the reason when it was refused. It is handed a body of its own to change, and
+    /// may be handed one read afresh from the disk, so it finds what it edits by id.
+    /// </param>
+    /// <remarks>
+    /// <para>
+    /// <b>For a file other programs write while it is open</b>, as agents write an activity file:
+    /// the plain <see cref="Save(string, TBody)"/> would write the older text plus this one edit
+    /// over their change. <see cref="WritableDocumentLifecycle{TDocument}"/> says what this narrows
+    /// and what it cannot close.
+    /// </para>
+    /// <para>
+    /// <b>The sessions hear about it only when it was written.</b> A refusal changed nothing.
+    /// </para>
+    /// </remarks>
+    public DocumentEditSaved Save(string path, DocumentEntry<TBody, TModel> basis, Func<TBody, string> edit)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+        ArgumentNullException.ThrowIfNull(basis);
+        ArgumentNullException.ThrowIfNull(edit);
+
+        var before = TextOf(basis.Document);
+        var after = before;
+
+        // The lifecycle decides which entry the edit is applied to: the caller's, or one read afresh
+        // when the file was written in between. Either way the edit gets a body of its own, so the
+        // cached one is never changed under a reader.
+        var result = _lifecycle.Save(path, basis, current =>
+        {
+            if (!current.IsUsable)
+            {
+                return DocumentEdit<DocumentEntry<TBody, TModel>>.Refused(
+                    $"{IoPath.GetFileName(path)} could not be read, so it was not written: {current.Unreadable}");
+            }
+
+            before = TextOf(current.Document);
+            var body = Read(before);
+            var refusal = edit(body);
+            if (refusal.Length > 0)
+            {
+                return DocumentEdit<DocumentEntry<TBody, TModel>>.Refused(refusal);
+            }
+
+            after = TextOf(body);
+            return DocumentEdit<DocumentEntry<TBody, TModel>>.Applied(Entry(body));
+        });
+
+        if (!result.Failed)
+        {
+            OnChanged(path);
+        }
+
+        return new DocumentEditSaved(result, before, after);
     }
 
     /// <inheritdoc />
@@ -88,7 +150,20 @@ public abstract class LifecycleDocumentStore<TBody, TModel> : IDiagramDocumentSt
     /// <summary>What the module's parser reads from <paramref name="body"/>.</summary>
     protected abstract TModel Rebuild(TBody body);
 
+    /// <summary>
+    /// Empty for a body that was read; otherwise why its text, though it could be opened, cannot be
+    /// read as a document of this type - and then nothing is written to it until it can be.
+    /// </summary>
+    /// <remarks>Empty unless the module says otherwise: most parsers read any text, reporting what they pass over.</remarks>
+    protected virtual string UnreadableOf(TBody body) => "";
+
     private DocumentEntry<TBody, TModel> Entry(TBody body) => new(body, Rebuild(body));
+
+    private DocumentEntry<TBody, TModel> ReadEntry(string text)
+    {
+        var body = Read(text);
+        return Entry(body) with { Unreadable = UnreadableOf(body) };
+    }
 
     private DocumentEntry<TBody, TModel> Unavailable(DocumentUnavailability unavailability, string reason)
     {

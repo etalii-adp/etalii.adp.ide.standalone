@@ -325,7 +325,16 @@ internal static class AadEdits
         ArgumentNullException.ThrowIfNull(self);
         ArgumentNullException.ThrowIfNull(edit);
 
-        var saved = documents.Save(bodyPath, documents.GetOrLoad(bodyPath), document =>
+        var saved = documents.Save(bodyPath, documents.GetOrLoad(bodyPath), document => Apply(document).Refusal ?? "");
+        if (saved.Result.Failed)
+        {
+            return Task.FromResult(CommandResult.Failure(saved.Result.Error));
+        }
+
+        var undo = new RestoreDocumentCommand<IAadDocumentStore>(bodyPath, saved.Before, self, saved.After);
+        return Task.FromResult(saved.Result.Warning.Length > 0 ? CommandResult.Success(undo, saved.Result.Warning) : CommandResult.Success(undo));
+
+        AadEdit Apply(AadBody document)
         {
             if (document.Version > AadBody.KnownVersion)
             {
@@ -347,14 +356,7 @@ internal static class AadEdits
             }
 
             return outcome;
-        });
-        if (saved.Result.Failed)
-        {
-            return Task.FromResult(CommandResult.Failure(saved.Result.Error));
         }
-
-        var undo = new RestoreDocumentCommand<IAadDocumentStore>(bodyPath, saved.Before, self, saved.After);
-        return Task.FromResult(saved.Result.Warning.Length > 0 ? CommandResult.Success(undo, saved.Result.Warning) : CommandResult.Success(undo));
     }
 
     /// <summary>The moment of a gesture as the file writes one: local time with its offset, to the second.</summary>

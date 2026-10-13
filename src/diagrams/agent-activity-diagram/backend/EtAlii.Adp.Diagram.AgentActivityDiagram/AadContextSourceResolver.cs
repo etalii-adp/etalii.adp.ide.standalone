@@ -176,7 +176,7 @@ public sealed class AadContextSourceResolver : IContextSourceResolver
         _documents.Changed += OnChanged;
         return new Unsubscriber(() => _documents.Changed -= OnChanged);
 
-        void OnChanged(object? sender, AadDocumentChangedEventArgs args)
+        void OnChanged(object? sender, DocumentChangedEventArgs args)
         {
             if (!string.Equals(args.Path, bodyPath, StringComparison.OrdinalIgnoreCase))
             {
