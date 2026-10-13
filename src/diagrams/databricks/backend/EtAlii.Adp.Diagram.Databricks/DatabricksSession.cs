@@ -180,7 +180,7 @@ public sealed class DatabricksSession : IDiagramSession
         {
             case "job":
             {
-                var job = Pick(entry.Jobs, job => job.Key);
+                var job = Pick(entry.Model.Jobs, job => job.Key);
                 if (job is null)
                 {
                     return [];
@@ -192,7 +192,7 @@ public sealed class DatabricksSession : IDiagramSession
 
             case "pipeline":
             {
-                var pipeline = Pick(entry.Pipelines, pipeline => pipeline.Key);
+                var pipeline = Pick(entry.Model.Pipelines, pipeline => pipeline.Key);
                 if (pipeline is null)
                 {
                     return [];
@@ -204,8 +204,8 @@ public sealed class DatabricksSession : IDiagramSession
 
             default:
             {
-                var positions = RegistrationLayout.Apply(DatabricksBundleLayout.Positions(entry.Bundle), stored);
-                return _mapper.BundleElements(entry.Bundle, positions);
+                var positions = RegistrationLayout.Apply(DatabricksBundleLayout.Positions(entry.Model.Bundle), stored);
+                return _mapper.BundleElements(entry.Model.Bundle, positions);
             }
         }
     }
@@ -221,7 +221,7 @@ public sealed class DatabricksSession : IDiagramSession
             ? candidates.FirstOrDefault(candidate => key(candidate) == _resourceKey)
             : candidates.FirstOrDefault();
 
-    private void OnDocumentChanged(object? sender, DatabricksDocumentChangedEventArgs args)
+    private void OnDocumentChanged(object? sender, DocumentChangedEventArgs args)
     {
         if (!string.Equals(args.Path, _bodyPath, StringComparison.OrdinalIgnoreCase))
         {

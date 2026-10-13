@@ -10,18 +10,11 @@ namespace EtAlii.Adp.Diagram.Databricks.Tests;
 /// </summary>
 public class DatabricksLayoutTests
 {
-    private static DatabricksDocumentEntry Load(string name)
+    private static DatabricksModel Load(string name)
     {
         var document = LineDocument.Parse(
             File.ReadAllText(IoPath.Combine(AppContext.BaseDirectory, "Fixtures", name)));
-        var root = DatabricksYaml.Root(document);
-        return new DatabricksDocumentEntry(
-            document,
-            BundleParser.Parse(root, document),
-            JobParser.Parse(root, document),
-            PipelineParser.Parse(root, document),
-            "",
-            0);
+        return DatabricksModel.Read(document);
     }
 
     [Fact]

@@ -65,23 +65,26 @@ public static class ServiceCollectionAddDatabricksExtension
             services.AddSingleton<IDiagramToolboxProvider>(_ => new DatabricksToolboxProvider(origin));
 
             // The empty body a new diagram of this type starts as - the one thing core cannot
-            // derive from the definition on its own.
+            // derive from the definition on its own. A class rather than AddEmptyDocument: its
+            // keys are made from the file's name, so its text is not the same for every file.
             services.AddSingleton<IDiagramDocumentFactory>(_ => new DatabricksDocumentFactory(origin));
 
             // The session seam: which declaration a session shows comes from the .adp file's
-            // resource: header, so all three factories are the same code under different origins.
-            services.AddSingleton<IDiagramSessionFactory>(provider => new DatabricksSessionFactory(
+            // resource: header, so all three types open the same session under different origins.
+            // The project's history, so a drag on the canvas is one undo away like every other edit.
+            services.AddDiagramSession(origin, (provider, opening) => new DatabricksSession(
+                opening.BodyPath,
+                opening.RegistrationPath,
                 origin,
+                DatabricksHeaders.ReadResourceKey(opening.RegistrationPath),
                 provider.GetRequiredService<IDatabricksDocumentStore>(),
                 provider.GetRequiredService<DatabricksElementMapper>(),
-                provider.GetRequiredService<IHistoryStackStore>()));
+                provider.GetRequiredService<IHistoryStackStore>().Get(opening.RootPath)));
 
             // The reload seam: an external write to a body OR its registration reaches the
             // shared store, and through it every open session - which is how a stored
             // reposition in the layout: block reaches the other connections.
-            services.AddSingleton<IDiagramDocumentReloader>(provider => new DatabricksDocumentReloader(
-                origin,
-                provider.GetRequiredService<IDatabricksDocumentStore>()));
+            services.AddDiagramDocumentReloader<IDatabricksDocumentStore>(origin);
 
             // The rules, resolved by origin through core's validator registry, so the family's
             // problems reach the Errors and Warnings panel like any other type's (Requirement 12).

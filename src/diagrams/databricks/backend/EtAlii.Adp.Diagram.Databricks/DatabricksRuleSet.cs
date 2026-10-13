@@ -14,18 +14,18 @@ namespace EtAlii.Adp.Diagram.Databricks;
 /// </remarks>
 internal static class DatabricksRuleSet
 {
-    public static IReadOnlyList<DiagramProblem> Judge(DatabricksDocumentEntry entry)
+    public static IReadOnlyList<DiagramProblem> Judge(DatabricksModel model)
     {
-        ArgumentNullException.ThrowIfNull(entry);
+        ArgumentNullException.ThrowIfNull(model);
 
         var problems = new List<DiagramProblem>();
-        foreach (var job in entry.Jobs)
+        foreach (var job in model.Jobs)
         {
             JudgeJob(job, problems);
         }
 
-        JudgeBundle(entry.Bundle, problems);
-        foreach (var pipeline in entry.Pipelines)
+        JudgeBundle(model.Bundle, problems);
+        foreach (var pipeline in model.Pipelines)
         {
             JudgePipeline(pipeline, problems);
         }

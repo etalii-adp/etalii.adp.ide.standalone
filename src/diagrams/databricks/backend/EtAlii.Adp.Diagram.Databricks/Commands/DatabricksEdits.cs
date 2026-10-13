@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.Databricks;
@@ -21,7 +22,7 @@ internal static class DatabricksEdits
         IDatabricksDocumentStore documents,
         string bodyPath,
         ICommand self,
-        Func<DatabricksDocumentEntry, string> edit)
+        Func<DocumentEntry<LineDocument, DatabricksModel>, string> edit)
     {
         var entry = documents.GetOrLoad(bodyPath);
         if (!entry.IsUsable)
@@ -37,21 +38,21 @@ internal static class DatabricksEdits
             return Task.FromResult(CommandResult.Failure(refusal));
         }
 
-        var saved = documents.Save(bodyPath, entry);
+        var saved = documents.Save(bodyPath, entry.Document);
         return Task.FromResult(!saved.Failed
             ? CommandResult.Success(new RestoreDocumentCommand<IDatabricksDocumentStore>(bodyPath, before, self))
             : CommandResult.Failure(saved.Error));
     }
 
     /// <summary>The job an edit addresses: the named one, or the file's first.</summary>
-    public static JobModel? JobOf(DatabricksDocumentEntry entry, string jobKey) =>
+    public static JobModel? JobOf(DatabricksModel model, string jobKey) =>
         jobKey.Length > 0
-            ? entry.Jobs.FirstOrDefault(job => job.Key == jobKey)
-            : entry.Jobs.FirstOrDefault();
+            ? model.Jobs.FirstOrDefault(job => job.Key == jobKey)
+            : model.Jobs.FirstOrDefault();
 
     /// <summary>The pipeline an edit addresses: the named one, or the file's first.</summary>
-    public static PipelineModel? PipelineOf(DatabricksDocumentEntry entry, string pipelineKey) =>
+    public static PipelineModel? PipelineOf(DatabricksModel model, string pipelineKey) =>
         pipelineKey.Length > 0
-            ? entry.Pipelines.FirstOrDefault(pipeline => pipeline.Key == pipelineKey)
-            : entry.Pipelines.FirstOrDefault();
+            ? model.Pipelines.FirstOrDefault(pipeline => pipeline.Key == pipelineKey)
+            : model.Pipelines.FirstOrDefault();
 }

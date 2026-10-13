@@ -15,17 +15,10 @@ public class LakehouseExampleTests
     /// <summary>The example folder, found by walking up from the test binary.</summary>
     private static string Lakehouse { get; } = RepositoryPaths.Under("src", "diagrams", "databricks", "examples", "lakehouse");
 
-    private static DatabricksDocumentEntry Load(string relativePath)
+    private static DatabricksModel Load(string relativePath)
     {
         var document = LineDocument.Parse(File.ReadAllText(IoPath.Combine(Lakehouse, relativePath)));
-        var root = DatabricksYaml.Root(document);
-        return new DatabricksDocumentEntry(
-            document,
-            BundleParser.Parse(root, document),
-            JobParser.Parse(root, document),
-            PipelineParser.Parse(root, document),
-            "",
-            0);
+        return DatabricksModel.Read(document);
     }
 
     [Theory]

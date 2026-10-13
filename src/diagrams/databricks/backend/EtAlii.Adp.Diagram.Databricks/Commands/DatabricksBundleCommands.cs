@@ -21,7 +21,7 @@ public sealed class AddDatabricksResourceCommandHandler(IDatabricksDocumentStore
         cancellationToken.ThrowIfCancellationRequested();
 
         return DatabricksEdits.Run(documents, command.BodyPath, command, entry =>
-            BundleWriter.AddResourceSkeleton(entry.Document, entry.Bundle, command.Kind, command.Key));
+            BundleWriter.AddResourceSkeleton(entry.Document, entry.Model.Bundle, command.Kind, command.Key));
     }
 }
 
@@ -35,6 +35,6 @@ public sealed class SetDatabricksBundleNameCommandHandler(IDatabricksDocumentSto
         cancellationToken.ThrowIfCancellationRequested();
 
         return DatabricksEdits.Run(documents, command.BodyPath, command, entry =>
-            BundleWriter.SetName(entry.Document, entry.Bundle, command.Name));
+            BundleWriter.SetName(entry.Document, entry.Model.Bundle, command.Name));
     }
 }
