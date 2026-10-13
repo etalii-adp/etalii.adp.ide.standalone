@@ -27,6 +27,8 @@
     <Project Path="../editors/plain/backend/EtAlii.Adp.Editor.Plain.Tests/EtAlii.Adp.Editor.Plain.Tests.csproj" />
     <Project Path="../editors/markdown/backend/EtAlii.Adp.Editor.Markdown/EtAlii.Adp.Editor.Markdown.csproj" />
     <Project Path="../editors/markdown/backend/EtAlii.Adp.Editor.Markdown.Tests/EtAlii.Adp.Editor.Markdown.Tests.csproj" />
+    <Project Path="../editors/json/backend/EtAlii.Adp.Editor.Json/EtAlii.Adp.Editor.Json.csproj" />
+    <Project Path="../editors/json/backend/EtAlii.Adp.Editor.Json.Tests/EtAlii.Adp.Editor.Json.Tests.csproj" />
     <Project Path="../editors/yaml/backend/EtAlii.Adp.Editor.Yaml/EtAlii.Adp.Editor.Yaml.csproj" />
     <Project Path="../editors/yaml/backend/EtAlii.Adp.Editor.Yaml.Tests/EtAlii.Adp.Editor.Yaml.Tests.csproj" />
   </Folder>

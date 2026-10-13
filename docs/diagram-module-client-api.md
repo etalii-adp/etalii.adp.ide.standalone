@@ -127,26 +127,23 @@ import "./dependency-graph.css";
 
 **Related.** [The shape of a module client](#the-shape-of-a-module-client) for where this sits in the whole.
 
-## What an editor module brings to the shared text panel
+## Editor analysis and schemas
 
-**Declarations:** `EditorAnalysis`, `EditorFinding`, `EditorCompletion`, `EditorCompletionList`, `EditorHover`, `editorHighlight`, `resolveSchemaReference`, `SchemaFiles`, `SchemaFile`, `schemaFileKey`
+**Declarations:** `EditorAnalysis`, `EditorFinding`, `EditorFindingSeverity`, `EditorCompletion`, `EditorCompletionList`, `EditorHover`, `editorHighlight`, `SchemaFiles`, `SchemaFile`, `schemaFileKey`, `resolveSchemaReference`
 
-**What it is for.** An editor module hands `TextEditorPanel` what it knows about its format, and the panel presents it the same way for every editor: an editor module draws no underline, list or tooltip of its own. [creating-an-editor-module.md](creating-an-editor-module.md), *The shared editor pieces*, says how they fit together.
+**What it is for.** An editor module tells `TextEditorPanel` what it knows about its format through one asynchronous interface, and the panel draws everything: the underlines, the gutter marks, the counts on the status line, the completion list and the hover text. A module never draws any of them itself, so JSON, YAML and XML look and behave alike.
 
-**Whether a module needs it.** Only an editor module whose format has findings, completion or a schema. A diagram module never does.
+**Whether a module needs it.** Only an editor module that checks or completes its text. A diagram module never does; an editor that only colours its text passes `extensions` and no `analysis`.
 
-**Its shape.** An `EditorAnalysis` answers `findings` for a text with `EditorFinding`s, each a `from` and `to`, a `severity`, a `message` set as text and a `source`; its optional `completions` answers an `EditorCompletionList` of `items`, each `EditorCompletion` a `label`, an optional `filterText`, `detail`, `info` and `boost`, and the `from`, `to` and `insert` it applies; its optional `hover` answers an `EditorHover`, a `from`, `to` and `text`; its optional `status` is what the status line says after the counts. `editorHighlight` is the one colour scheme, whose classes a module may put on text but never restyle. `resolveSchemaReference` decides where a schema reference a document holds points, against the document's path. `SchemaFiles` reads the project files an analysis needs over the tab's own stream and reports each as a `SchemaFile`, keyed by `schemaFileKey` of its path.
+**Its shape.** `EditorAnalysis` has `findings` (required), and `completions`, `hover` and `status` (each optional). Offsets are into the text as CodeMirror holds it, which is LF-only. An `EditorFinding` is `from`, `to`, `severity`, `message` (plain text, never markup) and `source` (who found it, such as `json-schema`). `EditorFindingSeverity` is `error`, `warning` or `info`. An `EditorCompletion` is `label`, `filterText`, `detail`, `info`, `from`, `to`, `insert` (with `${1}` tab stops applied as a snippet) and `boost`, which sorts an item up the list. `completions` answers an `EditorCompletionList` of `items`; `hover` answers an `EditorHover`, a `from`, `to` and `text`. `editorHighlight` is the one colour scheme, whose classes a module may put on text but never restyle.
 
-Source: [`src/editors/yaml/client/register.ts`](../src/editors/yaml/client/register.ts)
+`SchemaFiles` is a component that renders nothing: given the paths a document's schema references lead to, it reads each file over the tab's existing stream and reports every arrival, change and failure as a new map of `SchemaFile` (`loading`, `loaded` with its text and revision, or `failed` with its reason), keyed by `schemaFileKey` of the path. `resolveSchemaReference` decides where a reference points, before any URL arithmetic: a file of the project, a bundled schema, or no file with the reason, refusing a `..` that steps above the project root and anything with a scheme it does not bundle.
 
-```ts
-export const registrations: ToolPanelRegistration[] = [
-  {
-    matches: (mimeType) => mimeType === "editor/yaml",
-    Panel: YamlEditorPanel,
-  },
-];
-```
+Source: [`src/editors/json/client/JsonEditorPanel.tsx`](../src/editors/json/client/JsonEditorPanel.tsx)
+
+**The guards.** `resolveSchemaReference` is held to `src/fixtures/schema-reference-cases.json`, the cases the XML editor's C# twin is held to as well. `src/client/src/editors/analysisExtensions.test.tsx` checks that each severity carries a line style and a gutter mark as well as a colour.
+
+**Related.** [Registration and discovery](#registration-and-discovery) for `TextEditorPanel`, and [creating-an-editor-module.md](creating-an-editor-module.md) for the JSON editor as the worked example.
 
 ## The stream and the model
 
