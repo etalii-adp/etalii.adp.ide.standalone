@@ -36,7 +36,7 @@ public sealed class ServiceCollectionAddFunctionalDecompositionGraphTests
         var services = new ServiceCollection();
         services.AddFunctionalDecompositionGraph();
         services.AddSingleton(TestHistory.For(_ => { }));
-        using var provider = services.BuildServiceProvider();
+        await using var provider = services.BuildServiceProvider();
         var factory = new DiagramSessionFactories(provider.GetServices<IDiagramSessionFactory>()).Find(Diagram.FunctionalDecompositionGraph.Origin)!;
 
         // Act.
