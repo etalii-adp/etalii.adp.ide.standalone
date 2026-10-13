@@ -14,6 +14,11 @@ export default defineConfig({
       // a file moves. `@client` is the shell surface a module may reach into - see
       // `src/shell/panels/toolPanelRegistration.ts` for what that surface is meant to cover.
       "@client": fileURLToPath(new URL("./src", import.meta.url)),
+      // The YAML editor's language service (src/editors/yaml) imports Node's `path`, which Vite
+      // leaves out for a browser: the built bundle then threw on its first hover. Its browser
+      // stand-in takes its place (yaml-editor ruling A1); `viteBrowserExternals.test.ts` fails
+      // when any module of Node is left out again. `node:path`, a different name, is untouched.
+      path: "path-browserify",
     },
   },
   // Must match appsettings.developer.json's Client:DevServerUrl; strictPort so a

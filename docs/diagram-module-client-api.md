@@ -129,17 +129,17 @@ import "./dependency-graph.css";
 
 ## Editor analysis and schemas
 
-**Declarations:** `EditorAnalysis`, `EditorFinding`, `EditorFindingSeverity`, `EditorCompletion`, `SchemaFiles`, `SchemaFile`, `schemaFileKey`, `resolveSchemaReference`, `editorHighlight`, `useAuth`
+**Declarations:** `EditorAnalysis`, `EditorFinding`, `EditorFindingSeverity`, `EditorCompletion`, `EditorCompletionList`, `EditorHover`, `editorHighlight`, `SchemaFiles`, `SchemaFile`, `schemaFileKey`, `resolveSchemaReference`, `useAuth`
 
 **What it is for.** An editor module tells `TextEditorPanel` what it knows about its format through one asynchronous interface, and the panel draws everything: the underlines, the gutter marks, the counts on the status line, the completion list and the hover text. A module never draws any of them itself, so JSON, YAML and XML look and behave alike.
 
 **Whether a module needs it.** Only an editor module that checks or completes its text. A diagram module never does; an editor that only colours its text passes `extensions` and no `analysis`.
 
-**Its shape.** `EditorAnalysis` has `findings` (required), and `completions`, `hover` and `status` (each optional). Offsets are into the text as CodeMirror holds it, which is LF-only. An `EditorFinding` is `from`, `to`, `severity`, `message` (plain text, never markup) and `source` (who found it, such as `json-schema`). `EditorFindingSeverity` is `error`, `warning` or `info`. An `EditorCompletion` is `label`, `filterText`, `detail`, `info`, `from`, `to`, `insert` (with `${1}` tab stops applied as a snippet) and `boost`, which sorts an item up the list.
+**Its shape.** `EditorAnalysis` has `findings` (required), and `completions`, `hover` and `status` (each optional). Offsets are into the text as CodeMirror holds it, which is LF-only. An `EditorFinding` is `from`, `to`, `severity`, `message` (plain text, never markup) and `source` (who found it, such as `json-schema`). `EditorFindingSeverity` is `error`, `warning` or `info`. An `EditorCompletion` is `label`, `filterText`, `detail`, `info`, `from`, `to`, `insert` (with `${1}` tab stops applied as a snippet) and `boost`, which sorts an item up the list. `completions` answers an `EditorCompletionList` of `items`; `hover` answers an `EditorHover`, a `from`, `to` and `text`. `editorHighlight` is the one colour scheme, whose classes a module may put on text but never restyle.
 
 `SchemaFiles` is a component that renders nothing: given the paths a document's schema references lead to, it reads each file over the tab's existing stream and reports every arrival, change and failure as a new map of `SchemaFile` (`loading`, `loaded` with its text and revision, or `failed` with its reason), keyed by `schemaFileKey` of the path. `resolveSchemaReference` decides where a reference points, before any URL arithmetic: a file of the project, a bundled schema, or no file with the reason, refusing a `..` that steps above the project root and anything with a scheme it does not bundle.
 
-`editorHighlight` is the one colour scheme of every editor; a module that marks a token of its own reads a class from it (`editorHighlight.style([tags.namespace])`) rather than writing a colour. A module whose checking is in the backend implements `EditorAnalysis` over the family's `Analyze` and `Complete` calls of `EditorService`, made on the `transport` that `useAuth` gives; see *Asking the backend about the text* in [creating-an-editor-module.md](creating-an-editor-module.md).
+A module that marks a token of its own reads a class from `editorHighlight` (`editorHighlight.style([tags.namespace])`, as the XML editor does for a prefix) rather than writing a colour. A module whose checking is in the backend implements `EditorAnalysis` over the family's `Analyze` and `Complete` calls of `EditorService`, made on the `transport` that `useAuth` gives; see *Asking the backend about the text* in [creating-an-editor-module.md](creating-an-editor-module.md).
 
 Source: [`src/editors/json/client/JsonEditorPanel.tsx`](../src/editors/json/client/JsonEditorPanel.tsx), [`src/editors/xml/client/XmlEditorPanel.tsx`](../src/editors/xml/client/XmlEditorPanel.tsx)
 

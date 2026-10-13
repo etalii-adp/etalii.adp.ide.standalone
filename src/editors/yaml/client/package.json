@@ -1,0 +1,13 @@
+{
+  "name": "@adp/editor-yaml-client",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "YAML editor client: the grammar, the indentation-keeping keys, and the analysis on Red Hat's YAML language service.",
+  "dependencies": {
+    "@codemirror/lang-yaml": "6.1.3",
+    "vscode-languageserver-textdocument": "1.0.15",
+    "yaml": "2.8.3",
+    "yaml-language-server": "1.25.0"
+  }
+}
