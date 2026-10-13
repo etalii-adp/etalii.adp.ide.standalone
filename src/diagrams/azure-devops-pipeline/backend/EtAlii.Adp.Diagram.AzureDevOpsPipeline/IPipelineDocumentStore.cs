@@ -44,12 +44,6 @@ public interface IPipelineDocumentStore : IDiagramDocumentStore
     /// </remarks>
     DocumentSaveResult Save(string rootPath, string path, DocumentEntry<LineDocument, PipelineModel> entry);
 
-    /// <summary>
-    /// Tells every session on this document to re-deliver, without changing the document - for a
-    /// change to how it is drawn rather than to what it says.
-    /// </summary>
-    void Touch(string rootPath, string path);
-
     /// <summary>Raised after a save, and after an external change is picked up.</summary>
     event EventHandler<DocumentChangedEventArgs>? Changed;
 }

@@ -123,13 +123,14 @@ public class ServiceCollectionAddAzurePipelineTests
         var body = folder.Combine("pipelines", "azure-pipelines.yml");
         await File.WriteAllTextAsync(body, "jobs:\n  - template: /templates/shared.yml\n", cancellationToken);
 
-        // Act.
+        // Act: the session reads the body first, so the store keeps what it read with its root.
         await using var session = factory.Open(ShortGuid.NewShortGuid(), folder.Path, body, null);
+        var drawn = session.Baseline();
 
         // Assert.
         Assert.IsType<PipelineSession>(session);
+        Assert.NotEmpty(drawn);
         Assert.Equal("Shared", provider.GetRequiredService<IPipelineDocumentStore>().GetOrLoad(folder.Path, body).Model.Jobs.Single().Name);
-        Assert.NotEmpty(session.Baseline());
     }
 
     [Fact]
@@ -255,7 +256,7 @@ public class ServiceCollectionAddAzurePipelineTests
         }
 
         Assert.NotNull(directory);
-        var program = System.IO.Path.Combine(directory.FullName, "backend", "EtAlii.Adp.Backend.Service", "Program.cs");
+        var program = IoPath.Combine(directory.FullName, "backend", "EtAlii.Adp.Backend.Service", "Program.cs");
         Assert.True(File.Exists(program), $"The host's Program.cs was not found at {program}.");
         return program;
     }
@@ -273,7 +274,7 @@ public class ServiceCollectionAddAzurePipelineTests
         }
 
         Assert.NotNull(directory);
-        var diagram = System.IO.Path.Combine(
+        var diagram = IoPath.Combine(
             directory.FullName, "diagrams", "azure-devops-pipeline", "backend", "EtAlii.Adp.Diagram.AzureDevOpsPipeline", "Diagram.cs");
         Assert.True(File.Exists(diagram), $"The module's Diagram.cs was not found at {diagram}.");
         return diagram;

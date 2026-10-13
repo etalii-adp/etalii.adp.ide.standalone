@@ -95,6 +95,10 @@ public sealed class PipelineDocumentStore : IPipelineDocumentStore
         return DocumentSaveResult.Ok;
     }
 
+    /// <summary>
+    /// Tells every session on this document to re-deliver, without changing the document - for a
+    /// change to how it is drawn rather than to what it says.
+    /// </summary>
     public void Touch(string rootPath, string path)
     {
         GetOrLoad(rootPath, path);
