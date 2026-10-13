@@ -111,7 +111,7 @@ public abstract class DiagramElementSourceResolver<TBody, TModel> : IContextSour
             return Rejected("The path does not match the element.");
         }
 
-        var detail = new ContextLevelDetail { Element = new ElementDetail { Text = text } };
+        var detail = new ContextLevelDetail { Element = new ElementDetail { Text = text, HasChildren = HasChildren(model, elementId) } };
         if (Drawn(model, elementId) is { } drawn)
         {
             detail.Element.ElementType = drawn.Type;
@@ -145,6 +145,9 @@ public abstract class DiagramElementSourceResolver<TBody, TModel> : IContextSour
 
     /// <summary>The element <paramref name="elementId"/> as the canvas was sent it, or null when none is drawn.</summary>
     protected abstract DiagramElement? Drawn(TModel model, string elementId);
+
+    /// <summary>Whether <paramref name="elementId"/> has children, for a diagram whose elements form a tree; none by default.</summary>
+    protected virtual bool HasChildren(TModel model, string elementId) => false;
 
     /// <summary>
     /// Calls <paramref name="changed"/> whenever the document at <paramref name="bodyPath"/> changes

@@ -179,4 +179,36 @@ public sealed class AbmSessionTests : IDisposable
         // Assert.
         Assert.NotEqual("", refusal);
     }
+
+    [Fact]
+    public async Task ADragOntoAnotherNode_MovesItUnderThatNode_OnTheHistory()
+    {
+        // Arrange.
+        var history = new HistoryStack(new AbmTestDispatcher(_store));
+        await using var session = new AbmSession(Body, Registration, _store, new AbmElementMapper(), history);
+        var children = Model().NodeOf("1.1")!.ChildIds.Count;
+
+        // Act: the test-writing step, dropped as the first child of the step before it.
+        var refusal = await session.MoveElementAsync("1.2", "1.1", 0, TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.Equal("", refusal);
+        Assert.Equal(children + 1, Model().NodeOf("1.1")!.ChildIds.Count);
+        Assert.True(history.CanUndo);
+    }
+
+    [Fact]
+    public async Task ADragOntoAnotherNode_WithoutTheHistory_IsReadOnly()
+    {
+        // Arrange.
+        await using var session = new AbmSession(Body, Registration, _store, new AbmElementMapper());
+        var before = await File.ReadAllBytesAsync(Body, TestContext.Current.CancellationToken);
+
+        // Act.
+        var refusal = await session.MoveElementAsync("1.2", "1.1", 0, TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.Equal("This behavior model is read-only.", refusal);
+        Assert.Equal(before, await File.ReadAllBytesAsync(Body, TestContext.Current.CancellationToken));
+    }
 }
