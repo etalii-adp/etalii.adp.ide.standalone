@@ -72,13 +72,23 @@ public abstract class DocumentDiagramSession<TBody, TModel> : IDiagramSession
     }
 
     /// <inheritdoc />
-    public Task<string> MoveElementAsync(string elementId, string newParentId, int index, CancellationToken cancellationToken)
+    public async Task<string> MoveElementAsync(string elementId, string newParentId, int index, CancellationToken cancellationToken)
     {
-        _ = elementId;
-        _ = newParentId;
-        _ = index;
         cancellationToken.ThrowIfCancellationRequested();
-        return Task.FromResult(ParentRefusal);
+
+        var move = ParentMoveOf(elementId, newParentId, index);
+        if (move.Command is not { } command)
+        {
+            return move.Refusal;
+        }
+
+        if (_history is null)
+        {
+            return ReadOnlyRefusal;
+        }
+
+        var result = await _history.ExecuteAsync(command, cancellationToken);
+        return result.IsSuccess ? "" : result.Error;
     }
 
     /// <inheritdoc />
@@ -120,6 +130,15 @@ public abstract class DocumentDiagramSession<TBody, TModel> : IDiagramSession
     /// </summary>
     protected virtual DiagramPlacement PlacementOf(TModel model, string elementId, double x, double y) =>
         DiagramPlacement.Refused("This diagram cannot be arranged by dragging.");
+
+    /// <summary>
+    /// What a drag of <paramref name="elementId"/> onto <paramref name="newParentId"/>, at
+    /// <paramref name="index"/> among its children, is. By default a refusal in
+    /// <see cref="ParentRefusal"/>'s words; a diagram whose elements form a tree answers with the
+    /// command that moves one.
+    /// </summary>
+    protected virtual DiagramPlacement ParentMoveOf(string elementId, string newParentId, int index) =>
+        DiagramPlacement.Refused(ParentRefusal);
 
     /// <summary>The model the session shows now: the store's document at <see cref="BodyPath"/>.</summary>
     private TModel Model() => _documents.GetOrLoad(BodyPath).Model;
