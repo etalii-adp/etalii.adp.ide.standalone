@@ -15,8 +15,9 @@ namespace EtAlii.Adp.Diagram.Mindmap.Tests;
 /// than tolerated. Removing either is a requirements change, not a tidy-up.
 /// </para>
 /// <para>
-/// The reloader is held as <see cref="IDiagramDocumentReloader"/> for the same reason as in
-/// <c>MindmapDocumentReloaderTests</c>: the deletion reaches the store only through the override.
+/// The reloader is held as <see cref="IDiagramDocumentReloader"/>, as the host holds it: a default
+/// interface member is callable only through the interface, so the deletion is seen to reach the
+/// store through the shared reloader's own <c>BodyDeleted</c> rather than the default reload.
 /// </para>
 /// </remarks>
 public sealed class MindmapDocumentStoreDepartureTests : IDisposable
@@ -49,7 +50,7 @@ public sealed class MindmapDocumentStoreDepartureTests : IDisposable
     {
         // Arrange: a map on disk that nothing has opened.
         var store = new MindmapDocumentStore();
-        IDiagramDocumentReloader reloader = new MindmapDocumentReloader(store);
+        IDiagramDocumentReloader reloader = new DiagramDocumentReloader<IMindmapDocumentStore>(Diagram.Mindmap.Origin, store);
         var told = 0;
         store.Changed += (_, _) => told++;
 
@@ -75,7 +76,7 @@ public sealed class MindmapDocumentStoreDepartureTests : IDisposable
     {
         // Arrange.
         var store = new MindmapDocumentStore();
-        IDiagramDocumentReloader reloader = new MindmapDocumentReloader(store);
+        IDiagramDocumentReloader reloader = new DiagramDocumentReloader<IMindmapDocumentStore>(Diagram.Mindmap.Origin, store);
         var document = store.GetOrLoad(Body);
         var told = new List<MindmapChange>();
         store.Changed += (_, args) => told.Add(args.Change);

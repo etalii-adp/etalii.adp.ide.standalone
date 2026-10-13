@@ -97,7 +97,7 @@ Other 1.11-to-1.12 differences the writer tolerates by not rewriting anything: `
 
 - Saves are atomic, via a temporary file moved into place (Req 3.7; `WritableDocumentLifecycle`). A failed write returns an error and leaves the edit in memory to be retried (backend-centralization R3.2, R3.4).
 - One loaded document is shared by every viewer of a map (Req 2.4).
-- An external edit of the `.mm` is reloaded and pushed to every viewer; it is not undoable (Req 11.8, `MindmapDocumentReloader`). A reload that cannot parse keeps the last good map; deleting the body clears the map to the empty state (backend-centralization R2.4, R2.5).
+- An external edit of the `.mm` is reloaded and pushed to every viewer; it is not undoable (Req 11.8, the shared `DiagramDocumentReloader<IMindmapDocumentStore>`). A reload that cannot parse keeps the last good map; deleting the body clears the map to the empty state (backend-centralization R2.4, R2.5).
 
 ## 4. Layout
 
