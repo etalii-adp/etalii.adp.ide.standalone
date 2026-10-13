@@ -1,5 +1,4 @@
 using EtAlii.Adp.Context;
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -21,18 +20,29 @@ public static class ServiceCollectionAddDependencyGraphExtension
     {
         ArgumentNullException.ThrowIfNull(services);
 
-        services.AddSingleton<IDiagramDocumentFactory, DependencyGraphDocumentFactory>();
+        // The version marker and an empty element list, and nothing else: an empty graph is a valid
+        // one, and a placeholder node would be the first thing every user deletes. The base name is
+        // not written - a graph has no title line in its schema. CRLF, the house style, since a new
+        // file has no style of its own to keep.
+        services.AddEmptyDocument(Diagram.DependencyGraph.Origin, "dependencies: 1\r\nelements: []\r\n");
         services.AddSingleton<DependencyGraphElementMapper>();
 
         // One document per path, shared by every connection viewing it. TryAdd rather than Add
         // so a test that registers its own store keeps it.
         services.TryAddSingleton<IDependencyGraphDocumentStore, DependencyGraphDocumentStore>();
 
-        services.AddSingleton<IDiagramSessionFactory, DependencyGraphSessionFactory>();
+        // The registration file is ignored: a `generic/dependencies` `.adp` carries nothing beyond
+        // its MIME line, and a bare `.dgr` routes here with no registration at all. The project's
+        // history, so a drag is one undo away like every other edit.
+        services.AddDiagramSession(Diagram.DependencyGraph.Origin, (provider, opening) => new DependencyGraphSession(
+            opening.BodyPath,
+            provider.GetRequiredService<IDependencyGraphDocumentStore>(),
+            provider.GetRequiredService<DependencyGraphElementMapper>(),
+            provider.GetRequiredService<IHistoryStackStore>().Get(opening.RootPath)));
 
         // The reload seam: an external write to a graph reaches the store, and through it every
-        // open session.
-        services.AddSingleton<IDiagramDocumentReloader, DependencyGraphDocumentReloader>();
+        // open session - and a deleted body reaches it as a deletion, not as a reload.
+        services.AddDiagramDocumentReloader<IDependencyGraphDocumentStore>(Diagram.DependencyGraph.Origin);
 
         // The commands, one handler each: the whole editable surface of a graph, and nothing
         // writes the file except through them. Nine where the timeline has ten - SetTimelineEnd

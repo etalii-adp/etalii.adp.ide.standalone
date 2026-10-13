@@ -376,15 +376,15 @@ internal static class DependencyGraphTranscript
     /// <summary>The store's own entries, each marked as not parsing: the backend's one read-only case.</summary>
     private sealed class ReadOnlyStore(IDependencyGraphDocumentStore inner) : IDependencyGraphDocumentStore
     {
-        public event EventHandler<DependencyGraphDocumentChangedEventArgs>? Changed
+        public event EventHandler<DocumentChangedEventArgs>? Changed
         {
             add => inner.Changed += value;
             remove => inner.Changed -= value;
         }
 
-        public DependencyGraphDocumentEntry GetOrLoad(string path) => inner.GetOrLoad(path) with { Error = "parity: read-only" };
+        public DocumentEntry<LineDocument, DependencyGraphModel> GetOrLoad(string path) => inner.GetOrLoad(path) with { Unreadable = "parity: read-only" };
 
-        public DocumentSaveResult Save(string path, DependencyGraphDocumentEntry entry) => inner.Save(path, entry);
+        public DocumentSaveResult Save(string path, LineDocument document) => inner.Save(path, document);
 
         public void Forget(string path) => inner.Forget(path);
 

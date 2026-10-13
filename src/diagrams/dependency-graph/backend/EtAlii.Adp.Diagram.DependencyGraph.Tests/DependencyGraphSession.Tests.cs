@@ -327,7 +327,7 @@ public class DependencyGraphSessionTests : IDisposable
         // The seam core reaches, rather than the store directly: a reloader wired to the wrong
         // origin is an external edit that never arrives, with nothing failing anywhere.
         var path = Write();
-        var reloader = new DependencyGraphDocumentReloader(_store);
+        IDiagramDocumentReloader reloader = new DiagramDocumentReloader<IDependencyGraphDocumentStore>(Diagram.DependencyGraph.Origin, _store);
         await using var session = Open(path);
         session.Baseline();
         var disturbed = false;
@@ -362,22 +362,6 @@ public class DependencyGraphSessionTests : IDisposable
         Assert.False(disturbed);
     }
 
-    [Fact]
-    public void TheFactoryOpensASessionForThisOrigin()
-    {
-        // Arrange.
-        var path = Write();
-        var factory = new DependencyGraphSessionFactory(_store, _mapper, _historyStacks);
-
-        // Act.
-        var session = factory.Open(ShortGuid.NewShortGuid(), _workspace, path, registrationPath: null);
-
-        // Assert.
-        // A bare .dgr routes with no registration at all, so the factory must not need one.
-        Assert.Equal(Diagram.DependencyGraph.Origin, factory.Origin);
-        using var wrapped = Wrap(Assert.IsType<DependencyGraphSession>(session));
-        Assert.NotEmpty(wrapped.Value.Baseline());
-    }
 
     /// <summary>Bridges IAsyncDisposable into a using for the tests that never await.</summary>
     private static Disposer Wrap(DependencyGraphSession session) => new(session);

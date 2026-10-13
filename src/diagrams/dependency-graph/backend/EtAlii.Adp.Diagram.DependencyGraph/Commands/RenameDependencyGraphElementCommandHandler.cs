@@ -36,7 +36,7 @@ public sealed class RenameDependencyGraphElementCommandHandler : ICommandHandler
         var inverse = command with { Label = element.Label };
         DependencyGraphWriter.SetLabel(entry.Document, element, command.Label);
 
-        var saved = _documents.Save(command.BodyPath, entry);
+        var saved = _documents.Save(command.BodyPath, entry.Document);
         return Task.FromResult(!saved.Failed
             ? CommandResult.Success(inverse)
             : CommandResult.Failure(saved.Error));

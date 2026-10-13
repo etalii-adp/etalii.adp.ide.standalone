@@ -54,7 +54,7 @@ public sealed class SetDependencyGraphPlacementCommandHandler : ICommandHandler<
         DependencyGraphWriter.SetX(entry.Document, element, command.X);
         DependencyGraphWriter.SetRow(entry.Document, element, command.Row);
 
-        var saved = _documents.Save(command.BodyPath, entry);
+        var saved = _documents.Save(command.BodyPath, entry.Document);
         return Task.FromResult(!saved.Failed
             ? CommandResult.Success(inverse)
             : CommandResult.Failure(saved.Error));

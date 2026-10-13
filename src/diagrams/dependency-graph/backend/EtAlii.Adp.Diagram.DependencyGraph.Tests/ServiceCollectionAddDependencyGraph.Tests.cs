@@ -84,6 +84,64 @@ public class ServiceCollectionAddDependencyGraphTests
     }
 
     [Fact]
+    public void TheEmptyDocument_IsTheSchemaMarkerAndAnEmptyListAndNothingElse()
+    {
+        // Arrange.
+        using var provider = Build();
+
+        // Act.
+        var text = EmptyDocument(provider, "services");
+
+        // Assert.
+        var model = DependencyGraphParser.Parse(LineDocument.Parse(text));
+        Assert.Empty(model.Elements);
+        Assert.Empty(model.Relations);
+        Assert.Equal("dependencies: 1\r\nelements: []\r\n", text);
+    }
+
+    [Fact]
+    public void TheFirstElementAddedToTheEmptyDocument_ProducesValidYaml()
+    {
+        // Arrange.
+        // The trap this test exists for: `elements: []` already carries a value, and appending a
+        // block entry after it without opening the section leaves the key with two values and
+        // the file unparseable - a bug that would surface on the very first Add of every new
+        // graph.
+        using var provider = Build();
+        var document = LineDocument.Parse(EmptyDocument(provider, "services"));
+        var model = DependencyGraphParser.Parse(document);
+
+        // Act.
+        DependencyGraphWriter.InsertElement(document, model, "first001", "First", 120, 0);
+
+        // Assert.
+        var reparsed = DependencyGraphParser.Parse(LineDocument.Parse(document.Text));
+        var element = Assert.Single(reparsed.Elements);
+        Assert.Equal("First", element.Label);
+        Assert.DoesNotContain("[]", document.Text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ASession_IsOpenedOnTheBody_WithNoRegistration()
+    {
+        // Arrange: a bare .dgr routes with no registration at all, so opening must not need one.
+        await using var provider = Build();
+        var factory = new DiagramSessionFactories(provider.GetServices<IDiagramSessionFactory>()).Find(Diagram.DependencyGraph.Origin)!;
+
+        // Act.
+        await using var session = factory.Open(ShortGuid.NewShortGuid(), "root", DependencyGraphDocumentStoreTests.Simple, null);
+
+        // Assert.
+        Assert.IsType<DependencyGraphSession>(session);
+        Assert.NotEmpty(session.Baseline());
+    }
+
+    private static string EmptyDocument(ServiceProvider provider, string baseName) =>
+        new DiagramDocumentFactories(provider.GetServices<IDiagramDocumentFactory>())
+            .Find(Diagram.DependencyGraph.Origin)!
+            .CreateEmptyDocument(baseName);
+
+    [Fact]
     public void TheDefinitionsBuildHook_IsWhatCallsThis()
     {
         // Assert.
