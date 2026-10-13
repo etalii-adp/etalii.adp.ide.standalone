@@ -594,7 +594,8 @@ internal sealed class BodyReading
         var rule = element.Rule;
         if (rule.Id?.From is not null)
         {
-            if (element.IdRead is { Present: true, Value: { } value } && NewText.Plain(value, null) is { Length: > 0 } id)
+            // The id is the slot's written text (FBL 0.5 §5.3): `id: 007` is 007, `id: ~` is ~, and `id:` has none.
+            if (element.IdRead is { Present: true, Written: { Length: > 0 } id })
             {
                 element.Id = id;
                 element.IdStored = true;
@@ -636,21 +637,21 @@ internal sealed class BodyReading
             if (binding.Reference is { } reference && reference.To.Contains(element.Rule.Name) && reference.By == name)
             {
                 element.KeyAttribute = name;
-                return NewText.Plain(element.Attributes.GetValueOrDefault(name), null);
+                return element.TextOf(name);
             }
         }
-        if (element.Rule.Id?.From is not null && element.IdRead is { Present: true } read) return NewText.Plain(read.Value, null);
+        if (element.Rule.Id?.From is not null && element.IdRead is { Present: true } read) return read.Written;
         return element.Id;
     }
 
     private ReadElement? End(ReadElement relation, SlotRead? read, string end)
     {
-        if (read is not { Present: true, Value: { } value })
+        if (read is not { Present: true, Value: not null })
         {
             Family.Report(FindingCodes.DanglingReference, FindingSeverity.Warning, $"This {relation.Rule.Type} has no {end}, so it is not read as a relation.", relation.Entry.Own);
             return null;
         }
-        var key = NewText.Plain(value, null);
+        var key = read.Written;
         var found = Elements.FirstOrDefault(e => !e.IsRelation && e.Key == key);
         if (found is null)
         {
@@ -665,7 +666,7 @@ internal sealed class BodyReading
         {
             if (binding.Reference is not { } reference || reference.To.Contains(element.Rule.Name)) continue;
             if (!element.Slots.TryGetValue(name, out var read) || !read.Present) continue;
-            var names = element.Attributes.GetValueOrDefault(name) is List<object?> list ? list.Select(v => NewText.Plain(v, null)) : [NewText.Plain(read.Value, null)];
+            var names = element.Attributes.GetValueOrDefault(name) is List<object?> list ? list.Select(v => NewText.Plain(v, null)) : [element.TextOf(name)];
             foreach (var key in names)
             {
                 if (ReferencedBy(reference, key) is null)
@@ -689,7 +690,7 @@ internal sealed class BodyReading
                 // never an attribute's name, since DISL reserves it, so there is no attribute to read.
                 var named = reference.By == "id" && !element.Attributes.ContainsKey("id")
                     ? (element.IdStored ? element.Id : null)
-                    : NewText.Plain(element.Attributes.GetValueOrDefault(reference.By), null);
+                    : element.TextOf(reference.By);
                 if (named is not null) index.TryAdd(named, element);
             }
             _referenced[reference] = index;

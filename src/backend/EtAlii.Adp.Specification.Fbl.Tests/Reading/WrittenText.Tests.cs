@@ -2,6 +2,7 @@ using System.Text;
 using EtAlii.Adp.Specification.Fbl.Documents;
 using EtAlii.Adp.Specification.Fbl.History;
 using EtAlii.Adp.Specification.Fbl.Json;
+using EtAlii.Adp.Specification.Fbl.Planning;
 using EtAlii.Adp.Specification.Fbl.Rules;
 using EtAlii.Adp.Specification.Fbl.Text;
 using EtAlii.Adp.Specification.Fbl.Yaml;
@@ -26,6 +27,26 @@ public class WrittenTextTests
           "name": "task", "type": "Task", "at": "/tasks/*",
           "id": { "from": { "key": "id" } },
           "attributes": { "owner": { "key": "owner", "reference": { "to": ["item"], "by": "id" } } }
+        }]
+        """);
+
+    private static readonly FblBinding _relations = Inline("""
+        [{ "name": "item", "type": "Item", "at": "/items/*", "id": { "from": { "key": "id" } } }],
+        "relations": [{ "name": "link", "type": "Link", "at": "/links/*", "source": { "key": "from" }, "target": { "key": "to" } }]
+        """);
+
+    private static readonly FblBinding _named = Inline("""
+        [{
+          "name": "item", "type": "Item", "at": "/items/*",
+          "id": { "from": { "key": "id" } },
+          "attributes": { "code": { "key": "id" } },
+          "remove": { "cascade": ["task"] }
+        },
+        {
+          "name": "task", "type": "Task", "at": "/tasks/*",
+          "id": { "from": { "key": "id" } },
+          "attributes": { "owner": { "key": "owner", "reference": { "to": ["item"], "by": "id" } } },
+          "remove": {}
         }]
         """);
 
@@ -69,7 +90,7 @@ public class WrittenTextTests
         var marks = _names.Select(n => Case(n).Open).OfType<OpenFinding>().ToList();
 
         // Assert.
-        Assert.All(marks, mark => Assert.Contains(mark.RepairedBy, new[] { 3, 4 }));
+        Assert.All(marks, mark => Assert.Equal(4, mark.RepairedBy));
     }
 
     /// <summary>A case of Requirement 1.1 the library does not yet read as FBL 0.5 says: what it reads today, and which task of fbl-written-text repairs it.</summary>
@@ -82,11 +103,77 @@ public class WrittenTextTests
         "label 1.0" => ("items:\n  - id: a\n    label: 1.0\n", "1.0", m => m.Find("a")!.Attributes["label"], new OpenFinding(1.0, 4)),
         "label null" => ("items:\n  - id: a\n    label: null\n", "null", m => m.Find("a")!.Attributes["label"], new OpenFinding(null, 4)),
         "label ~" => ("items:\n  - id: a\n    label: ~\n", "~", m => m.Find("a")!.Attributes["label"], new OpenFinding(null, 4)),
-        "id 007" => ("items:\n  - id: 007\n    label: Seven\n", "007", m => m.Elements.Single().Id, new OpenFinding("7", 3)),
+        "id 007" => ("items:\n  - id: 007\n    label: Seven\n", "007", m => m.Elements.Single().Id, null),
         // The element named is written quoted, so its id is "007" whatever is read; the reference is written plain.
-        "reference 007" => ("items:\n  - id: \"007\"\ntasks:\n  - id: b\n    owner: 007\n", "", m => string.Join(" ", m.Findings.Select(f => f.Message)), new OpenFinding("'7' in owner names no item.", 3)),
+        "reference 007" => ("items:\n  - id: \"007\"\ntasks:\n  - id: b\n    owner: 007\n", "", m => string.Join(" ", m.Findings.Select(f => f.Message)), null),
         _ => throw new ArgumentOutOfRangeException(nameof(name), name, null),
     };
+
+    [Theory]
+    [InlineData("~", "~")]
+    [InlineData("null", "null")]
+    [InlineData("'007'", "007")]
+    public void AnIdThatYamlTypesIsItsWrittenText(string written, string id)
+    {
+        // Act.
+        var model = Read($"items:\n  - id: {written}\n");
+
+        // Assert.
+        var element = Assert.Single(model.Elements);
+        Assert.Equal((id, true), (element.Id, element.IdIsStored));
+        Assert.Empty(model.Findings);
+    }
+
+    [Fact]
+    public void AnIdWrittenWithNoValueIsMissing()
+    {
+        // Act.
+        var model = Read("items:\n  - id:\n");
+
+        // Assert: addressed by its place, and reported.
+        Assert.False(Assert.Single(model.Elements).IdIsStored);
+        Assert.Equal(FindingCodes.MissingId, Assert.Single(model.Findings).Code);
+    }
+
+    [Fact]
+    public void ARelationsEndIsItsWrittenText()
+    {
+        // Act.
+        var model = OpenBody.Open("items:\n  - id: \"007\"\n  - id: b\nlinks:\n  - from: 007\n    to: b\n"u8.ToArray(), _relations, _strings).Model;
+
+        // Assert.
+        var link = Assert.Single(model.Elements, e => e.IsRelation);
+        Assert.Equal(("007", "b"), (link.Source, link.Target));
+        Assert.Empty(model.Findings);
+    }
+
+    [Fact]
+    public void ARenameRewritesAReferenceWrittenAsTheOldKey()
+    {
+        // Arrange: the id is written quoted, the reference plain; both are the text 007.
+        var body = OpenBody.Open("items:\n  - id: \"007\"\ntasks:\n  - id: b\n    owner: 007\n"u8.ToArray(), _named, _strings);
+
+        // Act.
+        var result = body.Change(new ModelChange.Set("007", new Dictionary<string, object?> { ["code"] = "008" }));
+
+        // Assert.
+        Assert.IsType<PlanResult.Planned>(result);
+        Assert.Equal("items:\n  - id: \"008\"\ntasks:\n  - id: b\n    owner: \"008\"\n", Encoding.UTF8.GetString(body.Bytes));
+    }
+
+    [Fact]
+    public void ARemovalCascadesToAnEntryReferencingItsWrittenText()
+    {
+        // Arrange.
+        var body = OpenBody.Open("items:\n  - id: \"007\"\ntasks:\n  - id: b\n    owner: 007\n"u8.ToArray(), _named, _strings);
+
+        // Act.
+        var result = body.Change(new ModelChange.Remove("007"));
+
+        // Assert: the task naming it goes with it.
+        Assert.IsType<PlanResult.Planned>(result);
+        Assert.Empty(body.Model.Elements);
+    }
 
     [Theory]
     [InlineData("k: Plan  the launch  # a comment\n", "Plan  the launch")]

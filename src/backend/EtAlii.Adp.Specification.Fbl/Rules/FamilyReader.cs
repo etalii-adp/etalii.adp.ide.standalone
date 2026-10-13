@@ -112,6 +112,15 @@ internal sealed class ReadElement
 
     public bool IsRelation => Rule.IsRelation;
 
+    /// <summary>
+    /// An attribute as a key or a reference compares it (FBL 0.5 §5.7): the written text of its slot,
+    /// or the value as text where the slot is absent, holds a list or has a map to translate it.
+    /// </summary>
+    public string TextOf(string attribute) =>
+        Slots.TryGetValue(attribute, out var read) && read.Present && Attributes.GetValueOrDefault(attribute) is not List<object?> && Rule.Attributes.FirstOrDefault(a => a.Key == attribute).Value is { Map: null }
+            ? read.Written
+            : NewText.Plain(Attributes.GetValueOrDefault(attribute), null);
+
     public override string ToString() => $"{Rule.Name} {Id}";
 }
 
