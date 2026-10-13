@@ -4,9 +4,10 @@ namespace EtAlii.Adp.Specification.Fbl.Yaml;
 
 /// <summary>
 /// Reads a YAML flow collection (<c>[a, b]</c>, <c>{k: v}</c>) into the values CEL sees (FBL §4.3):
-/// its members are readable, while its only writable span is the whole collection.
+/// its members are readable, while its only writable span is the whole collection. With
+/// <paramref name="written"/>, each member and key is its written text instead (FBL §4.1.5).
 /// </summary>
-internal sealed class FlowReader(string text)
+internal sealed class FlowReader(string text, bool written = false)
 {
     private int _position;
 
@@ -101,6 +102,7 @@ internal sealed class FlowReader(string text)
             if (d == ':' && (key || _position + 1 >= text.Length || text[_position + 1] is ' ' or ',' or ']' or '}')) break;
             _position++;
         }
-        return YamlScalars.Typed(YamlScalars.Fold(text[begin.._position].Trim()));
+        var plain = YamlScalars.Fold(text[begin.._position].Trim());
+        return written ? plain : YamlScalars.Typed(plain);
     }
 }

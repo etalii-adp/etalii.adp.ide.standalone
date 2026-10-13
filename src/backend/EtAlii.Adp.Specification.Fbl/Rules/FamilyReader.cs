@@ -56,6 +56,18 @@ internal sealed record SlotRead(object? Value, Span? Span, bool Present, bool Wr
 
     /// <summary>The value as written, before maps or conversion, for keeping a map's wire value.</summary>
     public string? Wire { get; init; }
+
+    /// <summary>
+    /// Whether the slot holds a true scalar of a yaml or json tree, so that <see cref="Wire"/> is its
+    /// written text (FBL §4.1.5). A flow collection has the kind of a scalar and is not one.
+    /// </summary>
+    public bool WrittenScalar { get; init; }
+
+    /// <summary>
+    /// The written text of the slot (FBL §4.1.5): what the author wrote for a true scalar, otherwise
+    /// the value as text, which is already the written text for the xml, lines and blocks families.
+    /// </summary>
+    public string Written => WrittenScalar && Wire is { } wire ? wire : NewText.Plain(Value, null);
 }
 
 /// <summary>An element or relation as the engine keeps it: the public element plus where each value lives.</summary>
