@@ -20,6 +20,10 @@ namespace EtAlii.Adp.Diagram.Mindmap;
 /// "Rename…" are one edit and one undo entry. Nothing here writes to the document - every
 /// change goes through the project's history like every other edit.
 /// </para>
+/// <para>
+/// Not on <see cref="DiagramPropertyProvider{TBody, TModel}"/> (code-structure FR-012): that frame reads a store of a
+/// body and a model, which this module's store is not.
+/// </para>
 /// </remarks>
 public sealed class MindmapContextPropertyProvider : IContextPropertyProvider
 {

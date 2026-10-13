@@ -30,6 +30,10 @@ namespace EtAlii.Adp.Diagram.Mindmap;
 /// reaches the explorer's providers (Requirement 8.7). Tab, the XMind convention for a
 /// child, is an alias the canvas maps to Insert, since an action carries one shortcut.
 /// </para>
+/// <para>
+/// Not on <see cref="DiagramActionProvider{TBody, TModel}"/> (code-structure FR-012): that frame reads a store of a
+/// body and a model, which this module's store is not.
+/// </para>
 /// </remarks>
 public sealed class MindmapContextActionProvider : IContextActionProvider
 {
