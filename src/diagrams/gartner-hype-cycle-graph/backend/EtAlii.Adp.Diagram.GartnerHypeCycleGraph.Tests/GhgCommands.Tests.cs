@@ -222,6 +222,28 @@ public sealed class GhgCommandsTests : IDisposable
     }
 
     /// <summary>
+    /// A drag the graph cannot place is refused in the graph's own words, and writes nothing: a
+    /// read-only session, an influence, which follows its ends, and a drop onto another parent.
+    /// </summary>
+    [Fact]
+    public async Task ADragTheGraphCannotPlace_IsRefusedInItsOwnWords_AndWritesNothing()
+    {
+        using var historyStacks = new HistoryStackStore(_dispatcher);
+        await using var readOnly = new GhgSession(Body, _store, new GhgElementMapper());
+        await using var session = new GhgSession(Body, _store, new GhgElementMapper(), historyStacks.Get(_folder));
+        var influence = Parse().Influences[0].Id;
+
+        var unhistoried = await readOnly.MoveElementToAsync("railways", GhgScale.XOf(M(1830)), GhgScale.TopOf(40), TestContext.Current.CancellationToken);
+        var curve = await session.MoveElementToAsync(influence, GhgScale.XOf(M(1830)), GhgScale.TopOf(40), TestContext.Current.CancellationToken);
+        var reparent = await session.MoveElementAsync("railways", "steam-engine", 0, TestContext.Current.CancellationToken);
+
+        Assert.Equal("This graph is read-only.", unhistoried);
+        Assert.Equal("That is not something this graph can move.", curve);
+        Assert.Equal("A trend has no parent to move it under; it is placed in time and on a row.", reparent);
+        Assert.Equal(_original, await File.ReadAllBytesAsync(Body, TestContext.Current.CancellationToken));
+    }
+
+    /// <summary>
     /// DISL 11.5.3 and 11.5.4: a later entry reusing an id is drawn as ephemeral, so a move that would
     /// store its position is refused before it is applied, and the document is left as it was.
     /// </summary>
