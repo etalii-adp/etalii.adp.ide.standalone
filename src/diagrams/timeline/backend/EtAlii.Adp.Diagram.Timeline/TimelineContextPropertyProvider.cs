@@ -1,6 +1,6 @@
 using System.Globalization;
 using EtAlii.Adp.Context;
-using EtAlii.Adp.Documents.Wire;
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.Timeline;
@@ -14,9 +14,11 @@ namespace EtAlii.Adp.Diagram.Timeline;
 /// exists yet, <c>property-grid</c> Requirement 9 owns that gap, and this module does not add a
 /// private one (Requirement 10.6). The grid is the second of the two paths Requirement 3.4
 /// closes - a value that would invert the element is refused here on exactly the terms the
-/// adorner's handler applies.
+/// adorner's handler applies. The scope, the could-not-be-read guard and the dispatch are the
+/// frame's (<see cref="DiagramPropertyProvider{TBody, TModel}"/>).
 /// </remarks>
-public sealed class TimelineContextPropertyProvider : IContextPropertyProvider
+public sealed class TimelineContextPropertyProvider(IHistoryStackStore historyStacks, ITimelineDocumentStore documents)
+    : DiagramPropertyProvider<LineDocument, TimelineModel>(historyStacks, documents)
 {
     /// <summary>The element's or connection's label row.</summary>
     public const string LabelProperty = "timeline.label";
@@ -36,81 +38,52 @@ public sealed class TimelineContextPropertyProvider : IContextPropertyProvider
     /// <summary>A connection's target, read-only.</summary>
     public const string ToProperty = "timeline.to";
 
-    private readonly IHistoryStackStore _historyStacks;
-    private readonly ITimelineDocumentStore _documents;
-
-    /// <summary>Creates the provider over the history and the one document store.</summary>
-    public TimelineContextPropertyProvider(IHistoryStackStore historyStacks, ITimelineDocumentStore documents)
-    {
-        ArgumentNullException.ThrowIfNull(historyStacks);
-        ArgumentNullException.ThrowIfNull(documents);
-
-        _historyStacks = historyStacks;
-        _documents = documents;
-    }
+    /// <inheritdoc />
+    protected override bool IsBody(string path) => Diagram.IsBody(path);
 
     /// <inheritdoc />
-    public ContextScope Scope => ContextScope.DiagramElement;
+    /// <remarks>
+    /// Derived from the definition's forms (TimelineDefinition.Rows). A moment has no End row:
+    /// giving it an end is the context menu's action (Requirement 7.5), not a blank field inviting
+    /// a value. A relation's From and To are read-only and say why.
+    /// </remarks>
+    protected override IReadOnlyList<ContextPropertyDefinition> Describe(DocumentEntry<LineDocument, TimelineModel> entry, string elementId) =>
+        TimelineDefinition.Rows(entry.Model, elementId);
 
     /// <inheritdoc />
-    public ValueTask<IReadOnlyList<ContextPropertyDefinition>> DescribeAsync(ContextTarget target, CancellationToken cancellationToken)
+    /// <remarks>
+    /// A value is validated before any command is made, so the refusal names the value rather than
+    /// a command failure - and so an invalid value is never written (Requirement 10.3). The command
+    /// goes through the project's history and out through the delta stream - never written by the
+    /// panel (Requirement 10.5).
+    /// </remarks>
+    protected override DiagramPropertyChange Change(ContextTarget target, TimelineModel model, string propertyId, string value)
     {
-        ArgumentNullException.ThrowIfNull(target);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        return Rows(!Diagram.IsBody(target.ResolvedFullPath)
-            ? []
-            // Derived from the definition's forms (TimelineDefinition.Rows). A moment has no End row:
-            // giving it an end is the context menu's action (Requirement 7.5), not a blank field
-            // inviting a value. A relation's From and To are read-only and say why.
-            : TimelineDefinition.Rows(_documents.GetOrLoad(target.ResolvedFullPath).Model, target.ElementId));
-    }
-
-    /// <inheritdoc />
-    public async ValueTask<ContextPropertyResult> SetAsync(
-        ContextTarget target,
-        string propertyId,
-        string value,
-        CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(target);
-
-        var model = _documents.GetOrLoad(target.ResolvedFullPath).Model;
         var element = TimelineEdits.ElementOf(model, target.ElementId);
 
-        // Validated before any command is made, so the refusal names the value rather than a
-        // command failure - and so an invalid value is never written (Requirement 10.3).
         if (element is not null && propertyId is BeginProperty or EndProperty)
         {
             if (TimelineInstants.Parse(value) is null)
             {
-                return ContextPropertyResult.Failure($"'{value}' is not a time this timeline can read.");
+                return DiagramPropertyChange.Refused($"'{value}' is not a time this timeline can read.");
             }
 
-            var mixes = MixesPrecision(element, propertyId, value);
-            if (mixes)
+            if (MixesPrecision(element, propertyId, value))
             {
                 // Requirement 3.2: one element never mixes a date-only value with a date-time
                 // one. Refused here because the grid is the only path that can change one of the
                 // pair independently.
-                return ContextPropertyResult.Failure(
+                return DiagramPropertyChange.Refused(
                     "This element uses the other time form; begin and end must both be dates, or both carry a time.");
             }
         }
 
-        var command = CommandFor(target, element, propertyId, value);
-        if (command is null)
-        {
-            return ContextPropertyResult.Failure($"'{propertyId}' cannot be edited on this selection.");
-        }
-
-        // Through the project's history and out through the delta stream - never written by the
-        // panel (Requirement 10.5).
-        var result = await _historyStacks.Get(target.RootPath).ExecuteAsync(command, cancellationToken);
-        return result.IsSuccess ? ContextPropertyResult.Success : ContextPropertyResult.Failure(result.Error);
+        return CommandFor(target, model, element, propertyId, value) is { } command
+            ? DiagramPropertyChange.By(command)
+            : DiagramPropertyChange.Refused($"'{propertyId}' cannot be edited on this selection.");
     }
 
-    private ICommand? CommandFor(ContextTarget target, TimelineElement? element, string propertyId, string value)
+    private static ICommand? CommandFor(ContextTarget target, TimelineModel model, TimelineElement? element, string propertyId, string value)
     {
         var body = target.ResolvedFullPath;
         var id = target.ElementId;
@@ -118,8 +91,7 @@ public sealed class TimelineContextPropertyProvider : IContextPropertyProvider
         if (element is null)
         {
             // A connection: only its label is editable, and the read-only rows explain why.
-            return propertyId == LabelProperty &&
-                TimelineEdits.ConnectionOf(_documents.GetOrLoad(body).Model, id) is not null
+            return propertyId == LabelProperty && TimelineEdits.ConnectionOf(model, id) is not null
                 ? new RelabelTimelineConnectionCommand(body, id, value)
                 : null;
         }
@@ -150,7 +122,4 @@ public sealed class TimelineContextPropertyProvider : IContextPropertyProvider
 
         return typedIsDateTime != otherIsDateTime;
     }
-
-    private static ValueTask<IReadOnlyList<ContextPropertyDefinition>> Rows(IReadOnlyList<ContextPropertyDefinition> rows) =>
-        ValueTask.FromResult(rows);
 }

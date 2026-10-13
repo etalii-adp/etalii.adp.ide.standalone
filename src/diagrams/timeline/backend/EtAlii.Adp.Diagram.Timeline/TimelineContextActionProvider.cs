@@ -1,5 +1,5 @@
 using EtAlii.Adp.Context;
-using EtAlii.Adp.Documents.Wire;
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.Timeline;
@@ -12,13 +12,13 @@ namespace EtAlii.Adp.Diagram.Timeline;
 /// <para>
 /// Every mutating action dispatches a command through the project's history, so each is one undo
 /// away like every other edit in the IDE. <see cref="ConnectActionId"/> arrives as one call
-/// carrying the whole gesture in a <see cref="TimelineRelationGesture"/> id - deliberately
+/// carrying the whole gesture in a <see cref="GestureIds.Relation"/> id - deliberately
 /// stateless, because the two-call protocol it replaces kept an armed source between calls and
 /// a stale arm made the next drag relate the wrong pair.
 /// </para>
 /// <para>
 /// A gesture that lands on empty canvas has no element to name, so it names a
-/// <see cref="TimelineNewPlacement"/> instead - a synthetic id carrying where it landed. A drop
+/// <see cref="GestureIds.RowPlacement"/> instead - a synthetic id carrying where it landed. A drop
 /// creates there; a relation dragged onto empty space creates there <b>and</b> relates, as one
 /// command. That is what lets both gestures work through a channel with one element id per call
 /// and no field for a position.
@@ -28,8 +28,14 @@ namespace EtAlii.Adp.Diagram.Timeline;
 /// either. When one exists, this class is the single place the whole surface goes through
 /// (Requirement 11.7), which is the reason everything funnels through it now.
 /// </para>
+/// <para>
+/// The scope, the could-not-be-read guard, the dispatch and the commit leg are the frame's
+/// (<see cref="DiagramActionProvider{TBody, TModel}"/>); what is here is which actions a timeline
+/// offers and what each does.
+/// </para>
 /// </remarks>
-public sealed class TimelineContextActionProvider : IContextActionProvider
+public sealed class TimelineContextActionProvider(IHistoryStackStore historyStacks, ITimelineDocumentStore documents)
+    : DiagramActionProvider<LineDocument, TimelineModel>(historyStacks, documents)
 {
     /// <summary>Rename, asking for the new label first.</summary>
     public const string RenameActionId = "timeline.rename";
@@ -69,51 +75,30 @@ public sealed class TimelineContextActionProvider : IContextActionProvider
 
     private const string Gone = "That is no longer in this timeline.";
 
-    private readonly IHistoryStackStore _historyStacks;
-    private readonly ITimelineDocumentStore _documents;
-
-    /// <summary>Creates the provider over the history and the one document store.</summary>
-    public TimelineContextActionProvider(
-        IHistoryStackStore historyStacks,
-        ITimelineDocumentStore documents)
-    {
-        ArgumentNullException.ThrowIfNull(historyStacks);
-        ArgumentNullException.ThrowIfNull(documents);
-
-        _historyStacks = historyStacks;
-        _documents = documents;
-    }
+    /// <inheritdoc />
+    protected override bool IsBody(string path) => Diagram.IsBody(path);
 
     /// <inheritdoc />
-    public ContextScope Scope => ContextScope.DiagramElement;
+    /// <remarks>
+    /// Derived from the definition (TimelineDefinition.Menus): an element's and a relation's
+    /// menus, empty canvas at a placement - which a drop resolves its add through, because
+    /// executing an action by id only finds actions its target discovers - and a finished
+    /// relation gesture's one action, which the canvas executes by id against that target.
+    /// Arrange is offered wherever the reader is, which keeps it in the ribbon too.
+    /// </remarks>
+    protected override IReadOnlyList<ContextActionGroupDefinition> Discover(DocumentEntry<LineDocument, TimelineModel> entry, string elementId) =>
+        TimelineDefinition.Menus(entry.Model, elementId);
 
     /// <inheritdoc />
-    public ValueTask<IReadOnlyList<ContextActionGroupDefinition>> DiscoverAsync(ContextTarget target, CancellationToken cancellationToken)
+    protected override async ValueTask<ContextExecutionResult> RunAsync(
+        ContextTarget target,
+        DocumentEntry<LineDocument, TimelineModel> entry,
+        string actionId,
+        CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(target);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        return Result(!Diagram.IsBody(target.ResolvedFullPath)
-            // Another type's element; a provider consulted for every element in its scope answers
-            // with nothing rather than parsing another notation's file.
-            ? []
-            // Derived from the definition (TimelineDefinition.Menus): an element's and a relation's
-            // menus, empty canvas at a placement - which a drop resolves its add through, because
-            // executing an action by id only finds actions its target discovers - and a finished
-            // relation gesture's one action, which the canvas executes by id against that target.
-            // Arrange is offered wherever the reader is, which keeps it in the ribbon too.
-            : TimelineDefinition.Menus(_documents.GetOrLoad(target.ResolvedFullPath).Model, target.ElementId));
-    }
-
-    /// <inheritdoc />
-    public async ValueTask<ContextExecutionResult> ExecuteAsync(ContextTarget target, string actionId, CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(target);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        var model = _documents.GetOrLoad(target.ResolvedFullPath).Model;
+        var model = entry.Model;
         var element = TimelineEdits.ElementOf(model, target.ElementId);
-        var placed = TimelineNewPlacement.TryParse(target.ElementId, out var placedSeconds, out var placedRow);
+        var placed = GestureIds.TryParseRowPlacement(target.ElementId, out var placedSeconds, out var placedRow);
 
         switch (actionId)
         {
@@ -141,7 +126,7 @@ public sealed class TimelineContextActionProvider : IContextActionProvider
                     : await DispatchAsync(target, grown, cancellationToken);
             }
 
-            case ConnectActionId when TimelineRelationGesture.TryParse(target.ElementId, out var from, out var to):
+            case ConnectActionId when GestureIds.TryParseRelation(target.ElementId, out var from, out var to):
             {
                 // The whole gesture in one call - from, and where it ended. Deliberately
                 // stateless: the two-call protocol this replaces kept an armed source between
@@ -149,7 +134,7 @@ public sealed class TimelineContextActionProvider : IContextActionProvider
                 // may be a placement: a drag from the END anchor lands its placement in `to`,
                 // one from the BEGIN anchor arrives reversed with the placement in `from` -
                 // what precedes an element points into it.
-                if (TimelineNewPlacement.TryParse(from, out var fromSeconds, out var fromRow))
+                if (GestureIds.TryParseRowPlacement(from, out var fromSeconds, out var fromRow))
                 {
                     if (TimelineEdits.ElementOf(model, to) is null)
                     {
@@ -167,7 +152,7 @@ public sealed class TimelineContextActionProvider : IContextActionProvider
                     return new ContextExecutionFailed("The element this relation starts from is no longer in this timeline.");
                 }
 
-                if (TimelineNewPlacement.TryParse(to, out var toSeconds, out var toRow))
+                if (GestureIds.TryParseRowPlacement(to, out var toSeconds, out var toRow))
                 {
                     // Released on empty canvas: what the relation reaches does not exist yet, so
                     // it is created there and related in one command - one undo taking both - as
@@ -254,55 +239,20 @@ public sealed class TimelineContextActionProvider : IContextActionProvider
     }
 
     /// <inheritdoc />
-    public ValueTask<ContextValidationResult> ValidateAsync(ContextTarget target, string actionId, string value, CancellationToken cancellationToken)
+    /// <remarks>
+    /// Give-end is validated as typed, so the dialog can refuse before the commit does - by running
+    /// the definition's giveEnd, whose refusals the handler applies again (Requirement 3.4).
+    /// </remarks>
+    protected override ContextValidationResult Validate(ContextTarget target, string actionId, string value)
     {
-        ArgumentNullException.ThrowIfNull(target);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        if (actionId == GiveEndActionId)
+        if (actionId != GiveEndActionId)
         {
-            // Validated as typed, so the dialog can refuse before the commit does - by running the
-            // definition's giveEnd, whose refusals the handler applies again (Requirement 3.4).
-            (_, string refusal) = TimelineDefinition.EndChange(
-                _documents.GetOrLoad(target.ResolvedFullPath).Model, target.ResolvedFullPath, "giveEnd", target.ElementId, value);
-            if (refusal.Length > 0)
-            {
-                return ValueTask.FromResult(ContextValidationResult.Rejected(refusal));
-            }
+            return ContextValidationResult.Accepted;
         }
 
-        return ValueTask.FromResult(ContextValidationResult.Accepted);
-    }
-
-    /// <inheritdoc />
-    public async ValueTask<ContextCommitResult> CommitAsync(
-        ContextTarget target,
-        string actionId,
-        string value,
-        string text,
-        CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(target);
-        _ = text;
-
-        var command = CommandFor(target, actionId, value);
-        if (command is null)
-        {
-            return ContextCommitResult.Failed($"'{actionId}' does not apply to this selection.");
-        }
-
-        // Through the project's history, so every one of these is one undo away like every
-        // other edit in the IDE (Requirement 11.1).
-        var result = await _historyStacks.Get(target.RootPath).ExecuteAsync(command, cancellationToken);
-        return result.IsSuccess ? ContextCommitResult.Succeeded : ContextCommitResult.Failed(result.Error);
-    }
-
-    private async ValueTask<ContextExecutionResult> DispatchAsync(ContextTarget target, ICommand command, CancellationToken cancellationToken)
-    {
-        var result = await _historyStacks.Get(target.RootPath).ExecuteAsync(command, cancellationToken);
-        return result.IsSuccess
-            ? new ContextExecutionCompleted()
-            : new ContextExecutionFailed(result.Error);
+        (_, string refusal) = TimelineDefinition.EndChange(
+            Load(target).Model, target.ResolvedFullPath, "giveEnd", target.ElementId, value);
+        return refusal.Length > 0 ? ContextValidationResult.Rejected(refusal) : ContextValidationResult.Accepted;
     }
 
     /// <summary>
@@ -337,7 +287,8 @@ public sealed class TimelineContextActionProvider : IContextActionProvider
             TimelineScale.ToText(begin, TimelinePrecision.Date),
             row);
 
-    private ICommand? CommandFor(ContextTarget target, string actionId, string value)
+    /// <inheritdoc />
+    protected override ICommand? CommitCommand(ContextTarget target, TimelineModel model, string actionId, string value)
     {
         var body = target.ResolvedFullPath;
         var id = target.ElementId;
@@ -345,7 +296,6 @@ public sealed class TimelineContextActionProvider : IContextActionProvider
         // What kind of thing is selected decides which actions apply: an element-only action
         // committed against a relation - or the other way round - answers "does not apply"
         // rather than a handler's guess at what went wrong (Requirement 11.8).
-        var model = _documents.GetOrLoad(body).Model;
         var isElement = TimelineEdits.ElementOf(model, id) is not null;
         var isRelation = TimelineEdits.ConnectionOf(model, id) is not null;
 
@@ -362,24 +312,20 @@ public sealed class TimelineContextActionProvider : IContextActionProvider
             // The dialog path: the value is the begin the user typed, and the row comes from the
             // element the gesture anchored on, or 0 on nothing. Placement gestures never reach
             // here - they complete in ExecuteAsync.
-            AddElementActionId => AddAt(body, id, value, period: true),
-            AddMomentActionId => AddAt(body, id, value, period: false),
+            AddElementActionId => AddAt(model, body, id, value, period: true),
+            AddMomentActionId => AddAt(model, body, id, value, period: false),
             _ => null,
         };
     }
 
-    private ICommand? AddAt(string body, string anchorElementId, string value, bool period)
+    private static AddTimelineElementCommand? AddAt(TimelineModel model, string body, string anchorElementId, string value, bool period)
     {
         if (TimelineInstants.Parse(value) is not { } begin)
         {
             return null;
         }
 
-        var model = _documents.GetOrLoad(body).Model;
         var anchor = TimelineEdits.ElementOf(model, anchorElementId);
         return NewElementAt(model, body, begin, anchor?.Row ?? 0, period);
     }
-
-    private static ValueTask<IReadOnlyList<ContextActionGroupDefinition>> Result(IReadOnlyList<ContextActionGroupDefinition> groups) =>
-        ValueTask.FromResult(groups);
 }

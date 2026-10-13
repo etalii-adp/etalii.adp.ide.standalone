@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text.Json;
 using EtAlii.Adp.Context;
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Specification.Disl;
 
@@ -74,9 +75,9 @@ internal static class TimelineDefinition
         var diagram = TimelineDisl.Of(model).Diagram;
         DislMenuTarget? target = TimelineDisl.ElementOf(diagram, elementId) is { } element
             ? DislMenuTarget.Element(element)
-            : TimelineNewPlacement.TryParse(elementId, out _, out _)
+            : GestureIds.TryParseRowPlacement(elementId, out _, out _)
                 ? DislMenuTarget.Canvas(diagram)
-                : TimelineRelationGesture.TryParse(elementId, out var from, out var to)
+                : GestureIds.TryParseRelation(elementId, out var from, out var to)
                     ? DislMenuTarget.Connection(diagram, TimelineDisl.ElementOf(diagram, from), TimelineDisl.ElementOf(diagram, to), "Connection")
                     : null;
         if (target is null) return [];

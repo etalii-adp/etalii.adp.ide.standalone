@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.Timeline;
@@ -19,41 +20,22 @@ namespace EtAlii.Adp.Diagram.Timeline;
 /// command was made, because undo and redo dispatch the same instance again later.
 /// </para>
 /// </remarks>
-public sealed class SetTimelinePlacementCommandHandler : ICommandHandler<SetTimelinePlacementCommand>
+public sealed class SetTimelinePlacementCommandHandler(ITimelineDocumentStore documents)
+    : TimelineEditHandler<SetTimelinePlacementCommand>(documents)
 {
-    private readonly ITimelineDocumentStore _documents;
-
-    /// <summary>Creates the handler over the one store that owns the documents.</summary>
-    public SetTimelinePlacementCommandHandler(ITimelineDocumentStore documents)
-    {
-        ArgumentNullException.ThrowIfNull(documents);
-        _documents = documents;
-    }
-
     /// <inheritdoc />
-    public Task<CommandResult> ExecuteAsync(SetTimelinePlacementCommand command, CancellationToken cancellationToken)
+    protected override EditOutcome Apply(LineDocument body, TimelineModel model, SetTimelinePlacementCommand command)
     {
-        ArgumentNullException.ThrowIfNull(command);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        var entry = _documents.GetOrLoad(command.BodyPath);
-        if (!entry.IsUsable)
-        {
-            return Task.FromResult(CommandResult.Failure(
-                "This timeline does not parse, so nothing in it can be edited until the file is fixed."));
-        }
-
-        var element = entry.Model.Elements.FirstOrDefault(candidate =>
-            string.Equals(candidate.Id, command.ElementId, StringComparison.Ordinal));
+        var element = TimelineEdits.ElementOf(model, command.ElementId);
         if (element is null)
         {
-            return Task.FromResult(CommandResult.Failure("That element is no longer in this timeline."));
+            return EditOutcome.Refused("That element is no longer in this timeline.");
         }
 
         if (InvertsTheElement(command))
         {
             // Requirement 3.4: no path through the application may create end-before-begin.
-            return Task.FromResult(CommandResult.Failure("An element cannot end before it begins."));
+            return EditOutcome.Refused("An element cannot end before it begins.");
         }
 
         var inverse = command with
@@ -67,18 +49,14 @@ public sealed class SetTimelinePlacementCommandHandler : ICommandHandler<SetTime
         // parser recorded stay valid between them and no re-parse is needed mid-command. SetEnd
         // is skipped for a moment: a placement never gives an element an end it did not have -
         // that is the context menu's action, not a drag's side effect (Requirement 7.5).
-        TimelineWriter.SetBegin(entry.Document, element, command.Begin);
+        TimelineWriter.SetBegin(body, element, command.Begin);
         if (command.End is not null && element.End is not null)
         {
-            TimelineWriter.SetEnd(entry.Document, element, command.End);
+            TimelineWriter.SetEnd(body, element, command.End);
         }
 
-        TimelineWriter.SetRow(entry.Document, element, command.Row);
-
-        var saved = _documents.Save(command.BodyPath, entry.Document);
-        return Task.FromResult(!saved.Failed
-            ? CommandResult.Success(inverse)
-            : CommandResult.Failure(saved.Error));
+        TimelineWriter.SetRow(body, element, command.Row);
+        return EditOutcome.UndoneBy(inverse);
     }
 
     /// <summary>
