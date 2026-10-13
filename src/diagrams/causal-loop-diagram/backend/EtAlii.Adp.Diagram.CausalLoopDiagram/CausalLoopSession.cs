@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 
@@ -36,24 +35,16 @@ namespace EtAlii.Adp.Diagram.CausalLoopDiagram;
 /// own error, which hid a defect behind the same kind of line as a locked file.
 /// </para>
 /// </remarks>
-internal sealed class CausalLoopSession : IDiagramSession
+internal sealed class CausalLoopSession : DocumentDiagramSession<CausalLoopDocument, CausalLoopModel>
 {
-    private readonly string _bodyPath;
     private readonly string? _registrationPath;
-    private readonly ICausalLoopDocumentStore _documents;
     private readonly CausalLoopElementMapper _mapper;
 
-    /// <summary>The project's history, so an arrangement is one undo away. Null makes the diagram read-only.</summary>
-    private readonly IHistoryStack? _history;
-
-    /// <summary>What this connection was last sent, and the one way it is changed.</summary>
-    private readonly DiagramDocumentChangeHandler _changes;
-
     /// <summary>
-    /// The last viewport this connection reported. Unbounded until it reports one, so a client
-    /// that never does - a test, or a canvas mid-load - still receives the whole diagram.
+    /// The project's history, so an arrangement and an added variable are one undo away. Null makes
+    /// the diagram read-only. The base holds its own for a drag; these two gestures are this module's.
     /// </summary>
-    private DiagramViewport _viewport = DiagramViewport.Unbounded;
+    private readonly IHistoryStack? _history;
 
     public CausalLoopSession(
         string bodyPath,
@@ -61,86 +52,18 @@ internal sealed class CausalLoopSession : IDiagramSession
         ICausalLoopDocumentStore documents,
         CausalLoopElementMapper mapper,
         IHistoryStack? history = null)
+        : base(bodyPath, documents, history)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(bodyPath);
-        ArgumentNullException.ThrowIfNull(documents);
         ArgumentNullException.ThrowIfNull(mapper);
 
-        _bodyPath = bodyPath;
         _registrationPath = registrationPath;
-        _documents = documents;
         _mapper = mapper;
         _history = history;
-
-        // Rendered through the same viewport the connection last reported, whatever the cause.
-        _changes = new DiagramDocumentChangeHandler(
-            bodyPath,
-            Render,
-            deltas => Changed?.Invoke(this, new DiagramDeltasEventArgs(deltas)));
-        _documents.Changed += OnDocumentChanged;
     }
 
     /// <inheritdoc />
-    public event EventHandler<DiagramDeltasEventArgs>? Changed;
-
-    /// <inheritdoc />
-    public IReadOnlyList<DiagramDelta> Baseline()
-    {
-        var elements = _changes.Deliver();
-
-        return elements.Count > 0 ? [new DiagramAddDelta(elements)] : [];
-    }
-
-    /// <inheritdoc />
-    public IReadOnlyList<DiagramDelta> UpdateView(DiagramViewport viewport)
-    {
-        _viewport = viewport;
-        return _changes.Refresh();
-    }
-
-    /// <summary>Refused: nothing in this diagram nests under a parent - its place is a position.</summary>
-    public Task<string> MoveElementAsync(string elementId, string newParentId, int index, CancellationToken cancellationToken)
-    {
-        _ = elementId;
-        _ = newParentId;
-        _ = index;
-        cancellationToken.ThrowIfCancellationRequested();
-
-        return Task.FromResult("A causal loop element has no parent to move it under; dragging changes where it sits on the canvas.");
-    }
-
-    /// <summary>
-    /// Stores an authored position in the registration's <c>layout:</c> block, as one undoable
-    /// command - and never writes the <c>.cld</c>.
-    /// </summary>
-    public async Task<string> MoveElementToAsync(string elementId, double x, double y, CancellationToken cancellationToken)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(elementId);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        if (_history is null)
-        {
-            return "This diagram is read-only.";
-        }
-
-        if (_registrationPath is not { Length: > 0 })
-        {
-            return "This diagram was opened without a registration, so there is nowhere to store a position. Register the file to arrange it.";
-        }
-
-        // A link and a loop label are drawn where their members are, so neither has a position
-        // of its own to store. Refused rather than silently accepted and lost.
-        if (!elementId.StartsWith("variable:", StringComparison.Ordinal))
-        {
-            return "Only a variable can be moved; a link is drawn between its ends and a loop label among its members.";
-        }
-
-        var result = await _history.ExecuteAsync(
-            new SetRegistrationLayoutCommand(_registrationPath, elementId, x, y),
-            cancellationToken);
-
-        return result.IsSuccess ? "" : result.Error;
-    }
+    protected override string ParentRefusal =>
+        "A causal loop element has no parent to move it under; dragging changes where it sits on the canvas.";
 
     /// <summary>
     /// Declares a variable and authors its position at the point it was added, as one undoable
@@ -155,7 +78,7 @@ internal sealed class CausalLoopSession : IDiagramSession
 
         if (_history is null)
         {
-            return "This diagram is read-only.";
+            return ReadOnlyRefusal;
         }
 
         if (_registrationPath is not { Length: > 0 })
@@ -164,7 +87,7 @@ internal sealed class CausalLoopSession : IDiagramSession
         }
 
         var result = await _history.ExecuteAsync(
-            new AddVariableAtCommand(_bodyPath, _registrationPath, id, label, x, y),
+            new AddVariableAtCommand(BodyPath, _registrationPath, id, label, x, y),
             cancellationToken);
 
         return result.IsSuccess ? "" : result.Error;
@@ -186,7 +109,7 @@ internal sealed class CausalLoopSession : IDiagramSession
 
         if (_history is null)
         {
-            return "This diagram is read-only.";
+            return ReadOnlyRefusal;
         }
 
         if (_registrationPath is not { Length: > 0 })
@@ -195,32 +118,19 @@ internal sealed class CausalLoopSession : IDiagramSession
         }
 
         var result = await _history.ExecuteAsync(
-            new ArrangeCausalLoopCommand(_registrationPath, _bodyPath), cancellationToken);
+            new ArrangeCausalLoopCommand(_registrationPath, BodyPath), cancellationToken);
 
         return result.IsSuccess ? "" : result.Error;
-    }
-
-    /// <inheritdoc />
-    public ValueTask DisposeAsync()
-    {
-        _documents.Changed -= OnDocumentChanged;
-        return ValueTask.CompletedTask;
     }
 
     /// <summary>
     /// The whole document laid out, then filtered by the viewport - in that order, always.
     /// </summary>
-    private IReadOnlyList<DiagramElement> Render()
+    protected override IReadOnlyList<DiagramElement> Render(CausalLoopModel model, DiagramViewport viewport)
     {
-        var entry = _documents.GetOrLoad(_bodyPath);
-        if (!entry.IsUsable)
-        {
-            return [];
-        }
-
         // Computed positions first; authored ones from the registration win element by element,
         // and a stored id that names nothing simply has nothing to override.
-        var boxes = CausalLoopLayout.Compute(entry.Model);
+        var boxes = CausalLoopLayout.Compute(model);
         var stored = _registrationPath is { Length: > 0 }
             ? RegistrationLayout.Read(_registrationPath)
             : new Dictionary<string, RegistrationPosition>(StringComparer.Ordinal);
@@ -239,9 +149,26 @@ internal sealed class CausalLoopSession : IDiagramSession
             boxes = overlaid;
         }
 
-        return _mapper.Visible(entry.Model, boxes, _viewport);
+        return _mapper.Visible(model, boxes, viewport);
     }
 
-    private void OnDocumentChanged(object? sender, DocumentChangedEventArgs args) =>
-        _changes.OnDocumentChanged(args.Path);
+    /// <summary>
+    /// Stores an authored position in the registration's <c>layout:</c> block, as one undoable
+    /// command - and never writes the <c>.cld</c>.
+    /// </summary>
+    protected override DiagramPlacement PlacementOf(CausalLoopModel model, string elementId, double x, double y)
+    {
+        _ = model;
+
+        if (_registrationPath is not { Length: > 0 })
+        {
+            return DiagramPlacement.Refused("This diagram was opened without a registration, so there is nowhere to store a position. Register the file to arrange it.");
+        }
+
+        // A link and a loop label are drawn where their members are, so neither has a position
+        // of its own to store. Refused rather than silently accepted and lost.
+        return elementId.StartsWith("variable:", StringComparison.Ordinal)
+            ? DiagramPlacement.By(new SetRegistrationLayoutCommand(_registrationPath, elementId, x, y))
+            : DiagramPlacement.Refused("Only a variable can be moved; a link is drawn between its ends and a loop label among its members.");
+    }
 }

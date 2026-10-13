@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Documents.Wire;
@@ -27,8 +28,13 @@ namespace EtAlii.Adp.Diagram.CausalLoopDiagram.Tests;
 /// not construct a target: they start from a file level, the way the running application does,
 /// and let the resolver produce one.
 /// </para>
+/// <para>
+/// <b>What every element resolver must do is the shared contract's</b>
+/// (<see cref="DiagramElementSourceResolverContract"/>), on the on-call example and through its
+/// registration; the facts below are this module's own.
+/// </para>
 /// </remarks>
-public class CausalLoopContextSourceResolverTests : IDisposable
+public sealed class CausalLoopContextSourceResolverTests : DiagramElementSourceResolverContract
 {
     private const string Body =
         "causal-loop 1\r\n"
@@ -38,18 +44,45 @@ public class CausalLoopContextSourceResolverTests : IDisposable
         + "link births -> population +\r\n"
         + "loop R1 \"Births beget births\" population births\r\n";
 
-    private readonly string _workspace = IoPath.Combine(
-        IoPath.GetTempPath(), "adp-cld-context-" + Guid.NewGuid().ToString("N"));
-
     private readonly CausalLoopDocumentStore _store = new();
     private readonly CausalLoopElementMapper _mapper = new();
 
-    public CausalLoopContextSourceResolverTests() => Directory.CreateDirectory(_workspace);
+    protected override string Example => CausalLoopDocumentStoreTests.OnCall;
 
-    public void Dispose()
+    protected override IContextSourceResolver CreateResolver() => Resolver();
+
+    protected override void Reload(string body) => _store.Reload(body);
+
+    protected override string ElementId => "variable:incidents";
+
+    protected override IReadOnlyList<string> ElementPath => ["Incidents"];
+
+    protected override string ElementType => CausalLoopElementMapper.VariableType;
+
+    protected override string Gesture => CausalLoopSelection.RelationFor("incidents", "onCallLoad");
+
+    protected override DiagramElementTexts Texts { get; } = new(
+        "The selected file is not a causal loop diagram.",
+        "That element is no longer in this diagram.",
+        "This diagram",
+        "New link");
+
+    /// <summary>A selection is made in the registration, and the target carries the body beside it.</summary>
+    protected override string SelectedIn(string body)
     {
-        TestFolder.TryDelete(_workspace);
-        GC.SuppressFinalize(this);
+        var registration = IoPath.ChangeExtension(body, ".adp");
+        File.WriteAllText(registration, "systems/causal-loop-diagram\r\n");
+        return registration;
+    }
+
+    /// <summary>A variable is named by the quoted label on its <c>variable</c> line, and keeps its id through a rename.</summary>
+    protected override async Task<IReadOnlyList<string>> RenameAsync(string body, string name, CancellationToken cancellationToken)
+    {
+        var text = await File.ReadAllTextAsync(body, cancellationToken);
+        var renamed = Regex.Replace(text, "(?<=^variable incidents \")[^\"]*", name, RegexOptions.Multiline, TimeSpan.FromSeconds(1));
+        Assert.NotEqual(text, renamed);
+        await File.WriteAllTextAsync(body, renamed, cancellationToken);
+        return [name];
     }
 
     /// <summary>
@@ -61,10 +94,10 @@ public class CausalLoopContextSourceResolverTests : IDisposable
     /// document store in this module reads. A test that started from the body would never
     /// exercise that hop.
     /// </remarks>
-    private string WritePair(string name = "feedback")
+    private string WritePair(TestFolder workspace, string name = "feedback")
     {
-        var body = IoPath.Combine(_workspace, name + Diagram.DocumentExtension);
-        var registration = IoPath.Combine(_workspace, name + ".adp");
+        var body = workspace.Combine(name + Diagram.DocumentExtension);
+        var registration = workspace.Combine(name + ".adp");
 
         File.WriteAllText(body, Body);
         File.WriteAllText(registration, "systems/causal-loop-diagram\r\n");
@@ -91,7 +124,7 @@ public class CausalLoopContextSourceResolverTests : IDisposable
         ContextResolvedLevel? parent, string elementId, IReadOnlyList<string>? clientPath = null) =>
         await Resolver().ResolveAsync(
             ShortGuid.NewShortGuid(),
-            _workspace,
+            IoPath.GetDirectoryName(parent!.Target.ResolvedFullPath)!,
             new ContextSource { ElementId = new ElementId { Value = elementId } },
             clientPath ?? [],
             parent,
@@ -139,28 +172,13 @@ public class CausalLoopContextSourceResolverTests : IDisposable
     // ---- each drawn kind resolves --------------------------------------------------------------
 
     [Fact]
-    public async Task AVariable_Resolves_WithItsLabelAndItsPayload()
-    {
-        // Act.
-        var resolution = await ResolveAsync(FileLevel(WritePair()), "variable:population");
-
-        // Assert.
-        var level = Assert.IsType<ResolvedContextLevel>(resolution).Level;
-        Assert.Equal(ContextScope.DiagramElement, level.Scope);
-        Assert.Equal(["Population"], level.RelativePath);
-        Assert.Equal("variable:population", level.Target.ElementId);
-
-        // The payload comes from the mapper, so the selection and the stream cannot describe one
-        // element two different ways.
-        Assert.NotEqual("", level.Detail.Element.ElementType);
-        Assert.NotNull(level.Detail.Element.Payload);
-    }
-
-    [Fact]
     public async Task ALink_Resolves_NamedByItsTwoEnds()
     {
+        // Arrange.
+        using var workspace = TestFolder.Create("causal-loop-resolver");
+
         // Act.
-        var resolution = await ResolveAsync(FileLevel(WritePair()), "link:population|births");
+        var resolution = await ResolveAsync(FileLevel(WritePair(workspace)), "link:population|births");
 
         // Assert.
         var level = Assert.IsType<ResolvedContextLevel>(resolution).Level;
@@ -170,33 +188,15 @@ public class CausalLoopContextSourceResolverTests : IDisposable
     [Fact]
     public async Task ALoop_Resolves_WithItsCaption()
     {
+        // Arrange.
+        using var workspace = TestFolder.Create("causal-loop-resolver");
+
         // Act.
-        var resolution = await ResolveAsync(FileLevel(WritePair()), "loop:R1");
+        var resolution = await ResolveAsync(FileLevel(WritePair(workspace)), "loop:R1");
 
         // Assert.
         var level = Assert.IsType<ResolvedContextLevel>(resolution).Level;
         Assert.Equal(["R1 · Births beget births"], level.RelativePath);
-    }
-
-    /// <summary>
-    /// The placement, which is what makes the diagram-wide actions reachable: with nothing
-    /// selected the diagram itself is the subject, and a right-click on empty canvas carries the
-    /// point through a channel that has one element id and no other field.
-    /// </summary>
-    [Fact]
-    public async Task APlacement_Resolves_SoTheDiagramWideActionsCanBeOffered()
-    {
-        // Act.
-        var resolution = await ResolveAsync(FileLevel(WritePair()), CausalLoopSelection.PlacementFor(120, 240));
-
-        // Assert.
-        var level = Assert.IsType<ResolvedContextLevel>(resolution).Level;
-        Assert.Equal(ContextScope.DiagramElement, level.Scope);
-        Assert.StartsWith("new:", level.Target.ElementId, StringComparison.Ordinal);
-
-        // It names nothing in the document, so it carries no payload - and must not be mistaken
-        // for an element that has gone.
-        Assert.Equal(["This diagram"], level.RelativePath);
     }
 
     // ---- the hop that a hand-built target would have skipped ------------------------------------
@@ -213,7 +213,8 @@ public class CausalLoopContextSourceResolverTests : IDisposable
     public async Task TheTarget_CarriesTheBody_NotTheRegistrationThatWasSelected()
     {
         // Arrange.
-        var registration = WritePair();
+        using var workspace = TestFolder.Create("causal-loop-resolver");
+        var registration = WritePair(workspace);
 
         // Act.
         var resolution = await ResolveAsync(FileLevel(registration), "variable:births");
@@ -235,7 +236,8 @@ public class CausalLoopContextSourceResolverTests : IDisposable
     public async Task AResolvedTarget_IsOneTheActionProviderAnswersFor()
     {
         // Arrange.
-        var resolution = await ResolveAsync(FileLevel(WritePair()), "variable:population");
+        using var workspace = TestFolder.Create("causal-loop-resolver");
+        var resolution = await ResolveAsync(FileLevel(WritePair(workspace)), "variable:population");
         var target = Assert.IsType<ResolvedContextLevel>(resolution).Level.Target;
 
         var actions = new CausalLoopContextActionProvider(
@@ -253,35 +255,6 @@ public class CausalLoopContextSourceResolverTests : IDisposable
 
     // ---- refusals, so other modules' resolvers can answer ---------------------------------------
 
-    [Fact]
-    public async Task AnElementSelectedOutsideADiagram_IsRefused()
-    {
-        // Act.
-        var resolution = await ResolveAsync(parent: null, "variable:population");
-
-        // Assert.
-        Assert.IsType<RejectedContextLevel>(resolution);
-    }
-
-    /// <summary>
-    /// Every diagram type answers for an element id, and none can tell from the id alone whose
-    /// element it is - only the file above says. Declining lets the next resolver answer.
-    /// </summary>
-    [Fact]
-    public async Task AFileOfAnotherType_IsDeclined()
-    {
-        // Arrange.
-        var other = IoPath.Combine(_workspace, "notes.md");
-        await File.WriteAllTextAsync(other, Body, TestContext.Current.CancellationToken);
-
-        // Act.
-        var resolution = await ResolveAsync(FileLevel(other), "variable:population");
-
-        // Assert.
-        var rejected = Assert.IsType<RejectedContextLevel>(resolution);
-        Assert.Contains("not a causal loop diagram", rejected.Reason, StringComparison.Ordinal);
-    }
-
     /// <summary>
     /// A diagram of another type is declined, so that module's own resolver can answer.
     /// </summary>
@@ -294,7 +267,8 @@ public class CausalLoopContextSourceResolverTests : IDisposable
     public async Task ADiagramOfAnotherType_IsDeclined_SoItsOwnResolverCanAnswer()
     {
         // Arrange.
-        var other = IoPath.Combine(_workspace, "elsewhere" + TwoTypeCatalog.Other.Extension);
+        using var workspace = TestFolder.Create("causal-loop-resolver");
+        var other = workspace.Combine("elsewhere" + TwoTypeCatalog.Other.Extension);
         await File.WriteAllTextAsync(other, Body, TestContext.Current.CancellationToken);
 
         var resolver = new CausalLoopContextSourceResolver(
@@ -303,7 +277,7 @@ public class CausalLoopContextSourceResolverTests : IDisposable
         // Act.
         var resolution = await resolver.ResolveAsync(
             ShortGuid.NewShortGuid(),
-            _workspace,
+            workspace.Path,
             new ContextSource { ElementId = new ElementId { Value = "variable:population" } },
             [],
             FileLevel(other),
@@ -312,60 +286,6 @@ public class CausalLoopContextSourceResolverTests : IDisposable
         // Assert.
         var rejected = Assert.IsType<RejectedContextLevel>(resolution);
         Assert.Contains("not a causal loop diagram", rejected.Reason, StringComparison.Ordinal);
-    }
-
-    /// <summary>
-    /// An element nested under anything but a file is refused.
-    /// </summary>
-    /// <remarks>
-    /// The scope half of that rule, which a null parent does not reach: with no file level above
-    /// it there is nothing to verify the element against, and an unverifiable selection is never
-    /// recorded.
-    /// </remarks>
-    [Fact]
-    public async Task AnElementNestedUnderAnotherElement_IsRefused()
-    {
-        // Arrange.
-        var registration = WritePair();
-        var elementLevel = new ContextResolvedLevel(
-            new ContextSource(),
-            ["Population"],
-            ContextScope.DiagramElement,
-            ContextTarget.ForElement(registration, "variable:population", _workspace, ShortGuid.NewShortGuid()),
-            new ContextLevelDetail(),
-            null!);
-
-        // Act.
-        var resolution = await ResolveAsync(elementLevel, "variable:births");
-
-        // Assert.
-        var rejected = Assert.IsType<RejectedContextLevel>(resolution);
-        Assert.Contains("within its diagram", rejected.Reason, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public async Task AnElementTheDocumentNoLongerHolds_IsRefused()
-    {
-        // Act.
-        var resolution = await ResolveAsync(FileLevel(WritePair()), "variable:nowhere");
-
-        // Assert.
-        var rejected = Assert.IsType<RejectedContextLevel>(resolution);
-        Assert.Contains("no longer in this diagram", rejected.Reason, StringComparison.Ordinal);
-    }
-
-    /// <summary>
-    /// The client's path is checked, never trusted: it is what the client believes it selected,
-    /// and the id is what it actually selected.
-    /// </summary>
-    [Fact]
-    public async Task APathThatDisagreesWithTheElement_IsRefused()
-    {
-        // Act.
-        var resolution = await ResolveAsync(FileLevel(WritePair()), "variable:population", ["Something else"]);
-
-        // Assert.
-        Assert.IsType<RejectedContextLevel>(resolution);
     }
 }
 
