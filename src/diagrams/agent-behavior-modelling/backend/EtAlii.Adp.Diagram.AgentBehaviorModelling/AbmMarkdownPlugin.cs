@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text;
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.History;
 using EtAlii.Adp.Specification.Fbl;
 using EtAlii.Adp.Specification.Fbl.Planning;
 using EtAlii.Adp.Specification.Fbl.Plugins;
@@ -86,7 +87,7 @@ public sealed class AbmMarkdownPlugin : IPersistencePlugin
     private static string? KindOf(string type) => AbmDefinition.KindOfType.GetValueOrDefault(type);
 
     /// <summary>The change made on <paramref name="document"/>, as the module's commands make it.</summary>
-    private static AbmEdit Apply(LineDocument document, AbmModel model, ModelChange change)
+    private static EditOutcome Apply(LineDocument document, AbmModel model, ModelChange change)
     {
         switch (change)
         {
@@ -101,22 +102,22 @@ public sealed class AbmMarkdownPlugin : IPersistencePlugin
                     {
                         "label" => AbmWriter.SetLabel(document, node, Text(value)),
                         "notes" => AbmWriter.SetNotes(document, node, Text(value)),
-                        "attempts" when node.Kind != AbmNodeKinds.Retry => AbmEdit.Refused("Only a Retry has attempts."),
-                        "attempts" when Number(value) is null => AbmEdit.Refused("A Retry's attempts are a whole number."),
+                        "attempts" when node.Kind != AbmNodeKinds.Retry => EditOutcome.Refused("Only a Retry has attempts."),
+                        "attempts" when Number(value) is null => EditOutcome.Refused("A Retry's attempts are a whole number."),
                         "attempts" => AbmWriter.SetKind(document, node, AbmNodeKinds.Retry, Number(value)!.Value),
-                        _ => AbmEdit.Refused($"A behavior model node has no `{name}` to write."),
+                        _ => EditOutcome.Refused($"A behavior model node has no `{name}` to write."),
                     };
                     if (!edit.WasApplied) return edit;
                 }
-                return AbmEdit.Applied;
+                return EditOutcome.Applied;
             }
             case ModelChange.Add add:
             {
-                if (KindOf(add.Type) is not { } kind) return AbmEdit.Refused($"A behavior model has no `{add.Type}` node.");
+                if (KindOf(add.Type) is not { } kind) return EditOutcome.Refused($"A behavior model has no `{add.Type}` node.");
                 AbmNode? parent = null;
                 if (add.ParentId is { } parentId && (parent = model.NodeOf(parentId)) is null) return Gone();
                 var attempts = add.Attributes.TryGetValue("attempts", out var count) ? Number(count) ?? 0 : 0;
-                (AbmEdit edit, string id) = AbmWriter.Add(document, model, parent, add.Index ?? -1, kind, Text(add.Attributes.GetValueOrDefault("label")), attempts);
+                (EditOutcome edit, string id) = AbmWriter.Add(document, model, parent, add.Index ?? -1, kind, Text(add.Attributes.GetValueOrDefault("label")), attempts);
                 if (!edit.WasApplied) return edit;
                 var notes = Text(add.Attributes.GetValueOrDefault("notes"));
                 return notes.Length == 0 ? edit : AbmWriter.SetNotes(document, AbmParser.Parse(document).NodeOf(id)!, notes);
@@ -129,25 +130,25 @@ public sealed class AbmMarkdownPlugin : IPersistencePlugin
                 AbmNode? parent = null;
                 if (move.NewParentId is { } parentId && (parent = model.NodeOf(parentId)) is null)
                 {
-                    return AbmEdit.Refused("The node it was moved under is no longer in this behavior model.");
+                    return EditOutcome.Refused("The node it was moved under is no longer in this behavior model.");
                 }
                 return AbmWriter.Move(document, model, node, parent, move.Index);
             }
             case ModelChange.Retype retype:
             {
                 if (model.NodeOf(retype.Id) is not { } node) return Gone();
-                if (KindOf(retype.Type) is not { } kind) return AbmEdit.Refused($"A behavior model has no `{retype.Type}` node.");
+                if (KindOf(retype.Type) is not { } kind) return EditOutcome.Refused($"A behavior model has no `{retype.Type}` node.");
                 var attempts = retype.Attributes.TryGetValue("attempts", out var count) ? Number(count) ?? 0 : 0;
                 return AbmWriter.SetKind(document, node, kind, attempts);
             }
             case ModelChange.Save:
-                return AbmEdit.Applied;
+                return EditOutcome.Applied;
             default:
-                return AbmEdit.Refused("A behavior model cannot make that change.");
+                return EditOutcome.Refused("A behavior model cannot make that change.");
         }
     }
 
-    private static AbmEdit Gone() => AbmEdit.Refused("That node is no longer in this behavior model.");
+    private static EditOutcome Gone() => EditOutcome.Refused("That node is no longer in this behavior model.");
 
     private static SpliceOperation OperationOf(ModelChange change) => change switch
     {

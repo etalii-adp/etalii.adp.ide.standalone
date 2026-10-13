@@ -1,6 +1,5 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
-using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 using EtAlii.Adp.Specification.Disl;
@@ -31,7 +30,8 @@ namespace EtAlii.Adp.Diagram.AgentBehaviorModelling;
 /// exists (the <c>CommitActionId</c> pattern mindmap uses).
 /// </para>
 /// </remarks>
-public sealed class AbmContextActionProvider : IContextActionProvider
+public sealed class AbmContextActionProvider(IHistoryStackStore historyStacks, IAbmDocumentStore documents)
+    : DiagramActionProvider<AbmBody, AbmModel>(historyStacks, documents)
 {
     /// <summary>Rename a node in place.</summary>
     public const string RenameActionId = "abm.rename";
@@ -56,47 +56,38 @@ public sealed class AbmContextActionProvider : IContextActionProvider
 
     private const string AddPrefix = "abm.add.";
 
-    private readonly IHistoryStackStore _historyStacks;
-    private readonly IAbmDocumentStore _documents;
-
-    public AbmContextActionProvider(IHistoryStackStore historyStacks, IAbmDocumentStore documents)
-    {
-        ArgumentNullException.ThrowIfNull(historyStacks);
-        ArgumentNullException.ThrowIfNull(documents);
-        _historyStacks = historyStacks;
-        _documents = documents;
-    }
-
     /// <summary>The add action for one node kind: a child of the target node, or a node at a drop.</summary>
     public static string AddActionId(string kind) => AddPrefix + kind;
 
     /// <inheritdoc />
-    public ContextScope Scope => ContextScope.DiagramElement;
+    protected override bool IsBody(string path) => path.EndsWith(Diagram.DocumentExtension, StringComparison.OrdinalIgnoreCase);
 
     /// <inheritdoc />
-    public ValueTask<IReadOnlyList<ContextActionGroupDefinition>> DiscoverAsync(ContextTarget target, CancellationToken cancellationToken)
+    /// <remarks>By origin: a behavior model shares <c>.md</c> with every Markdown file, and another type's element is answered with nothing rather than by reading another notation's file.</remarks>
+    protected override bool Serves(ContextTarget target)
     {
         ArgumentNullException.ThrowIfNull(target);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        return Result(!IsOurs(target)
-            // Another type's element: answered with nothing rather than by reading another notation's file.
-            ? []
-            : AbmDefinition.Menus(_documents.GetOrLoad(target.ResolvedFullPath), target.ElementId));
-
-        // Derived from the DISL definition (AbmDefinition.Menus): its context-menu sets, grouped by
-        // group, the ids mapped by its x-abm block. Executing an action by id only finds actions
-        // its target discovers, so a drop and a finished gesture each discover what may be run on them.
+        return target.Origin == Diagram.AgentBehaviorModelling.Origin;
     }
 
     /// <inheritdoc />
-    public async ValueTask<ContextExecutionResult> ExecuteAsync(ContextTarget target, string actionId, CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(target);
-        cancellationToken.ThrowIfCancellationRequested();
+    /// <remarks>
+    /// Derived from the DISL definition (<see cref="AbmDefinition.Menus"/>): its context-menu sets,
+    /// grouped by group, the ids mapped by its x-abm block. Executing an action by id only finds
+    /// actions its target discovers, so a drop and a finished gesture each discover what may be run on them.
+    /// </remarks>
+    protected override IReadOnlyList<ContextActionGroupDefinition> Discover(DocumentEntry<AbmBody, AbmModel> entry, string elementId) =>
+        AbmDefinition.Menus(entry, elementId);
 
+    /// <inheritdoc />
+    protected override async ValueTask<ContextExecutionResult> RunAsync(
+        ContextTarget target,
+        DocumentEntry<AbmBody, AbmModel> entry,
+        string actionId,
+        CancellationToken cancellationToken)
+    {
         var body = target.ResolvedFullPath;
-        var model = _documents.GetOrLoad(body).Model;
+        var model = entry.Model;
         var node = model.NodeOf(target.ElementId);
 
         if (actionId.StartsWith(AddPrefix, StringComparison.Ordinal))
@@ -172,18 +163,11 @@ public sealed class AbmContextActionProvider : IContextActionProvider
             {
                 // The definition's deletion confirmation: how many nodes go with it, asked before it
                 // runs; a node with nothing beneath it goes without asking.
-                if (AbmDefinition.ElementOf(_documents.GetOrLoad(body).Document.Disl.Diagram, node.Id) is not { } element
-                    || DeletionPolicy.Confirmation(AbmDefinition.Specification, element, env: AbmDefinition.Env) is not { } confirmation)
-                {
-                    return await DispatchAsync(target, new RemoveAbmNodeCommand(body, node.Id), cancellationToken);
-                }
-
-                return new ContextExecutionRequiresConfirmation(new ContextConfirmationRequest(
-                    confirmation.Title,
-                    "mdi-delete-outline",
-                    confirmation.Message,
-                    confirmation.ConfirmLabel,
-                    Danger: confirmation.Danger));
+                var confirmation = AbmDefinition.ElementOf(entry.Document.Disl.Diagram, node.Id) is { } element
+                    && DeletionPolicy.Confirmation(AbmDefinition.Specification, element, env: AbmDefinition.Env) is { } asked
+                    ? new RemovalConfirmation(asked.Title, asked.Message, asked.ConfirmLabel, asked.Danger)
+                    : null;
+                return await RemoveAsync(target, new RemoveAbmNodeCommand(body, node.Id), confirmation, cancellationToken);
             }
 
             default:
@@ -192,47 +176,20 @@ public sealed class AbmContextActionProvider : IContextActionProvider
     }
 
     /// <inheritdoc />
-    public ValueTask<ContextValidationResult> ValidateAsync(ContextTarget target, string actionId, string value, CancellationToken cancellationToken)
+    /// <remarks>A label and notes have no wrong answer, so nothing is validated; the command refuses what the document cannot hold.</remarks>
+    protected override ICommand? CommitCommand(ContextTarget target, AbmModel model, string actionId, string value)
     {
-        ArgumentNullException.ThrowIfNull(target);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        // A label and notes have no wrong answer; the command refuses what the document cannot hold.
-        _ = actionId;
-        _ = value;
-        return ValueTask.FromResult(ContextValidationResult.Accepted);
-    }
-
-    /// <inheritdoc />
-    public async ValueTask<ContextCommitResult> CommitAsync(
-        ContextTarget target,
-        string actionId,
-        string value,
-        string text,
-        CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(target);
-        _ = text;
-
         var body = target.ResolvedFullPath;
         var id = target.ElementId;
-        var exists = _documents.GetOrLoad(body).Model.NodeOf(id) is not null;
+        var exists = model.NodeOf(id) is not null;
 
-        ICommand? command = actionId switch
+        return actionId switch
         {
             RenameActionId when exists => new RenameAbmNodeCommand(body, id, value),
             EditNotesActionId when exists => new SetAbmNotesCommand(body, id, value),
             RemoveActionId when exists => new RemoveAbmNodeCommand(body, id),
             _ => null,
         };
-
-        if (command is null)
-        {
-            return ContextCommitResult.Failed($"'{actionId}' does not apply to this selection.");
-        }
-
-        var result = await _historyStacks.Get(target.RootPath).ExecuteAsync(command, cancellationToken);
-        return result.IsSuccess ? ContextCommitResult.Succeeded : ContextCommitResult.Failed(result.Error);
     }
 
     /// <summary>
@@ -272,20 +229,14 @@ public sealed class AbmContextActionProvider : IContextActionProvider
     private async ValueTask<ContextExecutionResult> AddThenEditAsync(
         ContextTarget target, AddAbmNodeCommand command, string newId, string kind, CancellationToken cancellationToken)
     {
-        var result = await _historyStacks.Get(target.RootPath).ExecuteAsync(command, cancellationToken);
-        if (!result.IsSuccess)
+        var added = await DispatchAsync(target, command, cancellationToken);
+        if (added is not ContextExecutionCompleted)
         {
-            return new ContextExecutionFailed(result.Error);
+            return added;
         }
 
         return new ContextExecutionRequiresInput(new ContextInputRequest(
             "Rename", "mdi-pencil-outline", "Label", AddAbmNodeCommandHandler.StartingLabel(kind), "Rename", newId, RenameActionId));
-    }
-
-    private async ValueTask<ContextExecutionResult> DispatchAsync(ContextTarget target, ICommand command, CancellationToken cancellationToken)
-    {
-        var result = await _historyStacks.Get(target.RootPath).ExecuteAsync(command, cancellationToken);
-        return result.IsSuccess ? new ContextExecutionCompleted() : new ContextExecutionFailed(result.Error);
     }
 
     /// <summary>The positions an author dragged nodes to, from the registration beside the Markdown.</summary>
@@ -294,14 +245,8 @@ public sealed class AbmContextActionProvider : IContextActionProvider
 
     /// <summary>The registration beside the Markdown, where dragged positions are kept.</summary>
     private static string RegistrationOf(string bodyPath) =>
-        System.IO.Path.ChangeExtension(bodyPath, DiagramFileName.Extension);
+        Path.ChangeExtension(bodyPath, DiagramFileName.Extension);
 
     private static IReadOnlyList<AbmNode> Siblings(AbmModel model, AbmNode node) =>
         node.ParentId is { } parentId ? model.ChildrenOf(model.NodeOf(parentId)!) : model.Roots;
-
-    private static bool IsOurs(ContextTarget target) =>
-        target.Origin == Diagram.AgentBehaviorModelling.Origin;
-
-    private static ValueTask<IReadOnlyList<ContextActionGroupDefinition>> Result(IReadOnlyList<ContextActionGroupDefinition> groups) =>
-        ValueTask.FromResult(groups);
 }

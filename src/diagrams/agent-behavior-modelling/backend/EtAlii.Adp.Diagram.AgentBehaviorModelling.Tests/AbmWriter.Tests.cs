@@ -1,5 +1,6 @@
 using EtAlii.Adp.Diagram.AgentBehaviorModelling.Tests.Parity;
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.History;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.AgentBehaviorModelling.Tests;
@@ -102,7 +103,7 @@ public class AbmWriterTests
         (LineDocument document, AbmModel model) = Load();
 
         // Act.
-        (AbmEdit edit, string id) = AbmWriter.Add(document, model, model.NodeOf("1.2")!, 1, AbmNodeKinds.Check, "Cached");
+        (EditOutcome edit, string id) = AbmWriter.Add(document, model, model.NodeOf("1.2")!, 1, AbmNodeKinds.Check, "Cached");
 
         // Assert.
         Assert.True(edit.WasApplied);
@@ -122,7 +123,7 @@ public class AbmWriterTests
         // Act.
         AbmWriter.Add(document, model, model.NodeOf("1")!, -1, AbmNodeKinds.Action, "Last");
         var reread = AbmParser.Parse(document);
-        (AbmEdit edit, _) = AbmWriter.Add(document, reread, reread.NodeOf("1.3")!, -1, AbmNodeKinds.Action, "Under a leaf");
+        (EditOutcome edit, _) = AbmWriter.Add(document, reread, reread.NodeOf("1.3")!, -1, AbmNodeKinds.Action, "Under a leaf");
 
         // Assert: appended after the whole subtree, and a leaf takes no child.
         Assert.Equal("Last", AbmParser.Parse(document).NodeOf("1.4")!.Label);
@@ -136,7 +137,7 @@ public class AbmWriterTests
         (LineDocument document, AbmModel model) = Load("# Agent\r\n\r\nNo tree yet.\r\n");
 
         // Act.
-        (AbmEdit edit, string id) = AbmWriter.Add(document, model, null, -1, AbmNodeKinds.Sequence, "Handle the request");
+        (EditOutcome edit, string id) = AbmWriter.Add(document, model, null, -1, AbmNodeKinds.Sequence, "Handle the request");
 
         // Assert.
         Assert.True(edit.WasApplied);

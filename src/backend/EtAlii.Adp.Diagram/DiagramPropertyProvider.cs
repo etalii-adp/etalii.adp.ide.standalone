@@ -35,7 +35,7 @@ public abstract class DiagramPropertyProvider<TBody, TModel> : IContextPropertyP
         ArgumentNullException.ThrowIfNull(target);
         cancellationToken.ThrowIfCancellationRequested();
 
-        return ValueTask.FromResult(IsBody(target.ResolvedFullPath)
+        return ValueTask.FromResult(Serves(target)
             ? Describe(_documents.GetOrLoad(target.ResolvedFullPath), target.ElementId)
             : []);
     }
@@ -67,6 +67,17 @@ public abstract class DiagramPropertyProvider<TBody, TModel> : IContextPropertyP
 
     /// <summary>Whether <paramref name="path"/> is a document of this module.</summary>
     protected abstract bool IsBody(string path);
+
+    /// <summary>
+    /// Whether <paramref name="target"/> is an element of this module's: one in a document of its
+    /// own, by default. A module whose documents share their extension with others' tells by the
+    /// target's origin, which only the registration beside a body can give.
+    /// </summary>
+    protected virtual bool Serves(ContextTarget target)
+    {
+        ArgumentNullException.ThrowIfNull(target);
+        return IsBody(target.ResolvedFullPath);
+    }
 
     /// <summary>The rows <paramref name="elementId"/> has in <paramref name="entry"/>, or none.</summary>
     protected abstract IReadOnlyList<ContextPropertyDefinition> Describe(DocumentEntry<TBody, TModel> entry, string elementId);

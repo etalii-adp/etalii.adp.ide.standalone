@@ -1,5 +1,6 @@
 using System.Text;
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.History;
 using EtAlii.Adp.Specification.Fbl;
 using EtAlii.Adp.Specification.Fbl.Planning;
 using EtAlii.Adp.Specification.Fbl.Plugins;
@@ -55,12 +56,12 @@ public class AbmPluginParityTests
     {
         // Arrange.
         var bytes = Variant(name, variant);
-        var model = Writer(bytes, (_, _) => AbmEdit.Applied).Model;
+        var model = Writer(bytes, (_, _) => EditOutcome.Applied).Model;
         var differences = new List<string>();
         var count = 0;
 
         // Act.
-        foreach ((string label, ModelChange change, Func<LineDocument, AbmModel, AbmEdit> edit) in Edits(model))
+        foreach ((string label, ModelChange change, Func<LineDocument, AbmModel, EditOutcome> edit) in Edits(model))
         {
             count++;
             var expected = Writer(bytes, edit);
@@ -153,7 +154,7 @@ public class AbmPluginParityTests
     }
 
     /// <summary>Every edit a node allows, as the change the plugin is given and the writer call it stands for.</summary>
-    private static IEnumerable<(string Label, ModelChange Change, Func<LineDocument, AbmModel, AbmEdit> Edit)> Edits(AbmModel model)
+    private static IEnumerable<(string Label, ModelChange Change, Func<LineDocument, AbmModel, EditOutcome> Edit)> Edits(AbmModel model)
     {
         var parents = model.Nodes.Select(node => (AbmNode?)node).Prepend(null).ToList();
         foreach (var node in model.Nodes)
@@ -202,8 +203,8 @@ public class AbmPluginParityTests
             }
         }
 
-        yield return ("add gone", new ModelChange.Add("Do", null, new Dictionary<string, object?>(), "9.9"), (_, _) => AbmEdit.Refused("That node is no longer in this behavior model."));
-        yield return ("remove gone", new ModelChange.Remove("9.9"), (_, _) => AbmEdit.Refused("That node is no longer in this behavior model."));
+        yield return ("add gone", new ModelChange.Add("Do", null, new Dictionary<string, object?>(), "9.9"), (_, _) => EditOutcome.Refused("That node is no longer in this behavior model."));
+        yield return ("remove gone", new ModelChange.Remove("9.9"), (_, _) => EditOutcome.Refused("That node is no longer in this behavior model."));
     }
 
     private static ModelChange.Set Set(string id, string name, object? value) => new(id, new Dictionary<string, object?> { [name] = value });
@@ -211,7 +212,7 @@ public class AbmPluginParityTests
     private static Dictionary<string, object?> Attempts(int attempts) => new() { ["attempts"] = (long)attempts };
 
     /// <summary>Today's path: the text decoded, the writer's edit on its lines, and their bytes.</summary>
-    private static (AbmEdit Edit, byte[] Bytes, AbmModel Model) Writer(byte[] bytes, Func<LineDocument, AbmModel, AbmEdit> edit)
+    private static (EditOutcome Edit, byte[] Bytes, AbmModel Model) Writer(byte[] bytes, Func<LineDocument, AbmModel, EditOutcome> edit)
     {
         var document = LineDocument.Parse(Encoding.UTF8.GetString(bytes));
         var model = AbmParser.Parse(document);
