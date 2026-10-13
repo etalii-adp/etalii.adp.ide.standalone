@@ -10,7 +10,7 @@ The checks of the yaml-editor design's End-to-End section: what only a running a
 
 Expected: findings on the broken values, the hover text of the key, a list of keys; nothing from the language service in the console.
 
-Seen 2026-10-12, task 1, in headless Chromium 141 against the production build with a temporary route running the same calls, without a backend: findings per document, the hover text, key and value completions; the console's only errors were 501 answers to the shell's sign-in calls. Without the alias the hover threw `a.basename is not a function`. **Through the editor itself: not run.**
+Seen 2026-10-12, task 1, in headless Chromium 141 against the production build with a temporary route running the same calls, without a backend: findings per document, the hover text, key and value completions; the console's only errors were 501 answers to the shell's sign-in calls. Without the alias the hover threw `a.basename is not a function`. Through the editor itself, 2026-10-13: the production build (`npm run build`, served by `vite preview` behind the backend) opened the file with 10 underlines and "10 errors, 1 warning" on the status line; hovering `name` showed "Service" and the key's description; Ctrl+Space at the end of the file listed `image`, `environment` and `limits`, the keys not yet present. The console had no errors.
 
 ## 2. Colour, in both themes (Requirement 3.1 to 3.3)
 
@@ -18,7 +18,7 @@ Seen 2026-10-12, task 1, in headless Chromium 141 against the production build w
 
 Expected: keys, strings, numbers, booleans and null, comments, anchors and aliases, tags, the document markers and a block scalar each in their colour of the shared scheme; `1.10` and `0x1f` as numbers, `yes` and the date as strings; the colours follow the switch.
 
-**Not run.**
+Seen 2026-10-13, read as each token's computed colour in both themes and switched live: keys, strings, numbers, `true`/`~` (keyword), comments, anchors and aliases, a typed `!!str` tag, `---` and `...` and the block scalars each in their scheme colour; `1.10` and `0x1f` numbers, `yes` and the date strings; every colour changed with the theme without a reload. It also found that `!!str 5` was coloured as a number, now fixed and held by `yamlScalarColour.test.tsx`.
 
 ## 3. Tab and Enter (Requirement 3.5, 3.6)
 
@@ -27,7 +27,7 @@ Expected: keys, strings, numbers, booleans and null, comments, anchors and alias
 
 Expected: Enter goes one level deeper after `ports:`; Tab adds two spaces and never a tab; Enter after the item's first key lines up under it.
 
-**Not run.**
+Seen 2026-10-13: Enter after `ports:` put the caret at column 2, Tab made it 4 with spaces, Shift+Tab took it back to 2; after `- port: 80` Enter put the caret at column 4, under `port`. No tab character was written.
 
 ## 4. A broken schema's three carriers (Requirement 6)
 
@@ -35,7 +35,7 @@ Expected: Enter goes one level deeper after `ports:`; Tab adds two spaces and ne
 
 Expected: each break shown as an underline, a gutter mark, and its sentence on hover, on F8 and in the findings panel (Ctrl+Shift+M); the status line counts them and names "Service"; the deprecated `memory` is a warning.
 
-**Not run.**
+Seen 2026-10-13: underlines and gutter marks on lines 7 to 17, the hover sentence ("Incorrect type. Expected \"integer\"." on `many`), F8 jumping to the first finding ("Missing property \"image\"."), and Ctrl+Shift+M listing them; the status line read "10 errors, 1 warning" and "Service"; `memory` carried the warning mark.
 
 ## 5. Completion from the keyboard at two depths (Requirement 7)
 
@@ -44,7 +44,7 @@ Expected: each break shown as an underline, a gutter mark, and its sentence on h
 
 Expected: on the top-level line the keys not yet present, `restart` among them and none already there; after `restart:` the three values the schema allows; under `limits` only `cpu`; every accepted item leaves YAML that reads.
 
-**Not run.**
+Seen 2026-10-13: on the emptied top-level line only `restart` was offered (the deprecated `memory` is not offered); accepted, it wrote `restart: `, and Ctrl+Space there offered `always`, `never` and `on-failure`, giving `restart: always`. Under `limits` only `cpu` was offered, giving `  cpu: 0`. The file was not saved.
 
 ## 6. "Open as text" beside a pipeline's diagram (Requirement 2.3, 8)
 
@@ -54,4 +54,4 @@ Expected: on the top-level line the keys not yet present, `restart` among them a
 
 Expected: the diagram follows the change on disk.
 
-**Not run in a browser.** The backend half is held by `YamlEditorResolution.Tests`: the `.adp` opens the diagram, "Open as text" resolves to this editor, and a save reaches the pipeline's document store as a change.
+Run 2026-10-13: double-clicking `steps-only.yml` opened its diagram, "Open as text" opened the same file in the YAML editor (status "No schema"), and a changed `displayName` saved to disk. The diagram showed only its stage box in this headless view, so whether it followed the change was **not seen in the browser**. The backend half is held by `YamlEditorResolution.Tests`: the `.adp` opens the diagram, "Open as text" resolves to this editor, and a save reaches the pipeline's document store as a change.

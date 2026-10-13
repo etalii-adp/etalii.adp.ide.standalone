@@ -22,20 +22,20 @@ flowchart LR
 
 ## The solution, with its counts
 
-`src/backend/EtAlii.Adp.slnx` holds **132** projects, as a flat list rather than a folder hierarchy, so the whole thing opens and builds as one solution in Rider:
+`src/backend/EtAlii.Adp.slnx` holds **134** projects, as a flat list rather than a folder hierarchy, so the whole thing opens and builds as one solution in Rider:
 
 | Split | Count |
 | --- | --- |
 | core | **38** |
 | diagram | **86** |
-| editor | **6** |
+| editor | **8** |
 | designer | **2** |
-| production | **90** |
-| test | **42** |
+| production | **91** |
+| test | **43** |
 
-Those are **two different splits of the same 132**, and a figure appearing in both tables is a coincidence rather than a correspondence, which is exactly what makes a wrong classification look right.
+Those are **two different splits of the same 134**, and a figure appearing in both tables is a coincidence rather than a correspondence, which is exactly what makes a wrong classification look right.
 
-There are **147** tracked `.csproj` files under `src/`, which is **15** more than the solution holds. Every one of the 15 is fixture or example data belonging to `src/diagrams/dotnet-dependency-graph` — a module whose subject matter *is* reading `.csproj` files, so its test fixtures and its showcase project are themselves `.csproj`. **A page claiming "147 projects" would be wrong in the confident direction.**
+There are **149** tracked `.csproj` files under `src/`, which is **15** more than the solution holds. Every one of the 15 is fixture or example data belonging to `src/diagrams/dotnet-dependency-graph` — a module whose subject matter *is* reading `.csproj` files, so its test fixtures and its showcase project are themselves `.csproj`. **A page claiming "147 projects" would be wrong in the confident direction.**
 
 ## The relative-path trap
 
