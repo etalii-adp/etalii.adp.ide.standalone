@@ -23,4 +23,4 @@ public sealed record AddTimelineElementCommand(
     string Label,
     string Begin,
     string? End,
-    int Row) : ICommand;
+    int Row) : IDocumentEditCommand;

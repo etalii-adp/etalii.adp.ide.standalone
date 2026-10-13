@@ -15,4 +15,4 @@ namespace EtAlii.Adp.Diagram.Timeline;
 public sealed record RenameTimelineElementCommand(
     string BodyPath,
     string ElementId,
-    string Label) : ICommand;
+    string Label) : IDocumentEditCommand;

@@ -6120,62 +6120,62 @@
       "edits": [
         {
           "do": "execute timeline.add-element on new:1767225600,2",
-          "answer": "refused: This timeline does not parse, so nothing can be added until the file is fixed.",
+          "answer": "refused: unparseable.tml could not be read, so it cannot be edited.",
           "unchanged": true
         },
         {
           "do": "execute timeline.add-moment on new:1767312000,4",
-          "answer": "refused: This timeline does not parse, so nothing can be added until the file is fixed.",
+          "answer": "refused: unparseable.tml could not be read, so it cannot be edited.",
           "unchanged": true
         },
         {
           "do": "execute timeline.add-element on ",
-          "answer": "asks: ContextInputRequest { Title = Add element, Icon = mdi-plus, FieldLabel = Begin, InitialValue = {today}, ConfirmLabel = Add, InlineLabelElementId = , CommitActionId =  }",
+          "answer": "refused: unparseable.tml could not be read, so it cannot be edited.",
           "unchanged": true
         },
         {
           "do": "execute timeline.add-moment on ",
-          "answer": "asks: ContextInputRequest { Title = Add moment, Icon = mdi-plus, FieldLabel = Begin, InitialValue = {today}, ConfirmLabel = Add, InlineLabelElementId = , CommitActionId =  }",
+          "answer": "refused: unparseable.tml could not be read, so it cannot be edited.",
           "unchanged": true
         },
         {
           "do": "commit timeline.add-element on  = \"2026-02-01\"",
-          "answer": "refused: This timeline does not parse, so nothing can be added until the file is fixed.",
+          "answer": "refused: unparseable.tml could not be read, so it cannot be edited.",
           "unchanged": true
         },
         {
           "do": "commit timeline.add-moment on  = \"2026-02-02T08:30:00\"",
-          "answer": "refused: This timeline does not parse, so nothing can be added until the file is fixed.",
+          "answer": "refused: unparseable.tml could not be read, so it cannot be edited.",
           "unchanged": true
         },
         {
           "do": "commit timeline.add-moment on  = \"garbage\"",
-          "answer": "refused: 'timeline.add-moment' does not apply to this selection.",
+          "answer": "refused: unparseable.tml could not be read, so it cannot be edited.",
           "unchanged": true
         },
         {
           "do": "execute timeline.relabel on parity:unknown",
-          "answer": "refused: That is no longer in this timeline.",
+          "answer": "refused: unparseable.tml could not be read, so it cannot be edited.",
           "unchanged": true
         },
         {
           "do": "execute timeline.remove on parity:unknown",
-          "answer": "ok",
+          "answer": "refused: unparseable.tml could not be read, so it cannot be edited.",
           "unchanged": true
         },
         {
           "do": "commit timeline.rename on parity:unknown = \"Nobody\"",
-          "answer": "refused: 'timeline.rename' does not apply to this selection.",
+          "answer": "refused: unparseable.tml could not be read, so it cannot be edited.",
           "unchanged": true
         },
         {
           "do": "set parity:unknown timeline.label = \"Nobody\"",
-          "answer": "refused: 'timeline.label' cannot be edited on this selection.",
+          "answer": "refused: unparseable.tml could not be read, so it cannot be edited.",
           "unchanged": true
         },
         {
           "do": "execute timeline.arrange on ",
-          "answer": "refused: This timeline does not parse, so it cannot be arranged until the file is fixed.",
+          "answer": "refused: unparseable.tml could not be read, so it cannot be edited.",
           "unchanged": true
         }
       ],

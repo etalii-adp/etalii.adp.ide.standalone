@@ -11,4 +11,4 @@ namespace EtAlii.Adp.Diagram.Timeline;
 public sealed record RelabelTimelineConnectionCommand(
     string BodyPath,
     string ConnectionId,
-    string Label) : ICommand;
+    string Label) : IDocumentEditCommand;

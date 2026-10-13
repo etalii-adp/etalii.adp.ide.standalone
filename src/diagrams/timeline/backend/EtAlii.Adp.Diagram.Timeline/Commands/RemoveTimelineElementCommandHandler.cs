@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.Timeline;
@@ -7,58 +8,38 @@ namespace EtAlii.Adp.Diagram.Timeline;
 /// before anything is spliced - not a re-creation from the model, which would lose the comments
 /// and formatting the author had inside the removed block.
 /// </summary>
-public sealed class RemoveTimelineElementCommandHandler : ICommandHandler<RemoveTimelineElementCommand>
+public sealed class RemoveTimelineElementCommandHandler(ITimelineDocumentStore documents)
+    : TimelineEditHandler<RemoveTimelineElementCommand>(documents)
 {
-    private readonly ITimelineDocumentStore _documents;
-
-    /// <summary>Creates the handler over the one store that owns the documents.</summary>
-    public RemoveTimelineElementCommandHandler(ITimelineDocumentStore documents)
-    {
-        ArgumentNullException.ThrowIfNull(documents);
-        _documents = documents;
-    }
-
     /// <inheritdoc />
-    public Task<CommandResult> ExecuteAsync(RemoveTimelineElementCommand command, CancellationToken cancellationToken)
+    protected override EditOutcome Apply(LineDocument body, TimelineModel model, RemoveTimelineElementCommand command)
     {
-        ArgumentNullException.ThrowIfNull(command);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        var entry = _documents.GetOrLoad(command.BodyPath);
-        if (!entry.IsUsable)
-        {
-            return Task.FromResult(CommandResult.Failure(
-                "This timeline does not parse, so nothing can be removed until the file is fixed."));
-        }
-
-        var element = TimelineEdits.ElementOf(entry.Model, command.ElementId);
+        var element = TimelineEdits.ElementOf(model, command.ElementId);
         if (element is null)
         {
-            return Task.FromResult(CommandResult.Failure("That element is no longer in this timeline."));
+            return EditOutcome.Refused("That element is no longer in this timeline.");
         }
 
         // Captured in ascending order before any splice moves a line, so the restore can replay
         // them ascending against the document as it was.
-        var going = TimelineWriter.ConnectionsTouching(entry.Model, element.Id);
-        var segments = going
+        var segments = TimelineWriter.ConnectionsTouching(model, element.Id)
             .Select(connection => connection.Range)
             .Append(element.Range)
             .OrderBy(range => range.Start)
-            .Select(range => TimelineEdits.Capture(entry.Document, range))
+            .Select(range => TimelineEdits.Capture(body, range))
             .ToList();
 
-        TimelineWriter.RemoveElement(entry.Document, entry.Model, element);
+        TimelineWriter.RemoveElement(body, model, element);
 
         if (command.RemoveEmptiedConnectionsSection)
         {
             // This removal is the undo of an insert that created the connections: key on demand,
             // so the key it created goes too - or the undo comes back one line different.
-            TimelineWriter.RemoveConnectionsSectionIfEmpty(entry.Document, TimelineParser.Parse(entry.Document));
+            TimelineWriter.RemoveConnectionsSectionIfEmpty(body, TimelineParser.Parse(body));
         }
 
-        var saved = _documents.Save(command.BodyPath, entry.Document);
-        return Task.FromResult(!saved.Failed
-            ? CommandResult.Success(new RestoreTimelineLinesCommand(command.BodyPath, command.ElementId, segments))
-            : CommandResult.Failure(saved.Error));
+        // Redoing the restore removes the element again - by id, which it has again by then.
+        return EditOutcome.UndoneBy(new RestoreLinesCommand<ITimelineDocumentStore>(
+            command.BodyPath, segments, new RemoveTimelineElementCommand(command.BodyPath, command.ElementId)));
     }
 }

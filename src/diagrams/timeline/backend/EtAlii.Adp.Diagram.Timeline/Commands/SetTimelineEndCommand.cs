@@ -19,4 +19,4 @@ namespace EtAlii.Adp.Diagram.Timeline;
 public sealed record SetTimelineEndCommand(
     string BodyPath,
     string ElementId,
-    string? End) : ICommand;
+    string? End) : IDocumentEditCommand;

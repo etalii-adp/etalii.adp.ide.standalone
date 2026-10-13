@@ -51,7 +51,7 @@ public static class ServiceCollectionAddTimelineExtension
         services.AddSingleton<ICommandHandler<SetTimelinePlacementCommand>, SetTimelinePlacementCommandHandler>();
         services.AddSingleton<ICommandHandler<AddTimelineElementCommand>, AddTimelineElementCommandHandler>();
         services.AddSingleton<ICommandHandler<RemoveTimelineElementCommand>, RemoveTimelineElementCommandHandler>();
-        services.AddSingleton<ICommandHandler<RestoreTimelineLinesCommand>, RestoreTimelineLinesCommandHandler>();
+        services.AddSingleton<ICommandHandler<RestoreLinesCommand<ITimelineDocumentStore>>, RestoreLinesCommandHandler<ITimelineDocumentStore>>();
         services.AddSingleton<ICommandHandler<RenameTimelineElementCommand>, RenameTimelineElementCommandHandler>();
         services.AddSingleton<ICommandHandler<ConnectTimelineElementsCommand>, ConnectTimelineElementsCommandHandler>();
         services.AddSingleton<ICommandHandler<DisconnectTimelineConnectionCommand>, DisconnectTimelineConnectionCommandHandler>();

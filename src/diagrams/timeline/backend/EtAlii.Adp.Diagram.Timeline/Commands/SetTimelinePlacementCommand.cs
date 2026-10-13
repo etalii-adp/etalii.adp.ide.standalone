@@ -23,4 +23,4 @@ public sealed record SetTimelinePlacementCommand(
     string ElementId,
     string Begin,
     string? End,
-    int Row) : ICommand;
+    int Row) : IDocumentEditCommand;

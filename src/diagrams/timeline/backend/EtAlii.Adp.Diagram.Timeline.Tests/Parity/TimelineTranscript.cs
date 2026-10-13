@@ -164,7 +164,7 @@ internal static class TimelineTranscript
         ];
         var elementIds = model.Elements.Select(element => element.Id).Where(id => id.Length > 0).Distinct(StringComparer.Ordinal).ToList();
         var relation = elementIds.Count >= 2 ? GestureIds.Relation(elementIds[0], elementIds[1]) : GestureIds.Relation("a", "b");
-        var placement = TimelineNewPlacement.IdFor(PlacementSeconds, 2);
+        var placement = GestureIds.RowPlacement(PlacementSeconds, 2);
         List<string> targets = [.. ids, "", placement, relation, Unknown];
 
         var menus = new List<IReadOnlyList<string>>();
@@ -301,9 +301,9 @@ internal static class TimelineTranscript
             await script.CommitAsync(readable, TimelineContextActionProvider.DisconnectActionId, "");
         }
 
-        var placement = TimelineNewPlacement.IdFor(PlacementSeconds, 2);
+        var placement = GestureIds.RowPlacement(PlacementSeconds, 2);
         var added = await script.ExecuteAsync(placement, TimelineContextActionProvider.AddElementActionId);
-        await script.ExecuteAsync(TimelineNewPlacement.IdFor(PlacementSeconds + 86_400, 4), TimelineContextActionProvider.AddMomentActionId);
+        await script.ExecuteAsync(GestureIds.RowPlacement(PlacementSeconds + 86_400, 4), TimelineContextActionProvider.AddMomentActionId);
         await script.ExecuteAsync("", TimelineContextActionProvider.AddElementActionId);
         await script.ExecuteAsync("", TimelineContextActionProvider.AddMomentActionId);
         await script.CommitAsync("", TimelineContextActionProvider.AddElementActionId, "2026-02-01");
@@ -317,9 +317,9 @@ internal static class TimelineTranscript
                 await script.ExecuteAsync(GestureIds.Relation(readable, other), TimelineContextActionProvider.ConnectActionId);
             }
 
-            await script.ExecuteAsync(GestureIds.Relation(readable, TimelineNewPlacement.IdFor(PlacementSeconds + 864_000, 6)), TimelineContextActionProvider.ConnectActionId);
-            await script.ExecuteAsync(GestureIds.Relation(TimelineNewPlacement.IdFor(PlacementSeconds - 864_000, 7), readable), TimelineContextActionProvider.ConnectActionId);
-            await script.ExecuteAsync(GestureIds.Relation(TimelineNewPlacement.IdFor(PlacementSeconds, 8), Unknown), TimelineContextActionProvider.ConnectActionId);
+            await script.ExecuteAsync(GestureIds.Relation(readable, GestureIds.RowPlacement(PlacementSeconds + 864_000, 6)), TimelineContextActionProvider.ConnectActionId);
+            await script.ExecuteAsync(GestureIds.Relation(GestureIds.RowPlacement(PlacementSeconds - 864_000, 7), readable), TimelineContextActionProvider.ConnectActionId);
+            await script.ExecuteAsync(GestureIds.Relation(GestureIds.RowPlacement(PlacementSeconds, 8), Unknown), TimelineContextActionProvider.ConnectActionId);
             await script.ExecuteAsync(GestureIds.Relation(Unknown, readable), TimelineContextActionProvider.ConnectActionId);
         }
 

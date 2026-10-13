@@ -9,7 +9,8 @@ namespace EtAlii.Adp.History;
 /// <remarks>
 /// <para>
 /// <b>Every undo is the shared restore command</b>: the document's whole text as it was, with the
-/// command itself as the redo, so an undo gives back the original bytes however much moved.
+/// command itself as the redo, so an undo gives back the original bytes however much moved. The one
+/// exception is an edit whose <see cref="EditOutcome.Inverse"/> names its own undo.
 /// </para>
 /// <para>
 /// <b>The edit is made on a copy</b> of the cached body, so a refusal halfway through leaves nothing
@@ -57,7 +58,7 @@ public static class DocumentEditRun
         }
 
         var saved = documents.Save(bodyPath, copy);
-        return CommandResult.FromSave(saved, new RestoreDocumentCommand<TStore>(bodyPath, before, self));
+        return CommandResult.FromSave(saved, outcome.Inverse ?? new RestoreDocumentCommand<TStore>(bodyPath, before, self));
     }
 
     /// <summary>
@@ -67,7 +68,8 @@ public static class DocumentEditRun
     /// </summary>
     /// <remarks>
     /// The undo restores the text the edit was applied to, and refuses once the file is no longer
-    /// what the edit left, so it never writes over a later change of the other program's.
+    /// what the edit left, so it never writes over a later change of the other program's. An
+    /// <see cref="EditOutcome.Inverse"/> is not used here: only the whole text can make that check.
     /// </remarks>
     /// <param name="self">The command being run: the redo of the undo this returns.</param>
     public static CommandResult RunOnCurrent<TStore, TBody, TModel>(
