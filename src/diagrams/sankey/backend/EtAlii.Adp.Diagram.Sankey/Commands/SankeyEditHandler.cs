@@ -13,7 +13,7 @@ public abstract class SankeyEditHandler<TCommand>(ISankeyDocumentStore documents
     where TCommand : IDocumentEditCommand
 {
     /// <summary>The refusal for an entry that is not there, in one wording.</summary>
-    protected static EditOutcome Gone { get; } = EditOutcome.Refused("That is no longer in this diagram.");
+    protected static EditOutcome Gone => EditOutcome.Refused("That is no longer in this diagram.");
 
     /// <inheritdoc />
     protected sealed override SankeyModel Parse(LineDocument body) => SankeyParser.Parse(body);

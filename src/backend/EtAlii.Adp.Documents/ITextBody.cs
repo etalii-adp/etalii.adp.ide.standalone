@@ -10,7 +10,7 @@ namespace EtAlii.Adp.Documents;
 /// before the edit is what its undo restores.
 /// </remarks>
 /// <typeparam name="TSelf">The body type itself.</typeparam>
-public interface ITextBody<TSelf>
+public interface ITextBody<out TSelf>
     where TSelf : ITextBody<TSelf>
 {
     /// <summary>The body as it is written to its file.</summary>
