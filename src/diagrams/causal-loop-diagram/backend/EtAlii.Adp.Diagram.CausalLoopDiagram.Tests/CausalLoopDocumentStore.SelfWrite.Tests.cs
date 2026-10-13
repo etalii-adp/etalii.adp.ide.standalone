@@ -55,7 +55,7 @@ public class CausalLoopDocumentStoreSelfWriteTests : IDisposable
                 if (!entry.IsUsable || entry.Document.Text != Text)
                 {
                     damaged++;
-                    first ??= $"usable={entry.IsUsable}, length={entry.Document.Text.Length} of {Text.Length}, error=\"{entry.Error}\"";
+                    first ??= $"usable={entry.IsUsable}, length={entry.Document.Text.Length} of {Text.Length}, error=\"{entry.Unreadable}\"";
                 }
             }
         }, TestContext.Current.CancellationToken);
@@ -64,7 +64,7 @@ public class CausalLoopDocumentStoreSelfWriteTests : IDisposable
         var refused = 0;
         for (var i = 0; i < 2000; i++)
         {
-            if (store.Save(path, store.GetOrLoad(path)).Failed)
+            if (store.Save(path, store.GetOrLoad(path).Document).Failed)
             {
                 refused++;
             }

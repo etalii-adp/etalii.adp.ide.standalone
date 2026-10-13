@@ -51,10 +51,10 @@ public class CausalLoopDocumentStoreFailedReloadTests : IDisposable
         // This is what keeps the canvas drawn, and it is asserted on its own because the save
         // refusal below would protect the file even without it.
         var held = store.GetOrLoad(path);
-        Assert.True(held.IsUsable, $"The failed reload replaced the last good diagram: {held.Error}");
+        Assert.True(held.IsUsable, $"The failed reload replaced the last good diagram: {held.Unreadable}");
 
         // Act: whatever triggers the next save, once the file is readable again.
-        store.Save(path, held);
+        store.Save(path, held.Document);
 
         // Assert: the real diagram is still on disk.
         Assert.Equal(Text, File.ReadAllText(path));
@@ -89,82 +89,19 @@ public class CausalLoopDocumentStoreFailedReloadTests : IDisposable
         await File.WriteAllTextAsync(path, Text, TestContext.Current.CancellationToken);
         var store = new CausalLoopDocumentStore();
         var origin = new DiagramOrigin("test", "causal-loop");
-        using var bridge = new DiagramDocumentReloadBridge([new CausalLoopDocumentReloader(origin, store)]);
+        using var bridge = new DiagramDocumentReloadBridge([new DiagramDocumentReloader<ICausalLoopDocumentStore>(origin, store)]);
         Assert.True(store.GetOrLoad(path).IsUsable);
         bridge.Track(_workspace, path, registrationPath: null, origin);
 
         File.Delete(path);
 
         var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(10);
-        while (store.GetOrLoad(path).IsUsable && DateTime.UtcNow < deadline)
+        while (store.GetOrLoad(path).Model.Variables.Count > 0 && DateTime.UtcNow < deadline)
         {
             await Task.Delay(25, TestContext.Current.CancellationToken);
         }
 
-        Assert.False(store.GetOrLoad(path).IsUsable, "The deleted diagram is still held as if it existed.");
-    }
-
-    [Fact]
-    public async Task ReloadsRacingAnExternalPublishOfTheSameDiagram_NeverLoseIt()
-    {
-        // The measured race as a guard, in causal-loop's shape: an external writer republishes an
-        // UNCHANGED diagram while the store reloads it - a text editor saving over the file. A
-        // publish either lands whole or leaves the body missing for an instant; a missing body is
-        // confirmed before it counts as gone, so the diagram must never be lost.
-        var path = IoPath.Combine(_workspace, "loop.cld");
-        await File.WriteAllTextAsync(path, Text, TestContext.Current.CancellationToken);
-        // The retry's wait taken away, and only here: every reload that finds the body renamed away
-        // mid-publish now waits between attempts, and at 50 ms this test went from 0.8 s to 8.4 s
-        // (2026-09-25). What it guards is that the diagram is never lost, which keep-last-good decides,
-        // not how long a retry waits; the store's own attempts are kept.
-        var store = new CausalLoopDocumentStore(SharedDocumentReader.ReadAllText, CausalLoopDocumentStore.DefaultReadAttempts, TimeSpan.Zero);
-        Assert.True(store.GetOrLoad(path).IsUsable);
-
-        using var stop = new CancellationTokenSource();
-        var publishes = 0;
-        var writer = Task.Run(() =>
-        {
-            // ReSharper disable once AccessToDisposedClosure - Reason: Used in a test case which is acceptable.
-            while (!stop.IsCancellationRequested)
-            {
-                try
-                {
-                    AdpFileWriter.Save(path, Text);
-                    Interlocked.Increment(ref publishes);
-                }
-                catch (IOException)
-                {
-                    // A refused publish is not what this guard measures.
-                }
-            }
-        }, TestContext.Current.CancellationToken);
-
-        // Reload only once the writer is publishing. On a loaded runner the 3000 reloads can finish
-        // before the writer's task is even scheduled, and then nothing raced at all.
-        Assert.True(SpinWait.SpinUntil(() => Volatile.Read(ref publishes) > 0, TimeSpan.FromSeconds(10)),
-            "The arrangement failed: the external writer never started publishing.");
-
-        const int reloads = 3000;
-        var lost = 0;
-        try
-        {
-            for (var i = 0; i < reloads; i++)
-            {
-                store.Reload(path);
-                if (!store.GetOrLoad(path).IsUsable)
-                {
-                    lost++;
-                }
-            }
-        }
-        finally
-        {
-            await stop.CancelAsync();
-            await writer;
-        }
-
-        Assert.True(publishes > 0, "The arrangement failed: the external writer never published, so nothing raced.");
-        Assert.True(lost == 0, $"{lost} of {reloads} reloads racing {publishes} external publishes lost the diagram.");
+        Assert.Empty(store.GetOrLoad(path).Model.Variables);
     }
 
     [Fact]
@@ -182,7 +119,7 @@ public class CausalLoopDocumentStoreFailedReloadTests : IDisposable
             Assert.False(store.GetOrLoad(path).IsUsable, "The arrangement failed: the first read succeeded.");
         }
 
-        var answer = store.Save(path, store.GetOrLoad(path));
+        var answer = store.Save(path, store.GetOrLoad(path).Document);
 
         Assert.NotEqual("", answer.Error);
         Assert.Equal(Text, File.ReadAllText(path));

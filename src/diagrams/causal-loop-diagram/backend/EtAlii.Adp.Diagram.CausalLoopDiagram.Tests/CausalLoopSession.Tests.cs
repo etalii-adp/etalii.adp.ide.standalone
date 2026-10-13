@@ -348,7 +348,7 @@ public class CausalLoopSessionTests : IDisposable
     }
 
     [Fact]
-    public void AnUnreadableDocument_DrawsNothingRatherThanThrowing()
+    public void AMissingDocument_DrawsNothingRatherThanThrowing()
     {
         // Arrange.
         var missing = IoPath.Combine(_root, "absent.cld");
@@ -363,18 +363,20 @@ public class CausalLoopSessionTests : IDisposable
     {
         public Exception? Failure { get; set; }
 
-        public event EventHandler<CausalLoopDocumentChangedEventArgs>? Changed
+        public event EventHandler<DocumentChangedEventArgs>? Changed
         {
             add => inner.Changed += value;
             remove => inner.Changed -= value;
         }
 
-        public CausalLoopDocumentEntry GetOrLoad(string path) => Failure is null ? inner.GetOrLoad(path) : throw Failure;
+        public DocumentEntry<CausalLoopDocument, CausalLoopModel> GetOrLoad(string path) => Failure is null ? inner.GetOrLoad(path) : throw Failure;
 
-        public DocumentSaveResult Save(string path, CausalLoopDocumentEntry entry) => inner.Save(path, entry);
+        public DocumentSaveResult Save(string path, CausalLoopDocument document) => inner.Save(path, document);
 
         public void Reload(string path) => inner.Reload(path);
 
         public void BodyDeleted(string path) => inner.BodyDeleted(path);
+
+        public void Forget(string path) => inner.Forget(path);
     }
 }

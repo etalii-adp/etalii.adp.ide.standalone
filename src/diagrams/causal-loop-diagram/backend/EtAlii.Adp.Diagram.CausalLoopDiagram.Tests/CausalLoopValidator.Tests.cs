@@ -166,8 +166,7 @@ public class CausalLoopValidatorTests
         // Arrange.
         // The first thing a user ever sees of this type must not be the tool complaining about
         // a file the tool itself just wrote.
-        var text = new CausalLoopDocumentFactory(ServiceCollectionAddCausalLoopExtension.CausalLoopOrigin)
-            .CreateEmptyDocument("feedback");
+        var text = DiagramTests.StarterDocument();
 
         // Act.
         var problems = await _validator.ValidateAsync(

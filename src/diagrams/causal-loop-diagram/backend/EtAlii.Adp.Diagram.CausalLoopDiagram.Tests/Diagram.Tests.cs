@@ -70,14 +70,20 @@ public class DiagramTests
         Assert.Equal(ServiceCollectionAddCausalLoopExtension.CausalLoopOrigin, factory.Origin);
     }
 
+    /// <summary>The starter body the module registers, as a new <c>.cld</c> named "feedback" is created with.</summary>
+    internal static string StarterDocument()
+    {
+        using var provider = new ServiceCollection().AddCausalLoop().BuildServiceProvider();
+        return new DiagramDocumentFactories(provider.GetServices<IDiagramDocumentFactory>())
+            .Find(ServiceCollectionAddCausalLoopExtension.CausalLoopOrigin)!
+            .CreateEmptyDocument("feedback");
+    }
+
     [Fact]
     public void TheStarterDocument_IsALoop_RatherThanAnEmptyFile()
     {
-        // Arrange.
-        var factory = new CausalLoopDocumentFactory(ServiceCollectionAddCausalLoopExtension.CausalLoopOrigin);
-
         // Act.
-        var text = factory.CreateEmptyDocument("feedback");
+        var text = StarterDocument();
 
         // Assert.
         // A new file should show what the type is for on first open: two variables feeding each
@@ -91,11 +97,8 @@ public class DiagramTests
     [Fact]
     public void TheStarterDocument_LabelsItsLoopCorrectly_SoTheToolDoesNotShipAFinding()
     {
-        // Arrange.
-        var factory = new CausalLoopDocumentFactory(ServiceCollectionAddCausalLoopExtension.CausalLoopOrigin);
-
         // Act.
-        var text = factory.CreateEmptyDocument("feedback");
+        var text = StarterDocument();
         var negativeLinks = text
             .Split("\r\n", StringSplitOptions.RemoveEmptyEntries)
             .Count(line => line.StartsWith("link ", StringComparison.Ordinal) && line.EndsWith(" -", StringComparison.Ordinal));
@@ -114,8 +117,7 @@ public class DiagramTests
     public void TheStarterDocument_UsesTheHouseLineEnding()
     {
         // Arrange & act.
-        var text = new CausalLoopDocumentFactory(ServiceCollectionAddCausalLoopExtension.CausalLoopOrigin)
-            .CreateEmptyDocument("feedback");
+        var text = StarterDocument();
 
         // Assert.
         // A created file has no existing style to preserve, so it takes the house one.
