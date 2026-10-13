@@ -36,7 +36,7 @@ public sealed class ServiceCollectionAddGartnerHypeCycleGraphTests
         var services = new ServiceCollection();
         services.AddGartnerHypeCycleGraph();
         services.AddSingleton(TestHistory.For(_ => { }));
-        using var provider = services.BuildServiceProvider();
+        await using var provider = services.BuildServiceProvider();
         var factory = new DiagramSessionFactories(provider.GetServices<IDiagramSessionFactory>()).Find(Diagram.HypeCycleGraph.Origin)!;
 
         // Act.

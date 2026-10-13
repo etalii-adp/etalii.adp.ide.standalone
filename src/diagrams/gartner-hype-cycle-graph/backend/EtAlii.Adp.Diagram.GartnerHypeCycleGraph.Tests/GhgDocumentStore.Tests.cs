@@ -1,5 +1,3 @@
-using EtAlii.Adp.Documents;
-
 namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph.Tests;
 
 /// <summary>The store over <c>.ghg</c> bodies, held to the contract every module's is.</summary>
