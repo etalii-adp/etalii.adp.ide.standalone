@@ -44,6 +44,13 @@ public interface IPipelineDocumentStore : IDiagramDocumentStore
     /// </remarks>
     DocumentSaveResult Save(string rootPath, string path, DocumentEntry<LineDocument, PipelineModel> entry);
 
+    /// <summary>
+    /// This store as seen from <paramref name="rootPath"/>: the shared store interface, whose calls
+    /// name a path alone, answered with that root. It is how a session opened in a workspace stands
+    /// on the session base.
+    /// </summary>
+    IDiagramDocumentStore<LineDocument, PipelineModel> In(string rootPath);
+
     /// <summary>Raised after a save, and after an external change is picked up.</summary>
     event EventHandler<DocumentChangedEventArgs>? Changed;
 }
