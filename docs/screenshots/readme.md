@@ -15,7 +15,7 @@ The images the root readme shows, and how each was taken — precisely enough th
   session` marker at the right-hand end of the header, which a user of a release build never
   sees. Most of the committed set carries it, because the capture was taken without typing a
   credential; the five images added on 2026-10-12 (`c4-dynamic.png`, `c4-deployment.png`,
-  `skos.png`, `agent-activity-diagram.png` and `knowledge.png`) were taken without it. To retake without it, start the backend with
+  `skos.png`, `agent-activity-diagram.png` and `knowledge.png`), and `json-editor.png` added on 2026-10-13, were taken without it. To retake without it, start the backend with
   `LocalAuthenticator__DeveloperSessionDisabled=true` and let the script sign in; everything
   else about the images is unchanged.
 - **Format and budget**: PNG; each image ≤ 300 KB, the workspace overview ≤ 1 MB.
@@ -64,6 +64,7 @@ The whole procedure is executable: [`capture.mjs`](capture.mjs) drives all of th
 | `knowledge.png` | `designers/knowledge/yaml/` → `cities.yaml` → `cities.adp` | The knowledge designer's table of cities in its view *Map*: the *All cities* and *Map* view tabs, the columns Country, Name, Population, Tags, Province and Visited with their type icons, selection values as coloured chips, the Province relation as links, and the column summary along the bottom. Not fitted: a table has no canvas. Nothing selected. |
 | `markdown-editor.png` | `editors/markdown/` → `guide.md` | The three-part editor: heading outline above, CodeMirror text left, rendered preview right — and the status line reading **Saved**, since nothing was edited. |
 | `plain-text-editor.png` | `editors/plain/` → `crlf-notes.txt` | The plain-text editor: line numbers and the four lines of the note in a monospace face, and the status line reading **Saved**. |
+| `json-editor.png` | `editors/json/` → `service-broken.json` | The JSON editor on a document that breaks the schema beside it: the keys and values coloured, a red marker in the gutter on each line the schema rejects and the yellow warning on the deprecated `verbose`, wavy underlines under the offending values, and the status line reading **Saved**, **7 errors, 1 warning** and the schema's title *Service settings*. |
 
 Each diagram capture clicks **Fit to View** after opening (where the toolbar offers it), so the content's framing does not depend on the previous session's pan and zoom; the exceptions, `hype-cycle.png`, `owl.png`, `skos.png`, `c4-deployment.png` and `knowledge.png`, say so in their rows. Two captures that follow one row of this table should differ only in rendering noise.
 
