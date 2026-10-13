@@ -69,7 +69,7 @@ public class CausalLoopDocumentStoreLostEditTests : IDisposable
         // Act: the notification for an EARLIER write of this same file lands now. The store's own
         // self-write guard is already cleared, so this is exactly what the reload bridge does.
         store.Reload(path);
-        var error = store.Save(path, entry);
+        var error = store.Save(path, entry.Document);
 
         // Assert.
         Assert.Equal("", error.Error);

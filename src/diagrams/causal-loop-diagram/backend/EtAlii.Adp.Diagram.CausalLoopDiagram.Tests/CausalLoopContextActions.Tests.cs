@@ -187,12 +187,7 @@ public class CausalLoopContextActionsTests : IDisposable
 
         var watchId = ShortGuid.NewShortGuid();
         var history = _provider.GetRequiredService<IHistoryStackStore>();
-        var session = new CausalLoopSessionFactory(
-                ServiceCollectionAddCausalLoopExtension.CausalLoopOrigin,
-                _store,
-                new CausalLoopElementMapper(),
-                history)
-            .Open(watchId, _root, _path, adpPath);
+        var session = new CausalLoopSession(_path, adpPath, _store, new CausalLoopElementMapper(), history.Get(_root));
 
         // Registered exactly as the diagram service registers an open stream - which is what
         // lets a unary action reach the session behind it.

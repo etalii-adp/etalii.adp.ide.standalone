@@ -213,8 +213,7 @@ public class CausalLoopParserTests
         // Arrange.
         // The forward reference task 1.1 left: the factory emits text before a parser exists to
         // read it, so this is where the two are pinned together.
-        var text = new CausalLoopDocumentFactory(ServiceCollectionAddCausalLoopExtension.CausalLoopOrigin)
-            .CreateEmptyDocument("feedback");
+        var text = DiagramTests.StarterDocument();
 
         // Act.
         var result = Parse(text);

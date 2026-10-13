@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.CausalLoopDiagram;
@@ -20,7 +21,7 @@ internal static class CausalLoopEdits
         ICausalLoopDocumentStore documents,
         string bodyPath,
         ICommand self,
-        Func<CausalLoopDocumentEntry, string> edit)
+        Func<DocumentEntry<CausalLoopDocument, CausalLoopModel>, string> edit)
     {
         var entry = documents.GetOrLoad(bodyPath);
         if (!entry.IsUsable)
@@ -37,7 +38,7 @@ internal static class CausalLoopEdits
             return Task.FromResult(CommandResult.Failure(refusal));
         }
 
-        var saved = documents.Save(bodyPath, entry);
+        var saved = documents.Save(bodyPath, entry.Document);
         return Task.FromResult(saved.Failed
             ? CommandResult.Failure(saved.Error)
             : CommandResult.Success(new RestoreDocumentCommand<ICausalLoopDocumentStore>(bodyPath, before, self)));

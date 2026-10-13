@@ -1,4 +1,5 @@
 using EtAlii.Adp.Context;
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Hierarchy;
 using Google.Protobuf;
@@ -145,7 +146,7 @@ public sealed class CausalLoopContextSourceResolver : IContextSourceResolver
         _documents.Changed += OnChanged;
         return new CausalLoopSubscription(() => _documents.Changed -= OnChanged);
 
-        void OnChanged(object? sender, CausalLoopDocumentChangedEventArgs args)
+        void OnChanged(object? sender, DocumentChangedEventArgs args)
         {
             if (!string.Equals(args.Path, bodyPath, StringComparison.OrdinalIgnoreCase))
             {

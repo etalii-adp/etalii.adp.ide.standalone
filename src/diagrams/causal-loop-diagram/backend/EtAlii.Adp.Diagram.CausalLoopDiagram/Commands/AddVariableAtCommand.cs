@@ -42,7 +42,7 @@ public sealed class AddVariableAtCommandHandler(ICausalLoopDocumentStore documen
             return Task.FromResult(CommandResult.Failure(refusal));
         }
 
-        var saved = documents.Save(command.BodyPath, entry);
+        var saved = documents.Save(command.BodyPath, entry.Document);
         if (saved.Failed)
         {
             return Task.FromResult(CommandResult.Failure(saved.Error));

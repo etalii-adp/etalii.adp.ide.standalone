@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 
@@ -241,6 +242,6 @@ internal sealed class CausalLoopSession : IDiagramSession
         return _mapper.Visible(entry.Model, boxes, _viewport);
     }
 
-    private void OnDocumentChanged(object? sender, CausalLoopDocumentChangedEventArgs args) =>
+    private void OnDocumentChanged(object? sender, DocumentChangedEventArgs args) =>
         _changes.OnDocumentChanged(args.Path);
 }
