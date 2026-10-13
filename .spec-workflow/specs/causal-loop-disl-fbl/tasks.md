@@ -32,7 +32,7 @@ One Developer owns this specification, per CLAUDE.md's one-owner-per-specificati
 
 ## The tasks
 
-- [-] 1. Freeze the parity transcript from today's code
+- [x] 1. Freeze the parity transcript from today's code
   - Files: `src/diagrams/causal-loop-diagram/backend/EtAlii.Adp.Diagram.CausalLoopDiagram.Tests/Parity/CausalLoopTranscript.cs`, `Parity/CausalLoopTranscript.Tests.cs`, `Parity/TranscriptText.cs`, `Parity/causal-loop.transcript.json`, `Fixtures/*.cld` (new), `.gitattributes` only if a new fixture needs an attribute `.cld` does not have
   - Write the generator in the shape of the timeline's: per document the menus (every element id, the canvas, a placement, a connect gesture, an unknown id), the rows, the findings, the payloads, and a scripted edit sequence running every command once, with each step's answer and the hunks it made.
   - The corpus: the module's `examples/`, the copies under `src/examples/diagrams/causal-loop-diagram/`, and one new fixture per finding of table B and A7 marked Read: `lenient-spellings.cld`, `dangling-link.cld`, `duplicate-variable.cld`, `no-header.cld`, `header-twice.cld`, `trailing-comments.cld`, `weight-forms.cld`, `two-notes.cld`, `label-with-quote.cld`, `spellings-kept.cld`.
