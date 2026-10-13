@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.DependencyGraph;
@@ -13,50 +14,27 @@ namespace EtAlii.Adp.Diagram.DependencyGraph;
 /// It is still checked against the document as it is now rather than trusted from when the
 /// command was made, because undo and redo dispatch the same instance again later.
 /// </remarks>
-public sealed class SetDependencyGraphPlacementCommandHandler : ICommandHandler<SetDependencyGraphPlacementCommand>
+public sealed class SetDependencyGraphPlacementCommandHandler(IDependencyGraphDocumentStore documents)
+    : DependencyGraphEditHandler<SetDependencyGraphPlacementCommand>(documents)
 {
-    private readonly IDependencyGraphDocumentStore _documents;
-
-    /// <summary>Creates the handler over the one store that owns the documents.</summary>
-    public SetDependencyGraphPlacementCommandHandler(IDependencyGraphDocumentStore documents)
-    {
-        ArgumentNullException.ThrowIfNull(documents);
-        _documents = documents;
-    }
-
     /// <inheritdoc />
-    public Task<CommandResult> ExecuteAsync(SetDependencyGraphPlacementCommand command, CancellationToken cancellationToken)
+    protected override EditOutcome Apply(LineDocument body, DependencyGraphModel model, SetDependencyGraphPlacementCommand command)
     {
-        ArgumentNullException.ThrowIfNull(command);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        var entry = _documents.GetOrLoad(command.BodyPath);
-        if (!entry.IsUsable)
-        {
-            return Task.FromResult(CommandResult.Failure(
-                "This graph does not parse, so nothing in it can be edited until the file is fixed."));
-        }
-
-        var element = DependencyGraphEdits.ElementOf(entry.Model, command.ElementId);
+        var element = DependencyGraphEdits.ElementOf(model, command.ElementId);
         if (element is null)
         {
-            return Task.FromResult(CommandResult.Failure("That node is no longer in this graph."));
+            return EditOutcome.Refused("That node is no longer in this graph.");
         }
-
-        var inverse = command with
-        {
-            X = element.X,
-            Row = element.Row,
-        };
 
         // Each edit is a one-for-one line replace within the node's range, so the ranges the
         // parser recorded stay valid between them and no re-parse is needed mid-command.
-        DependencyGraphWriter.SetX(entry.Document, element, command.X);
-        DependencyGraphWriter.SetRow(entry.Document, element, command.Row);
+        DependencyGraphWriter.SetX(body, element, command.X);
+        DependencyGraphWriter.SetRow(body, element, command.Row);
 
-        var saved = _documents.Save(command.BodyPath, entry.Document);
-        return Task.FromResult(!saved.Failed
-            ? CommandResult.Success(inverse)
-            : CommandResult.Failure(saved.Error));
+        return EditOutcome.UndoneBy(command with
+        {
+            X = element.X,
+            Row = element.Row,
+        });
     }
 }

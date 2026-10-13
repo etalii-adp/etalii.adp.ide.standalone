@@ -11,4 +11,4 @@ namespace EtAlii.Adp.Diagram.DependencyGraph;
 public sealed record RelabelDependencyGraphRelationCommand(
     string BodyPath,
     string RelationId,
-    string Label) : ICommand;
+    string Label) : IDocumentEditCommand;

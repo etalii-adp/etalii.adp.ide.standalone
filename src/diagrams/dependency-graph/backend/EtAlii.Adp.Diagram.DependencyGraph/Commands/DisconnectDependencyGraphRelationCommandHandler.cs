@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.DependencyGraph;
@@ -7,53 +8,29 @@ namespace EtAlii.Adp.Diagram.DependencyGraph;
 /// label - sufficient because a relation block is machine-shaped; a node's block, which can hold
 /// an author's comments, gets the byte-exact restore instead.
 /// </summary>
-public sealed class DisconnectDependencyGraphRelationCommandHandler : ICommandHandler<DisconnectDependencyGraphRelationCommand>
+public sealed class DisconnectDependencyGraphRelationCommandHandler(IDependencyGraphDocumentStore documents)
+    : DependencyGraphEditHandler<DisconnectDependencyGraphRelationCommand>(documents)
 {
-    private readonly IDependencyGraphDocumentStore _documents;
-
-    /// <summary>Creates the handler over the one store that owns the documents.</summary>
-    public DisconnectDependencyGraphRelationCommandHandler(IDependencyGraphDocumentStore documents)
-    {
-        ArgumentNullException.ThrowIfNull(documents);
-        _documents = documents;
-    }
-
     /// <inheritdoc />
-    public Task<CommandResult> ExecuteAsync(DisconnectDependencyGraphRelationCommand command, CancellationToken cancellationToken)
+    protected override EditOutcome Apply(LineDocument body, DependencyGraphModel model, DisconnectDependencyGraphRelationCommand command)
     {
-        ArgumentNullException.ThrowIfNull(command);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        var entry = _documents.GetOrLoad(command.BodyPath);
-        if (!entry.IsUsable)
-        {
-            return Task.FromResult(CommandResult.Failure(
-                "This graph does not parse, so nothing can be disconnected until the file is fixed."));
-        }
-
-        var relation = DependencyGraphEdits.RelationOf(entry.Model, command.RelationId);
+        var relation = DependencyGraphEdits.RelationOf(model, command.RelationId);
         if (relation is null)
         {
-            return Task.FromResult(CommandResult.Failure("That dependency is no longer in this graph."));
+            return EditOutcome.Refused("That dependency is no longer in this graph.");
         }
 
-        // The endpoints go into the inverse in the order they were written: putting a dependency
-        // back the other way round would silently reverse what the graph says.
-        var inverse = new ConnectDependencyGraphElementsCommand(
-            command.BodyPath, relation.Id, relation.From, relation.To, relation.Label);
-
-        DependencyGraphWriter.RemoveRelation(entry.Document, relation);
+        DependencyGraphWriter.RemoveRelation(body, relation);
 
         if (command.RemoveEmptiedRelationsSection)
         {
             // The undo of a connect that created the relations: key on demand.
-            DependencyGraphWriter.RemoveRelationsSectionIfEmpty(
-                entry.Document, DependencyGraphParser.Parse(entry.Document));
+            DependencyGraphWriter.RemoveRelationsSectionIfEmpty(body, DependencyGraphParser.Parse(body));
         }
 
-        var saved = _documents.Save(command.BodyPath, entry.Document);
-        return Task.FromResult(!saved.Failed
-            ? CommandResult.Success(inverse)
-            : CommandResult.Failure(saved.Error));
+        // The endpoints go into the inverse in the order they were written: putting a dependency
+        // back the other way round would silently reverse what the graph says.
+        return EditOutcome.UndoneBy(new ConnectDependencyGraphElementsCommand(
+            command.BodyPath, relation.Id, relation.From, relation.To, relation.Label));
     }
 }

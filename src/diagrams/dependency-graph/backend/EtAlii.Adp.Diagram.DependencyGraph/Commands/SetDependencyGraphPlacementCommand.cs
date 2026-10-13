@@ -22,4 +22,4 @@ public sealed record SetDependencyGraphPlacementCommand(
     string BodyPath,
     string ElementId,
     double X,
-    int Row) : ICommand;
+    int Row) : IDocumentEditCommand;

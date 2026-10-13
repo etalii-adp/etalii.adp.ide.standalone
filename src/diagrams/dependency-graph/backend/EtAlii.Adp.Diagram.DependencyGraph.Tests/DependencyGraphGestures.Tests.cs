@@ -1,4 +1,5 @@
 using System.Globalization;
+using EtAlii.Adp.Documents;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.DependencyGraph.Tests;
@@ -22,8 +23,8 @@ public class DependencyGraphGesturesTests
     public void APlacement_RoundTripsThroughItsId(double x, int row)
     {
         // Act.
-        var parsed = DependencyGraphNewPlacement.TryParse(
-            DependencyGraphNewPlacement.IdFor(x, row), out var readX, out var readRow);
+        var parsed = GestureIds.TryParseRowPlacement(
+            GestureIds.RowPlacement(x, row), out var readX, out var readRow);
 
         // Assert.
         Assert.True(parsed);
@@ -42,11 +43,11 @@ public class DependencyGraphGesturesTests
         try
         {
             // Act.
-            var id = DependencyGraphNewPlacement.IdFor(412.5d, 2);
+            var id = GestureIds.RowPlacement(412.5d, 2);
 
             // Assert.
             Assert.Equal("new:412.5,2", id);
-            Assert.True(DependencyGraphNewPlacement.TryParse(id, out var x, out var row));
+            Assert.True(GestureIds.TryParseRowPlacement(id, out var x, out var row));
             Assert.Equal(412.5d, x);
             Assert.Equal(2, row);
         }
@@ -70,7 +71,7 @@ public class DependencyGraphGesturesTests
         // Act & assert.
         // An ordinary element id must never be mistaken for a placement: that would turn a
         // selection into a creation.
-        Assert.False(DependencyGraphNewPlacement.TryParse(candidate, out _, out _));
+        Assert.False(GestureIds.TryParseRowPlacement(candidate, out _, out _));
     }
 
     [Fact]
@@ -79,10 +80,10 @@ public class DependencyGraphGesturesTests
         // Act.
         // Which end is which is the type's whole meaning, so the id preserves the order the
         // gesture had rather than sorting or normalising it.
-        var id = DependencyGraphRelationGesture.IdFor("aaa", "bbb");
+        var id = GestureIds.Relation("aaa", "bbb");
 
         // Assert.
-        Assert.True(DependencyGraphRelationGesture.TryParse(id, out var from, out var to));
+        Assert.True(GestureIds.TryParseRelation(id, out var from, out var to));
         Assert.Equal("aaa", from);
         Assert.Equal("bbb", to);
     }
@@ -93,16 +94,16 @@ public class DependencyGraphGesturesTests
         // Arrange.
         // A placement contains a comma and a colon but no arrow, so the split is unambiguous -
         // which is what lets a drag onto empty canvas travel through the same one-id channel.
-        var placement = DependencyGraphNewPlacement.IdFor(-180.5d, 4);
+        var placement = GestureIds.RowPlacement(-180.5d, 4);
 
         // Act.
-        var id = DependencyGraphRelationGesture.IdFor("aaa", placement);
+        var id = GestureIds.Relation("aaa", placement);
 
         // Assert.
-        Assert.True(DependencyGraphRelationGesture.TryParse(id, out var from, out var to));
+        Assert.True(GestureIds.TryParseRelation(id, out var from, out var to));
         Assert.Equal("aaa", from);
         Assert.Equal(placement, to);
-        Assert.True(DependencyGraphNewPlacement.TryParse(to, out var x, out var row));
+        Assert.True(GestureIds.TryParseRowPlacement(to, out var x, out var row));
         Assert.Equal(-180.5d, x);
         Assert.Equal(4, row);
     }
@@ -117,6 +118,6 @@ public class DependencyGraphGesturesTests
     public void AnythingElse_IsNotARelationGesture(string? candidate)
     {
         // Act & assert.
-        Assert.False(DependencyGraphRelationGesture.TryParse(candidate, out _, out _));
+        Assert.False(GestureIds.TryParseRelation(candidate, out _, out _));
     }
 }

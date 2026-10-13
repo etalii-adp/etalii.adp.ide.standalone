@@ -1,4 +1,5 @@
 using EtAlii.Adp.Context;
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 using Xunit;
 using IoPath = System.IO.Path;
@@ -109,7 +110,7 @@ public class DependencyGraphContextActionProviderTests : IDisposable
     {
         // Arrange & act.
         var path = Write();
-        var ids = await ActionIdsFor(path, DependencyGraphNewPlacement.IdFor(700, 3));
+        var ids = await ActionIdsFor(path, GestureIds.RowPlacement(700, 3));
 
         // Assert.
         var only = Assert.Single(ids);
@@ -137,7 +138,7 @@ public class DependencyGraphContextActionProviderTests : IDisposable
 
         // Act.
         var result = await _actions.ExecuteAsync(
-            Target(path, DependencyGraphNewPlacement.IdFor(-180.5, 4)),
+            Target(path, GestureIds.RowPlacement(-180.5, 4)),
             DependencyGraphContextActionProvider.AddElementActionId,
             CancellationToken.None);
 
@@ -250,7 +251,7 @@ public class DependencyGraphContextActionProviderTests : IDisposable
     {
         // Arrange.
         var path = Write();
-        var gesture = DependencyGraphRelationGesture.IdFor("bbb", "aaa");
+        var gesture = GestureIds.Relation("bbb", "aaa");
 
         // Act.
         var result = await _actions.ExecuteAsync(
@@ -271,7 +272,7 @@ public class DependencyGraphContextActionProviderTests : IDisposable
         // Arrange.
         var path = Write();
         var before = await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken);
-        var gesture = DependencyGraphRelationGesture.IdFor("aaa", DependencyGraphNewPlacement.IdFor(900, 5));
+        var gesture = GestureIds.Relation("aaa", GestureIds.RowPlacement(900, 5));
 
         // Act.
         var result = await _actions.ExecuteAsync(
@@ -294,7 +295,7 @@ public class DependencyGraphContextActionProviderTests : IDisposable
         // Arrange.
         // Dragged into an existing node: what was created is the thing that depends on it.
         var path = Write();
-        var gesture = DependencyGraphRelationGesture.IdFor(DependencyGraphNewPlacement.IdFor(-300, 1), "aaa");
+        var gesture = GestureIds.Relation(GestureIds.RowPlacement(-300, 1), "aaa");
 
         // Act.
         var result = await _actions.ExecuteAsync(
@@ -313,7 +314,7 @@ public class DependencyGraphContextActionProviderTests : IDisposable
     {
         // Arrange & act.
         var path = Write();
-        var gesture = DependencyGraphRelationGesture.IdFor("ghost", DependencyGraphNewPlacement.IdFor(0, 0));
+        var gesture = GestureIds.Relation("ghost", GestureIds.RowPlacement(0, 0));
 
         // Act.
         var result = await _actions.ExecuteAsync(

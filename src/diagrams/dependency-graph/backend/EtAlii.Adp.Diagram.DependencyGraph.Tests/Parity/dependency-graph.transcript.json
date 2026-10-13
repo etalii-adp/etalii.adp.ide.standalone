@@ -3960,47 +3960,47 @@
       "edits": [
         {
           "do": "execute dependencies.add-element on new:480.25,-1",
-          "answer": "refused: This graph does not parse, so nothing can be added until the file is fixed.",
+          "answer": "refused: not-yaml.dgr could not be read, so it cannot be edited.",
           "unchanged": true
         },
         {
           "do": "execute dependencies.add-element on ",
-          "answer": "asks: ContextInputRequest { Title = Add node, Icon = mdi-plus, FieldLabel = Label, InitialValue = New node, ConfirmLabel = Add, InlineLabelElementId = , CommitActionId =  }",
+          "answer": "refused: not-yaml.dgr could not be read, so it cannot be edited.",
           "unchanged": true
         },
         {
           "do": "commit dependencies.add-element on  = \"\"",
-          "answer": "refused: This graph does not parse, so nothing can be added until the file is fixed.",
+          "answer": "refused: not-yaml.dgr could not be read, so it cannot be edited.",
           "unchanged": true
         },
         {
           "do": "execute dependencies.connect on rel:new:-120.5,3->parity:unknown",
-          "answer": "refused: The node this dependency reaches is no longer in this graph.",
+          "answer": "refused: not-yaml.dgr could not be read, so it cannot be edited.",
           "unchanged": true
         },
         {
           "do": "execute dependencies.remove on parity:unknown",
-          "answer": "ok",
+          "answer": "refused: not-yaml.dgr could not be read, so it cannot be edited.",
           "unchanged": true
         },
         {
           "do": "execute dependencies.disconnect on parity:unknown",
-          "answer": "ok",
+          "answer": "refused: not-yaml.dgr could not be read, so it cannot be edited.",
           "unchanged": true
         },
         {
           "do": "execute dependencies.relabel on parity:unknown",
-          "answer": "refused: That is no longer in this graph.",
+          "answer": "refused: not-yaml.dgr could not be read, so it cannot be edited.",
           "unchanged": true
         },
         {
           "do": "commit dependencies.rename on parity:unknown = \"Nobody\"",
-          "answer": "refused: 'dependencies.rename' does not apply to this selection.",
+          "answer": "refused: not-yaml.dgr could not be read, so it cannot be edited.",
           "unchanged": true
         },
         {
           "do": "execute parity.no-such-action on parity:unknown",
-          "answer": "ok",
+          "answer": "refused: not-yaml.dgr could not be read, so it cannot be edited.",
           "unchanged": true
         }
       ],

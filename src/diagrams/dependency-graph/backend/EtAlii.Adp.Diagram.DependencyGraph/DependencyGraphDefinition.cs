@@ -1,5 +1,6 @@
 using System.Runtime.CompilerServices;
 using EtAlii.Adp.Context;
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Specification.Disl;
 
@@ -78,9 +79,9 @@ internal static class DependencyGraphDefinition
         var diagram = Disl(model);
         DislMenuTarget? target = ElementOf(diagram, elementId) is { } element
             ? DislMenuTarget.Element(element)
-            : DependencyGraphNewPlacement.TryParse(elementId, out _, out _)
+            : GestureIds.TryParseRowPlacement(elementId, out _, out _)
                 ? DislMenuTarget.Canvas(diagram)
-                : DependencyGraphRelationGesture.TryParse(elementId, out _, out _)
+                : GestureIds.TryParseRelation(elementId, out _, out _)
                     ? DislMenuTarget.Connection(diagram, null, null, "DependsOn")
                     : null;
         if (target is null) return [];

@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.DependencyGraph;
@@ -7,59 +8,38 @@ namespace EtAlii.Adp.Diagram.DependencyGraph;
 /// before anything is spliced - not a re-creation from the model, which would lose the comments
 /// and formatting the author had inside the removed block.
 /// </summary>
-public sealed class RemoveDependencyGraphElementCommandHandler : ICommandHandler<RemoveDependencyGraphElementCommand>
+public sealed class RemoveDependencyGraphElementCommandHandler(IDependencyGraphDocumentStore documents)
+    : DependencyGraphEditHandler<RemoveDependencyGraphElementCommand>(documents)
 {
-    private readonly IDependencyGraphDocumentStore _documents;
-
-    /// <summary>Creates the handler over the one store that owns the documents.</summary>
-    public RemoveDependencyGraphElementCommandHandler(IDependencyGraphDocumentStore documents)
-    {
-        ArgumentNullException.ThrowIfNull(documents);
-        _documents = documents;
-    }
-
     /// <inheritdoc />
-    public Task<CommandResult> ExecuteAsync(RemoveDependencyGraphElementCommand command, CancellationToken cancellationToken)
+    protected override EditOutcome Apply(LineDocument body, DependencyGraphModel model, RemoveDependencyGraphElementCommand command)
     {
-        ArgumentNullException.ThrowIfNull(command);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        var entry = _documents.GetOrLoad(command.BodyPath);
-        if (!entry.IsUsable)
-        {
-            return Task.FromResult(CommandResult.Failure(
-                "This graph does not parse, so nothing can be removed until the file is fixed."));
-        }
-
-        var element = DependencyGraphEdits.ElementOf(entry.Model, command.ElementId);
+        var element = DependencyGraphEdits.ElementOf(model, command.ElementId);
         if (element is null)
         {
-            return Task.FromResult(CommandResult.Failure("That node is no longer in this graph."));
+            return EditOutcome.Refused("That node is no longer in this graph.");
         }
 
         // Captured in ascending order before any splice moves a line, so the restore can replay
         // them ascending against the document as it was.
-        var going = DependencyGraphWriter.RelationsTouching(entry.Model, element.Id);
-        var segments = going
+        var segments = DependencyGraphWriter.RelationsTouching(model, element.Id)
             .Select(relation => relation.Range)
             .Append(element.Range)
             .OrderBy(range => range.Start)
-            .Select(range => DependencyGraphEdits.Capture(entry.Document, range))
+            .Select(range => DependencyGraphEdits.Capture(body, range))
             .ToList();
 
-        DependencyGraphWriter.RemoveElement(entry.Document, entry.Model, element);
+        DependencyGraphWriter.RemoveElement(body, model, element);
 
         if (command.RemoveEmptiedRelationsSection)
         {
             // This removal is the undo of an insert that created the relations: key on demand,
             // so the key it created goes too - or the undo comes back one line different.
-            DependencyGraphWriter.RemoveRelationsSectionIfEmpty(
-                entry.Document, DependencyGraphParser.Parse(entry.Document));
+            DependencyGraphWriter.RemoveRelationsSectionIfEmpty(body, DependencyGraphParser.Parse(body));
         }
 
-        var saved = _documents.Save(command.BodyPath, entry.Document);
-        return Task.FromResult(!saved.Failed
-            ? CommandResult.Success(new RestoreDependencyGraphLinesCommand(command.BodyPath, command.ElementId, segments))
-            : CommandResult.Failure(saved.Error));
+        // Redoing the restore removes the node again - by id, which it has again by then.
+        return EditOutcome.UndoneBy(new RestoreLinesCommand<IDependencyGraphDocumentStore>(
+            command.BodyPath, segments, new RemoveDependencyGraphElementCommand(command.BodyPath, command.ElementId)));
     }
 }
