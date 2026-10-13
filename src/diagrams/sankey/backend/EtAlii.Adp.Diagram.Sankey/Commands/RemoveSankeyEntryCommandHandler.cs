@@ -1,26 +1,21 @@
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.Sankey;
 
 /// <summary>Removes whatever the id names.</summary>
-public sealed class RemoveSankeyEntryCommandHandler(ISankeyDocumentStore documents) : ICommandHandler<RemoveSankeyEntryCommand>
+public sealed class RemoveSankeyEntryCommandHandler(ISankeyDocumentStore documents) : SankeyEditHandler<RemoveSankeyEntryCommand>(documents)
 {
     /// <inheritdoc />
-    public Task<CommandResult> ExecuteAsync(RemoveSankeyEntryCommand command, CancellationToken cancellationToken = default)
+    protected override EditOutcome Apply(LineDocument document, SankeyModel model, RemoveSankeyEntryCommand command)
     {
-        ArgumentNullException.ThrowIfNull(command);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        return SankeyEdits.Run(documents, command.BodyPath, command, (document, model) =>
+        if (model.NodeOf(command.EntryId) is { } node)
         {
-            if (SankeyEdits.NodeOf(model, command.EntryId) is { } node)
-            {
-                return SankeyWriter.RemoveNode(document, model, node);
-            }
+            return SankeyWriter.RemoveNode(document, model, node);
+        }
 
-            return SankeyEdits.FlowOf(model, command.EntryId) is { } flow
-                ? SankeyWriter.Remove(document, flow.Range)
-                : SankeyEdits.Gone();
-        });
+        return model.FlowOf(command.EntryId) is { } flow
+            ? SankeyWriter.Remove(document, flow.Range)
+            : Gone;
     }
 }

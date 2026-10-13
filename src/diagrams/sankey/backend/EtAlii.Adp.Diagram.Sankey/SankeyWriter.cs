@@ -1,21 +1,8 @@
 using System.Globalization;
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.Sankey;
-
-/// <summary>What an edit did, or why it did nothing.</summary>
-/// <param name="Refusal">The sentence to show, or <c>null</c> when the edit was spliced.</param>
-public readonly record struct SankeyEdit(string? Refusal)
-{
-    /// <summary>The edit was spliced into the document.</summary>
-    public static SankeyEdit Applied { get; } = new(null);
-
-    /// <summary>The edit was refused, and this is why.</summary>
-    public static SankeyEdit Refused(string because) => new(because);
-
-    /// <summary>Whether the document changed.</summary>
-    public bool WasApplied => Refusal is null;
-}
 
 /// <summary>
 /// Turns an edit into a splice of the lines that edit affects, and nothing else.
@@ -37,7 +24,7 @@ public static class SankeyWriter
     private const string FlowsSection = SankeyParser.FlowsKey + ":";
 
     /// <summary>Writes a text key, removing it instead when <paramref name="removeWhenEmpty"/> and the value is blank.</summary>
-    public static SankeyEdit SetText(LineDocument document, LineRange range, string key, string value, bool removeWhenEmpty)
+    public static EditOutcome SetText(LineDocument document, LineRange range, string key, string value, bool removeWhenEmpty)
     {
         ArgumentNullException.ThrowIfNull(document);
 
@@ -50,11 +37,11 @@ public static class SankeyWriter
             LineSplice.SetKey(document, range, key, Text(value));
         }
 
-        return SankeyEdit.Applied;
+        return EditOutcome.Applied;
     }
 
     /// <summary>Writes a number key, or removes it for <c>null</c>.</summary>
-    public static SankeyEdit SetNumber(LineDocument document, LineRange range, string key, double? value)
+    public static EditOutcome SetNumber(LineDocument document, LineRange range, string key, double? value)
     {
         ArgumentNullException.ThrowIfNull(document);
 
@@ -67,7 +54,7 @@ public static class SankeyWriter
             LineSplice.SetKey(document, range, key, Number(value.Value));
         }
 
-        return SankeyEdit.Applied;
+        return EditOutcome.Applied;
     }
 
     /// <summary>
@@ -75,23 +62,23 @@ public static class SankeyWriter
     /// document does not state it yet.
     /// </summary>
     /// <param name="line">The key's zero-based line as the parser found it, or -1.</param>
-    public static SankeyEdit SetRootKey(LineDocument document, int line, string key, string value)
+    public static EditOutcome SetRootKey(LineDocument document, int line, string key, string value)
     {
         ArgumentNullException.ThrowIfNull(document);
 
         if (line >= 0 && line < document.Lines.Count)
         {
             document.Replace(new LineRange(line, line), [$"{key}: {value}"]);
-            return SankeyEdit.Applied;
+            return EditOutcome.Applied;
         }
 
         var header = LineSplice.FindSection(document, SankeyParser.HeaderKey + ":");
         document.Insert(header >= 0 ? header + 1 : 0, [$"{key}: {value}"]);
-        return SankeyEdit.Applied;
+        return EditOutcome.Applied;
     }
 
     /// <summary>Removes a node and every flow to or from it, bottom-up.</summary>
-    public static SankeyEdit RemoveNode(LineDocument document, SankeyModel model, SankeyNode node)
+    public static EditOutcome RemoveNode(LineDocument document, SankeyModel model, SankeyNode node)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(model);
@@ -101,16 +88,16 @@ public static class SankeyWriter
             .Where(flow => flow.From == node.Id || flow.To == node.Id)
             .Select(flow => flow.Range)
             .Append(node.Range));
-        return SankeyEdit.Applied;
+        return EditOutcome.Applied;
     }
 
     /// <summary>Removes one entry - a flow, typically.</summary>
-    public static SankeyEdit Remove(LineDocument document, LineRange range)
+    public static EditOutcome Remove(LineDocument document, LineRange range)
     {
         ArgumentNullException.ThrowIfNull(document);
 
         document.Remove(range);
-        return SankeyEdit.Applied;
+        return EditOutcome.Applied;
     }
 
     /// <summary>
@@ -122,7 +109,7 @@ public static class SankeyWriter
     /// The entry's own lines move, comments inside it included, and nothing else is touched: the
     /// lines around both places stay where they were.
     /// </remarks>
-    public static SankeyEdit MoveNode(LineDocument document, SankeyNode node, SankeyNode anchor, bool after)
+    public static EditOutcome MoveNode(LineDocument document, SankeyNode node, SankeyNode anchor, bool after)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(node);
@@ -130,7 +117,7 @@ public static class SankeyWriter
 
         if (node.Id == anchor.Id)
         {
-            return SankeyEdit.Refused("A node cannot be moved next to itself.");
+            return EditOutcome.Refused("A node cannot be moved next to itself.");
         }
 
         var lines = Enumerable.Range(node.Range.Start, node.Range.Length).Select(index => document.Lines[index].Text).ToList();
@@ -142,7 +129,7 @@ public static class SankeyWriter
 
         document.Remove(node.Range);
         document.Insert(at, lines);
-        return SankeyEdit.Applied;
+        return EditOutcome.Applied;
     }
 
     /// <summary>
@@ -150,7 +137,7 @@ public static class SankeyWriter
     /// <paramref name="before"/> when one is given, so it lands at its place in its column, and after
     /// the last node otherwise.
     /// </summary>
-    public static SankeyEdit AddNode(LineDocument document, SankeyModel model, SankeyNode node, SankeyNode? before = null)
+    public static EditOutcome AddNode(LineDocument document, SankeyModel model, SankeyNode node, SankeyNode? before = null)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(model);
@@ -175,11 +162,11 @@ public static class SankeyWriter
 
         (string itemIndent, string dashGap, string keyIndent) = LineSplice.IndentOf(document, ranges);
         document.Insert(before.Range.Start, Entry(itemIndent, dashGap, keyIndent, node.Id, keys));
-        return SankeyEdit.Applied;
+        return EditOutcome.Applied;
     }
 
     /// <summary>Appends a flow entry: its two ends and its value, and no id - its ends are its name.</summary>
-    public static SankeyEdit AddFlow(LineDocument document, SankeyModel model, SankeyFlow flow)
+    public static EditOutcome AddFlow(LineDocument document, SankeyModel model, SankeyFlow flow)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(model);
@@ -202,10 +189,10 @@ public static class SankeyWriter
         }
 
         document.Insert(at, lines);
-        return SankeyEdit.Applied;
+        return EditOutcome.Applied;
     }
 
-    private static SankeyEdit Append(
+    private static EditOutcome Append(
         LineDocument document,
         IReadOnlyList<LineRange> ranges,
         string section,
@@ -222,7 +209,7 @@ public static class SankeyWriter
 
         (string itemIndent, string dashGap, string keyIndent) = LineSplice.IndentOf(document, ranges);
         document.Insert(at, Entry(itemIndent, dashGap, keyIndent, id, keys));
-        return SankeyEdit.Applied;
+        return EditOutcome.Applied;
     }
 
     private static List<string> Entry(string itemIndent, string dashGap, string keyIndent, string id, IReadOnlyList<(string Key, string Value)> keys)

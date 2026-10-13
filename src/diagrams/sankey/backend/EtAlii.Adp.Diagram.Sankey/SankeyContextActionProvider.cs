@@ -77,7 +77,7 @@ public sealed class SankeyContextActionProvider : IContextActionProvider
         var model = _documents.GetOrLoad(target.ResolvedFullPath).Model;
         var thickness = Thickness(model);
 
-        if (SankeyEdits.NodeOf(model, target.ElementId) is not null)
+        if (model.NodeOf(target.ElementId) is not null)
         {
             return Result(
             [
@@ -90,7 +90,7 @@ public sealed class SankeyContextActionProvider : IContextActionProvider
             ]);
         }
 
-        if (SankeyEdits.FlowOf(model, target.ElementId) is { } flow)
+        if (model.FlowOf(target.ElementId) is { } flow)
         {
             var atZero = (flow.Value ?? 0) <= 0;
             return Result(
@@ -133,8 +133,8 @@ public sealed class SankeyContextActionProvider : IContextActionProvider
         var body = target.ResolvedFullPath;
         var id = target.ElementId;
         var model = _documents.GetOrLoad(body).Model;
-        var node = SankeyEdits.NodeOf(model, id);
-        var flow = SankeyEdits.FlowOf(model, id);
+        var node = model.NodeOf(id);
+        var flow = model.FlowOf(id);
 
         switch (actionId)
         {
@@ -214,8 +214,8 @@ public sealed class SankeyContextActionProvider : IContextActionProvider
 
         ICommand? command = actionId switch
         {
-            RenameActionId when SankeyEdits.NodeOf(model, id) is not null => new SetSankeyPropertyCommand(body, id, SankeyKeys.Name, value),
-            RemoveActionId when SankeyEdits.NodeOf(model, id) is not null => new RemoveSankeyEntryCommand(body, id),
+            RenameActionId when model.NodeOf(id) is not null => new SetSankeyPropertyCommand(body, id, SankeyKeys.Name, value),
+            RemoveActionId when model.NodeOf(id) is not null => new RemoveSankeyEntryCommand(body, id),
             _ => null,
         };
 
