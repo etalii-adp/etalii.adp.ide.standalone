@@ -1,21 +1,8 @@
 using System.Globalization;
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.SupplyChain;
-
-/// <summary>What an edit did, or why it did nothing.</summary>
-/// <param name="Refusal">The sentence to show, or <c>null</c> when the edit was spliced.</param>
-public readonly record struct SupplyChainEdit(string? Refusal)
-{
-    /// <summary>The edit was spliced into the document.</summary>
-    public static SupplyChainEdit Applied { get; } = new(null);
-
-    /// <summary>The edit was refused, and this is why.</summary>
-    public static SupplyChainEdit Refused(string because) => new(because);
-
-    /// <summary>Whether the document changed.</summary>
-    public bool WasApplied => Refusal is null;
-}
 
 /// <summary>
 /// Turns an edit into a splice of the lines that edit affects, and nothing else.
@@ -38,7 +25,7 @@ public static class SupplyChainWriter
     private const string FlowsSection = SupplyChainParser.FlowsKey + ":";
 
     /// <summary>Writes a text key, removing it instead when <paramref name="removeWhenEmpty"/> and the value is blank.</summary>
-    public static SupplyChainEdit SetText(LineDocument document, LineRange range, string key, string value, bool removeWhenEmpty)
+    public static EditOutcome SetText(LineDocument document, LineRange range, string key, string value, bool removeWhenEmpty)
     {
         ArgumentNullException.ThrowIfNull(document);
 
@@ -51,11 +38,11 @@ public static class SupplyChainWriter
             LineSplice.SetKey(document, range, key, Text(value));
         }
 
-        return SupplyChainEdit.Applied;
+        return EditOutcome.Applied;
     }
 
     /// <summary>Writes a number key, or removes it for <c>null</c>.</summary>
-    public static SupplyChainEdit SetNumber(LineDocument document, LineRange range, string key, double? value)
+    public static EditOutcome SetNumber(LineDocument document, LineRange range, string key, double? value)
     {
         ArgumentNullException.ThrowIfNull(document);
 
@@ -68,7 +55,7 @@ public static class SupplyChainWriter
             LineSplice.SetKey(document, range, key, Number(value.Value));
         }
 
-        return SupplyChainEdit.Applied;
+        return EditOutcome.Applied;
     }
 
     /// <summary>
@@ -78,7 +65,7 @@ public static class SupplyChainWriter
     /// <c>x</c> is written before <c>y</c> into the same range: a key that is missing is inserted
     /// directly after the entry's first line, which moves nothing above the range.
     /// </remarks>
-    public static SupplyChainEdit Place(LineDocument document, SupplyChainModel model, IReadOnlyDictionary<string, (double X, double Y)> places)
+    public static EditOutcome Place(LineDocument document, SupplyChainModel model, IReadOnlyDictionary<string, (double X, double Y)> places)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(model);
@@ -93,7 +80,7 @@ public static class SupplyChainWriter
 
         if (targets.Count == 0)
         {
-            return SupplyChainEdit.Refused("There is nothing here to place.");
+            return EditOutcome.Refused("There is nothing here to place.");
         }
 
         foreach (var node in targets)
@@ -106,7 +93,7 @@ public static class SupplyChainWriter
             LineSplice.SetKey(document, ExtendedBy(node.Range, grows), "x", Number(Math.Round(x)));
         }
 
-        return SupplyChainEdit.Applied;
+        return EditOutcome.Applied;
     }
 
     /// <summary>Places a group's own frame - what it is drawn at while it has no members.</summary>
@@ -122,7 +109,7 @@ public static class SupplyChainWriter
     }
 
     /// <summary>Removes a node and every flow to or from it, bottom-up.</summary>
-    public static SupplyChainEdit RemoveNode(LineDocument document, SupplyChainModel model, SupplyChainNode node)
+    public static EditOutcome RemoveNode(LineDocument document, SupplyChainModel model, SupplyChainNode node)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(model);
@@ -132,11 +119,11 @@ public static class SupplyChainWriter
             .Where(flow => flow.From == node.Id || flow.To == node.Id)
             .Select(flow => flow.Range)
             .Append(node.Range));
-        return SupplyChainEdit.Applied;
+        return EditOutcome.Applied;
     }
 
     /// <summary>Removes a group, and its name from every node that was inside it.</summary>
-    public static SupplyChainEdit RemoveGroup(LineDocument document, SupplyChainModel model, SupplyChainGroup group)
+    public static EditOutcome RemoveGroup(LineDocument document, SupplyChainModel model, SupplyChainGroup group)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(model);
@@ -157,20 +144,20 @@ public static class SupplyChainWriter
             edit();
         }
 
-        return SupplyChainEdit.Applied;
+        return EditOutcome.Applied;
     }
 
     /// <summary>Removes one entry - a flow, typically.</summary>
-    public static SupplyChainEdit Remove(LineDocument document, LineRange range)
+    public static EditOutcome Remove(LineDocument document, LineRange range)
     {
         ArgumentNullException.ThrowIfNull(document);
 
         document.Remove(range);
-        return SupplyChainEdit.Applied;
+        return EditOutcome.Applied;
     }
 
     /// <summary>Appends a node entry, matching whatever indentation the document already uses.</summary>
-    public static SupplyChainEdit AddNode(LineDocument document, SupplyChainModel model, SupplyChainNode node)
+    public static EditOutcome AddNode(LineDocument document, SupplyChainModel model, SupplyChainNode node)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(model);
@@ -207,7 +194,7 @@ public static class SupplyChainWriter
     }
 
     /// <summary>Appends a group entry.</summary>
-    public static SupplyChainEdit AddGroup(LineDocument document, SupplyChainModel model, SupplyChainGroup group)
+    public static EditOutcome AddGroup(LineDocument document, SupplyChainModel model, SupplyChainGroup group)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(model);
@@ -224,7 +211,7 @@ public static class SupplyChainWriter
     }
 
     /// <summary>Appends a flow entry.</summary>
-    public static SupplyChainEdit AddFlow(LineDocument document, SupplyChainModel model, SupplyChainFlow flow)
+    public static EditOutcome AddFlow(LineDocument document, SupplyChainModel model, SupplyChainFlow flow)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(model);
@@ -254,7 +241,7 @@ public static class SupplyChainWriter
         return Append(document, model.Flows.Select(existing => existing.Range), FlowsSection, flow.Id, keys);
     }
 
-    private static SupplyChainEdit Append(
+    private static EditOutcome Append(
         LineDocument document,
         IEnumerable<LineRange> existing,
         string section,
@@ -274,7 +261,7 @@ public static class SupplyChainWriter
         List<string> lines = [$"{itemIndent}-{dashGap}id: {Text(id)}", .. keys.Select(entry => $"{keyIndent}{entry.Key}: {entry.Value}")];
 
         document.Insert(at, lines);
-        return SupplyChainEdit.Applied;
+        return EditOutcome.Applied;
     }
 
     private static void RemoveBottomUp(LineDocument document, IEnumerable<LineRange> ranges)

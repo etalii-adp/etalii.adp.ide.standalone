@@ -17,23 +17,4 @@ public abstract class SankeyEditHandler<TCommand>(ISankeyDocumentStore documents
 
     /// <inheritdoc />
     protected sealed override SankeyModel Parse(LineDocument body) => SankeyParser.Parse(body);
-
-    /// <summary>The name, or the name with the lowest number that makes it unique among <paramref name="taken"/>.</summary>
-    protected static string Unique(IEnumerable<string> taken, string name)
-    {
-        var names = taken.ToHashSet(StringComparer.Ordinal);
-        if (!names.Contains(name))
-        {
-            return name;
-        }
-
-        for (var number = 2; ; number++)
-        {
-            var candidate = $"{name} {number}";
-            if (!names.Contains(candidate))
-            {
-                return candidate;
-            }
-        }
-    }
 }

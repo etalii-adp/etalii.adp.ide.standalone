@@ -1,17 +1,12 @@
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.SupplyChain;
 
 /// <summary>Writes the placements, in one edit and so in one undo.</summary>
-public sealed class PlaceSupplyChainNodesCommandHandler(ISupplyChainDocumentStore documents) : ICommandHandler<PlaceSupplyChainNodesCommand>
+public sealed class PlaceSupplyChainNodesCommandHandler(ISupplyChainDocumentStore documents) : SupplyChainEditHandler<PlaceSupplyChainNodesCommand>(documents)
 {
     /// <inheritdoc />
-    public Task<CommandResult> ExecuteAsync(PlaceSupplyChainNodesCommand command, CancellationToken cancellationToken = default)
-    {
-        ArgumentNullException.ThrowIfNull(command);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        return SupplyChainEdits.Run(documents, command.BodyPath, command, (document, model) =>
-            SupplyChainWriter.Place(document, model, command.Places));
-    }
+    protected override EditOutcome Apply(LineDocument document, SupplyChainModel model, PlaceSupplyChainNodesCommand command) =>
+        SupplyChainWriter.Place(document, model, command.Places);
 }

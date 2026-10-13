@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.SupplyChain;
@@ -10,20 +11,14 @@ namespace EtAlii.Adp.Diagram.SupplyChain;
 /// Written rather than cleared: a document whose nodes carry no coordinates is already drawn by
 /// this layout, so arranging it writes them all, and from then on dragging one moves only that one.
 /// </remarks>
-public sealed class ArrangeSupplyChainCommandHandler(ISupplyChainDocumentStore documents) : ICommandHandler<ArrangeSupplyChainCommand>
+public sealed class ArrangeSupplyChainCommandHandler(ISupplyChainDocumentStore documents) : SupplyChainEditHandler<ArrangeSupplyChainCommand>(documents)
 {
     /// <inheritdoc />
-    public Task<CommandResult> ExecuteAsync(ArrangeSupplyChainCommand command, CancellationToken cancellationToken = default)
+    protected override EditOutcome Apply(LineDocument document, SupplyChainModel model, ArrangeSupplyChainCommand command)
     {
-        ArgumentNullException.ThrowIfNull(command);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        return SupplyChainEdits.Run(documents, command.BodyPath, command, (document, model) =>
-        {
-            var arranged = SupplyChainLayout.Of(model).Arranged;
-            return arranged.Count == 0
-                ? SupplyChainEdit.Refused("There is nothing to arrange until this diagram has a node.")
-                : SupplyChainWriter.Place(document, model, arranged);
-        });
+        var arranged = SupplyChainLayout.Of(model).Arranged;
+        return arranged.Count == 0
+            ? EditOutcome.Refused("There is nothing to arrange until this diagram has a node.")
+            : SupplyChainWriter.Place(document, model, arranged);
     }
 }
