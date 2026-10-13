@@ -8,6 +8,12 @@ namespace EtAlii.Adp.Diagram.Mindmap;
 /// handler re-checks all of this on every run because undo and redo dispatch it again long
 /// after the click, against whatever the map is by then (Requirement 6.4).
 /// </summary>
+/// <remarks>
+/// Not on <see cref="DocumentEditHandler{TCommand, TStore, TBody, TModel}"/> (code-structure FR-033):
+/// that base edits a body whose model is read from it and announces only a path, where a map is one
+/// tree and each save names the structural change it made. A handler's result is still
+/// <see cref="CommandResult.FromSave"/>, so a warning of the save reaches it as it does on the base.
+/// </remarks>
 internal abstract class MindmapCommandHandler
 {
     protected MindmapCommandHandler(IMindmapDocumentStore documents)
