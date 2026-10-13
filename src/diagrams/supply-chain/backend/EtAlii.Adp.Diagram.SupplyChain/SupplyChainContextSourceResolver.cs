@@ -13,9 +13,8 @@ namespace EtAlii.Adp.Diagram.SupplyChain;
 /// anything drawn.
 /// </para>
 /// </remarks>
-public sealed class SupplyChainContextSourceResolver : DiagramElementSourceResolver<SupplyChainModel>
+public sealed class SupplyChainContextSourceResolver : DiagramElementSourceResolver<LineDocument, SupplyChainModel>
 {
-    private readonly ISupplyChainDocumentStore _documents;
     private readonly SupplyChainElementMapper _mapper;
     private readonly SupplyChainSelections _selections;
 
@@ -24,12 +23,10 @@ public sealed class SupplyChainContextSourceResolver : DiagramElementSourceResol
         ISupplyChainDocumentStore documents,
         SupplyChainElementMapper mapper,
         SupplyChainSelections selections)
-        : base(router)
+        : base(router, documents)
     {
-        ArgumentNullException.ThrowIfNull(documents);
         ArgumentNullException.ThrowIfNull(mapper);
         ArgumentNullException.ThrowIfNull(selections);
-        _documents = documents;
         _mapper = mapper;
         _selections = selections;
     }
@@ -45,9 +42,6 @@ public sealed class SupplyChainContextSourceResolver : DiagramElementSourceResol
         "New flow");
 
     /// <inheritdoc />
-    protected override SupplyChainModel Load(string bodyPath) => _documents.GetOrLoad(bodyPath).Model;
-
-    /// <inheritdoc />
     protected override DiagramElement? Drawn(SupplyChainModel model, string elementId) =>
         _mapper.All(model).FirstOrDefault(candidate => candidate.Id == elementId);
 
@@ -55,7 +49,7 @@ public sealed class SupplyChainContextSourceResolver : DiagramElementSourceResol
     /// <remarks>A selection of something drawn is also told to the sessions, which trace from it.</remarks>
     protected override IDisposable Follow(ShortGuid watchId, string bodyPath, string elementId, Action changed)
     {
-        var following = FollowStore(_documents, bodyPath, changed);
+        var following = base.Follow(watchId, bodyPath, elementId, changed);
         var selected = GestureIds.IsPlacement(elementId) || GestureIds.IsRelation(elementId) || elementId.Length == 0
             ? null
             : _selections.Select(watchId, bodyPath, elementId);

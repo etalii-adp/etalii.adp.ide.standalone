@@ -18,7 +18,7 @@ namespace EtAlii.Adp.TestSupport;
 /// <remarks>
 /// <b>Seen to fail with each of the base's checks removed</b>: the parent-scope check, the route
 /// and origin check, the client-path check and the payload from the module's mapping, in
-/// <see cref="DiagramElementSourceResolver{TModel}"/>; and with <c>Track</c> handing back a
+/// <see cref="DiagramElementSourceResolver{TBody, TModel}"/>; and with <c>Track</c> handing back a
 /// subscription that is never let go.
 /// </remarks>
 public abstract class DiagramElementSourceResolverContract : IDisposable
