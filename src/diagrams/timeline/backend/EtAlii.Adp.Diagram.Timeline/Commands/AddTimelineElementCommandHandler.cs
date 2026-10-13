@@ -53,7 +53,7 @@ public sealed class AddTimelineElementCommandHandler : ICommandHandler<AddTimeli
         TimelineWriter.InsertElement(
             entry.Document, entry.Model, command.Id, command.Label, command.Begin, command.End, command.Row);
 
-        var saved = _documents.Save(command.BodyPath, entry);
+        var saved = _documents.Save(command.BodyPath, entry.Document);
         return Task.FromResult(!saved.Failed
             ? CommandResult.Success(new RemoveTimelineElementCommand(command.BodyPath, command.Id))
             : CommandResult.Failure(saved.Error));

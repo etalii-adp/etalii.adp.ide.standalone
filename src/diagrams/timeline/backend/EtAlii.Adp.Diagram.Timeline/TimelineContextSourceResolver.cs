@@ -1,4 +1,5 @@
 using EtAlii.Adp.Context;
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Hierarchy;
 using Google.Protobuf;
@@ -173,7 +174,7 @@ public sealed class TimelineContextSourceResolver : IContextSourceResolver
         _documents.Changed += OnChanged;
         return new TimelineUnsubscriber(() => _documents.Changed -= OnChanged);
 
-        void OnChanged(object? sender, TimelineDocumentChangedEventArgs args)
+        void OnChanged(object? sender, DocumentChangedEventArgs args)
         {
             if (!string.Equals(args.Path, bodyPath, StringComparison.OrdinalIgnoreCase))
             {
@@ -182,7 +183,7 @@ public sealed class TimelineContextSourceResolver : IContextSourceResolver
 
             // Re-read rather than carrying the previous reading: a rename keeps the id while
             // changing everything shown, and a removal clears the selection.
-            onChange(Describe(args.Model, elementId)?.Path);
+            onChange(Describe(_documents.GetOrLoad(bodyPath).Model, elementId)?.Path);
         }
     }
 

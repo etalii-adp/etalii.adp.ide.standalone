@@ -65,7 +65,7 @@ public sealed class SetTimelineRowsCommandHandler(ITimelineDocumentStore documen
             return CommandResult.Failure("This timeline is already arranged.");
         }
 
-        var saved = documents.Save(bodyPath, entry);
+        var saved = documents.Save(bodyPath, entry.Document);
         return saved.Failed
             ? CommandResult.Failure(saved.Error)
             : CommandResult.Success(new SetTimelineRowsCommand(bodyPath, before));

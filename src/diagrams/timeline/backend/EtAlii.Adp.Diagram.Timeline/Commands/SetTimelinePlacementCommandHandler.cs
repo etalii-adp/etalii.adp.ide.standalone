@@ -75,7 +75,7 @@ public sealed class SetTimelinePlacementCommandHandler : ICommandHandler<SetTime
 
         TimelineWriter.SetRow(entry.Document, element, command.Row);
 
-        var saved = _documents.Save(command.BodyPath, entry);
+        var saved = _documents.Save(command.BodyPath, entry.Document);
         return Task.FromResult(!saved.Failed
             ? CommandResult.Success(inverse)
             : CommandResult.Failure(saved.Error));
