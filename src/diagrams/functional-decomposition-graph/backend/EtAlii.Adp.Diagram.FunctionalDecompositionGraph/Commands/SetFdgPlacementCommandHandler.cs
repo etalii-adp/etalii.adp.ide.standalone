@@ -1,19 +1,14 @@
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph;
 
 /// <summary>Moves an element by rewriting its top-left.</summary>
-public sealed class SetFdgPlacementCommandHandler(IFdgDocumentStore documents) : ICommandHandler<SetFdgPlacementCommand>
+public sealed class SetFdgPlacementCommandHandler(IFdgDocumentStore documents) : FdgEditHandler<SetFdgPlacementCommand>(documents)
 {
     /// <inheritdoc />
-    public Task<CommandResult> ExecuteAsync(SetFdgPlacementCommand command, CancellationToken cancellationToken = default)
-    {
-        ArgumentNullException.ThrowIfNull(command);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        return FdgEdits.Run(documents, command.BodyPath, command, (document, model) =>
-            FdgEdits.ElementOf(model, command.ElementId) is { } element
-                ? FdgWriter.MoveTo(document, element, command.X, command.Y)
-                : FdgEdits.Gone());
-    }
+    protected override EditOutcome Apply(LineDocument document, FdgModel model, SetFdgPlacementCommand command) =>
+        model.ElementOf(command.ElementId) is { } element
+            ? FdgWriter.MoveTo(document, element, command.X, command.Y)
+            : Gone;
 }

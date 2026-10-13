@@ -43,7 +43,7 @@ public sealed class FdgSession : DocumentDiagramSession<LineDocument, FdgModel>
     /// has no position of its own.
     /// </remarks>
     protected override DiagramPlacement PlacementOf(FdgModel model, string elementId, double x, double y) =>
-        FdgEdits.ElementOf(model, elementId) is null
+        model.ElementOf(elementId) is null
             ? DiagramPlacement.Refused("That is not something this graph can move.")
             : DiagramPlacement.By(new SetFdgPlacementCommand(BodyPath, elementId, x, y));
 }
