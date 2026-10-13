@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline;
@@ -32,7 +33,7 @@ internal sealed class MovePipelineStepCommandHandler(IPipelineDocumentStore docu
         var entry = documents.GetOrLoad(command.RootPath, command.BodyPath);
         if (!entry.IsUsable)
         {
-            return Task.FromResult(CommandResult.Failure(entry.Error));
+            return Task.FromResult(CommandResult.Failure(entry.Unreadable));
         }
 
         var location = PipelineEdits.Locate(entry.Model, command.StepId);
@@ -91,7 +92,7 @@ internal sealed class MovePipelineStepCommandHandler(IPipelineDocumentStore docu
     }
 
     /// <summary>The line the job's first step sits on, which is where the front of the list is.</summary>
-    private static int FirstStepLine(PipelineDocumentEntry entry, PipelineJob job)
+    private static int FirstStepLine(DocumentEntry<LineDocument, PipelineModel> entry, PipelineJob job)
     {
         _ = entry;
         return job.Steps[0].Lines.Start;

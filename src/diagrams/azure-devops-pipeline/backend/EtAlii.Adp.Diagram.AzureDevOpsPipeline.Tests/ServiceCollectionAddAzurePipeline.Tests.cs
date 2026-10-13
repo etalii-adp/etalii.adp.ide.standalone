@@ -5,6 +5,7 @@ using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
+using IoPath = System.IO.Path;
 
 namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline.Tests;
 
@@ -29,6 +30,7 @@ public class ServiceCollectionAddAzurePipelineTests
         typeof(IContextPropertyProvider),
         typeof(IDiagramToolboxProvider),
         typeof(IPipelineDocumentStore),
+        typeof(IDiagramDocumentReloader),
     ];
 
     private static ServiceProvider Build()
@@ -107,6 +109,53 @@ public class ServiceCollectionAddAzurePipelineTests
     }
 
     [Fact]
+    public async Task ASession_IsOpenedOnTheBody_AndResolvesItsTemplatesFromTheRoot()
+    {
+        // Arrange: a body below the root names its template from the root, so it is drawn only
+        // when the session was handed the root it was opened on.
+        await using var provider = Build();
+        var factory = new DiagramSessionFactories(provider.GetServices<IDiagramSessionFactory>()).Find(Diagram.Pipeline.Origin)!;
+        using var folder = TestFolder.Create("pipeline-registration");
+        Directory.CreateDirectory(folder.Combine("templates"));
+        Directory.CreateDirectory(folder.Combine("pipelines"));
+        var cancellationToken = TestContext.Current.CancellationToken;
+        await File.WriteAllTextAsync(folder.Combine("templates", "shared.yml"), "jobs:\n  - job: Shared\n    steps:\n      - script: x\n", cancellationToken);
+        var body = folder.Combine("pipelines", "azure-pipelines.yml");
+        await File.WriteAllTextAsync(body, "jobs:\n  - template: /templates/shared.yml\n", cancellationToken);
+
+        // Act: the session reads the body first, so the store keeps what it read with its root.
+        await using var session = factory.Open(ShortGuid.NewShortGuid(), folder.Path, body, null);
+        var drawn = session.Baseline();
+
+        // Assert.
+        Assert.IsType<PipelineSession>(session);
+        Assert.NotEmpty(drawn);
+        Assert.Equal("Shared", provider.GetRequiredService<IPipelineDocumentStore>().GetOrLoad(folder.Path, body).Model.Jobs.Single().Name);
+    }
+
+    [Fact]
+    public void TheReloadSeam_ReachesTheModulesOneStore()
+    {
+        // Arrange.
+        using var provider = Build();
+        using var folder = TestFolder.Create("pipeline-reload");
+        var body = folder.Combine("azure-pipelines.yml");
+        File.Copy(IoPath.Combine(AppContext.BaseDirectory, "Fixtures", "jobs-only.yml"), body);
+        var store = provider.GetRequiredService<IPipelineDocumentStore>();
+        var reloader = Assert.Single(provider.GetServices<IDiagramDocumentReloader>(), candidate => candidate.Origin == Diagram.Pipeline.Origin);
+        var changed = new List<string>();
+        store.Changed += (_, args) => changed.Add(args.Path);
+        _ = store.GetOrLoad(folder.Path, body);
+        File.Delete(body);
+
+        // Act.
+        reloader.BodyDeleted(folder.Path, body);
+
+        // Assert.
+        Assert.Equal([body], changed);
+    }
+
+    [Fact]
     public void TheDocumentStore_IsSharedAcrossEverythingThatUsesIt()
     {
         // Arrange: two diagrams on one pipeline have to see one document, which only holds if the
@@ -180,7 +229,6 @@ public class ServiceCollectionAddAzurePipelineTests
         var leaked = new[]
         {
             nameof(PipelineDocumentFactory),
-            nameof(PipelineSessionFactory),
             nameof(PipelineContextSourceResolver),
             nameof(PipelineContextActionProvider),
             nameof(PipelineContextPropertyProvider),
@@ -208,7 +256,7 @@ public class ServiceCollectionAddAzurePipelineTests
         }
 
         Assert.NotNull(directory);
-        var program = System.IO.Path.Combine(directory.FullName, "backend", "EtAlii.Adp.Backend.Service", "Program.cs");
+        var program = IoPath.Combine(directory.FullName, "backend", "EtAlii.Adp.Backend.Service", "Program.cs");
         Assert.True(File.Exists(program), $"The host's Program.cs was not found at {program}.");
         return program;
     }
@@ -226,7 +274,7 @@ public class ServiceCollectionAddAzurePipelineTests
         }
 
         Assert.NotNull(directory);
-        var diagram = System.IO.Path.Combine(
+        var diagram = IoPath.Combine(
             directory.FullName, "diagrams", "azure-devops-pipeline", "backend", "EtAlii.Adp.Diagram.AzureDevOpsPipeline", "Diagram.cs");
         Assert.True(File.Exists(diagram), $"The module's Diagram.cs was not found at {diagram}.");
         return diagram;

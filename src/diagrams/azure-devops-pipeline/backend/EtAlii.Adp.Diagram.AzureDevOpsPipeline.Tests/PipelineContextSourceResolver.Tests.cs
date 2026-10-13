@@ -310,7 +310,7 @@ public class PipelineContextSourceResolverTests : IDisposable
 
         // Act.
         await File.WriteAllTextAsync(BodyOf(path), "stages:\n  - stage: Build\n    jobs:\n      - job: Compile\n        steps:\n          - script: x\n", TestContext.Current.CancellationToken);
-        _store.Reload(_workspace, BodyOf(path));
+        _store.Reload(BodyOf(path));
 
         // Assert.
         Assert.Single(reported);
@@ -470,7 +470,7 @@ public class PipelineContextSourceResolverTests : IDisposable
         // Act: an edit elsewhere, then one that removes the dependency.
         _store.Touch(_workspace, BodyOf(path));
         await File.WriteAllTextAsync(BodyOf(path), Arrows.Replace("- Test", "", StringComparison.Ordinal), TestContext.Current.CancellationToken);
-        _store.Reload(_workspace, BodyOf(path));
+        _store.Reload(BodyOf(path));
 
         // Assert.
         Assert.Equal(2, reported.Count);

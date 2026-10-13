@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using Serilog;
 
 namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline;
@@ -74,7 +75,7 @@ public sealed class PipelineSession : IDiagramSession
     public event EventHandler<DiagramDeltasEventArgs>? Changed;
 
     /// <summary>Why this pipeline cannot be shown, or empty when it can (Requirement 3.6).</summary>
-    public string Unavailable => _documents.GetOrLoad(_rootPath, _bodyPath).Error;
+    public string Unavailable => _documents.GetOrLoad(_rootPath, _bodyPath).Unreadable;
 
     public IReadOnlyList<DiagramDelta> Baseline()
     {
@@ -170,6 +171,6 @@ public sealed class PipelineSession : IDiagramSession
         return entry.IsUsable ? _mapper.Visible(entry.Model, _viewport, _views.For(_watchId, _bodyPath).ExpandedIds) : [];
     }
 
-    private void OnDocumentChanged(object? sender, PipelineDocumentChangedEventArgs args) =>
+    private void OnDocumentChanged(object? sender, DocumentChangedEventArgs args) =>
         _changes.OnDocumentChanged(args.Path);
 }

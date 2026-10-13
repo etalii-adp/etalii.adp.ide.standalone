@@ -21,6 +21,12 @@ namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline;
 /// <b>The sessions hear about a reload only when the lifecycle installed a document.</b> One that
 /// kept the last good document changed nothing a session shows.
 /// </para>
+/// <para>
+/// <b>It does not derive from <see cref="LifecycleDocumentStore{TBody, TModel}"/></b>, because a
+/// pipeline's parse needs the workspace root and the file's own path to resolve its templates, and
+/// the base reads a body from its text alone (code-structure, spec 025: a module that cannot adopt
+/// a shared type keeps its own, rather than the base growing a parameter only this module uses).
+/// </para>
 /// </remarks>
 public sealed class PipelineDocumentStore : IPipelineDocumentStore
 {
@@ -41,18 +47,18 @@ public sealed class PipelineDocumentStore : IPipelineDocumentStore
     // A first open that cannot read opens as empty with a warning naming the path, which is the
     // lifecycle's own default and what this store did before it (R2.2) - so no unavailable document
     // is declared here.
-    private readonly WritableDocumentLifecycle<PipelineDocumentEntry> _lifecycle;
+    private readonly WritableDocumentLifecycle<DocumentEntry<LineDocument, PipelineModel>> _lifecycle;
 
     public PipelineDocumentStore()
     {
-        _lifecycle = new WritableDocumentLifecycle<PipelineDocumentEntry>(
+        _lifecycle = new WritableDocumentLifecycle<DocumentEntry<LineDocument, PipelineModel>>(
             (path, text) => Parse(_roots[path], path, LineDocument.Parse(text)),
             entry => entry.Document.Text);
     }
 
-    public event EventHandler<PipelineDocumentChangedEventArgs>? Changed;
+    public event EventHandler<DocumentChangedEventArgs>? Changed;
 
-    public PipelineDocumentEntry GetOrLoad(string rootPath, string path)
+    public DocumentEntry<LineDocument, PipelineModel> GetOrLoad(string rootPath, string path)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(rootPath);
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
@@ -60,7 +66,7 @@ public sealed class PipelineDocumentStore : IPipelineDocumentStore
         return _lifecycle.GetOrLoad(path);
     }
 
-    public DocumentSaveResult Save(string rootPath, string path, PipelineDocumentEntry entry)
+    public DocumentSaveResult Save(string rootPath, string path, DocumentEntry<LineDocument, PipelineModel> entry)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(rootPath);
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
@@ -70,8 +76,8 @@ public sealed class PipelineDocumentStore : IPipelineDocumentStore
         {
             // Writing a document whose model is empty because it never parsed would replace a file
             // somebody can still fix with one this module invented.
-            _logger.Warning("Refusing to write {Path}: it does not parse ({Error})", path, entry.Error);
-            return DocumentSaveResult.Failure($"{IoPath.GetFileName(path)} does not parse, so it was not written. {entry.Error}");
+            _logger.Warning("Refusing to write {Path}: it does not parse ({Error})", path, entry.Unreadable);
+            return DocumentSaveResult.Failure($"{IoPath.GetFileName(path)} does not parse, so it was not written. {entry.Unreadable}");
         }
 
         // The document's own lines are authoritative and unchanged by writing them out, but what
@@ -85,7 +91,7 @@ public sealed class PipelineDocumentStore : IPipelineDocumentStore
             return result;
         }
 
-        Changed?.Invoke(this, new PipelineDocumentChangedEventArgs(path, reparsed.Model));
+        OnChanged(path);
         return DocumentSaveResult.Ok;
     }
 
@@ -95,45 +101,55 @@ public sealed class PipelineDocumentStore : IPipelineDocumentStore
     /// </summary>
     public void Touch(string rootPath, string path)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(rootPath);
-        ArgumentException.ThrowIfNullOrWhiteSpace(path);
-        Changed?.Invoke(this, new PipelineDocumentChangedEventArgs(path, GetOrLoad(rootPath, path).Model));
+        GetOrLoad(rootPath, path);
+        OnChanged(path);
     }
 
-    /// <summary>Forgets a document, so the next open reads it afresh.</summary>
     public void Forget(string path) => _lifecycle.Forget(path);
 
-    public void Reload(string rootPath, string path)
+    public void Reload(string path)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(rootPath);
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
 
         // Whatever changed on disk may have been a template rather than this file, and a resolver
         // that kept serving what it read before would show the pipeline as it used to be.
-        _roots[path] = rootPath;
-        Resolver(rootPath).Forget();
+        ForgetTemplates();
 
-        if (_lifecycle.Reload(path))
+        // A document never opened has no root to resolve its templates against, and nothing open
+        // on it to tell: its first open reads it then.
+        if (_roots.ContainsKey(path) && _lifecycle.Reload(path))
         {
-            Changed?.Invoke(this, new PipelineDocumentChangedEventArgs(path, _lifecycle.GetOrLoad(path).Model));
+            OnChanged(path);
         }
     }
 
-    public void BodyDeleted(string rootPath, string path)
+    public void BodyDeleted(string path)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(rootPath);
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
 
         // A body already back is re-read by the lifecycle, and what it says may rest on templates
-        // that changed with it - so the resolver is dropped here as it is for a reload.
-        _roots[path] = rootPath;
-        Resolver(rootPath).Forget();
+        // that changed with it - so the resolvers are dropped here as they are for a reload.
+        ForgetTemplates();
 
-        if (_lifecycle.BodyDeleted(path))
+        if (_roots.ContainsKey(path) && _lifecycle.BodyDeleted(path))
         {
-            Changed?.Invoke(this, new PipelineDocumentChangedEventArgs(path, _lifecycle.GetOrLoad(path).Model));
+            OnChanged(path);
         }
     }
+
+    /// <summary>
+    /// Drops what every workspace's resolver read. The path that changed does not say which root
+    /// it lies under, and a forgotten template costs one read on the next parse.
+    /// </summary>
+    private void ForgetTemplates()
+    {
+        foreach (var resolver in _templates.Values)
+        {
+            resolver.Forget();
+        }
+    }
+
+    private void OnChanged(string path) => Changed?.Invoke(this, new DocumentChangedEventArgs(path));
 
     private PipelineTemplates Resolver(string rootPath) =>
         _templates.GetOrAdd(rootPath, root => new PipelineTemplates(root));
@@ -146,22 +162,18 @@ public sealed class PipelineDocumentStore : IPipelineDocumentStore
     /// carried as an entry with an error rather than thrown out of the store. The line comes from
     /// the parser and is what makes the message worth reading.
     /// </remarks>
-    private PipelineDocumentEntry Parse(string rootPath, string path, LineDocument document)
+    private DocumentEntry<LineDocument, PipelineModel> Parse(string rootPath, string path, LineDocument document)
     {
         try
         {
             var model = PipelineParser.Parse(document, Resolver(rootPath), path);
-            return new PipelineDocumentEntry(document, model, "", 0);
+            return new DocumentEntry<LineDocument, PipelineModel>(document, model);
         }
         catch (YamlException exception)
         {
             var line = (int)exception.Start.Line;
             _logger.Debug(exception, "{Path} does not parse at line {Line}", path, line);
-            return new PipelineDocumentEntry(
-                document,
-                PipelineModel.Empty,
-                $"Line {line}: {exception.Message}",
-                line);
+            return new DocumentEntry<LineDocument, PipelineModel>(document, PipelineModel.Empty, $"Line {line}: {exception.Message}");
         }
     }
 }

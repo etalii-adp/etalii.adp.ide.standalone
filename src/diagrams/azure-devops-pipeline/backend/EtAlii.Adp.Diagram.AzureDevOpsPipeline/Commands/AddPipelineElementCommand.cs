@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline;
@@ -41,7 +42,7 @@ internal sealed class AddPipelineElementCommandHandler(IPipelineDocumentStore do
         var entry = documents.GetOrLoad(command.RootPath, command.BodyPath);
         if (!entry.IsUsable)
         {
-            return Task.FromResult(CommandResult.Failure(entry.Error));
+            return Task.FromResult(CommandResult.Failure(entry.Unreadable));
         }
 
         var added = command.Kind == PipelineAddKind.Stage
@@ -67,7 +68,7 @@ internal sealed class AddPipelineElementCommandHandler(IPipelineDocumentStore do
     /// pipeline into a staged one means re-indenting everything in it, which is a rewrite of the
     /// whole file and exactly what this module promises not to do to one.
     /// </remarks>
-    private static PipelineAddOutcome AddStage(PipelineDocumentEntry entry, AddPipelineElementCommand command)
+    private static PipelineAddOutcome AddStage(DocumentEntry<LineDocument, PipelineModel> entry, AddPipelineElementCommand command)
     {
         var declared = entry.Model.Stages.Where(stage => stage is { IsImplicit: false, IsFromTemplate: false }).ToList();
         if (declared.Count == 0)
@@ -91,7 +92,7 @@ internal sealed class AddPipelineElementCommandHandler(IPipelineDocumentStore do
     }
 
     /// <summary>A job joins a stage's <c>jobs</c>, a step joins a job's <c>steps</c>.</summary>
-    private static PipelineAddOutcome AddWithin(PipelineDocumentEntry entry, AddPipelineElementCommand command)
+    private static PipelineAddOutcome AddWithin(DocumentEntry<LineDocument, PipelineModel> entry, AddPipelineElementCommand command)
     {
         var parent = PipelineEdits.Locate(entry.Model, command.ParentId);
         return parent is null
@@ -106,7 +107,7 @@ internal sealed class AddPipelineElementCommandHandler(IPipelineDocumentStore do
     }
 
     private static PipelineAddOutcome AddJob(
-        PipelineDocumentEntry entry,
+        DocumentEntry<LineDocument, PipelineModel> entry,
         AddPipelineElementCommand command,
         PipelineElementLocation parent)
     {
@@ -138,7 +139,7 @@ internal sealed class AddPipelineElementCommandHandler(IPipelineDocumentStore do
         return PipelineAddOutcome.Added($"{stage.Id}/{name}");
     }
 
-    private static PipelineAddOutcome AddStep(PipelineDocumentEntry entry, PipelineElementLocation parent)
+    private static PipelineAddOutcome AddStep(DocumentEntry<LineDocument, PipelineModel> entry, PipelineElementLocation parent)
     {
         if (parent.Kind != PipelineElementLocationKind.Job)
         {
