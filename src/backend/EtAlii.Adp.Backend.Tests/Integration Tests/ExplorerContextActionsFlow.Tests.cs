@@ -214,18 +214,17 @@ public class ExplorerContextActionsFlowTests(HostFixture host) : IClassFixture<H
         // Act and assert, step by step.
         // Both streams open with three baseline messages: the "nothing selected" selection,
         // the project's own actions - undo and redo (diagram-undo-redo Deviation 1) - and
-        // the project's problems (errors-and-warnings-panel Requirement 1.2). What matters
-        // is what arrives after all three.
+        // the project's problems (errors-and-warnings-panel Requirement 1.2) - followed by the
+        // answer of the validation that opening the project starts. What matters is what
+        // arrives after all of them.
         Assert.True(await callA.ResponseStream.MoveNext(ctsA.Token));
         Assert.True(await callB.ResponseStream.MoveNext(ctsB.Token));
         Assert.True(await callA.ResponseStream.MoveNext(ctsA.Token));
         Assert.Equal(ContextMessage.MessageOneofCase.ProjectActions, callA.ResponseStream.Current.MessageCase);
         Assert.True(await callB.ResponseStream.MoveNext(ctsB.Token));
         Assert.Equal(ContextMessage.MessageOneofCase.ProjectActions, callB.ResponseStream.Current.MessageCase);
-        Assert.True(await callA.ResponseStream.MoveNext(ctsA.Token));
-        Assert.Equal(ContextMessage.MessageOneofCase.Problems, callA.ResponseStream.Current.MessageCase);
-        Assert.True(await callB.ResponseStream.MoveNext(ctsB.Token));
-        Assert.Equal(ContextMessage.MessageOneofCase.Problems, callB.ResponseStream.Current.MessageCase);
+        await ReadUntilValidatedAsync(callA.ResponseStream, ctsA.Token);
+        await ReadUntilValidatedAsync(callB.ResponseStream, ctsB.Token);
         var pendingA = callA.ResponseStream.MoveNext(ctsA.Token);
         var pendingB = callB.ResponseStream.MoveNext(ctsB.Token);
 
@@ -426,5 +425,19 @@ public class ExplorerContextActionsFlowTests(HostFixture host) : IClassFixture<H
         Assert.False(second.Completed);
         Assert.True(File.Exists(IoPath.Combine(_projectFolder, "twice.txt")));
         Assert.False(File.Exists(IoPath.Combine(_projectFolder, "thrice.txt")));
+    }
+
+    /// <summary>Reads past the problems baseline to the answer of the validation that opening the project starts.</summary>
+    private static async Task ReadUntilValidatedAsync(IAsyncStreamReader<ContextMessage> stream, CancellationToken cancellationToken)
+    {
+        while (await stream.MoveNext(cancellationToken))
+        {
+            if (stream.Current.MessageCase == ContextMessage.MessageOneofCase.Problems && stream.Current.Problems.State == ProblemSetState.Validated)
+            {
+                return;
+            }
+        }
+
+        throw new InvalidOperationException("The stream ended before the project's first validation arrived.");
     }
 }
