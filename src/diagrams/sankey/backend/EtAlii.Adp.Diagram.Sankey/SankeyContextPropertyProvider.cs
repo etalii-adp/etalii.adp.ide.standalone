@@ -1,5 +1,6 @@
 using System.Globalization;
 using EtAlii.Adp.Context;
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.History;
 
@@ -25,7 +26,8 @@ namespace EtAlii.Adp.Diagram.Sankey;
 /// changing a flow.
 /// </para>
 /// </remarks>
-public sealed class SankeyContextPropertyProvider : IContextPropertyProvider
+public sealed class SankeyContextPropertyProvider(IHistoryStackStore historyStacks, ISankeyDocumentStore documents)
+    : DiagramPropertyProvider<LineDocument, SankeyModel>(historyStacks, documents)
 {
     /// <summary>The name of a node.</summary>
     public const string NameProperty = "sankey.name";
@@ -67,39 +69,20 @@ public sealed class SankeyContextPropertyProvider : IContextPropertyProvider
     private const string LookGroup = "Look";
     private const string AmountGroup = "Amount";
 
-    private readonly IHistoryStackStore _historyStacks;
-    private readonly ISankeyDocumentStore _documents;
-
-    public SankeyContextPropertyProvider(IHistoryStackStore historyStacks, ISankeyDocumentStore documents)
-    {
-        ArgumentNullException.ThrowIfNull(historyStacks);
-        ArgumentNullException.ThrowIfNull(documents);
-        _historyStacks = historyStacks;
-        _documents = documents;
-    }
+    /// <inheritdoc />
+    protected override bool IsBody(string path) => Diagram.IsBody(path);
 
     /// <inheritdoc />
-    public ContextScope Scope => ContextScope.DiagramElement;
-
-    /// <inheritdoc />
-    public ValueTask<IReadOnlyList<ContextPropertyDefinition>> DescribeAsync(ContextTarget target, CancellationToken cancellationToken)
+    protected override IReadOnlyList<ContextPropertyDefinition> Describe(DocumentEntry<LineDocument, SankeyModel> entry, string elementId)
     {
-        ArgumentNullException.ThrowIfNull(target);
-        cancellationToken.ThrowIfCancellationRequested();
+        var model = entry.Model;
 
-        if (!Diagram.IsBody(target.ResolvedFullPath))
-        {
-            return Rows([]);
-        }
-
-        var model = _documents.GetOrLoad(target.ResolvedFullPath).Model;
-
-        if (model.NodeOf(target.ElementId) is { } node)
+        if (model.NodeOf(elementId) is { } node)
         {
             var layout = SankeyLayout.Of(model);
             var value = layout.Values.GetValueOrDefault(node.Id);
             var columns = layout.ColumnOrder.Count;
-            return Rows(
+            return
             [
                 new ContextPropertyDefinition(NameProperty, "Name", node.Name, Group: IdentityGroup),
                 new ContextPropertyDefinition(DescriptionProperty, "Description", node.Description, ContextPropertyEditor.Text, Group: IdentityGroup),
@@ -110,34 +93,28 @@ public sealed class SankeyContextPropertyProvider : IContextPropertyProvider
                 new ContextPropertyDefinition(ValueProperty, "Value", Number(value), ReadOnlyReason: "A node's value is what flows through it; change a flow's value instead.", Group: AmountGroup),
                 new ContextPropertyDefinition(NoteProperty, "Note", node.Note, Group: AmountGroup),
                 new ContextPropertyDefinition(FormatProperty, "Format", node.Format, Group: AmountGroup),
-            ]);
+            ];
         }
 
-        if (model.FlowOf(target.ElementId) is { } flow)
+        if (model.FlowOf(elementId) is { } flow)
         {
-            return Rows(
+            return
             [
                 new ContextPropertyDefinition(DescriptionProperty, "Description", flow.Description, ContextPropertyEditor.Text, Group: IdentityGroup),
                 new ContextPropertyDefinition(ColorProperty, "Colour", ColorChoice(flow.Color), ContextPropertyEditor.Choice, Group: LookGroup, Candidates: ColorChoices(flow.Color)),
                 new ContextPropertyDefinition(CustomColorProperty, "Custom colour", SankeyColors.IsHex(flow.Color) ? flow.Color : "", Group: LookGroup),
                 new ContextPropertyDefinition(ValueProperty, "Value", Number(flow.Value), Group: AmountGroup),
                 new ContextPropertyDefinition(StepProperty, "Step", Number(flow.Step ?? StepSankeyValueCommandHandler.DefaultStep(flow.Value)), Group: AmountGroup),
-            ]);
+            ];
         }
 
-        return Rows([]);
+        return [];
     }
 
     /// <inheritdoc />
-    public async ValueTask<ContextPropertyResult> SetAsync(
-        ContextTarget target,
-        string propertyId,
-        string value,
-        CancellationToken cancellationToken)
+    protected override DiagramPropertyChange Change(ContextTarget target, SankeyModel model, string propertyId, string value)
     {
-        ArgumentNullException.ThrowIfNull(target);
-
-        var body = target.ResolvedFullPath;
+        _ = model;
 
         string? key = propertyId switch
         {
@@ -154,13 +131,13 @@ public sealed class SankeyContextPropertyProvider : IContextPropertyProvider
 
         if (key is null)
         {
-            return ContextPropertyResult.Failure($"'{propertyId}' cannot be edited on this selection.");
+            return DiagramPropertyChange.Refused($"'{propertyId}' cannot be edited on this selection.");
         }
 
         if (propertyId == ColorProperty && value == CustomColor)
         {
             // Picking the custom entry keeps the custom colour; a new one is typed in its own row.
-            return ContextPropertyResult.Success;
+            return DiagramPropertyChange.Unchanged;
         }
 
         value = propertyId switch
@@ -170,9 +147,7 @@ public sealed class SankeyContextPropertyProvider : IContextPropertyProvider
             _ => value,
         };
 
-        var command = new SetSankeyPropertyCommand(body, target.ElementId, key, value);
-        var result = await _historyStacks.Get(target.RootPath).ExecuteAsync(command, cancellationToken);
-        return result.IsSuccess ? ContextPropertyResult.Success : ContextPropertyResult.Failure(result.Error);
+        return DiagramPropertyChange.By(new SetSankeyPropertyCommand(target.ResolvedFullPath, target.ElementId, key, value));
     }
 
     private static string ColorChoice(string color) =>
@@ -186,7 +161,4 @@ public sealed class SankeyContextPropertyProvider : IContextPropertyProvider
     ];
 
     private static string Number(double? value) => value is { } number ? number.ToString("0.####", CultureInfo.InvariantCulture) : "";
-
-    private static ValueTask<IReadOnlyList<ContextPropertyDefinition>> Rows(IReadOnlyList<ContextPropertyDefinition> rows) =>
-        ValueTask.FromResult(rows);
 }

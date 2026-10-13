@@ -180,6 +180,26 @@ public sealed class SankeyProvidersTests : IDisposable
     }
 
     [Fact]
+    public async Task ADocumentThatCouldNotBeRead_IsRefusedByTheMenusAndTheGrid_AndWritesNothing()
+    {
+        // Arrange.
+        var unreadable = new UnreadableStore(_store);
+        var actions = new SankeyContextActionProvider(_historyStacks, unreadable);
+        var properties = new SankeyContextPropertyProvider(_historyStacks, unreadable);
+        var before = await File.ReadAllBytesAsync(_folder.Body, TestContext.Current.CancellationToken);
+
+        // Act.
+        var thicker = await actions.ExecuteAsync(Target(GestureIds.Placement(0, 0)), SankeyContextActionProvider.ThickerActionId, TestContext.Current.CancellationToken);
+        var set = await properties.SetAsync(Target("m"), SankeyContextPropertyProvider.NameProperty, "Renamed", TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.Contains("could not be read", Assert.IsType<ContextExecutionFailed>(thicker).Message, StringComparison.Ordinal);
+        Assert.False(set.IsSuccess);
+        Assert.Contains("could not be read", set.Error, StringComparison.Ordinal);
+        Assert.Equal(before, await File.ReadAllBytesAsync(_folder.Body, TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
     public void ThePalette_OffersANode_AddedByTheAddAction()
     {
         // Act.
@@ -193,4 +213,24 @@ public sealed class SankeyProvidersTests : IDisposable
         ContextTarget.ForElement(_folder.Body, elementId, _folder.Folder, ShortGuid.NewShortGuid());
 
     private SankeyModel Parse() => SankeyParser.Parse(LineDocument.Parse(File.ReadAllText(_folder.Body)));
+
+    /// <summary>A store whose every document reads as one that could not be read.</summary>
+    private sealed class UnreadableStore(ISankeyDocumentStore inner) : ISankeyDocumentStore
+    {
+        public event EventHandler<DocumentChangedEventArgs>? Changed
+        {
+            add => inner.Changed += value;
+            remove => inner.Changed -= value;
+        }
+
+        public DocumentEntry<LineDocument, SankeyModel> GetOrLoad(string path) => inner.GetOrLoad(path) with { Unreadable = "it is locked" };
+
+        public DocumentSaveResult Save(string path, LineDocument document) => inner.Save(path, document);
+
+        public void Reload(string path) => inner.Reload(path);
+
+        public void BodyDeleted(string path) => inner.BodyDeleted(path);
+
+        public void Forget(string path) => inner.Forget(path);
+    }
 }
