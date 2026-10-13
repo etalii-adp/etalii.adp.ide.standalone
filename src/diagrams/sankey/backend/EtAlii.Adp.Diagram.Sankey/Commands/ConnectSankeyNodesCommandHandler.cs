@@ -8,35 +8,29 @@ namespace EtAlii.Adp.Diagram.Sankey;
 /// whatever the source has not yet passed on, so a new band continues the quantity rather than
 /// inventing one - or 1 when the source has nothing left over.
 /// </summary>
-public sealed class ConnectSankeyNodesCommandHandler(ISankeyDocumentStore documents) : ICommandHandler<ConnectSankeyNodesCommand>
+public sealed class ConnectSankeyNodesCommandHandler(ISankeyDocumentStore documents) : SankeyEditHandler<ConnectSankeyNodesCommand>(documents)
 {
     /// <inheritdoc />
-    public Task<CommandResult> ExecuteAsync(ConnectSankeyNodesCommand command, CancellationToken cancellationToken = default)
+    protected override EditOutcome Apply(LineDocument document, SankeyModel model, ConnectSankeyNodesCommand command)
     {
-        ArgumentNullException.ThrowIfNull(command);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        return SankeyEdits.Run(documents, command.BodyPath, command, (document, model) =>
+        if (model.NodeOf(command.From) is null || model.NodeOf(command.To) is null)
         {
-            if (SankeyEdits.NodeOf(model, command.From) is null || SankeyEdits.NodeOf(model, command.To) is null)
-            {
-                return SankeyEdit.Refused("A flow runs from one node to another.");
-            }
+            return EditOutcome.Refused("A flow runs from one node to another.");
+        }
 
-            if (command.From == command.To)
-            {
-                return SankeyEdit.Refused("A node does not flow into itself.");
-            }
+        if (command.From == command.To)
+        {
+            return EditOutcome.Refused("A node does not flow into itself.");
+        }
 
-            if (SankeyEdits.IsTaken(model, SankeyFlow.IdOf(command.From, command.To)) ||
-                model.Flows.Any(flow => flow.From == command.From && flow.To == command.To))
-            {
-                return SankeyEdit.Refused("These two are already joined by a flow in this direction; change its value instead.");
-            }
+        if (model.IsTaken(SankeyFlow.IdOf(command.From, command.To)) ||
+            model.Flows.Any(flow => flow.From == command.From && flow.To == command.To))
+        {
+            return EditOutcome.Refused("These two are already joined by a flow in this direction; change its value instead.");
+        }
 
-            return SankeyWriter.AddFlow(document, model, new SankeyFlow(
-                "", command.From, command.To, Remainder(model, command.From), Step: null, Color: "", Description: "", new LineRange(0, 0)));
-        });
+        return SankeyWriter.AddFlow(document, model, new SankeyFlow(
+            "", command.From, command.To, Remainder(model, command.From), Step: null, Color: "", Description: "", new LineRange(0, 0)));
     }
 
     /// <summary>What flows into a node and has not flowed out again, or 1 when nothing is left over.</summary>

@@ -42,12 +42,12 @@ public sealed class SankeyContextSourceResolver : DiagramElementSourceResolver<S
     /// <inheritdoc />
     protected override (IReadOnlyList<string> Path, string Text)? Describe(SankeyModel model, string elementId)
     {
-        if (SankeyEdits.NodeOf(model, elementId) is { } node)
+        if (model.NodeOf(elementId) is { } node)
         {
             return ([node.Label], node.Label);
         }
 
-        if (SankeyEdits.FlowOf(model, elementId) is { } flow)
+        if (model.FlowOf(elementId) is { } flow)
         {
             var text = $"{Label(model, flow.From)} → {Label(model, flow.To)}";
             return ([text], text);
@@ -56,5 +56,5 @@ public sealed class SankeyContextSourceResolver : DiagramElementSourceResolver<S
         return null;
     }
 
-    private static string Label(SankeyModel model, string id) => SankeyEdits.NodeOf(model, id)?.Label ?? id;
+    private static string Label(SankeyModel model, string id) => model.NodeOf(id)?.Label ?? id;
 }

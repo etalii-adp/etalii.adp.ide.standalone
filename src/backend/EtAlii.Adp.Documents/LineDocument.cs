@@ -43,7 +43,7 @@ namespace EtAlii.Adp.Documents;
 /// rather than refusing (Requirements 1.2 and 1.4).
 /// </para>
 /// </remarks>
-public sealed class LineDocument
+public sealed class LineDocument : ITextBody<LineDocument>
 {
     private readonly List<Line> _lines;
 

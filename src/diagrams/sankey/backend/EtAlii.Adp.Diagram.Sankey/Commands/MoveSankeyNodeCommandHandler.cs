@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.Sankey;
@@ -6,22 +7,16 @@ namespace EtAlii.Adp.Diagram.Sankey;
 /// Moves a node's entry among the others, which is what moves it up or down its column: a column is
 /// drawn in the order its nodes are written.
 /// </summary>
-public sealed class MoveSankeyNodeCommandHandler(ISankeyDocumentStore documents) : ICommandHandler<MoveSankeyNodeCommand>
+public sealed class MoveSankeyNodeCommandHandler(ISankeyDocumentStore documents) : SankeyEditHandler<MoveSankeyNodeCommand>(documents)
 {
     /// <inheritdoc />
-    public Task<CommandResult> ExecuteAsync(MoveSankeyNodeCommand command, CancellationToken cancellationToken = default)
+    protected override EditOutcome Apply(LineDocument document, SankeyModel model, MoveSankeyNodeCommand command)
     {
-        ArgumentNullException.ThrowIfNull(command);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        return SankeyEdits.Run(documents, command.BodyPath, command, (document, model) =>
+        if (model.NodeOf(command.NodeId) is not { } node || model.NodeOf(command.AnchorId) is not { } anchor)
         {
-            if (SankeyEdits.NodeOf(model, command.NodeId) is not { } node || SankeyEdits.NodeOf(model, command.AnchorId) is not { } anchor)
-            {
-                return SankeyEdits.Gone();
-            }
+            return Gone;
+        }
 
-            return SankeyWriter.MoveNode(document, node, anchor, command.After);
-        });
+        return SankeyWriter.MoveNode(document, node, anchor, command.After);
     }
 }

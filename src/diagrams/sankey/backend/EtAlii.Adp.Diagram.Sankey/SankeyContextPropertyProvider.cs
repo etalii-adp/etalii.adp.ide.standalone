@@ -94,7 +94,7 @@ public sealed class SankeyContextPropertyProvider : IContextPropertyProvider
 
         var model = _documents.GetOrLoad(target.ResolvedFullPath).Model;
 
-        if (SankeyEdits.NodeOf(model, target.ElementId) is { } node)
+        if (model.NodeOf(target.ElementId) is { } node)
         {
             var layout = SankeyLayout.Of(model);
             var value = layout.Values.GetValueOrDefault(node.Id);
@@ -113,7 +113,7 @@ public sealed class SankeyContextPropertyProvider : IContextPropertyProvider
             ]);
         }
 
-        if (SankeyEdits.FlowOf(model, target.ElementId) is { } flow)
+        if (model.FlowOf(target.ElementId) is { } flow)
         {
             return Rows(
             [

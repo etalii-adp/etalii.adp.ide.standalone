@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.Sankey;
@@ -6,32 +7,32 @@ namespace EtAlii.Adp.Diagram.Sankey;
 /// The + and − of a flow. The value never goes below zero: a decrement at zero is refused with a
 /// sentence rather than written as a negative quantity nothing can carry.
 /// </summary>
-public sealed class StepSankeyValueCommandHandler(ISankeyDocumentStore documents) : ICommandHandler<StepSankeyValueCommand>
+public sealed class StepSankeyValueCommandHandler(ISankeyDocumentStore documents) : SankeyEditHandler<StepSankeyValueCommand>(documents)
 {
     /// <inheritdoc />
-    public Task<CommandResult> ExecuteAsync(StepSankeyValueCommand command, CancellationToken cancellationToken = default)
+    protected override CommandResult Execute(StepSankeyValueCommand command)
     {
-        ArgumentNullException.ThrowIfNull(command);
-        cancellationToken.ThrowIfCancellationRequested();
-
         if (command.Steps == 0)
         {
-            return Task.FromResult(CommandResult.Failure("A step of nothing changes nothing."));
+            return CommandResult.Failure("A step of nothing changes nothing.");
         }
 
-        return SankeyEdits.Run(documents, command.BodyPath, command, (document, model) =>
-        {
-            if (SankeyEdits.FlowOf(model, command.FlowId) is not { } flow)
-            {
-                return SankeyEdits.NodeOf(model, command.FlowId) is not null
-                    ? SankeyEdit.Refused("A node's value is what flows through it; change a flow's value instead.")
-                    : SankeyEdits.Gone();
-            }
+        return base.Execute(command);
+    }
 
-            return Stepped(flow.Value, flow.Step, command.Steps) is { } value
-                ? SankeyWriter.SetNumber(document, flow.Range, SankeyKeys.Value, value)
-                : SankeyEdit.Refused("The value is already zero.");
-        });
+    /// <inheritdoc />
+    protected override EditOutcome Apply(LineDocument document, SankeyModel model, StepSankeyValueCommand command)
+    {
+        if (model.FlowOf(command.FlowId) is not { } flow)
+        {
+            return model.NodeOf(command.FlowId) is not null
+                ? EditOutcome.Refused("A node's value is what flows through it; change a flow's value instead.")
+                : Gone;
+        }
+
+        return Stepped(flow.Value, flow.Step, command.Steps) is { } value
+            ? SankeyWriter.SetNumber(document, flow.Range, SankeyKeys.Value, value)
+            : EditOutcome.Refused("The value is already zero.");
     }
 
     /// <summary>

@@ -8,40 +8,40 @@ namespace EtAlii.Adp.Diagram.Sankey;
 /// node with no flows yet would otherwise fall to the first; its place in the column is above the
 /// first node there whose middle is below the drop.
 /// </summary>
-public sealed class AddSankeyNodeCommandHandler(ISankeyDocumentStore documents) : ICommandHandler<AddSankeyNodeCommand>
+public sealed class AddSankeyNodeCommandHandler(ISankeyDocumentStore documents) : SankeyEditHandler<AddSankeyNodeCommand>(documents)
 {
     /// <inheritdoc />
-    public Task<CommandResult> ExecuteAsync(AddSankeyNodeCommand command, CancellationToken cancellationToken = default)
+    protected override CommandResult Execute(AddSankeyNodeCommand command)
     {
-        ArgumentNullException.ThrowIfNull(command);
-        cancellationToken.ThrowIfCancellationRequested();
-
         var minted = command.NodeId.Length > 0 ? command : command with { NodeId = ShortGuid.NewShortGuid().ToString() };
 
-        return SankeyEdits.Run(documents, minted.BodyPath, minted, (document, model) =>
+        return base.Execute(minted);
+    }
+
+    /// <inheritdoc />
+    protected override EditOutcome Apply(LineDocument document, SankeyModel model, AddSankeyNodeCommand command)
+    {
+        if (model.IsTaken(command.NodeId))
         {
-            if (SankeyEdits.IsTaken(model, minted.NodeId))
-            {
-                return SankeyEdit.Refused("That id is already used in this diagram.");
-            }
+            return EditOutcome.Refused("That id is already used in this diagram.");
+        }
 
-            var layout = SankeyLayout.Of(model);
-            var column = SankeyLayout.ColumnAt(minted.X);
-            var below = column < layout.ColumnOrder.Count
-                ? layout.ColumnOrder[column].FirstOrDefault(id => layout.Boxes[id].CentreY > minted.Y)
-                : null;
+        var layout = SankeyLayout.Of(model);
+        var column = SankeyLayout.ColumnAt(command.X);
+        var below = column < layout.ColumnOrder.Count
+            ? layout.ColumnOrder[column].FirstOrDefault(id => layout.Boxes[id].CentreY > command.Y)
+            : null;
 
-            var node = new SankeyNode(
-                minted.NodeId,
-                SankeyEdits.Unique(model.Nodes.Select(existing => existing.Label), "New node"),
-                Color: "",
-                Note: "",
-                Format: "",
-                Column: column > 0 ? column + 1 : null,
-                Description: "",
-                Range: new LineRange(0, 0));
+        var node = new SankeyNode(
+            command.NodeId,
+            Unique(model.Nodes.Select(existing => existing.Label), "New node"),
+            Color: "",
+            Note: "",
+            Format: "",
+            Column: column > 0 ? column + 1 : null,
+            Description: "",
+            Range: new LineRange(0, 0));
 
-            return SankeyWriter.AddNode(document, model, node, below is null ? null : SankeyEdits.NodeOf(model, below));
-        });
+        return SankeyWriter.AddNode(document, model, node, below is null ? null : model.NodeOf(below));
     }
 }

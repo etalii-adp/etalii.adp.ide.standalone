@@ -21,6 +21,18 @@ public sealed record SankeyModel(
     /// <summary>A document that declares nothing - the parser's answer to text it could not read at all.</summary>
     public static SankeyModel Empty { get; } = new(SankeySettings.Default, [], [], [], null);
 
+    /// <summary>The node with <paramref name="id"/>: the first entry with it, as the canvas draws it.</summary>
+    public SankeyNode? NodeOf(string id) =>
+        Nodes.FirstOrDefault(node => node.Id.Length > 0 && string.Equals(node.Id, id, StringComparison.Ordinal));
+
+    /// <summary>The flow with <paramref name="id"/> - the id it states, or its <c>from-&gt;to</c>.</summary>
+    public SankeyFlow? FlowOf(string id) =>
+        Flows.FirstOrDefault(flow => string.Equals(flow.Id, id, StringComparison.Ordinal));
+
+    /// <summary>Whether any entry already uses <paramref name="id"/>.</summary>
+    public bool IsTaken(string id) =>
+        Nodes.Any(node => node.Id == id) || Flows.Any(flow => flow.Id == id);
+
     /// <summary>The version this module writes, and the only one it reads.</summary>
     public const int CurrentVersion = 1;
 }
