@@ -76,7 +76,7 @@ Three kinds are kept apart, because they are repaired in three different places:
 | B10 | **Positions are stored under the module's wire ids.** A registration's `layout:` block holds `variable:<name>`; the binding reads a variable's id as the bare name, so every stored position names no element and FBL would prune it as stale at the next write. | Definition defect; the id strategy is DISL's (`persistence.ids` with a `prefix`) | Recorded (`cld`, `registration-layout`, both example registrations) |
 | B11 | **A weight is written by .NET's shortest round-trip form.** FBL writes ECMAScript's. They agree on ordinary values and differ in the exponent form of very large and very small ones. | Definition defect or none, to settle by test | Read |
 | B12 | **A note with two candidates.** The module takes the last word that is nothing else as the note; an FBL `word` slot takes the first that matches. | Language gap, minor | Read |
-| B13 | **A label may hold a quote through the property grid's label row.** The rename dialog refuses a quote; `SetVariableLabel` itself does not, and a label holding `"` writes a statement that reads back differently. The definition's `pattern` forbids it. This is a defect of the module the conversion would repair by accident. | Module defect, to fix on purpose with its own guard | Read |
+| B13 | ~~**A label may hold a quote through the property grid's label row.** The rename dialog refuses a quote; `SetVariableLabel` itself does not, and a label holding `"` writes a statement that reads back differently. The definition's `pattern` forbids it. This is a defect of the module the conversion would repair by accident.~~ Struck by chat ruling, 2026-10-13: every path that sets a label already refuses a quote, so the finding does not occur. | Struck | Read |
 
 ### C. Language gaps, as they would be reported to etalii-adp/etalii.adp
 
@@ -170,7 +170,7 @@ The product direction (2026-09-26) is that every tool is a markup definition int
 6. Every refusal SHALL keep today's sentence: an unusable name, a name already declared, a link already stated, a loop identifier already used, and the three "nothing to change" sentences.
 7. Undo SHALL restore the body byte for byte, as today, through the host's shared restore command.
 8. A document ADP did not change SHALL be written back byte-identical.
-9. A label holding a double quote SHALL be refused from every path that sets one, with a test seen to fail against today's property-grid path first (finding B13).
+9. ~~A label holding a double quote SHALL be refused from every path that sets one, with a test seen to fail against today's property-grid path first (finding B13).~~ Struck by chat ruling, 2026-10-13: every path that sets a label already refuses a quote, so the finding does not occur.
 
 ### Requirement 6: Positions and the registration
 
@@ -259,7 +259,7 @@ The product direction (2026-09-26) is that every tool is a markup definition int
 
 ## Out of scope
 
-- Any change to what the tool does beyond the five questions above and finding B13.
+- Any change to what the tool does beyond the five questions above.
 - Changing DISL or FBL. Gaps are reported (Requirement 10); a language change is etalii.adp's own specification.
 - The other fourteen tools. Each gets its own specification; what this one adds to the libraries (Requirement 9) is theirs to use.
 - The self-organizing layout's algorithm and the viewport streaming model.

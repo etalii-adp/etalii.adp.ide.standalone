@@ -18,7 +18,7 @@ One Developer owns this specification, per CLAUDE.md's one-owner-per-specificati
 | 2 | 5 | 2 (2.1, 2.2, 2.3), 4 (2.4, 2.5) |
 | 3 | 5 | 5 (3.1, 3.2, 3.4, 3.5), 6 (3.3) |
 | 4 | 6 | 6 (4.1 to 4.6) |
-| 5 | 9 | 7 (5.1 to 5.8), 8 (5.9) |
+| 5 | 9 | 7 (5.1 to 5.8); 5.9 struck (chat ruling, 2026-10-13) |
 | 6 | 3 | 6 (6.1), 7 (6.2, 6.3) |
 | 7 | 4 | 7 (7.2), 10 (7.1, 7.3, 7.4) |
 | 8 | 4 | 9 (8.1 to 8.4) |
@@ -105,7 +105,7 @@ One Developer owns this specification, per CLAUDE.md's one-owner-per-specificati
   - _Requirements: 1.4, 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.8, 6.2, 6.3, 7.2_
   - _Prompt: Implement the task for spec causal-loop-disl-fbl, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Backend developer | Task: Make every causal loop command write through CausalLoopBody as splices, remove the parser and the writer from the product code, and regenerate the transcript's edit hunks once | Restrictions: Keep every command record and handler signature; keep every refusal sentence; the regenerated diff may touch edit hunks and new-statement placement only; positions stay written through core | _Leverage: the hype cycle's commands; GhgBody.Batch; DislWrite | _Requirements: 1.4, 5.1 to 5.8, 6.2, 6.3, 7.2 | Success: no module code builds a statement's text, the transcript diff is reviewed and limited as stated, round trip and undo are byte-exact for the corpus, four gates exit zero | Instructions: set this task to [-] in tasks.md before starting, log the work with log-implementation when done, then set it to [x]._
 
-- [ ] 8. Refuse a quote in a label from every path
+- [x] 8. ~~Refuse a quote in a label from every path~~ Struck by chat ruling, 2026-10-13: every path that sets a label already refuses a quote, so the finding does not occur. Nothing to implement.
   - Files: `backend/EtAlii.Adp.Diagram.CausalLoopDiagram.Tests/CausalLoopLabelQuote.Tests.cs` (new), the definition in etalii.adp if its `pattern` message differs from the tool's sentence, `Parity/causal-loop.transcript.json` if a refusal's answer changes
   - Write the test against the property grid's label row first and see it fail against the commit before task 7, where the label was written with its quote; then show it passes now and that the rename dialog and the grid give the same sentence.
   - This is a defect fixed on purpose (finding B13); say so in the pull request.
