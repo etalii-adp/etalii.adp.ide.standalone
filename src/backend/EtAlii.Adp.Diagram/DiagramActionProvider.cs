@@ -46,7 +46,7 @@ public abstract class DiagramActionProvider<TBody, TModel> : IContextActionProvi
         ArgumentNullException.ThrowIfNull(target);
         cancellationToken.ThrowIfCancellationRequested();
 
-        return ValueTask.FromResult(IsBody(target.ResolvedFullPath)
+        return ValueTask.FromResult(Serves(target)
             ? Discover(_documents.GetOrLoad(target.ResolvedFullPath), target.ElementId)
             : []);
     }
@@ -111,6 +111,13 @@ public abstract class DiagramActionProvider<TBody, TModel> : IContextActionProvi
 
     /// <summary>Whether <paramref name="path"/> is a document of this module.</summary>
     protected abstract bool IsBody(string path);
+
+    /// <inheritdoc cref="DiagramPropertyProvider{TBody, TModel}.Serves"/>
+    protected virtual bool Serves(ContextTarget target)
+    {
+        ArgumentNullException.ThrowIfNull(target);
+        return IsBody(target.ResolvedFullPath);
+    }
 
     /// <summary>
     /// The actions <paramref name="elementId"/> offers in <paramref name="entry"/>: an element, empty

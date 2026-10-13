@@ -1,6 +1,6 @@
 using System.Globalization;
 using EtAlii.Adp.Context;
-using EtAlii.Adp.Documents.Wire;
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.AgentBehaviorModelling;
@@ -20,7 +20,8 @@ namespace EtAlii.Adp.Diagram.AgentBehaviorModelling;
 /// watch out for - and they are written into the Markdown under the node, where the agent reads them.
 /// </para>
 /// </remarks>
-public sealed class AbmContextPropertyProvider : IContextPropertyProvider
+public sealed class AbmContextPropertyProvider(IHistoryStackStore historyStacks, IAbmDocumentStore documents)
+    : DiagramPropertyProvider<AbmBody, AbmModel>(historyStacks, documents)
 {
     /// <summary>A node's kind.</summary>
     public const string KindProperty = "abm.kind";
@@ -37,87 +38,55 @@ public sealed class AbmContextPropertyProvider : IContextPropertyProvider
     /// <summary>A node's place in the tree, read-only.</summary>
     public const string PlaceProperty = "abm.place";
 
-    private readonly IHistoryStackStore _historyStacks;
-    private readonly IAbmDocumentStore _documents;
+    /// <inheritdoc />
+    protected override bool IsBody(string path) => path.EndsWith(Diagram.DocumentExtension, StringComparison.OrdinalIgnoreCase);
 
-    public AbmContextPropertyProvider(IHistoryStackStore historyStacks, IAbmDocumentStore documents)
+    /// <inheritdoc />
+    /// <remarks>By origin: a behavior model shares <c>.md</c> with every Markdown file.</remarks>
+    protected override bool Serves(ContextTarget target)
     {
-        ArgumentNullException.ThrowIfNull(historyStacks);
-        ArgumentNullException.ThrowIfNull(documents);
-        _historyStacks = historyStacks;
-        _documents = documents;
+        ArgumentNullException.ThrowIfNull(target);
+        return target.Origin == Diagram.AgentBehaviorModelling.Origin;
     }
 
     /// <inheritdoc />
-    public ContextScope Scope => ContextScope.DiagramElement;
+    /// <remarks>
+    /// Derived from the DISL definition (<see cref="AbmDefinition.Rows"/>): the node form's items, the
+    /// Kind a choice among the kinds the node can become.
+    /// </remarks>
+    protected override IReadOnlyList<ContextPropertyDefinition> Describe(DocumentEntry<AbmBody, AbmModel> entry, string elementId) =>
+        AbmDefinition.Rows(entry, elementId);
 
     /// <inheritdoc />
-    public ValueTask<IReadOnlyList<ContextPropertyDefinition>> DescribeAsync(ContextTarget target, CancellationToken cancellationToken)
+    protected override DiagramPropertyChange Change(ContextTarget target, AbmModel model, string propertyId, string value)
     {
-        ArgumentNullException.ThrowIfNull(target);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        // Derived from the DISL definition (AbmDefinition.Rows): the node form's items, the Kind a
-        // choice among the kinds the node can become.
-        return target.Origin != Diagram.AgentBehaviorModelling.Origin
-            ? Rows([])
-            : Rows(AbmDefinition.Rows(_documents.GetOrLoad(target.ResolvedFullPath), target.ElementId));
-    }
-
-    /// <inheritdoc />
-    public async ValueTask<ContextPropertyResult> SetAsync(
-        ContextTarget target,
-        string propertyId,
-        string value,
-        CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(target);
-
         var body = target.ResolvedFullPath;
-        var node = _documents.GetOrLoad(body).Model.NodeOf(target.ElementId);
-        if (node is null)
+        if (model.NodeOf(target.ElementId) is not { } node)
         {
-            return ContextPropertyResult.Failure("That node is no longer in this behavior model.");
+            return DiagramPropertyChange.Refused("That node is no longer in this behavior model.");
         }
 
-        ICommand? command;
+        // Through the project's history and out through the delta stream - never written by the grid.
         switch (propertyId)
         {
             case KindProperty:
                 var kind = AbmNodeKinds.All.FirstOrDefault(candidate => Choice(candidate.Id) == value || candidate.Id == value);
-                if (kind is null)
-                {
-                    return ContextPropertyResult.Failure($"'{value}' is not a kind of node.");
-                }
-
-                command = new SetAbmNodeKindCommand(body, node.Id, kind.Id);
-                break;
+                return kind is null
+                    ? DiagramPropertyChange.Refused($"'{value}' is not a kind of node.")
+                    : DiagramPropertyChange.By(new SetAbmNodeKindCommand(body, node.Id, kind.Id));
             case LabelProperty:
-                command = new RenameAbmNodeCommand(body, node.Id, value);
-                break;
+                return DiagramPropertyChange.By(new RenameAbmNodeCommand(body, node.Id, value));
             case AttemptsProperty:
-                if (!int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var attempts) || attempts < 1)
-                {
-                    return ContextPropertyResult.Failure($"'{value}' is not a number of attempts; a Retry allows at least 1.");
-                }
-
-                command = new SetAbmNodeKindCommand(body, node.Id, AbmNodeKinds.Retry, attempts);
-                break;
+                return !int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var attempts) || attempts < 1
+                    ? DiagramPropertyChange.Refused($"'{value}' is not a number of attempts; a Retry allows at least 1.")
+                    : DiagramPropertyChange.By(new SetAbmNodeKindCommand(body, node.Id, AbmNodeKinds.Retry, attempts));
             case NotesProperty:
-                command = new SetAbmNotesCommand(body, node.Id, value);
-                break;
+                return DiagramPropertyChange.By(new SetAbmNotesCommand(body, node.Id, value));
             default:
-                return ContextPropertyResult.Failure($"'{propertyId}' cannot be edited on this selection.");
+                return DiagramPropertyChange.Refused($"'{propertyId}' cannot be edited on this selection.");
         }
-
-        // Through the project's history and out through the delta stream - never written by the grid.
-        var result = await _historyStacks.Get(target.RootPath).ExecuteAsync(command, cancellationToken);
-        return result.IsSuccess ? ContextPropertyResult.Success : ContextPropertyResult.Failure(result.Error);
     }
 
     /// <summary>A kind as the choice list reads it.</summary>
     private static string Choice(string kind) => kind == AbmNodeKinds.Retry ? "Retry" : AbmNodeKinds.Of(kind).Keyword;
-
-    private static ValueTask<IReadOnlyList<ContextPropertyDefinition>> Rows(IReadOnlyList<ContextPropertyDefinition> rows) =>
-        ValueTask.FromResult(rows);
 }
