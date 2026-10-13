@@ -73,6 +73,25 @@ public class StartupRevalidationTests : IDisposable
     }
 
     [Fact]
+    public async Task AProjectFirstOpenedAfterThePassDrained_IsStillValidated()
+    {
+        // Arrange: the startup pass knows one project and finishes with it.
+        var known = CreateProject("known");
+        var opened = CreateProject("opened");
+        _store.Roots = [known];
+        var revalidation = new StartupRevalidation(_store, _projectValidator);
+        await revalidation.StartAsync(TestContext.Current.CancellationToken);
+        await revalidation.Completion.WaitAsync(TestContext.Current.CancellationToken);
+
+        // Act: a project the store never knew is opened afterwards.
+        revalidation.Prioritize(opened);
+        await revalidation.Completion.WaitAsync(TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.Equal([known, opened], _store.Replaced);
+    }
+
+    [Fact]
     public async Task AMissingRootIsSkippedOnce_NeverRetried()
     {
         // Arrange.

@@ -10,8 +10,8 @@ using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would othe
 namespace EtAlii.Adp.Backend.Tests;
 
 /// <summary>
-/// The whole problems engine against the real host: the NEVER_VALIDATED baseline, Validate
-/// all producing exactly the expected problems and pushing them to a second connection,
+/// The whole problems engine against the real host: the NEVER_VALIDATED baseline, opening a
+/// project validating it without anyone asking, Validate all producing exactly the expected problems and pushing them to a second connection,
 /// Validate on a folder touching only that folder, deletion dropping and rename carrying
 /// entries, and the project folder byte-for-byte unchanged throughout.
 /// </summary>
@@ -37,6 +37,25 @@ public class ProblemsFlowTests(HostFixture host) : IClassFixture<HostFixture>
     }
 
     [Fact]
+    public async Task OpeningAProject_ValidatesItWithoutAnyoneAsking()
+    {
+        // Arrange.
+        await File.WriteAllTextAsync(IoPath.Combine(_projectFolder, "strange.adp"), "vendor/unheard-of\n", TestContext.Current.CancellationToken);
+        using var session = await OpenAsync();
+        using var cts = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken);
+        var baseline = await ReadProblemsAsync(session.Stream, cts.Token);
+
+        // Act.
+        var opened = await ReadProblemsAsync(session.Stream, cts.Token);
+
+        // Assert.
+        Assert.Equal(ProblemSetState.NeverValidated, baseline.State);
+        Assert.Equal(ProblemSetState.Validated, opened.State); // not "Not checked yet" until somebody asks
+        var problem = Assert.Single(opened.Problems);
+        Assert.Equal("core.unknown-type", problem.RuleId);
+    }
+
+    [Fact]
     public async Task ValidateAll_ProducesTheExpectedProblems_AndASecondConnectionReadsTheSameSet()
     {
         // Arrange.
@@ -49,10 +68,10 @@ public class ProblemsFlowTests(HostFixture host) : IClassFixture<HostFixture>
         // Arrange, continued.
         using var session = await OpenAsync();
         using var second = await OpenAsync(session);
-        using (var baselines = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken))
+        using (var opened = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken))
         {
-            await ReadProblemsAsync(session.Stream, baselines.Token);
-            await ReadProblemsAsync(second.Stream, baselines.Token);
+            await ReadValidatedProblemsAsync(session.Stream, opened.Token);
+            await ReadValidatedProblemsAsync(second.Stream, opened.Token);
         }
 
         // Arrange, continued.
@@ -86,9 +105,10 @@ public class ProblemsFlowTests(HostFixture host) : IClassFixture<HostFixture>
         await File.WriteAllTextAsync(IoPath.Combine(_projectFolder, "also-bad.adp"), "vendor/unheard-of\n", TestContext.Current.CancellationToken);
 
         using var session = await OpenAsync();
-        using (var baseline = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken))
+        using (var opened = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken))
         {
-            await ReadProblemsAsync(session.Stream, baseline.Token);
+            var both = await ReadValidatedProblemsAsync(session.Stream, opened.Token);
+            Assert.Equal(2, both.Problems.Count); // opening the project judged both files
         }
         var folderId = await EntryIdAsync(session, "inside");
 
@@ -97,8 +117,13 @@ public class ProblemsFlowTests(HostFixture host) : IClassFixture<HostFixture>
         // Act and assert, step by step.
         using var cts = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken);
         var set = await ReadValidatedProblemsAsync(session.Stream, cts.Token);
-        var problem = Assert.Single(set.Problems);
-        Assert.Equal(["inside", "bad.adp"], problem.Path.Segments); // also-bad.adp was outside the scope and stays unjudged
+        // The folder's own verdict is replaced; also-bad.adp lies outside its scope, so the
+        // verdict opening the project gave it stands rather than being cleared. That a folder
+        // validation judges nothing outside the folder is ValidateContextActionProvider's
+        // unit test, where no open project has judged everything first.
+        Assert.Equal(2, set.Problems.Count);
+        Assert.Contains(set.Problems, problem => problem.Path.Segments.SequenceEqual(["inside", "bad.adp"]));
+        Assert.Contains(set.Problems, problem => problem.Path.Segments.SequenceEqual(["also-bad.adp"]));
     }
 
     [Fact]
@@ -107,13 +132,8 @@ public class ProblemsFlowTests(HostFixture host) : IClassFixture<HostFixture>
         // Arrange.
         await File.WriteAllTextAsync(IoPath.Combine(_projectFolder, "doomed.adp"), "vendor/unheard-of\n", TestContext.Current.CancellationToken);
 
-        // Act and assert, step by step.
+        // Act and assert, step by step: opening the project validates it.
         using var session = await OpenAsync();
-        using (var baseline = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken))
-        {
-            await ReadProblemsAsync(session.Stream, baseline.Token);
-        }
-        await ExecuteAsync(session, ValidateAllContextActionProvider.ValidateAllActionId, ProblemsSource());
         using (var validated = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken))
         {
             var set = await ReadValidatedProblemsAsync(session.Stream, validated.Token);
@@ -134,11 +154,6 @@ public class ProblemsFlowTests(HostFixture host) : IClassFixture<HostFixture>
         await File.WriteAllTextAsync(IoPath.Combine(_projectFolder, "old.adp"), "vendor/unheard-of\n", TestContext.Current.CancellationToken);
 
         using var session = await OpenAsync();
-        using (var baseline = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken))
-        {
-            await ReadProblemsAsync(session.Stream, baseline.Token);
-        }
-        await ExecuteAsync(session, ValidateAllContextActionProvider.ValidateAllActionId, ProblemsSource());
         using (var validated = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken))
         {
             await ReadValidatedProblemsAsync(session.Stream, validated.Token);
