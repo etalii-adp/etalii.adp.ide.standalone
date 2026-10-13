@@ -20,6 +20,10 @@ internal sealed class YamlFamily(BodyText text, FblBinding binding, FblOptions o
     private readonly HashSet<AttributeBinding> _timeTyped = [.. binding.AllRules
         .SelectMany(rule => rule.Attributes.Where(attribute => options.TimeAttributes.Contains($"{rule.Name}.{attribute.Key}")).Select(attribute => attribute.Value))];
 
+    // The attributes read as text (FBL 0.5 §5.2): a value written for one reads back as the same text.
+    private readonly HashSet<AttributeBinding> _textRead = [.. binding.AllRules
+        .SelectMany(rule => rule.Attributes.Where(attribute => ReadModes.Of(rule, attribute.Key, attribute.Value, options) == ReadMode.Text).Select(attribute => attribute.Value))];
+
     public override string FamilyName => "yaml";
 
     protected override IReadOnlyList<Span> Leaves => _leaves;
@@ -125,6 +129,11 @@ internal sealed class YamlFamily(BodyText text, FblBinding binding, FblOptions o
         var old = (read.Node as TreeEntry)?.Value;
         var wire = binding is null ? null : NewText.Wire(binding, value, read.Wire);
         var written = Scalar(wire ?? value, old, binding, (read.Node as TreeEntry)?.Indent ?? 0);
+        // A number or a bool read from a quoted scalar (FBL 0.5 quoted: convert) keeps its quotes.
+        if (binding?.Quoted == "convert" && old?.Style is ValueStyle.Single or ValueStyle.Double && (wire ?? value) is bool or long or int or double or decimal)
+        {
+            written = old.Style == ValueStyle.Single ? YamlScalars.SingleQuoted(written) : YamlScalars.DoubleQuoted(written);
+        }
         return old?.Style == ValueStyle.Empty ? " " + written : written;
     }
 
@@ -161,7 +170,7 @@ internal sealed class YamlFamily(BodyText text, FblBinding binding, FblOptions o
             case "single" when !multiline: return YamlScalars.SingleQuoted(value);
             case "double": return YamlScalars.DoubleQuoted(value);
             case "literal" when multiline: return Literal(value, keyIndent);
-            case "plain" when YamlScalars.IsPlainWritable(value, timeTyped): return value;
+            case "plain" when YamlScalars.IsPlainWritable(value, timeTyped) || (_textRead.Contains(binding) && YamlScalars.IsPlainSyntax(value)): return value;
         }
         if (YamlScalars.IsPlainSafe(value, timeTyped)) return value;
         return Binding.Text.Quote == "single" && !multiline ? YamlScalars.SingleQuoted(value) : YamlScalars.DoubleQuoted(value);

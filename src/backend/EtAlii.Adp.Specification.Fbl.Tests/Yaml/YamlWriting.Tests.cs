@@ -32,9 +32,9 @@ public class YamlWritingTests
         }]
         """);
 
-    private static FblBinding Load(string elements)
+    private static FblBinding Load(string elements, string version = "0.1")
     {
-        var json = $$"""{ "fbl": "0.1", "bindings": { "t": { "claims": { "extensions": [".t"] }, "body": { "kind": "file", "family": "yaml" }, "reader": "declared", "elements": {{elements}} } } }""";
+        var json = $$"""{ "fbl": "{{version}}", "bindings": { "t": { "claims": { "extensions": [".t"] }, "body": { "kind": "file", "family": "yaml" }, "reader": "declared", "elements": {{elements}} } } }""";
         var problems = FblDocumentLoader.Load(Encoding.UTF8.GetBytes(json), out var document);
         Assert.Empty(problems);
         return document!.Bindings["t"];
@@ -159,5 +159,110 @@ public class YamlWritingTests
         // Assert.
         Assert.IsType<PlanResult.Planned>(result);
         Assert.Equal("items:\n  - id: a", Text(body));
+    }
+
+    [Theory]
+    [InlineData("yes")]
+    [InlineData("007")]
+    [InlineData("~")]
+    public void ATextThatYamlWouldTypeIsWrittenQuotedAndReadsBackAsThatText(string text)
+    {
+        // Arrange: an attribute read as text, with no style asked for.
+        var body = OpenText("items:\n  - id: a\n");
+
+        // Act.
+        var result = body.Change(new ModelChange.Set("a", new Dictionary<string, object?> { ["label"] = text }));
+
+        // Assert: the plain-safe test of FBL §6.3 still holds, so a reader that types the value reads the same text.
+        Assert.IsType<PlanResult.Planned>(result);
+        Assert.Equal($"items:\n  - id: a\n    label: \"{text}\"\n", Text(body));
+        Assert.Equal(text, body.Model.Elements[0].Attributes["label"]);
+    }
+
+    [Fact]
+    public void ATextIsWrittenPlainWhenTheAttributeAsksForPlainAndReadsBackAsThatText()
+    {
+        // Arrange.
+        var body = OpenText("items:\n  - id: a\n");
+
+        // Act.
+        var result = body.Change(new ModelChange.Set("a", new Dictionary<string, object?> { ["word"] = "yes" }));
+
+        // Assert: read as text, "yes" is what the author wrote, so plain is what YAML's syntax allows.
+        Assert.IsType<PlanResult.Planned>(result);
+        Assert.Equal("items:\n  - id: a\n    word: yes\n", Text(body));
+        Assert.Equal("yes", body.Model.Elements[0].Attributes["word"]);
+    }
+
+    private static readonly FblBinding _text = Load("""
+        [{
+          "name": "item", "type": "Item", "at": "/items/*", "id": { "from": { "key": "id" } },
+          "attributes": {
+            "label": { "key": "label", "read": "text" },
+            "word": { "key": "word", "read": "text", "style": "plain" }
+          }
+        }]
+        """, "0.5");
+
+    private static OpenBody OpenText(string body) => OpenBody.Open(Encoding.UTF8.GetBytes(body), _text);
+
+    private static readonly FblBinding _typed = Load("""
+        [{
+          "name": "item", "type": "Item", "at": "/items/*", "id": { "from": { "key": "id" } },
+          "attributes": {
+            "label": { "key": "label" },
+            "row": { "key": "row", "fallback": { "value": 0 } },
+            "count": { "key": "count", "quoted": "convert" }
+          }
+        }]
+        """, "0.5");
+
+    private static readonly FblOptions _types = new() { FileName = "plan.t", AttributeType = (_, attribute) => attribute is "row" or "count" ? "int" : "string" };
+
+    private static OpenBody OpenTyped(string body) => OpenBody.Open(Encoding.UTF8.GetBytes(body), _typed, _types);
+
+    [Fact]
+    public void SettingAnUnconvertedValueReplacesExactlyItsBytes()
+    {
+        // Arrange: row reads as its fallback, 0.
+        var body = OpenTyped("items:\n  - id: a\n    row: wide   # not a row\n");
+
+        // Act.
+        var result = body.Change(new ModelChange.Set("a", new Dictionary<string, object?> { ["row"] = 3L }));
+
+        // Assert: the value is replaced, and the comment after it is kept.
+        Assert.IsType<PlanResult.Planned>(result);
+        Assert.Equal("items:\n  - id: a\n    row: 3   # not a row\n", Text(body));
+        Assert.Equal(3L, body.Model.Elements[0].Attributes["row"]);
+    }
+
+    [Fact]
+    public void SettingAnotherAttributeLeavesAnUnconvertedValueUntouched()
+    {
+        // Arrange.
+        var body = OpenTyped("items:\n  - id: a\n    label: one\n    row: wide\n");
+
+        // Act.
+        var result = body.Change(new ModelChange.Set("a", new Dictionary<string, object?> { ["label"] = "two" }));
+
+        // Assert.
+        Assert.IsType<PlanResult.Planned>(result);
+        Assert.Equal("items:\n  - id: a\n    label: two\n    row: wide\n", Text(body));
+        Assert.Equal(0.0, body.Model.Elements[0].Attributes["row"]);
+    }
+
+    [Fact]
+    public void ANumberReplacingAQuotedScalarUnderQuotedConvertKeepsItsQuotes()
+    {
+        // Arrange: count, written "3", reads as 3.
+        var body = OpenTyped("items:\n  - id: a\n    count: \"3\"\n");
+
+        // Act.
+        var result = body.Change(new ModelChange.Set("a", new Dictionary<string, object?> { ["count"] = 5L }));
+
+        // Assert.
+        Assert.IsType<PlanResult.Planned>(result);
+        Assert.Equal("items:\n  - id: a\n    count: \"5\"\n", Text(body));
+        Assert.Equal(5L, body.Model.Elements[0].Attributes["count"]);
     }
 }

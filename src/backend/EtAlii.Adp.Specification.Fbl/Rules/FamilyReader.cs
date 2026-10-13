@@ -63,6 +63,9 @@ internal sealed record SlotRead(object? Value, Span? Span, bool Present, bool Wr
     /// </summary>
     public bool WrittenScalar { get; init; }
 
+    /// <summary>The style name of a written scalar (FBL 0.5 §2.4), which says whether it is quoted.</summary>
+    public string? Style { get; init; }
+
     /// <summary>
     /// The written text of the slot (FBL §4.1.5): what the author wrote for a true scalar, otherwise
     /// the value as text, which is already the written text for the xml, lines and blocks families.
@@ -110,7 +113,22 @@ internal sealed class ReadElement
 
     public int Line { get; init; }
 
+    /// <summary>Why the entry cannot be read as this element: the first value that does not convert and has no fallback (FBL 0.5 §5.2).</summary>
+    public string? Mistyped { get; set; }
+
+    /// <summary>The values read as their fallback, reported once the entry is claimed (FBL 0.5 §7.4).</summary>
+    public List<(string Message, Span? Span, string Attribute, string Text)> Unconverted { get; } = [];
+
     public bool IsRelation => Rule.IsRelation;
+
+    /// <summary>
+    /// An attribute as a key or a reference compares it (FBL 0.5 §5.7): the written text of its slot,
+    /// or the value as text where the slot is absent, holds a list or has a map to translate it.
+    /// </summary>
+    public string TextOf(string attribute) =>
+        Slots.TryGetValue(attribute, out var read) && read.Present && Attributes.GetValueOrDefault(attribute) is not List<object?> && Rule.Attributes.FirstOrDefault(a => a.Key == attribute).Value is { Map: null }
+            ? read.Written
+            : NewText.Plain(Attributes.GetValueOrDefault(attribute), null);
 
     public override string ToString() => $"{Rule.Name} {Id}";
 }
@@ -194,6 +212,12 @@ internal abstract class FamilyReader(BodyText text, FblBinding binding, FblOptio
     /// <summary>The entry as CEL sees it (FBL §4.1.4).</summary>
     public abstract object? CelValue(Candidate candidate);
 
+    /// <summary>The entry as CEL's <c>text</c> sees it (FBL 0.5 §2.4); null for a family that has no such variable.</summary>
+    public virtual object? CelText(Candidate candidate) => null;
+
+    /// <summary>The entry as CEL's <c>style</c> sees it (FBL 0.5 §2.4); null for a family that has no such variable.</summary>
+    public virtual object? CelStyle(Candidate candidate) => null;
+
     /// <summary>The variables a rule's CEL besides <c>entry</c>, <c>parent</c>, <c>line</c> and <c>registration</c>: <c>path</c> or <c>groups</c>.</summary>
     public abstract (string Name, object? Value) CelExtra(Candidate candidate);
 
@@ -262,8 +286,8 @@ internal abstract class FamilyReader(BodyText text, FblBinding binding, FblOptio
         return new SourceLocation(Options.FileName, line, column, Text.CodePoints(span.Start, span.End));
     }
 
-    public void Report(string code, FindingSeverity severity, string message, Span? span) =>
-        Findings.Add(new Finding(code, severity, message, span is { } s ? Locate(s) : null));
+    public void Report(string code, FindingSeverity severity, string message, Span? span, IReadOnlyDictionary<string, string>? detail = null) =>
+        Findings.Add(new Finding(code, severity, message, span is { } s ? Locate(s) : null) { Detail = detail });
 
     /// <summary>The indentation one step deeper than <paramref name="indent"/>, by FBL §6.3's step.</summary>
     protected string Indentation(int columns) => new(IndentCharacter, columns);

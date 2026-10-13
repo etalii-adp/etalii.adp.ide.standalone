@@ -28,7 +28,7 @@ internal sealed class BodyReading
 
     // While claiming, the variables of the candidate being claimed: its when and its computed slots read the same ones.
     private bool _isClaiming;
-    private (Candidate Candidate, Dictionary<string, object?> Variables)? _claiming;
+    private (Candidate Candidate, CelVariables Variables)? _claiming;
 
     // Per reference, the first element of each key, built on first use once the elements are final.
     private readonly Dictionary<ReferenceBinding, Dictionary<string, ReadElement>> _referenced = new(ReferenceEqualityComparer.Instance);
@@ -273,7 +273,7 @@ internal sealed class BodyReading
                     }
                     var element = new ReadElement { Rule = rule, Candidate = candidate, Line = Text.Position(entry.Own.Start).Line };
                     ReadSlots(element);
-                    if (Mistyped(element) is { } mistyped)
+                    if (element.Mistyped is { } mistyped)
                     {
                         // The entry is this rule's and no other's: it is not offered to a later
                         // candidate, which would read as an element what the rule could not.
@@ -283,6 +283,10 @@ internal sealed class BodyReading
                     _claims[entry] = rule.Name;
                     _byEntry[entry] = element;
                     Elements.Add(element);
+                    foreach (var unconverted in element.Unconverted)
+                    {
+                        Family.Report(FindingCodes.UnconvertedValue, FindingSeverity.Warning, unconverted.Message, unconverted.Span, new Dictionary<string, string> { ["attribute"] = unconverted.Attribute, ["text"] = unconverted.Text });
+                    }
                 }
                 else
                 {
@@ -300,21 +304,6 @@ internal sealed class BodyReading
                 Family.Report(FindingCodes.UnreadableEntry, FindingSeverity.Warning, $"This entry cannot be read: {error}", entry.Own);
             }
         }
-    }
-
-    /// <summary>The first attribute whose value does not convert to the type its specification gives it, as a reason, or null.</summary>
-    private string? Mistyped(ReadElement element)
-    {
-        if (Options.AttributeType is not { } typeOf) return null;
-        foreach ((string name, object? value) in element.Attributes)
-        {
-            if (value is null || !element.Slots.TryGetValue(name, out var read) || !read.Present) continue;
-            if (typeOf(element.Rule.Type, name) is { } type && !TypedValue.Reads(type, value))
-            {
-                return $"'{name}' is not a {type}.";
-            }
-        }
-        return null;
     }
 
     private static void Offer(Dictionary<Entry, List<Candidate>> offered, Candidate candidate)
@@ -362,7 +351,12 @@ internal sealed class BodyReading
         return cached;
     }
 
-    private CelContext RuleContext => Family is LinesFamily ? CelContext.Lines : CelContext.Tree;
+    private CelContext RuleContext => Family switch
+    {
+        LinesFamily => CelContext.Lines,
+        TreeFamily => CelContext.Scalars,
+        _ => CelContext.Tree,
+    };
 
     private object? Evaluate(string expression, Candidate candidate, out string? problem)
     {
@@ -402,7 +396,7 @@ internal sealed class BodyReading
     /// The variables of <paramref name="candidate"/>, kept while it is the one being read: while
     /// claiming, nothing they are made of changes between its <c>when</c> and its computed slots.
     /// </summary>
-    private Dictionary<string, object?> ClaimVariables(Candidate candidate)
+    private CelVariables ClaimVariables(Candidate candidate)
     {
         if (!_isClaiming) return Variables(candidate);
         if (_claiming is { } claiming && ReferenceEquals(claiming.Candidate, candidate)) return claiming.Variables;
@@ -411,13 +405,19 @@ internal sealed class BodyReading
         return variables;
     }
 
-    private Dictionary<string, object?> Variables(Candidate candidate)
+    private CelVariables Variables(Candidate candidate)
     {
-        var variables = new Dictionary<string, object?>(StringComparer.Ordinal)
+        var variables = new CelVariables
         {
             ["entry"] = Family.CelValue(candidate),
             ["line"] = (long)Text.Position(candidate.Entry.Own.Start).Line,
         };
+        if (RuleContext == CelContext.Scalars)
+        {
+            // Built only when an expression reads them, so a binding that does not use them costs nothing more.
+            variables.Lazy("text", () => Family.CelText(candidate));
+            variables.Lazy("style", () => Family.CelStyle(candidate));
+        }
         var registration = new CelMap();
         foreach ((string key, string value) in Options.RegistrationHeaders) registration[key] = value;
         variables["registration"] = registration;
@@ -455,15 +455,33 @@ internal sealed class BodyReading
             var read = ReadSlot(element.Candidate, binding, element);
             element.Slots[name] = read;
             object? value = read.Present ? read.Value : null;
+            var mode = ReadModes.Of(rule, name, binding, Options);
+            var scalar = read is { Present: true, WrittenScalar: true } && !binding.Flag && Family is TreeFamily;
+            // A slot read as text takes what the author wrote (FBL 0.5 §5.2), which a map then translates.
+            if (scalar && mode == ReadMode.Text) value = read.Written;
             if (read.Present && binding.Map is { } map && value is string wire)
             {
                 var mapped = map.FirstOrDefault(m => m.Key == wire);
-                if (mapped.Key is not null) value = mapped.Value;
+                if (mapped.Key is not null)
+                {
+                    value = mapped.Value;
+                    scalar = false;
+                }
             }
             if (binding.Flag) value = read.Present;
             else if (read.Present && binding.Reference is { } reference && !reference.To.Contains(rule.Name) && read.Words is { Count: > 0 } words)
             {
                 value = words.Select(w => (object?)w.Text).ToList();
+            }
+            if (read.Present && !binding.Flag && mode == ReadMode.Typed && Options.AttributeType?.Invoke(rule.Type, name) is { } type)
+            {
+                if (scalar && read is { Value: null, Style: "plain", Written.Length: 0 })
+                {
+                    // Nothing written (key:) is absent, so the default applies (FBL 0.5 §5.2).
+                    if (binding.Default is { } empty) element.Attributes[name] = FromJson(empty);
+                    continue;
+                }
+                value = Convert(element, name, binding, read, type, value, scalar);
             }
             if (!read.Present && binding is { Flag: false, Default: { } fallback }) value = FromJson(fallback);
             if (read.Present || binding.Flag || binding.Default is not null) element.Attributes[name] = value;
@@ -471,6 +489,29 @@ internal sealed class BodyReading
         if (rule.Source is { } source) element.SourceRead = ReadSlot(element.Candidate, source, element);
         if (rule.Target is { } target) element.TargetRead = ReadSlot(element.Candidate, target, element);
         if (rule.Id?.From is { } from) element.IdRead = ReadSlot(element.Candidate, from, element);
+    }
+
+    /// <summary>
+    /// A typed slot's value converted to its attribute's type (FBL 0.5 §5.2): the converted value, else
+    /// the fallback, reported once the entry is claimed, else the value with the element marked mistyped.
+    /// </summary>
+    private object? Convert(ReadElement element, string name, AttributeBinding binding, SlotRead read, string type, object? value, bool scalar)
+    {
+        var quoted = binding.Quoted == "convert" && Family is YamlFamily;
+        if (ScalarConversion.Convert(type, value, read.Written, scalar ? read.Style : null, quoted, out var converted)) return converted;
+        if (binding.Fallback is not { } fallback)
+        {
+            element.Mistyped ??= $"'{name}' is not a {type}.";
+            return value;
+        }
+        var replacement = FromJson(fallback.Value);
+        if (fallback.Report)
+        {
+            var kind = ScalarConversion.Describe(type);
+            var message = $"'{read.Written}' is not {kind}, so {char.ToUpperInvariant(name[0])}{name[1..]} is read as {NewText.Plain(replacement, null)}. Write {kind} to change it.";
+            element.Unconverted.Add((message, read.Span, name, read.Written));
+        }
+        return replacement;
     }
 
     public SlotRead ReadSlot(Candidate candidate, Slot slot, ReadElement element)
@@ -583,7 +624,8 @@ internal sealed class BodyReading
         var rule = element.Rule;
         if (rule.Id?.From is not null)
         {
-            if (element.IdRead is { Present: true, Value: { } value } && NewText.Plain(value, null) is { Length: > 0 } id)
+            // The id is the slot's written text (FBL 0.5 §5.3): `id: 007` is 007, `id: ~` is ~, and `id:` has none.
+            if (element.IdRead is { Present: true, Written: { Length: > 0 } id })
             {
                 element.Id = id;
                 element.IdStored = true;
@@ -625,25 +667,25 @@ internal sealed class BodyReading
             if (binding.Reference is { } reference && reference.To.Contains(element.Rule.Name) && reference.By == name)
             {
                 element.KeyAttribute = name;
-                return NewText.Plain(element.Attributes.GetValueOrDefault(name), null);
+                return element.TextOf(name);
             }
         }
-        if (element.Rule.Id?.From is not null && element.IdRead is { Present: true } read) return NewText.Plain(read.Value, null);
+        if (element.Rule.Id?.From is not null && element.IdRead is { Present: true } read) return read.Written;
         return element.Id;
     }
 
     private ReadElement? End(ReadElement relation, SlotRead? read, string end)
     {
-        if (read is not { Present: true, Value: { } value })
+        if (read is not { Present: true, Value: not null })
         {
             Family.Report(FindingCodes.DanglingReference, FindingSeverity.Warning, $"This {relation.Rule.Type} has no {end}, so it is not read as a relation.", relation.Entry.Own);
             return null;
         }
-        var key = NewText.Plain(value, null);
+        var key = read.Written;
         var found = Elements.FirstOrDefault(e => !e.IsRelation && e.Key == key);
         if (found is null)
         {
-            Family.Report(FindingCodes.DanglingReference, FindingSeverity.Warning, $"The {end} '{key}' of this {relation.Rule.Type} names no element, so it is not read as a relation.", read.Span ?? relation.Entry.Own);
+            Family.Report(FindingCodes.DanglingReference, FindingSeverity.Warning, $"The {end} '{key}' of this {relation.Rule.Type} names no element, so it is not read as a relation.", relation.Entry.Own);
         }
         return found;
     }
@@ -654,7 +696,7 @@ internal sealed class BodyReading
         {
             if (binding.Reference is not { } reference || reference.To.Contains(element.Rule.Name)) continue;
             if (!element.Slots.TryGetValue(name, out var read) || !read.Present) continue;
-            var names = element.Attributes.GetValueOrDefault(name) is List<object?> list ? list.Select(v => NewText.Plain(v, null)) : [NewText.Plain(read.Value, null)];
+            var names = element.Attributes.GetValueOrDefault(name) is List<object?> list ? list.Select(v => NewText.Plain(v, null)) : [element.TextOf(name)];
             foreach (var key in names)
             {
                 if (ReferencedBy(reference, key) is null)
@@ -678,7 +720,7 @@ internal sealed class BodyReading
                 // never an attribute's name, since DISL reserves it, so there is no attribute to read.
                 var named = reference.By == "id" && !element.Attributes.ContainsKey("id")
                     ? (element.IdStored ? element.Id : null)
-                    : NewText.Plain(element.Attributes.GetValueOrDefault(reference.By), null);
+                    : element.TextOf(reference.By);
                 if (named is not null) index.TryAdd(named, element);
             }
             _referenced[reference] = index;
@@ -712,3 +754,39 @@ internal sealed class BodyReading
 
 /// <summary>A value read from an attribute's <c>override</c> slot, which writing removes (FBL §5.2).</summary>
 internal sealed record OverrideNode(object? Node);
+
+/// <summary>The variables of one CEL evaluation, of which some are made only when the expression reads them.</summary>
+internal sealed class CelVariables : IReadOnlyDictionary<string, object?>
+{
+    private readonly Dictionary<string, object?> _values = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, Func<object?>> _lazy = new(StringComparer.Ordinal);
+
+    public object? this[string key]
+    {
+        get => TryGetValue(key, out var value) ? value : throw new KeyNotFoundException(key);
+        set => _values[key] = value;
+    }
+
+    public void Lazy(string name, Func<object?> make) => _lazy[name] = make;
+
+    public IEnumerable<string> Keys => _values.Keys.Concat(_lazy.Keys);
+
+    public IEnumerable<object?> Values => Keys.Select(key => this[key]);
+
+    public int Count => _values.Count + _lazy.Count;
+
+    public bool ContainsKey(string key) => _values.ContainsKey(key) || _lazy.ContainsKey(key);
+
+    public bool TryGetValue(string key, out object? value)
+    {
+        if (_values.TryGetValue(key, out value)) return true;
+        if (!_lazy.Remove(key, out var make)) return false;
+        value = make();
+        _values[key] = value;
+        return true;
+    }
+
+    public IEnumerator<KeyValuePair<string, object?>> GetEnumerator() => Keys.ToList().Select(key => new KeyValuePair<string, object?>(key, this[key])).GetEnumerator();
+
+    System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
+}

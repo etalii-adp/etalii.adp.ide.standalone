@@ -17,7 +17,7 @@ namespace EtAlii.Adp.Specification.Fbl.Tests.Conformance;
 public class ConformanceFixturesTests
 {
     /// <summary>The number of fixtures vendored when this suite was written: fewer means the enumeration broke.</summary>
-    private const int MinimumFixtures = 11;
+    private const int MinimumFixtures = 12;
 
     public static TheoryData<string> Fixtures()
     {
@@ -33,6 +33,16 @@ public class ConformanceFixturesTests
     public void TheFixturesAreFound()
     {
         Assert.True(Fixtures().Count >= MinimumFixtures, $"Only {Fixtures().Count} fixtures were found; {MinimumFixtures} are vendored.");
+    }
+
+    [Fact]
+    public void TheTimelineSpecificationsAttributeTypes_AreRead()
+    {
+        // Assert: a reading told no type compares no written text, so an empty table would pass
+        // every timeline fixture whose values YAML happens to type as the fixture does.
+        Assert.True(TimelineTypes.Count >= 10, $"Only {TimelineTypes.Count} attribute types were read from timeline.dis.");
+        Assert.Equal("string", TimelineTypes.Of("Period", "label"));
+        Assert.Null(TimelineTypes.Of("Moment", "end"));
     }
 
     /// <summary>
@@ -64,10 +74,48 @@ public class ConformanceFixturesTests
     [MemberData(nameof(PassingFixtures))]
     public void TheFixturePasses(string name)
     {
-        // Arrange.
         var folder = Path.Combine(Repository.Conformance, "fixtures", name);
+        Run(name, folder, File.ReadAllBytes(Path.Combine(folder, "fixture.json")));
+    }
+
+    /// <summary>
+    /// The runner fails on a fixture whose reading names a typed value where a text is read
+    /// (Requirement 5.5): a copy of <c>timeline-written-text</c> made in the test's temporary folder,
+    /// one expected label changed from the string "yes" to true.
+    /// </summary>
+    [Fact]
+    public void TheRunnerFailsOnAnAttributeValueOfAnotherType()
+    {
+        // Arrange.
+        var folder = Path.Combine(Repository.Conformance, "fixtures", "timeline-written-text");
+        var original = File.ReadAllText(Path.Combine(folder, "fixture.json"));
+        var changed = original.Replace("\"label\": \"yes\"", "\"label\": true", StringComparison.Ordinal);
+        Assert.NotEqual(original, changed);
+        var copy = Path.Combine(Path.GetTempPath(), $"fbl-{Guid.NewGuid():N}", "fixture.json");
+        Directory.CreateDirectory(Path.GetDirectoryName(copy)!);
+        File.WriteAllText(copy, changed);
+
+        try
+        {
+            // Act.
+            var failure = Record.Exception(() => Run("timeline-written-text", folder, File.ReadAllBytes(copy)));
+
+            // Assert: it fails, naming the attribute.
+            Assert.NotNull(failure);
+            Assert.Contains("'label'", failure.Message, StringComparison.Ordinal);
+        }
+        finally
+        {
+            Directory.Delete(Path.GetDirectoryName(copy)!, true);
+        }
+    }
+
+    /// <summary>Runs a fixture's reading and steps; its binding and input are found from <paramref name="folder"/>.</summary>
+    private static void Run(string name, string folder, byte[] fixtureBytes)
+    {
+        // Arrange.
         var fixturePath = Path.Combine(folder, "fixture.json");
-        using var fixture = JsonDocument.Parse(File.ReadAllBytes(fixturePath));
+        using var fixture = JsonDocument.Parse(fixtureBytes);
         var root = fixture.RootElement;
         var binding = FblDocumentLoader.ResolveReference(BindingReference(root.GetProperty("binding").GetString()!, folder), fixturePath, out var problems);
         Assert.DoesNotContain(problems, p => p.Severity == ProblemSeverity.Error);
@@ -151,6 +199,28 @@ public class ConformanceFixturesTests
         Assert.Empty(reading.Family.Unaccounted());
     }
 
+    [Theory]
+    [MemberData(nameof(Fixtures))]
+    public void AnUnchangedSaveOfTheInputPlansNoSpliceAndKeepsItsBytes(string name)
+    {
+        // Arrange.
+        var folder = Path.Combine(Repository.Conformance, "fixtures", name);
+        var fixturePath = Path.Combine(folder, "fixture.json");
+        using var fixture = JsonDocument.Parse(File.ReadAllBytes(fixturePath));
+        var inputName = fixture.RootElement.GetProperty("input").GetString()!;
+        var binding = FblDocumentLoader.ResolveReference(BindingReference(fixture.RootElement.GetProperty("binding").GetString()!, folder), fixturePath, out _);
+        var input = File.ReadAllBytes(Path.Combine(folder, inputName));
+        var subject = Subject.Open(input, inputName, binding);
+
+        // Act.
+        var result = subject.Change(new ModelChange.Save());
+
+        // Assert.
+        var planned = Assert.IsType<PlanResult.Planned>(result);
+        Assert.Empty(planned.Edit.Splices);
+        Assert.Equal(input, subject.Bytes);
+    }
+
     private static void AssertRead(Subject subject, JsonElement read, string name)
     {
         var model = subject.Model!;
@@ -164,6 +234,7 @@ public class ConformanceFixturesTests
                 var found = model.Find(id);
                 Assert.True(found is not null, $"{name}: no element '{id}' was read; read: {string.Join(", ", model.Elements.Select(e => $"{e.Id} ({e.Type})"))}.");
                 Assert.Equal(type, found.Type);
+                if (element.TryGetProperty("attributes", out var attributes)) AssertAttributes(found, attributes, name);
             }
         }
         if (read.TryGetProperty("findings", out var findings))
@@ -182,6 +253,37 @@ public class ConformanceFixturesTests
             }
         }
     }
+
+    /// <summary>
+    /// Each attribute a fixture's element names has that value and that JSON type, a string for a
+    /// text (FBL 0.5 section 15.3); an attribute it does not name is not compared.
+    /// </summary>
+    private static void AssertAttributes(FblElement element, JsonElement attributes, string name)
+    {
+        foreach (var attribute in attributes.EnumerateObject())
+        {
+            var label = $"{name}: '{attribute.Name}' of '{element.Id}'";
+            Assert.True(element.Attributes.TryGetValue(attribute.Name, out var actual), $"{label} was not read.");
+            var expected = attribute.Value;
+            var same = expected.ValueKind switch
+            {
+                JsonValueKind.String => actual is string text && text == expected.GetString(),
+                JsonValueKind.Number => actual is long or int or double or decimal && Convert.ToDouble(actual, System.Globalization.CultureInfo.InvariantCulture).Equals(expected.GetDouble()),
+                JsonValueKind.True or JsonValueKind.False => actual is bool flag && flag == expected.GetBoolean(),
+                JsonValueKind.Null => actual is null,
+                _ => false,
+            };
+            Assert.True(same, $"{label} is {Describe(actual)}, where the fixture reads {expected.GetRawText()}.");
+        }
+    }
+
+    private static string Describe(object? value) => value switch
+    {
+        null => "null",
+        string text => $"the text \"{text}\"",
+        bool flag => $"the bool {(flag ? "true" : "false")}",
+        _ => $"the {value.GetType().Name} {Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture)}",
+    };
 
     private static Splice ReadSplice(JsonElement splice) => new(
         Splice.Parse(splice.GetProperty("operation").GetString()!),
@@ -233,7 +335,10 @@ public class ConformanceFixturesTests
         public static Subject Open(byte[] input, string name, FblBinding binding) =>
             name.EndsWith(".adp", StringComparison.OrdinalIgnoreCase)
                 ? new Subject { _registration = OpenRegistration.Open(input) }
-                : new Subject { _binding = binding, _body = OpenBody.Open(input, binding, new FblOptions { FileName = name, DeriveId = NaturalIds.For(binding.Name), TimeAttributes = NaturalIds.TimeAttributes(binding.Name) }) };
+                : new Subject { _binding = binding, _body = OpenBody.Open(input, binding, new FblOptions { FileName = name, DeriveId = NaturalIds.For(binding.Name), TimeAttributes = NaturalIds.TimeAttributes(binding.Name), AttributeType = AttributeTypes(binding.Name) }) };
+
+        /// <summary>The attribute types of a binding's tool type, which a binding does not carry (FBL 0.5 section 5.2): the timeline's, from its specification.</summary>
+        private static Func<string, string, string?>? AttributeTypes(string binding) => binding == "timeline" ? TimelineTypes.Of : null;
 
         public byte[] Bytes => _body?.Bytes ?? _registration!.Bytes;
 

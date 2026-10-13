@@ -204,7 +204,7 @@ internal static class EditPlanner
 
     private static void Rewrite(Plan plan, SlotRead? read, string oldKey, string newKey)
     {
-        if (read is not { Present: true, Span: { } span } || NewText.Plain(read.Value, null) != oldKey || plan.Touches(span)) return;
+        if (read is not { Present: true, Span: { } span } || read.Written != oldKey || plan.Touches(span)) return;
         plan.Add(SpliceOperation.RewriteReference, span, plan.Reading.Family.Format(read, null, newKey));
     }
 
@@ -348,7 +348,9 @@ internal static class EditPlanner
         {
             if (binding.Reference is not { } reference || !reference.To.Contains(element.Rule.Name) || other == element) continue;
             var value = other.Attributes.GetValueOrDefault(name);
-            if (value is List<object?> list ? list.Any(v => NewText.Plain(v, null) == element.Key) : NewText.Plain(value, null) == element.Key) return true;
+            if (value is List<object?> list
+                ? list.Any(v => NewText.Plain(v, null) == element.Key)
+                : other.TextOf(name) == element.Key) return true;
         }
         return false;
     }
