@@ -28,7 +28,7 @@ internal sealed class BodyReading
 
     // While claiming, the variables of the candidate being claimed: its when and its computed slots read the same ones.
     private bool _isClaiming;
-    private (Candidate Candidate, Dictionary<string, object?> Variables)? _claiming;
+    private (Candidate Candidate, CelVariables Variables)? _claiming;
 
     // Per reference, the first element of each key, built on first use once the elements are final.
     private readonly Dictionary<ReferenceBinding, Dictionary<string, ReadElement>> _referenced = new(ReferenceEqualityComparer.Instance);
@@ -362,7 +362,12 @@ internal sealed class BodyReading
         return cached;
     }
 
-    private CelContext RuleContext => Family is LinesFamily ? CelContext.Lines : CelContext.Tree;
+    private CelContext RuleContext => Family switch
+    {
+        LinesFamily => CelContext.Lines,
+        TreeFamily => CelContext.Scalars,
+        _ => CelContext.Tree,
+    };
 
     private object? Evaluate(string expression, Candidate candidate, out string? problem)
     {
@@ -402,7 +407,7 @@ internal sealed class BodyReading
     /// The variables of <paramref name="candidate"/>, kept while it is the one being read: while
     /// claiming, nothing they are made of changes between its <c>when</c> and its computed slots.
     /// </summary>
-    private Dictionary<string, object?> ClaimVariables(Candidate candidate)
+    private CelVariables ClaimVariables(Candidate candidate)
     {
         if (!_isClaiming) return Variables(candidate);
         if (_claiming is { } claiming && ReferenceEquals(claiming.Candidate, candidate)) return claiming.Variables;
@@ -411,13 +416,19 @@ internal sealed class BodyReading
         return variables;
     }
 
-    private Dictionary<string, object?> Variables(Candidate candidate)
+    private CelVariables Variables(Candidate candidate)
     {
-        var variables = new Dictionary<string, object?>(StringComparer.Ordinal)
+        var variables = new CelVariables
         {
             ["entry"] = Family.CelValue(candidate),
             ["line"] = (long)Text.Position(candidate.Entry.Own.Start).Line,
         };
+        if (RuleContext == CelContext.Scalars)
+        {
+            // Built only when an expression reads them, so a binding that does not use them costs nothing more.
+            variables.Lazy("text", () => Family.CelText(candidate));
+            variables.Lazy("style", () => Family.CelStyle(candidate));
+        }
         var registration = new CelMap();
         foreach ((string key, string value) in Options.RegistrationHeaders) registration[key] = value;
         variables["registration"] = registration;
@@ -712,3 +723,39 @@ internal sealed class BodyReading
 
 /// <summary>A value read from an attribute's <c>override</c> slot, which writing removes (FBL §5.2).</summary>
 internal sealed record OverrideNode(object? Node);
+
+/// <summary>The variables of one CEL evaluation, of which some are made only when the expression reads them.</summary>
+internal sealed class CelVariables : IReadOnlyDictionary<string, object?>
+{
+    private readonly Dictionary<string, object?> _values = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, Func<object?>> _lazy = new(StringComparer.Ordinal);
+
+    public object? this[string key]
+    {
+        get => TryGetValue(key, out var value) ? value : throw new KeyNotFoundException(key);
+        set => _values[key] = value;
+    }
+
+    public void Lazy(string name, Func<object?> make) => _lazy[name] = make;
+
+    public IEnumerable<string> Keys => _values.Keys.Concat(_lazy.Keys);
+
+    public IEnumerable<object?> Values => Keys.Select(key => this[key]);
+
+    public int Count => _values.Count + _lazy.Count;
+
+    public bool ContainsKey(string key) => _values.ContainsKey(key) || _lazy.ContainsKey(key);
+
+    public bool TryGetValue(string key, out object? value)
+    {
+        if (_values.TryGetValue(key, out value)) return true;
+        if (!_lazy.Remove(key, out var make)) return false;
+        value = make();
+        _values[key] = value;
+        return true;
+    }
+
+    public IEnumerator<KeyValuePair<string, object?>> GetEnumerator() => Keys.ToList().Select(key => new KeyValuePair<string, object?>(key, this[key])).GetEnumerator();
+
+    System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
+}

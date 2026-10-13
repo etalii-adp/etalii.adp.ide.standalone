@@ -265,9 +265,21 @@ public sealed record AttributeBinding : Slot
     public CreateChild? Create { get; init; }
 
     public string? ReadOnly { get; init; }
+
+    /// <summary>yaml, json (FBL 0.5): "text" or "typed", what the slot reads from a scalar; null to let the attribute's type decide.</summary>
+    public string? Read { get; init; }
+
+    /// <summary>yaml, read as typed (FBL 0.5): "convert" to convert a quoted scalar from its written text, "text" or null not to.</summary>
+    public string? Quoted { get; init; }
+
+    /// <summary>yaml, json (FBL 0.5): what the attribute is when its value does not convert, keeping the entry readable.</summary>
+    public FallbackBinding? Fallback { get; init; }
 }
 
 public sealed record ReferenceBinding(IReadOnlyList<string> To, string By);
+
+/// <summary>An attribute binding's <c>fallback</c> (FBL 0.5 §5.2): its value, and whether <c>fbl.unconverted-value</c> is reported.</summary>
+public sealed record FallbackBinding(JsonElement Value, bool Report);
 
 /// <summary>
 /// How a missing child holding the value is written. xml: the element's text and its place. yaml

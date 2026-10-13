@@ -4,18 +4,15 @@ namespace EtAlii.Adp.Specification.Fbl.Yaml;
 
 /// <summary>
 /// Reads a YAML flow collection (<c>[a, b]</c>, <c>{k: v}</c>) into the values CEL sees (FBL §4.3):
-/// its members are readable, while its only writable span is the whole collection. With
-/// <paramref name="written"/>, each member and key is its written text instead (FBL §4.1.5).
+/// its members are readable, while its only writable span is the whole collection. One pass gives
+/// three readings of the same shape: each member's typed value, its written text (FBL §4.1.5) and
+/// the name of the style it is written in (FBL §2.4).
 /// </summary>
-internal sealed class FlowReader(string text, bool written = false)
+internal sealed class FlowReader(string text)
 {
     private int _position;
 
-    public object? Read()
-    {
-        var value = Value();
-        return value;
-    }
+    public FlowValue Read() => Value();
 
     private void Skip()
     {
@@ -31,41 +28,57 @@ internal sealed class FlowReader(string text, bool written = false)
         }
     }
 
-    private object? Value()
+    private FlowValue Value()
     {
         Skip();
-        if (_position >= text.Length) return null;
+        if (_position >= text.Length) return new FlowValue(null, "", "plain");
         switch (text[_position])
         {
             case '[':
                 _position++;
-                var list = new List<object?>();
+                var typed = new List<object?>();
+                var texts = new List<object?>();
+                var styles = new List<object?>();
                 while (true)
                 {
                     Skip();
-                    if (_position >= text.Length) return list;
-                    if (text[_position] == ']') { _position++; return list; }
-                    list.Add(Value());
+                    if (_position >= text.Length || text[_position] == ']')
+                    {
+                        if (_position < text.Length) _position++;
+                        return new FlowValue(typed, texts, styles);
+                    }
+                    var item = Value();
+                    typed.Add(item.Typed);
+                    texts.Add(item.Text);
+                    styles.Add(item.Style);
                     Skip();
                     if (_position < text.Length && text[_position] == ',') _position++;
                 }
             case '{':
                 _position++;
-                var map = new CelMap();
+                var typedMap = new CelMap();
+                var textMap = new CelMap();
+                var styleMap = new CelMap();
                 while (true)
                 {
                     Skip();
-                    if (_position >= text.Length) return map;
-                    if (text[_position] == '}') { _position++; return map; }
+                    if (_position >= text.Length || text[_position] == '}')
+                    {
+                        if (_position < text.Length) _position++;
+                        return new FlowValue(typedMap, textMap, styleMap);
+                    }
                     var key = Scalar(true);
                     Skip();
-                    object? value = null;
+                    var value = new FlowValue(null, "", "plain");
                     if (_position < text.Length && text[_position] == ':')
                     {
                         _position++;
                         value = Value();
                     }
-                    map[Convert.ToString(key, System.Globalization.CultureInfo.InvariantCulture) ?? ""] = value;
+                    var name = Convert.ToString(key.Typed, System.Globalization.CultureInfo.InvariantCulture) ?? "";
+                    typedMap[name] = value.Typed;
+                    textMap[(string)key.Text!] = value.Text;
+                    styleMap[name] = value.Style;
                     Skip();
                     if (_position < text.Length && text[_position] == ',') _position++;
                 }
@@ -74,7 +87,7 @@ internal sealed class FlowReader(string text, bool written = false)
         }
     }
 
-    private object? Scalar(bool key)
+    private FlowValue Scalar(bool key)
     {
         var c = text[_position];
         if (c is '"' or '\'')
@@ -92,7 +105,8 @@ internal sealed class FlowReader(string text, bool written = false)
             }
             var inner = text[start..Math.Min(_position, text.Length)];
             _position++;
-            return c == '"' ? YamlScalars.DecodeDouble(inner) : YamlScalars.DecodeSingle(inner);
+            var decoded = c == '"' ? YamlScalars.DecodeDouble(inner) : YamlScalars.DecodeSingle(inner);
+            return new FlowValue(decoded, decoded, c == '"' ? "double" : "single");
         }
         var begin = _position;
         while (_position < text.Length)
@@ -103,6 +117,9 @@ internal sealed class FlowReader(string text, bool written = false)
             _position++;
         }
         var plain = YamlScalars.Fold(text[begin.._position].Trim());
-        return written ? plain : YamlScalars.Typed(plain);
+        return new FlowValue(YamlScalars.Typed(plain), plain, "plain");
     }
 }
+
+/// <summary>A member of a flow collection, or the collection itself, read three ways: typed, as written, and by style.</summary>
+internal sealed record FlowValue(object? Typed, object? Text, object? Style);

@@ -26,6 +26,9 @@ public static class FblDocumentLoader
 {
     private const int SupportedMajor = 0;
 
+    /// <summary>The newest minor version this library reads in full; a document of a newer one loads with a warning.</summary>
+    private const int KnownMinor = 5;
+
     public static IReadOnlyList<LoadProblem> Load(string path, out FblDocument? document) =>
         Load(ReadShared(path), out document);
 
@@ -81,9 +84,9 @@ public static class FblDocumentLoader
                 problems.Add(new LoadProblem("/fbl", ProblemSeverity.Error, $"FBL {version} is not supported; this library reads FBL {SupportedMajor}.x."));
                 return problems;
             }
-            if (minor > 1)
+            if (minor > KnownMinor)
             {
-                problems.Add(new LoadProblem("/fbl", ProblemSeverity.Warning, $"FBL {version} is newer than 0.1; what this library does not know is ignored."));
+                problems.Add(new LoadProblem("/fbl", ProblemSeverity.Warning, $"FBL {version} is newer than {SupportedMajor}.{KnownMinor}; what this library does not know is ignored."));
             }
             if (!root.TryGetProperty("bindings", out var bindings) || bindings.ValueKind != JsonValueKind.Object || !bindings.EnumerateObject().Any())
             {
@@ -472,6 +475,11 @@ internal static class BindingReader
             HtmlParagraphs = Str(json, "content") == "html-paragraphs",
             Create = create,
             ReadOnly = ReadOnly(json),
+            Read = Str(json, "read"),
+            Quoted = Str(json, "quoted"),
+            Fallback = json.TryGetProperty("fallback", out var f) && f.ValueKind == JsonValueKind.Object
+                ? new FallbackBinding(f.TryGetProperty("value", out var fv) ? fv.Clone() : default, !f.TryGetProperty("report", out var report) || report.ValueKind != JsonValueKind.False)
+                : null,
         };
     }
 
@@ -577,7 +585,9 @@ internal static class BindingChecker
             {
                 foreach (var c in rule.Remove.Cascade) Require(c, rules, at + "/remove/cascade", problems);
             }
-            var context = rule.At is not null ? CelContext.Tree : CelContext.Lines;
+            var families = FamiliesOf(binding, rule);
+            var scalars = families.Count > 0 && families.All(f => f is Family.Yaml or Family.Json);
+            var context = rule.At is null ? CelContext.Lines : scalars ? CelContext.Scalars : CelContext.Tree;
             Compile(rule.When, context, at + "/when", problems);
             Compile(rule.Insert?.When, CelContext.Insert, at + "/insert/when", problems);
             if (rule.Id?.From is { } from) CheckSlot(from, context, at + "/id/from", problems);
@@ -595,6 +605,7 @@ internal static class BindingChecker
                     foreach (var to in reference.To) Require(to, rules, a + "/reference/to", problems);
                 }
                 if (attribute.Override is { } o) CheckSlot(o, context, a + "/override", problems);
+                CheckScalarOptions(attribute, scalars, a, problems);
                 if (CountSlots(attribute) != 1)
                 {
                     problems.Add(new LoadProblem(a, ProblemSeverity.Error, "An attribute binding names exactly one slot (FBL §3.3)."));
@@ -631,6 +642,28 @@ internal static class BindingChecker
         if (binding.Comment is not null) CheckRegex(binding.Comment, pointer + "/comment", problems);
         if (binding.Header?.Line is { } headerLine) CheckRegex(headerLine, pointer + "/header/line", problems);
         if (binding.Claims.Marker?.Pattern is { } pattern) CheckRegex(pattern, pointer + "/claims/marker/pattern", problems);
+    }
+
+    /// <summary>The families a rule reads: those of the file rules it names, else the body's, else those of every file rule.</summary>
+    private static List<Family> FamiliesOf(FblBinding binding, Rule rule)
+    {
+        if (rule.Files.Count > 0) return binding.Body.Files.Where(f => f.Name is { } name && rule.Files.Contains(name)).Select(f => f.Family).OfType<Family>().ToList();
+        if (binding.Body.Family is { } family) return [family];
+        return binding.Body.Files.Select(f => f.Family).OfType<Family>().ToList();
+    }
+
+    /// <summary>
+    /// FBL 0.5 §5.2: <c>read</c>, <c>quoted</c> and <c>fallback</c> are given only on a slot of the yaml
+    /// or json family that reads a scalar, so never in another family nor on a <c>value</c> or <c>capture</c> slot.
+    /// </summary>
+    private static void CheckScalarOptions(AttributeBinding attribute, bool scalars, string pointer, List<LoadProblem> problems)
+    {
+        var where = !scalars ? "a slot of the xml, lines or blocks family" : attribute.Value is not null ? "a value slot" : attribute.Capture is not null ? "a capture slot" : null;
+        if (where is null) return;
+        foreach ((string option, bool given) in new[] { ("read", attribute.Read is not null), ("quoted", attribute.Quoted is not null), ("fallback", attribute.Fallback is not null) })
+        {
+            if (given) problems.Add(new LoadProblem($"{pointer}/{option}", ProblemSeverity.Error, $"'{option}' is not given on {where} (FBL 5.2)."));
+        }
     }
 
     private static int CountSlots(Slot s) =>
