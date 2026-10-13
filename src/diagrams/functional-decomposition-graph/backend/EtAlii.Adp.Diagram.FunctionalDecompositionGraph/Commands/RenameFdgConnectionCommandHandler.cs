@@ -1,19 +1,14 @@
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph;
 
 /// <summary>Sets a connection's name.</summary>
-public sealed class RenameFdgConnectionCommandHandler(IFdgDocumentStore documents) : ICommandHandler<RenameFdgConnectionCommand>
+public sealed class RenameFdgConnectionCommandHandler(IFdgDocumentStore documents) : FdgEditHandler<RenameFdgConnectionCommand>(documents)
 {
     /// <inheritdoc />
-    public Task<CommandResult> ExecuteAsync(RenameFdgConnectionCommand command, CancellationToken cancellationToken = default)
-    {
-        ArgumentNullException.ThrowIfNull(command);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        return FdgEdits.Run(documents, command.BodyPath, command, (document, model) =>
-            FdgEdits.ConnectionOf(model, command.ConnectionId) is { } connection
-                ? FdgWriter.SetConnectionName(document, connection, command.Name)
-                : FdgEdit.Refused("That connection is no longer in this graph."));
-    }
+    protected override EditOutcome Apply(LineDocument document, FdgModel model, RenameFdgConnectionCommand command) =>
+        model.ConnectionOf(command.ConnectionId) is { } connection
+            ? FdgWriter.SetConnectionName(document, connection, command.Name)
+            : EditOutcome.Refused("That connection is no longer in this graph.");
 }

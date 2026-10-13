@@ -7,43 +7,36 @@ namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph;
 /// Links two elements - after checking the link the way the canvas does, because the request may not
 /// have come from a canvas that checked.
 /// </summary>
-public sealed class ConnectFdgElementsCommandHandler(IFdgDocumentStore documents) : ICommandHandler<ConnectFdgElementsCommand>
+public sealed class ConnectFdgElementsCommandHandler(IFdgDocumentStore documents) : FdgEditHandler<ConnectFdgElementsCommand>(documents)
 {
     /// <inheritdoc />
-    public Task<CommandResult> ExecuteAsync(ConnectFdgElementsCommand command, CancellationToken cancellationToken = default)
+    protected override CommandResult Execute(ConnectFdgElementsCommand command) =>
+        base.Execute(command.ConnectionId.Length > 0 ? command : command with { ConnectionId = ShortGuid.NewShortGuid().ToString() });
+
+    /// <inheritdoc />
+    protected override EditOutcome Apply(LineDocument document, FdgModel model, ConnectFdgElementsCommand command)
     {
-        ArgumentNullException.ThrowIfNull(command);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        var minted = command.ConnectionId.Length > 0
-            ? command
-            : command with { ConnectionId = ShortGuid.NewShortGuid().ToString() };
-
-        return FdgEdits.Run(documents, minted.BodyPath, minted, (document, model) =>
+        // Checked against the document as it is now, never against what the client believed.
+        var refusal = FdgConnectVerdict.RefusalFor(model, command.RelationType, command.FromId, command.ToId);
+        if (refusal is not null)
         {
-            // Checked against the document as it is now, never against what the client believed.
-            var refusal = FdgConnectVerdict.RefusalFor(model, minted.RelationType, minted.FromId, minted.ToId);
-            if (refusal is not null)
-            {
-                return FdgEdit.Refused(refusal);
-            }
+            return EditOutcome.Refused(refusal);
+        }
 
-            if (model.Elements.Any(element => element.Id == minted.ConnectionId) ||
-                model.Connections.Any(connection => connection.Id == minted.ConnectionId))
-            {
-                return FdgEdit.Refused("That id is already used in this graph.");
-            }
+        if (model.IsTaken(command.ConnectionId))
+        {
+            return EditOutcome.Refused("That id is already used in this graph.");
+        }
 
-            var connection = new FdgConnection(
-                minted.ConnectionId,
-                minted.RelationType,
-                minted.FromId,
-                minted.ToId,
-                Name: "",
-                Description: "",
-                Range: new LineRange(0, 0));
+        var connection = new FdgConnection(
+            command.ConnectionId,
+            command.RelationType,
+            command.FromId,
+            command.ToId,
+            Name: "",
+            Description: "",
+            Range: new LineRange(0, 0));
 
-            return FdgWriter.Connect(document, model, connection);
-        });
+        return FdgWriter.Connect(document, model, connection);
     }
 }

@@ -1,5 +1,6 @@
 using System.Globalization;
 using EtAlii.Adp.Context;
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.History;
 
@@ -26,7 +27,8 @@ namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph;
 /// the grid did not list would be a resize the canvas could never make.
 /// </para>
 /// </remarks>
-public sealed class FdgContextPropertyProvider : IContextPropertyProvider
+public sealed class FdgContextPropertyProvider(IHistoryStackStore historyStacks, IFdgDocumentStore documents)
+    : DiagramPropertyProvider<LineDocument, FdgModel>(historyStacks, documents)
 {
     /// <summary>An element's Name, for the four named types.</summary>
     public const string NameProperty = "fdg.name";
@@ -49,34 +51,15 @@ public sealed class FdgContextPropertyProvider : IContextPropertyProvider
     private const string IdentityGroup = "Identity";
     private const string SizeGroup = "Size";
 
-    private readonly IHistoryStackStore _historyStacks;
-    private readonly IFdgDocumentStore _documents;
-
-    public FdgContextPropertyProvider(IHistoryStackStore historyStacks, IFdgDocumentStore documents)
-    {
-        ArgumentNullException.ThrowIfNull(historyStacks);
-        ArgumentNullException.ThrowIfNull(documents);
-        _historyStacks = historyStacks;
-        _documents = documents;
-    }
+    /// <inheritdoc />
+    protected override bool IsBody(string path) => Diagram.IsBody(path);
 
     /// <inheritdoc />
-    public ContextScope Scope => ContextScope.DiagramElement;
-
-    /// <inheritdoc />
-    public ValueTask<IReadOnlyList<ContextPropertyDefinition>> DescribeAsync(ContextTarget target, CancellationToken cancellationToken)
+    protected override IReadOnlyList<ContextPropertyDefinition> Describe(DocumentEntry<LineDocument, FdgModel> entry, string elementId)
     {
-        ArgumentNullException.ThrowIfNull(target);
-        cancellationToken.ThrowIfCancellationRequested();
+        var model = entry.Model;
 
-        if (!Diagram.IsBody(target.ResolvedFullPath))
-        {
-            return Rows([]);
-        }
-
-        var model = _documents.GetOrLoad(target.ResolvedFullPath).Model;
-
-        if (FdgEdits.ElementOf(model, target.ElementId) is { } element)
+        if (model.ElementOf(elementId) is { } element)
         {
             List<ContextPropertyDefinition> rows = element.IsComment
                 ? [new ContextPropertyDefinition(TextProperty, "Text", element.Text, ContextPropertyEditor.Text, Group: IdentityGroup)]
@@ -88,34 +71,27 @@ public sealed class FdgContextPropertyProvider : IContextPropertyProvider
                 rows.Add(new ContextPropertyDefinition(HeightProperty, "Height", Number(element.DrawnHeight), Group: SizeGroup));
             }
 
-            return Rows(rows);
+            return rows;
         }
 
-        if (FdgEdits.ConnectionOf(model, target.ElementId) is { } connection)
+        if (model.ConnectionOf(elementId) is { } connection)
         {
-            return Rows(
+            return
             [
                 new ContextPropertyDefinition(ConnectionNameProperty, "Name", connection.Name, Group: IdentityGroup),
                 new ContextPropertyDefinition(DescriptionProperty, "Description", connection.Description, ContextPropertyEditor.Text, Group: IdentityGroup),
-            ]);
+            ];
         }
 
-        return Rows([]);
+        return [];
     }
 
     /// <inheritdoc />
-    public async ValueTask<ContextPropertyResult> SetAsync(
-        ContextTarget target,
-        string propertyId,
-        string value,
-        CancellationToken cancellationToken)
+    protected override DiagramPropertyChange Change(ContextTarget target, FdgModel model, string propertyId, string value)
     {
-        ArgumentNullException.ThrowIfNull(target);
-
         var body = target.ResolvedFullPath;
         var id = target.ElementId;
-        var model = _documents.GetOrLoad(body).Model;
-        var element = FdgEdits.ElementOf(model, id);
+        var element = model.ElementOf(id);
 
         // A size is validated before any command exists, so the refusal names the value - and an
         // invalid value is never written.
@@ -124,12 +100,13 @@ public sealed class FdgContextPropertyProvider : IContextPropertyProvider
         {
             if (!double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var parsed) || parsed <= 0)
             {
-                return ContextPropertyResult.Failure($"'{value}' is not a size this graph can draw.");
+                return DiagramPropertyChange.Refused($"'{value}' is not a size this graph can draw.");
             }
 
             size = parsed;
         }
 
+        // Through the project's history and out through the delta stream - never written by the grid.
         ICommand? command = propertyId switch
         {
             NameProperty or TextProperty when element is not null => new RenameFdgElementCommand(body, id, value),
@@ -140,18 +117,10 @@ public sealed class FdgContextPropertyProvider : IContextPropertyProvider
             _ => null,
         };
 
-        if (command is null)
-        {
-            return ContextPropertyResult.Failure($"'{propertyId}' cannot be edited on this selection.");
-        }
-
-        // Through the project's history and out through the delta stream - never written by the grid.
-        var result = await _historyStacks.Get(target.RootPath).ExecuteAsync(command, cancellationToken);
-        return result.IsSuccess ? ContextPropertyResult.Success : ContextPropertyResult.Failure(result.Error);
+        return command is null
+            ? DiagramPropertyChange.Refused($"'{propertyId}' cannot be edited on this selection.")
+            : DiagramPropertyChange.By(command);
     }
 
     private static string Number(double value) => value.ToString("0.##", CultureInfo.InvariantCulture);
-
-    private static ValueTask<IReadOnlyList<ContextPropertyDefinition>> Rows(IReadOnlyList<ContextPropertyDefinition> rows) =>
-        ValueTask.FromResult(rows);
 }

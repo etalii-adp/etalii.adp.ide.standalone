@@ -1,26 +1,8 @@
 using System.Globalization;
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph;
-
-/// <summary>What an edit did, or why it did nothing.</summary>
-/// <param name="Refusal">The sentence to show, or <c>null</c> when the edit was spliced.</param>
-/// <remarks>
-/// A refusal is a sentence rather than a code because it is shown to the person who asked for the
-/// edit, and because the three checks that can refuse - type, cardinality, cycle - each have
-/// something specific to say that "invalid" does not.
-/// </remarks>
-public readonly record struct FdgEdit(string? Refusal)
-{
-    /// <summary>The edit was spliced into the document.</summary>
-    public static FdgEdit Applied { get; } = new(null);
-
-    /// <summary>The edit was refused, and this is why.</summary>
-    public static FdgEdit Refused(string because) => new(because);
-
-    /// <summary>Whether the document changed.</summary>
-    public bool WasApplied => Refusal is null;
-}
 
 /// <summary>
 /// Turns an edit into a splice of the lines that edit affects, and nothing else.
@@ -46,41 +28,41 @@ public static class FdgWriter
     private const string ConnectionsSection = "connections:";
 
     /// <summary>Rewrites an element's name. A Comment has none, and says so.</summary>
-    public static FdgEdit SetName(LineDocument document, FdgElement element, string name)
+    public static EditOutcome SetName(LineDocument document, FdgElement element, string name)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(element);
 
         if (element.IsComment)
         {
-            return FdgEdit.Refused("A Comment has no name; its text is what it says.");
+            return EditOutcome.Refused("A Comment has no name; its text is what it says.");
         }
 
         LineSplice.SetKey(document, element.Range, "name", LineSplice.Quote(name));
-        return FdgEdit.Applied;
+        return EditOutcome.Applied;
     }
 
     /// <summary>
     /// Rewrites an element's description - prose the client is never sent. An empty one removes the
     /// key rather than writing <c>description: ""</c>, as the design's command table asks.
     /// </summary>
-    public static FdgEdit SetDescription(LineDocument document, FdgElement element, string description)
+    public static EditOutcome SetDescription(LineDocument document, FdgElement element, string description)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(element);
 
         SetOrRemove(document, element.Range, "description", description);
-        return FdgEdit.Applied;
+        return EditOutcome.Applied;
     }
 
     /// <summary>Rewrites a connection's description, the same way an element's is.</summary>
-    public static FdgEdit SetConnectionDescription(LineDocument document, FdgConnection connection, string description)
+    public static EditOutcome SetConnectionDescription(LineDocument document, FdgConnection connection, string description)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(connection);
 
         SetOrRemove(document, connection.Range, "description", description);
-        return FdgEdit.Applied;
+        return EditOutcome.Applied;
     }
 
     private static void SetOrRemove(LineDocument document, LineRange range, string key, string value)
@@ -103,14 +85,14 @@ public static class FdgWriter
     /// adding a trailing newline the author did not write, which is what a byte comparison
     /// notices first.
     /// </remarks>
-    public static FdgEdit SetText(LineDocument document, FdgElement element, string text)
+    public static EditOutcome SetText(LineDocument document, FdgElement element, string text)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(element);
 
         if (!element.IsComment)
         {
-            return FdgEdit.Refused("Only a Comment carries text.");
+            return EditOutcome.Refused("Only a Comment carries text.");
         }
 
         var indent = LineSplice.KeyIndentWithin(document, element.Range);
@@ -121,18 +103,18 @@ public static class FdgWriter
         ];
 
         ReplaceKeyBlock(document, element.Range, "text", lines);
-        return FdgEdit.Applied;
+        return EditOutcome.Applied;
     }
 
     /// <summary>Moves an element by rewriting its top-left corner.</summary>
-    public static FdgEdit MoveTo(LineDocument document, FdgElement element, double x, double y)
+    public static EditOutcome MoveTo(LineDocument document, FdgElement element, double x, double y)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(element);
 
         LineSplice.SetKey(document, element.Range, "x", Number(x));
         LineSplice.SetKey(document, element.Range, "y", Number(y));
-        return FdgEdit.Applied;
+        return EditOutcome.Applied;
     }
 
     /// <summary>
@@ -140,7 +122,7 @@ public static class FdgWriter
     /// written only for a Comment - the other four share <see cref="FdgGeometry.SharedHeight"/>
     /// and storing it per element is what the shared constant exists to avoid.
     /// </summary>
-    public static FdgEdit Resize(LineDocument document, FdgElement element, double width, double? height)
+    public static EditOutcome Resize(LineDocument document, FdgElement element, double width, double? height)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(element);
@@ -149,26 +131,26 @@ public static class FdgWriter
 
         if (height is null)
         {
-            return FdgEdit.Applied;
+            return EditOutcome.Applied;
         }
 
         if (!element.IsComment)
         {
-            return FdgEdit.Refused("Only a Comment has its own height; the others share one.");
+            return EditOutcome.Refused("Only a Comment has its own height; the others share one.");
         }
 
         LineSplice.SetKey(document, element.Range, "height", Number(Math.Max(height.Value, FdgGeometry.MinimumCommentHeight)));
-        return FdgEdit.Applied;
+        return EditOutcome.Applied;
     }
 
     /// <summary>Rewrites a connection's name.</summary>
-    public static FdgEdit SetConnectionName(LineDocument document, FdgConnection connection, string name)
+    public static EditOutcome SetConnectionName(LineDocument document, FdgConnection connection, string name)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(connection);
 
         LineSplice.SetKey(document, connection.Range, "name", LineSplice.Quote(name));
-        return FdgEdit.Applied;
+        return EditOutcome.Applied;
     }
 
     /// <summary>
@@ -179,7 +161,7 @@ public static class FdgWriter
     /// top-down would leave the second range pointing at lines that have already shifted - the
     /// same reason the counterpart module orders its removals this way.
     /// </remarks>
-    public static FdgEdit RemoveElement(LineDocument document, FdgModel model, FdgElement element)
+    public static EditOutcome RemoveElement(LineDocument document, FdgModel model, FdgElement element)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(model);
@@ -197,21 +179,21 @@ public static class FdgWriter
             document.Remove(range);
         }
 
-        return FdgEdit.Applied;
+        return EditOutcome.Applied;
     }
 
     /// <summary>Removes one connection.</summary>
-    public static FdgEdit Disconnect(LineDocument document, FdgConnection connection)
+    public static EditOutcome Disconnect(LineDocument document, FdgConnection connection)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(connection);
 
         document.Remove(connection.Range);
-        return FdgEdit.Applied;
+        return EditOutcome.Applied;
     }
 
     /// <summary>Appends an element entry, matching whatever indentation the document already uses.</summary>
-    public static FdgEdit AddElement(LineDocument document, FdgModel model, FdgElement element)
+    public static EditOutcome AddElement(LineDocument document, FdgModel model, FdgElement element)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(model);
@@ -221,7 +203,7 @@ public static class FdgWriter
         var at = LineSplice.InsertionPointFor(document, ranges, ElementsSection);
         if (at < 0)
         {
-            return FdgEdit.Refused($"The document has no `{ElementsSection}` section to add to.");
+            return EditOutcome.Refused($"The document has no `{ElementsSection}` section to add to.");
         }
 
         (string itemIndent, string dashGap, string keyIndent) = LineSplice.IndentOf(document, ranges);
@@ -250,11 +232,11 @@ public static class FdgWriter
         }
 
         document.Insert(at, lines);
-        return FdgEdit.Applied;
+        return EditOutcome.Applied;
     }
 
     /// <summary>Appends a connection entry.</summary>
-    public static FdgEdit Connect(LineDocument document, FdgModel model, FdgConnection connection)
+    public static EditOutcome Connect(LineDocument document, FdgModel model, FdgConnection connection)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(model);
@@ -264,7 +246,7 @@ public static class FdgWriter
         var at = LineSplice.InsertionPointFor(document, ranges, ConnectionsSection);
         if (at < 0)
         {
-            return FdgEdit.Refused($"The document has no `{ConnectionsSection}` section to add to.");
+            return EditOutcome.Refused($"The document has no `{ConnectionsSection}` section to add to.");
         }
 
         (string itemIndent, string dashGap, string keyIndent) = LineSplice.IndentOf(document, ranges);
@@ -282,7 +264,7 @@ public static class FdgWriter
         }
 
         document.Insert(at, lines);
-        return FdgEdit.Applied;
+        return EditOutcome.Applied;
     }
 
     /// <summary>

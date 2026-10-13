@@ -1,6 +1,5 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
-using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph;
@@ -17,7 +16,7 @@ namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph;
 /// of it.
 /// </para>
 /// <para>
-/// <b>Every action that needs no input dispatches here, in <see cref="ExecuteAsync"/>.</b> A
+/// <b>Every action that needs no input dispatches here, in <see cref="RunAsync"/>.</b> A
 /// Completed execution never reaches the commit leg, so an action answering Completed without
 /// dispatching would have done nothing at all - the trap dependency-graph's provider records being
 /// walked into three times.
@@ -27,7 +26,8 @@ namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph;
 /// against the document as it is now, whatever the canvas that sent it believed.
 /// </para>
 /// </remarks>
-public sealed class FdgContextActionProvider : IContextActionProvider
+public sealed class FdgContextActionProvider(IHistoryStackStore historyStacks, IFdgDocumentStore documents)
+    : DiagramActionProvider<LineDocument, FdgModel>(historyStacks, documents)
 {
     /// <summary>Rename an element in place - its Name, or a Comment's text.</summary>
     public const string RenameActionId = "fdg.rename";
@@ -44,17 +44,6 @@ public sealed class FdgContextActionProvider : IContextActionProvider
     private const string AddPrefix = "fdg.add.";
     private const string ConnectPrefix = "fdg.connect.";
 
-    private readonly IHistoryStackStore _historyStacks;
-    private readonly IFdgDocumentStore _documents;
-
-    public FdgContextActionProvider(IHistoryStackStore historyStacks, IFdgDocumentStore documents)
-    {
-        ArgumentNullException.ThrowIfNull(historyStacks);
-        ArgumentNullException.ThrowIfNull(documents);
-        _historyStacks = historyStacks;
-        _documents = documents;
-    }
-
     /// <summary>The add action for one element type.</summary>
     public static string AddActionId(string elementType) => AddPrefix + elementType;
 
@@ -62,79 +51,70 @@ public sealed class FdgContextActionProvider : IContextActionProvider
     private static string ConnectActionId(string relation) => ConnectPrefix + relation;
 
     /// <inheritdoc />
-    public ContextScope Scope => ContextScope.DiagramElement;
+    protected override bool IsBody(string path) => Diagram.IsBody(path);
 
     /// <inheritdoc />
-    public ValueTask<IReadOnlyList<ContextActionGroupDefinition>> DiscoverAsync(ContextTarget target, CancellationToken cancellationToken)
+    protected override IReadOnlyList<ContextActionGroupDefinition> Discover(DocumentEntry<LineDocument, FdgModel> entry, string elementId)
     {
-        ArgumentNullException.ThrowIfNull(target);
-        cancellationToken.ThrowIfCancellationRequested();
+        var model = entry.Model;
 
-        if (!Diagram.IsBody(target.ResolvedFullPath))
+        if (model.ElementOf(elementId) is { } element)
         {
-            // Another type's element: a provider consulted for every element in its scope answers
-            // with nothing rather than parsing another notation's file.
-            return Result([]);
-        }
-
-        var model = _documents.GetOrLoad(target.ResolvedFullPath).Model;
-
-        if (FdgEdits.ElementOf(model, target.ElementId) is { } element)
-        {
-            return Result(
+            return
             [
                 new ContextActionGroupDefinition(
                 [
                     new ContextActionDefinition(RenameActionId, element.IsComment ? "Edit text…" : "Rename…", "mdi-pencil-outline", new ContextShortcutDefinition("F2")),
                     new ContextActionDefinition(RemoveActionId, "Remove", "mdi-delete-outline", new ContextShortcutDefinition("Delete")),
                 ]),
-            ]);
+            ];
         }
 
-        if (FdgEdits.ConnectionOf(model, target.ElementId) is not null)
+        if (model.ConnectionOf(elementId) is not null)
         {
-            return Result(
+            return
             [
                 new ContextActionGroupDefinition(
                 [
                     new ContextActionDefinition(RenameConnectionActionId, "Rename…", "mdi-pencil-outline", new ContextShortcutDefinition("F2")),
                     new ContextActionDefinition(DisconnectActionId, "Remove connection", "mdi-vector-polyline-remove", new ContextShortcutDefinition("Delete")),
                 ]),
-            ]);
+            ];
         }
 
         // Executing an action by id only finds actions its target discovers, so a drop and a
         // finished gesture each discover what may be executed against them.
-        if (GestureIds.TryParsePlacement(target.ElementId, out _, out _))
+        if (GestureIds.TryParsePlacement(elementId, out _, out _))
         {
-            return Result(
+            return
             [
                 new ContextActionGroupDefinition(
                     [.. FdgElementTypes.All.Select(type => new ContextActionDefinition(AddActionId(type), $"Add {Titled(type)} here", "mdi-plus"))]),
-            ]);
+            ];
         }
 
-        if (GestureIds.TryParseRelation(target.ElementId, out _, out _))
+        if (GestureIds.TryParseRelation(elementId, out _, out _))
         {
-            return Result(
+            return
             [
                 new ContextActionGroupDefinition(
                     [.. FdgRelations.All.Select(relation => new ContextActionDefinition(ConnectActionId(relation.Id), Titled(relation.Id), "mdi-ray-start-arrow"))]),
-            ]);
+            ];
         }
 
-        return Result([]);
+        return [];
     }
 
     /// <inheritdoc />
-    public async ValueTask<ContextExecutionResult> ExecuteAsync(ContextTarget target, string actionId, CancellationToken cancellationToken)
+    protected override async ValueTask<ContextExecutionResult> RunAsync(
+        ContextTarget target,
+        DocumentEntry<LineDocument, FdgModel> entry,
+        string actionId,
+        CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(target);
-        cancellationToken.ThrowIfCancellationRequested();
-
         var body = target.ResolvedFullPath;
-        var model = _documents.GetOrLoad(body).Model;
-        var element = FdgEdits.ElementOf(model, target.ElementId);
+        var model = entry.Model;
+        var element = model.ElementOf(target.ElementId);
 
         if (actionId.StartsWith(AddPrefix, StringComparison.Ordinal))
         {
@@ -174,7 +154,7 @@ public sealed class FdgContextActionProvider : IContextActionProvider
                     element.IsComment ? "Save" : "Rename",
                     target.ElementId));
 
-            case RenameConnectionActionId when FdgEdits.ConnectionOf(model, target.ElementId) is { } connection:
+            case RenameConnectionActionId when model.ConnectionOf(target.ElementId) is { } connection:
                 return new ContextExecutionRequiresInput(new ContextInputRequest(
                     "Rename", "mdi-pencil-outline", "Name", connection.Name, "Rename", target.ElementId));
 
@@ -183,22 +163,18 @@ public sealed class FdgContextActionProvider : IContextActionProvider
                 // Says how many connections go with it before it runs; with none, no ceremony -
                 // and so the removal happens here.
                 var going = model.Connections.Count(connection => connection.From == element.Id || connection.To == element.Id);
-                if (going == 0)
-                {
-                    return await DispatchAsync(target, new RemoveFdgElementCommand(body, element.Id), cancellationToken);
-                }
-
-                return new ContextExecutionRequiresConfirmation(new ContextConfirmationRequest(
-                    "Remove",
-                    "mdi-delete-outline",
-                    going == 1
-                        ? "Removing this element also removes the 1 connection to or from it."
-                        : $"Removing this element also removes the {going} connections to or from it.",
-                    "Remove",
-                    Danger: true));
+                var confirmation = going == 0
+                    ? null
+                    : new RemovalConfirmation(
+                        "Remove",
+                        going == 1
+                            ? "Removing this element also removes the 1 connection to or from it."
+                            : $"Removing this element also removes the {going} connections to or from it.",
+                        "Remove");
+                return await RemoveAsync(target, new RemoveFdgElementCommand(body, element.Id), confirmation, cancellationToken);
             }
 
-            case DisconnectActionId when FdgEdits.ConnectionOf(model, target.ElementId) is not null:
+            case DisconnectActionId when model.ConnectionOf(target.ElementId) is not null:
                 return await DispatchAsync(target, new DisconnectFdgConnectionCommand(body, target.ElementId), cancellationToken);
 
             case RenameActionId or RemoveActionId or RenameConnectionActionId or DisconnectActionId:
@@ -210,61 +186,22 @@ public sealed class FdgContextActionProvider : IContextActionProvider
     }
 
     /// <inheritdoc />
-    public ValueTask<ContextValidationResult> ValidateAsync(ContextTarget target, string actionId, string value, CancellationToken cancellationToken)
+    protected override ICommand? CommitCommand(ContextTarget target, FdgModel model, string actionId, string value)
     {
-        ArgumentNullException.ThrowIfNull(target);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        // Every value asked for is a name or a Comment's text, and neither has a wrong answer; the
-        // command refuses anything the document cannot hold.
-        _ = actionId;
-        _ = value;
-        return ValueTask.FromResult(ContextValidationResult.Accepted);
-    }
-
-    /// <inheritdoc />
-    public async ValueTask<ContextCommitResult> CommitAsync(
-        ContextTarget target,
-        string actionId,
-        string value,
-        string text,
-        CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(target);
-        _ = text;
-
         var body = target.ResolvedFullPath;
         var id = target.ElementId;
-        var model = _documents.GetOrLoad(body).Model;
-        var isElement = FdgEdits.ElementOf(model, id) is not null;
-        var isConnection = FdgEdits.ConnectionOf(model, id) is not null;
+        var isElement = model.ElementOf(id) is not null;
+        var isConnection = model.ConnectionOf(id) is not null;
 
-        ICommand? command = actionId switch
+        return actionId switch
         {
             RenameActionId when isElement => new RenameFdgElementCommand(body, id, value),
             RemoveActionId when isElement => new RemoveFdgElementCommand(body, id),
             RenameConnectionActionId when isConnection => new RenameFdgConnectionCommand(body, id, value),
             _ => null,
         };
-
-        if (command is null)
-        {
-            return ContextCommitResult.Failed($"'{actionId}' does not apply to this selection.");
-        }
-
-        var result = await _historyStacks.Get(target.RootPath).ExecuteAsync(command, cancellationToken);
-        return result.IsSuccess ? ContextCommitResult.Succeeded : ContextCommitResult.Failed(result.Error);
-    }
-
-    private async ValueTask<ContextExecutionResult> DispatchAsync(ContextTarget target, ICommand command, CancellationToken cancellationToken)
-    {
-        var result = await _historyStacks.Get(target.RootPath).ExecuteAsync(command, cancellationToken);
-        return result.IsSuccess ? new ContextExecutionCompleted() : new ContextExecutionFailed(result.Error);
     }
 
     /// <summary>A document word as a menu reads it: <c>owns-data</c> becomes "owns data".</summary>
     private static string Titled(string word) => word.Replace('-', ' ');
-
-    private static ValueTask<IReadOnlyList<ContextActionGroupDefinition>> Result(IReadOnlyList<ContextActionGroupDefinition> groups) =>
-        ValueTask.FromResult(groups);
 }

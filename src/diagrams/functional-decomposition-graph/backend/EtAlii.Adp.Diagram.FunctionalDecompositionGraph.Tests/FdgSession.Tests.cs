@@ -1,4 +1,5 @@
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.History;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph.Tests;
@@ -164,7 +165,7 @@ public sealed class FdgSessionTests : IDisposable
         return session;
     }
 
-    private void Edit(string elementId, Func<LineDocument, FdgElement, FdgEdit> edit)
+    private void Edit(string elementId, Func<LineDocument, FdgElement, EditOutcome> edit)
     {
         var document = LineDocument.Parse(File.ReadAllText(Body));
         var element = FdgParser.Parse(document).Elements.Single(candidate => candidate.Id == elementId);

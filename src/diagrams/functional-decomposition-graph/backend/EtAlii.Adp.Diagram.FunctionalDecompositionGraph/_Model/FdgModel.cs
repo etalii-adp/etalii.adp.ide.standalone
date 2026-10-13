@@ -30,6 +30,18 @@ public sealed record FdgModel(
     /// <summary>A document that declares nothing - the parser's answer to text it could not read at all.</summary>
     public static FdgModel Empty { get; } = new([], [], [], null);
 
+    /// <summary>The element with <paramref name="id"/>: the first entry with it, as the canvas draws it.</summary>
+    public FdgElement? ElementOf(string id) =>
+        Elements.FirstOrDefault(element => string.Equals(element.Id, id, StringComparison.Ordinal));
+
+    /// <summary>The connection with <paramref name="id"/>: the first entry with it.</summary>
+    public FdgConnection? ConnectionOf(string id) =>
+        Connections.FirstOrDefault(connection => string.Equals(connection.Id, id, StringComparison.Ordinal));
+
+    /// <summary>Whether any element or connection already uses <paramref name="id"/>.</summary>
+    public bool IsTaken(string id) =>
+        Elements.Any(element => element.Id == id) || Connections.Any(connection => connection.Id == id);
+
     /// <summary>The version this module writes, and the only one it understands.</summary>
     public const int CurrentVersion = 1;
 }

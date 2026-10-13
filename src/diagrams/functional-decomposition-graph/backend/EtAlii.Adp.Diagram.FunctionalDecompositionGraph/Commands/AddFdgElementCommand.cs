@@ -11,4 +11,4 @@ namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph;
 /// Empty to have one minted. The handler mints it ONCE and returns the minted command as the redo, so
 /// a redone element keeps the id later commands refer to.
 /// </param>
-public sealed record AddFdgElementCommand(string BodyPath, string ElementType, double X, double Y, string ElementId = "") : ICommand;
+public sealed record AddFdgElementCommand(string BodyPath, string ElementType, double X, double Y, string ElementId = "") : IDocumentEditCommand;
