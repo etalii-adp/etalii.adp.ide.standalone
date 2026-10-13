@@ -41,22 +41,4 @@ public abstract class DocumentEditHandler<TCommand, TStore, TBody, TModel>(TStor
     /// <summary>Changes <paramref name="body"/>, whose model is <paramref name="model"/>, as <paramref name="command"/> asks, or says why not.</summary>
     protected abstract EditOutcome Apply(TBody body, TModel model, TCommand command);
 
-    /// <summary>The name, or the name with the lowest number that makes it unique among <paramref name="taken"/>.</summary>
-    protected static string Unique(IEnumerable<string> taken, string name)
-    {
-        var names = taken.ToHashSet(StringComparer.Ordinal);
-        if (!names.Contains(name))
-        {
-            return name;
-        }
-
-        for (var number = 2; ; number++)
-        {
-            var candidate = $"{name} {number}";
-            if (!names.Contains(candidate))
-            {
-                return candidate;
-            }
-        }
-    }
 }

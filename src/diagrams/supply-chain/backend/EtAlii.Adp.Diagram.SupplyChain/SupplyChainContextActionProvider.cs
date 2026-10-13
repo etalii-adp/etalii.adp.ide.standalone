@@ -212,7 +212,7 @@ public sealed class SupplyChainContextActionProvider(IHistoryStackStore historyS
     }
 
     /// <inheritdoc />
-    protected override ContextValidationResult Validate(string actionId, string value) =>
+    protected override ContextValidationResult Validate(ContextTarget target, string actionId, string value) =>
         actionId == GroupActionId && string.IsNullOrWhiteSpace(value)
             ? ContextValidationResult.Rejected("A group needs a name.")
             : ContextValidationResult.Accepted;

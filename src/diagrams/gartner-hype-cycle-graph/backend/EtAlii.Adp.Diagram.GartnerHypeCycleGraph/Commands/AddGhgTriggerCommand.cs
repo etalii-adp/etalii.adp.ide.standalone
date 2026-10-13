@@ -7,4 +7,4 @@ namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
 /// <param name="X">The drop's x. The trigger happens at the start of the step it falls in.</param>
 /// <param name="Y">The drop's y. The trigger's centre lands on the middle of the nearest row.</param>
 /// <param name="TriggerId">Empty to have one minted, once, as for <see cref="AddGhgTrendCommand"/>.</param>
-public sealed record AddGhgTriggerCommand(string BodyPath, double X, double Y, string TriggerId = "") : ICommand;
+public sealed record AddGhgTriggerCommand(string BodyPath, double X, double Y, string TriggerId = "") : IDocumentEditCommand;

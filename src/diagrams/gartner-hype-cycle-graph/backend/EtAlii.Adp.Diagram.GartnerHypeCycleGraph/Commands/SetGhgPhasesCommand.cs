@@ -8,4 +8,4 @@ namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
 /// hides them (Requirement 7.2). Stored boundaries are kept too, and apply again when their phase is
 /// shown (Requirement 3.4).
 /// </remarks>
-public sealed record SetGhgPhasesCommand(string BodyPath, string TrendId, int Phases) : ICommand;
+public sealed record SetGhgPhasesCommand(string BodyPath, string TrendId, int Phases) : IDocumentEditCommand;

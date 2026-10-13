@@ -23,4 +23,4 @@ public sealed record AddGhgInfluenceCommand(
     GhgEnd? FromEnd,
     string ToId,
     GhgEnd? ToEnd,
-    string InfluenceId = "") : ICommand;
+    string InfluenceId = "") : IDocumentEditCommand;

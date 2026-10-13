@@ -30,6 +30,33 @@ public sealed record GhgModel(
     /// <summary>A document that declares nothing - the parser's answer to text it could not read at all.</summary>
     public static GhgModel Empty { get; } = new([], [], [], null);
 
+    /// <summary>The trend with <paramref name="id"/>: the first entry with it, as the canvas draws it.</summary>
+    public GhgTrend? TrendOf(string id) =>
+        Trends.FirstOrDefault(trend => string.Equals(trend.Id, id, StringComparison.Ordinal));
+
+    /// <summary>The trigger with <paramref name="id"/>: the first entry with it.</summary>
+    public GhgTrigger? TriggerOf(string id) =>
+        Triggers.FirstOrDefault(trigger => string.Equals(trigger.Id, id, StringComparison.Ordinal));
+
+    /// <summary>The note with <paramref name="id"/>: the first entry with it.</summary>
+    public GhgNote? NoteOf(string id) =>
+        Notes.FirstOrDefault(note => string.Equals(note.Id, id, StringComparison.Ordinal));
+
+    /// <summary>The influence with <paramref name="id"/>: the first entry with it.</summary>
+    public GhgInfluence? InfluenceOf(string id) =>
+        Influences.FirstOrDefault(influence => string.Equals(influence.Id, id, StringComparison.Ordinal));
+
+    /// <summary>Whether any entry of any list already has <paramref name="id"/>: ids are unique across all four.</summary>
+    public bool IsTaken(string id) =>
+        Trends.Any(trend => trend.Id == id) ||
+        Triggers.Any(trigger => trigger.Id == id) ||
+        Notes.Any(note => note.Id == id) ||
+        Influences.Any(influence => influence.Id == id);
+
+    /// <summary>Whether <paramref name="id"/> names a trend, a trigger or a note: something drawn as an element.</summary>
+    public bool IsElement(string id) =>
+        TrendOf(id) is not null || TriggerOf(id) is not null || NoteOf(id) is not null;
+
     /// <summary>The step the time axis is drawn in, never null.</summary>
     public GhgTimeUnit TimeUnit => Unit ?? GhgTimeUnit.Month;
 

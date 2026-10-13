@@ -3,29 +3,23 @@ using EtAlii.Adp.History;
 namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
 
 /// <summary>Rewrites a trend's or trigger's name, or a note's text.</summary>
-public sealed class RenameGhgElementCommandHandler(IGhgDocumentStore documents) : ICommandHandler<RenameGhgElementCommand>
+public sealed class RenameGhgElementCommandHandler(IGhgDocumentStore documents) : GhgEditHandler<RenameGhgElementCommand>(documents)
 {
     /// <inheritdoc />
-    public Task<CommandResult> ExecuteAsync(RenameGhgElementCommand command, CancellationToken cancellationToken = default)
+    protected override EditOutcome Apply(GhgBody document, GhgModel model, RenameGhgElementCommand command)
     {
-        ArgumentNullException.ThrowIfNull(command);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        return GhgEdits.Run(documents, command.BodyPath, command, (document, model) =>
+        if (model.TrendOf(command.ElementId) is { } trend)
         {
-            if (GhgEdits.TrendOf(model, command.ElementId) is { } trend)
-            {
-                return GhgWriter.SetName(document, trend, command.Name);
-            }
+            return GhgWriter.SetName(document, trend, command.Name);
+        }
 
-            if (GhgEdits.TriggerOf(model, command.ElementId) is { } trigger)
-            {
-                return GhgWriter.SetName(document, trigger, command.Name);
-            }
+        if (model.TriggerOf(command.ElementId) is { } trigger)
+        {
+            return GhgWriter.SetName(document, trigger, command.Name);
+        }
 
-            return GhgEdits.NoteOf(model, command.ElementId) is { } note
-                ? GhgWriter.SetText(document, note, command.Name)
-                : GhgEdits.Gone();
-        });
+        return model.NoteOf(command.ElementId) is { } note
+            ? GhgWriter.SetText(document, note, command.Name)
+            : GhgRefusals.Gone;
     }
 }

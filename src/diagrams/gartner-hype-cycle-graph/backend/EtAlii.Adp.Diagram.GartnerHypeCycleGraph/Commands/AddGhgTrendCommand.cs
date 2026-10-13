@@ -10,4 +10,4 @@ namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
 /// Empty to have one minted. The handler mints it ONCE and returns the minted command as the redo, so
 /// a redone trend keeps the id later commands refer to.
 /// </param>
-public sealed record AddGhgTrendCommand(string BodyPath, double X, double Y, string TrendId = "") : ICommand;
+public sealed record AddGhgTrendCommand(string BodyPath, double X, double Y, string TrendId = "") : IDocumentEditCommand;

@@ -11,4 +11,4 @@ namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
 /// A trend's move keeps the span, and shifts every stored boundary by exactly the months the trend
 /// moved (Requirement 3.5).
 /// </remarks>
-public sealed record SetGhgPlacementCommand(string BodyPath, string ElementId, double X, double Y) : ICommand;
+public sealed record SetGhgPlacementCommand(string BodyPath, string ElementId, double X, double Y) : IDocumentEditCommand;

@@ -2,6 +2,7 @@ using System.Text.Json;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Documents.Wire;
+using EtAlii.Adp.History;
 using EtAlii.Adp.Specification.Disl;
 
 namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
@@ -19,7 +20,7 @@ namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
 /// no call builds it twice.
 /// </para>
 /// <para>
-/// <b>An element is found by the id written in the document</b>, as <see cref="GhgEdits"/> finds it:
+/// <b>An element is found by the id written in the document</b>, as <see cref="GhgModel"/> finds it:
 /// the first trend with it, else the first trigger, else the first note, else the first influence. A
 /// later entry reusing an id, or one without an id, is told apart by FBL by its place; the client
 /// knows it by what is written, the binding's <c>storedId</c>.
@@ -85,7 +86,7 @@ internal static class GhgDefinition
             : WithUnresolvedEnds(element, [.. FormDerivation.Derive(Specification, element, Env(entry), Ids).Select(Row)]);
     }
 
-    /// <summary>The element <paramref name="id"/> names, as <see cref="GhgEdits"/> finds it; null for none.</summary>
+    /// <summary>The element <paramref name="id"/> names, as <see cref="GhgModel"/> finds it; null for none.</summary>
     public static DislElement? ElementOf(DislDiagram diagram, string id)
     {
         ArgumentNullException.ThrowIfNull(diagram);
@@ -113,18 +114,18 @@ internal static class GhgDefinition
     }
 
     /// <summary>Writes the changes of <paramref name="transaction"/> into <paramref name="document"/>, in order; the first refusal, the transaction's own or the binding's, stops it.</summary>
-    public static GhgEdit Apply(GhgBody document, DislTransaction transaction)
+    public static EditOutcome Apply(GhgBody document, DislTransaction transaction)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(transaction);
-        if (!transaction.WasApplied) return GhgEdit.Refused(transaction.Refusal!);
+        if (!transaction.WasApplied) return EditOutcome.Refused(transaction.Refusal!);
 
         foreach (var change in transaction.Changes)
         {
             var edit = document.Change(DislWrite.ToFbl(Specification, change));
             if (!edit.WasApplied) return edit;
         }
-        return GhgEdit.Applied;
+        return EditOutcome.Applied;
     }
 
     /// <summary>What <c>env</c> reads for an edit: true time, editable.</summary>

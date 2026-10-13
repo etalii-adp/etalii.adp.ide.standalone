@@ -3,24 +3,18 @@ using EtAlii.Adp.History;
 namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
 
 /// <summary>Rewrites a trend's or trigger's tags as one flow sequence line.</summary>
-public sealed class SetGhgTagsCommandHandler(IGhgDocumentStore documents) : ICommandHandler<SetGhgTagsCommand>
+public sealed class SetGhgTagsCommandHandler(IGhgDocumentStore documents) : GhgEditHandler<SetGhgTagsCommand>(documents)
 {
     /// <inheritdoc />
-    public Task<CommandResult> ExecuteAsync(SetGhgTagsCommand command, CancellationToken cancellationToken = default)
+    protected override EditOutcome Apply(GhgBody document, GhgModel model, SetGhgTagsCommand command)
     {
-        ArgumentNullException.ThrowIfNull(command);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        return GhgEdits.Run(documents, command.BodyPath, command, (document, model) =>
+        if (model.TriggerOf(command.TrendId) is { } trigger)
         {
-            if (GhgEdits.TriggerOf(model, command.TrendId) is { } trigger)
-            {
-                return GhgWriter.SetTags(document, trigger, command.Parsed);
-            }
+            return GhgWriter.SetTags(document, trigger, command.Parsed);
+        }
 
-            return GhgEdits.TrendOf(model, command.TrendId) is { } trend
-                ? GhgWriter.SetTags(document, trend, command.Parsed)
-                : GhgEdits.Gone();
-        });
+        return model.TrendOf(command.TrendId) is { } trend
+            ? GhgWriter.SetTags(document, trend, command.Parsed)
+            : GhgRefusals.Gone;
     }
 }
