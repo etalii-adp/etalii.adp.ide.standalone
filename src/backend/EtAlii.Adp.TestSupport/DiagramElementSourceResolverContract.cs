@@ -56,19 +56,25 @@ public abstract class DiagramElementSourceResolverContract : IDisposable
     private IContextSourceResolver Resolver => field ??= CreateResolver();
 
     /// <summary>
-    /// Renames <see cref="ElementId"/> in the body to <paramref name="name"/> and returns what a
+    /// Renames <see cref="ElementId"/> in <paramref name="body"/> to <paramref name="name"/> and returns what a
     /// selection of it shows afterwards: the <c>name:</c> under the element's <c>- id:</c> line is
-    /// rewritten, which fits every YAML document so far. A module of another shape makes this virtual.
+    /// rewritten, which fits every YAML document so far. A module of another shape overrides it.
     /// </summary>
-    private async Task<IReadOnlyList<string>> RenameAsync(string name, CancellationToken cancellationToken)
+    protected virtual async Task<IReadOnlyList<string>> RenameAsync(string body, string name, CancellationToken cancellationToken)
     {
-        var text = await File.ReadAllTextAsync(Body, cancellationToken);
+        var text = await File.ReadAllTextAsync(body, cancellationToken);
         var pattern = "(- id: " + Regex.Escape(ElementId) + "\\r?\\n(?:[ ]+.*\\r?\\n)*?[ ]+name: )[^\\r\\n]*";
         var renamed = Regex.Replace(text, pattern, match => match.Groups[1].Value + name, RegexOptions.None, TimeSpan.FromSeconds(1));
         Assert.NotEqual(text, renamed);
-        await File.WriteAllTextAsync(Body, renamed, cancellationToken);
+        await File.WriteAllTextAsync(body, renamed, cancellationToken);
         return [name];
     }
+
+    /// <summary>
+    /// The file a selection is made inside: the body itself, or, for a type that shares its extension
+    /// with others and so is routed only through its registration, the registration beside it.
+    /// </summary>
+    protected virtual string SelectedIn(string body) => body;
 
     private string CopyExample()
     {
@@ -176,21 +182,21 @@ public abstract class DiagramElementSourceResolverContract : IDisposable
         var tracking = Resolver.Track(level.Target.WatchId, _folder.Path, level, seen.Add);
 
         // Act: renamed while tracked, then renamed again after it was let go.
-        var renamed = await RenameAsync("Renamed once", cancellationToken);
+        var renamed = await RenameAsync(Body, "Renamed once", cancellationToken);
         Reload(Body);
         tracking.Dispose();
-        await RenameAsync("Renamed twice", cancellationToken);
+        await RenameAsync(Body, "Renamed twice", cancellationToken);
         Reload(Body);
 
         // Assert.
         Assert.Equal([renamed], seen);
     }
 
-    /// <summary>Resolves <paramref name="elementId"/> as selected inside <paramref name="file"/>, the body by default, at <paramref name="scope"/>.</summary>
+    /// <summary>Resolves <paramref name="elementId"/> as selected inside <paramref name="file"/>, <see cref="SelectedIn"/> the body by default, at <paramref name="scope"/>.</summary>
     protected Task<ContextLevelResolution> ResolveAsync(
         string elementId, IReadOnlyList<string>? clientPath = null, string? file = null, ContextScope scope = ContextScope.Hierarchy)
     {
-        file ??= Body;
+        file ??= SelectedIn(Body);
         var parent = new ContextResolvedLevel(
             new ContextSource(),
             [IoPath.GetFileName(file)],
