@@ -30,6 +30,24 @@ What the run showed that the design depends on:
 - Hover text is markdown and ends with a "Source:" link to the schema. The module shows it as text and drops that line.
 - The service's files name validators for draft-04, draft-07, 2019-09 and 2020-12. A reading of file names; the spike task holds one test per dialect.
 
+### What the spike recorded (task 1, 2026-10-12)
+
+Task 1 repeated the scratch run inside the repository, as tests that stay (`src/client/src/editors/spike/yamlLanguageService.spike.test.ts`), and once in a browser, with the alias of ruling A1 in place. Recorded here by a small amendment, as the task asks; the two performance rows are tasks 6 and 7's, recorded by the same amendment.
+
+| Question | Answer | Known |
+| --- | --- | --- |
+| Under `npm test`? | Yes. Ten tests green: only the schema the provider names is requested; findings per document of a two-document file, on their own lines; the finding kinds of the next row; a finding through an alias; key and value completions; hover text; one test per dialect (draft-04, draft-07, 2019-09, 2020-12). | Run |
+| Which fields tell the finding kinds apart? | **The service's own fields tell only two apart.** A parser finding has `source` `YAML`, a schema finding `source` `yaml-schema: <title>`, and both are severity 2. A deprecation (`deprecationMessage`) is a schema finding indistinguishable by any field from a violation; the standard `deprecated: true` is not read by the service at all. An alias with no anchor is severity 3 from `YAML`. A schema that cannot be read is one finding with `code` at or above `0x10000` (`SchemaResolveError`), and then nothing is validated. **So the module tells them apart itself**: it hands the service each schema with every deprecation message marked, and `deprecated: true` turned into such a message; YAML's own mistakes, the alias check included, come from the `yaml` parser's document (`yamlReading.ts`), and the service's `YAML` findings are dropped. | Run |
+| Where does a finding through an alias sit? | At the anchor only. The module copies it to each alias that reaches the value (6.3). | Run |
+| In a production build, in a browser? | Yes, with the alias. The built page, served statically, opened in headless Chromium 141 with a temporary route running the same calls; the console showed findings per document, a hover, key and value completions, and nothing from the service; its only errors were 501 answers to the shell's sign-in calls, as no backend served the build. **Without the alias the hover threw `a.basename is not a function`.** The route was removed before the pull request. | Run |
+| Which modules of Node were replaced? | `path` alone, imported by the service and by `@vscode/l10n`; the browser run found no other. `viteBrowserExternals.test.ts` fails when a build leaves any out; seen red with the alias removed. | Run |
+| What does it add? | **1,117,091 bytes minified, 301,725 gzipped**, as its own chunk loaded with `import()`. The shell's own bundle grew by 2,382 bytes (1,732,313 to 1,734,695), the temporary route's code, and not by the chunk. | Measured |
+| What the service does on its own that the module stops | It follows a `# yaml-language-server: $schema=` line itself, relative to the document's URI. The module blanks that line, keeping its length, in the text the service reads, so the schema is the one the shared resolver chose (5.1). | Run |
+| Which keys are required? | No field of a completion item says so. The service's skeleton item for the whole mapping holds exactly the required keys; the module reads them from it to put them first (7.1). | Run |
+| Findings in time (Performance) | 5,001-line document against a 2,015-line schema: 332 to 461 ms per analysis, so on screen 732 to 861 ms after the last keystroke, with the 400 ms pause. | Measured, Node in the cloud container, three runs |
+| A completion list in time (Performance) | First 291 to 526 ms, over the bound: the service validates the whole document to find the schemas at the caret. A document longer than 300 lines is now answered from the lines the caret's completion depends on (`completionWindow.ts`: the caret's line, the keys beside it with the first line of each one's value, and each line that opens a collection around it), held by tests to answer as the whole document does; then **64 to 109 ms**. | Measured, as above |
+
+
 ## Rulings asked
 
 | # | Requirement | What is asked | Options |

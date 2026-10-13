@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Editor\EtAlii.Adp.Editor.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Hosting.Abstractions" />
+    <PackageReference Include="Serilog" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- So the re-read retry can be guarded with a reader that refuses on demand: the window it
+         exists for is microseconds wide, and a test driving the real file system would only hit it
+         by luck. See YamlEditorSession.ReadWithRetry for the reasoning at the seam itself.
+
+         This is the house shape rather than a one-off: 21 other projects in this tree already open
+         their internals to their own test assembly this way, EtAlii.Adp.Documents, .Hierarchy,
+         .Context and every diagram module among them. -->
+    <InternalsVisibleTo Include="EtAlii.Adp.Editor.Yaml.Tests" />
+  </ItemGroup>
+
+</Project>

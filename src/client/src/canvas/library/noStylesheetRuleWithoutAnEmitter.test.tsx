@@ -552,7 +552,7 @@ describe("no stylesheet rule without something that draws it, and nothing drawn 
     // below true of nothing. Editors have no shipped examples and are out of scope, and so is a
     // designer: what is exported is the stream a diagram canvas receives, and a table has another.
     const diagramRegistrations = toolPanels.filter(
-      (registration) => registration.Panel !== undefined && !registration.matches("editor/markdown") && !registration.matches("editor/plain") && !registration.matches("editor/json") && !registration.matches("etalii/knowledge"),
+      (registration) => registration.Panel !== undefined && !registration.matches("editor/markdown") && !registration.matches("editor/plain") && !registration.matches("editor/json") && !registration.matches("editor/yaml") && !registration.matches("etalii/knowledge"),
     );
     expect(diagramRegistrations.length, "fewer diagram canvases are registered than when this was written").toBeGreaterThanOrEqual(19);
     expect(
