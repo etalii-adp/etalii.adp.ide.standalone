@@ -32,9 +32,9 @@ public class YamlWritingTests
         }]
         """);
 
-    private static FblBinding Load(string elements)
+    private static FblBinding Load(string elements, string version = "0.1")
     {
-        var json = $$"""{ "fbl": "0.1", "bindings": { "t": { "claims": { "extensions": [".t"] }, "body": { "kind": "file", "family": "yaml" }, "reader": "declared", "elements": {{elements}} } } }""";
+        var json = $$"""{ "fbl": "{{version}}", "bindings": { "t": { "claims": { "extensions": [".t"] }, "body": { "kind": "file", "family": "yaml" }, "reader": "declared", "elements": {{elements}} } } }""";
         var problems = FblDocumentLoader.Load(Encoding.UTF8.GetBytes(json), out var document);
         Assert.Empty(problems);
         return document!.Bindings["t"];
@@ -160,4 +160,49 @@ public class YamlWritingTests
         Assert.IsType<PlanResult.Planned>(result);
         Assert.Equal("items:\n  - id: a", Text(body));
     }
+
+    [Theory]
+    [InlineData("yes")]
+    [InlineData("007")]
+    [InlineData("~")]
+    public void ATextThatYamlWouldTypeIsWrittenQuotedAndReadsBackAsThatText(string text)
+    {
+        // Arrange: an attribute read as text, with no style asked for.
+        var body = OpenText("items:\n  - id: a\n");
+
+        // Act.
+        var result = body.Change(new ModelChange.Set("a", new Dictionary<string, object?> { ["label"] = text }));
+
+        // Assert: the plain-safe test of FBL §6.3 still holds, so a reader that types the value reads the same text.
+        Assert.IsType<PlanResult.Planned>(result);
+        Assert.Equal($"items:\n  - id: a\n    label: \"{text}\"\n", Text(body));
+        Assert.Equal(text, body.Model.Elements[0].Attributes["label"]);
+    }
+
+    [Fact]
+    public void ATextIsWrittenPlainWhenTheAttributeAsksForPlainAndReadsBackAsThatText()
+    {
+        // Arrange.
+        var body = OpenText("items:\n  - id: a\n");
+
+        // Act.
+        var result = body.Change(new ModelChange.Set("a", new Dictionary<string, object?> { ["word"] = "yes" }));
+
+        // Assert: read as text, "yes" is what the author wrote, so plain is what YAML's syntax allows.
+        Assert.IsType<PlanResult.Planned>(result);
+        Assert.Equal("items:\n  - id: a\n    word: yes\n", Text(body));
+        Assert.Equal("yes", body.Model.Elements[0].Attributes["word"]);
+    }
+
+    private static readonly FblBinding _text = Load("""
+        [{
+          "name": "item", "type": "Item", "at": "/items/*", "id": { "from": { "key": "id" } },
+          "attributes": {
+            "label": { "key": "label", "read": "text" },
+            "word": { "key": "word", "read": "text", "style": "plain" }
+          }
+        }]
+        """, "0.5");
+
+    private static OpenBody OpenText(string body) => OpenBody.Open(Encoding.UTF8.GetBytes(body), _text);
 }

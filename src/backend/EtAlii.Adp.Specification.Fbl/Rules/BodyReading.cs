@@ -466,6 +466,11 @@ internal sealed class BodyReading
             var read = ReadSlot(element.Candidate, binding, element);
             element.Slots[name] = read;
             object? value = read.Present ? read.Value : null;
+            // A slot read as text takes what the author wrote (FBL 0.5 §5.2), which a map then translates.
+            if (read is { Present: true, WrittenScalar: true } && !binding.Flag && Family is TreeFamily && ReadModes.Of(rule, name, binding, Options) == ReadMode.Text)
+            {
+                value = read.Written;
+            }
             if (read.Present && binding.Map is { } map && value is string wire)
             {
                 var mapped = map.FirstOrDefault(m => m.Key == wire);

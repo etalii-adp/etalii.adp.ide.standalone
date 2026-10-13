@@ -62,50 +62,25 @@ public class WrittenTextTests
     public void AScalarReadsAsWritten(string name)
     {
         // Arrange.
-        (string body, object? expected, Func<FblModel, object?> observe, OpenFinding? open) = Case(name);
+        (string body, object? expected, Func<FblModel, object?> observe) = Case(name);
 
         // Act.
         var observed = observe(Read(body));
 
-        // Assert: an open finding still reads as it does today, until the task that repairs it.
-        if (open is not null)
-        {
-            Assert.Equal(open.Today, observed);
-            Assert.NotEqual(expected, observed);
-        }
-        else
-        {
-            Assert.Equal(expected, observed);
-        }
+        // Assert: since task 4, every case reads as FBL 0.5 says, so no open finding is marked any more.
+        Assert.Equal(expected, observed);
     }
 
-    /// <summary>
-    /// Task 5, the last that changes a reading, makes this assert that no mark is left; until then
-    /// each mark names the task that repairs it.
-    /// </summary>
-    [Fact]
-    public void EveryOpenFindingNamesTheTaskThatRepairsIt()
-    {
-        // Act.
-        var marks = _names.Select(n => Case(n).Open).OfType<OpenFinding>().ToList();
-
-        // Assert.
-        Assert.All(marks, mark => Assert.Equal(4, mark.RepairedBy));
-    }
-
-    /// <summary>A case of Requirement 1.1 the library does not yet read as FBL 0.5 says: what it reads today, and which task of fbl-written-text repairs it.</summary>
-    private sealed record OpenFinding(object? Today, int RepairedBy);
-
-    private static (string Body, object? Expected, Func<FblModel, object?> Observe, OpenFinding? Open) Case(string name) => name switch
+    private static (string Body, object? Expected, Func<FblModel, object?> Observe) Case(string name) => name switch
     {
         // Green against the untouched library: it reads yaml by the 1.2 core schema, where yes is a string.
-        "label yes" => ("items:\n  - id: a\n    label: yes\n", "yes", m => m.Find("a")!.Attributes["label"], null),
-        "label 1.0" => ("items:\n  - id: a\n    label: 1.0\n", "1.0", m => m.Find("a")!.Attributes["label"], new OpenFinding(1.0, 4)),
-        "label null" => ("items:\n  - id: a\n    label: null\n", "null", m => m.Find("a")!.Attributes["label"], new OpenFinding(null, 4)),
-        "label ~" => ("items:\n  - id: a\n    label: ~\n", "~", m => m.Find("a")!.Attributes["label"], new OpenFinding(null, 4)),
-        "id 007" => ("items:\n  - id: 007\n    label: Seven\n", "007", m => m.Elements.Single().Id, null),
+        "label yes" => ("items:\n  - id: a\n    label: yes\n", "yes", m => m.Find("a")!.Attributes["label"]),
+        "label 1.0" => ("items:\n  - id: a\n    label: 1.0\n", "1.0", m => m.Find("a")!.Attributes["label"]),
+        "label null" => ("items:\n  - id: a\n    label: null\n", "null", m => m.Find("a")!.Attributes["label"]),
+        "label ~" => ("items:\n  - id: a\n    label: ~\n", "~", m => m.Find("a")!.Attributes["label"]),
+        "id 007" => ("items:\n  - id: 007\n    label: Seven\n", "007", m => m.Elements.Single().Id),
         // The element named is written quoted, so its id is "007" whatever is read; the reference is written plain.
-        "reference 007" => ("items:\n  - id: \"007\"\ntasks:\n  - id: b\n    owner: 007\n", "", m => string.Join(" ", m.Findings.Select(f => f.Message)), null),
+        "reference 007" => ("items:\n  - id: \"007\"\ntasks:\n  - id: b\n    owner: 007\n", "", m => string.Join(" ", m.Findings.Select(f => f.Message))),
         _ => throw new ArgumentOutOfRangeException(nameof(name), name, null),
     };
 
