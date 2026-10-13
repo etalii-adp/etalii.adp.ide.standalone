@@ -123,6 +123,27 @@ public sealed class SupplyChainSessionTests : IDisposable
         Assert.Equal(before.NodeBoxes["kolwezi-cobalt"].Y - 30, cobalt.Y);
     }
 
+    [Fact]
+    public async Task ADisposedSession_HearsNoMoreSelections_WhileAnOpenOneDoes()
+    {
+        // Arrange.
+        var closed = Open();
+        await using var open = Open();
+        closed.Baseline();
+        open.Baseline();
+        var heardClosed = Watch(closed);
+        var heardOpen = Watch(open);
+        await closed.DisposeAsync();
+
+        // Act.
+        using var selection = _selections.Select(_watchId, _folder.Body, "pack-assembly");
+
+        // Assert: the open one hears it, and by then the closed one has had its chance.
+        Assert.NotEmpty(Changed(await Next(heardOpen)));
+        await Task.Delay(200, TestContext.Current.CancellationToken);
+        Assert.False(heardClosed.Task.IsCompleted);
+    }
+
     private SupplyChainSession Open() => new(_watchId, _folder.Body, _store, new SupplyChainElementMapper(), _selections);
 
     private static TaskCompletionSource<DiagramDeltasEventArgs> Watch(SupplyChainSession session)
