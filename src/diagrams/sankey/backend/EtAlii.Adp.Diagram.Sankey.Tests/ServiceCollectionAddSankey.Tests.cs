@@ -36,7 +36,7 @@ public sealed class ServiceCollectionAddSankeyTests
         var services = new ServiceCollection();
         services.AddSankey();
         services.AddSingleton(TestHistory.For(_ => { }));
-        using var provider = services.BuildServiceProvider();
+        await using var provider = services.BuildServiceProvider();
         var factory = new DiagramSessionFactories(provider.GetServices<IDiagramSessionFactory>()).Find(Diagram.Sankey.Origin)!;
 
         // Act.
