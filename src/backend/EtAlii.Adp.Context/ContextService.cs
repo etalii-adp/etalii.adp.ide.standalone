@@ -149,18 +149,21 @@ public sealed partial class ContextService : Wire.ContextService.ContextServiceB
             var projectActions = await _contextActionResolver.DiscoverAsync(
                 HistoryActionsBroadcaster.ProjectTarget(rootPath), cancellationToken);
 
-            // An open project's problems stay current without anyone asking: the maintenance
-            // watcher follows its files, and if the startup pass is still working through the
-            // backlog this project's turn moves to the front - its freshness is the one the
-            // user can see (errors-and-warnings-panel Requirements 4.2, 5).
-            _watchHooks.ProjectWatched(rootPath);
-
             // Registering writes the baseline first, so a late subscriber is consistent
             // before anything else can arrive. The problems ride along as data: only the
             // broadcaster knows both stores.
             _selectionStore.Register(watchId, rootPath, channel.Writer, rootActions, projectActions, _watchHooks.CurrentFor(rootPath));
             _contextInteractionStore.Register(watchId, channel.Writer);
             registered = true;
+
+            // An open project's problems stay current without anyone asking: the maintenance
+            // watcher follows its files, and the project's validation moves to the front of the
+            // background queue - joining it when the project was never validated - because its
+            // freshness is the one the user can see (errors-and-warnings-panel Requirements 4.2,
+            // 5). After the registration, so the baseline is always what was known before and
+            // that validation's answer always arrives as a push behind it.
+            _watchHooks.ProjectWatched(rootPath);
+
             _logger.Information(
                 "Context stream open on watch {WatchId} for project {ProjectId}, with {GroupCount} root action groups",
                 watchId,
