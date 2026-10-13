@@ -63,13 +63,15 @@ public class ContextSelectionFlowTests(HostFixture host) : IClassFixture<HostFix
         _ = await ReadSelectionAsync(stream, cancellationToken);
         while (await stream.MoveNext(cancellationToken))
         {
-            if (stream.Current.MessageCase == ContextMessage.MessageOneofCase.Problems)
+            // Past the NEVER_VALIDATED baseline to the answer of the validation that opening the
+            // project starts, so nothing that validation pushes arrives during the test itself.
+            if (stream.Current.MessageCase == ContextMessage.MessageOneofCase.Problems && stream.Current.Problems.State == ProblemSetState.Validated)
             {
                 return;
             }
         }
 
-        throw new InvalidOperationException("The stream ended before the problems baseline arrived.");
+        throw new InvalidOperationException("The stream ended before the project's first validation arrived.");
     }
 
     [Fact]

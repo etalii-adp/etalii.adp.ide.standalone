@@ -30,4 +30,4 @@ EDSL, the editor specification language, is a placeholder in [etalii.adp](https:
 | The size past which nothing is checked | `client/yamlAnalysis.ts` (`largestChecked`) |
 | That nothing the editor reads is written back, and the file's encoding, BOM and line endings are kept | `backend/EtAlii.Adp.Editor.Yaml/YamlEditorSession.cs` on the shared `TextFileBuffer`; `client/nothingWrittenBack.test.tsx` |
 
-This list is to be added to the EDSL issue in etalii.adp that the JSON editor opens, or to a new issue linked from it; the link goes here once it is posted.
+This list is posted in [etalii-adp/etalii.adp#154](https://github.com/etalii-adp/etalii.adp/issues/154), the issue that collects every editor's EDSL list (opened 2026-10-13 on Peter's ruling).
