@@ -24,7 +24,7 @@ public class AbmDerivedMenusTests
     public void EveryMenu_IsTheHandWrittenOne(string name)
     {
         // Arrange.
-        var readable = AbmDocumentEntry.Read(Texts().Single(document => document.Name == name).Text);
+        var readable = AbmEntries.Read(Texts().Single(document => document.Name == name).Text);
         var unreadable = readable with { Unreadable = "parity: unreadable" };
 
         // Act and assert.
@@ -46,7 +46,7 @@ public class AbmDerivedMenusTests
     public void EveryRow_IsTheHandWrittenOne(string name)
     {
         // Arrange.
-        var readable = AbmDocumentEntry.Read(Texts().Single(document => document.Name == name).Text);
+        var readable = AbmEntries.Read(Texts().Single(document => document.Name == name).Text);
         var unreadable = readable with { Unreadable = "parity: unreadable" };
 
         // Act and assert.

@@ -379,13 +379,13 @@ internal static class AbmTranscript
     /// <summary>The store's own entries, each marked as unreadable: the backend's one read-only case.</summary>
     private sealed class ReadOnlyStore(IAbmDocumentStore inner) : IAbmDocumentStore
     {
-        public event EventHandler<AbmDocumentChangedEventArgs>? Changed
+        public event EventHandler<DocumentChangedEventArgs>? Changed
         {
             add => inner.Changed += value;
             remove => inner.Changed -= value;
         }
 
-        public AbmDocumentEntry GetOrLoad(string path) => inner.GetOrLoad(path) with { Unreadable = "parity: read-only" };
+        public DocumentEntry<AbmBody, AbmModel> GetOrLoad(string path) => inner.GetOrLoad(path) with { Unreadable = "parity: read-only" };
 
         public DocumentSaveResult Save(string path, AbmBody document) => inner.Save(path, document);
 
