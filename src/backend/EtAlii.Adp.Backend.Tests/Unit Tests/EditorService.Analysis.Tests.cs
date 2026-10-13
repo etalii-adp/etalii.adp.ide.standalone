@@ -149,7 +149,7 @@ public sealed class EditorServiceAnalysisTests : IDisposable
 
         // Assert.
         Assert.Equal("Checking stopped: The reader broke.", response.Error);
-        var logged = Assert.Single(events.Where(logEvent => logEvent.Level == LogEventLevel.Error)).RenderMessage(CultureInfo.InvariantCulture);
+        var logged = Assert.Single(events, logEvent => logEvent.Level == LogEventLevel.Error).RenderMessage(CultureInfo.InvariantCulture);
         Assert.Contains("notes.txt", logged, StringComparison.Ordinal);
         Assert.DoesNotContain("secret text", logged, StringComparison.Ordinal);
     }

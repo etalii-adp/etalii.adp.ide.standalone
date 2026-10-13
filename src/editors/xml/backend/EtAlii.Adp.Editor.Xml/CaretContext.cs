@@ -111,7 +111,7 @@ internal sealed record CaretContext(
         }
 
         var name = content[first..nameEnd];
-        var (attributes, closed, caretAttribute, inValue, valueFrom, valueTo) = ScanAttributes(content, nameEnd, offset);
+        (List<WrittenAttribute> attributes, bool closed, WrittenAttribute? caretAttribute, bool inValue, int valueFrom, int valueTo) = ScanAttributes(content, nameEnd, offset);
         if (offset <= nameEnd)
         {
             return Nowhere with
@@ -133,17 +133,7 @@ internal sealed record CaretContext(
 
         if (inValue)
         {
-            return Nowhere with
-            {
-                Kind = CaretKind.AttributeValue,
-                Cut = open,
-                From = valueFrom,
-                To = valueTo,
-                ElementName = name,
-                IsWrittenTag = closed,
-                Attributes = attributes,
-                AttributeName = caretAttribute?.Name ?? "",
-            };
+            return new CaretContext(CaretKind.AttributeValue, open, valueFrom, valueTo, name, closed, attributes, caretAttribute?.Name ?? "");
         }
 
         // Between attributes, or on the name of one: only there is an attribute name offered.

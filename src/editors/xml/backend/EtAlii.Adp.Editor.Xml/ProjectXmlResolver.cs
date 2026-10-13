@@ -65,7 +65,7 @@ internal sealed class ProjectXmlResolver : XmlResolver
         };
     }
 
-    public override object? GetEntity(Uri absoluteUri, string? role, Type? ofObjectToReturn)
+    public override object GetEntity(Uri absoluteUri, string? role, Type? ofObjectToReturn)
     {
         ArgumentNullException.ThrowIfNull(absoluteUri);
 

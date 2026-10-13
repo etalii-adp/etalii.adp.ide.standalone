@@ -82,7 +82,7 @@ public class ExpectedAtTheCaretTests
     public void TheValidator_AnswersTheElementsExpected_ForADocumentThatStopsAtTheCaret(string caret, string before, string[] expected)
     {
         // Arrange and act.
-        var answered = Feed(CitiesSchema, before, out _).ExpectedElements();
+        var answered = Feed(CitiesSchema, before).ExpectedElements();
 
         // Assert: the design's table, run again as a test.
         Assert.True(expected.SequenceEqual(answered), $"{caret}: expected [{string.Join(", ", expected)}], answered [{string.Join(", ", answered)}]");
@@ -92,7 +92,7 @@ public class ExpectedAtTheCaretTests
     public void TheValidator_AnswersTheAttributesExpected_WhenNoneIsPresent()
     {
         // Arrange: the start tag of city is fed with no attribute.
-        var fed = Feed(CitiesSchema, Root + "<title>T</title>", out _);
+        var fed = Feed(CitiesSchema, Root + "<title>T</title>");
         var validator = fed.Validator;
         validator.ValidateElement("city", Namespace, null);
 
@@ -108,7 +108,7 @@ public class ExpectedAtTheCaretTests
     public void TheValidator_LeavesOutAnAttributeAlreadyPresent()
     {
         // Arrange.
-        var fed = Feed(CitiesSchema, Root + "<title>T</title>", out _);
+        var fed = Feed(CitiesSchema, Root + "<title>T</title>");
         var validator = fed.Validator;
         validator.ValidateElement("city", Namespace, null);
         validator.ValidateAttribute("kind", "", "town", null);
@@ -138,7 +138,7 @@ public class ExpectedAtTheCaretTests
             """;
 
         // Act.
-        var particles = Feed(schema, "<box><label>L</label>", out _).Validator.GetExpectedParticles();
+        var particles = Feed(schema, "<box><label>L</label>").Validator.GetExpectedParticles();
 
         // Assert: the wildcard comes back as XmlSchemaAny, which completion leaves out.
         Assert.Contains(particles, particle => particle is XmlSchemaAny);
@@ -165,7 +165,7 @@ public class ExpectedAtTheCaretTests
             """;
 
         // Act.
-        var answered = Feed(schema, "<drawing>", out _).ExpectedElements();
+        var answered = Feed(schema, "<drawing>").ExpectedElements();
 
         // Assert: the platform expands the group itself, so completion offers every member
         // with no lookup of its own.
@@ -197,8 +197,8 @@ public class ExpectedAtTheCaretTests
             """;
 
         // Act.
-        var first = Feed(schema, "<home>", out _).ExpectedElements();
-        var second = Feed(schema, "<home><name>N</name>", out _).ExpectedElements();
+        var first = Feed(schema, "<home>").ExpectedElements();
+        var second = Feed(schema, "<home><name>N</name>").ExpectedElements();
 
         // Assert.
         Assert.Equal(["name"], first);
@@ -245,7 +245,7 @@ public class ExpectedAtTheCaretTests
     {
         // Arrange: an XSD of at least 2,000 lines and a document of at least 5,000 that
         // satisfies it, the sizes of Requirement 1.2.
-        var (schemaText, documentText) = LargeSchemaAndDocument();
+        (string schemaText, string documentText) = LargeSchemaAndDocument();
         Assert.True(schemaText.Split('\n').Length >= 2_000);
         Assert.True(documentText.Split('\n').Length >= 5_000);
         const int runs = 20;
@@ -341,7 +341,7 @@ public class ExpectedAtTheCaretTests
     }
 
     /// <summary>What was fed, and the validator left at the caret.</summary>
-    private sealed record Fed(XmlSchemaValidator Validator, XmlSchemaSet Schemas)
+    private sealed record Fed(XmlSchemaValidator Validator)
     {
         public string[] ExpectedElements() => Validator.GetExpectedParticles()
             .OfType<XmlSchemaElement>()
@@ -350,10 +350,9 @@ public class ExpectedAtTheCaretTests
             .ToArray();
     }
 
-    private static Fed Feed(string schemaText, string before, out XmlSchemaSet schemas)
+    private static Fed Feed(string schemaText, string before)
     {
-        schemas = Compile(schemaText);
-        return Feed(schemas, before);
+        return Feed(Compile(schemaText), before);
     }
 
     /// <summary>
@@ -399,7 +398,7 @@ public class ExpectedAtTheCaretTests
                         }
 
                         validator.ValidateElement(reader.LocalName, reader.NamespaceURI, null);
-                        foreach (var (local, ns, value) in attributes)
+                        foreach ((string local, string ns, string value) in attributes)
                         {
                             validator.ValidateAttribute(local, ns, value, null);
                         }
@@ -433,6 +432,6 @@ public class ExpectedAtTheCaretTests
             // stands where the last event left it.
         }
 
-        return new Fed(validator, schemas);
+        return new Fed(validator);
     }
 }

@@ -17,10 +17,10 @@ internal static class XmlReaders
     /// The most characters entities may expand to in one document: a document built to expand
     /// without end is refused with the platform's sentence rather than read (xml-editor Q4).
     /// </summary>
-    public const long MaximumCharactersFromEntities = 1_000_000;
+    private const long MaximumCharactersFromEntities = 1_000_000;
 
     /// <summary>The most characters a document may hold once read: ten times the most a request may carry.</summary>
-    public const long MaximumCharactersInDocument = 10_000_000;
+    private const long MaximumCharactersInDocument = 10_000_000;
 
     /// <summary>A reader over <paramref name="content"/>, the file at <paramref name="fullPath"/> as typed.</summary>
     public static XmlReader Document(string content, string fullPath, ProjectXmlResolver resolver, Action<XmlReaderSettings>? configure = null)

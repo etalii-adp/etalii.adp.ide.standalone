@@ -13,8 +13,8 @@ namespace EtAlii.Adp.Editor.Xml;
 /// </summary>
 internal static class XmlCompletion
 {
-    public const string NamespaceNotDeclared = "namespace not declared";
-    public const string Required = "required";
+    private const string NamespaceNotDeclared = "namespace not declared";
+    private const string Required = "required";
 
     /// <summary>A boost that sorts required attributes above the rest (Requirement 7.2).</summary>
     private const int RequiredBoost = 10;
@@ -71,7 +71,7 @@ internal static class XmlCompletion
                 continue;
             }
 
-            var (name, detail) = Named(element.QualifiedName, fed.Scopes);
+            (string name, string detail) = Named(element.QualifiedName, fed.Scopes);
             var insert = caret.IsWrittenTag ? name : ElementInsert(name, element, fed.Scopes, typedOpen);
             items.Add(new TextCompletion(name, detail, Documentation(element, element.ElementSchemaType), caret.From, caret.To, insert));
         }
@@ -97,7 +97,7 @@ internal static class XmlCompletion
         // not by this schema, and are no suggestion of it.
         foreach (var attribute in fed.Validator.GetExpectedAttributes().Where(attribute => attribute.QualifiedName.Namespace != XmlSchema.InstanceNamespace))
         {
-            var (name, detail) = Named(attribute.QualifiedName, fed.Scopes);
+            (string name, string detail) = Named(attribute.QualifiedName, fed.Scopes);
             if (written.Contains(name))
             {
                 continue;
@@ -188,7 +188,7 @@ internal static class XmlCompletion
         {
             foreach (var attribute in complex.AttributeUses.Values.OfType<XmlSchemaAttribute>().Where(attribute => attribute.Use == XmlSchemaUse.Required))
             {
-                var (attributeName, _) = Named(attribute.QualifiedName, scopes);
+                (string attributeName, _) = Named(attribute.QualifiedName, scopes);
                 insert.Append(CultureInfo.InvariantCulture, $" {attributeName}=\"${{{stop++}}}\"");
             }
 
@@ -357,7 +357,7 @@ internal static class XmlCompletion
 
                     var info = new XmlSchemaInfo();
                     Validator.ValidateElement(reader.LocalName, reader.NamespaceURI, info);
-                    foreach (var (local, ns, value) in attributes)
+                    foreach ((string local, string ns, string value) in attributes)
                     {
                         Validator.ValidateAttribute(local, ns, value, null);
                     }

@@ -21,25 +21,24 @@ internal static partial class SchemaValidation
     {
         var findings = new List<TextFinding>();
         var starts = new Stack<int>();
-        var lastText = (From: -1, To: -1);
-        XmlReader? reader = null;
+        var reading = new Reading();
 
         void OnEvent(object? sender, ValidationEventArgs args)
         {
             var exception = args.Exception;
             var at = positions.Offset(exception.LineNumber, exception.LinePosition);
-            var (from, to) = RangeOf(content, positions, at);
+            (int from, int to) = RangeOf(content, positions, at);
 
             if (AttributeValue().Match(exception.Message) is { Success: true } attribute)
             {
                 (from, to) = ValueAfter(content, at, attribute.Groups["name"].Value) ?? (from, to);
             }
-            else if (reader is { NodeType: XmlNodeType.EndElement } && starts.Count > 0)
+            else if (reading.Reader is { NodeType: XmlNodeType.EndElement } && starts.Count > 0)
             {
                 // Reported at the end tag: a missing child, or a value that does not fit. The
                 // value is marked where it is; anything else goes to the element's start tag.
-                (from, to) = ElementValue().IsMatch(exception.Message) && lastText.From >= 0
-                    ? lastText
+                (from, to) = ElementValue().IsMatch(exception.Message) && reading.LastText.From >= 0
+                    ? reading.LastText
                     : RangeOf(content, positions, starts.Peek());
             }
 
@@ -68,14 +67,14 @@ internal static partial class SchemaValidation
 
                 settings.ValidationEventHandler += OnEvent;
             });
-            reader = validating;
+            reading.Reader = validating;
             var lines = (IXmlLineInfo)validating;
             while (validating.Read())
             {
                 switch (validating.NodeType)
                 {
                     case XmlNodeType.Element:
-                        lastText = (-1, -1);
+                        reading.LastText = (-1, -1);
                         if (!validating.IsEmptyElement)
                         {
                             starts.Push(positions.Offset(lines.LineNumber, lines.LinePosition));
@@ -85,7 +84,7 @@ internal static partial class SchemaValidation
                     case XmlNodeType.Text:
                         var textFrom = positions.Offset(lines.LineNumber, lines.LinePosition);
                         var textTo = content.IndexOf('<', textFrom);
-                        lastText = Trimmed(content, textFrom, textTo < 0 ? content.Length : textTo);
+                        reading.LastText = Trimmed(content, textFrom, textTo < 0 ? content.Length : textTo);
                         break;
                 }
 
@@ -94,7 +93,7 @@ internal static partial class SchemaValidation
                 if (validating.NodeType == XmlNodeType.EndElement && starts.Count > 0)
                 {
                     starts.Pop();
-                    lastText = (-1, -1);
+                    reading.LastText = (-1, -1);
                 }
             }
         }
@@ -104,6 +103,17 @@ internal static partial class SchemaValidation
         }
 
         return findings;
+    }
+
+    /// <summary>
+    /// Where the reader is, for the validation events it raises: the events are handled inside a
+    /// read, and need the node being read and the text last seen in the element.
+    /// </summary>
+    private sealed class Reading
+    {
+        public XmlReader? Reader { get; set; }
+
+        public (int From, int To) LastText { get; set; } = (-1, -1);
     }
 
     /// <summary>The element name at <paramref name="offset"/>, past a <c>&lt;</c> or <c>&lt;/</c> the platform may point at.</summary>

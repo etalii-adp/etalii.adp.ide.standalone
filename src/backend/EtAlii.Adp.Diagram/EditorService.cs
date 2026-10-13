@@ -35,9 +35,9 @@ public sealed class EditorService : Editor.Wire.EditorService.EditorServiceBase
     /// </summary>
     public const int MaximumAnalyzedLength = 1_000_000;
 
-    public const string TooLarge = "Too large to check.";
+    private const string TooLarge = "Too large to check.";
     public const string NoFile = "The file no longer exists.";
-    public const string NoAnalysis = "This editor has no analysis.";
+    private const string NoAnalysis = "This editor has no analysis.";
 
     public EditorService(IProjectStore projectStore, IHistoryStackStore historyStacks, EditorAnalyzers analyzers)
         : this(projectStore, historyStacks, analyzers, Log.ForContext<EditorService>())
@@ -148,7 +148,8 @@ public sealed class EditorService : Editor.Wire.EditorService.EditorServiceBase
         ServerCallContext context,
         out string rootPath,
         out string fullPath,
-        [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out IEditorAnalyzer? analyzer,
+        [System.Diagnostics.CodeAnalysis.NotNullWhen(true)]
+        out IEditorAnalyzer? analyzer,
         out string refusal)
     {
         analyzer = null;

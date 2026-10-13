@@ -9,8 +9,8 @@ namespace EtAlii.Adp.Editor.Xml;
 /// </summary>
 public sealed class XmlAnalyzer : IEditorAnalyzer
 {
-    public const string NoSchema = "No schema";
-    public const string DtdChecked = "DTD: checked, no suggestions.";
+    private const string NoSchema = "No schema";
+    private const string DtdChecked = "DTD: checked, no suggestions.";
 
     private static readonly ILogger _logger = Log.ForContext<XmlAnalyzer>();
 

@@ -19,7 +19,7 @@ public class CaretContextTests
     public void TheKindOfPlace_IsToldFromTheText(string marked, string expected)
     {
         // Arrange.
-        var (text, offset) = Caret(marked);
+        (string text, int offset) = Caret(marked);
 
         // Act.
         var caret = CaretContext.At(text, offset);
@@ -38,7 +38,7 @@ public class CaretContextTests
     public void APlaceWhoseOwnSyntaxHidesTheDocument_IsUnknown(string marked)
     {
         // Arrange.
-        var (text, offset) = Caret(marked);
+        (string text, int offset) = Caret(marked);
 
         // Act.
         var caret = CaretContext.At(text, offset);
@@ -51,7 +51,7 @@ public class CaretContextTests
     public void AName_IsReplacedWhole_AndAWrittenTagIsSaidToBeWritten()
     {
         // Arrange: the caret in the middle of a name whose tag is already closed.
-        var (text, offset) = Caret("<library>\n  <bo|ok isbn=\"1\">\n");
+        (string text, int offset) = Caret("<library>\n  <bo|ok isbn=\"1\">\n");
 
         // Act.
         var caret = CaretContext.At(text, offset);
@@ -66,7 +66,7 @@ public class CaretContextTests
     public void ANameBeingTyped_IsNotAWrittenTag()
     {
         // Arrange.
-        var (text, offset) = Caret("<library>\n  <bo|\n</library>\n");
+        (string text, int offset) = Caret("<library>\n  <bo|\n</library>\n");
 
         // Act.
         var caret = CaretContext.At(text, offset);
@@ -80,7 +80,7 @@ public class CaretContextTests
     public void AnAttributeValue_IsReplacedWhole_AndTheAttributesOnBothSidesAreRead()
     {
         // Arrange.
-        var (text, offset) = Caret("<book isbn=\"1\" format=\"pa|per\" lent=\"x\">");
+        (string text, int offset) = Caret("<book isbn=\"1\" format=\"pa|per\" lent=\"x\">");
 
         // Act.
         var caret = CaretContext.At(text, offset);
@@ -96,13 +96,13 @@ public class CaretContextTests
     public void AValueLeftOpen_EndsAtItsLine_AndDoesNotSwallowTheRestOfTheDocument()
     {
         // Arrange.
-        var (text, offset) = Caret("<book format=\"pa|\n  <title>t</title>\n</book>\n");
+        (string text, int offset) = Caret("<book format=\"pa|\n  <title>t</title>\n</book>\n");
 
         // Act.
         var caret = CaretContext.At(text, offset);
 
         // Assert.
-        Assert.Equal(CaretKind.AttributeValue.ToString(), caret.Kind.ToString());
+        Assert.Equal(nameof(CaretKind.AttributeValue), caret.Kind.ToString());
         Assert.Equal("pa", text[caret.From..caret.To]);
     }
 

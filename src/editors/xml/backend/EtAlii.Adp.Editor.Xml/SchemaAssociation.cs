@@ -20,8 +20,8 @@ internal sealed partial record SchemaAssociation(
     bool IsSchema,
     IReadOnlyList<TextFinding> Unsupported)
 {
-    public const string XmlSchemaNamespace = "http://www.w3.org/2001/XMLSchema";
-    public const string InstanceNamespace = "http://www.w3.org/2001/XMLSchema-instance";
+    private const string XmlSchemaNamespace = "http://www.w3.org/2001/XMLSchema";
+    private const string InstanceNamespace = "http://www.w3.org/2001/XMLSchema-instance";
 
     private static readonly Dictionary<string, string> SchemaLanguages = new(StringComparer.Ordinal)
     {
@@ -56,7 +56,7 @@ internal sealed partial record SchemaAssociation(
             var lines = (IXmlLineInfo)reader;
             while (reader.Read())
             {
-                if (reader.NodeType == XmlNodeType.ProcessingInstruction && reader.Name == "xml-model")
+                if (reader is { NodeType: XmlNodeType.ProcessingInstruction, Name: "xml-model" })
                 {
                     var start = positions.Offset(lines.LineNumber, lines.LinePosition);
                     unsupported.Add(UnsupportedFinding(reader.Value, start, start + reader.Name.Length));
@@ -67,16 +67,16 @@ internal sealed partial record SchemaAssociation(
                     continue;
                 }
 
-                isSchema = reader.LocalName == "schema" && reader.NamespaceURI == XmlSchemaNamespace;
+                isSchema = reader is { LocalName: "schema", NamespaceURI: XmlSchemaNamespace };
                 if (reader.MoveToAttribute("noNamespaceSchemaLocation", InstanceNamespace))
                 {
-                    var (from, to) = ValueRange(content, positions.Offset(lines.LineNumber, lines.LinePosition));
+                    (int from, int to) = ValueRange(content, positions.Offset(lines.LineNumber, lines.LinePosition));
                     xsd.Add(new SchemaReference("", content[from..to].Trim(), from, to));
                 }
 
                 if (reader.MoveToAttribute("schemaLocation", InstanceNamespace))
                 {
-                    var (from, to) = ValueRange(content, positions.Offset(lines.LineNumber, lines.LinePosition));
+                    (int from, int to) = ValueRange(content, positions.Offset(lines.LineNumber, lines.LinePosition));
                     var words = Word().Matches(content[from..to]).ToArray();
                     for (var index = 0; index + 1 < words.Length; index += 2)
                     {

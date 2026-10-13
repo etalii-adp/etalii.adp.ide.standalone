@@ -32,7 +32,7 @@ internal static partial class WellFormedness
         }
         catch (XmlException exception)
         {
-            var (from, to) = positions.NameAt(exception.LineNumber, exception.LinePosition);
+            (int from, int to) = positions.NameAt(exception.LineNumber, exception.LinePosition);
 
             // A reference the resolver would not read stops the reader too - an external DTD's
             // entities cannot be known without it. That is not a mistake in this text, so it is

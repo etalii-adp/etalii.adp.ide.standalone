@@ -22,7 +22,7 @@ internal sealed class ExampleProject : IDisposable
 
     public string Root => _folder.Combine("project");
 
-    public XmlAnalyzer Analyzer { get; }
+    private XmlAnalyzer Analyzer { get; }
 
     public string PathOf(string name) => Path.Combine(Root, name);
 
