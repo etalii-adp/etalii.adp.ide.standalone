@@ -221,6 +221,31 @@ public sealed class FdgCommandsTests : IDisposable
     }
 
     /// <summary>
+    /// A drag the graph cannot place is refused in the graph's own words, and writes nothing: a
+    /// read-only session, a connection, which follows its ends, and a drop onto another parent.
+    /// </summary>
+    [Fact]
+    public async Task ADragTheGraphCannotPlace_IsRefusedInItsOwnWords_AndWritesNothing()
+    {
+        // Arrange.
+        using var historyStacks = new HistoryStackStore(_dispatcher);
+        await using var readOnly = new FdgSession(Body, _store, new FdgElementMapper());
+        await using var session = new FdgSession(Body, _store, new FdgElementMapper(), historyStacks.Get(_folder));
+        var connection = Parse().Connections[0].Id;
+
+        // Act.
+        var unhistoried = await readOnly.MoveElementToAsync("planning", 10, 20, TestContext.Current.CancellationToken);
+        var curve = await session.MoveElementToAsync(connection, 10, 20, TestContext.Current.CancellationToken);
+        var reparent = await session.MoveElementAsync("planning", "dispatch", 0, TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.Equal("This graph is read-only.", unhistoried);
+        Assert.Equal("That is not something this graph can move.", curve);
+        Assert.Equal("An element here has no parent to move it under; its parent is a connection, drawn from the parent to it.", reparent);
+        Assert.Equal(_original, await File.ReadAllBytesAsync(Body, TestContext.Current.CancellationToken));
+    }
+
+    /// <summary>
     /// A document that could not be read is never written: its emptiness is not the document, and
     /// writing it would replace the only copy on disk - the loss causal loop measured.
     /// </summary>
