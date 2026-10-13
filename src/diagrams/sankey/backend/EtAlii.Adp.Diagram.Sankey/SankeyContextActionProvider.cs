@@ -161,7 +161,7 @@ public sealed class SankeyContextActionProvider(IHistoryStackStore historyStacks
     }
 
     /// <inheritdoc />
-    protected override ContextValidationResult Validate(string actionId, string value) =>
+    protected override ContextValidationResult Validate(ContextTarget target, string actionId, string value) =>
         actionId == RenameActionId && string.IsNullOrWhiteSpace(value)
             ? ContextValidationResult.Rejected("A node needs a name.")
             : ContextValidationResult.Accepted;

@@ -128,11 +128,13 @@ public sealed class GhgContextActionProvider(IHistoryStackStore historyStacks, I
                 // The definition's deletion confirmation: how many influences go with it, asked before
                 // it runs; with none, no ceremony.
                 var id = target.ElementId;
-                var confirmation = GhgDefinition.ElementOf(entry.Document.Disl.Diagram, id) is { } element
+                var asked = GhgDefinition.ElementOf(entry.Document.Disl.Diagram, id) is { } element
                     ? DeletionPolicy.Confirmation(GhgDefinition.Specification, element, env: GhgDefinition.EditEnv)
                     : null;
-                return await RemoveAsync(target, new RemoveGhgElementCommand(body, id), confirmation is null ? null : new RemovalConfirmation(
-                    confirmation.Title, confirmation.Message, confirmation.ConfirmLabel, confirmation.Danger), cancellationToken);
+                var confirmation = asked is null
+                    ? null
+                    : new RemovalConfirmation(asked.Title, asked.Message, asked.ConfirmLabel, asked.Danger);
+                return await RemoveAsync(target, new RemoveGhgElementCommand(body, id), confirmation, cancellationToken);
             }
 
             case DisconnectActionId when model.InfluenceOf(target.ElementId) is not null:
