@@ -6,16 +6,11 @@ namespace EtAlii.Adp.Diagram.AgentActivityDiagram;
 /// The open activity files, one per path, shared by every connection viewing one.
 /// </summary>
 /// <remarks>
-/// <b>A marker, but for one save of its own.</b> Everything else a store does is declared by
-/// <see cref="IDiagramDocumentStore{TBody, TModel}"/>. Agents write an activity file while it is open,
-/// so every command saves its edit against the file as it is now (Requirement 8.6), which the shared
-/// store offers and this interface declares.
+/// <b>A marker.</b> Agents write an activity file while it is open, so every command saves its edit
+/// against the file as it is now (Requirement 8.6), which <see cref="IEditSavingDocumentStore{TBody, TModel}"/>
+/// declares and the shared store offers.
 /// </remarks>
-public interface IAadDocumentStore : IDiagramDocumentStore<AadBody, AadModel>
-{
-    /// <inheritdoc cref="LifecycleDocumentStore{TBody, TModel}.Save(string, DocumentEntry{TBody, TModel}, Func{TBody, string})"/>
-    DocumentEditSaved Save(string path, DocumentEntry<AadBody, AadModel> basis, Func<AadBody, string> edit);
-}
+public interface IAadDocumentStore : IEditSavingDocumentStore<AadBody, AadModel>;
 
 /// <summary>
 /// The activity file store: the shared store, told how a body reads through its binding, what it

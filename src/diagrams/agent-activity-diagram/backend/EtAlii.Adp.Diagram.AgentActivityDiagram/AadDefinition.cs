@@ -1,6 +1,7 @@
 using System.Text.Json;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents.Wire;
+using EtAlii.Adp.History;
 using EtAlii.Adp.Specification.Disl;
 
 namespace EtAlii.Adp.Diagram.AgentActivityDiagram;
@@ -198,11 +199,11 @@ internal static class AadDefinition
     public static string StoredGroup(string group) => TaskStatus.Find(group)?.Stored ?? group;
 
     /// <summary>Writes a transaction's changes into the body, stopping at the first the binding refuses.</summary>
-    public static AadEdit Apply(AadBody document, DislTransaction transaction)
+    public static EditOutcome Apply(AadBody document, DislTransaction transaction)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(transaction);
-        if (!transaction.WasApplied) return AadEdit.Refused(transaction.Refusal!);
+        if (!transaction.WasApplied) return EditOutcome.Refused(transaction.Refusal!);
 
         foreach (var change in transaction.Changes)
         {
@@ -210,7 +211,7 @@ internal static class AadDefinition
             if (!edit.WasApplied) return edit;
         }
 
-        return AadEdit.Applied;
+        return EditOutcome.Applied;
     }
 
     /// <summary>The menu the definition derives for an element, a row or a relation.</summary>

@@ -59,4 +59,39 @@ public static class DocumentEditRun
         var saved = documents.Save(bodyPath, copy);
         return CommandResult.FromSave(saved, new RestoreDocumentCommand<TStore>(bodyPath, before, self));
     }
+
+    /// <summary>
+    /// Edits the document at <paramref name="bodyPath"/> as <see cref="Run"/> does, but against the
+    /// file as it is when the edit is saved: where another program wrote it since it was read, the
+    /// edit is applied to what that program wrote.
+    /// </summary>
+    /// <remarks>
+    /// The undo restores the text the edit was applied to, and refuses once the file is no longer
+    /// what the edit left, so it never writes over a later change of the other program's.
+    /// </remarks>
+    /// <param name="self">The command being run: the redo of the undo this returns.</param>
+    public static CommandResult RunOnCurrent<TStore, TBody, TModel>(
+        TStore documents,
+        string bodyPath,
+        ICommand self,
+        Func<TBody, TModel> parse,
+        Func<TBody, TModel, EditOutcome> edit)
+        where TStore : IEditSavingDocumentStore<TBody, TModel>
+    {
+        ArgumentNullException.ThrowIfNull(documents);
+        ArgumentException.ThrowIfNullOrWhiteSpace(bodyPath);
+        ArgumentNullException.ThrowIfNull(self);
+        ArgumentNullException.ThrowIfNull(parse);
+        ArgumentNullException.ThrowIfNull(edit);
+
+        var entry = documents.GetOrLoad(bodyPath);
+        if (!entry.IsUsable)
+        {
+            return CommandResult.Failure(
+                $"{Path.GetFileName(bodyPath)} could not be read, so nothing can be edited until it can: {entry.Unreadable}");
+        }
+
+        var saved = documents.Save(bodyPath, entry, body => edit(body, parse(body)).Refusal ?? "");
+        return CommandResult.FromSave(saved.Result, new RestoreDocumentCommand<TStore>(bodyPath, saved.Before, self, saved.After));
+    }
 }
