@@ -1,5 +1,4 @@
 using EtAlii.Adp.Context;
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -14,18 +13,25 @@ public static class ServiceCollectionAddAgentActivityDiagramExtension
         ArgumentNullException.ThrowIfNull(services);
 
         // Without a document factory the host refuses to start: a type that declares an extension
-        // must be creatable from the Add dialog.
-        services.AddSingleton<IDiagramDocumentFactory, AadDocumentFactory>();
+        // must be creatable from the Add dialog. CRLF, the house style, since a new file has no
+        // style of its own to keep.
+        services.AddEmptyDocument(Diagram.AgentActivity.Origin, AadBody.EmptyDocument("\r\n"));
         services.AddSingleton<AadElementMapper>();
 
         // One document per path, shared by every connection viewing it. TryAdd rather than Add so a
         // test that registers its own store keeps it.
         services.TryAddSingleton<IAadDocumentStore, AadDocumentStore>();
-        services.AddSingleton<IDiagramSessionFactory, AadSessionFactory>();
+
+        // The project's history, so a drag is one undo away like every other edit.
+        services.AddDiagramSession(Diagram.AgentActivity.Origin, (provider, opening) => new AadSession(
+            opening.BodyPath,
+            provider.GetRequiredService<IAadDocumentStore>(),
+            provider.GetRequiredService<AadElementMapper>(),
+            provider.GetRequiredService<IHistoryStackStore>().Get(opening.RootPath)));
 
         // The reload seam: an agent's write to an .aad body reaches the store, and through it every
         // open session - and a deleted body reaches it as a deletion, not as a reload.
-        services.AddSingleton<IDiagramDocumentReloader, AadDocumentReloader>();
+        services.AddDiagramDocumentReloader<IAadDocumentStore>(Diagram.AgentActivity.Origin);
 
         // Selection: an element or a relation of an activity file resolves to a selection the panels read.
         services.AddSingleton<IContextSourceResolver, AadContextSourceResolver>();

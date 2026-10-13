@@ -44,7 +44,7 @@ public sealed class AadFindingsTests : IDisposable
         var text = Fixture(fixture);
 
         // Act.
-        var entry = AadDocumentEntry.Read(text);
+        var entry = AadEntries.Read(text);
         var problems = AadValidator.Validate(entry.Document);
 
         // Assert: said once, at its weight, on its line; everything readable is there; nothing is rewritten.
@@ -63,7 +63,7 @@ public sealed class AadFindingsTests : IDisposable
         var text = Fixture("wrong-type-reference");
 
         // Act.
-        var entry = AadDocumentEntry.Read(text);
+        var entry = AadEntries.Read(text);
         var problems = AadValidator.Validate(entry.Document);
         var drawn = new AadElementMapper().Visible(entry.Model, DiagramViewport.Unbounded);
 
@@ -81,7 +81,7 @@ public sealed class AadFindingsTests : IDisposable
     public void ARelationTheRulesAllow_IsNotMarked()
     {
         // Arrange.
-        var entry = AadDocumentEntry.Read(AadDocumentTests.Fixture("one-day.aad"));
+        var entry = AadEntries.Read(AadDocumentTests.Fixture("one-day.aad"));
 
         // Act.
         var relations = new AadElementMapper().Visible(entry.Model with { ShowArchived = true }, DiagramViewport.Unbounded)
