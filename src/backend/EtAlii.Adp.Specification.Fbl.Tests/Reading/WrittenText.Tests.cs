@@ -224,6 +224,24 @@ public class WrittenTextTests
         Assert.Equal(new Dictionary<string, object?> { ["007"] = "~", ["n"] = "x" }, (IDictionary<string, object?>)mapping.FlowText!);
     }
 
+    [Theory]
+    [InlineData("007", "agent")]
+    [InlineData("yes", "agreed")]
+    [InlineData("'007'", "agent")]
+    public void AMapTranslatesTheWrittenText(string written, string mapped)
+    {
+        // Arrange: typed, 007 is the number 7 and matches no key of the map.
+        const string elements = """[{ "name": "item", "type": "Item", "at": "/items/*", "id": { "from": { "key": "id" } }, "attributes": { "kind": { "key": "kind", "read": "text", "map": { "007": "agent", "yes": "agreed" } } } }]""";
+        var json = $$"""{ "fbl": "0.5", "bindings": { "t": { "claims": { "extensions": [".t"] }, "body": { "kind": "file", "family": "yaml" }, "reader": "declared", "elements": {{elements}} } } }""";
+        Assert.Empty(FblDocumentLoader.Load(Encoding.UTF8.GetBytes(json), out var document));
+
+        // Act.
+        var model = OpenBody.Open(Encoding.UTF8.GetBytes($"items:\n  - id: a\n    kind: {written}\n"), document!.Bindings["t"]).Model;
+
+        // Assert: the map is looked up by what the author wrote (FBL 0.5 §5.2, Requirement 2.5).
+        Assert.Equal(mapped, model.Find("a")!.Attributes["kind"]);
+    }
+
     [Fact]
     public void AFlowCollectionIsNotAWrittenScalar()
     {
