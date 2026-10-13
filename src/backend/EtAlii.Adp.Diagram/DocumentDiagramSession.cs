@@ -54,6 +54,9 @@ public abstract class DocumentDiagramSession<TBody, TModel> : IDiagramSession
     /// <summary>What a drag onto another parent answers; no document diagram has one to change.</summary>
     protected virtual string ParentRefusal => "This diagram cannot be rearranged by giving an element another parent.";
 
+    /// <summary>What a drag answers when the session was opened without the project's history.</summary>
+    protected virtual string ReadOnlyRefusal => "This diagram is read-only.";
+
     /// <inheritdoc />
     public IReadOnlyList<DiagramDelta> Baseline()
     {
@@ -86,7 +89,7 @@ public abstract class DocumentDiagramSession<TBody, TModel> : IDiagramSession
 
         if (_history is null)
         {
-            return "This diagram is read-only.";
+            return ReadOnlyRefusal;
         }
 
         var placement = PlacementOf(Model(), elementId, x, y);
