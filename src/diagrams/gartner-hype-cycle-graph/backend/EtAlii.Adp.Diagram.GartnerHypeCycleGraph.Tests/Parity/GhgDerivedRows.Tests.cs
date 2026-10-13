@@ -17,7 +17,7 @@ public class GhgDerivedRowsTests
     public void EveryRow_IsTheHandWrittenOne(string path)
     {
         // Arrange.
-        var readable = GhgDocumentEntry.Read(GhgDisl.Texts().Single(document => document.Path == path).Text);
+        var readable = GhgEntries.Read(GhgDisl.Texts().Single(document => document.Path == path).Text);
         var readOnly = readable with { Unreadable = "parity: read-only" };
 
         // Act and assert.

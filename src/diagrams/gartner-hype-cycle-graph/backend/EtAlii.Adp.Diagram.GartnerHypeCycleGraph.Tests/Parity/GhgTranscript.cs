@@ -427,13 +427,13 @@ internal static class GhgTranscript
     /// <summary>The store's own entries, each marked as unreadable: the backend's one read-only case.</summary>
     private sealed class ReadOnlyStore(IGhgDocumentStore inner) : IGhgDocumentStore
     {
-        public event EventHandler<GhgDocumentChangedEventArgs>? Changed
+        public event EventHandler<DocumentChangedEventArgs>? Changed
         {
             add => inner.Changed += value;
             remove => inner.Changed -= value;
         }
 
-        public GhgDocumentEntry GetOrLoad(string path) => inner.GetOrLoad(path) with { Unreadable = "parity: read-only" };
+        public DocumentEntry<GhgBody, GhgModel> GetOrLoad(string path) => inner.GetOrLoad(path) with { Unreadable = "parity: read-only" };
 
         public DocumentSaveResult Save(string path, GhgBody document) => inner.Save(path, document);
 
