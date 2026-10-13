@@ -42,7 +42,7 @@ One Developer owns this specification, per CLAUDE.md's one-owner-per-specificati
 
 ## The tasks
 
-- [ ] 1. Show the findings, and prove the written text of every scalar
+- [-] 1. Show the findings, and prove the written text of every scalar
   - Files: `src/backend/EtAlii.Adp.Specification.Fbl.Tests/Reading/WrittenText.Tests.cs` (new), `src/backend/EtAlii.Adp.Specification.Fbl.Tests/Yaml/YamlScalars.Tests.cs`, `src/backend/EtAlii.Adp.Specification.Fbl/Rules/FamilyReader.cs` (`SlotRead.Written`), `src/backend/EtAlii.Adp.Specification.Fbl/Rules/TreeFamily.cs` (`ReadMember`), `src/backend/EtAlii.Adp.Specification.Fbl/Files/Yaml/FlowReader.cs`, and `src/backend/EtAlii.Adp.Specification.Fbl/Files/Yaml/YamlParser.cs` or `src/backend/EtAlii.Adp.Specification.Fbl/Files/Json/JsonFamily.cs` only where a test shows the text is not FBL 4.1.5's
   - First commit: the test of Requirement 1.1 with the 0.5 expectations (a string attribute written `yes`, `1.0`, `null` and `~`, an id written `007`, a reference written `007`), run against the untouched library. Six red cases are expected, each for the measured reason: the values come back typed and the id comes back as `7`. Record the red run in the pull request.
   - A case that is green on that first run is a defect that does not occur. It is struck from the requirements as a small amendment through the Scrum master, with the test that shows it (Requirement 1.2), and never by an edit under a pending card.
