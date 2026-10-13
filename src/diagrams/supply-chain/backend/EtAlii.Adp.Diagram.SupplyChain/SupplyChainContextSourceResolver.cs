@@ -148,7 +148,7 @@ public sealed class SupplyChainContextSourceResolver : IContextSourceResolver
             selected?.Dispose();
         });
 
-        void OnChanged(object? sender, SupplyChainDocumentChangedEventArgs args)
+        void OnChanged(object? sender, DocumentChangedEventArgs args)
         {
             if (!string.Equals(args.Path, bodyPath, StringComparison.OrdinalIgnoreCase))
             {
