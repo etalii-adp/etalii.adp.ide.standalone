@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.SupplyChain;
@@ -116,7 +117,7 @@ public sealed class SupplyChainSession : IDiagramSession
     private void Raise(IReadOnlyList<DiagramDelta> deltas) =>
         Changed?.Invoke(this, new DiagramDeltasEventArgs(deltas));
 
-    private void OnDocumentChanged(object? sender, SupplyChainDocumentChangedEventArgs args) =>
+    private void OnDocumentChanged(object? sender, DocumentChangedEventArgs args) =>
         _changes.OnDocumentChanged(args.Path);
 
     private void OnSelectionChanged(object? sender, SupplyChainSelectionChangedEventArgs args)
