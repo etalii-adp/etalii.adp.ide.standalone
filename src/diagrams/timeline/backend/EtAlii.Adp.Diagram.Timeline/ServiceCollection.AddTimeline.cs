@@ -1,5 +1,4 @@
 using EtAlii.Adp.Context;
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -22,18 +21,30 @@ public static class ServiceCollectionAddTimelineExtension
     {
         ArgumentNullException.ThrowIfNull(services);
 
-        services.AddSingleton<IDiagramDocumentFactory, TimelineDocumentFactory>();
+        // The schema marker and an empty element list, and nothing else (Requirement 1.3): an empty
+        // timeline is a valid one, and a placeholder element would be the first thing every user
+        // deletes. The base name is not written - a timeline has no title line in its schema. CRLF,
+        // the house style, since a new file has no style of its own to keep.
+        services.AddEmptyDocument(Diagram.Timeline.Origin, "timeline: 1\r\nelements: []\r\n");
         services.AddSingleton<TimelineElementMapper>();
 
         // One document per path, shared by every connection viewing it. TryAdd rather than Add
         // so a test that registers its own store keeps it.
         services.TryAddSingleton<ITimelineDocumentStore, TimelineDocumentStore>();
 
-        services.AddSingleton<IDiagramSessionFactory, TimelineSessionFactory>();
+        // The registration file is ignored: a `generic/timeline` `.adp` carries nothing beyond its
+        // MIME line, and a bare `.tml` routes here with no registration at all (Requirement 1.2).
+        // The project's history, so a drag is one undo away like every other edit.
+        services.AddDiagramSession(Diagram.Timeline.Origin, (provider, opening) => new TimelineSession(
+            opening.BodyPath,
+            provider.GetRequiredService<ITimelineDocumentStore>(),
+            provider.GetRequiredService<TimelineElementMapper>(),
+            provider.GetRequiredService<IHistoryStackStore>().Get(opening.RootPath)));
 
         // The reload seam: an external write to a timeline reaches the store, and through it
-        // every open session (modular-text-editors Requirement 5.3).
-        services.AddSingleton<IDiagramDocumentReloader, TimelineDocumentReloader>();
+        // every open session (modular-text-editors Requirement 5.3) - and a deleted body reaches
+        // it as a deletion, not as a reload.
+        services.AddDiagramDocumentReloader<ITimelineDocumentStore>(Diagram.Timeline.Origin);
 
         // The commands, one handler each: the whole editable surface of a timeline
         // (Requirement 11.1), and nothing writes the file except through them.
