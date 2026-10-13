@@ -129,7 +129,7 @@ import "./dependency-graph.css";
 
 ## Editor analysis and schemas
 
-**Declarations:** `EditorAnalysis`, `EditorFinding`, `EditorFindingSeverity`, `EditorCompletion`, `EditorCompletionList`, `EditorHover`, `editorHighlight`, `SchemaFiles`, `SchemaFile`, `schemaFileKey`, `resolveSchemaReference`
+**Declarations:** `EditorAnalysis`, `EditorFinding`, `EditorFindingSeverity`, `EditorCompletion`, `EditorCompletionList`, `EditorHover`, `editorHighlight`, `SchemaFiles`, `SchemaFile`, `schemaFileKey`, `resolveSchemaReference`, `useAuth`
 
 **What it is for.** An editor module tells `TextEditorPanel` what it knows about its format through one asynchronous interface, and the panel draws everything: the underlines, the gutter marks, the counts on the status line, the completion list and the hover text. A module never draws any of them itself, so JSON, YAML and XML look and behave alike.
 
@@ -139,7 +139,9 @@ import "./dependency-graph.css";
 
 `SchemaFiles` is a component that renders nothing: given the paths a document's schema references lead to, it reads each file over the tab's existing stream and reports every arrival, change and failure as a new map of `SchemaFile` (`loading`, `loaded` with its text and revision, or `failed` with its reason), keyed by `schemaFileKey` of the path. `resolveSchemaReference` decides where a reference points, before any URL arithmetic: a file of the project, a bundled schema, or no file with the reason, refusing a `..` that steps above the project root and anything with a scheme it does not bundle.
 
-Source: [`src/editors/json/client/JsonEditorPanel.tsx`](../src/editors/json/client/JsonEditorPanel.tsx)
+A module that marks a token of its own reads a class from `editorHighlight` (`editorHighlight.style([tags.namespace])`, as the XML editor does for a prefix) rather than writing a colour. A module whose checking is in the backend implements `EditorAnalysis` over the family's `Analyze` and `Complete` calls of `EditorService`, made on the `transport` that `useAuth` gives; see *Asking the backend about the text* in [creating-an-editor-module.md](creating-an-editor-module.md).
+
+Source: [`src/editors/json/client/JsonEditorPanel.tsx`](../src/editors/json/client/JsonEditorPanel.tsx), [`src/editors/xml/client/XmlEditorPanel.tsx`](../src/editors/xml/client/XmlEditorPanel.tsx)
 
 **The guards.** `resolveSchemaReference` is held to `src/fixtures/schema-reference-cases.json`, the cases the XML editor's C# twin is held to as well. `src/client/src/editors/analysisExtensions.test.tsx` checks that each severity carries a line style and a gutter mark as well as a colour.
 
@@ -172,7 +174,7 @@ export function useDependencyGraphStream(projectId: Uint8Array, path: readonly s
 
 **An element naming no declared type renders as a visible fallback box** rather than disappearing — a mapping bug shown, not hidden.
 
-**Authentication is not part of this surface.** `useAuth` is reached by several modules' *test* files to build an authenticated client, and by no module's production code. It is therefore outside the computed surface and carries no entry here; a module that finds itself needing it in production code is doing something this document does not cover, and that is the signal rather than an omission.
+**Authentication is not part of this surface.** `useAuth` is reached by several modules' *test* files to build an authenticated client, and in production code only by the XML editor, for the `transport` its analysis calls are made on; that one use is in [Editor analysis and schemas](#editor-analysis-and-schemas). Any other module that finds itself needing it in production code is doing something this document does not cover, and that is the signal rather than an omission.
 
 **Related.** [The view report](#the-view-report) for telling the backend what is visible, and [`src/client/src/diagrams/readme.md`](../src/client/src/diagrams/readme.md) for the stream's own mechanism.
 

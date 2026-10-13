@@ -52,6 +52,7 @@ public static class ServiceCollectionAddDiagramsExtension
         // catalog tolerates a host that never ran AddEditorDefinitions - an older test host -
         // by answering empty rather than failing its container.
         services.AddSingleton<EditorSessionFactories>();
+        services.AddSingleton<EditorAnalyzers>();
         services.TryAddSingleton<IEditorDefinitionCatalog>(svc =>
             new EditorDefinitionCatalog { All = svc.GetService<IReadOnlyList<EditorDefinition>>() ?? [] });
         services.AddSingleton(svc => new EditorResolver(svc.GetRequiredService<IEditorDefinitionCatalog>()));

@@ -25,6 +25,8 @@ export const editorHighlight = HighlightStyle.define([
   },
   { tag: [tags.tagName], color: "var(--color-syntax-tag)" },
   { tag: [tags.attributeName], color: "var(--color-syntax-attribute)" },
+  // A namespace prefix has a class of its own, so it is told apart from the local name after it.
+  { tag: [tags.namespace], color: "var(--color-syntax-keyword)" },
   { tag: [tags.invalid], color: "var(--color-syntax-invalid)" },
   // Markdown's prose kinds take the nearest of the nine, with weight and slant carrying the rest:
   // a heading reads as a name, a link and inline code as a string.
