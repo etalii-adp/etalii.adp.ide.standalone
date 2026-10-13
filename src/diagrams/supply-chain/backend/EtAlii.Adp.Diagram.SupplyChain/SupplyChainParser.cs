@@ -23,7 +23,7 @@ namespace EtAlii.Adp.Diagram.SupplyChain;
 /// </remarks>
 public static class SupplyChainParser
 {
-    internal const string HeaderKey = "supply-chain";
+    private const string HeaderKey = "supply-chain";
     internal const string GroupsKey = "groups";
     internal const string NodesKey = "nodes";
     internal const string FlowsKey = "flows";
