@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using EtAlii.Adp.Hierarchy;
 using Google.Protobuf;
 
@@ -70,7 +71,7 @@ public sealed class DatabricksElementMapper
     {
         ArgumentNullException.ThrowIfNull(model);
 
-        var unplaced = new Dictionary<string, RegistrationPosition>(StringComparer.Ordinal);
+        var unplaced = ReadOnlyDictionary<string, RegistrationPosition>.Empty;
         return type switch
         {
             "job" => model.Jobs.SelectMany(job => JobElements(job, unplaced)),
