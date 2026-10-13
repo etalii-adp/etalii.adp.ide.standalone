@@ -186,4 +186,20 @@ public class MindmapContextSourceResolverTests : IDisposable
         // Assert.
         Assert.Equal(0, calls);
     }
+
+    [Fact]
+    public async Task Track_IsLetGo_WhenDisposed()
+    {
+        // Arrange.
+        var level = Assert.IsType<ResolvedContextLevel>(await ResolveAsync("ID_88117420")).Level;
+        var calls = 0;
+        var track = _project.Resolver.Track(_project.WatchId, _project.Root, level, _ => calls++);
+
+        // Act: let go, then an ancestor renamed.
+        track.Dispose();
+        await _project.History.ExecuteAsync(new SetNodeTextCommand(_project.BodyPath, "ID_411002937", "Server"), TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.Equal(0, calls);
+    }
 }
