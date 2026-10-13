@@ -1,5 +1,5 @@
 using EtAlii.Adp.Context;
-using EtAlii.Adp.Documents.Wire;
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 using EtAlii.Adp.Specification.Disl;
 
@@ -21,13 +21,13 @@ namespace EtAlii.Adp.Diagram.DependencyGraph;
 /// <para>
 /// Every mutating action dispatches a command through the project's history, so each is one undo
 /// away like every other edit in the IDE. <see cref="ConnectActionId"/> arrives as one call
-/// carrying the whole gesture in a <see cref="DependencyGraphRelationGesture"/> id - deliberately
+/// carrying the whole gesture in a <see cref="GestureIds.Relation"/> id - deliberately
 /// stateless, because the two-call protocol it replaces kept an armed source between calls and
 /// a stale arm made the next drag relate the wrong pair.
 /// </para>
 /// <para>
 /// A gesture that lands on empty canvas has no element to name, so it names a
-/// <see cref="DependencyGraphNewPlacement"/> instead - a synthetic id carrying where it landed. A
+/// <see cref="GestureIds.RowPlacement"/> instead - a synthetic id carrying where it landed. A
 /// drop creates there; a relation dragged onto empty space creates there <b>and</b> relates, as
 /// one command. That is what lets both gestures work through a channel with one element id per
 /// call and no field for a position.
@@ -36,8 +36,14 @@ namespace EtAlii.Adp.Diagram.DependencyGraph;
 /// Two of the timeline's actions have no counterpart here: giving an element an end and taking one
 /// away. A node has no end to give it. Nothing replaces them.
 /// </para>
+/// <para>
+/// The scope, the could-not-be-read guard, the dispatch and the commit leg are the frame's
+/// (<see cref="DiagramActionProvider{TBody, TModel}"/>); what is here is which actions a graph
+/// offers and what each does.
+/// </para>
 /// </remarks>
-public sealed class DependencyGraphContextActionProvider : IContextActionProvider
+public sealed class DependencyGraphContextActionProvider(IHistoryStackStore historyStacks, IDependencyGraphDocumentStore documents)
+    : DiagramActionProvider<LineDocument, DependencyGraphModel>(historyStacks, documents)
 {
     /// <summary>Rename, asking for the new label first.</summary>
     public const string RenameActionId = "dependencies.rename";
@@ -75,50 +81,29 @@ public sealed class DependencyGraphContextActionProvider : IContextActionProvide
 
     private const string Gone = "That is no longer in this graph.";
 
-    private readonly IHistoryStackStore _historyStacks;
-    private readonly IDependencyGraphDocumentStore _documents;
-
-    /// <summary>Creates the provider over the history and the one document store.</summary>
-    public DependencyGraphContextActionProvider(
-        IHistoryStackStore historyStacks,
-        IDependencyGraphDocumentStore documents)
-    {
-        ArgumentNullException.ThrowIfNull(historyStacks);
-        ArgumentNullException.ThrowIfNull(documents);
-
-        _historyStacks = historyStacks;
-        _documents = documents;
-    }
+    /// <inheritdoc />
+    protected override bool IsBody(string path) => Diagram.IsBody(path);
 
     /// <inheritdoc />
-    public ContextScope Scope => ContextScope.DiagramElement;
+    /// <remarks>
+    /// A node, a dependency, a placement - which discovers what can happen at empty canvas, because
+    /// executing an action by id only finds actions its target discovers, so a drop resolves through
+    /// this list - and a finished relation gesture, which the canvas executes by id likewise. Each
+    /// menu is the definition's, in its groups.
+    /// </remarks>
+    protected override IReadOnlyList<ContextActionGroupDefinition> Discover(DocumentEntry<LineDocument, DependencyGraphModel> entry, string elementId) =>
+        DependencyGraphDefinition.Menus(entry.Model, elementId);
 
     /// <inheritdoc />
-    public ValueTask<IReadOnlyList<ContextActionGroupDefinition>> DiscoverAsync(ContextTarget target, CancellationToken cancellationToken)
+    protected override async ValueTask<ContextExecutionResult> RunAsync(
+        ContextTarget target,
+        DocumentEntry<LineDocument, DependencyGraphModel> entry,
+        string actionId,
+        CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(target);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        return Result(!Diagram.IsBody(target.ResolvedFullPath)
-            // Another type's element; a provider consulted for every element in its scope answers
-            // with nothing rather than parsing another notation's file.
-            ? []
-            // A node, a dependency, a placement - which discovers what can happen at empty canvas, because
-            // executing an action by id only finds actions its target discovers, so a drop resolves through
-            // this list - and a finished relation gesture, which the canvas executes by id likewise. Each
-            // menu is the definition's, in its groups.
-            : DependencyGraphDefinition.Menus(_documents.GetOrLoad(target.ResolvedFullPath).Model, target.ElementId));
-    }
-
-    /// <inheritdoc />
-    public async ValueTask<ContextExecutionResult> ExecuteAsync(ContextTarget target, string actionId, CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(target);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        var model = _documents.GetOrLoad(target.ResolvedFullPath).Model;
+        var model = entry.Model;
         var element = DependencyGraphEdits.ElementOf(model, target.ElementId);
-        var placed = DependencyGraphNewPlacement.TryParse(target.ElementId, out var placedX, out var placedRow);
+        var placed = GestureIds.TryParseRowPlacement(target.ElementId, out var placedX, out var placedRow);
 
         switch (actionId)
         {
@@ -148,7 +133,7 @@ public sealed class DependencyGraphContextActionProvider : IContextActionProvide
                     : await DispatchAsync(target, grown, cancellationToken);
             }
 
-            case ConnectActionId when DependencyGraphRelationGesture.TryParse(target.ElementId, out var from, out var to):
+            case ConnectActionId when GestureIds.TryParseRelation(target.ElementId, out var from, out var to):
             {
                 // The whole gesture in one call - from, and where it ended. Deliberately
                 // stateless: the two-call protocol this replaces kept an armed source between
@@ -156,7 +141,7 @@ public sealed class DependencyGraphContextActionProvider : IContextActionProvide
                 // may be a placement: a drag from the outgoing anchor lands its placement in
                 // `to`, one from the incoming anchor arrives reversed with the placement in
                 // `from` - what depends on a node points into it.
-                if (DependencyGraphNewPlacement.TryParse(from, out var fromX, out var fromRow))
+                if (GestureIds.TryParseRowPlacement(from, out var fromX, out var fromRow))
                 {
                     if (DependencyGraphEdits.ElementOf(model, to) is null)
                     {
@@ -173,7 +158,7 @@ public sealed class DependencyGraphContextActionProvider : IContextActionProvide
                     return new ContextExecutionFailed("The node this dependency starts from is no longer in this graph.");
                 }
 
-                if (DependencyGraphNewPlacement.TryParse(to, out var toX, out var toRow))
+                if (GestureIds.TryParseRowPlacement(to, out var toX, out var toRow))
                 {
                     // Released on empty canvas: what the node depends on does not exist yet, so
                     // it is created there and related in one command - one undo taking both - as
@@ -243,52 +228,6 @@ public sealed class DependencyGraphContextActionProvider : IContextActionProvide
         }
     }
 
-    /// <inheritdoc />
-    public ValueTask<ContextValidationResult> ValidateAsync(ContextTarget target, string actionId, string value, CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(target);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        // Nothing to validate as typed. The timeline validated a date here on exactly the terms
-        // its handler would apply again; every value this type asks for is a label, and a label
-        // has no wrong answer.
-        _ = actionId;
-        _ = value;
-
-        return ValueTask.FromResult(ContextValidationResult.Accepted);
-    }
-
-    /// <inheritdoc />
-    public async ValueTask<ContextCommitResult> CommitAsync(
-        ContextTarget target,
-        string actionId,
-        string value,
-        string text,
-        CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(target);
-        _ = text;
-
-        var command = CommandFor(target, actionId, value);
-        if (command is null)
-        {
-            return ContextCommitResult.Failed($"'{actionId}' does not apply to this selection.");
-        }
-
-        // Through the project's history, so every one of these is one undo away like every
-        // other edit in the IDE.
-        var result = await _historyStacks.Get(target.RootPath).ExecuteAsync(command, cancellationToken);
-        return result.IsSuccess ? ContextCommitResult.Succeeded : ContextCommitResult.Failed(result.Error);
-    }
-
-    private async ValueTask<ContextExecutionResult> DispatchAsync(ContextTarget target, ICommand command, CancellationToken cancellationToken)
-    {
-        var result = await _historyStacks.Get(target.RootPath).ExecuteAsync(command, cancellationToken);
-        return result.IsSuccess
-            ? new ContextExecutionCompleted()
-            : new ContextExecutionFailed(result.Error);
-    }
-
     /// <summary>What a node created by a gesture is called until somebody renames it.</summary>
     private const string NewElementLabel = AddConnectedDependencyGraphElementCommandHandler.NewElementLabel;
 
@@ -318,7 +257,13 @@ public sealed class DependencyGraphContextActionProvider : IContextActionProvide
             x,
             row);
 
-    private ICommand? CommandFor(ContextTarget target, string actionId, string value)
+    /// <inheritdoc />
+    /// <remarks>
+    /// Nothing is validated as typed: the timeline validated a date on exactly the terms its handler
+    /// would apply again, but every value this type asks for is a label, and a label has no wrong
+    /// answer.
+    /// </remarks>
+    protected override ICommand? CommitCommand(ContextTarget target, DependencyGraphModel model, string actionId, string value)
     {
         var body = target.ResolvedFullPath;
         var id = target.ElementId;
@@ -326,7 +271,6 @@ public sealed class DependencyGraphContextActionProvider : IContextActionProvide
         // What kind of thing is selected decides which actions apply: a node-only action
         // committed against a dependency - or the other way round - answers "does not apply"
         // rather than a handler's guess at what went wrong.
-        var model = _documents.GetOrLoad(body).Model;
         var element = DependencyGraphEdits.ElementOf(model, id);
         var isRelation = DependencyGraphEdits.RelationOf(model, id) is not null;
 
@@ -347,7 +291,4 @@ public sealed class DependencyGraphContextActionProvider : IContextActionProvide
             _ => null,
         };
     }
-
-    private static ValueTask<IReadOnlyList<ContextActionGroupDefinition>> Result(IReadOnlyList<ContextActionGroupDefinition> groups) =>
-        ValueTask.FromResult(groups);
 }

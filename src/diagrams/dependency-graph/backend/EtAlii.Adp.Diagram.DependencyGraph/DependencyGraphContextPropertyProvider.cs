@@ -1,6 +1,6 @@
 using System.Globalization;
 using EtAlii.Adp.Context;
-using EtAlii.Adp.Documents.Wire;
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.DependencyGraph;
@@ -21,8 +21,13 @@ namespace EtAlii.Adp.Diagram.DependencyGraph;
 /// point: begin, end and duration are <b>absent</b> rather than blank. A grid that offered an
 /// empty "Begin" would be inviting a value this type has nowhere to put.
 /// </para>
+/// <para>
+/// The scope, the could-not-be-read guard and the dispatch are the frame's
+/// (<see cref="DiagramPropertyProvider{TBody, TModel}"/>).
+/// </para>
 /// </remarks>
-public sealed class DependencyGraphContextPropertyProvider : IContextPropertyProvider
+public sealed class DependencyGraphContextPropertyProvider(IHistoryStackStore historyStacks, IDependencyGraphDocumentStore documents)
+    : DiagramPropertyProvider<LineDocument, DependencyGraphModel>(historyStacks, documents)
 {
     /// <summary>The node's or dependency's label row.</summary>
     public const string LabelProperty = "dependencies.label";
@@ -39,69 +44,39 @@ public sealed class DependencyGraphContextPropertyProvider : IContextPropertyPro
     /// <summary>A dependency's depended-upon end, read-only.</summary>
     public const string ToProperty = "dependencies.to";
 
-    private readonly IHistoryStackStore _historyStacks;
-    private readonly IDependencyGraphDocumentStore _documents;
-
-    /// <summary>Creates the provider over the history and the one document store.</summary>
-    public DependencyGraphContextPropertyProvider(
-        IHistoryStackStore historyStacks, IDependencyGraphDocumentStore documents)
-    {
-        ArgumentNullException.ThrowIfNull(historyStacks);
-        ArgumentNullException.ThrowIfNull(documents);
-
-        _historyStacks = historyStacks;
-        _documents = documents;
-    }
+    /// <inheritdoc />
+    protected override bool IsBody(string path) => Diagram.IsBody(path);
 
     /// <inheritdoc />
-    public ContextScope Scope => ContextScope.DiagramElement;
+    /// <remarks>
+    /// From and To are read-only and labelled by what they mean rather than by their key names:
+    /// which end is which is this type's whole content, and "From"/"To" alone leaves the reader to
+    /// guess which way the arrow points. The rows are the definition's forms.
+    /// </remarks>
+    protected override IReadOnlyList<ContextPropertyDefinition> Describe(DocumentEntry<LineDocument, DependencyGraphModel> entry, string elementId) =>
+        DependencyGraphDefinition.Rows(entry.Model, elementId);
 
     /// <inheritdoc />
-    public ValueTask<IReadOnlyList<ContextPropertyDefinition>> DescribeAsync(ContextTarget target, CancellationToken cancellationToken)
+    /// <remarks>
+    /// A value is validated before any command is made, so the refusal names the value rather than
+    /// a command failure - and so an invalid value is never written. The command goes through the
+    /// project's history and out through the delta stream - never written by the panel.
+    /// </remarks>
+    protected override DiagramPropertyChange Change(ContextTarget target, DependencyGraphModel model, string propertyId, string value)
     {
-        ArgumentNullException.ThrowIfNull(target);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        return Rows(!Diagram.IsBody(target.ResolvedFullPath)
-            ? []
-            // From and To are read-only and labelled by what they mean rather than by their key names:
-            // which end is which is this type's whole content, and "From"/"To" alone leaves the reader to
-            // guess which way the arrow points. The rows are the definition's forms.
-            : DependencyGraphDefinition.Rows(_documents.GetOrLoad(target.ResolvedFullPath).Model, target.ElementId));
-    }
-
-    /// <inheritdoc />
-    public async ValueTask<ContextPropertyResult> SetAsync(
-        ContextTarget target,
-        string propertyId,
-        string value,
-        CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(target);
-
-        var model = _documents.GetOrLoad(target.ResolvedFullPath).Model;
         var element = DependencyGraphEdits.ElementOf(model, target.ElementId);
 
-        // Validated before any command is made, so the refusal names the value rather than a
-        // command failure - and so an invalid value is never written.
         if (element is not null && propertyId is XProperty or RowProperty && ParseNumber(propertyId, value) is null)
         {
-            return ContextPropertyResult.Failure($"'{value}' is not a number this graph can place a node at.");
+            return DiagramPropertyChange.Refused($"'{value}' is not a number this graph can place a node at.");
         }
 
-        var command = CommandFor(target, element, propertyId, value);
-        if (command is null)
-        {
-            return ContextPropertyResult.Failure($"'{propertyId}' cannot be edited on this selection.");
-        }
-
-        // Through the project's history and out through the delta stream - never written by the
-        // panel.
-        var result = await _historyStacks.Get(target.RootPath).ExecuteAsync(command, cancellationToken);
-        return result.IsSuccess ? ContextPropertyResult.Success : ContextPropertyResult.Failure(result.Error);
+        return CommandFor(target, model, element, propertyId, value) is { } command
+            ? DiagramPropertyChange.By(command)
+            : DiagramPropertyChange.Refused($"'{propertyId}' cannot be edited on this selection.");
     }
 
-    private ICommand? CommandFor(ContextTarget target, DependencyGraphElement? element, string propertyId, string value)
+    private static ICommand? CommandFor(ContextTarget target, DependencyGraphModel model, DependencyGraphElement? element, string propertyId, string value)
     {
         var body = target.ResolvedFullPath;
         var id = target.ElementId;
@@ -109,8 +84,7 @@ public sealed class DependencyGraphContextPropertyProvider : IContextPropertyPro
         if (element is null)
         {
             // A dependency: only its label is editable, and the read-only rows explain why.
-            return propertyId == LabelProperty &&
-                DependencyGraphEdits.RelationOf(_documents.GetOrLoad(body).Model, id) is not null
+            return propertyId == LabelProperty && DependencyGraphEdits.RelationOf(model, id) is not null
                 ? new RelabelDependencyGraphRelationCommand(body, id, value)
                 : null;
         }
@@ -146,7 +120,4 @@ public sealed class DependencyGraphContextPropertyProvider : IContextPropertyPro
             ? x
             : null;
     }
-
-    private static ValueTask<IReadOnlyList<ContextPropertyDefinition>> Rows(IReadOnlyList<ContextPropertyDefinition> rows) =>
-        ValueTask.FromResult(rows);
 }

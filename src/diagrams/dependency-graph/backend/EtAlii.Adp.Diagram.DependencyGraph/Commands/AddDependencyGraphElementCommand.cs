@@ -21,4 +21,4 @@ public sealed record AddDependencyGraphElementCommand(
     string Id,
     string Label,
     double X,
-    int Row) : ICommand;
+    int Row) : IDocumentEditCommand;

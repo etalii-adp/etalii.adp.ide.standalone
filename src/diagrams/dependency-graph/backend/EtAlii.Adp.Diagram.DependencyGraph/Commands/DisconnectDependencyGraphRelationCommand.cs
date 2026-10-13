@@ -11,4 +11,4 @@ namespace EtAlii.Adp.Diagram.DependencyGraph;
 public sealed record DisconnectDependencyGraphRelationCommand(
     string BodyPath,
     string RelationId,
-    bool RemoveEmptiedRelationsSection = false) : ICommand;
+    bool RemoveEmptiedRelationsSection = false) : IDocumentEditCommand;
