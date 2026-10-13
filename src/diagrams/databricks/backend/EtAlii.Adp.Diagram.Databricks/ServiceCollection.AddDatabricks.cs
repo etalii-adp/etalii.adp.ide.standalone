@@ -1,5 +1,6 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -52,14 +53,21 @@ public static class ServiceCollectionAddDatabricksExtension
         services.AddSingleton<ICommandHandler<SetDatabricksPipelineScalarCommand>, SetDatabricksPipelineScalarCommandHandler>();
         services.AddSingleton<ICommandHandler<RestoreDocumentCommand<IDatabricksDocumentStore>>, RestoreDocumentCommandHandler<IDatabricksDocumentStore>>();
 
-        // The context seams, once for the whole family: which of the three types a file is does
-        // not change what an element is (the C4 precedent).
-        services.AddSingleton<IContextSourceResolver, DatabricksContextSourceResolver>();
+        // The action and property seams, once for the whole family: which of the three types a
+        // file is does not change what an element is (the C4 precedent).
         services.AddSingleton<IContextActionProvider, DatabricksContextActionProvider>();
         services.AddSingleton<IContextPropertyProvider, DatabricksContextPropertyProvider>();
 
         foreach (var origin in (DiagramOrigin[])[BundleOrigin, JobOrigin, PipelineOrigin])
         {
+            // The element resolver, one per type, because the shared base answers for the files of
+            // one type; what it says of an element is the family's, whichever type it is.
+            services.AddSingleton<IContextSourceResolver>(provider => new DatabricksContextSourceResolver(
+                origin,
+                provider.GetRequiredService<DiagramFileRouter>(),
+                provider.GetRequiredService<IDatabricksDocumentStore>(),
+                provider.GetRequiredService<DatabricksElementMapper>()));
+
             // The palette this type offers: entries name actions above rather than carrying an
             // implementation, so a drop and a menu click are the same edit (Requirement 9).
             services.AddSingleton<IDiagramToolboxProvider>(_ => new DatabricksToolboxProvider(origin));

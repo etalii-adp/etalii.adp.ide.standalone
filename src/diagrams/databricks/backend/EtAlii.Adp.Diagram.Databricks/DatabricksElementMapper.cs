@@ -61,6 +61,24 @@ public sealed class DatabricksElementMapper
     /// <inheritdoc cref="NodeWidth" />
     private const double FrameHeight = 120;
 
+    /// <summary>
+    /// Every element of <paramref name="type"/>'s reading across every declaration the file holds:
+    /// what a selection's payload is taken from. A selection does not know which declaration a
+    /// session shows, nor where the registration put a box, so this lays nothing out.
+    /// </summary>
+    public IEnumerable<DiagramElement> Every(DatabricksModel model, string type)
+    {
+        ArgumentNullException.ThrowIfNull(model);
+
+        var unplaced = new Dictionary<string, RegistrationPosition>(StringComparer.Ordinal);
+        return type switch
+        {
+            "job" => model.Jobs.SelectMany(job => JobElements(job, unplaced)),
+            "pipeline" => model.Pipelines.SelectMany(pipeline => PipelineElements(pipeline, unplaced)),
+            _ => BundleElements(model.Bundle, unplaced),
+        };
+    }
+
     /// <summary>The job reading: the DAG's tasks, stubs, clusters and edges.</summary>
     public IReadOnlyList<DiagramElement> JobElements(
         JobModel job, IReadOnlyDictionary<string, RegistrationPosition> positions)
