@@ -224,13 +224,10 @@ internal static class XmlCompletion
     private static XmlQualifiedName Qualified(string written, XmlNamespaceManager scopes, bool isAttribute)
     {
         var colon = written.IndexOf(':', StringComparison.Ordinal);
-        if (colon < 0)
-        {
+        return colon < 0
             // An unprefixed attribute is in no namespace; an unprefixed element is in the default one.
-            return new XmlQualifiedName(written, isAttribute ? "" : scopes.DefaultNamespace);
-        }
-
-        return new XmlQualifiedName(written[(colon + 1)..], scopes.LookupNamespace(written[..colon]) ?? "");
+            ? new XmlQualifiedName(written, isAttribute ? "" : scopes.DefaultNamespace)
+            : new XmlQualifiedName(written[(colon + 1)..], scopes.LookupNamespace(written[..colon]) ?? "");
     }
 
     /// <summary>The text of an item's <c>xs:documentation</c>, or of its type's (Requirement 7.6).</summary>

@@ -80,13 +80,6 @@ public class YamlEditorResolutionTests(HostFixture host) : IClassFixture<HostFix
         // other write (Requirement 2.4 - this editor adds no path of its own).
         var store = host.Services.GetRequiredService<IPipelineDocumentStore>();
         var reloaded = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
-        void OnChanged(object? _, PipelineDocumentChangedEventArgs args)
-        {
-            if (args.Path.EndsWith("pipeline.yml", StringComparison.Ordinal))
-            {
-                reloaded.TrySetResult(args.Path);
-            }
-        }
         store.Changed += OnChanged;
         try
         {
@@ -105,6 +98,16 @@ public class YamlEditorResolutionTests(HostFixture host) : IClassFixture<HostFix
         finally
         {
             store.Changed -= OnChanged;
+        }
+
+        return;
+
+        void OnChanged(object? _, PipelineDocumentChangedEventArgs args)
+        {
+            if (args.Path.EndsWith("pipeline.yml", StringComparison.Ordinal))
+            {
+                reloaded.TrySetResult(args.Path);
+            }
         }
     }
 

@@ -9,12 +9,9 @@ public sealed class AddSupplyChainNodeCommandHandler(ISupplyChainDocumentStore d
     /// <inheritdoc />
     protected override CommandResult Execute(AddSupplyChainNodeCommand command)
     {
-        if (!SupplyChainNodeTypes.IsKnown(command.NodeType))
-        {
-            return CommandResult.Failure($"This notation has no `{command.NodeType}` stage.");
-        }
-
-        return base.Execute(command.NodeId.Length > 0 ? command : command with { NodeId = ShortGuid.NewShortGuid().ToString() });
+        return !SupplyChainNodeTypes.IsKnown(command.NodeType)
+            ? CommandResult.Failure($"This notation has no `{command.NodeType}` stage.")
+            : base.Execute(command.NodeId.Length > 0 ? command : command with { NodeId = ShortGuid.NewShortGuid().ToString() });
     }
 
     /// <inheritdoc />

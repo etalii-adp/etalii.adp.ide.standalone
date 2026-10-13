@@ -28,7 +28,7 @@ public abstract class LifecycleDocumentStore<TBody, TModel> : IDiagramDocumentSt
 
     protected LifecycleDocumentStore()
     {
-        _lifecycle = new(
+        _lifecycle = new WritableDocumentLifecycle<DocumentEntry<TBody, TModel>>(
             (_, text) => Entry(Read(text)),
             entry => TextOf(entry.Document),
             (_, unavailability, reason) => Unavailable(unavailability, reason));

@@ -9,12 +9,9 @@ public sealed class GroupSupplyChainNodeCommandHandler(ISupplyChainDocumentStore
     /// <inheritdoc />
     protected override CommandResult Execute(GroupSupplyChainNodeCommand command)
     {
-        if (string.IsNullOrWhiteSpace(command.GroupName))
-        {
-            return CommandResult.Failure("A group needs a name.");
-        }
-
-        return base.Execute(command.GroupId.Length > 0 ? command : command with { GroupId = ShortGuid.NewShortGuid().ToString() });
+        return string.IsNullOrWhiteSpace(command.GroupName)
+            ? CommandResult.Failure("A group needs a name.")
+            : base.Execute(command.GroupId.Length > 0 ? command : command with { GroupId = ShortGuid.NewShortGuid().ToString() });
     }
 
     /// <inheritdoc />

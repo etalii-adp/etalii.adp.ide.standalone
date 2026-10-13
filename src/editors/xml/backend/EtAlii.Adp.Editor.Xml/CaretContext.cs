@@ -69,12 +69,9 @@ internal sealed record CaretContext(
         }
 
         var tagEnd = TagEnd(content, open + 1, offset);
-        if (tagEnd >= 0)
-        {
-            return Content(content, offset, tagEnd + 1);
-        }
-
-        return InStartTag(content, offset, open);
+        return tagEnd >= 0
+            ? Content(content, offset, tagEnd + 1)
+            : InStartTag(content, offset, open);
     }
 
     private static CaretContext Content(string content, int offset, int cut)
