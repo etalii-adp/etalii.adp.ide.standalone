@@ -107,6 +107,12 @@ public sealed class PipelineDocumentStore : IPipelineDocumentStore
 
     public void Forget(string path) => _lifecycle.Forget(path);
 
+    public IDiagramDocumentStore<LineDocument, PipelineModel> In(string rootPath)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(rootPath);
+        return new Rooted(this, rootPath);
+    }
+
     public void Reload(string path)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
@@ -150,6 +156,28 @@ public sealed class PipelineDocumentStore : IPipelineDocumentStore
     }
 
     private void OnChanged(string path) => Changed?.Invoke(this, new DocumentChangedEventArgs(path));
+
+    /// <summary>The store with every open and save made from one root.</summary>
+    private sealed class Rooted(PipelineDocumentStore documents, string rootPath) : IDiagramDocumentStore<LineDocument, PipelineModel>
+    {
+        public event EventHandler<DocumentChangedEventArgs>? Changed
+        {
+            add => documents.Changed += value;
+            remove => documents.Changed -= value;
+        }
+
+        public DocumentEntry<LineDocument, PipelineModel> GetOrLoad(string path) => documents.GetOrLoad(rootPath, path);
+
+        /// <remarks>Refused, as the store refuses it, while what the file holds does not parse.</remarks>
+        public DocumentSaveResult Save(string path, LineDocument document) =>
+            documents.Save(rootPath, path, documents.GetOrLoad(rootPath, path) with { Document = document });
+
+        public void Reload(string path) => documents.Reload(path);
+
+        public void BodyDeleted(string path) => documents.BodyDeleted(path);
+
+        public void Forget(string path) => documents.Forget(path);
+    }
 
     private PipelineTemplates Resolver(string rootPath) =>
         _templates.GetOrAdd(rootPath, root => new PipelineTemplates(root));

@@ -414,6 +414,19 @@ public class PipelineSessionTests : IDisposable
     }
 
     [Fact]
+    public async Task DraggingToAPoint_IsRefusedWithAReason()
+    {
+        // Arrange.
+        await using var session = Open(Write(TwoStages));
+
+        // Act.
+        var refusal = await session.MoveElementToAsync("Build", 100, 200, TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.Equal("This diagram cannot be arranged by dragging.", refusal);
+    }
+
+    [Fact]
     public async Task ExpandingAJob_PushesItsStepsInDeclaredOrder()
     {
         // Arrange: the third level of Requirement 8.2 - a job in turn expandable to its steps -

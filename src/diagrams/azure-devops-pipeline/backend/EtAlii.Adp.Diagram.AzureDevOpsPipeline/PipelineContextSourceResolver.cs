@@ -14,6 +14,12 @@ namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline;
 /// Registering this is the whole of it - the context service is untouched (Requirement 12.2). The
 /// detail is resolved here rather than looked up later, so the property grid shows what is
 /// selected without a second round trip (Requirement 12.3).
+/// <para>
+/// <b>It does not derive from <see cref="DiagramElementSourceResolver{TBody, TModel}"/></b>, because
+/// a pipeline's elements nest (a job's path is read within its stage, a step's within its job) and
+/// are resolved against the workspace root, while the base resolves flat elements by path alone
+/// (code-structure, spec 025: a module that cannot adopt a shared type keeps its own).
+/// </para>
 /// </remarks>
 public sealed class PipelineContextSourceResolver : IContextSourceResolver
 {
@@ -135,7 +141,7 @@ public sealed class PipelineContextSourceResolver : IContextSourceResolver
         var elementId = level.Target.ElementId;
 
         _documents.Changed += OnChanged;
-        return new PipelineChangeUnsubscriber(() => _documents.Changed -= OnChanged);
+        return Disposable.From(() => _documents.Changed -= OnChanged);
 
         void OnChanged(object? sender, DocumentChangedEventArgs args)
         {

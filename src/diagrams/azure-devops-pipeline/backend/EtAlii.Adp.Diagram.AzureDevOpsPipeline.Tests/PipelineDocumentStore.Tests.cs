@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -98,6 +99,29 @@ public class PipelineDocumentStoreTests : IDisposable
         // Assert.
         Assert.NotEqual("", refusal.Error);
         Assert.Equal(broken, File.ReadAllText(path));
+    }
+
+    [Fact]
+    public void TheStoreSeenFromARoot_ResolvesTemplatesThere_AndSavesAsTheStoreDoes()
+    {
+        // Arrange: a body below the root names its template from the root.
+        Write("templates/shared.yml", "jobs:\n  - job: Shared\n    steps:\n      - script: x\n");
+        var path = Write("pipelines/azure-pipelines.yml", "jobs:\n  - template: /templates/shared.yml\n");
+        const string broken = "stages:\n  - stage: Build\n   jobs: [\n";
+        var brokenPath = Write("broken.yml", broken);
+        var rooted = new PipelineDocumentStore().In(_workspace);
+
+        // Act.
+        var entry = rooted.GetOrLoad(path);
+        var edited = LineDocument.Parse(entry.Document.Text + "# edited\n");
+        var saved = rooted.Save(path, edited);
+        var refused = rooted.Save(brokenPath, rooted.GetOrLoad(brokenPath).Document);
+
+        // Assert.
+        Assert.Equal("Shared", entry.Model.Jobs.Single().Name);
+        Assert.Equal(("", edited.Text), (saved.Error, File.ReadAllText(path)));
+        Assert.NotEqual("", refused.Error);
+        Assert.Equal(broken, File.ReadAllText(brokenPath));
     }
 
     [Fact]
