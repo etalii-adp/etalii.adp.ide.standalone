@@ -44,7 +44,7 @@ public sealed class AddDependencyGraphElementCommandHandler : ICommandHandler<Ad
         DependencyGraphWriter.InsertElement(
             entry.Document, entry.Model, command.Id, command.Label, command.X, command.Row);
 
-        var saved = _documents.Save(command.BodyPath, entry);
+        var saved = _documents.Save(command.BodyPath, entry.Document);
         return Task.FromResult(!saved.Failed
             ? CommandResult.Success(new RemoveDependencyGraphElementCommand(command.BodyPath, command.Id))
             : CommandResult.Failure(saved.Error));

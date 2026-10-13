@@ -57,7 +57,7 @@ public sealed class RemoveDependencyGraphElementCommandHandler : ICommandHandler
                 entry.Document, DependencyGraphParser.Parse(entry.Document));
         }
 
-        var saved = _documents.Save(command.BodyPath, entry);
+        var saved = _documents.Save(command.BodyPath, entry.Document);
         return Task.FromResult(!saved.Failed
             ? CommandResult.Success(new RestoreDependencyGraphLinesCommand(command.BodyPath, command.ElementId, segments))
             : CommandResult.Failure(saved.Error));
