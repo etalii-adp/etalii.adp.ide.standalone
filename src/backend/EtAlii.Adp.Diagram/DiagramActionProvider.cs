@@ -60,7 +60,7 @@ public abstract class DiagramActionProvider<TBody, TModel> : IContextActionProvi
         var entry = _documents.GetOrLoad(target.ResolvedFullPath);
         return entry.IsUsable
             ? await RunAsync(target, entry, actionId, cancellationToken)
-            : new ContextExecutionFailed($"{System.IO.Path.GetFileName(target.ResolvedFullPath)} could not be read, so it cannot be edited.");
+            : new ContextExecutionFailed(Unreadable(target));
     }
 
     /// <inheritdoc />
@@ -84,7 +84,12 @@ public abstract class DiagramActionProvider<TBody, TModel> : IContextActionProvi
         _ = text;
 
         var entry = _documents.GetOrLoad(target.ResolvedFullPath);
-        if ((entry.IsUsable ? CommitCommand(target, entry.Model, actionId, value) : null) is not { } command)
+        if (!entry.IsUsable)
+        {
+            return ContextCommitResult.Failed(Unreadable(target));
+        }
+
+        if (CommitCommand(target, entry.Model, actionId, value) is not { } command)
         {
             return ContextCommitResult.Failed($"'{actionId}' does not apply to this selection.");
         }
@@ -92,6 +97,10 @@ public abstract class DiagramActionProvider<TBody, TModel> : IContextActionProvi
         var result = await _historyStacks.Get(target.RootPath).ExecuteAsync(command, cancellationToken);
         return result.IsSuccess ? ContextCommitResult.Succeeded : ContextCommitResult.Failed(result.Error);
     }
+
+    /// <summary>The refusal of an edit to a document that could not be read, in one wording.</summary>
+    internal static string Unreadable(ContextTarget target) =>
+        $"{System.IO.Path.GetFileName(target.ResolvedFullPath)} could not be read, so it cannot be edited.";
 
     /// <summary>Whether <paramref name="path"/> is a document of this module.</summary>
     protected abstract bool IsBody(string path);

@@ -191,11 +191,14 @@ public sealed class SankeyProvidersTests : IDisposable
         // Act.
         var thicker = await actions.ExecuteAsync(Target(GestureIds.Placement(0, 0)), SankeyContextActionProvider.ThickerActionId, TestContext.Current.CancellationToken);
         var set = await properties.SetAsync(Target("m"), SankeyContextPropertyProvider.NameProperty, "Renamed", TestContext.Current.CancellationToken);
+        var committed = await actions.CommitAsync(Target("m"), SankeyContextActionProvider.RenameActionId, "Renamed", "", TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Contains("could not be read", Assert.IsType<ContextExecutionFailed>(thicker).Message, StringComparison.Ordinal);
         Assert.False(set.IsSuccess);
         Assert.Contains("could not be read", set.Error, StringComparison.Ordinal);
+        Assert.False(committed.Completed);
+        Assert.Contains("could not be read", committed.Error, StringComparison.Ordinal);
         Assert.Equal(before, await File.ReadAllBytesAsync(_folder.Body, TestContext.Current.CancellationToken));
     }
 

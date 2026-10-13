@@ -52,7 +52,7 @@ public abstract class DiagramPropertyProvider<TBody, TModel> : IContextPropertyP
         var entry = _documents.GetOrLoad(target.ResolvedFullPath);
         if (!entry.IsUsable)
         {
-            return ContextPropertyResult.Failure($"{System.IO.Path.GetFileName(target.ResolvedFullPath)} could not be read, so it cannot be edited.");
+            return ContextPropertyResult.Failure(DiagramActionProvider<TBody, TModel>.Unreadable(target));
         }
 
         var change = Change(target, entry.Model, propertyId, value);
