@@ -50,7 +50,7 @@ public sealed class InsertDatabricksTaskCommandHandler(IDatabricksDocumentStore 
         cancellationToken.ThrowIfCancellationRequested();
 
         return DatabricksEdits.Run(documents, command.BodyPath, command, entry =>
-            DatabricksEdits.JobOf(entry, command.JobKey) is { } job
+            DatabricksEdits.JobOf(entry.Model, command.JobKey) is { } job
                 ? JobWriter.InsertTask(entry.Document, job, command.TaskKey, command.TaskType, command.Source)
                 : "There is no job in this file to add a task to.");
     }
@@ -66,7 +66,7 @@ public sealed class RemoveDatabricksTaskCommandHandler(IDatabricksDocumentStore 
         cancellationToken.ThrowIfCancellationRequested();
 
         return DatabricksEdits.Run(documents, command.BodyPath, command, entry =>
-            DatabricksEdits.JobOf(entry, command.JobKey) is { } job
+            DatabricksEdits.JobOf(entry.Model, command.JobKey) is { } job
                 ? JobWriter.RemoveTask(entry.Document, job, command.TaskKey)
                 : "There is no job in this file any more.");
     }
@@ -82,7 +82,7 @@ public sealed class ConnectDatabricksTasksCommandHandler(IDatabricksDocumentStor
         cancellationToken.ThrowIfCancellationRequested();
 
         return DatabricksEdits.Run(documents, command.BodyPath, command, entry =>
-            DatabricksEdits.JobOf(entry, command.JobKey) is { } job
+            DatabricksEdits.JobOf(entry.Model, command.JobKey) is { } job
                 ? JobWriter.Connect(entry.Document, job, command.FromKey, command.ToKey, command.Outcome)
                 : "There is no job in this file any more.");
     }
@@ -98,7 +98,7 @@ public sealed class DisconnectDatabricksTasksCommandHandler(IDatabricksDocumentS
         cancellationToken.ThrowIfCancellationRequested();
 
         return DatabricksEdits.Run(documents, command.BodyPath, command, entry =>
-            DatabricksEdits.JobOf(entry, command.JobKey) is { } job
+            DatabricksEdits.JobOf(entry.Model, command.JobKey) is { } job
                 ? JobWriter.Disconnect(entry.Document, job, command.FromKey, command.ToKey)
                 : "There is no job in this file any more.");
     }
@@ -114,7 +114,7 @@ public sealed class RenameDatabricksTaskCommandHandler(IDatabricksDocumentStore 
         cancellationToken.ThrowIfCancellationRequested();
 
         return DatabricksEdits.Run(documents, command.BodyPath, command, entry =>
-            DatabricksEdits.JobOf(entry, command.JobKey) is { } job
+            DatabricksEdits.JobOf(entry.Model, command.JobKey) is { } job
                 ? JobWriter.RenameTask(entry.Document, job, command.TaskKey, command.NewKey)
                 : "There is no job in this file any more.");
     }
@@ -130,7 +130,7 @@ public sealed class SetDatabricksRunIfCommandHandler(IDatabricksDocumentStore do
         cancellationToken.ThrowIfCancellationRequested();
 
         return DatabricksEdits.Run(documents, command.BodyPath, command, entry =>
-            DatabricksEdits.JobOf(entry, command.JobKey) is { } job
+            DatabricksEdits.JobOf(entry.Model, command.JobKey) is { } job
                 ? JobWriter.SetRunIf(entry.Document, job, command.TaskKey, command.RunIf)
                 : "There is no job in this file any more.");
     }
@@ -146,7 +146,7 @@ public sealed class SetDatabricksClusterCommandHandler(IDatabricksDocumentStore 
         cancellationToken.ThrowIfCancellationRequested();
 
         return DatabricksEdits.Run(documents, command.BodyPath, command, entry =>
-            DatabricksEdits.JobOf(entry, command.JobKey) is { } job
+            DatabricksEdits.JobOf(entry.Model, command.JobKey) is { } job
                 ? JobWriter.SetCluster(entry.Document, job, command.TaskKey, command.ClusterKey)
                 : "There is no job in this file any more.");
     }

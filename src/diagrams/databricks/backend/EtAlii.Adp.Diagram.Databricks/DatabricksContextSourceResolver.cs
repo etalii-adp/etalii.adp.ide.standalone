@@ -1,4 +1,5 @@
 using EtAlii.Adp.Context;
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Hierarchy;
 
@@ -80,7 +81,7 @@ public sealed class DatabricksContextSourceResolver : IContextSourceResolver
                 this)));
         }
 
-        var text = DatabricksSelection.Describe(_documents.GetOrLoad(bodyPath), elementId);
+        var text = DatabricksSelection.Describe(_documents.GetOrLoad(bodyPath).Model, elementId);
         if (text is null)
         {
             return Rejected("That element is no longer in this file.");
@@ -132,7 +133,7 @@ public sealed class DatabricksContextSourceResolver : IContextSourceResolver
         _documents.Changed += OnChanged;
         return new DatabricksUnsubscriber(() => _documents.Changed -= OnChanged);
 
-        void OnChanged(object? sender, DatabricksDocumentChangedEventArgs args)
+        void OnChanged(object? sender, DocumentChangedEventArgs args)
         {
             if (!string.Equals(args.Path, bodyPath, StringComparison.OrdinalIgnoreCase))
             {
@@ -140,7 +141,7 @@ public sealed class DatabricksContextSourceResolver : IContextSourceResolver
             }
 
             // Re-read rather than carrying the previous reading: a removal clears the selection.
-            var text = DatabricksSelection.Describe(args.Entry, elementId);
+            var text = DatabricksSelection.Describe(_documents.GetOrLoad(bodyPath).Model, elementId);
             onChange(text is null ? null : [text]);
         }
     }

@@ -1,103 +1,79 @@
+using EtAlii.Adp.Documents;
+using EtAlii.Adp.Hierarchy;
+using EtAlii.Adp.History;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using IoPath = System.IO.Path;
 
 namespace EtAlii.Adp.Diagram.Databricks.Tests;
 
 /// <summary>
-/// A body that could not be read is kept, and a deleted body is cleared - the pairing the shared
-/// lifecycle depends on (backend-centralization R2.4, R2.5), which task 6 brings to this store in
-/// one change and which <see cref="DatabricksDocumentReloader"/> must forward.
+/// The shared reload seam over the Databricks store, held to the contract every module's is: a body
+/// missing on a reload is kept and cleared only by the watcher's delete, a deletion tells the
+/// sessions, and an unreadable body is kept (backend-centralization R2.4, R2.5).
 /// </summary>
-/// <remarks>
-/// <b>The reloader is held as <see cref="IDiagramDocumentReloader"/>, and that is load-bearing.</b> A
-/// default interface member is callable only through the interface. Held as the class, removing the
-/// <c>BodyDeleted</c> override would stop this file compiling instead of making a test fail, so the
-/// defect could never be seen red. Do not "simplify" the declared type.
-/// </remarks>
-public sealed class DatabricksDocumentReloaderTests : IDisposable
+public sealed class DatabricksDocumentReloaderTests : DocumentReloaderContract<IDatabricksDocumentStore>
 {
-    private const string Bundle = """
-        bundle:
-          name: lakehouse-nightly
-        """;
+    protected override DiagramOrigin Origin => ServiceCollectionAddDatabricksExtension.BundleOrigin;
 
-    private readonly string _folder = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.DatabricksDocumentReloaderTests", Guid.NewGuid().ToString("N"));
+    protected override string Example => IoPath.Combine(AppContext.BaseDirectory, "Fixtures", "bundle.yml");
 
-    public DatabricksDocumentReloaderTests()
-    {
-        Directory.CreateDirectory(_folder);
-        File.WriteAllText(Body, Bundle);
-    }
+    protected override IDatabricksDocumentStore CreateStore() => new DatabricksDocumentStore();
 
-    private string Body => IoPath.Combine(_folder, "databricks.yml");
+    protected override bool IsEmpty(IDatabricksDocumentStore store, string path) => store.GetOrLoad(path).Model.Bundle.Name == "";
 
-    public void Dispose()
-    {
-        TestFolder.TryDelete(_folder);
-    }
+    protected override void OnChanged(IDatabricksDocumentStore store, Action<string> changed) =>
+        store.Changed += (_, args) => changed(args.Path);
 
-    [Fact]
-    public void AMissingBody_IsKeptOnReload_AndClearedOnlyByTheWatchersDelete()
+    [Theory]
+    [InlineData("bundle")]
+    [InlineData("job")]
+    [InlineData("pipeline")]
+    public void EachTypeOfTheFamily_ReloadsIntoTheOneSharedStore(string type)
     {
         // Arrange.
-        var store = new DatabricksDocumentStore();
-        IDiagramDocumentReloader reloader = new DatabricksDocumentReloader(ServiceCollectionAddDatabricksExtension.BundleOrigin, store);
-        Assert.Equal("lakehouse-nightly", store.GetOrLoad(Body).Bundle.Name);
-        File.Delete(Body);
+        using var provider = new ServiceCollection()
+            .AddSingleton<IReadOnlyList<DiagramDefinition>>(Diagram.Definitions)
+            .AddCommands().AddHierarchyCommandHandlers()
+            .AddDatabricks()
+            .BuildServiceProvider();
+        using var folder = TestFolder.Create("EtAlii.Adp.DatabricksDocumentReloaderTests");
+        var body = folder.Combine("databricks.yml");
+        File.Copy(Example, body);
+        var store = provider.GetRequiredService<IDatabricksDocumentStore>();
+        store.GetOrLoad(body);
+        File.WriteAllText(body, "bundle:\r\n  name: replaced\r\n");
+        var reloader = provider.GetServices<IDiagramDocumentReloader>().Single(candidate => candidate.Origin == new DiagramOrigin("databricks", type));
 
-        // Act: a reload that finds no file.
-        reloader.Reload(_folder, Body);
+        // Act.
+        reloader.Reload(folder.Path, body);
 
-        // Assert: kept until the absence is confirmed (R2.5's first half). A body missing on a
-        // reload is far more often a publish in flight than a deletion, so the last good document
-        // stays. This is NOT R2.4, which is a body present but unreadable - see the next test.
-        Assert.Equal("lakehouse-nightly", store.GetOrLoad(Body).Bundle.Name);
-
-        // Act: the watcher's evidence that it is gone.
-        reloader.BodyDeleted(_folder, Body);
-
-        // Assert: cleared, to what a first open of a missing body shows (R2.5).
-        Assert.Equal("", store.GetOrLoad(Body).Document.Text);
-        Assert.Equal("", store.GetOrLoad(Body).Bundle.Name);
+        // Assert.
+        Assert.Equal("replaced", store.GetOrLoad(body).Model.Bundle.Name);
     }
 
     [Fact]
     public void AnUnreadableBody_IsKeptOnReload_AndTellsNobody()
     {
         // Arrange.
+        using var folder = TestFolder.Create("EtAlii.Adp.DatabricksDocumentReloaderTests");
+        var body = folder.Combine("databricks.yml");
+        File.Copy(Example, body);
         var store = new DatabricksDocumentStore();
-        IDiagramDocumentReloader reloader = new DatabricksDocumentReloader(ServiceCollectionAddDatabricksExtension.BundleOrigin, store);
-        Assert.Equal("lakehouse-nightly", store.GetOrLoad(Body).Bundle.Name);
+        IDiagramDocumentReloader reloader = new DiagramDocumentReloader<IDatabricksDocumentStore>(Origin, store);
+        Assert.Equal("lakehouse-nightly", store.GetOrLoad(body).Model.Bundle.Name);
         var told = 0;
         store.Changed += (_, _) => told++;
 
         // Act: a reload while another program holds the file with no sharing at all.
-        using (new FileStream(Body, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+        using (new FileStream(body, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
         {
-            reloader.Reload(_folder, Body);
+            reloader.Reload(folder.Path, body);
         }
 
         // Assert: the last good bundle is kept, not replaced by an empty one (R2.4), and since
         // nothing a session shows has changed, no session is told.
-        Assert.Equal("lakehouse-nightly", store.GetOrLoad(Body).Bundle.Name);
+        Assert.Equal("lakehouse-nightly", store.GetOrLoad(body).Model.Bundle.Name);
         Assert.Equal(0, told);
-    }
-
-    [Fact]
-    public void ADeletion_TellsTheSessions()
-    {
-        // Arrange.
-        var store = new DatabricksDocumentStore();
-        IDiagramDocumentReloader reloader = new DatabricksDocumentReloader(ServiceCollectionAddDatabricksExtension.BundleOrigin, store);
-        store.GetOrLoad(Body);
-        var told = new List<string>();
-        store.Changed += (_, args) => told.Add(args.Path);
-        File.Delete(Body);
-
-        // Act.
-        reloader.BodyDeleted(_folder, Body);
-
-        // Assert.
-        Assert.Equal([Body], told);
     }
 }

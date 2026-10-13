@@ -35,17 +35,10 @@ public sealed class DatabricksValidator(DiagramOrigin origin) : IDiagramValidato
 
         // ReSharper disable once NullCoalescingConditionIsAlwaysNotNullAccordingToAPIContract - Reason: IDiagramValidator.ValidateAsync is a public module seam and the record's non-nullable Document is a compile-time annotation the runtime does not enforce, so a caller that passes null (null!, or code built without nullable checks) gets an empty document here rather than a NullReferenceException; ProjectValidator, the one caller in this repository, always passes the text it read, so an empty file arrives as "", not null.
         var document = LineDocument.Parse(request.Document ?? "");
-        DatabricksDocumentEntry entry;
+        DatabricksModel model;
         try
         {
-            var root = DatabricksYaml.Root(document);
-            entry = new DatabricksDocumentEntry(
-                document,
-                BundleParser.Parse(root, document),
-                JobParser.Parse(root, document),
-                PipelineParser.Parse(root, document),
-                "",
-                0);
+            model = DatabricksModel.Read(document);
         }
         catch (YamlException exception)
         {
@@ -61,6 +54,6 @@ public sealed class DatabricksValidator(DiagramOrigin origin) : IDiagramValidato
             ]);
         }
 
-        return ValueTask.FromResult(DatabricksRuleSet.Judge(entry));
+        return ValueTask.FromResult(DatabricksRuleSet.Judge(model));
     }
 }

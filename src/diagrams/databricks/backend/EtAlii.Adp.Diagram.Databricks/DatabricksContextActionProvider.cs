@@ -112,7 +112,7 @@ public sealed class DatabricksContextActionProvider : IContextActionProvider
             return Result([]);
         }
 
-        if (DatabricksSelection.TaskOf(entry, target.ElementId) is { } selected)
+        if (DatabricksSelection.TaskOf(entry.Model, target.ElementId) is { } selected)
         {
             return Result(ForTask(selected.Task));
         }
@@ -144,7 +144,7 @@ public sealed class DatabricksContextActionProvider : IContextActionProvider
             ]);
         }
 
-        if (DatabricksSelection.TargetOf(entry, target.ElementId) is not null)
+        if (DatabricksSelection.TargetOf(entry.Model, target.ElementId) is not null)
         {
             // The mocked domain action on a target frame (Requirement 8.4).
             return Result(
@@ -172,7 +172,7 @@ public sealed class DatabricksContextActionProvider : IContextActionProvider
             ]);
         }
 
-        if (DatabricksSelection.LibraryOf(entry, target.ElementId) is not null)
+        if (DatabricksSelection.LibraryOf(entry.Model, target.ElementId) is not null)
         {
             return Result(
             [
@@ -224,7 +224,7 @@ public sealed class DatabricksContextActionProvider : IContextActionProvider
         }
 
         var entry = _documents.GetOrLoad(target.ResolvedFullPath);
-        var task = DatabricksSelection.TaskOf(entry, target.ElementId);
+        var task = DatabricksSelection.TaskOf(entry.Model, target.ElementId);
 
         switch (actionId)
         {
@@ -271,7 +271,7 @@ public sealed class DatabricksContextActionProvider : IContextActionProvider
 
             case RemoveEdgeActionId when DatabricksSelection.TryEdge(target.ElementId, out var fromKey, out var toKey):
                 return await DispatchAsync(target, new DisconnectDatabricksTasksCommand(
-                    target.ResolvedFullPath, JobKeyFor(entry, toKey), fromKey, toKey), cancellationToken);
+                    target.ResolvedFullPath, JobKeyFor(entry.Model, toKey), fromKey, toKey), cancellationToken);
 
             case ConnectActionId when DatabricksRelationGesture.TryParse(target.ElementId, out var from, out var to):
             {
@@ -286,7 +286,7 @@ public sealed class DatabricksContextActionProvider : IContextActionProvider
                 var fromKey = KeyOf(from);
                 var toKey = KeyOf(to);
                 return await DispatchAsync(target, new ConnectDatabricksTasksCommand(
-                    target.ResolvedFullPath, JobKeyFor(entry, toKey), fromKey, toKey), cancellationToken);
+                    target.ResolvedFullPath, JobKeyFor(entry.Model, toKey), fromKey, toKey), cancellationToken);
             }
 
             case var _ when actionId.StartsWith(AddTaskActionPrefix, StringComparison.Ordinal)
@@ -295,7 +295,7 @@ public sealed class DatabricksContextActionProvider : IContextActionProvider
                 // The gesture already said everything an add needs - so nothing is asked, and
                 // the task appears with a fresh key. The authored drop position is the client's
                 // follow-up layout write; the computed layout places it until then.
-                var job = entry.Jobs.FirstOrDefault();
+                var job = entry.Model.Jobs.FirstOrDefault();
                 if (job is null)
                 {
                     return new ContextExecutionFailed("This file declares no job to add a task to.");
@@ -313,7 +313,7 @@ public sealed class DatabricksContextActionProvider : IContextActionProvider
 
             case RenameBundleActionId when DatabricksSelection.IsBundle(target.ElementId):
                 return new ContextExecutionRequiresInput(new ContextInputRequest(
-                    "Rename bundle", "mdi-pencil-outline", "Name", entry.Bundle.Name, "Rename", target.ElementId));
+                    "Rename bundle", "mdi-pencil-outline", "Name", entry.Model.Bundle.Name, "Rename", target.ElementId));
 
             case var _ when actionId.StartsWith(AddResourceActionPrefix, StringComparison.Ordinal):
                 return new ContextExecutionRequiresInput(new ContextInputRequest(
@@ -323,7 +323,7 @@ public sealed class DatabricksContextActionProvider : IContextActionProvider
                 return new ContextExecutionRequiresInput(new ContextInputRequest(
                     "Add library", "mdi-plus", "Path", "", "Add"));
 
-            case RemoveLibraryActionId when DatabricksSelection.LibraryOf(entry, target.ElementId) is { } selected:
+            case RemoveLibraryActionId when DatabricksSelection.LibraryOf(entry.Model, target.ElementId) is { } selected:
                 return await DispatchAsync(target, new RemoveDatabricksLibraryCommand(
                     target.ResolvedFullPath, selected.Pipeline.Key, selected.Library.Kind, selected.Library.Path), cancellationToken);
 
@@ -348,7 +348,7 @@ public sealed class DatabricksContextActionProvider : IContextActionProvider
             }
 
             var entry = _documents.GetOrLoad(target.ResolvedFullPath);
-            if (entry.Jobs.SelectMany(job => job.Tasks).Any(task => task.Key == value.Trim()))
+            if (entry.Model.Jobs.SelectMany(job => job.Tasks).Any(task => task.Key == value.Trim()))
             {
                 return ValueTask.FromResult(ContextValidationResult.Rejected($"A task named '{value.Trim()}' is already there."));
             }
@@ -382,7 +382,7 @@ public sealed class DatabricksContextActionProvider : IContextActionProvider
     {
         var body = target.ResolvedFullPath;
         var entry = _documents.GetOrLoad(body);
-        var task = DatabricksSelection.TaskOf(entry, target.ElementId);
+        var task = DatabricksSelection.TaskOf(entry.Model, target.ElementId);
 
         if (actionId.StartsWith(AddResourceActionPrefix, StringComparison.Ordinal))
         {
@@ -391,14 +391,14 @@ public sealed class DatabricksContextActionProvider : IContextActionProvider
 
         if (actionId.StartsWith(AddLibraryActionPrefix, StringComparison.Ordinal))
         {
-            var pipeline = entry.Pipelines.FirstOrDefault();
+            var pipeline = entry.Model.Pipelines.FirstOrDefault();
             return new InsertDatabricksLibraryCommand(
                 body, pipeline?.Key ?? "", actionId[AddLibraryActionPrefix.Length..], value);
         }
 
         if (actionId.StartsWith(AddTaskActionPrefix, StringComparison.Ordinal))
         {
-            var job = entry.Jobs.FirstOrDefault();
+            var job = entry.Model.Jobs.FirstOrDefault();
             var taskType = actionId[AddTaskActionPrefix.Length..];
             return job is null
                 ? null
@@ -456,8 +456,8 @@ public sealed class DatabricksContextActionProvider : IContextActionProvider
     }
 
     /// <summary>The job whose task carries <paramref name="taskKey"/>; empty for the file's first.</summary>
-    private static string JobKeyFor(DatabricksDocumentEntry entry, string taskKey) =>
-        entry.Jobs.FirstOrDefault(job => job.Tasks.Any(task => task.Key == taskKey))?.Key ?? "";
+    private static string JobKeyFor(DatabricksModel model, string taskKey) =>
+        model.Jobs.FirstOrDefault(job => job.Tasks.Any(task => task.Key == taskKey))?.Key ?? "";
 
     /// <summary>An element id's task key: <c>task:{key}</c>, or the id as given.</summary>
     private static string KeyOf(string elementId) =>

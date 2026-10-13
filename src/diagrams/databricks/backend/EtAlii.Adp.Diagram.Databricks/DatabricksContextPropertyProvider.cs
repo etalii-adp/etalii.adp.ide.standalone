@@ -80,7 +80,7 @@ public sealed class DatabricksContextPropertyProvider : IContextPropertyProvider
 
         var entry = _documents.GetOrLoad(target.ResolvedFullPath);
 
-        if (DatabricksSelection.TaskOf(entry, target.ElementId) is { } selected)
+        if (DatabricksSelection.TaskOf(entry.Model, target.ElementId) is { } selected)
         {
             return Rows(
             [
@@ -97,12 +97,12 @@ public sealed class DatabricksContextPropertyProvider : IContextPropertyProvider
         {
             return Rows(
             [
-                new ContextPropertyDefinition(BundleNameProperty, "Name", entry.Bundle.Name, Group: IdentityGroup),
+                new ContextPropertyDefinition(BundleNameProperty, "Name", entry.Model.Bundle.Name, Group: IdentityGroup),
                 .. Placeholders(),
             ]);
         }
 
-        if (DatabricksSelection.IsPipelineNode(target.ElementId) && entry.Pipelines.FirstOrDefault() is { } pipeline)
+        if (DatabricksSelection.IsPipelineNode(target.ElementId) && entry.Model.Pipelines.FirstOrDefault() is { } pipeline)
         {
             return Rows(
             [
@@ -114,7 +114,7 @@ public sealed class DatabricksContextPropertyProvider : IContextPropertyProvider
             ]);
         }
 
-        if (DatabricksSelection.TargetOf(entry, target.ElementId) is { } frame)
+        if (DatabricksSelection.TargetOf(entry.Model, target.ElementId) is { } frame)
         {
             return Rows(
             [
@@ -155,14 +155,14 @@ public sealed class DatabricksContextPropertyProvider : IContextPropertyProvider
         if (propertyId.StartsWith(PipelineScalarPrefix, StringComparison.Ordinal)
             && DatabricksSelection.IsPipelineNode(target.ElementId))
         {
-            var pipeline = entry.Pipelines.FirstOrDefault();
+            var pipeline = entry.Model.Pipelines.FirstOrDefault();
             return pipeline is null
                 ? null
                 : new SetDatabricksPipelineScalarCommand(
                     body, pipeline.Key, propertyId[PipelineScalarPrefix.Length..], value);
         }
 
-        var task = DatabricksSelection.TaskOf(entry, target.ElementId);
+        var task = DatabricksSelection.TaskOf(entry.Model, target.ElementId);
         return propertyId switch
         {
             RunIfProperty when task is { } selected =>

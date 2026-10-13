@@ -1,35 +1,31 @@
+using EtAlii.Adp.Documents;
 using Xunit;
 using IoPath = System.IO.Path;
 
 namespace EtAlii.Adp.Diagram.Databricks.Tests;
 
 /// <summary>
-/// The store's lifecycle: load-once, byte-identical saves of untouched documents, errors carried
-/// rather than thrown, and broken files refused on save (databricks-diagrams Requirements 2.1
-/// and 2.3).
+/// The store over the Databricks family, held to the contract every module's is, and what is its
+/// own: byte-identical saves of untouched documents, one file serving all three readings, and broken
+/// files refused on save (databricks-diagrams Requirements 2.1 and 2.3).
 /// </summary>
-public class DatabricksDocumentStoreTests : IDisposable
+public sealed class DatabricksDocumentStoreTests : DocumentStoreContract<IDatabricksDocumentStore, LineDocument, DatabricksModel>
 {
-    private readonly string _root;
-    private readonly DatabricksDocumentStore _store = new();
+    private static string Fixture(string name) => IoPath.Combine(AppContext.BaseDirectory, "Fixtures", name);
 
-    public DatabricksDocumentStoreTests()
-    {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
-    }
+    protected override string Example => Fixture("bundle.yml");
 
-    public void Dispose()
-    {
-        TestFolder.TryDelete(_root);
-    }
+    protected override string EditMarker => "store-contract-marker";
 
-    private string CopyFixture(string name)
-    {
-        var destination = IoPath.Combine(_root, name);
-        File.Copy(IoPath.Combine(AppContext.BaseDirectory, "Fixtures", name), destination);
-        return destination;
-    }
+    protected override IDatabricksDocumentStore CreateStore() => new DatabricksDocumentStore();
+
+    protected override void Edit(LineDocument document) =>
+        BundleWriter.SetName(document, DatabricksModel.Read(document).Bundle, EditMarker);
+
+    protected override string TextOf(LineDocument document) => document.Text;
+
+    protected override bool IsEmpty(DatabricksModel model) =>
+        model.Bundle.Name == "" && model.Jobs.Count == 0 && model.Pipelines.Count == 0;
 
     [Theory]
     [InlineData("bundle.yml")]
@@ -42,85 +38,91 @@ public class DatabricksDocumentStoreTests : IDisposable
     public void SavingAnUntouchedDocument_LeavesTheFileByteIdentical(string name)
     {
         // Arrange.
-        var path = CopyFixture(name);
+        using var folder = TestFolder.Create("databricks-store");
+        var path = folder.Combine(name);
+        File.Copy(Fixture(name), path);
         var original = File.ReadAllBytes(path);
-        var entry = _store.GetOrLoad(path);
+        var store = new DatabricksDocumentStore();
+        var entry = store.GetOrLoad(path);
 
         // Act. Nothing is edited between the load and the save, which is what makes this test about
         // byte identity rather than about edits surviving - see the LostEdit test beside it for the
         // case an untouched document cannot express.
-        var refusal = _store.Save(path, entry);
+        var saved = store.Save(path, entry.Document);
 
         // Assert.
-        Assert.Equal("", refusal.Error);
+        Assert.Equal("", saved.Error);
         Assert.Equal(original, File.ReadAllBytes(path));
     }
 
     [Fact]
     public void AMissingFile_OpensAsAnEmptyUsableDocument()
     {
-        // Arrange & act.
-        var entry = _store.GetOrLoad(IoPath.Combine(_root, "not-yet.yml"));
+        // Arrange.
+        using var folder = TestFolder.Create("databricks-store");
 
-        // Assert.
-        // A freshly created diagram opens, and the first save creates the file.
+        // Act.
+        var entry = new DatabricksDocumentStore().GetOrLoad(folder.Combine("not-yet.yml"));
+
+        // Assert: a freshly created diagram opens, and the first save creates the file.
         Assert.True(entry.IsUsable);
         Assert.Empty(entry.Document.Lines);
-        Assert.Empty(entry.Jobs);
+        Assert.Empty(entry.Model.Jobs);
     }
 
     [Fact]
-    public void AFileThatIsNotYaml_CarriesTheErrorAndItsLine_AndSaveRefuses()
+    public void AFileThatIsNotYaml_IsHeldUnreadable_AndASaveIsRefusedUnwritten()
     {
         // Arrange.
-        var path = CopyFixture("broken.yml");
+        using var folder = TestFolder.Create("databricks-store");
+        var path = folder.Combine("broken.yml");
+        File.Copy(Fixture("broken.yml"), path);
+        var before = File.ReadAllBytes(path);
+        var store = new DatabricksDocumentStore();
 
         // Act.
-        var entry = _store.GetOrLoad(path);
-        var refusal = _store.Save(path, entry);
+        var entry = store.GetOrLoad(path);
+        var saved = store.Save(path, entry.Document);
 
-        // Assert.
+        // Assert: the broken file is never made worse - the save is refused with the reason.
         Assert.False(entry.IsUsable);
-        Assert.NotEqual("", entry.Error);
-        Assert.True(entry.ErrorLine >= 1);
-        // The broken file is never made worse: the save is refused with the reason.
-        Assert.Contains("does not parse", refusal.Error, StringComparison.Ordinal);
+        Assert.NotEqual("", entry.Unreadable);
+        Assert.True(saved.Failed);
+        Assert.Contains("could not be read", saved.Error, StringComparison.Ordinal);
+        Assert.Equal(before, File.ReadAllBytes(path));
     }
 
     [Fact]
     public void OneFile_ServesAllThreeReadings()
     {
-        // Arrange.
-        var path = CopyFixture("bundle.yml");
+        // Arrange & act.
+        var entry = new DatabricksDocumentStore().GetOrLoad(Example);
 
-        // Act.
-        var entry = _store.GetOrLoad(path);
-
-        // Assert.
-        // A databricks.yml is a bundle that also declares a job and a pipeline inline - one
+        // Assert: a databricks.yml is a bundle that also declares a job and a pipeline inline - one
         // entry serves whichever diagram type opens it.
-        Assert.Equal("lakehouse-nightly", entry.Bundle.Name);
-        Assert.Equal("nightly_ingest", Assert.Single(entry.Jobs).Key);
-        Assert.Equal("bronze_to_gold", Assert.Single(entry.Pipelines).Key);
+        Assert.Equal("lakehouse-nightly", entry.Model.Bundle.Name);
+        Assert.Equal("nightly_ingest", Assert.Single(entry.Model.Jobs).Key);
+        Assert.Equal("bronze_to_gold", Assert.Single(entry.Model.Pipelines).Key);
     }
 
     [Fact]
     public void Reload_PicksUpAnExternalChange_AndSaysSo()
     {
         // Arrange.
-        var path = CopyFixture("crlf-line-endings.yml");
-        _store.GetOrLoad(path);
+        using var folder = TestFolder.Create("databricks-store");
+        var path = folder.Combine("crlf-line-endings.yml");
+        File.Copy(Fixture("crlf-line-endings.yml"), path);
+        var store = new DatabricksDocumentStore();
+        store.GetOrLoad(path);
         File.WriteAllText(path, "bundle:\r\n  name: replaced\r\n");
-        DatabricksDocumentChangedEventArgs? heard = null;
-        _store.Changed += (_, args) => heard = args;
+        string? heard = null;
+        store.Changed += (_, args) => heard = args.Path;
 
         // Act.
-        _store.Reload(path);
+        store.Reload(path);
 
         // Assert.
-        Assert.NotNull(heard);
-        Assert.Equal(path, heard.Path);
-        Assert.Equal("replaced", heard.Entry.Bundle.Name);
-        Assert.Equal("replaced", _store.GetOrLoad(path).Bundle.Name);
+        Assert.Equal(path, heard);
+        Assert.Equal("replaced", store.GetOrLoad(path).Model.Bundle.Name);
     }
 }

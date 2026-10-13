@@ -28,7 +28,7 @@ public sealed class InsertDatabricksLibraryCommandHandler(IDatabricksDocumentSto
         cancellationToken.ThrowIfCancellationRequested();
 
         return DatabricksEdits.Run(documents, command.BodyPath, command, entry =>
-            DatabricksEdits.PipelineOf(entry, command.PipelineKey) is { } pipeline
+            DatabricksEdits.PipelineOf(entry.Model, command.PipelineKey) is { } pipeline
                 ? PipelineWriter.InsertLibrary(entry.Document, pipeline, command.Kind, command.Path)
                 : "There is no pipeline in this file any more.");
     }
@@ -44,7 +44,7 @@ public sealed class RemoveDatabricksLibraryCommandHandler(IDatabricksDocumentSto
         cancellationToken.ThrowIfCancellationRequested();
 
         return DatabricksEdits.Run(documents, command.BodyPath, command, entry =>
-            DatabricksEdits.PipelineOf(entry, command.PipelineKey) is { } pipeline
+            DatabricksEdits.PipelineOf(entry.Model, command.PipelineKey) is { } pipeline
                 ? PipelineWriter.RemoveLibrary(entry.Document, pipeline, command.Kind, command.Path)
                 : "There is no pipeline in this file any more.");
     }
@@ -60,7 +60,7 @@ public sealed class SetDatabricksPipelineScalarCommandHandler(IDatabricksDocumen
         cancellationToken.ThrowIfCancellationRequested();
 
         return DatabricksEdits.Run(documents, command.BodyPath, command, entry =>
-            DatabricksEdits.PipelineOf(entry, command.PipelineKey) is { } pipeline
+            DatabricksEdits.PipelineOf(entry.Model, command.PipelineKey) is { } pipeline
                 ? PipelineWriter.SetScalar(entry.Document, pipeline, command.Key, command.Value)
                 : "There is no pipeline in this file any more.");
     }
