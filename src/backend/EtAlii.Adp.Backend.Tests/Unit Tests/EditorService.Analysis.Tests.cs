@@ -180,7 +180,7 @@ public sealed class EditorServiceAnalysisTests : IDisposable
         }
     }
 
-    private EditorService Service(params IEditorAnalyzer[] analyzers) => Service(Serilog.Core.Logger.None, analyzers);
+    private EditorService Service(params IEditorAnalyzer[] analyzers) => Service(Logger.None, analyzers);
 
     private EditorService Service(ILogger logger, params IEditorAnalyzer[] analyzers) =>
         new(
