@@ -7,46 +7,42 @@ namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
 /// Draws an influence - after checking it the way the canvas does, because the request may not have
 /// come from a canvas that checked.
 /// </summary>
-public sealed class AddGhgInfluenceCommandHandler(IGhgDocumentStore documents) : ICommandHandler<AddGhgInfluenceCommand>
+public sealed class AddGhgInfluenceCommandHandler(IGhgDocumentStore documents) : GhgEditHandler<AddGhgInfluenceCommand>(documents)
 {
     /// <inheritdoc />
-    public Task<CommandResult> ExecuteAsync(AddGhgInfluenceCommand command, CancellationToken cancellationToken = default)
+    protected override CommandResult Execute(AddGhgInfluenceCommand command)
     {
-        ArgumentNullException.ThrowIfNull(command);
-        cancellationToken.ThrowIfCancellationRequested();
+        return base.Execute(command.InfluenceId.Length > 0 ? command : command with { InfluenceId = ShortGuid.NewShortGuid().ToString() });
+    }
 
-        var minted = command.InfluenceId.Length > 0
-            ? command
-            : command with { InfluenceId = ShortGuid.NewShortGuid().ToString() };
-
-        return GhgEdits.Run(documents, minted.BodyPath, minted, (document, model) =>
+    /// <inheritdoc />
+    protected override EditOutcome Apply(GhgBody document, GhgModel model, AddGhgInfluenceCommand command)
+    {
+        // Checked against the document as it is now, never against what the client believed.
+        if (RefusalFor(model, command.FromId, command.ToId) is { } refusal)
         {
-            // Checked against the document as it is now, never against what the client believed.
-            if (RefusalFor(model, minted.FromId, minted.ToId) is { } refusal)
-            {
-                return GhgEdit.Refused(refusal);
-            }
+            return EditOutcome.Refused(refusal);
+        }
 
-            if (GhgEdits.IdTaken(model, minted.InfluenceId))
-            {
-                return GhgEdit.Refused("That id is already used in this graph.");
-            }
+        if (model.IsTaken(command.InfluenceId))
+        {
+            return EditOutcome.Refused("That id is already used in this graph.");
+        }
 
-            // A trigger has no phases, so an influence leaving one states no end at all.
-            var fromEnd = GhgEdits.TrendOf(model, minted.FromId) is { } from
-                ? minted.FromEnd ?? new GhgEnd(GhgPhases.Names[from.VisiblePhases - 1], GhgEnd.Bottom, 0.5)
-                : GhgEnd.None;
-            var influence = new GhgInfluence(
-                minted.InfluenceId,
-                minted.FromId,
-                fromEnd,
-                minted.ToId,
-                minted.ToEnd ?? new GhgEnd(GhgPhases.Names[0], GhgEnd.Top, 0.5),
-                Description: "",
-                Range: new LineRange(0, 0));
+        // A trigger has no phases, so an influence leaving one states no end at all.
+        var fromEnd = model.TrendOf(command.FromId) is { } from
+            ? command.FromEnd ?? new GhgEnd(GhgPhases.Names[from.VisiblePhases - 1], GhgEnd.Bottom, 0.5)
+            : GhgEnd.None;
+        var influence = new GhgInfluence(
+            command.InfluenceId,
+            command.FromId,
+            fromEnd,
+            command.ToId,
+            command.ToEnd ?? new GhgEnd(GhgPhases.Names[0], GhgEnd.Top, 0.5),
+            Description: "",
+            Range: new LineRange(0, 0));
 
-            return GhgWriter.AddInfluence(document, model, influence);
-        });
+        return GhgWriter.AddInfluence(document, model, influence);
     }
 
     /// <summary>
@@ -58,12 +54,12 @@ public sealed class AddGhgInfluenceCommandHandler(IGhgDocumentStore documents) :
     {
         ArgumentNullException.ThrowIfNull(model);
 
-        if (GhgEdits.TriggerOf(model, to) is not null && GhgEdits.TrendOf(model, to) is null)
+        if (model.TriggerOf(to) is not null && model.TrendOf(to) is null)
         {
             return "An influence cannot end at a trigger.";
         }
 
-        if ((GhgEdits.TrendOf(model, from) is null && GhgEdits.TriggerOf(model, from) is null) || GhgEdits.TrendOf(model, to) is null)
+        if ((model.TrendOf(from) is null && model.TriggerOf(from) is null) || model.TrendOf(to) is null)
         {
             return "An influence is drawn from one trend to another.";
         }

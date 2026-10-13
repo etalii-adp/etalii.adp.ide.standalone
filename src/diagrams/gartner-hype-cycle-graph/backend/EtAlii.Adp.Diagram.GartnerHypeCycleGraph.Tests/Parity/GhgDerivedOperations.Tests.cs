@@ -59,7 +59,7 @@ public class GhgDerivedOperationsTests
                     $"span of {trend.Id} to {GhgScale.FormatMonth(from)}..{GhgScale.FormatMonth(to)}",
                     store => new SetGhgSpanCommandHandler(store),
                     new SetGhgSpanCommand(Body, trend.Id, GhgScale.FormatMonth(from), GhgScale.FormatMonth(to)),
-                    (document, read) => HandWrittenGhgEdits.SetSpan(document, GhgEdits.TrendOf(read, trend.Id)!, from, to));
+                    (document, read) => HandWrittenGhgEdits.SetSpan(document, read.TrendOf(trend.Id)!, from, to));
             }
         }
 
@@ -88,7 +88,7 @@ public class GhgDerivedOperationsTests
         Assert.True(mismatches.Count == 0, $"{path}: {mismatches.Count} of {compared.Count} differ\n{string.Join("\n", mismatches)}");
         return;
 
-        async Task Compare<TCommand>(string edit, Func<Store, ICommandHandler<TCommand>> handler, TCommand command, Func<GhgBody, GhgModel, GhgEdit> handWritten)
+        async Task Compare<TCommand>(string edit, Func<Store, ICommandHandler<TCommand>> handler, TCommand command, Func<GhgBody, GhgModel, EditOutcome> handWritten)
             where TCommand : ICommand
         {
             compared.Add(edit);

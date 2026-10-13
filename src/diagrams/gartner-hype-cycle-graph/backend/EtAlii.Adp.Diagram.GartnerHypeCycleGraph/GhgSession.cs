@@ -43,7 +43,7 @@ public sealed class GhgSession : DocumentDiagramSession<GhgBody, GhgModel>
     /// and has no position of its own.
     /// </remarks>
     protected override DiagramPlacement PlacementOf(GhgModel model, string elementId, double x, double y) =>
-        GhgEdits.IsElement(model, elementId)
+        model.IsElement(elementId)
             ? DiagramPlacement.By(new SetGhgPlacementCommand(BodyPath, elementId, x, y))
             : DiagramPlacement.Refused("That is not something this graph can move.");
 }

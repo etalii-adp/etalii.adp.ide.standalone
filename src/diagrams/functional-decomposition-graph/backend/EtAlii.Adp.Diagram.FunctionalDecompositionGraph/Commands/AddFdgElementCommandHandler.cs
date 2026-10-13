@@ -44,7 +44,7 @@ public sealed class AddFdgElementCommandHandler(IFdgDocumentStore documents) : F
         var element = new FdgElement(
             command.ElementId,
             command.ElementType,
-            Name: isComment ? "" : Unique(model.Elements.Select(existing => existing.Name), DefaultNameOf(command.ElementType)),
+            Name: isComment ? "" : UniqueName.Of(model.Elements.Select(existing => existing.Name), DefaultNameOf(command.ElementType)),
             Description: "",
             Text: isComment ? "New comment" : "",
             X: command.X - (width / 2),

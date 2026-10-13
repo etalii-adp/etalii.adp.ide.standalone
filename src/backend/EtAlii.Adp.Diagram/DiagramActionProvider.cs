@@ -69,7 +69,7 @@ public abstract class DiagramActionProvider<TBody, TModel> : IContextActionProvi
         ArgumentNullException.ThrowIfNull(target);
         cancellationToken.ThrowIfCancellationRequested();
 
-        return ValueTask.FromResult(Validate(actionId, value));
+        return ValueTask.FromResult(Validate(target, actionId, value));
     }
 
     /// <inheritdoc />
@@ -102,6 +102,13 @@ public abstract class DiagramActionProvider<TBody, TModel> : IContextActionProvi
     internal static string Unreadable(ContextTarget target) =>
         $"{System.IO.Path.GetFileName(target.ResolvedFullPath)} could not be read, so it cannot be edited.";
 
+    /// <summary>The entry of the document <paramref name="target"/> is in, for a leg that is not handed one.</summary>
+    protected DocumentEntry<TBody, TModel> Load(ContextTarget target)
+    {
+        ArgumentNullException.ThrowIfNull(target);
+        return _documents.GetOrLoad(target.ResolvedFullPath);
+    }
+
     /// <summary>Whether <paramref name="path"/> is a document of this module.</summary>
     protected abstract bool IsBody(string path);
 
@@ -119,8 +126,8 @@ public abstract class DiagramActionProvider<TBody, TModel> : IContextActionProvi
         string actionId,
         CancellationToken cancellationToken);
 
-    /// <summary>Whether <paramref name="value"/> may be committed for <paramref name="actionId"/>; anything, by default.</summary>
-    protected virtual ContextValidationResult Validate(string actionId, string value) =>
+    /// <summary>Whether <paramref name="value"/> may be committed for <paramref name="actionId"/> on <paramref name="target"/>; anything, by default.</summary>
+    protected virtual ContextValidationResult Validate(ContextTarget target, string actionId, string value) =>
         ContextValidationResult.Accepted;
 
     /// <summary>

@@ -1,5 +1,5 @@
 using EtAlii.Adp.Context;
-using EtAlii.Adp.Documents.Wire;
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
@@ -42,7 +42,8 @@ namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
 /// set does stays here: <see cref="SetAsync"/> turns a row's text into the command that edits the document.
 /// </para>
 /// </remarks>
-public sealed class GhgContextPropertyProvider : IContextPropertyProvider
+public sealed class GhgContextPropertyProvider(IHistoryStackStore historyStacks, IGhgDocumentStore documents)
+    : DiagramPropertyProvider<GhgBody, GhgModel>(historyStacks, documents)
 {
     public const string NameProperty = "ghg.name";
     public const string DateProperty = "ghg.date";
@@ -73,53 +74,22 @@ public sealed class GhgContextPropertyProvider : IContextPropertyProvider
     /// <summary>The slider's four stops, in order; the value is the one at <c>phases - 1</c>.</summary>
     public static readonly IReadOnlyList<string> PhaseCandidates = ["Peak", "Peak and Trough", "Peak, Trough and Slope", "All four"];
 
-    private readonly IHistoryStackStore _historyStacks;
-    private readonly IGhgDocumentStore _documents;
-
-    public GhgContextPropertyProvider(IHistoryStackStore historyStacks, IGhgDocumentStore documents)
-    {
-        ArgumentNullException.ThrowIfNull(historyStacks);
-        ArgumentNullException.ThrowIfNull(documents);
-        _historyStacks = historyStacks;
-        _documents = documents;
-    }
+    /// <inheritdoc />
+    protected override bool IsBody(string path) => Diagram.IsBody(path);
 
     /// <inheritdoc />
-    public ContextScope Scope => ContextScope.DiagramElement;
+    protected override IReadOnlyList<ContextPropertyDefinition> Describe(DocumentEntry<GhgBody, GhgModel> entry, string elementId) =>
+        GhgDefinition.Rows(entry, elementId);
 
     /// <inheritdoc />
-    public ValueTask<IReadOnlyList<ContextPropertyDefinition>> DescribeAsync(ContextTarget target, CancellationToken cancellationToken)
+    protected override DiagramPropertyChange Change(ContextTarget target, GhgModel model, string propertyId, string value)
     {
-        ArgumentNullException.ThrowIfNull(target);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        return Rows(!Diagram.IsBody(target.ResolvedFullPath)
-            ? []
-            : GhgDefinition.Rows(_documents.GetOrLoad(target.ResolvedFullPath), target.ElementId));
-    }
-
-    /// <inheritdoc />
-    public async ValueTask<ContextPropertyResult> SetAsync(
-        ContextTarget target,
-        string propertyId,
-        string value,
-        CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(target);
-
         var body = target.ResolvedFullPath;
         var id = target.ElementId;
-        var entry = _documents.GetOrLoad(body);
-        if (!entry.IsUsable)
-        {
-            return ContextPropertyResult.Failure("The graph could not be read, so it cannot be edited.");
-        }
-
-        var model = entry.Model;
-        var isTrend = GhgEdits.TrendOf(model, id) is not null;
-        var isTrigger = GhgEdits.TriggerOf(model, id) is not null;
-        var isNote = GhgEdits.NoteOf(model, id) is not null;
-        var isInfluence = GhgEdits.InfluenceOf(model, id) is not null;
+        var isTrend = model.TrendOf(id) is not null;
+        var isTrigger = model.TriggerOf(id) is not null;
+        var isNote = model.NoteOf(id) is not null;
+        var isInfluence = model.InfluenceOf(id) is not null;
         var boundary = IndexIn(BoundaryProperties, propertyId);
 
         ICommand? command;
@@ -129,7 +99,7 @@ public sealed class GhgContextPropertyProvider : IContextPropertyProvider
                 var phases = IndexIn(PhaseCandidates, value.Trim()) + 1;
                 if (phases == 0)
                 {
-                    return ContextPropertyResult.Failure($"'{value}' is not one of {string.Join(", ", PhaseCandidates)}.");
+                    return DiagramPropertyChange.Refused($"'{value}' is not one of {string.Join(", ", PhaseCandidates)}.");
                 }
 
                 command = new SetGhgPhasesCommand(body, id, phases);
@@ -137,7 +107,7 @@ public sealed class GhgContextPropertyProvider : IContextPropertyProvider
             case FromAttachmentProperty or ToAttachmentProperty when isInfluence:
                 if (!GhgEnd.TryParse(value, out var end))
                 {
-                    return ContextPropertyResult.Failure($"'{value}' is not an attachment; write it as phase/edge/at, such as plateau/bottom/0.3.");
+                    return DiagramPropertyChange.Refused($"'{value}' is not an attachment; write it as phase/edge/at, such as plateau/bottom/0.3.");
                 }
 
                 command = new SetGhgAttachmentCommand(body, id, propertyId == FromAttachmentProperty ? "from" : "to", end);
@@ -159,14 +129,10 @@ public sealed class GhgContextPropertyProvider : IContextPropertyProvider
                 break;
         }
 
-        if (command is null)
-        {
-            return ContextPropertyResult.Failure($"'{propertyId}' cannot be edited on this selection.");
-        }
-
         // Through the project's history and out through the delta stream - never written by the grid.
-        var result = await _historyStacks.Get(target.RootPath).ExecuteAsync(command, cancellationToken);
-        return result.IsSuccess ? ContextPropertyResult.Success : ContextPropertyResult.Failure(result.Error);
+        return command is null
+            ? DiagramPropertyChange.Refused($"'{propertyId}' cannot be edited on this selection.")
+            : DiagramPropertyChange.By(command);
     }
 
     private static int IndexIn(IReadOnlyList<string> values, string value)
@@ -181,7 +147,4 @@ public sealed class GhgContextPropertyProvider : IContextPropertyProvider
 
         return -1;
     }
-
-    private static ValueTask<IReadOnlyList<ContextPropertyDefinition>> Rows(IReadOnlyList<ContextPropertyDefinition> rows) =>
-        ValueTask.FromResult(rows);
 }

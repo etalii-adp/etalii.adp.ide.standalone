@@ -4,36 +4,32 @@ using EtAlii.Adp.Specification.Disl;
 namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
 
 /// <summary>Adds a trigger, named <c>Trigger</c> and numbered when that is taken, with no tags.</summary>
-public sealed class AddGhgTriggerCommandHandler(IGhgDocumentStore documents) : ICommandHandler<AddGhgTriggerCommand>
+public sealed class AddGhgTriggerCommandHandler(IGhgDocumentStore documents) : GhgEditHandler<AddGhgTriggerCommand>(documents)
 {
     /// <summary>A new trigger's name, numbered when it is taken.</summary>
     public const string DefaultName = "Trigger";
 
     /// <inheritdoc />
-    public Task<CommandResult> ExecuteAsync(AddGhgTriggerCommand command, CancellationToken cancellationToken = default)
+    protected override CommandResult Execute(AddGhgTriggerCommand command)
     {
-        ArgumentNullException.ThrowIfNull(command);
-        cancellationToken.ThrowIfCancellationRequested();
+        return base.Execute(command.TriggerId.Length > 0 ? command : command with { TriggerId = ShortGuid.NewShortGuid().ToString() });
+    }
 
-        var minted = command.TriggerId.Length > 0
-            ? command
-            : command with { TriggerId = ShortGuid.NewShortGuid().ToString() };
-
-        return GhgEdits.Run(documents, minted.BodyPath, minted, (document, model) =>
+    /// <inheritdoc />
+    protected override EditOutcome Apply(GhgBody document, GhgModel model, AddGhgTriggerCommand command)
+    {
+        if (model.IsTaken(command.TriggerId))
         {
-            if (GhgEdits.IdTaken(model, minted.TriggerId))
-            {
-                return GhgEdit.Refused("That id is already used in this graph.");
-            }
+            return EditOutcome.Refused("That id is already used in this graph.");
+        }
 
-            return GhgDefinition.Apply(document, OperationInterpreter.Run(
-                GhgDefinition.Specification,
-                "addTriggerHere",
-                document.Disl.Diagram,
-                null,
-                DislIds.Fixed(minted.TriggerId),
-                new DislInvocation(GhgDefinition.Position(minted.X, minted.Y, model.TimeUnit)),
-                GhgDefinition.EditEnv));
-        });
+        return GhgDefinition.Apply(document, OperationInterpreter.Run(
+            GhgDefinition.Specification,
+            "addTriggerHere",
+            document.Disl.Diagram,
+            null,
+            DislIds.Fixed(command.TriggerId),
+            new DislInvocation(GhgDefinition.Position(command.X, command.Y, model.TimeUnit)),
+            GhgDefinition.EditEnv));
     }
 }

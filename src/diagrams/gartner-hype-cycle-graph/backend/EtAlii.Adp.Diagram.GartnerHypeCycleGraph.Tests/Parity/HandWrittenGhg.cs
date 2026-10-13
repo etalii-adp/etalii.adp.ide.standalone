@@ -51,7 +51,7 @@ internal static class HandWrittenGhg
                 model.Trends.Count + model.Triggers.Count + model.Notes.Count > 0,
                 "There is nothing to arrange until this graph has a trend."),
         ]);
-        if (GhgEdits.TrendOf(model, elementId) is { } trend)
+        if (model.TrendOf(elementId) is { } trend)
         {
             List<ContextActionDefinition> actions =
             [
@@ -66,7 +66,7 @@ internal static class HandWrittenGhg
             return WithArrange([new ContextActionGroupDefinition(actions)]);
         }
 
-        if (GhgEdits.TriggerOf(model, elementId) is not null)
+        if (model.TriggerOf(elementId) is not null)
         {
             return WithArrange(
             [
@@ -78,7 +78,7 @@ internal static class HandWrittenGhg
             ]);
         }
 
-        if (GhgEdits.NoteOf(model, elementId) is not null)
+        if (model.NoteOf(elementId) is not null)
         {
             return WithArrange(
             [
@@ -90,7 +90,7 @@ internal static class HandWrittenGhg
             ]);
         }
 
-        if (GhgEdits.InfluenceOf(model, elementId) is not null)
+        if (model.InfluenceOf(elementId) is not null)
         {
             return WithArrange(
             [
@@ -133,7 +133,7 @@ internal static class HandWrittenGhg
         var readOnly = entry.IsUsable ? "" : "The graph could not be read, so it cannot be edited.";
         var model = entry.Model;
 
-        if (GhgEdits.TrendOf(model, elementId) is { } trend)
+        if (model.TrendOf(elementId) is { } trend)
         {
             List<ContextPropertyDefinition> rows =
             [
@@ -155,7 +155,7 @@ internal static class HandWrittenGhg
             return rows;
         }
 
-        if (GhgEdits.TriggerOf(model, elementId) is { } trigger)
+        if (model.TriggerOf(elementId) is { } trigger)
         {
             return
             [
@@ -166,7 +166,7 @@ internal static class HandWrittenGhg
             ];
         }
 
-        if (GhgEdits.NoteOf(model, elementId) is { } note)
+        if (model.NoteOf(elementId) is { } note)
         {
             return
             [
@@ -175,7 +175,7 @@ internal static class HandWrittenGhg
             ];
         }
 
-        if (GhgEdits.InfluenceOf(model, elementId) is { } influence)
+        if (model.InfluenceOf(elementId) is { } influence)
         {
             const string shown = "Where it is attached; drag the end on the canvas to move it.";
             return
@@ -221,12 +221,12 @@ internal static class HandWrittenGhg
 
     private static string Describe(GhgModel model, string id, GhgEnd end)
     {
-        if (GhgEdits.TrendOf(model, id) is null && GhgEdits.TriggerOf(model, id) is { } trigger)
+        if (model.TrendOf(id) is null && model.TriggerOf(id) is { } trigger)
         {
             return trigger.Name.Length > 0 ? trigger.Name : id;
         }
 
-        var trend = GhgEdits.TrendOf(model, id);
+        var trend = model.TrendOf(id);
         var name = trend is { Name.Length: > 0 } ? trend.Name : id;
         var phase = end.PhaseIndex >= 0 ? GhgPhases.Titles[end.PhaseIndex] : end.Phase;
         return $"{name} · {phase}";

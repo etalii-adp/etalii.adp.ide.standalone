@@ -29,7 +29,7 @@ public sealed class AddSupplyChainNodeCommandHandler(ISupplyChainDocumentStore d
         var node = new SupplyChainNode(
             command.NodeId,
             SupplyChainNodeTypes.Normalize(command.NodeType),
-            Unique(model.Nodes.Select(existing => existing.Name), $"New {SupplyChainNodeTypes.Display(command.NodeType).ToLowerInvariant()}"),
+            UniqueName.Of(model.Nodes.Select(existing => existing.Name), $"New {SupplyChainNodeTypes.Display(command.NodeType).ToLowerInvariant()}"),
             Description: "",
             Group: "",
             Quantity: 0,

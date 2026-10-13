@@ -6,7 +6,7 @@ namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
 /// <param name="BodyPath">The document.</param>
 /// <param name="TrendId">The trend or trigger.</param>
 /// <param name="Tags">Comma-separated, as the grid's LINE editor sends them. Blank entries and repeats are dropped.</param>
-public sealed record SetGhgTagsCommand(string BodyPath, string TrendId, string Tags) : ICommand
+public sealed record SetGhgTagsCommand(string BodyPath, string TrendId, string Tags) : IDocumentEditCommand
 {
     /// <summary>The tags the text names, trimmed, in order, each once.</summary>
     public IReadOnlyList<string> Parsed =>

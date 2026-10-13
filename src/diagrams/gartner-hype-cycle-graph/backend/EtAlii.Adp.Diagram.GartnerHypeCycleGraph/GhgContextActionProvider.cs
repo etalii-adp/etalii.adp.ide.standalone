@@ -1,6 +1,5 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
-using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.History;
 using EtAlii.Adp.Specification.Disl;
 
@@ -33,7 +32,8 @@ namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
 /// written over it, and the menus offer nothing rather than actions that would only refuse.
 /// </para>
 /// </remarks>
-public sealed class GhgContextActionProvider : IContextActionProvider
+public sealed class GhgContextActionProvider(IHistoryStackStore historyStacks, IGhgDocumentStore documents)
+    : DiagramActionProvider<GhgBody, GhgModel>(historyStacks, documents)
 {
     /// <summary>Add a trend at a drop or a placement.</summary>
     public const string AddTrendActionId = "ghg.add.trend";
@@ -62,52 +62,28 @@ public sealed class GhgContextActionProvider : IContextActionProvider
     /// <summary>Put every trend, trigger and note on the row that keeps the graph least cluttered (<see cref="GhgArrangement"/>).</summary>
     public const string ArrangeActionId = "ghg.arrange";
 
-    private readonly IHistoryStackStore _historyStacks;
-    private readonly IGhgDocumentStore _documents;
-
-    public GhgContextActionProvider(IHistoryStackStore historyStacks, IGhgDocumentStore documents)
-    {
-        ArgumentNullException.ThrowIfNull(historyStacks);
-        ArgumentNullException.ThrowIfNull(documents);
-        _historyStacks = historyStacks;
-        _documents = documents;
-    }
+    /// <inheritdoc />
+    protected override bool IsBody(string path) => Diagram.IsBody(path);
 
     /// <inheritdoc />
-    public ContextScope Scope => ContextScope.DiagramElement;
+    protected override IReadOnlyList<ContextActionGroupDefinition> Discover(DocumentEntry<GhgBody, GhgModel> entry, string elementId) =>
+        // Derived from the DISL definition: the element's, the empty canvas's or the connect gesture's
+        // menu, nothing offered on a read-only entry. Executing an action by id only finds actions its
+        // target discovers, so a drop and a finished gesture each discover what may be executed against them.
+        GhgDefinition.Menus(entry, elementId);
 
     /// <inheritdoc />
-    public ValueTask<IReadOnlyList<ContextActionGroupDefinition>> DiscoverAsync(ContextTarget target, CancellationToken cancellationToken)
+    protected override async ValueTask<ContextExecutionResult> RunAsync(
+        ContextTarget target,
+        DocumentEntry<GhgBody, GhgModel> entry,
+        string actionId,
+        CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(target);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        return Result(!Diagram.IsBody(target.ResolvedFullPath)
-            ? []
-            // Derived from the DISL definition: the element's, the empty canvas's or the connect gesture's
-            // menu, nothing offered on a read-only entry. Executing an action by id only finds actions its
-            // target discovers, so a drop and a finished gesture each discover what may be executed against them.
-            : GhgDefinition.Menus(_documents.GetOrLoad(target.ResolvedFullPath), target.ElementId));
-
-    }
-
-    /// <inheritdoc />
-    public async ValueTask<ContextExecutionResult> ExecuteAsync(ContextTarget target, string actionId, CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(target);
-        cancellationToken.ThrowIfCancellationRequested();
-
         var body = target.ResolvedFullPath;
-        var entry = _documents.GetOrLoad(body);
-        if (!entry.IsUsable)
-        {
-            return new ContextExecutionFailed($"{System.IO.Path.GetFileName(body)} could not be read, so it cannot be edited.");
-        }
-
         var model = entry.Model;
-        var trend = GhgEdits.TrendOf(model, target.ElementId);
-        var trigger = GhgEdits.TriggerOf(model, target.ElementId);
-        var note = GhgEdits.NoteOf(model, target.ElementId);
+        var trend = model.TrendOf(target.ElementId);
+        var trigger = model.TriggerOf(target.ElementId);
+        var note = model.NoteOf(target.ElementId);
 
         switch (actionId)
         {
@@ -152,21 +128,16 @@ public sealed class GhgContextActionProvider : IContextActionProvider
                 // The definition's deletion confirmation: how many influences go with it, asked before
                 // it runs; with none, no ceremony.
                 var id = target.ElementId;
-                if (GhgDefinition.ElementOf(entry.Document.Disl.Diagram, id) is not { } element
-                    || DeletionPolicy.Confirmation(GhgDefinition.Specification, element, env: GhgDefinition.EditEnv) is not { } confirmation)
-                {
-                    return await DispatchAsync(target, new RemoveGhgElementCommand(body, id), cancellationToken);
-                }
-
-                return new ContextExecutionRequiresConfirmation(new ContextConfirmationRequest(
-                    confirmation.Title,
-                    "mdi-delete-outline",
-                    confirmation.Message,
-                    confirmation.ConfirmLabel,
-                    Danger: confirmation.Danger));
+                var asked = GhgDefinition.ElementOf(entry.Document.Disl.Diagram, id) is { } element
+                    ? DeletionPolicy.Confirmation(GhgDefinition.Specification, element, env: GhgDefinition.EditEnv)
+                    : null;
+                var confirmation = asked is null
+                    ? null
+                    : new RemovalConfirmation(asked.Title, asked.Message, asked.ConfirmLabel, asked.Danger);
+                return await RemoveAsync(target, new RemoveGhgElementCommand(body, id), confirmation, cancellationToken);
             }
 
-            case DisconnectActionId when GhgEdits.InfluenceOf(model, target.ElementId) is not null:
+            case DisconnectActionId when model.InfluenceOf(target.ElementId) is not null:
                 return await DispatchAsync(target, new RemoveGhgInfluenceCommand(body, target.ElementId), cancellationToken);
 
             case ArrangeActionId:
@@ -181,65 +152,35 @@ public sealed class GhgContextActionProvider : IContextActionProvider
     }
 
     /// <inheritdoc />
-    public ValueTask<ContextValidationResult> ValidateAsync(ContextTarget target, string actionId, string value, CancellationToken cancellationToken)
+    protected override ContextValidationResult Validate(ContextTarget target, string actionId, string value)
     {
-        ArgumentNullException.ThrowIfNull(target);
-        cancellationToken.ThrowIfCancellationRequested();
-
         // The one value asked for is a name or a note's text, and the only wrong one is an empty name:
         // a note may be emptied.
         if (actionId != RenameActionId || !string.IsNullOrWhiteSpace(value))
         {
-            return ValueTask.FromResult(ContextValidationResult.Accepted);
+            return ContextValidationResult.Accepted;
         }
 
-        var entry = _documents.GetOrLoad(target.ResolvedFullPath);
-        return ValueTask.FromResult(
-            entry.IsUsable && GhgEdits.NoteOf(entry.Model, target.ElementId) is not null
-                ? ContextValidationResult.Accepted
-                : ContextValidationResult.Rejected(entry.IsUsable && GhgEdits.TriggerOf(entry.Model, target.ElementId) is not null
-                    ? "A trigger needs a name."
-                    : "A trend needs a name."));
+        var entry = Load(target);
+        return entry.IsUsable && entry.Model.NoteOf(target.ElementId) is not null
+            ? ContextValidationResult.Accepted
+            : ContextValidationResult.Rejected(entry.IsUsable && entry.Model.TriggerOf(target.ElementId) is not null
+                ? "A trigger needs a name."
+                : "A trend needs a name.");
     }
 
     /// <inheritdoc />
-    public async ValueTask<ContextCommitResult> CommitAsync(
-        ContextTarget target,
-        string actionId,
-        string value,
-        string text,
-        CancellationToken cancellationToken)
+    protected override ICommand? CommitCommand(ContextTarget target, GhgModel model, string actionId, string value)
     {
-        ArgumentNullException.ThrowIfNull(target);
-        _ = text;
-
         var body = target.ResolvedFullPath;
         var id = target.ElementId;
-        var entry = _documents.GetOrLoad(body);
-        var isElement = entry.IsUsable && GhgEdits.IsElement(entry.Model, id);
+        var isElement = model.IsElement(id);
 
-        ICommand? command = actionId switch
+        return actionId switch
         {
             RenameActionId when isElement => new RenameGhgElementCommand(body, id, value),
             RemoveActionId when isElement => new RemoveGhgElementCommand(body, id),
             _ => null,
         };
-
-        if (command is null)
-        {
-            return ContextCommitResult.Failed($"'{actionId}' does not apply to this selection.");
-        }
-
-        var result = await _historyStacks.Get(target.RootPath).ExecuteAsync(command, cancellationToken);
-        return result.IsSuccess ? ContextCommitResult.Succeeded : ContextCommitResult.Failed(result.Error);
     }
-
-    private async ValueTask<ContextExecutionResult> DispatchAsync(ContextTarget target, ICommand command, CancellationToken cancellationToken)
-    {
-        var result = await _historyStacks.Get(target.RootPath).ExecuteAsync(command, cancellationToken);
-        return result.IsSuccess ? new ContextExecutionCompleted() : new ContextExecutionFailed(result.Error);
-    }
-
-    private static ValueTask<IReadOnlyList<ContextActionGroupDefinition>> Result(IReadOnlyList<ContextActionGroupDefinition> groups) =>
-        ValueTask.FromResult(groups);
 }

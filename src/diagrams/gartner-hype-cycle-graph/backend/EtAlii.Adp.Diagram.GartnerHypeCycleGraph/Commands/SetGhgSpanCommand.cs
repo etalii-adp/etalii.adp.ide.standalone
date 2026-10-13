@@ -14,4 +14,4 @@ namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
 /// Stored boundaries keep their proportion of the span, snapped to a month, and every phase stays at
 /// least a month long (Requirement 3.5).
 /// </remarks>
-public sealed record SetGhgSpanCommand(string BodyPath, string TrendId, string? Start, string? Stop) : ICommand;
+public sealed record SetGhgSpanCommand(string BodyPath, string TrendId, string? Start, string? Stop) : IDocumentEditCommand;
