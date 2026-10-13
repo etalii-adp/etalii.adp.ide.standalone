@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 using Xunit;
 
@@ -249,7 +250,7 @@ public sealed class GhgCommandsTests : IDisposable
     {
         // Another program holds the file, so the first open cannot read it.
         var store = new GhgDocumentStore();
-        GhgDocumentEntry entry;
+        DocumentEntry<GhgBody, GhgModel> entry;
         await using (new FileStream(Body, FileMode.Open, FileAccess.Read, FileShare.None))
         {
             entry = store.GetOrLoad(Body);
@@ -261,7 +262,7 @@ public sealed class GhgCommandsTests : IDisposable
         var edited = await new GhgTestDispatcher(store).DispatchAsync(
             new RenameGhgElementCommand(Body, "railways", "Railroads"),
             TestContext.Current.CancellationToken);
-        var saved = store.Save(Body, GhgBody.Parse(GhgDocumentFactory.EmptyDocument("\n")));
+        var saved = store.Save(Body, GhgBody.Parse(GhgParser.EmptyDocument("\n")));
 
         Assert.False(edited.IsSuccess);
         Assert.True(saved.Failed);

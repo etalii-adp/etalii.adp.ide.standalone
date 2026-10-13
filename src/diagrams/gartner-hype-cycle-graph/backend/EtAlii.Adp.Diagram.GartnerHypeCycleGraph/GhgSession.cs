@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
@@ -112,6 +113,6 @@ public sealed class GhgSession : IDiagramSession
     private void Raise(IReadOnlyList<DiagramDelta> deltas) =>
         Changed?.Invoke(this, new DiagramDeltasEventArgs(deltas));
 
-    private void OnDocumentChanged(object? sender, GhgDocumentChangedEventArgs args) =>
+    private void OnDocumentChanged(object? sender, DocumentChangedEventArgs args) =>
         _changes.OnDocumentChanged(args.Path);
 }
