@@ -86,17 +86,15 @@ public abstract class DiagramElementSourceResolver<TBody, TModel> : IContextSour
 
         if (GestureIds.TryParsePlacement(elementId, out _, out _) || GestureIds.TryParseRelation(elementId, out _, out _))
         {
-            var proposed = GestureIds.IsPlacement(elementId) ? Texts.NewElement : Texts.NewRelation;
-            return Resolved(new ContextResolvedLevel(
-                id,
-                [proposed],
-                ContextScope.DiagramElement,
-                target,
-                new ContextLevelDetail { Element = new ElementDetail { Text = proposed } },
-                this));
+            return Proposed(id, GestureIds.IsPlacement(elementId) ? Texts.NewElement : Texts.NewRelation, target);
         }
 
         var model = Load(bodyPath);
+        if (ProposedOf(model, elementId) is { } other)
+        {
+            return Proposed(id, other, target);
+        }
+
         if (Describe(model, elementId) is not { } described)
         {
             return Rejected(Texts.Gone);
@@ -146,6 +144,13 @@ public abstract class DiagramElementSourceResolver<TBody, TModel> : IContextSour
     /// <summary>The element <paramref name="elementId"/> as the canvas was sent it, or null when none is drawn.</summary>
     protected abstract DiagramElement? Drawn(TModel model, string elementId);
 
+    /// <summary>
+    /// What <paramref name="elementId"/> is called when it names a target of the module's own besides
+    /// a drop and a connect gesture, such as the diagram itself or a group of one element; null when it
+    /// names none. Such a target, like a gesture, is never selected, tracked or written. None by default.
+    /// </summary>
+    protected virtual string? ProposedOf(TModel model, string elementId) => null;
+
     /// <summary>Whether <paramref name="elementId"/> has children, for a diagram whose elements form a tree; none by default.</summary>
     protected virtual bool HasChildren(TModel model, string elementId) => false;
 
@@ -171,6 +176,15 @@ public abstract class DiagramElementSourceResolver<TBody, TModel> : IContextSour
             }
         }
     }
+
+    private ValueTask<ContextLevelResolution> Proposed(ContextSource id, string text, ContextTarget target) =>
+        Resolved(new ContextResolvedLevel(
+            id,
+            [text],
+            ContextScope.DiagramElement,
+            target,
+            new ContextLevelDetail { Element = new ElementDetail { Text = text } },
+            this));
 
     private static ValueTask<ContextLevelResolution> Resolved(ContextResolvedLevel level) =>
         ValueTask.FromResult<ContextLevelResolution>(new ResolvedContextLevel(level));

@@ -140,8 +140,19 @@ public abstract class DocumentDiagramSession<TBody, TModel> : IDiagramSession
     protected virtual DiagramPlacement ParentMoveOf(string elementId, string newParentId, int index) =>
         DiagramPlacement.Refused(ParentRefusal);
 
-    /// <summary>The model the session shows now: the store's document at <see cref="BodyPath"/>.</summary>
-    private TModel Model() => _documents.GetOrLoad(BodyPath).Model;
+    /// <summary>
+    /// What the session shows of <paramref name="entry"/>: its model. A diagram whose files are
+    /// written by other programs while open, and so are often half written, answers with what it
+    /// last read while the entry cannot be read.
+    /// </summary>
+    protected virtual TModel Shown(DocumentEntry<TBody, TModel> entry)
+    {
+        ArgumentNullException.ThrowIfNull(entry);
+        return entry.Model;
+    }
+
+    /// <summary>The model the session shows now: the store's document at <see cref="BodyPath"/>, as <see cref="Shown"/> says.</summary>
+    private TModel Model() => Shown(_documents.GetOrLoad(BodyPath));
 
     /// <summary>
     /// Renders again and raises what changed, as a change to the document does: for a session whose
