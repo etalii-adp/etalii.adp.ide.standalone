@@ -23,33 +23,6 @@ internal static partial class SchemaValidation
         var starts = new Stack<int>();
         var reading = new Reading();
 
-        void OnEvent(object? sender, ValidationEventArgs args)
-        {
-            var exception = args.Exception;
-            var at = positions.Offset(exception.LineNumber, exception.LinePosition);
-            (int from, int to) = RangeOf(content, positions, at);
-
-            if (AttributeValue().Match(exception.Message) is { Success: true } attribute)
-            {
-                (from, to) = ValueAfter(content, at, attribute.Groups["name"].Value) ?? (from, to);
-            }
-            else if (reading.Reader is { NodeType: XmlNodeType.EndElement } && starts.Count > 0)
-            {
-                // Reported at the end tag: a missing child, or a value that does not fit. The
-                // value is marked where it is; anything else goes to the element's start tag.
-                (from, to) = ElementValue().IsMatch(exception.Message) && reading.LastText.From >= 0
-                    ? reading.LastText
-                    : RangeOf(content, positions, starts.Peek());
-            }
-
-            findings.Add(new TextFinding(
-                from,
-                to,
-                args.Severity == XmlSeverityType.Error ? TextFindingSeverity.Error : TextFindingSeverity.Warning,
-                Sentence(exception.Message),
-                Source));
-        }
-
         try
         {
             using var validating = XmlReaders.Document(content, fullPath, resolver, settings =>
@@ -103,6 +76,33 @@ internal static partial class SchemaValidation
         }
 
         return findings;
+
+        void OnEvent(object? sender, ValidationEventArgs args)
+        {
+            var exception = args.Exception;
+            var at = positions.Offset(exception.LineNumber, exception.LinePosition);
+            (int from, int to) = RangeOf(content, positions, at);
+
+            if (AttributeValue().Match(exception.Message) is { Success: true } attribute)
+            {
+                (from, to) = ValueAfter(content, at, attribute.Groups["name"].Value) ?? (from, to);
+            }
+            else if (reading.Reader is { NodeType: XmlNodeType.EndElement } && starts.Count > 0)
+            {
+                // Reported at the end tag: a missing child, or a value that does not fit. The
+                // value is marked where it is; anything else goes to the element's start tag.
+                (from, to) = ElementValue().IsMatch(exception.Message) && reading.LastText.From >= 0
+                    ? reading.LastText
+                    : RangeOf(content, positions, starts.Peek());
+            }
+
+            findings.Add(new TextFinding(
+                from,
+                to,
+                args.Severity == XmlSeverityType.Error ? TextFindingSeverity.Error : TextFindingSeverity.Warning,
+                Sentence(exception.Message),
+                Source));
+        }
     }
 
     /// <summary>
