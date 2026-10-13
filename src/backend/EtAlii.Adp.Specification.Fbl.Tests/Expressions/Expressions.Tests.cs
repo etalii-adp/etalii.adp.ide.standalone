@@ -55,7 +55,7 @@ public class ExpressionsTests
         var binding = Binding("yaml", """{ "label": { "key": "label" } }""", when: "has(entry.end)", version: "0.1");
 
         // Act.
-        var model = OpenBody.Open(Encoding.UTF8.GetBytes("items:\n  - label: open\n    end:\n  - label: absent\n"), binding, new FblOptions { FileName = "plan.t" }).Model;
+        var model = OpenBody.Open("items:\n  - label: open\n    end:\n  - label: absent\n"u8.ToArray(), binding, new FblOptions { FileName = "plan.t" }).Model;
 
         // Assert: only the entry that writes end: is matched.
         Assert.Equal(["open"], model.Elements.Select(e => e.Attributes["label"]));

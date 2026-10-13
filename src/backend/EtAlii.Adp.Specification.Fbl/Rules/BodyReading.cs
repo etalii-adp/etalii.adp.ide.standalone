@@ -725,25 +725,37 @@ internal sealed class BodyReading
 internal sealed record OverrideNode(object? Node);
 
 /// <summary>The variables of one CEL evaluation, of which some are made only when the expression reads them.</summary>
-internal sealed class CelVariables : Dictionary<string, object?>, IReadOnlyDictionary<string, object?>
+internal sealed class CelVariables : IReadOnlyDictionary<string, object?>
 {
+    private readonly Dictionary<string, object?> _values = new(StringComparer.Ordinal);
     private readonly Dictionary<string, Func<object?>> _lazy = new(StringComparer.Ordinal);
 
-    public CelVariables()
-        : base(StringComparer.Ordinal)
+    public object? this[string key]
     {
+        get => TryGetValue(key, out var value) ? value : throw new KeyNotFoundException(key);
+        set => _values[key] = value;
     }
 
     public void Lazy(string name, Func<object?> make) => _lazy[name] = make;
 
-    bool IReadOnlyDictionary<string, object?>.ContainsKey(string key) => ContainsKey(key) || _lazy.ContainsKey(key);
+    public IEnumerable<string> Keys => _values.Keys.Concat(_lazy.Keys);
 
-    bool IReadOnlyDictionary<string, object?>.TryGetValue(string key, out object? value)
+    public IEnumerable<object?> Values => Keys.Select(key => this[key]);
+
+    public int Count => _values.Count + _lazy.Count;
+
+    public bool ContainsKey(string key) => _values.ContainsKey(key) || _lazy.ContainsKey(key);
+
+    public bool TryGetValue(string key, out object? value)
     {
-        if (TryGetValue(key, out value)) return true;
+        if (_values.TryGetValue(key, out value)) return true;
         if (!_lazy.Remove(key, out var make)) return false;
         value = make();
-        this[key] = value;
+        _values[key] = value;
         return true;
     }
+
+    public IEnumerator<KeyValuePair<string, object?>> GetEnumerator() => Keys.ToList().Select(key => new KeyValuePair<string, object?>(key, this[key])).GetEnumerator();
+
+    System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
 }

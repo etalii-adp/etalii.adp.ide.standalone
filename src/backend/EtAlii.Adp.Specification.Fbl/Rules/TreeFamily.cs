@@ -122,10 +122,10 @@ internal abstract class TreeFamily(BodyText text, FblBinding binding, FblOptions
     public static object? Cel(TreeValue value) => Walk(value, scalar => scalar.Flow ?? scalar.Typed);
 
     /// <summary>A value as CEL's <c>text</c> sees it (FBL 0.5 §2.4): every scalar by its written text.</summary>
-    public static object? CelText(TreeValue value) => Walk(value, scalar => scalar.FlowText ?? scalar.Text);
+    private static object? CelText(TreeValue value) => Walk(value, scalar => scalar.FlowText ?? scalar.Text);
 
     /// <summary>A value as CEL's <c>style</c> sees it (FBL 0.5 §2.4): every scalar by the name of the style it is written in.</summary>
-    public static object? CelStyle(TreeValue value) => Walk(value, scalar => scalar.FlowStyle ?? StyleName(scalar.Style));
+    private static object? CelStyle(TreeValue value) => Walk(value, scalar => scalar.FlowStyle ?? StyleName(scalar.Style));
 
     private static object? Walk(TreeValue value, Func<TreeValue, object?> scalar)
     {
