@@ -132,3 +132,27 @@ public class WarningDocumentStore<TBody, TModel>(IDiagramDocumentStore<TBody, TM
     /// <inheritdoc />
     public void Forget(string path) => inner.Forget(path);
 }
+
+/// <summary>
+/// A <see cref="WarningDocumentStore{TBody, TModel}"/> for a store whose edits are saved against
+/// the file as it is now: the warning is added to those saves too.
+/// </summary>
+public class WarningEditSavingDocumentStore<TBody, TModel> : WarningDocumentStore<TBody, TModel>, IEditSavingDocumentStore<TBody, TModel>
+{
+    private readonly IEditSavingDocumentStore<TBody, TModel> _inner;
+    private readonly string _warning;
+
+    protected WarningEditSavingDocumentStore(IEditSavingDocumentStore<TBody, TModel> inner, string warning)
+        : base(inner, warning)
+    {
+        _inner = inner;
+        _warning = warning;
+    }
+
+    /// <inheritdoc />
+    public DocumentEditSaved Save(string path, DocumentEntry<TBody, TModel> basis, Func<TBody, string> edit)
+    {
+        var saved = _inner.Save(path, basis, edit);
+        return saved.Result.Failed ? saved : saved with { Result = DocumentSaveResult.WithWarning(_warning) };
+    }
+}

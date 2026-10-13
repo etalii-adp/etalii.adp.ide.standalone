@@ -1,6 +1,5 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
-using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.History;
 using EtAlii.Adp.Specification.Disl;
 using EtAlii.Adp.Specification.Fbl;
@@ -21,49 +20,27 @@ public sealed class AadToolboxProvider : IDiagramToolboxProvider
 /// The property grid of an element or a row: its type's attributes, each written through a command
 /// (Requirement 9.4). A relation shows nothing; it is its two ends.
 /// </summary>
-public sealed class AadContextPropertyProvider : IContextPropertyProvider
+public sealed class AadContextPropertyProvider(IHistoryStackStore historyStacks, IAadDocumentStore documents)
+    : DiagramPropertyProvider<AadBody, AadModel>(historyStacks, documents)
 {
-    private readonly IHistoryStackStore _historyStacks;
-    private readonly IAadDocumentStore _documents;
-
-    public AadContextPropertyProvider(IHistoryStackStore historyStacks, IAadDocumentStore documents)
-    {
-        ArgumentNullException.ThrowIfNull(historyStacks);
-        ArgumentNullException.ThrowIfNull(documents);
-        _historyStacks = historyStacks;
-        _documents = documents;
-    }
+    /// <inheritdoc />
+    protected override bool IsBody(string path) => Diagram.IsBody(path);
 
     /// <inheritdoc />
-    public ContextScope Scope => ContextScope.DiagramElement;
-
-    /// <inheritdoc />
-    public ValueTask<IReadOnlyList<ContextPropertyDefinition>> DescribeAsync(ContextTarget target, CancellationToken cancellationToken)
+    protected override IReadOnlyList<ContextPropertyDefinition> Describe(DocumentEntry<AadBody, AadModel> entry, string elementId)
     {
-        ArgumentNullException.ThrowIfNull(target);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        if (target.Origin != Diagram.AgentActivity.Origin)
-        {
-            return ValueTask.FromResult<IReadOnlyList<ContextPropertyDefinition>>([]);
-        }
-
-        var entry = _documents.GetOrLoad(target.ResolvedFullPath);
-        return ValueTask.FromResult(AadDefinition.ElementOf(entry.Document.Disl.Diagram, target.ElementId) is { Type.IsRelation: false } element
+        ArgumentNullException.ThrowIfNull(entry);
+        return AadDefinition.ElementOf(entry.Document.Disl.Diagram, elementId) is { Type.IsRelation: false } element
             ? AadDefinition.Rows(element, readOnly: !entry.IsUsable)
-            : []);
+            : [];
     }
 
     /// <inheritdoc />
-    public async ValueTask<ContextPropertyResult> SetAsync(ContextTarget target, string propertyId, string value, CancellationToken cancellationToken)
+    /// <remarks>Through the project's history and out through the delta stream - never written by the grid.</remarks>
+    protected override DiagramPropertyChange Change(ContextTarget target, AadModel model, string propertyId, string value)
     {
         ArgumentNullException.ThrowIfNull(target);
-        ArgumentNullException.ThrowIfNull(propertyId);
-        ArgumentNullException.ThrowIfNull(value);
-
-        // Through the project's history and out through the delta stream - never written by the grid.
-        var result = await _historyStacks.Get(target.RootPath).ExecuteAsync(new SetAadAttributeCommand(target.ResolvedFullPath, target.ElementId, propertyId, value), cancellationToken);
-        return result.IsSuccess ? ContextPropertyResult.Success : ContextPropertyResult.Failure(result.Error);
+        return DiagramPropertyChange.By(new SetAadAttributeCommand(target.ResolvedFullPath, target.ElementId, propertyId, value));
     }
 }
 

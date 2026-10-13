@@ -1,6 +1,5 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
-using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.History;
 using EtAlii.Adp.Specification.Disl;
 
@@ -25,7 +24,8 @@ namespace EtAlii.Adp.Diagram.AgentActivityDiagram;
 /// writes the file except a command.
 /// </para>
 /// </remarks>
-public sealed class AadContextActionProvider : IContextActionProvider
+public sealed class AadContextActionProvider(IHistoryStackStore historyStacks, IAadDocumentStore documents)
+    : DiagramActionProvider<AadBody, AadModel>(historyStacks, documents)
 {
     /// <summary>What precedes a toolbox tool's id in the action a drop of it executes.</summary>
     public const string AddActionPrefix = "add-";
@@ -55,76 +55,57 @@ public sealed class AadContextActionProvider : IContextActionProvider
 
     private const string SetTaskStatusOperation = "setTaskStatus";
 
-    private readonly IHistoryStackStore _historyStacks;
-    private readonly IAadDocumentStore _documents;
-
-    public AadContextActionProvider(IHistoryStackStore historyStacks, IAadDocumentStore documents)
-    {
-        ArgumentNullException.ThrowIfNull(historyStacks);
-        ArgumentNullException.ThrowIfNull(documents);
-        _historyStacks = historyStacks;
-        _documents = documents;
-    }
+    /// <inheritdoc />
+    protected override bool IsBody(string path) => Diagram.IsBody(path);
 
     /// <inheritdoc />
-    public ContextScope Scope => ContextScope.DiagramElement;
-
-    /// <inheritdoc />
-    public ValueTask<IReadOnlyList<ContextActionGroupDefinition>> DiscoverAsync(ContextTarget target, CancellationToken cancellationToken)
+    protected override IReadOnlyList<ContextActionGroupDefinition> Discover(DocumentEntry<AadBody, AadModel> entry, string elementId)
     {
-        ArgumentNullException.ThrowIfNull(target);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        if (target.Origin != Diagram.AgentActivity.Origin)
-        {
-            return Result([]);
-        }
-
-        var entry = _documents.GetOrLoad(target.ResolvedFullPath);
+        ArgumentNullException.ThrowIfNull(entry);
         if (!entry.IsUsable)
         {
-            return Result([]);
+            return [];
         }
 
         // Executing an action by id only finds actions its target discovers, so each gesture's
         // target discovers what the gesture executes against it.
-        var id = target.ElementId;
+        var id = elementId;
         if (GestureIds.IsPlacement(id))
         {
-            return Result(
+            return
             [
                 new ContextActionGroupDefinition([.. AadDefinition.Toolbox.Select(tool => new ContextActionDefinition(tool.DropActionId, $"Add {tool.Label.ToLowerInvariant()}", tool.Icon))]),
                 new ContextActionGroupDefinition([new ContextActionDefinition(
                     UnpinAllActionId, "Unlock all positions", "mdi-lock-open-variant-outline", Available: entry.Model.Placements.Count > 0, UnavailableReason: "No position is locked.")]),
-            ]);
+            ];
         }
 
         if (GestureIds.IsRelation(id))
         {
-            return Result([new ContextActionGroupDefinition([new ContextActionDefinition(ConnectActionId, "Connect", "mdi-vector-line")])]);
+            return [new ContextActionGroupDefinition([new ContextActionDefinition(ConnectActionId, "Connect", "mdi-vector-line")])];
         }
 
         if (id == AadElementMapper.ViewId)
         {
-            return Result([new ContextActionGroupDefinition(
+            return [new ContextActionGroupDefinition(
             [
                 new ContextActionDefinition(ShowArchivedActionId, "Show archived", "mdi-archive-eye-outline"),
                 new ContextActionDefinition(HideArchivedActionId, "Hide archived", "mdi-archive-off-outline"),
-            ])]);
+            ])];
         }
 
         if (AadGroupTarget.TryParse(id, out _, out _))
         {
-            return Result([new ContextActionGroupDefinition(
+            return [new ContextActionGroupDefinition(
             [
                 new ContextActionDefinition(CollapseGroupActionId, "Fold", "mdi-chevron-right"),
                 new ContextActionDefinition(ExpandGroupActionId, "Unfold", "mdi-chevron-down"),
-            ])]);
+            ])];
         }
 
         if (AadDefinition.ElementOf(entry.Document.Disl.Diagram, id) is not { } element)
         {
-            return Result([]);
+            return [];
         }
 
         var pinned = entry.Model.Placements.ContainsKey(id);
@@ -138,23 +119,21 @@ public sealed class AadContextActionProvider : IContextActionProvider
             }
         }
 
-        return Result(groups);
+        return groups;
     }
 
     /// <inheritdoc />
-    public async ValueTask<ContextExecutionResult> ExecuteAsync(ContextTarget target, string actionId, CancellationToken cancellationToken)
+    protected override async ValueTask<ContextExecutionResult> RunAsync(
+        ContextTarget target,
+        DocumentEntry<AadBody, AadModel> entry,
+        string actionId,
+        CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(target);
+        ArgumentNullException.ThrowIfNull(entry);
         ArgumentNullException.ThrowIfNull(actionId);
-        cancellationToken.ThrowIfCancellationRequested();
 
         var body = target.ResolvedFullPath;
-        var entry = _documents.GetOrLoad(body);
-        if (!entry.IsUsable)
-        {
-            return new ContextExecutionFailed($"{System.IO.Path.GetFileName(body)} could not be read, so it cannot be edited.");
-        }
-
         var id = target.ElementId;
         var diagram = entry.Document.Disl.Diagram;
         var element = AadDefinition.ElementOf(diagram, id);
@@ -192,10 +171,13 @@ public sealed class AadContextActionProvider : IContextActionProvider
             RemoveActionId when element is { Type.IsRelation: true } => await DispatchAsync(target, new DisconnectAadCommand(body, id), cancellationToken),
 
             // The definition's confirmation, asked before anything goes; with none, no ceremony.
-            RemoveActionId when element is not null => DeletionPolicy.Confirmation(AadDefinition.Specification, element, env: AadDefinition.Env()) is { } confirmation
-                ? new ContextExecutionRequiresConfirmation(new ContextConfirmationRequest(
-                    confirmation.Title, "mdi-delete-outline", confirmation.Message, confirmation.ConfirmLabel, Danger: confirmation.Danger))
-                : await DispatchAsync(target, new RemoveAadElementCommand(body, id), cancellationToken),
+            RemoveActionId when element is not null => await RemoveAsync(
+                target,
+                new RemoveAadElementCommand(body, id),
+                DeletionPolicy.Confirmation(AadDefinition.Specification, element, env: AadDefinition.Env()) is { } confirmation
+                    ? new RemovalConfirmation(confirmation.Title, confirmation.Message, confirmation.ConfirmLabel, confirmation.Danger)
+                    : null,
+                cancellationToken),
 
             RenameActionId or AddRowActionId or UnpinActionId or RemoveActionId => new ContextExecutionFailed("That is no longer in this diagram."),
 
@@ -204,41 +186,26 @@ public sealed class AadContextActionProvider : IContextActionProvider
     }
 
     /// <inheritdoc />
-    public ValueTask<ContextValidationResult> ValidateAsync(ContextTarget target, string actionId, string value, CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(target);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        // The one value asked for is a name, and the only wrong one is an empty one.
-        return ValueTask.FromResult(actionId == RenameActionId && string.IsNullOrWhiteSpace(value)
+    /// <remarks>The one value asked for is a name, and the only wrong one is an empty one.</remarks>
+    protected override ContextValidationResult Validate(ContextTarget target, string actionId, string value) =>
+        actionId == RenameActionId && string.IsNullOrWhiteSpace(value)
             ? ContextValidationResult.Rejected("It needs a name.")
-            : ContextValidationResult.Accepted);
-    }
+            : ContextValidationResult.Accepted;
 
     /// <inheritdoc />
-    public async ValueTask<ContextCommitResult> CommitAsync(ContextTarget target, string actionId, string value, string text, CancellationToken cancellationToken)
+    protected override ICommand? CommitCommand(ContextTarget target, AadModel model, string actionId, string value)
     {
         ArgumentNullException.ThrowIfNull(target);
-        _ = text;
 
         var body = target.ResolvedFullPath;
         var id = target.ElementId;
-        var entry = _documents.GetOrLoad(body);
-        var element = entry.IsUsable ? AadDefinition.ElementOf(entry.Document.Disl.Diagram, id) : null;
-
-        ICommand? command = actionId switch
+        var element = AadDefinition.ElementOf(Load(target).Document.Disl.Diagram, id);
+        return actionId switch
         {
             RenameActionId when element is { Type.IsRelation: false } && AadDefinition.LabelAttribute(element) is { } label => new SetAadAttributeCommand(body, id, label, value),
             RemoveActionId when element is { Type.IsRelation: false } => new RemoveAadElementCommand(body, id),
             _ => null,
         };
-        if (command is null)
-        {
-            return ContextCommitResult.Failed($"'{actionId}' does not apply to this selection.");
-        }
-
-        var result = await _historyStacks.Get(target.RootPath).ExecuteAsync(command, cancellationToken);
-        return result.IsSuccess ? ContextCommitResult.Succeeded : ContextCommitResult.Failed(result.Error);
     }
 
     /// <summary>A derived menu entry as this host offers it: none, itself, or a submenu of the values it can set.</summary>
@@ -275,15 +242,6 @@ public sealed class AadContextActionProvider : IContextActionProvider
                 yield break;
         }
     }
-
-    private async ValueTask<ContextExecutionResult> DispatchAsync(ContextTarget target, ICommand command, CancellationToken cancellationToken)
-    {
-        var result = await _historyStacks.Get(target.RootPath).ExecuteAsync(command, cancellationToken);
-        return result.IsSuccess ? new ContextExecutionCompleted() : new ContextExecutionFailed(result.Error);
-    }
-
-    private static ValueTask<IReadOnlyList<ContextActionGroupDefinition>> Result(IReadOnlyList<ContextActionGroupDefinition> groups) =>
-        ValueTask.FromResult(groups);
 }
 
 /// <summary>

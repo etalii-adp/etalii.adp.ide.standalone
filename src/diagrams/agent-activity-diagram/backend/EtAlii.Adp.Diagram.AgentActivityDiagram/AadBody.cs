@@ -1,4 +1,6 @@
 using System.Text;
+using EtAlii.Adp.Documents;
+using EtAlii.Adp.History;
 using EtAlii.Adp.Specification.Disl;
 using EtAlii.Adp.Specification.Fbl;
 using EtAlii.Adp.Specification.Fbl.Documents;
@@ -6,18 +8,6 @@ using EtAlii.Adp.Specification.Fbl.History;
 using EtAlii.Adp.Specification.Fbl.Planning;
 
 namespace EtAlii.Adp.Diagram.AgentActivityDiagram;
-
-/// <summary>What came of one edit of an activity file: applied, or refused with a reason for the user.</summary>
-public readonly record struct AadEdit(string? Refusal)
-{
-    /// <summary>The edit was applied.</summary>
-    public static AadEdit Applied { get; } = new(null);
-
-    /// <summary>The edit was refused, and nothing was changed.</summary>
-    public static AadEdit Refused(string because) => new(because);
-
-    public bool WasApplied => Refusal is null;
-}
 
 /// <summary>
 /// One activity file, open: its text, read through the bundled FBL binding and changed only by
@@ -37,7 +27,7 @@ public readonly record struct AadEdit(string? Refusal)
 /// hold a moment in time, so that one is written plain as YAML reads it.
 /// </para>
 /// </remarks>
-public sealed class AadBody
+public sealed class AadBody : ITextBody<AadBody>
 {
     private static readonly Lazy<FblBinding> LoadedBinding = new(LoadBinding);
 
@@ -141,11 +131,11 @@ public sealed class AadBody
     }
 
     /// <summary>Plans <paramref name="change"/> as splices and applies them, or says why not.</summary>
-    internal AadEdit Change(ModelChange change)
+    internal EditOutcome Change(ModelChange change)
     {
         ArgumentNullException.ThrowIfNull(change);
 
-        return _body.Change(change) is PlanResult.Refused refused ? AadEdit.Refused(refused.Reason) : AadEdit.Applied;
+        return _body.Change(change) is PlanResult.Refused refused ? EditOutcome.Refused(refused.Reason) : EditOutcome.Applied;
     }
 
     /// <summary>
