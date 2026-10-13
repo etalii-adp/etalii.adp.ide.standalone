@@ -132,6 +132,65 @@ public sealed class SankeySessionTests : IDisposable
         Assert.Contains("read-only", refusal, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task DraggingSomethingThatIsNotANode_IsRefused()
+    {
+        // Arrange.
+        using var history = new HistoryStack(new SankeyTestDispatcher(_store));
+        await using var session = new SankeySession(_folder.Body, _store, new SankeyElementMapper(), history);
+
+        // Act.
+        var refusal = await session.MoveElementToAsync("revenue->gross-profit", 0, 0, TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.Equal("That is not something this diagram can move.", refusal);
+    }
+
+    [Fact]
+    public async Task AnEditFromAnotherConnection_ReachesThisOne()
+    {
+        // Arrange.
+        using var history = new HistoryStack(new SankeyTestDispatcher(_store));
+        await using var watching = new SankeySession(_folder.Body, _store, new SankeyElementMapper());
+        await using var editing = new SankeySession(_folder.Body, _store, new SankeyElementMapper(), history);
+        _ = watching.Baseline();
+        var raised = new List<DiagramDelta>();
+        watching.Changed += (_, args) => raised.AddRange(args.Deltas);
+
+        // Act.
+        await DragCafesBelowPackaged(editing);
+
+        // Assert.
+        Assert.NotEmpty(raised);
+    }
+
+    [Fact]
+    public async Task ADisposedSession_HearsNoMoreEdits()
+    {
+        // Arrange.
+        using var history = new HistoryStack(new SankeyTestDispatcher(_store));
+        var watching = new SankeySession(_folder.Body, _store, new SankeyElementMapper());
+        await using var editing = new SankeySession(_folder.Body, _store, new SankeyElementMapper(), history);
+        _ = watching.Baseline();
+        var raised = new List<DiagramDelta>();
+        watching.Changed += (_, args) => raised.AddRange(args.Deltas);
+        await watching.DisposeAsync();
+
+        // Act.
+        await DragCafesBelowPackaged(editing);
+
+        // Assert.
+        Assert.Empty(raised);
+    }
+
+    private async Task DragCafesBelowPackaged(SankeySession session)
+    {
+        var layout = SankeyLayout.Of(_store.GetOrLoad(_folder.Body).Model);
+        var cafes = layout.Boxes["cafes"];
+        var refusal = await session.MoveElementToAsync("cafes", cafes.X, layout.Boxes["packaged"].CentreY + 1 - (cafes.Height / 2), TestContext.Current.CancellationToken);
+        Assert.Equal("", refusal);
+    }
+
     private SankeyModel Parse() => SankeyParser.Parse(LineDocument.Parse(File.ReadAllText(_folder.Body)));
 
     private static SankeyNodePayload Node(IReadOnlyList<DiagramElement> delivered, string id) =>

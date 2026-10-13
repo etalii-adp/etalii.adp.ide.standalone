@@ -37,6 +37,20 @@ The schema of the run had a sequence, a choice inside it, an all-group, a requir
 
 So the three unknowns of the requirements are answered for the shapes tried: the validator answers for a document that stops at the caret; a choice offers both branches and an all-group offers what is left; and the cost is milliseconds.
 
+**Measured by task 1 (2026-10-12)**, as the tests of `src/editors/xml/backend/EtAlii.Adp.Editor.Xml.Tests/Spike/ExpectedAtTheCaret.Tests.cs`, on .NET SDK 10.0.112, Debug, in a Linux cloud container rather than the development machine. Every row of the table above was run again and answered as written.
+
+| Question | Answer | Known |
+| --- | --- | --- |
+| A wildcard (`xs:any`) after a named element | `GetExpectedParticles` answers an `XmlSchemaAny` and no element; completion leaves it out | Run |
+| A substitution group | The head and every member (`circle`, `shape`, `square`): the platform expands the group, so completion needs no lookup of its own | Run |
+| A type derived by extension | The base type's content first (`name`), then the extension's (`street`) | Run |
+| Two namespaces, one schema importing the other | The element of the other namespace is answered with its own qualified name (`urn:adp:parties` `party`), so the prefix in scope can be found | Run |
+| Compiling an XSD of 2,009 lines | 6.4 ms, mean of 20 | Measured |
+| Validating a document of 5,003 lines against it | 3.9 ms, mean of 20 | Measured |
+| One completion in the middle of that document | 2.1 ms, mean of 20 | Measured |
+
+The Performance section's bounds (one second for findings, 300 ms for completion) are met by two orders of magnitude, so Q2 is not asked again.
+
 **What the run also showed, by what it could not do.** `XmlSchemaValidator` works on an `XmlSchemaSet`. A DTD is not one. So the platform validates against a DTD and cannot say what a DTD expects next. That is ruling A2.
 
 ## Rulings asked

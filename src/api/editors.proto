@@ -4,6 +4,7 @@ package etalii.adp;
 
 import "shared.proto";      // ShortGuid
 import "connection.proto";  // Path
+import "problems.proto";    // ProblemSeverity
 
 option csharp_namespace = "EtAlii.Adp.Editor.Wire";
 
@@ -21,6 +22,15 @@ service EditorService {
   // through the watcher as an ordinary pushed change, which is Requirement 5.3's whole
   // both-views-stay-true guarantee.
   rpc SaveText(SaveTextRequest) returns (SaveTextResponse);
+
+  // What an editor's module says about the text as typed: its findings, a status line, and
+  // the project files the answer was computed from (ruling A1 of the text editors' design). The
+  // call carries text, offsets and sentences and no format: whichever module registered an
+  // analyser for the editor answers it, and the service learns nothing of what the text is.
+  rpc Analyze(AnalyzeTextRequest) returns (AnalyzeTextResponse);
+
+  // What the editor's module offers at a position of the text as typed. Same seam as Analyze.
+  rpc Complete(CompleteTextRequest) returns (CompleteTextResponse);
 }
 
 message SaveTextRequest {
@@ -34,4 +44,52 @@ message SaveTextResponse {
   // Empty on success; otherwise the module's own sentence - a refusal, a vanished file, a
   // failed write - shown beside the editor's dirty indicator rather than swallowed.
   string error = 1;
+}
+
+// Offsets (from, to, offset) are into `content` as sent, in UTF-16 code units - what both
+// CodeMirror and .NET count in - so neither side converts.
+message AnalyzeTextRequest {
+  ShortGuid project_id = 1;
+  Path path = 2;           // project-relative path of the open text file
+  string editor_id = 3;    // which editor's module is asked
+  string content = 4;      // the text as typed, saved or not
+}
+
+message TextFinding {
+  uint32 from = 1;
+  uint32 to = 2;
+  ProblemSeverity severity = 3;
+  string message = 4;      // the sentence shown to the user
+  string source = 5;       // what found it, shown beside the sentence
+}
+
+message AnalyzeTextResponse {
+  repeated TextFinding findings = 1;
+  string status = 2;             // the module's own status line, or empty
+  repeated Path depends_on = 3;  // project files the answer was computed from, to be watched
+  string error = 4;              // empty on success; otherwise a sentence saying why not
+}
+
+message CompleteTextRequest {
+  ShortGuid project_id = 1;
+  Path path = 2;
+  string editor_id = 3;
+  string content = 4;
+  uint32 offset = 5;       // the caret
+  bool explicit = 6;       // asked for (Ctrl+Space) rather than opened by typing
+}
+
+message TextCompletion {
+  string label = 1;
+  string detail = 2;       // a short note beside the label
+  string info = 3;         // documentation shown beside the item, as text
+  uint32 from = 4;         // the range the insert replaces
+  uint32 to = 5;
+  string insert = 6;       // may hold ${1} tab stops
+  int32 boost = 7;         // ranks the item; higher first
+}
+
+message CompleteTextResponse {
+  repeated TextCompletion items = 1;
+  string error = 2;
 }
