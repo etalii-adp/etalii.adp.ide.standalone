@@ -36,7 +36,7 @@ public sealed class SankeyContextSourceResolver : DiagramElementSourceResolver<S
         _mapper.All(model).FirstOrDefault(candidate => candidate.Id == elementId);
 
     /// <inheritdoc />
-    protected override IDisposable Follow(string bodyPath, Action changed) =>
+    protected override IDisposable Follow(ShortGuid watchId, string bodyPath, string elementId, Action changed) =>
         FollowStore(_documents, bodyPath, changed);
 
     /// <inheritdoc />

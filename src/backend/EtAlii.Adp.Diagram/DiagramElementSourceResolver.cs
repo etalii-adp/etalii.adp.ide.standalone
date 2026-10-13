@@ -125,12 +125,11 @@ public abstract class DiagramElementSourceResolver<TModel> : IContextSourceResol
     {
         ArgumentNullException.ThrowIfNull(level);
         ArgumentNullException.ThrowIfNull(onChange);
-        _ = watchId;
         _ = rootPath;
 
         var bodyPath = level.Target.ResolvedFullPath;
         var elementId = level.Target.ElementId;
-        return Follow(bodyPath, () => onChange(Describe(Load(bodyPath), elementId)?.Path));
+        return Follow(watchId, bodyPath, elementId, () => onChange(Describe(Load(bodyPath), elementId)?.Path));
     }
 
     /// <summary>The model of the document whose body is at <paramref name="bodyPath"/>.</summary>
@@ -142,8 +141,13 @@ public abstract class DiagramElementSourceResolver<TModel> : IContextSourceResol
     /// <summary>The element <paramref name="elementId"/> as the canvas was sent it, or null when none is drawn.</summary>
     protected abstract DiagramElement? Drawn(TModel model, string elementId);
 
-    /// <summary>Calls <paramref name="changed"/> whenever the document at <paramref name="bodyPath"/> changes, until the result is disposed.</summary>
-    protected abstract IDisposable Follow(string bodyPath, Action changed);
+    /// <summary>
+    /// Calls <paramref name="changed"/> whenever the document at <paramref name="bodyPath"/> changes,
+    /// until the result is disposed. <paramref name="watchId"/> and <paramref name="elementId"/> are
+    /// for a module that also follows what each connection has selected, as supply chain does for
+    /// its trace.
+    /// </summary>
+    protected abstract IDisposable Follow(ShortGuid watchId, string bodyPath, string elementId, Action changed);
 
     /// <summary>
     /// <see cref="Follow"/> for a module whose document lives in an <see cref="IDiagramDocumentStore{TBody, TModel}"/>:

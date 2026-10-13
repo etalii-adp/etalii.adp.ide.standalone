@@ -103,6 +103,7 @@ public abstract class DocumentDiagramSession<TBody, TModel> : IDiagramSession
     public ValueTask DisposeAsync()
     {
         _documents.Changed -= OnDocumentChanged;
+        OnDisposing();
         return ValueTask.CompletedTask;
     }
 
@@ -119,6 +120,17 @@ public abstract class DocumentDiagramSession<TBody, TModel> : IDiagramSession
 
     /// <summary>The model the session shows now: the store's document at <see cref="BodyPath"/>.</summary>
     private TModel Model() => _documents.GetOrLoad(BodyPath).Model;
+
+    /// <summary>
+    /// Renders again and raises what changed, as a change to the document does: for a session whose
+    /// rendering also follows something besides its document, such as a selection.
+    /// </summary>
+    protected void Rerender() => _changes.OnDocumentChanged(BodyPath);
+
+    /// <summary>Stops following whatever else the session subscribed to; the store it leaves itself.</summary>
+    protected virtual void OnDisposing()
+    {
+    }
 
     private void Raise(IReadOnlyList<DiagramDelta> deltas) =>
         Changed?.Invoke(this, new DiagramDeltasEventArgs(deltas));
