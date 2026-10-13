@@ -8,7 +8,7 @@ namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
 /// the start of the step it was dropped in, with all four phases: the definition's
 /// <c>addTrendHere</c> operation, run by <see cref="OperationInterpreter"/>.
 /// </summary>
-public sealed class AddGhgTrendCommandHandler(IGhgDocumentStore documents) : ICommandHandler<AddGhgTrendCommand>
+public sealed class AddGhgTrendCommandHandler(IGhgDocumentStore documents) : GhgEditHandler<AddGhgTrendCommand>(documents)
 {
     /// <summary>A new trend's length in steps of the diagram's time unit; months, in a diagram of months.</summary>
     public const int DefaultMonths = 12;
@@ -17,32 +17,28 @@ public sealed class AddGhgTrendCommandHandler(IGhgDocumentStore documents) : ICo
     public const string DefaultName = "New trend";
 
     /// <inheritdoc />
-    public Task<CommandResult> ExecuteAsync(AddGhgTrendCommand command, CancellationToken cancellationToken = default)
+    protected override CommandResult Execute(AddGhgTrendCommand command)
     {
-        ArgumentNullException.ThrowIfNull(command);
-        cancellationToken.ThrowIfCancellationRequested();
-
         // Minted once and carried as the redo, so a redone trend keeps its id.
-        var minted = command.TrendId.Length > 0
-            ? command
-            : command with { TrendId = ShortGuid.NewShortGuid().ToString() };
+        return base.Execute(command.TrendId.Length > 0 ? command : command with { TrendId = ShortGuid.NewShortGuid().ToString() });
+    }
 
-        return GhgEdits.Run(documents, minted.BodyPath, minted, (document, model) =>
+    /// <inheritdoc />
+    protected override EditOutcome Apply(GhgBody document, GhgModel model, AddGhgTrendCommand command)
+    {
+        if (model.IsTaken(command.TrendId))
         {
-            if (GhgEdits.IdTaken(model, minted.TrendId))
-            {
-                return GhgEdit.Refused("That id is already used in this graph.");
-            }
+            return EditOutcome.Refused("That id is already used in this graph.");
+        }
 
-            // The definition's addTrendHere, as the toolbox's trend drop: its name, its span and its row.
-            return GhgDefinition.Apply(document, OperationInterpreter.Run(
-                GhgDefinition.Specification,
-                "addTrendHere",
-                document.Disl.Diagram,
-                null,
-                DislIds.Fixed(minted.TrendId),
-                new DislInvocation(GhgDefinition.Position(minted.X, minted.Y, model.TimeUnit)),
-                GhgDefinition.EditEnv));
-        });
+        // The definition's addTrendHere, as the toolbox's trend drop: its name, its span and its row.
+        return GhgDefinition.Apply(document, OperationInterpreter.Run(
+            GhgDefinition.Specification,
+            "addTrendHere",
+            document.Disl.Diagram,
+            null,
+            DislIds.Fixed(command.TrendId),
+            new DislInvocation(GhgDefinition.Position(command.X, command.Y, model.TimeUnit)),
+            GhgDefinition.EditEnv));
     }
 }

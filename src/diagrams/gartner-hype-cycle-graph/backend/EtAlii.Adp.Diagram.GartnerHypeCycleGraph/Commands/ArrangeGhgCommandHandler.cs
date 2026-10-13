@@ -10,48 +10,42 @@ namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
 /// Each write touches its own entry alone, so they are applied as one batch (<see cref="GhgBody.Batch"/>):
 /// the body is read again once, not once per row.
 /// </remarks>
-public sealed class ArrangeGhgCommandHandler(IGhgDocumentStore documents) : ICommandHandler<ArrangeGhgCommand>
+public sealed class ArrangeGhgCommandHandler(IGhgDocumentStore documents) : GhgEditHandler<ArrangeGhgCommand>(documents)
 {
     /// <inheritdoc />
-    public Task<CommandResult> ExecuteAsync(ArrangeGhgCommand command, CancellationToken cancellationToken = default)
+    protected override EditOutcome Apply(GhgBody document, GhgModel model, ArrangeGhgCommand command)
     {
-        ArgumentNullException.ThrowIfNull(command);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        return GhgEdits.Run(documents, command.BodyPath, command, (document, model) =>
+        var rows = GhgArrangement.RowsOf(model);
+        if (rows.Count == 0)
         {
-            var rows = GhgArrangement.RowsOf(model);
-            if (rows.Count == 0)
+            return EditOutcome.Refused("There is nothing to arrange until this graph has a trend.");
+        }
+
+        var writes = RowWrites(document, model, rows);
+        if (writes.Count == 0)
+        {
+            return EditOutcome.Refused("This graph is already arranged.");
+        }
+
+        document.Batch(() =>
+        {
+            foreach (var write in writes)
             {
-                return GhgEdit.Refused("There is nothing to arrange until this graph has a trend.");
+                write();
             }
-
-            var writes = RowWrites(document, model, rows);
-            if (writes.Count == 0)
-            {
-                return GhgEdit.Refused("This graph is already arranged.");
-            }
-
-            document.Batch(() =>
-            {
-                foreach (var write in writes)
-                {
-                    write();
-                }
-            });
-
-            return GhgEdit.Applied;
         });
+
+        return EditOutcome.Applied;
     }
 
     /// <summary>The writes of every entry whose row <paramref name="rows"/> changes, bottom-up: the last entry in the body first.</summary>
-    internal static IReadOnlyList<Func<GhgEdit>> RowWrites(GhgBody document, GhgModel model, IReadOnlyDictionary<string, int> rows)
+    internal static IReadOnlyList<Func<EditOutcome>> RowWrites(GhgBody document, GhgModel model, IReadOnlyDictionary<string, int> rows)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(model);
         ArgumentNullException.ThrowIfNull(rows);
 
-        var changes = new List<(int Start, Func<GhgEdit> Write)>();
+        var changes = new List<(int Start, Func<EditOutcome> Write)>();
         var written = new HashSet<string>(StringComparer.Ordinal);
         foreach (var trend in model.Trends)
         {

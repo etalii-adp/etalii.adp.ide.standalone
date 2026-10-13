@@ -9,4 +9,4 @@ namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
 /// <param name="BodyPath">The document.</param>
 /// <param name="ElementId">The trend, trigger or note.</param>
 /// <param name="Name">The new name, or a note's new text, line breaks and all.</param>
-public sealed record RenameGhgElementCommand(string BodyPath, string ElementId, string Name) : ICommand;
+public sealed record RenameGhgElementCommand(string BodyPath, string ElementId, string Name) : IDocumentEditCommand;

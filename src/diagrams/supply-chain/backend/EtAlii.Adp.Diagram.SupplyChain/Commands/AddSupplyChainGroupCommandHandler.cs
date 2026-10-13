@@ -21,7 +21,7 @@ public sealed class AddSupplyChainGroupCommandHandler(ISupplyChainDocumentStore 
         // The drop is the centre; the document holds the top-left.
         var group = new SupplyChainGroup(
             command.GroupId,
-            Unique(model.Groups.Select(existing => existing.Name), "New group"),
+            UniqueName.Of(model.Groups.Select(existing => existing.Name), "New group"),
             Description: "",
             new LineRange(0, 0),
             X: command.X - (SupplyChainGeometry.EmptyGroupWidth / 2),

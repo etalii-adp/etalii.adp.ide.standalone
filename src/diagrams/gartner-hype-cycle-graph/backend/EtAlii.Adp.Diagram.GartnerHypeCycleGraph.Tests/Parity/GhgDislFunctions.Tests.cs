@@ -1,4 +1,5 @@
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.History;
 using EtAlii.Adp.Specification.Disl;
 using Xunit;
 
@@ -108,13 +109,13 @@ public class GhgDislFunctionsTests
     }
 
     [Fact]
-    public void TooShort_IsTheSentenceGhgEditsRefusesWith()
+    public void TooShort_IsTheSentenceTheHandlersRefuseWith()
     {
         for (var months = -3; months <= 12; months++)
         {
             for (var phases = -1; phases <= 6; phases++)
             {
-                var expected = GhgEdits.TooShort(months, phases)?.Refusal ?? "";
+                var expected = GhgRefusals.TooShort(months, phases)?.Refusal ?? "";
                 Assert.Equal(expected, GhgDisl.Evaluate("tooShort(months, phases)", new Dictionary<string, object?> { ["months"] = (long)months, ["phases"] = (long)phases }));
             }
         }
@@ -193,7 +194,7 @@ public class GhgDislFunctionsTests
             foreach (var name in taken.Append("Trend").Append("Trigger").Append("").Distinct())
             {
                 var variables = new Dictionary<string, object?> { ["base"] = name, ["taken"] = taken.Cast<object?>().ToList() };
-                Assert.Equal(GhgEdits.UniqueName(taken, name), GhgDisl.Evaluate("uniqueName(base, taken)", variables));
+                Assert.Equal(UniqueName.Of(taken, name), GhgDisl.Evaluate("uniqueName(base, taken)", variables));
                 compared++;
             }
         }

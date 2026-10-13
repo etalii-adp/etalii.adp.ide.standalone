@@ -1,5 +1,6 @@
 using System.Text;
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.History;
 using EtAlii.Adp.Specification.Disl;
 using EtAlii.Adp.Specification.Fbl;
 using EtAlii.Adp.Specification.Fbl.Documents;
@@ -31,7 +32,7 @@ namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
 /// is its own body, so an edit to one is never seen by another.
 /// </para>
 /// </remarks>
-public sealed class GhgBody
+public sealed class GhgBody : ITextBody<GhgBody>
 {
     private static readonly Lazy<FblBinding> LoadedBinding = new(LoadBinding);
 
@@ -163,19 +164,19 @@ public sealed class GhgBody
     }
 
     /// <summary>Plans and applies one change; the refusal's sentence when the library refuses it.</summary>
-    internal GhgEdit Change(ModelChange change)
+    internal EditOutcome Change(ModelChange change)
     {
         if (_batch is not null)
         {
             var planned = _body.Plan(change);
             if (planned is PlanResult.Planned { Edit: var edit }) _batch.Add((change, edit));
-            return planned is PlanResult.Refused declined ? GhgEdit.Refused(declined.Reason) : GhgEdit.Applied;
+            return planned is PlanResult.Refused declined ? EditOutcome.Refused(declined.Reason) : EditOutcome.Applied;
         }
 
         var result = _body.Change(change);
         _lineStarts = null;
         if (result is not PlanResult.Refused) Recent.Remember(_body.Fork());
-        return result is PlanResult.Refused refused ? GhgEdit.Refused(refused.Reason) : GhgEdit.Applied;
+        return result is PlanResult.Refused refused ? EditOutcome.Refused(refused.Reason) : EditOutcome.Applied;
     }
 
     /// <summary>
@@ -242,19 +243,19 @@ public sealed class GhgBody
     }
 
     /// <summary>Sets attributes of the element the module knows by <paramref name="id"/> and <paramref name="range"/>.</summary>
-    internal GhgEdit Set(string type, string id, LineRange range, IReadOnlyDictionary<string, object?> attributes)
+    internal EditOutcome Set(string type, string id, LineRange range, IReadOnlyDictionary<string, object?> attributes)
     {
         if (Find(type, id, range) is not { } element)
         {
-            return GhgEdits.Gone();
+            return GhgRefusals.Gone;
         }
 
-        return attributes.Count == 0 ? GhgEdit.Applied : Change(new ModelChange.Set(element.Id, attributes));
+        return attributes.Count == 0 ? EditOutcome.Applied : Change(new ModelChange.Set(element.Id, attributes));
     }
 
     /// <summary>Removes the element the module knows by <paramref name="id"/> and <paramref name="range"/>, with what cascades from it.</summary>
-    internal GhgEdit Remove(string type, string id, LineRange range) =>
-        Find(type, id, range) is { } element ? Change(new ModelChange.Remove(element.Id)) : GhgEdits.Gone();
+    internal EditOutcome Remove(string type, string id, LineRange range) =>
+        Find(type, id, range) is { } element ? Change(new ModelChange.Remove(element.Id)) : GhgRefusals.Gone;
 
     private static int[] LineStarts(byte[] bytes)
     {

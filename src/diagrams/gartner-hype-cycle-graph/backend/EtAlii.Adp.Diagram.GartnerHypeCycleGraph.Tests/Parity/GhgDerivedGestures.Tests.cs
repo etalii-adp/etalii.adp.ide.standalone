@@ -192,7 +192,7 @@ public class GhgDerivedGesturesTests
         // "A trend must be at least one month long." is not reached, and cannot be: it is the refusal
         // for a span shorter than one month, which only a stop at or before the start makes, and that
         // is refused first as a stop before the start. The definition's tooShort keeps the sentence,
-        // as GhgEdits.TooShort does.
+        // as GhgRefusals.TooShort does.
         return;
 
         async Task Collect<TCommand>(ICommandHandler<TCommand> handler, TCommand command)

@@ -102,6 +102,13 @@ public abstract class DiagramActionProvider<TBody, TModel> : IContextActionProvi
     internal static string Unreadable(ContextTarget target) =>
         $"{System.IO.Path.GetFileName(target.ResolvedFullPath)} could not be read, so it cannot be edited.";
 
+    /// <summary>The entry of the document <paramref name="target"/> is in, for a leg that is not handed one.</summary>
+    protected DocumentEntry<TBody, TModel> Load(ContextTarget target)
+    {
+        ArgumentNullException.ThrowIfNull(target);
+        return _documents.GetOrLoad(target.ResolvedFullPath);
+    }
+
     /// <summary>Whether <paramref name="path"/> is a document of this module.</summary>
     protected abstract bool IsBody(string path);
 

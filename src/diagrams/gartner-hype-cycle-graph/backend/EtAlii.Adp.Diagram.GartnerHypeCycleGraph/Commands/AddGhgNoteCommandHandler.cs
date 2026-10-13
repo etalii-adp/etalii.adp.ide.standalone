@@ -8,7 +8,7 @@ namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
 /// is at the start of the step and the top of the row the drop fell in - so the drop point is
 /// inside it, which is how the canvas finds it to open its editor.
 /// </summary>
-public sealed class AddGhgNoteCommandHandler(IGhgDocumentStore documents) : ICommandHandler<AddGhgNoteCommand>
+public sealed class AddGhgNoteCommandHandler(IGhgDocumentStore documents) : GhgEditHandler<AddGhgNoteCommand>(documents)
 {
     /// <summary>A new note's width, in canvas units.</summary>
     public const double DefaultWidth = 160;
@@ -17,30 +17,26 @@ public sealed class AddGhgNoteCommandHandler(IGhgDocumentStore documents) : ICom
     public const double DefaultHeight = 64;
 
     /// <inheritdoc />
-    public Task<CommandResult> ExecuteAsync(AddGhgNoteCommand command, CancellationToken cancellationToken = default)
+    protected override CommandResult Execute(AddGhgNoteCommand command)
     {
-        ArgumentNullException.ThrowIfNull(command);
-        cancellationToken.ThrowIfCancellationRequested();
+        return base.Execute(command.NoteId.Length > 0 ? command : command with { NoteId = ShortGuid.NewShortGuid().ToString() });
+    }
 
-        var minted = command.NoteId.Length > 0
-            ? command
-            : command with { NoteId = ShortGuid.NewShortGuid().ToString() };
-
-        return GhgEdits.Run(documents, minted.BodyPath, minted, (document, model) =>
+    /// <inheritdoc />
+    protected override EditOutcome Apply(GhgBody document, GhgModel model, AddGhgNoteCommand command)
+    {
+        if (model.IsTaken(command.NoteId))
         {
-            if (GhgEdits.IdTaken(model, minted.NoteId))
-            {
-                return GhgEdit.Refused("That id is already used in this graph.");
-            }
+            return EditOutcome.Refused("That id is already used in this graph.");
+        }
 
-            return GhgDefinition.Apply(document, OperationInterpreter.Run(
-                GhgDefinition.Specification,
-                "addNoteHere",
-                document.Disl.Diagram,
-                null,
-                DislIds.Fixed(minted.NoteId),
-                new DislInvocation(GhgDefinition.Position(minted.X, minted.Y, model.TimeUnit)),
-                GhgDefinition.EditEnv));
-        });
+        return GhgDefinition.Apply(document, OperationInterpreter.Run(
+            GhgDefinition.Specification,
+            "addNoteHere",
+            document.Disl.Diagram,
+            null,
+            DislIds.Fixed(command.NoteId),
+            new DislInvocation(GhgDefinition.Position(command.X, command.Y, model.TimeUnit)),
+            GhgDefinition.EditEnv));
     }
 }

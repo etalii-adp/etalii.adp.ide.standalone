@@ -34,7 +34,7 @@ public sealed class AddSankeyNodeCommandHandler(ISankeyDocumentStore documents) 
 
         var node = new SankeyNode(
             command.NodeId,
-            Unique(model.Nodes.Select(existing => existing.Label), "New node"),
+            UniqueName.Of(model.Nodes.Select(existing => existing.Label), "New node"),
             Color: "",
             Note: "",
             Format: "",

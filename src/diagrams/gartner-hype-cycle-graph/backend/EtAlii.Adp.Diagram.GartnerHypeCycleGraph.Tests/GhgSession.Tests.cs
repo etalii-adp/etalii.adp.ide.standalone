@@ -1,3 +1,4 @@
+using EtAlii.Adp.History;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph.Tests;
@@ -151,7 +152,7 @@ public sealed class GhgSessionTests : IDisposable
     private static GhgTrend Trend(GhgBody document, string id) =>
         GhgParser.Parse(document).Trends.Single(trend => trend.Id == id);
 
-    private void Edit(Func<GhgBody, GhgEdit> edit)
+    private void Edit(Func<GhgBody, EditOutcome> edit)
     {
         var document = GhgBody.Parse(File.ReadAllText(Body));
         Assert.True(edit(document).WasApplied);

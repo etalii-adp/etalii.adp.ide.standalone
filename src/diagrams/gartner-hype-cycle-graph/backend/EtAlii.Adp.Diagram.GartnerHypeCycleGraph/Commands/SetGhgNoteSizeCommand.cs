@@ -12,7 +12,7 @@ namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
 /// <param name="BodyPath">The document.</param>
 /// <param name="NoteId">The note.</param>
 /// <param name="Size">Such as <c>200 x 64</c>, or <c>200 x 64 at 1950-01 row 3</c>.</param>
-public sealed partial record SetGhgNoteSizeCommand(string BodyPath, string NoteId, string Size) : ICommand
+public sealed partial record SetGhgNoteSizeCommand(string BodyPath, string NoteId, string Size) : IDocumentEditCommand
 {
     /// <summary>The size a value states, and the month and row when it states them; null when it does not read.</summary>
     public static (double Width, double Height, int? At, int? Row)? Parse(string? size)

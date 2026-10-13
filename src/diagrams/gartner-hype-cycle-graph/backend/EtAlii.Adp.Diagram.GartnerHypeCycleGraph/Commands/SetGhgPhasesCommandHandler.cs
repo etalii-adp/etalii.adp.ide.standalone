@@ -3,27 +3,21 @@ using EtAlii.Adp.History;
 namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
 
 /// <summary>Rewrites a trend's phase count.</summary>
-public sealed class SetGhgPhasesCommandHandler(IGhgDocumentStore documents) : ICommandHandler<SetGhgPhasesCommand>
+public sealed class SetGhgPhasesCommandHandler(IGhgDocumentStore documents) : GhgEditHandler<SetGhgPhasesCommand>(documents)
 {
     /// <inheritdoc />
-    public Task<CommandResult> ExecuteAsync(SetGhgPhasesCommand command, CancellationToken cancellationToken = default)
+    protected override EditOutcome Apply(GhgBody document, GhgModel model, SetGhgPhasesCommand command)
     {
-        ArgumentNullException.ThrowIfNull(command);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        return GhgEdits.Run(documents, command.BodyPath, command, (document, model) =>
+        if (model.TrendOf(command.TrendId) is not { } trend)
         {
-            if (GhgEdits.TrendOf(model, command.TrendId) is not { } trend)
-            {
-                return GhgEdits.Gone();
-            }
+            return GhgRefusals.Gone;
+        }
 
-            if (trend.HasSpan && GhgEdits.TooShort(trend.Months, command.Phases) is { } tooShort)
-            {
-                return tooShort;
-            }
+        if (trend.HasSpan && GhgRefusals.TooShort(trend.Months, command.Phases) is { } tooShort)
+        {
+            return tooShort;
+        }
 
-            return GhgWriter.SetPhases(document, trend, command.Phases);
-        });
+        return GhgWriter.SetPhases(document, trend, command.Phases);
     }
 }
