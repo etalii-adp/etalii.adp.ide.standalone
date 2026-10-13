@@ -8,6 +8,12 @@ namespace EtAlii.Adp.Diagram.Mindmap;
 /// viewport, and (through <see cref="MindmapViewState"/>) its folds. It turns each change to
 /// the map, and each fold, into the deltas that carry it into this connection's view.
 /// </summary>
+/// <remarks>
+/// Not on <see cref="DocumentDiagramSession{TBody, TModel}"/> or its shared change handler
+/// (code-structure FR-031): a mindmap's change names its kind, so an edited node is sent alone and a
+/// structural change relaid out, and a fold sends a group or ungroup delta that no diff of two
+/// renderings produces.
+/// </remarks>
 internal sealed class MindmapSession : IDiagramSession
 {
     private readonly ShortGuid _watchId;
