@@ -1,19 +1,7 @@
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.AgentBehaviorModelling;
-
-/// <summary>The outcome of one edit: applied, or refused with a sentence for the user.</summary>
-public readonly record struct AbmEdit(string? Refusal)
-{
-    /// <summary>The edit was made.</summary>
-    public static AbmEdit Applied { get; } = new(null);
-
-    /// <summary>The edit was not made, because <paramref name="because"/>.</summary>
-    public static AbmEdit Refused(string because) => new(because);
-
-    /// <summary>Whether the document was changed.</summary>
-    public bool WasApplied => Refusal is null;
-}
 
 /// <summary>
 /// Splices the edits a behavior model supports into its Markdown: the lines a change touches, and
@@ -35,7 +23,7 @@ public readonly record struct AbmEdit(string? Refusal)
 public static class AbmWriter
 {
     /// <summary>Sets a node's label, keeping its keyword as the author wrote it.</summary>
-    public static AbmEdit SetLabel(LineDocument document, AbmNode node, string label)
+    public static EditOutcome SetLabel(LineDocument document, AbmNode node, string label)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(node);
@@ -45,43 +33,43 @@ public static class AbmWriter
             ? ItemLine(PrefixOf(document, node), node.KeywordText, text)
             : PrefixOf(document, node) + text;
         document.Replace(new LineRange(node.Line, node.Line), [line.TrimEnd()]);
-        return AbmEdit.Applied;
+        return EditOutcome.Applied;
     }
 
     /// <summary>Changes a node's kind, refusing a kind that cannot hold the children it already has.</summary>
-    public static AbmEdit SetKind(LineDocument document, AbmNode node, string kind, int retryCount)
+    public static EditOutcome SetKind(LineDocument document, AbmNode node, string kind, int retryCount)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(node);
 
         if (!AbmNodeKinds.IsKnown(kind))
         {
-            return AbmEdit.Refused($"A behavior model has no `{kind}` node.");
+            return EditOutcome.Refused($"A behavior model has no `{kind}` node.");
         }
 
         if (kind == AbmNodeKinds.Retry && retryCount < 1)
         {
-            return AbmEdit.Refused("A Retry allows at least one attempt.");
+            return EditOutcome.Refused("A Retry allows at least one attempt.");
         }
 
         var category = AbmNodeKinds.Of(kind).Category;
         if (category == AbmNodeCategory.Leaf && node.ChildIds.Count > 0)
         {
-            return AbmEdit.Refused($"\"{AbmNodeKinds.Of(kind).Keyword}\" holds no children, and this node has {Count(node.ChildIds.Count, "child", "children")}.");
+            return EditOutcome.Refused($"\"{AbmNodeKinds.Of(kind).Keyword}\" holds no children, and this node has {Count(node.ChildIds.Count, "child", "children")}.");
         }
 
         if (category == AbmNodeCategory.Decorator && node.ChildIds.Count > 1)
         {
-            return AbmEdit.Refused($"\"{AbmNodeKinds.KeywordOf(kind, retryCount)}\" holds exactly one child, and this node has {node.ChildIds.Count}.");
+            return EditOutcome.Refused($"\"{AbmNodeKinds.KeywordOf(kind, retryCount)}\" holds exactly one child, and this node has {node.ChildIds.Count}.");
         }
 
         var line = ItemLine(PrefixOf(document, node), AbmNodeKinds.KeywordOf(kind, kind == AbmNodeKinds.Retry ? retryCount : 0), node.Label);
         document.Replace(new LineRange(node.Line, node.Line), [line.TrimEnd()]);
-        return AbmEdit.Applied;
+        return EditOutcome.Applied;
     }
 
     /// <summary>Replaces a node's notes; empty notes remove them.</summary>
-    public static AbmEdit SetNotes(LineDocument document, AbmNode node, string notes)
+    public static EditOutcome SetNotes(LineDocument document, AbmNode node, string notes)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(node);
@@ -105,7 +93,7 @@ public static class AbmWriter
                 break;
         }
 
-        return AbmEdit.Applied;
+        return EditOutcome.Applied;
     }
 
     /// <summary>
@@ -113,7 +101,7 @@ public static class AbmWriter
     /// now at <paramref name="index"/>, or after the last when the index is past them.
     /// </summary>
     /// <returns>The edit, and the new node's id when it was applied.</returns>
-    public static (AbmEdit Edit, string NodeId) Add(
+    public static (EditOutcome Edit, string NodeId) Add(
         LineDocument document, AbmModel model, AbmNode? parent, int index, string kind, string label, int retryCount = 0)
     {
         ArgumentNullException.ThrowIfNull(document);
@@ -121,7 +109,7 @@ public static class AbmWriter
 
         if (!AbmNodeKinds.IsKnown(kind))
         {
-            return (AbmEdit.Refused($"A behavior model has no `{kind}` node."), "");
+            return (EditOutcome.Refused($"A behavior model has no `{kind}` node."), "");
         }
 
         if (kind == AbmNodeKinds.Retry && retryCount < 1)
@@ -138,18 +126,18 @@ public static class AbmWriter
             if (roots.Count == 0)
             {
                 AddFirstRoot(document, model, ItemLine("- ", keyword, text).TrimEnd());
-                return (AbmEdit.Applied, "1");
+                return (EditOutcome.Applied, "1");
             }
 
             var at = Math.Clamp(index < 0 ? roots.Count : index, 0, roots.Count);
             var line = at < roots.Count ? roots[at].Line : roots[^1].SubtreeEnd + 1;
             document.Insert(line, [ItemLine(PrefixFor(document, roots[0]), keyword, text).TrimEnd()]);
-            return (AbmEdit.Applied, (at + 1).ToString(System.Globalization.CultureInfo.InvariantCulture));
+            return (EditOutcome.Applied, (at + 1).ToString(System.Globalization.CultureInfo.InvariantCulture));
         }
 
         if (!parent.TakesAnotherChild)
         {
-            return (AbmEdit.Refused(parent.Category == AbmNodeCategory.Leaf
+            return (EditOutcome.Refused(parent.Category == AbmNodeCategory.Leaf
                 ? $"\"{parent.Keyword}\" holds no children. Add the node under a Do in order, Try in order or Do together."
                 : $"\"{parent.Keyword}\" holds exactly one child, and already has it."), "");
         }
@@ -159,17 +147,17 @@ public static class AbmWriter
         var insertAt = position < children.Count ? children[position].Line : parent.SubtreeEnd + 1;
         var prefix = children.Count > 0 ? PrefixFor(document, children[0]) : new string(' ', parent.ContentIndent) + parent.Marker + " ";
         document.Insert(insertAt, [ItemLine(prefix, keyword, text).TrimEnd()]);
-        return (AbmEdit.Applied, $"{parent.Id}.{position + 1}");
+        return (EditOutcome.Applied, $"{parent.Id}.{position + 1}");
     }
 
     /// <summary>Removes a node, its notes and everything beneath it.</summary>
-    public static AbmEdit Remove(LineDocument document, AbmNode node)
+    public static EditOutcome Remove(LineDocument document, AbmNode node)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(node);
 
         document.Remove(node.Subtree);
-        return AbmEdit.Applied;
+        return EditOutcome.Applied;
     }
 
     /// <summary>
@@ -182,7 +170,7 @@ public static class AbmWriter
     /// the first, to index 3 the last. So "one earlier" is the node's index minus one, and "one
     /// later" its index plus two.
     /// </remarks>
-    public static AbmEdit Move(LineDocument document, AbmModel model, AbmNode node, AbmNode? newParent, int index)
+    public static EditOutcome Move(LineDocument document, AbmModel model, AbmNode node, AbmNode? newParent, int index)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(model);
@@ -192,7 +180,7 @@ public static class AbmWriter
         {
             if (AbmModel.IsWithin(newParent.Id, node.Id))
             {
-                return AbmEdit.Refused("A node cannot move beneath itself.");
+                return EditOutcome.Refused("A node cannot move beneath itself.");
             }
 
             var accepts = newParent.Category switch
@@ -203,7 +191,7 @@ public static class AbmWriter
             };
             if (!accepts)
             {
-                return AbmEdit.Refused(newParent.Category == AbmNodeCategory.Leaf
+                return EditOutcome.Refused(newParent.Category == AbmNodeCategory.Leaf
                     ? $"\"{newParent.Keyword}\" holds no children."
                     : $"\"{newParent.Keyword}\" holds exactly one child, and already has it.");
             }
@@ -214,7 +202,7 @@ public static class AbmWriter
         var current = node.ParentId == newParent?.Id ? siblings.ToList().FindIndex(sibling => sibling.Id == node.Id) : -1;
         if (current >= 0 && (at == current || at == current + 1))
         {
-            return AbmEdit.Refused("That node is already there.");
+            return EditOutcome.Refused("That node is already there.");
         }
 
         var target = at < siblings.Count
@@ -260,7 +248,7 @@ public static class AbmWriter
             document.Insert(target, moved);
         }
 
-        return AbmEdit.Applied;
+        return EditOutcome.Applied;
     }
 
     /// <summary>One item line: the prefix, then the keyword in bold with its colon, then the label.</summary>

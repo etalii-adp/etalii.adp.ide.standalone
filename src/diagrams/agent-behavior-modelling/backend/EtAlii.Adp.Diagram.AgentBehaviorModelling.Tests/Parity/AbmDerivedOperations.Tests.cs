@@ -1,3 +1,4 @@
+using EtAlii.Adp.History;
 using EtAlii.Adp.Specification.Disl;
 using Xunit;
 
@@ -95,7 +96,7 @@ public class AbmDerivedOperationsTests
     }
 
     /// <summary>Runs both edits on a copy of <paramref name="text"/> each, and asserts the same outcome.</summary>
-    private static void Same(string text, string what, Func<AbmBody, AbmEdit> handWritten, Func<AbmBody, AbmEdit> derived)
+    private static void Same(string text, string what, Func<AbmBody, EditOutcome> handWritten, Func<AbmBody, EditOutcome> derived)
     {
         var expected = AbmBody.Parse(text);
         var actual = AbmBody.Parse(text);
@@ -107,7 +108,7 @@ public class AbmDerivedOperationsTests
 
     private static DislElement Element(AbmBody document, string id) => AbmDefinition.ElementOf(document.Disl.Diagram, id)!;
 
-    private static AbmEdit Derived(AbmBody document, string operation, string id, Dictionary<string, object?> parameters) =>
+    private static EditOutcome Derived(AbmBody document, string operation, string id, Dictionary<string, object?> parameters) =>
         AbmDefinition.Apply(document, OperationInterpreter.Run(
             AbmDefinition.Specification, operation, document.Disl.Diagram, Element(document, id), AbmDefinition.NewIds, new DislInvocation(Parameters: parameters), AbmDefinition.Env));
 

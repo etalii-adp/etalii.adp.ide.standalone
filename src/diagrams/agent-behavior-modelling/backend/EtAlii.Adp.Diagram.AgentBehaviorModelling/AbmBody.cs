@@ -1,5 +1,6 @@
 using System.Text;
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.History;
 using EtAlii.Adp.Specification.Disl;
 using EtAlii.Adp.Specification.Fbl;
 using EtAlii.Adp.Specification.Fbl.Documents;
@@ -24,7 +25,7 @@ namespace EtAlii.Adp.Diagram.AgentBehaviorModelling;
 /// back. The library's own history is per open body, and a command opens a fresh one each time.
 /// </para>
 /// </remarks>
-public sealed class AbmBody
+public sealed class AbmBody : ITextBody<AbmBody>
 {
     private static readonly Lazy<FblBinding> LoadedBinding = new(LoadBinding);
 
@@ -97,10 +98,10 @@ public sealed class AbmBody
     }
 
     /// <summary>Plans and applies one change; the refusal's sentence when the plugin refuses it.</summary>
-    public AbmEdit Change(ModelChange change)
+    public EditOutcome Change(ModelChange change)
     {
         ArgumentNullException.ThrowIfNull(change);
-        return _body.Change(change) is PlanResult.Refused refused ? AbmEdit.Refused(refused.Reason) : AbmEdit.Applied;
+        return _body.Change(change) is PlanResult.Refused refused ? EditOutcome.Refused(refused.Reason) : EditOutcome.Applied;
     }
 
     private static FblBinding LoadBinding()

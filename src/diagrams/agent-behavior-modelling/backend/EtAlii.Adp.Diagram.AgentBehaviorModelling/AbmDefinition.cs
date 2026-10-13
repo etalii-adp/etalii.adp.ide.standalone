@@ -2,6 +2,7 @@ using System.Text.Json;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Documents.Wire;
+using EtAlii.Adp.History;
 using EtAlii.Adp.Specification.Disl;
 using EtAlii.Adp.Specification.Fbl.Planning;
 
@@ -106,26 +107,26 @@ internal static class AbmDefinition
     public static IIdSource NewIds => DislIds.Fixed("new");
 
     /// <summary>Writes <paramref name="transaction"/>'s changes to <paramref name="document"/> in order, or gives its refusal.</summary>
-    public static AbmEdit Apply(AbmBody document, DislTransaction transaction) =>
+    public static EditOutcome Apply(AbmBody document, DislTransaction transaction) =>
         Apply(document, transaction, change => change);
 
     /// <summary>
     /// Writes <paramref name="transaction"/>'s changes to <paramref name="document"/> in order, each as
     /// <paramref name="written"/> makes it from the FBL change the definition writes, or gives its refusal.
     /// </summary>
-    public static AbmEdit Apply(AbmBody document, DislTransaction transaction, Func<ModelChange, ModelChange> written)
+    public static EditOutcome Apply(AbmBody document, DislTransaction transaction, Func<ModelChange, ModelChange> written)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(transaction);
         ArgumentNullException.ThrowIfNull(written);
-        if (!transaction.WasApplied) return AbmEdit.Refused(transaction.Refusal!);
+        if (!transaction.WasApplied) return EditOutcome.Refused(transaction.Refusal!);
 
         foreach (var change in transaction.Changes)
         {
             var edit = document.Change(written(DislWrite.ToFbl(Specification, change)));
             if (!edit.WasApplied) return edit;
         }
-        return AbmEdit.Applied;
+        return EditOutcome.Applied;
     }
 
     /// <summary>The node <paramref name="id"/> names - its place - or null.</summary>
