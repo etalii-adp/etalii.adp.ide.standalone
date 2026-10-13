@@ -58,16 +58,26 @@ internal static partial class YamlScalars
     /// </summary>
     public static bool IsPlainSafe(string value, bool timeTyped)
     {
-        if (value.Length == 0) return false;
-        if (char.IsWhiteSpace(value[0]) || char.IsWhiteSpace(value[^1])) return false;
-        if (value.Any(c => c is '\n' or '\r' || char.IsControl(c))) return false;
-        if ("-?:,[]{}#&*!|>'\"%@`".Contains(value[0])) return false;
-        if (value.Contains(": ", StringComparison.Ordinal) || value.Contains(" #", StringComparison.Ordinal) || value.EndsWith(':')) return false;
+        if (!IsPlainSyntax(value)) return false;
         if (Typed(value) is not string) return false;
         var lower = value.ToLowerInvariant();
         if (lower is "yes" or "no" or "on" or "off" or "y" or "n" or "true" or "false" or "null" or "~") return false;
         if (Yaml11Number().IsMatch(value) && value.Any(char.IsAsciiDigit)) return false;
         return !Timestamp().IsMatch(value) || timeTyped;
+    }
+
+    /// <summary>
+    /// Whether YAML's syntax lets <paramref name="value"/> be written plain, whatever a schema then
+    /// types it as: the plain-safe test without its reading back as a string (FBL 0.5 §6.3), for an
+    /// attribute read as text whose <c>style</c> is <c>plain</c>.
+    /// </summary>
+    public static bool IsPlainSyntax(string value)
+    {
+        if (value.Length == 0) return false;
+        if (char.IsWhiteSpace(value[0]) || char.IsWhiteSpace(value[^1])) return false;
+        if (value.Any(c => c is '\n' or '\r' || char.IsControl(c))) return false;
+        if ("-?:,[]{}#&*!|>'\"%@`".Contains(value[0])) return false;
+        return !value.Contains(": ", StringComparison.Ordinal) && !value.Contains(" #", StringComparison.Ordinal) && !value.EndsWith(':');
     }
 
     /// <summary>
