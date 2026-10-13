@@ -1,87 +1,34 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
-using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Hierarchy;
-using Xunit;
-using IoPath = System.IO.Path;
 
 namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph.Tests;
 
-/// <summary>
-/// Task 13's half of the resolver: a drop's placement and a finished connect gesture resolve, so the
-/// action they carry can be executed against them. Without it, every palette drop and every drawn
-/// connection is refused before any provider is asked.
-/// </summary>
-public sealed class GhgContextSourceResolverTests : IDisposable
+/// <summary>A selection on the technology trends example, by the contract every element resolver keeps.</summary>
+public sealed class GhgContextSourceResolverTests : DiagramElementSourceResolverContract
 {
-    private readonly string _folder = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.GhgResolverTests", Guid.NewGuid().ToString("N"));
     private readonly GhgDocumentStore _store = new();
 
-    public GhgContextSourceResolverTests()
-    {
-        Directory.CreateDirectory(_folder);
-        File.Copy(GhgModuleFiles.Example, Body);
-    }
+    protected override string Example => GhgModuleFiles.Example;
 
-    private string Body => IoPath.Combine(_folder, "technology-trends.ghg");
+    protected override IContextSourceResolver CreateResolver() =>
+        new GhgContextSourceResolver(new DiagramFileRouter(new GhgOnlyCatalog()), _store, new GhgElementMapper());
 
-    public void Dispose()
-    {
-        try
-        {
-            Directory.Delete(_folder, recursive: true);
-        }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-        {
-            // A temp folder left behind is not a test failure.
-        }
-    }
+    protected override void Reload(string body) => _store.Reload(body);
 
-    private async Task<ContextLevelResolution> ResolveAsync(string elementId)
-    {
-        var resolver = new GhgContextSourceResolver(new DiagramFileRouter(new GhgOnlyCatalog()), _store, new GhgElementMapper());
-        var file = new ContextResolvedLevel(
-            new ContextSource(),
-            [IoPath.GetFileName(Body)],
-            ContextScope.Hierarchy,
-            new ContextTarget(ContextScope.Hierarchy, Body, IsContainer: false, SourceId: default, _folder, ShortGuid.NewShortGuid()),
-            new ContextLevelDetail(),
-            null!);
+    protected override string ElementId => "steam-engine";
 
-        return await resolver.ResolveAsync(
-            ShortGuid.NewShortGuid(),
-            _folder,
-            new ContextSource { ElementId = new ElementId { Value = elementId } },
-            [],
-            file,
-            TestContext.Current.CancellationToken);
-    }
+    protected override IReadOnlyList<string> ElementPath => ["Steam engine"];
 
-    [Theory]
-    [InlineData("new:300,700")]
-    [InlineData("rel:steam-engine@plateau/bottom/0.3->railways@peak/top/0.1")]
-    public async Task APlacementAndAGesture_Resolve_ToTheirOwnId_OnTheBody(string elementId)
-    {
-        // Act.
-        var resolution = await ResolveAsync(elementId);
+    protected override string ElementType => GhgElementMapper.TrendType;
 
-        // Assert.
-        var level = Assert.IsType<ResolvedContextLevel>(resolution).Level;
-        Assert.Equal(elementId, level.Target.ElementId);
-        Assert.Equal(Body, level.Target.ResolvedFullPath);
-    }
+    protected override string Gesture => "rel:steam-engine@plateau/bottom/0.3->railways@peak/top/0.1";
 
-    [Fact]
-    public async Task AnElement_StillResolves_AndAnUnknownIdStillDoesNot()
-    {
-        // Act.
-        var element = await ResolveAsync("steam-engine");
-        var unknown = await ResolveAsync("nothing-here");
-
-        // Assert.
-        Assert.Equal(["Steam engine"], Assert.IsType<ResolvedContextLevel>(element).Level.RelativePath);
-        Assert.IsType<RejectedContextLevel>(unknown);
-    }
+    protected override DiagramElementTexts Texts { get; } = new(
+        "The selected file is not a hype cycle graph.",
+        "That is no longer in this graph.",
+        "New element",
+        "New influence");
 }
 
 internal sealed class GhgOnlyCatalog : IDiagramDefinitionCatalog
