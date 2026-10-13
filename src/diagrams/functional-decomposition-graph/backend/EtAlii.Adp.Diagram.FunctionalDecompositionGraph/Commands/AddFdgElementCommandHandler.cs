@@ -18,13 +18,10 @@ public sealed class AddFdgElementCommandHandler(IFdgDocumentStore documents) : F
     /// <inheritdoc />
     protected override CommandResult Execute(AddFdgElementCommand command)
     {
-        if (!FdgElementTypes.IsKnown(command.ElementType))
-        {
-            return CommandResult.Failure($"This notation has no `{command.ElementType}` element.");
-        }
-
-        // Minted once and carried as the redo, so a redone element keeps its id.
-        return base.Execute(command.ElementId.Length > 0 ? command : command with { ElementId = ShortGuid.NewShortGuid().ToString() });
+        return !FdgElementTypes.IsKnown(command.ElementType)
+            ? CommandResult.Failure($"This notation has no `{command.ElementType}` element.")
+            // Minted once and carried as the redo, so a redone element keeps its id.
+            : base.Execute(command.ElementId.Length > 0 ? command : command with { ElementId = ShortGuid.NewShortGuid().ToString() });
     }
 
     /// <inheritdoc />

@@ -12,12 +12,7 @@ public sealed class StepSankeyValueCommandHandler(ISankeyDocumentStore documents
     /// <inheritdoc />
     protected override CommandResult Execute(StepSankeyValueCommand command)
     {
-        if (command.Steps == 0)
-        {
-            return CommandResult.Failure("A step of nothing changes nothing.");
-        }
-
-        return base.Execute(command);
+        return command.Steps == 0 ? CommandResult.Failure("A step of nothing changes nothing.") : base.Execute(command);
     }
 
     /// <inheritdoc />

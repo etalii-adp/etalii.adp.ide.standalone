@@ -87,12 +87,9 @@ public sealed class XmlAnalyzer : IEditorAnalyzer
 
         var resolved = ResolvedXsd(association, filePath, resolver, [], []);
         var compiled = resolved.Count == 0 ? null : _schemas.Get(rootPath, Roots(resolved));
-        if (compiled is not { Set: { } set, Problem: null, Version11: null })
-        {
-            return Task.FromResult<IReadOnlyList<TextCompletion>>([]);
-        }
-
-        return Task.FromResult(XmlCompletion.Complete(content, offset, isExplicit, set, filePath, resolver));
+        return compiled is not { Set: { } set, Problem: null, Version11: null }
+            ? Task.FromResult<IReadOnlyList<TextCompletion>>([])
+            : Task.FromResult(XmlCompletion.Complete(content, offset, isExplicit, set, filePath, resolver));
     }
 
     /// <summary>Which schema applies, and whether the document is to be validated against it.</summary>
@@ -124,17 +121,11 @@ public sealed class XmlAnalyzer : IEditorAnalyzer
             return new Application(compiled.Version11 is null ? "XSD: compiles." : "XSD 1.1: not checked.", false, null);
         }
 
-        if (association.Xsd.Count > 0)
-        {
-            return AppliedXsd(rootPath, filePath, association, resolver, findings, dependsOn);
-        }
-
-        if (association.HasDoctype)
-        {
-            return new Application(DtdChecked, true, null);
-        }
-
-        return new Application(NoSchema, false, null);
+        return association.Xsd.Count > 0
+            ? AppliedXsd(rootPath, filePath, association, resolver, findings, dependsOn)
+            : association.HasDoctype
+                ? new Application(DtdChecked, true, null)
+                : new Application(NoSchema, false, null);
     }
 
     private Application AppliedXsd(

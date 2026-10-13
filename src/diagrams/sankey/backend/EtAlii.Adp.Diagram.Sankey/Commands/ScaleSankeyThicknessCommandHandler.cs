@@ -17,12 +17,7 @@ public sealed class ScaleSankeyThicknessCommandHandler(ISankeyDocumentStore docu
     /// <inheritdoc />
     protected override CommandResult Execute(ScaleSankeyThicknessCommand command)
     {
-        if (command.Steps == 0)
-        {
-            return CommandResult.Failure("A step of nothing changes nothing.");
-        }
-
-        return base.Execute(command);
+        return command.Steps == 0 ? CommandResult.Failure("A step of nothing changes nothing.") : base.Execute(command);
     }
 
     /// <inheritdoc />
