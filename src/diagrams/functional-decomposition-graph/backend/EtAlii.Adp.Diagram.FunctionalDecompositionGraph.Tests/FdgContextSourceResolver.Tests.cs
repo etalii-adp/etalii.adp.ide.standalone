@@ -1,87 +1,34 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
-using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Hierarchy;
-using Xunit;
-using IoPath = System.IO.Path;
 
 namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph.Tests;
 
-/// <summary>
-/// Task 13's half of the resolver: a drop's placement and a finished connect gesture resolve, so the
-/// action they carry can be executed against them. Without it, every palette drop and every drawn
-/// connection is refused before any provider is asked.
-/// </summary>
-public sealed class FdgContextSourceResolverTests : IDisposable
+/// <summary>A selection on the field service example, by the contract every element resolver keeps.</summary>
+public sealed class FdgContextSourceResolverTests : DiagramElementSourceResolverContract
 {
-    private readonly string _folder = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.FdgResolverTests", Guid.NewGuid().ToString("N"));
     private readonly FdgDocumentStore _store = new();
 
-    public FdgContextSourceResolverTests()
-    {
-        Directory.CreateDirectory(_folder);
-        File.Copy(FieldServiceExample.Path, Body);
-    }
+    protected override string Example => FieldServiceExample.Path;
 
-    private string Body => IoPath.Combine(_folder, "field-service.fdg");
+    protected override IContextSourceResolver CreateResolver() =>
+        new FdgContextSourceResolver(new DiagramFileRouter(new FdgOnlyCatalog()), _store, new FdgElementMapper());
 
-    public void Dispose()
-    {
-        try
-        {
-            Directory.Delete(_folder, recursive: true);
-        }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-        {
-            // A temp folder left behind is not a test failure.
-        }
-    }
+    protected override void Reload(string body) => _store.Reload(body);
 
-    private async Task<ContextLevelResolution> ResolveAsync(string elementId)
-    {
-        var resolver = new FdgContextSourceResolver(new DiagramFileRouter(new FdgOnlyCatalog()), _store, new FdgElementMapper());
-        var file = new ContextResolvedLevel(
-            new ContextSource(),
-            [IoPath.GetFileName(Body)],
-            ContextScope.Hierarchy,
-            new ContextTarget(ContextScope.Hierarchy, Body, IsContainer: false, SourceId: default, _folder, ShortGuid.NewShortGuid()),
-            new ContextLevelDetail(),
-            null!);
+    protected override string ElementId => "planning";
 
-        return await resolver.ResolveAsync(
-            ShortGuid.NewShortGuid(),
-            _folder,
-            new ContextSource { ElementId = new ElementId { Value = elementId } },
-            [],
-            file,
-            TestContext.Current.CancellationToken);
-    }
+    protected override IReadOnlyList<string> ElementPath => ["Planning"];
 
-    [Theory]
-    [InlineData("new:300,700")]
-    [InlineData("rel:tick-step->step-list")]
-    public async Task APlacementAndAGesture_Resolve_ToTheirOwnId_OnTheBody(string elementId)
-    {
-        // Act.
-        var resolution = await ResolveAsync(elementId);
+    protected override string ElementType => FdgElementMapper.UiElementType;
 
-        // Assert.
-        var level = Assert.IsType<ResolvedContextLevel>(resolution).Level;
-        Assert.Equal(elementId, level.Target.ElementId);
-        Assert.Equal(Body, level.Target.ResolvedFullPath);
-    }
+    protected override string Gesture => "rel:tick-step->step-list";
 
-    [Fact]
-    public async Task AnElement_StillResolves_AndAnUnknownIdStillDoesNot()
-    {
-        // Act.
-        var element = await ResolveAsync("planning");
-        var unknown = await ResolveAsync("nothing-here");
-
-        // Assert.
-        Assert.Equal(["Planning"], Assert.IsType<ResolvedContextLevel>(element).Level.RelativePath);
-        Assert.IsType<RejectedContextLevel>(unknown);
-    }
+    protected override DiagramElementTexts Texts { get; } = new(
+        "The selected file is not a functional decomposition graph.",
+        "That element is no longer in this graph.",
+        "New element",
+        "New connection");
 }
 
 internal sealed class FdgOnlyCatalog : IDiagramDefinitionCatalog

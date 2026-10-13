@@ -76,6 +76,34 @@ public sealed class SupplyChainContextSourceResolverTests : IDisposable
     }
 }
 
+/// <summary>A selection on the automotive example, by the contract every element resolver keeps.</summary>
+public sealed class SupplyChainContextSourceResolverContractTests : DiagramElementSourceResolverContract
+{
+    private readonly SupplyChainDocumentStore _store = new();
+
+    protected override string Example => SupplyChainExamples.Automotive;
+
+    protected override IContextSourceResolver CreateResolver() =>
+        new SupplyChainContextSourceResolver(
+            new DiagramFileRouter(new SupplyChainOnlyCatalog()), _store, new SupplyChainElementMapper(), new SupplyChainSelections());
+
+    protected override void Reload(string body) => _store.Reload(body);
+
+    protected override string ElementId => "pack-assembly";
+
+    protected override IReadOnlyList<string> ElementPath => ["Battery pack assembly"];
+
+    protected override string ElementType => SupplyChainElementMapper.IntegratorType;
+
+    protected override string Gesture => "rel:cell-gigafactory->pack-assembly";
+
+    protected override DiagramElementTexts Texts { get; } = new(
+        "The selected file is not a supply chain diagram.",
+        "That is no longer in this diagram.",
+        "New node",
+        "New flow");
+}
+
 internal sealed class SupplyChainOnlyCatalog : IDiagramDefinitionCatalog
 {
     public IReadOnlyList<DiagramDefinition> All => Diagram.Definitions;
