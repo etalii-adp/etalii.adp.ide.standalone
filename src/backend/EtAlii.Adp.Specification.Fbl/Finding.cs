@@ -13,6 +13,9 @@ public enum FindingSeverity
 /// </summary>
 public sealed record Finding(string Code, FindingSeverity Severity, string Message, SourceLocation? Location)
 {
+    /// <summary>What the finding is about, by name, where its code defines it: <c>attribute</c> and <c>text</c> for <see cref="FindingCodes.UnconvertedValue"/>.</summary>
+    public IReadOnlyDictionary<string, string>? Detail { get; init; }
+
     public override string ToString() => Location is null ? $"{Code}: {Message}" : $"{Code} at {Location}: {Message}";
 }
 
@@ -34,6 +37,7 @@ public static class FindingCodes
     public const string StaleViewData = "fbl.stale-view-data";
     public const string UnknownHeader = "fbl.unknown-header";
     public const string RegexTimeout = "fbl.regex-timeout";
+    public const string UnconvertedValue = "fbl.unconverted-value";
     public const string Unparseable = "std.unparseable";
     public const string UnreadableEntry = "std.unreadableEntry";
     public const string MissingId = "std.missingId";

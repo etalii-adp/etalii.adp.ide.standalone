@@ -63,6 +63,9 @@ internal sealed record SlotRead(object? Value, Span? Span, bool Present, bool Wr
     /// </summary>
     public bool WrittenScalar { get; init; }
 
+    /// <summary>The style name of a written scalar (FBL 0.5 §2.4), which says whether it is quoted.</summary>
+    public string? Style { get; init; }
+
     /// <summary>
     /// The written text of the slot (FBL §4.1.5): what the author wrote for a true scalar, otherwise
     /// the value as text, which is already the written text for the xml, lines and blocks families.
@@ -109,6 +112,12 @@ internal sealed class ReadElement
     public ReadElement? TargetElement { get; set; }
 
     public int Line { get; init; }
+
+    /// <summary>Why the entry cannot be read as this element: the first value that does not convert and has no fallback (FBL 0.5 §5.2).</summary>
+    public string? Mistyped { get; set; }
+
+    /// <summary>The values read as their fallback, reported once the entry is claimed (FBL 0.5 §7.4).</summary>
+    public List<(string Message, Span? Span, string Attribute, string Text)> Unconverted { get; } = [];
 
     public bool IsRelation => Rule.IsRelation;
 
@@ -277,8 +286,8 @@ internal abstract class FamilyReader(BodyText text, FblBinding binding, FblOptio
         return new SourceLocation(Options.FileName, line, column, Text.CodePoints(span.Start, span.End));
     }
 
-    public void Report(string code, FindingSeverity severity, string message, Span? span) =>
-        Findings.Add(new Finding(code, severity, message, span is { } s ? Locate(s) : null));
+    public void Report(string code, FindingSeverity severity, string message, Span? span, IReadOnlyDictionary<string, string>? detail = null) =>
+        Findings.Add(new Finding(code, severity, message, span is { } s ? Locate(s) : null) { Detail = detail });
 
     /// <summary>The indentation one step deeper than <paramref name="indent"/>, by FBL §6.3's step.</summary>
     protected string Indentation(int columns) => new(IndentCharacter, columns);

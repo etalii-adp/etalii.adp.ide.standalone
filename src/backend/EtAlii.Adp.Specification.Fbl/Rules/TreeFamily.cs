@@ -210,6 +210,7 @@ internal abstract class TreeFamily(BodyText text, FblBinding binding, FblOptions
                 Node = member,
                 Wire = member.Value.Kind == ValueKind.Scalar ? member.Value.Text : null,
                 WrittenScalar = IsWrittenScalar(member.Value),
+                Style = StyleName(member.Value.Style),
             };
         }
         foreach (var merged in mapping.Merged)
@@ -221,6 +222,7 @@ internal abstract class TreeFamily(BodyText text, FblBinding binding, FblOptions
                     Node = inherited,
                     Wire = inherited.Value.Kind == ValueKind.Scalar ? inherited.Value.Text : null,
                     WrittenScalar = IsWrittenScalar(inherited.Value),
+                    Style = StyleName(inherited.Value.Style),
                 };
             }
         }

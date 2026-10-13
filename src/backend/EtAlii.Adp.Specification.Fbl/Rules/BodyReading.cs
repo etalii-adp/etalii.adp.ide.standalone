@@ -273,7 +273,7 @@ internal sealed class BodyReading
                     }
                     var element = new ReadElement { Rule = rule, Candidate = candidate, Line = Text.Position(entry.Own.Start).Line };
                     ReadSlots(element);
-                    if (Mistyped(element) is { } mistyped)
+                    if (element.Mistyped is { } mistyped)
                     {
                         // The entry is this rule's and no other's: it is not offered to a later
                         // candidate, which would read as an element what the rule could not.
@@ -283,6 +283,10 @@ internal sealed class BodyReading
                     _claims[entry] = rule.Name;
                     _byEntry[entry] = element;
                     Elements.Add(element);
+                    foreach (var unconverted in element.Unconverted)
+                    {
+                        Family.Report(FindingCodes.UnconvertedValue, FindingSeverity.Warning, unconverted.Message, unconverted.Span, new Dictionary<string, string> { ["attribute"] = unconverted.Attribute, ["text"] = unconverted.Text });
+                    }
                 }
                 else
                 {
@@ -300,21 +304,6 @@ internal sealed class BodyReading
                 Family.Report(FindingCodes.UnreadableEntry, FindingSeverity.Warning, $"This entry cannot be read: {error}", entry.Own);
             }
         }
-    }
-
-    /// <summary>The first attribute whose value does not convert to the type its specification gives it, as a reason, or null.</summary>
-    private string? Mistyped(ReadElement element)
-    {
-        if (Options.AttributeType is not { } typeOf) return null;
-        foreach ((string name, object? value) in element.Attributes)
-        {
-            if (value is null || !element.Slots.TryGetValue(name, out var read) || !read.Present) continue;
-            if (typeOf(element.Rule.Type, name) is { } type && !TypedValue.Reads(type, value))
-            {
-                return $"'{name}' is not a {type}.";
-            }
-        }
-        return null;
     }
 
     private static void Offer(Dictionary<Entry, List<Candidate>> offered, Candidate candidate)
@@ -466,20 +455,33 @@ internal sealed class BodyReading
             var read = ReadSlot(element.Candidate, binding, element);
             element.Slots[name] = read;
             object? value = read.Present ? read.Value : null;
+            var mode = ReadModes.Of(rule, name, binding, Options);
+            var scalar = read is { Present: true, WrittenScalar: true } && !binding.Flag && Family is TreeFamily;
             // A slot read as text takes what the author wrote (FBL 0.5 §5.2), which a map then translates.
-            if (read is { Present: true, WrittenScalar: true } && !binding.Flag && Family is TreeFamily && ReadModes.Of(rule, name, binding, Options) == ReadMode.Text)
-            {
-                value = read.Written;
-            }
+            if (scalar && mode == ReadMode.Text) value = read.Written;
             if (read.Present && binding.Map is { } map && value is string wire)
             {
                 var mapped = map.FirstOrDefault(m => m.Key == wire);
-                if (mapped.Key is not null) value = mapped.Value;
+                if (mapped.Key is not null)
+                {
+                    value = mapped.Value;
+                    scalar = false;
+                }
             }
             if (binding.Flag) value = read.Present;
             else if (read.Present && binding.Reference is { } reference && !reference.To.Contains(rule.Name) && read.Words is { Count: > 0 } words)
             {
                 value = words.Select(w => (object?)w.Text).ToList();
+            }
+            if (read.Present && !binding.Flag && mode == ReadMode.Typed && Options.AttributeType?.Invoke(rule.Type, name) is { } type)
+            {
+                if (scalar && read is { Value: null, Style: "plain", Written.Length: 0 })
+                {
+                    // Nothing written (key:) is absent, so the default applies (FBL 0.5 §5.2).
+                    if (binding.Default is { } empty) element.Attributes[name] = FromJson(empty);
+                    continue;
+                }
+                value = Convert(element, name, binding, read, type, value, scalar);
             }
             if (!read.Present && binding is { Flag: false, Default: { } fallback }) value = FromJson(fallback);
             if (read.Present || binding.Flag || binding.Default is not null) element.Attributes[name] = value;
@@ -487,6 +489,29 @@ internal sealed class BodyReading
         if (rule.Source is { } source) element.SourceRead = ReadSlot(element.Candidate, source, element);
         if (rule.Target is { } target) element.TargetRead = ReadSlot(element.Candidate, target, element);
         if (rule.Id?.From is { } from) element.IdRead = ReadSlot(element.Candidate, from, element);
+    }
+
+    /// <summary>
+    /// A typed slot's value converted to its attribute's type (FBL 0.5 §5.2): the converted value, else
+    /// the fallback, reported once the entry is claimed, else the value with the element marked mistyped.
+    /// </summary>
+    private object? Convert(ReadElement element, string name, AttributeBinding binding, SlotRead read, string type, object? value, bool scalar)
+    {
+        var quoted = binding.Quoted == "convert" && Family is YamlFamily;
+        if (ScalarConversion.Convert(type, value, read.Written, scalar ? read.Style : null, quoted, out var converted)) return converted;
+        if (binding.Fallback is not { } fallback)
+        {
+            element.Mistyped ??= $"'{name}' is not a {type}.";
+            return value;
+        }
+        var replacement = FromJson(fallback.Value);
+        if (fallback.Report)
+        {
+            var kind = ScalarConversion.Describe(type);
+            var message = $"'{read.Written}' is not {kind}, so {char.ToUpperInvariant(name[0])}{name[1..]} is read as {NewText.Plain(replacement, null)}. Write {kind} to change it.";
+            element.Unconverted.Add((message, read.Span, name, read.Written));
+        }
+        return replacement;
     }
 
     public SlotRead ReadSlot(Candidate candidate, Slot slot, ReadElement element)

@@ -129,6 +129,11 @@ internal sealed class YamlFamily(BodyText text, FblBinding binding, FblOptions o
         var old = (read.Node as TreeEntry)?.Value;
         var wire = binding is null ? null : NewText.Wire(binding, value, read.Wire);
         var written = Scalar(wire ?? value, old, binding, (read.Node as TreeEntry)?.Indent ?? 0);
+        // A number or a bool read from a quoted scalar (FBL 0.5 quoted: convert) keeps its quotes.
+        if (binding?.Quoted == "convert" && old?.Style is ValueStyle.Single or ValueStyle.Double && (wire ?? value) is bool or long or int or double or decimal)
+        {
+            written = old.Style == ValueStyle.Single ? YamlScalars.SingleQuoted(written) : YamlScalars.DoubleQuoted(written);
+        }
         return old?.Style == ValueStyle.Empty ? " " + written : written;
     }
 

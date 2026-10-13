@@ -205,4 +205,64 @@ public class YamlWritingTests
         """, "0.5");
 
     private static OpenBody OpenText(string body) => OpenBody.Open(Encoding.UTF8.GetBytes(body), _text);
+
+    private static readonly FblBinding _typed = Load("""
+        [{
+          "name": "item", "type": "Item", "at": "/items/*", "id": { "from": { "key": "id" } },
+          "attributes": {
+            "label": { "key": "label" },
+            "row": { "key": "row", "fallback": { "value": 0 } },
+            "count": { "key": "count", "quoted": "convert" }
+          }
+        }]
+        """, "0.5");
+
+    private static readonly FblOptions _types = new() { FileName = "plan.t", AttributeType = (_, attribute) => attribute is "row" or "count" ? "int" : "string" };
+
+    private static OpenBody OpenTyped(string body) => OpenBody.Open(Encoding.UTF8.GetBytes(body), _typed, _types);
+
+    [Fact]
+    public void SettingAnUnconvertedValueReplacesExactlyItsBytes()
+    {
+        // Arrange: row reads as its fallback, 0.
+        var body = OpenTyped("items:\n  - id: a\n    row: wide   # not a row\n");
+
+        // Act.
+        var result = body.Change(new ModelChange.Set("a", new Dictionary<string, object?> { ["row"] = 3L }));
+
+        // Assert: the value is replaced, and the comment after it is kept.
+        Assert.IsType<PlanResult.Planned>(result);
+        Assert.Equal("items:\n  - id: a\n    row: 3   # not a row\n", Text(body));
+        Assert.Equal(3L, body.Model.Elements[0].Attributes["row"]);
+    }
+
+    [Fact]
+    public void SettingAnotherAttributeLeavesAnUnconvertedValueUntouched()
+    {
+        // Arrange.
+        var body = OpenTyped("items:\n  - id: a\n    label: one\n    row: wide\n");
+
+        // Act.
+        var result = body.Change(new ModelChange.Set("a", new Dictionary<string, object?> { ["label"] = "two" }));
+
+        // Assert.
+        Assert.IsType<PlanResult.Planned>(result);
+        Assert.Equal("items:\n  - id: a\n    label: two\n    row: wide\n", Text(body));
+        Assert.Equal(0.0, body.Model.Elements[0].Attributes["row"]);
+    }
+
+    [Fact]
+    public void ANumberReplacingAQuotedScalarUnderQuotedConvertKeepsItsQuotes()
+    {
+        // Arrange: count, written "3", reads as 3.
+        var body = OpenTyped("items:\n  - id: a\n    count: \"3\"\n");
+
+        // Act.
+        var result = body.Change(new ModelChange.Set("a", new Dictionary<string, object?> { ["count"] = 5L }));
+
+        // Assert.
+        Assert.IsType<PlanResult.Planned>(result);
+        Assert.Equal("items:\n  - id: a\n    count: \"5\"\n", Text(body));
+        Assert.Equal(5L, body.Model.Elements[0].Attributes["count"]);
+    }
 }
