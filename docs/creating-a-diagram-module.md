@@ -102,6 +102,8 @@ All of it serves one promise: **a document ADP did not change comes back byte-id
 
 A session is one open diagram on one connection: [`TimelineSession.cs`](../src/diagrams/timeline/backend/EtAlii.Adp.Diagram.Timeline/TimelineSession.cs), opened by [`TimelineSessionFactory.cs`](../src/diagrams/timeline/backend/EtAlii.Adp.Diagram.Timeline/TimelineSessionFactory.cs), which core resolves by origin. It answers a baseline (the whole diagram as element adds), reacts to the store's changed event by sending deltas (the difference against what this connection last saw — computed by core's shared [`DiagramDiff.cs`](../src/backend/EtAlii.Adp.Diagram/DiagramDiff.cs) over what [`TimelineElementMapper.cs`](../src/diagrams/timeline/backend/EtAlii.Adp.Diagram.Timeline/TimelineElementMapper.cs) renders), and handles moves.
 
+A session over a document store need not write any of that. It derives from core's [`DocumentDiagramSession<TBody, TModel>`](../src/backend/EtAlii.Adp.Diagram/DocumentDiagramSession.cs), which follows the store, delivers the baseline, answers a viewport report, refuses a drag when it may not edit and dispatches a drop through the project's history; the module overrides `Render(model, viewport)`, and `PlacementOf` where its elements can be dragged. [`SankeySession.cs`](../src/diagrams/sankey/backend/EtAlii.Adp.Diagram.Sankey/SankeySession.cs) is the example.
+
 Before writing it, decide the single biggest fork in any diagram type's design, and write the decision down: **who owns position?**
 
 - **Authored in the document** — a position is the author's claim, and dragging is a *document edit* through a command. Timeline (x is authored time, y an authored row) and wardley-map (both coordinates are the statement) are the shipped examples.
