@@ -63,8 +63,8 @@ public static class Diagram
 
 | Seam | Timeline's implementation | Needed when |
 |---|---|---|
-| `IDiagramDocumentFactory` | `TimelineDocumentFactory` | **Mandatory once you declare an extension** — startup fails, naming your type, if the factory that writes an empty body is missing. |
-| `IDiagramSessionFactory` | `TimelineSessionFactory` | Mandatory to open the diagram at all. |
+| `IDiagramDocumentFactory` | `TimelineDocumentFactory` | **Mandatory once you declare an extension** — startup fails, naming your type, if the factory that writes an empty body is missing. A new document that is the same text whatever the file is called needs no class: `services.AddEmptyDocument(origin, text)` registers it, as sankey does. |
+| `IDiagramSessionFactory` | `TimelineSessionFactory` | Mandatory to open the diagram at all. Nor does it need a class: `services.AddDiagramSession(origin, (provider, opening) => new XSession(...))` registers one from a delegate, which [sankey's registration](../src/diagrams/sankey/backend/EtAlii.Adp.Diagram.Sankey/ServiceCollection.AddSankey.cs) shows. |
 | `ICommandHandler<T>` per command | the `Commands/` folder | For every edit the type supports. |
 | `IDiagramDocumentReloader` | `TimelineDocumentReloader` | So an external write to the body (another editor, a `git pull`) reaches every open session. A store whose interface extends [`IDiagramDocumentStore`](../src/backend/EtAlii.Adp.Documents/IDiagramDocumentStore.cs) writes no reloader: `services.AddDiagramDocumentReloader<ISankeyDocumentStore>(Diagram.Sankey.Origin)` registers the shared [`DiagramDocumentReloader<TStore>`](../src/backend/EtAlii.Adp.Diagram/DiagramDocumentReloader.cs), as sankey does, and its tests derive from [`DocumentReloaderContract<TStore>`](../src/backend/EtAlii.Adp.TestSupport/DocumentReloaderContract.cs). Timeline follows when its store does. |
 | `IContextSourceResolver` | `TimelineContextSourceResolver` | To make elements selectable. |

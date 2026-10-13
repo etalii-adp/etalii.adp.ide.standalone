@@ -226,3 +226,12 @@ src/backend/EtAlii.Adp.Specification.Fbl.Tests/Conformance/etalii.adp/** -text
 # file, since every other XML file here is ordinary text.
 src/editors/xml/examples/latin1.xml -text
 src/examples/editors/xml/latin1.xml -text
+
+# The JSON editor's examples, in the Databricks shape: `.json` only, scoped to the module's examples
+# and their replica, so the readme beside them stays ordinary text. The family's guarantee is that an
+# unchanged save gives the bytes back - each line's terminator and the final newline included
+# (json-editor Requirement 8.1) - and the examples carry one CRLF document and LF ones on purpose. Under
+# the house rule every one of them would be CRLF in a working tree, and the round trip would test one
+# shape twice.
+src/editors/json/examples/**/*.json -text
+src/examples/editors/json/**/*.json -text

@@ -127,19 +127,25 @@ import "./dependency-graph.css";
 
 **Related.** [The shape of a module client](#the-shape-of-a-module-client) for where this sits in the whole.
 
-## An editor's analysis
+## Editor analysis and schemas
 
-**Declarations:** `EditorAnalysis`, `EditorFinding`, `EditorFindingSeverity`, `EditorCompletion`, `editorHighlight`, `SchemaFiles`, `SchemaFile`, `schemaFileKey`, `useAuth`
+**Declarations:** `EditorAnalysis`, `EditorFinding`, `EditorFindingSeverity`, `EditorCompletion`, `SchemaFiles`, `SchemaFile`, `schemaFileKey`, `resolveSchemaReference`, `editorHighlight`, `useAuth`
 
-**What it is for.** An editor module tells the shared text panel what it knows about its format, and the panel presents it: findings underlined and counted, a completion list, hover text. The module never draws any of it. [Creating an editor module](creating-an-editor-module.md) says how the pieces fit; this entry names what a module imports.
+**What it is for.** An editor module tells `TextEditorPanel` what it knows about its format through one asynchronous interface, and the panel draws everything: the underlines, the gutter marks, the counts on the status line, the completion list and the hover text. A module never draws any of them itself, so JSON, YAML and XML look and behave alike.
 
-**Whether a module needs it.** Only an editor whose format has findings or completion. The XML editor is the first module that imports it.
+**Whether a module needs it.** Only an editor module that checks or completes its text. A diagram module never does; an editor that only colours its text passes `extensions` and no `analysis`.
 
-**Its shape.** `EditorAnalysis` is handed to `TextEditorPanel` as `analysis`: `findings` answers the `EditorFinding`s of a text, each with `from`, `to`, a `severity` (an `EditorFindingSeverity`: error, warning or info), a `message` and a `source`; the optional `completions` answers `EditorCompletion`s, each with a `label`, an optional `filterText`, `detail` and `info`, the range `from` and `to` it replaces, the `insert` (tab stops applied as a snippet) and a `boost`; the optional `hover` answers text for a range; the optional `status` is what the status line says after the counts. `editorHighlight` is the one colour scheme of every editor; a module reads a class from it (`editorHighlight.style([tags.namespace])`) rather than writing a colour. `SchemaFiles` reads files an analysis depends on over the connection's stream and reports each as a `SchemaFile`, keyed by `schemaFileKey`. `useAuth` gives the `transport` a module's own calls to the backend are made on.
+**Its shape.** `EditorAnalysis` has `findings` (required), and `completions`, `hover` and `status` (each optional). Offsets are into the text as CodeMirror holds it, which is LF-only. An `EditorFinding` is `from`, `to`, `severity`, `message` (plain text, never markup) and `source` (who found it, such as `json-schema`). `EditorFindingSeverity` is `error`, `warning` or `info`. An `EditorCompletion` is `label`, `filterText`, `detail`, `info`, `from`, `to`, `insert` (with `${1}` tab stops applied as a snippet) and `boost`, which sorts an item up the list.
 
-**The guards.** `analysisExtensions.test.tsx` holds the presentation; a module's own tests hold its analysis.
+`SchemaFiles` is a component that renders nothing: given the paths a document's schema references lead to, it reads each file over the tab's existing stream and reports every arrival, change and failure as a new map of `SchemaFile` (`loading`, `loaded` with its text and revision, or `failed` with its reason), keyed by `schemaFileKey` of the path. `resolveSchemaReference` decides where a reference points, before any URL arithmetic: a file of the project, a bundled schema, or no file with the reason, refusing a `..` that steps above the project root and anything with a scheme it does not bundle.
 
-**Related.** [Registration and discovery](#registration-and-discovery) for `TextEditorPanel`.
+`editorHighlight` is the one colour scheme of every editor; a module that marks a token of its own reads a class from it (`editorHighlight.style([tags.namespace])`) rather than writing a colour. A module whose checking is in the backend implements `EditorAnalysis` over the family's `Analyze` and `Complete` calls of `EditorService`, made on the `transport` that `useAuth` gives; see *Asking the backend about the text* in [creating-an-editor-module.md](creating-an-editor-module.md).
+
+Source: [`src/editors/json/client/JsonEditorPanel.tsx`](../src/editors/json/client/JsonEditorPanel.tsx), [`src/editors/xml/client/XmlEditorPanel.tsx`](../src/editors/xml/client/XmlEditorPanel.tsx)
+
+**The guards.** `resolveSchemaReference` is held to `src/fixtures/schema-reference-cases.json`, the cases the XML editor's C# twin is held to as well. `src/client/src/editors/analysisExtensions.test.tsx` checks that each severity carries a line style and a gutter mark as well as a colour.
+
+**Related.** [Registration and discovery](#registration-and-discovery) for `TextEditorPanel`, and [creating-an-editor-module.md](creating-an-editor-module.md) for the JSON editor as the worked example.
 
 ## The stream and the model
 
@@ -168,7 +174,7 @@ export function useDependencyGraphStream(projectId: Uint8Array, path: readonly s
 
 **An element naming no declared type renders as a visible fallback box** rather than disappearing — a mapping bug shown, not hidden.
 
-**Authentication is not part of this surface.** `useAuth` is reached by several modules' *test* files to build an authenticated client, and by no module's production code. It is therefore outside the computed surface and carries no entry here; a module that finds itself needing it in production code is doing something this document does not cover, and that is the signal rather than an omission.
+**Authentication is not part of this surface.** `useAuth` is reached by several modules' *test* files to build an authenticated client, and in production code only by the XML editor, for the `transport` its analysis calls are made on; that one use is in [Editor analysis and schemas](#editor-analysis-and-schemas). Any other module that finds itself needing it in production code is doing something this document does not cover, and that is the signal rather than an omission.
 
 **Related.** [The view report](#the-view-report) for telling the backend what is visible, and [`src/client/src/diagrams/readme.md`](../src/client/src/diagrams/readme.md) for the stream's own mechanism.
 
