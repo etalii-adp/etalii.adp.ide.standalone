@@ -1,3 +1,5 @@
+using EtAlii.Adp.Documents;
+
 namespace EtAlii.Adp.History;
 
 /// <summary>
@@ -63,6 +65,22 @@ public sealed class CommandResult
         ArgumentNullException.ThrowIfNull(inverse);
         ArgumentNullException.ThrowIfNull(warning);
         return new CommandResult(true, "", inverse, warning);
+    }
+
+    /// <summary>
+    /// What a command that saved a document came to: the save's failure, or a success that
+    /// <paramref name="inverse"/> puts back, carrying the save's warning when it has one.
+    /// </summary>
+    /// <remarks>
+    /// <b>The one way from a save to a result, so a warning cannot be dropped</b> (code-structure
+    /// FR-022, D4). Six modules wrote <c>saved.Failed ? Failure : Success</c>, which loses the
+    /// warning <see cref="DocumentSaveResult"/> says must not pass unmentioned.
+    /// </remarks>
+    public static CommandResult FromSave(DocumentSaveResult saved, ICommand inverse)
+    {
+        ArgumentNullException.ThrowIfNull(saved);
+        ArgumentNullException.ThrowIfNull(inverse);
+        return saved.Failed ? Failure(saved.Error) : Success(inverse, saved.Warning);
     }
 
     /// <summary>Rejected, for a reason the caller can show to the user.</summary>

@@ -44,15 +44,7 @@ internal static class SankeyEdits
         }
 
         var saved = documents.Save(bodyPath, document);
-        if (saved.Failed)
-        {
-            return Task.FromResult(CommandResult.Failure(saved.Error));
-        }
-
-        var undo = new RestoreDocumentCommand<ISankeyDocumentStore>(bodyPath, before, self);
-        return Task.FromResult(saved.Warning.Length > 0
-            ? CommandResult.Success(undo, saved.Warning)
-            : CommandResult.Success(undo));
+        return Task.FromResult(CommandResult.FromSave(saved, new RestoreDocumentCommand<ISankeyDocumentStore>(bodyPath, before, self)));
     }
 
     /// <summary>The node with <paramref name="id"/>: the first entry with it, as the canvas draws it.</summary>
