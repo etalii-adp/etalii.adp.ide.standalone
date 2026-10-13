@@ -234,4 +234,15 @@ public class ReadingTests
             ["CausalLink@7", "CausalLink@8", "Loop@10"],
             requests.Select(r => $"{r.Type}@{r.Line}").Order(StringComparer.Ordinal));
     }
+
+    [Fact]
+    public void ARelationEndThatNamesNoElementIsReportedOnItsEntry()
+    {
+        // Act: the connection's from names nothing.
+        var model = Read("timeline: 1\nelements:\n  - id: a\n    label: A\n    begin: 2026-01-01\nconnections:\n  - id: c\n    from: x\n    to: a\n", _timeline);
+
+        // Assert: FBL section 5.4 reports a dangling reference on the entry, the line that starts it.
+        var finding = Assert.Single(model.Findings, f => f.Code == FindingCodes.DanglingReference);
+        Assert.Equal(7, finding.Location!.Line);
+    }
 }

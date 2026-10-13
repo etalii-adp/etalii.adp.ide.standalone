@@ -685,7 +685,7 @@ internal sealed class BodyReading
         var found = Elements.FirstOrDefault(e => !e.IsRelation && e.Key == key);
         if (found is null)
         {
-            Family.Report(FindingCodes.DanglingReference, FindingSeverity.Warning, $"The {end} '{key}' of this {relation.Rule.Type} names no element, so it is not read as a relation.", read.Span ?? relation.Entry.Own);
+            Family.Report(FindingCodes.DanglingReference, FindingSeverity.Warning, $"The {end} '{key}' of this {relation.Rule.Type} names no element, so it is not read as a relation.", relation.Entry.Own);
         }
         return found;
     }
