@@ -22,7 +22,8 @@ public static class ServiceCollectionAddAgentBehaviorModellingExtension
         ArgumentNullException.ThrowIfNull(services);
 
         // Without a document factory the host refuses to start: a type that declares an extension
-        // must be creatable from the Add dialog.
+        // must be creatable from the Add dialog. A class of its own rather than a registered text,
+        // because a new model's title is the file's name.
         services.AddSingleton<IDiagramDocumentFactory, AbmDocumentFactory>();
         services.AddSingleton<AbmElementMapper>();
 
@@ -30,8 +31,19 @@ public static class ServiceCollectionAddAgentBehaviorModellingExtension
         // registers its own store keeps it.
         services.TryAddSingleton<IAbmDocumentStore, AbmDocumentStore>();
 
-        services.AddSingleton<IDiagramSessionFactory, AbmSessionFactory>();
-        services.AddSingleton<IDiagramDocumentReloader, AbmDocumentReloader>();
+        // The project's history, so a drag is one undo away like every other edit.
+        services.AddDiagramSession(Diagram.AgentBehaviorModelling.Origin, (provider, opening) => new AbmSession(
+            opening.BodyPath,
+            opening.RegistrationPath,
+            provider.GetRequiredService<IAbmDocumentStore>(),
+            provider.GetRequiredService<AbmElementMapper>(),
+            provider.GetRequiredService<IHistoryStackStore>().Get(opening.RootPath)));
+
+        // The reload seam: an external write to a Markdown body reaches the store, and through it every
+        // open session - and a deleted body reaches it as a deletion, not as a reload.
+        services.AddDiagramDocumentReloader<IAbmDocumentStore>(Diagram.AgentBehaviorModelling.Origin);
+
+        // Selection, and what can be done to it: the palette, the menus and shortcuts, and the property grid.
         services.AddSingleton<IContextSourceResolver, AbmContextSourceResolver>();
         services.AddSingleton<IDiagramToolboxProvider, AbmToolboxProvider>();
         services.AddSingleton<IContextActionProvider, AbmContextActionProvider>();

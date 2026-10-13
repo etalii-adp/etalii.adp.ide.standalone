@@ -166,7 +166,7 @@ public sealed class AbmContextSourceResolver : IContextSourceResolver
         _documents.Changed += OnChanged;
         return new Unsubscriber(() => _documents.Changed -= OnChanged);
 
-        void OnChanged(object? sender, AbmDocumentChangedEventArgs args)
+        void OnChanged(object? sender, DocumentChangedEventArgs args)
         {
             if (!string.Equals(args.Path, bodyPath, StringComparison.OrdinalIgnoreCase))
             {

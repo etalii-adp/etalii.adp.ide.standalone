@@ -70,7 +70,7 @@ internal static class AbmDefinition
     public static DislEnv Env { get; } = new();
 
     /// <summary>The context menu of <paramref name="elementId"/> in <paramref name="entry"/>: a node, a placement, a parent-line gesture; none for anything else.</summary>
-    public static IReadOnlyList<ContextActionGroupDefinition> Menus(AbmDocumentEntry entry, string elementId)
+    public static IReadOnlyList<ContextActionGroupDefinition> Menus(DocumentEntry<AbmBody, AbmModel> entry, string elementId)
     {
         ArgumentNullException.ThrowIfNull(entry);
         var diagram = entry.Document.Disl.Diagram;
@@ -91,7 +91,7 @@ internal static class AbmDefinition
     }
 
     /// <summary>The property rows of <paramref name="elementId"/> in <paramref name="entry"/>: a node's form; none for anything else.</summary>
-    public static IReadOnlyList<ContextPropertyDefinition> Rows(AbmDocumentEntry entry, string elementId)
+    public static IReadOnlyList<ContextPropertyDefinition> Rows(DocumentEntry<AbmBody, AbmModel> entry, string elementId)
     {
         ArgumentNullException.ThrowIfNull(entry);
         return ElementOf(entry.Document.Disl.Diagram, elementId) is { } element

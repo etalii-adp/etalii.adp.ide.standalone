@@ -19,7 +19,7 @@ public class AbmShortcutsTests
     public void AMove_AnswersToAltAndTheArrowKey_AsTheBrowserReportsIt(string actionId, string key)
     {
         // Arrange.
-        var entry = AbmDocumentEntry.Read(Text);
+        var entry = AbmEntries.Read(Text);
         var pressed = new ContextShortcutDefinition(key, Alt: true);
 
         // Act.

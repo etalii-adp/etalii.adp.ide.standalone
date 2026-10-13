@@ -29,7 +29,7 @@ internal static class HandWrittenAbm
     ];
 
     /// <summary>The context menu of <paramref name="elementId"/>, as <c>AbmContextActionProvider.DiscoverAsync</c> answered it after its origin check.</summary>
-    public static IReadOnlyList<ContextActionGroupDefinition> Menus(AbmDocumentEntry entry, string elementId)
+    public static IReadOnlyList<ContextActionGroupDefinition> Menus(DocumentEntry<AbmBody, AbmModel> entry, string elementId)
     {
         var model = entry.Model;
 
@@ -80,7 +80,7 @@ internal static class HandWrittenAbm
     }
 
     /// <summary>The property rows of <paramref name="elementId"/>, as <c>AbmContextPropertyProvider.DescribeAsync</c> answered them after its origin check.</summary>
-    public static IReadOnlyList<ContextPropertyDefinition> Rows(AbmDocumentEntry entry, string elementId)
+    public static IReadOnlyList<ContextPropertyDefinition> Rows(DocumentEntry<AbmBody, AbmModel> entry, string elementId)
     {
         if (entry.Model.NodeOf(elementId) is not { } node)
         {
