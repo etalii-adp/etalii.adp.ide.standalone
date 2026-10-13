@@ -21,6 +21,8 @@ public sealed class StartupRevalidation : IHostedService
     private readonly List<string> _queue = [];
     private readonly HashSet<string> _seen = new(StringComparer.OrdinalIgnoreCase);
     private readonly CancellationTokenSource _stopping = new();
+    private bool _started;
+    private bool _running;
 
     public StartupRevalidation(IProblemStore store, ProjectValidator validator)
     {
@@ -44,9 +46,10 @@ public sealed class StartupRevalidation : IHostedService
                     _queue.Add(root);
                 }
             }
+            _started = true;
+            // The host starts now; the walking happens behind it.
+            StartRunning();
         }
-        // The host starts now; the walking happens behind it.
-        Completion = Task.Run(() => RunAsync(_stopping.Token), CancellationToken.None);
         return Task.CompletedTask;
     }
 
@@ -76,6 +79,13 @@ public sealed class StartupRevalidation : IHostedService
             if (_seen.Add(root))
             {
                 _queue.Insert(0, root);
+                // A project first opened after the startup pass drained would otherwise sit in
+                // the queue with nothing walking it, and its panel would say "Not checked yet"
+                // until somebody asked for a validation.
+                if (_started && !_running)
+                {
+                    StartRunning();
+                }
                 return;
             }
             var index = _queue.FindIndex(queued => string.Equals(queued, root, StringComparison.OrdinalIgnoreCase));
@@ -87,6 +97,17 @@ public sealed class StartupRevalidation : IHostedService
         }
     }
 
+    /// <summary>Starts the walk; called under <see cref="_gate"/>.</summary>
+    private void StartRunning()
+    {
+        if (_stopping.IsCancellationRequested)
+        {
+            return;
+        }
+        _running = true;
+        Completion = Task.Run(() => RunAsync(_stopping.Token), CancellationToken.None);
+    }
+
     private async Task RunAsync(CancellationToken cancellationToken)
     {
         while (!cancellationToken.IsCancellationRequested)
@@ -96,6 +117,7 @@ public sealed class StartupRevalidation : IHostedService
             {
                 if (_queue.Count == 0)
                 {
+                    _running = false;
                     return;
                 }
                 root = _queue[0];

@@ -188,12 +188,15 @@ public sealed class SupplyChainContextActionProvider(IHistoryStackStore historyS
             case RemoveActionId when node is not null:
             {
                 var going = model.Flows.Count(candidate => candidate.From == node.Id || candidate.To == node.Id);
-                return await RemoveAsync(target, new RemoveSupplyChainEntryCommand(body, id), going == 0 ? null : new RemovalConfirmation(
-                    "Remove",
-                    going == 1
-                        ? "Removing this node also removes the 1 flow to or from it."
-                        : $"Removing this node also removes the {going} flows to or from it.",
-                    "Remove"), cancellationToken);
+                var confirmation = going == 0
+                    ? null
+                    : new RemovalConfirmation(
+                        "Remove",
+                        going == 1
+                            ? "Removing this node also removes the 1 flow to or from it."
+                            : $"Removing this node also removes the {going} flows to or from it.",
+                        "Remove");
+                return await RemoveAsync(target, new RemoveSupplyChainEntryCommand(body, id), confirmation, cancellationToken);
             }
 
             case RemoveActionId when flow is not null || group is not null:
@@ -209,7 +212,7 @@ public sealed class SupplyChainContextActionProvider(IHistoryStackStore historyS
     }
 
     /// <inheritdoc />
-    protected override ContextValidationResult Validate(ContextTarget target, string actionId, string value) =>
+    protected override ContextValidationResult Validate(string actionId, string value) =>
         actionId == GroupActionId && string.IsNullOrWhiteSpace(value)
             ? ContextValidationResult.Rejected("A group needs a name.")
             : ContextValidationResult.Accepted;

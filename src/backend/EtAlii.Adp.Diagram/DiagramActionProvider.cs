@@ -69,7 +69,7 @@ public abstract class DiagramActionProvider<TBody, TModel> : IContextActionProvi
         ArgumentNullException.ThrowIfNull(target);
         cancellationToken.ThrowIfCancellationRequested();
 
-        return ValueTask.FromResult(Validate(target, actionId, value));
+        return ValueTask.FromResult(Validate(actionId, value));
     }
 
     /// <inheritdoc />
@@ -120,7 +120,7 @@ public abstract class DiagramActionProvider<TBody, TModel> : IContextActionProvi
         CancellationToken cancellationToken);
 
     /// <summary>Whether <paramref name="value"/> may be committed for <paramref name="actionId"/>; anything, by default.</summary>
-    protected virtual ContextValidationResult Validate(ContextTarget target, string actionId, string value) =>
+    protected virtual ContextValidationResult Validate(string actionId, string value) =>
         ContextValidationResult.Accepted;
 
     /// <summary>
