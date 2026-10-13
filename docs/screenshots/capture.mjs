@@ -230,7 +230,8 @@ const shots = [
 
   // The text editors: no canvas, so nothing to wait for or fit.
   { name: "markdown-editor.png", path: ["editors", "markdown", "guide.md"], fit: false, expectDrawing: false },
-  { name: "plain-text-editor.png", path: ["editors", "plain", "crlf-notes.txt"], fit: false, expectDrawing: false, collapse: ["editors"] },
+  { name: "plain-text-editor.png", path: ["editors", "plain", "crlf-notes.txt"], fit: false, expectDrawing: false },
+  { name: "json-editor.png", path: ["editors", "json", "service-broken.json"], fit: false, expectDrawing: false, collapse: ["editors"] },
 ];
 
 // ---- sign in, open the examples project ------------------------------------------------------

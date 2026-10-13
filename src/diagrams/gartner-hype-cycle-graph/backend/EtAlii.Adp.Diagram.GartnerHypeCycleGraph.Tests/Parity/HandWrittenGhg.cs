@@ -35,7 +35,7 @@ internal static class HandWrittenGhg
     ];
 
     /// <summary>The context menu of <paramref name="elementId"/>, as <c>GhgContextActionProvider.DiscoverAsync</c> answered it after its body check.</summary>
-    public static IReadOnlyList<ContextActionGroupDefinition> Menus(GhgDocumentEntry entry, string elementId)
+    public static IReadOnlyList<ContextActionGroupDefinition> Menus(DocumentEntry<GhgBody, GhgModel> entry, string elementId)
     {
         if (!entry.IsUsable)
         {
@@ -124,7 +124,7 @@ internal static class HandWrittenGhg
     }
 
     /// <summary>The property rows of <paramref name="elementId"/>, as <c>GhgContextPropertyProvider.DescribeAsync</c> answered them after its body check (runtime plan step S11).</summary>
-    public static IReadOnlyList<ContextPropertyDefinition> Rows(GhgDocumentEntry entry, string elementId)
+    public static IReadOnlyList<ContextPropertyDefinition> Rows(DocumentEntry<GhgBody, GhgModel> entry, string elementId)
     {
         const string identityGroup = "Identity";
         const string timeGroup = "Time";
