@@ -41,7 +41,7 @@ public class WrittenTextTests
     public void AScalarReadsAsWritten(string name)
     {
         // Arrange.
-        var (body, expected, observe, open) = Case(name);
+        (string body, object? expected, Func<FblModel, object?> observe, OpenFinding? open) = Case(name);
 
         // Act.
         var observed = observe(Read(body));
@@ -136,7 +136,7 @@ public class WrittenTextTests
     {
         // Arrange.
         var family = Yaml("base: &b\n  k: 007\nm:\n  <<: *b\n");
-        var merged = (TreeEntry)Root(family).Value.Member("m")!;
+        var merged = Root(family).Value.Member("m")!;
 
         // Act.
         var slot = family.ReadRaw(merged, "k");
