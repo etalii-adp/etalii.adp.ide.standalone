@@ -35,7 +35,7 @@ One definition per tool, interpreted by a core in each host, needs the core to r
 
 #### Acceptance Criteria
 
-1. WHEN the work starts THEN a test SHALL read a body through a binding with a string attribute written `yes`, `1.0`, `null` and `~`, an id written `007` and a reference written `007`, and SHALL be seen to fail against today's library for the reason the measurement gives: the values come back typed, and the id comes back as `7`.
+1. WHEN the work starts THEN a test SHALL read a body through a binding with a string attribute written `1.0`, `null` and `~`, an id written `007` and a reference written `007`, and SHALL be seen to fail against today's library for the reason the measurement gives: the values come back typed, and the id comes back as `7`.
 2. IF a measured defect does not occur THEN it SHALL be struck from this document with the test that shows it, as a small amendment.
 
 ### Requirement 2: Written text
