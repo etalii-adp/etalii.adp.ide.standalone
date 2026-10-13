@@ -1,44 +1,22 @@
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.Timeline;
 
 /// <summary>Carries out a rename. The inverse is the same command carrying the previous label.</summary>
-public sealed class RenameTimelineElementCommandHandler : ICommandHandler<RenameTimelineElementCommand>
+public sealed class RenameTimelineElementCommandHandler(ITimelineDocumentStore documents)
+    : TimelineEditHandler<RenameTimelineElementCommand>(documents)
 {
-    private readonly ITimelineDocumentStore _documents;
-
-    /// <summary>Creates the handler over the one store that owns the documents.</summary>
-    public RenameTimelineElementCommandHandler(ITimelineDocumentStore documents)
-    {
-        ArgumentNullException.ThrowIfNull(documents);
-        _documents = documents;
-    }
-
     /// <inheritdoc />
-    public Task<CommandResult> ExecuteAsync(RenameTimelineElementCommand command, CancellationToken cancellationToken)
+    protected override EditOutcome Apply(LineDocument body, TimelineModel model, RenameTimelineElementCommand command)
     {
-        ArgumentNullException.ThrowIfNull(command);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        var entry = _documents.GetOrLoad(command.BodyPath);
-        if (!entry.IsUsable)
-        {
-            return Task.FromResult(CommandResult.Failure(
-                "This timeline does not parse, so nothing can be renamed until the file is fixed."));
-        }
-
-        var element = TimelineEdits.ElementOf(entry.Model, command.ElementId);
+        var element = TimelineEdits.ElementOf(model, command.ElementId);
         if (element is null)
         {
-            return Task.FromResult(CommandResult.Failure("That element is no longer in this timeline."));
+            return EditOutcome.Refused("That element is no longer in this timeline.");
         }
 
-        var inverse = command with { Label = element.Label };
-        TimelineWriter.SetLabel(entry.Document, element, command.Label);
-
-        var saved = _documents.Save(command.BodyPath, entry.Document);
-        return Task.FromResult(!saved.Failed
-            ? CommandResult.Success(inverse)
-            : CommandResult.Failure(saved.Error));
+        TimelineWriter.SetLabel(body, element, command.Label);
+        return EditOutcome.UndoneBy(command with { Label = element.Label });
     }
 }

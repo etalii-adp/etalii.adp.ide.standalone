@@ -1,62 +1,43 @@
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.Timeline;
 
 /// <summary>Carries out an add. The inverse is the removal of what was added.</summary>
-public sealed class AddTimelineElementCommandHandler : ICommandHandler<AddTimelineElementCommand>
+public sealed class AddTimelineElementCommandHandler(ITimelineDocumentStore documents)
+    : TimelineEditHandler<AddTimelineElementCommand>(documents)
 {
-    private readonly ITimelineDocumentStore _documents;
-
-    /// <summary>Creates the handler over the one store that owns the documents.</summary>
-    public AddTimelineElementCommandHandler(ITimelineDocumentStore documents)
-    {
-        ArgumentNullException.ThrowIfNull(documents);
-        _documents = documents;
-    }
-
     /// <inheritdoc />
-    public Task<CommandResult> ExecuteAsync(AddTimelineElementCommand command, CancellationToken cancellationToken)
+    protected override CommandResult Execute(AddTimelineElementCommand command)
     {
-        ArgumentNullException.ThrowIfNull(command);
-        cancellationToken.ThrowIfCancellationRequested();
-
         if (string.IsNullOrWhiteSpace(command.Id))
         {
-            return Task.FromResult(CommandResult.Failure("An element needs an id."));
+            return CommandResult.Failure("An element needs an id.");
         }
 
         if (string.IsNullOrWhiteSpace(command.Begin))
         {
-            return Task.FromResult(CommandResult.Failure("An element needs a begin."));
+            return CommandResult.Failure("An element needs a begin.");
         }
 
-        if (Inverted(command))
-        {
-            // Requirement 3.4 covers creation too: an element born inverted is as unreachable
-            // through the application as one edited into that state.
-            return Task.FromResult(CommandResult.Failure("An element cannot end before it begins."));
-        }
+        // Requirement 3.4 covers creation too: an element born inverted is as unreachable
+        // through the application as one edited into that state.
+        return Inverted(command)
+            ? CommandResult.Failure("An element cannot end before it begins.")
+            : base.Execute(command);
+    }
 
-        var entry = _documents.GetOrLoad(command.BodyPath);
-        if (!entry.IsUsable)
-        {
-            return Task.FromResult(CommandResult.Failure(
-                "This timeline does not parse, so nothing can be added until the file is fixed."));
-        }
-
-        if (TimelineEdits.ElementOf(entry.Model, command.Id) is not null)
+    /// <inheritdoc />
+    protected override EditOutcome Apply(LineDocument body, TimelineModel model, AddTimelineElementCommand command)
+    {
+        if (TimelineEdits.ElementOf(model, command.Id) is not null)
         {
             // Redo lands here when the element survived - re-adding it would duplicate the id.
-            return Task.FromResult(CommandResult.Failure("An element with that id is already in this timeline."));
+            return EditOutcome.Refused("An element with that id is already in this timeline.");
         }
 
-        TimelineWriter.InsertElement(
-            entry.Document, entry.Model, command.Id, command.Label, command.Begin, command.End, command.Row);
-
-        var saved = _documents.Save(command.BodyPath, entry.Document);
-        return Task.FromResult(!saved.Failed
-            ? CommandResult.Success(new RemoveTimelineElementCommand(command.BodyPath, command.Id))
-            : CommandResult.Failure(saved.Error));
+        TimelineWriter.InsertElement(body, model, command.Id, command.Label, command.Begin, command.End, command.Row);
+        return EditOutcome.UndoneBy(new RemoveTimelineElementCommand(command.BodyPath, command.Id));
     }
 
     private static bool Inverted(AddTimelineElementCommand command)

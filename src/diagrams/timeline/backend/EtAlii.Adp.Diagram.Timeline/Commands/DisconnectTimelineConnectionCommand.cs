@@ -11,4 +11,4 @@ namespace EtAlii.Adp.Diagram.Timeline;
 public sealed record DisconnectTimelineConnectionCommand(
     string BodyPath,
     string ConnectionId,
-    bool RemoveEmptiedConnectionsSection = false) : ICommand;
+    bool RemoveEmptiedConnectionsSection = false) : IDocumentEditCommand;

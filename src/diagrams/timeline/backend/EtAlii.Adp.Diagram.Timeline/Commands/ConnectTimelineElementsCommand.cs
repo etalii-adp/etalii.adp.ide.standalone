@@ -19,4 +19,4 @@ public sealed record ConnectTimelineElementsCommand(
     string Id,
     string From,
     string To,
-    string Label) : ICommand;
+    string Label) : IDocumentEditCommand;

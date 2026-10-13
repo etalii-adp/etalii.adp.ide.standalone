@@ -57,7 +57,7 @@ public sealed class TimelineContextSourceResolverTests : DiagramElementSourceRes
     public async Task ARowPlacement_ResolvesToTheElementAboutToExist()
     {
         // Arrange: a timeline's drop names a time and a whole row.
-        var placement = TimelineNewPlacement.IdFor(1_780_000_000, 4);
+        var placement = GestureIds.RowPlacement(1_780_000_000, 4);
 
         // Act.
         var level = Assert.IsType<ResolvedContextLevel>(await ResolveAsync(placement)).Level;

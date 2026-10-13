@@ -35,4 +35,4 @@ public sealed record AddConnectedTimelineElementCommand(
     string? End,
     int Row,
     bool NewElementIsSource = false,
-    string? Label = null) : ICommand;
+    string? Label = null) : IDocumentEditCommand;

@@ -1,4 +1,5 @@
 using EtAlii.Adp.Context;
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 using Xunit;
 using IoPath = System.IO.Path;
@@ -268,7 +269,7 @@ public class TimelineContextActionProviderTests : IDisposable
 
         // Act.
         var result = await _actions.ExecuteAsync(
-            Target(path, TimelineNewPlacement.IdFor(seconds, 5)),
+            Target(path, GestureIds.RowPlacement(seconds, 5)),
             TimelineContextActionProvider.AddMomentActionId,
             CancellationToken.None);
 
@@ -376,7 +377,7 @@ public class TimelineActionRealityTests : IDisposable
         // Executing an action by id only finds actions its target discovers. A placement that
         // discovered nothing made every drop answer "not available for this item" in the app.
         var path = Write();
-        var groups = await _actions.DiscoverAsync(Target(path, TimelineNewPlacement.IdFor(0, 0)), CancellationToken.None);
+        var groups = await _actions.DiscoverAsync(Target(path, GestureIds.RowPlacement(0, 0)), CancellationToken.None);
         var ids = groups.ActionIds();
 
         // Assert.
@@ -395,7 +396,7 @@ public class TimelineActionRealityTests : IDisposable
 
         // Act.
         var result = await _actions.ExecuteAsync(
-            Target(path, TimelineNewPlacement.IdFor(0, 0)), TimelineContextActionProvider.ArrangeActionId, CancellationToken.None);
+            Target(path, GestureIds.RowPlacement(0, 0)), TimelineContextActionProvider.ArrangeActionId, CancellationToken.None);
         var rows = _store.GetOrLoad(path).Model.Elements.Select(element => element.Row).ToList();
 
         // Assert: arranged onto the first row.
@@ -481,7 +482,7 @@ public class TimelineRelationGestureTests : IDisposable
         // protocol could invert this when a stale arm completed against the wrong source.
         var path = Write();
         var result = await _actions.ExecuteAsync(
-            Target(path, TimelineRelationGesture.IdFor("aaa", "bbb")),
+            Target(path, GestureIds.Relation("aaa", "bbb")),
             TimelineContextActionProvider.ConnectActionId,
             CancellationToken.None);
 
@@ -502,7 +503,7 @@ public class TimelineRelationGestureTests : IDisposable
 
         // Act.
         var result = await _actions.ExecuteAsync(
-            Target(path, TimelineRelationGesture.IdFor("aaa", TimelineNewPlacement.IdFor(seconds, 3))),
+            Target(path, GestureIds.Relation("aaa", GestureIds.RowPlacement(seconds, 3))),
             TimelineContextActionProvider.ConnectActionId,
             CancellationToken.None);
         var model = _store.GetOrLoad(path).Model;
@@ -530,7 +531,7 @@ public class TimelineRelationGestureTests : IDisposable
 
         // Act.
         var result = await _actions.ExecuteAsync(
-            Target(path, TimelineRelationGesture.IdFor(TimelineNewPlacement.IdFor(seconds, 2), "aaa")),
+            Target(path, GestureIds.Relation(GestureIds.RowPlacement(seconds, 2), "aaa")),
             TimelineContextActionProvider.ConnectActionId,
             CancellationToken.None);
         var model = _store.GetOrLoad(path).Model;
@@ -552,7 +553,7 @@ public class TimelineRelationGestureTests : IDisposable
         var path = Write();
         var seconds = TimelineScale.ToSeconds(new DateTimeOffset(2025, 12, 1, 0, 0, 0, TimeSpan.Zero));
         var result = await _actions.ExecuteAsync(
-            Target(path, TimelineRelationGesture.IdFor(TimelineNewPlacement.IdFor(seconds, 2), "ghost")),
+            Target(path, GestureIds.Relation(GestureIds.RowPlacement(seconds, 2), "ghost")),
             TimelineContextActionProvider.ConnectActionId,
             CancellationToken.None);
 
@@ -572,7 +573,7 @@ public class TimelineRelationGestureTests : IDisposable
 
         // Act.
         var result = await _actions.ExecuteAsync(
-            Target(path, TimelineRelationGesture.IdFor("aaa", "bbb")),
+            Target(path, GestureIds.Relation("aaa", "bbb")),
             TimelineContextActionProvider.ConnectActionId,
             CancellationToken.None);
         await _historyStacks.Get(_workspace).UndoAsync(CancellationToken.None);
@@ -588,7 +589,7 @@ public class TimelineRelationGestureTests : IDisposable
         // Arrange & act.
         var path = Write();
         var result = await _actions.ExecuteAsync(
-            Target(path, TimelineRelationGesture.IdFor("ghost", "bbb")),
+            Target(path, GestureIds.Relation("ghost", "bbb")),
             TimelineContextActionProvider.ConnectActionId,
             CancellationToken.None);
 
@@ -603,7 +604,7 @@ public class TimelineRelationGestureTests : IDisposable
         // Arrange & act.
         var path = Write();
         var groups = await _actions.DiscoverAsync(
-            Target(path, TimelineRelationGesture.IdFor("aaa", "bbb")), CancellationToken.None);
+            Target(path, GestureIds.Relation("aaa", "bbb")), CancellationToken.None);
 
         // Assert.
         Assert.Contains(
