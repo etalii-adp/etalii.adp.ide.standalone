@@ -1,22 +1,17 @@
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.Timeline;
 
-/// <summary>Carries out a relabel. The inverse is the same command carrying the previous label.</summary>
+/// <summary>Carries out a relabel: one change of the relation's label; a label cleared removes the key.</summary>
 public sealed class RelabelTimelineConnectionCommandHandler(ITimelineDocumentStore documents)
     : TimelineEditHandler<RelabelTimelineConnectionCommand>(documents)
 {
     /// <inheritdoc />
-    protected override EditOutcome Apply(LineDocument body, TimelineModel model, RelabelTimelineConnectionCommand command)
+    protected override EditOutcome Apply(TimelineBody body, TimelineModel model, RelabelTimelineConnectionCommand command)
     {
         var connection = TimelineEdits.ConnectionOf(model, command.ConnectionId);
-        if (connection is null)
-        {
-            return EditOutcome.Refused("That relation is no longer in this timeline.");
-        }
-
-        TimelineWriter.SetConnectionLabel(body, connection, command.Label);
-        return EditOutcome.UndoneBy(command with { Label = connection.Label });
+        return connection is null
+            ? EditOutcome.Refused(TimelineEdits.RelationGone)
+            : TimelineEdits.Set(body, connection, ("label", command.Label));
     }
 }

@@ -65,7 +65,7 @@ public sealed class CausalLoopElementMapper
         var drawn = new Dictionary<string, Rect>(StringComparer.Ordinal);
         foreach (var variable in model.Variables)
         {
-            if (boxes.TryGetValue(variable.Id, out var box) && Intersects(box, viewport))
+            if (boxes.TryGetValue(variable.Id, out var box) && viewport.Intersects(box))
             {
                 drawn[variable.Id] = box;
             }
@@ -80,7 +80,7 @@ public sealed class CausalLoopElementMapper
         foreach (var link in model.Links)
         {
             if (!boxes.TryGetValue(link.From, out var from) || !boxes.TryGetValue(link.To, out var to)
-                || !Intersects(Hull(from, to), viewport))
+                || !viewport.Intersects(Hull(from, to)))
             {
                 continue;
             }
@@ -196,10 +196,6 @@ public sealed class CausalLoopElementMapper
             _loopTypeUrl,
             payload.ToByteArray());
     }
-
-    private static bool Intersects(Rect box, DiagramViewport viewport) =>
-        box.Right >= viewport.MinX && box.X <= viewport.MaxX
-        && box.Bottom >= viewport.MinY && box.Y <= viewport.MaxY;
 
     /// <summary>
     /// The smallest box holding both - a link's span. The arc bows a little beyond it, which

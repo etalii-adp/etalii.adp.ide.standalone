@@ -10,7 +10,7 @@ namespace EtAlii.Adp.Diagram.Timeline;
 /// </summary>
 /// <remarks>
 /// One command rather than an add followed by a connect, so the gesture is one history entry
-/// and one undo - the inverse removes the new element, which takes its relation with it.
+/// and one undo - which puts back the text from before both were written.
 /// Both ids are the caller's to supply, so a redo re-creates both under the ids they had.
 /// </remarks>
 /// <param name="BodyPath">The document.</param>

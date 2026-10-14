@@ -61,10 +61,10 @@ internal static class TimelineTranscript
     /// <summary>The checked-in transcript.</summary>
     public static string CheckedInPath => Path.Combine(ModuleFolder, "backend", TestProject, "Parity", FileName);
 
-    private static string SourceFolder => Path.GetFullPath(Path.Combine(ModuleFolder, "..", ".."));
+    internal static string SourceFolder => Path.GetFullPath(Path.Combine(ModuleFolder, "..", ".."));
 
     /// <summary>The corpus, as paths relative to <c>src/</c> with forward slashes, in the order they are recorded.</summary>
-    private static IReadOnlyList<string> Corpus()
+    internal static IReadOnlyList<string> Corpus()
     {
         var fixtureFolder = Path.Combine(ModuleFolder, "backend", TestProject, "Fixtures");
         var fixtures = Directory.GetFiles(fixtureFolder, "*.tml");

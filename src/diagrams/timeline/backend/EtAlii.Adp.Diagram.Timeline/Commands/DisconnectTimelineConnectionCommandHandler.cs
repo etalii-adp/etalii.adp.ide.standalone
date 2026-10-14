@@ -1,34 +1,17 @@
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.Timeline;
 
-/// <summary>
-/// Carries out a disconnect. The inverse is a connect carrying the same id, endpoints and
-/// label - sufficient because a connection block is machine-shaped; an element's block, which
-/// can hold an author's comments, gets the byte-exact restore instead.
-/// </summary>
+/// <summary>Carries out a disconnect: the relation's entry is removed, and its undo is the shared restore.</summary>
 public sealed class DisconnectTimelineConnectionCommandHandler(ITimelineDocumentStore documents)
     : TimelineEditHandler<DisconnectTimelineConnectionCommand>(documents)
 {
     /// <inheritdoc />
-    protected override EditOutcome Apply(LineDocument body, TimelineModel model, DisconnectTimelineConnectionCommand command)
+    protected override EditOutcome Apply(TimelineBody body, TimelineModel model, DisconnectTimelineConnectionCommand command)
     {
         var connection = TimelineEdits.ConnectionOf(model, command.ConnectionId);
-        if (connection is null)
-        {
-            return EditOutcome.Refused("That relation is no longer in this timeline.");
-        }
-
-        TimelineWriter.RemoveConnection(body, connection);
-
-        if (command.RemoveEmptiedConnectionsSection)
-        {
-            // The undo of a connect that created the connections: key on demand.
-            TimelineWriter.RemoveConnectionsSectionIfEmpty(body, TimelineEdits.Read(body));
-        }
-
-        return EditOutcome.UndoneBy(new ConnectTimelineElementsCommand(
-            command.BodyPath, connection.Id, connection.From, connection.To, connection.Label));
+        return connection is null
+            ? EditOutcome.Refused(TimelineEdits.RelationGone)
+            : TimelineEdits.Remove(body, connection);
     }
 }

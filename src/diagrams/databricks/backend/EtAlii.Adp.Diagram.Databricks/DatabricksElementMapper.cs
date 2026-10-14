@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using EtAlii.Adp.Hierarchy;
+using EtAlii.Adp.Layout;
 using Google.Protobuf;
 
 namespace EtAlii.Adp.Diagram.Databricks;
@@ -326,8 +327,7 @@ public sealed class DatabricksElementMapper
         var width = element.Type == TargetType ? FrameWidth : NodeWidth;
         var height = element.Type == TargetType ? FrameHeight : NodeHeight;
 
-        return element.X <= viewport.MaxX && element.X + width >= viewport.MinX &&
-            element.Y <= viewport.MaxY && element.Y + height >= viewport.MinY;
+        return viewport.Intersects(new Rect(element.X, element.Y, width, height));
     }
 
     private static IEnumerable<string> PipelineBadges(PipelineModel pipeline)

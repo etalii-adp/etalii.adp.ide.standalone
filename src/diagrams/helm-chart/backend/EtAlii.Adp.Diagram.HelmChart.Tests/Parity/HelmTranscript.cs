@@ -1,0 +1,365 @@
+using System.Globalization;
+using System.Text;
+using System.Text.Json;
+using EtAlii.Adp.Context;
+using EtAlii.Adp.Hierarchy;
+using EtAlii.Adp.History;
+using EtAlii.Adp.Layout;
+using Google.Protobuf.Reflection;
+using Microsoft.Extensions.DependencyInjection;
+using Path = System.IO.Path;
+
+namespace EtAlii.Adp.Diagram.HelmChart.Tests.Parity;
+
+/// <summary>
+/// The Helm chart diagram's parity transcript: what today's hand-written code answers for every
+/// chart folder of the corpus, frozen as <c>Parity/helm-chart.transcript.json</c> before the reader,
+/// the rule set or the property provider is changed (helm-chart-disl-fbl, Requirement 1). Every
+/// later step must reproduce it byte for byte.
+/// </summary>
+/// <remarks>
+/// <para>
+/// <b>The corpus</b>: every chart folder under the test project's <c>Fixtures/</c>, the module's
+/// <c>examples/</c> and the shipped copies under <c>src/examples/diagrams/helm-chart/</c>, each in
+/// ordinal order. A folder whose files equal one recorded earlier, path for path and byte for byte,
+/// is written as <c>sameAs</c> that one, so a shipped copy costs a line while it stays identical
+/// and shows in full the moment one file of it drifts. A folder that differs from one recorded
+/// earlier only in its registration (the shipped copies carry other stored positions) is written as
+/// <c>sameChartAs</c> that one, with only what a registration changes: the delivered elements, the
+/// moves and the registration after them.
+/// </para>
+/// <para>
+/// <b>Per chart folder</b>: the elements a session delivers at baseline, in delivery order, each
+/// with its id, wire type, position and payload; the computed boxes; the property rows of every
+/// node, every relation, the empty id and an unknown one, and the answer to a property write; the
+/// findings with code, severity, file, line and sentence, in order; and the session's answers to a
+/// reparent, to a move of a node, of a relation and of an unknown id (with a history and without),
+/// with the registration's text after those moves.
+/// </para>
+/// <para>
+/// <b>No edit sequence over chart files</b> (Requirement 1.5): nothing here writes a chart file,
+/// because nothing in the module can. The one write is a move, which core writes into the
+/// registration, and that is done in a copy.
+/// </para>
+/// <para>
+/// <b>Every folder is read from a copy in a temporary folder</b>, so that the moves write into a
+/// registration nobody else reads, and so that the three empty directories of the
+/// <c>empty-directories</c> fixture, which git cannot store, can be made (<see cref="EmptyDirectories"/>).
+/// Every path the module reports is relative to the chart folder, so where the copy lies cannot
+/// show; <see cref="Mask"/> replaces it all the same, should a sentence ever carry it.
+/// </para>
+/// <para>
+/// <b>Nothing else is masked</b>: nothing the module answers depends on a clock, a random number or
+/// the machine. YamlDotNet's sentences stay as they are, which is finding B9 on record.
+/// </para>
+/// </remarks>
+internal static class HelmTranscript
+{
+    /// <summary>The checked-in file's name, in this project's <c>Parity</c> folder.</summary>
+    private const string FileName = "helm-chart.transcript.json";
+
+    private const string TestProject = "EtAlii.Adp.Diagram.HelmChart.Tests";
+    private const string Unknown = "parity:unknown";
+
+    /// <summary>The registration a folder without one is given in its copy: the bare MIME line core writes.</summary>
+    private const string BareRegistration = "helm/chart\r\n";
+
+    private static readonly TypeRegistry _payloadTypes = TypeRegistry.FromMessages(Wire.HelmElementPayload.Descriptor);
+
+    /// <summary>
+    /// The empty directories a fixture is about, by fixture name: git stores files and no directory
+    /// without one, so the generator makes these in the copy. They are what finding B4 is about (a
+    /// <c>crds/</c> with no file, a directory under <c>charts/</c> with no <c>Chart.yaml</c>, and a
+    /// deeper entry that is a directory), and the fixture's readme lists them.
+    /// </summary>
+    private static readonly IReadOnlyDictionary<string, string[]> EmptyDirectories = new Dictionary<string, string[]>(StringComparer.Ordinal)
+    {
+        ["empty-directories"] = ["crds", "charts/hollow", "charts/holder/charts/empty"],
+    };
+
+    /// <summary>The module's folder, <c>src/diagrams/helm-chart</c>.</summary>
+    private static string ModuleFolder { get; } = RepositoryPaths.Under("src", "diagrams", "helm-chart");
+
+    /// <summary>The checked-in transcript.</summary>
+    public static string CheckedInPath => Path.Combine(ModuleFolder, "backend", TestProject, "Parity", FileName);
+
+    private static string SourceFolder => Path.GetFullPath(Path.Combine(ModuleFolder, "..", ".."));
+
+    /// <summary>The corpus, as folder paths relative to <c>src/</c> with forward slashes, in the order they are recorded.</summary>
+    private static IReadOnlyList<string> Corpus()
+    {
+        return
+        [
+            .. Folders(Path.Combine(ModuleFolder, "backend", TestProject, "Fixtures")),
+            .. Folders(Path.Combine(ModuleFolder, "examples")),
+            .. Folders(Path.Combine(SourceFolder, "examples", "diagrams", "helm-chart")),
+        ];
+
+        static IEnumerable<string> Folders(string folder) =>
+            Directory.GetDirectories(folder)
+                .Select(path => Path.GetRelativePath(SourceFolder, path).Replace('\\', '/'))
+                .Order(StringComparer.Ordinal);
+    }
+
+    /// <summary>The whole transcript, as the bytes the checked-in file must hold.</summary>
+    public static async Task<byte[]> GenerateAsync(CancellationToken cancellationToken)
+    {
+        await using var provider = new ServiceCollection().AddCommands().AddHierarchyCommandHandlers().AddHelmCharts().BuildServiceProvider();
+        using var stream = new MemoryStream();
+        await using (var json = new Utf8JsonWriter(stream, TranscriptText.WriterOptions))
+        {
+            json.WriteStartObject();
+            json.WriteString("module", Diagram.HelmCharts.Origin.Key);
+            json.WriteString("generator", $"src/diagrams/helm-chart/backend/{TestProject}/Parity/HelmTranscript.cs");
+            json.WriteString("regenerate", "ADP_WRITE_PARITY_TRANSCRIPTS=1 dotnet test --project <this test project> (then review the diff)");
+
+            json.WriteStartArray("charts");
+            var recorded = new Recorded();
+            foreach (var relative in Corpus())
+            {
+                await WriteChartAsync(json, relative, recorded, provider.GetRequiredService<IHistoryStackStore>(), cancellationToken);
+            }
+
+            json.WriteEndArray();
+            json.WriteEndObject();
+            await json.FlushAsync(cancellationToken);
+        }
+
+        stream.Write("\r\n"u8);
+        return stream.ToArray();
+    }
+
+    private static async Task WriteChartAsync(
+        Utf8JsonWriter json, string relative, Recorded recorded, IHistoryStackStore histories, CancellationToken cancellationToken)
+    {
+        var source = Path.Combine(SourceFolder, relative);
+        var sha = await FolderSha256Async(source, registrations: true, cancellationToken);
+        var chartSha = await FolderSha256Async(source, registrations: false, cancellationToken);
+
+        json.WriteStartObject();
+        json.WriteString("chart", relative);
+        json.WriteString("sha256", sha);
+        if (recorded.Folders.TryGetValue(sha, out var first))
+        {
+            json.WriteString("sameAs", first);
+            json.WriteEndObject();
+            return;
+        }
+
+        recorded.Folders[sha] = relative;
+        var sameChart = recorded.Charts.GetValueOrDefault(chartSha);
+        if (sameChart is null)
+        {
+            recorded.Charts[chartSha] = relative;
+        }
+        else
+        {
+            json.WriteString("sameChartAs", sameChart);
+        }
+
+        var folder = Path.Combine(Path.GetTempPath(), "EtAlii.Adp.HelmTranscript", Guid.NewGuid().ToString("N"));
+        try
+        {
+            TestFolder.CopyTree(source, folder);
+            if (EmptyDirectories.TryGetValue(Path.GetFileName(source), out var empty))
+            {
+                json.WritePropertyName("emptyDirectoriesMade");
+                json.WriteLines(empty);
+                foreach (var directory in empty)
+                {
+                    Directory.CreateDirectory(Path.Combine(folder, directory));
+                }
+            }
+
+            var registration = Directory.GetFiles(folder, "*.adp").Order(StringComparer.Ordinal).FirstOrDefault();
+            json.WriteString("registration", registration is null ? $"none; the copy is given {Quoted(BareRegistration)}" : Path.GetFileName(registration));
+            if (registration is null)
+            {
+                registration = Path.Combine(folder, "helm-chart.adp");
+                await File.WriteAllTextAsync(registration, BareRegistration, cancellationToken);
+            }
+
+            await WriteReadingAsync(json, folder, registration, histories, full: sameChart is null, cancellationToken);
+        }
+        finally
+        {
+            TestFolder.TryDelete(folder);
+        }
+
+        json.WriteEndObject();
+    }
+
+    private static async Task WriteReadingAsync(
+        Utf8JsonWriter json, string folder, string registration, IHistoryStackStore histories, bool full, CancellationToken cancellationToken)
+    {
+        var chart = new HelmChartReader().Read(folder);
+        var graph = HelmGraph.Derive(chart);
+        var store = new FixedStore(chart);
+
+        json.WriteBoolean("isChart", chart.IsChart);
+
+        // What a session delivers at baseline, in delivery order, over the folder's own stored positions.
+        List<DiagramElement> elements;
+        await using (var session = new HelmSession(folder, registration, store, new HelmElementMapper()))
+        {
+            elements = [.. session.Baseline().OfType<DiagramAddDelta>().SelectMany(delta => delta.Elements)];
+        }
+
+        json.WritePropertyName("elements");
+        json.WriteLines([.. elements.Select(element => Mask(TranscriptText.PayloadLine(element.Id, element.X, element.Y, element.Type, element.PayloadTypeUrl, element.Payload, _payloadTypes), folder))]);
+
+        if (full)
+        {
+            await WriteAnswersAsync(json, folder, registration, chart, graph, store, cancellationToken);
+        }
+
+        json.WritePropertyName("moves");
+        json.WriteLines(await MovesAsync(folder, registration, store, graph, histories, cancellationToken));
+
+        json.WritePropertyName("registrationAfterMoves");
+        json.WriteLines([.. Lines(await File.ReadAllTextAsync(registration, cancellationToken))]);
+    }
+
+    /// <summary>What does not depend on the registration: the computed boxes, the rows, the refused write and the findings.</summary>
+    private static async Task WriteAnswersAsync(
+        Utf8JsonWriter json, string folder, string registration, HelmChart chart, HelmGraph graph, IHelmChartStore store, CancellationToken cancellationToken)
+    {
+        json.WritePropertyName("boxes");
+        json.WriteLines([.. HelmLayout.Compute(chart, graph).Select(pair => $"{pair.Key} | {Box(pair.Value)}")]);
+
+        var properties = new HelmContextPropertyProvider(store);
+        List<string> targets =
+        [
+            .. graph.Nodes.Select(node => node.Id),
+            .. graph.Edges.Select(edge => edge.Id),
+            "",
+            Unknown,
+        ];
+
+        json.WriteStartArray("rows");
+        foreach (var target in targets)
+        {
+            var rows = await properties.DescribeAsync(Target(registration, folder, target), cancellationToken);
+            json.WriteStartObject();
+            json.WriteString("target", target);
+            json.WritePropertyName("rows");
+            json.WriteLines([.. rows.Select(row => Mask(row.RowLine(), folder))]);
+            json.WriteEndObject();
+        }
+
+        json.WriteEndArray();
+
+        var write = await properties.SetAsync(Target(registration, folder, targets[0]), "helm.name", "Renamed", cancellationToken);
+        json.WriteString("write", write.IsSuccess ? "ok" : $"refused: {Mask(write.Error, folder)}");
+
+        var problems = await new HelmValidator().ValidateAsync(
+            new DiagramValidationRequest("helm/chart", Path.GetFileNameWithoutExtension(registration), folder, registration, registration) { SubjectFolder = folder },
+            cancellationToken);
+        json.WritePropertyName("findings");
+        json.WriteLines([.. problems.Select(problem => Mask(FindingLine(problem), folder))]);
+    }
+
+    /// <summary>
+    /// The session's answers to a reparent and to a move of a node, of a relation and of an unknown
+    /// id: first without a history, which makes the diagram read-only, then with the project's history.
+    /// </summary>
+    private static async Task<List<string>> MovesAsync(
+        string folder, string registration, IHelmChartStore store, HelmGraph graph, IHistoryStackStore histories, CancellationToken cancellationToken)
+    {
+        var node = graph.Nodes.FirstOrDefault()?.Id;
+        var relation = graph.Edges.FirstOrDefault()?.Id;
+        List<(string What, string? Id)> moves = [("node", node), ("relation", relation), ("unknown id", Unknown)];
+
+        var lines = new List<string>();
+        foreach (var history in new[] { false, true })
+        {
+            await using var session = new HelmSession(folder, registration, store, new HelmElementMapper(), history ? histories.Get(folder) : null);
+            var label = history ? "with a history" : "without a history";
+            lines.Add($"{label}: reparent {node ?? Unknown} under {Unknown} => {Answer(await session.MoveElementAsync(node ?? Unknown, Unknown, 0, cancellationToken))}");
+            foreach ((string what, string? id) in moves)
+            {
+                lines.Add(id is null
+                    ? $"{label}: move a {what} => there is none"
+                    : $"{label}: move {what} {id} to (10.5, -20.25) => {Answer(await session.MoveElementToAsync(id, 10.5, -20.25, cancellationToken))}");
+            }
+        }
+
+        return [.. lines.Select(line => Mask(line, folder))];
+
+        static string Answer(string answer) => answer.Length == 0 ? "accepted" : $"refused: {answer}";
+    }
+
+    private static ContextTarget Target(string registration, string folder, string elementId) =>
+        ContextTarget.ForElement(registration, elementId, folder, origin: Diagram.HelmCharts.Origin);
+
+    private static string FindingLine(DiagramProblem problem)
+    {
+        var where = problem.Location is DiagramProblemFileLocation located
+            ? $"{located.RelativePath}:{located.Line.ToString(CultureInfo.InvariantCulture)}"
+            : problem.Location?.ToString() ?? "-";
+        return $"{problem.RuleId} | {problem.Severity} | {where} | {Quoted(problem.Message)}";
+    }
+
+    private static string Box(Rect box) =>
+        string.Create(CultureInfo.InvariantCulture, $"{box.X:R}, {box.Y:R}, {box.Width:R} x {box.Height:R}");
+
+    private static string Quoted(string text) => TranscriptText.Quoted(text);
+
+    /// <summary>The copy's absolute location, should a sentence carry it: the one thing in a reading that differs per run.</summary>
+    private static string Mask(string text, string folder) => text.Replace(folder, "{copy}", StringComparison.Ordinal);
+
+    /// <summary>A text's lines without their endings, so a registration written with either convention reads the same.</summary>
+    private static IEnumerable<string> Lines(string text)
+    {
+        var lines = text.Split('\n').Select(line => line.TrimEnd('\r')).ToList();
+        return text.EndsWith('\n') ? lines[..^1] : lines;
+    }
+
+    /// <summary>
+    /// The hash of a folder's files, path for path and byte for byte, in ordinal order of their
+    /// relative paths, with or without the registrations beside <c>Chart.yaml</c>: what makes two
+    /// folders the same for <c>sameAs</c>, and the same chart for <c>sameChartAs</c>.
+    /// </summary>
+    private static async Task<string> FolderSha256Async(string folder, bool registrations, CancellationToken cancellationToken)
+    {
+        var manifest = new StringBuilder();
+        foreach ((string full, string relative) in Directory.GetFiles(folder, "*", SearchOption.AllDirectories)
+                     .Select(path => (Full: path, Relative: Path.GetRelativePath(folder, path).Replace('\\', '/')))
+                     .Where(path => registrations || !(path.Relative.EndsWith(".adp", StringComparison.Ordinal) && !path.Relative.Contains('/', StringComparison.Ordinal)))
+                     .OrderBy(path => path.Relative, StringComparer.Ordinal))
+        {
+            manifest.Append(relative).Append(' ').Append(TranscriptText.Sha256(await File.ReadAllBytesAsync(full, cancellationToken))).Append('\n');
+        }
+
+        return TranscriptText.Sha256(TranscriptText.Encode(manifest.ToString()));
+    }
+
+    /// <summary>The folders recorded so far, by the hash of all their files and by the hash of their chart files alone.</summary>
+    private sealed class Recorded
+    {
+        public Dictionary<string, string> Folders { get; } = new(StringComparer.Ordinal);
+
+        public Dictionary<string, string> Charts { get; } = new(StringComparer.Ordinal);
+    }
+
+    /// <summary>A store that holds one reading, whatever it is asked for, and never watches: the session's and the provider's view of a store.</summary>
+    private sealed class FixedStore(HelmChart chart) : IHelmChartStore
+    {
+        public HelmChart GetOrLoad(string folder) => chart;
+
+        public HelmChart Acquire(string folder) => chart;
+
+        public void Release(string folder)
+        {
+        }
+
+        public IDisposable Watch(string folder, Action<HelmChart> onChanged) => new Nothing();
+
+        private sealed class Nothing : IDisposable
+        {
+            public void Dispose()
+            {
+            }
+        }
+    }
+}

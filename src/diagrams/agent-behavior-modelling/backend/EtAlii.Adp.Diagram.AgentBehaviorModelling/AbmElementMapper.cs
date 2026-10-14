@@ -1,4 +1,5 @@
 using EtAlii.Adp.Hierarchy;
+using EtAlii.Adp.Layout;
 using Google.Protobuf;
 
 namespace EtAlii.Adp.Diagram.AgentBehaviorModelling;
@@ -110,10 +111,7 @@ public sealed class AbmElementMapper
     }
 
     private static bool Overlaps(RegistrationPosition topLeft, DiagramViewport viewport) =>
-        topLeft.X + AbmLayout.NodeWidth >= viewport.MinX
-        && topLeft.X <= viewport.MaxX
-        && topLeft.Y + AbmLayout.NodeHeight >= viewport.MinY
-        && topLeft.Y <= viewport.MaxY;
+        viewport.Intersects(new Rect(topLeft.X, topLeft.Y, AbmLayout.NodeWidth, AbmLayout.NodeHeight));
 
     private static DiagramElement Node(AbmNode node, RegistrationPosition topLeft)
     {

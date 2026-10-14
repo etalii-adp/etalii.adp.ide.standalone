@@ -46,7 +46,7 @@ public sealed class MindmapElementMapper
         var placed = document.Nodes.Where(node => layout.ContainsKey(node.Id)).ToArray();
 
         var delivered = new HashSet<string>(StringComparer.Ordinal);
-        foreach (var node in placed.Where(node => Intersects(layout[node.Id], viewport)))
+        foreach (var node in placed.Where(node => viewport.Intersects(layout[node.Id])))
         {
             delivered.Add(node.Id);
             if (node.Parent is { } parent)
@@ -99,7 +99,4 @@ public sealed class MindmapElementMapper
             $"type.googleapis.com/{MindmapNodePayload.Descriptor.FullName}",
             payload.ToByteArray());
     }
-
-    private static bool Intersects(Rect box, DiagramViewport viewport) =>
-        box.Right >= viewport.MinX && box.X <= viewport.MaxX && box.Bottom >= viewport.MinY && box.Y <= viewport.MaxY;
 }

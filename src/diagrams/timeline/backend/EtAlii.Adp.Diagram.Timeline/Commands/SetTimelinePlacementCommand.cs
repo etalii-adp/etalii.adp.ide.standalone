@@ -6,7 +6,7 @@ namespace EtAlii.Adp.Diagram.Timeline;
 
 /// <summary>
 /// Puts one element somewhere: a begin, an end, a row. The one command behind a drag, a resize
-/// and a grid edit, whose inverse is the same command carrying the previous three values.
+/// and a grid edit, undone by putting back the text it started from.
 /// </summary>
 /// <remarks>
 /// One command rather than five differing only in which field they carry - the design flags this

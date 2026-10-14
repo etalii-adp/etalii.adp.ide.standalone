@@ -160,7 +160,7 @@ public sealed class SparqlElementMapper
         var delivered = new HashSet<string>(StringComparer.Ordinal);
         foreach (var region in projection.Regions)
         {
-            if (layout.RegionBounds.TryGetValue(region.Id, out var frame) && Intersects(frame, viewport))
+            if (layout.RegionBounds.TryGetValue(region.Id, out var frame) && viewport.Intersects(frame))
             {
                 delivered.Add(region.Id);
             }
@@ -169,7 +169,7 @@ public sealed class SparqlElementMapper
         foreach (var node in projection.Nodes)
         {
             var at = layout.NodePositions.TryGetValue(node.Id, out var position) ? position : default;
-            if (Intersects(new Rect(at.X, at.Y, SparqlLayout.NodeWidth, SparqlLayout.NodeHeight), viewport))
+            if (viewport.Intersects(new Rect(at.X, at.Y, SparqlLayout.NodeWidth, SparqlLayout.NodeHeight)))
             {
                 delivered.Add(node.Id);
             }
@@ -211,10 +211,6 @@ public sealed class SparqlElementMapper
         return [.. Elements(projection, layout)
             .Where(element => !positioned.Contains(element.Id) || delivered.Contains(element.Id))];
     }
-
-    private static bool Intersects(Rect box, DiagramViewport viewport) =>
-        box.X <= viewport.MaxX && box.X + box.Width >= viewport.MinX &&
-        box.Y <= viewport.MaxY && box.Y + box.Height >= viewport.MinY;
 
     private static DiagramElement Pack(string id, RegistrationPosition at, string type, IMessage payload) =>
         new(id, at.X, at.Y, type, $"type.googleapis.com/{payload.Descriptor.FullName}", payload.ToByteArray());
