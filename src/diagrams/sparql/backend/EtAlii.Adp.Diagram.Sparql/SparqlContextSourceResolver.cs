@@ -1,4 +1,5 @@
 using EtAlii.Adp.Context;
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Hierarchy;
 
@@ -102,7 +103,7 @@ public sealed class SparqlContextSourceResolver : IContextSourceResolver
         _documents.Changed += OnChanged;
         return new SparqlUnsubscriber(() => _documents.Changed -= OnChanged);
 
-        void OnChanged(object? sender, SparqlDocumentChangedEventArgs args)
+        void OnChanged(object? sender, DocumentChangedEventArgs args)
         {
             if (!string.Equals(args.Path, bodyPath, StringComparison.OrdinalIgnoreCase))
             {
@@ -111,7 +112,7 @@ public sealed class SparqlContextSourceResolver : IContextSourceResolver
 
             // Re-read rather than carrying the previous reading: an edit in the text editor that
             // drops a variable clears the selection.
-            var text = SparqlSelection.Describe(args.Entry, elementId);
+            var text = SparqlSelection.Describe(_documents.GetOrLoad(bodyPath), elementId);
             onChange(text is null ? null : [text]);
         }
     }

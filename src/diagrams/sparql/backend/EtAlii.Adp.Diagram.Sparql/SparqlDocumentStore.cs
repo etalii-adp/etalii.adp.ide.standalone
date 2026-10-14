@@ -15,6 +15,12 @@ namespace EtAlii.Adp.Diagram.Sparql;
 /// telling the sessions.
 /// </para>
 /// <para>
+/// <b>Not on <see cref="LifecycleDocumentStore{TBody, TModel}"/>, and not by a switch on it.</b>
+/// That base is the writable store: its public surface includes a save, which this store must not
+/// have. It implements the reading half of the shared store instead, so the shared entry, event,
+/// reloader and registrations all serve it.
+/// </para>
+/// <para>
 /// <b>There is no save path, and none is borrowed.</b> This store holds the read-only lifecycle, not
 /// the writable one, so there is no self-write bookkeeping here either: a store that never writes has
 /// nothing to suppress, and every change on disk is somebody else's and is always taken.
@@ -29,15 +35,15 @@ public sealed class SparqlDocumentStore : ISparqlDocumentStore
 {
     private static readonly ILogger _logger = Log.ForContext<SparqlDocumentStore>();
 
-    private readonly DocumentLifecycle<SparqlDocumentEntry> _lifecycle = new(Parse, Unavailable);
+    private readonly DocumentLifecycle<DocumentEntry<string, SparqlQueryModel>> _lifecycle = new(Parse, Unavailable);
 
     /// <inheritdoc />
-    public event EventHandler<SparqlDocumentChangedEventArgs>? Changed;
+    public event EventHandler<DocumentChangedEventArgs>? Changed;
 
     /// <inheritdoc />
-    public SparqlDocumentEntry GetOrLoad(string path) => _lifecycle.GetOrLoad(path);
+    public DocumentEntry<string, SparqlQueryModel> GetOrLoad(string path) => _lifecycle.GetOrLoad(path);
 
-    /// <summary>Forgets a document, so the next open reads it afresh.</summary>
+    /// <inheritdoc />
     public void Forget(string path) => _lifecycle.Forget(path);
 
     /// <inheritdoc />
@@ -45,7 +51,7 @@ public sealed class SparqlDocumentStore : ISparqlDocumentStore
     {
         if (_lifecycle.Reload(path))
         {
-            Changed?.Invoke(this, new SparqlDocumentChangedEventArgs(path, _lifecycle.GetOrLoad(path)));
+            Changed?.Invoke(this, new DocumentChangedEventArgs(path));
         }
     }
 
@@ -54,22 +60,23 @@ public sealed class SparqlDocumentStore : ISparqlDocumentStore
     {
         if (_lifecycle.BodyDeleted(path))
         {
-            Changed?.Invoke(this, new SparqlDocumentChangedEventArgs(path, _lifecycle.GetOrLoad(path)));
+            Changed?.Invoke(this, new DocumentChangedEventArgs(path));
         }
     }
 
-    private static SparqlDocumentEntry Parse(string path, string text)
+    private static DocumentEntry<string, SparqlQueryModel> Parse(string path, string text)
     {
         try
         {
-            return new SparqlDocumentEntry(SparqlParser.Parse(text), "", 0);
+            return new DocumentEntry<string, SparqlQueryModel>(text, SparqlParser.Parse(text));
         }
         catch (SparqlParseException exception)
         {
             // A file that does not parse is an ordinary state for a file somebody is editing:
-            // it opens as unavailable naming file, line and reason (Requirement 1.3).
+            // it opens as unavailable naming the reason (Requirement 1.3). The line goes to the
+            // validator's finding, which is where a person reads it.
             _logger.Debug(exception, "{Path} does not parse at line {Line}", path, exception.Line);
-            return new SparqlDocumentEntry(SparqlQueryModel.Empty, exception.Message, exception.Line);
+            return new DocumentEntry<string, SparqlQueryModel>(text, SparqlQueryModel.Empty, exception.Message);
         }
     }
 
@@ -77,7 +84,7 @@ public sealed class SparqlDocumentStore : ISparqlDocumentStore
     /// A query that is missing or cannot be read opens as a state this module names rather than as an
     /// empty query (R2.2). The lifecycle logs the warning naming the path for an unreadable one.
     /// </summary>
-    private static SparqlDocumentEntry Unavailable(string path, DocumentUnavailability unavailability, string reason)
+    private static DocumentEntry<string, SparqlQueryModel> Unavailable(string path, DocumentUnavailability unavailability, string reason)
     {
         var name = IoPath.GetFileName(path);
         var error = unavailability == DocumentUnavailability.Missing
@@ -85,6 +92,6 @@ public sealed class SparqlDocumentStore : ISparqlDocumentStore
             // missing body is a state to name, not one to repair.
             ? $"{name} does not exist. Queries are authored in a text editor; this diagram draws an existing .rq file."
             : $"{name} could not be read: {reason}";
-        return new SparqlDocumentEntry(SparqlQueryModel.Empty, error, 0);
+        return new DocumentEntry<string, SparqlQueryModel>("", SparqlQueryModel.Empty, error);
     }
 }

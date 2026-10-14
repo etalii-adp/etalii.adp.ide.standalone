@@ -1,3 +1,5 @@
+using EtAlii.Adp.Documents;
+
 namespace EtAlii.Adp.Diagram.Sparql;
 
 /// <summary>
@@ -12,7 +14,7 @@ public static class SparqlSelection
         path is { Length: > 0 } && path.EndsWith(".rq", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>The projection of a loaded entry, or null when the file does not parse.</summary>
-    public static SparqlProjectionResult? ProjectionOf(SparqlDocumentEntry entry)
+    public static SparqlProjectionResult? ProjectionOf(DocumentEntry<string, SparqlQueryModel> entry)
     {
         ArgumentNullException.ThrowIfNull(entry);
         return entry.IsUsable ? SparqlProjection.Project(entry.Model) : null;
@@ -55,7 +57,7 @@ public static class SparqlSelection
     }
 
     /// <summary>How this element reads in a selection path, or null when the id is not in the file.</summary>
-    public static string? Describe(SparqlDocumentEntry entry, string elementId)
+    public static string? Describe(DocumentEntry<string, SparqlQueryModel> entry, string elementId)
     {
         ArgumentNullException.ThrowIfNull(entry);
 

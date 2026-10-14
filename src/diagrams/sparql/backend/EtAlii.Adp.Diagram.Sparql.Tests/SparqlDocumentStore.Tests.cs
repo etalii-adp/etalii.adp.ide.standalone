@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -61,12 +62,12 @@ public class SparqlDocumentStoreTests : IDisposable
 
         // Assert.
         Assert.False(entry.IsUsable);
-        Assert.Contains("does not exist", entry.Error);
-        Assert.Contains("text editor", entry.Error);
+        Assert.Contains("does not exist", entry.Unreadable);
+        Assert.Contains("text editor", entry.Unreadable);
     }
 
     [Fact]
-    public void AFileThatDoesNotParse_OpensUnavailableWithLineAndReason()
+    public void AFileThatDoesNotParse_OpensUnavailableWithItsReason()
     {
         // Arrange.
         var path = CopyFixture("broken.rq");
@@ -76,8 +77,7 @@ public class SparqlDocumentStoreTests : IDisposable
 
         // Assert.
         Assert.False(entry.IsUsable);
-        Assert.Equal(4, entry.ErrorLine);
-        Assert.Contains("undeclared", entry.Error);
+        Assert.Contains("undeclared", entry.Unreadable);
         Assert.Same(SparqlQueryModel.Empty, entry.Model);
     }
 
@@ -92,7 +92,7 @@ public class SparqlDocumentStoreTests : IDisposable
 
         // Assert.
         Assert.False(entry.IsUsable);
-        Assert.Contains("SPARQL Update", entry.Error);
+        Assert.Contains("SPARQL Update", entry.Unreadable);
     }
 
     [Fact]
@@ -103,7 +103,7 @@ public class SparqlDocumentStoreTests : IDisposable
         var before = _store.GetOrLoad(path);
         Assert.Single(before.Model.Where.Patterns);
 
-        SparqlDocumentChangedEventArgs? raised = null;
+        DocumentChangedEventArgs? raised = null;
         _store.Changed += (_, args) => raised = args;
 
         // Act.
@@ -113,7 +113,7 @@ public class SparqlDocumentStoreTests : IDisposable
         // Assert.
         Assert.NotNull(raised);
         Assert.Equal(path, raised.Path);
-        Assert.Equal(2, raised.Entry.Model.Where.Patterns.Count);
+        Assert.Equal(2, _store.GetOrLoad(path).Model.Where.Patterns.Count);
     }
 
     [Fact]
