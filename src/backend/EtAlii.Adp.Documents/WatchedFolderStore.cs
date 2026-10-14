@@ -31,7 +31,7 @@ public abstract class WatchedFolderStore<TSnapshot>(TimeSpan settleDelay) : IWat
 
     private readonly ConcurrentDictionary<string, WatchedFolder<TSnapshot>> _folders = new(StringComparer.OrdinalIgnoreCase);
 
-    /// <inheritdoc />
+    /// <summary>Raised after a folder has been re-read because something in it changed; <see cref="Watch"/> hears one folder of it.</summary>
     public event EventHandler<WatchedFolderChangedEventArgs<TSnapshot>>? Changed;
 
     /// <summary>Reads <paramref name="folder"/>, a full path, into a snapshot.</summary>
