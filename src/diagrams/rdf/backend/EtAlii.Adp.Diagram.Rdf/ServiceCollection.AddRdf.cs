@@ -2,8 +2,8 @@ using EtAlii.Adp.Context;
 using EtAlii.Adp.Diagram.Rdf.Shacl;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace EtAlii.Adp.Diagram.Rdf;
 
@@ -26,7 +26,7 @@ public static class ServiceCollectionAddRdfExtension
 
     /// <summary>Every reading of the family, each a diagram type of its own over the one store.</summary>
     private static DiagramOrigin[] FamilyOrigins =>
-        [RdfOrigin, OwlOrigin, ServiceCollectionAddSkosExtension.SkosOrigin, Shacl.ServiceCollectionAddShaclExtension.ShaclOrigin];
+        [RdfOrigin, OwlOrigin, ServiceCollectionAddSkosExtension.SkosOrigin, ServiceCollectionAddShaclExtension.ShaclOrigin];
 
     /// <summary>The idempotency marker: every family definition carries the same Build, and the first one registers.</summary>
     private sealed class FamilyRegistered;

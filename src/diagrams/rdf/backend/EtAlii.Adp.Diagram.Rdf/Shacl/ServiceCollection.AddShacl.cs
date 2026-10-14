@@ -1,7 +1,7 @@
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace EtAlii.Adp.Diagram.Rdf.Shacl;
 
