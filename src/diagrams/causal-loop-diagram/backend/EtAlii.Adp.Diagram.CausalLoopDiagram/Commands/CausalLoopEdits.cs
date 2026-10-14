@@ -45,10 +45,10 @@ public static class CausalLoopEdits
     public const string LoopTaken = "A loop of that identifier is already stated in this diagram.";
 
     /// <summary>A loop through nothing.</summary>
-    public const string LoopThroughNothing = "A loop runs through at least one variable.";
+    private const string LoopThroughNothing = "A loop runs through at least one variable.";
 
     /// <summary>A loop through a variable the document does not declare.</summary>
-    public static string NotDeclared(string missing) => $"'{missing}' is not declared in this diagram, so a loop cannot run through it.";
+    private static string NotDeclared(string missing) => $"'{missing}' is not declared in this diagram, so a loop cannot run through it.";
 
     /// <summary>A name the line-oriented format can round-trip: one word, at least one character.</summary>
     public static bool IsUsableName(string name)
@@ -103,7 +103,7 @@ public static class CausalLoopEdits
     };
 
     /// <summary>Writes <paramref name="changes"/> into <paramref name="body"/> as one edit.</summary>
-    public static EditOutcome Write(CausalLoopBody body, params DislChange[] changes) =>
+    private static EditOutcome Write(CausalLoopBody body, params DislChange[] changes) =>
         CausalLoopDefinition.Apply(body, new DislTransaction(changes, [], null));
 
     /// <summary>Sets <paramref name="attributes"/> on the element <paramref name="id"/> of <paramref name="type"/>.</summary>

@@ -20,7 +20,7 @@ internal sealed class CausalLoopMemoryStore : ICausalLoopDocumentStore
     public string this[string path]
     {
         get => _texts[path];
-        set => _texts[path] = value;
+        init => _texts[path] = value;
     }
 
     public DocumentEntry<CausalLoopBody, CausalLoopModel> GetOrLoad(string path)

@@ -146,8 +146,16 @@ public sealed class CausalLoopBody : ITextBody<CausalLoopBody>
             change = note.Remaining;
         }
 
+        // A change that re-emits a link's line writes the binding's note, which need not be the tool's.
+        var other = change as ModelChange.Set;
+        var kept = other is not null && !other.Attributes.ContainsKey(CausalLoopNote.Attribute) ? CausalLoopNote.Read(_body.Model, _body.Bytes, other.Id) : null;
         var result = _body.Change(change);
         if (result is PlanResult.Refused refused) return EditOutcome.Refused(refused.Reason);
+        if (other is not null && kept is not null && CausalLoopNote.Read(_body.Model, _body.Bytes, other.Id) != kept)
+        {
+            return Change(new ModelChange.Set(other.Id, new Dictionary<string, object?>(StringComparer.Ordinal) { [CausalLoopNote.Attribute] = kept }));
+        }
+
         Recent.Remember(_body.Fork());
         return EditOutcome.Applied;
     }

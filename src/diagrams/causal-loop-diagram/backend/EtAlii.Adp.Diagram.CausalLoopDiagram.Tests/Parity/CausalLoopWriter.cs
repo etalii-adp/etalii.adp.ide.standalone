@@ -35,10 +35,10 @@ internal static class CausalLoopWriter
     private const string AlreadyDeclared = "A variable of that name is already declared in this diagram.";
 
     /// <summary>A name the format cannot round-trip.</summary>
-    public const string UnusableName = "A name needs at least one character and no whitespace, because a statement is read as words on one line.";
+    private const string UnusableName = "A name needs at least one character and no whitespace, because a statement is read as words on one line.";
 
     /// <summary>A label or loop name the format cannot round-trip: it is written between quotes and has no escape for one.</summary>
-    public const string UnusableText = "A label or loop name cannot hold a double quote, because it is written between double quotes.";
+    private const string UnusableText = "A label or loop name cannot hold a double quote, because it is written between double quotes.";
 
     // ---- variables -------------------------------------------------------------------------
 

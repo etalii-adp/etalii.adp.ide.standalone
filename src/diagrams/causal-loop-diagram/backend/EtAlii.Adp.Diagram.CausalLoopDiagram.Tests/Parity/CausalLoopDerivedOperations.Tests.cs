@@ -32,7 +32,7 @@ public class CausalLoopDerivedOperationsTests
         var compared = 0;
         var differences = new List<string>();
 
-        foreach (var (operation, target, invocation, command) in Cases(model))
+        foreach ((string operation, string? target, DislInvocation? invocation, ICommand command) in Cases(model))
         {
             // Act.
             var derived = Derived(text, operation, target, invocation);

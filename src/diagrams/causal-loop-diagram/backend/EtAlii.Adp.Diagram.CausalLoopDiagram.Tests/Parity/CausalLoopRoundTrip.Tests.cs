@@ -17,11 +17,7 @@ public sealed class CausalLoopRoundTripTests : IDisposable
 
     public CausalLoopRoundTripTests() => Directory.CreateDirectory(_root);
 
-    public void Dispose()
-    {
-        TestFolder.TryDelete(_root);
-        GC.SuppressFinalize(this);
-    }
+    public void Dispose() => TestFolder.TryDelete(_root);
 
     public static TheoryData<string> Documents() => [.. CausalLoopTranscript.Corpus()];
 
@@ -90,7 +86,7 @@ public sealed class CausalLoopRoundTripTests : IDisposable
         var model = CausalLoopBody.Parse(text).Read();
         var applied = 0;
 
-        foreach (var (name, run) in Edits(model))
+        foreach ((string name, Func<ICausalLoopDocumentStore, string, Task<CommandResult>> run) in Edits(model))
         {
             var path = Path.Combine(_root, $"{Guid.NewGuid():N}.cld");
             await File.WriteAllBytesAsync(path, bytes, TestContext.Current.CancellationToken);
@@ -122,7 +118,7 @@ public sealed class CausalLoopRoundTripTests : IDisposable
         var first = variables.FirstOrDefault() ?? "nobody";
         var second = variables.Skip(1).FirstOrDefault() ?? first;
         var link = model.Links.FirstOrDefault();
-        var (from, to) = link is null ? ("nobody", "nobody") : (link.From, link.To);
+        (string from, string to) = link is null ? ("nobody", "nobody") : (link.From, link.To);
         var loop = model.Loops.FirstOrDefault()?.Identifier ?? "R0";
 
         yield return ("add variable", (store, path) => new AddVariableCommandHandler(store).ExecuteAsync(new AddVariableCommand(path, "roundTrip", "Round trip"), token));

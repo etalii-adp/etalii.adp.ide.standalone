@@ -381,7 +381,7 @@ public class CausalLoopCommandsTests : IDisposable
     public async Task SettingALoopsMembership_RewritesItsMembersAndLeavesEveryOtherByte()
     {
         // Act.
-        var (result, before, after) = await SetR3("onCallLoad", "fatigue", "attrition", "teamSize");
+        (CommandResult result, string before, string after) = await SetR3("onCallLoad", "fatigue", "attrition", "teamSize");
 
         // Assert.
         Assert.True(result.IsSuccess, result.Error);
@@ -392,7 +392,7 @@ public class CausalLoopCommandsTests : IDisposable
     public async Task AMembershipThroughAnUndeclaredVariable_IsRefusedNamingIt_AndNothingIsWritten()
     {
         // Act.
-        var (result, before, after) = await SetR3("onCallLoad", "nowhere");
+        (CommandResult result, string before, string after) = await SetR3("onCallLoad", "nowhere");
 
         // Assert.
         Assert.False(result.IsSuccess);

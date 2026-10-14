@@ -162,7 +162,7 @@ internal static class CausalLoopDefinition
     }
 
     /// <summary>The element <paramref name="id"/> names: the first in model order with that id; null for none.</summary>
-    public static DislElement? ElementOf(DislDiagram diagram, string? id)
+    private static DislElement? ElementOf(DislDiagram diagram, string? id)
     {
         ArgumentNullException.ThrowIfNull(diagram);
         return id is null ? null : diagram.ElementById(id);

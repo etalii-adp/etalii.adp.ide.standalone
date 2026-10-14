@@ -36,6 +36,9 @@ public static class CausalLoopNote
 
     private const string Note = "note";
 
+    /// <summary>The attribute of a link that holds its note.</summary>
+    public const string Attribute = Note;
+
     /// <summary><paramref name="model"/> with the note of every link read from <paramref name="bytes"/> as the tool reads it.</summary>
     public static FblModel Applied(FblModel model, byte[] bytes)
     {
@@ -45,6 +48,17 @@ public static class CausalLoopNote
         {
             Elements = [.. model.Elements.Select(element => element.Type == Link ? WithNote(element, StatementOf(element, bytes)) : element)],
         };
+    }
+
+    /// <summary>The note of the link <paramref name="id"/> as the tool reads it, empty for none; null where <paramref name="id"/> is no link.</summary>
+    /// <param name="model">What the binding itself reads from <paramref name="bytes"/>, its notes not replaced.</param>
+    public static string? Read(FblModel model, byte[] bytes, string id)
+    {
+        ArgumentNullException.ThrowIfNull(model);
+        ArgumentNullException.ThrowIfNull(bytes);
+        return model.Find(id) is { Type: Link } link && Candidates(StatementOf(link, bytes)) is var candidates
+            ? candidates is [.., var last] ? last.Text : ""
+            : null;
     }
 
     /// <summary>
@@ -82,7 +96,7 @@ public static class CausalLoopNote
     private static FblElement WithNote(FblElement element, string statement)
     {
         var attributes = new Dictionary<string, object?>(element.Attributes, StringComparer.Ordinal);
-        if (Candidates(statement) is [.., var last] && last.Text.Length > 0) attributes[Note] = last.Text;
+        if (Candidates(statement) is [.., { Text.Length: > 0 } last]) attributes[Note] = last.Text;
         else attributes.Remove(Note);
         return element with { Attributes = attributes };
     }
