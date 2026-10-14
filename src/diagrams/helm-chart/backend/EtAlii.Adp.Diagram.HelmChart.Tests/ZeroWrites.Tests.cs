@@ -78,7 +78,7 @@ public class ZeroWritesTests : IDisposable
 
             foreach (var id in everything)
             {
-                var target = ContextTarget.ForElement(_root, id, _root);
+                var target = ContextTarget.ForElement(registration, id, _root);
                 await properties.DescribeAsync(target, TestContext.Current.CancellationToken);
 
                 // The refused write. Included on purpose: this is the path most likely to

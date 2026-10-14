@@ -1,3 +1,5 @@
+using EtAlii.Adp.Hierarchy;
+
 namespace EtAlii.Adp.Diagram.HelmChart;
 
 /// <summary>
@@ -18,6 +20,35 @@ public static class HelmLayout
     private const double Top = 40;
     private const double ColumnGap = 60;
     private const double RowGap = 24;
+
+    /// <summary>
+    /// Every box the chart currently has: computed positions first, stored ones winning
+    /// element by element, sizes staying measured - a stale stored id simply has nothing to
+    /// override (core's own overlay semantics). The session's every render and the resolver's
+    /// payload both come through here, so a selection can never place an element elsewhere
+    /// than the canvas drew it.
+    /// </summary>
+    public static IReadOnlyDictionary<string, HelmBox> Arranged(
+        HelmChart chart, HelmGraph graph, IReadOnlyDictionary<string, RegistrationPosition> stored)
+    {
+        ArgumentNullException.ThrowIfNull(stored);
+
+        var boxes = Compute(chart, graph);
+        if (stored.Count == 0)
+        {
+            return boxes;
+        }
+
+        var overlaid = new Dictionary<string, HelmBox>(boxes.Count, StringComparer.Ordinal);
+        foreach ((string id, HelmBox box) in boxes)
+        {
+            overlaid[id] = stored.TryGetValue(id, out var position)
+                ? box with { X = position.X, Y = position.Y }
+                : box;
+        }
+
+        return overlaid;
+    }
 
     public static IReadOnlyDictionary<string, HelmBox> Compute(HelmChart chart, HelmGraph graph)
     {
