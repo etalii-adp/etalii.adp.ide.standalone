@@ -27,7 +27,7 @@ namespace EtAlii.Adp.Backend.Tests;
 // fails deterministically" - has been met.
 //
 // The mechanism was a LOST EDIT in the document store, not a watcher-versus-write race and not
-// timing in this test. A command does GetOrLoad, splices through TimelineWriter, then calls
+// timing in this test. A command does GetOrLoad, splices (then through TimelineWriter), then calls
 // Save - and TimelineDocumentStore.Save(path) used to call GetOrLoad(path) AGAIN rather than
 // write the entry the caller spliced. Reload(path) evicts the cached entry. So a reload landing
 // between the splice and the save meant the spliced object was no longer the written object: the

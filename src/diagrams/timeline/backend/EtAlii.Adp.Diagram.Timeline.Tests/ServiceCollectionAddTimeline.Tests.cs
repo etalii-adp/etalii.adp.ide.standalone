@@ -106,17 +106,17 @@ public class ServiceCollectionAddTimelineTests
         // the file unparseable - a bug that would surface on the very first Add of every new
         // timeline.
         using var provider = Build();
-        var document = LineDocument.Parse(EmptyDocument(provider, "plan"));
-        var model = TimelineReading.Of(document.Text);
+        var body = TimelineBody.Parse(EmptyDocument(provider, "plan"));
 
         // Act.
-        TimelineWriter.InsertElement(document, model, "first001", "First", "2026-01-01", "2026-01-31", 0);
+        var outcome = TimelineEdits.AddElement(body, "first001", "First", "2026-01-01", "2026-01-31", 0);
 
         // Assert.
-        var reparsed = TimelineReading.Of(document.Text);
+        Assert.True(outcome.WasApplied, outcome.Refusal);
+        var reparsed = TimelineReading.Of(body.Text);
         var element = Assert.Single(reparsed.Elements);
         Assert.Equal("First", element.Label);
-        Assert.DoesNotContain("[]", document.Text, StringComparison.Ordinal);
+        Assert.DoesNotContain("[]", body.Text, StringComparison.Ordinal);
     }
 
     [Fact]

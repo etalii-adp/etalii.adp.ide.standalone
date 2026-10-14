@@ -40,7 +40,7 @@ public static class TimelineReading
     public static TimelineModel Of(string text) => Of(TimelineBody.Parse(text));
 
     /// <summary>The model of what <paramref name="body"/> reads; empty for a body the library cannot read.</summary>
-    private static TimelineModel Of(TimelineBody body)
+    internal static TimelineModel Of(TimelineBody body)
     {
         ArgumentNullException.ThrowIfNull(body);
         var reading = body.Model;
@@ -87,7 +87,7 @@ public static class TimelineReading
     }
 
     /// <summary>The text an attribute was written with; empty when it is not written or is no scalar.</summary>
-    private static string TextOf(FblElement element, string attribute) => element.Attributes.GetValueOrDefault(attribute) switch
+    internal static string TextOf(FblElement element, string attribute) => element.Attributes.GetValueOrDefault(attribute) switch
     {
         string text => text,
         long or double or bool => Convert.ToString(element.Attributes[attribute], CultureInfo.InvariantCulture) ?? "",

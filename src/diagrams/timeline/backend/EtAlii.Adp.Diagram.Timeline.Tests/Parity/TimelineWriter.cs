@@ -1,9 +1,13 @@
 using EtAlii.Adp.Documents;
 
-namespace EtAlii.Adp.Diagram.Timeline;
+namespace EtAlii.Adp.Diagram.Timeline.Tests.Parity;
 
 /// <summary>
-/// Turns an edit into a splice of the lines that edit affects, and nothing else.
+/// Turns an edit into a splice of the lines that edit affects, and nothing else: the module's own writer
+/// before every edit was written through its binding, kept here as an oracle beside
+/// <see cref="TimelineParser"/> (timeline-disl-fbl Requirement 4.1). Nothing in the product writes with it;
+/// the tests that need a hand-made splice of a document - a store's lost edit, a store contract's edit -
+/// make it with this.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -156,43 +160,6 @@ public static class TimelineWriter
         foreach (var range in ranges)
         {
             document.Remove(range);
-        }
-    }
-
-    /// <summary>Removes one connection.</summary>
-    public static void RemoveConnection(LineDocument document, TimelineConnection connection) =>
-        document.Remove(connection.Range);
-
-    /// <summary>Whether the document currently carries a <c>connections:</c> section key.</summary>
-    /// <remarks>
-    /// An insert creates the section on demand, so a command whose inverse must restore the file
-    /// byte for byte asks this first and has its undo remove what the insert created - a stray
-    /// <c>connections:</c> header after an undo was the one line that broke identity.
-    /// </remarks>
-    public static bool HasConnectionsSection(LineDocument document)
-    {
-        ArgumentNullException.ThrowIfNull(document);
-        return LineSplice.FindSection(document, "connections:") >= 0;
-    }
-
-    /// <summary>
-    /// Removes a <c>connections:</c> section key left with no entries - the undo of the insert
-    /// that created it. A no-op while any relation remains.
-    /// </summary>
-    public static void RemoveConnectionsSectionIfEmpty(LineDocument document, TimelineModel model)
-    {
-        ArgumentNullException.ThrowIfNull(document);
-        ArgumentNullException.ThrowIfNull(model);
-
-        if (model.Connections.Count > 0)
-        {
-            return;
-        }
-
-        var index = LineSplice.FindSection(document, "connections:");
-        if (index >= 0)
-        {
-            document.Remove(new LineRange(index, index));
         }
     }
 

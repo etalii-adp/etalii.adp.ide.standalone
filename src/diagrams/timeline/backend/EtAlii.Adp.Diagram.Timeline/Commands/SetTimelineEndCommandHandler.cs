@@ -1,19 +1,21 @@
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.Timeline;
 
-/// <summary>Carries out an end change. The inverse is the same command carrying the previous end.</summary>
+/// <summary>
+/// Carries out an end change: one change of <c>end</c>. Giving a moment an end writes the key where the
+/// period rule's <c>keys</c> put it, after <c>begin</c>; removing it removes the key. Never a retype.
+/// </summary>
 public sealed class SetTimelineEndCommandHandler(ITimelineDocumentStore documents)
     : TimelineEditHandler<SetTimelineEndCommand>(documents)
 {
     /// <inheritdoc />
-    protected override EditOutcome Apply(LineDocument body, TimelineModel model, SetTimelineEndCommand command)
+    protected override EditOutcome Apply(TimelineBody body, TimelineModel model, SetTimelineEndCommand command)
     {
         var element = TimelineEdits.ElementOf(model, command.ElementId);
         if (element is null)
         {
-            return EditOutcome.Refused("That element is no longer in this timeline.");
+            return EditOutcome.Refused(TimelineEdits.ElementGone);
         }
 
         if (command.End is not null && element.Begin.IsReadable)
@@ -31,7 +33,13 @@ public sealed class SetTimelineEndCommandHandler(ITimelineDocumentStore document
             }
         }
 
-        TimelineWriter.SetEnd(body, element, command.End);
-        return EditOutcome.UndoneBy(command with { End = element.End?.Text });
+        if (command.End is null && element.End is null)
+        {
+            // A moment has no end to remove. An end key holding a mapping or a sequence is not an end
+            // (finding B11): the entry is a moment, and the key is kept as it was written.
+            return EditOutcome.Applied;
+        }
+
+        return TimelineEdits.Set(body, element, ("end", command.End));
     }
 }

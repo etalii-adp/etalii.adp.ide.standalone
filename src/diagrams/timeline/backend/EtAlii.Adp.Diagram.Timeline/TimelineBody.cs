@@ -1,9 +1,11 @@
 using System.Text;
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.History;
 using EtAlii.Adp.Specification.Disl;
 using EtAlii.Adp.Specification.Fbl;
 using EtAlii.Adp.Specification.Fbl.Documents;
 using EtAlii.Adp.Specification.Fbl.History;
+using EtAlii.Adp.Specification.Fbl.Planning;
 
 namespace EtAlii.Adp.Diagram.Timeline;
 
@@ -21,8 +23,16 @@ namespace EtAlii.Adp.Diagram.Timeline;
 /// read with the attribute types the definition gives them (<see cref="DislAttributeTypes"/>).
 /// </para>
 /// <para>
-/// <b>Writing is not here yet</b>: the commands still splice the file's lines through
-/// <see cref="TimelineWriter"/>, on the line ranges this body's reading gives (<see cref="LinesOf"/>).
+/// <b>Every write is a <see cref="ModelChange"/></b> the library plans as splices in the body's own
+/// conventions (FBL section 6, timeline-disl-fbl Requirement 3.1): a value's own span in its own style, a
+/// new key where the binding's <c>keys</c> put it, a new entry indented as the entries already there. No
+/// code here builds a line of YAML, so an unchanged document stays byte-identical and a comment, an
+/// unknown key or a blank line survives because no splice touches it.
+/// </para>
+/// <para>
+/// <b>Undo stays the host's</b>: the shared restore command puts the text back
+/// (<see cref="TimelineEdits"/>). The library's own history is per open body, and a command opens a
+/// fresh one on the store's text each time.
 /// </para>
 /// <para>
 /// <b>A text read recently is not read again.</b> Reading is a pure function of the bytes, so
@@ -51,10 +61,16 @@ public sealed class TimelineBody
     private (byte[] Bytes, FblModel Model)? _model;
     private (byte[] Bytes, DislModel Model)? _disl;
 
+    // While a batch is open, the changes asked for and their edits, planned against the body as it was.
+    private List<(ModelChange Change, Edit Edit)>? _batch;
+
     private TimelineBody(OpenBody body)
     {
         _body = body;
     }
+
+    /// <summary>The body's text after every change made to it.</summary>
+    public string Text => Encoding.UTF8.GetString(_body.Bytes);
 
     /// <summary>What the binding reads from the body.</summary>
     public FblModel Model
@@ -111,6 +127,100 @@ public sealed class TimelineBody
         return new LineRange(first, last);
     }
 
+    /// <summary>
+    /// The library's id of the entry whose lines start at <paramref name="range"/>: the element (or, with
+    /// <paramref name="relation"/>, the relation) the module's model read there. Found by its place rather
+    /// than by its written id, because an id written twice is the library's for its first holder only.
+    /// </summary>
+    internal string? IdAt(LineRange range, bool relation)
+    {
+        foreach (var element in Model.Elements)
+        {
+            if ((element.Rule == "connection") != relation) continue;
+            if (LinesOf(element.OwnSpan).Start == range.Start) return element.Id;
+        }
+
+        return null;
+    }
+
+    /// <summary>Plans and applies one change; the refusal's sentence when the library refuses it.</summary>
+    internal EditOutcome Change(ModelChange change)
+    {
+        if (_batch is not null)
+        {
+            var planned = _body.Plan(change);
+            if (planned is PlanResult.Planned { Edit: var edit }) _batch.Add((change, edit));
+            return planned is PlanResult.Refused declined ? EditOutcome.Refused(declined.Reason) : EditOutcome.Applied;
+        }
+
+        var result = _body.Change(change);
+        _lineStarts = null;
+        if (result is not PlanResult.Refused) Recent.Remember(_body.Fork());
+        return result is PlanResult.Refused refused ? EditOutcome.Refused(refused.Reason) : EditOutcome.Applied;
+    }
+
+    /// <summary>
+    /// Runs <paramref name="writes"/>, each a change to a different entry that reads only that entry,
+    /// and applies them together: as one edit, read once, when their splices keep apart; else one by
+    /// one, in the order they were asked for, as <see cref="Change"/> would have.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Every change is planned against the body as it was before any of them</b>, so an element is
+    /// found where it was read. That is what the writes would meet one by one only when each touches its
+    /// own entry alone, which is the caller's to promise: Arrange diagram, which sets one row per entry.
+    /// </para>
+    /// <para>
+    /// <b>Why</b>: applying a change reads the whole body again, so N changes one by one cost N readings
+    /// (timeline-disl-fbl, Performance: an arrangement that writes many rows is planned as one edit).
+    /// </para>
+    /// </remarks>
+    internal void Batch(Action writes)
+    {
+        ArgumentNullException.ThrowIfNull(writes);
+        if (_batch is not null) throw new InvalidOperationException("A batch is already open on this body.");
+
+        _batch = [];
+        List<(ModelChange Change, Edit Edit)> batch;
+        try
+        {
+            writes();
+        }
+        finally
+        {
+            batch = _batch;
+            _batch = null;
+        }
+
+        if (Combined(batch) is { } combined)
+        {
+            _body.Apply(combined);
+            _lineStarts = null;
+            Recent.Remember(_body.Fork());
+            return;
+        }
+
+        foreach ((ModelChange change, _) in batch)
+        {
+            Change(change);
+        }
+    }
+
+    /// <summary>The edits of a batch as one, when no two of them touch and none needs a snapshot to undo; else null.</summary>
+    private static Edit? Combined(List<(ModelChange Change, Edit Edit)> batch)
+    {
+        var edits = batch.Select(planned => planned.Edit).Where(edit => edit.Splices.Count > 0).ToList();
+        if (edits.Count == 0 || edits.Any(edit => edit.Snapshot)) return null;
+
+        edits.Sort((left, right) => left.Splices.Min(splice => splice.Start).CompareTo(right.Splices.Min(splice => splice.Start)));
+        for (var index = 1; index < edits.Count; index++)
+        {
+            if (edits[index - 1].Splices.Max(splice => splice.End) >= edits[index].Splices.Min(splice => splice.Start)) return null;
+        }
+
+        return new Edit([.. edits.SelectMany(edit => edit.Splices)]);
+    }
+
     private static int[] LineStarts(byte[] bytes)
     {
         List<int> starts = [0];
@@ -131,7 +241,7 @@ public sealed class TimelineBody
         return index >= 0 ? index : ~index - 1;
     }
 
-    /// <summary>The open bodies of the last few texts read, by their bytes: forks no one edits, only forked again.</summary>
+    /// <summary>The open bodies of the last few texts read or written, by their bytes: forks no one edits, only forked again.</summary>
     private sealed class RecentBodies
     {
         private const int Capacity = 8;

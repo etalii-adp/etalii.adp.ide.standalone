@@ -51,7 +51,6 @@ public static class ServiceCollectionAddTimelineExtension
         services.AddSingleton<ICommandHandler<SetTimelinePlacementCommand>, SetTimelinePlacementCommandHandler>();
         services.AddSingleton<ICommandHandler<AddTimelineElementCommand>, AddTimelineElementCommandHandler>();
         services.AddSingleton<ICommandHandler<RemoveTimelineElementCommand>, RemoveTimelineElementCommandHandler>();
-        services.AddSingleton<ICommandHandler<RestoreLinesCommand<ITimelineDocumentStore>>, RestoreLinesCommandHandler<ITimelineDocumentStore>>();
         services.AddSingleton<ICommandHandler<RenameTimelineElementCommand>, RenameTimelineElementCommandHandler>();
         services.AddSingleton<ICommandHandler<ConnectTimelineElementsCommand>, ConnectTimelineElementsCommandHandler>();
         services.AddSingleton<ICommandHandler<DisconnectTimelineConnectionCommand>, DisconnectTimelineConnectionCommandHandler>();
@@ -61,6 +60,9 @@ public static class ServiceCollectionAddTimelineExtension
         services.AddSingleton<ICommandHandler<ArrangeTimelineCommand>, ArrangeTimelineCommandHandler>();
         services.AddSingleton<ICommandHandler<SetTimelineRowsCommand>, SetTimelineRowsCommandHandler>();
 
+        // Every undo: the whole text as it was before the edit, byte for byte (timeline-disl-fbl
+        // Requirement 3.6), the shared restore closed over this module's store.
+        services.AddSingleton<ICommandHandler<RestoreDocumentCommand<ITimelineDocumentStore>>, RestoreDocumentCommandHandler<ITimelineDocumentStore>>();
 
         // The context seams: selection, actions, properties and the palette.
         services.AddSingleton<IContextSourceResolver, TimelineContextSourceResolver>();
