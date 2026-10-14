@@ -232,6 +232,8 @@ const shots = [
   { name: "markdown-editor.png", path: ["editors", "markdown", "guide.md"], fit: false, expectDrawing: false },
   { name: "plain-text-editor.png", path: ["editors", "plain", "crlf-notes.txt"], fit: false, expectDrawing: false },
   { name: "json-editor.png", path: ["editors", "json", "service-broken.json"], fit: false, expectDrawing: false, collapse: ["editors"] },
+  { name: "xml-editor.png", path: ["editors", "xml", "library-broken.xml"], fit: false, expectDrawing: false, collapse: ["editors"] },
+  { name: "yaml-editor.png", path: ["editors", "yaml", "service-broken.yaml"], fit: false, expectDrawing: false, collapse: ["editors"] },
 ];
 
 // ---- sign in, open the examples project ------------------------------------------------------
