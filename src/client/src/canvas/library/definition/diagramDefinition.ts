@@ -3,6 +3,7 @@ import type { BackgroundDeclaration } from "./background";
 import type { ActionDeclaration, DeclaredFlag } from "./actions";
 import type { ChromeDeclaration } from "./chrome";
 import type { CompartmentDeclaration } from "./compartments";
+import type { DiagramModelConnection } from "../api/diagramModel";
 
 /**
  * The diagram definition: the one declarative place that states what a diagram type allows
@@ -322,7 +323,7 @@ export type DeclaredNumber = number | Binding;
  * renderer with extra steps, which is the thing this specification exists to remove. Five
  * entries, and each earns its place from a renderer that draws it today.
  */
-export type DecorationGlyph = "line" | "path" | "circle" | "rect" | "marker";
+export type DecorationGlyph = "line" | "path" | "circle" | "rect" | "marker" | "circular-arrow";
 
 /**
  * An ornament attached to an element - drawn relative to it, and nothing more than drawn.
@@ -389,6 +390,15 @@ export interface DecorationDeclaration {
    * marker is a question for the sufficiency table rather than one to settle here.
    */
   d?: Binding;
+  /**
+   * A `circular-arrow` drawn mirrored - turning anticlockwise - while this holds.
+   *
+   * The `circular-arrow` is a near-complete circle round {@link from}, of {@link radius}, opening
+   * at its top and sweeping clockwise into its arrowhead: the turn a feedback loop's marker shows.
+   * Mirrored left to right it turns the other way, which is how a notation tells two kinds of
+   * loop apart before anyone reads a letter.
+   */
+  mirrored?: Condition;
   /** A `marker`'s name, from the library's own registry - an arrowhead, a tick. */
   marker?: string;
   /** Optional text drawn with the glyph: the stub's label, the badge's caption. */
@@ -858,6 +868,12 @@ export interface ElementTypeDefinition {
    * under every element as they always have.
    */
   beneathConnections?: boolean;
+  /**
+   * Where an element with no position of its own is drawn: at the mean of the centres of the
+   * elements whose ids this path lists - a feedback loop's badge among the variables it runs
+   * through. Where a listed element is not in the model, the element stays where the model put it.
+   */
+  centreOf?: BindingPath;
 }
 
 /**
@@ -917,7 +933,7 @@ export interface CustomRouteRef {
    * anchors from the boxes and bows to the side of travel, which points alone cannot say;
    * the connect preview has no target box yet and passes none.
    */
-  path: (from: ShapePoint, to: ShapePoint, waypoints: readonly ShapePoint[], ends?: RouteEnds) => string;
+  path: (from: ShapePoint, to: ShapePoint, waypoints: readonly ShapePoint[], ends?: RouteEnds, connection?: DiagramModelConnection) => string;
 }
 
 /** Start and end decorations (Requirement 3.2). */
@@ -1036,6 +1052,32 @@ export interface RelationTypeDefinition {
    * count draws it again where it was.
    */
   hideWhenAttachmentHidden?: boolean;
+  /** The line's width, chosen per connection by thresholds on one number. See {@link StrokeLadder}. */
+  strokeLadder?: StrokeLadder;
+}
+
+/**
+ * A line's width chosen by thresholds on one number of the connection's payload - a weight drawn
+ * on a short ladder rather than as a continuous width.
+ *
+ * The first rung whose test holds gives the width, and {@link otherwise} where none does. The width
+ * is painted by the class {@link classNames} names for it, so the stylesheet that paints every other
+ * line of the notation paints this one too.
+ */
+export interface StrokeLadder {
+  /** The number the width is chosen by: `payload.weight`. */
+  path: BindingPath;
+  rungs: readonly StrokeRung[];
+  otherwise: number;
+  /** The class each width is painted by, keyed by the width as text. */
+  classNames: Readonly<Record<string, string>>;
+}
+
+/** One rung: a test of the number, and the width it gives. `absent` holds where the payload has no number. */
+export interface StrokeRung {
+  test: "absent" | "atLeast" | "atMost" | "above" | "below";
+  value?: number;
+  width: number;
 }
 
 /**

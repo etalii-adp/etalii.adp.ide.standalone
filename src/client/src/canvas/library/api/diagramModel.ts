@@ -95,4 +95,10 @@ export interface DiagramModelConnection {
   waypoints?: readonly ShapePoint[];
   /** Per-connection override of the type's style (Requirement 3.2). */
   style?: ConnectionStyle;
+  /**
+   * The module's own data for this connection, which a relation type's declared conditions and
+   * texts read under the `payload` root - a link's polarity, whether it is delayed - as an
+   * element's do.
+   */
+  payload?: unknown;
 }

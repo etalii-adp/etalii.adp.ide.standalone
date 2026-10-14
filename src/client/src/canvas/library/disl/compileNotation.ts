@@ -17,13 +17,18 @@ import type {
   LayoutDefinition,
   LayoutMode,
   LinkDeclaration,
+  MarkerKind,
   RelationTypeDefinition,
   RouteLabelRule,
   SegmentDeclaration,
   SideFraction,
   SnapAxis,
   SnapDeclaration,
+  StrokeLadder,
+  StrokeRung,
 } from "../definition/diagramDefinition";
+import { ArcBow } from "./bowedArc";
+import { bowedArcAdornment, bowedArcRoute, type ArcBarsDeclaration, type ArcMarkDeclaration, type BowedArcDeclaration } from "./bowedArcLine";
 import { BEFORE_GAP } from "../definition/labels";
 import {
   typeList,
@@ -35,8 +40,11 @@ import {
   type DislCoordinateSystem,
   type DislCustomShape,
   type DislDocument,
+  type DislEdgeLabel,
   type DislEdgeNotation,
+  type DislIcon,
   type DislLabel,
+  type DislMidMarker,
   type DislNodeNotation,
   type DislRelation,
   type DislViewpoint,
@@ -149,6 +157,20 @@ export interface NotationBindings {
    * (`backendKey`), or a second key invokes it, which DISL's one `shortcut` per entry cannot say.
    */
   action?: (action: ActionDeclaration, entry: { shortcut?: string }) => ActionDeclaration;
+  /**
+   * What a DISL marker is drawn as, where a module has stated it ahead of the library's own reading
+   * of the name: a module whose arrowhead has always been drawn otherwise than its specification's
+   * marker says, until the specification is corrected.
+   */
+  builtInMarkers?: Readonly<Record<string, MarkerKind>>;
+  /** The class of a node's icon, which the module's stylesheet paints. */
+  iconClassName?: (type: string, icon: DislIcon) => string | undefined;
+  /** The classes of a relation's bars across its line: the group's and each bar's. */
+  midMarkerClassNames?: (relation: string) => { group?: string; marker?: string };
+  /** The class of a mark written beside a relation's line. */
+  edgeLabelClassName?: (relation: string, label: string) => string | undefined;
+  /** The class that paints each width a relation's computed stroke width gives. */
+  strokeWidthClassName?: (relation: string, width: number) => string | undefined;
 }
 
 export interface CompileOptions {
@@ -285,6 +307,94 @@ function concatenationTerms(expression: string): string[] {
   return terms;
 }
 
+/** The icons the library draws, by their DISL name, and the glyph each is drawn as. */
+const ICONS: Readonly<Record<string, DecorationDeclaration["glyph"]>> = { "mdi-sync": "circular-arrow" };
+
+/** An icon's size where the specification states none, and the gap between a body-less node's icon and its point. */
+const ICON_SIZE = 24;
+const ICON_GAP = 2;
+
+/** An expression without the parentheses that enclose all of it. */
+function unwrapped(expression: string): string {
+  let text = expression.trim();
+  while (text.startsWith("(") && text.endsWith(")")) {
+    let depth = 0;
+    let encloses = true;
+    for (let index = 0; index < text.length; index++) {
+      depth += text[index] === "(" ? 1 : text[index] === ")" ? -1 : 0;
+      if (depth === 0 && index < text.length - 1) {
+        encloses = false;
+        break;
+      }
+    }
+    if (!encloses) {
+      break;
+    }
+    text = text.slice(1, -1).trim();
+  }
+  return text;
+}
+
+/** A stroke width ladder read from its CEL: nested `test ? width : rest`, ending in a width. See `Compiler.strokeLadder`. */
+function strokeLadderOf(expression: string, attributes: Set<string>, where: string): { rungs: StrokeRung[]; otherwise: number } {
+  const text = unwrapped(expression);
+  if (/^-?\d+(\.\d+)?$/.test(text)) {
+    return { rungs: [], otherwise: Number(text) };
+  }
+
+  // The `?` at the top level, and the `:` that closes it, counting the ternaries nested in its first branch.
+  let depth = 0;
+  let question = -1;
+  let colon = -1;
+  let open = 0;
+  for (let index = 0; index < text.length; index++) {
+    const character = text[index];
+    depth += character === "(" ? 1 : character === ")" ? -1 : 0;
+    if (depth !== 0) {
+      continue;
+    }
+    if (character === "?") {
+      if (question < 0) {
+        question = index;
+      } else {
+        open++;
+      }
+    } else if (character === ":" && question >= 0) {
+      if (open === 0) {
+        colon = index;
+        break;
+      }
+      open--;
+    }
+  }
+
+  if (question < 0 || colon < 0) {
+    return fail(`${where} "${expression}" is no ladder of thresholds the library can read.`);
+  }
+
+  const test = text.slice(0, question).trim();
+  const then = strokeLadderOf(text.slice(question + 1, colon), attributes, where);
+  const rest = strokeLadderOf(text.slice(colon + 1), attributes, where);
+  if (then.rungs.length > 0) {
+    fail(`${where} "${expression}" nests a choice in a width; the library reads a ladder whose steps are widths.`);
+  }
+
+  const absent = /^!has\(self\.([A-Za-z_][A-Za-z0-9_]*)\)$/.exec(test);
+  const compared = /^self\.([A-Za-z_][A-Za-z0-9_]*)\s*(>=|<=|>|<)\s*(-?\d+(?:\.\d+)?)$/.exec(test);
+  const tests: Readonly<Record<string, StrokeRung["test"]>> = { ">=": "atLeast", "<=": "atMost", ">": "above", "<": "below" };
+  const rung: StrokeRung | undefined = absent !== null
+    ? { test: "absent", width: then.otherwise }
+    : compared !== null
+      ? { test: tests[compared[2]!]!, value: Number(compared[3]), width: then.otherwise }
+      : undefined;
+  if (rung === undefined) {
+    return fail(`${where} "${expression}" tests "${test}"; the library reads a ladder's tests as !has(self.a) or self.a against a number.`);
+  }
+  attributes.add((absent ?? compared)![1]!);
+
+  return { rungs: [rung, ...rest.rungs], otherwise: rest.otherwise };
+}
+
 /** The compiler's state for one specification and one set of bindings. */
 class Compiler {
   private readonly wire: WireIds;
@@ -404,11 +514,18 @@ class Compiler {
   }
 
   /**
-   * A CEL expression as a path or template over the payload: string literals, `self.<attribute>` and
-   * the module's `celPaths`, joined by `+`. Anything else is refused, naming the expression, because
+   * A CEL expression as a path or template over the payload: the module's `celPaths` for the whole
+   * expression, or string literals, `self.<attribute>` and the module's `celPaths`, joined by `+`. Anything else is refused, naming the expression, because
    * the library cannot evaluate it and a guess would draw something the specification never said.
    */
   private celBinding(expression: string, where: string): Binding {
+    // The whole expression first: one the module names is a value the payload carries, whatever
+    // its terms, and splitting it at a `+` inside a choice would bind half of each branch.
+    const whole = this.bindings.celPaths[expression];
+    if (whole !== undefined) {
+      return { path: whole };
+    }
+
     const parts = concatenationTerms(expression).map((term): { text: string } | { path: string } => {
       const literal = /^'([^'{}]*)'$/.exec(term);
       if (literal !== null) {
@@ -441,11 +558,14 @@ class Compiler {
   private elementType(name: string, node: DislNodeNotation): ElementTypeDefinition {
     const where = `node "${name}"`;
     const { shape, segments } = this.shape(name, node);
+    const bodyless = shape === "none";
     const classNames = this.bindings.classNames(name, node);
     const hint = this.showsDragValue() && this.movable(node) ? [this.dragHint()] : [];
-    const labels = [...(node.labels ?? []).map((label) => this.label(name, label)), ...hint];
+    const labels = [...(node.labels ?? []).map((label) => this.label(name, label, bodyless)), ...hint];
     const compartments = this.compartments(name, node);
-    const { links, decorations } = this.badges(name, node);
+    const { links, decorations: badges } = this.badges(name, node);
+    const decorations = [...this.icon(name, node, bodyless), ...badges];
+    const centreOf = this.centreOf(name, node);
     const { sizing, resize } = this.sizing(node);
     const editOnDrop = (this.spec.toolbox?.groups ?? []).some((group) => group.tools.some((tool) => tool.creates === name && tool.after === "editLabel"));
 
@@ -466,7 +586,114 @@ class Compiler {
       ...(node.deletable === false ? { deletable: false } : {}),
       ...(editOnDrop ? { editOnDrop } : {}),
       ...(segments !== undefined ? { segments } : {}),
+      ...(centreOf !== undefined ? { centreOf } : {}),
     };
+  }
+
+  /**
+   * A node's icon (DISL §6.9), drawn by the library's own glyph for its name. A body-less node has no
+   * box to put it at the top of: it stands above the node's point, its lowest edge {@link ICON_GAP}
+   * above it, with the node's last line of text on the point itself. `flip: 'horizontal'` mirrors it
+   * while the condition it is chosen by holds. Its colour is a style, which the stylesheet paints.
+   */
+  private icon(name: string, node: DislNodeNotation, bodyless: boolean): DecorationDeclaration[] {
+    const icon = node.icon;
+    if (icon === undefined) {
+      return [];
+    }
+
+    const where = `node "${name}" icon "${icon.icon}"`;
+    const glyph = ICONS[icon.icon] ?? fail(`${where} is no icon the library draws (it draws ${Object.keys(ICONS).join(", ")}).`);
+    if (!bodyless || (icon.position ?? "top") !== "top") {
+      fail(`${where} sits "${String(icon.position ?? "top")}" on a node ${bodyless ? "" : "with a body "}; the library draws an icon above a body-less node's point.`);
+    }
+
+    const radius = (icon.size ?? ICON_SIZE) / 2;
+    const mirrored = icon.flip === undefined ? undefined : this.flipCondition(icon.flip, where);
+    const className = this.bindings.iconClassName?.(name, icon);
+    return [{
+      glyph,
+      from: { x: 0, y: -(radius + ICON_GAP) },
+      radius,
+      markerEnd: "arrow",
+      ...(className !== undefined ? { className } : {}),
+      ...(mirrored !== undefined ? { mirrored } : {}),
+    }];
+  }
+
+  /** The condition an icon's `flip` mirrors it under: `<condition> ? 'horizontal' : 'none'`. */
+  private flipCondition(flip: unknown, where: string): Condition | undefined {
+    if (flip === "none") {
+      return undefined;
+    }
+
+    const expression = isObject(flip) && typeof flip.cel === "string" ? flip.cel.trim() : undefined;
+    const ternary = expression === undefined ? null : /^(.+?)\s*\?\s*'horizontal'\s*:\s*'none'$/.exec(expression);
+    if (ternary === null) {
+      return fail(`${where} flips by ${JSON.stringify(flip)}; the library mirrors an icon left to right while one condition holds.`);
+    }
+
+    return this.condition(ternary[1]!.trim(), `${where} flip`);
+  }
+
+  /**
+   * Where a node with no position of its own is drawn (DISL §6.9 placement): the mean of the centres of
+   * the members one attribute lists, `self.<members>.map(m, m.view.bounds.center()[0]).avg()` and its
+   * `[1]` - the members the payload lists under the attribute's name. Any other CEL is refused; a
+   * placement by attribute or by the layout is not this one's.
+   */
+  private centreOf(name: string, node: DislNodeNotation): string | undefined {
+    const { x, y } = node.placement ?? {};
+    // An attribute or the layout places a node as the other placements do; only a CEL is read here.
+    const computed = (value: unknown) => isObject(value) && typeof value.cel === "string";
+    if (!computed(x) && !computed(y)) {
+      return undefined;
+    }
+
+    const memberList = (value: unknown, index: number): string | null => {
+      const expression = isObject(value) && typeof value.cel === "string" ? value.cel.replace(/\s+/g, "") : "";
+      const match = /^self\.([A-Za-z_][A-Za-z0-9_]*)\.map\(([A-Za-z_][A-Za-z0-9_]*),\2\.view\.bounds\.center\(\)\[(\d)\]\)\.avg\(\)$/.exec(expression);
+      return match !== null && Number(match[3]) === index ? match[1]! : null;
+    };
+    const across = memberList(x, 0);
+    if (across === null || across !== memberList(y, 1)) {
+      return fail(`node "${name}" is placed at ${JSON.stringify({ x, y })}; the library places a node at the centre of the members one attribute lists.`);
+    }
+
+    return `payload.${across}`;
+  }
+
+  /**
+   * A CEL condition as the library's: the module's `celConditions`, else `self.<attribute>` (true),
+   * `!self.<attribute>` (false) or `self.<attribute> == '<text>'`. Anything else is refused, naming it.
+   */
+  private condition(expression: string, where: string): Condition {
+    const bound = this.bindings.celConditions?.[expression];
+    if (bound !== undefined) {
+      return bound;
+    }
+
+    const flag = /^(!?)self\.([A-Za-z_][A-Za-z0-9_]*)$/.exec(expression);
+    if (flag !== null) {
+      return { path: `payload.${flag[2]}`, is: flag[1] === "!" ? "false" : "true" };
+    }
+
+    const equals = /^self\.([A-Za-z_][A-Za-z0-9_]*)\s*==\s*'([^'\\]*)'$/.exec(expression);
+    if (equals !== null) {
+      return { path: `payload.${equals[1]}`, equals: equals[2]! };
+    }
+
+    return fail(`${where}: the condition "${expression}" has no entry in the module's celConditions.`);
+  }
+
+  /** A `visible` as a condition, or none where it is always drawn. */
+  private visibility(visible: boolean | string | { cel: string } | undefined, where: string): Condition | undefined {
+    if (visible === undefined || visible === true) {
+      return undefined;
+    }
+
+    const expression = typeof visible === "string" ? visible : isObject(visible) ? visible.cel : undefined;
+    return expression === undefined ? fail(`${where} is never visible.`) : this.condition(expression.trim(), `${where} visible`);
   }
 
   private shape(name: string, node: DislNodeNotation): { shape: BuiltInShape; segments?: SegmentDeclaration } {
@@ -491,12 +718,14 @@ class Compiler {
     return segments !== undefined ? { shape: binding.shape, segments } : { shape: binding.shape };
   }
 
-  private label(type: string, label: DislLabel): LabelDeclaration {
+  private label(type: string, label: DislLabel, bodyless = false): LabelDeclaration {
     const where = `node "${type}" label "${label.id}"`;
     const declaration: Record<string, unknown> = { text: this.binding(label.text, where) };
 
     const position = label.position;
-    if (position === "outside-left") {
+    if (bodyless && position === "bottom") {
+      // A body-less node has no box to write at the bottom of: its last line is on its point, beneath its icon.
+    } else if (position === "outside-left") {
       if (label.distance !== undefined && label.distance !== BEFORE_GAP) {
         fail(`${where} sits ${label.distance} before its node; the library's before label sits ${BEFORE_GAP}.`);
       }
@@ -625,6 +854,11 @@ class Compiler {
       return { kind: "compass", positions, ...(drawnFrom === "outline" ? { attachDrawnBy: "edge" as const } : {}), visible: false };
     }
 
+    if (anchors?.mode === "outline") {
+      // Anywhere on the outline, where a line from the other end's centre crosses it: the library's edge rule.
+      return { kind: "edge" };
+    }
+
     if (anchors?.mode === "sides") {
       const sides = [...(anchors.sides ?? ["top", "right", "bottom", "left"])].sort().join(",");
       const edgeSides = sides === "bottom,top" ? "vertical" : sides === "left,right" ? "horizontal" : sides === "bottom,left,right,top" ? undefined : fail(`node "${name}" attaches on ${sides}, which the library's edge anchors cannot narrow to.`);
@@ -723,14 +957,17 @@ class Compiler {
     const lineClassName = this.bindings.relationLineClassName?.(name);
     const hitClassName = this.bindings.relationHitClassName?.(name);
     const customRoute = this.bindings.customRoutes?.[name];
+    const along = this.alongTheLine(name, edge, routing);
     const label = this.edgeLabel(name, edge);
+    const strokeLadder = this.strokeLadder(name, edge);
 
     // Only a type that may hold children can be the parent end of a relation derived from containment.
     const derivedFromParent = isObject(relation.derived) && relation.derived.source === "item.parent";
     const sourceTypes = typeList(relation.source).flatMap((type) => this.concreteTypes(type)).filter((type) => !derivedFromParent || this.holdsChildren(type));
     const targetTypes = typeList(relation.target).flatMap((type) => this.concreteTypes(type));
     const endpoint = (types: readonly string[], end: "source" | "target"): EndpointConstraint => {
-      const anchors = this.bindings.endpointAnchors?.(name, end) ?? this.startingAnchors(edge, types, end);
+      // An end anchored on the outline attaches where the line crosses it: the library's edge rule.
+      const anchors = this.bindings.endpointAnchors?.(name, end) ?? this.startingAnchors(edge, types, end) ?? (edge.anchoring?.[end]?.mode === "outline" ? "edge" as const : undefined);
       return { elementTypes: types.map((type) => this.typeId(type)), ...(anchors !== undefined ? { anchors } : {}) };
     };
 
@@ -741,8 +978,10 @@ class Compiler {
 
     return {
       id: this.typeId(name),
-      route: customRoute ?? libraryRouteOf(routing),
-      style: { ...(source !== "none" ? { startMarker: libraryMarkerOf(source) } : {}), endMarker: libraryMarkerOf(target) },
+      route: customRoute ?? (along !== undefined ? bowedArcRoute(along) : libraryRouteOf(routing)),
+      style: { ...(source !== "none" ? { startMarker: this.marker(source) } : {}), endMarker: this.marker(target) },
+      ...(along !== undefined && ((along.bars?.length ?? 0) > 0 || (along.marks?.length ?? 0) > 0) ? { adorn: bowedArcAdornment(along) } : {}),
+      ...(strokeLadder !== undefined ? { strokeLadder } : {}),
       ...(className !== undefined ? { className } : {}),
       ...(lineClassName !== undefined ? { lineClassName } : {}),
       ...(hitClassName !== undefined ? { hitClassName } : {}),
@@ -783,6 +1022,132 @@ class Compiler {
     }
 
     return undefined;
+  }
+
+  /** A DISL marker as the library draws it: the module's override, else the library's reading of the name. */
+  private marker(marker: string): MarkerKind {
+    return this.bindings.builtInMarkers?.[marker] ?? libraryMarkerOf(marker);
+  }
+
+  /**
+   * A curved line (DISL §6.10 `curved`) as a bowed arc, with what the notation rides along it: the
+   * variants that bow it the other way, its loop to its own node, the bars of its `midMarkers` and
+   * the marks of its labels placed at a fraction. Those two are drawn against the arc's own geometry,
+   * so a line of any other routing that states one is refused.
+   */
+  private alongTheLine(name: string, edge: DislEdgeNotation, routing: string): BowedArcDeclaration | undefined {
+    const where = `edge "${name}"`;
+    const midMarkers = edge.midMarkers ?? [];
+    const marks = (edge.labels ?? []).filter((label) => typeof label.at === "number");
+    if (routing !== "curved") {
+      if (midMarkers.length > 0 || marks.length > 0) {
+        fail(`${where} draws ${midMarkers.length > 0 ? "markers" : "labels at a fraction"} along a "${routing}" line; the library draws them along a curved one only.`);
+      }
+      return undefined;
+    }
+
+    const line = (edge.line ?? {}) as Readonly<Record<string, unknown>>;
+    // DISL leaves a curve's default bow to the host: the library's is a fifth of the chord.
+    const bow = typeof line.curvature === "number" ? line.curvature : ArcBow;
+    const variants = (edge.variants ?? []).map((variant, index) => this.bowVariant(variant, `${where} variant ${index + 1}`));
+    const selfLoop = edge.selfLoop;
+    if (selfLoop !== undefined && ((selfLoop.shape ?? "arc") !== "arc" || (selfLoop.side ?? "top") !== "top")) {
+      fail(`${where} loops to its own node as ${JSON.stringify(selfLoop)}; the library draws that loop as an arc above the node.`);
+    }
+
+    const bars = this.bars(name, midMarkers);
+    const drawn = marks.map((label) => this.mark(name, label));
+    return {
+      bow,
+      ...(variants.length > 0 ? { variants } : {}),
+      ...(selfLoop?.size !== undefined ? { selfLoopRadius: selfLoop.size } : {}),
+      ...(bars.length > 0 ? { bars } : {}),
+      ...(drawn.length > 0 ? { marks: drawn } : {}),
+    };
+  }
+
+  /** A variant that bows a curved line otherwise while its condition holds; any other change is refused. */
+  private bowVariant(variant: unknown, where: string): { when: Condition; bow: number } {
+    const shape = isObject(variant) ? variant : {};
+    const line = isObject(shape.line) ? shape.line : {};
+    const others = [...Object.keys(shape).filter((key) => !["when", "doc", "line"].includes(key)), ...Object.keys(line).filter((key) => !["routing", "curvature", "bendpoints"].includes(key))];
+    if (typeof shape.when !== "string" || typeof line.curvature !== "number" || (line.routing ?? "curved") !== "curved" || others.length > 0) {
+      return fail(`${where} changes ${JSON.stringify(variant)}; the library draws a variant of a curved line as the same curve bowed otherwise.`);
+    }
+
+    return { when: this.condition(shape.when.trim(), where), bow: line.curvature };
+  }
+
+  /**
+   * The bars of a line's `midMarkers` (DISL §6.10): each a `bar` of a width, at a fraction, oriented by
+   * the line. Neighbours of one width shown under one condition are drawn as one group - the strokes of
+   * a delay mark. Any other marker is refused.
+   */
+  private bars(name: string, markers: readonly DislMidMarker[]): ArcBarsDeclaration[] {
+    const classes = this.bindings.midMarkerClassNames?.(name) ?? {};
+    const groups: ArcBarsDeclaration[] = [];
+    let key: string | undefined;
+    for (const marker of markers) {
+      const type = typeof marker.marker === "string" ? marker.marker : marker.marker.type;
+      const width = typeof marker.marker === "string" ? undefined : marker.marker.params?.width;
+      if (type !== "bar" || typeof width !== "number" || (marker.orient ?? "auto") !== "auto") {
+        fail(`edge "${name}" draws the marker ${JSON.stringify(marker.marker)} oriented "${String(marker.orient)}"; the library draws a bar of a width across the line.`);
+      }
+
+      const when = this.visibility(marker.visible, `edge "${name}" marker at ${marker.at}`);
+      const next = JSON.stringify([width, when]);
+      if (next !== key) {
+        groups.push({ at: [], length: width, ...(when !== undefined ? { when } : {}), ...(classes.group !== undefined ? { className: classes.group } : {}), ...(classes.marker !== undefined ? { barClassName: classes.marker } : {}) });
+        key = next;
+      }
+      (groups[groups.length - 1]!.at as number[]).push(marker.at);
+    }
+
+    return groups;
+  }
+
+  /** A label at a fraction of a curved line, beside it on the left or the right of travel: a mark the line carries. */
+  private mark(name: string, label: DislEdgeLabel): ArcMarkDeclaration {
+    const where = `edge "${name}" label "${label.id}"`;
+    const side = label.side ?? "left";
+    if ((side !== "left" && side !== "right") || (label.orientation ?? "horizontal") !== "horizontal" || (label.editable !== undefined && label.editable !== false)) {
+      fail(`${where} sits ${JSON.stringify({ side: label.side, orientation: label.orientation, editable: label.editable })}; the library writes a mark beside a curved line, upright, on its left or right, and never edits one.`);
+    }
+
+    const className = this.bindings.edgeLabelClassName?.(name, label.id);
+    return {
+      text: this.binding(label.text, where) as ArcMarkDeclaration["text"],
+      at: label.at as number,
+      side,
+      distance: label.distance ?? 0,
+      ...(className !== undefined ? { className } : {}),
+    };
+  }
+
+  /**
+   * A line's computed stroke width (DISL §6.10 `line.stroke.width` as CEL) as a ladder of thresholds on
+   * one attribute: `!has(self.a) ? w : (self.a >= x ? w1 : (self.a <= y ? w2 : w3))`, nested as deep
+   * as it likes, each test `!has(self.a)` or `self.a` against a number. Each width it gives is painted
+   * by the class the module names for it. A fixed width is a style, which the stylesheet paints.
+   */
+  private strokeLadder(name: string, edge: DislEdgeNotation): StrokeLadder | undefined {
+    const stroke = isObject(edge.line?.stroke) ? edge.line.stroke : undefined;
+    const width = stroke?.width;
+    if (!isObject(width)) {
+      return undefined;
+    }
+
+    const where = `edge "${name}" stroke width`;
+    const expression = typeof width.cel === "string" ? width.cel : fail(`${where} binds ${JSON.stringify(width)}; the library reads a computed width as CEL.`);
+    const attributes = new Set<string>();
+    const ladder = strokeLadderOf(expression, attributes, where);
+    if (attributes.size !== 1) {
+      fail(`${where} "${expression}" chooses by ${attributes.size} attributes; the library chooses a width by thresholds on one.`);
+    }
+
+    const widths = new Set([...ladder.rungs.map((rung) => rung.width), ladder.otherwise]);
+    const classNames = Object.fromEntries([...widths].map((each) => [String(each), this.bindings.strokeWidthClassName?.(name, each) ?? fail(`${where} gives ${each}, which the module's strokeWidthClassName paints with no class.`)]));
+    return { path: `payload.${[...attributes][0]!}`, rungs: ladder.rungs, otherwise: ladder.otherwise, classNames };
   }
 
   // ---- lists and badges (DISL 0.4) ----------------------------------------------------------
@@ -959,7 +1324,8 @@ class Compiler {
    * distance. The text is the connection's own label, which the model carries; only an attribute can be it.
    */
   private edgeLabel(name: string, edge: DislEdgeNotation): RouteLabelRule | undefined {
-    const labels = edge.labels ?? [];
+    // A label at a fraction of a curved line is a mark along it, which `alongTheLine` reads.
+    const labels = (edge.labels ?? []).filter((label) => typeof label.at !== "number");
     if (labels.length === 0) {
       return undefined;
     }
@@ -1288,7 +1654,7 @@ class Compiler {
 
   /**
    * The canvas's layout mode for a layout algorithm: the standard `rowPacked` (DISL 0.3 §10.1) packs rows;
-   * the host computes `rows` (§10.2), `tidyTree` (§10.3) and a plugin's layout and sends positions, and
+   * the host computes `rows` (§10.2), `tidyTree` (§10.3), `circular` and a plugin's layout and sends positions, and
    * `none` leaves them where they are, so the canvas draws them by hand.
    */
   private layoutMode(algorithmName: string | undefined): LayoutMode {
@@ -1301,7 +1667,7 @@ class Compiler {
       return "row-packed";
     }
 
-    if (algorithm.algorithm.startsWith("plugin:") || ["none", "rows", "tidyTree"].includes(algorithm.algorithm)) {
+    if (algorithm.algorithm.startsWith("plugin:") || ["none", "rows", "tidyTree", "circular"].includes(algorithm.algorithm)) {
       return "manual";
     }
 

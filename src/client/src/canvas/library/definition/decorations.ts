@@ -35,6 +35,22 @@ import type {
  * Resolution is pure, like `layoutLabels`, so the acceptance can be asserted without a canvas.
  */
 
+/**
+ * A near-complete circle with a gap for its arrowhead, opening at its top: a feedback loop's marker.
+ * Two arcs rather than one, because a single SVG elliptical arc cannot exceed a half turn without the
+ * large-arc flag. Clockwise, it sweeps from the top to the right; mirrored, to the left.
+ */
+export function circularArrowPath(centreX: number, centreY: number, radius: number, clockwise: boolean): string {
+  const sweep = clockwise ? 1 : 0;
+  const start = -Math.PI / 2;
+  const end = start + (clockwise ? 1 : -1) * Math.PI * 1.7;
+  const middle = (start + end) / 2;
+
+  const at = (angle: number) => `${(centreX + radius * Math.cos(angle)).toFixed(2)} ${(centreY + radius * Math.sin(angle)).toFixed(2)}`;
+
+  return `M ${at(start)} A ${radius} ${radius} 0 0 ${sweep} ${at(middle)} A ${radius} ${radius} 0 0 ${sweep} ${at(end)}`;
+}
+
 /** One decoration, resolved and ready to draw. Geometry is absolute canvas units. */
 export interface ResolvedDecoration {
   glyph: DecorationGlyph;
@@ -125,14 +141,17 @@ export function resolveDecorations(
     }
 
     const from = pointOf(declaration.from, source, centre, declaration.anchor);
+    const radius = numberOf(declaration.radius, source, 0);
     resolved.push({
       glyph: declaration.glyph,
       from,
       to: pointOf(declaration.to, source, from, declaration.anchor),
-      radius: numberOf(declaration.radius, source, 0),
+      radius,
       width: numberOf(declaration.width, source, 0),
       height: numberOf(declaration.height, source, 0),
-      d: declaration.d ? (resolveOne(declaration.d, source) ?? undefined) : undefined,
+      d: declaration.glyph === "circular-arrow"
+        ? circularArrowPath(from.x, from.y, radius, !holds(declaration.mirrored, source))
+        : declaration.d ? (resolveOne(declaration.d, source) ?? undefined) : undefined,
       marker: declaration.marker,
       text: declaration.text ? (resolveOne(declaration.text, source) ?? undefined) : undefined,
       textAt: pointOf(declaration.textAt, source, from, declaration.anchor),
