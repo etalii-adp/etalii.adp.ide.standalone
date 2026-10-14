@@ -1,5 +1,6 @@
 using System.Globalization;
 using EtAlii.Adp.Context;
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.History;
 
@@ -23,6 +24,11 @@ namespace EtAlii.Adp.Diagram.WardleyMap;
 /// deliberately - so a row that is not here means the document does not say it.
 /// </para>
 /// <para>
+/// On the shared frame (code-structure FR-034). The rows that are an action's - the name, the
+/// evolution target, inertia - make their command through that action's record in
+/// <see cref="WardleyActions"/>, so a row and a menu entry cannot mean two different things.
+/// </para>
+/// <para>
 /// <b>Every read-only reason is a full sentence, and none is blank.</b> Both
 /// <see cref="ContextPropertyDefinition.IsEditable"/> and the client's row test the reason's
 /// LENGTH, so a reason of <c>" "</c> would render the row editable and let the write through.
@@ -30,7 +36,8 @@ namespace EtAlii.Adp.Diagram.WardleyMap;
 /// when it refuses a write, so it has to read as both a label and a refusal.
 /// </para>
 /// </remarks>
-public sealed class WardleyContextPropertyProvider : IContextPropertyProvider
+public sealed class WardleyContextPropertyProvider(IHistoryStackStore historyStacks, IWardleyDocumentStore documents)
+    : DiagramPropertyProvider<WardleyDocument, WardleyMap>(historyStacks, documents)
 {
     public const string NamePropertyId = "wardley.name";
     public const string KindPropertyId = "wardley.kind";
@@ -86,50 +93,32 @@ public sealed class WardleyContextPropertyProvider : IContextPropertyProvider
     private const string ChildVisibilityReason =
         "A pipeline child takes its visibility from its parent, so it is not its own. Change it on '{0}'.";
 
-    private readonly IHistoryStackStore _historyStacks;
-    private readonly IWardleyDocumentStore _documents;
+    /// <inheritdoc />
+    protected override bool IsBody(string path) => Diagram.IsBody(path);
 
-    public WardleyContextPropertyProvider(IHistoryStackStore historyStacks, IWardleyDocumentStore documents)
-    {
-        ArgumentNullException.ThrowIfNull(historyStacks);
-        ArgumentNullException.ThrowIfNull(documents);
-        _historyStacks = historyStacks;
-        _documents = documents;
-    }
+    /// <summary>An element of a map of this module's; the map itself has no rows.</summary>
+    protected override bool Serves(ContextTarget target) =>
+        base.Serves(target) && target.ElementId.Length > 0;
 
-    public ContextScope Scope => ContextScope.DiagramElement;
-
-    public ValueTask<IReadOnlyList<ContextPropertyDefinition>> DescribeAsync(
-        ContextTarget target,
-        CancellationToken cancellationToken)
+    /// <inheritdoc />
+    protected override IReadOnlyList<ContextPropertyDefinition> Describe(ContextTarget target, DocumentEntry<WardleyDocument, WardleyMap> entry)
     {
         ArgumentNullException.ThrowIfNull(target);
-        cancellationToken.ThrowIfCancellationRequested();
+        ArgumentNullException.ThrowIfNull(entry);
 
-        // Every provider in this scope is consulted for every element in it, including elements
-        // of other diagram types - so the first question is whether this file is one of ours.
-        if (target.Scope != ContextScope.DiagramElement || target.ElementId.Length == 0 ||
-            !Diagram.IsBody(target.ResolvedFullPath))
+        var subject = Subject(target, entry.Model);
+        if (subject.Entry is not { } identity)
         {
-            return None();
+            return [];
         }
 
-        var map = _documents.GetOrLoad(target.ResolvedFullPath).Model;
-        var entry = _documents
-            .Identities(target.ResolvedFullPath)
-            .FirstOrDefault(candidate => candidate.Id == target.ElementId);
-
-        if (entry is null)
+        var map = subject.Map;
+        var rows = identity.Kind switch
         {
-            return None();
-        }
-
-        var rows = entry.Kind switch
-        {
-            WardleyIdentityKind.Component => ForComponent(map, entry),
-            WardleyIdentityKind.PipelineChild => ForPipelineChild(map, entry),
-            WardleyIdentityKind.Link => ForLink(map, entry),
-            WardleyIdentityKind.Pipeline => ForPipeline(map, entry),
+            WardleyIdentityKind.Component => ForComponent(map, identity),
+            WardleyIdentityKind.PipelineChild => ForPipelineChild(map, identity),
+            WardleyIdentityKind.Link => ForLink(map, identity),
+            WardleyIdentityKind.Pipeline => ForPipeline(map, identity),
             _ => [],
         };
 
@@ -137,122 +126,114 @@ public sealed class WardleyContextPropertyProvider : IContextPropertyProvider
         // must answer what the element IS - but nothing is editable, and each row says why.
         // Kept short and uniform, because otherwise every row repeats a paragraph.
         return WardleyEditability.Editable(target.ResolvedFullPath)
-            ? Some(rows)
-            : Some(rows.Select(row => row with { ReadOnlyReason = WardleyEditability.Reason }).ToArray());
+            ? rows
+            : rows.Select(row => row with { ReadOnlyReason = WardleyEditability.Reason }).ToArray();
     }
 
-    public async ValueTask<ContextPropertyResult> SetAsync(
-        ContextTarget target,
-        string propertyId,
-        string value,
-        CancellationToken cancellationToken)
+    /// <inheritdoc />
+    protected override DiagramPropertyChange Change(ContextTarget target, WardleyMap model, string propertyId, string value)
     {
         ArgumentNullException.ThrowIfNull(target);
 
         if (!Diagram.IsBody(target.ResolvedFullPath))
         {
-            return ContextPropertyResult.Failure("That element is not on a Wardley map.");
+            return DiagramPropertyChange.Refused("That element is not on a Wardley map.");
         }
 
         if (!WardleyEditability.Editable(target.ResolvedFullPath))
         {
-            return ContextPropertyResult.Failure(WardleyEditability.Reason);
+            return DiagramPropertyChange.Refused(WardleyEditability.Reason);
         }
 
-        var bodyPath = target.ResolvedFullPath;
-        var map = _documents.GetOrLoad(bodyPath).Model;
-        var entry = _documents.Identities(bodyPath).FirstOrDefault(candidate => candidate.Id == target.ElementId);
-        if (entry is null)
+        var subject = Subject(target, model);
+        if (subject.Entry is not { } entry)
         {
-            return ContextPropertyResult.Failure(Gone);
+            return DiagramPropertyChange.Refused(Gone);
         }
 
-        var component = ComponentOf(map, entry);
-        var child = FindChild(map, entry);
+        var bodyPath = subject.BodyPath;
+        var component = subject.Component;
+        var child = subject.Child;
 
         switch (propertyId)
         {
             case NamePropertyId when component is not null:
-                return await Dispatch(target, new RenameWardleyElementCommand(bodyPath, entry.Id, value.Trim()), cancellationToken);
+                return Run(WardleyContextActionProvider.RenameActionId, subject, value);
 
             case VisibilityPropertyId when component is not null:
                 return TryCoordinate(value, out var visibility, out var visibilityError)
-                    ? await Dispatch(target, new MoveWardleyElementCommand(bodyPath, entry.Id, visibility, component.Position.Maturity), cancellationToken)
-                    : ContextPropertyResult.Failure(visibilityError);
+                    ? DiagramPropertyChange.By(new MoveWardleyElementCommand(bodyPath, entry.Id, visibility, component.Position.Maturity))
+                    : DiagramPropertyChange.Refused(visibilityError);
 
             case MaturityPropertyId when component is not null:
                 return TryCoordinate(value, out var maturity, out var maturityError)
-                    ? await Dispatch(target, new MoveWardleyElementCommand(bodyPath, entry.Id, component.Position.Visibility, maturity), cancellationToken)
-                    : ContextPropertyResult.Failure(maturityError);
+                    ? DiagramPropertyChange.By(new MoveWardleyElementCommand(bodyPath, entry.Id, component.Position.Visibility, maturity))
+                    : DiagramPropertyChange.Refused(maturityError);
 
             case MaturityPropertyId when child is not null:
                 // A child's visibility is its parent's, so only this half of the pair moves
                 // (Requirement 5.4); the move command already knows that.
                 return TryCoordinate(value, out var childMaturity, out var childError)
-                    ? await Dispatch(target, new MoveWardleyElementCommand(bodyPath, entry.Id, 0d, childMaturity), cancellationToken)
-                    : ContextPropertyResult.Failure(childError);
+                    ? DiagramPropertyChange.By(new MoveWardleyElementCommand(bodyPath, entry.Id, 0d, childMaturity))
+                    : DiagramPropertyChange.Refused(childError);
 
+            // Emptying the row clears the statement, which is the row's own way of saying "this
+            // is no longer heading anywhere".
             case EvolvePropertyId when component is not null:
-                {
-                    var evolve = map.Evolves.FirstOrDefault(candidate => candidate.Name == component.Name);
-
-                    // Emptying the row clears the statement, which is the row's own way of
-                    // saying "this is no longer heading anywhere".
-                    if (string.IsNullOrWhiteSpace(value))
-                    {
-                        return await Dispatch(target, new SetWardleyEvolveCommand(bodyPath, entry.Id, Present: false, 0d), cancellationToken);
-                    }
-
-                    return TryCoordinate(value, out var evolveTarget, out var evolveError)
-                        ? await Dispatch(target, new SetWardleyEvolveCommand(bodyPath, entry.Id, Present: true, evolveTarget, evolve?.Override ?? ""), cancellationToken)
-                        : ContextPropertyResult.Failure(evolveError);
-                }
+                return string.IsNullOrWhiteSpace(value)
+                    ? Run(WardleyContextActionProvider.ClearEvolveActionId, subject, "")
+                    : Run(WardleyContextActionProvider.SetEvolveActionId, subject, value);
 
             case EvolveNamePropertyId when component is not null:
-                {
-                    var evolve = map.Evolves.FirstOrDefault(candidate => candidate.Name == component.Name);
-                    return evolve is null
-                        ? ContextPropertyResult.Failure($"'{component.Name}' is not evolving, so it has no name to arrive under.")
-                        : await Dispatch(target, new SetWardleyEvolveCommand(bodyPath, entry.Id, Present: true, evolve.Maturity, value.Trim()), cancellationToken);
-                }
+                return subject.Evolve is { } evolve
+                    ? DiagramPropertyChange.By(new SetWardleyEvolveCommand(bodyPath, entry.Id, Present: true, evolve.Maturity, value.Trim()))
+                    : DiagramPropertyChange.Refused($"'{component.Name}' is not evolving, so it has no name to arrive under.");
 
             case InertiaPropertyId when component is not null:
-                return await Dispatch(
-                    target,
-                    new SetWardleyInertiaCommand(bodyPath, entry.Id, string.Equals(value, "true", StringComparison.OrdinalIgnoreCase)),
-                    cancellationToken);
+                return Run(WardleyContextActionProvider.ToggleInertiaActionId, subject, value.Length == 0 ? "false" : value);
 
             case DecoratorsPropertyId when component is not null:
                 {
                     var decorators = WardleyDecorators.Parse(value, out var unknown);
                     return decorators is null
-                        ? ContextPropertyResult.Failure($"'{unknown}' is not one of this notation's decorators. They are: {WardleyDecorators.Vocabulary}.")
-                        : await Dispatch(target, new SetWardleyDecoratorsCommand(bodyPath, entry.Id, decorators), cancellationToken);
+                        ? DiagramPropertyChange.Refused($"'{unknown}' is not one of this notation's decorators. They are: {WardleyDecorators.Vocabulary}.")
+                        : DiagramPropertyChange.By(new SetWardleyDecoratorsCommand(bodyPath, entry.Id, decorators));
                 }
 
             case LinkContextPropertyId:
-                {
-                    var link = map.Links.FirstOrDefault(candidate => WardleyIdentityKeys.Of(candidate) == entry.Key);
-                    if (link is null)
-                    {
-                        return ContextPropertyResult.Failure(Gone);
-                    }
-
-                    var identities = _documents.Identities(bodyPath);
-
-                    return await Dispatch(
-                        target,
-                        new SetWardleyLinkCommand(bodyPath, IdOf(link.Source), IdOf(link.Target), link.Kind, Present: true, value.Trim()),
-                        cancellationToken);
-
-                    string IdOf(string name) => identities
-                        .FirstOrDefault(candidate => candidate.Kind == WardleyIdentityKind.Component && candidate.Key == name)?.Id ?? "";
-                }
+                return LinkOf(subject) is { } link
+                    ? DiagramPropertyChange.By(new SetWardleyLinkCommand(bodyPath, subject.IdOf(link.Source), subject.IdOf(link.Target), link.Kind, Present: true, value.Trim()))
+                    : DiagramPropertyChange.Refused(Gone);
 
             default:
-                return ContextPropertyResult.Failure(ReasonFor(propertyId));
+                return DiagramPropertyChange.Refused(ReasonFor(propertyId));
         }
+
+        static WardleyLink? LinkOf(WardleySubject subject) =>
+            subject.Map.Links.FirstOrDefault(candidate => WardleyIdentityKeys.Of(candidate) == subject.Entry!.Key);
     }
+
+    /// <summary>The change the action <paramref name="actionId"/> makes of <paramref name="value"/>, refused as the action refuses it.</summary>
+    private static DiagramPropertyChange Run(string actionId, WardleySubject subject, string value)
+    {
+        var action = WardleyActions.All.Applying(actionId, subject);
+        if (action is null)
+        {
+            return DiagramPropertyChange.Refused(Gone);
+        }
+
+        if (action.Validate(value) is { Valid: false } refused)
+        {
+            return DiagramPropertyChange.Refused(refused.Reason);
+        }
+
+        return action.Command(subject, value) is { } command
+            ? DiagramPropertyChange.By(command)
+            : DiagramPropertyChange.Refused(Gone);
+    }
+
+    private WardleySubject Subject(ContextTarget target, WardleyMap model) =>
+        WardleySubject.Of(target.ResolvedFullPath, model, documents, target.ElementId);
 
     // ---- what is shown ------------------------------------------------------------------------
 
@@ -431,11 +412,6 @@ public sealed class WardleyContextPropertyProvider : IContextPropertyProvider
 
     // ---- plumbing -----------------------------------------------------------------------------
 
-    private static WardleyComponent? ComponentOf(WardleyMap map, WardleyIdentityEntry entry) =>
-        entry.Kind != WardleyIdentityKind.Component
-            ? null
-            : map.Components.FirstOrDefault(candidate => WardleyIdentityKeys.Of(candidate) == entry.Key);
-
     private static (WardleyPipeline Pipeline, WardleyPipelineChild Child)? FindChild(WardleyMap map, WardleyIdentityEntry entry)
     {
         if (entry.Kind != WardleyIdentityKind.PipelineChild)
@@ -505,19 +481,4 @@ public sealed class WardleyContextPropertyProvider : IContextPropertyProvider
     };
 
     private static string Number(double value) => value.ToString("0.####", CultureInfo.InvariantCulture);
-
-    private async ValueTask<ContextPropertyResult> Dispatch(
-        ContextTarget target,
-        ICommand command,
-        CancellationToken cancellationToken)
-    {
-        var result = await _historyStacks.Get(target.RootPath).ExecuteAsync(command, cancellationToken);
-        return result.IsSuccess ? ContextPropertyResult.Success : ContextPropertyResult.Failure(result.Error);
-    }
-
-    private static ValueTask<IReadOnlyList<ContextPropertyDefinition>> None() =>
-        ValueTask.FromResult<IReadOnlyList<ContextPropertyDefinition>>([]);
-
-    private static ValueTask<IReadOnlyList<ContextPropertyDefinition>> Some(IReadOnlyList<ContextPropertyDefinition> rows) =>
-        ValueTask.FromResult(rows);
 }
