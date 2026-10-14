@@ -25,6 +25,11 @@ namespace EtAlii.Adp.Diagram.WardleyMap;
 /// the map is drawn against rather than a thing the map contains, and offering it would put a
 /// row of band boundaries in the property grid.
 /// </para>
+/// <para>
+/// <b>It stays off the shared resolver</b> (code-structure FR-032): a Wardley element's id is the
+/// store's identity for it, kept per document beside the map, and the shared resolver describes an
+/// element from the model alone.
+/// </para>
 /// </remarks>
 public sealed class WardleyContextSourceResolver : IContextSourceResolver
 {

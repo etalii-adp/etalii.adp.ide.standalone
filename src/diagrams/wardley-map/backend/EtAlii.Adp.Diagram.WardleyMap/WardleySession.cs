@@ -1,6 +1,4 @@
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
-using Serilog;
 
 namespace EtAlii.Adp.Diagram.WardleyMap;
 
@@ -9,201 +7,65 @@ namespace EtAlii.Adp.Diagram.WardleyMap;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Core owns the stream, the authorization and the connection lifetime. This owns what the map
-/// <em>is</em> and expresses every change as a <see cref="DiagramDelta"/>.
+/// Following the store, the baseline, the viewport answers, the diff and the dispatch of a drag
+/// are the shared session's (code-structure FR-031); what is the map's own is what it draws, the
+/// pipeline groups its baseline carries, and how a drop becomes a position on the map's axes.
 /// </para>
 /// <para>
-/// <b>It filters by viewport</b> (view-delta-adoption Requirement 1). This used to answer
-/// <see cref="UpdateView"/> with nothing, on the judgement that a bounded space of tens of
-/// elements has nothing to virtualize - reasonable locally, and superseded: the loop is what
-/// lets a reader zoomed into one corner of a large map stop paying for the rest, and a module
-/// that declines it is a module whose readers cannot.
+/// <b>It filters by viewport</b> (view-delta-adoption Requirement 1). The viewport arrives in the
+/// map's own 0..1 space, which is this module's unit and stays its business; the shared client code
+/// converts nothing (Requirement 3.4). What is visible is <see cref="WardleyElementMapper.Visible"/>'s
+/// decision.
 /// </para>
 /// <para>
-/// The viewport arrives in the map own 0..1 space, which is this module unit and stays its
-/// business; the shared client code converts nothing (Requirement 3.4). What is visible is
-/// <see cref="WardleyElementMapper.Visible"/>'s decision, and this class only diffs one answer
-/// against the last.
+/// <b>An element's id is the store's identity for it</b>, kept per document beside the map, so
+/// what is drawn is read with the identities of this session's document.
 /// </para>
 /// </remarks>
-public sealed class WardleySession : IDiagramSession
+public sealed class WardleySession : DocumentDiagramSession<WardleyDocument, WardleyMap>
 {
-    private static readonly ILogger _logger = Log.ForContext<WardleySession>();
-
-    private readonly string _bodyPath;
     private readonly IWardleyDocumentStore _documents;
     private readonly WardleyElementMapper _mapper;
 
-    /// <summary>The project's history, so a drag is one undo away. Null makes the map read-only.</summary>
-    private readonly IHistoryStack? _history;
-
-    /// <summary>What this connection was last sent, so a change can be diffed against it.</summary>
-    private IReadOnlyList<DiagramElement> _delivered = [];
-
-    /// <summary>
-    /// The rectangle this connection last reported, in the map own 0..1 space. Unbounded until a
-    /// report arrives, so a baseline delivers the whole map exactly as it did before this filter
-    /// existed - a connection that never reports one is never worse off.
-    /// </summary>
-    private DiagramViewport _viewport = DiagramViewport.Unbounded;
-
+    /// <param name="bodyPath">The map this session shows.</param>
+    /// <param name="documents">The store every Wardley session shares.</param>
+    /// <param name="mapper">What the map looks like on the canvas.</param>
+    /// <param name="history">The project's history, so a drag is one undo away. Null makes the map read-only.</param>
     public WardleySession(
         string bodyPath,
         IWardleyDocumentStore documents,
         WardleyElementMapper mapper,
         IHistoryStack? history = null)
+        : base(bodyPath, documents, history)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(bodyPath);
-        ArgumentNullException.ThrowIfNull(documents);
         ArgumentNullException.ThrowIfNull(mapper);
 
-        _bodyPath = bodyPath;
         _documents = documents;
         _mapper = mapper;
-        _history = history;
-        _documents.Changed += OnDocumentChanged;
     }
 
-    public event EventHandler<DiagramDeltasEventArgs>? Changed;
+    /// <inheritdoc />
+    protected override string ParentRefusal => "Dragging a component changes where it sits on the map, not what contains it.";
 
-    public IReadOnlyList<DiagramDelta> Baseline()
-    {
-        var elements = Visible();
-        _delivered = elements;
+    /// <inheritdoc />
+    protected override string ReadOnlyRefusal => "This map is read-only.";
 
-        // One message rather than a stream of per-element ones: the whole map is delivered
-        // anyway, so there is nothing to page (Requirement 10.5, and the Performance section).
-        var deltas = new List<DiagramDelta>();
-        if (elements.Count > 0)
-        {
-            deltas.Add(new DiagramAddDelta(elements));
-        }
+    /// <inheritdoc />
+    protected override IReadOnlyList<DiagramElement> Render(WardleyMap model, DiagramViewport viewport) =>
+        _mapper.Visible(model, _documents.Identities(BodyPath), viewport);
 
-        deltas.AddRange(Groups());
-        return deltas;
-    }
+    /// <summary>One group per pipeline, sent once with the baseline (Requirement 10.5).</summary>
+    protected override IReadOnlyList<DiagramDelta> Groups(WardleyMap model) =>
+        _mapper.Group(model, _documents.Identities(BodyPath));
 
     /// <summary>
-    /// The reader moved: answer with what appeared and what left.
+    /// A drop moves the element to a position (Requirement 7.2). The canvas point is converted back
+    /// into the document's own axes here, through the one function that may do it; the command's
+    /// handler clamps it to the map.
     /// </summary>
-    /// <remarks>
-    /// Diffed against <see cref="_delivered"/> rather than against a re-rendering under the old
-    /// viewport. Both give the same answer while the two agree, and only this one stays right when
-    /// they do not - a document change between two reports goes out through
-    /// <see cref="OnDocumentChanged"/> and moves what this connection holds, which a recomputation
-    /// from the previous rectangle would not know about.
-    /// </remarks>
-    public IReadOnlyList<DiagramDelta> UpdateView(DiagramViewport viewport)
+    protected override DiagramPlacement PlacementOf(WardleyMap model, string elementId, double x, double y)
     {
-        _viewport = viewport;
-
-        IReadOnlyList<DiagramElement> after;
-        try
-        {
-            after = Visible();
-        }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-        {
-            // A file that vanished or locked between two pans costs this answer, never the
-            // session; the reported viewport is kept, so the next report or change catches up.
-            _logger.Warning(exception, "Could not re-read {BodyPath} for a view report", _bodyPath);
-            return [];
-        }
-
-        // The shared diff against what this connection holds (backend-centralization R4.1):
-        // what left is removed first, then what appeared or changed is added (R4.5).
-        var deltas = DiagramDiff.Between(_delivered, after);
-        _delivered = after;
-
-        return deltas;
-    }
-
-    /// <summary>
-    /// Refused. A Wardley element's place in the document is not a containment - dragging one
-    /// changes where it sits on the map, which is <see cref="MoveElementToAsync"/>.
-    /// </summary>
-    public Task<string> MoveElementAsync(string elementId, string newParentId, int index, CancellationToken cancellationToken)
-    {
-        _ = elementId;
-        _ = newParentId;
-        _ = index;
-        cancellationToken.ThrowIfCancellationRequested();
-
-        return Task.FromResult("Dragging a component changes where it sits on the map, not what contains it.");
-    }
-
-    /// <summary>
-    /// Moves an element to a position (Requirement 7.2). The canvas point is converted back
-    /// into the document's own axes here, through the one function that may do it, and
-    /// dispatched as a command so the change is undoable and reaches every other connection.
-    /// </summary>
-    public async Task<string> MoveElementToAsync(string elementId, double x, double y, CancellationToken cancellationToken)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(elementId);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        if (_history is null)
-        {
-            return "This map is read-only.";
-        }
-
-        var coordinate = WardleyAxis.Clamp(WardleyAxis.ToCoordinate(x, y));
-        var result = await _history.ExecuteAsync(
-            new MoveWardleyElementCommand(_bodyPath, elementId, coordinate.Visibility, coordinate.Maturity),
-            cancellationToken);
-
-        return result.IsSuccess ? "" : result.Error;
-    }
-
-    public ValueTask DisposeAsync()
-    {
-        _documents.Changed -= OnDocumentChanged;
-        return ValueTask.CompletedTask;
-    }
-
-    /// <summary>
-    /// The map as the elements this connection reported viewport can see. Used by every path that
-    /// decides what to send, so a document change cannot re-deliver what a viewport culled.
-    /// </summary>
-    private IReadOnlyList<DiagramElement> Visible()
-    {
-        var map = _documents.GetOrLoad(_bodyPath).Model;
-        return _mapper.Visible(map, _documents.Identities(_bodyPath), _viewport);
-    }
-
-    private IReadOnlyList<DiagramDelta> Groups()
-    {
-        var map = _documents.GetOrLoad(_bodyPath).Model;
-        return _mapper.Group(map, _documents.Identities(_bodyPath));
-    }
-
-    /// <summary>
-    /// A save from any connection, or an edit made outside ADP, arrives here and goes out as the
-    /// difference from what this connection was last sent (Requirement 10.7).
-    /// </summary>
-    private void OnDocumentChanged(object? sender, DocumentChangedEventArgs args)
-    {
-        if (!string.Equals(args.Path, _bodyPath, StringComparison.OrdinalIgnoreCase))
-        {
-            return;
-        }
-
-        try
-        {
-            var current = Visible();
-            var deltas = DiagramDiff.Between(_delivered, current);
-            _delivered = current;
-
-            if (deltas.Count > 0)
-            {
-                Changed?.Invoke(this, new DiagramDeltasEventArgs(deltas));
-            }
-        }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-        {
-            // A file that vanished or locked mid-reload costs this notification, never the
-            // session: the next change tries again.
-            _logger.Warning(exception, "Could not re-read {BodyPath} after a change", _bodyPath);
-        }
+        var coordinate = WardleyAxis.ToCoordinate(x, y);
+        return DiagramPlacement.By(new MoveWardleyElementCommand(BodyPath, elementId, coordinate.Visibility, coordinate.Maturity));
     }
 }
