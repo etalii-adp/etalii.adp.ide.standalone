@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using Xunit;
 
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
@@ -5,56 +6,36 @@ using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would othe
 namespace EtAlii.Adp.Diagram.AnsibleStructure.Tests;
 
 /// <summary>
-/// The store: one project per folder, kept true as the tree changes (Requirement 3.5).
+/// The store: one project per folder, kept true as the tree changes (Requirement 3.5), through the
+/// shared watched-folder contract and the module's own cases.
 /// </summary>
 /// <remarks>
 /// Against a temp copy of the fixture rather than the fixture itself, because these tests
 /// deliberately change files - and the committed trees are the one thing in this module nothing
 /// is allowed to write to.
 /// </remarks>
-public class AnsibleProjectStoreTests : IDisposable
+public sealed class AnsibleProjectStoreTests : WatchedFolderStoreContract<AnsibleProject>
 {
-    private static readonly TimeSpan SettleDelay = TimeSpan.FromMilliseconds(150);
     private static readonly TimeSpan WaitLimit = TimeSpan.FromSeconds(15);
 
-    private readonly string _root;
-    private readonly AnsibleProjectStore _store = new(new AnsibleProjectReader(), SettleDelay);
+    protected override WatchedFolderStore<AnsibleProject> CreateStore(TimeSpan settleDelay) =>
+        new AnsibleProjectStore(new AnsibleProjectReader(), settleDelay);
 
-    public AnsibleProjectStoreTests()
-    {
-        _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        TestFolder.CopyTree(IoPath.Combine("Fixtures", "infrastructure"), _root);
-    }
+    protected override void Populate(string root) => TestFolder.CopyTree(IoPath.Combine("Fixtures", "infrastructure"), root);
 
-    public void Dispose()
-    {
-        _store.Dispose();
-        TestFolder.TryDelete(_root);
-    }
+    /// <summary>nginx gains a second dependency. (common is deliberately the role with no meta at all, so it is the wrong one to edit here.)</summary>
+    protected override Task ChangeAsync(string root, CancellationToken cancellationToken) =>
+        File.WriteAllTextAsync(
+            IoPath.Combine(root, "roles", "nginx", "meta", "main.yml"),
+            "---\ndependencies:\n  - role: common\n  - role: postgres\n",
+            cancellationToken);
 
-    // ---- holding one project per folder ----------------------------------------------------
+    protected override bool ShowsTheChange(AnsibleProject snapshot) =>
+        snapshot.Roles.Single(role => role.Name == "nginx").Dependencies.Select(d => d.Target)
+            .SequenceEqual(["common", "postgres"]);
 
-    [Fact]
-    public void GetOrLoad_ReadsOnce_AndHandsTheSameProjectBack()
-    {
-        // Act.
-        var first = _store.GetOrLoad(_root);
-        var second = _store.GetOrLoad(_root);
-
-        // Assert.
-        // The same instance, not merely an equal one: one project per folder is what stops two
-        // connections seeing different structures.
-        Assert.Same(first, second);
-    }
-
-    [Fact]
-    public void Get_DoesNotLoad()
-    {
-        // Act and assert, step by step.
-        Assert.Null(_store.Get(_root));
-        _store.GetOrLoad(_root);
-        Assert.NotNull(_store.Get(_root));
-    }
+    protected override Task TouchAsync(string root, int index, CancellationToken cancellationToken) =>
+        File.AppendAllTextAsync(IoPath.Combine(root, "webservers.yml"), $"# touch {index}\n", cancellationToken);
 
     [Fact]
     public void TheStore_HasNoWayToWriteAnything()
@@ -62,48 +43,29 @@ public class AnsibleProjectStoreTests : IDisposable
         // Arrange, act and assert.
         // A store for a read-only type has one job. This is a compile-time claim made at
         // runtime: if a save method is ever added, this test says so out loud.
-        var methods = typeof(IAnsibleProjectStore).GetMethods().Select(method => method.Name).ToArray();
+        var methods = typeof(IAnsibleProjectStore).GetInterfaces().Append(typeof(IAnsibleProjectStore))
+            .SelectMany(type => type.GetMethods())
+            .Select(method => method.Name)
+            .ToArray();
         Assert.DoesNotContain(methods, name =>
             name.Contains("Save", StringComparison.OrdinalIgnoreCase) ||
             name.Contains("Write", StringComparison.OrdinalIgnoreCase) ||
             name.Contains("Update", StringComparison.OrdinalIgnoreCase));
     }
 
-    // ---- following the tree ------------------------------------------------------------------
-
-    [Fact]
-    public async Task AChangedFile_IsAnnouncedWithTheRereadProject()
-    {
-        // Arrange.
-        _store.GetOrLoad(_root);
-        var changes = Watch();
-
-        // Act.
-        // nginx gains a second dependency. (common is deliberately the role with no meta at
-        // all, so it is the wrong one to edit here.)
-        await File.WriteAllTextAsync(IoPath.Combine(_root, "roles", "nginx", "meta", "main.yml"), "---\ndependencies:\n  - role: common\n  - role: postgres\n", TestContext.Current.CancellationToken);
-
-        // Assert.
-        var project = await WaitForChange(changes);
-        Assert.Equal(
-            ["common", "postgres"],
-            project.Roles.Single(role => role.Name == "nginx").Dependencies.Select(d => d.Target));
-    }
-
     [Fact]
     public async Task ANewRoleFolder_IsPickedUp()
     {
         // Arrange.
-        _store.GetOrLoad(_root);
-        var changes = Watch();
+        var heard = Heard();
 
         // Act.
-        var added = IoPath.Combine(_root, "roles", "redis", "tasks");
+        var added = IoPath.Combine(Root, "roles", "redis", "tasks");
         Directory.CreateDirectory(added);
         await File.WriteAllTextAsync(IoPath.Combine(added, "main.yml"), "---\n- name: Install redis\n  ansible.builtin.package:\n    name: redis\n", TestContext.Current.CancellationToken);
 
         // Assert.
-        var project = await WaitForChange(changes);
+        var project = await heard.Task.WaitAsync(WaitLimit, TestContext.Current.CancellationToken);
         Assert.Contains(project.Roles, role => role.Name == "redis");
     }
 
@@ -111,151 +73,22 @@ public class AnsibleProjectStoreTests : IDisposable
     public async Task ADeletedFile_TakesItsNodeWithIt()
     {
         // Arrange.
-        _store.GetOrLoad(_root);
-        var changes = Watch();
+        var heard = Heard();
 
         // Act.
-        File.Delete(IoPath.Combine(_root, "dbservers.yml"));
+        File.Delete(IoPath.Combine(Root, "dbservers.yml"));
 
         // Assert.
-        var project = await WaitForChange(changes);
+        var project = await heard.Task.WaitAsync(WaitLimit, TestContext.Current.CancellationToken);
         Assert.DoesNotContain(project.Playbooks, playbook => playbook.Name == "dbservers.yml");
     }
 
-    [Fact]
-    public async Task ABurstOfChanges_CostsFarFewerRereadsThanChanges()
+    /// <summary>The first project the store announces for the folder after this call.</summary>
+    private TaskCompletionSource<AnsibleProject> Heard()
     {
-        // Arrange.
-        const int changeCount = 6;
-        _store.GetOrLoad(_root);
-        var changes = Watch();
-
-        // Act.
-        // Written back to back, as a multi-file save actually arrives. An earlier version of
-        // this test spaced them 20ms apart and asserted exactly one re-read; that failed
-        // intermittently, because any stall longer than the settle delay lets the timer fire
-        // mid-burst and produce a second - so it was measuring the machine's load, not the
-        // store's coalescing.
-        for (var i = 0; i < changeCount; i++)
-        {
-            await File.AppendAllTextAsync(IoPath.Combine(_root, "webservers.yml"), $"# touch {i}\n", TestContext.Current.CancellationToken);
-        }
-
-        // Assert.
-        await WaitForChange(changes);
-        await Task.Delay(SettleDelay + SettleDelay, TestContext.Current.CancellationToken);
-        lock (changes)
-        {
-            // The claim that is actually true and worth guarding: a burst costs materially
-            // fewer re-reads than it has changes. Demanding exactly one would be a clock test.
-            Assert.InRange(changes.Count, 1, changeCount - 1);
-        }
-    }
-
-    [Fact]
-    public async Task TheStoreHandsOutTheRereadProject_NotTheStaleOne()
-    {
-        // Arrange.
-        _store.GetOrLoad(_root);
-        var changes = Watch();
-
-        // Act.
-        File.Delete(IoPath.Combine(_root, "dbservers.yml"));
-        await WaitForChange(changes);
-
-        // Assert.
-        // Re-read before announcing, so a listener that asks the store during the event is not
-        // handed the project the event exists to replace.
-        Assert.DoesNotContain(_store.Get(_root)!.Playbooks, playbook => playbook.Name == "dbservers.yml");
-    }
-
-    // ---- lifetime ----------------------------------------------------------------------------
-
-    [Fact]
-    public void ReleasingOneOfTwoClaims_KeepsTheFolderWatched()
-    {
-        // Arrange.
-        // The failure this split exists to prevent: a second connection closing must not tear
-        // the watcher out from under the first, whose diagram would then go quietly stale.
-        _store.Acquire(_root);
-        _store.Acquire(_root);
-
-        // Act.
-        _store.Release(_root);
-
-        // Assert.
-        Assert.NotNull(_store.Get(_root));
-    }
-
-    [Fact]
-    public void ReleasingTheLastClaim_DropsTheFolder()
-    {
-        // Arrange.
-        _store.Acquire(_root);
-
-        // Act.
-        _store.Release(_root);
-
-        // Assert.
-        Assert.Null(_store.Get(_root));
-    }
-
-    [Fact]
-    public async Task AReleasedFolder_IsReadAfreshOnTheNextAsk()
-    {
-        // Arrange.
-        var before = _store.Acquire(_root);
-        _store.Release(_root);
-
-        // Act.
-        File.Delete(IoPath.Combine(_root, "dbservers.yml"));
-        await Task.Delay(SettleDelay, TestContext.Current.CancellationToken);
-        var after = _store.GetOrLoad(_root);
-
-        // Assert.
-        Assert.NotSame(before, after);
-        Assert.DoesNotContain(after.Playbooks, playbook => playbook.Name == "dbservers.yml");
-    }
-
-    [Fact]
-    public void ReleasingAFolderNobodyHeld_IsNotAnError()
-    {
-        // Act and assert.
-        _store.Release(_root);
-        _store.Release(IoPath.Combine(_root, "never-loaded"));
-    }
-
-    // ---- plumbing ------------------------------------------------------------------------------
-
-    private List<AnsibleProject> Watch()
-    {
-        var changes = new List<AnsibleProject>();
-        _store.Changed += (_, args) =>
-        {
-            lock (changes)
-            {
-                changes.Add(args.Project);
-            }
-        };
-        return changes;
-    }
-
-    private static async Task<AnsibleProject> WaitForChange(List<AnsibleProject> changes)
-    {
-        var start = DateTime.UtcNow;
-        while (DateTime.UtcNow - start < WaitLimit)
-        {
-            lock (changes)
-            {
-                if (changes.Count > 0)
-                {
-                    return changes[^1];
-                }
-            }
-            await Task.Delay(25, TestContext.Current.CancellationToken);
-        }
-
-        Assert.Fail($"The folder was not re-read within {WaitLimit}.");
-        return null!;
+        Store.GetOrLoad(Root);
+        var heard = new TaskCompletionSource<AnsibleProject>(TaskCreationOptions.RunContinuationsAsynchronously);
+        Store.Changed += (_, args) => heard.TrySetResult(args.Snapshot);
+        return heard;
     }
 }

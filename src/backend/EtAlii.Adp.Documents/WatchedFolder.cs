@@ -1,41 +1,41 @@
 using Serilog;
 
-namespace EtAlii.Adp.Diagram.AnsibleStructure;
+namespace EtAlii.Adp.Documents;
 
 /// <summary>
-/// One watched folder: its <see cref="FileSystemWatcher"/>, its settle timer, its claim count
-/// and the project last read from it.
+/// One watched folder of a <see cref="WatchedFolderStore{TSnapshot}"/>: its
+/// <see cref="FileSystemWatcher"/>, its settle timer, its claim count and the snapshot last read
+/// from it.
 /// </summary>
 /// <remarks>
-/// The shape <c>TrackedProblemRoot</c> established, copied rather than reinvented: subdirectories
-/// included, content filters as well as name ones, a timer that restarts until a burst settles,
-/// and - the part this repository has already paid for once - <b>every handler guarded</b>. These
-/// run on the watcher's own thread, where an unhandled exception is not a failed request but the
-/// death of the process.
+/// Subdirectories included, content filters as well as name ones, a timer that restarts until a
+/// burst settles, and <b>every handler guarded</b>. These run on the watcher's own thread, where
+/// an unhandled exception is not a failed request but the death of the process.
 /// </remarks>
-internal sealed class AnsibleWatchedFolder : IDisposable
+internal sealed class WatchedFolder<TSnapshot> : IDisposable
 {
-    private static readonly ILogger _logger = Log.ForContext<AnsibleWatchedFolder>();
+    private static readonly ILogger _logger = Log.ForContext<WatchedFolder<TSnapshot>>();
 
-    private readonly Action<AnsibleWatchedFolder> _onSettled;
+    private readonly Action<WatchedFolder<TSnapshot>> _onSettled;
     private readonly FileSystemWatcher _watcher;
     private readonly Lock _gate = new();
     private readonly TimeSpan _settleDelay;
     private Timer? _settleTimer;
+    private int _claims;
     private bool _disposed;
 
-    public AnsibleWatchedFolder(string path, AnsibleProject project, TimeSpan settleDelay, Action<AnsibleWatchedFolder> onSettled)
+    public WatchedFolder(string path, TSnapshot snapshot, TimeSpan settleDelay, Action<WatchedFolder<TSnapshot>> onSettled)
     {
         Path = path;
-        Project = project;
+        Snapshot = snapshot;
         _settleDelay = settleDelay;
         _onSettled = onSettled;
 
         _watcher = new FileSystemWatcher(path)
         {
             IncludeSubdirectories = true,
-            // Content matters as much as names here: editing a role's meta changes what the
-            // diagram means without renaming anything.
+            // Content matters as much as names: editing a file changes what the diagram means
+            // without renaming anything.
             NotifyFilter = NotifyFilters.FileName | NotifyFilters.DirectoryName | NotifyFilters.LastWrite | NotifyFilters.Size,
         };
 
@@ -51,16 +51,13 @@ internal sealed class AnsibleWatchedFolder : IDisposable
     public string Path { get; }
 
     /// <summary>The last read of this folder. Replaced wholesale; never mutated in place.</summary>
-    public AnsibleProject Project { get; set; }
-
-    /// <summary>How many sessions are holding this folder open. The watcher outlives the count reaching zero by nothing.</summary>
-    private int Claims { get; set; }
+    public TSnapshot Snapshot { get; set; }
 
     public void Claim()
     {
         lock (_gate)
         {
-            Claims++;
+            _claims++;
         }
     }
 
@@ -69,8 +66,8 @@ internal sealed class AnsibleWatchedFolder : IDisposable
     {
         lock (_gate)
         {
-            Claims = Math.Max(0, Claims - 1);
-            return Claims == 0;
+            _claims = Math.Max(0, _claims - 1);
+            return _claims == 0;
         }
     }
 

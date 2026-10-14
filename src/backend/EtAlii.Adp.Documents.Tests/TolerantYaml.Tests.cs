@@ -1,20 +1,18 @@
 using Xunit;
-
 using YamlDotNet.RepresentationModel;
+using IoPath = System.IO.Path;
 
-using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
-
-namespace EtAlii.Adp.Diagram.AnsibleStructure.Tests;
+namespace EtAlii.Adp.Documents.Tests;
 
 /// <summary>
-/// The narrowest point of Requirement 1.2: one file in, either a parsed document or an account
-/// of why not, and never an exception.
+/// One YAML file in, either a parsed document or an account of why not, and never an exception
+/// (code-structure FR-037; the folder diagrams' Requirement 1.2).
 /// </summary>
-public class AnsibleYamlTests : IDisposable
+public class TolerantYamlTests : IDisposable
 {
     private readonly string _scratch;
 
-    public AnsibleYamlTests()
+    public TolerantYamlTests()
     {
         _scratch = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(_scratch);
@@ -32,10 +30,10 @@ public class AnsibleYamlTests : IDisposable
         var path = Write("play.yml", "---\n- name: A play\n  hosts: web\n");
 
         // Act.
-        var result = AnsibleYaml.Read(path, "play.yml");
+        var result = TolerantYaml.Read(path, "play.yml");
 
         // Assert.
-        var document = Assert.IsType<AnsibleYamlDocument>(result);
+        var document = Assert.IsType<TolerantYamlDocument>(result);
         var root = Assert.IsType<YamlSequenceNode>(document.Root);
         Assert.Single(root.Children);
     }
@@ -49,7 +47,7 @@ public class AnsibleYamlTests : IDisposable
         var path = Write("play.yml", "---\n- name: First\n  hosts: web\n- name: Second\n  hosts: db\n");
 
         // Act.
-        var document = Assert.IsType<AnsibleYamlDocument>(AnsibleYaml.Read(path, "play.yml"));
+        var document = Assert.IsType<TolerantYamlDocument>(TolerantYaml.Read(path, "play.yml"));
 
         // Assert.
         var root = Assert.IsType<YamlSequenceNode>(document.Root);
@@ -64,10 +62,10 @@ public class AnsibleYamlTests : IDisposable
         var path = Write("broken.yml", "---\n- name: A play\n  msg: \"never closed\n  loop: [ 1, 2\n");
 
         // Act.
-        var result = AnsibleYaml.Read(path, "broken.yml");
+        var result = TolerantYaml.Read(path, "broken.yml");
 
         // Assert.
-        var unreadable = Assert.IsType<AnsibleYamlUnreadable>(result);
+        var unreadable = Assert.IsType<TolerantYamlUnreadable>(result);
         Assert.Equal("broken.yml", unreadable.Failure.RelativePath);
         Assert.NotEqual("", unreadable.Failure.Message);
         Assert.True(unreadable.Failure.Line > 0, "The parser named a line and it should survive.");
@@ -83,20 +81,20 @@ public class AnsibleYamlTests : IDisposable
         var path = Write("empty.yml", "");
 
         // Act.
-        var result = AnsibleYaml.Read(path, "empty.yml");
+        var result = TolerantYaml.Read(path, "empty.yml");
 
         // Assert.
-        Assert.Null(Assert.IsType<AnsibleYamlDocument>(result).Root);
+        Assert.Null(Assert.IsType<TolerantYamlDocument>(result).Root);
     }
 
     [Fact]
     public void AFileThatIsNotThere_IsAFailureRatherThanAThrow()
     {
         // Act.
-        var result = AnsibleYaml.Read(IoPath.Combine(_scratch, "absent.yml"), "absent.yml");
+        var result = TolerantYaml.Read(IoPath.Combine(_scratch, "absent.yml"), "absent.yml");
 
         // Assert.
-        Assert.IsType<AnsibleYamlUnreadable>(result);
+        Assert.IsType<TolerantYamlUnreadable>(result);
     }
 
     [Fact]
@@ -109,54 +107,11 @@ public class AnsibleYamlTests : IDisposable
 
         // Act.
         using var writer = new FileStream(path, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite);
-        var result = AnsibleYaml.Read(path, "shared.yml");
+        var result = TolerantYaml.Read(path, "shared.yml");
 
         // Assert.
-        Assert.IsType<AnsibleYamlDocument>(result);
+        Assert.IsType<TolerantYamlDocument>(result);
     }
-
-    [Theory]
-    [InlineData("infrastructure")]
-    [InlineData("unconventional")]
-    public void EveryYamlFileInAValidFixture_Parses(string fixture)
-    {
-        // Arrange.
-        // The fixtures' only machine check: they are hand-written, and this at least proves
-        // they are well-formed YAML. It says nothing about whether they are good Ansible.
-        var root = IoPath.Combine("Fixtures", fixture);
-
-        // Act.
-        var failures = YamlFilesUnder(root)
-            .Select(path => AnsibleYaml.Read(path, IoPath.GetRelativePath(root, path)))
-            .OfType<AnsibleYamlUnreadable>()
-            .Select(unreadable => $"{unreadable.Failure.RelativePath}:{unreadable.Failure.Line} {unreadable.Failure.Message}")
-            .ToArray();
-
-        // Assert.
-        Assert.Empty(failures);
-    }
-
-    [Fact]
-    public void TheDeliberatelyBrokenFixture_IsTheOnlyOneThatDoesNotParse()
-    {
-        // Arrange.
-        var root = IoPath.Combine("Fixtures", "broken");
-
-        // Act.
-        var unreadable = YamlFilesUnder(root)
-            .Select(path => (Path: IoPath.GetRelativePath(root, path), Result: AnsibleYaml.Read(path, IoPath.GetRelativePath(root, path))))
-            .Where(pair => pair.Result is AnsibleYamlUnreadable)
-            .Select(pair => pair.Path)
-            .ToArray();
-
-        // Assert.
-        Assert.Equal(["unparsable.yml"], unreadable);
-    }
-
-    private static string[] YamlFilesUnder(string root) =>
-        [.. Directory.EnumerateFiles(root, "*", SearchOption.AllDirectories)
-            .Where(path => IoPath.GetExtension(path) is ".yml" or ".yaml")
-            .Order(StringComparer.Ordinal)];
 
     private string Write(string name, string content)
     {

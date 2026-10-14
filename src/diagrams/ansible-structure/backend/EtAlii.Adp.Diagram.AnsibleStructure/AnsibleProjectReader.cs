@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using Serilog;
 
 using YamlDotNet.RepresentationModel;
@@ -48,7 +49,7 @@ public sealed class AnsibleProjectReader
             return Empty(root);
         }
 
-        var failures = new List<AnsibleYamlFailure>();
+        var failures = new List<TolerantYamlFailure>();
         var playbooks = ReadPlaybooks(root, failures);
         var roles = ReadRoles(root, failures);
         var inventories = ReadInventories(root, failures);
@@ -61,7 +62,7 @@ public sealed class AnsibleProjectReader
 
     // ---- playbooks -----------------------------------------------------------------------
 
-    private static IReadOnlyList<AnsiblePlaybook> ReadPlaybooks(string root, List<AnsibleYamlFailure> failures)
+    private static IReadOnlyList<AnsiblePlaybook> ReadPlaybooks(string root, List<TolerantYamlFailure> failures)
     {
         // Root level and playbooks/ - the two places the recommended layout puts them. A team
         // that keeps theirs in plays/ gets an undrawn folder, not a problem (Requirement 9.4).
@@ -73,8 +74,8 @@ public sealed class AnsibleProjectReader
         foreach (var path in candidates)
         {
             var relative = Relative(root, path);
-            var result = AnsibleYaml.Read(path, relative);
-            if (result is not AnsibleYamlDocument document)
+            var result = TolerantYaml.Read(path, relative);
+            if (result is not TolerantYamlDocument document)
             {
                 Record(result, failures);
                 continue;
@@ -148,7 +149,7 @@ public sealed class AnsibleProjectReader
 
     // ---- roles ---------------------------------------------------------------------------
 
-    private static IReadOnlyList<AnsibleRole> ReadRoles(string root, List<AnsibleYamlFailure> failures)
+    private static IReadOnlyList<AnsibleRole> ReadRoles(string root, List<TolerantYamlFailure> failures)
     {
         var rolesFolder = IoPath.Combine(root, "roles");
         if (!Directory.Exists(rolesFolder))
@@ -186,7 +187,7 @@ public sealed class AnsibleProjectReader
         return roles;
     }
 
-    private static IReadOnlyList<AnsibleDirective> ReadDependencies(string root, string roleFolder, List<AnsibleYamlFailure> failures)
+    private static IReadOnlyList<AnsibleDirective> ReadDependencies(string root, string roleFolder, List<TolerantYamlFailure> failures)
     {
         var meta = FirstExisting(IoPath.Combine(roleFolder, "meta"), "main.yml", "main.yaml");
         if (meta is null)
@@ -195,8 +196,8 @@ public sealed class AnsibleProjectReader
         }
 
         var relative = Relative(root, meta);
-        var result = AnsibleYaml.Read(meta, relative);
-        if (result is not AnsibleYamlDocument { Root: YamlMappingNode mapping })
+        var result = TolerantYaml.Read(meta, relative);
+        if (result is not TolerantYamlDocument { Root: YamlMappingNode mapping })
         {
             Record(result, failures);
             return [];
@@ -229,14 +230,14 @@ public sealed class AnsibleProjectReader
         return directives;
     }
 
-    private static IReadOnlyList<AnsibleDirective> ReadTaskIncludes(string root, string roleFolder, List<AnsibleYamlFailure> failures)
+    private static IReadOnlyList<AnsibleDirective> ReadTaskIncludes(string root, string roleFolder, List<TolerantYamlFailure> failures)
     {
         var directives = new List<AnsibleDirective>();
         foreach (var path in YamlFilesIn(IoPath.Combine(roleFolder, "tasks")))
         {
             var relative = Relative(root, path);
-            var result = AnsibleYaml.Read(path, relative);
-            if (result is not AnsibleYamlDocument { Root: YamlSequenceNode tasks })
+            var result = TolerantYaml.Read(path, relative);
+            if (result is not TolerantYamlDocument { Root: YamlSequenceNode tasks })
             {
                 Record(result, failures);
                 continue;
@@ -301,7 +302,7 @@ public sealed class AnsibleProjectReader
 
     // ---- inventories ---------------------------------------------------------------------
 
-    private static IReadOnlyList<AnsibleInventory> ReadInventories(string root, List<AnsibleYamlFailure> failures)
+    private static IReadOnlyList<AnsibleInventory> ReadInventories(string root, List<TolerantYamlFailure> failures)
     {
         var inventories = new List<AnsibleInventory>();
 
@@ -338,7 +339,7 @@ public sealed class AnsibleProjectReader
         return inventories;
     }
 
-    private static IReadOnlyList<AnsibleInventoryGroup> GroupsIn(string root, string folder, List<AnsibleYamlFailure> failures)
+    private static IReadOnlyList<AnsibleInventoryGroup> GroupsIn(string root, string folder, List<TolerantYamlFailure> failures)
     {
         var groups = new List<AnsibleInventoryGroup>();
         foreach (var path in SortedFiles(folder).Where(IsInventoryFile))
@@ -348,11 +349,11 @@ public sealed class AnsibleProjectReader
         return groups;
     }
 
-    private static IReadOnlyList<AnsibleInventoryGroup> GroupsOf(string root, string path, List<AnsibleYamlFailure> failures)
+    private static IReadOnlyList<AnsibleInventoryGroup> GroupsOf(string root, string path, List<TolerantYamlFailure> failures)
     {
         var relative = Relative(root, path);
-        var result = AnsibleYaml.Read(path, relative);
-        if (result is not AnsibleYamlDocument { Root: YamlMappingNode mapping })
+        var result = TolerantYaml.Read(path, relative);
+        if (result is not TolerantYamlDocument { Root: YamlMappingNode mapping })
         {
             // An INI-format inventory is not YAML and will not parse. That is not the user's
             // mistake, so it is not recorded as a failure - it is read as the INI it is,
@@ -443,9 +444,9 @@ public sealed class AnsibleProjectReader
         return annotations;
     }
 
-    private static void Record(AnsibleYamlResult result, List<AnsibleYamlFailure> failures)
+    private static void Record(TolerantYamlResult result, List<TolerantYamlFailure> failures)
     {
-        if (result is AnsibleYamlUnreadable unreadable &&
+        if (result is TolerantYamlUnreadable unreadable &&
             !failures.Any(failure => string.Equals(failure.RelativePath, unreadable.Failure.RelativePath, StringComparison.OrdinalIgnoreCase)))
         {
             failures.Add(unreadable.Failure);

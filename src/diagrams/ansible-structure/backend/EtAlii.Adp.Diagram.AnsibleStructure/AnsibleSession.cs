@@ -1,6 +1,5 @@
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
-using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
 namespace EtAlii.Adp.Diagram.AnsibleStructure;
 
@@ -38,6 +37,9 @@ internal sealed class AnsibleSession : IDiagramSession
     /// <summary>The project's history, so a drag is one undo away. Null makes the diagram read-only.</summary>
     private readonly IHistoryStack? _history;
 
+    /// <summary>The store's word for this folder, until the session goes.</summary>
+    private readonly IDisposable _watch;
+
     private DiagramViewport _viewport = DiagramViewport.Unbounded;
     private IReadOnlyList<DiagramElement> _delivered = [];
 
@@ -59,7 +61,7 @@ internal sealed class AnsibleSession : IDiagramSession
         _history = history;
 
         _store.Acquire(_folder);
-        _store.Changed += OnProjectChanged;
+        _watch = _store.Watch(_folder, OnProjectChanged);
     }
 
     public event EventHandler<DiagramDeltasEventArgs>? Changed;
@@ -151,20 +153,19 @@ internal sealed class AnsibleSession : IDiagramSession
 
     public ValueTask DisposeAsync()
     {
-        _store.Changed -= OnProjectChanged;
+        _watch.Dispose();
         _store.Release(_folder);
         return ValueTask.CompletedTask;
     }
 
-    private void OnProjectChanged(object? sender, AnsibleProjectChangedEventArgs args)
+    private void OnProjectChanged(AnsibleProject project)
     {
-        if (Changed is null ||
-            !string.Equals(IoPath.GetFullPath(args.FolderPath), IoPath.GetFullPath(_folder), StringComparison.OrdinalIgnoreCase))
+        if (Changed is null)
         {
             return;
         }
 
-        var after = _mapper.Visible(args.Project, AnsibleGraph.Derive(args.Project), _viewport, Stored());
+        var after = _mapper.Visible(project, AnsibleGraph.Derive(project), _viewport, Stored());
         var deltas = DiagramDiff.Between(_delivered, after);
         _delivered = after;
 

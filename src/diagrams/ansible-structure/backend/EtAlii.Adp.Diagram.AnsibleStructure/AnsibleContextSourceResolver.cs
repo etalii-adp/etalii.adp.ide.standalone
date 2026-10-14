@@ -121,14 +121,8 @@ public sealed class AnsibleContextSourceResolver : IContextSourceResolver
         var folder = IoPath.GetFullPath(level.Target.ResolvedFullPath);
         var elementId = level.Target.ElementId;
         var lastPath = level.RelativePath;
-        var disposed = false;
 
-        _store.Changed += OnChanged;
-        return new AnsibleNodeSubscription(() =>
-        {
-            disposed = true;
-            _store.Changed -= OnChanged;
-        });
+        return _store.Watch(folder, OnChanged);
 
         void Announce(string[] current)
         {
@@ -141,15 +135,9 @@ public sealed class AnsibleContextSourceResolver : IContextSourceResolver
             onChange(current);
         }
 
-        void OnChanged(object? sender, AnsibleProjectChangedEventArgs args)
+        void OnChanged(AnsibleProject project)
         {
-            if (disposed ||
-                !string.Equals(IoPath.GetFullPath(args.FolderPath), folder, StringComparison.OrdinalIgnoreCase))
-            {
-                return;
-            }
-
-            var graph = AnsibleGraph.Derive(args.Project);
+            var graph = AnsibleGraph.Derive(project);
             var node = graph.Node(elementId);
             if (node is null)
             {
