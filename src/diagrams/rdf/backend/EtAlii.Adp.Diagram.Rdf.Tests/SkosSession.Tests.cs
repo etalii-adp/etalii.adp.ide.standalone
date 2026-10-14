@@ -86,11 +86,11 @@ public class SkosSessionTests : IDisposable
         File.WriteAllText(registration, "w3c/skos\r\nbody: drinks.ttl\r\nlanguage: nl\r\n");
 
         // Act.
-        var session = (SkosSession)Open(body, registration);
+        var session = (RdfFamilySession<SkosProjectionResult>)Open(body, registration);
         var baseline = session.Baseline();
 
         // Assert: the chooser was seeded with nl - the Dutch label reaches the payload.
-        Assert.Equal("nl", session.DisplayLanguage);
+        Assert.Equal("nl", Assert.IsType<SkosReading>(session.Reading).DisplayLanguage);
         var add = Assert.IsType<DiagramAddDelta>(Assert.Single(baseline));
         var tea = Assert.Single(add.Elements, element => element.Id == "res:http://example.org/tea");
         Assert.Equal(SkosElementMapper.ConceptType, tea.Type);
@@ -113,10 +113,10 @@ public class SkosSessionTests : IDisposable
         File.WriteAllText(registration, "w3c/skos\r\nlanguage: nl\r\nbody: drinks.ttl\r\n");
 
         // Act.
-        var session = (SkosSession)Open(body, registration);
+        var session = (RdfFamilySession<SkosProjectionResult>)Open(body, registration);
 
         // Assert.
-        Assert.Equal(SkosLabels.DefaultLanguage, session.DisplayLanguage);
+        Assert.Equal(SkosLabels.DefaultLanguage, Assert.IsType<SkosReading>(session.Reading).DisplayLanguage);
     }
 
     [Fact]
@@ -141,8 +141,8 @@ public class SkosSessionTests : IDisposable
     {
         // Arrange.
         var body = WriteBody();
-        var readOnly = new SkosSession(body, registrationPath: null, "en",
-            _provider.GetRequiredService<IRdfDocumentStore>(), _provider.GetRequiredService<SkosElementMapper>());
+        var readOnly = new RdfFamilySession<SkosProjectionResult>(body, registrationPath: null,
+            _provider.GetRequiredService<IRdfDocumentStore>(), new SkosReading(_provider.GetRequiredService<SkosElementMapper>(), "en"));
         var unregistered = Open(body, registrationPath: null);
         var registration = IoPath.Combine(_root, "drinks.adp");
         await File.WriteAllTextAsync(registration, "w3c/skos\r\nbody: drinks.ttl\r\n", TestContext.Current.CancellationToken);

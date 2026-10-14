@@ -41,10 +41,6 @@ public static class ServiceCollectionAddShaclExtension
         // The palette; origin-scoped by construction, unlike the context menu.
         services.AddSingleton<IDiagramToolboxProvider>(_ => new ShaclToolboxProvider(ShaclOrigin));
 
-        services.AddSingleton<IDiagramSessionFactory>(provider => new ShaclSessionFactory(
-            ShaclOrigin,
-            provider.GetRequiredService<IRdfDocumentStore>(),
-            provider.GetRequiredService<ShaclElementMapper>(),
-            provider.GetRequiredService<IHistoryStackStore>()));
+        services.AddRdfReading(ShaclOrigin, (provider, _) => new ShaclReading(provider.GetRequiredService<ShaclElementMapper>()));
     }
 }

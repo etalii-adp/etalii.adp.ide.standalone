@@ -26,11 +26,13 @@ public static class ServiceCollectionAddSkosExtension
         services.AddSingleton<ICommandHandler<DisconnectSkosPairCommand>, DisconnectSkosPairCommandHandler>();
         services.AddSingleton<IDiagramToolboxProvider>(_ => new SkosToolboxProvider(SkosOrigin));
         services.AddSingleton<IDiagramValidator>(_ => new SkosValidator(SkosOrigin));
-        services.AddSingleton<IDiagramSessionFactory>(provider => new SkosSessionFactory(
-            SkosOrigin,
-            provider.GetRequiredService<IRdfDocumentStore>(),
-            provider.GetRequiredService<SkosElementMapper>(),
-            provider.GetRequiredService<IHistoryStackStore>()));
+        services.AddRdfReading(SkosOrigin, (provider, registrationPath) =>
+        {
+            // A misplaced header yields null here and a validation finding there; the session
+            // never guesses (Requirement 3.2).
+            (string? language, _) = SkosRegistrationLanguage.Read(registrationPath);
+            return new SkosReading(provider.GetRequiredService<SkosElementMapper>(), language ?? SkosLabels.DefaultLanguage);
+        });
         services.AddSingleton<IDiagramDocumentFactory>(_ => new SkosDocumentFactory(SkosOrigin));
     }
 }

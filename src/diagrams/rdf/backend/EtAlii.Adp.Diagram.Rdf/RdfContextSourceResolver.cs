@@ -1,148 +1,49 @@
 ﻿using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
-using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Hierarchy;
 
 namespace EtAlii.Adp.Diagram.Rdf;
 
 /// <summary>
 /// Makes an RDF element selectable: resolves an <c>element_id</c> against the file named by the
-/// enclosing level and verifies the id really is in it - once for the whole family, because
-/// which reading a file is opened under does not change what an element is.
+/// enclosing level and verifies the id really is in it, on the resolver base (code-structure
+/// FR-032). One is registered per reading, because the base answers for the files of one type;
+/// what an element is does not depend on which reading a file is opened under, so all four
+/// describe it the same way.
 /// </summary>
-public sealed class RdfContextSourceResolver : IContextSourceResolver
+/// <param name="origin">The reading whose files this resolver answers for.</param>
+/// <param name="router">Routes a file to its diagram type.</param>
+/// <param name="documents">The family's one store.</param>
+/// <param name="drawn">What the reading draws for an id in a model, so a selection carries what the canvas was sent.</param>
+public sealed class RdfContextSourceResolver(
+    DiagramOrigin origin,
+    DiagramFileRouter router,
+    IRdfDocumentStore documents,
+    Func<RdfModel, string, DiagramElement?> drawn)
+    : DiagramElementSourceResolver<LineDocument, RdfModel>(router, documents)
 {
-    private readonly DiagramFileRouter _router;
-    private readonly IRdfDocumentStore _documents;
+    /// <inheritdoc />
+    protected override DiagramOrigin Origin { get; } = origin;
 
-    public RdfContextSourceResolver(DiagramFileRouter router, IRdfDocumentStore documents)
+    /// <inheritdoc />
+    protected override DiagramElementTexts Texts { get; } = new(
+        "The selected file is not an RDF document.",
+        "That element is no longer in this file.",
+        "New element",
+        // A finished relation gesture names an element about to exist too, as a placement does.
+        "New element");
+
+    /// <inheritdoc />
+    protected override (IReadOnlyList<string> Path, string Text)? Describe(DocumentEntry<LineDocument, RdfModel> entry, string elementId)
     {
-        ArgumentNullException.ThrowIfNull(router);
-        ArgumentNullException.ThrowIfNull(documents);
+        ArgumentNullException.ThrowIfNull(entry);
 
-        _router = router;
-        _documents = documents;
+        var text = RdfSelection.Describe(entry, elementId)
+            ?? OwlSelection.Describe(entry, elementId)
+            ?? Shacl.ShaclSelection.Describe(entry, elementId);
+        return text is null ? null : ([text], text);
     }
 
     /// <inheritdoc />
-    public bool CanResolve(ContextSource source) => source.SourceCase == ContextSource.SourceOneofCase.ElementId;
-
-    /// <inheritdoc />
-    public ValueTask<ContextLevelResolution> ResolveAsync(
-        ShortGuid watchId,
-        string rootPath,
-        ContextSource id,
-        IReadOnlyList<string> clientPath,
-        ContextResolvedLevel? parent,
-        CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(id);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        if (parent is null || parent.Scope != ContextScope.Hierarchy)
-        {
-            return Rejected("A diagram element must be selected within its diagram.");
-        }
-
-        if (_router.Route(parent.Target.ResolvedFullPath, rootPath) is not DiagramRouted routed ||
-            routed.Definition.Origin.Vendor != "w3c" ||
-            routed.BodyPath is not { Length: > 0 } bodyPath)
-        {
-            return Rejected("The selected file is not an RDF document.");
-        }
-
-        var elementId = id.ElementId.Value;
-
-        // A placement or a finished relation gesture names the element about to exist - it
-        // resolves like any element, to a target the action provider reads the gesture back out
-        // of; it lives for one ExecuteAction and is never selected, tracked or written anywhere.
-        if (RdfNewPlacement.IsPlacement(elementId) ||
-            RdfRelationGesture.TryParse(elementId, out _, out _))
-        {
-            return ValueTask.FromResult<ContextLevelResolution>(new ResolvedContextLevel(new ContextResolvedLevel(
-                id,
-                ["New element"],
-                ContextScope.DiagramElement,
-                new ContextTarget(
-                    ContextScope.DiagramElement,
-                    bodyPath,
-                    IsContainer: false,
-                    SourceId: default,
-                    rootPath,
-                    watchId,
-                    elementId,
-                    routed.Definition.Origin),
-                new ContextLevelDetail { Element = new ElementDetail { Text = "New element" } },
-                this)));
-        }
-
-        var entry = _documents.GetOrLoad(bodyPath);
-        var text = RdfSelection.Describe(entry, elementId) ?? OwlSelection.Describe(entry, elementId) ?? Shacl.ShaclSelection.Describe(entry, elementId);
-        if (text is null)
-        {
-            return Rejected("That element is no longer in this file.");
-        }
-
-        // The client's path is checked, never trusted.
-        if (clientPath.Count > 0 && !clientPath.SequenceEqual([text], StringComparer.Ordinal))
-        {
-            return Rejected("The path does not match the element.");
-        }
-
-        var level = new ContextResolvedLevel(
-            id,
-            [text],
-            ContextScope.DiagramElement,
-            new ContextTarget(
-                ContextScope.DiagramElement,
-                bodyPath,
-                IsContainer: false,
-                SourceId: default,
-                rootPath,
-                watchId,
-                elementId,
-                routed.Definition.Origin),
-            new ContextLevelDetail { Element = new ElementDetail { Text = text } },
-            this);
-
-        return ValueTask.FromResult<ContextLevelResolution>(new ResolvedContextLevel(level));
-    }
-
-    /// <summary>Nothing nests inside these elements for selection purposes.</summary>
-    public ContextNesting NestingOf(ContextResolvedLevel level) => ContextNesting.NotNestable;
-
-    /// <inheritdoc />
-    public IDisposable Track(
-        ShortGuid watchId,
-        string rootPath,
-        ContextResolvedLevel level,
-        Action<IReadOnlyList<string>?> onChange)
-    {
-        ArgumentNullException.ThrowIfNull(level);
-        ArgumentNullException.ThrowIfNull(onChange);
-        _ = watchId;
-        _ = rootPath;
-
-        var bodyPath = level.Target.ResolvedFullPath;
-        var elementId = level.Target.ElementId;
-
-        _documents.Changed += OnChanged;
-        return new RdfUnsubscriber(() => _documents.Changed -= OnChanged);
-
-        void OnChanged(object? sender, DocumentChangedEventArgs args)
-        {
-            if (!string.Equals(args.Path, bodyPath, StringComparison.OrdinalIgnoreCase))
-            {
-                return;
-            }
-
-            // Re-read rather than carrying the previous reading: a removal clears the selection.
-            var entry = _documents.GetOrLoad(bodyPath);
-            var text = RdfSelection.Describe(entry, elementId) ?? OwlSelection.Describe(entry, elementId) ?? Shacl.ShaclSelection.Describe(entry, elementId);
-            onChange(text is null ? null : [text]);
-        }
-    }
-
-    private static ValueTask<ContextLevelResolution> Rejected(string reason) =>
-        ValueTask.FromResult<ContextLevelResolution>(new RejectedContextLevel(reason));
+    protected override DiagramElement? Drawn(RdfModel model, string elementId) => drawn(model, elementId);
 }
