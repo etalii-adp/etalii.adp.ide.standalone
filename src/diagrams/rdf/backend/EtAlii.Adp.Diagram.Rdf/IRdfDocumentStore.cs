@@ -8,49 +8,16 @@ namespace EtAlii.Adp.Diagram.Rdf;
 /// an edit made through one is visible in the others.
 /// </summary>
 /// <remarks>
+/// <para>
 /// This is the triplestore document store the family's specifications name: a file is parsed once
 /// into triples plus a line-level concrete syntax, and siblings add projections over the model,
 /// never parsers of their own. Turtle and N-Triples come through the same door - N-Triples is a
 /// subset - and everything else is refused upstream at the definition, not here.
+/// </para>
 /// <para>
-/// <see cref="IReloadableDocumentStore.Reload"/> is this store's too, declared on the shared
-/// interface so the shared restore edit (backend-centralization R6) can reload this module's
-/// documents: it re-reads a document something outside changed and tells the sessions on it. It
-/// is a no-op while the store's own save of that path is in flight: its own write on disk is not
-/// an external change, and must not bounce back as one. A reload that cannot read keeps the last
-/// good document and tells nobody (R2.4).
+/// <b>The shared store's contract, under the family's name</b> (code-structure FR-029). The name stays
+/// so the four readings, the commands and the restore edit can ask for this family's store by type:
+/// one instance serves all four origins.
 /// </para>
 /// </remarks>
-public interface IRdfDocumentStore : IReloadableDocumentStore
-{
-    /// <summary>
-    /// The document at <paramref name="path"/>, loaded once and kept. A file that is not there
-    /// yet yields an empty document rather than throwing, so a freshly created diagram opens and
-    /// the first save creates it.
-    /// </summary>
-    RdfDocumentEntry GetOrLoad(string path);
-
-    /// <summary>
-    /// Writes the document back and tells every session on it. Refuses while the document does
-    /// not parse, so a file that is already broken is never made worse (Requirement 1.5).
-    /// </summary>
-    /// <returns><see cref="DocumentSaveResult.Ok"/> when it was written, or a failure whose <see cref="DocumentSaveResult.Error"/> says why it was not (backend-centralization R3.1).</returns>
-    /// <remarks>
-    /// <b>The entry is a parameter rather than something this looked up, and that is the fix for a
-    /// data-loss defect.</b> It used to call <see cref="GetOrLoad"/> itself, so it wrote whatever was
-    /// in the cache at save time - and a <see cref="IReloadableDocumentStore.Reload"/> replaced that entry. A reload landing between a
-    /// command's edit and its save therefore discarded the edit and REPORTED SUCCESS, which put the
-    /// command's inverse on the undo stack for a change that never happened. Passing the entry makes
-    /// that ordering unrepresentable: what the caller edited is what gets written.
-    /// </remarks>
-    DocumentSaveResult Save(string path, RdfDocumentEntry entry);
-
-    /// <summary>
-    /// The watcher saw the body deleted: the document becomes what a first open of a missing body
-    /// shows, and the sessions are told (R2.5). The one call that clears a document a reload kept.
-    /// </summary>
-    void BodyDeleted(string path);
-
-    /// <summary>Raised after a save, and after an external change is picked up.</summary>
-    event EventHandler<RdfDocumentChangedEventArgs>? Changed;
-}
+public interface IRdfDocumentStore : IDiagramDocumentStore<LineDocument, RdfModel>;

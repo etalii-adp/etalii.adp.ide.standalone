@@ -1,4 +1,3 @@
-using System.Text;
 using EtAlii.Adp.Documents;
 
 namespace EtAlii.Adp.Diagram.Rdf.Shacl;
@@ -24,7 +23,7 @@ public sealed class ShaclDocumentFactory(DiagramOrigin origin) : IDiagramDocumen
     {
         ArgumentNullException.ThrowIfNull(baseName);
 
-        var local = LocalOf(baseName);
+        var local = RdfLocalName.Of(baseName);
         return "@prefix sh: <http://www.w3.org/ns/shacl#> .\r\n"
             + "@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .\r\n"
             + "@prefix ex: <http://example.org/> .\r\n"
@@ -38,19 +37,5 @@ public sealed class ShaclDocumentFactory(DiagramOrigin origin) : IDiagramDocumen
             + "        sh:minCount 1 ;\r\n"
             + "        sh:maxCount 1 ;\r\n"
             + "    ] .\r\n";
-    }
-
-    private static string LocalOf(string baseName)
-    {
-        var builder = new StringBuilder(baseName.Length);
-        foreach (var character in baseName)
-        {
-            builder.Append(char.IsAsciiLetterOrDigit(character) || character is '-' or '_'
-                ? character
-                : '_');
-        }
-
-        var local = builder.ToString().Trim('_');
-        return local.Length > 0 ? local : "untitled";
     }
 }

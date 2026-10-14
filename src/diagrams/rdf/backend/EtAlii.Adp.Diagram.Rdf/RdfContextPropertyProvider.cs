@@ -1,5 +1,6 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Diagram.Rdf.Shacl;
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.History;
 
@@ -168,7 +169,7 @@ public sealed class RdfContextPropertyProvider : IContextPropertyProvider
         return result.IsSuccess ? ContextPropertyResult.Success : ContextPropertyResult.Failure(result.Error);
     }
 
-    private static ICommand? CommandFor(RdfDocumentEntry entry, ContextTarget target, string propertyId, string value)
+    private static ICommand? CommandFor(DocumentEntry<LineDocument, RdfModel> entry, ContextTarget target, string propertyId, string value)
     {
         if (SkosProperties.CommandFor(entry, target, propertyId, value) is { } skosCommand)
         {
@@ -214,7 +215,7 @@ public sealed class RdfContextPropertyProvider : IContextPropertyProvider
     /// and a property's own axioms. Empty for a term with no OWL axioms, so a plain data graph's
     /// grid stays exactly the family's (owl-diagram Requirements 7.2, 7.3).
     /// </summary>
-    private static IEnumerable<ContextPropertyDefinition> OwlRowsFor(RdfDocumentEntry entry, string iri)
+    private static IEnumerable<ContextPropertyDefinition> OwlRowsFor(DocumentEntry<LineDocument, RdfModel> entry, string iri)
     {
         const string axiomGroup = "Axioms";
         const string axiomsAreTriples = "Axioms are stated by triples; draw or remove them as edges and statements.";
@@ -261,7 +262,7 @@ public sealed class RdfContextPropertyProvider : IContextPropertyProvider
     }
 
     /// <summary>A derived property edge's rows: the property's identity and its axioms.</summary>
-    private static IReadOnlyList<ContextPropertyDefinition> PropertyRowsFor(RdfDocumentEntry entry, string propertyIri)
+    private static IReadOnlyList<ContextPropertyDefinition> PropertyRowsFor(DocumentEntry<LineDocument, RdfModel> entry, string propertyIri)
     {
         var rows = new List<ContextPropertyDefinition>
         {
@@ -271,7 +272,7 @@ public sealed class RdfContextPropertyProvider : IContextPropertyProvider
         return rows;
     }
 
-    private static IEnumerable<string> CharacteristicsOf(RdfDocumentEntry entry, string iri)
+    private static IEnumerable<string> CharacteristicsOf(DocumentEntry<LineDocument, RdfModel> entry, string iri)
     {
         foreach (var triple in entry.Model.Triples)
         {
@@ -298,7 +299,7 @@ public sealed class RdfContextPropertyProvider : IContextPropertyProvider
         }
     }
 
-    private static string LiteralOf(RdfDocumentEntry entry, string iri, string predicateIri) =>
+    private static string LiteralOf(DocumentEntry<LineDocument, RdfModel> entry, string iri, string predicateIri) =>
         entry.Model.Triples
             .Where(t => t.Subject is IriTerm s && s.Iri == iri && t.Predicate.Iri == predicateIri)
             .Select(t => t.Object)

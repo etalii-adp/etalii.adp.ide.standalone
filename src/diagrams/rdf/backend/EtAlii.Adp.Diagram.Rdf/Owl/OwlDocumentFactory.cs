@@ -1,4 +1,3 @@
-using System.Text;
 using EtAlii.Adp.Documents;
 
 namespace EtAlii.Adp.Diagram.Rdf;
@@ -22,7 +21,7 @@ public sealed class OwlDocumentFactory(DiagramOrigin origin) : IDiagramDocumentF
     {
         ArgumentNullException.ThrowIfNull(baseName);
 
-        var local = LocalOf(baseName);
+        var local = RdfLocalName.Of(baseName);
         return $"@prefix : <http://example.org/{local}#> .\r\n"
             + "@prefix owl: <http://www.w3.org/2002/07/owl#> .\r\n"
             + "@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .\r\n"
@@ -32,20 +31,5 @@ public sealed class OwlDocumentFactory(DiagramOrigin origin) : IDiagramDocumentF
             + "\r\n"
             + ":Thing1 a owl:Class ;\r\n"
             + "    rdfs:label \"First class\" .\r\n";
-    }
-
-    /// <summary>The base name as a local name, anything a prefixed name cannot carry folded to underscores.</summary>
-    private static string LocalOf(string baseName)
-    {
-        var builder = new StringBuilder(baseName.Length);
-        foreach (var character in baseName)
-        {
-            builder.Append(char.IsAsciiLetterOrDigit(character) || character is '-' or '_'
-                ? character
-                : '_');
-        }
-
-        var local = builder.ToString().Trim('_');
-        return local.Length > 0 ? local : "untitled";
     }
 }

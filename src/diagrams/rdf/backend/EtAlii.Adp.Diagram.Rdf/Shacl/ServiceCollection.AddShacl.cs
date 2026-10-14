@@ -46,9 +46,5 @@ public static class ServiceCollectionAddShaclExtension
             provider.GetRequiredService<IRdfDocumentStore>(),
             provider.GetRequiredService<ShaclElementMapper>(),
             provider.GetRequiredService<IHistoryStackStore>()));
-
-        services.AddSingleton<IDiagramDocumentReloader>(provider => new RdfDocumentReloader(
-            ShaclOrigin,
-            provider.GetRequiredService<IRdfDocumentStore>()));
     }
 }

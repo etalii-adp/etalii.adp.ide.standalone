@@ -53,7 +53,7 @@ public class ShaclActionsTests : IDisposable
         GC.SuppressFinalize(this);
     }
 
-    private RdfDocumentEntry Entry() => _provider.GetRequiredService<IRdfDocumentStore>().GetOrLoad(_body);
+    private DocumentEntry<LineDocument, RdfModel> Entry() => _provider.GetRequiredService<IRdfDocumentStore>().GetOrLoad(_body);
 
     private ContextTarget Target(string elementId, DiagramOrigin? origin) =>
         new(ContextScope.DiagramElement, _body, false, ShortGuid.NewShortGuid(), _root, default, elementId) { Origin = origin };

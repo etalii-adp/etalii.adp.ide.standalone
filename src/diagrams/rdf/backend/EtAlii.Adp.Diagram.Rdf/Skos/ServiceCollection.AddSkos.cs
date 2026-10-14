@@ -32,8 +32,5 @@ public static class ServiceCollectionAddSkosExtension
             provider.GetRequiredService<SkosElementMapper>(),
             provider.GetRequiredService<IHistoryStackStore>()));
         services.AddSingleton<IDiagramDocumentFactory>(_ => new SkosDocumentFactory(SkosOrigin));
-        services.AddSingleton<IDiagramDocumentReloader>(provider => new RdfDocumentReloader(
-            SkosOrigin,
-            provider.GetRequiredService<IRdfDocumentStore>()));
     }
 }

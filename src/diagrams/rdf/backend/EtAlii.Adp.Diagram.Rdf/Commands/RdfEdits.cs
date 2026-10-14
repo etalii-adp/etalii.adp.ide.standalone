@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.Rdf;
@@ -20,7 +21,7 @@ internal static class RdfEdits
         IRdfDocumentStore documents,
         string bodyPath,
         ICommand self,
-        Func<RdfDocumentEntry, string> edit)
+        Func<DocumentEntry<LineDocument, RdfModel>, string> edit)
     {
         var entry = documents.GetOrLoad(bodyPath);
         if (!entry.IsUsable)
@@ -36,7 +37,7 @@ internal static class RdfEdits
             return Task.FromResult(CommandResult.Failure(refusal));
         }
 
-        var saved = documents.Save(bodyPath, entry);
+        var saved = documents.Save(bodyPath, entry.Document);
         return Task.FromResult(!saved.Failed
             ? CommandResult.Success(new RestoreDocumentCommand<IRdfDocumentStore>(bodyPath, before, self))
             : CommandResult.Failure(saved.Error));

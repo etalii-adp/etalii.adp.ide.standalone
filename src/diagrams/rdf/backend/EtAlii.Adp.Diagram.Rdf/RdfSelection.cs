@@ -1,4 +1,5 @@
 using EtAlii.Adp.Context;
+using EtAlii.Adp.Documents;
 using IoPath = System.IO.Path;
 
 namespace EtAlii.Adp.Diagram.Rdf;
@@ -54,7 +55,7 @@ internal static class RdfSelection
             : CouldBeFamilyFile(target.ResolvedFullPath);
 
     /// <summary>The IRI a <c>res:</c> id names, when the model actually states it; null otherwise.</summary>
-    public static string? ResourceOf(RdfDocumentEntry entry, string? elementId)
+    public static string? ResourceOf(DocumentEntry<LineDocument, RdfModel> entry, string? elementId)
     {
         if (elementId is null || !elementId.StartsWith("res:", StringComparison.Ordinal))
         {
@@ -70,7 +71,7 @@ internal static class RdfSelection
         elementId is not null && elementId.StartsWith("blank:", StringComparison.Ordinal);
 
     /// <summary>The drawn triple an <c>edge:</c> id names, when the model still states it.</summary>
-    public static RdfTriple? EdgeOf(RdfDocumentEntry entry, string? elementId)
+    public static RdfTriple? EdgeOf(DocumentEntry<LineDocument, RdfModel> entry, string? elementId)
     {
         if (elementId is null || !elementId.StartsWith("edge:", StringComparison.Ordinal))
         {
@@ -94,20 +95,20 @@ internal static class RdfSelection
     }
 
     /// <summary>Every triple the IRI is subject or object of - what a removal takes with it (Requirement 6).</summary>
-    public static IReadOnlyList<RdfTriple> Touching(RdfDocumentEntry entry, string iri) =>
+    public static IReadOnlyList<RdfTriple> Touching(DocumentEntry<LineDocument, RdfModel> entry, string iri) =>
         entry.Model.Triples
             .Where(t => Names(t, iri))
             .ToList();
 
     /// <summary>Whether the drawn view is budget-cut, in which case every edit is withheld.</summary>
-    public static bool IsTruncated(RdfDocumentEntry entry) =>
+    public static bool IsTruncated(DocumentEntry<LineDocument, RdfModel> entry) =>
         RdfProjection.Project(entry.Model).Truncated;
 
     /// <summary>
     /// The display text an id resolves to, or null when the entry holds nothing by that id -
     /// which is what tells the resolver another module's element is being asked about.
     /// </summary>
-    public static string? Describe(RdfDocumentEntry entry, string elementId)
+    public static string? Describe(DocumentEntry<LineDocument, RdfModel> entry, string elementId)
     {
         if (ResourceOf(entry, elementId) is { } iri)
         {
