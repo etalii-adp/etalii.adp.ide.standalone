@@ -3,6 +3,7 @@ using System.Text.Json;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Documents.Wire;
+using EtAlii.Adp.History;
 using EtAlii.Adp.Specification.Disl;
 
 namespace EtAlii.Adp.Diagram.CausalLoopDiagram;
@@ -50,11 +51,61 @@ internal static class CausalLoopDefinition
     /// <summary>The palette.</summary>
     public static IReadOnlyList<ToolboxItemDefinition> Toolbox => LoadedToolbox.Value;
 
+    /// <summary>What <c>env</c> reads for an edit: editable, with no viewpoint.</summary>
+    public static DislEnv EditEnv => Env;
+
     /// <summary>The model of <paramref name="entry"/>: its body as the binding reads it.</summary>
-    private static DislDiagram DiagramOf(DocumentEntry<CausalLoopDocument, CausalLoopModel> entry)
+    private static DislDiagram DiagramOf(DocumentEntry<CausalLoopBody, CausalLoopModel> entry)
     {
         ArgumentNullException.ThrowIfNull(entry);
-        return CausalLoopBody.Parse(entry.Document.Text).Disl.Diagram;
+        return entry.Document.Disl.Diagram;
+    }
+
+    /// <summary>
+    /// Writes the changes of <paramref name="transaction"/> into <paramref name="body"/>, in order, each
+    /// as the FBL change <see cref="DislWrite"/> makes of it; the first refusal, the transaction's own or
+    /// the binding's, stops it (causal-loop-disl-fbl Requirement 5.1).
+    /// </summary>
+    public static EditOutcome Apply(CausalLoopBody body, DislTransaction transaction)
+    {
+        ArgumentNullException.ThrowIfNull(body);
+        ArgumentNullException.ThrowIfNull(transaction);
+        if (!transaction.WasApplied) return EditOutcome.Refused(transaction.Refusal!);
+
+        foreach (var change in transaction.Changes)
+        {
+            var edit = body.Change(DislWrite.ToFbl(Specification, change));
+            if (!edit.WasApplied) return edit;
+        }
+
+        return EditOutcome.Applied;
+    }
+
+    /// <summary>
+    /// Draws the link from the variable <paramref name="from"/> to <paramref name="to"/>, stating
+    /// <paramref name="polarity"/> (none for null), and writes it with every loop the definition's
+    /// <c>on: connect</c> hook claims for it, as one edit (causal-loop-disl-fbl Requirement 5.5). Both
+    /// variables are declared and the link is not yet stated; the caller checked.
+    /// </summary>
+    public static EditOutcome Draw(CausalLoopBody body, string from, string to, string? polarity)
+    {
+        ArgumentNullException.ThrowIfNull(body);
+        var diagram = body.Working();
+        var cause = VariableOf(diagram, from) ?? throw new ArgumentException($"No variable is named '{from}'.", nameof(from));
+        var effect = VariableOf(diagram, to) ?? throw new ArgumentException($"No variable is named '{to}'.", nameof(to));
+
+        // The cause and effect names are the binding's reading of the ends, which the hook's cycles are
+        // keyed by; only the polarity is written.
+        var written = new Dictionary<string, object?>(StringComparer.Ordinal);
+        if (polarity is not null) written["polarity"] = polarity;
+        var read = new Dictionary<string, object?>(written, StringComparer.Ordinal) { ["causeName"] = from, ["effectName"] = to };
+        var id = CausalLoopEdits.LinkId(from, to);
+        var link = diagram.AddRelation("CausalLink", id, cause, effect, read);
+
+        var claimed = HookRunner.AfterConnect(Specification, link, new ClaimedLoopIds(), Env);
+        return claimed.WasApplied
+            ? Apply(body, new DislTransaction([new DislChange.Connect("CausalLink", id, cause.Id, effect.Id, written), .. claimed.Changes], [], null))
+            : EditOutcome.Refused(claimed.Refusal!);
     }
 
     /// <summary>
@@ -73,7 +124,7 @@ internal static class CausalLoopDefinition
     }
 
     /// <summary>The context menu of <paramref name="elementId"/> in <paramref name="entry"/>: an element, a placement, a connect gesture; none for anything else.</summary>
-    public static IReadOnlyList<ContextActionGroupDefinition> Menus(DocumentEntry<CausalLoopDocument, CausalLoopModel> entry, string? elementId)
+    public static IReadOnlyList<ContextActionGroupDefinition> Menus(DocumentEntry<CausalLoopBody, CausalLoopModel> entry, string? elementId)
     {
         ArgumentNullException.ThrowIfNull(entry);
         if (!entry.IsUsable) return [];
@@ -96,7 +147,7 @@ internal static class CausalLoopDefinition
     }
 
     /// <summary>The property rows of <paramref name="elementId"/> in <paramref name="entry"/>: an element's form; none for anything else.</summary>
-    public static IReadOnlyList<ContextPropertyDefinition> Rows(DocumentEntry<CausalLoopDocument, CausalLoopModel> entry, string? elementId)
+    public static IReadOnlyList<ContextPropertyDefinition> Rows(DocumentEntry<CausalLoopBody, CausalLoopModel> entry, string? elementId)
     {
         ArgumentNullException.ThrowIfNull(entry);
         if (!entry.IsUsable || ElementOf(DiagramOf(entry), elementId) is not { } element) return [];
@@ -104,21 +155,21 @@ internal static class CausalLoopDefinition
     }
 
     /// <summary>The confirmation removing the element <paramref name="elementId"/> asks for; null when it names none, or asks nothing.</summary>
-    public static DislConfirmation? RemovalConfirmation(DocumentEntry<CausalLoopDocument, CausalLoopModel> entry, string? elementId)
+    public static DislConfirmation? RemovalConfirmation(DocumentEntry<CausalLoopBody, CausalLoopModel> entry, string? elementId)
     {
         ArgumentNullException.ThrowIfNull(entry);
         return ElementOf(DiagramOf(entry), elementId) is { } element ? DeletionPolicy.Confirmation(Specification, element, env: Env) : null;
     }
 
     /// <summary>The element <paramref name="id"/> names: the first in model order with that id; null for none.</summary>
-    private static DislElement? ElementOf(DislDiagram diagram, string? id)
+    public static DislElement? ElementOf(DislDiagram diagram, string? id)
     {
         ArgumentNullException.ThrowIfNull(diagram);
         return id is null ? null : diagram.ElementById(id);
     }
 
     /// <summary>The variable written with <paramref name="name"/>; null for none.</summary>
-    private static DislElement? VariableOf(DislDiagram diagram, string name) =>
+    public static DislElement? VariableOf(DislDiagram diagram, string name) =>
         diagram.NodesOfType("Variable").FirstOrDefault(variable => variable.Attributes.TryGetValue("name", out var written) && written as string == name);
 
     private static ContextActionDefinition Action(DerivedMenuEntry entry) => new(
@@ -177,5 +228,16 @@ internal static class CausalLoopDefinition
             }
         }
         return reasons;
+    }
+
+    /// <summary>
+    /// The ids of the loops a hook claims while it runs: unique on the working diagram, and never written,
+    /// since a loop's id is its identifier, which the binding reads back.
+    /// </summary>
+    private sealed class ClaimedLoopIds : IIdSource
+    {
+        private int _next;
+
+        public string Next(string type) => string.Create(CultureInfo.InvariantCulture, $"{type}:claimed-{++_next}");
     }
 }

@@ -58,7 +58,7 @@ internal static class HandWrittenCausalLoop
     ];
 
     /// <summary>The context menu of <paramref name="elementId"/>, as <c>DiscoverAsync</c> answered it after its body check.</summary>
-    public static IReadOnlyList<ContextActionGroupDefinition> Menus(DocumentEntry<CausalLoopDocument, CausalLoopModel> entry, string? elementId)
+    public static IReadOnlyList<ContextActionGroupDefinition> Menus(DocumentEntry<CausalLoopBody, CausalLoopModel> entry, string? elementId)
     {
         if (!entry.IsUsable)
         {
@@ -104,7 +104,7 @@ internal static class HandWrittenCausalLoop
     }
 
     /// <summary>The property rows of <paramref name="elementId"/>, as <c>DescribeAsync</c> answered them after its body check.</summary>
-    public static IReadOnlyList<ContextPropertyDefinition> Rows(DocumentEntry<CausalLoopDocument, CausalLoopModel> entry, string? elementId)
+    public static IReadOnlyList<ContextPropertyDefinition> Rows(DocumentEntry<CausalLoopBody, CausalLoopModel> entry, string? elementId)
     {
         if (!entry.IsUsable)
         {

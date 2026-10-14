@@ -33,7 +33,7 @@ namespace EtAlii.Adp.Diagram.CausalLoopDiagram;
 /// is what lets every module's element resolver coexist.
 /// </para>
 /// </remarks>
-public sealed class CausalLoopContextSourceResolver : DiagramElementSourceResolver<CausalLoopDocument, CausalLoopModel>
+public sealed class CausalLoopContextSourceResolver : DiagramElementSourceResolver<CausalLoopBody, CausalLoopModel>
 {
     private readonly CausalLoopElementMapper _mapper;
 

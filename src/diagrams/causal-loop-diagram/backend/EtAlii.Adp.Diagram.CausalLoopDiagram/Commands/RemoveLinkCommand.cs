@@ -3,17 +3,20 @@ using EtAlii.Adp.History;
 namespace EtAlii.Adp.Diagram.CausalLoopDiagram;
 
 /// <summary>Withdraws a link. Loops through it survive: a loop is a claim of its own.</summary>
-public sealed record RemoveLinkCommand(string BodyPath, string From, string To) : ICommand;
+public sealed record RemoveLinkCommand(string BodyPath, string From, string To) : IDocumentEditCommand;
 
 /// <inheritdoc cref="RemoveLinkCommand" />
-public sealed class RemoveLinkCommandHandler(ICausalLoopDocumentStore documents) : ICommandHandler<RemoveLinkCommand>
+public sealed class RemoveLinkCommandHandler(ICausalLoopDocumentStore documents) : CausalLoopEditHandler<RemoveLinkCommand>(documents)
 {
-    public Task<CommandResult> ExecuteAsync(RemoveLinkCommand command, CancellationToken cancellationToken = default)
+    /// <inheritdoc />
+    protected override EditOutcome Apply(CausalLoopBody body, CausalLoopModel model, RemoveLinkCommand command)
     {
+        ArgumentNullException.ThrowIfNull(body);
+        ArgumentNullException.ThrowIfNull(model);
         ArgumentNullException.ThrowIfNull(command);
-        cancellationToken.ThrowIfCancellationRequested();
 
-        return CausalLoopEdits.Run(documents, command.BodyPath, command, entry =>
-            CausalLoopWriter.RemoveLink(entry.Document, entry.Model, command.From, command.To));
+        return CausalLoopEdits.HasLink(model, command.From, command.To)
+            ? CausalLoopEdits.Remove(body, CausalLoopEdits.LinkId(command.From, command.To))
+            : EditOutcome.Refused(CausalLoopEdits.NoSuchLink);
     }
 }

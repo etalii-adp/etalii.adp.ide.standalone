@@ -3,17 +3,20 @@ using EtAlii.Adp.History;
 namespace EtAlii.Adp.Diagram.CausalLoopDiagram;
 
 /// <summary>Changes what a link asserts about the direction of its effect.</summary>
-public sealed record SetLinkPolarityCommand(string BodyPath, string From, string To, CausalLoopPolarity Polarity) : ICommand;
+public sealed record SetLinkPolarityCommand(string BodyPath, string From, string To, CausalLoopPolarity Polarity) : IDocumentEditCommand;
 
 /// <inheritdoc cref="SetLinkPolarityCommand" />
-public sealed class SetLinkPolarityCommandHandler(ICausalLoopDocumentStore documents) : ICommandHandler<SetLinkPolarityCommand>
+public sealed class SetLinkPolarityCommandHandler(ICausalLoopDocumentStore documents) : CausalLoopEditHandler<SetLinkPolarityCommand>(documents)
 {
-    public Task<CommandResult> ExecuteAsync(SetLinkPolarityCommand command, CancellationToken cancellationToken = default)
+    /// <inheritdoc />
+    protected override EditOutcome Apply(CausalLoopBody body, CausalLoopModel model, SetLinkPolarityCommand command)
     {
+        ArgumentNullException.ThrowIfNull(body);
+        ArgumentNullException.ThrowIfNull(model);
         ArgumentNullException.ThrowIfNull(command);
-        cancellationToken.ThrowIfCancellationRequested();
 
-        return CausalLoopEdits.Run(documents, command.BodyPath, command, entry =>
-            CausalLoopWriter.SetLinkPolarity(entry.Document, entry.Model, command.From, command.To, command.Polarity));
+        return CausalLoopEdits.HasLink(model, command.From, command.To)
+            ? CausalLoopEdits.Set(body, CausalLoopEdits.LinkId(command.From, command.To), "CausalLink", ("polarity", CausalLoopEdits.Stored(command.Polarity)))
+            : EditOutcome.Refused(CausalLoopEdits.NoSuchLink);
     }
 }

@@ -9,7 +9,7 @@ namespace EtAlii.Adp.Diagram.CausalLoopDiagram.Tests;
 public class LoopArithmeticTests
 {
     private static CausalLoopModel Model(params string[] statements) =>
-        CausalLoopParser.Parse(CausalLoopDocument.Parse(string.Join("", statements.Select(s => s + "\r\n")))).Model;
+        CausalLoopBody.Parse(string.Join("", statements.Select(s => s + "\r\n"))).Read();
 
     private static CausalLoopModel Ring(params string[] polarities)
     {

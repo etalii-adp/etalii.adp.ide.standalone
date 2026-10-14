@@ -1,12 +1,13 @@
 using System.Globalization;
 using EtAlii.Adp.Documents;
 
-namespace EtAlii.Adp.Diagram.CausalLoopDiagram;
+namespace EtAlii.Adp.Diagram.CausalLoopDiagram.Tests.Parity;
 
 /// <summary>
 /// Reads a <c>.cld</c> document into the model it states.
 /// </summary>
 /// <remarks>
+/// <para>The parity oracle (causal-loop-disl-fbl task 7): the module's hand-written reading and writing, kept in the test project to hold the definition and binding to what the tool did, and used by no product code.</para>
 /// <para>
 /// The grammar, one statement per line:
 /// </para>
@@ -30,7 +31,7 @@ namespace EtAlii.Adp.Diagram.CausalLoopDiagram;
 /// (Requirement 3.6).
 /// </para>
 /// </remarks>
-public static class CausalLoopParser
+internal static class CausalLoopParser
 {
     /// <summary>The header a <c>.cld</c> document opens with.</summary>
     private const string Header = "causal-loop";

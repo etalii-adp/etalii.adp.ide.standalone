@@ -1,12 +1,13 @@
 using System.Globalization;
 using EtAlii.Adp.Documents;
 
-namespace EtAlii.Adp.Diagram.CausalLoopDiagram;
+namespace EtAlii.Adp.Diagram.CausalLoopDiagram.Tests.Parity;
 
 /// <summary>
 /// Every edit this module makes to a <c>.cld</c>, as a splice into the lines the parser read.
 /// </summary>
 /// <remarks>
+/// <para>The parity oracle (causal-loop-disl-fbl task 7): the module's hand-written reading and writing, kept in the test project to hold the definition and binding to what the tool did, and used by no product code.</para>
 /// <para>
 /// <b>Splices, never reserialization.</b> Each operation rewrites the one line its statement
 /// occupies, or appends one, and leaves every other byte as the author wrote it - comments,
@@ -19,7 +20,7 @@ namespace EtAlii.Adp.Diagram.CausalLoopDiagram;
 /// nothing, so a rejected edit cannot leave the document half-changed.
 /// </para>
 /// </remarks>
-public static class CausalLoopWriter
+internal static class CausalLoopWriter
 {
     /// <summary>What a gesture is told when the thing it names is not in the document.</summary>
     public const string NoSuchVariable = "No variable of that name is in this diagram, so there is nothing to change.";

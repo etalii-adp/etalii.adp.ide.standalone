@@ -35,7 +35,7 @@ namespace EtAlii.Adp.Diagram.CausalLoopDiagram;
 /// own error, which hid a defect behind the same kind of line as a locked file.
 /// </para>
 /// </remarks>
-internal sealed class CausalLoopSession : DocumentDiagramSession<CausalLoopDocument, CausalLoopModel>
+internal sealed class CausalLoopSession : DocumentDiagramSession<CausalLoopBody, CausalLoopModel>
 {
     private readonly string? _registrationPath;
     private readonly CausalLoopElementMapper _mapper;

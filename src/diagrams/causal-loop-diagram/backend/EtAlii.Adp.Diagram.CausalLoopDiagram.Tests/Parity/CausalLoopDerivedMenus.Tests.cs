@@ -55,11 +55,11 @@ public class CausalLoopDerivedMenusTests
 /// <summary>An entry of a corpus document as the store makes one, and the targets the parity transcript records for it.</summary>
 internal static class CausalLoopEntries
 {
-    public static async Task<DocumentEntry<CausalLoopDocument, CausalLoopModel>> ReadAsync(string relative, CancellationToken cancellationToken)
+    /// <remarks>The model is the hand-written parser's, the one the hand-written oracle read; the derived side reads the body.</remarks>
+    public static async Task<DocumentEntry<CausalLoopBody, CausalLoopModel>> ReadAsync(string relative, CancellationToken cancellationToken)
     {
         var text = await File.ReadAllTextAsync(Path.Combine(CausalLoopTranscript.SourceFolder, relative), cancellationToken);
-        var document = CausalLoopDocument.Parse(text);
-        return new DocumentEntry<CausalLoopDocument, CausalLoopModel>(document, CausalLoopParser.Parse(document).Model);
+        return new DocumentEntry<CausalLoopBody, CausalLoopModel>(CausalLoopBody.Parse(text), CausalLoopParser.Parse(CausalLoopDocument.Parse(text)).Model);
     }
 
     public static IEnumerable<string> Targets(CausalLoopModel model, bool withGestures)

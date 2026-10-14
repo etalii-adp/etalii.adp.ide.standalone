@@ -3,17 +3,21 @@ using EtAlii.Adp.History;
 namespace EtAlii.Adp.Diagram.CausalLoopDiagram;
 
 /// <summary>Renames a loop, without touching what it runs through.</summary>
-public sealed record SetLoopNameCommand(string BodyPath, string Identifier, string Name) : ICommand;
+public sealed record SetLoopNameCommand(string BodyPath, string Identifier, string Name) : IDocumentEditCommand;
 
 /// <inheritdoc cref="SetLoopNameCommand" />
-public sealed class SetLoopNameCommandHandler(ICausalLoopDocumentStore documents) : ICommandHandler<SetLoopNameCommand>
+public sealed class SetLoopNameCommandHandler(ICausalLoopDocumentStore documents) : CausalLoopEditHandler<SetLoopNameCommand>(documents)
 {
-    public Task<CommandResult> ExecuteAsync(SetLoopNameCommand command, CancellationToken cancellationToken = default)
+    /// <inheritdoc />
+    protected override EditOutcome Apply(CausalLoopBody body, CausalLoopModel model, SetLoopNameCommand command)
     {
+        ArgumentNullException.ThrowIfNull(body);
+        ArgumentNullException.ThrowIfNull(model);
         ArgumentNullException.ThrowIfNull(command);
-        cancellationToken.ThrowIfCancellationRequested();
 
-        return CausalLoopEdits.Run(documents, command.BodyPath, command, entry =>
-            CausalLoopWriter.SetLoopName(entry.Document, entry.Model, command.Identifier, command.Name));
+        if (!CausalLoopEdits.IsUsableText(command.Name)) return EditOutcome.Refused(CausalLoopEdits.UnusableText);
+        return CausalLoopEdits.HasLoop(model, command.Identifier)
+            ? CausalLoopEdits.Set(body, CausalLoopEdits.LoopId(command.Identifier), "Loop", ("title", command.Name))
+            : EditOutcome.Refused(CausalLoopEdits.NoSuchLoop);
     }
 }
