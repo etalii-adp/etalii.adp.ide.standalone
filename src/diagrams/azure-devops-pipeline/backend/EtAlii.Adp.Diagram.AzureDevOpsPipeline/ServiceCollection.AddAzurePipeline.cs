@@ -79,5 +79,6 @@ public static class ServiceCollectionAddAzurePipelineExtension
         services.AddSingleton<ICommandHandler<RemovePipelineElementCommand>, RemovePipelineElementCommandHandler>();
         services.AddSingleton<ICommandHandler<RestorePipelineLinesCommand>, RestorePipelineLinesCommandHandler>();
         services.AddSingleton<ICommandHandler<MovePipelineStepCommand>, MovePipelineStepCommandHandler>();
+        services.AddSingleton<ICommandHandler<RestoreDocumentCommand<IPipelineDocumentStore>>, RestoreDocumentCommandHandler<IPipelineDocumentStore>>();
     }
 }

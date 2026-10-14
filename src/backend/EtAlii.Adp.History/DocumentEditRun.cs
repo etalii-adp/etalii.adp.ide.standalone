@@ -57,6 +57,11 @@ public static class DocumentEditRun
             return CommandResult.Failure(outcome.Refusal!);
         }
 
+        if (outcome.IsUnchanged)
+        {
+            return CommandResult.Success();
+        }
+
         var saved = documents.Save(bodyPath, copy);
         return CommandResult.FromSave(saved, outcome.Inverse ?? new RestoreDocumentCommand<TStore>(bodyPath, before, self));
     }
@@ -70,6 +75,7 @@ public static class DocumentEditRun
     /// The undo restores the text the edit was applied to, and refuses once the file is no longer
     /// what the edit left, so it never writes over a later change of the other program's. An
     /// <see cref="EditOutcome.Inverse"/> is not used here: only the whole text can make that check.
+    /// Nor is <see cref="EditOutcome.Unchanged"/>: the edit is applied inside the store's save.
     /// </remarks>
     /// <param name="self">The command being run: the redo of the undo this returns.</param>
     public static CommandResult RunOnCurrent<TStore, TBody, TModel>(

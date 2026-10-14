@@ -123,24 +123,40 @@ public sealed class PipelineWriter
     }
 
     /// <summary>
-    /// Removes a whole element, and the blank lines that separated it from the next one.
+    /// Removes a whole element, and the blank lines that separated it from the next one where a
+    /// blank line separates it from the one before as well.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// The trailing blanks go with it deliberately. A pipeline that separates its stages with a
     /// blank line each would otherwise accumulate a run of them wherever a stage was removed, and
     /// that is a diff the user did not ask for even though every line of it is whitespace.
+    /// </para>
+    /// <para>
+    /// <b>Only where a blank line comes before it too</b>, because then the one before is the
+    /// separator that stays. The last job of a stage has its stage's content above it, and the blank
+    /// below it separates that stage from the next: taking it would join the two stages.
+    /// </para>
     /// </remarks>
-    public void RemoveElement(PipelineEditTarget element)
+    /// <returns>The lines removed, blanks included, which put back where they were undo the removal.</returns>
+    public IReadOnlyList<string> RemoveElement(PipelineEditTarget element)
     {
         Guard(element);
 
+        var start = element.Lines.Start;
         var end = element.Lines.End;
-        while (end + 1 < _document.Lines.Count && _document.Lines[end + 1].IsBlank)
+        var separated = start == 0 || _document.Lines[start - 1].IsBlank;
+        while (separated && end + 1 < _document.Lines.Count && _document.Lines[end + 1].IsBlank)
         {
             end++;
         }
 
-        _document.Remove(new LineRange(element.Lines.Start, end));
+        var removed = Enumerable.Range(start, end - start + 1)
+            .Select(index => _document.Lines[index].Text)
+            .ToList();
+
+        _document.Remove(new LineRange(start, end));
+        return removed;
     }
 
     /// <summary>

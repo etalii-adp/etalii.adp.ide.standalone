@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline;
@@ -19,45 +20,24 @@ public sealed record RenamePipelineElementCommand(
     string RootPath,
     string BodyPath,
     string ElementId,
-    string DisplayName) : ICommand;
+    string DisplayName) : IPipelineEditCommand;
 
 internal sealed class RenamePipelineElementCommandHandler(IPipelineDocumentStore documents)
-    : ICommandHandler<RenamePipelineElementCommand>
+    : PipelineEditHandler<RenamePipelineElementCommand>(documents)
 {
-    public Task<CommandResult> ExecuteAsync(RenamePipelineElementCommand command, CancellationToken cancellationToken = default)
+    protected override EditOutcome Apply(LineDocument body, PipelineModel model, RenamePipelineElementCommand command)
     {
-        ArgumentNullException.ThrowIfNull(command);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        var entry = documents.GetOrLoad(command.RootPath, command.BodyPath);
-        if (!entry.IsUsable)
+        var location = PipelineEdits.Locate(model, command.ElementId);
+        if (Refuses(location, out var refusal))
         {
-            return Task.FromResult(CommandResult.Failure(entry.Unreadable));
-        }
-
-        var location = PipelineEdits.Locate(entry.Model, command.ElementId);
-        if (location is null)
-        {
-            return Task.FromResult(CommandResult.Failure("That element is no longer in this pipeline."));
-        }
-
-        if (PipelineEdits.RefusalFor(location) is { Length: > 0 } refusal)
-        {
-            return Task.FromResult(CommandResult.Failure(refusal));
+            return refusal;
         }
 
         // The old value, captured before the write, is the whole of the inverse.
         var previous = DisplayNameOf(location);
-        if (!new PipelineWriter(entry.Document).SetDisplayName(location.Target, command.DisplayName))
-        {
-            // Nothing changed, so there is nothing to undo either.
-            return Task.FromResult(CommandResult.Success());
-        }
-
-        var saved = documents.Save(command.RootPath, command.BodyPath, entry);
-        return Task.FromResult(saved.Failed
-            ? CommandResult.Failure(saved.Error)
-            : CommandResult.Success(command with { DisplayName = previous }));
+        return new PipelineWriter(body).SetDisplayName(location.Target, command.DisplayName)
+            ? EditOutcome.UndoneBy(command with { DisplayName = previous })
+            : EditOutcome.Unchanged;
     }
 
     private static string DisplayNameOf(PipelineElementLocation location) => location.Kind switch

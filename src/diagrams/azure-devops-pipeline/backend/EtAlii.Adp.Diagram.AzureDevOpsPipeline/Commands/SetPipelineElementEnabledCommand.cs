@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline;
@@ -19,43 +20,23 @@ public sealed record SetPipelineElementEnabledCommand(
     string RootPath,
     string BodyPath,
     string ElementId,
-    bool Enabled) : ICommand;
+    bool Enabled) : IPipelineEditCommand;
 
 internal sealed class SetPipelineElementEnabledCommandHandler(IPipelineDocumentStore documents)
-    : ICommandHandler<SetPipelineElementEnabledCommand>
+    : PipelineEditHandler<SetPipelineElementEnabledCommand>(documents)
 {
-    public Task<CommandResult> ExecuteAsync(SetPipelineElementEnabledCommand command, CancellationToken cancellationToken = default)
+    protected override EditOutcome Apply(LineDocument body, PipelineModel model, SetPipelineElementEnabledCommand command)
     {
-        ArgumentNullException.ThrowIfNull(command);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        var entry = documents.GetOrLoad(command.RootPath, command.BodyPath);
-        if (!entry.IsUsable)
+        var location = PipelineEdits.Locate(model, command.ElementId);
+        if (Refuses(location, out var refusal))
         {
-            return Task.FromResult(CommandResult.Failure(entry.Unreadable));
-        }
-
-        var location = PipelineEdits.Locate(entry.Model, command.ElementId);
-        if (location is null)
-        {
-            return Task.FromResult(CommandResult.Failure("That element is no longer in this pipeline."));
-        }
-
-        if (PipelineEdits.RefusalFor(location) is { Length: > 0 } refusal)
-        {
-            return Task.FromResult(CommandResult.Failure(refusal));
+            return refusal;
         }
 
         var wasEnabled = !ExecutionOf(location).IsDisabled;
-        if (!new PipelineWriter(entry.Document).SetEnabled(location.Target, command.Enabled ? "" : "false"))
-        {
-            return Task.FromResult(CommandResult.Success());
-        }
-
-        var saved = documents.Save(command.RootPath, command.BodyPath, entry);
-        return Task.FromResult(saved.Failed
-            ? CommandResult.Failure(saved.Error)
-            : CommandResult.Success(command with { Enabled = wasEnabled }));
+        return new PipelineWriter(body).SetEnabled(location.Target, command.Enabled ? "" : "false")
+            ? EditOutcome.UndoneBy(command with { Enabled = wasEnabled })
+            : EditOutcome.Unchanged;
     }
 
     private static PipelineExecution ExecutionOf(PipelineElementLocation location) => location.Kind switch

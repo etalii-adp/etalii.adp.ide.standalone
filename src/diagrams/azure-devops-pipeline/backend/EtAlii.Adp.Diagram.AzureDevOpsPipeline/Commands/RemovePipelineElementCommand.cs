@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline;
@@ -17,7 +18,7 @@ namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline;
 public sealed record RemovePipelineElementCommand(
     string RootPath,
     string BodyPath,
-    string ElementId) : ICommand;
+    string ElementId) : IPipelineEditCommand;
 
 /// <summary>
 /// Puts removed lines back exactly as they were - the inverse of a remove.
@@ -30,52 +31,27 @@ public sealed record RestorePipelineLinesCommand(
     string RootPath,
     string BodyPath,
     int AtLine,
-    IReadOnlyList<string> Lines) : ICommand;
+    IReadOnlyList<string> Lines) : IPipelineEditCommand;
 
 internal sealed class RemovePipelineElementCommandHandler(IPipelineDocumentStore documents)
-    : ICommandHandler<RemovePipelineElementCommand>
+    : PipelineEditHandler<RemovePipelineElementCommand>(documents)
 {
-    public Task<CommandResult> ExecuteAsync(RemovePipelineElementCommand command, CancellationToken cancellationToken = default)
+    protected override EditOutcome Apply(LineDocument body, PipelineModel model, RemovePipelineElementCommand command)
     {
-        ArgumentNullException.ThrowIfNull(command);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        var entry = documents.GetOrLoad(command.RootPath, command.BodyPath);
-        if (!entry.IsUsable)
+        var location = PipelineEdits.Locate(model, command.ElementId);
+        if (Refuses(location, out var refusal))
         {
-            return Task.FromResult(CommandResult.Failure(entry.Unreadable));
+            return refusal;
         }
 
-        var location = PipelineEdits.Locate(entry.Model, command.ElementId);
-        if (location is null)
+        if (Refuse(model, location) is { Length: > 0 } reason)
         {
-            return Task.FromResult(CommandResult.Failure("That element is no longer in this pipeline."));
-        }
-
-        if (PipelineEdits.RefusalFor(location) is { Length: > 0 } refusal)
-        {
-            return Task.FromResult(CommandResult.Failure(refusal));
-        }
-
-        if (Refuse(entry.Model, location) is { Length: > 0 } reason)
-        {
-            return Task.FromResult(CommandResult.Failure(reason));
+            return EditOutcome.Refused(reason);
         }
 
         var target = location.Target;
-        var removed = Enumerable.Range(target.Lines.Start, target.Lines.Length)
-            .Select(index => entry.Document.Lines[index].Text)
-            .ToList();
-
-        new PipelineWriter(entry.Document).RemoveElement(target);
-        var saved = documents.Save(command.RootPath, command.BodyPath, entry);
-        return Task.FromResult(saved.Failed
-            ? CommandResult.Failure(saved.Error)
-            : CommandResult.Success(new RestorePipelineLinesCommand(
-                command.RootPath,
-                command.BodyPath,
-                target.Lines.Start,
-                removed)));
+        var removed = new PipelineWriter(body).RemoveElement(target);
+        return EditOutcome.UndoneBy(new RestorePipelineLinesCommand(command.RootPath, command.BodyPath, target.Lines.Start, removed));
     }
 
     /// <summary>
@@ -106,43 +82,26 @@ internal sealed class RemovePipelineElementCommandHandler(IPipelineDocumentStore
 }
 
 internal sealed class RestorePipelineLinesCommandHandler(IPipelineDocumentStore documents)
-    : ICommandHandler<RestorePipelineLinesCommand>
+    : PipelineEditHandler<RestorePipelineLinesCommand>(documents)
 {
-    public Task<CommandResult> ExecuteAsync(RestorePipelineLinesCommand command, CancellationToken cancellationToken = default)
+    protected override EditOutcome Apply(LineDocument body, PipelineModel model, RestorePipelineLinesCommand command)
     {
-        ArgumentNullException.ThrowIfNull(command);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        var entry = documents.GetOrLoad(command.RootPath, command.BodyPath);
-        if (!entry.IsUsable)
-        {
-            return Task.FromResult(CommandResult.Failure(entry.Unreadable));
-        }
-
-        if (command.AtLine > entry.Document.Lines.Count)
+        if (command.AtLine > body.Lines.Count)
         {
             // The file has been cut down under us since the removal, so there is no longer a line
             // to put these back at. Refusing is honest; guessing a position is not.
-            return Task.FromResult(CommandResult.Failure(
-                "This pipeline has changed too much since then to put that back."));
+            return EditOutcome.Refused("This pipeline has changed too much since then to put that back.");
         }
 
-        new PipelineWriter(entry.Document).InsertElement(null, Math.Max(command.AtLine - 1, 0), command.Lines);
-        var saved = documents.Save(command.RootPath, command.BodyPath, entry);
-        if (saved.Failed)
-        {
-            return Task.FromResult(CommandResult.Failure(saved.Error));
-        }
+        new PipelineWriter(body).InsertElement(null, Math.Max(command.AtLine - 1, 0), command.Lines);
 
         // Redoing the undo removes it again - and the element is found by id, which is what it
-        // had before it was removed and has again now.
-        var restored = PipelineEdits.Locate(
-            documents.GetOrLoad(command.RootPath, command.BodyPath).Model,
-            IdOf(command.Lines));
-
-        return Task.FromResult(restored is null
-            ? CommandResult.Success()
-            : CommandResult.Success(new RemovePipelineElementCommand(command.RootPath, command.BodyPath, restored.Id)));
+        // had before it was removed and has again now. A step has no name to find it by, so
+        // its redo is the text as it was without it.
+        var restored = PipelineEdits.Locate(ModelOf(command, body), IdOf(command.Lines));
+        return restored is null
+            ? EditOutcome.Applied
+            : EditOutcome.UndoneBy(new RemovePipelineElementCommand(command.RootPath, command.BodyPath, restored.Id));
     }
 
     /// <summary>

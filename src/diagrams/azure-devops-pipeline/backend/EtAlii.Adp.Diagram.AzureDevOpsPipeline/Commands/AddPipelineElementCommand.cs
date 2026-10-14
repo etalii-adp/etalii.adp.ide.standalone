@@ -29,35 +29,20 @@ public sealed record AddPipelineElementCommand(
     string BodyPath,
     PipelineAddKind Kind,
     string ParentId,
-    string Name = "") : ICommand;
+    string Name = "") : IPipelineEditCommand;
 
 internal sealed class AddPipelineElementCommandHandler(IPipelineDocumentStore documents)
-    : ICommandHandler<AddPipelineElementCommand>
+    : PipelineEditHandler<AddPipelineElementCommand>(documents)
 {
-    public Task<CommandResult> ExecuteAsync(AddPipelineElementCommand command, CancellationToken cancellationToken = default)
+    protected override EditOutcome Apply(LineDocument body, PipelineModel model, AddPipelineElementCommand command)
     {
-        ArgumentNullException.ThrowIfNull(command);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        var entry = documents.GetOrLoad(command.RootPath, command.BodyPath);
-        if (!entry.IsUsable)
-        {
-            return Task.FromResult(CommandResult.Failure(entry.Unreadable));
-        }
-
         var added = command.Kind == PipelineAddKind.Stage
-            ? AddStage(entry, command)
-            : AddWithin(entry, command);
+            ? AddStage(body, model, command)
+            : AddWithin(body, model, command);
 
-        if (added.Error.Length > 0)
-        {
-            return Task.FromResult(CommandResult.Failure(added.Error));
-        }
-
-        var saved = documents.Save(command.RootPath, command.BodyPath, entry);
-        return Task.FromResult(saved.Failed
-            ? CommandResult.Failure(saved.Error)
-            : CommandResult.Success(new RemovePipelineElementCommand(command.RootPath, command.BodyPath, added.ElementId)));
+        return added.Error.Length > 0
+            ? EditOutcome.Refused(added.Error)
+            : EditOutcome.UndoneBy(new RemovePipelineElementCommand(command.RootPath, command.BodyPath, added.ElementId));
     }
 
     /// <summary>
@@ -68,9 +53,9 @@ internal sealed class AddPipelineElementCommandHandler(IPipelineDocumentStore do
     /// pipeline into a staged one means re-indenting everything in it, which is a rewrite of the
     /// whole file and exactly what this module promises not to do to one.
     /// </remarks>
-    private static PipelineAddOutcome AddStage(DocumentEntry<LineDocument, PipelineModel> entry, AddPipelineElementCommand command)
+    private static PipelineAddOutcome AddStage(LineDocument body, PipelineModel model, AddPipelineElementCommand command)
     {
-        var declared = entry.Model.Stages.Where(stage => stage is { IsImplicit: false, IsFromTemplate: false }).ToList();
+        var declared = model.Stages.Where(stage => stage is { IsImplicit: false, IsFromTemplate: false }).ToList();
         if (declared.Count == 0)
         {
             return PipelineAddOutcome.Failed(
@@ -79,11 +64,11 @@ internal sealed class AddPipelineElementCommandHandler(IPipelineDocumentStore do
 
         var name = PipelineBlocks.UnusedName(
             command.Name.Length > 0 ? command.Name : "NewStage",
-            entry.Model.Stages.Select(stage => stage.Name));
+            model.Stages.Select(stage => stage.Name));
 
         var last = declared[^1];
-        var indent = entry.Document.Lines[last.Lines.Start].Indent();
-        new PipelineWriter(entry.Document).InsertElement(
+        var indent = body.Lines[last.Lines.Start].Indent();
+        new PipelineWriter(body).InsertElement(
             PipelineEditTarget.For(last),
             listKeyLine: 0,
             PipelineBlocks.Stage(name, indent));
@@ -92,22 +77,23 @@ internal sealed class AddPipelineElementCommandHandler(IPipelineDocumentStore do
     }
 
     /// <summary>A job joins a stage's <c>jobs</c>, a step joins a job's <c>steps</c>.</summary>
-    private static PipelineAddOutcome AddWithin(DocumentEntry<LineDocument, PipelineModel> entry, AddPipelineElementCommand command)
+    private static PipelineAddOutcome AddWithin(LineDocument body, PipelineModel model, AddPipelineElementCommand command)
     {
-        var parent = PipelineEdits.Locate(entry.Model, command.ParentId);
+        var parent = PipelineEdits.Locate(model, command.ParentId);
         return parent is null
             ? PipelineAddOutcome.Failed("That element is no longer in this pipeline.")
             : PipelineEdits.RefusalFor(parent) is { Length: > 0 } refusal
             ? PipelineAddOutcome.Failed(refusal)
             : command.Kind switch
             {
-                PipelineAddKind.Step => AddStep(entry, parent),
-                _ => AddJob(entry, command, parent),
+                PipelineAddKind.Step => AddStep(body, parent),
+                _ => AddJob(body, model, command, parent),
             };
     }
 
     private static PipelineAddOutcome AddJob(
-        DocumentEntry<LineDocument, PipelineModel> entry,
+        LineDocument body,
+        PipelineModel model,
         AddPipelineElementCommand command,
         PipelineElementLocation parent)
     {
@@ -127,19 +113,19 @@ internal sealed class AddPipelineElementCommandHandler(IPipelineDocumentStore do
 
         var name = PipelineBlocks.UnusedName(
             command.Name.Length > 0 ? command.Name : "NewJob",
-            entry.Model.Jobs.Select(job => job.Name));
+            model.Jobs.Select(job => job.Name));
 
         var last = authored[^1];
-        var indent = entry.Document.Lines[last.Lines.Start].Indent();
+        var indent = body.Lines[last.Lines.Start].Indent();
         var lines = command.Kind == PipelineAddKind.DeploymentJob
             ? PipelineBlocks.DeploymentJob(name, name.ToLowerInvariant(), indent)
             : PipelineBlocks.Job(name, indent);
 
-        new PipelineWriter(entry.Document).InsertElement(PipelineEditTarget.For(last), listKeyLine: 0, lines);
+        new PipelineWriter(body).InsertElement(PipelineEditTarget.For(last), listKeyLine: 0, lines);
         return PipelineAddOutcome.Added($"{stage.Id}/{name}");
     }
 
-    private static PipelineAddOutcome AddStep(DocumentEntry<LineDocument, PipelineModel> entry, PipelineElementLocation parent)
+    private static PipelineAddOutcome AddStep(LineDocument body, PipelineElementLocation parent)
     {
         if (parent.Kind != PipelineElementLocationKind.Job)
         {
@@ -154,8 +140,8 @@ internal sealed class AddPipelineElementCommandHandler(IPipelineDocumentStore do
         }
 
         var last = authored[^1];
-        var indent = entry.Document.Lines[last.Lines.Start].Indent();
-        new PipelineWriter(entry.Document).InsertElement(
+        var indent = body.Lines[last.Lines.Start].Indent();
+        new PipelineWriter(body).InsertElement(
             PipelineEditTarget.For(last),
             listKeyLine: 0,
             PipelineBlocks.Step(PipelineBlocks.PlaceholderScript, indent));
