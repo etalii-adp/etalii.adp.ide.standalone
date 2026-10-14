@@ -1,7 +1,7 @@
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace EtAlii.Adp.Diagram.Rdf;
 
@@ -32,8 +32,5 @@ public static class ServiceCollectionAddSkosExtension
             provider.GetRequiredService<SkosElementMapper>(),
             provider.GetRequiredService<IHistoryStackStore>()));
         services.AddSingleton<IDiagramDocumentFactory>(_ => new SkosDocumentFactory(SkosOrigin));
-        services.AddSingleton<IDiagramDocumentReloader>(provider => new RdfDocumentReloader(
-            SkosOrigin,
-            provider.GetRequiredService<IRdfDocumentStore>()));
     }
 }

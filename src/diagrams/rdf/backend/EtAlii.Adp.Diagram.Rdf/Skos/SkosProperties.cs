@@ -1,4 +1,5 @@
 using EtAlii.Adp.Context;
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.Rdf;
@@ -24,7 +25,7 @@ public static class SkosProperties
     private const string OutOfFileMapping = "The mapped concept lives outside this file, so the mapping shows here rather than drawing.";
 
     /// <summary>The skos rows for the selection, or null when the element is not this reading's business.</summary>
-    public static IReadOnlyList<ContextPropertyDefinition>? Describe(RdfDocumentEntry entry, ContextTarget target)
+    public static IReadOnlyList<ContextPropertyDefinition>? Describe(DocumentEntry<LineDocument, RdfModel> entry, ContextTarget target)
     {
         var conceptIri = SkosSelection.ConceptOf(entry, target.ElementId);
         var containerIri = conceptIri ?? SkosSelection.SchemeOrCollectionOf(entry, target.ElementId);
@@ -111,7 +112,7 @@ public static class SkosProperties
     }
 
     /// <summary>The command a skos row edit dispatches, or null when the row is not this reading's or not editable.</summary>
-    public static ICommand? CommandFor(RdfDocumentEntry entry, ContextTarget target, string propertyId, string value)
+    public static ICommand? CommandFor(DocumentEntry<LineDocument, RdfModel> entry, ContextTarget target, string propertyId, string value)
     {
         var iri = SkosSelection.ConceptOf(entry, target.ElementId)
             ?? SkosSelection.SchemeOrCollectionOf(entry, target.ElementId);
@@ -161,7 +162,7 @@ public static class SkosProperties
             existing.Lexical, existing.Language ?? "", existing.DatatypeIri ?? "",
             value, existing.Language ?? "", existing.DatatypeIri ?? "");
 
-    private static IEnumerable<LiteralTerm> Literals(RdfDocumentEntry entry, string iri, string predicateIri) =>
+    private static IEnumerable<LiteralTerm> Literals(DocumentEntry<LineDocument, RdfModel> entry, string iri, string predicateIri) =>
         entry.Model.Triples
             .Where(t => t.Subject is IriTerm s && s.Iri == iri && t.Predicate.Iri == predicateIri)
             .Select(t => t.Object)

@@ -1,4 +1,3 @@
-using System.Text;
 using EtAlii.Adp.Documents;
 
 namespace EtAlii.Adp.Diagram.Rdf;
@@ -18,7 +17,7 @@ public sealed class SkosDocumentFactory(DiagramOrigin origin) : IDiagramDocument
     {
         ArgumentNullException.ThrowIfNull(baseName);
 
-        var local = LocalOf(baseName);
+        var local = RdfLocalName.Of(baseName);
         return "@prefix skos: <http://www.w3.org/2004/02/skos/core#> .\r\n"
             + "@prefix ex: <http://example.org/> .\r\n"
             + "\r\n"
@@ -29,19 +28,5 @@ public sealed class SkosDocumentFactory(DiagramOrigin origin) : IDiagramDocument
             + $"ex:{local}_top a skos:Concept ;\r\n"
             + "    skos:prefLabel \"Top concept\"@en ;\r\n"
             + $"    skos:topConceptOf ex:{local} .\r\n";
-    }
-
-    private static string LocalOf(string baseName)
-    {
-        var builder = new StringBuilder(baseName.Length);
-        foreach (var character in baseName)
-        {
-            builder.Append(char.IsAsciiLetterOrDigit(character) || character is '-' or '_'
-                ? character
-                : '_');
-        }
-
-        var local = builder.ToString().Trim('_');
-        return local.Length > 0 ? local : "untitled";
     }
 }

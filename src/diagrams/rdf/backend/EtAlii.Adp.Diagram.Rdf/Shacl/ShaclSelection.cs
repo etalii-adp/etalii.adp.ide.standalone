@@ -1,3 +1,5 @@
+using EtAlii.Adp.Documents;
+
 namespace EtAlii.Adp.Diagram.Rdf.Shacl;
 
 /// <summary>
@@ -16,7 +18,7 @@ internal static class ShaclSelection
     /// The drawn shapes edge an id names, as "from → to", or null - the projection is the authority,
     /// because the edge exists only there. Projected unbudgeted, as the session lays the diagram out.
     /// </summary>
-    public static string? Describe(RdfDocumentEntry entry, string? elementId)
+    public static string? Describe(DocumentEntry<LineDocument, RdfModel> entry, string? elementId)
     {
         if (elementId is null || !elementId.StartsWith(EdgePrefix, StringComparison.Ordinal) || !entry.IsUsable)
         {

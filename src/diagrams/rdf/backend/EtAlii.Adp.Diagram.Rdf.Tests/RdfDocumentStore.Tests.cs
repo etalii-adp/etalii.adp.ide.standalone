@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -47,7 +48,7 @@ public class RdfDocumentStoreTests : IDisposable
         // Act. Nothing is edited between the load and the save, which is what makes this test about
         // byte identity rather than about edits surviving - see the LostEdit test beside it for the
         // case an untouched document cannot express.
-        var refusal = _store.Save(path, entry);
+        var refusal = _store.Save(path, entry.Document);
 
         // Assert.
         Assert.Equal("", refusal.Error);
@@ -76,11 +77,11 @@ public class RdfDocumentStoreTests : IDisposable
 
         // Act.
         var entry = _store.GetOrLoad(path);
-        var refusal = _store.Save(path, entry);
+        var refusal = _store.Save(path, entry.Document);
 
         // Assert.
         Assert.False(entry.IsUsable);
-        Assert.NotEqual(0, entry.ErrorLine);
+        Assert.Contains("at line", entry.Unreadable, StringComparison.Ordinal);
         Assert.NotEqual("", refusal.Error);
         Assert.Contains("broken.ttl", refusal.Error);
         // Refusing to save left the broken file exactly as it was.
@@ -109,7 +110,7 @@ public class RdfDocumentStoreTests : IDisposable
         var path = CopyFixture("crlf-line-endings.ttl");
         _store.GetOrLoad(path);
         File.WriteAllText(path, "@prefix ex: <http://example.org/> .\r\nex:x ex:y ex:z .\r\n");
-        RdfDocumentChangedEventArgs? raised = null;
+        DocumentChangedEventArgs? raised = null;
         _store.Changed += (_, args) => raised = args;
 
         // Act.
@@ -118,7 +119,7 @@ public class RdfDocumentStoreTests : IDisposable
         // Assert.
         Assert.NotNull(raised);
         Assert.Equal(path, raised.Path);
-        var triple = Assert.Single(raised.Entry.Model.Triples);
+        var triple = Assert.Single(_store.GetOrLoad(raised.Path).Model.Triples);
         Assert.Equal("http://example.org/x", Assert.IsType<IriTerm>(triple.Subject).Iri);
     }
 

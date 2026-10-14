@@ -1,3 +1,5 @@
+using EtAlii.Adp.Documents;
+
 namespace EtAlii.Adp.Diagram.Rdf;
 
 /// <summary>
@@ -10,14 +12,14 @@ namespace EtAlii.Adp.Diagram.Rdf;
 internal static class SkosSelection
 {
     /// <summary>The IRI of an element the file asserts to be a <c>skos:Concept</c>, or null.</summary>
-    public static string? ConceptOf(RdfDocumentEntry entry, string? elementId)
+    public static string? ConceptOf(DocumentEntry<LineDocument, RdfModel> entry, string? elementId)
     {
         var iri = RdfSelection.ResourceOf(entry, elementId);
         return iri is not null && IsTyped(entry, iri, SkosVocabulary.Concept) ? iri : null;
     }
 
     /// <summary>The IRI of an element the file asserts to be a scheme or collection, or null.</summary>
-    public static string? SchemeOrCollectionOf(RdfDocumentEntry entry, string? elementId)
+    public static string? SchemeOrCollectionOf(DocumentEntry<LineDocument, RdfModel> entry, string? elementId)
     {
         var iri = RdfSelection.ResourceOf(entry, elementId);
         return iri is not null
@@ -29,12 +31,12 @@ internal static class SkosSelection
     }
 
     /// <summary>Whether the file asserts any concept scheme - what makes the concept toolbox entry apply.</summary>
-    public static bool HasScheme(RdfDocumentEntry entry) =>
+    public static bool HasScheme(DocumentEntry<LineDocument, RdfModel> entry) =>
         entry.Model.Triples.Any(t =>
             t is { Predicate.Iri: RdfVocabulary.Type, Object: IriTerm { Iri: SkosVocabulary.ConceptScheme } });
 
     /// <summary>The first asserted scheme IRI, document order - where a dropped concept is filed.</summary>
-    public static string? FirstScheme(RdfDocumentEntry entry) =>
+    public static string? FirstScheme(DocumentEntry<LineDocument, RdfModel> entry) =>
         entry.Model.Triples
             .Where(t => t is { Predicate.Iri: RdfVocabulary.Type, Object: IriTerm { Iri: SkosVocabulary.ConceptScheme } })
             .Select(t => t.Subject)
@@ -48,7 +50,7 @@ internal static class SkosSelection
     /// the broader-direction triple whichever direction the file states.
     /// </summary>
     public static (string AIri, string BIri, SkosEdgeKind Kind, IReadOnlyList<RdfTriple> Triples)? PairOf(
-        RdfDocumentEntry entry, string? elementId)
+        DocumentEntry<LineDocument, RdfModel> entry, string? elementId)
     {
         if (elementId is null || !elementId.StartsWith("edge:", StringComparison.Ordinal))
         {
@@ -83,7 +85,7 @@ internal static class SkosSelection
     }
 
     /// <summary>Every asserted triple stating the hierarchy pair, in either direction. For the canonical id, <paramref name="narrowerIri"/> is the id's first IRI.</summary>
-    private static IReadOnlyList<RdfTriple> HierarchyTriplesBetween(RdfDocumentEntry entry, string narrowerIri, string broaderIri) =>
+    private static IReadOnlyList<RdfTriple> HierarchyTriplesBetween(DocumentEntry<LineDocument, RdfModel> entry, string narrowerIri, string broaderIri) =>
         entry.Model.Triples
             .Where(t =>
                 (Matches(t, narrowerIri, SkosVocabulary.Broader, broaderIri))
@@ -91,7 +93,7 @@ internal static class SkosSelection
             .ToList();
 
     /// <summary>Every asserted triple stating the related pair, in either direction.</summary>
-    private static IReadOnlyList<RdfTriple> RelatedTriplesBetween(RdfDocumentEntry entry, string aIri, string bIri) =>
+    private static IReadOnlyList<RdfTriple> RelatedTriplesBetween(DocumentEntry<LineDocument, RdfModel> entry, string aIri, string bIri) =>
         entry.Model.Triples
             .Where(t =>
                 Matches(t, aIri, SkosVocabulary.Related, bIri)
@@ -99,7 +101,7 @@ internal static class SkosSelection
             .ToList();
 
     /// <summary>Whether the concept's labels are stated through SKOS-XL - the edit-refusal case of Requirement 3.6.</summary>
-    public static bool HasXlLabels(RdfDocumentEntry entry, string iri) =>
+    public static bool HasXlLabels(DocumentEntry<LineDocument, RdfModel> entry, string iri) =>
         entry.Model.Triples.Any(t =>
             t.Subject is IriTerm s && s.Iri == iri && SkosVocabulary.XlLabelProperties.Contains(t.Predicate.Iri));
 
@@ -108,7 +110,7 @@ internal static class SkosSelection
         && triple.Predicate.Iri == predicateIri
         && triple.Object is IriTerm o && o.Iri == objectIri;
 
-    private static bool IsTyped(RdfDocumentEntry entry, string iri, string typeIri) =>
+    private static bool IsTyped(DocumentEntry<LineDocument, RdfModel> entry, string iri, string typeIri) =>
         entry.Model.Triples.Any(t =>
             t.Subject is IriTerm s && s.Iri == iri
             && t.Predicate.Iri == RdfVocabulary.Type

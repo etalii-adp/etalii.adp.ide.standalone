@@ -1,97 +1,81 @@
+using EtAlii.Adp.Documents;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using IoPath = System.IO.Path;
 
 namespace EtAlii.Adp.Diagram.Rdf.Tests;
 
 /// <summary>
-/// A body that could not be read is kept, and a deleted body is cleared - the pairing the shared
-/// lifecycle depends on (backend-centralization R2.4, R2.5), which task 6 brings to this store in
-/// one change and which <see cref="RdfDocumentReloader"/> must forward.
+/// The shared reload seam over the family's one store, held to the contract every module's is: a
+/// body missing on a reload is kept, a deleted one is cleared, and the sessions hear of both
+/// (backend-centralization R2.4, R2.5).
 /// </summary>
-/// <remarks>
-/// <b>The reloader is held as <see cref="IDiagramDocumentReloader"/>, and that is load-bearing.</b> A
-/// default interface member is callable only through the interface. Held as the class, removing the
-/// <c>BodyDeleted</c> override would stop this file compiling instead of making a test fail, so the
-/// defect could never be seen red. Do not "simplify" the declared type.
-/// </remarks>
-public sealed class RdfDocumentReloaderTests : IDisposable
+public sealed class RdfDocumentReloaderTests : DocumentReloaderContract<IRdfDocumentStore>
 {
-    private readonly string _folder = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.RdfDocumentReloaderTests", Guid.NewGuid().ToString("N"));
+    protected override DiagramOrigin Origin => ServiceCollectionAddRdfExtension.RdfOrigin;
 
-    public RdfDocumentReloaderTests()
-    {
-        Directory.CreateDirectory(_folder);
-        File.Copy(IoPath.Combine(AppContext.BaseDirectory, "Fixtures", "constructs.ttl"), Body);
-    }
+    protected override string Example => IoPath.Combine(AppContext.BaseDirectory, "Fixtures", "constructs.ttl");
 
-    private string Body => IoPath.Combine(_folder, "constructs.ttl");
+    protected override IRdfDocumentStore CreateStore() => new RdfDocumentStore();
 
-    public void Dispose() => TestFolder.TryDelete(_folder);
+    protected override bool IsEmpty(IRdfDocumentStore store, string path) => store.GetOrLoad(path).Model.Triples.Count == 0;
 
-    private static IDiagramDocumentReloader ReloaderOver(RdfDocumentStore store) =>
-        new RdfDocumentReloader(ServiceCollectionAddRdfExtension.RdfOrigin, store);
-
-    [Fact]
-    public void AMissingBody_IsKeptOnReload_AndClearedOnlyByTheWatchersDelete()
-    {
-        // Arrange.
-        var store = new RdfDocumentStore();
-        var reloader = ReloaderOver(store);
-        Assert.NotEmpty(store.GetOrLoad(Body).Model.Triples);
-        File.Delete(Body);
-
-        // Act: a reload that finds no file.
-        reloader.Reload(_folder, Body);
-
-        // Assert: kept until the absence is confirmed (R2.5's first half). A body missing on a
-        // reload is far more often a publish in flight than a deletion, so the last good document
-        // stays. This is NOT R2.4, which is a body present but unreadable - see the next test.
-        Assert.NotEmpty(store.GetOrLoad(Body).Model.Triples);
-
-        // Act: the watcher's evidence that it is gone.
-        reloader.BodyDeleted(_folder, Body);
-
-        // Assert: cleared, to what a first open of a missing body shows (R2.5).
-        Assert.Empty(store.GetOrLoad(Body).Model.Triples);
-    }
+    protected override void OnChanged(IRdfDocumentStore store, Action<string> changed) =>
+        store.Changed += (_, args) => changed(args.Path);
 
     [Fact]
     public void AnUnreadableBody_IsKeptOnReload_AndTellsNobody()
     {
         // Arrange.
-        var store = new RdfDocumentStore();
-        var reloader = ReloaderOver(store);
-        Assert.NotEmpty(store.GetOrLoad(Body).Model.Triples);
+        var store = CreateStore();
+        IDiagramDocumentReloader reloader = new DiagramDocumentReloader<IRdfDocumentStore>(Origin, store);
+        using var folder = TestFolder.Create("EtAlii.Adp.RdfDocumentReloaderTests");
+        var body = folder.Combine("constructs.ttl");
+        File.Copy(Example, body);
+        Assert.False(IsEmpty(store, body));
         var told = 0;
         store.Changed += (_, _) => told++;
 
         // Act: a reload while another program holds the file with no sharing at all.
-        using (new FileStream(Body, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+        using (new FileStream(body, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
         {
-            reloader.Reload(_folder, Body);
+            reloader.Reload(folder.Path, body);
         }
 
         // Assert: the last good document is kept, not replaced by an empty one (R2.4), and since
         // nothing a session shows has changed, no session is told.
-        Assert.NotEmpty(store.GetOrLoad(Body).Model.Triples);
+        Assert.False(IsEmpty(store, body));
         Assert.Equal(0, told);
     }
 
     [Fact]
-    public void ADeletion_TellsTheSessions()
+    public void EveryReadingOfTheFamily_ReloadsThroughTheOneStore()
     {
-        // Arrange.
-        var store = new RdfDocumentStore();
-        var reloader = ReloaderOver(store);
-        store.GetOrLoad(Body);
-        var told = new List<string>();
-        store.Changed += (_, args) => told.Add(args.Path);
-        File.Delete(Body);
+        // Arrange: a body each reading could have opened, and the family registered as the host does.
+        var store = CreateStore();
+        var services = new ServiceCollection();
+        services.AddSingleton(store);
+        services.AddRdf();
+        using var provider = services.BuildServiceProvider();
+        using var folder = TestFolder.Create("EtAlii.Adp.RdfDocumentReloaderTests");
+        var body = folder.Combine("constructs.ttl");
+        File.Copy(Example, body);
+        store.GetOrLoad(body);
+        var reloaders = provider.GetServices<IDiagramDocumentReloader>().ToList();
 
-        // Act.
-        reloader.BodyDeleted(_folder, Body);
-
-        // Assert.
-        Assert.Equal([Body], told);
+        // Act & assert: each reading's reload reaches the store, so a session of any of them sees an
+        // outside write. A reading left without one would show its last reading until reopened.
+        string[] readings = ["rdf", "owl", "skos", "shacl"];
+        foreach (var reading in readings)
+        {
+            var told = new List<string>();
+            void Told(object? sender, DocumentChangedEventArgs args) => told.Add(args.Path);
+            store.Changed += Told;
+            var reloader = Assert.Single(reloaders, r => r.Origin == new DiagramOrigin("w3c", reading));
+            File.AppendAllText(body, $"<http://example.org/{reading}> <http://example.org/y> <http://example.org/z> .\r\n");
+            reloader.Reload(folder.Path, body);
+            store.Changed -= Told;
+            Assert.Equal([body], told);
+        }
     }
 }

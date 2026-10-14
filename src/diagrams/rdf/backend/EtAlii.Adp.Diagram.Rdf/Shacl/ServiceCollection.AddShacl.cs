@@ -1,7 +1,7 @@
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace EtAlii.Adp.Diagram.Rdf.Shacl;
 
@@ -46,9 +46,5 @@ public static class ServiceCollectionAddShaclExtension
             provider.GetRequiredService<IRdfDocumentStore>(),
             provider.GetRequiredService<ShaclElementMapper>(),
             provider.GetRequiredService<IHistoryStackStore>()));
-
-        services.AddSingleton<IDiagramDocumentReloader>(provider => new RdfDocumentReloader(
-            ShaclOrigin,
-            provider.GetRequiredService<IRdfDocumentStore>()));
     }
 }

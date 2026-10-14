@@ -1,5 +1,6 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents.Wire;
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.Rdf.Shacl;
@@ -48,7 +49,7 @@ public static class ShaclProperties
         "Shown as written, never parsed beyond extraction and never executed - this reading draws constraints, it does not run them.";
 
     /// <summary>The shacl rows for the selection, or null when the element is not this reading's business.</summary>
-    public static IReadOnlyList<ContextPropertyDefinition>? Describe(RdfDocumentEntry entry, ContextTarget target)
+    public static IReadOnlyList<ContextPropertyDefinition>? Describe(DocumentEntry<LineDocument, RdfModel> entry, ContextTarget target)
     {
         ArgumentNullException.ThrowIfNull(entry);
         ArgumentNullException.ThrowIfNull(target);
@@ -113,7 +114,7 @@ public static class ShaclProperties
     }
 
     /// <summary>The command a grid edit dispatches, or null when the row is not this reading's to write.</summary>
-    public static ICommand? CommandFor(RdfDocumentEntry entry, ContextTarget target, string propertyId, string value)
+    public static ICommand? CommandFor(DocumentEntry<LineDocument, RdfModel> entry, ContextTarget target, string propertyId, string value)
     {
         ArgumentNullException.ThrowIfNull(entry);
         ArgumentNullException.ThrowIfNull(target);
@@ -183,7 +184,7 @@ public static class ShaclProperties
     /// text is reached through the blank node the constraint is written as, which reading may do
     /// freely - it is keying an edit to such a node, not looking at it, that the boundary forbids.
     /// </summary>
-    private static void AddSparqlQueries(List<ContextPropertyDefinition> rows, RdfDocumentEntry entry, ShaclCard card)
+    private static void AddSparqlQueries(List<ContextPropertyDefinition> rows, DocumentEntry<LineDocument, RdfModel> entry, ShaclCard card)
     {
         if (card.Iri.Length == 0)
         {
@@ -216,7 +217,7 @@ public static class ShaclProperties
     private static bool AnswersFor(ContextTarget target) =>
         target.Origin is null || target.Origin == ServiceCollectionAddShaclExtension.ShaclOrigin;
 
-    private static string[] Literals(RdfDocumentEntry entry, ShaclCard card, string predicateIri) =>
+    private static string[] Literals(DocumentEntry<LineDocument, RdfModel> entry, ShaclCard card, string predicateIri) =>
         card.Iri.Length == 0
             ? []
             : [.. entry.Model.Triples

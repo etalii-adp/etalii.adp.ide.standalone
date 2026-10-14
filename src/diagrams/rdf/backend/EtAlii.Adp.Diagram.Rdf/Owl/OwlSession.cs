@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 using Serilog;
@@ -217,7 +218,7 @@ public sealed class OwlSession : IDiagramSession
             truncated ? graph.Total : kept.Count);
     }
 
-    private void OnDocumentChanged(object? sender, RdfDocumentChangedEventArgs args)
+    private void OnDocumentChanged(object? sender, DocumentChangedEventArgs args)
     {
         if (!string.Equals(args.Path, _bodyPath, StringComparison.OrdinalIgnoreCase))
         {

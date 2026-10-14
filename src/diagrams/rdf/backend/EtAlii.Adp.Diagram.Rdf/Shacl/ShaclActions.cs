@@ -1,4 +1,5 @@
 using EtAlii.Adp.Context;
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.Rdf.Shacl;
@@ -51,7 +52,7 @@ public static class ShaclActions
     public const string AddNodeShapeActionId = "shacl.add-node-shape";
 
     /// <summary>The shacl entries for a discovery pass, or empty where the selection is not this reading's.</summary>
-    public static IReadOnlyList<ContextActionGroupDefinition> Discover(RdfDocumentEntry entry, ContextTarget target)
+    public static IReadOnlyList<ContextActionGroupDefinition> Discover(DocumentEntry<LineDocument, RdfModel> entry, ContextTarget target)
     {
         ArgumentNullException.ThrowIfNull(entry);
         ArgumentNullException.ThrowIfNull(target);
@@ -125,7 +126,7 @@ public static class ShaclActions
     /// <summary>Executes a shacl action, or null when <paramref name="actionId"/> is not this reading's.</summary>
     public static async ValueTask<ContextExecutionResult?> ExecuteAsync(
         IHistoryStackStore historyStacks,
-        RdfDocumentEntry entry,
+        DocumentEntry<LineDocument, RdfModel> entry,
         ContextTarget target,
         string actionId,
         CancellationToken cancellationToken)
@@ -212,7 +213,7 @@ public static class ShaclActions
     }
 
     /// <summary>Validates a dialog value, or null when the action is not this reading's.</summary>
-    public static ContextValidationResult? Validate(RdfDocumentEntry entry, string actionId, string value)
+    public static ContextValidationResult? Validate(DocumentEntry<LineDocument, RdfModel> entry, string actionId, string value)
     {
         ArgumentNullException.ThrowIfNull(entry);
 
@@ -226,7 +227,7 @@ public static class ShaclActions
     }
 
     /// <summary>The command a dialog value commits to, or null when the action is not this reading's.</summary>
-    public static ICommand? CommandFor(RdfDocumentEntry entry, ContextTarget target, string actionId, string value)
+    public static ICommand? CommandFor(DocumentEntry<LineDocument, RdfModel> entry, ContextTarget target, string actionId, string value)
     {
         ArgumentNullException.ThrowIfNull(entry);
         ArgumentNullException.ThrowIfNull(target);

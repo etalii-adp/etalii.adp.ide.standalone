@@ -2,6 +2,8 @@
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Hierarchy;
 
+using EtAlii.Adp.Documents;
+
 namespace EtAlii.Adp.Diagram.Rdf;
 
 /// <summary>
@@ -128,7 +130,7 @@ public sealed class RdfContextSourceResolver : IContextSourceResolver
         _documents.Changed += OnChanged;
         return new RdfUnsubscriber(() => _documents.Changed -= OnChanged);
 
-        void OnChanged(object? sender, RdfDocumentChangedEventArgs args)
+        void OnChanged(object? sender, DocumentChangedEventArgs args)
         {
             if (!string.Equals(args.Path, bodyPath, StringComparison.OrdinalIgnoreCase))
             {
@@ -136,7 +138,8 @@ public sealed class RdfContextSourceResolver : IContextSourceResolver
             }
 
             // Re-read rather than carrying the previous reading: a removal clears the selection.
-            var text = RdfSelection.Describe(args.Entry, elementId) ?? OwlSelection.Describe(args.Entry, elementId) ?? Shacl.ShaclSelection.Describe(args.Entry, elementId);
+            var entry = _documents.GetOrLoad(bodyPath);
+            var text = RdfSelection.Describe(entry, elementId) ?? OwlSelection.Describe(entry, elementId) ?? Shacl.ShaclSelection.Describe(entry, elementId);
             onChange(text is null ? null : [text]);
         }
     }

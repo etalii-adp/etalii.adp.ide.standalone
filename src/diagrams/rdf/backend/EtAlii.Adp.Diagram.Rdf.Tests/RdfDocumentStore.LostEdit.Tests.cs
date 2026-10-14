@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -70,7 +71,7 @@ public class RdfDocumentStoreLostEditTests : IDisposable
         // Act: the notification for an EARLIER write of this same file lands now. The store's own
         // guard is already cleared, so this is exactly what the reload bridge does with it.
         _store.Reload(path);
-        var error = _store.Save(path, entry);
+        var error = _store.Save(path, entry.Document);
 
         // Assert.
         Assert.Equal("", error.Error);

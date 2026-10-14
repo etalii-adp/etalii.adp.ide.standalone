@@ -1,5 +1,6 @@
 using System.Text;
 using EtAlii.Adp.Context;
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.Rdf;
@@ -27,7 +28,7 @@ public static class SkosActions
     public const string DisconnectActionId = "skos.disconnect";
 
     /// <summary>The skos entries for a discovery pass, or empty where the selection is not the reading's business.</summary>
-    public static IReadOnlyList<ContextActionGroupDefinition> Discover(RdfDocumentEntry entry, ContextTarget target)
+    public static IReadOnlyList<ContextActionGroupDefinition> Discover(DocumentEntry<LineDocument, RdfModel> entry, ContextTarget target)
     {
         if (RdfRelationGesture.TryParse(target.ElementId, out var from, out var to)
             && SkosSelection.ConceptOf(entry, from) is not null
@@ -72,7 +73,7 @@ public static class SkosActions
     /// <summary>Executes a skos action, or null when <paramref name="actionId"/> is not this reading's.</summary>
     public static async ValueTask<ContextExecutionResult?> ExecuteAsync(
         IHistoryStackStore historyStacks,
-        RdfDocumentEntry entry,
+        DocumentEntry<LineDocument, RdfModel> entry,
         ContextTarget target,
         string actionId,
         CancellationToken cancellationToken)
@@ -131,7 +132,7 @@ public static class SkosActions
     }
 
     /// <summary>Validates a skos dialog value, or null when the action is not this reading's.</summary>
-    public static ContextValidationResult? Validate(RdfDocumentEntry entry, string actionId, string value)
+    public static ContextValidationResult? Validate(DocumentEntry<LineDocument, RdfModel> entry, string actionId, string value)
     {
         if (actionId != AddConceptActionId)
         {
@@ -157,7 +158,7 @@ public static class SkosActions
     }
 
     /// <summary>Commits a skos dialog or a confirmed disconnect, or null when the action is not this reading's.</summary>
-    public static ICommand? CommandFor(RdfDocumentEntry entry, ContextTarget target, string actionId, string value)
+    public static ICommand? CommandFor(DocumentEntry<LineDocument, RdfModel> entry, ContextTarget target, string actionId, string value)
     {
         switch (actionId)
         {
@@ -190,7 +191,7 @@ public static class SkosActions
     /// declared prefix - plus the label slugged the document-factory way. A file with no prefix
     /// at all is asked for one rather than guessed at.
     /// </summary>
-    private static (string? Iri, string Error) MintIri(RdfDocumentEntry entry, string label)
+    private static (string? Iri, string Error) MintIri(DocumentEntry<LineDocument, RdfModel> entry, string label)
     {
         var subjectPrefix = entry.Model.Triples
             .Select(t => t.Subject)

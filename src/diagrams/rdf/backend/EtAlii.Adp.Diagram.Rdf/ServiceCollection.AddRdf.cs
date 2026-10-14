@@ -2,8 +2,8 @@ using EtAlii.Adp.Context;
 using EtAlii.Adp.Diagram.Rdf.Shacl;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace EtAlii.Adp.Diagram.Rdf;
 
@@ -23,6 +23,10 @@ public static class ServiceCollectionAddRdfExtension
 
     /// <summary>The ontology reading's origin - the first sibling over the same engine.</summary>
     public static readonly DiagramOrigin OwlOrigin = new("w3c", "owl");
+
+    /// <summary>Every reading of the family, each a diagram type of its own over the one store.</summary>
+    private static DiagramOrigin[] FamilyOrigins =>
+        [RdfOrigin, OwlOrigin, ServiceCollectionAddSkosExtension.SkosOrigin, Shacl.ServiceCollectionAddShaclExtension.ShaclOrigin];
 
     /// <summary>The idempotency marker: every family definition carries the same Build, and the first one registers.</summary>
     private sealed class FamilyRegistered;
@@ -71,17 +75,14 @@ public static class ServiceCollectionAddRdfExtension
         // One mapper for the family; the projections it renders differ per reading.
         services.TryAddSingleton<RdfElementMapper>();
 
-        // The session seam, the empty body a new diagram starts as, and the reload seam - the
-        // arranged-module trio every sibling reading registers its own instances of.
+        // The session seam and the empty body a new diagram starts as, which every sibling reading
+        // registers its own instances of.
         services.AddSingleton<IDiagramSessionFactory>(provider => new RdfSessionFactory(
             RdfOrigin,
             provider.GetRequiredService<IRdfDocumentStore>(),
             provider.GetRequiredService<RdfElementMapper>(),
             provider.GetRequiredService<IHistoryStackStore>()));
         services.AddSingleton<IDiagramDocumentFactory>(_ => new RdfDocumentFactory(RdfOrigin));
-        services.AddSingleton<IDiagramDocumentReloader>(provider => new RdfDocumentReloader(
-            RdfOrigin,
-            provider.GetRequiredService<IRdfDocumentStore>()));
 
         // The ontology reading, over the same store: its own projection, layout and refusals in
         // its session, and one validator for its origin (core allows exactly one) that delegates
@@ -96,14 +97,18 @@ public static class ServiceCollectionAddRdfExtension
             provider.GetRequiredService<OwlElementMapper>(),
             provider.GetRequiredService<IHistoryStackStore>()));
         services.AddSingleton<IDiagramDocumentFactory>(_ => new OwlDocumentFactory(OwlOrigin));
-        services.AddSingleton<IDiagramDocumentReloader>(provider => new RdfDocumentReloader(
-            OwlOrigin,
-            provider.GetRequiredService<IRdfDocumentStore>()));
 
         // The sibling readings ride the family's one Build (the C4 arrangement): each registers
         // its own reading seams here, over the store and commands registered above.
         services.AddSkos();
         services.AddShacl();
+
+        // The reload seam, once per reading over the one store: a write to a body reaches every
+        // session on it, whichever reading opened it (code-structure FR-028).
+        foreach (var origin in FamilyOrigins)
+        {
+            services.AddDiagramDocumentReloader<IRdfDocumentStore>(origin);
+        }
 
         return services;
     }
