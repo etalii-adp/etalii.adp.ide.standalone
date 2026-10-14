@@ -1,3 +1,5 @@
+using EtAlii.Adp.Documents;
+
 namespace EtAlii.Adp.Diagram.AnsibleStructure;
 
 /// <summary>
@@ -30,7 +32,7 @@ public sealed record AnsibleProject(
     IReadOnlyList<AnsibleRole> Roles,
     IReadOnlyList<AnsibleInventory> Inventories,
     IReadOnlyList<string> Annotations,
-    IReadOnlyList<AnsibleYamlFailure> Failures)
+    IReadOnlyList<TolerantYamlFailure> Failures)
 {
     /// <summary>Whether the folder held nothing this module recognises - a valid answer, not a fault (Requirement 9.4).</summary>
     public bool IsEmpty => Playbooks.Count == 0 && Roles.Count == 0 && Inventories.Count == 0;
