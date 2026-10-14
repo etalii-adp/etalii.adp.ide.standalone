@@ -33,4 +33,19 @@ public class RectTests
         Assert.Equal(expected, first.Overlaps(second));
         Assert.Equal(expected, second.Overlaps(first));
     }
+
+    [Theory]
+    [InlineData(10, 10, 80, 80, true)]
+    [InlineData(0, 0, 100, 100, true)]
+    [InlineData(-1, 10, 80, 80, false)]
+    [InlineData(10, 10, 91, 80, false)]
+    [InlineData(10, 10, 80, 91, false)]
+    public void Contains_OnlyWhatLiesEntirelyInside(double x, double y, double width, double height, bool expected)
+    {
+        // Arrange.
+        var outer = new Rect(0, 0, 100, 100);
+
+        // Act and assert.
+        Assert.Equal(expected, outer.Contains(new Rect(x, y, width, height)));
+    }
 }

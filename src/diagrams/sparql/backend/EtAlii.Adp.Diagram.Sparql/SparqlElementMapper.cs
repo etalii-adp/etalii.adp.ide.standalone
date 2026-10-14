@@ -1,4 +1,5 @@
 using EtAlii.Adp.Hierarchy;
+using EtAlii.Adp.Layout;
 using Google.Protobuf;
 
 namespace EtAlii.Adp.Diagram.Sparql;
@@ -168,7 +169,7 @@ public sealed class SparqlElementMapper
         foreach (var node in projection.Nodes)
         {
             var at = layout.NodePositions.TryGetValue(node.Id, out var position) ? position : default;
-            if (Intersects(new SparqlRect(at.X, at.Y, SparqlLayout.NodeWidth, SparqlLayout.NodeHeight), viewport))
+            if (Intersects(new Rect(at.X, at.Y, SparqlLayout.NodeWidth, SparqlLayout.NodeHeight), viewport))
             {
                 delivered.Add(node.Id);
             }
@@ -211,7 +212,7 @@ public sealed class SparqlElementMapper
             .Where(element => !positioned.Contains(element.Id) || delivered.Contains(element.Id))];
     }
 
-    private static bool Intersects(SparqlRect box, DiagramViewport viewport) =>
+    private static bool Intersects(Rect box, DiagramViewport viewport) =>
         box.X <= viewport.MaxX && box.X + box.Width >= viewport.MinX &&
         box.Y <= viewport.MaxY && box.Y + box.Height >= viewport.MinY;
 
