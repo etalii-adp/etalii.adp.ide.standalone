@@ -161,26 +161,6 @@ export function polarityMark(polarity: CausalLoopPolarityProto): string {
   }
 }
 
-/**
- * The thickness step a weight is drawn at.
- *
- * Deliberately a short ladder rather than a continuous stroke width. A weight is an author's
- * annotation and not a measurement, so a coarse scale is honest about what it is - and the
- * shared stylesheet offers a small set of widths, which a module may use but must not replace
- * with private appearance.
- */
-export function weightStep(link: CausalLoopLink): "light" | "normal" | "heavy" {
-  if (!link.payload.hasWeight) {
-    return "normal";
-  }
-
-  if (link.payload.weight >= 2) {
-    return "heavy";
-  }
-
-  return link.payload.weight <= 0.5 ? "light" : "normal";
-}
-
 /** How a loop's identifier and name read together. */
 export function loopCaption(loop: CausalLoopLoop): string {
   return loop.payload.name.length > 0
