@@ -1,3 +1,5 @@
+using EtAlii.Adp.Documents;
+
 namespace EtAlii.Adp.Diagram.WardleyMap;
 
 /// <summary>
@@ -26,7 +28,7 @@ namespace EtAlii.Adp.Diagram.WardleyMap;
 /// only what a <em>new</em> line is terminated with, never what an existing one is rewritten to.
 /// </para>
 /// </remarks>
-public sealed class WardleyDocument
+public sealed class WardleyDocument : ITextBody<WardleyDocument>
 {
     private readonly List<WardleyDocumentLine> _lines;
 
@@ -58,6 +60,9 @@ public sealed class WardleyDocument
 
         return new WardleyDocument(SplitLines(text), DetectNewline(text));
     }
+
+    /// <inheritdoc />
+    public string Text => ToText();
 
     /// <summary>The document as text, byte-identical to what <see cref="Parse"/> was given when nothing was edited.</summary>
     public string ToText() => string.Concat(_lines.Select(line => line.Text + line.Terminator));

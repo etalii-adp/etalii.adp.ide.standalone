@@ -53,11 +53,12 @@ public static class ServiceCollectionAddWardleyMapCommandsExtension
         services.AddSingleton<ICommandHandler<SetWardleyLinkCommand>, SetWardleyLinkCommandHandler>();
         services.AddSingleton<ICommandHandler<SetWardleyPipelineMembershipCommand>, SetWardleyPipelineMembershipCommandHandler>();
 
-        // The two inverses. An edit that touches one line reports the first; one that touches
-        // several - an add, a remove, a rename - reports the second, because putting the
-        // document back is the only description of those that is both exact and simple.
+        // The two inverses. An edit that touches one line names the first; one that touches
+        // several - an add, a remove, a rename - is undone by the shared restore of the whole
+        // text, because putting the document back is the only description of those that is both
+        // exact and simple.
         services.AddSingleton<ICommandHandler<RestoreWardleyLineCommand>, RestoreWardleyLineCommandHandler>();
-        services.AddSingleton<ICommandHandler<RestoreWardleyDocumentCommand>, RestoreWardleyDocumentCommandHandler>();
+        services.AddSingleton<ICommandHandler<RestoreDocumentCommand<IWardleyDocumentStore>>, RestoreDocumentCommandHandler<IWardleyDocumentStore>>();
 
         return services;
     }
