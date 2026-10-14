@@ -26,6 +26,9 @@ public class LinesWordsTests
             { "name": "note", "type": "Note", "line": "^note\\s+(?<id>\\S+)(?:\\s+(?<text>\"[^\"]*\"|\\S+))?\\s*$", "id": { "from": { "group": "id" } },
               "attributes": { "text": { "group": "text", "word": "^.+$" } },
               "insert": { "place": "after-last", "emit": "note {id}[ \"{text}\"]" } },
+            { "name": "label", "type": "Label", "line": "^label\\s+(?<id>[^\\s\"]+)(?:\\s+(?<text>\"[^\"]*\"|[^\\s\"]+))?(?<rest>.*)$", "id": { "from": { "group": "id" } },
+              "attributes": { "text": { "group": "text", "word": "^.+$", "empty": "remove" } },
+              "insert": { "place": "after-last", "emit": "label {id}[ \"{text}\"]" } },
             { "name": "group", "type": "Group", "line": "^group\\s+(?<id>\\S+)(?<members>(?:\\s+\\S+)+)\\s*$", "id": { "from": { "group": "id" } },
               "attributes": { "members": { "group": "members" } },
               "insert": { "place": "after-last", "emit": "group {id} {members}" } }
@@ -123,6 +126,19 @@ public class LinesWordsTests
 
         // Assert.
         Assert.Equal("item a size=1e21\n", text);
+    }
+
+    [Theory]
+    [InlineData("label l \"Say \"hi\"\"\n", "label l\n")]
+    [InlineData("label l \"x\"y\n", "label l\n")]
+    [InlineData("label l \"x\" y\n", "label l\n")]
+    public void AValueRemoved_WhoseRemovalWouldChangeHowTheLineReads_ReEmitsTheLine(string text, string expected)
+    {
+        // Act: removing the quoted word with the space before it would glue the next word to the id, or move it into the value's place.
+        var changed = Changed(text, new ModelChange.Set("l", new Dictionary<string, object?> { ["text"] = "" }));
+
+        // Assert.
+        Assert.Equal(expected, changed);
     }
 
     [Fact]

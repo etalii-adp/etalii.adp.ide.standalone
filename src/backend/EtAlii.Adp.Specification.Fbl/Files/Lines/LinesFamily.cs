@@ -459,7 +459,7 @@ internal sealed class LinesFamily(BodyText text, FblBinding binding, FblOptions 
             if (InsertPoint(element, change) is { } point) pending.Add((SpliceOperation.InsertKey, new Span(point.Offset, point.Offset), point.Text));
             else reEmit = true;
         }
-        if (!reEmit)
+        if (!reEmit && RemovalsReadBack(element, statement, changes, pending))
         {
             foreach ((SpliceOperation operation, Span span, string text) in pending) plan.Add(operation, span, text);
             return;
@@ -475,6 +475,53 @@ internal sealed class LinesFamily(BodyText text, FblBinding binding, FblOptions 
             element.SourceRead?.Value as string, element.TargetRead?.Value as string)));
         plan.Add(SpliceOperation.ReEmitLine, ReEmitSpan(statement), line);
     }
+
+    /// <summary>
+    /// Whether the line, with <paramref name="pending"/> applied, still reads as the change says where a
+    /// value is removed: the rule still matches it, every group the change does not write reads as it
+    /// did, and a value that has a group of its own no longer reads one. A removal can fail that - the word after the value is glued to the
+    /// word before it, or moves into the value's place - and the line is then re-emitted instead.
+    /// </summary>
+    private bool RemovalsReadBack(ReadElement element, Statement statement, IReadOnlyList<SlotChange> changes, List<(SpliceOperation Operation, Span Span, string Text)> pending)
+    {
+        if (pending.All(splice => splice.Operation != SpliceOperation.RemoveKey) || element.Rule.Line is not { } expression) return true;
+        var start = statement.Offsets[0];
+        var end = statement.Offsets[^1];
+        var after = new StringBuilder();
+        var at = start;
+        foreach ((_, Span span, string text) in pending.OrderBy(splice => splice.Span.Start))
+        {
+            if (span.Start < at || span.End > end) return true;
+            after.Append(Text.Text(at, span.Start)).Append(text);
+            at = span.End;
+        }
+        after.Append(Text.Text(at, end));
+        Match? match;
+        try
+        {
+            match = Regex(expression, element.Rule.CaseInsensitive).Match(after.ToString());
+        }
+        catch (RegexMatchTimeoutException)
+        {
+            return false;
+        }
+        if (match is null) return false;
+        var changed = changes.Select(change => change.Binding.Group).OfType<string>().ToHashSet(StringComparer.Ordinal);
+        foreach ((string name, Group held) in Groups(statement, expression, element.Rule.CaseInsensitive))
+        {
+            if (!changed.Contains(name) && match.Groups[name].Value != held.Value) return false;
+        }
+        foreach (var change in changes)
+        {
+            if (!change.IsEmpty || change.Binding.Group is not { } group) continue;
+            var own = element.Rule.Attributes.Count(attribute => attribute.Value.Group == group) == 1;
+            if (own && match.Groups[group].Success) return false;
+        }
+        return true;
+    }
+
+    private IReadOnlyDictionary<string, Group> Groups(Statement statement, string expression, bool caseInsensitive) =>
+        Match(expression, caseInsensitive, statement) ?? new Dictionary<string, Group>();
 
     private Span ReEmitSpan(Statement statement)
     {
