@@ -1,3 +1,4 @@
+using EtAlii.Adp.Layout;
 using Xunit;
 
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
@@ -16,14 +17,14 @@ public class HelmElementMapperTests
         return (chart, HelmGraph.Derive(chart));
     }
 
-    private static IReadOnlyDictionary<string, HelmBox> BoxesFor(HelmGraph graph)
+    private static IReadOnlyDictionary<string, Rect> BoxesFor(HelmGraph graph)
     {
         // Hand-built boxes: layout is the next task's concern, and the mapper must not care.
-        var boxes = new Dictionary<string, HelmBox>(StringComparer.Ordinal);
+        var boxes = new Dictionary<string, Rect>(StringComparer.Ordinal);
         var index = 0;
         foreach (var node in graph.Nodes)
         {
-            boxes[node.Id] = new HelmBox(index * 100, index * 10, 90, 40);
+            boxes[node.Id] = new Rect(index * 100, index * 10, 90, 40);
             index++;
         }
 
@@ -206,7 +207,7 @@ public class HelmElementMapperTests
     {
         // Arrange: the same graph, with every box withheld.
         (HelmChart chart, HelmGraph graph) = WellFormed();
-        var none = new Dictionary<string, HelmBox>(StringComparer.Ordinal);
+        var none = new Dictionary<string, Rect>(StringComparer.Ordinal);
         var mapper = new HelmElementMapper();
 
         // Act.

@@ -1,3 +1,4 @@
+using EtAlii.Adp.Layout;
 using Xunit;
 
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
@@ -85,7 +86,7 @@ public class HelmLayoutTests
 
         // Assert.
         Assert.Equal(first.Count, second.Count);
-        foreach ((string id, HelmBox box) in first)
+        foreach ((string id, Rect box) in first)
         {
             Assert.Equal(box, second[id]);
         }
