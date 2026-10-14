@@ -44,6 +44,12 @@ export interface ElementDropped {
   elementType: string;
   /** Where it landed, in diagram coordinates. */
   position: ShapePoint;
+  /**
+   * The elements drawn under the point it landed on, topmost first: a drop that means something
+   * only ON an element - a link dropped onto the variable it starts from - finds it here rather
+   * than by measuring boxes of its own.
+   */
+  elementIds?: readonly string[];
 }
 
 /** A delete gesture reached an element the definition marks deletable. */

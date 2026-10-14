@@ -22,6 +22,8 @@ interface CatalogEntry {
 }
 
 const SHAPES: Readonly<Record<string, CatalogEntry>> = {
+  // A node with no body: only its icon, labels and decorations are drawn.
+  none: { shape: "none", draws: {}, defaults: {} },
   rect: { shape: "box", draws: {}, defaults: {} },
   ellipse: { shape: "ellipse", draws: {}, defaults: {} },
   pill: { shape: "pill", draws: {}, defaults: {} },

@@ -80,6 +80,8 @@ import { effectiveDefinition, type DiagramRuntimeConfig } from "./api/diagramRun
 import type { DiagramModel, DiagramModelConnection, DiagramModelElement } from "./api/diagramModel";
 import { layoutAlgorithmFor, type LayoutInput, type LayoutPositions } from "./layout/layoutAlgorithm";
 import { useAnimatedPlacements } from "./layout/useAnimatedPlacements";
+import { placedAtCentreOfMembers } from "./layout/centreOfMembers";
+import { strokeClassOf } from "./definition/strokeLadder";
 import type {
   AnchorSet,
   BuiltInShape,
@@ -447,15 +449,19 @@ export function DiagramCanvasCore({
   // there is drawn rather than jumped; the others re-place from the model and are drawn at once.
   const drawnPositions = useAnimatedPlacements(layoutPositions, layoutAlgorithm?.signature !== undefined);
 
+  // An element with no position of its own is drawn among the members it lists, wherever they are drawn.
   const elements = useMemo(
     () =>
-      drawnPositions === null
-        ? model.elements
-        : model.elements.map((element) => {
-            const at = drawnPositions.get(element.id);
-            return at === undefined ? element : { ...element, x: at.x, y: at.y, width: at.width ?? element.width };
-          }),
-    [model.elements, drawnPositions],
+      placedAtCentreOfMembers(
+        drawnPositions === null
+          ? model.elements
+          : model.elements.map((element) => {
+              const at = drawnPositions.get(element.id);
+              return at === undefined ? element : { ...element, x: at.x, y: at.y, width: at.width ?? element.width };
+            }),
+        elementTypes,
+      ),
+    [model.elements, drawnPositions, elementTypes],
   );
 
   const elementsById = useMemo(() => new Map(elements.map((element) => [element.id, element])), [elements]);
@@ -1012,9 +1018,10 @@ export function DiagramCanvasCore({
     [raise],
   );
 
-  /** The topmost drawn element whose bounds contain the point - later in the model draws on top. */
-  const elementAt = useCallback(
-    (point: Point): DiagramModelElement | undefined => {
+  /** Every drawn element whose bounds contain the point, topmost first - later in the model draws on top. */
+  const elementsAt = useCallback(
+    (point: Point): DiagramModelElement[] => {
+      const found: DiagramModelElement[] = [];
       for (let i = visibleElements.length - 1; i >= 0; i--) {
         const bounds = boundsOf(visibleElements[i]);
         if (
@@ -1023,13 +1030,16 @@ export function DiagramCanvasCore({
           point.y >= bounds.y &&
           point.y <= bounds.y + bounds.height
         ) {
-          return visibleElements[i];
+          found.push(visibleElements[i]);
         }
       }
-      return undefined;
+      return found;
     },
     [visibleElements, boundsOf],
   );
+
+  /** The topmost drawn element whose bounds contain the point. */
+  const elementAt = useCallback((point: Point): DiagramModelElement | undefined => elementsAt(point)[0], [elementsAt]);
 
   // A press on a type declared unselectable is a press on the background: the selection clears
   // (centralized-selection Requirement 2.3). Omitted means selectable, so nothing changes for a
@@ -1612,7 +1622,7 @@ export function DiagramCanvasCore({
     const pointer = toCanvasPoint(event.clientX, event.clientY);
     const position = layoutAlgorithm?.inverse?.(pointer, layoutInput, definition.layout) ?? pointer;
     dropMemoryRef.current = { position, at: Date.now(), known: new Set(model.elements.map((element) => element.id)) };
-    raise({ kind: "element-dropped", elementType: payload, position });
+    raise({ kind: "element-dropped", elementType: payload, position, elementIds: elementsAt(pointer).map((element) => element.id) });
   };
 
   // ---- keyboard: delete --------------------------------------------------------------------
@@ -2861,7 +2871,7 @@ function LibraryConnection({
         ...(drawn.targetAttachment !== undefined ? { targetEdge: drawn.targetAttachment.edge } : {}),
       }
       : undefined;
-  const d = routePath(relation, from, to, waypoints, connection.style?.cornerRadius ?? relation.style?.cornerRadius, routeEnds);
+  const d = routePath(relation, from, to, waypoints, connection.style?.cornerRadius ?? relation.style?.cornerRadius, routeEnds, connection);
   const style = { ...relation.style, ...connection.style };
   const mid = waypoints.length > 0 ? waypoints[Math.floor(waypoints.length / 2)] : midpointOf(from, to);
   const label = connection.label;
@@ -2869,7 +2879,7 @@ function LibraryConnection({
 
   return (
     <g
-      className={`canvas-connection library-connection ${relation.className ?? ""} ${connection.className ?? ""}${selected ? " canvas-selected" : ""}`.replace(/\s+/g, " ").trim()}
+      className={`canvas-connection library-connection ${relation.className ?? ""} ${strokeClassOf(relation.strokeLadder, connection.payload)} ${connection.className ?? ""}${selected ? " canvas-selected" : ""}`.replace(/\s+/g, " ").trim()}
       data-connection-id={connection.id}
       {...press}
       onContextMenu={onContextMenu}
@@ -3049,6 +3059,7 @@ function decorationGlyph(decoration: ResolvedDecoration): ReactNode {
     case "line":
       return <line className={className} x1={decoration.from.x} y1={decoration.from.y} x2={decoration.to.x} y2={decoration.to.y} />;
     case "path":
+    case "circular-arrow":
       return decoration.d !== undefined ? <path className={className} d={decoration.d} /> : null;
     case "circle":
       return <circle className={className} cx={decoration.from.x} cy={decoration.from.y} r={decoration.radius} />;
@@ -3782,10 +3793,11 @@ export function routePath(
   waypoints: readonly Point[],
   cornerRadius?: number,
   ends?: import("./definition/diagramDefinition").RouteEnds,
+  connection?: DiagramModelConnection,
 ): string {
   const route = relation.route;
   if (typeof route !== "string") {
-    return route.path(from, to, waypoints, ends);
+    return route.path(from, to, waypoints, ends, connection);
   }
 
   switch (route) {

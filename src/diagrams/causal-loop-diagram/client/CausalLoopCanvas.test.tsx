@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, waitFor } from "@testing-library/react";
+import { createEvent, fireEvent, render, waitFor } from "@testing-library/react";
 import { create, toBinary } from "@bufbuild/protobuf";
 import { ElementSchema } from "@client/generated/elements_pb";
 import {
@@ -13,6 +13,7 @@ import { VIEW_REPORT_DEBOUNCE_MS } from "@client/diagrams/viewReport";
 import { applyDelta, emptyModel, type CausalLoopModel } from "./causalLoopModel";
 import { elementSelectionOf, selectedElementIdOf } from "@client/canvas/selection";
 import { ContextSelectionAction, type ContextSelection } from "@client/generated/context_pb";
+import type { ContextSource } from "@client/generated/context-contract_pb";
 import { expectLibrarySelection } from "@client/canvas/library/testing/expectLibrarySelection";
 import { CanvasFrame } from "@client/canvas/library/surface/CanvasFrame";
 import { fakeContextConnection, idsPushed, pointer } from "@client/canvas/library/testing/canvasHarness";
@@ -553,6 +554,59 @@ describe("CausalLoopCanvas", () => {
     const line = container.querySelector('[data-canvas-surface="refusal"]');
     expect(line?.textContent).toBe("Drop a link or a loop onto a variable.");
     expect(container.querySelectorAll(".canvas-rejection")).toHaveLength(1);
+  });
+});
+
+describe("the specification's gestures, run against the backend", () => {
+  /** The element id a call's source names, or undefined where it carries none. */
+  /** The first call the canvas made to run an action: its id, and the source it carried. */
+  const firstCall = () => executeAction.mock.calls[0] as unknown as unknown[];
+  const sourceIdOf = (call: unknown[]) => {
+    const source = (call[1] as ContextSource | undefined)?.source;
+    return source?.case === "elementId" ? source.value.value : undefined;
+  };
+
+  it("runs a link or loop item dropped on a variable against the variable it landed on", () => {
+    // The library says what the drop landed on; this canvas measured boxes of its own until now.
+    // One variable alone, so the view centres on it and a drop at the surface's middle lands on it.
+    currentModel = modelOf(variable("a", 0, 0, "Alpha"));
+    const sized = vi.spyOn(Element.prototype, "getBoundingClientRect").mockReturnValue({ left: 0, top: 0, right: 1000, bottom: 1000, width: 1000, height: 1000, x: 0, y: 0, toJSON: () => ({}) });
+    const { container } = renderCanvas();
+    const surface = container.querySelector("svg.library-canvas-surface")!;
+    const data = new Map<string, string>([["application/x-adp-toolbox-item", "causal-loop.add-link"]]);
+    const dataTransfer = { getData: (type: string) => data.get(type) ?? "", dropEffect: "", types: [...data.keys()] };
+
+    // jsdom's drag events carry no pointer position, so the drop is given its own.
+    fireEvent.dragOver(surface, { dataTransfer });
+    const drop = createEvent.drop(surface, { dataTransfer });
+    Object.defineProperties(drop, { clientX: { value: 500 }, clientY: { value: 500 } });
+    fireEvent(surface, drop);
+    sized.mockRestore();
+
+    expect(executeAction).toHaveBeenCalledTimes(1);
+    expect(firstCall()[0]).toBe("causal-loop.add-link");
+    expect(sourceIdOf(firstCall())).toBe("variable:a");
+  });
+
+  it("renames a variable on a double-click, as the specification's doubleClick says", () => {
+    const { container } = renderCanvas();
+
+    fireEvent.doubleClick(container.querySelector('[data-element-id="variable:a"]')!);
+
+    expect(executeAction).toHaveBeenCalledTimes(1);
+    expect(firstCall()[0]).toBe("causal-loop.rename-variable");
+    expect(sourceIdOf(firstCall())).toBe("variable:a");
+  });
+
+  it("removes the selected link on Delete, with the action its menu entry runs", () => {
+    currentSelection = elementSelectionOf(new Uint8Array(16), ["feedback.adp"], "link:a|b");
+    const { container } = renderCanvas();
+
+    fireEvent.keyDown(container.querySelector("svg.library-canvas-surface")!, { key: "Delete" });
+
+    expect(executeAction).toHaveBeenCalledTimes(1);
+    expect(firstCall()[0]).toBe("causal-loop.remove-link");
+    expect(sourceIdOf(firstCall())).toBe("link:a|b");
   });
 });
 
