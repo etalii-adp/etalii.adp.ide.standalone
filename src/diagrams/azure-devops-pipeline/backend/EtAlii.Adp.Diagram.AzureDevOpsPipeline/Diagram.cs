@@ -15,6 +15,14 @@ public static class Diagram
     public const string DocumentExtension = ".yml";
 
     /// <summary>
+    /// Whether <paramref name="path"/> could be a pipeline: a YAML file. Only a registration says
+    /// that one is, so this answers for the providers only which files are not worth reading.
+    /// </summary>
+    internal static bool IsPipelineFile(string path) =>
+        path.EndsWith(DocumentExtension, StringComparison.OrdinalIgnoreCase) ||
+        path.EndsWith(".yaml", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
     /// This module's one type, named so the module's own registrations can say which type they
     /// serve without indexing into the array. Discovery reads <see cref="Definitions"/>; the
     /// module reads this.

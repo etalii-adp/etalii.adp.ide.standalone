@@ -27,14 +27,23 @@ namespace EtAlii.Adp.Diagram;
 public abstract class DiagramActionProvider<TBody, TModel> : IContextActionProvider
 {
     private readonly IHistoryStackStore _historyStacks;
-    private readonly IDiagramDocumentStore<TBody, TModel> _documents;
+    private readonly Func<ContextTarget, DocumentEntry<TBody, TModel>> _load;
 
     protected DiagramActionProvider(IHistoryStackStore historyStacks, IDiagramDocumentStore<TBody, TModel> documents)
+        : this(historyStacks, DiagramPropertyProvider<TBody, TModel>.LoadFrom(documents))
+    {
+    }
+
+    /// <summary>
+    /// A provider whose documents are loaded by <paramref name="load"/>, for a module whose store
+    /// needs more of a target than the path of its body to read it.
+    /// </summary>
+    protected DiagramActionProvider(IHistoryStackStore historyStacks, Func<ContextTarget, DocumentEntry<TBody, TModel>> load)
     {
         ArgumentNullException.ThrowIfNull(historyStacks);
-        ArgumentNullException.ThrowIfNull(documents);
+        ArgumentNullException.ThrowIfNull(load);
         _historyStacks = historyStacks;
-        _documents = documents;
+        _load = load;
     }
 
     /// <inheritdoc />
@@ -47,7 +56,7 @@ public abstract class DiagramActionProvider<TBody, TModel> : IContextActionProvi
         cancellationToken.ThrowIfCancellationRequested();
 
         return ValueTask.FromResult(Serves(target)
-            ? Discover(_documents.GetOrLoad(target.ResolvedFullPath), target.ElementId)
+            ? Discover(target, Load(target))
             : []);
     }
 
@@ -57,7 +66,7 @@ public abstract class DiagramActionProvider<TBody, TModel> : IContextActionProvi
         ArgumentNullException.ThrowIfNull(target);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var entry = _documents.GetOrLoad(target.ResolvedFullPath);
+        var entry = Load(target);
         return entry.IsUsable
             ? await RunAsync(target, entry, actionId, cancellationToken)
             : new ContextExecutionFailed(Unreadable(target));
@@ -83,7 +92,7 @@ public abstract class DiagramActionProvider<TBody, TModel> : IContextActionProvi
         ArgumentNullException.ThrowIfNull(target);
         _ = text;
 
-        var entry = _documents.GetOrLoad(target.ResolvedFullPath);
+        var entry = Load(target);
         if (!entry.IsUsable)
         {
             return ContextCommitResult.Failed(Unreadable(target));
@@ -106,7 +115,7 @@ public abstract class DiagramActionProvider<TBody, TModel> : IContextActionProvi
     protected DocumentEntry<TBody, TModel> Load(ContextTarget target)
     {
         ArgumentNullException.ThrowIfNull(target);
-        return _documents.GetOrLoad(target.ResolvedFullPath);
+        return _load(target);
     }
 
     /// <summary>Whether <paramref name="path"/> is a document of this module.</summary>
@@ -125,6 +134,17 @@ public abstract class DiagramActionProvider<TBody, TModel> : IContextActionProvi
     /// discovers.
     /// </summary>
     protected abstract IReadOnlyList<ContextActionGroupDefinition> Discover(DocumentEntry<TBody, TModel> entry, string elementId);
+
+    /// <summary>
+    /// The actions <paramref name="target"/> offers in <paramref name="entry"/>: those its element
+    /// offers, by default. A module whose actions depend on the connection as well, such as what
+    /// it has open, adds those here.
+    /// </summary>
+    protected virtual IReadOnlyList<ContextActionGroupDefinition> Discover(ContextTarget target, DocumentEntry<TBody, TModel> entry)
+    {
+        ArgumentNullException.ThrowIfNull(target);
+        return Discover(entry, target.ElementId);
+    }
 
     /// <summary>Runs <paramref name="actionId"/> on <paramref name="target"/> in a document that was read.</summary>
     protected abstract ValueTask<ContextExecutionResult> RunAsync(

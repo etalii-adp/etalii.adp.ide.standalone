@@ -1,4 +1,5 @@
 using EtAlii.Adp.Context;
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.History;
 
@@ -28,7 +29,7 @@ namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline;
 /// one (Requirement 13.10).
 /// </para>
 /// </remarks>
-public sealed class PipelineContextPropertyProvider : IContextPropertyProvider
+public sealed class PipelineContextPropertyProvider : DiagramPropertyProvider<LineDocument, PipelineModel>
 {
     /// <summary>The element's <c>displayName</c> - one of the three editable properties.</summary>
     public const string DisplayNamePropertyId = "azure-pipeline.display-name";
@@ -53,36 +54,32 @@ public sealed class PipelineContextPropertyProvider : IContextPropertyProvider
     /// </summary>
     private const string EditItInTheFile = "This is edited in the pipeline file. A wrong value here would break the build.";
 
-    private readonly IHistoryStackStore _historyStacks;
-    private readonly IPipelineDocumentStore _documents;
-
     /// <summary>Creates the provider.</summary>
+    /// <remarks>A pipeline is read from the target's workspace root as well as its path, for its templates.</remarks>
     public PipelineContextPropertyProvider(IHistoryStackStore historyStacks, IPipelineDocumentStore documents)
+        : base(historyStacks, IPipelineDocumentStore.LoaderFor(documents))
     {
-        ArgumentNullException.ThrowIfNull(historyStacks);
-        ArgumentNullException.ThrowIfNull(documents);
-        _historyStacks = historyStacks;
-        _documents = documents;
     }
 
     /// <inheritdoc />
-    public ContextScope Scope => ContextScope.DiagramElement;
+    protected override bool IsBody(string path) => Diagram.IsPipelineFile(path);
 
     /// <inheritdoc />
-    public ValueTask<IReadOnlyList<ContextPropertyDefinition>> DescribeAsync(ContextTarget target, CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(target);
-        cancellationToken.ThrowIfCancellationRequested();
+    protected override bool Serves(ContextTarget target) => base.Serves(target) && target.ElementId.Length > 0;
 
-        if (Resolve(target) is not { } found)
+    /// <inheritdoc />
+    protected override IReadOnlyList<ContextPropertyDefinition> Describe(DocumentEntry<LineDocument, PipelineModel> entry, string elementId)
+    {
+        ArgumentNullException.ThrowIfNull(entry);
+
+        if (!entry.IsUsable || PipelineEdits.Locate(entry.Model, elementId) is not { } location)
         {
-            return None();
+            return [];
         }
 
-        (PipelineModel model, PipelineElementLocation location) = found;
         var properties = location.Kind switch
         {
-            PipelineElementLocationKind.Stage => StageProperties(model, location),
+            PipelineElementLocationKind.Stage => StageProperties(entry.Model, location),
             PipelineElementLocationKind.Job => JobProperties(location),
             _ => StepProperties(location),
         };
@@ -90,36 +87,28 @@ public sealed class PipelineContextPropertyProvider : IContextPropertyProvider
         // An element whose text lives in a template is worth showing and cannot be written here,
         // whatever the rules above would otherwise permit (Requirement 13.7).
         return location.Target.IsEditable
-            ? Ok(properties)
-            : Ok(properties.Select(property => property with { ReadOnlyReason = location.Target.ReadOnlyReason }).ToList());
+            ? properties
+            : properties.Select(property => property with { ReadOnlyReason = location.Target.ReadOnlyReason }).ToList();
     }
 
     /// <inheritdoc />
-    public async ValueTask<ContextPropertyResult> SetAsync(
-        ContextTarget target,
-        string propertyId,
-        string value,
-        CancellationToken cancellationToken)
+    /// <remarks>
+    /// The same command the canvas and the context menu use, on the project's history - so a
+    /// rename from the panel and a rename from the diagram are one implementation and one undo
+    /// (Requirement 13.11).
+    /// </remarks>
+    protected override DiagramPropertyChange Change(ContextTarget target, PipelineModel model, string propertyId, string value)
     {
         ArgumentNullException.ThrowIfNull(target);
 
-        if (Resolve(target) is not { } found)
+        if (PipelineEdits.Locate(model, target.ElementId) is not { } location)
         {
-            return ContextPropertyResult.Failure("That element is no longer in this pipeline.");
+            return DiagramPropertyChange.Refused("That element is no longer in this pipeline.");
         }
 
-        (_, PipelineElementLocation location) = found;
-        var command = CommandFor(target, propertyId, value, location);
-        if (command is null)
-        {
-            return ContextPropertyResult.Failure($"'{propertyId}' cannot be set on this element.");
-        }
-
-        // The same command the canvas and the context menu use, on the project's history - so a
-        // rename from the panel and a rename from the diagram are one implementation and one undo
-        // (Requirement 13.11).
-        var result = await _historyStacks.Get(target.RootPath).ExecuteAsync(command, cancellationToken);
-        return result.IsSuccess ? ContextPropertyResult.Success : ContextPropertyResult.Failure(result.Error);
+        return CommandFor(target, propertyId, value, location) is { } command
+            ? DiagramPropertyChange.By(command)
+            : DiagramPropertyChange.Refused($"'{propertyId}' cannot be set on this element.");
     }
 
     private static ICommand? CommandFor(ContextTarget target, string propertyId, string value, PipelineElementLocation location)
@@ -445,27 +434,4 @@ public sealed class PipelineContextPropertyProvider : IContextPropertyProvider
         value.Contains("${{", StringComparison.Ordinal) ||
         value.Contains("$(", StringComparison.Ordinal) ||
         value.Contains("$[", StringComparison.Ordinal);
-
-    private (PipelineModel Model, PipelineElementLocation Location)? Resolve(ContextTarget target)
-    {
-        if (target.Scope != ContextScope.DiagramElement || target.ElementId.Length == 0)
-        {
-            return null;
-        }
-
-        var entry = _documents.GetOrLoad(target.RootPath, target.ResolvedFullPath);
-        if (!entry.IsUsable)
-        {
-            return null;
-        }
-
-        var location = PipelineEdits.Locate(entry.Model, target.ElementId);
-        return location is null ? null : (entry.Model, location);
-    }
-
-    private static ValueTask<IReadOnlyList<ContextPropertyDefinition>> None() =>
-        ValueTask.FromResult<IReadOnlyList<ContextPropertyDefinition>>([]);
-
-    private static ValueTask<IReadOnlyList<ContextPropertyDefinition>> Ok(IReadOnlyList<ContextPropertyDefinition> properties) =>
-        ValueTask.FromResult(properties);
 }

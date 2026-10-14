@@ -16,14 +16,30 @@ namespace EtAlii.Adp.Diagram;
 public abstract class DiagramPropertyProvider<TBody, TModel> : IContextPropertyProvider
 {
     private readonly IHistoryStackStore _historyStacks;
-    private readonly IDiagramDocumentStore<TBody, TModel> _documents;
+    private readonly Func<ContextTarget, DocumentEntry<TBody, TModel>> _load;
 
     protected DiagramPropertyProvider(IHistoryStackStore historyStacks, IDiagramDocumentStore<TBody, TModel> documents)
+        : this(historyStacks, LoadFrom(documents))
+    {
+    }
+
+    /// <summary>
+    /// A provider whose documents are loaded by <paramref name="load"/>, for a module whose store
+    /// needs more of a target than the path of its body to read it.
+    /// </summary>
+    protected DiagramPropertyProvider(IHistoryStackStore historyStacks, Func<ContextTarget, DocumentEntry<TBody, TModel>> load)
     {
         ArgumentNullException.ThrowIfNull(historyStacks);
-        ArgumentNullException.ThrowIfNull(documents);
+        ArgumentNullException.ThrowIfNull(load);
         _historyStacks = historyStacks;
-        _documents = documents;
+        _load = load;
+    }
+
+    /// <summary>How a target's document is loaded from a store that needs only the path of its body.</summary>
+    internal static Func<ContextTarget, DocumentEntry<TBody, TModel>> LoadFrom(IDiagramDocumentStore<TBody, TModel> documents)
+    {
+        ArgumentNullException.ThrowIfNull(documents);
+        return target => documents.GetOrLoad(target.ResolvedFullPath);
     }
 
     /// <inheritdoc />
@@ -36,7 +52,7 @@ public abstract class DiagramPropertyProvider<TBody, TModel> : IContextPropertyP
         cancellationToken.ThrowIfCancellationRequested();
 
         return ValueTask.FromResult(Serves(target)
-            ? Describe(_documents.GetOrLoad(target.ResolvedFullPath), target.ElementId)
+            ? Describe(_load(target), target.ElementId)
             : []);
     }
 
@@ -49,7 +65,7 @@ public abstract class DiagramPropertyProvider<TBody, TModel> : IContextPropertyP
     {
         ArgumentNullException.ThrowIfNull(target);
 
-        var entry = _documents.GetOrLoad(target.ResolvedFullPath);
+        var entry = _load(target);
         if (!entry.IsUsable)
         {
             return ContextPropertyResult.Failure(DiagramActionProvider<TBody, TModel>.Unreadable(target));

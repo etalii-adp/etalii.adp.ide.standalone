@@ -20,31 +20,22 @@ public sealed record MovePipelineStepCommand(
     string RootPath,
     string BodyPath,
     string StepId,
-    int ToIndex) : ICommand;
+    int ToIndex) : IPipelineEditCommand;
 
 internal sealed class MovePipelineStepCommandHandler(IPipelineDocumentStore documents)
-    : ICommandHandler<MovePipelineStepCommand>
+    : PipelineEditHandler<MovePipelineStepCommand>(documents)
 {
-    public Task<CommandResult> ExecuteAsync(MovePipelineStepCommand command, CancellationToken cancellationToken = default)
+    protected override EditOutcome Apply(LineDocument body, PipelineModel model, MovePipelineStepCommand command)
     {
-        ArgumentNullException.ThrowIfNull(command);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        var entry = documents.GetOrLoad(command.RootPath, command.BodyPath);
-        if (!entry.IsUsable)
-        {
-            return Task.FromResult(CommandResult.Failure(entry.Unreadable));
-        }
-
-        var location = PipelineEdits.Locate(entry.Model, command.StepId);
+        var location = PipelineEdits.Locate(model, command.StepId);
         if (location is null || location.Kind != PipelineElementLocationKind.Step)
         {
-            return Task.FromResult(CommandResult.Failure("That step is no longer in this pipeline."));
+            return EditOutcome.Refused("That step is no longer in this pipeline.");
         }
 
         if (PipelineEdits.RefusalFor(location) is { Length: > 0 } refusal)
         {
-            return Task.FromResult(CommandResult.Failure(refusal));
+            return EditOutcome.Refused(refusal);
         }
 
         var job = location.Job!;
@@ -53,48 +44,29 @@ internal sealed class MovePipelineStepCommandHandler(IPipelineDocumentStore docu
         var to = Math.Clamp(command.ToIndex, 0, steps.Count - 1);
         if (from < 0 || from == to)
         {
-            return Task.FromResult(CommandResult.Success());
+            return EditOutcome.Unchanged;
         }
 
         if (steps.Any(step => step.IsFromTemplate))
         {
             // Some of what runs here is written in another file, so the order on the canvas is
             // not the order in this one and moving by position would move the wrong lines.
-            return Task.FromResult(CommandResult.Failure(
-                "Some of this job's steps come from a template, so their order cannot be changed here."));
+            return EditOutcome.Refused("Some of this job's steps come from a template, so their order cannot be changed here.");
         }
 
         // The step it should follow: the one currently at the destination when moving down, and
-        // the one before it when moving up. Null means it becomes the first.
+        // the one before it when moving up. Null means it becomes the first. The list's key is the
+        // line above the job's first step, which is where the front of the list is.
         var after = to > from ? steps[to] : to == 0 ? null : steps[to - 1];
-        var listKeyLine = FirstStepLine(entry, job) - 1;
-
-        if (!new PipelineWriter(entry.Document).MoveElement(
-                location.Target,
-                after is null ? null : PipelineEditTarget.For(after),
-                listKeyLine))
-        {
-            return Task.FromResult(CommandResult.Success());
-        }
-
-        if (documents.Save(command.RootPath, command.BodyPath, entry) is { Failed: true } saved)
-        {
-            return Task.FromResult(CommandResult.Failure(saved.Error));
-        }
+        var listKeyLine = steps[0].Lines.Start - 1;
 
         // Undo moves it back to where it was. Ids are positional, so the step that is now at
         // `to` is the one to send home - which is the same step, under its new id.
-        return Task.FromResult(CommandResult.Success(command with
-        {
-            StepId = $"{job.Id}/step-{to}",
-            ToIndex = from,
-        }));
-    }
-
-    /// <summary>The line the job's first step sits on, which is where the front of the list is.</summary>
-    private static int FirstStepLine(DocumentEntry<LineDocument, PipelineModel> entry, PipelineJob job)
-    {
-        _ = entry;
-        return job.Steps[0].Lines.Start;
+        return new PipelineWriter(body).MoveElement(
+                location.Target,
+                after is null ? null : PipelineEditTarget.For(after),
+                listKeyLine)
+            ? EditOutcome.UndoneBy(command with { StepId = $"{job.Id}/step-{to}", ToIndex = from })
+            : EditOutcome.Unchanged;
     }
 }

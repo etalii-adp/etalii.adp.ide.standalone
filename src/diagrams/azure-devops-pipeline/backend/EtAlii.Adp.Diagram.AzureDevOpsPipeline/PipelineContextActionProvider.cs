@@ -1,5 +1,5 @@
 using EtAlii.Adp.Context;
-using EtAlii.Adp.Documents.Wire;
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline;
@@ -23,7 +23,7 @@ namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline;
 /// the click.
 /// </para>
 /// </remarks>
-public sealed class PipelineContextActionProvider : IContextActionProvider
+public sealed class PipelineContextActionProvider : DiagramActionProvider<LineDocument, PipelineModel>
 {
     /// <summary>Sets the element's <c>displayName</c>.</summary>
     public const string RenameActionId = "azure-pipeline.rename";
@@ -63,43 +63,37 @@ public sealed class PipelineContextActionProvider : IContextActionProvider
 
     private const string Gone = "That element is no longer in this pipeline.";
 
-    private readonly IHistoryStackStore _historyStacks;
-    private readonly IPipelineDocumentStore _documents;
     private readonly PipelineViewState _views;
 
     /// <summary>Creates the provider.</summary>
+    /// <remarks>A pipeline is read from the target's workspace root as well as its path, for its templates.</remarks>
     public PipelineContextActionProvider(
         IHistoryStackStore historyStacks,
         IPipelineDocumentStore documents,
         PipelineViewState views)
+        : base(historyStacks, IPipelineDocumentStore.LoaderFor(documents))
     {
-        ArgumentNullException.ThrowIfNull(historyStacks);
-        ArgumentNullException.ThrowIfNull(documents);
         ArgumentNullException.ThrowIfNull(views);
-        _historyStacks = historyStacks;
-        _documents = documents;
         _views = views;
     }
 
     /// <inheritdoc />
-    public ContextScope Scope => ContextScope.DiagramElement;
+    protected override bool IsBody(string path) => Diagram.IsPipelineFile(path);
 
     /// <inheritdoc />
-    public ValueTask<IReadOnlyList<ContextActionGroupDefinition>> DiscoverAsync(ContextTarget target, CancellationToken cancellationToken)
+    protected override bool Serves(ContextTarget target) => base.Serves(target) && target.ElementId.Length > 0;
+
+    /// <inheritdoc />
+    /// <remarks>What the element offers whatever is open; <see cref="Discover(ContextTarget, DocumentEntry{LineDocument, PipelineModel})"/> adds the opening.</remarks>
+    protected override IReadOnlyList<ContextActionGroupDefinition> Discover(DocumentEntry<LineDocument, PipelineModel> entry, string elementId)
     {
-        ArgumentNullException.ThrowIfNull(target);
-        cancellationToken.ThrowIfCancellationRequested();
+        ArgumentNullException.ThrowIfNull(entry);
 
-        if (Resolve(target) is not { } found)
+        if (Resolve(entry, elementId) is not { } location || !location.Target.IsEditable)
         {
-            return Empty();
-        }
-
-        (PipelineModel model, PipelineElementLocation location) = found;
-        if (!location.Target.IsEditable)
-        {
-            // Its text is somewhere else, so there is nothing here to do to it.
-            return Empty();
+            // Nothing may be edited in a file that does not parse, and an element whose text is
+            // somewhere else has nothing here to do to it.
+            return [];
         }
 
         var edits = new List<ContextActionDefinition>
@@ -111,30 +105,6 @@ public sealed class PipelineContextActionProvider : IContextActionProvider
                 Execution(location).IsDisabled ? "mdi-play-circle-outline" : "mdi-pause-circle-outline"),
         };
 
-        // Opening a stage is how its jobs are ever seen, so it goes first among what can be done
-        // to one - and only where there is something inside to show (Requirement 8.2).
-        if (location is { Kind: PipelineElementLocationKind.Stage, Stage.Jobs.Count: > 0 })
-        {
-            var open = _views.For(target.WatchId, target.ResolvedFullPath).IsExpanded(location.Stage.Id);
-            edits.Insert(0, new ContextActionDefinition(
-                ToggleStageActionId,
-                open ? "Hide jobs" : "Show jobs",
-                open ? "mdi-unfold-less-horizontal" : "mdi-unfold-more-horizontal",
-                new ContextShortcutDefinition(" ")));
-        }
-
-        // A job opens to its steps the same way, and for the same reason - it is how they are
-        // ever seen - so it leads a job's edits as opening leads a stage's (Requirement 8.2).
-        if (location.Kind == PipelineElementLocationKind.Job && location.Job!.Steps.Count > 0)
-        {
-            var open = _views.For(target.WatchId, target.ResolvedFullPath).IsExpanded(location.Job!.Id);
-            edits.Insert(0, new ContextActionDefinition(
-                ToggleJobActionId,
-                open ? "Hide steps" : "Show steps",
-                open ? "mdi-unfold-less-horizontal" : "mdi-unfold-more-horizontal",
-                new ContextShortcutDefinition(" ")));
-        }
-
         if (location.Kind != PipelineElementLocationKind.Step && DependsOnDeclared(location))
         {
             // Only worth offering when there is something to clear: a stage with no dependsOn is
@@ -145,7 +115,7 @@ public sealed class PipelineContextActionProvider : IContextActionProvider
                 "mdi-arrow-decision-outline"));
         }
 
-        if (Removable(model, location))
+        if (Removable(entry.Model, location))
         {
             edits.Add(new ContextActionDefinition(
                 RemoveActionId,
@@ -159,24 +129,56 @@ public sealed class PipelineContextActionProvider : IContextActionProvider
 
         // Three groups, so the menu separates changing this element from adding another and from
         // moving it - an empty group would draw a separator with nothing under it.
-        return Groups(
-            new ContextActionGroupDefinition(edits),
-            additions.Count > 0 ? new ContextActionGroupDefinition(additions) : null,
-            ordering.Count > 0 ? new ContextActionGroupDefinition(ordering) : null);
+        return new[]
+            {
+                new ContextActionGroupDefinition(edits),
+                additions.Count > 0 ? new ContextActionGroupDefinition(additions) : null,
+                ordering.Count > 0 ? new ContextActionGroupDefinition(ordering) : null,
+            }
+            .OfType<ContextActionGroupDefinition>()
+            .ToArray();
     }
 
     /// <inheritdoc />
-    public ValueTask<ContextExecutionResult> ExecuteAsync(ContextTarget target, string actionId, CancellationToken cancellationToken)
+    /// <remarks>
+    /// Opening a stage or a job is how what is inside it is ever seen, so it leads what can be done
+    /// to one, and only where there is something inside to show (Requirement 8.2). Whether it is
+    /// open belongs to the connection, which is why it is added here rather than with the edits.
+    /// </remarks>
+    protected override IReadOnlyList<ContextActionGroupDefinition> Discover(ContextTarget target, DocumentEntry<LineDocument, PipelineModel> entry)
     {
         ArgumentNullException.ThrowIfNull(target);
-        cancellationToken.ThrowIfCancellationRequested();
 
-        if (Resolve(target) is not { } found)
+        var groups = Discover(entry, target.ElementId);
+        if (groups.Count == 0 || Resolve(entry, target.ElementId) is not { } location || OpenerOf(location) is not { } inside)
         {
-            return Result(new ContextExecutionFailed(Gone));
+            return groups;
         }
 
-        (_, PipelineElementLocation location) = found;
+        var open = _views.For(target.WatchId, target.ResolvedFullPath).IsExpanded(inside.Id);
+        var toggle = new ContextActionDefinition(
+            inside.ActionId,
+            open ? inside.Hide : inside.Show,
+            open ? "mdi-unfold-less-horizontal" : "mdi-unfold-more-horizontal",
+            new ContextShortcutDefinition(" "));
+
+        return [new ContextActionGroupDefinition([toggle, .. groups[0].Actions]), .. groups.Skip(1)];
+    }
+
+    /// <inheritdoc />
+    protected override async ValueTask<ContextExecutionResult> RunAsync(
+        ContextTarget target,
+        DocumentEntry<LineDocument, PipelineModel> entry,
+        string actionId,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(target);
+        ArgumentNullException.ThrowIfNull(entry);
+
+        if (Resolve(entry, target.ElementId) is not { } location)
+        {
+            return new ContextExecutionFailed(Gone);
+        }
 
         if (actionId == ToggleStageActionId || actionId == ToggleJobActionId)
         {
@@ -188,65 +190,34 @@ public sealed class PipelineContextActionProvider : IContextActionProvider
                 target.WatchId,
                 target.ResolvedFullPath,
                 actionId == ToggleJobActionId ? location.Job!.Id : location.Stage.Id);
-            return Result(new ContextExecutionCompleted());
+            return new ContextExecutionCompleted();
         }
 
-        // A rename asks for the new text first; everything else has all it needs already, so it
-        // is committed straight away rather than putting a dialog in the way of one keystroke.
-        return actionId == RenameActionId
-            ? Result(new ContextExecutionRequiresInput(new ContextInputRequest(
+        if (actionId == RenameActionId)
+        {
+            // A rename asks for the new text first.
+            return new ContextExecutionRequiresInput(new ContextInputRequest(
                 "Rename",
                 "mdi-pencil-outline",
                 "Display name",
                 DisplayName(location),
                 "Rename",
-                target.ElementId)))
-            : Result(new ContextExecutionCompleted());
+                target.ElementId));
+        }
+
+        // Everything else has all it needs already, so it runs now rather than putting a dialog in
+        // the way of one keystroke - through the project's history, so every one of these is one
+        // undo away like every other edit in the IDE (Requirement 9.8).
+        return CommandFor(target, actionId, "", location) is { } command
+            ? await DispatchAsync(target, command, cancellationToken)
+            : new ContextExecutionFailed($"'{actionId}' does not apply to this selection.");
     }
 
     /// <inheritdoc />
-    /// <remarks>
-    /// An empty display name is accepted, and means "remove it". An element without one falls back
-    /// to its own identifying value - a stage to its name, a script step to its first line - so
-    /// clearing it is a real instruction rather than a mistake to refuse.
-    /// </remarks>
-    public ValueTask<ContextValidationResult> ValidateAsync(ContextTarget target, string actionId, string value, CancellationToken cancellationToken)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-        _ = target;
-        _ = actionId;
-        _ = value;
-        return ValueTask.FromResult(ContextValidationResult.Accepted);
-    }
-
-    /// <inheritdoc />
-    public async ValueTask<ContextCommitResult> CommitAsync(
-        ContextTarget target,
-        string actionId,
-        string value,
-        string text,
-        CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(target);
-        _ = text;
-
-        if (Resolve(target) is not { } found)
-        {
-            return ContextCommitResult.Failed(Gone);
-        }
-
-        (_, PipelineElementLocation location) = found;
-        var command = CommandFor(target, actionId, value, location);
-        if (command is null)
-        {
-            return ContextCommitResult.Failed($"'{actionId}' does not apply to this selection.");
-        }
-
-        // Through the project's history, so every one of these is one undo away like every other
-        // edit in the IDE (Requirement 9.8).
-        var result = await _historyStacks.Get(target.RootPath).ExecuteAsync(command, cancellationToken);
-        return result.IsSuccess ? ContextCommitResult.Succeeded : ContextCommitResult.Failed(result.Error);
-    }
+    protected override ICommand? CommitCommand(ContextTarget target, PipelineModel model, string actionId, string value) =>
+        PipelineEdits.Locate(model, target.ElementId) is { } location
+            ? CommandFor(target, actionId, value, location)
+            : null;
 
     private static ICommand? CommandFor(ContextTarget target, string actionId, string value, PipelineElementLocation location)
     {
@@ -364,32 +335,20 @@ public sealed class PipelineContextActionProvider : IContextActionProvider
     private static int IndexOf(PipelineElementLocation location) =>
         location.Job!.Steps.ToList().FindIndex(step => step.Id == location.Step!.Id);
 
-    /// <summary>The model and the element a target names, or null when it names neither.</summary>
-    private (PipelineModel Model, PipelineElementLocation Location)? Resolve(ContextTarget target)
+    /// <summary>The element <paramref name="elementId"/> names in a document that was read, or null.</summary>
+    private static PipelineElementLocation? Resolve(DocumentEntry<LineDocument, PipelineModel> entry, string elementId) =>
+        entry.IsUsable && elementId.Length > 0 ? PipelineEdits.Locate(entry.Model, elementId) : null;
+
+    /// <summary>What a stage or a job opens to show, or null where there is nothing inside it to show.</summary>
+    private static PipelineOpener? OpenerOf(PipelineElementLocation location) => location switch
     {
-        if (target.Scope != ContextScope.DiagramElement || target.ElementId.Length == 0)
-        {
-            return null;
-        }
+        { Kind: PipelineElementLocationKind.Stage, Stage.Jobs.Count: > 0 } =>
+            new PipelineOpener(location.Stage.Id, ToggleStageActionId, "Show jobs", "Hide jobs"),
+        { Kind: PipelineElementLocationKind.Job } when location.Job!.Steps.Count > 0 =>
+            new PipelineOpener(location.Job.Id, ToggleJobActionId, "Show steps", "Hide steps"),
+        _ => null,
+    };
 
-        var entry = _documents.GetOrLoad(target.RootPath, target.ResolvedFullPath);
-        if (!entry.IsUsable)
-        {
-            // Nothing may be edited in a file that does not parse, so nothing is offered on one.
-            return null;
-        }
-
-        var location = PipelineEdits.Locate(entry.Model, target.ElementId);
-        return location is null ? null : (entry.Model, location);
-    }
-
-    private static ValueTask<IReadOnlyList<ContextActionGroupDefinition>> Empty() =>
-        ValueTask.FromResult<IReadOnlyList<ContextActionGroupDefinition>>([]);
-
-    private static ValueTask<IReadOnlyList<ContextActionGroupDefinition>> Groups(params ContextActionGroupDefinition?[] groups) =>
-        ValueTask.FromResult<IReadOnlyList<ContextActionGroupDefinition>>(
-            groups.Where(group => group is not null).Select(group => group!).ToArray());
-
-    private static ValueTask<ContextExecutionResult> Result(ContextExecutionResult result) =>
-        ValueTask.FromResult(result);
+    /// <summary>What opening an element shows it by: its id in the view state, the action, and its two labels.</summary>
+    private sealed record PipelineOpener(string Id, string ActionId, string Show, string Hide);
 }

@@ -557,6 +557,36 @@ public class PipelineContextActionProviderTests : IDisposable
             $"Only {offered} actions were offered across every element; this guard has stopped finding the actions it executes.");
     }
 
+    /// <summary>Every action that writes and asks for nothing first, with an element it is offered on.</summary>
+    public static TheoryData<string, string> ActionsThatAskForNothing() => new()
+    {
+        { PipelineContextActionProvider.ToggleEnabledActionId, "Build" },
+        { PipelineContextActionProvider.ClearDependenciesActionId, "Test" },
+        { PipelineContextActionProvider.RemoveActionId, "Test" },
+        { PipelineContextActionProvider.AddStageActionId, "Build" },
+        { PipelineContextActionProvider.AddJobActionId, "Build" },
+        { PipelineContextActionProvider.AddDeploymentJobActionId, "Build" },
+        { PipelineContextActionProvider.AddStepActionId, "Build/Compile" },
+        { PipelineContextActionProvider.MoveStepDownActionId, "Build/Compile/step-0" },
+    };
+
+    [Theory]
+    [MemberData(nameof(ActionsThatAskForNothing))]
+    public async Task AnActionThatAsksForNothing_IsDoneByItsExecution(string actionId, string elementId)
+    {
+        // Arrange: the context service ends an execution that answers Completed there - it never
+        // commits one - so an action that asks for nothing does its work here or not at all.
+        var path = Write();
+        var before = await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken);
+
+        // Act.
+        var executed = await _provider.ExecuteAsync(Target(path, elementId), actionId, TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.IsType<ContextExecutionCompleted>(executed);
+        Assert.NotEqual(before, await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
+    }
+
     [Fact]
     public async Task EveryActionThatWritesSomething_CommitsSuccessfully()
     {

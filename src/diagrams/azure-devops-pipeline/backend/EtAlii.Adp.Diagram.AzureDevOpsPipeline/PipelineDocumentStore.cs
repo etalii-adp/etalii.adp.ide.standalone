@@ -66,6 +66,19 @@ public sealed class PipelineDocumentStore : IPipelineDocumentStore
         return _lifecycle.GetOrLoad(path);
     }
 
+    /// <summary>
+    /// Writes the document back and tells every session on it. Refuses while the document does not
+    /// parse, so a file that is already broken is never made worse.
+    /// </summary>
+    /// <returns><see cref="DocumentSaveResult.Ok"/> when it was written, or a failure whose <see cref="DocumentSaveResult.Error"/> says why it was not (backend-centralization R3.1).</returns>
+    /// <remarks>
+    /// <b>The entry is a parameter rather than something this looked up, and that is the fix for a
+    /// data-loss defect.</b> It used to call <see cref="GetOrLoad"/> itself, so it wrote whatever was
+    /// in the cache at save time - and a <see cref="IReloadableDocumentStore.Reload"/> replaced that entry. A reload landing between a
+    /// command's edit and its save therefore discarded the edit and REPORTED SUCCESS, which put the
+    /// command's inverse on the undo stack for a change that never happened. Passing the entry makes
+    /// that ordering unrepresentable: what the caller edited is what gets written.
+    /// </remarks>
     public DocumentSaveResult Save(string rootPath, string path, DocumentEntry<LineDocument, PipelineModel> entry)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(rootPath);
@@ -111,6 +124,14 @@ public sealed class PipelineDocumentStore : IPipelineDocumentStore
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(rootPath);
         return new Rooted(this, rootPath);
+    }
+
+    public PipelineModel ModelOf(string rootPath, string path, LineDocument document)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(rootPath);
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+        ArgumentNullException.ThrowIfNull(document);
+        return Parse(rootPath, path, document).Model;
     }
 
     public void Reload(string path)

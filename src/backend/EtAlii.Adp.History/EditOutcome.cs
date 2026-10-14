@@ -24,6 +24,16 @@ public readonly record struct EditOutcome(string? Refusal, ICommand? Inverse = n
     /// <summary>The edit was refused, and this is why.</summary>
     public static EditOutcome Refused(string because) => new(because);
 
+    /// <summary>
+    /// The edit asked for what the body already says. <see cref="DocumentEditRun.Run"/> saves nothing
+    /// and records nothing to undo: an undo step for an edit that did not happen is one that appears
+    /// to do nothing when the user reaches it.
+    /// </summary>
+    public static EditOutcome Unchanged { get; } = new(null) { IsUnchanged = true };
+
+    /// <summary>Whether the edit asked for what the body already says, so there is nothing to save.</summary>
+    public bool IsUnchanged { get; private init; }
+
     /// <summary>Whether the body changed.</summary>
     public bool WasApplied => Refusal is null;
 }
