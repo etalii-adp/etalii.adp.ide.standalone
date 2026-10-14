@@ -1,4 +1,4 @@
-using EtAlii.Adp.Documents;
+﻿using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.C4;
@@ -34,7 +34,7 @@ public sealed class C4SessionFactory : IDiagramSessionFactory
     {
         var viewKey = registrationPath is { Length: > 0 } ? ReadViewKey(registrationPath) : null;
         // The project's history, so a drag on this canvas is one undo away like every other edit.
-        return new C4Session(watchId, bodyPath, viewKey, _documents, _mapper, _historyStacks.Get(rootPath));
+        return new C4Session(bodyPath, viewKey, _documents, _mapper, _historyStacks.Get(rootPath));
     }
 
     /// <summary>

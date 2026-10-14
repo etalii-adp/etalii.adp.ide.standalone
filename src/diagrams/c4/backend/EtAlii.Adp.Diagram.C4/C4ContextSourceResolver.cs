@@ -1,125 +1,84 @@
-﻿using EtAlii.Adp.Context;
-using EtAlii.Adp.Documents;
-using EtAlii.Adp.Documents.Wire;
+﻿using EtAlii.Adp.Documents;
 using EtAlii.Adp.Hierarchy;
 
 namespace EtAlii.Adp.Diagram.C4;
 
 /// <summary>
-/// Makes a C4 element selectable: resolves an <c>element_id</c> against the model named by the
-/// enclosing selection level, verifies the element really is in it, and fills in the detail a
-/// consumer shows. Registering this is the whole of it; the context service is untouched
-/// (c4-diagrams Requirement 13.2).
+/// Makes a C4 element or relationship selectable: resolves an <c>element_id</c> against the model
+/// named by the enclosing selection level, and verifies it really is in it (c4-diagrams
+/// Requirement 13.2).
 /// </summary>
 /// <remarks>
-/// Registered once for the whole family rather than once per type. Which C4 type the file is
-/// does not change what an element *is*, and the resolver only has to agree that the file is a
-/// C4 document at all.
+/// <para>
+/// <b>The shared resolver, told what this diagram's ids mean</b> (code-structure FR-032): the
+/// checks, the gestures, the payload and the following are the base's. One is registered per C4
+/// type, as each type's session factory is, because a selection is answered by the resolver of the
+/// file's own origin.
+/// </para>
+/// <para>
+/// <b>What an element looks like does not depend on the view, but where a relationship is drawn
+/// does.</b> The payload is taken from the first view that draws the id, laid out as the
+/// document says, so an element is described exactly as the canvas was sent it, and a line that
+/// only one view elevates is still found. The resolver does not know which view the reader has
+/// open, so a relationship's end coordinates are those of that first view's computed layout.
+/// </para>
 /// </remarks>
-public sealed class C4ContextSourceResolver : IContextSourceResolver
+public sealed class C4ContextSourceResolver : DiagramElementSourceResolver<C4Document, C4Workspace>
 {
-    private readonly DiagramFileRouter _router;
-    private readonly IC4DocumentStore _documents;
+    private readonly C4ElementMapper _mapper;
 
-    public C4ContextSourceResolver(DiagramFileRouter router, IC4DocumentStore documents)
+    /// <summary>Creates the resolver of the C4 type at <paramref name="origin"/>, over the router and the one document store.</summary>
+    public C4ContextSourceResolver(DiagramOrigin origin, DiagramFileRouter router, IC4DocumentStore documents, C4ElementMapper mapper)
+        : base(router, documents)
     {
-        ArgumentNullException.ThrowIfNull(router);
-        ArgumentNullException.ThrowIfNull(documents);
-        _router = router;
-        _documents = documents;
+        ArgumentNullException.ThrowIfNull(origin);
+        ArgumentNullException.ThrowIfNull(mapper);
+        Origin = origin;
+        _mapper = mapper;
     }
 
-    public bool CanResolve(ContextSource source) => source.SourceCase == ContextSource.SourceOneofCase.ElementId;
+    /// <inheritdoc />
+    protected override DiagramOrigin Origin { get; }
 
-    public ValueTask<ContextLevelResolution> ResolveAsync(
-        ShortGuid watchId,
-        string rootPath,
-        ContextSource id,
-        IReadOnlyList<string> clientPath,
-        ContextResolvedLevel? parent,
-        CancellationToken cancellationToken)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-
-        // An element is only ever selected inside a diagram: with no file level above it there
-        // is nothing to verify it against.
-        if (parent is null || parent.Scope != ContextScope.Hierarchy)
-        {
-            return Rejected("A diagram element must be selected within its diagram.");
-        }
-
-        if (_router.Route(parent.Target.ResolvedFullPath, rootPath) is not DiagramRouted routed ||
-            routed.Definition.Origin.Vendor != "c4")
-        {
-            return Rejected("The selected file is not a C4 diagram.");
-        }
-
-        var bodyPath = routed.BodyPath!;
-        var workspace = _documents.GetOrLoad(bodyPath).Model;
-        var elementId = id.ElementId.Value;
-        var element = workspace.Find(elementId);
-        if (element is null)
-        {
-            // A relationship is selectable too, and carries no name of its own.
-            var relationship = RelationshipDrawnAs(workspace, elementId);
-            return relationship is null
-                ? Rejected("Unknown element.")
-                : Resolve(watchId, rootPath, id, bodyPath, elementId, RelationshipDetail(workspace, relationship), [], routed.Definition.Origin);
-        }
-
-        // The path is the element's chain of names from the top of the model, relative to the
-        // file level; the client's version is checked, never trusted.
-        var relativePath = PathOf(workspace, element);
-        if (clientPath.Count > 0 && !clientPath.SequenceEqual(relativePath, StringComparer.Ordinal))
-        {
-            return Rejected("The path does not match the element.");
-        }
-
-        var detail = new ContextLevelDetail
-        {
-            Element = new ElementDetail
-            {
-                Text = element.Name,
-                HasChildren = workspace.Elements.Any(candidate =>
-                    string.Equals(candidate.ParentId, element.Id, StringComparison.OrdinalIgnoreCase)),
-                Folded = false,
-                Linked = false,
-            },
-        };
-
-        return Resolve(watchId, rootPath, id, bodyPath, elementId, detail, relativePath, routed.Definition.Origin);
-    }
-
-    /// <summary>Nothing nests inside an element for selection purposes.</summary>
-    public ContextNesting NestingOf(ContextResolvedLevel level) => ContextNesting.NotNestable;
+    /// <inheritdoc />
+    protected override DiagramElementTexts Texts { get; } = new(
+        "The selected file is not a C4 diagram.",
+        "That element is no longer in this diagram.",
+        "New element",
+        "New relationship");
 
     /// <summary>
-    /// Re-resolves after every change to the model: a rename changes the path, a deletion
-    /// clears the selection. One document may back several open views, so a change through any
-    /// of them re-resolves this one.
+    /// An element reads as its chain of names from the top of the model, which is what identifies it
+    /// to a human; a relationship carries no name of its own, and reads as its two ends.
     /// </summary>
-    public IDisposable Track(ShortGuid watchId, string rootPath, ContextResolvedLevel level, Action<IReadOnlyList<string>?> onChange)
+    protected override (IReadOnlyList<string> Path, string Text)? Describe(C4Workspace model, string elementId)
     {
-        ArgumentNullException.ThrowIfNull(level);
-        ArgumentNullException.ThrowIfNull(onChange);
+        ArgumentNullException.ThrowIfNull(model);
 
-        var bodyPath = level.Target.ResolvedFullPath;
-        var elementId = level.Target.ElementId;
-
-        _documents.Changed += OnChanged;
-        return new CallbackDisposable(() => _documents.Changed -= OnChanged);
-
-        void OnChanged(object? sender, DocumentChangedEventArgs args)
+        if (model.Find(elementId) is { } element)
         {
-            if (!string.Equals(args.Path, bodyPath, StringComparison.OrdinalIgnoreCase))
-            {
-                return;
-            }
-
-            var workspace = _documents.GetOrLoad(args.Path).Model;
-            var element = workspace.Find(elementId);
-            onChange(element is null ? null : PathOf(workspace, element));
+            return (PathOf(model, element), element.Name);
         }
+
+        return RelationshipDrawnAs(model, elementId) is { } relationship
+            ? ([], RelationshipText(model, relationship))
+            : null;
+    }
+
+    /// <inheritdoc />
+    protected override bool HasChildren(C4Workspace model, string elementId)
+    {
+        ArgumentNullException.ThrowIfNull(model);
+        return model.Elements.Any(candidate => string.Equals(candidate.ParentId, elementId, StringComparison.OrdinalIgnoreCase));
+    }
+
+    /// <inheritdoc />
+    protected override DiagramElement? Drawn(C4Workspace model, string elementId)
+    {
+        ArgumentNullException.ThrowIfNull(model);
+        return model.Views
+            .Select(view => _mapper.Visible(model, view, DiagramViewport.Unbounded).FirstOrDefault(candidate => candidate.Id == elementId))
+            .FirstOrDefault(drawn => drawn is not null);
     }
 
     /// <summary>The element's chain of names from the top of the model - what identifies it to a human.</summary>
@@ -207,48 +166,12 @@ public sealed class C4ContextSourceResolver : IContextSourceResolver
     private static string NameOf(C4Workspace workspace, string id) =>
         workspace.Find(id) is { } element ? C4LayoutEngine.Displayed(workspace, element).Name : id;
 
-    private static ContextLevelDetail RelationshipDetail(C4Workspace workspace, C4Relationship relationship)
+    private static string RelationshipText(C4Workspace workspace, C4Relationship relationship)
     {
         var source = NameOf(workspace, relationship.SourceId);
         var destination = NameOf(workspace, relationship.DestinationId);
-        return new ContextLevelDetail
-        {
-            Element = new ElementDetail
-            {
-                Text = relationship.Description.Length > 0
-                    ? $"{source} -> {destination}: {relationship.Description}"
-                    : $"{source} -> {destination}",
-                HasChildren = false,
-                Folded = false,
-                Linked = false,
-            },
-        };
+        return relationship.Description.Length > 0
+            ? $"{source} -> {destination}: {relationship.Description}"
+            : $"{source} -> {destination}";
     }
-
-    private ValueTask<ContextLevelResolution> Resolve(
-        ShortGuid watchId,
-        string rootPath,
-        ContextSource id,
-        string bodyPath,
-        string elementId,
-        ContextLevelDetail detail,
-        IReadOnlyList<string> relativePath,
-        DiagramOrigin origin)
-    {
-        var level = new ContextResolvedLevel(
-            id,
-            relativePath,
-            ContextScope.DiagramElement,
-            new ContextTarget(ContextScope.DiagramElement, bodyPath, IsContainer: false, SourceId: default, rootPath, watchId, elementId, origin),
-            detail,
-            // The level carries its own resolver, which is how the selection store re-resolves
-            // it after the document changes.
-            this);
-
-        return ValueTask.FromResult<ContextLevelResolution>(new ResolvedContextLevel(level));
-    }
-
-    private static ValueTask<ContextLevelResolution> Rejected(string reason) =>
-        ValueTask.FromResult<ContextLevelResolution>(new RejectedContextLevel(reason));
-
 }
