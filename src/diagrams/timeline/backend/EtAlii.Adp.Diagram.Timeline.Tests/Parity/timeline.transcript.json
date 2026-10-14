@@ -1141,6 +1141,661 @@
       }
     },
     {
+      "document": "diagrams/timeline/backend/EtAlii.Adp.Diagram.Timeline.Tests/Fixtures/dotnet-times.tml",
+      "sha256": "4ade28775faf864c25a71bcf1b0513484ef1a3175488149c402ad2fac2b44c02",
+      "menus": [
+        [
+          "g1 timeline.rename | Rename… | mdi-pencil-outline | F2 | on",
+          "g1 timeline.remove-end | Remove its end | mdi-ray-start | - | on",
+          "g1 timeline.remove | Remove | mdi-delete-outline | Delete | on",
+          "g2 timeline.add-after | Add element after | mdi-arrow-expand-right | Tab | on",
+          "g2 timeline.add-below | Add element below | mdi-arrow-expand-down | Enter | on",
+          "g3 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
+        ],
+        [
+          "g1 timeline.rename | Rename… | mdi-pencil-outline | F2 | on",
+          "g1 timeline.give-end | Give it an end… | mdi-ray-start-end | - | on",
+          "g1 timeline.remove | Remove | mdi-delete-outline | Delete | on",
+          "g2 timeline.add-after | Add element after | mdi-arrow-expand-right | Tab | on",
+          "g2 timeline.add-below | Add element below | mdi-arrow-expand-down | Enter | on",
+          "g3 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
+        ],
+        [],
+        [
+          "g1 timeline.add-element | Add element here | mdi-plus | - | on",
+          "g1 timeline.add-moment | Add moment here | mdi-rhombus-medium | - | on",
+          "g2 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
+        ],
+        [
+          "g1 timeline.connect | Relate | mdi-ray-start-arrow | - | on"
+        ]
+      ],
+      "choices": [],
+      "targets": [
+        "\"moveslashes\" => menu #0",
+        "\"movewords\" => menu #1",
+        "\"\" => menu #2",
+        "\"new:1767225600,2\" => menu #3",
+        "\"rel:moveslashes->movewords\" => menu #4",
+        "\"parity:unknown\" => menu #2"
+      ],
+      "rows": [
+        {
+          "target": "moveslashes",
+          "rows": [
+            "timeline.label | Label | \"Slashed\" | Line | editable | group Identity",
+            "timeline.begin | Begin | \"2026/07/01\" | Line | editable | group Timing",
+            "timeline.end | End | \"2026/07/04\" | Line | editable | group Timing",
+            "timeline.row | Row | \"0\" | Line | editable | group Placement"
+          ]
+        },
+        {
+          "target": "movewords",
+          "rows": [
+            "timeline.label | Label | \"Written out\" | Line | editable | group Identity",
+            "timeline.begin | Begin | \"July 5, 2026\" | Line | editable | group Timing",
+            "timeline.row | Row | \"1\" | Line | editable | group Placement"
+          ]
+        }
+      ],
+      "findings": [],
+      "payloads": [
+        "moveslashes | generic/timeline+period | 1782864000, 0 | TimelineElementPayload { \"begin\": \"2026/07/01\", \"end\": \"2026/07/04\", \"dateOnly\": true, \"label\": \"Slashed\" }",
+        "movewords | generic/timeline+moment | 1783209600, 60 | TimelineElementPayload { \"begin\": \"July 5, 2026\", \"row\": 1, \"dateOnly\": true, \"label\": \"Written out\" }"
+      ],
+      "edits": [
+        {
+          "do": "move moveslashes by 1 rows and 0 seconds",
+          "answer": "ok",
+          "hunks": [
+            "@7 -3 +\"    begin: 2026-07-01\\r\\n    end: 2026-07-04\\r\\n    row: 1\\r\\n\""
+          ],
+          "sha256": "c94c4c271e010a4438dd5249c953fb73b7e305dd669ec50929b6dde056d9267b"
+        },
+        {
+          "do": "move moveslashes by 0 rows and 86400 seconds",
+          "answer": "ok",
+          "hunks": [
+            "@7 -2 +\"    begin: 2026-07-02\\r\\n    end: 2026-07-05\\r\\n\""
+          ],
+          "sha256": "e615b5d51fecebc4879dd6ee975e7353d6847eb4f1feb1fc2cb931b88b428b60"
+        },
+        {
+          "do": "move movewords by 1 rows and 0 seconds",
+          "answer": "ok",
+          "hunks": [
+            "@12 -2 +\"    begin: 2026-07-05\\r\\n    row: 2\\r\\n\""
+          ],
+          "sha256": "5dd66088d861b1f433d1a8272149c066b1c3a36243720c61049156b57b4c48b1"
+        },
+        {
+          "do": "move movewords by 0 rows and 86400 seconds",
+          "answer": "ok",
+          "hunks": [
+            "@12 -1 +\"    begin: 2026-07-06\\r\\n\""
+          ],
+          "sha256": "32adbc42e99bb5e26b56d2f9188deda916c7ece491e9ce704368cc6636281b8b"
+        },
+        {
+          "do": "set moveslashes timeline.label = \"Parity element\"",
+          "answer": "ok",
+          "hunks": [
+            "@6 -1 +\"    label: Parity element\\r\\n\""
+          ],
+          "sha256": "a9bf1368a18ac74c41f78d37a925451e0c6df771db9f10a7176a9289b3d4a6d0"
+        },
+        {
+          "do": "set moveslashes timeline.label = \"Line one\\nline two\"",
+          "answer": "ok",
+          "hunks": [
+            "@6 -1 +\"    label: \\\"Line one\\\\nline two\\\"\\r\\n\""
+          ],
+          "sha256": "5c15c4d449305f4b280cf9d95845eafdd09c8e60737d4a37e74557f385be40a0"
+        },
+        {
+          "do": "set moveslashes timeline.begin = \"not a time\"",
+          "answer": "refused: 'not a time' is not a time this timeline can read.",
+          "unchanged": true
+        },
+        {
+          "do": "set moveslashes timeline.begin = \"2026-01-05T10:00:00\"",
+          "answer": "refused: This element uses the other time form; begin and end must both be dates, or both carry a time.",
+          "unchanged": true
+        },
+        {
+          "do": "set moveslashes timeline.begin = \"2026-01-05\"",
+          "answer": "ok",
+          "hunks": [
+            "@7 -1 +\"    begin: 2026-01-05\\r\\n\""
+          ],
+          "sha256": "d801ac984b6f1058a360a2e5cc7325f88aced09e93912372268a8329c39d224f"
+        },
+        {
+          "do": "set moveslashes timeline.end = \"2025-12-01\"",
+          "answer": "refused: An element cannot end before it begins.",
+          "unchanged": true
+        },
+        {
+          "do": "set moveslashes timeline.end = \"2026-02-01\"",
+          "answer": "ok",
+          "hunks": [
+            "@8 -1 +\"    end: 2026-02-01\\r\\n\""
+          ],
+          "sha256": "ac7a15fa321221cbc1c72ef31399b688875db2035a6b032babc6d98e86d213ca"
+        },
+        {
+          "do": "set moveslashes timeline.row = \"three\"",
+          "answer": "refused: 'timeline.row' cannot be edited on this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "set moveslashes timeline.row = \"3\"",
+          "answer": "ok",
+          "hunks": [
+            "@9 -1 +\"    row: 3\\r\\n\""
+          ],
+          "sha256": "00f056fac41a41b98afbb85ebc536aec499979c68fa2841de21913d45cbf7b18"
+        },
+        {
+          "do": "set moveslashes timeline.from = \"nobody\"",
+          "answer": "refused: 'timeline.from' cannot be edited on this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.give-end on moveslashes",
+          "answer": "asks: ContextInputRequest { Title = Give it an end, Icon = mdi-ray-start-end, FieldLabel = End, InitialValue = 2026-01-05, ConfirmLabel = Set, InlineLabelElementId = , CommitActionId =  }",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.remove-end on moveslashes",
+          "answer": "ok",
+          "hunks": [
+            "@8 -1 +\"\""
+          ],
+          "sha256": "38ec5314636e36dbd1ee75909cd8f6dcd863bc84d38b51ce50e4a7cab50c7f6b"
+        },
+        {
+          "do": "set movewords timeline.end = \"2026-03-01\"",
+          "answer": "refused: 'timeline.end' cannot be edited on this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.remove-end on movewords",
+          "answer": "ok",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.give-end on movewords",
+          "answer": "asks: ContextInputRequest { Title = Give it an end, Icon = mdi-ray-start-end, FieldLabel = End, InitialValue = 2026-07-06, ConfirmLabel = Set, InlineLabelElementId = , CommitActionId =  }",
+          "unchanged": true
+        },
+        {
+          "do": "validate timeline.give-end on movewords = \"whenever\"",
+          "answer": "rejected: 'whenever' is not a time this timeline can read.",
+          "unchanged": true
+        },
+        {
+          "do": "validate timeline.give-end on movewords = \"1900-01-01\"",
+          "answer": "rejected: An element cannot end before it begins.",
+          "unchanged": true
+        },
+        {
+          "do": "validate timeline.give-end on movewords = \"2100-01-01\"",
+          "answer": "accepted",
+          "unchanged": true
+        },
+        {
+          "do": "commit timeline.give-end on movewords = \"2100-01-01\"",
+          "answer": "ok",
+          "hunks": [
+            "@10 -0 +\"    end: 2100-01-01\\r\\n\""
+          ],
+          "sha256": "40e92f8a3c568fea9613b8b763d940bb06c065d38482874da7a9d5fb47ce5470"
+        },
+        {
+          "do": "execute timeline.add-after on moveslashes",
+          "answer": "ok",
+          "hunks": [
+            "@14 -0 +\"  - id: {minted-1}\\r\\n    label: New element\\r\\n    begin: 2026-01-11\\r\\n    end: 2026-01-25\\r\\n    row: 3\\r\\nconnections:\\r\\n  - id: {minted-2}\\r\\n    from: moveslashes\\r\\n    to: {minted-1}\\r\\n\""
+          ],
+          "sha256": "04bb7825e0eebeb0f836b441e30fbc42cf7de9bf28542a9d44f8580474571eb8"
+        },
+        {
+          "do": "execute timeline.add-below on moveslashes",
+          "answer": "ok",
+          "hunks": [
+            "@19 -0 +\"  - id: {minted-3}\\r\\n    label: New element\\r\\n    begin: 2026-01-05\\r\\n    end: 2026-01-19\\r\\n    row: 4\\r\\n\"",
+            "@23 -0 +\"  - id: {minted-4}\\r\\n    from: moveslashes\\r\\n    to: {minted-3}\\r\\n\""
+          ],
+          "sha256": "f74477b5e9856283776bbb82248a4ed12faf006459f779cd8bf92a080aded247"
+        },
+        {
+          "do": "execute timeline.rename on moveslashes",
+          "answer": "asks: ContextInputRequest { Title = Rename, Icon = mdi-pencil-outline, FieldLabel = Label, InitialValue = Line one\nline two, ConfirmLabel = Rename, InlineLabelElementId = moveslashes, CommitActionId =  }",
+          "unchanged": true
+        },
+        {
+          "do": "commit timeline.rename on moveslashes = \"Parity renamed\"",
+          "answer": "ok",
+          "hunks": [
+            "@6 -1 +\"    label: Parity renamed\\r\\n\""
+          ],
+          "sha256": "a8226b2686e9581a46d803118e40df0cdcc9b888c39cfa64f09d937884d96429"
+        },
+        {
+          "do": "commit timeline.disconnect on moveslashes = \"\"",
+          "answer": "refused: 'timeline.disconnect' does not apply to this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.add-element on new:1767225600,2",
+          "answer": "ok",
+          "hunks": [
+            "@24 -0 +\"  - id: {minted-5}\\r\\n    label: New element\\r\\n    begin: 2026-01-01\\r\\n    end: 2026-01-15\\r\\n    row: 2\\r\\n\""
+          ],
+          "sha256": "60e641ce9c2532d837b666a41034a0169eefa7b1e9a74b9359894a8608e46635"
+        },
+        {
+          "do": "execute timeline.add-moment on new:1767312000,4",
+          "answer": "ok",
+          "hunks": [
+            "@29 -0 +\"  - id: {minted-6}\\r\\n    label: New moment\\r\\n    begin: 2026-01-02\\r\\n    row: 4\\r\\n\""
+          ],
+          "sha256": "fea2a991a4dcd641e2cb3694052008d9f4a55d00cfbdd2b1c2d00d4b4c4ed824"
+        },
+        {
+          "do": "execute timeline.add-element on ",
+          "answer": "asks: ContextInputRequest { Title = Add element, Icon = mdi-plus, FieldLabel = Begin, InitialValue = {today}, ConfirmLabel = Add, InlineLabelElementId = , CommitActionId =  }",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.add-moment on ",
+          "answer": "asks: ContextInputRequest { Title = Add moment, Icon = mdi-plus, FieldLabel = Begin, InitialValue = {today}, ConfirmLabel = Add, InlineLabelElementId = , CommitActionId =  }",
+          "unchanged": true
+        },
+        {
+          "do": "commit timeline.add-element on  = \"2026-02-01\"",
+          "answer": "ok",
+          "hunks": [
+            "@33 -0 +\"  - id: {minted-7}\\r\\n    label: New element\\r\\n    begin: 2026-02-01\\r\\n    end: 2026-02-15\\r\\n    row: 0\\r\\n\""
+          ],
+          "sha256": "abd8fff70be1f83443a1a4573b9eb20f97b7d1a73f34b98113ddf03c36aaefd8"
+        },
+        {
+          "do": "commit timeline.add-moment on moveslashes = \"2026-02-02T08:30:00\"",
+          "answer": "ok",
+          "hunks": [
+            "@38 -0 +\"  - id: {minted-8}\\r\\n    label: New moment\\r\\n    begin: 2026-02-02\\r\\n    row: 3\\r\\n\""
+          ],
+          "sha256": "eaca4909baab37d751820a7706a9ba8c4c781b5bd4b6c82d5a6397090b20e2d8"
+        },
+        {
+          "do": "commit timeline.add-moment on  = \"garbage\"",
+          "answer": "refused: 'timeline.add-moment' does not apply to this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.connect on rel:moveslashes->movewords",
+          "answer": "ok",
+          "hunks": [
+            "@49 -0 +\"  - id: {minted-9}\\r\\n    from: moveslashes\\r\\n    to: movewords\\r\\n\""
+          ],
+          "sha256": "7f5c0f76e56e7d14c8c3408e8ad0c116a9a85b35e90ea06a95cab5a84fc058d3"
+        },
+        {
+          "do": "execute timeline.connect on rel:moveslashes->new:1768089600,6",
+          "answer": "ok",
+          "hunks": [
+            "@42 -0 +\"  - id: {minted-10}\\r\\n    label: New element\\r\\n    begin: 2026-01-11\\r\\n    end: 2026-01-25\\r\\n    row: 6\\r\\n\"",
+            "@52 -0 +\"  - id: {minted-11}\\r\\n    from: moveslashes\\r\\n    to: {minted-10}\\r\\n\""
+          ],
+          "sha256": "16fcce57c80e500e07d2d222dfc1f3be19a9194077255d7ff741a189c294972d"
+        },
+        {
+          "do": "execute timeline.connect on rel:new:1766361600,7->moveslashes",
+          "answer": "ok",
+          "hunks": [
+            "@47 -0 +\"  - id: {minted-12}\\r\\n    label: New element\\r\\n    begin: 2025-12-22\\r\\n    end: 2026-01-05\\r\\n    row: 7\\r\\n\"",
+            "@60 -0 +\"  - id: {minted-13}\\r\\n    from: {minted-12}\\r\\n    to: moveslashes\\r\\n\""
+          ],
+          "sha256": "0dff0f18300388af5d376aeb662738d06acf3d499de5cb16db7a72e6a931fb59"
+        },
+        {
+          "do": "execute timeline.connect on rel:new:1767225600,8->parity:unknown",
+          "answer": "refused: The element this relation reaches is no longer in this timeline.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.connect on rel:parity:unknown->moveslashes",
+          "answer": "refused: The element this relation starts from is no longer in this timeline.",
+          "unchanged": true
+        },
+        {
+          "do": "set {minted-5} timeline.begin = \"2026-01-02\"",
+          "answer": "ok",
+          "hunks": [
+            "@26 -1 +\"    begin: 2026-01-02\\r\\n\""
+          ],
+          "sha256": "f164cff61ff216b7280693f066b4c7812de680efcaa5b1951241d9bd558478ca"
+        },
+        {
+          "do": "execute timeline.relabel on parity:unknown",
+          "answer": "refused: That is no longer in this timeline.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.remove on parity:unknown",
+          "answer": "ok",
+          "unchanged": true
+        },
+        {
+          "do": "commit timeline.rename on parity:unknown = \"Nobody\"",
+          "answer": "refused: 'timeline.rename' does not apply to this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "set parity:unknown timeline.label = \"Nobody\"",
+          "answer": "refused: 'timeline.label' cannot be edited on this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.remove on moveslashes",
+          "answer": "confirms: ContextConfirmationRequest { Title = Remove, Icon = mdi-delete-outline, Message = Removing this element also removes the 5 relations attached to it., ConfirmLabel = Remove, Danger = True }",
+          "unchanged": true
+        },
+        {
+          "do": "commit timeline.remove on moveslashes = \"\"",
+          "answer": "ok",
+          "hunks": [
+            "@5 -4 +\"\"",
+            "@53 -15 +\"\""
+          ],
+          "sha256": "a8bfd8fe40a148b6a1556d99cc0b8ea209fedc0a628ce783057f7a44be0c7a36"
+        },
+        {
+          "do": "execute timeline.remove on movewords",
+          "answer": "ok",
+          "hunks": [
+            "@5 -5 +\"\""
+          ],
+          "sha256": "933e7062249ad4c0fa2b33f17e0b1b81bb1e9e81d608dd112abd504c893ba159"
+        },
+        {
+          "do": "execute timeline.arrange on ",
+          "answer": "ok",
+          "hunks": [
+            "@9 -1 +\"    row: 0\\r\\n\"",
+            "@14 -1 +\"    row: 3\\r\\n\"",
+            "@23 -1 +\"    row: 1\\r\\n\"",
+            "@32 -1 +\"    row: 1\\r\\n\"",
+            "@37 -1 +\"    row: 1\\r\\n\"",
+            "@42 -1 +\"    row: 0\\r\\n\""
+          ],
+          "sha256": "19f72a9889d5f3be01a0ad5efd2ad3622ee846e3d4316085b7552c0df4522b46"
+        }
+      ],
+      "undoAll": "26 undone; the original text is NOT back",
+      "undoAllLeaves": {
+        "hunks": [
+          "@6 -0 +\"    end: 2026/07/04\\r\\n\"",
+          "@8 -1 +\"\""
+        ],
+        "sha256": "4bc27235cffd99e5c6eade3f8c6c7a589ce78ebbeb881fb6ca86b034e3db1a9c"
+      }
+    },
+    {
+      "document": "diagrams/timeline/backend/EtAlii.Adp.Diagram.Timeline.Tests/Fixtures/give-end.tml",
+      "sha256": "2e9678760a15b6240d0fc5eaffc04d86020a36349b0255281a643a6976f61a19",
+      "menus": [
+        [
+          "g1 timeline.rename | Rename… | mdi-pencil-outline | F2 | on",
+          "g1 timeline.give-end | Give it an end… | mdi-ray-start-end | - | on",
+          "g1 timeline.remove | Remove | mdi-delete-outline | Delete | on",
+          "g2 timeline.add-after | Add element after | mdi-arrow-expand-right | Tab | on",
+          "g2 timeline.add-below | Add element below | mdi-arrow-expand-down | Enter | on",
+          "g3 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
+        ],
+        [],
+        [
+          "g1 timeline.add-element | Add element here | mdi-plus | - | on",
+          "g1 timeline.add-moment | Add moment here | mdi-rhombus-medium | - | on",
+          "g2 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
+        ],
+        [
+          "g1 timeline.connect | Relate | mdi-ray-start-arrow | - | on"
+        ]
+      ],
+      "choices": [],
+      "targets": [
+        "\"gemoment\" => menu #0",
+        "\"\" => menu #1",
+        "\"new:1767225600,2\" => menu #2",
+        "\"rel:a->b\" => menu #3",
+        "\"parity:unknown\" => menu #1"
+      ],
+      "rows": [
+        {
+          "target": "gemoment",
+          "rows": [
+            "timeline.label | Label | \"Launch\" | Line | editable | group Identity",
+            "timeline.begin | Begin | \"2026-04-01\" | Line | editable | group Timing",
+            "timeline.row | Row | \"0\" | Line | editable | group Placement"
+          ]
+        }
+      ],
+      "findings": [],
+      "payloads": [
+        "gemoment | generic/timeline+moment | 1775001600, 0 | TimelineElementPayload { \"begin\": \"2026-04-01\", \"dateOnly\": true, \"label\": \"Launch\" }"
+      ],
+      "edits": [
+        {
+          "do": "set gemoment timeline.end = \"2026-03-01\"",
+          "answer": "refused: 'timeline.end' cannot be edited on this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.remove-end on gemoment",
+          "answer": "ok",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.give-end on gemoment",
+          "answer": "asks: ContextInputRequest { Title = Give it an end, Icon = mdi-ray-start-end, FieldLabel = End, InitialValue = 2026-04-01, ConfirmLabel = Set, InlineLabelElementId = , CommitActionId =  }",
+          "unchanged": true
+        },
+        {
+          "do": "validate timeline.give-end on gemoment = \"whenever\"",
+          "answer": "rejected: 'whenever' is not a time this timeline can read.",
+          "unchanged": true
+        },
+        {
+          "do": "validate timeline.give-end on gemoment = \"1900-01-01\"",
+          "answer": "rejected: An element cannot end before it begins.",
+          "unchanged": true
+        },
+        {
+          "do": "validate timeline.give-end on gemoment = \"2100-01-01\"",
+          "answer": "accepted",
+          "unchanged": true
+        },
+        {
+          "do": "commit timeline.give-end on gemoment = \"2100-01-01\"",
+          "answer": "ok",
+          "hunks": [
+            "@5 -0 +\"    end: 2100-01-01\\r\\n\""
+          ],
+          "sha256": "7142209f63296e4c1e14e4a53461854d7debee3dbd2490c7a7aa3c8a23388be1"
+        },
+        {
+          "do": "execute timeline.add-after on gemoment",
+          "answer": "ok",
+          "hunks": [
+            "@9 -0 +\"  - id: {minted-1}\\r\\n    label: New element\\r\\n    begin: 2100-01-07\\r\\n    end: 2100-01-21\\r\\n    row: 0\\r\\nconnections:\\r\\n  - id: {minted-2}\\r\\n    from: gemoment\\r\\n    to: {minted-1}\\r\\n\""
+          ],
+          "sha256": "a2e10dcc18674106311829b46b81d2811d738d58a1738ee664c1f1119da194af"
+        },
+        {
+          "do": "execute timeline.add-below on gemoment",
+          "answer": "ok",
+          "hunks": [
+            "@14 -0 +\"  - id: {minted-3}\\r\\n    label: New element\\r\\n    begin: 2026-04-01\\r\\n    end: 2026-04-15\\r\\n    row: 1\\r\\n\"",
+            "@18 -0 +\"  - id: {minted-4}\\r\\n    from: gemoment\\r\\n    to: {minted-3}\\r\\n\""
+          ],
+          "sha256": "f7de114ef6069c67403597f165ed1d60f53709964f13edc8f36820e31e0f3f9a"
+        },
+        {
+          "do": "execute timeline.rename on gemoment",
+          "answer": "asks: ContextInputRequest { Title = Rename, Icon = mdi-pencil-outline, FieldLabel = Label, InitialValue = Launch, ConfirmLabel = Rename, InlineLabelElementId = gemoment, CommitActionId =  }",
+          "unchanged": true
+        },
+        {
+          "do": "commit timeline.rename on gemoment = \"Parity renamed\"",
+          "answer": "ok",
+          "hunks": [
+            "@6 -1 +\"    label: Parity renamed\\r\\n\""
+          ],
+          "sha256": "6af7bc8c29f615e4191c15c1e0b77305805cc7eee68ae27c08f3e2f91dac69ef"
+        },
+        {
+          "do": "commit timeline.disconnect on gemoment = \"\"",
+          "answer": "refused: 'timeline.disconnect' does not apply to this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.add-element on new:1767225600,2",
+          "answer": "ok",
+          "hunks": [
+            "@19 -0 +\"  - id: {minted-5}\\r\\n    label: New element\\r\\n    begin: 2026-01-01\\r\\n    end: 2026-01-15\\r\\n    row: 2\\r\\n\""
+          ],
+          "sha256": "147cf52cf5d96e5e246e5ce621380af9949df98e1b266a1aefe0b3245c22fe2f"
+        },
+        {
+          "do": "execute timeline.add-moment on new:1767312000,4",
+          "answer": "ok",
+          "hunks": [
+            "@24 -0 +\"  - id: {minted-6}\\r\\n    label: New moment\\r\\n    begin: 2026-01-02\\r\\n    row: 4\\r\\n\""
+          ],
+          "sha256": "dc0869d0eb362c816a521d423adb1d31b9859ee37b23545fd9e28ca070876261"
+        },
+        {
+          "do": "execute timeline.add-element on ",
+          "answer": "asks: ContextInputRequest { Title = Add element, Icon = mdi-plus, FieldLabel = Begin, InitialValue = {today}, ConfirmLabel = Add, InlineLabelElementId = , CommitActionId =  }",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.add-moment on ",
+          "answer": "asks: ContextInputRequest { Title = Add moment, Icon = mdi-plus, FieldLabel = Begin, InitialValue = {today}, ConfirmLabel = Add, InlineLabelElementId = , CommitActionId =  }",
+          "unchanged": true
+        },
+        {
+          "do": "commit timeline.add-element on  = \"2026-02-01\"",
+          "answer": "ok",
+          "hunks": [
+            "@28 -0 +\"  - id: {minted-7}\\r\\n    label: New element\\r\\n    begin: 2026-02-01\\r\\n    end: 2026-02-15\\r\\n    row: 0\\r\\n\""
+          ],
+          "sha256": "faa3c7802e84df69066869996101e23fc990405811f1b381501846f19c3e37eb"
+        },
+        {
+          "do": "commit timeline.add-moment on gemoment = \"2026-02-02T08:30:00\"",
+          "answer": "ok",
+          "hunks": [
+            "@33 -0 +\"  - id: {minted-8}\\r\\n    label: New moment\\r\\n    begin: 2026-02-02\\r\\n    row: 0\\r\\n\""
+          ],
+          "sha256": "2bc89b6e49ed371a9b82dd090781f0d17428e9fe7eaef15bb2331b0a9924bb07"
+        },
+        {
+          "do": "commit timeline.add-moment on  = \"garbage\"",
+          "answer": "refused: 'timeline.add-moment' does not apply to this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.connect on rel:gemoment->new:1768089600,6",
+          "answer": "ok",
+          "hunks": [
+            "@37 -0 +\"  - id: {minted-9}\\r\\n    label: New element\\r\\n    begin: 2026-01-11\\r\\n    end: 2026-01-25\\r\\n    row: 6\\r\\n\"",
+            "@44 -0 +\"  - id: {minted-10}\\r\\n    from: gemoment\\r\\n    to: {minted-9}\\r\\n\""
+          ],
+          "sha256": "3101a26fb116c2bb7371d892ee178607d9a1eb99e4a649d93781e3cf9c5eda5a"
+        },
+        {
+          "do": "execute timeline.connect on rel:new:1766361600,7->gemoment",
+          "answer": "ok",
+          "hunks": [
+            "@42 -0 +\"  - id: {minted-11}\\r\\n    label: New element\\r\\n    begin: 2025-12-22\\r\\n    end: 2026-01-05\\r\\n    row: 7\\r\\n\"",
+            "@52 -0 +\"  - id: {minted-12}\\r\\n    from: {minted-11}\\r\\n    to: gemoment\\r\\n\""
+          ],
+          "sha256": "1b9d0ad745b6d64689635f33d9b81f8c2274b810baaea8b7d5e261c4e4a85bab"
+        },
+        {
+          "do": "execute timeline.connect on rel:new:1767225600,8->parity:unknown",
+          "answer": "refused: The element this relation reaches is no longer in this timeline.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.connect on rel:parity:unknown->gemoment",
+          "answer": "refused: The element this relation starts from is no longer in this timeline.",
+          "unchanged": true
+        },
+        {
+          "do": "set {minted-5} timeline.begin = \"2026-01-02\"",
+          "answer": "ok",
+          "hunks": [
+            "@21 -1 +\"    begin: 2026-01-02\\r\\n\""
+          ],
+          "sha256": "fbb0cd8af06e6844b59349227f071d5f870b4de680e193f3b5d6442bfeba6410"
+        },
+        {
+          "do": "execute timeline.relabel on parity:unknown",
+          "answer": "refused: That is no longer in this timeline.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.remove on parity:unknown",
+          "answer": "ok",
+          "unchanged": true
+        },
+        {
+          "do": "commit timeline.rename on parity:unknown = \"Nobody\"",
+          "answer": "refused: 'timeline.rename' does not apply to this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "set parity:unknown timeline.label = \"Nobody\"",
+          "answer": "refused: 'timeline.label' cannot be edited on this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.remove on gemoment",
+          "answer": "confirms: ContextConfirmationRequest { Title = Remove, Icon = mdi-delete-outline, Message = Removing this element also removes the 4 relations attached to it., ConfirmLabel = Remove, Danger = True }",
+          "unchanged": true
+        },
+        {
+          "do": "commit timeline.remove on gemoment = \"\"",
+          "answer": "ok",
+          "hunks": [
+            "@4 -5 +\"\"",
+            "@48 -12 +\"\""
+          ],
+          "sha256": "9d6abd1b3bfc9174549caf84a6e4deb7d6dc84f087dda2b67a0ae15ecad884a6"
+        },
+        {
+          "do": "execute timeline.arrange on ",
+          "answer": "ok",
+          "hunks": [
+            "@13 -1 +\"    row: 6\\r\\n\"",
+            "@18 -1 +\"    row: 3\\r\\n\"",
+            "@22 -1 +\"    row: 0\\r\\n\"",
+            "@27 -1 +\"    row: 5\\r\\n\"",
+            "@31 -1 +\"    row: 1\\r\\n\"",
+            "@36 -1 +\"    row: 4\\r\\n\"",
+            "@41 -1 +\"    row: 2\\r\\n\""
+          ],
+          "sha256": "a43906df5faca9b5d8a4f7e91d6bb28fecefae39943d3c1b958a4596d5e4c4c3"
+        }
+      ],
+      "undoAll": "14 undone; the original text is back"
+    },
+    {
       "document": "diagrams/timeline/backend/EtAlii.Adp.Diagram.Timeline.Tests/Fixtures/indentation.tml",
       "sha256": "9d613d85183e141aeb434e711ef6e872eb2a6e36a3190b81adf225e99e2440c6",
       "menus": [
@@ -2265,6 +2920,377 @@
       }
     },
     {
+      "document": "diagrams/timeline/backend/EtAlii.Adp.Diagram.Timeline.Tests/Fixtures/no-header.tml",
+      "sha256": "6654b5a4f5ffb3fe31143a4f9ecf41bf17692052420d59b29e2d8233a666afbd",
+      "menus": [
+        [
+          "g1 timeline.rename | Rename… | mdi-pencil-outline | F2 | on",
+          "g1 timeline.remove-end | Remove its end | mdi-ray-start | - | on",
+          "g1 timeline.remove | Remove | mdi-delete-outline | Delete | on",
+          "g2 timeline.add-after | Add element after | mdi-arrow-expand-right | Tab | on",
+          "g2 timeline.add-below | Add element below | mdi-arrow-expand-down | Enter | on",
+          "g3 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
+        ],
+        [
+          "g1 timeline.rename | Rename… | mdi-pencil-outline | F2 | on",
+          "g1 timeline.give-end | Give it an end… | mdi-ray-start-end | - | on",
+          "g1 timeline.remove | Remove | mdi-delete-outline | Delete | on",
+          "g2 timeline.add-after | Add element after | mdi-arrow-expand-right | Tab | on",
+          "g2 timeline.add-below | Add element below | mdi-arrow-expand-down | Enter | on",
+          "g3 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
+        ],
+        [],
+        [
+          "g1 timeline.add-element | Add element here | mdi-plus | - | on",
+          "g1 timeline.add-moment | Add moment here | mdi-rhombus-medium | - | on",
+          "g2 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
+        ],
+        [
+          "g1 timeline.connect | Relate | mdi-ray-start-arrow | - | on"
+        ]
+      ],
+      "choices": [],
+      "targets": [
+        "\"nhperiod\" => menu #0",
+        "\"nhmoment\" => menu #1",
+        "\"\" => menu #2",
+        "\"new:1767225600,2\" => menu #3",
+        "\"rel:nhperiod->nhmoment\" => menu #4",
+        "\"parity:unknown\" => menu #2"
+      ],
+      "rows": [
+        {
+          "target": "nhperiod",
+          "rows": [
+            "timeline.label | Label | \"No marker\" | Line | editable | group Identity",
+            "timeline.begin | Begin | \"2026-05-01\" | Line | editable | group Timing",
+            "timeline.end | End | \"2026-05-10\" | Line | editable | group Timing",
+            "timeline.row | Row | \"0\" | Line | editable | group Placement"
+          ]
+        },
+        {
+          "target": "nhmoment",
+          "rows": [
+            "timeline.label | Label | \"Still a timeline\" | Line | editable | group Identity",
+            "timeline.begin | Begin | \"2026-05-12\" | Line | editable | group Timing",
+            "timeline.row | Row | \"1\" | Line | editable | group Placement"
+          ]
+        }
+      ],
+      "findings": [],
+      "payloads": [
+        "nhperiod | generic/timeline+period | 1777593600, 0 | TimelineElementPayload { \"begin\": \"2026-05-01\", \"end\": \"2026-05-10\", \"dateOnly\": true, \"label\": \"No marker\" }",
+        "nhmoment | generic/timeline+moment | 1778544000, 60 | TimelineElementPayload { \"begin\": \"2026-05-12\", \"row\": 1, \"dateOnly\": true, \"label\": \"Still a timeline\" }"
+      ],
+      "edits": [
+        {
+          "do": "set nhperiod timeline.label = \"Parity element\"",
+          "answer": "ok",
+          "hunks": [
+            "@4 -1 +\"    label: Parity element\\r\\n\""
+          ],
+          "sha256": "8d92c942d00b0839c829e2b48692fc96e15fc5a73a365d63af1578497ef36041"
+        },
+        {
+          "do": "set nhperiod timeline.label = \"Line one\\nline two\"",
+          "answer": "ok",
+          "hunks": [
+            "@4 -1 +\"    label: \\\"Line one\\\\nline two\\\"\\r\\n\""
+          ],
+          "sha256": "ab60178e07ebd172900ceea9c4f946c8ed0551ce9d4cdc26cae791dc965bfe47"
+        },
+        {
+          "do": "set nhperiod timeline.begin = \"not a time\"",
+          "answer": "refused: 'not a time' is not a time this timeline can read.",
+          "unchanged": true
+        },
+        {
+          "do": "set nhperiod timeline.begin = \"2026-01-05T10:00:00\"",
+          "answer": "refused: This element uses the other time form; begin and end must both be dates, or both carry a time.",
+          "unchanged": true
+        },
+        {
+          "do": "set nhperiod timeline.begin = \"2026-01-05\"",
+          "answer": "ok",
+          "hunks": [
+            "@5 -1 +\"    begin: 2026-01-05\\r\\n\""
+          ],
+          "sha256": "0f9dccb9b76f2781211b77ecb68672b184ce288e4940d9cc37314f2900cdcff4"
+        },
+        {
+          "do": "set nhperiod timeline.end = \"2025-12-01\"",
+          "answer": "refused: An element cannot end before it begins.",
+          "unchanged": true
+        },
+        {
+          "do": "set nhperiod timeline.end = \"2026-02-01\"",
+          "answer": "ok",
+          "hunks": [
+            "@6 -1 +\"    end: 2026-02-01\\r\\n\""
+          ],
+          "sha256": "d37f5f875bd540873468b9c55f5651a97b1a5054467aaa8cfd9d0af449387ef5"
+        },
+        {
+          "do": "set nhperiod timeline.row = \"three\"",
+          "answer": "refused: 'timeline.row' cannot be edited on this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "set nhperiod timeline.row = \"3\"",
+          "answer": "ok",
+          "hunks": [
+            "@7 -1 +\"    row: 3\\r\\n\""
+          ],
+          "sha256": "2c95e4a71b55ce0cf2d1842dab0869eaf53d3c24e66942f2e98e0cbb0b3d7c50"
+        },
+        {
+          "do": "set nhperiod timeline.from = \"nobody\"",
+          "answer": "refused: 'timeline.from' cannot be edited on this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.give-end on nhperiod",
+          "answer": "asks: ContextInputRequest { Title = Give it an end, Icon = mdi-ray-start-end, FieldLabel = End, InitialValue = 2026-01-05, ConfirmLabel = Set, InlineLabelElementId = , CommitActionId =  }",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.remove-end on nhperiod",
+          "answer": "ok",
+          "hunks": [
+            "@6 -1 +\"\""
+          ],
+          "sha256": "3b54cac0d7d27cc6aa08930eff21271bdb9e212b46a7b26aa5e81bd447753e0f"
+        },
+        {
+          "do": "set nhmoment timeline.end = \"2026-03-01\"",
+          "answer": "refused: 'timeline.end' cannot be edited on this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.remove-end on nhmoment",
+          "answer": "ok",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.give-end on nhmoment",
+          "answer": "asks: ContextInputRequest { Title = Give it an end, Icon = mdi-ray-start-end, FieldLabel = End, InitialValue = 2026-05-12, ConfirmLabel = Set, InlineLabelElementId = , CommitActionId =  }",
+          "unchanged": true
+        },
+        {
+          "do": "validate timeline.give-end on nhmoment = \"whenever\"",
+          "answer": "rejected: 'whenever' is not a time this timeline can read.",
+          "unchanged": true
+        },
+        {
+          "do": "validate timeline.give-end on nhmoment = \"1900-01-01\"",
+          "answer": "rejected: An element cannot end before it begins.",
+          "unchanged": true
+        },
+        {
+          "do": "validate timeline.give-end on nhmoment = \"2100-01-01\"",
+          "answer": "accepted",
+          "unchanged": true
+        },
+        {
+          "do": "commit timeline.give-end on nhmoment = \"2100-01-01\"",
+          "answer": "ok",
+          "hunks": [
+            "@8 -0 +\"    end: 2100-01-01\\r\\n\""
+          ],
+          "sha256": "876ecca2a2abdcadfc64055819a2398e48a46162064cac7db29b5ba2befa478e"
+        },
+        {
+          "do": "execute timeline.add-after on nhperiod",
+          "answer": "ok",
+          "hunks": [
+            "@12 -0 +\"  - id: {minted-1}\\r\\n    label: New element\\r\\n    begin: 2026-01-11\\r\\n    end: 2026-01-25\\r\\n    row: 3\\r\\nconnections:\\r\\n  - id: {minted-2}\\r\\n    from: nhperiod\\r\\n    to: {minted-1}\\r\\n\""
+          ],
+          "sha256": "13089c9c30daaa5b9e06359456505f3209036b944678e19a02ba6d9c3362a802"
+        },
+        {
+          "do": "execute timeline.add-below on nhperiod",
+          "answer": "ok",
+          "hunks": [
+            "@17 -0 +\"  - id: {minted-3}\\r\\n    label: New element\\r\\n    begin: 2026-01-05\\r\\n    end: 2026-01-19\\r\\n    row: 4\\r\\n\"",
+            "@21 -0 +\"  - id: {minted-4}\\r\\n    from: nhperiod\\r\\n    to: {minted-3}\\r\\n\""
+          ],
+          "sha256": "549884948bb455704bb5efc172eab6ae99080be5122ec8ea10bf0ee9fb5bf5a3"
+        },
+        {
+          "do": "execute timeline.rename on nhperiod",
+          "answer": "asks: ContextInputRequest { Title = Rename, Icon = mdi-pencil-outline, FieldLabel = Label, InitialValue = Line one\nline two, ConfirmLabel = Rename, InlineLabelElementId = nhperiod, CommitActionId =  }",
+          "unchanged": true
+        },
+        {
+          "do": "commit timeline.rename on nhperiod = \"Parity renamed\"",
+          "answer": "ok",
+          "hunks": [
+            "@4 -1 +\"    label: Parity renamed\\r\\n\""
+          ],
+          "sha256": "431a8392ea1c9446647de89e74d5229a34569f2be43ec1315cc2d31a587386de"
+        },
+        {
+          "do": "commit timeline.disconnect on nhperiod = \"\"",
+          "answer": "refused: 'timeline.disconnect' does not apply to this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.add-element on new:1767225600,2",
+          "answer": "ok",
+          "hunks": [
+            "@22 -0 +\"  - id: {minted-5}\\r\\n    label: New element\\r\\n    begin: 2026-01-01\\r\\n    end: 2026-01-15\\r\\n    row: 2\\r\\n\""
+          ],
+          "sha256": "2b65e2dfbf5b182f2868a019000f52b921822dd461a9bd95adcb88ecbbe6db6a"
+        },
+        {
+          "do": "execute timeline.add-moment on new:1767312000,4",
+          "answer": "ok",
+          "hunks": [
+            "@27 -0 +\"  - id: {minted-6}\\r\\n    label: New moment\\r\\n    begin: 2026-01-02\\r\\n    row: 4\\r\\n\""
+          ],
+          "sha256": "0d80a893d74ca13c738a416d254de7e80fba4e0b9249ea551a4bf27f4b05a3d9"
+        },
+        {
+          "do": "execute timeline.add-element on ",
+          "answer": "asks: ContextInputRequest { Title = Add element, Icon = mdi-plus, FieldLabel = Begin, InitialValue = {today}, ConfirmLabel = Add, InlineLabelElementId = , CommitActionId =  }",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.add-moment on ",
+          "answer": "asks: ContextInputRequest { Title = Add moment, Icon = mdi-plus, FieldLabel = Begin, InitialValue = {today}, ConfirmLabel = Add, InlineLabelElementId = , CommitActionId =  }",
+          "unchanged": true
+        },
+        {
+          "do": "commit timeline.add-element on  = \"2026-02-01\"",
+          "answer": "ok",
+          "hunks": [
+            "@31 -0 +\"  - id: {minted-7}\\r\\n    label: New element\\r\\n    begin: 2026-02-01\\r\\n    end: 2026-02-15\\r\\n    row: 0\\r\\n\""
+          ],
+          "sha256": "5429fd06fc1e428d8d869ae17c5619b381c5147fcdfa2be44b011ef77038136c"
+        },
+        {
+          "do": "commit timeline.add-moment on nhperiod = \"2026-02-02T08:30:00\"",
+          "answer": "ok",
+          "hunks": [
+            "@36 -0 +\"  - id: {minted-8}\\r\\n    label: New moment\\r\\n    begin: 2026-02-02\\r\\n    row: 3\\r\\n\""
+          ],
+          "sha256": "ab760abd3d18ba0c3758beb679c2eda2673b02682de1da5e2814cc8375bd56a6"
+        },
+        {
+          "do": "commit timeline.add-moment on  = \"garbage\"",
+          "answer": "refused: 'timeline.add-moment' does not apply to this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.connect on rel:nhperiod->nhmoment",
+          "answer": "ok",
+          "hunks": [
+            "@47 -0 +\"  - id: {minted-9}\\r\\n    from: nhperiod\\r\\n    to: nhmoment\\r\\n\""
+          ],
+          "sha256": "ff052f5c54462e41eff350523199d8b5f0201cdc0e336e7ace597c97cfdc98d5"
+        },
+        {
+          "do": "execute timeline.connect on rel:nhperiod->new:1768089600,6",
+          "answer": "ok",
+          "hunks": [
+            "@40 -0 +\"  - id: {minted-10}\\r\\n    label: New element\\r\\n    begin: 2026-01-11\\r\\n    end: 2026-01-25\\r\\n    row: 6\\r\\n\"",
+            "@50 -0 +\"  - id: {minted-11}\\r\\n    from: nhperiod\\r\\n    to: {minted-10}\\r\\n\""
+          ],
+          "sha256": "9258e1494f0e850b4dacd4e34a5b69e59471fda95f060e6f12ab309fa54f4e2e"
+        },
+        {
+          "do": "execute timeline.connect on rel:new:1766361600,7->nhperiod",
+          "answer": "ok",
+          "hunks": [
+            "@45 -0 +\"  - id: {minted-12}\\r\\n    label: New element\\r\\n    begin: 2025-12-22\\r\\n    end: 2026-01-05\\r\\n    row: 7\\r\\n\"",
+            "@58 -0 +\"  - id: {minted-13}\\r\\n    from: {minted-12}\\r\\n    to: nhperiod\\r\\n\""
+          ],
+          "sha256": "0ed50c8fab8160b79de8614a56e0ab21df9b3e3dfdbe0759fb95d7a0821a46bf"
+        },
+        {
+          "do": "execute timeline.connect on rel:new:1767225600,8->parity:unknown",
+          "answer": "refused: The element this relation reaches is no longer in this timeline.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.connect on rel:parity:unknown->nhperiod",
+          "answer": "refused: The element this relation starts from is no longer in this timeline.",
+          "unchanged": true
+        },
+        {
+          "do": "set {minted-5} timeline.begin = \"2026-01-02\"",
+          "answer": "ok",
+          "hunks": [
+            "@24 -1 +\"    begin: 2026-01-02\\r\\n\""
+          ],
+          "sha256": "8f60b32e6813bb5e2a838aa0a8114c148c3739df7a574bc199ffa9f20af0ab57"
+        },
+        {
+          "do": "execute timeline.relabel on parity:unknown",
+          "answer": "refused: That is no longer in this timeline.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.remove on parity:unknown",
+          "answer": "ok",
+          "unchanged": true
+        },
+        {
+          "do": "commit timeline.rename on parity:unknown = \"Nobody\"",
+          "answer": "refused: 'timeline.rename' does not apply to this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "set parity:unknown timeline.label = \"Nobody\"",
+          "answer": "refused: 'timeline.label' cannot be edited on this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.remove on nhperiod",
+          "answer": "confirms: ContextConfirmationRequest { Title = Remove, Icon = mdi-delete-outline, Message = Removing this element also removes the 5 relations attached to it., ConfirmLabel = Remove, Danger = True }",
+          "unchanged": true
+        },
+        {
+          "do": "commit timeline.remove on nhperiod = \"\"",
+          "answer": "ok",
+          "hunks": [
+            "@3 -4 +\"\"",
+            "@51 -15 +\"\""
+          ],
+          "sha256": "1a86d6c88713d2596467106c1bc49f9578f30144eb9c61ffba3cbb98fcd117ac"
+        },
+        {
+          "do": "execute timeline.remove on nhmoment",
+          "answer": "ok",
+          "hunks": [
+            "@3 -5 +\"\""
+          ],
+          "sha256": "d7b4c3b50de94e5b83b33653d810dc69199deff27a7acc117d6fd027b7a2687e"
+        },
+        {
+          "do": "execute timeline.arrange on ",
+          "answer": "ok",
+          "hunks": [
+            "@7 -1 +\"    row: 0\\r\\n\"",
+            "@12 -1 +\"    row: 3\\r\\n\"",
+            "@21 -1 +\"    row: 1\\r\\n\"",
+            "@30 -1 +\"    row: 1\\r\\n\"",
+            "@35 -1 +\"    row: 1\\r\\n\"",
+            "@40 -1 +\"    row: 0\\r\\n\""
+          ],
+          "sha256": "78b75b30889ac7b0b9d5c86c7085cd414a205eeb94af3864d6fe91323d2352ce"
+        }
+      ],
+      "undoAll": "22 undone; the original text is NOT back",
+      "undoAllLeaves": {
+        "hunks": [
+          "@4 -0 +\"    end: 2026-05-10\\r\\n\"",
+          "@6 -1 +\"\""
+        ],
+        "sha256": "e94d222b923c9f8977a0e4c1e2082056258d010b4d06216372bb048ff667d011"
+      }
+    },
+    {
       "document": "diagrams/timeline/backend/EtAlii.Adp.Diagram.Timeline.Tests/Fixtures/no-trailing-newline.tml",
       "sha256": "8516c10db621b68bf397ea5503357146300e4d971fbb46c01aab44b766a42700",
       "menus": [
@@ -2561,6 +3587,1227 @@
           "@6 -1 +\"\""
         ],
         "sha256": "3561d090c5486520aa5ec2ffaafcc435e0bf7fbdf441ede1a20f508114f7df8b"
+      }
+    },
+    {
+      "document": "diagrams/timeline/backend/EtAlii.Adp.Diagram.Timeline.Tests/Fixtures/other-version.tml",
+      "sha256": "c27292fd06c958cc8657e130dd3deacb646a53a8180d2181b9f77f7e84740ae3",
+      "menus": [
+        [
+          "g1 timeline.rename | Rename… | mdi-pencil-outline | F2 | on",
+          "g1 timeline.remove-end | Remove its end | mdi-ray-start | - | on",
+          "g1 timeline.remove | Remove | mdi-delete-outline | Delete | on",
+          "g2 timeline.add-after | Add element after | mdi-arrow-expand-right | Tab | on",
+          "g2 timeline.add-below | Add element below | mdi-arrow-expand-down | Enter | on",
+          "g3 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
+        ],
+        [
+          "g1 timeline.rename | Rename… | mdi-pencil-outline | F2 | on",
+          "g1 timeline.give-end | Give it an end… | mdi-ray-start-end | - | on",
+          "g1 timeline.remove | Remove | mdi-delete-outline | Delete | on",
+          "g2 timeline.add-after | Add element after | mdi-arrow-expand-right | Tab | on",
+          "g2 timeline.add-below | Add element below | mdi-arrow-expand-down | Enter | on",
+          "g3 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
+        ],
+        [],
+        [
+          "g1 timeline.add-element | Add element here | mdi-plus | - | on",
+          "g1 timeline.add-moment | Add moment here | mdi-rhombus-medium | - | on",
+          "g2 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
+        ],
+        [
+          "g1 timeline.connect | Relate | mdi-ray-start-arrow | - | on"
+        ]
+      ],
+      "choices": [],
+      "targets": [
+        "\"ovperiod\" => menu #0",
+        "\"ovmoment\" => menu #1",
+        "\"\" => menu #2",
+        "\"new:1767225600,2\" => menu #3",
+        "\"rel:ovperiod->ovmoment\" => menu #4",
+        "\"parity:unknown\" => menu #2"
+      ],
+      "rows": [
+        {
+          "target": "ovperiod",
+          "rows": [
+            "timeline.label | Label | \"Another version\" | Line | editable | group Identity",
+            "timeline.begin | Begin | \"2026-05-15\" | Line | editable | group Timing",
+            "timeline.end | End | \"2026-05-20\" | Line | editable | group Timing",
+            "timeline.row | Row | \"0\" | Line | editable | group Placement"
+          ]
+        },
+        {
+          "target": "ovmoment",
+          "rows": [
+            "timeline.label | Label | \"Read all the same\" | Line | editable | group Identity",
+            "timeline.begin | Begin | \"2026-05-22\" | Line | editable | group Timing",
+            "timeline.row | Row | \"1\" | Line | editable | group Placement"
+          ]
+        }
+      ],
+      "findings": [],
+      "payloads": [
+        "ovperiod | generic/timeline+period | 1778803200, 0 | TimelineElementPayload { \"begin\": \"2026-05-15\", \"end\": \"2026-05-20\", \"dateOnly\": true, \"label\": \"Another version\" }",
+        "ovmoment | generic/timeline+moment | 1779408000, 60 | TimelineElementPayload { \"begin\": \"2026-05-22\", \"row\": 1, \"dateOnly\": true, \"label\": \"Read all the same\" }"
+      ],
+      "edits": [
+        {
+          "do": "set ovperiod timeline.label = \"Parity element\"",
+          "answer": "ok",
+          "hunks": [
+            "@5 -1 +\"    label: Parity element\\r\\n\""
+          ],
+          "sha256": "4bed98c647519c67a10aaedd509db3f11f1340d80f68305ed119c33e49303af4"
+        },
+        {
+          "do": "set ovperiod timeline.label = \"Line one\\nline two\"",
+          "answer": "ok",
+          "hunks": [
+            "@5 -1 +\"    label: \\\"Line one\\\\nline two\\\"\\r\\n\""
+          ],
+          "sha256": "1683a20a0c616b7c502645e00483d9c0d7d4cdac27da0dec7a4497185d242e5f"
+        },
+        {
+          "do": "set ovperiod timeline.begin = \"not a time\"",
+          "answer": "refused: 'not a time' is not a time this timeline can read.",
+          "unchanged": true
+        },
+        {
+          "do": "set ovperiod timeline.begin = \"2026-01-05T10:00:00\"",
+          "answer": "refused: This element uses the other time form; begin and end must both be dates, or both carry a time.",
+          "unchanged": true
+        },
+        {
+          "do": "set ovperiod timeline.begin = \"2026-01-05\"",
+          "answer": "ok",
+          "hunks": [
+            "@6 -1 +\"    begin: 2026-01-05\\r\\n\""
+          ],
+          "sha256": "0fdd3cfe7512d262c72d19c3ea838e7684667c026df514665a8499ccf2b7f04f"
+        },
+        {
+          "do": "set ovperiod timeline.end = \"2025-12-01\"",
+          "answer": "refused: An element cannot end before it begins.",
+          "unchanged": true
+        },
+        {
+          "do": "set ovperiod timeline.end = \"2026-02-01\"",
+          "answer": "ok",
+          "hunks": [
+            "@7 -1 +\"    end: 2026-02-01\\r\\n\""
+          ],
+          "sha256": "9c89c79064b245f16c9f510e758868691d6963a04409f2bee641e78f9f5e3b20"
+        },
+        {
+          "do": "set ovperiod timeline.row = \"three\"",
+          "answer": "refused: 'timeline.row' cannot be edited on this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "set ovperiod timeline.row = \"3\"",
+          "answer": "ok",
+          "hunks": [
+            "@8 -1 +\"    row: 3\\r\\n\""
+          ],
+          "sha256": "f6831a351e4b4357474215d777132bc4cbc713db31312500c1eca8db970ed14f"
+        },
+        {
+          "do": "set ovperiod timeline.from = \"nobody\"",
+          "answer": "refused: 'timeline.from' cannot be edited on this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.give-end on ovperiod",
+          "answer": "asks: ContextInputRequest { Title = Give it an end, Icon = mdi-ray-start-end, FieldLabel = End, InitialValue = 2026-01-05, ConfirmLabel = Set, InlineLabelElementId = , CommitActionId =  }",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.remove-end on ovperiod",
+          "answer": "ok",
+          "hunks": [
+            "@7 -1 +\"\""
+          ],
+          "sha256": "821f9819c1f93c369fcf161a457f083b60e24c6bffd67f8b3bbe8538ce2e7313"
+        },
+        {
+          "do": "set ovmoment timeline.end = \"2026-03-01\"",
+          "answer": "refused: 'timeline.end' cannot be edited on this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.remove-end on ovmoment",
+          "answer": "ok",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.give-end on ovmoment",
+          "answer": "asks: ContextInputRequest { Title = Give it an end, Icon = mdi-ray-start-end, FieldLabel = End, InitialValue = 2026-05-22, ConfirmLabel = Set, InlineLabelElementId = , CommitActionId =  }",
+          "unchanged": true
+        },
+        {
+          "do": "validate timeline.give-end on ovmoment = \"whenever\"",
+          "answer": "rejected: 'whenever' is not a time this timeline can read.",
+          "unchanged": true
+        },
+        {
+          "do": "validate timeline.give-end on ovmoment = \"1900-01-01\"",
+          "answer": "rejected: An element cannot end before it begins.",
+          "unchanged": true
+        },
+        {
+          "do": "validate timeline.give-end on ovmoment = \"2100-01-01\"",
+          "answer": "accepted",
+          "unchanged": true
+        },
+        {
+          "do": "commit timeline.give-end on ovmoment = \"2100-01-01\"",
+          "answer": "ok",
+          "hunks": [
+            "@9 -0 +\"    end: 2100-01-01\\r\\n\""
+          ],
+          "sha256": "15df6db13c2c3eab00d9315bcf89ac190ca507b63f8c52b73aeb65dcd26131b2"
+        },
+        {
+          "do": "execute timeline.add-after on ovperiod",
+          "answer": "ok",
+          "hunks": [
+            "@13 -0 +\"  - id: {minted-1}\\r\\n    label: New element\\r\\n    begin: 2026-01-11\\r\\n    end: 2026-01-25\\r\\n    row: 3\\r\\nconnections:\\r\\n  - id: {minted-2}\\r\\n    from: ovperiod\\r\\n    to: {minted-1}\\r\\n\""
+          ],
+          "sha256": "c90e0baadfa0214d9840d25e51cddb09693031856933515b9d26ea6c20f1a013"
+        },
+        {
+          "do": "execute timeline.add-below on ovperiod",
+          "answer": "ok",
+          "hunks": [
+            "@18 -0 +\"  - id: {minted-3}\\r\\n    label: New element\\r\\n    begin: 2026-01-05\\r\\n    end: 2026-01-19\\r\\n    row: 4\\r\\n\"",
+            "@22 -0 +\"  - id: {minted-4}\\r\\n    from: ovperiod\\r\\n    to: {minted-3}\\r\\n\""
+          ],
+          "sha256": "577bc07d23bf05d2a8a9b3b8ce745989d6579324e74e0b86382829a27a64fbad"
+        },
+        {
+          "do": "execute timeline.rename on ovperiod",
+          "answer": "asks: ContextInputRequest { Title = Rename, Icon = mdi-pencil-outline, FieldLabel = Label, InitialValue = Line one\nline two, ConfirmLabel = Rename, InlineLabelElementId = ovperiod, CommitActionId =  }",
+          "unchanged": true
+        },
+        {
+          "do": "commit timeline.rename on ovperiod = \"Parity renamed\"",
+          "answer": "ok",
+          "hunks": [
+            "@5 -1 +\"    label: Parity renamed\\r\\n\""
+          ],
+          "sha256": "5f90a6a169885f17a455ff076fbe9729274b541a4f7bda8892685e1bfe9eb4dd"
+        },
+        {
+          "do": "commit timeline.disconnect on ovperiod = \"\"",
+          "answer": "refused: 'timeline.disconnect' does not apply to this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.add-element on new:1767225600,2",
+          "answer": "ok",
+          "hunks": [
+            "@23 -0 +\"  - id: {minted-5}\\r\\n    label: New element\\r\\n    begin: 2026-01-01\\r\\n    end: 2026-01-15\\r\\n    row: 2\\r\\n\""
+          ],
+          "sha256": "71172f1dfa86666521b18de31df6465d2a4332bd63821c98191b6726559ee346"
+        },
+        {
+          "do": "execute timeline.add-moment on new:1767312000,4",
+          "answer": "ok",
+          "hunks": [
+            "@28 -0 +\"  - id: {minted-6}\\r\\n    label: New moment\\r\\n    begin: 2026-01-02\\r\\n    row: 4\\r\\n\""
+          ],
+          "sha256": "9671b7fa40c771669ea271074b1d6e3e8317b2dfdd6e6d6f9b4f1f927511a864"
+        },
+        {
+          "do": "execute timeline.add-element on ",
+          "answer": "asks: ContextInputRequest { Title = Add element, Icon = mdi-plus, FieldLabel = Begin, InitialValue = {today}, ConfirmLabel = Add, InlineLabelElementId = , CommitActionId =  }",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.add-moment on ",
+          "answer": "asks: ContextInputRequest { Title = Add moment, Icon = mdi-plus, FieldLabel = Begin, InitialValue = {today}, ConfirmLabel = Add, InlineLabelElementId = , CommitActionId =  }",
+          "unchanged": true
+        },
+        {
+          "do": "commit timeline.add-element on  = \"2026-02-01\"",
+          "answer": "ok",
+          "hunks": [
+            "@32 -0 +\"  - id: {minted-7}\\r\\n    label: New element\\r\\n    begin: 2026-02-01\\r\\n    end: 2026-02-15\\r\\n    row: 0\\r\\n\""
+          ],
+          "sha256": "eba3fede387ec5b7fdb4be06441f7e7c5b06c3a026abb21fd5798f88ce9f1890"
+        },
+        {
+          "do": "commit timeline.add-moment on ovperiod = \"2026-02-02T08:30:00\"",
+          "answer": "ok",
+          "hunks": [
+            "@37 -0 +\"  - id: {minted-8}\\r\\n    label: New moment\\r\\n    begin: 2026-02-02\\r\\n    row: 3\\r\\n\""
+          ],
+          "sha256": "be0632ae7eae58ee5c32c41a982cdd8a3b10a067b883c2895cafa121599b0814"
+        },
+        {
+          "do": "commit timeline.add-moment on  = \"garbage\"",
+          "answer": "refused: 'timeline.add-moment' does not apply to this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.connect on rel:ovperiod->ovmoment",
+          "answer": "ok",
+          "hunks": [
+            "@48 -0 +\"  - id: {minted-9}\\r\\n    from: ovperiod\\r\\n    to: ovmoment\\r\\n\""
+          ],
+          "sha256": "8a0038100cf219bc44bb0d5ceadf346a7942b908b74d9a041ad7766a14c26fd5"
+        },
+        {
+          "do": "execute timeline.connect on rel:ovperiod->new:1768089600,6",
+          "answer": "ok",
+          "hunks": [
+            "@41 -0 +\"  - id: {minted-10}\\r\\n    label: New element\\r\\n    begin: 2026-01-11\\r\\n    end: 2026-01-25\\r\\n    row: 6\\r\\n\"",
+            "@51 -0 +\"  - id: {minted-11}\\r\\n    from: ovperiod\\r\\n    to: {minted-10}\\r\\n\""
+          ],
+          "sha256": "d8eac4282b9ae53c867095fade41ec2298be8363e95b1d04cf03d402d197781f"
+        },
+        {
+          "do": "execute timeline.connect on rel:new:1766361600,7->ovperiod",
+          "answer": "ok",
+          "hunks": [
+            "@46 -0 +\"  - id: {minted-12}\\r\\n    label: New element\\r\\n    begin: 2025-12-22\\r\\n    end: 2026-01-05\\r\\n    row: 7\\r\\n\"",
+            "@59 -0 +\"  - id: {minted-13}\\r\\n    from: {minted-12}\\r\\n    to: ovperiod\\r\\n\""
+          ],
+          "sha256": "026c8568076ef34f40c487dbbc44acf55b0086f8b6cada29d49807442ad4bc6c"
+        },
+        {
+          "do": "execute timeline.connect on rel:new:1767225600,8->parity:unknown",
+          "answer": "refused: The element this relation reaches is no longer in this timeline.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.connect on rel:parity:unknown->ovperiod",
+          "answer": "refused: The element this relation starts from is no longer in this timeline.",
+          "unchanged": true
+        },
+        {
+          "do": "set {minted-5} timeline.begin = \"2026-01-02\"",
+          "answer": "ok",
+          "hunks": [
+            "@25 -1 +\"    begin: 2026-01-02\\r\\n\""
+          ],
+          "sha256": "c2c91a690a2b9dc384f5e961c93cd22e95e3ca65b672bc9195eaeb91dde3dfc8"
+        },
+        {
+          "do": "execute timeline.relabel on parity:unknown",
+          "answer": "refused: That is no longer in this timeline.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.remove on parity:unknown",
+          "answer": "ok",
+          "unchanged": true
+        },
+        {
+          "do": "commit timeline.rename on parity:unknown = \"Nobody\"",
+          "answer": "refused: 'timeline.rename' does not apply to this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "set parity:unknown timeline.label = \"Nobody\"",
+          "answer": "refused: 'timeline.label' cannot be edited on this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.remove on ovperiod",
+          "answer": "confirms: ContextConfirmationRequest { Title = Remove, Icon = mdi-delete-outline, Message = Removing this element also removes the 5 relations attached to it., ConfirmLabel = Remove, Danger = True }",
+          "unchanged": true
+        },
+        {
+          "do": "commit timeline.remove on ovperiod = \"\"",
+          "answer": "ok",
+          "hunks": [
+            "@4 -4 +\"\"",
+            "@52 -15 +\"\""
+          ],
+          "sha256": "dfcd4629f6fe78b80127d30a5a05b04e1c86f03d388e0d291f7471672b438da0"
+        },
+        {
+          "do": "execute timeline.remove on ovmoment",
+          "answer": "ok",
+          "hunks": [
+            "@4 -5 +\"\""
+          ],
+          "sha256": "cf1b0e3cd440153f72ee8b10a8398bace8aa46699e3e7ec591e2681eea251634"
+        },
+        {
+          "do": "execute timeline.arrange on ",
+          "answer": "ok",
+          "hunks": [
+            "@8 -1 +\"    row: 0\\r\\n\"",
+            "@13 -1 +\"    row: 3\\r\\n\"",
+            "@22 -1 +\"    row: 1\\r\\n\"",
+            "@31 -1 +\"    row: 1\\r\\n\"",
+            "@36 -1 +\"    row: 1\\r\\n\"",
+            "@41 -1 +\"    row: 0\\r\\n\""
+          ],
+          "sha256": "4dff2b2f2c95e0eb452302cca305f2cc1864523fb0c40075af6039b88271ec14"
+        }
+      ],
+      "undoAll": "22 undone; the original text is NOT back",
+      "undoAllLeaves": {
+        "hunks": [
+          "@5 -0 +\"    end: 2026-05-20\\r\\n\"",
+          "@7 -1 +\"\""
+        ],
+        "sha256": "9cda96f9188ffbda211a876c5bbe2405bfda1fddd72ae08e7a30698581552fb5"
+      }
+    },
+    {
+      "document": "diagrams/timeline/backend/EtAlii.Adp.Diagram.Timeline.Tests/Fixtures/quoted-values.tml",
+      "sha256": "c44aaf23f53031e9bb4efd671589c26e1b863e717b39e3eb3918457dbcc2b8d8",
+      "menus": [
+        [
+          "g1 timeline.rename | Rename… | mdi-pencil-outline | F2 | on",
+          "g1 timeline.remove-end | Remove its end | mdi-ray-start | - | on",
+          "g1 timeline.remove | Remove | mdi-delete-outline | Delete | on",
+          "g2 timeline.add-after | Add element after | mdi-arrow-expand-right | Tab | on",
+          "g2 timeline.add-below | Add element below | mdi-arrow-expand-down | Enter | on",
+          "g3 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
+        ],
+        [
+          "g1 timeline.rename | Rename… | mdi-pencil-outline | F2 | on",
+          "g1 timeline.give-end | Give it an end… | mdi-ray-start-end | - | on",
+          "g1 timeline.remove | Remove | mdi-delete-outline | Delete | on",
+          "g2 timeline.add-after | Add element after | mdi-arrow-expand-right | Tab | on",
+          "g2 timeline.add-below | Add element below | mdi-arrow-expand-down | Enter | on",
+          "g3 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
+        ],
+        [
+          "g1 timeline.relabel | Relabel… | mdi-pencil-outline | F2 | on",
+          "g1 timeline.disconnect | Remove relation | mdi-vector-polyline-remove | Delete | on",
+          "g2 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
+        ],
+        [],
+        [
+          "g1 timeline.add-element | Add element here | mdi-plus | - | on",
+          "g1 timeline.add-moment | Add moment here | mdi-rhombus-medium | - | on",
+          "g2 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
+        ],
+        [
+          "g1 timeline.connect | Relate | mdi-ray-start-arrow | - | on"
+        ]
+      ],
+      "choices": [],
+      "targets": [
+        "\"qvperiod\" => menu #0",
+        "\"qvmoment\" => menu #1",
+        "\"qvconn01\" => menu #2",
+        "\"\" => menu #3",
+        "\"new:1767225600,2\" => menu #4",
+        "\"rel:qvperiod->qvmoment\" => menu #5",
+        "\"parity:unknown\" => menu #3"
+      ],
+      "rows": [
+        {
+          "target": "qvperiod",
+          "rows": [
+            "timeline.label | Label | \"Single-quoted label\" | Line | editable | group Identity",
+            "timeline.begin | Begin | \"2026-03-02\" | Line | editable | group Timing",
+            "timeline.end | End | \"2026-03-20\" | Line | editable | group Timing",
+            "timeline.row | Row | \"0\" | Line | editable | group Placement"
+          ]
+        },
+        {
+          "target": "qvmoment",
+          "rows": [
+            "timeline.label | Label | \"Double-quoted label\" | Line | editable | group Identity",
+            "timeline.begin | Begin | \"2026-03-25\" | Line | editable | group Timing",
+            "timeline.row | Row | \"1\" | Line | editable | group Placement"
+          ]
+        },
+        {
+          "target": "qvconn01",
+          "rows": [
+            "timeline.label | Label | \"single-quoted relation\" | Line | editable | group Identity",
+            "timeline.from | From | \"qvperiod\" | Line | read-only (Reconnecting is done on the canvas, by dragging the relation's end to another element.) | group Identity",
+            "timeline.to | To | \"qvmoment\" | Line | read-only (Reconnecting is done on the canvas, by dragging the relation's end to another element.) | group Identity"
+          ]
+        }
+      ],
+      "findings": [],
+      "payloads": [
+        "qvperiod | generic/timeline+period | 1772409600, 0 | TimelineElementPayload { \"begin\": \"2026-03-02\", \"end\": \"2026-03-20\", \"dateOnly\": true, \"label\": \"Single-quoted label\" }",
+        "qvmoment | generic/timeline+moment | 1774396800, 60 | TimelineElementPayload { \"begin\": \"2026-03-25\", \"row\": 1, \"dateOnly\": true, \"label\": \"Double-quoted label\" }",
+        "qvconn01 | generic/timeline+connection | 0, 0 | TimelineConnectionPayload { \"fromElementId\": \"qvperiod\", \"toElementId\": \"qvmoment\", \"label\": \"single-quoted relation\" }"
+      ],
+      "edits": [
+        {
+          "do": "set qvperiod timeline.label = \"Parity element\"",
+          "answer": "ok",
+          "hunks": [
+            "@5 -1 +\"    label: Parity element\\r\\n\""
+          ],
+          "sha256": "d90d59f7be40c4ff097f7799def9cbc063caad3c7c1963ed6079cd7878fa4409"
+        },
+        {
+          "do": "set qvperiod timeline.label = \"Line one\\nline two\"",
+          "answer": "ok",
+          "hunks": [
+            "@5 -1 +\"    label: \\\"Line one\\\\nline two\\\"\\r\\n\""
+          ],
+          "sha256": "5189a5d999c72c73ce0ab9f46a879bf33e98834360e2bbc0bfcfffc8ffe18cd0"
+        },
+        {
+          "do": "set qvperiod timeline.begin = \"not a time\"",
+          "answer": "refused: 'not a time' is not a time this timeline can read.",
+          "unchanged": true
+        },
+        {
+          "do": "set qvperiod timeline.begin = \"2026-01-05T10:00:00\"",
+          "answer": "refused: This element uses the other time form; begin and end must both be dates, or both carry a time.",
+          "unchanged": true
+        },
+        {
+          "do": "set qvperiod timeline.begin = \"2026-01-05\"",
+          "answer": "ok",
+          "hunks": [
+            "@6 -3 +\"    begin: 2026-01-05\\r\\n    end: 2026-03-20\\r\\n    row: 0\\r\\n\""
+          ],
+          "sha256": "88745d09e1b8ec7930eb584840c0eef94bd37812329fd7a870c946173099560f"
+        },
+        {
+          "do": "set qvperiod timeline.end = \"2025-12-01\"",
+          "answer": "refused: An element cannot end before it begins.",
+          "unchanged": true
+        },
+        {
+          "do": "set qvperiod timeline.end = \"2026-02-01\"",
+          "answer": "ok",
+          "hunks": [
+            "@7 -1 +\"    end: 2026-02-01\\r\\n\""
+          ],
+          "sha256": "5c383bdc6ab282bdb98b0cfe2adcfcdf3768c1294c1488ed9b9ef014fefac05d"
+        },
+        {
+          "do": "set qvperiod timeline.row = \"three\"",
+          "answer": "refused: 'timeline.row' cannot be edited on this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "set qvperiod timeline.row = \"3\"",
+          "answer": "ok",
+          "hunks": [
+            "@8 -1 +\"    row: 3\\r\\n\""
+          ],
+          "sha256": "739a22c4e5bcec5034a3892860cd2ca0109849ae297b80208ef529938e23c3e8"
+        },
+        {
+          "do": "set qvperiod timeline.from = \"nobody\"",
+          "answer": "refused: 'timeline.from' cannot be edited on this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.give-end on qvperiod",
+          "answer": "asks: ContextInputRequest { Title = Give it an end, Icon = mdi-ray-start-end, FieldLabel = End, InitialValue = 2026-01-05, ConfirmLabel = Set, InlineLabelElementId = , CommitActionId =  }",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.remove-end on qvperiod",
+          "answer": "ok",
+          "hunks": [
+            "@7 -1 +\"\""
+          ],
+          "sha256": "93f3de853880e41a78fc6378177b60e1c0b221aeb3ef8f4bea3953981658dd82"
+        },
+        {
+          "do": "set qvmoment timeline.end = \"2026-03-01\"",
+          "answer": "refused: 'timeline.end' cannot be edited on this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.remove-end on qvmoment",
+          "answer": "ok",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.give-end on qvmoment",
+          "answer": "asks: ContextInputRequest { Title = Give it an end, Icon = mdi-ray-start-end, FieldLabel = End, InitialValue = 2026-03-25, ConfirmLabel = Set, InlineLabelElementId = , CommitActionId =  }",
+          "unchanged": true
+        },
+        {
+          "do": "validate timeline.give-end on qvmoment = \"whenever\"",
+          "answer": "rejected: 'whenever' is not a time this timeline can read.",
+          "unchanged": true
+        },
+        {
+          "do": "validate timeline.give-end on qvmoment = \"1900-01-01\"",
+          "answer": "rejected: An element cannot end before it begins.",
+          "unchanged": true
+        },
+        {
+          "do": "validate timeline.give-end on qvmoment = \"2100-01-01\"",
+          "answer": "accepted",
+          "unchanged": true
+        },
+        {
+          "do": "commit timeline.give-end on qvmoment = \"2100-01-01\"",
+          "answer": "ok",
+          "hunks": [
+            "@9 -0 +\"    end: 2100-01-01\\r\\n\""
+          ],
+          "sha256": "0e68447279381aed3132a872f1e200c7e7189141297f9aba59583327ba0cfa71"
+        },
+        {
+          "do": "set qvconn01 timeline.label = \"Parity relation\"",
+          "answer": "ok",
+          "hunks": [
+            "@17 -1 +\"    label: Parity relation\\r\\n\""
+          ],
+          "sha256": "8574fc3a6c6e4040e2347483d8c305d8cd35e4ea6c15aa080cacfeb1aad6b41c"
+        },
+        {
+          "do": "set qvconn01 timeline.from = \"nobody\"",
+          "answer": "refused: 'timeline.from' cannot be edited on this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "set qvconn01 timeline.begin = \"2026-01-01\"",
+          "answer": "refused: 'timeline.begin' cannot be edited on this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.relabel on qvconn01",
+          "answer": "asks: ContextInputRequest { Title = Relabel, Icon = mdi-pencil-outline, FieldLabel = Label, InitialValue = Parity relation, ConfirmLabel = Relabel, InlineLabelElementId = qvconn01, CommitActionId =  }",
+          "unchanged": true
+        },
+        {
+          "do": "commit timeline.relabel on qvconn01 = \"Relabelled\"",
+          "answer": "ok",
+          "hunks": [
+            "@17 -1 +\"    label: Relabelled\\r\\n\""
+          ],
+          "sha256": "529dc7eb25882805ae9942a460d9c882454a75bc043850e8dfbe0b549f659df4"
+        },
+        {
+          "do": "commit timeline.rename on qvconn01 = \"Not for a relation\"",
+          "answer": "refused: 'timeline.rename' does not apply to this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.add-after on qvperiod",
+          "answer": "ok",
+          "hunks": [
+            "@13 -0 +\"  - id: {minted-1}\\r\\n    label: New element\\r\\n    begin: 2026-01-11\\r\\n    end: 2026-01-25\\r\\n    row: 3\\r\\n\"",
+            "@18 -0 +\"  - id: {minted-2}\\r\\n    from: qvperiod\\r\\n    to: {minted-1}\\r\\n\""
+          ],
+          "sha256": "e87c0070cb4fbec1d7425d4fb837537d50dff3c34975b7b9a9e2df78a728a375"
+        },
+        {
+          "do": "execute timeline.add-below on qvperiod",
+          "answer": "ok",
+          "hunks": [
+            "@18 -0 +\"  - id: {minted-3}\\r\\n    label: New element\\r\\n    begin: 2026-01-05\\r\\n    end: 2026-01-19\\r\\n    row: 4\\r\\n\"",
+            "@26 -0 +\"  - id: {minted-4}\\r\\n    from: qvperiod\\r\\n    to: {minted-3}\\r\\n\""
+          ],
+          "sha256": "2bb53df032667cfaf616b169f6a6b190569273dc140ed3222c892a426ee5c51a"
+        },
+        {
+          "do": "execute timeline.rename on qvperiod",
+          "answer": "asks: ContextInputRequest { Title = Rename, Icon = mdi-pencil-outline, FieldLabel = Label, InitialValue = Line one\nline two, ConfirmLabel = Rename, InlineLabelElementId = qvperiod, CommitActionId =  }",
+          "unchanged": true
+        },
+        {
+          "do": "commit timeline.rename on qvperiod = \"Parity renamed\"",
+          "answer": "ok",
+          "hunks": [
+            "@5 -1 +\"    label: Parity renamed\\r\\n\""
+          ],
+          "sha256": "0d1521b00227fb618c1874f51918e3641d0f8851a6b7642c364527b84d4e5ee7"
+        },
+        {
+          "do": "commit timeline.disconnect on qvperiod = \"\"",
+          "answer": "refused: 'timeline.disconnect' does not apply to this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.add-element on new:1767225600,2",
+          "answer": "ok",
+          "hunks": [
+            "@23 -0 +\"  - id: {minted-5}\\r\\n    label: New element\\r\\n    begin: 2026-01-01\\r\\n    end: 2026-01-15\\r\\n    row: 2\\r\\n\""
+          ],
+          "sha256": "7669e4cfe3779ccf703c42c9eb2db79173c8ff309b5f9e2db428ee0bba6842fe"
+        },
+        {
+          "do": "execute timeline.add-moment on new:1767312000,4",
+          "answer": "ok",
+          "hunks": [
+            "@28 -0 +\"  - id: {minted-6}\\r\\n    label: New moment\\r\\n    begin: 2026-01-02\\r\\n    row: 4\\r\\n\""
+          ],
+          "sha256": "92fa2375ff07ccb911f2cad887eb7ef5357d49f77dee6775116c71736eac0d68"
+        },
+        {
+          "do": "execute timeline.add-element on ",
+          "answer": "asks: ContextInputRequest { Title = Add element, Icon = mdi-plus, FieldLabel = Begin, InitialValue = {today}, ConfirmLabel = Add, InlineLabelElementId = , CommitActionId =  }",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.add-moment on ",
+          "answer": "asks: ContextInputRequest { Title = Add moment, Icon = mdi-plus, FieldLabel = Begin, InitialValue = {today}, ConfirmLabel = Add, InlineLabelElementId = , CommitActionId =  }",
+          "unchanged": true
+        },
+        {
+          "do": "commit timeline.add-element on  = \"2026-02-01\"",
+          "answer": "ok",
+          "hunks": [
+            "@32 -0 +\"  - id: {minted-7}\\r\\n    label: New element\\r\\n    begin: 2026-02-01\\r\\n    end: 2026-02-15\\r\\n    row: 0\\r\\n\""
+          ],
+          "sha256": "fa9bf0cb9872a9825fbacf47d82acfa5133d7ba3b34b9cd5b29c8be2182c8605"
+        },
+        {
+          "do": "commit timeline.add-moment on qvperiod = \"2026-02-02T08:30:00\"",
+          "answer": "ok",
+          "hunks": [
+            "@37 -0 +\"  - id: {minted-8}\\r\\n    label: New moment\\r\\n    begin: 2026-02-02\\r\\n    row: 3\\r\\n\""
+          ],
+          "sha256": "a9f45dae203a1a847a3d4da74342f8f2380b00053b957947b46f6d35e4901173"
+        },
+        {
+          "do": "commit timeline.add-moment on  = \"garbage\"",
+          "answer": "refused: 'timeline.add-moment' does not apply to this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.connect on rel:qvperiod->qvmoment",
+          "answer": "ok",
+          "hunks": [
+            "@52 -0 +\"  - id: {minted-9}\\r\\n    from: qvperiod\\r\\n    to: qvmoment\\r\\n\""
+          ],
+          "sha256": "a97b3c0078e0ddf58bdafabe8b99d2c5fb1e807b12e8823a2c558bb4dc9c0caf"
+        },
+        {
+          "do": "execute timeline.connect on rel:qvperiod->new:1768089600,6",
+          "answer": "ok",
+          "hunks": [
+            "@41 -0 +\"  - id: {minted-10}\\r\\n    label: New element\\r\\n    begin: 2026-01-11\\r\\n    end: 2026-01-25\\r\\n    row: 6\\r\\n\"",
+            "@55 -0 +\"  - id: {minted-11}\\r\\n    from: qvperiod\\r\\n    to: {minted-10}\\r\\n\""
+          ],
+          "sha256": "cf83345827ef7e3a8f7499fbda925fe9d2cfce1fa8234c58bbe2c0ab7eb2d87b"
+        },
+        {
+          "do": "execute timeline.connect on rel:new:1766361600,7->qvperiod",
+          "answer": "ok",
+          "hunks": [
+            "@46 -0 +\"  - id: {minted-12}\\r\\n    label: New element\\r\\n    begin: 2025-12-22\\r\\n    end: 2026-01-05\\r\\n    row: 7\\r\\n\"",
+            "@63 -0 +\"  - id: {minted-13}\\r\\n    from: {minted-12}\\r\\n    to: qvperiod\\r\\n\""
+          ],
+          "sha256": "2df64e197ab15458c1e26fac5510517904b79e9c7a5bb7043cd84be4ccfdca22"
+        },
+        {
+          "do": "execute timeline.connect on rel:new:1767225600,8->parity:unknown",
+          "answer": "refused: The element this relation reaches is no longer in this timeline.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.connect on rel:parity:unknown->qvperiod",
+          "answer": "refused: The element this relation starts from is no longer in this timeline.",
+          "unchanged": true
+        },
+        {
+          "do": "set {minted-5} timeline.begin = \"2026-01-02\"",
+          "answer": "ok",
+          "hunks": [
+            "@25 -1 +\"    begin: 2026-01-02\\r\\n\""
+          ],
+          "sha256": "e884411ef12bd1e97478d47ec41eef636616c684d0ae917c2e20e3bcc8331a4a"
+        },
+        {
+          "do": "execute timeline.relabel on parity:unknown",
+          "answer": "refused: That is no longer in this timeline.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.remove on parity:unknown",
+          "answer": "ok",
+          "unchanged": true
+        },
+        {
+          "do": "commit timeline.rename on parity:unknown = \"Nobody\"",
+          "answer": "refused: 'timeline.rename' does not apply to this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "set parity:unknown timeline.label = \"Nobody\"",
+          "answer": "refused: 'timeline.label' cannot be edited on this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.disconnect on qvconn01",
+          "answer": "ok",
+          "hunks": [
+            "@52 -4 +\"\""
+          ],
+          "sha256": "ec9c042588ee9abf4ef4f83319a5ce8b235273fd7d742e9c138a4377e5bd1eec"
+        },
+        {
+          "do": "execute timeline.remove on qvperiod",
+          "answer": "confirms: ContextConfirmationRequest { Title = Remove, Icon = mdi-delete-outline, Message = Removing this element also removes the 5 relations attached to it., ConfirmLabel = Remove, Danger = True }",
+          "unchanged": true
+        },
+        {
+          "do": "commit timeline.remove on qvperiod = \"\"",
+          "answer": "ok",
+          "hunks": [
+            "@4 -4 +\"\"",
+            "@52 -15 +\"\""
+          ],
+          "sha256": "e372eefaae12d3491ac1a116a909df06821a17cbc7ce3eba5e1e8dece2355bf8"
+        },
+        {
+          "do": "execute timeline.remove on qvmoment",
+          "answer": "ok",
+          "hunks": [
+            "@4 -5 +\"\""
+          ],
+          "sha256": "83cae3978968a60633d1002a8b835cc83dd3677864dd2e5771c639612f8735a3"
+        },
+        {
+          "do": "execute timeline.arrange on ",
+          "answer": "ok",
+          "hunks": [
+            "@8 -1 +\"    row: 0\\r\\n\"",
+            "@13 -1 +\"    row: 3\\r\\n\"",
+            "@22 -1 +\"    row: 1\\r\\n\"",
+            "@31 -1 +\"    row: 1\\r\\n\"",
+            "@36 -1 +\"    row: 1\\r\\n\"",
+            "@41 -1 +\"    row: 0\\r\\n\""
+          ],
+          "sha256": "45a1b8fbd2196805b9595cbd3ea8b58b1225aa6155fc1bf75fe7611ca0f2e3cb"
+        }
+      ],
+      "undoAll": "25 undone; the original text is NOT back",
+      "undoAllLeaves": {
+        "hunks": [
+          "@5 -4 +\"    end: 2026-03-20\\r\\n    label: Single-quoted label\\r\\n    begin: 2026-03-02\\r\\n    row: 0\\r\\n\"",
+          "@17 -1 +\"    label: single-quoted relation\\r\\n\""
+        ],
+        "sha256": "0116ab3815668ca764457459d7946dd21d84409211e1af7aa950f388a3c15c5e"
+      }
+    },
+    {
+      "document": "diagrams/timeline/backend/EtAlii.Adp.Diagram.Timeline.Tests/Fixtures/rows.tml",
+      "sha256": "34497b90ed30c1adb1d29ced877a9b3eb8e9f337e13629099d37cc01f730681d",
+      "menus": [
+        [
+          "g1 timeline.rename | Rename… | mdi-pencil-outline | F2 | on",
+          "g1 timeline.remove-end | Remove its end | mdi-ray-start | - | on",
+          "g1 timeline.remove | Remove | mdi-delete-outline | Delete | on",
+          "g2 timeline.add-after | Add element after | mdi-arrow-expand-right | Tab | on",
+          "g2 timeline.add-below | Add element below | mdi-arrow-expand-down | Enter | on",
+          "g3 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
+        ],
+        [
+          "g1 timeline.rename | Rename… | mdi-pencil-outline | F2 | on",
+          "g1 timeline.give-end | Give it an end… | mdi-ray-start-end | - | on",
+          "g1 timeline.remove | Remove | mdi-delete-outline | Delete | on",
+          "g2 timeline.add-after | Add element after | mdi-arrow-expand-right | Tab | on",
+          "g2 timeline.add-below | Add element below | mdi-arrow-expand-down | Enter | on",
+          "g3 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
+        ],
+        [],
+        [
+          "g1 timeline.add-element | Add element here | mdi-plus | - | on",
+          "g1 timeline.add-moment | Add moment here | mdi-rhombus-medium | - | on",
+          "g2 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
+        ],
+        [
+          "g1 timeline.connect | Relate | mdi-ray-start-arrow | - | on"
+        ]
+      ],
+      "choices": [],
+      "targets": [
+        "\"rowfloat\" => menu #0",
+        "\"rowhex\" => menu #1",
+        "\"rowoctal\" => menu #1",
+        "\"rowquoted\" => menu #1",
+        "\"rowsigned\" => menu #1",
+        "\"rowexponent\" => menu #1",
+        "\"\" => menu #2",
+        "\"new:1767225600,2\" => menu #3",
+        "\"rel:rowfloat->rowhex\" => menu #4",
+        "\"parity:unknown\" => menu #2"
+      ],
+      "rows": [
+        {
+          "target": "rowfloat",
+          "rows": [
+            "timeline.label | Label | \"One point oh\" | Line | editable | group Identity",
+            "timeline.begin | Begin | \"2026-08-01\" | Line | editable | group Timing",
+            "timeline.end | End | \"2026-08-05\" | Line | editable | group Timing",
+            "timeline.row | Row | \"0\" | Line | editable | group Placement"
+          ]
+        },
+        {
+          "target": "rowhex",
+          "rows": [
+            "timeline.label | Label | \"Hexadecimal\" | Line | editable | group Identity",
+            "timeline.begin | Begin | \"2026-08-06\" | Line | editable | group Timing",
+            "timeline.row | Row | \"0\" | Line | editable | group Placement"
+          ]
+        },
+        {
+          "target": "rowoctal",
+          "rows": [
+            "timeline.label | Label | \"Octal\" | Line | editable | group Identity",
+            "timeline.begin | Begin | \"2026-08-07\" | Line | editable | group Timing",
+            "timeline.row | Row | \"0\" | Line | editable | group Placement"
+          ]
+        },
+        {
+          "target": "rowquoted",
+          "rows": [
+            "timeline.label | Label | \"Quoted\" | Line | editable | group Identity",
+            "timeline.begin | Begin | \"2026-08-08\" | Line | editable | group Timing",
+            "timeline.row | Row | \"3\" | Line | editable | group Placement"
+          ]
+        },
+        {
+          "target": "rowsigned",
+          "rows": [
+            "timeline.label | Label | \"Signed\" | Line | editable | group Identity",
+            "timeline.begin | Begin | \"2026-08-09\" | Line | editable | group Timing",
+            "timeline.row | Row | \"4\" | Line | editable | group Placement"
+          ]
+        },
+        {
+          "target": "rowexponent",
+          "rows": [
+            "timeline.label | Label | \"Exponent\" | Line | editable | group Identity",
+            "timeline.begin | Begin | \"2026-08-10\" | Line | editable | group Timing",
+            "timeline.row | Row | \"0\" | Line | editable | group Placement"
+          ]
+        }
+      ],
+      "findings": [],
+      "payloads": [
+        "rowfloat | generic/timeline+period | 1785542400, 0 | TimelineElementPayload { \"begin\": \"2026-08-01\", \"end\": \"2026-08-05\", \"dateOnly\": true, \"label\": \"One point oh\" }",
+        "rowhex | generic/timeline+moment | 1785974400, 0 | TimelineElementPayload { \"begin\": \"2026-08-06\", \"dateOnly\": true, \"label\": \"Hexadecimal\" }",
+        "rowoctal | generic/timeline+moment | 1786060800, 0 | TimelineElementPayload { \"begin\": \"2026-08-07\", \"dateOnly\": true, \"label\": \"Octal\" }",
+        "rowquoted | generic/timeline+moment | 1786147200, 180 | TimelineElementPayload { \"begin\": \"2026-08-08\", \"row\": 3, \"dateOnly\": true, \"label\": \"Quoted\" }",
+        "rowsigned | generic/timeline+moment | 1786233600, 240 | TimelineElementPayload { \"begin\": \"2026-08-09\", \"row\": 4, \"dateOnly\": true, \"label\": \"Signed\" }",
+        "rowexponent | generic/timeline+moment | 1786320000, 0 | TimelineElementPayload { \"begin\": \"2026-08-10\", \"dateOnly\": true, \"label\": \"Exponent\" }"
+      ],
+      "edits": [
+        {
+          "do": "set rowfloat timeline.label = \"Parity element\"",
+          "answer": "ok",
+          "hunks": [
+            "@5 -1 +\"    label: Parity element\\r\\n\""
+          ],
+          "sha256": "aafdfe16379f25b50949febcc40f901698561640513501641d4e94eb62ebeb35"
+        },
+        {
+          "do": "set rowfloat timeline.label = \"Line one\\nline two\"",
+          "answer": "ok",
+          "hunks": [
+            "@5 -1 +\"    label: \\\"Line one\\\\nline two\\\"\\r\\n\""
+          ],
+          "sha256": "eb24082be38f7b9909c7cf34608097a88ceda0823bbdd96639db3ea0b710c103"
+        },
+        {
+          "do": "set rowfloat timeline.begin = \"not a time\"",
+          "answer": "refused: 'not a time' is not a time this timeline can read.",
+          "unchanged": true
+        },
+        {
+          "do": "set rowfloat timeline.begin = \"2026-01-05T10:00:00\"",
+          "answer": "refused: This element uses the other time form; begin and end must both be dates, or both carry a time.",
+          "unchanged": true
+        },
+        {
+          "do": "set rowfloat timeline.begin = \"2026-01-05\"",
+          "answer": "ok",
+          "hunks": [
+            "@6 -1 +\"    begin: 2026-01-05\\r\\n\"",
+            "@8 -1 +\"    row: 0\\r\\n\""
+          ],
+          "sha256": "c561a48799896a181b03b4074a8f8186c4eb0f0696c5d6256b2413b5604ff69b"
+        },
+        {
+          "do": "set rowfloat timeline.end = \"2025-12-01\"",
+          "answer": "refused: An element cannot end before it begins.",
+          "unchanged": true
+        },
+        {
+          "do": "set rowfloat timeline.end = \"2026-02-01\"",
+          "answer": "ok",
+          "hunks": [
+            "@7 -1 +\"    end: 2026-02-01\\r\\n\""
+          ],
+          "sha256": "99bd119deffb79e71d281d479f6f261a1fd8edce2277492c66b5a18e0f8d2366"
+        },
+        {
+          "do": "set rowfloat timeline.row = \"three\"",
+          "answer": "refused: 'timeline.row' cannot be edited on this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "set rowfloat timeline.row = \"3\"",
+          "answer": "ok",
+          "hunks": [
+            "@8 -1 +\"    row: 3\\r\\n\""
+          ],
+          "sha256": "6c19ceca3c8d898a265c5ee86f7599ec167313cb70564bf8f625268166b76c85"
+        },
+        {
+          "do": "set rowfloat timeline.from = \"nobody\"",
+          "answer": "refused: 'timeline.from' cannot be edited on this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.give-end on rowfloat",
+          "answer": "asks: ContextInputRequest { Title = Give it an end, Icon = mdi-ray-start-end, FieldLabel = End, InitialValue = 2026-01-05, ConfirmLabel = Set, InlineLabelElementId = , CommitActionId =  }",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.remove-end on rowfloat",
+          "answer": "ok",
+          "hunks": [
+            "@7 -1 +\"\""
+          ],
+          "sha256": "228eacc25b4607adf8ecf98b74856a1bd7390216b7b35b427efbd4ad8af08492"
+        },
+        {
+          "do": "set rowhex timeline.end = \"2026-03-01\"",
+          "answer": "refused: 'timeline.end' cannot be edited on this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.remove-end on rowhex",
+          "answer": "ok",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.give-end on rowhex",
+          "answer": "asks: ContextInputRequest { Title = Give it an end, Icon = mdi-ray-start-end, FieldLabel = End, InitialValue = 2026-08-06, ConfirmLabel = Set, InlineLabelElementId = , CommitActionId =  }",
+          "unchanged": true
+        },
+        {
+          "do": "validate timeline.give-end on rowhex = \"whenever\"",
+          "answer": "rejected: 'whenever' is not a time this timeline can read.",
+          "unchanged": true
+        },
+        {
+          "do": "validate timeline.give-end on rowhex = \"1900-01-01\"",
+          "answer": "rejected: An element cannot end before it begins.",
+          "unchanged": true
+        },
+        {
+          "do": "validate timeline.give-end on rowhex = \"2100-01-01\"",
+          "answer": "accepted",
+          "unchanged": true
+        },
+        {
+          "do": "commit timeline.give-end on rowhex = \"2100-01-01\"",
+          "answer": "ok",
+          "hunks": [
+            "@9 -0 +\"    end: 2100-01-01\\r\\n\""
+          ],
+          "sha256": "49ede5f29aa9425d82211ddcac912cc540a24940227f6718948da34084eb0620"
+        },
+        {
+          "do": "execute timeline.add-after on rowfloat",
+          "answer": "ok",
+          "hunks": [
+            "@29 -0 +\"  - id: {minted-1}\\r\\n    label: New element\\r\\n    begin: 2026-01-11\\r\\n    end: 2026-01-25\\r\\n    row: 3\\r\\nconnections:\\r\\n  - id: {minted-2}\\r\\n    from: rowfloat\\r\\n    to: {minted-1}\\r\\n\""
+          ],
+          "sha256": "187e940397f033f8d4e2eeaba433e7f9b34e759604fe1818902542c489045c41"
+        },
+        {
+          "do": "execute timeline.add-below on rowfloat",
+          "answer": "ok",
+          "hunks": [
+            "@34 -0 +\"  - id: {minted-3}\\r\\n    label: New element\\r\\n    begin: 2026-01-05\\r\\n    end: 2026-01-19\\r\\n    row: 4\\r\\n\"",
+            "@38 -0 +\"  - id: {minted-4}\\r\\n    from: rowfloat\\r\\n    to: {minted-3}\\r\\n\""
+          ],
+          "sha256": "62d1ba3ca07f4ae407248a4c5bf03fe4b072c22fc390276b6e4377d8cb1ff79e"
+        },
+        {
+          "do": "execute timeline.rename on rowfloat",
+          "answer": "asks: ContextInputRequest { Title = Rename, Icon = mdi-pencil-outline, FieldLabel = Label, InitialValue = Line one\nline two, ConfirmLabel = Rename, InlineLabelElementId = rowfloat, CommitActionId =  }",
+          "unchanged": true
+        },
+        {
+          "do": "commit timeline.rename on rowfloat = \"Parity renamed\"",
+          "answer": "ok",
+          "hunks": [
+            "@5 -1 +\"    label: Parity renamed\\r\\n\""
+          ],
+          "sha256": "4119bf7de0c58f25831ed040e771e543eaa0c8158c2d7a6e41fc6e11d8d2f3f2"
+        },
+        {
+          "do": "commit timeline.disconnect on rowfloat = \"\"",
+          "answer": "refused: 'timeline.disconnect' does not apply to this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.add-element on new:1767225600,2",
+          "answer": "ok",
+          "hunks": [
+            "@39 -0 +\"  - id: {minted-5}\\r\\n    label: New element\\r\\n    begin: 2026-01-01\\r\\n    end: 2026-01-15\\r\\n    row: 2\\r\\n\""
+          ],
+          "sha256": "3735f343614d243cc9de667545700b2a0d1e229e6498778a72e16d99fc0ec3a2"
+        },
+        {
+          "do": "execute timeline.add-moment on new:1767312000,4",
+          "answer": "ok",
+          "hunks": [
+            "@44 -0 +\"  - id: {minted-6}\\r\\n    label: New moment\\r\\n    begin: 2026-01-02\\r\\n    row: 4\\r\\n\""
+          ],
+          "sha256": "44e51c5f877cd53470349aee4b18773933a11930d98b7cb4df30b3ea0839c478"
+        },
+        {
+          "do": "execute timeline.add-element on ",
+          "answer": "asks: ContextInputRequest { Title = Add element, Icon = mdi-plus, FieldLabel = Begin, InitialValue = {today}, ConfirmLabel = Add, InlineLabelElementId = , CommitActionId =  }",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.add-moment on ",
+          "answer": "asks: ContextInputRequest { Title = Add moment, Icon = mdi-plus, FieldLabel = Begin, InitialValue = {today}, ConfirmLabel = Add, InlineLabelElementId = , CommitActionId =  }",
+          "unchanged": true
+        },
+        {
+          "do": "commit timeline.add-element on  = \"2026-02-01\"",
+          "answer": "ok",
+          "hunks": [
+            "@48 -0 +\"  - id: {minted-7}\\r\\n    label: New element\\r\\n    begin: 2026-02-01\\r\\n    end: 2026-02-15\\r\\n    row: 0\\r\\n\""
+          ],
+          "sha256": "76009603020feb223cfcdec94fa93f0352639f1c35c9361562f0e6f4a3c5c0ec"
+        },
+        {
+          "do": "commit timeline.add-moment on rowfloat = \"2026-02-02T08:30:00\"",
+          "answer": "ok",
+          "hunks": [
+            "@53 -0 +\"  - id: {minted-8}\\r\\n    label: New moment\\r\\n    begin: 2026-02-02\\r\\n    row: 3\\r\\n\""
+          ],
+          "sha256": "c70182df710537a096cac615d37e03070b4ebd28378ddae4860d82361e37d31f"
+        },
+        {
+          "do": "commit timeline.add-moment on  = \"garbage\"",
+          "answer": "refused: 'timeline.add-moment' does not apply to this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.connect on rel:rowfloat->rowhex",
+          "answer": "ok",
+          "hunks": [
+            "@64 -0 +\"  - id: {minted-9}\\r\\n    from: rowfloat\\r\\n    to: rowhex\\r\\n\""
+          ],
+          "sha256": "a70286c286ead29b83a0a81c8a24cf70f8911ee9b2ca70f64fc6ef65175b6b67"
+        },
+        {
+          "do": "execute timeline.connect on rel:rowfloat->new:1768089600,6",
+          "answer": "ok",
+          "hunks": [
+            "@57 -0 +\"  - id: {minted-10}\\r\\n    label: New element\\r\\n    begin: 2026-01-11\\r\\n    end: 2026-01-25\\r\\n    row: 6\\r\\n\"",
+            "@67 -0 +\"  - id: {minted-11}\\r\\n    from: rowfloat\\r\\n    to: {minted-10}\\r\\n\""
+          ],
+          "sha256": "3feb36967d44622c3f6c008c80949fbba6d1d1d8a5bf34b36d82fafa2c2c2669"
+        },
+        {
+          "do": "execute timeline.connect on rel:new:1766361600,7->rowfloat",
+          "answer": "ok",
+          "hunks": [
+            "@62 -0 +\"  - id: {minted-12}\\r\\n    label: New element\\r\\n    begin: 2025-12-22\\r\\n    end: 2026-01-05\\r\\n    row: 7\\r\\n\"",
+            "@75 -0 +\"  - id: {minted-13}\\r\\n    from: {minted-12}\\r\\n    to: rowfloat\\r\\n\""
+          ],
+          "sha256": "2bd4cb0c38ae27fd0b37a41ca921749a82300c6ac8d233cc7f207474442b45cf"
+        },
+        {
+          "do": "execute timeline.connect on rel:new:1767225600,8->parity:unknown",
+          "answer": "refused: The element this relation reaches is no longer in this timeline.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.connect on rel:parity:unknown->rowfloat",
+          "answer": "refused: The element this relation starts from is no longer in this timeline.",
+          "unchanged": true
+        },
+        {
+          "do": "set {minted-5} timeline.begin = \"2026-01-02\"",
+          "answer": "ok",
+          "hunks": [
+            "@41 -1 +\"    begin: 2026-01-02\\r\\n\""
+          ],
+          "sha256": "07794c358228437c70f18903aa0b2abe976310abc46ec86842bdf5661a0aca7b"
+        },
+        {
+          "do": "execute timeline.relabel on parity:unknown",
+          "answer": "refused: That is no longer in this timeline.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.remove on parity:unknown",
+          "answer": "ok",
+          "unchanged": true
+        },
+        {
+          "do": "commit timeline.rename on parity:unknown = \"Nobody\"",
+          "answer": "refused: 'timeline.rename' does not apply to this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "set parity:unknown timeline.label = \"Nobody\"",
+          "answer": "refused: 'timeline.label' cannot be edited on this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.remove on rowfloat",
+          "answer": "confirms: ContextConfirmationRequest { Title = Remove, Icon = mdi-delete-outline, Message = Removing this element also removes the 5 relations attached to it., ConfirmLabel = Remove, Danger = True }",
+          "unchanged": true
+        },
+        {
+          "do": "commit timeline.remove on rowfloat = \"\"",
+          "answer": "ok",
+          "hunks": [
+            "@4 -4 +\"\"",
+            "@68 -15 +\"\""
+          ],
+          "sha256": "25a78c797f6e84b95cd47c324101ee368ff273b7f62bff5dff8d60f2fe7bf5ba"
+        },
+        {
+          "do": "execute timeline.remove on rowhex",
+          "answer": "ok",
+          "hunks": [
+            "@4 -5 +\"\""
+          ],
+          "sha256": "7a445b8edaa0841d3196501da6f8a09a753ebe65d5547ec7ef15746d4a5a3778"
+        },
+        {
+          "do": "execute timeline.arrange on ",
+          "answer": "ok",
+          "hunks": [
+            "@11 -1 +\"    row: 1\\r\\n\"",
+            "@15 -1 +\"    row: 2\\r\\n\"",
+            "@19 -1 +\"    row: 3\\r\\n\"",
+            "@24 -1 +\"    row: 0\\r\\n\"",
+            "@29 -1 +\"    row: 3\\r\\n\"",
+            "@38 -1 +\"    row: 1\\r\\n\"",
+            "@43 -1 +\"    row: 1\\r\\n\"",
+            "@47 -1 +\"    row: 0\\r\\n\"",
+            "@52 -1 +\"    row: 4\\r\\n\"",
+            "@57 -1 +\"    row: 0\\r\\n\""
+          ],
+          "sha256": "0f0c301636c076d70ccb6d6c22f805ffda0f06a9ed4513c99a493d0e500f2c79"
+        }
+      ],
+      "undoAll": "22 undone; the original text is NOT back",
+      "undoAllLeaves": {
+        "hunks": [
+          "@5 -0 +\"    end: 2026-08-05\\r\\n\"",
+          "@7 -2 +\"    row: 0\\r\\n\"",
+          "@20 -1 +\"    row: 3\\r\\n\"",
+          "@24 -1 +\"    row: 4\\r\\n\"",
+          "@28 -1 +\"    row: 0\\r\\n\""
+        ],
+        "sha256": "9becd9b89717ed2a3ed5afa3c55c94651fc88239e654edcbebfc3098f489a387"
       }
     },
     {
@@ -3734,6 +5981,437 @@
           "@6 -1 +\"\""
         ],
         "sha256": "72de6cfe258394539caa24cda4fbbbeaaa57524714873d3734ada35740b63421"
+      }
+    },
+    {
+      "document": "diagrams/timeline/backend/EtAlii.Adp.Diagram.Timeline.Tests/Fixtures/trailing-comment.tml",
+      "sha256": "2d53d2431e29b47a82ef910ec5ba1ec01a9c50b4a1c66be3bb81dc6d13724908",
+      "menus": [
+        [
+          "g1 timeline.rename | Rename… | mdi-pencil-outline | F2 | on",
+          "g1 timeline.remove-end | Remove its end | mdi-ray-start | - | on",
+          "g1 timeline.remove | Remove | mdi-delete-outline | Delete | on",
+          "g2 timeline.add-after | Add element after | mdi-arrow-expand-right | Tab | on",
+          "g2 timeline.add-below | Add element below | mdi-arrow-expand-down | Enter | on",
+          "g3 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
+        ],
+        [
+          "g1 timeline.rename | Rename… | mdi-pencil-outline | F2 | on",
+          "g1 timeline.give-end | Give it an end… | mdi-ray-start-end | - | on",
+          "g1 timeline.remove | Remove | mdi-delete-outline | Delete | on",
+          "g2 timeline.add-after | Add element after | mdi-arrow-expand-right | Tab | on",
+          "g2 timeline.add-below | Add element below | mdi-arrow-expand-down | Enter | on",
+          "g3 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
+        ],
+        [
+          "g1 timeline.relabel | Relabel… | mdi-pencil-outline | F2 | on",
+          "g1 timeline.disconnect | Remove relation | mdi-vector-polyline-remove | Delete | on",
+          "g2 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
+        ],
+        [],
+        [
+          "g1 timeline.add-element | Add element here | mdi-plus | - | on",
+          "g1 timeline.add-moment | Add moment here | mdi-rhombus-medium | - | on",
+          "g2 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
+        ],
+        [
+          "g1 timeline.connect | Relate | mdi-ray-start-arrow | - | on"
+        ]
+      ],
+      "choices": [],
+      "targets": [
+        "\"tcperiod\" => menu #0",
+        "\"tcmoment\" => menu #1",
+        "\"tcconn01\" => menu #2",
+        "\"\" => menu #3",
+        "\"new:1767225600,2\" => menu #4",
+        "\"rel:tcperiod->tcmoment\" => menu #5",
+        "\"parity:unknown\" => menu #3"
+      ],
+      "rows": [
+        {
+          "target": "tcperiod",
+          "rows": [
+            "timeline.label | Label | \"Discovery\" | Line | editable | group Identity",
+            "timeline.begin | Begin | \"2026-01-05\" | Line | editable | group Timing",
+            "timeline.end | End | \"2026-02-13\" | Line | editable | group Timing",
+            "timeline.row | Row | \"0\" | Line | editable | group Placement"
+          ]
+        },
+        {
+          "target": "tcmoment",
+          "rows": [
+            "timeline.label | Label | \"Go/no-go\" | Line | editable | group Identity",
+            "timeline.begin | Begin | \"2026-02-16\" | Line | editable | group Timing",
+            "timeline.row | Row | \"1\" | Line | editable | group Placement"
+          ]
+        },
+        {
+          "target": "tcconn01",
+          "rows": [
+            "timeline.label | Label | \"gates\" | Line | editable | group Identity",
+            "timeline.from | From | \"tcperiod\" | Line | read-only (Reconnecting is done on the canvas, by dragging the relation's end to another element.) | group Identity",
+            "timeline.to | To | \"tcmoment\" | Line | read-only (Reconnecting is done on the canvas, by dragging the relation's end to another element.) | group Identity"
+          ]
+        }
+      ],
+      "findings": [],
+      "payloads": [
+        "tcperiod | generic/timeline+period | 1767571200, 0 | TimelineElementPayload { \"begin\": \"2026-01-05\", \"end\": \"2026-02-13\", \"dateOnly\": true, \"label\": \"Discovery\" }",
+        "tcmoment | generic/timeline+moment | 1771200000, 60 | TimelineElementPayload { \"begin\": \"2026-02-16\", \"row\": 1, \"dateOnly\": true, \"label\": \"Go/no-go\" }",
+        "tcconn01 | generic/timeline+connection | 0, 0 | TimelineConnectionPayload { \"fromElementId\": \"tcperiod\", \"toElementId\": \"tcmoment\", \"label\": \"gates\" }"
+      ],
+      "edits": [
+        {
+          "do": "set tcperiod timeline.label = \"Parity element\"",
+          "answer": "ok",
+          "hunks": [
+            "@5 -1 +\"    label: Parity element\\r\\n\""
+          ],
+          "sha256": "0997798476e3d1565450b7f2898000fa658f4ebc5b7b168cd3cf2306edf6849b"
+        },
+        {
+          "do": "set tcperiod timeline.label = \"Line one\\nline two\"",
+          "answer": "ok",
+          "hunks": [
+            "@5 -1 +\"    label: \\\"Line one\\\\nline two\\\"\\r\\n\""
+          ],
+          "sha256": "05922de9bd8f503d02b7a5f1048d310c9fcd34cc17e3d708cfd118486c0a9a1e"
+        },
+        {
+          "do": "set tcperiod timeline.begin = \"not a time\"",
+          "answer": "refused: 'not a time' is not a time this timeline can read.",
+          "unchanged": true
+        },
+        {
+          "do": "set tcperiod timeline.begin = \"2026-01-05T10:00:00\"",
+          "answer": "refused: This element uses the other time form; begin and end must both be dates, or both carry a time.",
+          "unchanged": true
+        },
+        {
+          "do": "set tcperiod timeline.begin = \"2026-01-05\"",
+          "answer": "ok",
+          "hunks": [
+            "@6 -3 +\"    begin: 2026-01-05\\r\\n    end: 2026-02-13\\r\\n    row: 0\\r\\n\""
+          ],
+          "sha256": "93d2bd9538302c41bb0a2b86edd09105ebe2a3bd6b9300cc3332b4874ad0b412"
+        },
+        {
+          "do": "set tcperiod timeline.end = \"2025-12-01\"",
+          "answer": "refused: An element cannot end before it begins.",
+          "unchanged": true
+        },
+        {
+          "do": "set tcperiod timeline.end = \"2026-02-01\"",
+          "answer": "ok",
+          "hunks": [
+            "@7 -1 +\"    end: 2026-02-01\\r\\n\""
+          ],
+          "sha256": "ec84b4f618c9c41e5b628f02921f1cbcd8663360b09ee24098ab28ae911c3bca"
+        },
+        {
+          "do": "set tcperiod timeline.row = \"three\"",
+          "answer": "refused: 'timeline.row' cannot be edited on this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "set tcperiod timeline.row = \"3\"",
+          "answer": "ok",
+          "hunks": [
+            "@8 -1 +\"    row: 3\\r\\n\""
+          ],
+          "sha256": "b7e013321c0a75a35b835789dd5ce089e31a0ad37b84e6d1d2545be8ba7e327f"
+        },
+        {
+          "do": "set tcperiod timeline.from = \"nobody\"",
+          "answer": "refused: 'timeline.from' cannot be edited on this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.give-end on tcperiod",
+          "answer": "asks: ContextInputRequest { Title = Give it an end, Icon = mdi-ray-start-end, FieldLabel = End, InitialValue = 2026-01-05, ConfirmLabel = Set, InlineLabelElementId = , CommitActionId =  }",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.remove-end on tcperiod",
+          "answer": "ok",
+          "hunks": [
+            "@7 -1 +\"\""
+          ],
+          "sha256": "16c7d94bdafe14bf552e48ba142782f06b301e7dce5760a2c4fcbcf2fc7a774b"
+        },
+        {
+          "do": "set tcmoment timeline.end = \"2026-03-01\"",
+          "answer": "refused: 'timeline.end' cannot be edited on this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.remove-end on tcmoment",
+          "answer": "ok",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.give-end on tcmoment",
+          "answer": "asks: ContextInputRequest { Title = Give it an end, Icon = mdi-ray-start-end, FieldLabel = End, InitialValue = 2026-02-16, ConfirmLabel = Set, InlineLabelElementId = , CommitActionId =  }",
+          "unchanged": true
+        },
+        {
+          "do": "validate timeline.give-end on tcmoment = \"whenever\"",
+          "answer": "rejected: 'whenever' is not a time this timeline can read.",
+          "unchanged": true
+        },
+        {
+          "do": "validate timeline.give-end on tcmoment = \"1900-01-01\"",
+          "answer": "rejected: An element cannot end before it begins.",
+          "unchanged": true
+        },
+        {
+          "do": "validate timeline.give-end on tcmoment = \"2100-01-01\"",
+          "answer": "accepted",
+          "unchanged": true
+        },
+        {
+          "do": "commit timeline.give-end on tcmoment = \"2100-01-01\"",
+          "answer": "ok",
+          "hunks": [
+            "@9 -0 +\"    end: 2100-01-01\\r\\n\""
+          ],
+          "sha256": "fbc0a66960f6a2580be4e5ba8c66176470d219d203001d9aea6be40572d6f94c"
+        },
+        {
+          "do": "set tcconn01 timeline.label = \"Parity relation\"",
+          "answer": "ok",
+          "hunks": [
+            "@17 -1 +\"    label: Parity relation\\r\\n\""
+          ],
+          "sha256": "49770268d1fe0b9ff79932bfbc5a88fd1874749589a49e5a515f4249a3b58ee5"
+        },
+        {
+          "do": "set tcconn01 timeline.from = \"nobody\"",
+          "answer": "refused: 'timeline.from' cannot be edited on this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "set tcconn01 timeline.begin = \"2026-01-01\"",
+          "answer": "refused: 'timeline.begin' cannot be edited on this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.relabel on tcconn01",
+          "answer": "asks: ContextInputRequest { Title = Relabel, Icon = mdi-pencil-outline, FieldLabel = Label, InitialValue = Parity relation, ConfirmLabel = Relabel, InlineLabelElementId = tcconn01, CommitActionId =  }",
+          "unchanged": true
+        },
+        {
+          "do": "commit timeline.relabel on tcconn01 = \"Relabelled\"",
+          "answer": "ok",
+          "hunks": [
+            "@17 -1 +\"    label: Relabelled\\r\\n\""
+          ],
+          "sha256": "d4328923150cc0f694129c00149756149a1009666def4da1bcccf9bf449291a1"
+        },
+        {
+          "do": "commit timeline.rename on tcconn01 = \"Not for a relation\"",
+          "answer": "refused: 'timeline.rename' does not apply to this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.add-after on tcperiod",
+          "answer": "ok",
+          "hunks": [
+            "@13 -0 +\"  - id: {minted-1}\\r\\n    label: New element\\r\\n    begin: 2026-01-11\\r\\n    end: 2026-01-25\\r\\n    row: 3\\r\\n\"",
+            "@18 -0 +\"  - id: {minted-2}\\r\\n    from: tcperiod\\r\\n    to: {minted-1}\\r\\n\""
+          ],
+          "sha256": "40497b3ed7df24d9dc6839c63b0fe9220e4258b0c723fdd0e8391942de840d9d"
+        },
+        {
+          "do": "execute timeline.add-below on tcperiod",
+          "answer": "ok",
+          "hunks": [
+            "@18 -0 +\"  - id: {minted-3}\\r\\n    label: New element\\r\\n    begin: 2026-01-05\\r\\n    end: 2026-01-19\\r\\n    row: 4\\r\\n\"",
+            "@26 -0 +\"  - id: {minted-4}\\r\\n    from: tcperiod\\r\\n    to: {minted-3}\\r\\n\""
+          ],
+          "sha256": "90eb71aad10e585b3969e7cb38014cff34961802283e30ba7e7d5b12fc32edd1"
+        },
+        {
+          "do": "execute timeline.rename on tcperiod",
+          "answer": "asks: ContextInputRequest { Title = Rename, Icon = mdi-pencil-outline, FieldLabel = Label, InitialValue = Line one\nline two, ConfirmLabel = Rename, InlineLabelElementId = tcperiod, CommitActionId =  }",
+          "unchanged": true
+        },
+        {
+          "do": "commit timeline.rename on tcperiod = \"Parity renamed\"",
+          "answer": "ok",
+          "hunks": [
+            "@5 -1 +\"    label: Parity renamed\\r\\n\""
+          ],
+          "sha256": "59ff3d26f88b67d75d93864f727478a2140309c19fc238665786590d58192c4a"
+        },
+        {
+          "do": "commit timeline.disconnect on tcperiod = \"\"",
+          "answer": "refused: 'timeline.disconnect' does not apply to this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.add-element on new:1767225600,2",
+          "answer": "ok",
+          "hunks": [
+            "@23 -0 +\"  - id: {minted-5}\\r\\n    label: New element\\r\\n    begin: 2026-01-01\\r\\n    end: 2026-01-15\\r\\n    row: 2\\r\\n\""
+          ],
+          "sha256": "2c09de361f39ded0858d579f0d82a25c936a0426b139825f6efd93f8ef9a2695"
+        },
+        {
+          "do": "execute timeline.add-moment on new:1767312000,4",
+          "answer": "ok",
+          "hunks": [
+            "@28 -0 +\"  - id: {minted-6}\\r\\n    label: New moment\\r\\n    begin: 2026-01-02\\r\\n    row: 4\\r\\n\""
+          ],
+          "sha256": "3aaacd7b0892bc9127aebab6d9c860cc1c5fd4a09b00812284324e490ffc2231"
+        },
+        {
+          "do": "execute timeline.add-element on ",
+          "answer": "asks: ContextInputRequest { Title = Add element, Icon = mdi-plus, FieldLabel = Begin, InitialValue = {today}, ConfirmLabel = Add, InlineLabelElementId = , CommitActionId =  }",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.add-moment on ",
+          "answer": "asks: ContextInputRequest { Title = Add moment, Icon = mdi-plus, FieldLabel = Begin, InitialValue = {today}, ConfirmLabel = Add, InlineLabelElementId = , CommitActionId =  }",
+          "unchanged": true
+        },
+        {
+          "do": "commit timeline.add-element on  = \"2026-02-01\"",
+          "answer": "ok",
+          "hunks": [
+            "@32 -0 +\"  - id: {minted-7}\\r\\n    label: New element\\r\\n    begin: 2026-02-01\\r\\n    end: 2026-02-15\\r\\n    row: 0\\r\\n\""
+          ],
+          "sha256": "c3cb92ada88df65b3dc591e1f5ca37349990400d710cac85ed8c7ece2979fc8b"
+        },
+        {
+          "do": "commit timeline.add-moment on tcperiod = \"2026-02-02T08:30:00\"",
+          "answer": "ok",
+          "hunks": [
+            "@37 -0 +\"  - id: {minted-8}\\r\\n    label: New moment\\r\\n    begin: 2026-02-02\\r\\n    row: 3\\r\\n\""
+          ],
+          "sha256": "702c999a87b9a30a346baaefecc271c768b7b8275f54bd3e3aecd680f2cca4dc"
+        },
+        {
+          "do": "commit timeline.add-moment on  = \"garbage\"",
+          "answer": "refused: 'timeline.add-moment' does not apply to this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.connect on rel:tcperiod->tcmoment",
+          "answer": "ok",
+          "hunks": [
+            "@52 -0 +\"  - id: {minted-9}\\r\\n    from: tcperiod\\r\\n    to: tcmoment\\r\\n\""
+          ],
+          "sha256": "bea229c3d3b9f7c0ed80456857aa573ba52f7b2be4e4927054d666ff6d646a5e"
+        },
+        {
+          "do": "execute timeline.connect on rel:tcperiod->new:1768089600,6",
+          "answer": "ok",
+          "hunks": [
+            "@41 -0 +\"  - id: {minted-10}\\r\\n    label: New element\\r\\n    begin: 2026-01-11\\r\\n    end: 2026-01-25\\r\\n    row: 6\\r\\n\"",
+            "@55 -0 +\"  - id: {minted-11}\\r\\n    from: tcperiod\\r\\n    to: {minted-10}\\r\\n\""
+          ],
+          "sha256": "ad4dae3538bc18a679dfea7dafb591cfcf747d13633f605efd3ba1057179007c"
+        },
+        {
+          "do": "execute timeline.connect on rel:new:1766361600,7->tcperiod",
+          "answer": "ok",
+          "hunks": [
+            "@46 -0 +\"  - id: {minted-12}\\r\\n    label: New element\\r\\n    begin: 2025-12-22\\r\\n    end: 2026-01-05\\r\\n    row: 7\\r\\n\"",
+            "@63 -0 +\"  - id: {minted-13}\\r\\n    from: {minted-12}\\r\\n    to: tcperiod\\r\\n\""
+          ],
+          "sha256": "8e6af48d913063a6b5a0c050c4b424cfce386ec699b4cb1a8e44c05ccd1714e4"
+        },
+        {
+          "do": "execute timeline.connect on rel:new:1767225600,8->parity:unknown",
+          "answer": "refused: The element this relation reaches is no longer in this timeline.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.connect on rel:parity:unknown->tcperiod",
+          "answer": "refused: The element this relation starts from is no longer in this timeline.",
+          "unchanged": true
+        },
+        {
+          "do": "set {minted-5} timeline.begin = \"2026-01-02\"",
+          "answer": "ok",
+          "hunks": [
+            "@25 -1 +\"    begin: 2026-01-02\\r\\n\""
+          ],
+          "sha256": "1ded8d30ae5c582179d30dd202de4664b6a4f75facd1d7e55d1d23b28b747b14"
+        },
+        {
+          "do": "execute timeline.relabel on parity:unknown",
+          "answer": "refused: That is no longer in this timeline.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.remove on parity:unknown",
+          "answer": "ok",
+          "unchanged": true
+        },
+        {
+          "do": "commit timeline.rename on parity:unknown = \"Nobody\"",
+          "answer": "refused: 'timeline.rename' does not apply to this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "set parity:unknown timeline.label = \"Nobody\"",
+          "answer": "refused: 'timeline.label' cannot be edited on this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.disconnect on tcconn01",
+          "answer": "ok",
+          "hunks": [
+            "@52 -4 +\"\""
+          ],
+          "sha256": "1842aab9a7e284550032085ef875d58290b20ab1344a3d5a210685b9f122654e"
+        },
+        {
+          "do": "execute timeline.remove on tcperiod",
+          "answer": "confirms: ContextConfirmationRequest { Title = Remove, Icon = mdi-delete-outline, Message = Removing this element also removes the 5 relations attached to it., ConfirmLabel = Remove, Danger = True }",
+          "unchanged": true
+        },
+        {
+          "do": "commit timeline.remove on tcperiod = \"\"",
+          "answer": "ok",
+          "hunks": [
+            "@4 -4 +\"\"",
+            "@52 -15 +\"\""
+          ],
+          "sha256": "42c3a3162ed1991b09c23e887932aefa5ea496549338434843503e9ed7d95922"
+        },
+        {
+          "do": "execute timeline.remove on tcmoment",
+          "answer": "ok",
+          "hunks": [
+            "@4 -5 +\"\""
+          ],
+          "sha256": "2fd05929d91f5caafb1cefe03be9f9c86c9d10b0f59a8f50f74c7ff21cbe934c"
+        },
+        {
+          "do": "execute timeline.arrange on ",
+          "answer": "ok",
+          "hunks": [
+            "@8 -1 +\"    row: 0\\r\\n\"",
+            "@13 -1 +\"    row: 3\\r\\n\"",
+            "@22 -1 +\"    row: 1\\r\\n\"",
+            "@31 -1 +\"    row: 1\\r\\n\"",
+            "@36 -1 +\"    row: 1\\r\\n\"",
+            "@41 -1 +\"    row: 0\\r\\n\""
+          ],
+          "sha256": "6b0d211963aafee85de6dcf5480f5d46e50b2d6161fb61b7522c02ae54981234"
+        }
+      ],
+      "undoAll": "25 undone; the original text is NOT back",
+      "undoAllLeaves": {
+        "hunks": [
+          "@5 -4 +\"    end: 2026-02-13\\r\\n    label: Discovery\\r\\n    begin: 2026-01-05\\r\\n    row: 0\\r\\n\"",
+          "@17 -1 +\"    label: gates\\r\\n\""
+        ],
+        "sha256": "e5ffc334abe9c219650133a02b699cf848e5a9f44db407d09c94c1cb01d9840b"
       }
     },
     {
@@ -4983,6 +7661,96 @@
       }
     },
     {
+      "document": "diagrams/timeline/backend/EtAlii.Adp.Diagram.Timeline.Tests/Fixtures/findings/duplicate-key.tml",
+      "sha256": "6804b497ef4cb976ae97aeb2e979fc8c63552a94c24669bc1f6b4974f260e4f2",
+      "menus": [
+        [],
+        [
+          "g1 timeline.add-element | Add element here | mdi-plus | - | on",
+          "g1 timeline.add-moment | Add moment here | mdi-rhombus-medium | - | on",
+          "g2 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | off (There is nothing to arrange until this timeline has an element.)"
+        ],
+        [
+          "g1 timeline.connect | Relate | mdi-ray-start-arrow | - | on"
+        ]
+      ],
+      "choices": [],
+      "targets": [
+        "\"\" => menu #0",
+        "\"new:1767225600,2\" => menu #1",
+        "\"rel:a->b\" => menu #2",
+        "\"parity:unknown\" => menu #0"
+      ],
+      "rows": [],
+      "findings": [
+        "line 6 | Error | timeline.unparseable | This is not YAML that can be read: Duplicate key label"
+      ],
+      "payloads": [],
+      "edits": [
+        {
+          "do": "execute timeline.add-element on new:1767225600,2",
+          "answer": "refused: duplicate-key.tml could not be read, so it cannot be edited.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.add-moment on new:1767312000,4",
+          "answer": "refused: duplicate-key.tml could not be read, so it cannot be edited.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.add-element on ",
+          "answer": "refused: duplicate-key.tml could not be read, so it cannot be edited.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.add-moment on ",
+          "answer": "refused: duplicate-key.tml could not be read, so it cannot be edited.",
+          "unchanged": true
+        },
+        {
+          "do": "commit timeline.add-element on  = \"2026-02-01\"",
+          "answer": "refused: duplicate-key.tml could not be read, so it cannot be edited.",
+          "unchanged": true
+        },
+        {
+          "do": "commit timeline.add-moment on  = \"2026-02-02T08:30:00\"",
+          "answer": "refused: duplicate-key.tml could not be read, so it cannot be edited.",
+          "unchanged": true
+        },
+        {
+          "do": "commit timeline.add-moment on  = \"garbage\"",
+          "answer": "refused: duplicate-key.tml could not be read, so it cannot be edited.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.relabel on parity:unknown",
+          "answer": "refused: duplicate-key.tml could not be read, so it cannot be edited.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.remove on parity:unknown",
+          "answer": "refused: duplicate-key.tml could not be read, so it cannot be edited.",
+          "unchanged": true
+        },
+        {
+          "do": "commit timeline.rename on parity:unknown = \"Nobody\"",
+          "answer": "refused: duplicate-key.tml could not be read, so it cannot be edited.",
+          "unchanged": true
+        },
+        {
+          "do": "set parity:unknown timeline.label = \"Nobody\"",
+          "answer": "refused: duplicate-key.tml could not be read, so it cannot be edited.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.arrange on ",
+          "answer": "refused: duplicate-key.tml could not be read, so it cannot be edited.",
+          "unchanged": true
+        }
+      ],
+      "undoAll": "0 undone; the original text is back"
+    },
+    {
       "document": "diagrams/timeline/backend/EtAlii.Adp.Diagram.Timeline.Tests/Fixtures/findings/empty.tml",
       "sha256": "10b1465a0933cb1720c9b86cd32efee1118bf3b1b1ecce611fa683ec462dbac7",
       "menus": [
@@ -5099,6 +7867,471 @@
           "@2 -1 +\"elements:\\n\""
         ],
         "sha256": "81f3b6ab93e954beb929bb91644532c7dec058351ee7500d299f3bb409fe0662"
+      }
+    },
+    {
+      "document": "diagrams/timeline/backend/EtAlii.Adp.Diagram.Timeline.Tests/Fixtures/findings/end-shapes.tml",
+      "sha256": "665e6350d3fa7a8c09b18367667c6f6132bf44176bdd20db0f21d24059aba733",
+      "menus": [
+        [
+          "g1 timeline.rename | Rename… | mdi-pencil-outline | F2 | on",
+          "g1 timeline.remove-end | Remove its end | mdi-ray-start | - | on",
+          "g1 timeline.remove | Remove | mdi-delete-outline | Delete | on",
+          "g2 timeline.add-after | Add element after | mdi-arrow-expand-right | Tab | on",
+          "g2 timeline.add-below | Add element below | mdi-arrow-expand-down | Enter | on",
+          "g3 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
+        ],
+        [
+          "g1 timeline.rename | Rename… | mdi-pencil-outline | F2 | on",
+          "g1 timeline.give-end | Give it an end… | mdi-ray-start-end | - | on",
+          "g1 timeline.remove | Remove | mdi-delete-outline | Delete | on",
+          "g2 timeline.add-after | Add element after | mdi-arrow-expand-right | Tab | on",
+          "g2 timeline.add-below | Add element below | mdi-arrow-expand-down | Enter | on",
+          "g3 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
+        ],
+        [],
+        [
+          "g1 timeline.add-element | Add element here | mdi-plus | - | on",
+          "g1 timeline.add-moment | Add moment here | mdi-rhombus-medium | - | on",
+          "g2 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
+        ],
+        [
+          "g1 timeline.connect | Relate | mdi-ray-start-arrow | - | on"
+        ]
+      ],
+      "choices": [],
+      "targets": [
+        "\"esempty\" => menu #0",
+        "\"esmapping\" => menu #1",
+        "\"essequence\" => menu #1",
+        "\"esquoted\" => menu #0",
+        "\"esnull\" => menu #0",
+        "\"\" => menu #2",
+        "\"new:1767225600,2\" => menu #3",
+        "\"rel:esempty->esmapping\" => menu #4",
+        "\"parity:unknown\" => menu #2"
+      ],
+      "rows": [
+        {
+          "target": "esempty",
+          "rows": [
+            "timeline.label | Label | \"Empty end\" | Line | editable | group Identity",
+            "timeline.begin | Begin | \"2026-07-01\" | Line | editable | group Timing",
+            "timeline.end | End | \"\" | Line | editable | group Timing",
+            "timeline.row | Row | \"0\" | Line | editable | group Placement"
+          ]
+        },
+        {
+          "target": "esmapping",
+          "rows": [
+            "timeline.label | Label | \"Mapping end\" | Line | editable | group Identity",
+            "timeline.begin | Begin | \"2026-07-02\" | Line | editable | group Timing",
+            "timeline.row | Row | \"1\" | Line | editable | group Placement"
+          ]
+        },
+        {
+          "target": "essequence",
+          "rows": [
+            "timeline.label | Label | \"Sequence end\" | Line | editable | group Identity",
+            "timeline.begin | Begin | \"2026-07-03\" | Line | editable | group Timing",
+            "timeline.row | Row | \"2\" | Line | editable | group Placement"
+          ]
+        },
+        {
+          "target": "esquoted",
+          "rows": [
+            "timeline.label | Label | \"Quoted empty end\" | Line | editable | group Identity",
+            "timeline.begin | Begin | \"2026-07-04\" | Line | editable | group Timing",
+            "timeline.end | End | \"\" | Line | editable | group Timing",
+            "timeline.row | Row | \"3\" | Line | editable | group Placement"
+          ]
+        },
+        {
+          "target": "esnull",
+          "rows": [
+            "timeline.label | Label | \"Null end\" | Line | editable | group Identity",
+            "timeline.begin | Begin | \"2026-07-05\" | Line | editable | group Timing",
+            "timeline.end | End | \"null\" | Line | editable | group Timing",
+            "timeline.row | Row | \"4\" | Line | editable | group Placement"
+          ]
+        }
+      ],
+      "findings": [
+        "element \"esempty\" | Warning | timeline.unreadable-time | 'Empty end' ends at '', which is not a time this timeline can read.",
+        "element \"esquoted\" | Warning | timeline.unreadable-time | 'Quoted empty end' ends at '', which is not a time this timeline can read.",
+        "element \"esnull\" | Warning | timeline.unreadable-time | 'Null end' ends at 'null', which is not a time this timeline can read."
+      ],
+      "payloads": [
+        "esempty | generic/timeline+period | 1782864000, 0 | TimelineElementPayload { \"begin\": \"2026-07-01\", \"dateOnly\": true, \"label\": \"Empty end\" }",
+        "esmapping | generic/timeline+moment | 1782950400, 60 | TimelineElementPayload { \"begin\": \"2026-07-02\", \"row\": 1, \"dateOnly\": true, \"label\": \"Mapping end\" }",
+        "essequence | generic/timeline+moment | 1783036800, 120 | TimelineElementPayload { \"begin\": \"2026-07-03\", \"row\": 2, \"dateOnly\": true, \"label\": \"Sequence end\" }",
+        "esquoted | generic/timeline+period | 1783123200, 180 | TimelineElementPayload { \"begin\": \"2026-07-04\", \"row\": 3, \"dateOnly\": true, \"label\": \"Quoted empty end\" }",
+        "esnull | generic/timeline+period | 1783209600, 240 | TimelineElementPayload { \"begin\": \"2026-07-05\", \"end\": \"null\", \"row\": 4, \"dateOnly\": true, \"label\": \"Null end\" }"
+      ],
+      "edits": [
+        {
+          "do": "set esempty timeline.label = \"Parity element\"",
+          "answer": "ok",
+          "hunks": [
+            "@5 -1 +\"    label: Parity element\\n\""
+          ],
+          "sha256": "1a4307d8e137996ab6da9dfc705daffaf2eca16efe0fddd8378992a9d5aad284"
+        },
+        {
+          "do": "set esempty timeline.label = \"Line one\\nline two\"",
+          "answer": "ok",
+          "hunks": [
+            "@5 -1 +\"    label: \\\"Line one\\\\nline two\\\"\\n\""
+          ],
+          "sha256": "04e8b76acbbee2bb6b0764896aef36d3e5b833e8aeb6da4ff0c1a9331ce1db63"
+        },
+        {
+          "do": "set esempty timeline.begin = \"not a time\"",
+          "answer": "refused: 'not a time' is not a time this timeline can read.",
+          "unchanged": true
+        },
+        {
+          "do": "set esempty timeline.begin = \"2026-01-05T10:00:00\"",
+          "answer": "refused: This element uses the other time form; begin and end must both be dates, or both carry a time.",
+          "unchanged": true
+        },
+        {
+          "do": "set esempty timeline.begin = \"2026-01-05\"",
+          "answer": "ok",
+          "hunks": [
+            "@6 -2 +\"    begin: 2026-01-05\\n    end: \\n\""
+          ],
+          "sha256": "e07e2cd7bd4835c7519f5fc292e4f6d1621697e5a33805753b8e0bb62d10b0c4"
+        },
+        {
+          "do": "set esempty timeline.end = \"2025-12-01\"",
+          "answer": "refused: An element cannot end before it begins.",
+          "unchanged": true
+        },
+        {
+          "do": "set esempty timeline.end = \"2026-02-01\"",
+          "answer": "ok",
+          "hunks": [
+            "@7 -1 +\"    end: 2026-02-01\\n\""
+          ],
+          "sha256": "64aa74945583304b6f990cce0f020d193f96bce845873e6cb920b1f914ebfb92"
+        },
+        {
+          "do": "set esempty timeline.row = \"three\"",
+          "answer": "refused: 'timeline.row' cannot be edited on this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "set esempty timeline.row = \"3\"",
+          "answer": "ok",
+          "hunks": [
+            "@8 -1 +\"    row: 3\\n\""
+          ],
+          "sha256": "032a489772aa08d87c41dcdbc4b0dd3de862d5c91ec19f84c8e7aa89326f24f0"
+        },
+        {
+          "do": "set esempty timeline.from = \"nobody\"",
+          "answer": "refused: 'timeline.from' cannot be edited on this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.give-end on esempty",
+          "answer": "asks: ContextInputRequest { Title = Give it an end, Icon = mdi-ray-start-end, FieldLabel = End, InitialValue = 2026-01-05, ConfirmLabel = Set, InlineLabelElementId = , CommitActionId =  }",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.remove-end on esempty",
+          "answer": "ok",
+          "hunks": [
+            "@7 -1 +\"\""
+          ],
+          "sha256": "03b53971ac4ee4cf286243ef34249f4a81c610bb347d9795308e39ac45e5df1d"
+        },
+        {
+          "do": "set esmapping timeline.end = \"2026-03-01\"",
+          "answer": "refused: 'timeline.end' cannot be edited on this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.remove-end on esmapping",
+          "answer": "ok",
+          "hunks": [
+            "@11 -1 +\"\""
+          ],
+          "sha256": "2f16d065920b7572d3c027c2c3c68104382d7eb1949182d7e125171b77638b65"
+        },
+        {
+          "do": "execute timeline.give-end on esmapping",
+          "answer": "ok",
+          "unchanged": true
+        },
+        {
+          "do": "validate timeline.give-end on esmapping = \"whenever\"",
+          "answer": "accepted",
+          "unchanged": true
+        },
+        {
+          "do": "validate timeline.give-end on esmapping = \"1900-01-01\"",
+          "answer": "accepted",
+          "unchanged": true
+        },
+        {
+          "do": "validate timeline.give-end on esmapping = \"2100-01-01\"",
+          "answer": "accepted",
+          "unchanged": true
+        },
+        {
+          "do": "commit timeline.give-end on esmapping = \"2100-01-01\"",
+          "answer": "refused: 'timeline.give-end' does not apply to this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.add-after on esmapping",
+          "answer": "ok",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.add-below on esmapping",
+          "answer": "ok",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.rename on esmapping",
+          "answer": "ok",
+          "unchanged": true
+        },
+        {
+          "do": "commit timeline.rename on esmapping = \"Parity renamed\"",
+          "answer": "refused: 'timeline.rename' does not apply to this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "commit timeline.disconnect on esmapping = \"\"",
+          "answer": "refused: 'timeline.disconnect' does not apply to this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.add-element on new:1767225600,2",
+          "answer": "throws SemanticErrorException: While scanning a plain scalar value, found invalid mapping.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.add-moment on new:1767312000,4",
+          "answer": "throws SemanticErrorException: While scanning a plain scalar value, found invalid mapping.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.add-element on ",
+          "answer": "asks: ContextInputRequest { Title = Add element, Icon = mdi-plus, FieldLabel = Begin, InitialValue = {today}, ConfirmLabel = Add, InlineLabelElementId = , CommitActionId =  }",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.add-moment on ",
+          "answer": "asks: ContextInputRequest { Title = Add moment, Icon = mdi-plus, FieldLabel = Begin, InitialValue = {today}, ConfirmLabel = Add, InlineLabelElementId = , CommitActionId =  }",
+          "unchanged": true
+        },
+        {
+          "do": "commit timeline.add-element on  = \"2026-02-01\"",
+          "answer": "throws SemanticErrorException: While scanning a plain scalar value, found invalid mapping.",
+          "unchanged": true
+        },
+        {
+          "do": "commit timeline.add-moment on esmapping = \"2026-02-02T08:30:00\"",
+          "answer": "throws SemanticErrorException: While scanning a plain scalar value, found invalid mapping.",
+          "unchanged": true
+        },
+        {
+          "do": "commit timeline.add-moment on  = \"garbage\"",
+          "answer": "refused: 'timeline.add-moment' does not apply to this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.connect on rel:esmapping->esempty",
+          "answer": "refused: The element this relation starts from is no longer in this timeline.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.connect on rel:esmapping->new:1768089600,6",
+          "answer": "refused: The element this relation starts from is no longer in this timeline.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.connect on rel:new:1766361600,7->esmapping",
+          "answer": "refused: The element this relation reaches is no longer in this timeline.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.connect on rel:new:1767225600,8->parity:unknown",
+          "answer": "refused: The element this relation reaches is no longer in this timeline.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.connect on rel:parity:unknown->esmapping",
+          "answer": "refused: The element this relation starts from is no longer in this timeline.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.relabel on parity:unknown",
+          "answer": "refused: That is no longer in this timeline.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.remove on parity:unknown",
+          "answer": "ok",
+          "unchanged": true
+        },
+        {
+          "do": "commit timeline.rename on parity:unknown = \"Nobody\"",
+          "answer": "refused: 'timeline.rename' does not apply to this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "set parity:unknown timeline.label = \"Nobody\"",
+          "answer": "refused: 'timeline.label' cannot be edited on this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.remove on esmapping",
+          "answer": "ok",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.remove on esempty",
+          "answer": "ok",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.arrange on ",
+          "answer": "throws SemanticErrorException: While scanning a plain scalar value, found invalid mapping.",
+          "unchanged": true
+        }
+      ],
+      "undoAll": "0 undone; the next throws SemanticErrorException: While scanning a plain scalar value, found invalid mapping.; the original text is NOT back",
+      "undoAllLeaves": {
+        "hunks": [
+          "@5 -4 +\"    label: \\\"Line one\\\\nline two\\\"\\n    begin: 2026-01-05\\n    row: 3\\n\"",
+          "@12 -1 +\"\""
+        ],
+        "sha256": "2f16d065920b7572d3c027c2c3c68104382d7eb1949182d7e125171b77638b65"
+      }
+    },
+    {
+      "document": "diagrams/timeline/backend/EtAlii.Adp.Diagram.Timeline.Tests/Fixtures/findings/first-element.tml",
+      "sha256": "a6e6b785b22f86baf0a8261f280414031969c58e160790182a5d6a897db4a9f8",
+      "menus": [
+        [],
+        [
+          "g1 timeline.add-element | Add element here | mdi-plus | - | on",
+          "g1 timeline.add-moment | Add moment here | mdi-rhombus-medium | - | on",
+          "g2 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | off (There is nothing to arrange until this timeline has an element.)"
+        ],
+        [
+          "g1 timeline.connect | Relate | mdi-ray-start-arrow | - | on"
+        ]
+      ],
+      "choices": [],
+      "targets": [
+        "\"\" => menu #0",
+        "\"new:1767225600,2\" => menu #1",
+        "\"rel:a->b\" => menu #2",
+        "\"parity:unknown\" => menu #0"
+      ],
+      "rows": [],
+      "findings": [],
+      "payloads": [],
+      "edits": [
+        {
+          "do": "execute timeline.add-element on new:1767225600,2",
+          "answer": "ok",
+          "hunks": [
+            "@2 -1 +\"elements:\\r\\n  - id: {minted-1}\\r\\n    label: New element\\r\\n    begin: 2026-01-01\\r\\n    end: 2026-01-15\\r\\n    row: 2\\r\\n\""
+          ],
+          "sha256": "0f515dd436ecbb9abb9905d5b4902d14a8886482f31a73febfd1ee907c577af7"
+        },
+        {
+          "do": "execute timeline.add-moment on new:1767312000,4",
+          "answer": "ok",
+          "hunks": [
+            "@8 -0 +\"  - id: {minted-2}\\r\\n    label: New moment\\r\\n    begin: 2026-01-02\\r\\n    row: 4\\r\\n\""
+          ],
+          "sha256": "43f272edce7f5680b3ad718679e6e29f5a18a18172e8755f226ebe84822f0b9c"
+        },
+        {
+          "do": "execute timeline.add-element on ",
+          "answer": "asks: ContextInputRequest { Title = Add element, Icon = mdi-plus, FieldLabel = Begin, InitialValue = {today}, ConfirmLabel = Add, InlineLabelElementId = , CommitActionId =  }",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.add-moment on ",
+          "answer": "asks: ContextInputRequest { Title = Add moment, Icon = mdi-plus, FieldLabel = Begin, InitialValue = {today}, ConfirmLabel = Add, InlineLabelElementId = , CommitActionId =  }",
+          "unchanged": true
+        },
+        {
+          "do": "commit timeline.add-element on  = \"2026-02-01\"",
+          "answer": "ok",
+          "hunks": [
+            "@12 -0 +\"  - id: {minted-3}\\r\\n    label: New element\\r\\n    begin: 2026-02-01\\r\\n    end: 2026-02-15\\r\\n    row: 0\\r\\n\""
+          ],
+          "sha256": "f09eccd3b5c4a576c4b5673f594058d11600986828ebe6c49cd52e22bcc0faf9"
+        },
+        {
+          "do": "commit timeline.add-moment on  = \"2026-02-02T08:30:00\"",
+          "answer": "ok",
+          "hunks": [
+            "@17 -0 +\"  - id: {minted-4}\\r\\n    label: New moment\\r\\n    begin: 2026-02-02\\r\\n    row: 0\\r\\n\""
+          ],
+          "sha256": "93237dacecdec744bfcca0e87f50f364dcd547e9298f2f7ef7b73e7667bac4b1"
+        },
+        {
+          "do": "commit timeline.add-moment on  = \"garbage\"",
+          "answer": "refused: 'timeline.add-moment' does not apply to this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "set {minted-1} timeline.begin = \"2026-01-02\"",
+          "answer": "ok",
+          "hunks": [
+            "@5 -1 +\"    begin: 2026-01-02\\r\\n\""
+          ],
+          "sha256": "ddc584d0c2be4e7ec4694864a10057753f66b50cd32cf6bb4668d34818741ae0"
+        },
+        {
+          "do": "execute timeline.relabel on parity:unknown",
+          "answer": "refused: That is no longer in this timeline.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.remove on parity:unknown",
+          "answer": "ok",
+          "unchanged": true
+        },
+        {
+          "do": "commit timeline.rename on parity:unknown = \"Nobody\"",
+          "answer": "refused: 'timeline.rename' does not apply to this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "set parity:unknown timeline.label = \"Nobody\"",
+          "answer": "refused: 'timeline.label' cannot be edited on this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.arrange on ",
+          "answer": "ok",
+          "hunks": [
+            "@7 -1 +\"    row: 1\\r\\n\"",
+            "@11 -1 +\"    row: 0\\r\\n\"",
+            "@20 -1 +\"    row: 1\\r\\n\""
+          ],
+          "sha256": "145c0183e6441ff51894b81b3da84504137533e8e6e7f14dd2a1cad232016c2d"
+        }
+      ],
+      "undoAll": "6 undone; the original text is NOT back",
+      "undoAllLeaves": {
+        "hunks": [
+          "@2 -1 +\"elements:\\r\\n\""
+        ],
+        "sha256": "15e897d938257608c4c00bf2e81174e21c33c110c456ca0c782c175b5e215153"
       }
     },
     {
@@ -5555,6 +8788,687 @@
           "@42 -0 +\"  - id: twice\\n    from: first\\n    to: twice\\n    label: shares its id with an element\\n\""
         ],
         "sha256": "af05af74c93de76c8e8de7d3191ed7d60362a9ca497b6fd6a9a5c95196b6edd7"
+      }
+    },
+    {
+      "document": "diagrams/timeline/backend/EtAlii.Adp.Diagram.Timeline.Tests/Fixtures/findings/no-begin.tml",
+      "sha256": "9a611efa4552aedf42c5ee69c7e4f2110a8ccb09832398bd24b25de56d428785",
+      "menus": [
+        [
+          "g1 timeline.rename | Rename… | mdi-pencil-outline | F2 | on",
+          "g1 timeline.remove-end | Remove its end | mdi-ray-start | - | on",
+          "g1 timeline.remove | Remove | mdi-delete-outline | Delete | on",
+          "g2 timeline.add-after | Add element after | mdi-arrow-expand-right | Tab | on",
+          "g2 timeline.add-below | Add element below | mdi-arrow-expand-down | Enter | on",
+          "g3 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
+        ],
+        [
+          "g1 timeline.rename | Rename… | mdi-pencil-outline | F2 | on",
+          "g1 timeline.give-end | Give it an end… | mdi-ray-start-end | - | on",
+          "g1 timeline.remove | Remove | mdi-delete-outline | Delete | on",
+          "g2 timeline.add-after | Add element after | mdi-arrow-expand-right | Tab | on",
+          "g2 timeline.add-below | Add element below | mdi-arrow-expand-down | Enter | on",
+          "g3 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
+        ],
+        [],
+        [
+          "g1 timeline.add-element | Add element here | mdi-plus | - | on",
+          "g1 timeline.add-moment | Add moment here | mdi-rhombus-medium | - | on",
+          "g2 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
+        ],
+        [
+          "g1 timeline.connect | Relate | mdi-ray-start-arrow | - | on"
+        ]
+      ],
+      "choices": [],
+      "targets": [
+        "\"nbperiod\" => menu #0",
+        "\"nbmoment\" => menu #1",
+        "\"\" => menu #2",
+        "\"new:1767225600,2\" => menu #3",
+        "\"rel:nbperiod->nbmoment\" => menu #4",
+        "\"parity:unknown\" => menu #2"
+      ],
+      "rows": [
+        {
+          "target": "nbperiod",
+          "rows": [
+            "timeline.label | Label | \"No begin, an end\" | Line | editable | group Identity",
+            "timeline.begin | Begin | \"\" | Line | editable | group Timing",
+            "timeline.end | End | \"2026-09-10\" | Line | editable | group Timing",
+            "timeline.row | Row | \"0\" | Line | editable | group Placement"
+          ]
+        },
+        {
+          "target": "nbmoment",
+          "rows": [
+            "timeline.label | Label | \"No begin at all\" | Line | editable | group Identity",
+            "timeline.begin | Begin | \"\" | Line | editable | group Timing",
+            "timeline.row | Row | \"1\" | Line | editable | group Placement"
+          ]
+        }
+      ],
+      "findings": [
+        "element \"nbperiod\" | Warning | timeline.unreadable-time | 'No begin, an end' begins at '', which is not a time this timeline can read.",
+        "element \"nbmoment\" | Warning | timeline.unreadable-time | 'No begin at all' begins at '', which is not a time this timeline can read."
+      ],
+      "payloads": [
+        "nbperiod | generic/timeline+period | 0, 0 | TimelineElementPayload { \"end\": \"2026-09-10\", \"dateOnly\": true, \"label\": \"No begin, an end\" }",
+        "nbmoment | generic/timeline+moment | 0, 60 | TimelineElementPayload { \"row\": 1, \"dateOnly\": true, \"label\": \"No begin at all\" }"
+      ],
+      "edits": [
+        {
+          "do": "set nbperiod timeline.label = \"Parity element\"",
+          "answer": "ok",
+          "hunks": [
+            "@5 -1 +\"    label: Parity element\\n\""
+          ],
+          "sha256": "4b6a8cf38174e9e3db8f609245f14c290faf8b647e015a872acd0086197769d2"
+        },
+        {
+          "do": "set nbperiod timeline.label = \"Line one\\nline two\"",
+          "answer": "ok",
+          "hunks": [
+            "@5 -1 +\"    label: \\\"Line one\\\\nline two\\\"\\n\""
+          ],
+          "sha256": "c650a7f145f844a94161c6bd628acb406d99e04b7cbaa3324f3fcf660cab532c"
+        },
+        {
+          "do": "set nbperiod timeline.begin = \"not a time\"",
+          "answer": "refused: 'not a time' is not a time this timeline can read.",
+          "unchanged": true
+        },
+        {
+          "do": "set nbperiod timeline.begin = \"2026-01-05T10:00:00\"",
+          "answer": "refused: This element uses the other time form; begin and end must both be dates, or both carry a time.",
+          "unchanged": true
+        },
+        {
+          "do": "set nbperiod timeline.begin = \"2026-01-05\"",
+          "answer": "ok",
+          "hunks": [
+            "@5 -0 +\"    row: 0\\n    begin: 2026-01-05\\n\""
+          ],
+          "sha256": "10b9beabc383b0e9081504ff7b15180e0728b8777936f2a1c55c0a86fcc091e6"
+        },
+        {
+          "do": "set nbperiod timeline.end = \"2025-12-01\"",
+          "answer": "refused: 'timeline.end' cannot be edited on this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "set nbperiod timeline.end = \"2026-02-01\"",
+          "answer": "refused: 'timeline.end' cannot be edited on this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "set nbperiod timeline.row = \"three\"",
+          "answer": "refused: 'timeline.row' cannot be edited on this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "set nbperiod timeline.row = \"3\"",
+          "answer": "refused: 'timeline.row' cannot be edited on this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "set nbperiod timeline.from = \"nobody\"",
+          "answer": "refused: 'timeline.from' cannot be edited on this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.give-end on nbperiod",
+          "answer": "ok",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.remove-end on nbperiod",
+          "answer": "ok",
+          "unchanged": true
+        },
+        {
+          "do": "set nbmoment timeline.end = \"2026-03-01\"",
+          "answer": "refused: 'timeline.end' cannot be edited on this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.remove-end on nbmoment",
+          "answer": "ok",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.give-end on nbmoment",
+          "answer": "ok",
+          "unchanged": true
+        },
+        {
+          "do": "validate timeline.give-end on nbmoment = \"whenever\"",
+          "answer": "accepted",
+          "unchanged": true
+        },
+        {
+          "do": "validate timeline.give-end on nbmoment = \"1900-01-01\"",
+          "answer": "accepted",
+          "unchanged": true
+        },
+        {
+          "do": "validate timeline.give-end on nbmoment = \"2100-01-01\"",
+          "answer": "accepted",
+          "unchanged": true
+        },
+        {
+          "do": "commit timeline.give-end on nbmoment = \"2100-01-01\"",
+          "answer": "refused: 'timeline.give-end' does not apply to this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.add-element on new:1767225600,2",
+          "answer": "throws YamlException: Duplicate key row",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.add-moment on new:1767312000,4",
+          "answer": "throws YamlException: Duplicate key row",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.add-element on ",
+          "answer": "asks: ContextInputRequest { Title = Add element, Icon = mdi-plus, FieldLabel = Begin, InitialValue = {today}, ConfirmLabel = Add, InlineLabelElementId = , CommitActionId =  }",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.add-moment on ",
+          "answer": "asks: ContextInputRequest { Title = Add moment, Icon = mdi-plus, FieldLabel = Begin, InitialValue = {today}, ConfirmLabel = Add, InlineLabelElementId = , CommitActionId =  }",
+          "unchanged": true
+        },
+        {
+          "do": "commit timeline.add-element on  = \"2026-02-01\"",
+          "answer": "throws YamlException: Duplicate key row",
+          "unchanged": true
+        },
+        {
+          "do": "commit timeline.add-moment on  = \"2026-02-02T08:30:00\"",
+          "answer": "throws YamlException: Duplicate key row",
+          "unchanged": true
+        },
+        {
+          "do": "commit timeline.add-moment on  = \"garbage\"",
+          "answer": "refused: 'timeline.add-moment' does not apply to this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.relabel on parity:unknown",
+          "answer": "refused: That is no longer in this timeline.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.remove on parity:unknown",
+          "answer": "ok",
+          "unchanged": true
+        },
+        {
+          "do": "commit timeline.rename on parity:unknown = \"Nobody\"",
+          "answer": "refused: 'timeline.rename' does not apply to this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "set parity:unknown timeline.label = \"Nobody\"",
+          "answer": "refused: 'timeline.label' cannot be edited on this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.remove on nbmoment",
+          "answer": "ok",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.remove on nbperiod",
+          "answer": "ok",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.arrange on ",
+          "answer": "throws YamlException: Duplicate key row",
+          "unchanged": true
+        }
+      ],
+      "undoAll": "0 undone; the next throws YamlException: Duplicate key row; the original text is NOT back",
+      "undoAllLeaves": {
+        "hunks": [
+          "@5 -1 +\"    row: 0\\n    begin: 2026-01-05\\n    label: \\\"Line one\\\\nline two\\\"\\n\""
+        ],
+        "sha256": "10b9beabc383b0e9081504ff7b15180e0728b8777936f2a1c55c0a86fcc091e6"
+      }
+    },
+    {
+      "document": "diagrams/timeline/backend/EtAlii.Adp.Diagram.Timeline.Tests/Fixtures/findings/scalar-connection.tml",
+      "sha256": "09b9e53550e1fb7f82c250d5ad4f4391d6750e67bdbfdaa1dbc42642e24858e9",
+      "menus": [
+        [
+          "g1 timeline.rename | Rename… | mdi-pencil-outline | F2 | on",
+          "g1 timeline.remove-end | Remove its end | mdi-ray-start | - | on",
+          "g1 timeline.remove | Remove | mdi-delete-outline | Delete | on",
+          "g2 timeline.add-after | Add element after | mdi-arrow-expand-right | Tab | on",
+          "g2 timeline.add-below | Add element below | mdi-arrow-expand-down | Enter | on",
+          "g3 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
+        ],
+        [
+          "g1 timeline.rename | Rename… | mdi-pencil-outline | F2 | on",
+          "g1 timeline.give-end | Give it an end… | mdi-ray-start-end | - | on",
+          "g1 timeline.remove | Remove | mdi-delete-outline | Delete | on",
+          "g2 timeline.add-after | Add element after | mdi-arrow-expand-right | Tab | on",
+          "g2 timeline.add-below | Add element below | mdi-arrow-expand-down | Enter | on",
+          "g3 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
+        ],
+        [
+          "g1 timeline.relabel | Relabel… | mdi-pencil-outline | F2 | on",
+          "g1 timeline.disconnect | Remove relation | mdi-vector-polyline-remove | Delete | on",
+          "g2 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
+        ],
+        [],
+        [
+          "g1 timeline.add-element | Add element here | mdi-plus | - | on",
+          "g1 timeline.add-moment | Add moment here | mdi-rhombus-medium | - | on",
+          "g2 timeline.arrange | Arrange diagram | mdi-sitemap-outline | - | on (There is nothing to arrange until this timeline has an element.)"
+        ],
+        [
+          "g1 timeline.connect | Relate | mdi-ray-start-arrow | - | on"
+        ]
+      ],
+      "choices": [],
+      "targets": [
+        "\"scfirst\" => menu #0",
+        "\"scsecond\" => menu #1",
+        "\"scconn01\" => menu #2",
+        "\"\" => menu #3",
+        "\"new:1767225600,2\" => menu #4",
+        "\"rel:scfirst->scsecond\" => menu #5",
+        "\"parity:unknown\" => menu #3"
+      ],
+      "rows": [
+        {
+          "target": "scfirst",
+          "rows": [
+            "timeline.label | Label | \"First\" | Line | editable | group Identity",
+            "timeline.begin | Begin | \"2026-10-01\" | Line | editable | group Timing",
+            "timeline.end | End | \"2026-10-05\" | Line | editable | group Timing",
+            "timeline.row | Row | \"0\" | Line | editable | group Placement"
+          ]
+        },
+        {
+          "target": "scsecond",
+          "rows": [
+            "timeline.label | Label | \"Second\" | Line | editable | group Identity",
+            "timeline.begin | Begin | \"2026-10-08\" | Line | editable | group Timing",
+            "timeline.row | Row | \"1\" | Line | editable | group Placement"
+          ]
+        },
+        {
+          "target": "scconn01",
+          "rows": [
+            "timeline.label | Label | \"\" | Line | editable | group Identity",
+            "timeline.from | From | \"scfirst\" | Line | read-only (Reconnecting is done on the canvas, by dragging the relation's end to another element.) | group Identity",
+            "timeline.to | To | \"scsecond\" | Line | read-only (Reconnecting is done on the canvas, by dragging the relation's end to another element.) | group Identity"
+          ]
+        }
+      ],
+      "findings": [],
+      "payloads": [
+        "scfirst | generic/timeline+period | 1790812800, 0 | TimelineElementPayload { \"begin\": \"2026-10-01\", \"end\": \"2026-10-05\", \"dateOnly\": true, \"label\": \"First\" }",
+        "scsecond | generic/timeline+moment | 1791417600, 60 | TimelineElementPayload { \"begin\": \"2026-10-08\", \"row\": 1, \"dateOnly\": true, \"label\": \"Second\" }",
+        "scconn01 | generic/timeline+connection | 0, 0 | TimelineConnectionPayload { \"fromElementId\": \"scfirst\", \"toElementId\": \"scsecond\" }"
+      ],
+      "edits": [
+        {
+          "do": "set scfirst timeline.label = \"Parity element\"",
+          "answer": "ok",
+          "hunks": [
+            "@5 -1 +\"    label: Parity element\\n\""
+          ],
+          "sha256": "2143f4c1672963493c1eafa5b1a380a396524083c3d804ebbf19d670adf3f771"
+        },
+        {
+          "do": "set scfirst timeline.label = \"Line one\\nline two\"",
+          "answer": "ok",
+          "hunks": [
+            "@5 -1 +\"    label: \\\"Line one\\\\nline two\\\"\\n\""
+          ],
+          "sha256": "4fa63de346277b7ae89dd70c210a20e5b3ca53cf5279ddeee70ed8fa02b4cadc"
+        },
+        {
+          "do": "set scfirst timeline.begin = \"not a time\"",
+          "answer": "refused: 'not a time' is not a time this timeline can read.",
+          "unchanged": true
+        },
+        {
+          "do": "set scfirst timeline.begin = \"2026-01-05T10:00:00\"",
+          "answer": "refused: This element uses the other time form; begin and end must both be dates, or both carry a time.",
+          "unchanged": true
+        },
+        {
+          "do": "set scfirst timeline.begin = \"2026-01-05\"",
+          "answer": "ok",
+          "hunks": [
+            "@6 -1 +\"    begin: 2026-01-05\\n\""
+          ],
+          "sha256": "2f50e31f1eb9e51096147810fac20bd6e4c0847a7e5e1aba798d9883a1d03388"
+        },
+        {
+          "do": "set scfirst timeline.end = \"2025-12-01\"",
+          "answer": "refused: An element cannot end before it begins.",
+          "unchanged": true
+        },
+        {
+          "do": "set scfirst timeline.end = \"2026-02-01\"",
+          "answer": "ok",
+          "hunks": [
+            "@7 -1 +\"    end: 2026-02-01\\n\""
+          ],
+          "sha256": "5e3318482cc42bb5cfa5743ef8be5fbca31538da985906579ce22ee3eaee2fea"
+        },
+        {
+          "do": "set scfirst timeline.row = \"three\"",
+          "answer": "refused: 'timeline.row' cannot be edited on this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "set scfirst timeline.row = \"3\"",
+          "answer": "ok",
+          "hunks": [
+            "@8 -1 +\"    row: 3\\n\""
+          ],
+          "sha256": "513c1cf7d5f5454870a8c7dacf8a4a4bae8be477b646d67776acec10304ee356"
+        },
+        {
+          "do": "set scfirst timeline.from = \"nobody\"",
+          "answer": "refused: 'timeline.from' cannot be edited on this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.give-end on scfirst",
+          "answer": "asks: ContextInputRequest { Title = Give it an end, Icon = mdi-ray-start-end, FieldLabel = End, InitialValue = 2026-01-05, ConfirmLabel = Set, InlineLabelElementId = , CommitActionId =  }",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.remove-end on scfirst",
+          "answer": "ok",
+          "hunks": [
+            "@7 -1 +\"\""
+          ],
+          "sha256": "793794bda21579a9483fac2e8c0185dae39bf691b09c927110b9aafdb0691e90"
+        },
+        {
+          "do": "set scsecond timeline.end = \"2026-03-01\"",
+          "answer": "refused: 'timeline.end' cannot be edited on this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.remove-end on scsecond",
+          "answer": "ok",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.give-end on scsecond",
+          "answer": "asks: ContextInputRequest { Title = Give it an end, Icon = mdi-ray-start-end, FieldLabel = End, InitialValue = 2026-10-08, ConfirmLabel = Set, InlineLabelElementId = , CommitActionId =  }",
+          "unchanged": true
+        },
+        {
+          "do": "validate timeline.give-end on scsecond = \"whenever\"",
+          "answer": "rejected: 'whenever' is not a time this timeline can read.",
+          "unchanged": true
+        },
+        {
+          "do": "validate timeline.give-end on scsecond = \"1900-01-01\"",
+          "answer": "rejected: An element cannot end before it begins.",
+          "unchanged": true
+        },
+        {
+          "do": "validate timeline.give-end on scsecond = \"2100-01-01\"",
+          "answer": "accepted",
+          "unchanged": true
+        },
+        {
+          "do": "commit timeline.give-end on scsecond = \"2100-01-01\"",
+          "answer": "ok",
+          "hunks": [
+            "@9 -0 +\"    end: 2100-01-01\\n\""
+          ],
+          "sha256": "6aed9eebb69f95d3fe1d7e7157b860d9759a5b31082737be17d0fce6ffd5009b"
+        },
+        {
+          "do": "set scconn01 timeline.label = \"Parity relation\"",
+          "answer": "ok",
+          "hunks": [
+            "@15 -0 +\"    label: Parity relation\\n\""
+          ],
+          "sha256": "afef23483294911b41b2aa1e80d39089e273e344a48d5ec6426dae2df4533a76"
+        },
+        {
+          "do": "set scconn01 timeline.from = \"nobody\"",
+          "answer": "refused: 'timeline.from' cannot be edited on this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "set scconn01 timeline.begin = \"2026-01-01\"",
+          "answer": "refused: 'timeline.begin' cannot be edited on this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.relabel on scconn01",
+          "answer": "asks: ContextInputRequest { Title = Relabel, Icon = mdi-pencil-outline, FieldLabel = Label, InitialValue = Parity relation, ConfirmLabel = Relabel, InlineLabelElementId = scconn01, CommitActionId =  }",
+          "unchanged": true
+        },
+        {
+          "do": "commit timeline.relabel on scconn01 = \"Relabelled\"",
+          "answer": "ok",
+          "hunks": [
+            "@15 -1 +\"    label: Relabelled\\n\""
+          ],
+          "sha256": "3043aee169e48b841316a880a35c578baab139442c38c4921647a988a5dd799f"
+        },
+        {
+          "do": "commit timeline.rename on scconn01 = \"Not for a relation\"",
+          "answer": "refused: 'timeline.rename' does not apply to this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.add-after on scfirst",
+          "answer": "ok",
+          "hunks": [
+            "@13 -0 +\"  - id: {minted-1}\\n    label: New element\\n    begin: 2026-01-11\\n    end: 2026-01-25\\n    row: 3\\n\"",
+            "@18 -0 +\"  - id: {minted-2}\\n    from: scfirst\\n    to: {minted-1}\\n\""
+          ],
+          "sha256": "9cd434afeb0e87d3d34ac26a3c3b9380715326f92b2f3b6edf8f0bb87773d354"
+        },
+        {
+          "do": "execute timeline.add-below on scfirst",
+          "answer": "ok",
+          "hunks": [
+            "@18 -0 +\"  - id: {minted-3}\\n    label: New element\\n    begin: 2026-01-05\\n    end: 2026-01-19\\n    row: 4\\n\"",
+            "@26 -0 +\"  - id: {minted-4}\\n    from: scfirst\\n    to: {minted-3}\\n\""
+          ],
+          "sha256": "8638b3432518b1d5c5e0bbb9c044785300aaca5612c25ba08b64c8279322dfa4"
+        },
+        {
+          "do": "execute timeline.rename on scfirst",
+          "answer": "asks: ContextInputRequest { Title = Rename, Icon = mdi-pencil-outline, FieldLabel = Label, InitialValue = Line one\nline two, ConfirmLabel = Rename, InlineLabelElementId = scfirst, CommitActionId =  }",
+          "unchanged": true
+        },
+        {
+          "do": "commit timeline.rename on scfirst = \"Parity renamed\"",
+          "answer": "ok",
+          "hunks": [
+            "@5 -1 +\"    label: Parity renamed\\n\""
+          ],
+          "sha256": "27dcc77df44dbc5e1dd3541e89be06fff135bc981396543d8b56ad24f8544179"
+        },
+        {
+          "do": "commit timeline.disconnect on scfirst = \"\"",
+          "answer": "refused: 'timeline.disconnect' does not apply to this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.add-element on new:1767225600,2",
+          "answer": "ok",
+          "hunks": [
+            "@23 -0 +\"  - id: {minted-5}\\n    label: New element\\n    begin: 2026-01-01\\n    end: 2026-01-15\\n    row: 2\\n\""
+          ],
+          "sha256": "2fa253bcaeaeaea4a59677cb1b499733744b3bd252c419d24ce68cf8a4d04d0a"
+        },
+        {
+          "do": "execute timeline.add-moment on new:1767312000,4",
+          "answer": "ok",
+          "hunks": [
+            "@28 -0 +\"  - id: {minted-6}\\n    label: New moment\\n    begin: 2026-01-02\\n    row: 4\\n\""
+          ],
+          "sha256": "414e3c809f91723efb9d17cd2364f6c3bc5afb3e047ced5bfbdacb54fcbb56d4"
+        },
+        {
+          "do": "execute timeline.add-element on ",
+          "answer": "asks: ContextInputRequest { Title = Add element, Icon = mdi-plus, FieldLabel = Begin, InitialValue = {today}, ConfirmLabel = Add, InlineLabelElementId = , CommitActionId =  }",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.add-moment on ",
+          "answer": "asks: ContextInputRequest { Title = Add moment, Icon = mdi-plus, FieldLabel = Begin, InitialValue = {today}, ConfirmLabel = Add, InlineLabelElementId = , CommitActionId =  }",
+          "unchanged": true
+        },
+        {
+          "do": "commit timeline.add-element on  = \"2026-02-01\"",
+          "answer": "ok",
+          "hunks": [
+            "@32 -0 +\"  - id: {minted-7}\\n    label: New element\\n    begin: 2026-02-01\\n    end: 2026-02-15\\n    row: 0\\n\""
+          ],
+          "sha256": "ffb14aa7f9ea6092f29675db634d3cfd1fe4bfad64ad3e4454f984c6241f3449"
+        },
+        {
+          "do": "commit timeline.add-moment on scfirst = \"2026-02-02T08:30:00\"",
+          "answer": "ok",
+          "hunks": [
+            "@37 -0 +\"  - id: {minted-8}\\n    label: New moment\\n    begin: 2026-02-02\\n    row: 3\\n\""
+          ],
+          "sha256": "ab10115fcceeeef17fd27565185ec937ad2360d5cb8d842027c6621df013c1aa"
+        },
+        {
+          "do": "commit timeline.add-moment on  = \"garbage\"",
+          "answer": "refused: 'timeline.add-moment' does not apply to this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.connect on rel:scfirst->scsecond",
+          "answer": "ok",
+          "hunks": [
+            "@52 -0 +\"  - id: {minted-9}\\n    from: scfirst\\n    to: scsecond\\n\""
+          ],
+          "sha256": "95ea8edc3c37bd25ff2bd6b840499590dc659c5f58e274fd3da7446727ccc9c8"
+        },
+        {
+          "do": "execute timeline.connect on rel:scfirst->new:1768089600,6",
+          "answer": "ok",
+          "hunks": [
+            "@41 -0 +\"  - id: {minted-10}\\n    label: New element\\n    begin: 2026-01-11\\n    end: 2026-01-25\\n    row: 6\\n\"",
+            "@55 -0 +\"  - id: {minted-11}\\n    from: scfirst\\n    to: {minted-10}\\n\""
+          ],
+          "sha256": "4521b763ca67996e3ceacbaf1dbc35520b9e2e00073bf3af979956ad045b2d0c"
+        },
+        {
+          "do": "execute timeline.connect on rel:new:1766361600,7->scfirst",
+          "answer": "ok",
+          "hunks": [
+            "@46 -0 +\"  - id: {minted-12}\\n    label: New element\\n    begin: 2025-12-22\\n    end: 2026-01-05\\n    row: 7\\n\"",
+            "@63 -0 +\"  - id: {minted-13}\\n    from: {minted-12}\\n    to: scfirst\\n\""
+          ],
+          "sha256": "4ee1453539398e679eb44050c9e7ba8efcc9a1fd07e8f7d4f623da8b741e74c4"
+        },
+        {
+          "do": "execute timeline.connect on rel:new:1767225600,8->parity:unknown",
+          "answer": "refused: The element this relation reaches is no longer in this timeline.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.connect on rel:parity:unknown->scfirst",
+          "answer": "refused: The element this relation starts from is no longer in this timeline.",
+          "unchanged": true
+        },
+        {
+          "do": "set {minted-5} timeline.begin = \"2026-01-02\"",
+          "answer": "ok",
+          "hunks": [
+            "@25 -1 +\"    begin: 2026-01-02\\n\""
+          ],
+          "sha256": "1ced40d934647d3b69b1287ed089a77ec5c05b06ccf80efa8487c7987b53f7aa"
+        },
+        {
+          "do": "execute timeline.relabel on parity:unknown",
+          "answer": "refused: That is no longer in this timeline.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.remove on parity:unknown",
+          "answer": "ok",
+          "unchanged": true
+        },
+        {
+          "do": "commit timeline.rename on parity:unknown = \"Nobody\"",
+          "answer": "refused: 'timeline.rename' does not apply to this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "set parity:unknown timeline.label = \"Nobody\"",
+          "answer": "refused: 'timeline.label' cannot be edited on this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.disconnect on scconn01",
+          "answer": "ok",
+          "hunks": [
+            "@52 -4 +\"\""
+          ],
+          "sha256": "29325d4b319e3eddb4880bd1b6e0468b553d66c1e28ff08c5b7de118ca7314cb"
+        },
+        {
+          "do": "execute timeline.remove on scfirst",
+          "answer": "confirms: ContextConfirmationRequest { Title = Remove, Icon = mdi-delete-outline, Message = Removing this element also removes the 5 relations attached to it., ConfirmLabel = Remove, Danger = True }",
+          "unchanged": true
+        },
+        {
+          "do": "commit timeline.remove on scfirst = \"\"",
+          "answer": "ok",
+          "hunks": [
+            "@4 -4 +\"\"",
+            "@52 -15 +\"\""
+          ],
+          "sha256": "f777f2232cb2e52307797b4a8ff5a3c3f1681cdb6ed69807e5d736809f2c6a6a"
+        },
+        {
+          "do": "execute timeline.remove on scsecond",
+          "answer": "ok",
+          "hunks": [
+            "@4 -5 +\"\""
+          ],
+          "sha256": "0664b76d87ef63913dbeee31625affa7685175cd29a7fbc7304eb56f49322fc9"
+        },
+        {
+          "do": "execute timeline.arrange on ",
+          "answer": "ok",
+          "hunks": [
+            "@8 -1 +\"    row: 0\\n\"",
+            "@13 -1 +\"    row: 3\\n\"",
+            "@22 -1 +\"    row: 1\\n\"",
+            "@31 -1 +\"    row: 1\\n\"",
+            "@36 -1 +\"    row: 1\\n\"",
+            "@41 -1 +\"    row: 0\\n\""
+          ],
+          "sha256": "461da0c0e3fb3ed7dcbb75cea88ee9d349f30c005554f340cd820d27b24fad8a"
+        }
+      ],
+      "undoAll": "25 undone; the original text is NOT back",
+      "undoAllLeaves": {
+        "hunks": [
+          "@5 -0 +\"    end: 2026-10-05\\n\"",
+          "@7 -1 +\"\""
+        ],
+        "sha256": "f64c8cf37f99ec7a3f2018cf5132ada0a2a27a59f4248920cba1a86851d726b1"
       }
     },
     {

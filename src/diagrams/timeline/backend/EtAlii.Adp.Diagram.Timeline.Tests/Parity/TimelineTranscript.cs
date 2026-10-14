@@ -25,7 +25,8 @@ namespace EtAlii.Adp.Diagram.Timeline.Tests.Parity;
 /// <b>Per document</b>: the context menu of every element and relation id, the empty canvas, a
 /// placement, a relation gesture and an unknown id; the property rows of every element and relation;
 /// the findings; the payload of every mapped element; and a scripted edit sequence, each step's
-/// answer and the hunks it made to the document's text.
+/// answer and the hunks it made to the document's text. The sequence drags only an element whose id
+/// starts with <c>move</c>, so that adding moves left every other document's record as it was.
 /// </para>
 /// <para>
 /// <b>No read-only variant</b>: no timeline provider reads a read-only state today, so there is
@@ -45,6 +46,9 @@ internal static class TimelineTranscript
 
     private const string TestProject = "EtAlii.Adp.Diagram.Timeline.Tests";
     private const string Unknown = "parity:unknown";
+
+    /// <summary>The edit script drags an element whose id starts with this, as nothing else reaches a move.</summary>
+    private const string MovedPrefix = "move";
 
     /// <summary>2026-01-01T00:00:00Z, where the script's placements land.</summary>
     private const double PlacementSeconds = 1_767_225_600;
@@ -255,6 +259,14 @@ internal static class TimelineTranscript
         var other = named.Select(element => element.Id).Distinct(StringComparer.Ordinal).FirstOrDefault(id => id != readable);
         var connection = model.Connections.FirstOrDefault(candidate => candidate.Id.Length > 0)?.Id;
 
+        // A drag, only of the elements whose id asks for one: a document that names none is
+        // recorded as it was before moves were scripted (Fixtures/readme.md, dotnet-times.tml).
+        foreach (var moved in named.Select(element => element.Id).Where(id => id.StartsWith(MovedPrefix, StringComparison.Ordinal)).Distinct(StringComparer.Ordinal))
+        {
+            await script.MoveAsync(moved, rows: 1, seconds: 0);
+            await script.MoveAsync(moved, rows: 0, seconds: 86_400);
+        }
+
         if (period is not null)
         {
             await script.SetAsync(period, TimelineContextPropertyProvider.LabelProperty, "Parity element");
@@ -402,13 +414,21 @@ internal static class TimelineTranscript
 
             var stack = session.History.Get(session.Folder);
             var undone = 0;
-            while (stack.CanUndo && (await stack.UndoAsync(cancellationToken)).IsSuccess)
+            var thrown = "";
+            try
             {
-                undone++;
+                while (stack.CanUndo && (await stack.UndoAsync(cancellationToken)).IsSuccess)
+                {
+                    undone++;
+                }
+            }
+            catch (Exception exception) when (exception is not OperationCanceledException)
+            {
+                thrown = $"; the next {Thrown(exception)}";
             }
 
             var restored = await ReadAsync();
-            json.WriteString("undoAll", $"{undone} undone; {(string.Equals(restored, original, StringComparison.Ordinal) ? "the original text is back" : "the original text is NOT back")}");
+            json.WriteString("undoAll", $"{undone} undone{thrown}; {(string.Equals(restored, original, StringComparison.Ordinal) ? "the original text is back" : "the original text is NOT back")}");
             if (!string.Equals(restored, original, StringComparison.Ordinal))
             {
                 // What undoing everything left different, so a change in it is visible rather than
@@ -421,24 +441,76 @@ internal static class TimelineTranscript
 
         public async Task SetAsync(string target, string propertyId, string value)
         {
-            var result = await session.Properties.SetAsync(session.Target(target), propertyId, value, cancellationToken);
-            await RecordAsync($"set {Mask(target)} {propertyId} = {TranscriptText.Quoted(value)}", result.IsSuccess ? "ok" : $"refused: {result.Error}", mints: false);
+            string answer;
+            try
+            {
+                var result = await session.Properties.SetAsync(session.Target(target), propertyId, value, cancellationToken);
+                answer = result.IsSuccess ? "ok" : $"refused: {result.Error}";
+            }
+            catch (Exception exception) when (exception is not OperationCanceledException)
+            {
+                answer = Thrown(exception);
+            }
+
+            await RecordAsync($"set {Mask(target)} {propertyId} = {TranscriptText.Quoted(value)}", answer, mints: false);
+        }
+
+        /// <summary>
+        /// Drags an element by <paramref name="rows"/> rows and <paramref name="seconds"/> seconds from
+        /// where it is drawn, as the session turns a drop into a placement: the mapper's position, the
+        /// mapper's placement of the new one, one command.
+        /// </summary>
+        public async Task MoveAsync(string target, int rows, double seconds)
+        {
+            var model = session.Model;
+            var element = model.Elements.First(candidate => string.Equals(candidate.Id, target, StringComparison.Ordinal));
+            var drawn = new TimelineElementMapper().Visible(model, DiagramViewport.Unbounded).First(candidate => string.Equals(candidate.Id, target, StringComparison.Ordinal));
+            (string begin, string? end, int row) = TimelineElementMapper.Placement(element, drawn.X + seconds, drawn.Y + (rows * TimelineRows.Height));
+            string answer;
+            try
+            {
+                var result = await session.History.Get(session.Folder).ExecuteAsync(new SetTimelinePlacementCommand(session.Body, target, begin, end, row), cancellationToken);
+                answer = result.IsSuccess ? "ok" : $"refused: {result.Error}";
+            }
+            catch (Exception exception) when (exception is not OperationCanceledException)
+            {
+                answer = Thrown(exception);
+            }
+
+            await RecordAsync($"move {Mask(target)} by {rows} rows and {seconds.ToString(CultureInfo.InvariantCulture)} seconds", answer, mints: false);
         }
 
         public async Task ValidateAsync(string target, string actionId, string value)
         {
-            var result = await session.Actions.ValidateAsync(session.Target(target), actionId, value, cancellationToken);
-            await RecordAsync(
-                $"validate {actionId} on {Mask(target)} = {TranscriptText.Quoted(value)}",
-                result.Valid ? "accepted" : $"rejected: {result.Reason}",
-                mints: false);
+            string answer;
+            try
+            {
+                var result = await session.Actions.ValidateAsync(session.Target(target), actionId, value, cancellationToken);
+                answer = result.Valid ? "accepted" : $"rejected: {result.Reason}";
+            }
+            catch (Exception exception) when (exception is not OperationCanceledException)
+            {
+                answer = Thrown(exception);
+            }
+
+            await RecordAsync($"validate {actionId} on {Mask(target)} = {TranscriptText.Quoted(value)}", answer, mints: false);
         }
 
         /// <summary>Runs an action; answers "confirm" when it asked for a confirmation, else the minted id of an add, else null.</summary>
         public async Task<string?> ExecuteAsync(string target, string actionId)
         {
             var before = session.Model;
-            var result = await session.Actions.ExecuteAsync(session.Target(target), actionId, cancellationToken);
+            ContextExecutionResult result;
+            try
+            {
+                result = await session.Actions.ExecuteAsync(session.Target(target), actionId, cancellationToken);
+            }
+            catch (Exception exception) when (exception is not OperationCanceledException)
+            {
+                await RecordAsync($"execute {actionId} on {Mask(target)}", Thrown(exception), mints: true, before);
+                return null;
+            }
+
             var minted = await RecordAsync($"execute {actionId} on {Mask(target)}", Describe(result), mints: true, before);
             return result is ContextExecutionRequiresConfirmation ? "confirm" : minted;
         }
@@ -446,13 +518,25 @@ internal static class TimelineTranscript
         public async Task CommitAsync(string target, string actionId, string value)
         {
             var before = session.Model;
-            var result = await session.Actions.CommitAsync(session.Target(target), actionId, value, "", cancellationToken);
-            await RecordAsync(
-                $"commit {actionId} on {Mask(target)} = {TranscriptText.Quoted(value)}",
-                result.Completed ? "ok" : $"refused: {result.Error}",
-                mints: true,
-                before);
+            string answer;
+            try
+            {
+                var result = await session.Actions.CommitAsync(session.Target(target), actionId, value, "", cancellationToken);
+                answer = result.Completed ? "ok" : $"refused: {result.Error}";
+            }
+            catch (Exception exception) when (exception is not OperationCanceledException)
+            {
+                answer = Thrown(exception);
+            }
+
+            await RecordAsync($"commit {actionId} on {Mask(target)} = {TranscriptText.Quoted(value)}", answer, mints: true, before);
         }
+
+        /// <summary>
+        /// A step today's code throws on, recorded rather than ending the transcript: what it throws is
+        /// the answer a user would meet, and the steps after it still run.
+        /// </summary>
+        private static string Thrown(Exception exception) => $"throws {exception.GetType().Name}: {exception.Message}";
 
         private async Task<string?> RecordAsync(string step, string answer, bool mints, TimelineModel? before = null)
         {

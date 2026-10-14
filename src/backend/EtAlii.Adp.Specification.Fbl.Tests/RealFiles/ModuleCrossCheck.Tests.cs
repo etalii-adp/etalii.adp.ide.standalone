@@ -7,6 +7,7 @@ using EtAlii.Adp.Diagram.Timeline;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Specification.Fbl.History;
 using Xunit;
+using YamlDotNet.Core;
 
 namespace EtAlii.Adp.Specification.Fbl.Tests.RealFiles;
 
@@ -122,7 +123,19 @@ internal static partial class ModuleIds
         switch (key)
         {
             case "timeline":
-                var timeline = TimelineParser.Parse(LineDocument.Parse(text));
+                TimelineModel timeline;
+                try
+                {
+                    timeline = TimelineParser.Parse(LineDocument.Parse(text));
+                }
+                catch (YamlException)
+                {
+                    // A body YamlDotNet refuses, such as one with a key written twice, is one the
+                    // module reads nothing of: it reports timeline.unparseable. The binding may
+                    // still read it, which is then a listed divergence.
+                    break;
+                }
+
                 foreach (var element in timeline.Elements.Where(e => e.Id.Length > 0)) Add(ids, element.IsPeriod ? "Period" : "Moment", element.Id);
                 foreach (var connection in timeline.Connections.Where(c => c.Id.Length > 0)) Add(ids, "Connection", connection.Id);
                 break;
