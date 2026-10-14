@@ -28,6 +28,13 @@ public sealed record DislModel(DislDiagram Diagram, IReadOnlyList<Finding> Findi
 /// <b>A value is typed by its attribute</b> (<see cref="DislValues.TryFromRead"/>): one that does not
 /// fit stays unset, so it reads as its default, as the code it replaces falls back.
 /// </para>
+/// <para>
+/// <b>Under the <c>natural</c> strategy a type's <c>prefix</c> is applied</b> (§11.5, §11.5.1): an
+/// element of a type that declares one has that prefix followed by its natural id - the id a node
+/// was read with, or for a relation read without an id its ends as read joined by <c>|</c> - and an
+/// element of a type that declares none keeps the id it was read with. A relation's ends are found
+/// by the ids they were read with, and kept as read in <c>SourceId</c> and <c>TargetId</c>.
+/// </para>
 /// </remarks>
 public static class DislModelBuilder
 {
@@ -55,6 +62,7 @@ public static class DislModelBuilder
         var map = DislTypeMap.Of(specification);
         var metamodel = specification.Metamodel;
         var built = new Dictionary<FblElement, DislElement>(ReferenceEqualityComparer.Instance);
+        var byReadId = new Dictionary<string, DislElement>(StringComparer.Ordinal);
         var pending = new List<(FblElement Element, DislTypeMapping Mapping, DislType Type)>();
 
         foreach (var element in reading.Elements)
@@ -94,7 +102,7 @@ public static class DislModelBuilder
             var attributes = Attributes(element, mapping, type, metamodel, out var host, out var ends);
             var sourceId = ends.GetValueOrDefault("source") ?? element.Source;
             var targetId = ends.GetValueOrDefault("target") ?? element.Target;
-            diagram.Add(new DislElement(diagram, type, element.Id, attributes)
+            diagram.Add(new DislElement(diagram, type, NaturalId(specification, type, element, sourceId, targetId), attributes)
             {
                 Source = End(sourceId),
                 Target = End(targetId),
@@ -116,7 +124,7 @@ public static class DislModelBuilder
                 ? Node(owner.Element, owner.Mapping, owner.Type)
                 : null;
             var attributes = Attributes(element, mapping, type, metamodel, out var host, out _);
-            var node = diagram.Add(new DislElement(diagram, type, element.Id, attributes)
+            var node = diagram.Add(new DislElement(diagram, type, NaturalId(specification, type, element, null, null), attributes)
             {
                 Parent = parent,
                 Slot = parent is null ? null : element.ParentSlot,
@@ -125,12 +133,26 @@ public static class DislModelBuilder
                 IdIsStored = element.IdIsStored,
             });
             built[element] = node;
+            byReadId.TryAdd(element.Id, node);
             return node;
         }
 
         // A relation end names a stored id (an FBL reference by id) or an FBL element's id, which is the
-        // node's; the first element with it keeps it (§11.5.4).
-        DislElement? End(string? id) => id is null ? null : diagram.ElementById(id);
+        // node's as it was read; the first element with it keeps it (§11.5.4).
+        DislElement? End(string? id) => id is null ? null : byReadId.GetValueOrDefault(id) ?? diagram.ElementById(id);
+    }
+
+    /// <summary>
+    /// The id of <paramref name="element"/>: under the <c>natural</c> strategy, the prefix its type
+    /// declares followed by its natural id (§11.5.1) - a relation read without an id is named by its
+    /// ends as read, joined by <c>|</c> - and otherwise, or without a prefix, the id it was read with.
+    /// </summary>
+    private static string NaturalId(DislSpecification specification, DislType type, FblElement element, string? sourceId, string? targetId)
+    {
+        if (specification.IdRuleOf(type.Name) is not { Strategy: "natural", Prefix: { } prefix }) return element.Id;
+        return type.IsRelation && !element.IdIsStored
+            ? prefix + sourceId + "|" + targetId
+            : prefix + element.Id;
     }
 
     /// <summary>

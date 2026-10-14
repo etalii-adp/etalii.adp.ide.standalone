@@ -109,7 +109,12 @@ public sealed record DislFunctionDeclaration(
 /// <summary>An id rule (DISL §11.5): how ids are made, for every type or for one.</summary>
 /// <param name="Strategy">The strategy, <c>uuid-v7</c> when none is declared.</param>
 /// <param name="Expression">The CEL of the <c>cel</c> and <c>derived</c> strategies; null for the others.</param>
-public sealed record DislIdRule(string Strategy, string? Expression);
+/// <param name="Prefix">
+/// The prefix the rule gives the type it was asked for (<c>prefix</c>, a string or, at the top level, a
+/// map by type): the type's own rule's, else the top level's for the type or the nearest type in its
+/// linearisation; null when none is declared.
+/// </param>
+public sealed record DislIdRule(string Strategy, string? Expression, string? Prefix = null);
 
 /// <summary>A compiled expression of the specification: where it is, the context it was compiled in (§12.3), and its program.</summary>
 public sealed record DislExpression(string Pointer, string Context, CelProgram Program);
