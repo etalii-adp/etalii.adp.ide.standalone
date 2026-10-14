@@ -401,6 +401,16 @@ public sealed class WardleyContextPropertyProviderTests : IDisposable
     }
 
     [Fact]
+    public async Task SettingInertiaToWhatItIs_KeepsIt_RatherThanFlippingIt()
+    {
+        // Act.
+        await Set(IdOf("Kettle"), WardleyContextPropertyProvider.InertiaPropertyId, "true");
+
+        // Assert.
+        Assert.Contains("inertia", await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task EmptyingTheEvolveRow_ClearsTheStatement()
     {
         // Act. The row's own way of saying "this is no longer heading anywhere".

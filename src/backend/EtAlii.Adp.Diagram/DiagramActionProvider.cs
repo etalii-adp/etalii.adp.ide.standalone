@@ -131,14 +131,15 @@ public abstract class DiagramActionProvider<TBody, TModel> : IContextActionProvi
     /// <summary>
     /// The actions <paramref name="elementId"/> offers in <paramref name="entry"/>: an element, empty
     /// canvas, a drop or a finished gesture. Executing an action by id only finds actions its target
-    /// discovers.
+    /// discovers. None by default, for a module that overrides the overload given the target instead.
     /// </summary>
-    protected abstract IReadOnlyList<ContextActionGroupDefinition> Discover(DocumentEntry<TBody, TModel> entry, string elementId);
+    protected virtual IReadOnlyList<ContextActionGroupDefinition> Discover(DocumentEntry<TBody, TModel> entry, string elementId) => [];
 
     /// <summary>
     /// The actions <paramref name="target"/> offers in <paramref name="entry"/>: those its element
     /// offers, by default. A module whose actions depend on the connection as well, such as what
-    /// it has open, adds those here.
+    /// it has open, adds those here, and one whose elements are known by more than the model, such
+    /// as ids kept beside each document, answers here alone.
     /// </summary>
     protected virtual IReadOnlyList<ContextActionGroupDefinition> Discover(ContextTarget target, DocumentEntry<TBody, TModel> entry)
     {
@@ -171,6 +172,28 @@ public abstract class DiagramActionProvider<TBody, TModel> : IContextActionProvi
 
         var result = await _historyStacks.Get(target.RootPath).ExecuteAsync(command, cancellationToken);
         return result.IsSuccess ? new ContextExecutionCompleted() : new ContextExecutionFailed(result.Error);
+    }
+
+    /// <summary>
+    /// Runs <paramref name="action"/> on <paramref name="subject"/>: asks what it asks first, or asks the
+    /// user to confirm what goes with it, or dispatches its command at once.
+    /// </summary>
+    protected async ValueTask<ContextExecutionResult> RunActionAsync<TSubject>(
+        ContextTarget target,
+        DiagramAction<TSubject> action,
+        TSubject subject,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(action);
+
+        if (action.Ask(subject) is { } asked)
+        {
+            return asked;
+        }
+
+        return action.Command(subject, "") is { } command
+            ? await RemoveAsync(target, command, action.Confirm(subject), cancellationToken)
+            : new ContextExecutionFailed($"'{action.Id}' does not apply to this selection.");
     }
 
     /// <summary>
