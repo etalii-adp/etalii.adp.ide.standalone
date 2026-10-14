@@ -408,30 +408,11 @@ public sealed class SupplyChainLayout
     /// </summary>
     private static Dictionary<string, int> Layers(IReadOnlyList<SupplyChainNode> nodes, Dictionary<string, List<string>> forward)
     {
-        var incoming = nodes.ToDictionary(node => node.Id, _ => 0, StringComparer.Ordinal);
-        foreach (var targets in forward.Values)
-        {
-            foreach (var target in targets)
-            {
-                incoming[target]++;
-            }
-        }
-
-        var layer = nodes.ToDictionary(node => node.Id, node => SupplyChainNodeTypes.RankOf(node.Type), StringComparer.Ordinal);
-        var ready = new Queue<string>(nodes.Where(node => incoming[node.Id] == 0).Select(node => node.Id));
-        while (ready.Count > 0)
-        {
-            var id = ready.Dequeue();
-            foreach (var target in forward[id])
-            {
-                layer[target] = Math.Max(layer[target], layer[id] + 1);
-                if (--incoming[target] == 0)
-                {
-                    ready.Enqueue(target);
-                }
-            }
-        }
-
-        return layer;
+        var stage = nodes.ToDictionary(node => node.Id, node => SupplyChainNodeTypes.RankOf(node.Type), StringComparer.Ordinal);
+        return Layering.LongestPath(
+            nodes.Select(node => node.Id),
+            forward.SelectMany(pair => pair.Value.Select(target => (pair.Key, target))),
+            CyclePolicy.Kahn,
+            id => stage[id]);
     }
 }
