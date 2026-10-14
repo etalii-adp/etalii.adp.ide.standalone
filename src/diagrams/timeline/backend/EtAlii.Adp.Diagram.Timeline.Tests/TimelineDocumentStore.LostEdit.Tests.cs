@@ -1,3 +1,4 @@
+using EtAlii.Adp.Diagram.Timeline.Tests.Parity;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -18,7 +19,7 @@ namespace EtAlii.Adp.Diagram.Timeline.Tests;
 /// </para>
 /// <para>
 /// <b>The window is real and it was in <c>Save</c>'s shape.</b> A command does
-/// <c>GetOrLoad</c> - splice through <c>TimelineWriter</c> - <c>Save</c>, and <c>Save(path)</c>
+/// <c>GetOrLoad</c> - splice - <c>Save</c>, and <c>Save(path)</c>
 /// used to call <c>GetOrLoad(path)</c> AGAIN rather than write an entry it was handed.
 /// <c>Reload</c> removes the cached entry, so a reload landing between those two steps meant the
 /// object the command spliced was no longer the object that got written, and the save persisted
@@ -54,7 +55,7 @@ public class TimelineDocumentStoreLostEditTests : IDisposable
     public async Task ASaveAfterAReload_WritesTheSpliceRatherThanTheFileItJustReread()
     {
         // Arrange: a document loaded and spliced in memory, exactly as SetTimelinePlacementCommandHandler
-        // does it - GetOrLoad, splice through TimelineWriter, then ask the store to save.
+        // did it when this was found - GetOrLoad, splice through TimelineWriter (the parity oracle now), then ask the store to save.
         var path = IoPath.Combine(_workspace, "plan.tml");
         await File.WriteAllTextAsync(path, Text, TestContext.Current.CancellationToken);
         var store = new TimelineDocumentStore();

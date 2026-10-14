@@ -1,9 +1,8 @@
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.Timeline;
 
-/// <summary>Carries out an add. The inverse is the removal of what was added.</summary>
+/// <summary>Carries out an add: one entry where the binding puts a new one, a period when it has an end.</summary>
 public sealed class AddTimelineElementCommandHandler(ITimelineDocumentStore documents)
     : TimelineEditHandler<AddTimelineElementCommand>(documents)
 {
@@ -28,7 +27,7 @@ public sealed class AddTimelineElementCommandHandler(ITimelineDocumentStore docu
     }
 
     /// <inheritdoc />
-    protected override EditOutcome Apply(LineDocument body, TimelineModel model, AddTimelineElementCommand command)
+    protected override EditOutcome Apply(TimelineBody body, TimelineModel model, AddTimelineElementCommand command)
     {
         if (TimelineEdits.ElementOf(model, command.Id) is not null)
         {
@@ -36,8 +35,7 @@ public sealed class AddTimelineElementCommandHandler(ITimelineDocumentStore docu
             return EditOutcome.Refused("An element with that id is already in this timeline.");
         }
 
-        TimelineWriter.InsertElement(body, model, command.Id, command.Label, command.Begin, command.End, command.Row);
-        return EditOutcome.UndoneBy(new RemoveTimelineElementCommand(command.BodyPath, command.Id));
+        return TimelineEdits.AddElement(body, command.Id, command.Label, command.Begin, command.End, command.Row);
     }
 
     private static bool Inverted(AddTimelineElementCommand command)

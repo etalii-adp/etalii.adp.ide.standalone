@@ -4,20 +4,8 @@
     {
       "finding": "B5",
       "fixture": "quoted-values.tml",
-      "observed": "set qvperiod timeline.label = \"Parity element\": the transcript writes @5 -1 +\"    label: Parity element\\r\\n\"; the binding writes @5 -1 +\"    label: 'Parity element'\\r\\n\" || set qvperiod timeline.begin = \"2026-01-05\": the transcript writes @6 -3 +\"    begin: 2026-01-05\\r\\n    end: 2026-03-20\\r\\n    row: 0\\r\\n\"; the binding writes @6 -1 +\"    begin: \\\"2026-01-05\\\"\\r\\n\" || set qvconn01 timeline.label = \"Parity relation\": the transcript writes @17 -1 +\"    label: Parity relation\\r\\n\"; the binding writes @17 -1 +\"    label: 'Parity relation'\\r\\n\"",
-      "reason": "Finding B5. The tool's writer replaces the whole line of a changed value with the key and a value quoted only where YAML needs it, so a trailing comment and the author's quotes are lost; setting a begin also rewrites the end and row lines, because the property is applied as a placement of all three. FBL replaces the value's span in its own style (FBL 6.3), so the comment and the quotes survive and a value set to what it already holds writes nothing. Behaviour change ruled by Q1's default: what FBL writes."
-    },
-    {
-      "finding": "B5",
-      "fixture": "trailing-comment.tml",
-      "observed": "set tcperiod timeline.label = \"Parity element\": the transcript writes @5 -1 +\"    label: Parity element\\r\\n\"; the binding writes @5 -1 +\"    label: Parity element   # what the phase is called\\r\\n\" || set tcperiod timeline.begin = \"2026-01-05\": the transcript writes @6 -3 +\"    begin: 2026-01-05\\r\\n    end: 2026-02-13\\r\\n    row: 0\\r\\n\"; the binding writes nothing || set tcconn01 timeline.label = \"Parity relation\": the transcript writes @17 -1 +\"    label: Parity relation\\r\\n\"; the binding writes @17 -1 +\"    label: Parity relation # why the one leads to the other\\r\\n\"",
-      "reason": "Finding B5. The tool's writer replaces the whole line of a changed value with the key and a value quoted only where YAML needs it, so a trailing comment and the author's quotes are lost; setting a begin also rewrites the end and row lines, because the property is applied as a placement of all three. FBL replaces the value's span in its own style (FBL 6.3), so the comment and the quotes survive and a value set to what it already holds writes nothing. Behaviour change ruled by Q1's default: what FBL writes."
-    },
-    {
-      "finding": "B6",
-      "fixture": "give-end.tml",
-      "observed": "commit timeline.give-end on gemoment = \"2100-01-01\": the transcript writes @5 -0 +\"    end: 2100-01-01\\r\\n\"; the binding writes @7 -0 +\"    end: 2100-01-01\\r\\n\"",
-      "reason": "Finding B6. The tool writes a given end directly after the entry's first line; FBL writes a new key where the binding's insert.keys order puts it, after begin. Behaviour change ruled by Q1's default: what FBL writes."
+      "observed": "set qvperiod timeline.row = \"3\": the transcript writes @8 -1 +\"    row: 3\\r\\n\"; the binding writes @8 -1 +\"    row: \\\"3\\\"\\r\\n\"",
+      "reason": "Finding B5, what is left of it once every edit is written through the module's binding (timeline-disl-fbl task 6): a label, a begin, an end and a relation's label are now written as the example binding writes them, in their own span and style with a trailing comment kept, and a value set to what it holds writes nothing. A row written quoted is not: the module's binding reads row as text (finding B13), and the library writes an int given to a slot read as text plain, where the example binding, which types the row, keeps the quotes. The tool wrote it plain before too."
     },
     {
       "finding": "B9",

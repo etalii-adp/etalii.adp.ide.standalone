@@ -1,9 +1,8 @@
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.Timeline;
 
-/// <summary>Carries out a connect. The inverse is the disconnection of what was connected.</summary>
+/// <summary>Carries out a connect: one relation entry; the first creates <c>connections:</c> at the end of the document.</summary>
 public sealed class ConnectTimelineElementsCommandHandler(ITimelineDocumentStore documents)
     : TimelineEditHandler<ConnectTimelineElementsCommand>(documents)
 {
@@ -15,7 +14,7 @@ public sealed class ConnectTimelineElementsCommandHandler(ITimelineDocumentStore
             : base.Execute(command);
 
     /// <inheritdoc />
-    protected override EditOutcome Apply(LineDocument body, TimelineModel model, ConnectTimelineElementsCommand command)
+    protected override EditOutcome Apply(TimelineBody body, TimelineModel model, ConnectTimelineElementsCommand command)
     {
         if (TimelineEdits.ElementOf(model, command.From) is null ||
             TimelineEdits.ElementOf(model, command.To) is null)
@@ -26,13 +25,6 @@ public sealed class ConnectTimelineElementsCommandHandler(ITimelineDocumentStore
             return EditOutcome.Refused("Both ends of a relation must be elements of this timeline.");
         }
 
-        // Whether the insert is about to create the connections: key, so the inverse can take
-        // the key back out and the undo return the file byte for byte.
-        var hadSection = TimelineWriter.HasConnectionsSection(body);
-
-        TimelineWriter.InsertConnection(body, model, command.Id, command.From, command.To, command.Label);
-
-        return EditOutcome.UndoneBy(new DisconnectTimelineConnectionCommand(
-            command.BodyPath, command.Id, RemoveEmptiedConnectionsSection: !hadSection));
+        return TimelineEdits.AddConnection(body, command.Id, command.From, command.To, command.Label);
     }
 }

@@ -20,8 +20,8 @@ internal sealed class TimelineTestDispatcher(ITimelineDocumentStore documents) :
             new AddTimelineElementCommandHandler(documents).ExecuteAsync(add, cancellationToken),
         RemoveTimelineElementCommand remove =>
             new RemoveTimelineElementCommandHandler(documents).ExecuteAsync(remove, cancellationToken),
-        RestoreLinesCommand<ITimelineDocumentStore> restore =>
-            new RestoreLinesCommandHandler<ITimelineDocumentStore>(documents).ExecuteAsync(restore, cancellationToken),
+        RestoreDocumentCommand<ITimelineDocumentStore> restore =>
+            new RestoreDocumentCommandHandler<ITimelineDocumentStore>(documents).ExecuteAsync(restore, cancellationToken),
         RenameTimelineElementCommand rename =>
             new RenameTimelineElementCommandHandler(documents).ExecuteAsync(rename, cancellationToken),
         ConnectTimelineElementsCommand connect =>

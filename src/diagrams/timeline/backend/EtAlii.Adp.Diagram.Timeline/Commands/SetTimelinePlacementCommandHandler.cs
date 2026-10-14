@@ -1,11 +1,10 @@
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.Timeline;
 
 /// <summary>
 /// Carries out a placement: locate against current state, refuse with a sentence when that
-/// fails, splice through <see cref="TimelineWriter"/>, report the inverse.
+/// fails, and set the begin, the end of a period and the row as one change.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -24,12 +23,12 @@ public sealed class SetTimelinePlacementCommandHandler(ITimelineDocumentStore do
     : TimelineEditHandler<SetTimelinePlacementCommand>(documents)
 {
     /// <inheritdoc />
-    protected override EditOutcome Apply(LineDocument body, TimelineModel model, SetTimelinePlacementCommand command)
+    protected override EditOutcome Apply(TimelineBody body, TimelineModel model, SetTimelinePlacementCommand command)
     {
         var element = TimelineEdits.ElementOf(model, command.ElementId);
         if (element is null)
         {
-            return EditOutcome.Refused("That element is no longer in this timeline.");
+            return EditOutcome.Refused(TimelineEdits.ElementGone);
         }
 
         if (InvertsTheElement(command))
@@ -38,25 +37,13 @@ public sealed class SetTimelinePlacementCommandHandler(ITimelineDocumentStore do
             return EditOutcome.Refused("An element cannot end before it begins.");
         }
 
-        var inverse = command with
-        {
-            Begin = element.Begin.Text,
-            End = element.End?.Text,
-            Row = element.Row,
-        };
-
-        // Each edit is a one-for-one line replace within the element's range, so the ranges the
-        // reading recorded stay valid between them and no re-parse is needed mid-command. SetEnd
-        // is skipped for a moment: a placement never gives an element an end it did not have -
-        // that is the context menu's action, not a drag's side effect (Requirement 7.5).
-        TimelineWriter.SetBegin(body, element, command.Begin);
-        if (command.End is not null && element.End is not null)
-        {
-            TimelineWriter.SetEnd(body, element, command.End);
-        }
-
-        TimelineWriter.SetRow(body, element, command.Row);
-        return EditOutcome.UndoneBy(inverse);
+        // The end is set only for a period: a placement never gives an element an end it did not
+        // have - that is the context menu's action, not a drag's side effect (Requirement 7.5). And
+        // only when it moves: an end written empty is the period's own, and setting it to what it
+        // holds would remove the key (the binding's empty: remove) and make the period a moment.
+        return command.End is not null && element.End is not null && !string.Equals(command.End, element.End.Text, StringComparison.Ordinal)
+            ? TimelineEdits.Set(body, element, ("begin", command.Begin), ("end", command.End), ("row", command.Row))
+            : TimelineEdits.Set(body, element, ("begin", command.Begin), ("row", command.Row));
     }
 
     /// <summary>

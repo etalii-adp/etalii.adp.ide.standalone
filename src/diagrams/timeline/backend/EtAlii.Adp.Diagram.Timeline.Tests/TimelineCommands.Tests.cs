@@ -331,6 +331,181 @@ public class TimelineCommandsTests : IDisposable
         Assert.Contains("# A comment the commands must never disturb.", await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken), StringComparison.Ordinal);
     }
 
+    private const string Commented = "timeline: 1\r\n" +
+        "elements:\r\n" +
+        "  - id: aaa\r\n" +
+        "    label: \"Kick-off\"   # what the phase is called\r\n" +
+        "    begin: 2026-01-05  # when it starts\r\n" +
+        "    end: 2026-02-13\r\n" +
+        "    row: 0\r\n" +
+        "  - id: bbb\r\n" +
+        "    label: Go/no-go\r\n" +
+        "    begin: 2026-02-16\r\n" +
+        "    row: 1\r\n" +
+        "connections:\r\n" +
+        "  # Why the one leads to the other.\r\n" +
+        "  - id: ccc\r\n" +
+        "    from: aaa\r\n" +
+        "    to: bbb\r\n" +
+        "    label: 'gates'   # the author's quotes\r\n" +
+        "  - id: ddd\r\n" +
+        "    from: bbb\r\n" +
+        "    to: aaa\r\n";
+
+    private const string WithoutConnections = "timeline: 1\r\n" +
+        "elements:\r\n" +
+        "  - id: aaa\r\n" +
+        "    label: Period\r\n" +
+        "    begin: 2026-01-05\r\n" +
+        "    end: 2026-02-13\r\n" +
+        "    row: 0\r\n" +
+        "  - id: bbb\r\n" +
+        "    label: Moment\r\n" +
+        "    begin: 2026-02-16\r\n" +
+        "    row: 1\r\n" +
+        "# Nothing is connected yet.\r\n";
+
+    private static string Fixture(params string[] path) =>
+        IoPath.Combine([AppContext.BaseDirectory, "Fixtures", .. path]);
+
+    [Fact]
+    public async Task ARenameOnALineWithATrailingComment_KeepsTheCommentAndTheQuotes()
+    {
+        // Arrange: Requirement 3.2, a changed value is its own span in its own style (Q1).
+        var path = Write(Commented);
+
+        // Act.
+        var result = await History.ExecuteAsync(new RenameTimelineElementCommand(path, "aaa", "Launch"), TestContext.Current.CancellationToken);
+
+        // Assert: only the value changed; the quotes and the comment the author wrote are still there.
+        Assert.True(result.IsSuccess, result.Error);
+        Assert.Equal(
+            Commented.Replace("label: \"Kick-off\"   #", "label: \"Launch\"   #", StringComparison.Ordinal),
+            await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task AGivenEnd_LandsAfterBegin()
+    {
+        // Arrange: Requirement 3.3, a new key goes where the binding's keys put it (Q1), not after
+        // the entry's first line.
+        var path = Write(Commented);
+
+        // Act.
+        var result = await History.ExecuteAsync(new SetTimelineEndCommand(path, "bbb", "2026-02-20"), TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.True(result.IsSuccess, result.Error);
+        Assert.Equal(
+            Commented.Replace("    begin: 2026-02-16\r\n", "    begin: 2026-02-16\r\n    end: 2026-02-20\r\n", StringComparison.Ordinal),
+            await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task ANewEntry_CopiesTheGapAfterTheDash_OfIndentationTml()
+    {
+        // Arrange: Requirement 3.3 and finding B7, a new entry is indented as the entries already
+        // there, the three spaces after the dash included.
+        var original = await File.ReadAllTextAsync(Fixture("indentation.tml"), TestContext.Current.CancellationToken);
+        var path = Write(original);
+
+        // Act.
+        var result = await History.ExecuteAsync(new AddTimelineElementCommand(path, "indent03", "Third", "2026-10-25", null, 2), TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.True(result.IsSuccess, result.Error);
+        Assert.Equal(
+            original.Replace(
+                "        row: 1\r\nconnections:",
+                "        row: 1\r\n    -   id: indent03\r\n        label: Third\r\n        begin: 2026-10-25\r\n        row: 2\r\nconnections:",
+                StringComparison.Ordinal),
+            await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task TheFirstElementOfFirstElementTml_OpensTheEmptySequence()
+    {
+        // Arrange: Requirement 3.4 and finding B4.
+        var path = Write(await File.ReadAllTextAsync(Fixture("findings", "first-element.tml"), TestContext.Current.CancellationToken));
+
+        // Act.
+        var result = await History.ExecuteAsync(new AddTimelineElementCommand(path, "first001", "First", "2026-01-01", "2026-01-31", 0), TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.True(result.IsSuccess, result.Error);
+        Assert.Equal(
+            "timeline: 1\r\nelements:\r\n  - id: first001\r\n    label: First\r\n    begin: 2026-01-01\r\n    end: 2026-01-31\r\n    row: 0\r\n",
+            await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task TheFirstRelation_CreatesTheConnectionsKeyAtTheEndOfTheDocument()
+    {
+        // Arrange: Requirement 3.4.
+        var path = Write(WithoutConnections);
+
+        // Act.
+        var result = await History.ExecuteAsync(new ConnectTimelineElementsCommand(path, "ccc", "aaa", "bbb", ""), TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.True(result.IsSuccess, result.Error);
+        Assert.Equal(
+            WithoutConnections + "connections:\r\n  - id: ccc\r\n    from: aaa\r\n    to: bbb\r\n",
+            await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task EveryEditUndone_RestoresTheBytes_ACreatedConnectionsKeyIncluded()
+    {
+        // Arrange: Requirement 3.6, an undo is the shared restore of the text before.
+        ICommand[] edits =
+        [
+            new RenameTimelineElementCommand("", "aaa", "Launch"),
+            new SetTimelinePlacementCommand("", "aaa", "2026-01-12", "2026-02-20", 2),
+            new SetTimelineEndCommand("", "bbb", "2026-02-20"),
+            new SetTimelineEndCommand("", "aaa", null),
+            new RelabelTimelineConnectionCommand("", "ccc", "holds up"),
+            new RelabelTimelineConnectionCommand("", "ccc", ""),
+            new DisconnectTimelineConnectionCommand("", "ccc"),
+            new RemoveTimelineElementCommand("", "aaa"),
+            new AddTimelineElementCommand("", "eee", "Added", "2026-03-01", null, 3),
+            new AddConnectedTimelineElementCommand("", "bbb", "fff", "ggg", "2026-03-10", "2026-03-20", 4),
+            new ArrangeTimelineCommand(""),
+        ];
+
+        foreach ((string original, ICommand edit) in edits.Select(edit => (Commented, edit)).Append((WithoutConnections, new ConnectTimelineElementsCommand("", "ccc", "aaa", "bbb", "first"))))
+        {
+            var path = Write(original);
+
+            // Act.
+            var result = await History.ExecuteAsync(At(edit, path), TestContext.Current.CancellationToken);
+            var undone = await History.UndoAsync(TestContext.Current.CancellationToken);
+
+            // Assert.
+            Assert.True(result.IsSuccess, $"{edit.GetType().Name}: {result.Error}");
+            Assert.True(undone.IsSuccess, $"{edit.GetType().Name}: {undone.Error}");
+            Assert.True(
+                original == await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken),
+                $"{edit.GetType().Name} undone did not put the bytes back:\n{await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken)}");
+        }
+    }
+
+    /// <summary><paramref name="edit"/>, naming the document at <paramref name="path"/>.</summary>
+    private static ICommand At(ICommand edit, string path) => edit switch
+    {
+        RenameTimelineElementCommand command => command with { BodyPath = path },
+        SetTimelinePlacementCommand command => command with { BodyPath = path },
+        SetTimelineEndCommand command => command with { BodyPath = path },
+        RelabelTimelineConnectionCommand command => command with { BodyPath = path },
+        DisconnectTimelineConnectionCommand command => command with { BodyPath = path },
+        RemoveTimelineElementCommand command => command with { BodyPath = path },
+        AddTimelineElementCommand command => command with { BodyPath = path },
+        AddConnectedTimelineElementCommand command => command with { BodyPath = path },
+        ConnectTimelineElementsCommand command => command with { BodyPath = path },
+        ArrangeTimelineCommand => new ArrangeTimelineCommand(path),
+        _ => throw new ArgumentOutOfRangeException(nameof(edit)),
+    };
+
     [Fact]
     public async Task AnEditOnAnUnparseableFile_IsRefusedAndTheFileUntouched()
     {
