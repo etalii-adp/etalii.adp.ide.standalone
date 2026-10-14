@@ -32,6 +32,22 @@ public class CausalLoopLayoutTests
     }
 
     /// <summary>
+    /// Finding A7: a name written twice is one variable, the first, and placing it does not throw.
+    /// </summary>
+    [Fact]
+    public void AVariableWrittenTwice_IsPlacedOnce()
+    {
+        // Arrange.
+        var model = Model("variable a \"First\"", "variable b \"B\"", "variable a \"Second\"", "link a -> b +");
+
+        // Act.
+        var boxes = CausalLoopLayout.Compute(model);
+
+        // Assert.
+        Assert.Equal(["a", "b"], boxes.Keys.Order(StringComparer.Ordinal));
+    }
+
+    /// <summary>
     /// Requirement 7.1's exact case. One variable is legitimately placed at the origin, and that
     /// has to stay tellable from a variable the layout never placed - which is why the layout
     /// returns a dictionary and callers ask rather than defaulting.

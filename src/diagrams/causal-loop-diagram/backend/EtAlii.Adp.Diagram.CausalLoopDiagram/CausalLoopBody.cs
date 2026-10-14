@@ -162,13 +162,17 @@ public sealed class CausalLoopBody : ITextBody<CausalLoopBody>
 
     /// <summary>
     /// What the binding reads, as the module's model: the variables, links and loops in document order,
-    /// each with the line it is on, and every name as written without its quotes.
+    /// each with the line it is on, and every name as written without its quotes; a loop with what the
+    /// definition derives of it, its computed polarity and whether its identifier disagrees with it.
     /// </summary>
     public CausalLoopModel Read()
     {
         var variables = new List<CausalLoopVariable>();
         var links = new List<CausalLoopLink>();
         var loops = new List<CausalLoopLoop>();
+
+        // Every loop the binding reads is one Loop of the DISL model, in the same order.
+        using var derived = Disl.Diagram.NodesOfType("Loop").GetEnumerator();
         foreach (var element in Model.Elements)
         {
             var lines = new LineRange(element.Line - 1, element.Line - 1);
@@ -194,11 +198,21 @@ public sealed class CausalLoopBody : ITextBody<CausalLoopBody>
                         lines));
                     break;
                 case "Loop":
+                    var loop = derived.MoveNext() ? derived.Current : null;
                     loops.Add(new CausalLoopLoop(
                         TextOf(element, "identifier"),
                         TextOf(element, "title"),
                         element.Attributes.GetValueOrDefault("members") is IEnumerable<object?> members ? [.. members.Select(member => Unquoted(member as string ?? ""))] : [],
-                        lines));
+                        lines)
+                    {
+                        Computed = (loop?.ValueOf("computed") as string) switch
+                        {
+                            "reinforcing" => LoopPolarityResult.Reinforcing,
+                            "balancing" => LoopPolarityResult.Balancing,
+                            _ => LoopPolarityResult.Undecidable,
+                        },
+                        Disagrees = loop?.ValueOf("disagrees") is true,
+                    });
                     break;
             }
         }

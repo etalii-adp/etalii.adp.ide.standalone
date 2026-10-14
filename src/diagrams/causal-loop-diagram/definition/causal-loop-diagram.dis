@@ -402,7 +402,7 @@
             "line": { "routing": "curved", "curvature": -0.2, "bendpoints": { "editable": false } } }
         ],
         "sourceMarker": "none",
-        "targetMarker": "arrow",
+        "targetMarker": "arrowFilled",
         "anchoring": { "source": { "mode": "outline" }, "target": { "mode": "outline" } },
         "selfLoop": { "shape": "arc", "size": 26, "side": "top" },
         "midMarkers": [
