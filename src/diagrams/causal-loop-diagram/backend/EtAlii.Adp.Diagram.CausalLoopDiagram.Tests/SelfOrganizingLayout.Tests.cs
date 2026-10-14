@@ -1,7 +1,7 @@
-using EtAlii.Adp.Layout;
 using System.Diagnostics;
 using System.Globalization;
 using System.Text;
+using EtAlii.Adp.Layout;
 using Xunit;
 using IoPath = System.IO.Path;
 

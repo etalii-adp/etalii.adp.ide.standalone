@@ -1,5 +1,5 @@
-using EtAlii.Adp.Layout;
 using System.Runtime.CompilerServices;
+using EtAlii.Adp.Layout;
 
 namespace EtAlii.Adp.Diagram.SupplyChain;
 
