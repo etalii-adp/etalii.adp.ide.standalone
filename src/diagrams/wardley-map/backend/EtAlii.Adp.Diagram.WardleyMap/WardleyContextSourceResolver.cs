@@ -1,4 +1,5 @@
 using EtAlii.Adp.Context;
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Hierarchy;
 using Google.Protobuf;
@@ -72,7 +73,7 @@ public sealed class WardleyContextSourceResolver : IContextSourceResolver
             return Rejected("The selected file is not a Wardley map.");
         }
 
-        var map = WardleyParser.Parse(_documents.GetOrLoad(bodyPath));
+        var map = _documents.GetOrLoad(bodyPath).Model;
         var identities = _documents.Identities(bodyPath);
         var elementId = id.ElementId.Value;
 
@@ -167,7 +168,7 @@ public sealed class WardleyContextSourceResolver : IContextSourceResolver
         _documents.Changed += OnChanged;
         return new CallbackDisposable(() => _documents.Changed -= OnChanged);
 
-        void OnChanged(object? sender, WardleyDocumentChangedEventArgs args)
+        void OnChanged(object? sender, DocumentChangedEventArgs args)
         {
             if (!string.Equals(args.Path, bodyPath, StringComparison.OrdinalIgnoreCase))
             {
@@ -176,7 +177,7 @@ public sealed class WardleyContextSourceResolver : IContextSourceResolver
 
             // Re-read rather than carrying the previous reading: the change may have been an
             // external edit, and a rename keeps the id while changing everything shown.
-            var map = WardleyParser.Parse(_documents.GetOrLoad(bodyPath));
+            var map = _documents.GetOrLoad(bodyPath).Model;
             var description = WardleyElementDescriptions.Of(map, _documents.Identities(bodyPath), elementId);
             onChange(description?.Path);
         }

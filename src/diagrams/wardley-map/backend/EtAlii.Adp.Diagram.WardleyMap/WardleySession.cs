@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 using Serilog;
 
@@ -166,13 +167,13 @@ public sealed class WardleySession : IDiagramSession
     /// </summary>
     private IReadOnlyList<DiagramElement> Visible()
     {
-        var map = WardleyParser.Parse(_documents.GetOrLoad(_bodyPath));
+        var map = _documents.GetOrLoad(_bodyPath).Model;
         return _mapper.Visible(map, _documents.Identities(_bodyPath), _viewport);
     }
 
     private IReadOnlyList<DiagramDelta> Groups()
     {
-        var map = WardleyParser.Parse(_documents.GetOrLoad(_bodyPath));
+        var map = _documents.GetOrLoad(_bodyPath).Model;
         return _mapper.Group(map, _documents.Identities(_bodyPath));
     }
 
@@ -180,7 +181,7 @@ public sealed class WardleySession : IDiagramSession
     /// A save from any connection, or an edit made outside ADP, arrives here and goes out as the
     /// difference from what this connection was last sent (Requirement 10.7).
     /// </summary>
-    private void OnDocumentChanged(object? sender, WardleyDocumentChangedEventArgs args)
+    private void OnDocumentChanged(object? sender, DocumentChangedEventArgs args)
     {
         if (!string.Equals(args.Path, _bodyPath, StringComparison.OrdinalIgnoreCase))
         {

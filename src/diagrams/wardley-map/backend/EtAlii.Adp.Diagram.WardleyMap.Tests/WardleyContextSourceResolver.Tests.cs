@@ -167,7 +167,7 @@ public sealed class WardleyContextSourceResolverTests : IDisposable
         // Arrange. Two descriptions of one element that could drift apart is exactly the defect
         // this shares the mapper to avoid.
         var identities = _documents.Identities(_body);
-        var map = WardleyParser.Parse(_documents.GetOrLoad(_body));
+        var map = _documents.GetOrLoad(_body).Model;
         var elementId = IdOf(WardleyIdentityKind.Component, "Cup of Tea");
         var streamed = new WardleyElementMapper(new WardleyIdentities())
             .Elements(map, identities)
@@ -265,7 +265,7 @@ public sealed class WardleyContextSourceResolverTests : IDisposable
         using var subscription = _resolver.Track(ShortGuid.NewShortGuid(), _root, level, path => announced = path);
 
         // Act.
-        var document = _documents.GetOrLoad(_body);
+        var document = _documents.GetOrLoad(_body).Document;
         WardleyWriter.RemoveLine(document, WardleyParser.Parse(document).Components.Single(c => c.Name == "Power").Line);
         _documents.Save(_body, document);
 
@@ -283,7 +283,7 @@ public sealed class WardleyContextSourceResolverTests : IDisposable
         using var subscription = _resolver.Track(ShortGuid.NewShortGuid(), _root, level, path => announced = path);
 
         // Act.
-        var document = _documents.GetOrLoad(_body);
+        var document = _documents.GetOrLoad(_body).Document;
         WardleyWriter.Rename(document, WardleyParser.Parse(document), "Power", "Mains Power");
         _documents.Rekey(_body, WardleyIdentityKind.Component, "Power", "Mains Power");
         _documents.Save(_body, document);

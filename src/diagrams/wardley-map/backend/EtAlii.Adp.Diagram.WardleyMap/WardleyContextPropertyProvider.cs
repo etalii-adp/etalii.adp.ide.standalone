@@ -114,7 +114,7 @@ public sealed class WardleyContextPropertyProvider : IContextPropertyProvider
             return None();
         }
 
-        var map = WardleyParser.Parse(_documents.GetOrLoad(target.ResolvedFullPath));
+        var map = _documents.GetOrLoad(target.ResolvedFullPath).Model;
         var entry = _documents
             .Identities(target.ResolvedFullPath)
             .FirstOrDefault(candidate => candidate.Id == target.ElementId);
@@ -160,7 +160,7 @@ public sealed class WardleyContextPropertyProvider : IContextPropertyProvider
         }
 
         var bodyPath = target.ResolvedFullPath;
-        var map = WardleyParser.Parse(_documents.GetOrLoad(bodyPath));
+        var map = _documents.GetOrLoad(bodyPath).Model;
         var entry = _documents.Identities(bodyPath).FirstOrDefault(candidate => candidate.Id == target.ElementId);
         if (entry is null)
         {

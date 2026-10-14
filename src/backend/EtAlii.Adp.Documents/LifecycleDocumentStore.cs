@@ -53,7 +53,13 @@ public abstract class LifecycleDocumentStore<TBody, TModel> : IDiagramDocumentSt
                 $"{IoPath.GetFileName(path)} could not be read, so it was not written: {current.Unreadable}");
         }
 
-        var result = _lifecycle.Save(path, Entry(document));
+        var entry = Entry(document);
+        var result = _lifecycle.Save(path, entry);
+        if (!result.Failed)
+        {
+            result = Kept(result, Saved(path, entry));
+        }
+
         OnChanged(path);
         return result;
     }
@@ -114,6 +120,7 @@ public abstract class LifecycleDocumentStore<TBody, TModel> : IDiagramDocumentSt
 
         if (!result.Failed)
         {
+            result = Kept(result, Saved(path, _lifecycle.GetOrLoad(path)));
             OnChanged(path);
         }
 
@@ -125,6 +132,7 @@ public abstract class LifecycleDocumentStore<TBody, TModel> : IDiagramDocumentSt
     {
         if (_lifecycle.Reload(path))
         {
+            Installed(path);
             OnChanged(path);
         }
     }
@@ -134,12 +142,14 @@ public abstract class LifecycleDocumentStore<TBody, TModel> : IDiagramDocumentSt
     {
         if (_lifecycle.BodyDeleted(path))
         {
+            Installed(path);
             OnChanged(path);
         }
     }
 
     /// <inheritdoc />
-    public void Forget(string path) => _lifecycle.Forget(path);
+    /// <remarks>A module that keeps something beside a document forgets it here too, and calls this.</remarks>
+    public virtual void Forget(string path) => _lifecycle.Forget(path);
 
     /// <summary>The body a text reads as; an empty text is a new, empty document.</summary>
     protected abstract TBody Read(string text);
@@ -156,6 +166,29 @@ public abstract class LifecycleDocumentStore<TBody, TModel> : IDiagramDocumentSt
     /// </summary>
     /// <remarks>Empty unless the module says otherwise: most parsers read any text, reporting what they pass over.</remarks>
     protected virtual string UnreadableOf(TBody body) => "";
+
+    /// <summary>
+    /// What a module keeps beside a document, brought up to date with <paramref name="entry"/>, the
+    /// entry a save of <paramref name="path"/> just wrote, before the sessions hear of it. Empty when
+    /// all of it was kept, otherwise a warning the save carries to the user: the document landed and
+    /// something beside it did not.
+    /// </summary>
+    /// <remarks>Nothing is kept beside a document unless the module says otherwise.</remarks>
+    protected virtual string Saved(string path, DocumentEntry<TBody, TModel> entry) => "";
+
+    /// <summary>
+    /// What a module keeps beside a document, brought up to date with the entry a reload or a
+    /// deletion of <paramref name="path"/> just installed, before the sessions hear of it.
+    /// </summary>
+    protected virtual void Installed(string path)
+    {
+    }
+
+    /// <summary><paramref name="result"/>, carrying <paramref name="warning"/> as well as any warning of its own.</summary>
+    private static DocumentSaveResult Kept(DocumentSaveResult result, string warning) =>
+        warning.Length == 0
+            ? result
+            : DocumentSaveResult.WithWarning(result.Warning.Length == 0 ? warning : $"{result.Warning} {warning}");
 
     private DocumentEntry<TBody, TModel> Entry(TBody body) => new(body, Rebuild(body));
 

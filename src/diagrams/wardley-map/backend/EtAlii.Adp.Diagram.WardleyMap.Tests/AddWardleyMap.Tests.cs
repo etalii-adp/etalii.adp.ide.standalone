@@ -35,7 +35,7 @@ public sealed class AddWardleyMapTests : IDisposable
     {
         // Act and assert. Requirement 12.3 lists eight; this is the list.
         Assert.Single(_services.GetServices<IDiagramDocumentFactory>().OfType<WardleyDocumentFactory>());
-        Assert.Single(_services.GetServices<IDiagramSessionFactory>().OfType<WardleySessionFactory>());
+        Assert.Single(_services.GetServices<IDiagramSessionFactory>(), factory => factory.Origin == Diagram.WardleyMap.Origin);
         Assert.Single(_services.GetServices<IContextSourceResolver>().OfType<WardleyContextSourceResolver>());
         Assert.Single(_services.GetServices<IContextActionProvider>().OfType<WardleyContextActionProvider>());
         Assert.Single(_services.GetServices<IDiagramToolboxProvider>().OfType<WardleyToolboxProvider>());
@@ -49,7 +49,7 @@ public sealed class AddWardleyMapTests : IDisposable
     {
         // Act and assert. Core resolves each of these BY ORIGIN, so a seam answering for the
         // wrong one - or for none - is a module core cannot find.
-        Assert.Equal(Diagram.WardleyMap.Origin, _services.GetServices<IDiagramSessionFactory>().OfType<WardleySessionFactory>().Single().Origin);
+        Assert.Single(_services.GetServices<IDiagramDocumentReloader>(), reloader => reloader.Origin == Diagram.WardleyMap.Origin);
         Assert.Equal(Diagram.WardleyMap.Origin, _services.GetServices<IDiagramToolboxProvider>().OfType<WardleyToolboxProvider>().Single().Origin);
         Assert.Equal(Diagram.WardleyMap.Origin, _services.GetServices<IDiagramValidator>().OfType<WardleyValidator>().Single().Origin);
         Assert.Equal(Diagram.WardleyMap.Origin, _services.GetServices<IDiagramDocumentFactory>().OfType<WardleyDocumentFactory>().Single().Origin);

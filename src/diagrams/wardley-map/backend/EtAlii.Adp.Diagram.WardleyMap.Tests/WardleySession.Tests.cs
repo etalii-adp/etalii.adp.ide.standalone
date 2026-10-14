@@ -199,7 +199,7 @@ public sealed class WardleySessionTests : IDisposable
     /// <summary>What a viewport admits, asked of the mapper directly.</summary>
     private IReadOnlyList<DiagramElement> Visible(string path, DiagramViewport viewport)
     {
-        var map = WardleyParser.Parse(_documents.GetOrLoad(path));
+        var map = _documents.GetOrLoad(path).Model;
         return _mapper.Visible(map, _documents.Identities(path), viewport);
     }
 
