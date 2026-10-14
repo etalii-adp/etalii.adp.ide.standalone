@@ -74,7 +74,11 @@
    reaches only what it draws itself. An adorner left in the base colour reads as not belonging
    to the selected link, which is the defect this used to prevent by cascade. */
 
-/* The loop badge, among the variables it runs through. */
+/* The loop badge, among the variables it runs through. A loop whose label disagrees with its arrows
+   has its caption underlined wavy - marked rather than corrected, since the reading does not know
+   whether the label or an arrow is the mistake. The library draws that wave (`labelUnderline` in
+   cldBindings.ts) in the caption's own colour, so no rule here paints it: `text-decoration: underline
+   wavy`, which this file used to say, is drawn straight on SVG text by Chromium. */
 .causal-loop-badge {
   font-size: 12px;
   font-weight: 600;
@@ -91,14 +95,6 @@
 
 .causal-loop-undecidable {
   fill: var(--color-text-muted, #64748b);
-}
-
-/*
- * A loop whose label disagrees with its arrows. Marked rather than corrected: the reading does
- * not know whether the label or an arrow is the mistake, so it shows that there is one.
- */
-.causal-loop-disagrees .causal-loop-badge {
-  text-decoration: underline wavy;
 }
 
 /* The loop marker: a curved arrow encircling the identifier at the loop's centre. */

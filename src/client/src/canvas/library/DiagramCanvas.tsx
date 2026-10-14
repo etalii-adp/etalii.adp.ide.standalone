@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, Component, type ReactNode } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, Component, Fragment, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { create } from "@bufbuild/protobuf";
 import { ToolboxItemSchema, type ToolboxItem } from "@client/generated/diagrams_pb";
@@ -38,7 +38,8 @@ import { StyledBoxElement } from "../elements/styled-box/StyledBoxElement";
 import { SymbolElement } from "../elements/symbol/SymbolElement";
 import { InlineLabelEditor, type InlineLabelEditorProps } from "../label/InlineLabelEditor";
 import { asideLabelPlacement, beforeLabelPlacement, centredLabelPlacement, insetLabelPlacement, midpointLabelPlacement } from "../label/labelPlacement";
-import { BEFORE_GAP, labelKey, layoutLabels, wrappedLabelRegion } from "./definition/labels";
+import { BEFORE_GAP, labelKey, layoutLabels, wrappedLabelRegion, type LaidOutLabel } from "./definition/labels";
+import { wavyUnderlinePath } from "./definition/wavyUnderline";
 import { resolveDecorations, type ResolvedDecoration } from "./definition/decorations";
 import { resolveBackground } from "./definition/background";
 import { actionForGesture, actionForKey, flagOf, type ElementGesture } from "./definition/actions";
@@ -3171,35 +3172,90 @@ function declaredLabels(type: ElementTypeDefinition, bounds: ConnectorBox, sourc
   // reader sees. A label naming its own colour keeps it: the declaration is more specific than
   // the element's, so it wins.
   const inherited = resolveBound(type.boundStyle?.labelColor, source);
-  return lines.map((line) => (
-    <text
-      key={labelKey(line)}
-      className={["library-element-label", line.className].filter(Boolean).join(" ")}
-      x={line.x}
-      y={line.y}
-      style={{
-        // THE ANCHOR TRAVELS WITH THE X IT WAS COMPUTED FOR, AS AN INLINE STYLE, ALWAYS. The
-        // layout places `start` at the left inset, `middle` at the centre and `end` at the right
-        // inset, so an anchor that differs from the layout's puts the text somewhere the layout
-        // never meant. This used to be a presentation ATTRIBUTE, written only when it differed
-        // from `middle`, on the belief that an attribute outranks a stylesheet - it is the other
-        // way round: an attribute loses to ANY author rule, even a single class. So the library's
-        // own `.library-element-label { text-anchor: middle }` centred every start- and end-aligned
-        // line on its inset, and a module rule (databricks' `text-anchor: start`) re-anchored the
-        // centred ones. Text ran out of its element on databricks, SHACL and azure-pipeline alike;
-        // eight modules declare start or end. An inline style outranks every class rule, which is
-        // what makes the layout's answer the one the browser draws.
-        textAnchor: line.anchor,
-        fontSize: line.typography?.fontSize,
-        fontWeight: line.typography?.fontWeight,
-        fontStyle: line.typography?.fontStyle,
-        fill: tokenColour(line.typography?.color ?? inherited),
-      }}
-    >
-      {line.tooltip ? <title>{line.tooltip}</title> : null}
-      {line.text}
-    </text>
-  ));
+  return lines.map((line) => {
+    const text = (
+      <text
+        key={labelKey(line)}
+        className={["library-element-label", line.className].filter(Boolean).join(" ")}
+        x={line.x}
+        y={line.y}
+        style={{
+          // THE ANCHOR TRAVELS WITH THE X IT WAS COMPUTED FOR, AS AN INLINE STYLE, ALWAYS. The
+          // layout places `start` at the left inset, `middle` at the centre and `end` at the right
+          // inset, so an anchor that differs from the layout's puts the text somewhere the layout
+          // never meant. This used to be a presentation ATTRIBUTE, written only when it differed
+          // from `middle`, on the belief that an attribute outranks a stylesheet - it is the other
+          // way round: an attribute loses to ANY author rule, even a single class. So the library's
+          // own `.library-element-label { text-anchor: middle }` centred every start- and end-aligned
+          // line on its inset, and a module rule (databricks' `text-anchor: start`) re-anchored the
+          // centred ones. Text ran out of its element on databricks, SHACL and azure-pipeline alike;
+          // eight modules declare start or end. An inline style outranks every class rule, which is
+          // what makes the layout's answer the one the browser draws.
+          textAnchor: line.anchor,
+          fontSize: line.typography?.fontSize,
+          fontWeight: line.typography?.fontWeight,
+          fontStyle: line.typography?.fontStyle,
+          fill: tokenColour(line.typography?.color ?? inherited),
+        }}
+      >
+        {line.tooltip ? <title>{line.tooltip}</title> : null}
+        {line.text}
+      </text>
+    );
+    if (line.underline === undefined) {
+      return text;
+    }
+
+    // The underline follows its text as the next sibling, which is how it finds the text to measure.
+    return (
+      <Fragment key={labelKey(line)}>
+        {text}
+        <WavyUnderline line={line} fill={tokenColour(line.typography?.color ?? inherited)} />
+      </Fragment>
+    );
+  });
+}
+
+/**
+ * The wavy line under a label (`LabelDeclaration.underline`), in the label's own classes and fill so
+ * it is painted in the label's colour by whatever paints the label.
+ *
+ * Its width is the text's as the browser lays it out - `getComputedTextLength` on the `<text>` just
+ * before it, at the font size the stylesheet gave it - and the library's estimate until that is known,
+ * or where it never is, as in a test's DOM. A label's font size is often a module's CSS rather than a
+ * declaration, so an estimate alone would draw a line too short or too long for a bold or larger face.
+ */
+function WavyUnderline({ line, fill }: { line: LaidOutLabel; fill: string | undefined }) {
+  const ref = useRef<SVGPathElement>(null);
+  const declaredSize = line.typography?.fontSize ?? LABEL_FONT_SIZE;
+  const [measured, setMeasured] = useState<{ width: number; fontSize: number } | undefined>(undefined);
+
+  useLayoutEffect(() => {
+    const text = ref.current?.previousElementSibling as (SVGTextContentElement & Element) | null | undefined;
+    const width = typeof text?.getComputedTextLength === "function" ? text.getComputedTextLength() : Number.NaN;
+    const drawnSize = text ? Number.parseFloat(getComputedStyle(text).fontSize) : Number.NaN;
+    const next = Number.isFinite(width) && width > 0 ? { width, fontSize: Number.isFinite(drawnSize) && drawnSize > 0 ? drawnSize : declaredSize } : undefined;
+    setMeasured((current) => (current?.width === next?.width && current?.fontSize === next?.fontSize ? current : next));
+  }, [line.text, declaredSize, line.className]);
+
+  const fontSize = measured?.fontSize ?? declaredSize;
+  const d = wavyUnderlinePath({
+    x: line.x,
+    baseline: line.y,
+    width: measured?.width ?? widthOf(line.text, fontSize),
+    anchor: line.anchor,
+    fontSize,
+  });
+  return (
+    <path
+      ref={ref}
+      className={["library-label-underline", line.className].filter(Boolean).join(" ")}
+      data-underline={line.underline}
+      d={d}
+      style={{ fill }}
+      aria-hidden
+    />
+  );
 }
 
 

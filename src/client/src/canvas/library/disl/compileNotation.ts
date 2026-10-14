@@ -14,6 +14,7 @@ import type {
   EndpointConstraint,
   FilterDeclaration,
   LabelDeclaration,
+  LabelUnderline,
   LayoutDefinition,
   LayoutMode,
   LinkDeclaration,
@@ -91,6 +92,11 @@ export interface NotationBindings {
   classNames: (type: string, node: DislNodeNotation) => readonly ClassDeclaration[];
   /** A label's class: a name, or a binding where the class follows the payload. */
   labelClassName?: (type: string, label: DislLabel) => string | Binding | undefined;
+  /**
+   * A line the library draws under a label, where DISL's text decoration cannot say its style: DISL
+   * has `underline` and no wavy form, and a stylesheet's wavy underline is drawn straight on SVG text.
+   */
+  labelUnderline?: (type: string, label: DislLabel) => LabelUnderline | undefined;
   /**
    * The path of each CEL term a list's row binds, within the row, keyed by the term as written.
    * `item.<attribute>` needs no entry: it is `<attribute>`.
@@ -777,6 +783,10 @@ class Compiler {
     const className = this.bindings.labelClassName?.(type, label);
     if (className !== undefined) {
       declaration.className = className;
+    }
+    const underline = this.bindings.labelUnderline?.(type, label);
+    if (underline !== undefined) {
+      declaration.underline = underline;
     }
     const editorBox = this.bindings.labelEditorBox?.(type, label);
     if (editorBox !== undefined) {

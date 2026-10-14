@@ -340,6 +340,28 @@ describe("CausalLoopCanvas", () => {
     expect(container.textContent).toContain("R1");
   });
 
+  it("underlines a disagreeing loop's caption with a drawn wave, and an agreeing one's not at all", () => {
+    // The stylesheet's `underline wavy` was drawn straight by Chromium on SVG text, so the mark read as
+    // an ordinary underline. The wave is a shape of its own now, under the caption, in its colour.
+    currentModel = modelOf(
+      variable("a", 0, 0),
+      variable("b", 200, 0),
+      loop("R1", ["a", "b"], { computed: LoopPolarityProto.BALANCING, disagrees: true }),
+      loop("B2", ["b", "a"], { computed: LoopPolarityProto.BALANCING }),
+    );
+
+    const { container } = renderCanvas();
+    const underlines = [...container.querySelectorAll<SVGPathElement>("path.library-label-underline")];
+
+    expect(underlines, "one underline, under the disagreeing loop").toHaveLength(1);
+    const [underline] = underlines;
+    expect(underline!.getAttribute("data-underline")).toBe("wavy");
+    expect(underline!.previousElementSibling?.textContent).toMatch(/^R1\b/);
+    // The caption's own classes, so its polarity colour paints the wave too.
+    expect([...underline!.classList]).toEqual(expect.arrayContaining(["causal-loop-badge", "causal-loop-balancing"]));
+    expect(underline!.getAttribute("d")).toMatch(/^M.* Q.* Z$/);
+  });
+
   it("draws thicker for a heavier weight, on a short ladder", () => {
     currentModel = modelOf(
       variable("a", 0, 0),

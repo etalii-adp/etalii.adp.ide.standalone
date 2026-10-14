@@ -39,6 +39,8 @@ export interface LaidOutLabel {
   lineIndex: number;
   /** Which of the declaration's `columns` drew it; absent for the line itself. */
   columnIndex?: number;
+  /** The line drawn under it, where the declaration's `underline` holds; never under a column. */
+  underline?: "wavy";
 }
 
 /**
@@ -374,6 +376,7 @@ export function layoutLabels(
     }
 
     const lines = entries.map((entry) => entry.text);
+    const underline = declaration.underline !== undefined && holds(declaration.underline.when, source) ? declaration.underline.style : undefined;
 
     if (declaration.wrap === true) {
       const typography = scaledTypography(declaration.typography, viewScale);
@@ -402,6 +405,7 @@ export function layoutLabels(
           tooltip: fitted.overflowed ? whole : (declaration.tooltip ? (resolveMany(declaration.tooltip, source)[0] ?? undefined) : undefined),
           declarationIndex,
           lineIndex,
+          ...(underline !== undefined ? { underline } : {}),
         });
       });
       return;
@@ -457,6 +461,7 @@ export function layoutLabels(
         tooltip,
         declarationIndex,
         lineIndex,
+        ...(underline !== undefined ? { underline } : {}),
       });
     });
   });

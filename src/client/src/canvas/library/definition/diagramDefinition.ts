@@ -533,6 +533,11 @@ export interface LabelDeclaration {
   truncate?: boolean;
   /** Conditional presence, replacing `badges.length > 0 ? … : null`. */
   when?: Condition;
+  /**
+   * A line drawn under the label, where its `when` holds (always, without one). See
+   * {@link LabelUnderline}.
+   */
+  underline?: LabelUnderline;
   /** The `<title>` every card renderer writes by hand. */
   tooltip?: Binding;
   /**
@@ -571,6 +576,20 @@ export interface LabelDeclaration {
    * `when`, no collection of its own and no editability.
    */
   columns?: readonly LabelColumn[];
+}
+
+/**
+ * A line the library draws under a label, as a shape of its own in the label's colour.
+ *
+ * <b>Only `wavy`, because only `wavy` needs drawing.</b> Chromium honours `text-decoration:
+ * underline` on SVG text but ignores its `text-decoration-style`, so a stylesheet's wavy underline
+ * comes out straight on the canvas; a straight one a stylesheet still draws. The wave's geometry is
+ * `wavyUnderline.ts`, and it spans the text's width as the browser measures it.
+ */
+export interface LabelUnderline {
+  style: "wavy";
+  /** When the line is drawn; always, without one. */
+  when?: Condition;
 }
 
 /** One further column on a label's line. See {@link LabelDeclaration.columns}. */

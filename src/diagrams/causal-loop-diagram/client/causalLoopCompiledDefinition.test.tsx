@@ -270,6 +270,7 @@ const HAND_WRITTEN: DiagramDefinition = assertValidDiagramDefinition({
         {
           text: { path: "payload.caption" },
           className: { template: "causal-loop-badge causal-loop-{payload.polarityWord}" },
+          underline: { style: "wavy", when: { path: "payload.disagrees", is: "true" } },
         },
       ],
       anchors: { kind: "edge" },
