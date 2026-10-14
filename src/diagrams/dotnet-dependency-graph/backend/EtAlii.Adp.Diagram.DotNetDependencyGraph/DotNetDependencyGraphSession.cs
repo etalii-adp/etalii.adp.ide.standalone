@@ -23,6 +23,12 @@ namespace EtAlii.Adp.Diagram.DotNetDependencyGraph;
 /// <b>Elements are draggable although the subject is read-only</b> (Requirement 6.5):
 /// arrangement is a view concern, not an edit to the solution.
 /// </para>
+/// <para>
+/// <b>What this connection holds is kept by <see cref="DiagramDocumentChangeHandler"/></b>, as
+/// every session's is (code-structure FR-031): the baseline, a viewport report, a change on disk,
+/// an explicit refresh and a history change all diff under its one lock against the one record of
+/// what was delivered.
+/// </para>
 /// </remarks>
 internal sealed class DotNetDependencyGraphSession : IDiagramSession
 {
@@ -41,10 +47,7 @@ internal sealed class DotNetDependencyGraphSession : IDiagramSession
     /// </summary>
     private readonly IDisposable? _watch;
 
-    private IReadOnlyList<DiagramElement> _delivered = [];
-
-    /// <summary>Guards <see cref="_delivered"/>; see <see cref="Rediff"/>.</summary>
-    private readonly Lock _deliveredGate = new();
+    private readonly DiagramDocumentChangeHandler _changes;
 
     public DotNetDependencyGraphSession(
         string solutionPath,
@@ -63,6 +66,7 @@ internal sealed class DotNetDependencyGraphSession : IDiagramSession
         _mapper = mapper;
         _registrationPath = registrationPath;
         _history = history;
+        _changes = new DiagramDocumentChangeHandler(_solutionPath, Render, Raise);
 
         // Claimed for the session's lifetime, so a second connection closing does not stop the
         // files this one shows being watched.
@@ -71,7 +75,7 @@ internal sealed class DotNetDependencyGraphSession : IDiagramSession
         {
             // Automatic, because the product capability is live pushed updates and every other
             // module behaves that way.
-            _watch = _store.Watch(_solutionPath, Push);
+            _watch = _store.Watch(_solutionPath, _ => Push());
         }
 
         // A position change arrives through the history, never through the watcher - see
@@ -84,11 +88,8 @@ internal sealed class DotNetDependencyGraphSession : IDiagramSession
 
     public IReadOnlyList<DiagramDelta> Baseline()
     {
-        lock (_deliveredGate)
-        {
-            _delivered = _mapper.Elements(_store.GetOrLoad(_solutionPath), Stored());
-            return _delivered.Count == 0 ? [] : [new DiagramAddDelta(_delivered)];
-        }
+        var elements = _changes.Deliver();
+        return elements.Count == 0 ? [] : [new DiagramAddDelta(elements)];
     }
 
     /// <summary>
@@ -97,30 +98,7 @@ internal sealed class DotNetDependencyGraphSession : IDiagramSession
     /// culling is a scale answer rather than a rendering one - task 13 measures this repository's
     /// own solution and decides what "too large to read" requires.
     /// </summary>
-    public IReadOnlyList<DiagramDelta> UpdateView(DiagramViewport viewport) => Rediff(_store.GetOrLoad(_solutionPath));
-
-    /// <summary>
-    /// Renders the graph with the positions the registration holds now, and returns what differs
-    /// from what was last delivered - recording the new rendering as delivered.
-    /// </summary>
-    /// <remarks>
-    /// One place, under one lock, because three callers write <see cref="_delivered"/> from three
-    /// threads: a view update on a request, a refresh on the watcher's, and a history change on
-    /// whichever request ran the command. Unlocked, two of them interleaving could each diff
-    /// against the other's stale "before" and one push would be lost - which, for a move, is
-    /// exactly the defect this class was just fixed for. The event is raised by the caller,
-    /// OUTSIDE the lock, as <c>HistoryStack</c> does: a subscriber that re-enters cannot deadlock.
-    /// </remarks>
-    private IReadOnlyList<DiagramDelta> Rediff(DependencyGraphModel graph)
-    {
-        lock (_deliveredGate)
-        {
-            var after = _mapper.Elements(graph, Stored());
-            var deltas = DiagramDiff.Between(_delivered, after);
-            _delivered = after;
-            return deltas;
-        }
-    }
+    public IReadOnlyList<DiagramDelta> UpdateView(DiagramViewport viewport) => _changes.Refresh();
 
     /// <summary>
     /// A command ran, or was undone or redone, somewhere in this project - so push whatever the
@@ -141,7 +119,7 @@ internal sealed class DotNetDependencyGraphSession : IDiagramSession
     /// could miss one of the three.
     /// </para>
     /// </remarks>
-    private void OnHistoryChanged(object? sender, EventArgs args) => Push(_store.GetOrLoad(_solutionPath));
+    private void OnHistoryChanged(object? sender, EventArgs args) => Push();
 
     /// <summary>
     /// Refused, always. The graph's shape is the solution's, and nothing on this canvas can be
@@ -199,17 +177,20 @@ internal sealed class DotNetDependencyGraphSession : IDiagramSession
     /// appear short of reopening the diagram. The cache-only decision therefore reaches past the
     /// property it was about, and this method is where that shows.
     /// </remarks>
-    public void Refresh() => Push(_store.Reload(_solutionPath));
-
-    /// <summary>Pushes what <paramref name="graph"/> changes of what was last delivered, if anything.</summary>
-    private void Push(DependencyGraphModel graph)
+    public void Refresh()
     {
-        var deltas = Rediff(graph);
-        if (deltas.Count > 0)
-        {
-            Changed?.Invoke(this, new DiagramDeltasEventArgs(deltas));
-        }
+        _store.Reload(_solutionPath);
+        Push();
     }
+
+    /// <summary>Pushes what the graph as the store now has it changes of what was last delivered, if anything.</summary>
+    private void Push() => _changes.OnDocumentChanged(_solutionPath);
+
+    /// <summary>What this connection should hold: the whole graph, with the positions the registration holds now.</summary>
+    private IReadOnlyList<DiagramElement> Render() => _mapper.Elements(_store.GetOrLoad(_solutionPath), Stored());
+
+    private void Raise(IReadOnlyList<DiagramDelta> deltas) =>
+        Changed?.Invoke(this, new DiagramDeltasEventArgs(deltas));
 
     /// <summary>
     /// The positions authored into the registration, or none when this diagram was opened
