@@ -47,23 +47,12 @@ public static class ServiceCollectionAddCausalLoopExtension
         services.AddDiagramDocumentReloader<ICausalLoopDocumentStore>(CausalLoopOrigin);
 
         // The starter body a new .cld is created with, registered because core refuses to start a
-        // host whose type declares an extension without one. A loop, not two loose variables: a new
-        // file should show what the type is for on the first open, and two variables feeding each
-        // other positively are the smallest honest reinforcing loop. Its R1 label is arithmetically
-        // correct (zero negative links is an even count), so the validator has nothing to say about a
-        // file the tool itself just wrote. The base name is not written: the format has no title line.
-        // CRLF, the house style, since a new file has no style of its own to keep.
-        services.AddEmptyDocument(
-            CausalLoopOrigin,
-            "causal-loop 1\r\n"
-            + "\r\n"
-            + "variable population \"Population\"\r\n"
-            + "variable births \"Births\"\r\n"
-            + "\r\n"
-            + "link population -> births +\r\n"
-            + "link births -> population +\r\n"
-            + "\r\n"
-            + "loop R1 \"Births beget births\" population births\r\n");
+        // host whose type declares an extension without one: the binding's template (finding B9). A
+        // loop, not two loose variables: a new file should show what the type is for on the first
+        // open, and two variables feeding each other positively are the smallest honest reinforcing
+        // loop, whose R1 label is arithmetically correct, so the validator has nothing to say about a
+        // file the tool itself just wrote.
+        services.AddEmptyDocument(CausalLoopOrigin, CausalLoopBody.Template);
 
         // The edit commands, each with a byte-restoring inverse.
         services.AddSingleton<ICommandHandler<RestoreDocumentCommand<ICausalLoopDocumentStore>>, RestoreDocumentCommandHandler<ICausalLoopDocumentStore>>();

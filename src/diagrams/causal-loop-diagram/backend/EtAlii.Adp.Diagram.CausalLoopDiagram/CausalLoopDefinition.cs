@@ -15,10 +15,9 @@ namespace EtAlii.Adp.Diagram.CausalLoopDiagram;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>The model is the parser's reading</b>, put into DISL by <see cref="CausalLoopDislAdapter"/> until the
-/// body is read through the binding. An element is found by its wire id, which is its model id: the
-/// definition's natural ids with their prefixes. Of two elements with one id the first is found, as the
-/// hand-written providers found the first.
+/// <b>The model is the binding's reading</b>, built by <see cref="CausalLoopBody"/>. An element is found by
+/// its wire id, which is its model id: the definition's natural ids with their prefixes. Of two elements
+/// with one id the first is found, as the hand-written providers found the first.
 /// </para>
 /// <para>
 /// <b>A document that could not be read offers nothing</b>, neither a menu nor a row: its emptiness is
@@ -27,7 +26,7 @@ namespace EtAlii.Adp.Diagram.CausalLoopDiagram;
 /// </remarks>
 internal static class CausalLoopDefinition
 {
-    private static readonly Lazy<BundledDefinition> Loaded = new(() => BundledDefinition.Load(typeof(CausalLoopDefinition).Assembly, "causal-loop-diagram.dis"));
+    private static readonly Lazy<BundledDefinition> Loaded = new(() => BundledDefinition.Load(typeof(CausalLoopDefinition).Assembly, "causal-loop-diagram.dis", CausalLoopCycles.Plugins()));
 
     private static readonly Lazy<WireIdMap> LoadedIds = new(() => WireIdMap.Of(Specification, "x-cld"));
 
@@ -51,11 +50,26 @@ internal static class CausalLoopDefinition
     /// <summary>The palette.</summary>
     public static IReadOnlyList<ToolboxItemDefinition> Toolbox => LoadedToolbox.Value;
 
-    /// <summary>The model of <paramref name="entry"/>.</summary>
+    /// <summary>The model of <paramref name="entry"/>: its body as the binding reads it.</summary>
     private static DislDiagram DiagramOf(DocumentEntry<CausalLoopDocument, CausalLoopModel> entry)
     {
         ArgumentNullException.ThrowIfNull(entry);
-        return CausalLoopDislAdapter.Of(entry.Model);
+        return CausalLoopBody.Parse(entry.Document.Text).Disl.Diagram;
+    }
+
+    /// <summary>
+    /// The findings of <paramref name="body"/> (causal-loop-disl-fbl Requirement 3.3): the definition's
+    /// rules and built-ins, in its order, with a statement the binding does not read reported on its
+    /// line in the tool's own sentence for it (<see cref="CausalLoopUnreadable"/>).
+    /// </summary>
+    public static IReadOnlyList<DislFinding> Findings(CausalLoopBody body)
+    {
+        ArgumentNullException.ThrowIfNull(body);
+        IReadOnlyList<DislReaderFinding> unreadable =
+        [
+            .. body.UnreadableStatements.Select(statement => DislReaderFinding.Unreadable(CausalLoopUnreadable.SentenceFor(statement.Statement), statement.Line)),
+        ];
+        return ConstraintEvaluator.Evaluate(Specification, body.Disl.Diagram, new DislConstraintOptions(Env, unreadable));
     }
 
     /// <summary>The context menu of <paramref name="elementId"/> in <paramref name="entry"/>: an element, a placement, a connect gesture; none for anything else.</summary>

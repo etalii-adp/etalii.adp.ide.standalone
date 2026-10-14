@@ -33,8 +33,8 @@
       "params": [],
       "returns": "list(list(Element))",
       "uses": ["diagram"],
-      "cel": "diagram.cycles('CausalLink', 1000)",
-      "doc": "Every elementary cycle the causal links form, at most 1,000 of them, as DISL 12.4 orders them. The standalone tool examines the same bound."
+      "cel": "causalCycles(diagram.nodesOfType('Variable'), diagram.relationsOfType('CausalLink'), 1000)",
+      "doc": "Every elementary cycle the causal links form, at most 1,000 of them, in the tool's order: the plugin function `causalCycles`, or DISL 12.4's `diagram.cycles` and its order where the plugin is absent. The order decides the order of the unlabelled-loop findings and which cycle Claim a loop picks among the shortest (causal-loop-diagram.md, Other differences: the order of cycles)."
     },
     "linksBetween": {
       "params": [{ "name": "a", "type": "Element" }, { "name": "b", "type": "Element" }],
@@ -976,6 +976,27 @@
       "provides": ["layout"],
       "required": false,
       "doc": "The deterministic self-organizing layout of Arrange diagram. Without it everything but Arrange diagram works."
+    },
+    "net.etalii.adp.systems.cldCycles": {
+      "version": "^1.0.0",
+      "provides": ["celFunctions"],
+      "required": false,
+      "doc": "The tool's cycle finder (`CycleFinder.cs` in the standalone module), whose order DISL 12.4's `diagram.cycles` does not give. Without the plugin the cycles are DISL's: the same cycles, in DISL's order.",
+      "celFunctions": [
+        {
+          "name": "causalCycles",
+          "params": [
+            { "name": "variables", "type": "list(Element)", "doc": "The variables, in model order: the order the search starts from each." },
+            { "name": "links", "type": "list(Element)", "doc": "The causal links, in model order: the order each variable's successors are walked in." },
+            { "name": "max", "type": "int", "doc": "How many cycles are returned at most." }
+          ],
+          "returns": "list(list(Element))",
+          "cost": 100,
+          "uses": ["diagram"],
+          "fallback": "diagram.cycles('CausalLink', max)",
+          "doc": "The elementary cycles the links form between the variables, each in loop order, in the order Johnson's algorithm finds them: by start variable in model order, and for each start as a depth-first walk of the links in model order finds them, through variables at or after the start only. A link's ends are its `causeName` and `effectName` and a variable is the first of that `name`; a link whose end names no variable is not walked, and two links between the same variables are one step. At most `max` cycles; `diagram.cyclesTruncated` says whether there are more, which does not depend on the order."
+        }
+      ]
     }
   },
 

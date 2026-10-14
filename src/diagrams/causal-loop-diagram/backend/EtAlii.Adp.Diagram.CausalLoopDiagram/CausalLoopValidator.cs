@@ -1,4 +1,5 @@
 using EtAlii.Adp.Documents;
+
 namespace EtAlii.Adp.Diagram.CausalLoopDiagram;
 
 /// <summary>
@@ -13,6 +14,12 @@ namespace EtAlii.Adp.Diagram.CausalLoopDiagram;
 /// which one the author meant: the label may be the intent and an arrow the typo, or the arrows
 /// may be right and the label stale. Silently rewriting either would destroy the only evidence
 /// that anything was wrong.
+/// </para>
+/// <para>
+/// <b>The findings are the DISL definition's</b> (causal-loop-disl-fbl Requirement 3.3):
+/// <see cref="CausalLoopDefinition.Findings"/> evaluates its rules and built-ins over the body as the
+/// binding reads it, with the tool's codes, severities, sentences, lines and order. A finding with a
+/// line is located on it; one without, a cycle no loop names or the bound, has no location.
 /// </para>
 /// <para>
 /// <b>An unlabelled cycle is the finding this notation most exists to produce.</b> A feedback
@@ -41,9 +48,6 @@ public sealed class CausalLoopValidator(DiagramOrigin origin) : IDiagramValidato
     /// <summary>A loop statement naming a path the arrows do not form.</summary>
     public const string LoopIsNotACycleRuleId = "causal-loop.loop-is-not-a-cycle";
 
-    /// <summary>The cycle search stopped at its bound before finishing.</summary>
-    private const string CycleBoundRuleId = "causal-loop.cycle-bound-reached";
-
     /// <inheritdoc />
     public DiagramOrigin Origin { get; } = origin;
 
@@ -54,124 +58,22 @@ public sealed class CausalLoopValidator(DiagramOrigin origin) : IDiagramValidato
         ArgumentNullException.ThrowIfNull(request);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var parsed = CausalLoopParser.Parse(CausalLoopDocument.Parse(request.Document));
-        var model = parsed.Model;
-        var problems = new List<DiagramProblem>();
+        IReadOnlyList<DiagramProblem> problems =
+        [
+            .. CausalLoopDefinition.Findings(CausalLoopBody.Parse(request.Document)).Select(finding => new DiagramProblem(
+                Severity(finding.Severity),
+                finding.Message,
+                finding.Code,
+                finding.Line is { } line ? new DiagramProblemLineLocation((uint)line) : null)),
+        ];
 
-        foreach (var problem in parsed.Problems)
-        {
-            problems.Add(new DiagramProblem(
-                DiagramProblemSeverity.Warning,
-                problem.Message,
-                UnreadableRuleId,
-                new DiagramProblemLineLocation((uint)problem.Lines.Start + 1)));
-        }
-
-        foreach (var link in model.Links)
-        {
-            foreach (var end in new[] { link.From, link.To }.Where(end => !model.Declares(end)))
-            {
-                problems.Add(new DiagramProblem(
-                    DiagramProblemSeverity.Warning,
-                    $"The link from '{link.From}' to '{link.To}' names '{end}', which this document does not declare as a variable, so the link is not drawn.",
-                    DanglingLinkRuleId,
-                    new DiagramProblemLineLocation((uint)link.Lines.Start + 1)));
-            }
-        }
-
-        var found = CycleFinder.Find(model);
-        if (found.Truncated)
-        {
-            problems.Add(new DiagramProblem(
-                DiagramProblemSeverity.Info,
-                $"This diagram contains more feedback loops than are examined; {found.Examined} were read and the rest were not, so any claim below about unlabelled loops covers only those.",
-                CycleBoundRuleId));
-        }
-
-        AddStatedLoopFindings(model, found, problems);
-        AddUnlabelledCycleFindings(model, found, problems);
-
-        return ValueTask.FromResult<IReadOnlyList<DiagramProblem>>(problems);
+        return ValueTask.FromResult(problems);
     }
 
-    /// <summary>What the document claims, checked against what its arrows compute to.</summary>
-    private static void AddStatedLoopFindings(
-        CausalLoopModel model, CycleFinderResult found, List<DiagramProblem> problems)
+    private static DiagramProblemSeverity Severity(string severity) => severity switch
     {
-        foreach (var loop in model.Loops)
-        {
-            var line = new DiagramProblemLineLocation((uint)loop.Lines.Start + 1);
-
-            if (!IsACycle(found, loop.Variables))
-            {
-                problems.Add(new DiagramProblem(
-                    DiagramProblemSeverity.Warning,
-                    $"Loop {loop.Identifier} names a path the links do not close into a cycle, so nothing can be said about whether it reinforces or balances.",
-                    LoopIsNotACycleRuleId,
-                    line));
-                continue;
-            }
-
-            var computed = LoopPolarity.Of(model, loop.Variables);
-            if (computed == LoopPolarityResult.Undecidable)
-            {
-                problems.Add(new DiagramProblem(
-                    DiagramProblemSeverity.Warning,
-                    $"Loop {loop.Identifier} runs through a link with no stated polarity, so whether it reinforces or balances cannot be counted. Mark every link in it with + or - to decide it.",
-                    UndecidableLoopRuleId,
-                    line));
-                continue;
-            }
-
-            // The claim and the arithmetic, side by side. Neither is corrected: the label may be
-            // the intent and an arrow the typo, and this module cannot tell which.
-            if (loop.ClaimsReinforcing is { } claimed && claimed != (computed == LoopPolarityResult.Reinforcing))
-            {
-                var negatives = LoopPolarity.NegativeCount(model, loop.Variables) ?? 0;
-                problems.Add(new DiagramProblem(
-                    DiagramProblemSeverity.Warning,
-                    $"Loop {loop.Identifier} is labelled {(claimed ? "reinforcing" : "balancing")} but its links make it {(computed == LoopPolarityResult.Reinforcing ? "reinforcing" : "balancing")}: "
-                        + $"it runs through {negatives} negative {(negatives == 1 ? "link" : "links")}, and a loop reinforces on an even count and balances on an odd one. "
-                        + "Either the label or one of the arrows is wrong, and this reading does not assume which.",
-                    LabelDisagreesRuleId,
-                    line));
-            }
-        }
-    }
-
-    /// <summary>The cycles the arrows form that no loop statement claims.</summary>
-    private static void AddUnlabelledCycleFindings(
-        CausalLoopModel model, CycleFinderResult found, List<DiagramProblem> problems)
-    {
-        var claimed = model.Loops
-            .Select(loop => Signature(loop.Variables))
-            .ToHashSet(StringComparer.Ordinal);
-
-        foreach (var cycle in found.Cycles.Where(cycle => !claimed.Contains(Signature(cycle))))
-        {
-            var computed = LoopPolarity.Of(model, cycle);
-            var reads = computed switch
-            {
-                LoopPolarityResult.Reinforcing => "reinforcing",
-                LoopPolarityResult.Balancing => "balancing",
-                _ => "of a polarity that cannot be counted, because a link in it states none",
-            };
-
-            problems.Add(new DiagramProblem(
-                DiagramProblemSeverity.Info,
-                $"The links form a feedback loop through {string.Join(" → ", cycle)} that no loop statement names. It is {reads}.",
-                UnlabelledLoopRuleId));
-        }
-    }
-
-    /// <summary>Whether the arrows actually close the path this loop statement names.</summary>
-    private static bool IsACycle(CycleFinderResult found, IReadOnlyList<string> variables) =>
-        variables.Count > 0 && found.Cycles.Any(cycle => Signature(cycle) == Signature(variables));
-
-    /// <summary>
-    /// A cycle's identity independent of where it was entered: the same loop written starting
-    /// from a different member is the same loop, and must not be reported as unlabelled because
-    /// the author began it elsewhere.
-    /// </summary>
-    private static string Signature(IReadOnlyList<string> cycle) => CycleFinder.CanonicalSignature(cycle);
+        "error" => DiagramProblemSeverity.Error,
+        "info" or "hint" => DiagramProblemSeverity.Info,
+        _ => DiagramProblemSeverity.Warning,
+    };
 }

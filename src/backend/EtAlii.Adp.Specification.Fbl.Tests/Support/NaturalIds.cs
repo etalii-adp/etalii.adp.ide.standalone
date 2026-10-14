@@ -4,14 +4,15 @@ namespace EtAlii.Adp.Specification.Fbl.Tests.Support;
 /// The DISL id derivations the vendored fixtures name their elements by, standing in for DISL,
 /// which this library does not implement (Requirement 4.4). Each mirrors the <c>persistence.ids</c>
 /// of the specification in etalii-adp/etalii.adp <c>definitions/diagrams/</c>: natural ids with the
-/// type's prefix (databricks-job.dis, databricks-pipeline.dis), and the causal loop's links and
-/// loops by their ends and identifier as its fixtures address them.
+/// type's prefix (databricks-job.dis, databricks-pipeline.dis, causal-loop-diagram.dis, whose
+/// keys are a variable's name, a link's cause and effect names and a loop's identifier).
 /// </summary>
 internal static class NaturalIds
 {
     public static Func<IdRequest, string?> For(string binding) => request => (binding, request.Rule) switch
     {
-        ("cld", "link") => $"link:{request.Source}|{request.Target}",
+        ("cld", "variable") => $"variable:{Attribute(request, "name")}",
+        ("cld", "link") => $"link:{Attribute(request, "causeName")}|{Attribute(request, "effectName")}",
         ("cld", "loop") => $"loop:{Attribute(request, "identifier")}",
         ("job", "task") => $"task:{Attribute(request, "key")}",
         ("job", "cluster") => $"cluster:{Attribute(request, "key")}",

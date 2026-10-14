@@ -32,6 +32,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- The module's own FBL binding (causal-loop-disl-fbl Requirement 4.1), which the definition's persistence.binding names. -->
+    <EmbeddedResource Include="causal-loop-diagram.fbl" LogicalName="causal-loop-diagram.fbl" />
+  </ItemGroup>
+
+  <ItemGroup>
     <InternalsVisibleTo Include="EtAlii.Adp.Diagram.CausalLoopDiagram.Tests" />
   </ItemGroup>
 
