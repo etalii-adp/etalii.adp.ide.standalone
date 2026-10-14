@@ -49,11 +49,3 @@ public sealed record MindmapMetrics(
 
 public readonly record struct MindmapSize(double Width, double Height);
 
-/// <summary>Where a node sits: its top-left corner, and its size. Positions are in canvas units with the root's centre at the origin.</summary>
-public readonly record struct MindmapBox(double X, double Y, double Width, double Height)
-{
-    public double CenterX => X + Width / 2;
-    public double CenterY => Y + Height / 2;
-    public double Right => X + Width;
-    public double Bottom => Y + Height;
-}

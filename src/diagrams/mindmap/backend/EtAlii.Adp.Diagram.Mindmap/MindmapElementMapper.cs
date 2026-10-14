@@ -1,3 +1,4 @@
+using EtAlii.Adp.Layout;
 using Google.Protobuf;
 
 namespace EtAlii.Adp.Diagram.Mindmap;
@@ -69,11 +70,11 @@ public sealed class MindmapElementMapper
     }
 
     /// <summary>The layout for a document and a view - shared with the session, which needs positions for a group's parent.</summary>
-    public IReadOnlyDictionary<string, MindmapBox> Layout(MindmapDocument document, MindmapConnectionView view) =>
+    public IReadOnlyDictionary<string, Rect> Layout(MindmapDocument document, MindmapConnectionView view) =>
         MindmapLayout.Compute(document.Root, _metrics, view.IsFolded);
 
     /// <summary>One node as an element at a known box.</summary>
-    public DiagramElement ToElement(MindmapNode node, MindmapBox box)
+    public DiagramElement ToElement(MindmapNode node, Rect box)
     {
         var payload = new MindmapNodePayload
         {
@@ -99,6 +100,6 @@ public sealed class MindmapElementMapper
             payload.ToByteArray());
     }
 
-    private static bool Intersects(MindmapBox box, DiagramViewport viewport) =>
+    private static bool Intersects(Rect box, DiagramViewport viewport) =>
         box.Right >= viewport.MinX && box.X <= viewport.MaxX && box.Bottom >= viewport.MinY && box.Y <= viewport.MaxY;
 }
