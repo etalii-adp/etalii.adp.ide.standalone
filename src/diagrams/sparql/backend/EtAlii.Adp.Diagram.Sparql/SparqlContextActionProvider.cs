@@ -12,6 +12,12 @@ namespace EtAlii.Adp.Diagram.Sparql;
 /// has said, in code, that a query diagram is a reading surface. The registration no-writer test
 /// asserts exactly this, and the client can therefore never render a gesture the backend would
 /// have to refuse (Requirement 6.1).
+/// <para>
+/// <b>It stays off <see cref="DiagramActionProvider{TBody, TModel}"/></b> (code-structure T099): what
+/// that frame shares is the dispatch through the project's history, the unreadable-document guard
+/// before an edit and the deletion confirmation, and a reading surface has no edit for any of them to
+/// serve, while its one refusal, naming the text editor, would give way to the frame's per-action one.
+/// </para>
 /// </remarks>
 public sealed class SparqlContextActionProvider : IContextActionProvider
 {

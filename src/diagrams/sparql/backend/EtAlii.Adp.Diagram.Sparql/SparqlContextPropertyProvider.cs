@@ -10,6 +10,12 @@ namespace EtAlii.Adp.Diagram.Sparql;
 /// enforces that a read-only row states a reason, so this is not decoration: it is the shape the
 /// panel requires, and it is what makes the diagram honest about being a reading surface.
 /// </summary>
+/// <remarks>
+/// <b>It stays off <see cref="DiagramPropertyProvider{TBody, TModel}"/></b> (code-structure T099):
+/// that frame exists to dispatch a changed value through the project's history, which would make this
+/// provider take a history it never uses and answer a set on an unreadable query with the frame's
+/// "cannot be edited" rather than the one reason every row of this diagram gives.
+/// </remarks>
 public sealed class SparqlContextPropertyProvider : IContextPropertyProvider
 {
     /// <summary>A variable's name.</summary>
