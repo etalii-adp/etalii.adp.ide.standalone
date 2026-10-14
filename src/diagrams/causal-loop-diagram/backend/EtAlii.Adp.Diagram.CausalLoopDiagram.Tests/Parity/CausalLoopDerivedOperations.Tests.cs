@@ -51,10 +51,9 @@ public class CausalLoopDerivedOperationsTests
     /// <summary>Every operation, on every element it applies to, with the command its menu entry dispatches.</summary>
     private static IEnumerable<(string Operation, string? Target, DislInvocation? Invocation, ICommand Command)> Cases(CausalLoopModel model)
     {
-        // addVariableHere is not compared: the definition's lowestFreeVariableNumber() filters a range of
-        // 100,000 numbers and exceeds the definition's own cost limit on every document, so the interpreter
-        // refuses it. The menu names the variable in code (CausalLoopEdits.NextVariableName) and is unaffected;
-        // the correction belongs to the definition in etalii.adp.
+        (string variableId, string variableLabel) = CausalLoopEdits.NextVariableName(model);
+        yield return ("addVariableHere", null, null, new AddVariableCommand(Path, variableId, variableLabel));
+
         var names = model.Variables.Select(variable => variable.Id).Distinct(StringComparer.Ordinal).ToList();
 
         foreach (var from in names)
