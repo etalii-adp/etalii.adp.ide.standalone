@@ -22,6 +22,10 @@ public sealed record RestoreC4ElementPositionCommand(
     double? X,
     double? Y) : ICommand;
 
+/// <remarks>
+/// Not on <see cref="C4EditHandler{TCommand}"/>: a position is written to the sidecar and the body is
+/// never edited, so the edit run - a copy of the body, saved - has nothing to do here.
+/// </remarks>
 internal sealed class MoveC4ElementCommandHandler(IC4DocumentStore documents, C4LayoutSidecar sidecar)
     : ICommandHandler<MoveC4ElementCommand>
 {

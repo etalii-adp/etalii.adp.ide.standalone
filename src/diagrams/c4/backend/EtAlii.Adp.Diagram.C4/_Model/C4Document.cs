@@ -1,3 +1,5 @@
+using EtAlii.Adp.Documents;
+
 namespace EtAlii.Adp.Diagram.C4;
 
 /// <summary>
@@ -11,7 +13,7 @@ namespace EtAlii.Adp.Diagram.C4;
 /// are deliberately *not* stripped structurally - they are ordinary text this type carries
 /// through untouched, and the parser skips them.
 /// </remarks>
-public sealed class C4Document
+public sealed class C4Document : ITextBody<C4Document>
 {
     private readonly List<C4DocumentLine> _lines;
 
@@ -46,6 +48,9 @@ public sealed class C4Document
 
         return new C4Document(SplitLines(text), DetectNewline(text), text.EndsWith('\n'));
     }
+
+    /// <inheritdoc />
+    public string Text => ToText();
 
     /// <summary>The document as text, byte-identical to what <see cref="Parse"/> was given when nothing was edited.</summary>
     public string ToText() =>
