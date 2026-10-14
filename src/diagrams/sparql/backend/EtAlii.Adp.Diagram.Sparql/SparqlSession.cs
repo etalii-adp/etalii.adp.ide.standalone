@@ -1,7 +1,5 @@
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
-using Serilog;
 
 namespace EtAlii.Adp.Diagram.Sparql;
 
@@ -18,123 +16,41 @@ namespace EtAlii.Adp.Diagram.Sparql;
 /// so its byte-identical round trip holds by construction rather than by care.
 /// </para>
 /// <para>
-/// <see cref="UpdateView"/> narrows what this connection holds to what its viewport admits:
-/// what newly falls inside is added, what left is removed (view-delta-adoption Requirements
-/// 1.2 and 1.3). The change path renders through the same viewport, so an ordinary edit never
-/// re-sends the elements the viewport just culled.
+/// Following the store, the baseline, the viewport and the dispatch are the session base's; this
+/// says how a query renders and where a drop is stored.
 /// </para>
 /// </remarks>
-public sealed class SparqlSession : IDiagramSession
+public sealed class SparqlSession(
+    string bodyPath,
+    string? registrationPath,
+    ISparqlDocumentStore documents,
+    SparqlElementMapper mapper,
+    IHistoryStack? history = null)
+    : DocumentDiagramSession<string, SparqlQueryModel>(bodyPath, documents, history)
 {
-    private static readonly ILogger _logger = Log.ForContext<SparqlSession>();
-
-    private readonly string _bodyPath;
-    private readonly string? _registrationPath;
-    private readonly ISparqlDocumentStore _documents;
-    private readonly SparqlElementMapper _mapper;
-
-    /// <summary>The project's history, so a reposition is one undo away. Null makes even that unavailable.</summary>
-    private readonly IHistoryStack? _history;
-
-    /// <summary>What this connection was last sent, so a change can be diffed against it.</summary>
-    private IReadOnlyList<DiagramElement> _delivered = [];
-
-    /// <summary>
-    /// What this connection is looking at. Unbounded until the client reports, so a connection
-    /// that never reports keeps the whole query it was given at baseline.
-    /// </summary>
-    private DiagramViewport _viewport = DiagramViewport.Unbounded;
-
-    public SparqlSession(
-        string bodyPath,
-        string? registrationPath,
-        ISparqlDocumentStore documents,
-        SparqlElementMapper mapper,
-        IHistoryStack? history = null)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(bodyPath);
-        ArgumentNullException.ThrowIfNull(documents);
-        ArgumentNullException.ThrowIfNull(mapper);
-
-        _bodyPath = bodyPath;
-        _registrationPath = registrationPath;
-        _documents = documents;
-        _mapper = mapper;
-        _history = history;
-        _documents.Changed += OnDocumentChanged;
-    }
+    private readonly SparqlElementMapper _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
 
     /// <inheritdoc />
-    public event EventHandler<DiagramDeltasEventArgs>? Changed;
-
-    /// <inheritdoc />
-    public IReadOnlyList<DiagramDelta> Baseline()
-    {
-        var elements = Render();
-        _delivered = elements;
-
-        return elements.Count > 0
-            ? [new DiagramAddDelta(elements)]
-            : [];
-    }
-
-    /// <inheritdoc />
-    public IReadOnlyList<DiagramDelta> UpdateView(DiagramViewport viewport)
-    {
-        _viewport = viewport;
-        var after = Render();
-
-        // The shared diff against what this connection holds (backend-centralization R4.1):
-        // what left is removed first, then what appeared or changed is added (R4.5).
-        var deltas = DiagramDiff.Between(_delivered, after);
-        _delivered = after;
-        return deltas;
-    }
-
-    /// <summary>Refused: a query's structure comes from its text, so nothing here is re-parented by dragging.</summary>
-    public Task<string> MoveElementAsync(string elementId, string newParentId, int index, CancellationToken cancellationToken)
-    {
-        _ = elementId;
-        _ = newParentId;
-        _ = index;
-        cancellationToken.ThrowIfCancellationRequested();
-
-        return Task.FromResult(
-            "A query's structure comes from its text, so nothing here can be moved into a different group. Dragging changes where an element sits on the canvas.");
-    }
+    protected override string ParentRefusal =>
+        "A query's structure comes from its text, so nothing here can be moved into a different group. Dragging changes where an element sits on the canvas.";
 
     /// <summary>
     /// Stores an authored position in the registration's <c>layout:</c> block, as one undoable
     /// command - the module's single mutating gesture, and one that leaves the query untouched
     /// (Requirement 5.1, 6.3).
     /// </summary>
-    public async Task<string> MoveElementToAsync(string elementId, double x, double y, CancellationToken cancellationToken)
+    protected override DiagramPlacement PlacementOf(SparqlQueryModel model, string elementId, double x, double y)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(elementId);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        if (_history is null)
-        {
-            return "This diagram is read-only.";
-        }
-
-        if (_registrationPath is not { Length: > 0 })
+        if (registrationPath is not { Length: > 0 })
         {
             // Registering the file lifts this (Requirement 5.3).
-            return "This query was opened without a registration, so there is nowhere to store a position. Register the file to arrange it.";
+            return DiagramPlacement.Refused("This query was opened without a registration, so there is nowhere to store a position. Register the file to arrange it.");
         }
 
         var refusal = Refusal(elementId);
-        if (refusal.Length > 0)
-        {
-            return refusal;
-        }
-
-        var result = await _history.ExecuteAsync(
-            new SetRegistrationLayoutCommand(_registrationPath, elementId, x, y),
-            cancellationToken);
-
-        return result.IsSuccess ? "" : result.Error;
+        return refusal.Length > 0
+            ? DiagramPlacement.Refused(refusal)
+            : DiagramPlacement.By(new SetRegistrationLayoutCommand(registrationPath, elementId, x, y));
     }
 
     /// <summary>Why this element cannot carry an authored position, or empty when it can (Requirement 5.4).</summary>
@@ -164,18 +80,11 @@ public sealed class SparqlSession : IDiagramSession
     }
 
     /// <inheritdoc />
-    public ValueTask DisposeAsync()
+    protected override IReadOnlyList<DiagramElement> Render(SparqlQueryModel model, DiagramViewport viewport)
     {
-        _documents.Changed -= OnDocumentChanged;
-        return ValueTask.CompletedTask;
-    }
-
-    private IReadOnlyList<DiagramElement> Render()
-    {
-        var entry = _documents.GetOrLoad(_bodyPath);
-        var projection = SparqlProjection.Project(entry.Model);
-        var stored = _registrationPath is { Length: > 0 }
-            ? RegistrationLayout.Read(_registrationPath)
+        var projection = SparqlProjection.Project(model);
+        var stored = registrationPath is { Length: > 0 }
+            ? RegistrationLayout.Read(registrationPath)
             : new Dictionary<string, RegistrationPosition>(StringComparer.Ordinal);
 
         // Layout applies the stored positions itself, because a region anchor moves its whole
@@ -185,32 +94,6 @@ public sealed class SparqlSession : IDiagramSession
         // Through the viewport, always. When this rendered unfiltered while UpdateView
         // filtered, an ordinary edit re-sent every element the viewport had just culled and
         // the two paths disagreed about what the client held.
-        return _mapper.Visible(projection, layout, _viewport);
-    }
-
-    private void OnDocumentChanged(object? sender, DocumentChangedEventArgs args)
-    {
-        if (!string.Equals(args.Path, _bodyPath, StringComparison.OrdinalIgnoreCase))
-        {
-            return;
-        }
-
-        try
-        {
-            var current = Render();
-            var deltas = DiagramDiff.Between(_delivered, current);
-            _delivered = current;
-
-            if (deltas.Count > 0)
-            {
-                Changed?.Invoke(this, new DiagramDeltasEventArgs(deltas));
-            }
-        }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-        {
-            // A file that vanished or locked mid-reload costs this notification, never the
-            // session: the next change tries again.
-            _logger.Warning(exception, "Could not re-read {BodyPath} after a change", _bodyPath);
-        }
+        return _mapper.Visible(projection, layout, viewport);
     }
 }

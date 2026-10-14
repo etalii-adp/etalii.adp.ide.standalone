@@ -21,19 +21,22 @@ namespace EtAlii.Adp.Diagram;
 /// record of what was delivered.
 /// </para>
 /// </remarks>
-/// <typeparam name="TBody">The type the store reads a body into, as its <see cref="IDiagramDocumentStore{TBody, TModel}"/> says.</typeparam>
+/// <typeparam name="TBody">The type the store reads a body into, as its <see cref="IReadableDiagramDocumentStore{TBody, TModel}"/> says.</typeparam>
 /// <typeparam name="TModel">What the module's parser reads from a body, and what it renders.</typeparam>
 public abstract class DocumentDiagramSession<TBody, TModel> : IDiagramSession
 {
-    private readonly IDiagramDocumentStore<TBody, TModel> _documents;
+    private readonly IReadableDiagramDocumentStore<TBody, TModel> _documents;
     private readonly IHistoryStack? _history;
     private readonly DiagramDocumentChangeHandler _changes;
     private DiagramViewport _viewport = DiagramViewport.Unbounded;
 
     /// <param name="bodyPath">The document this session shows.</param>
-    /// <param name="documents">The store that holds it; the session follows its changes until disposed.</param>
+    /// <param name="documents">
+    /// The store that holds it; the session follows its changes until disposed. Only its reading half,
+    /// because the session writes nothing itself: an edit is a command, which takes the store it writes.
+    /// </param>
     /// <param name="history">The project's history, or null for a session that may not edit.</param>
-    protected DocumentDiagramSession(string bodyPath, IDiagramDocumentStore<TBody, TModel> documents, IHistoryStack? history)
+    protected DocumentDiagramSession(string bodyPath, IReadableDiagramDocumentStore<TBody, TModel> documents, IHistoryStack? history)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(bodyPath);
         ArgumentNullException.ThrowIfNull(documents);
