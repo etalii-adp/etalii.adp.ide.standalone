@@ -1,3 +1,4 @@
+using EtAlii.Adp.Layout;
 using Google.Protobuf;
 
 namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph;
@@ -123,16 +124,17 @@ public sealed class FdgElementMapper
     }
 
     private static bool Overlaps(FdgElement element, DiagramViewport viewport) =>
-        element.X + element.Width >= viewport.MinX
-        && element.X <= viewport.MaxX
-        && element.Y + element.DrawnHeight >= viewport.MinY
-        && element.Y <= viewport.MaxY;
+        viewport.Intersects(new Rect(element.X, element.Y, element.Width, element.DrawnHeight));
 
     private static bool SpanOverlaps(FdgElement from, FdgElement to, DiagramViewport viewport) =>
-        Math.Max(from.X + from.Width, to.X + to.Width) >= viewport.MinX
-        && Math.Min(from.X, to.X) <= viewport.MaxX
-        && Math.Max(from.Y + from.DrawnHeight, to.Y + to.DrawnHeight) >= viewport.MinY
-        && Math.Min(from.Y, to.Y) <= viewport.MaxY;
+        viewport.Intersects(Hull(new Rect(from.X, from.Y, from.Width, from.DrawnHeight), new Rect(to.X, to.Y, to.Width, to.DrawnHeight)));
+
+    private static Rect Hull(Rect a, Rect b)
+    {
+        var x = Math.Min(a.X, b.X);
+        var y = Math.Min(a.Y, b.Y);
+        return new Rect(x, y, Math.Max(a.Right, b.Right) - x, Math.Max(a.Bottom, b.Bottom) - y);
+    }
 
     private static DiagramElement Element(FdgElement element)
     {

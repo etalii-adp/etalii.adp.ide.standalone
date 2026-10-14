@@ -1,4 +1,5 @@
 using EtAlii.Adp.Hierarchy;
+using EtAlii.Adp.Layout;
 
 namespace EtAlii.Adp.Diagram.Rdf;
 
@@ -23,10 +24,7 @@ internal static class RdfViewport
 {
     /// <summary>Whether the cell at <paramref name="position" /> overlaps <paramref name="viewport" />.</summary>
     private static bool Admits(DiagramViewport viewport, RegistrationPosition position, double width, double height) =>
-        position.X + width >= viewport.MinX
-        && position.X <= viewport.MaxX
-        && position.Y + height >= viewport.MinY
-        && position.Y <= viewport.MaxY;
+        viewport.Intersects(new Rect(position.X, position.Y, width, height));
 
     /// <summary>
     /// Whether the node with <paramref name="id" /> is on screen. A node nothing placed is

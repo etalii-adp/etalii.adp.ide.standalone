@@ -86,7 +86,7 @@ public sealed class HelmElementMapper
         ArgumentNullException.ThrowIfNull(boxes);
 
         var delivered = new HashSet<string>(StringComparer.Ordinal);
-        foreach (var node in graph.Nodes.Where(node => boxes.TryGetValue(node.Id, out var box) && Intersects(box, viewport)))
+        foreach (var node in graph.Nodes.Where(node => boxes.TryGetValue(node.Id, out var box) && viewport.Intersects(box)))
         {
             delivered.Add(node.Id);
         }
@@ -122,10 +122,6 @@ public sealed class HelmElementMapper
 
         return elements;
     }
-
-    private static bool Intersects(Rect box, DiagramViewport viewport) =>
-        box.X <= viewport.MaxX && box.Right >= viewport.MinX &&
-        box.Y <= viewport.MaxY && box.Bottom >= viewport.MinY;
 
     private static DiagramElement NodeElement(HelmChart chart, HelmGraph graph, HelmNode node, Rect box)
     {

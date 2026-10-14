@@ -1,3 +1,4 @@
+using EtAlii.Adp.Layout;
 using Google.Protobuf;
 
 namespace EtAlii.Adp.Diagram.Timeline;
@@ -98,13 +99,7 @@ public sealed class TimelineElementMapper
             : begin;
 
         // A row occupies its full height, so an element half-scrolled off the top is still in view.
-        var top = TimelineRows.ToY(element.Row);
-        var bottom = top + TimelineRows.Height;
-
-        return end >= viewport.MinX
-            && begin <= viewport.MaxX
-            && bottom >= viewport.MinY
-            && top <= viewport.MaxY;
+        return viewport.Intersects(new Rect(begin, TimelineRows.ToY(element.Row), end - begin, TimelineRows.Height));
     }
 
     /// <summary>

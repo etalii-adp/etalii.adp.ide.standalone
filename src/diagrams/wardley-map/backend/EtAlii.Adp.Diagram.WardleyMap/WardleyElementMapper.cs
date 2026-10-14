@@ -1,3 +1,4 @@
+using EtAlii.Adp.Layout;
 using Google.Protobuf;
 
 namespace EtAlii.Adp.Diagram.WardleyMap;
@@ -190,15 +191,13 @@ public sealed class WardleyElementMapper
         && Contains(viewport, (element.X, element.Y));
 
     private static bool Contains(DiagramViewport viewport, (double X, double Y) point) =>
-        point.X >= viewport.MinX && point.X <= viewport.MaxX
-        && point.Y >= viewport.MinY && point.Y <= viewport.MaxY;
+        viewport.Intersects(new Rect(point.X, point.Y, 0, 0));
 
     private static bool Overlaps(DiagramViewport viewport, WardleyAttitude attitude)
     {
         (double x1, double y1) = WardleyAxis.ToPoint(attitude.From);
         (double x2, double y2) = WardleyAxis.ToPoint(attitude.To);
-        return Math.Max(x1, x2) >= viewport.MinX && Math.Min(x1, x2) <= viewport.MaxX
-            && Math.Max(y1, y2) >= viewport.MinY && Math.Min(y1, y2) <= viewport.MaxY;
+        return viewport.Intersects(new Rect(Math.Min(x1, x2), Math.Min(y1, y2), Math.Abs(x1 - x2), Math.Abs(y1 - y2)));
     }
 
     /// <summary>

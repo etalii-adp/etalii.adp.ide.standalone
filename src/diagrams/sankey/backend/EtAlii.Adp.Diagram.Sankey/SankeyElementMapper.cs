@@ -1,4 +1,3 @@
-using EtAlii.Adp.Layout;
 using Google.Protobuf;
 
 namespace EtAlii.Adp.Diagram.Sankey;
@@ -43,7 +42,7 @@ public sealed class SankeyElementMapper
         var layout = SankeyLayout.Of(model);
 
         var kept = layout.Nodes
-            .Where(node => Overlaps(layout.Boxes[node.Id], viewport))
+            .Where(node => viewport.Intersects(layout.Boxes[node.Id]))
             .Select(node => node.Id)
             .ToHashSet(StringComparer.Ordinal);
 
@@ -61,9 +60,6 @@ public sealed class SankeyElementMapper
             .. layout.Flows.Where(flow => kept.Contains(flow.From) && kept.Contains(flow.To)).Select(flow => Flow(model, layout, flow, byId)),
         ];
     }
-
-    private static bool Overlaps(Rect box, DiagramViewport viewport) =>
-        box.Right >= viewport.MinX && box.X <= viewport.MaxX && box.Bottom >= viewport.MinY && box.Y <= viewport.MaxY;
 
     private static DiagramElement Node(SankeyModel model, SankeyLayout layout, SankeyNode node)
     {
