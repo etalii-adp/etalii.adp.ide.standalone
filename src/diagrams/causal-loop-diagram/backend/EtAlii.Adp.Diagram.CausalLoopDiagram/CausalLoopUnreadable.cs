@@ -56,7 +56,7 @@ public static class CausalLoopUnreadable
     /// The statement's words: split at whitespace, a double-quoted run kept together as one word
     /// without its quotes, and an unclosed quote running to the end of the line.
     /// </summary>
-    private static List<string> Words(string text)
+    internal static List<string> Words(string text)
     {
         var words = new List<string>();
         var index = 0;

@@ -47,7 +47,7 @@ public sealed class CausalLoopBody
     private CausalLoopBody(OpenBody body)
     {
         _body = body;
-        Model = body.Model;
+        Model = CausalLoopNote.Applied(body.Model, body.Bytes);
         _disl = new Lazy<DislModel>(() => DislModelBuilder.From(Model, CausalLoopDefinition.Specification));
     }
 
@@ -61,7 +61,7 @@ public sealed class CausalLoopBody
     /// <summary>The body's text.</summary>
     public string Text => Encoding.UTF8.GetString(_body.Bytes);
 
-    /// <summary>What the binding reads from the body.</summary>
+    /// <summary>What the binding reads from the body, with each link's note as the tool reads it (<see cref="CausalLoopNote"/>).</summary>
     public FblModel Model { get; }
 
     /// <summary>The DISL model of what the binding reads: what the menus, the rows and the findings are derived from.</summary>
