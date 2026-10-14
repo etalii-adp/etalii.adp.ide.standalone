@@ -1,6 +1,6 @@
 {
   "$schema": "https://etalii.net/adp/fbl/schema/0.1/fbl.schema.json#/$defs/Fixture",
-  "doc": "The lines family: a rename rewrites every link and loop that names the variable; a value with no word in the line re-emits the line in canonical form (so 's' becomes '+'); removing a variable removes its links.",
+  "doc": "The lines family: a rename rewrites every link and loop that names the variable; a value with no word in the line re-emits the line in canonical form (so 's' becomes '+'); removing a variable removes its links. The ids are the ones DISL derives under definitions/diagrams/causal-loop-diagram.dis (natural, with its prefixes): the binding stores none.",
   "binding": "../../causal-loop-diagram.fbl#cld",
   "input": "growth.cld",
   "steps": [
@@ -8,7 +8,7 @@
       "doc": "Renaming a variable rewrites its declaration and every reference to it, one splice each, as one edit.",
       "edit": {
         "set": {
-          "element": "births",
+          "element": "variable:births",
           "attributes": {
             "name": "birthRate"
           }
@@ -140,11 +140,11 @@
   "read": {
     "elements": [
       {
-        "id": "population",
+        "id": "variable:population",
         "type": "Variable"
       },
       {
-        "id": "births",
+        "id": "variable:births",
         "type": "Variable"
       },
       {
@@ -153,11 +153,11 @@
       },
       {
         "id": "link:population|births",
-        "type": "CausalLink"
+        "type": "Link"
       },
       {
         "id": "link:births|population",
-        "type": "CausalLink"
+        "type": "Link"
       }
     ]
   }

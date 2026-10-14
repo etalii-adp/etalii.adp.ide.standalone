@@ -96,36 +96,8 @@
       "property": "registration-layout",
       "binding": "cld",
       "file": "src/examples/diagrams/causal-loop-diagram/on-call/on-call.adp",
-      "observed": "10 layout entries name no element: variable:Test, variable:attrition, variable:automation, variable:fatigue, variable:incidents, …",
-      "reason": "The causal loop module stores positions under its wire ids ('variable:<name>'), while causal-loop-diagram.fbl reads a variable's id as its bare name, so these positions name no element of the reading and would be pruned as stale at the next write of the registration. Candidate follow-up for etalii.adp: give the binding's variables the module's 'variable:' prefix through the DISL id strategy, or migrate the registrations."
-    },
-    {
-      "property": "registration-layout",
-      "binding": "cld",
-      "file": "src/examples/diagrams/causal-loop-diagram/reference/reference.adp",
-      "observed": "6 layout entries name no element: variable:births, variable:crowding, variable:deaths, variable:foodPerCapita, variable:population, …",
-      "reason": "The causal loop module stores positions under its wire ids ('variable:<name>'), while causal-loop-diagram.fbl reads a variable's id as its bare name, so these positions name no element of the reading and would be pruned as stale at the next write of the registration. Candidate follow-up for etalii.adp: give the binding's variables the module's 'variable:' prefix through the DISL id strategy, or migrate the registrations."
-    },
-    {
-      "property": "cross-check",
-      "binding": "causal-loop",
-      "file": "src/diagrams/causal-loop-diagram/backend/EtAlii.Adp.Diagram.CausalLoopDiagram.Tests/Fixtures/dangling-link.cld",
-      "observed": "CausalLink: the binding lacks 2 (link:a|ghost, link:phantom|spectre)",
-      "reason": "Finding B3 of causal-loop-disl-fbl: the module keeps a link whose ends name no variable, while causal-loop-diagram.fbl, by FBL section 5.4, reports a reference that names no element and does not read the link. This fixture exists to show the finding; the conversion settles it."
-    },
-    {
-      "property": "cross-check",
-      "binding": "causal-loop",
-      "file": "src/diagrams/causal-loop-diagram/backend/EtAlii.Adp.Diagram.CausalLoopDiagram.Tests/Fixtures/label-with-quote.cld",
-      "observed": "CausalLink: the binding lacks 2 (link:a|b, link:b|a) | Variable: the binding lacks 1 (a)",
-      "reason": "The fixture of causal-loop-disl-fbl's finding B13: the module reads the statement variable a \"Say \"hi\"\" leniently, while causal-loop-diagram.fbl's pattern does not match it, so variable a and the links that name it are not read. This fixture exists to show the finding; the conversion settles it."
-    },
-    {
-      "property": "cross-check",
-      "binding": "causal-loop",
-      "file": "src/diagrams/causal-loop-diagram/backend/EtAlii.Adp.Diagram.CausalLoopDiagram.Tests/Fixtures/lenient-spellings.cld",
-      "observed": "CausalLink: the binding lacks 5 (link:a|b, link:a|indented, link:b|a, link:indented|a, link:my id|a) | Loop: the binding lacks 1 (loop:R1) | Variable: the binding lacks 2 (a, my id)",
-      "reason": "Finding B1 of causal-loop-disl-fbl: the module reads spellings causal-loop-diagram.fbl does not (an unquoted label, a quoted identifier, leading whitespace, S and O as polarity, a bare-word note, an unquoted loop name). This fixture exists to show the finding; the conversion settles it."
+      "observed": "2 layout entries name no element: variable:Test, variable:variable1",
+      "reason": "The registration keeps positions for two variables on-call.cld does not declare (left from earlier edits of the example), so they name no element of the reading and would be pruned as stale at the next write of the registration. The ids of every declared variable agree since the reading takes DISL's natural ids ('variable:<name>', causal-loop-disl-fbl task 6). Candidate follow-up: drop the two stale positions from the example."
     },
     {
       "property": "registration-resource",

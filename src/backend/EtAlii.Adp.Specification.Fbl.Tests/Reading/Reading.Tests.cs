@@ -135,11 +135,17 @@ public class ReadingTests
     [Fact]
     public void AStatementNoRuleReadsIsReportedWhenTheBindingAsksForIt()
     {
-        // Arrange.
-        var causalLoop = RealFileCorpus.Binding("causal-loop-diagram.fbl", "cld");
+        // Arrange: a lines binding with no rule that takes every statement, as the causal loop's
+        // binding has since FBL 0.2 (its last rule reads such a line as an Unreadable entry).
+        var problems = FblDocumentLoader.Load(Encoding.UTF8.GetBytes("""
+            { "fbl": "0.2", "bindings": { "loop": { "claims": { "extensions": [".cld"] }, "body": { "kind": "file", "family": "lines" }, "reader": "declared",
+              "unmatched": "report",
+              "elements": [ { "name": "header", "type": "Header", "line": "^causal-loop$" } ] } } }
+            """), out var document);
+        Assert.Empty(problems);
 
         // Act.
-        var model = Read("causal-loop\n\nthis is not a statement\n", causalLoop, new FblOptions { FileName = "loop.cld" });
+        var model = Read("causal-loop\n\nthis is not a statement\n", document!.Bindings["loop"], new FblOptions { FileName = "loop.cld" });
 
         // Assert.
         var unbound = Assert.Single(model.Findings, f => f.Code == FindingCodes.UnboundStatement);
@@ -221,7 +227,7 @@ public class ReadingTests
     [Fact]
     public void AnIdStrategyIsAskedWithTheTypeAndLineOfEveryEntryWithoutAStoredId()
     {
-        // Arrange: the causal loop diagram of the vendored causal-loop-rename fixture, whose links and loop store no id.
+        // Arrange: the causal loop diagram of the vendored causal-loop-rename fixture, whose entries store no id.
         var binding = RealFileCorpus.Binding("causal-loop-diagram.fbl", "cld");
         var bytes = File.ReadAllBytes(Path.Combine(Repository.Conformance, "fixtures", "causal-loop-rename", "growth.cld"));
         var requests = new List<IdRequest>();
@@ -229,9 +235,10 @@ public class ReadingTests
         // Act.
         _ = OpenBody.Open(bytes, binding, new FblOptions { FileName = "growth.cld", DeriveId = request => { requests.Add(request); return null; } }).Model;
 
-        // Assert: the two links on lines 7 and 8 and the loop on line 10.
+        // Assert: every entry, since the binding stores no id and leaves them to DISL: the header,
+        // the two variables on lines 3 and 4, the two links on lines 7 and 8 and the loop on line 10.
         Assert.Equal(
-            ["CausalLink@7", "CausalLink@8", "Loop@10"],
+            ["Header@1", "Link@7", "Link@8", "Loop@10", "Variable@3", "Variable@4"],
             requests.Select(r => $"{r.Type}@{r.Line}").Order(StringComparer.Ordinal));
     }
 

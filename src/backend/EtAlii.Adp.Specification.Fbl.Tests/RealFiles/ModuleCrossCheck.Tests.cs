@@ -128,8 +128,10 @@ internal static partial class ModuleIds
                 break;
             case "causal-loop":
                 var loop = CausalLoopParser.Parse(CausalLoopDocument.Parse(text)).Model;
-                foreach (var variable in loop.Variables) Add(ids, "Variable", variable.Id);
-                foreach (var link in loop.Links) Add(ids, "CausalLink", link.Id);
+                // The binding's ids are DISL's (causal-loop-diagram.dis: natural, with its prefixes),
+                // which the module's parser gives its links and loops but not its variables.
+                foreach (var variable in loop.Variables) Add(ids, "Variable", $"variable:{variable.Id}");
+                foreach (var link in loop.Links) Add(ids, "Link", link.Id);
                 foreach (var cycle in loop.Loops) Add(ids, "Loop", cycle.Id);
                 break;
             case "structurizr":

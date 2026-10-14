@@ -657,10 +657,12 @@ internal sealed class BodyReading
     private static string PlaceId(ReadElement element) => $"{element.Rule.Name}@{element.Line}";
 
     /// <summary>
-    /// The value references name an element by: the attribute its own rules reference it by, else
-    /// its stored id, else its id (FBL §5.7).
+    /// The value references name an element by: the attribute its own rule, else any rule of the
+    /// binding, references it by, else its stored id, else its id (FBL §5.7: "the <c>by</c>
+    /// attribute of an entry of the <c>to</c> rules"). A variable that only the links and loops
+    /// reference by its name is renamed by that name, whatever id DISL gives it.
     /// </summary>
-    private static string KeyOf(ReadElement element)
+    private string KeyOf(ReadElement element)
     {
         foreach ((string name, AttributeBinding binding) in element.Rule.Attributes)
         {
@@ -668,6 +670,16 @@ internal sealed class BodyReading
             {
                 element.KeyAttribute = name;
                 return element.TextOf(name);
+            }
+        }
+        foreach (var rule in Binding.AllRules)
+        {
+            foreach ((_, AttributeBinding binding) in rule.Attributes)
+            {
+                if (binding.Reference is not { By: { } by } reference || by == "id" || !reference.To.Contains(element.Rule.Name)) continue;
+                if (element.Rule.Attribute(by) is null) continue;
+                element.KeyAttribute = by;
+                return element.TextOf(by);
             }
         }
         if (element.Rule.Id?.From is not null && element.IdRead is { Present: true } read) return read.Written;
