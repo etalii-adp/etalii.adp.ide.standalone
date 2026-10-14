@@ -68,7 +68,9 @@ public sealed class AddVariableAtCommandHandler(ICausalLoopDocumentStore documen
             return Task.FromResult(CommandResult.Failure($"Could not store the variable's position: {exception.Message}"));
         }
 
-        return Task.FromResult(CommandResult.Success(
+        // Built from the save, so a warning of it reaches the user (code-structure FR-022).
+        return Task.FromResult(CommandResult.FromSave(
+            saved,
             new RestoreVariableAdditionCommand(
                 command.BodyPath, beforeBody, command.RegistrationPath, $"variable:{command.Id}", priorPosition, command)));
     }
