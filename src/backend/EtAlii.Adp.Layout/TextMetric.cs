@@ -1,4 +1,4 @@
-namespace EtAlii.Adp.Documents;
+namespace EtAlii.Adp.Layout;
 
 /// <summary>
 /// How wide a text is estimated to be, one way on both tiers (backend-centralization R10): its

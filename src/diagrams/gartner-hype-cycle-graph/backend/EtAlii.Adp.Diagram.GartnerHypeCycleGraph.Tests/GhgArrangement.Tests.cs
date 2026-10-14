@@ -1,4 +1,4 @@
-using EtAlii.Adp.Documents;
+using EtAlii.Adp.Layout;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph.Tests;

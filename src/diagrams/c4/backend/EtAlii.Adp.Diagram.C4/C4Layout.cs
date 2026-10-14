@@ -1,4 +1,4 @@
-using EtAlii.Adp.Documents;
+using EtAlii.Adp.Layout;
 
 namespace EtAlii.Adp.Diagram.C4;
 
@@ -6,7 +6,7 @@ namespace EtAlii.Adp.Diagram.C4;
 /// <param name="Id">A synthetic id, since a boundary is drawn from an element rather than declared.</param>
 /// <param name="Name">The scope element's name.</param>
 /// <param name="Kind">What the boundary encloses, for its label: "Software System" or "Container".</param>
-public sealed record C4Boundary(string Id, string Name, string Kind, C4Box Box);
+public sealed record C4Boundary(string Id, string Name, string Kind, Rect Box);
 
 /// <summary>Where everything on one view goes.</summary>
 /// <param name="AuthoredPositionsIgnored">
@@ -15,7 +15,7 @@ public sealed record C4Boundary(string Id, string Name, string Kind, C4Box Box);
 /// arrangement vanish without explanation (Requirement 8.4).
 /// </param>
 public sealed record C4Layout(
-    IReadOnlyDictionary<string, C4Box> Boxes,
+    IReadOnlyDictionary<string, Rect> Boxes,
     IReadOnlyList<C4Boundary> Boundaries,
     bool AuthoredPositionsIgnored = false);
 
@@ -55,7 +55,7 @@ public static class C4LayoutEngine
         var members = C4RuleSet.MembersOf(workspace, view);
         if (members.Count == 0)
         {
-            return new C4Layout(new Dictionary<string, C4Box>(StringComparer.OrdinalIgnoreCase), []);
+            return new C4Layout(new Dictionary<string, Rect>(StringComparer.OrdinalIgnoreCase), []);
         }
 
         var direction = view.AutoLayout?.Direction ?? "tb";
@@ -86,7 +86,7 @@ public static class C4LayoutEngine
             {
                 if (sizes.TryGetValue(id, out var size))
                 {
-                    boxes[id] = new C4Box(Math.Round(position.X, 2), Math.Round(position.Y, 2), size.Width, size.Height);
+                    boxes[id] = new Rect(Math.Round(position.X, 2), Math.Round(position.Y, 2), size.Width, size.Height);
                 }
             }
         }
@@ -185,7 +185,7 @@ public static class C4LayoutEngine
         return element.Technology.Length > 0 ? $"[{type}: {element.Technology}]" : $"[{type}]";
     }
 
-    private static C4Box MeasureOf(C4Workspace workspace, C4Element element, C4Metrics metrics)
+    private static Rect MeasureOf(C4Workspace workspace, C4Element element, C4Metrics metrics)
     {
         var displayed = Displayed(workspace, element);
         return metrics.Measure(displayed.Name, TypeLineOf(displayed), displayed.Description);
@@ -224,11 +224,11 @@ public static class C4LayoutEngine
             .ToArray();
 
         var padding = metrics.BoundaryPadding;
-        var boxes = new Dictionary<string, C4Box>(StringComparer.OrdinalIgnoreCase);
+        var boxes = new Dictionary<string, Rect>(StringComparer.OrdinalIgnoreCase);
         var boundaries = new List<C4Boundary>();
 
-        (Dictionary<string, C4Box> topBoxes, List<C4Boundary> topBoundaries, _, _) = Arrange(members.Where(element => hosts[element.Id] is null).ToArray());
-        foreach ((string id, C4Box box) in topBoxes)
+        (Dictionary<string, Rect> topBoxes, List<C4Boundary> topBoundaries, _, _) = Arrange(members.Where(element => hosts[element.Id] is null).ToArray());
+        foreach ((string id, Rect box) in topBoxes)
         {
             boxes[id] = box;
         }
@@ -252,10 +252,10 @@ public static class C4LayoutEngine
 
         // Lays out one set of siblings with its top-left corner at the origin, returning every box
         // and boundary inside it relative to that corner, and the extent it takes up.
-        (Dictionary<string, C4Box> Boxes, List<C4Boundary> Boundaries, double Width, double Height) Arrange(IReadOnlyList<C4Element> siblings)
+        (Dictionary<string, Rect> Boxes, List<C4Boundary> Boundaries, double Width, double Height) Arrange(IReadOnlyList<C4Element> siblings)
         {
-            var sizes = new Dictionary<string, C4Box>(StringComparer.OrdinalIgnoreCase);
-            var inner = new Dictionary<string, (Dictionary<string, C4Box> Boxes, List<C4Boundary> Boundaries)>(StringComparer.OrdinalIgnoreCase);
+            var sizes = new Dictionary<string, Rect>(StringComparer.OrdinalIgnoreCase);
+            var inner = new Dictionary<string, (Dictionary<string, Rect> Boxes, List<C4Boundary> Boundaries)>(StringComparer.OrdinalIgnoreCase);
             foreach (var sibling in siblings)
             {
                 var children = hosted[sibling.Id].ToArray();
@@ -265,10 +265,10 @@ public static class C4LayoutEngine
                     continue;
                 }
 
-                (Dictionary<string, C4Box> childBoxes, List<C4Boundary> childBoundaries, double width, double height) = Arrange(children);
+                (Dictionary<string, Rect> childBoxes, List<C4Boundary> childBoundaries, double width, double height) = Arrange(children);
                 inner[sibling.Id] = (childBoxes, childBoundaries);
                 var labelWidth = TextMetric.WidthOf(BoundaryLabelOf(sibling), metrics.FontSize) + 2 * metrics.HorizontalPadding;
-                sizes[sibling.Id] = new C4Box(0, 0, Math.Round(Math.Max(width + 2 * padding, labelWidth), 2), Math.Round(height + 2 * padding + metrics.FontSize * metrics.LineHeight, 2));
+                sizes[sibling.Id] = new Rect(0, 0, Math.Round(Math.Max(width + 2 * padding, labelWidth), 2), Math.Round(height + 2 * padding + metrics.FontSize * metrics.LineHeight, 2));
             }
 
             // Rank the siblings along the relationships between them, each end standing in for
@@ -285,7 +285,7 @@ public static class C4LayoutEngine
             var left = placed.Values.Min(box => box.X);
             var top = placed.Values.Min(box => box.Y);
 
-            var resultBoxes = new Dictionary<string, C4Box>(StringComparer.OrdinalIgnoreCase);
+            var resultBoxes = new Dictionary<string, Rect>(StringComparer.OrdinalIgnoreCase);
             var resultBoundaries = new List<C4Boundary>();
             foreach (var sibling in siblings)
             {
@@ -300,7 +300,7 @@ public static class C4LayoutEngine
                 resultBoundaries.Add(new C4Boundary($"boundary:{sibling.Id}", sibling.Name, BoundaryKindOf(sibling), box));
                 var dx = box.X + padding;
                 var dy = box.Y + padding;
-                foreach ((string id, C4Box child) in contents.Boxes)
+                foreach ((string id, Rect child) in contents.Boxes)
                 {
                     resultBoxes[id] = Offset(child, dx, dy);
                 }
@@ -345,7 +345,7 @@ public static class C4LayoutEngine
         }
     }
 
-    private static C4Box Offset(C4Box box, double dx, double dy) =>
+    private static Rect Offset(Rect box, double dx, double dy) =>
         box with { X = Math.Round(box.X + dx, 2), Y = Math.Round(box.Y + dy, 2) };
 
     /// <summary>What a deployment node's boundary says after its name, in its brackets.</summary>
@@ -408,9 +408,9 @@ public static class C4LayoutEngine
     /// horizontal), centred on the widest rank so the diagram reads as a whole rather than
     /// hugging one edge.
     /// </summary>
-    private static Dictionary<string, C4Box> Place(
+    private static Dictionary<string, Rect> Place(
         IReadOnlyList<C4Element> members,
-        Dictionary<string, C4Box> sizes,
+        Dictionary<string, Rect> sizes,
         Dictionary<string, int> ranks,
         string direction,
         int rankSeparation,
@@ -423,7 +423,7 @@ public static class C4LayoutEngine
             .OrderBy(group => group.Key)
             .ToArray();
 
-        var boxes = new Dictionary<string, C4Box>(StringComparer.OrdinalIgnoreCase);
+        var boxes = new Dictionary<string, Rect>(StringComparer.OrdinalIgnoreCase);
         var rankOffset = 0.0;
         //var rankExtents = new List<double>();
 
@@ -447,8 +447,8 @@ public static class C4LayoutEngine
                 var across = rankOffset + (thickness - acrossSize) / 2;
 
                 boxes[element.Id] = horizontal
-                    ? new C4Box(Math.Round(across, 2), Math.Round(alongOffset, 2), size.Width, size.Height)
-                    : new C4Box(Math.Round(alongOffset, 2), Math.Round(across, 2), size.Width, size.Height);
+                    ? new Rect(Math.Round(across, 2), Math.Round(alongOffset, 2), size.Width, size.Height)
+                    : new Rect(Math.Round(alongOffset, 2), Math.Round(across, 2), size.Width, size.Height);
 
                 alongOffset += alongSize + nodeSeparation;
             }
@@ -482,7 +482,7 @@ public static class C4LayoutEngine
         C4Workspace workspace,
         C4View view,
         IReadOnlyList<C4Element> members,
-        Dictionary<string, C4Box> boxes,
+        Dictionary<string, Rect> boxes,
         IReadOnlyList<C4Boundary> boundaries,
         C4Metrics metrics)
     {
@@ -540,7 +540,7 @@ public static class C4LayoutEngine
         C4Workspace workspace,
         C4View view,
         IReadOnlyList<C4Element> members,
-        IReadOnlyDictionary<string, C4Box> boxes,
+        IReadOnlyDictionary<string, Rect> boxes,
         C4Metrics metrics)
     {
         if (view.Kind is not (C4ViewKind.Container or C4ViewKind.Component) || view.ScopeId is not { } scopeId)
@@ -572,7 +572,7 @@ public static class C4LayoutEngine
         var bottom = inside.Max(box => box.Bottom) + padding + metrics.FontSize * metrics.LineHeight;
 
         var kind = view.Kind == C4ViewKind.Container ? "Software System" : "Container";
-        return [new C4Boundary($"boundary:{scope.Id}", scope.Name, kind, new C4Box(Math.Round(x, 2), Math.Round(y, 2), Math.Round(right - x, 2), Math.Round(bottom - y, 2)))];
+        return [new C4Boundary($"boundary:{scope.Id}", scope.Name, kind, new Rect(Math.Round(x, 2), Math.Round(y, 2), Math.Round(right - x, 2), Math.Round(bottom - y, 2)))];
     }
     /// <summary>
     /// Separates outsiders that landed on each other on the way out of a boundary.
@@ -604,7 +604,7 @@ public static class C4LayoutEngine
     /// </para>
     /// </remarks>
     private static void Spread(
-        Dictionary<string, C4Box> boxes,
+        Dictionary<string, Rect> boxes,
         IReadOnlyList<string> outsiders,
         Dictionary<string, bool> pushedVertically,
         double nodeSeparation)
@@ -678,7 +678,7 @@ public static class C4LayoutEngine
     /// its predecessor is left exactly where it was.
     /// </remarks>
     private static void SweepApart(
-        Dictionary<string, C4Box> boxes,
+        Dictionary<string, Rect> boxes,
         IEnumerable<string> ids,
         bool horizontally,
         double nodeSeparation)
