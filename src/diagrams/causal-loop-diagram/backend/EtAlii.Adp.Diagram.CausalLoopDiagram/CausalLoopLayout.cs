@@ -41,6 +41,10 @@ public static class CausalLoopLayout
         ArgumentNullException.ThrowIfNull(model);
         metrics ??= CausalLoopMetrics.Default;
 
+        // A name written twice is one variable, the first, as everything else reads it (finding A7);
+        // placing both would ask for two boxes under one key.
+        model = model with { Variables = [.. model.Variables.DistinctBy(variable => variable.Id, StringComparer.Ordinal)] };
+
         var boxes = new Dictionary<string, CausalLoopBox>(model.Variables.Count, StringComparer.Ordinal);
         if (model.Variables.Count == 0)
         {

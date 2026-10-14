@@ -89,7 +89,8 @@ public sealed class CausalLoopElementMapper
             drawn[link.To] = to;
         }
 
-        foreach (var variable in model.Variables)
+        // A name written twice is drawn once, as the first (finding A7).
+        foreach (var variable in model.Variables.DistinctBy(variable => variable.Id, StringComparer.Ordinal))
         {
             if (drawn.TryGetValue(variable.Id, out var box))
             {
@@ -106,7 +107,7 @@ public sealed class CausalLoopElementMapper
         // be drawn: a label placed among a subset would sit somewhere the loop is not.
         foreach (var loop in model.Loops.Where(loop => loop.Variables.Count > 0 && loop.Variables.All(drawn.ContainsKey)))
         {
-            elements.Add(LoopElement(model, loop, [.. loop.Variables.Select(id => drawn[id])]));
+            elements.Add(LoopElement(loop, [.. loop.Variables.Select(id => drawn[id])]));
         }
 
         return elements;
@@ -167,26 +168,22 @@ public sealed class CausalLoopElementMapper
             payload.ToByteArray());
     }
 
-    private static DiagramElement LoopElement(
-        CausalLoopModel model, CausalLoopLoop loop, IReadOnlyList<CausalLoopBox> members)
+    private static DiagramElement LoopElement(CausalLoopLoop loop, IReadOnlyList<CausalLoopBox> members)
     {
-        var computed = LoopPolarity.Of(model, loop.Variables);
         var payload = new Wire.CausalLoopLoopPayload
         {
             Identifier = loop.Identifier,
             Name = loop.Name,
-            Computed = computed switch
+            Computed = loop.Computed switch
             {
                 LoopPolarityResult.Reinforcing => Wire.LoopPolarityProto.Reinforcing,
                 LoopPolarityResult.Balancing => Wire.LoopPolarityProto.Balancing,
                 _ => Wire.LoopPolarityProto.Undecidable,
             },
 
-            // The one fact this diagram type knows that a drawing tool does not. Undecidable is
-            // not a disagreement: nothing is claimed to be wrong with the label.
-            Disagrees = computed != LoopPolarityResult.Undecidable
-                && loop.ClaimsReinforcing is { } claimed
-                && claimed != (computed == LoopPolarityResult.Reinforcing),
+            // The one fact this diagram type knows that a drawing tool does not, as the definition
+            // derives it. Undecidable is not a disagreement: nothing is claimed to be wrong with the label.
+            Disagrees = loop.Disagrees,
         };
         payload.MemberElementIds.AddRange(loop.Variables.Select(id => $"variable:{id}"));
 

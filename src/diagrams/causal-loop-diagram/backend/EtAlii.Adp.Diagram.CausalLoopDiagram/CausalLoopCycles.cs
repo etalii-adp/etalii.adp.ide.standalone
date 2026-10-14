@@ -13,7 +13,8 @@ namespace EtAlii.Adp.Diagram.CausalLoopDiagram;
 /// <para>
 /// <b>It stands in for an order DISL does not give.</b> DISL 12.4's <c>diagram.cycles</c> finds the
 /// same cycles and sorts them; Johnson's algorithm reports them as it finds them, and the two differ
-/// over the corpus (<c>weight-forms.cld</c>). The definition's companion records the difference under
+/// over the corpus (<c>lenient-spellings.cld</c> and <c>weight-forms.cld</c>, held by
+/// <c>CausalLoopCyclesAgainstTheLibraryTests</c>). The definition's companion records the difference under
 /// "Other differences: the order of cycles"; without this plugin the definition falls back to DISL's.
 /// </para>
 /// <para>
@@ -27,7 +28,8 @@ internal static class CausalLoopCycles
     public static DislPluginFunctions Plugins() => new DislPluginFunctions()
         .Add("causalCycles", arguments => Find(Elements(arguments[0]), Elements(arguments[1]), Bound(arguments[2])));
 
-    private static List<object?> Find(IReadOnlyList<DislElement> variables, IReadOnlyList<DislElement> links, int bound)
+    /// <summary>The cycles of <paramref name="variables"/> over <paramref name="links"/>, at most <paramref name="bound"/>, as the plugin function answers them.</summary>
+    internal static List<object?> Find(IReadOnlyList<DislElement> variables, IReadOnlyList<DislElement> links, int bound)
     {
         var byName = new Dictionary<string, DislElement>(StringComparer.Ordinal);
         foreach (var variable in variables) byName.TryAdd(Text(variable, "name"), variable);

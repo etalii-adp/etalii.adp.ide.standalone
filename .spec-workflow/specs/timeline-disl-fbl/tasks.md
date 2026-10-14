@@ -45,7 +45,7 @@ Three claims need a word, because the criterion is wider than one pull request.
 
 ## The tasks
 
-- [ ] 1. A fixture and a failing test for every finding, and the transcript regenerated from unchanged code
+- [-] 1. A fixture and a failing test for every finding, and the transcript regenerated from unchanged code
   - Files: `src/diagrams/timeline/backend/EtAlii.Adp.Diagram.Timeline.Tests/Fixtures/first-element.tml`, `trailing-comment.tml`, `quoted-values.tml`, `give-end.tml`, `no-header.tml`, `other-version.tml`, `duplicate-key.tml`, `end-shapes.tml`, `dotnet-times.tml`, `rows.tml`, `no-begin.tml`, `scalar-connection.tml` (all new), `Fixtures/readme.md`, `Parity/TimelineTranscript.cs` (the corpus and, where a finding needs one, a step of the edit script), `Parity/timeline.transcript.json`, `Parity/TimelineFindings.Tests.cs` (new), `Parity/timeline.findings.json` (new), `EtAlii.Adp.Diagram.Timeline.Tests.csproj` (the vendored example binding linked in for the test)
   - One fixture per finding marked Read in table B (B4 to B7, B9 to B12) and per finding the design adds (B13 to B15): `first-element.tml` (B4), `trailing-comment.tml` and `quoted-values.tml` (B5), `give-end.tml` (B6), the existing `indentation.tml` with an add (B7), `no-header.tml` and `other-version.tml` (B9), `duplicate-key.tml` (B10), `end-shapes.tml` with an empty, a mapping and a sequence `end` (B11), `dotnet-times.tml` with a move (B12), `rows.tml` (B13), `no-begin.tml` (B14), `scalar-connection.tml` (B15).
   - Regenerate the transcript once with `ADP_WRITE_PARITY_TRANSCRIPTS=1` from today's unchanged code. The diff of the checked-in file must show the new documents only; say so in the pull request, with the count of documents before and after.
