@@ -22,38 +22,22 @@ namespace EtAlii.Adp.Diagram.WardleyMap;
 /// <param name="BodyPath">The `.owm` file to edit.</param>
 /// <param name="Line">The 1-based line to put back.</param>
 /// <param name="Text">The line's text, exactly as it was.</param>
-public sealed record RestoreWardleyLineCommand(string BodyPath, uint Line, string Text) : ICommand;
+public sealed record RestoreWardleyLineCommand(string BodyPath, uint Line, string Text) : IDocumentEditCommand;
 
-/// <summary>Restores one line verbatim, and reports the command that puts back what it replaced.</summary>
-public sealed class RestoreWardleyLineCommandHandler : ICommandHandler<RestoreWardleyLineCommand>
+/// <summary>Restores one line verbatim, and names the command that puts back what it replaced.</summary>
+public sealed class RestoreWardleyLineCommandHandler(IWardleyDocumentStore documents) : WardleyEditHandler<RestoreWardleyLineCommand>(documents)
 {
-    private readonly IWardleyDocumentStore _documents;
-
-    public RestoreWardleyLineCommandHandler(IWardleyDocumentStore documents)
+    protected override EditOutcome Apply(WardleyDocument body, WardleyMap model, RestoreWardleyLineCommand command)
     {
-        ArgumentNullException.ThrowIfNull(documents);
-        _documents = documents;
-    }
-
-    public Task<CommandResult> ExecuteAsync(RestoreWardleyLineCommand command, CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(command);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        var document = _documents.GetOrLoad(command.BodyPath).Document;
-        if (command.Line < 1 || command.Line > document.Lines.Count)
+        if (command.Line < 1 || command.Line > body.Lines.Count)
         {
             // The document has changed shape underneath this - a redo after an edit that
             // removed lines, say. Refusing is the honest answer (Requirement 9.4).
-            return Task.FromResult(CommandResult.Failure("That line is no longer in this map."));
+            return EditOutcome.Refused("That line is no longer in this map.");
         }
 
-        var replaced = document.Lines[(int)command.Line - 1];
-        document.ReplaceLine(command.Line, command.Text);
-        var published = _documents.Save(command.BodyPath, document);
-
-        return Task.FromResult(!published.Failed
-            ? CommandResult.Success(command with { Text = replaced }, published.Warning)
-            : CommandResult.Failure(published.Error));
+        var replaced = body.Lines[(int)command.Line - 1];
+        body.ReplaceLine(command.Line, command.Text);
+        return EditOutcome.UndoneBy(command with { Text = replaced });
     }
 }

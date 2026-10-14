@@ -1,4 +1,5 @@
 using EtAlii.Adp.Context;
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
@@ -462,6 +463,70 @@ public sealed class WardleyContextActionProviderTests : IDisposable
         Assert.Equal("That element is no longer on this map.", Assert.IsType<ContextExecutionFailed>(result).Message);
     }
 
+    [Fact]
+    public async Task EvolveFromTheMenu_KeepsTheNameItArrivesUnder()
+    {
+        // Arrange: the grid always kept the `->` name when its target changed; the menu used to
+        // drop it. One record now makes both commands, so both keep it.
+        await File.WriteAllTextAsync(_path, "component Kettle [0.43, 0.35]\nevolve Kettle->Electric Kettle 0.62\n", TestContext.Current.CancellationToken);
+        _documents.Forget(_path);
+        var kettle = IdOf("Kettle");
+
+        // Act.
+        var committed = await _provider.CommitAsync(
+            Target(kettle), WardleyContextActionProvider.SetEvolveActionId, "0.8", "", TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.True(committed.Completed, committed.Error);
+        Assert.Equal(
+            "component Kettle [0.43, 0.35]\nevolve Kettle->Electric Kettle 0.8\n",
+            await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task ADocumentThatCouldNotBeRead_IsRefusedByTheMenusAndTheGrid_AndWritesNothing()
+    {
+        // Arrange.
+        var kettle = IdOf("Kettle");
+        var unreadable = new UnreadableStore(_documents);
+        var historyStacks = _services.GetRequiredService<IHistoryStackStore>();
+        var actions = new WardleyContextActionProvider(historyStacks, unreadable);
+        var properties = new WardleyContextPropertyProvider(historyStacks, unreadable);
+        var before = await File.ReadAllBytesAsync(_path, TestContext.Current.CancellationToken);
+
+        // Act.
+        var offered = await actions.DiscoverAsync(Target(kettle), TestContext.Current.CancellationToken);
+        var toggled = await actions.ExecuteAsync(Target(kettle), WardleyContextActionProvider.ToggleInertiaActionId, TestContext.Current.CancellationToken);
+        var committed = await actions.CommitAsync(Target(kettle), WardleyContextActionProvider.RenameActionId, "Boiler", "", TestContext.Current.CancellationToken);
+        var set = await properties.SetAsync(Target(kettle), WardleyContextPropertyProvider.NamePropertyId, "Boiler", TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.Empty(offered);
+        Assert.Contains("could not be read", Assert.IsType<ContextExecutionFailed>(toggled).Message, StringComparison.Ordinal);
+        Assert.False(committed.Completed);
+        Assert.Contains("could not be read", committed.Error, StringComparison.Ordinal);
+        Assert.False(set.IsSuccess);
+        Assert.Contains("could not be read", set.Error, StringComparison.Ordinal);
+        Assert.Equal(before, await File.ReadAllBytesAsync(_path, TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task AFileThatIsNotAMap_IsAnsweredWithNothing_WhateverItHolds()
+    {
+        // Arrange: the map's very text, in a file this module does not open.
+        var other = IoPath.Combine(_root, "tea.txt");
+        await File.WriteAllTextAsync(other, Map, TestContext.Current.CancellationToken);
+        var properties = _services.GetServices<IContextPropertyProvider>().OfType<WardleyContextPropertyProvider>().Single();
+
+        // Act.
+        var offered = await _provider.DiscoverAsync(ContextTarget.ForElement(other, "", _root, ShortGuid.NewShortGuid()), TestContext.Current.CancellationToken);
+        var rows = await properties.DescribeAsync(ContextTarget.ForElement(other, IdOf("Kettle"), _root, ShortGuid.NewShortGuid()), TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.Empty(offered);
+        Assert.Empty(rows);
+    }
+
     // ---- plumbing -----------------------------------------------------------------------------
 
     private string IdOf(string name) => _documents
@@ -479,4 +544,28 @@ public sealed class WardleyContextActionProviderTests : IDisposable
 
     private async Task<IReadOnlyList<string>> ActionIdsFor(string elementId) =>
         (await ActionsFor(elementId)).Select(action => action.Id).ToArray();
+
+    /// <summary>A store whose every map reads as one that could not be read.</summary>
+    private sealed class UnreadableStore(IWardleyDocumentStore inner) : IWardleyDocumentStore
+    {
+        public event EventHandler<DocumentChangedEventArgs>? Changed
+        {
+            add => inner.Changed += value;
+            remove => inner.Changed -= value;
+        }
+
+        public DocumentEntry<WardleyDocument, WardleyMap> GetOrLoad(string path) => inner.GetOrLoad(path) with { Unreadable = "it is locked" };
+
+        public DocumentSaveResult Save(string path, WardleyDocument document) => inner.Save(path, document);
+
+        public void Reload(string path) => inner.Reload(path);
+
+        public void BodyDeleted(string path) => inner.BodyDeleted(path);
+
+        public void Forget(string path) => inner.Forget(path);
+
+        public IReadOnlyList<WardleyIdentityEntry> Identities(string path) => inner.Identities(path);
+
+        public void Rekey(string path, string kind, string oldKey, string newKey) => inner.Rekey(path, kind, oldKey, newKey);
+    }
 }

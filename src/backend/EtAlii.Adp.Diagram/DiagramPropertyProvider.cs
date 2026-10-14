@@ -52,7 +52,7 @@ public abstract class DiagramPropertyProvider<TBody, TModel> : IContextPropertyP
         cancellationToken.ThrowIfCancellationRequested();
 
         return ValueTask.FromResult(Serves(target)
-            ? Describe(_load(target), target.ElementId)
+            ? Describe(target, _load(target))
             : []);
     }
 
@@ -95,8 +95,22 @@ public abstract class DiagramPropertyProvider<TBody, TModel> : IContextPropertyP
         return IsBody(target.ResolvedFullPath);
     }
 
-    /// <summary>The rows <paramref name="elementId"/> has in <paramref name="entry"/>, or none.</summary>
-    protected abstract IReadOnlyList<ContextPropertyDefinition> Describe(DocumentEntry<TBody, TModel> entry, string elementId);
+    /// <summary>
+    /// The rows <paramref name="elementId"/> has in <paramref name="entry"/>, or none. None by default,
+    /// for a module that overrides the overload given the target instead.
+    /// </summary>
+    protected virtual IReadOnlyList<ContextPropertyDefinition> Describe(DocumentEntry<TBody, TModel> entry, string elementId) => [];
+
+    /// <summary>
+    /// The rows <paramref name="target"/>'s element has in <paramref name="entry"/>: those
+    /// <see cref="Describe(DocumentEntry{TBody, TModel}, string)"/> gives, by default. A module whose
+    /// elements are known by more than the model, such as ids kept beside each document, answers here.
+    /// </summary>
+    protected virtual IReadOnlyList<ContextPropertyDefinition> Describe(ContextTarget target, DocumentEntry<TBody, TModel> entry)
+    {
+        ArgumentNullException.ThrowIfNull(target);
+        return Describe(entry, target.ElementId);
+    }
 
     /// <summary>What setting <paramref name="propertyId"/> to <paramref name="value"/> on <paramref name="target"/> is.</summary>
     protected abstract DiagramPropertyChange Change(ContextTarget target, TModel model, string propertyId, string value);

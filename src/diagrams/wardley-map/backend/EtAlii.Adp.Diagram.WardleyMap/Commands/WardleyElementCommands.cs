@@ -18,14 +18,14 @@ public sealed record AddWardleyElementCommand(
     string Name,
     double Visibility,
     double Maturity,
-    WardleyDecorator? Decorator = null) : ICommand;
+    WardleyDecorator? Decorator = null) : IDocumentEditCommand;
 
 /// <summary>Adds a `note` - free text pinned at a position (Requirement 6.7).</summary>
 public sealed record AddWardleyNoteCommand(
     string BodyPath,
     string Text,
     double Visibility,
-    double Maturity) : ICommand;
+    double Maturity) : IDocumentEditCommand;
 
 /// <summary>
 /// Adds a numbered `annotation` (Requirement 6.8).
@@ -39,7 +39,7 @@ public sealed record AddWardleyAnnotationCommand(
     string BodyPath,
     string Text,
     double Visibility,
-    double Maturity) : ICommand;
+    double Maturity) : IDocumentEditCommand;
 
 /// <summary>
 /// Removes an element and every statement that referred to it (Requirement 9.3).
@@ -48,13 +48,13 @@ public sealed record AddWardleyAnnotationCommand(
 /// Removing the declaration alone would leave links pointing at a name nothing declares - a
 /// document ADP made invalid, which is worse than the edit the user asked for.
 /// </remarks>
-public sealed record RemoveWardleyElementCommand(string BodyPath, string ElementId) : ICommand;
+public sealed record RemoveWardleyElementCommand(string BodyPath, string ElementId) : IDocumentEditCommand;
 
 /// <summary>Renames an element, rewriting every statement that names it (Requirement 4.4).</summary>
-public sealed record RenameWardleyElementCommand(string BodyPath, string ElementId, string NewName) : ICommand;
+public sealed record RenameWardleyElementCommand(string BodyPath, string ElementId, string NewName) : IDocumentEditCommand;
 
 /// <summary>Sets or clears `inertia` on a component (Requirement 6.2).</summary>
-public sealed record SetWardleyInertiaCommand(string BodyPath, string ElementId, bool Inertia) : ICommand;
+public sealed record SetWardleyInertiaCommand(string BodyPath, string ElementId, bool Inertia) : IDocumentEditCommand;
 
 /// <summary>Sets or clears a link between two elements (Requirement 9.3).</summary>
 /// <param name="Kind">
@@ -71,7 +71,7 @@ public sealed record SetWardleyLinkCommand(
     string TargetElementId,
     WardleyLinkKind Kind,
     bool Present,
-    string Context = "") : ICommand;
+    string Context = "") : IDocumentEditCommand;
 
 /// <summary>
 /// Sets or clears an element's `evolve` statement - where its owner believes it is heading
@@ -86,7 +86,7 @@ public sealed record SetWardleyEvolveCommand(
     string ElementId,
     bool Present,
     double Maturity,
-    string OverrideName = "") : ICommand;
+    string OverrideName = "") : IDocumentEditCommand;
 
 /// <summary>Adds a component to a pipeline, or takes one out (Requirement 9.3).</summary>
 /// <param name="ParentElementId">The component whose pipeline this is; a component has at most one.</param>
@@ -100,7 +100,7 @@ public sealed record SetWardleyPipelineMembershipCommand(
     string ParentElementId,
     string ChildName,
     bool Member,
-    double Maturity = 0.5d) : ICommand;
+    double Maturity = 0.5d) : IDocumentEditCommand;
 
 /// <summary>
 /// Sets a component's decorators to exactly this set (Requirement 6.3).
@@ -114,24 +114,11 @@ public sealed record SetWardleyPipelineMembershipCommand(
 public sealed record SetWardleyDecoratorsCommand(
     string BodyPath,
     string ElementId,
-    IReadOnlyList<WardleyDecorator> Decorators) : ICommand;
+    IReadOnlyList<WardleyDecorator> Decorators) : IDocumentEditCommand;
 
 /// <summary>Sets or clears one of the five decorators on a component (Requirement 6.3).</summary>
 public sealed record SetWardleyDecoratorCommand(
     string BodyPath,
     string ElementId,
     WardleyDecorator Decorator,
-    bool Present) : ICommand;
-
-/// <summary>
-/// Restores the whole document. The inverse of any edit that touches more than one line - an
-/// add, a remove, a rename.
-/// </summary>
-/// <remarks>
-/// A per-line inverse cannot express these: a remove takes out several statements at once and a
-/// rename rewrites a set of them, so putting the document back is the only description that is
-/// both exact and simple. It is the same reasoning as
-/// <see cref="RestoreWardleyLineCommand"/>, one scale up - and exactness is what makes an undo
-/// leave no trace at all (Requirements 3.1, 9.6).
-/// </remarks>
-public sealed record RestoreWardleyDocumentCommand(string BodyPath, string Text) : ICommand;
+    bool Present) : IDocumentEditCommand;
