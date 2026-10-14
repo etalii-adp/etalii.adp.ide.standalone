@@ -10,7 +10,7 @@ namespace EtAlii.Adp.Diagram.Sparql.Tests;
 /// layer (the behavioural byte-snapshot sweep) and the third (no toolbox, no mutating actions)
 /// land with the integration tests and providers respectively.
 /// <para>
-/// <see cref="SparqlDocumentFactory"/> is deliberately not caught by any of this, and the
+/// The empty document the module registers is deliberately not caught by any of this, and the
 /// distinction is the whole point: it hands core the text of a file being created, and nothing
 /// in this module can rewrite a query that already exists.
 /// </para>
@@ -43,7 +43,13 @@ public class NoWriterSurfaceTests
     public void TheStoreSurface_EndsAtReading()
     {
         // Arrange.
-        var storeTypes = new[] { typeof(ISparqlDocumentStore), typeof(SparqlDocumentStore) };
+        // Every interface the store's own one extends as well, because the shared store's surface is
+        // inherited rather than declared here: extending the writable store instead of its reading
+        // half would bring a save in without a line of this module changing.
+        var storeTypes = typeof(ISparqlDocumentStore).GetInterfaces()
+            .Append(typeof(ISparqlDocumentStore))
+            .Append(typeof(SparqlDocumentStore))
+            .ToArray();
 
         // Act.
         var offenders = new List<string>();

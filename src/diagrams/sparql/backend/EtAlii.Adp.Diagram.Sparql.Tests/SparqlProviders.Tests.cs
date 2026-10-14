@@ -1,5 +1,7 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Documents.Wire;
+using EtAlii.Adp.Hierarchy;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -166,8 +168,34 @@ public class SparqlProvidersTests : IDisposable
         Assert.Empty(await provider.DescribeAsync(TargetFor(path, "var:x"), CancellationToken.None));
     }
 
+    [Fact]
+    public async Task ATrackedSelection_IsDescribedFromTheQueryAsItNowStands()
+    {
+        // Arrange: the header of a SELECT, tracked.
+        var body = CopyFixture("groups.rq");
+        var resolver = new SparqlContextSourceResolver(new DiagramFileRouter(new SparqlOnlyCatalog()), _documents);
+        var target = TargetFor(body, SparqlElementMapper.HeaderId);
+        var level = new ContextResolvedLevel(new ContextSource(), ["Query"], ContextScope.DiagramElement, target, new ContextLevelDetail(), resolver);
+        IReadOnlyList<string>? reported = null;
+        _documents.GetOrLoad(body);
+        using var track = resolver.Track(target.WatchId, _root, level, path => reported = path);
+
+        // Act: the text editor makes it an ASK.
+        await File.WriteAllTextAsync(body, "ASK { ?s ?p ?o }", TestContext.Current.CancellationToken);
+        _documents.Reload(body);
+
+        // Assert.
+        Assert.NotNull(reported);
+        Assert.StartsWith("ASK", Assert.Single(reported), StringComparison.Ordinal);
+    }
+
     private static ContextPropertyDefinition Single(IReadOnlyList<ContextPropertyDefinition> rows, string id) =>
         Assert.Single(rows, row => row.Id == id);
+}
+
+internal sealed class SparqlOnlyCatalog : IDiagramDefinitionCatalog
+{
+    public IReadOnlyList<DiagramDefinition> All => Diagram.Definitions;
 }
 
 /// <summary>The validator's three findings, each on the fixture that provokes it (Requirement 7).</summary>

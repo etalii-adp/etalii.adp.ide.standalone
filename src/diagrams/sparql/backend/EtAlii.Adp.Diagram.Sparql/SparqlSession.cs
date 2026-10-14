@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 using Serilog;
@@ -187,7 +188,7 @@ public sealed class SparqlSession : IDiagramSession
         return _mapper.Visible(projection, layout, _viewport);
     }
 
-    private void OnDocumentChanged(object? sender, SparqlDocumentChangedEventArgs args)
+    private void OnDocumentChanged(object? sender, DocumentChangedEventArgs args)
     {
         if (!string.Equals(args.Path, _bodyPath, StringComparison.OrdinalIgnoreCase))
         {

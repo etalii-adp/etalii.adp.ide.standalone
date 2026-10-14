@@ -29,8 +29,28 @@ public interface IDiagramDocumentStore : IReloadableDocumentStore
 }
 
 /// <summary>
-/// A diagram module's document store as its sessions, resolvers and commands use it: one document
-/// per body path, loaded once and shared, saved as the caller edited it, and a change event.
+/// A diagram module's document store as its sessions and resolvers read it: one document per body
+/// path, loaded once and shared, and a change event.
+/// </summary>
+/// <remarks>
+/// <b>The reading half on its own, for a module that never writes its files</b>, such as a SPARQL
+/// query, which is edited in a text editor and only drawn. Such a store implements this and has no
+/// save to refuse with, so a session or resolver on it cannot write by mistake.
+/// </remarks>
+/// <typeparam name="TBody">The type a body is read into, such as <see cref="LineDocument"/>.</typeparam>
+/// <typeparam name="TModel">What the module's parser reads from a body.</typeparam>
+public interface IReadableDiagramDocumentStore<TBody, TModel> : IDiagramDocumentStore
+{
+    /// <summary>The document whose body is at <paramref name="path"/>, loaded once and kept.</summary>
+    DocumentEntry<TBody, TModel> GetOrLoad(string path);
+
+    /// <summary>Raised when the document at a path has been replaced, for the sessions on it.</summary>
+    event EventHandler<DocumentChangedEventArgs>? Changed;
+}
+
+/// <summary>
+/// A diagram module's document store as its sessions, resolvers and commands use it: the reading
+/// half, and a save of the document as the caller edited it.
 /// </summary>
 /// <remarks>
 /// <see cref="LifecycleDocumentStore{TBody, TModel}"/> implements it, so a module's own store
@@ -39,15 +59,9 @@ public interface IDiagramDocumentStore : IReloadableDocumentStore
 /// </remarks>
 /// <typeparam name="TBody">The type a body is read into and edited as, such as <see cref="LineDocument"/>.</typeparam>
 /// <typeparam name="TModel">What the module's parser reads from a body.</typeparam>
-public interface IDiagramDocumentStore<TBody, TModel> : IDiagramDocumentStore
+public interface IDiagramDocumentStore<TBody, TModel> : IReadableDiagramDocumentStore<TBody, TModel>
 {
-    /// <summary>The document whose body is at <paramref name="path"/>, loaded once and kept.</summary>
-    DocumentEntry<TBody, TModel> GetOrLoad(string path);
-
     /// <summary>Writes <paramref name="document"/>, the one the caller edited, to <paramref name="path"/>.</summary>
     /// <remarks><b>A document that could not be read is refused, never written.</b></remarks>
     DocumentSaveResult Save(string path, TBody document);
-
-    /// <summary>Raised when the document at a path has been replaced, for the sessions on it.</summary>
-    event EventHandler<DocumentChangedEventArgs>? Changed;
 }
