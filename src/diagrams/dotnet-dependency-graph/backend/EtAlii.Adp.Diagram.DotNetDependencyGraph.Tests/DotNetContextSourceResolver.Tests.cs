@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Documents.Wire;
@@ -137,10 +138,10 @@ public sealed class DotNetContextSourceResolverTests : IDisposable
         var cancellationToken = TestContext.Current.CancellationToken;
         var level = Assert.IsType<ResolvedContextLevel>(await Resolve("project:Library/Library.csproj")).Level;
         var cleared = new TaskCompletionSource();
-        var heard = 0;
+        var heard = new ConcurrentQueue<IReadOnlyList<string>?>();
         var tracking = _resolver.Track(level.Target.WatchId, _root, level, path =>
         {
-            Interlocked.Increment(ref heard);
+            heard.Enqueue(path);
             if (path is null)
             {
                 cleared.TrySetResult();
@@ -151,12 +152,12 @@ public sealed class DotNetContextSourceResolverTests : IDisposable
         await File.WriteAllTextAsync(_solution, "<Solution>\n  <Project Path=\"App/App.csproj\" />\n</Solution>\n", cancellationToken);
         await cleared.Task.WaitAsync(WaitLimit, cancellationToken);
         tracking.Dispose();
-        var heardBefore = Volatile.Read(ref heard);
+        var heardBefore = heard.Count;
         await File.WriteAllTextAsync(_solution, "<Solution>\n</Solution>\n", cancellationToken);
         await Task.Delay(SettleDelay * 5, cancellationToken);
 
         // Assert: nothing is heard once the selection is let go.
-        Assert.Equal(heardBefore, Volatile.Read(ref heard));
+        Assert.Equal(heardBefore, heard.Count);
     }
 
     private string Write(string relativePath, string content)

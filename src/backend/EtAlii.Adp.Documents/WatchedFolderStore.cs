@@ -122,12 +122,10 @@ public abstract class WatchedFolderStore<TSnapshot>(TimeSpan settleDelay) : IWat
     /// Reads <paramref name="folder"/> again now and announces it, as a settled change would - for
     /// what changes outside anything watched, such as a package restored into the machine's cache.
     /// </summary>
-    public TSnapshot Reload(string folder)
+    public void Reload(string folder)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(folder);
-        var watched = Watched(folder);
-        OnSettled(watched);
-        return watched.Snapshot;
+        OnSettled(Watched(folder));
     }
 
     /// <inheritdoc />
