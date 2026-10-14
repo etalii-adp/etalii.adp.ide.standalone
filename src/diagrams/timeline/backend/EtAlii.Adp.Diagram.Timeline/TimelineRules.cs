@@ -1,6 +1,12 @@
 namespace EtAlii.Adp.Diagram.Timeline;
 
 /// <summary>The stable identifiers of this module's rules, prefixed with its short name.</summary>
+/// <remarks>
+/// The codes are the definition's (<c>timeline.dis</c>, <c>constraints</c>); they are named here because
+/// <see cref="TimelineDefinition"/> groups the findings by them, which <c>constraints.order</c> cannot
+/// state, and reports the two id findings at a line rather than at an element (<c>timeline.md</c>,
+/// <i>What stays code</i>).
+/// </remarks>
 public static class TimelineRules
 {
     /// <summary>An element ends before it begins - readable from a hand-edited file, creatable by nothing in the application (Requirement 3.4).</summary>
