@@ -1,5 +1,4 @@
-﻿using EtAlii.Adp.Context;
-using EtAlii.Adp.Documents;
+﻿using EtAlii.Adp.Documents;
 using EtAlii.Adp.Hierarchy;
 
 namespace EtAlii.Adp.Diagram.Rdf;
