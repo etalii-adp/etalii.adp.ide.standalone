@@ -3,6 +3,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Documents\EtAlii.Adp.Documents.csproj" />
     <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Diagram\EtAlii.Adp.Diagram.csproj" />
+    <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Specification.Disl\EtAlii.Adp.Specification.Disl.csproj" />
     <!--
       Core abstractions only. The dependency runs module -> core and never back, and never
       sideways: a causal loop diagram states feedback structure and shares no engine with any
@@ -22,6 +23,12 @@
   <ItemGroup>
     <!-- This module's own wire payloads, packed into the core Element's Any. -->
     <Protobuf Include="..\..\api\*.proto" ProtoRoot="..\..\api" GrpcServices="None" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The DISL definition bundled from etalii-adp/etalii.adp (src/diagrams/tools/bundle-disl.sh), and its provenance. -->
+    <EmbeddedResource Include="..\..\definition\causal-loop-diagram.dis" LogicalName="causal-loop-diagram.dis" />
+    <EmbeddedResource Include="..\..\definition\provenance.json" LogicalName="causal-loop-diagram.provenance.json" />
   </ItemGroup>
 
   <ItemGroup>
