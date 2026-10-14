@@ -1,42 +1,17 @@
 /**
- * The geometry of a causal link: an arc, not an S-curve.
+ * The geometry of a bowed arc: one quadratic curve between two boxes, bowed off its chord.
  *
- * ## Why this module has its own connector
+ * <b>What DISL calls a `curved` routing</b> (§6.10), with its `curvature` and its `selfLoop`:
+ * the control point sits at the chord's midpoint, offset perpendicular to the chord by a fraction
+ * of the chord's length, to the LEFT of the direction of travel for a positive curvature. That
+ * one rule is what keeps two opposite lines apart - `A -> B` and `B -> A` travel in opposite
+ * directions, so they bow to opposite sides and a two-element cycle draws as an ellipse rather
+ * than as one line with an arrowhead at each end; a longer cycle bows consistently and reads as
+ * a ring.
  *
- * The shared `forwardBezierPath` is a **cubic** bezier whose two control points are pushed
- * horizontally, so a connector leaves its source rightward and arrives at its target from the
- * left. That is exactly right for a tree drawn in columns, which is what it was written for, and
- * exactly wrong here for two reasons:
- *
- * 1. **It draws two opposite links on top of each other.** `A -> B` and `B -> A` anchor on the
- *    sides facing each other and take mirror-image paths, so the pair renders as one line with an
- *    arrowhead at each end. A two-variable feedback loop — the commonest shape in this notation —
- *    showed no loop at all. That is the bug this module fixes.
- * 2. **A cycle reads as a zigzag.** Horizontal departures make each link an S; four of them in a
- *    ring make a concertina rather than a circle.
- *
- * ## What the convention actually is
- *
- * Causal loop diagrams are drawn with **curved arrows**, and the curve is not decoration: it is
- * what makes a feedback loop legible as a loop. Vensim — the notation's reference implementation
- * — gives each arrow a *single* curvature handle the author drags, which is a quadratic bezier
- * with one control point. This module does the same thing automatically:
- *
- * - the control point sits at the chord's midpoint, offset **perpendicular** to the chord;
- * - the offset is always to the same side **of the direction of travel**.
- *
- * That second rule is what closes the loop. `A -> B` and `B -> A` travel in opposite directions,
- * so "the same side of travel" puts them on opposite sides of the chord, and the pair draws an
- * ellipse. A longer cycle bows consistently outward and reads as a ring.
- *
- * Requirement 9.4 permits exactly this: something the notation needs that the shared appearance
- * does not offer, added on top of the shared base rather than replacing it. Everything else on
- * this canvas stays shared - the classes, the arrowhead marker, and the overflow controls that
- * the shared canvas provides.
- *
- * (That last clause is worded around a literal on purpose: the no-private-overflow guard scans
- * raw file content rather than code, so naming those controls in prose here would report this
- * module as building its own. The guard is right to be blunt; the comment is what moves.)
+ * Each end is clipped to its box along the direction of the control point, so the curve leaves
+ * and arrives along its own tangent and an arrowhead points where the curve goes. A line from a
+ * box to itself has no chord: it is drawn as a loop above the box (`selfLoop`, side `top`).
  */
 
 /** A point in canvas units. */
@@ -53,22 +28,15 @@ export interface ArcBox {
   height: number;
 }
 
-/**
- * How far an arc bows from its chord, as a fraction of the chord's length.
- *
- * Tuned so that a two-variable loop reads as a rounded ellipse rather than either a lens (too
- * little) or a circle that swallows its own endpoints (too much). It is a constant rather than a
- * per-link value because nothing in a `.cld` states curvature: the document says what causes
- * what, and how that is drawn is this module's business.
- */
+/** How far an arc bows from its chord when nothing says otherwise, as a fraction of the chord's length. */
 export const ArcBow = 0.2;
 
-/** The radius of the loop a link from a variable to itself is drawn as. */
-const SelfLoopRadius = 26;
+/** The radius of the loop a line from a box to itself is drawn as, when nothing says otherwise. */
+export const SelfLoopRadius = 26;
 
-/** A causal link's drawn geometry. */
-export interface CausalArc {
-  /** The SVG path: one quadratic segment, or an ellipse pair for a self-link. */
+/** A bowed arc's drawn geometry. */
+export interface BowedArc {
+  /** The SVG path: one quadratic segment, or a pair of them for a line from a box to itself. */
   readonly path: string;
 
   /** Where the arc leaves the source box. */
@@ -80,7 +48,7 @@ export interface CausalArc {
   /** The single control point. Named for what it is, so a reader can check the claim above. */
   readonly control: ArcPoint;
 
-  /** The point halfway along the arc — where a delay mark belongs. */
+  /** The point halfway along the arc. */
   readonly apex: ArcPoint;
 
   /** The unit normal at the apex, for drawing something across the arc rather than beside it. */
@@ -93,11 +61,12 @@ export function centreOf(box: ArcBox): ArcPoint {
 }
 
 /**
- * The arc for a link from <paramref name="from" /> to <paramref name="to" />.
+ * The arc for a line from <paramref name="from" /> to <paramref name="to" />.
  *
- * @param bow how far to bow, as a fraction of the chord; the default is the notation's own look.
+ * @param bow how far to bow, as a fraction of the chord; positive bows to the left of travel.
+ * @param selfLoopRadius the radius of the loop drawn when both ends are one box.
  */
-export function arcBetween(from: ArcBox, to: ArcBox, bow: number = ArcBow): CausalArc {
+export function arcBetween(from: ArcBox, to: ArcBox, bow: number = ArcBow, selfLoopRadius: number = SelfLoopRadius): BowedArc {
   const source = centreOf(from);
   const target = centreOf(to);
 
@@ -105,16 +74,15 @@ export function arcBetween(from: ArcBox, to: ArcBox, bow: number = ArcBow): Caus
   const dy = target.y - source.y;
   const span = Math.hypot(dx, dy);
 
-  // A link from a variable to itself has no chord to bow from, and dividing by that zero would
-  // put NaN into the path and erase the whole drawing. The notation draws it as a small loop
-  // above the variable, which is also what a reader expects.
+  // A line from a box to itself has no chord to bow from, and dividing by that zero would put NaN
+  // into the path and erase the whole drawing. It is drawn as a small loop above the box.
   if (span < 1) {
-    return selfArc(from);
+    return selfArc(from, selfLoopRadius);
   }
 
   // The left-hand normal of the direction of travel, in SVG coordinates where y runs down.
-  // Consistency is the whole trick: reversing the link reverses the direction, which flips this
-  // normal, which is what puts the two halves of a two-variable loop on opposite sides.
+  // Consistency is the whole trick: reversing the line reverses the direction, which flips this
+  // normal, which is what puts the two halves of a two-element cycle on opposite sides.
   const normal = { x: dy / span, y: -dx / span };
 
   const control = {
@@ -140,24 +108,24 @@ export function arcBetween(from: ArcBox, to: ArcBox, bow: number = ArcBow): Caus
 }
 
 /**
- * A point on the arc, as a fraction along it — for placing a polarity mark near the arrowhead
- * without putting it on top of the arrowhead.
+ * A point on the arc, as a fraction along it - for placing a mark near the arrowhead without
+ * putting it on top of the arrowhead.
  */
-export function pointAlong(arc: CausalArc, t: number): ArcPoint {
+export function pointAlong(arc: BowedArc, t: number): ArcPoint {
   return quadraticAt(arc.start, arc.control, arc.finish, t);
 }
 
 /** The unit normal to the arc at a fraction along it. */
-export function normalAlong(arc: CausalArc, t: number): ArcPoint {
+export function normalAlong(arc: BowedArc, t: number): ArcPoint {
   return quadraticNormalAt(arc.start, arc.control, arc.finish, t);
 }
 
 /**
  * Where a ray from the box's centre toward <paramref name="target" /> leaves the box.
  *
- * A rectangle rather than the circle it would be tempting to use: a variable is drawn as a label,
- * so it is much wider than it is tall, and a circular clip would leave a visible gap at the sides
- * and overlap the text at the top and bottom.
+ * A rectangle rather than the circle it would be tempting to use: a box holding a label is much
+ * wider than it is tall, and a circular clip would leave a visible gap at the sides and overlap
+ * the text at the top and bottom.
  */
 function boundaryToward(box: ArcBox, target: ArcPoint): ArcPoint {
   const centre = centreOf(box);
@@ -181,21 +149,21 @@ function boundaryToward(box: ArcBox, target: ArcPoint): ArcPoint {
 }
 
 /**
- * A link from a variable to itself, drawn as a small loop above it.
+ * A line from a box to itself, drawn as a small loop above it.
  *
  * Two quadratic segments rather than one, because a single control point cannot return a curve
  * to where it started without collapsing to a line.
  */
-function selfArc(box: ArcBox): CausalArc {
+function selfArc(box: ArcBox, radius: number): BowedArc {
   const centre = centreOf(box);
   const top = box.y;
 
   const start = { x: centre.x - box.width * 0.15, y: top };
   const finish = { x: centre.x + box.width * 0.15, y: top };
-  const control = { x: centre.x, y: top - SelfLoopRadius * 2 };
+  const control = { x: centre.x, y: top - radius * 2 };
 
-  const left = { x: start.x - SelfLoopRadius, y: top - SelfLoopRadius * 1.6 };
-  const right = { x: finish.x + SelfLoopRadius, y: top - SelfLoopRadius * 1.6 };
+  const left = { x: start.x - radius, y: top - radius * 1.6 };
+  const right = { x: finish.x + radius, y: top - radius * 1.6 };
 
   return {
     path:

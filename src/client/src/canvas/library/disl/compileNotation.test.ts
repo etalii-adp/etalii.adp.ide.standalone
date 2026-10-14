@@ -266,7 +266,7 @@ describe("compileNotation", () => {
     expect(() => compileNotation(withEdge({ connect: { tool: "absent" } }), SPAN_BINDINGS)).toThrow(/"absent", which the toolbox does not declare/);
     expect(compileNotation(withEdge({ labels: [{ id: "l", text: { attribute: "label" }, at: "end", side: "below", distance: 4 }] }), SPAN_BINDINGS).relationTypes[0]!.label).toEqual({ placement: "target", offset: 4 });
     expect(() => compileNotation(withEdge({ labels: [{ id: "l", text: { cel: "self.label" } }] }), SPAN_BINDINGS)).toThrow(/connection's own label/);
-    expect(() => compileNotation(withEdge({ labels: [{ id: "l", text: { attribute: "label" }, at: 0.25 }] }), SPAN_BINDINGS)).toThrow(/sits at 0.25/);
+    expect(() => compileNotation(withEdge({ labels: [{ id: "l", text: { attribute: "label" }, at: 0.25 }] }), SPAN_BINDINGS)).toThrow(/labels at a fraction along a "bezier" line/);
   });
 
   it("snaps only the axes that snap, takes an axis the module binds, and adds the drag hint to what moves", () => {

@@ -1,15 +1,15 @@
 import { describe, expect, it } from "vitest";
 
-import { ArcBow, arcBetween, centreOf, normalAlong, pointAlong, type ArcBox } from "./causalLoopArc";
+import { ArcBow, arcBetween, centreOf, normalAlong, pointAlong, type ArcBox } from "./bowedArc";
 
 /**
- * The geometry of a causal link.
+ * The geometry of a bowed arc.
  *
- * The bug these were written for: a two-variable feedback loop drew no loop at all. Both links
+ * The bug these were written for: a two-element cycle drew no cycle at all. Both lines
  * took the shared tree connector, which anchors on the sides facing each other, so `A -> B` and
  * `B -> A` rendered as one line with an arrowhead at each end.
  */
-describe("causal loop arcs", () => {
+describe("bowed arcs", () => {
   const boxAt = (x: number, y: number): ArcBox => ({ x: x - 60, y: y - 20, width: 120, height: 40 });
 
   const left = boxAt(0, 0);
@@ -25,7 +25,7 @@ describe("causal loop arcs", () => {
 
       // Assert.
       // The hint that started this: one control point, not two. A cubic bezier bulges out and
-      // back, which is what made a ring of links read as a concertina.
+      // back, which is what made a ring of lines read as a concertina.
       expect(segments(arc.path)).toEqual(["Q"]);
       expect(arc.path).not.toContain("C");
     });
@@ -45,7 +45,7 @@ describe("causal loop arcs", () => {
       expect(Math.abs(arc.control.y)).toBeCloseTo(chord * ArcBow, 6);
     });
 
-    it("bows further as the chord grows, so a long link is not a near-straight line", () => {
+    it("bows further as the chord grows, so a long line is not a near-straight line", () => {
       // Act.
       const near = arcBetween(left, boxAt(200, 0));
       const far = arcBetween(left, boxAt(800, 0));
@@ -55,9 +55,9 @@ describe("causal loop arcs", () => {
     });
   });
 
-  describe("a two-variable loop draws a loop", () => {
+  describe("a two-element cycle draws a loop", () => {
     /**
-     * The defect, stated as a test. Reversing a link reverses the direction of travel, which
+     * The defect, stated as a test. Reversing a line reverses the direction of travel, which
      * flips the normal, which puts the two arcs on opposite sides of the chord.
      */
     it("puts the two directions on opposite sides of the chord", () => {
@@ -95,7 +95,7 @@ describe("causal loop arcs", () => {
       expect(gap).toBeGreaterThan(50);
     });
 
-    it("holds whichever way round the two variables sit", () => {
+    it("holds whichever way round the two boxes sit", () => {
       // Act.
       // The old connector keyed its anchors off which box was further right, so mirroring the
       // pair changed the drawing. This one keys off the direction of travel, which does not care.
@@ -110,9 +110,9 @@ describe("causal loop arcs", () => {
   });
 
   describe("a cycle bows consistently, so it reads as a ring", () => {
-    it("bows every link of a ring to the same side of travel", () => {
+    it("bows every line of a ring to the same side of travel", () => {
       // Arrange.
-      // Four variables on a circle, linked in order - the commonest larger shape.
+      // Four boxes on a circle, joined in order - the commonest larger shape.
       const ring = [0, 1, 2, 3].map((index) => {
         const angle = (index * Math.PI) / 2;
         return boxAt(Math.round(300 * Math.cos(angle)), Math.round(300 * Math.sin(angle)));
@@ -150,7 +150,7 @@ describe("causal loop arcs", () => {
 
       // Assert.
       // Which edge is not fixed, and should not be: the arc leaves along its own tangent, which
-      // points at the control point, so a bowed link departs through the top rather than the
+      // points at the control point, so a bowed line departs through the top rather than the
       // side. Asserting "the right-hand side" would be asserting the old tree connector's
       // behaviour, which is the thing being replaced.
       expect(onBoundary(left, arc.start)).toBe(true);
@@ -217,10 +217,10 @@ describe("causal loop arcs", () => {
 
   describe("degenerate shapes do not produce NaN", () => {
     /**
-     * A link from a variable to itself has no chord, and dividing by that zero would put NaN into
-     * the path - which does not draw a broken link, it erases the whole drawing.
+     * A line from a box to itself has no chord, and dividing by that zero would put NaN into
+     * the path - which does not draw a broken line, it erases the whole drawing.
      */
-    it("draws a link from a variable to itself as a loop above it", () => {
+    it("draws a line from a box to itself as a loop above it", () => {
       // Act.
       const arc = arcBetween(left, left);
 
@@ -232,7 +232,7 @@ describe("causal loop arcs", () => {
       expect(arc.apex.y).toBeLessThan(left.y);
     });
 
-    it("survives two variables placed on top of each other", () => {
+    it("survives two boxes placed on top of each other", () => {
       // Act.
       const arc = arcBetween(left, boxAt(0, 0));
 

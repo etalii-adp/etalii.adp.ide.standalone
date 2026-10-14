@@ -200,6 +200,9 @@ export interface DislSize {
 
 export interface DislPlacement {
   system?: string;
+  /** Where a node with no position of its own stands, as CEL over its attributes. */
+  x?: Bindable<number>;
+  y?: Bindable<number>;
   anchor?: string;
   movable?: boolean | { x: boolean; y: boolean };
   resizable?: boolean | { x: boolean; y: boolean };
@@ -255,6 +258,7 @@ export interface DislNodeNotation extends Extensions {
   conditions?: readonly { when: string; style: string }[];
   compartments?: readonly DislCompartment[];
   badges?: readonly DislBadge[];
+  icon?: DislIcon;
 }
 
 export interface DislEndAnchoring {
@@ -287,6 +291,8 @@ export interface DislEdgeNotation extends Extensions {
   };
   /** The labels drawn along the edge (DISL §6.10). */
   labels?: readonly DislEdgeLabel[];
+  selfLoop?: { shape?: string; size?: number; side?: string };
+  midMarkers?: readonly DislMidMarker[];
 }
 
 /** A label along an edge (DISL §6.10): where along it, on which side and how far off the line. */
@@ -294,9 +300,27 @@ export interface DislEdgeLabel extends Extensions {
   id: string;
   text: Bindable<string>;
   at?: "start" | "middle" | "end" | number;
-  side?: "above" | "below" | "on";
+  side?: "above" | "below" | "on" | "left" | "right";
+  orientation?: string;
   distance?: number;
   editable?: boolean | "inline" | "multiline";
+}
+
+/** A marker drawn along an edge at a fraction of its length. */
+export interface DislMidMarker {
+  marker: string | { type: string; params?: Readonly<Record<string, unknown>> };
+  at: number;
+  orient?: string;
+  visible?: boolean | string | { cel: string };
+}
+
+/** An icon a node draws, by name. */
+export interface DislIcon {
+  icon: string;
+  position?: string;
+  size?: number;
+  color?: unknown;
+  flip?: Bindable<string>;
 }
 
 export interface DislContextTool {

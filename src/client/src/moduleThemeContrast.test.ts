@@ -81,10 +81,13 @@ describe("module colours honour the theme", () => {
   describe("causal-loop's variable pill carries a readable label", () => {
     const css = moduleFile("causal-loop-diagram", "causal-loop.css");
     const canvas = moduleFile("causal-loop-diagram", "CausalLoopCanvas.tsx");
+    // The definition is compiled from the specification; the label's class is the module's binding.
+    const bindings = moduleFile("causal-loop-diagram", "cldBindings.ts");
     const sheets = [css, libraryCss];
 
     it("declares the label with a class some stylesheet paints, so it cannot inherit black", () => {
-      const declared = [...canvas.matchAll(/className:\s*"([a-z-]+)"/g)].map((match) => match[1]);
+      const labelBinding = /labelClassName:[^\n]*/.exec(bindings)?.[0] ?? "";
+      const declared = [...labelBinding.matchAll(/"([a-z-]+)"/g)].map((match) => match[1]);
       expect(declared, "the variable label names a class").toContain("canvas-node-label");
 
       const token = paintedBy(sheets, ".canvas-node-label", "fill");
