@@ -1,7 +1,6 @@
 using System.Globalization;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
-using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.CausalLoopDiagram;
@@ -22,11 +21,16 @@ namespace EtAlii.Adp.Diagram.CausalLoopDiagram;
 /// <b>What an action does is still the module's command</b>, dispatched through the history stack, until
 /// the body is written through the binding.
 /// </para>
+/// <para>
+/// The scope, discovery on this module's documents, the could-not-be-read guard, the dispatch and the
+/// commit leg are the shared frame's (code-structure FR-034); this says which command each action is.
+/// </para>
 /// </remarks>
 public sealed class CausalLoopContextActionProvider(
     ICausalLoopDocumentStore documents,
     IHistoryStackStore historyStacks,
-    IDiagramViewportRegistry sessions) : IContextActionProvider
+    IDiagramViewportRegistry sessions)
+    : DiagramActionProvider<CausalLoopBody, CausalLoopModel>(historyStacks, documents)
 {
     /// <summary>Declare a new variable at the point the user asked for one.</summary>
     public const string AddVariableActionId = "causal-loop.add-variable";
@@ -84,44 +88,33 @@ public sealed class CausalLoopContextActionProvider(
     public const string ArrangeActionId = "causal-loop.arrange";
 
     /// <inheritdoc />
-    public ContextScope Scope => ContextScope.DiagramElement;
+    protected override bool IsBody(string path) => Diagram.IsBody(path);
 
     /// <inheritdoc />
-    public ValueTask<IReadOnlyList<ContextActionGroupDefinition>> DiscoverAsync(
-        ContextTarget target, CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(target);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        if (!AnswersFor(target))
-        {
-            return Groups([]);
-        }
-
-        // Derived from the DISL definition: the element's, the empty canvas's or the connect gesture's
-        // menu, nothing offered on a document that could not be read. Executing an action by id only
-        // finds actions its target discovers, so a drop and a finished gesture each discover theirs.
-        return Groups(CausalLoopDefinition.Menus(documents.GetOrLoad(target.ResolvedFullPath), target.ElementId));
-    }
+    /// <remarks>
+    /// Derived from the DISL definition: the element's, the empty canvas's or the connect gesture's
+    /// menu, nothing offered on a document that could not be read. Executing an action by id only
+    /// finds actions its target discovers, so a drop and a finished gesture each discover theirs.
+    /// </remarks>
+    protected override IReadOnlyList<ContextActionGroupDefinition> Discover(DocumentEntry<CausalLoopBody, CausalLoopModel> entry, string elementId) =>
+        CausalLoopDefinition.Menus(entry, elementId);
 
     /// <inheritdoc />
-    public ValueTask<ContextExecutionResult> ExecuteAsync(
-        ContextTarget target, string actionId, CancellationToken cancellationToken)
+    protected override ValueTask<ContextExecutionResult> RunAsync(
+        ContextTarget target, DocumentEntry<CausalLoopBody, CausalLoopModel> entry, string actionId, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(target);
-        cancellationToken.ThrowIfCancellationRequested();
+        ArgumentNullException.ThrowIfNull(entry);
 
-        if (!AnswersFor(target) || !actionId.StartsWith("causal-loop.", StringComparison.Ordinal))
+        if (!IsBody(target.ResolvedFullPath) || !actionId.StartsWith("causal-loop.", StringComparison.Ordinal))
         {
             return ValueTask.FromResult<ContextExecutionResult>(new ContextExecutionFailed("That action is not this diagram's."));
         }
 
-        var entry = documents.GetOrLoad(target.ResolvedFullPath);
-
         // The gestures that need a word from the user ask for one; the rest run.
         return actionId switch
         {
-            AddVariableActionId => AddVariableAsync(target, cancellationToken),
+            AddVariableActionId => AddVariableAsync(target, entry.Model, cancellationToken),
             RenameVariableActionId => AskInline(
                 "Rename variable", "mdi-rename-outline", "Name",
                 LabelOf(entry.Model, target.ElementId), target.ElementId),
@@ -132,25 +125,25 @@ public sealed class CausalLoopContextActionProvider(
                 entry.Model.Loops.FirstOrDefault(loop => loop.Id == target.ElementId)?.Name ?? ""),
             RemoveVariableActionId => Confirm(entry, target),
             ArrangeActionId => ArrangeAsync(target, cancellationToken),
-            _ => RunAsync(target, actionId, "", cancellationToken),
+            _ => CommitCommand(target, entry.Model, actionId, "") is { } command
+                ? DispatchAsync(target, command, cancellationToken)
+                : ValueTask.FromResult<ContextExecutionResult>(new ContextExecutionFailed("That action does not apply to this selection.")),
         };
     }
 
     /// <inheritdoc />
-    public ValueTask<ContextValidationResult> ValidateAsync(
-        ContextTarget target, string actionId, string value, CancellationToken cancellationToken)
+    protected override ContextValidationResult Validate(ContextTarget target, string actionId, string value)
     {
         ArgumentNullException.ThrowIfNull(target);
-        cancellationToken.ThrowIfCancellationRequested();
 
-        if (!AnswersFor(target))
+        if (!IsBody(target.ResolvedFullPath))
         {
-            return ValueTask.FromResult(ContextValidationResult.Accepted);
+            return ContextValidationResult.Accepted;
         }
 
-        var entry = documents.GetOrLoad(target.ResolvedFullPath);
+        var entry = Load(target);
 
-        return ValueTask.FromResult(actionId switch
+        return actionId switch
         {
             // The label is written quoted, so it may hold spaces but not a quote or a line break,
             // and it must not be empty - an empty name leaves nothing to read on the variable.
@@ -161,27 +154,16 @@ public sealed class CausalLoopContextActionProvider(
             AddLoopActionId when entry.Model.Loops.Any(loop => loop.Identifier == value) =>
                 ContextValidationResult.Rejected("A loop of that identifier is already stated in this diagram."),
             _ => ContextValidationResult.Accepted,
-        });
+        };
     }
 
     /// <inheritdoc />
-    public async ValueTask<ContextCommitResult> CommitAsync(
-        ContextTarget target, string actionId, string value, string text, CancellationToken cancellationToken)
+    protected override ICommand? CommitCommand(ContextTarget target, CausalLoopModel model, string actionId, string value)
     {
         ArgumentNullException.ThrowIfNull(target);
-        _ = text;
+        ArgumentNullException.ThrowIfNull(model);
 
-        var result = await RunAsync(target, actionId, value, cancellationToken);
-        return result is ContextExecutionFailed failed
-            ? ContextCommitResult.Failed(failed.Message)
-            : ContextCommitResult.Succeeded;
-    }
-
-    /// <summary>The command one action-and-value pair dispatches, or null when it is not ours.</summary>
-    private ICommand? CommandFor(ContextTarget target, string actionId, string value)
-    {
         var body = target.ResolvedFullPath;
-        var entry = documents.GetOrLoad(body);
         var variable = CausalLoopSelection.VariableOf(target.ElementId);
         var link = CausalLoopSelection.LinkOf(target.ElementId);
         var loop = CausalLoopSelection.LoopOf(target.ElementId);
@@ -198,15 +180,15 @@ public sealed class CausalLoopContextActionProvider(
             ConnectActionId when CausalLoopSelection.RelationOf(target.ElementId) is { } ends =>
                 new AddLinkCommand(body, ends.From, ends.To, CausalLoopPolarity.Positive),
             AddLoopActionId when variable is not null =>
-                new AddLoopCommand(body, value, value, LoopThrough(entry.Model, variable)),
+                new AddLoopCommand(body, value, value, LoopThrough(model, variable)),
             MakePositiveActionId when link is not null =>
                 new SetLinkPolarityCommand(body, link.Value.From, link.Value.To, CausalLoopPolarity.Positive),
             MakeNegativeActionId when link is not null =>
                 new SetLinkPolarityCommand(body, link.Value.From, link.Value.To, CausalLoopPolarity.Negative),
             ToggleDelayActionId when link is not null =>
-                new SetLinkDelayCommand(body, link.Value.From, link.Value.To, !IsDelayed(entry.Model, link.Value)),
+                new SetLinkDelayCommand(body, link.Value.From, link.Value.To, !IsDelayed(model, link.Value)),
             FlipCurvatureActionId when link is not null =>
-                new SetLinkCurvatureCommand(body, link.Value.From, link.Value.To, !IsFlipped(entry.Model, link.Value)),
+                new SetLinkCurvatureCommand(body, link.Value.From, link.Value.To, !IsFlipped(model, link.Value)),
             RemoveLinkActionId when link is not null =>
                 new RemoveLinkCommand(body, link.Value.From, link.Value.To),
             RenameLoopActionId when loop is not null => new SetLoopNameCommand(body, loop, value),
@@ -214,12 +196,6 @@ public sealed class CausalLoopContextActionProvider(
             _ => null,
         };
     }
-
-    private static bool AnswersFor(ContextTarget target) => Diagram.IsBody(target.ResolvedFullPath);
-
-    private static ValueTask<IReadOnlyList<ContextActionGroupDefinition>> Groups(
-        IReadOnlyList<ContextActionGroupDefinition> groups) =>
-        ValueTask.FromResult(groups);
 
     private static ValueTask<ContextExecutionResult> Ask(string title, string icon, string field, string initial) =>
         ValueTask.FromResult<ContextExecutionResult>(
@@ -245,10 +221,9 @@ public sealed class CausalLoopContextActionProvider(
     /// through the session where there is a registration to write it into, and left to the layout
     /// where there is not.
     /// </summary>
-    private async ValueTask<ContextExecutionResult> AddVariableAsync(ContextTarget target, CancellationToken cancellationToken)
+    private async ValueTask<ContextExecutionResult> AddVariableAsync(ContextTarget target, CausalLoopModel model, CancellationToken cancellationToken)
     {
-        var entry = documents.GetOrLoad(target.ResolvedFullPath);
-        (string id, string label) = CausalLoopEdits.NextVariableName(entry.Model);
+        (string id, string label) = CausalLoopEdits.NextVariableName(model);
 
         if (CausalLoopSelection.PlacementPoint(target.ElementId) is { } point &&
             sessions.Find(target.WatchId, target.ResolvedFullPath) is CausalLoopSession session)
@@ -257,9 +232,7 @@ public sealed class CausalLoopContextActionProvider(
             return refusal.Length == 0 ? new ContextExecutionCompleted() : new ContextExecutionFailed(refusal);
         }
 
-        var result = await historyStacks.Get(target.RootPath).ExecuteAsync(
-            new AddVariableCommand(target.ResolvedFullPath, id, label), cancellationToken);
-        return result.IsSuccess ? new ContextExecutionCompleted() : new ContextExecutionFailed(result.Error);
+        return await DispatchAsync(target, new AddVariableCommand(target.ResolvedFullPath, id, label), cancellationToken);
     }
 
     /// <summary>
@@ -278,18 +251,6 @@ public sealed class CausalLoopContextActionProvider(
             : new ContextConfirmationRequest(asked.Title, "mdi-delete-outline", asked.Message, asked.ConfirmLabel, asked.Danger);
 
         return ValueTask.FromResult<ContextExecutionResult>(new ContextExecutionRequiresConfirmation(request));
-    }
-
-    private async ValueTask<ContextExecutionResult> RunAsync(
-        ContextTarget target, string actionId, string value, CancellationToken cancellationToken)
-    {
-        if (CommandFor(target, actionId, value) is not { } command)
-        {
-            return new ContextExecutionFailed("That action does not apply to this selection.");
-        }
-
-        var result = await historyStacks.Get(target.RootPath).ExecuteAsync(command, cancellationToken);
-        return result.IsSuccess ? new ContextExecutionCompleted() : new ContextExecutionFailed(result.Error);
     }
 
     /// <summary>
