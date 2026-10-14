@@ -84,7 +84,7 @@ public sealed class WardleyContextActionProvider : IContextActionProvider
             return Empty();
         }
 
-        var map = WardleyParser.Parse(_documents.GetOrLoad(target.ResolvedFullPath));
+        var map = _documents.GetOrLoad(target.ResolvedFullPath).Model;
 
         // No element: the map itself, where the only things to do are the adds.
         if (target.ElementId.Length == 0)
@@ -130,7 +130,7 @@ public sealed class WardleyContextActionProvider : IContextActionProvider
                 $"Add {SpellAdd(actionId)}", "mdi-plus", AddFieldLabel(actionId), "", "Add")));
         }
 
-        var map = WardleyParser.Parse(_documents.GetOrLoad(target.ResolvedFullPath));
+        var map = _documents.GetOrLoad(target.ResolvedFullPath).Model;
         var entry = _documents
             .Identities(target.ResolvedFullPath)
             .FirstOrDefault(candidate => candidate.Id == target.ElementId);
@@ -300,7 +300,7 @@ public sealed class WardleyContextActionProvider : IContextActionProvider
                 cancellationToken);
         }
 
-        var map = WardleyParser.Parse(_documents.GetOrLoad(bodyPath));
+        var map = _documents.GetOrLoad(bodyPath).Model;
         var entry = _documents.Identities(bodyPath).FirstOrDefault(candidate => candidate.Id == target.ElementId);
         if (entry is null)
         {

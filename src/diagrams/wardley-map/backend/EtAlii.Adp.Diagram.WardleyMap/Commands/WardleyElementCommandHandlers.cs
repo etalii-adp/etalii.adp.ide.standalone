@@ -60,7 +60,7 @@ public sealed class AddWardleyElementCommandHandler : ICommandHandler<AddWardley
             return Task.FromResult(CommandResult.Failure("An element needs a name."));
         }
 
-        var document = _documents.GetOrLoad(command.BodyPath);
+        var document = _documents.GetOrLoad(command.BodyPath).Document;
         var map = WardleyParser.Parse(document);
 
         // Two components sharing a name makes every reference to it ambiguous, which
@@ -100,7 +100,7 @@ public sealed class RemoveWardleyElementCommandHandler : ICommandHandler<RemoveW
         ArgumentNullException.ThrowIfNull(command);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var document = _documents.GetOrLoad(command.BodyPath);
+        var document = _documents.GetOrLoad(command.BodyPath).Document;
         var map = WardleyParser.Parse(document);
         var component = WardleyEdit.ComponentOf(map, _documents.Identities(command.BodyPath), command.ElementId);
         if (component is null)
@@ -150,7 +150,7 @@ public sealed class RenameWardleyElementCommandHandler : ICommandHandler<RenameW
             return Task.FromResult(CommandResult.Failure("An element needs a name."));
         }
 
-        var document = _documents.GetOrLoad(command.BodyPath);
+        var document = _documents.GetOrLoad(command.BodyPath).Document;
         var map = WardleyParser.Parse(document);
         var component = WardleyEdit.ComponentOf(map, _documents.Identities(command.BodyPath), command.ElementId);
         if (component is null)
@@ -200,7 +200,7 @@ public sealed class SetWardleyInertiaCommandHandler : ICommandHandler<SetWardley
         ArgumentNullException.ThrowIfNull(command);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var document = _documents.GetOrLoad(command.BodyPath);
+        var document = _documents.GetOrLoad(command.BodyPath).Document;
         var map = WardleyParser.Parse(document);
         var component = WardleyEdit.ComponentOf(map, _documents.Identities(command.BodyPath), command.ElementId);
         if (component is null)
@@ -236,7 +236,7 @@ public sealed class SetWardleyDecoratorsCommandHandler : ICommandHandler<SetWard
         ArgumentNullException.ThrowIfNull(command);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var document = _documents.GetOrLoad(command.BodyPath);
+        var document = _documents.GetOrLoad(command.BodyPath).Document;
         var map = WardleyParser.Parse(document);
         var component = WardleyEdit.ComponentOf(map, _documents.Identities(command.BodyPath), command.ElementId);
         if (component is null)
@@ -290,7 +290,7 @@ public sealed class SetWardleyDecoratorCommandHandler : ICommandHandler<SetWardl
         ArgumentNullException.ThrowIfNull(command);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var document = _documents.GetOrLoad(command.BodyPath);
+        var document = _documents.GetOrLoad(command.BodyPath).Document;
         var map = WardleyParser.Parse(document);
         var component = WardleyEdit.ComponentOf(map, _documents.Identities(command.BodyPath), command.ElementId);
         if (component is null)
@@ -334,7 +334,7 @@ public sealed class AddWardleyNoteCommandHandler : ICommandHandler<AddWardleyNot
             return Task.FromResult(CommandResult.Failure("A note needs something to say."));
         }
 
-        var document = _documents.GetOrLoad(command.BodyPath);
+        var document = _documents.GetOrLoad(command.BodyPath).Document;
         var before = document.ToText();
         var position = WardleyAxis.Clamp(new WardleyCoordinate(command.Visibility, command.Maturity));
 
@@ -369,7 +369,7 @@ public sealed class AddWardleyAnnotationCommandHandler : ICommandHandler<AddWard
             return Task.FromResult(CommandResult.Failure("An annotation needs something to say."));
         }
 
-        var document = _documents.GetOrLoad(command.BodyPath);
+        var document = _documents.GetOrLoad(command.BodyPath).Document;
         var map = WardleyParser.Parse(document);
         var before = document.ToText();
         var position = WardleyAxis.Clamp(new WardleyCoordinate(command.Visibility, command.Maturity));
@@ -404,7 +404,7 @@ public sealed class SetWardleyLinkCommandHandler : ICommandHandler<SetWardleyLin
         ArgumentNullException.ThrowIfNull(command);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var document = _documents.GetOrLoad(command.BodyPath);
+        var document = _documents.GetOrLoad(command.BodyPath).Document;
         var map = WardleyParser.Parse(document);
         var identities = _documents.Identities(command.BodyPath);
         var source = WardleyEdit.ComponentOf(map, identities, command.SourceElementId);
@@ -476,7 +476,7 @@ public sealed class SetWardleyEvolveCommandHandler : ICommandHandler<SetWardleyE
         ArgumentNullException.ThrowIfNull(command);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var document = _documents.GetOrLoad(command.BodyPath);
+        var document = _documents.GetOrLoad(command.BodyPath).Document;
         var map = WardleyParser.Parse(document);
         var component = WardleyEdit.ComponentOf(map, _documents.Identities(command.BodyPath), command.ElementId);
         if (component is null)
@@ -549,7 +549,7 @@ public sealed class SetWardleyPipelineMembershipCommandHandler : ICommandHandler
             return Task.FromResult(CommandResult.Failure("A pipeline component needs a name."));
         }
 
-        var document = _documents.GetOrLoad(command.BodyPath);
+        var document = _documents.GetOrLoad(command.BodyPath).Document;
         var map = WardleyParser.Parse(document);
         var parent = WardleyEdit.ComponentOf(map, _documents.Identities(command.BodyPath), command.ParentElementId);
         if (parent is null)
@@ -657,7 +657,7 @@ public sealed class RestoreWardleyDocumentCommandHandler : ICommandHandler<Resto
         ArgumentNullException.ThrowIfNull(command);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var document = _documents.GetOrLoad(command.BodyPath);
+        var document = _documents.GetOrLoad(command.BodyPath).Document;
         var replaced = document.ToText();
 
         // Replacing the lines in place rather than swapping the document keeps every session's

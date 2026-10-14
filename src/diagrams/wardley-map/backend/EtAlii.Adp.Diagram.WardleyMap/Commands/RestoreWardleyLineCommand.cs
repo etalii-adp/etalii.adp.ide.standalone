@@ -40,7 +40,7 @@ public sealed class RestoreWardleyLineCommandHandler : ICommandHandler<RestoreWa
         ArgumentNullException.ThrowIfNull(command);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var document = _documents.GetOrLoad(command.BodyPath);
+        var document = _documents.GetOrLoad(command.BodyPath).Document;
         if (command.Line < 1 || command.Line > document.Lines.Count)
         {
             // The document has changed shape underneath this - a redo after an edit that

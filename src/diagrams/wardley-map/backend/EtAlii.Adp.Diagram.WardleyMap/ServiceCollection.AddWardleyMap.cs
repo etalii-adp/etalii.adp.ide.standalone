@@ -1,5 +1,6 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.History;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -34,6 +35,8 @@ public static class ServiceCollectionAddWardleyMapExtension
 
         // Writes the empty `.owm` body the shared create-file command puts beside a new `.adp`
         // (Requirement 1.6). Resolved by origin; core never learns what a Wardley map is.
+        // Its own factory rather than the shared empty document: a new map is titled after its file,
+        // which one fixed text cannot say.
         services.AddSingleton<IDiagramDocumentFactory, WardleyDocumentFactory>();
 
         // Model to core elements and deltas, including the axis flip.
@@ -41,11 +44,15 @@ public static class ServiceCollectionAddWardleyMapExtension
 
         // The per-connection view: baseline, viewport, deltas and a positional drag
         // (Requirement 10.8).
-        services.AddSingleton<IDiagramSessionFactory, WardleySessionFactory>();
+        services.AddDiagramSession(Diagram.WardleyMap.Origin, (provider, opening) => new WardleySession(
+            opening.BodyPath,
+            provider.GetRequiredService<IWardleyDocumentStore>(),
+            provider.GetRequiredService<WardleyElementMapper>(),
+            provider.GetRequiredService<IHistoryStackStore>().Get(opening.RootPath)));
 
         // The reload seam: an external write to a map reaches the store, and through it every
         // open session (modular-text-editors Requirement 5.3).
-        services.AddSingleton<IDiagramDocumentReloader, WardleyDocumentReloader>();
+        services.AddDiagramDocumentReloader<IWardleyDocumentStore>(Diagram.WardleyMap.Origin);
 
         // Makes an element selectable, and self-describing once it is (Requirement 11.2).
         services.AddSingleton<IContextSourceResolver, WardleyContextSourceResolver>();

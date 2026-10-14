@@ -31,7 +31,7 @@ public sealed class WardleyDocumentStoreSharedReadTests : IDisposable
         using var editor = new FileStream(path, FileMode.Open, FileAccess.Write, FileShare.Read);
 
         // Act.
-        var document = new WardleyDocumentStore().GetOrLoad(path);
+        var document = new WardleyDocumentStore().GetOrLoad(path).Document;
 
         // Assert: the map itself, not the empty fallback.
         Assert.Equal(text, document.ToText());

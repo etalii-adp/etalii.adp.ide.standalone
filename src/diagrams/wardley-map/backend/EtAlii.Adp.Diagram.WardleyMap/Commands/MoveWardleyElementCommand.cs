@@ -43,7 +43,7 @@ public sealed class MoveWardleyElementCommandHandler : ICommandHandler<MoveWardl
         ArgumentNullException.ThrowIfNull(command);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var document = _documents.GetOrLoad(command.BodyPath);
+        var document = _documents.GetOrLoad(command.BodyPath).Document;
         var map = WardleyParser.Parse(document);
 
         // From the store, not reconciled here: an unmatched element gets a FRESH ShortGuid, so

@@ -1,0 +1,94 @@
+using Xunit;
+
+namespace EtAlii.Adp.Diagram.WardleyMap.Tests;
+
+/// <summary>
+/// The identities held beside a document follow what the shared store does to it: kept while it
+/// keeps the last good document, re-reconciled when it installs another (Requirement 4.3, R2.5).
+/// </summary>
+public sealed class WardleyDocumentStoreIdentityTests : IDisposable
+{
+    private readonly TestFolder _folder = TestFolder.Create("EtAlii.Adp.WardleyDocumentStoreIdentityTests");
+
+    private string Body => field ??= Copy();
+
+    private string Copy()
+    {
+        var body = _folder.Combine("tea.owm");
+        File.Copy(WardleyDocumentStoreTests.Minimal, body);
+        return body;
+    }
+
+    public void Dispose() => _folder.Dispose();
+
+    [Fact]
+    public void AMissingBody_KeepsItsIdentitiesOnReload_AndLosesThemOnlyToTheWatchersDelete()
+    {
+        // Arrange.
+        var store = new WardleyDocumentStore();
+        var held = store.Identities(Body);
+        Assert.NotEmpty(held);
+        File.Delete(Body);
+
+        // Act: a reload that finds no file keeps the last good document, and with it its ids.
+        store.Reload(Body);
+        var kept = store.Identities(Body);
+
+        // Act: the watcher's evidence that it is gone.
+        store.BodyDeleted(Body);
+
+        // Assert.
+        Assert.Equal(held, kept);
+        Assert.Empty(store.Identities(Body));
+    }
+
+    [Fact]
+    public async Task AnExternalEdit_KeepsTheIdsOfWhatSurvived_AndGivesTheNewcomerOne()
+    {
+        // Arrange.
+        var store = new WardleyDocumentStore();
+        var before = store.Identities(Body);
+        await File.AppendAllTextAsync(Body, "component Kettle [0.45, 0.57]\n", TestContext.Current.CancellationToken);
+
+        // Act.
+        store.Reload(Body);
+        var after = store.Identities(Body);
+
+        // Assert: a `git pull` does not reset a selection on what it left alone.
+        Assert.All(before, entry => Assert.Contains(entry, after));
+        Assert.Single(after.Except(before), entry => entry.Key == "Kettle");
+    }
+
+    [Fact]
+    public void AForgottenDocument_ForgetsItsIdentities_AndReadsTheSidecarAfresh()
+    {
+        // Arrange: ids handed out on open and never written, as on a map opened and not edited.
+        var store = new WardleyDocumentStore();
+        var minted = store.Identities(Body);
+
+        // Act.
+        store.Forget(Body);
+        var again = store.Identities(Body);
+
+        // Assert: no sidecar was written, so the next open mints its own; the old ones are not held.
+        Assert.NotEqual(minted.Select(entry => entry.Id), again.Select(entry => entry.Id));
+    }
+
+    [Fact]
+    public void ASaveWhoseIdentitiesCannotBeKept_LandsTheMap_AndSaysSo()
+    {
+        // Arrange: a folder where the identity sidecar goes, which no platform lets a file replace.
+        var store = new WardleyDocumentStore();
+        Directory.CreateDirectory(WardleyIdentities.PathFor(Body));
+        var document = store.GetOrLoad(Body).Document;
+        document.ReplaceLine(1, "title Kept anyway");
+
+        // Act.
+        var saved = store.Save(Body, document);
+
+        // Assert: the map landed, and the ids it hands out will not survive a restart.
+        Assert.False(saved.Failed, saved.Error);
+        Assert.Contains("title Kept anyway", File.ReadAllText(Body), StringComparison.Ordinal);
+        Assert.Contains("new ids", saved.Warning, StringComparison.Ordinal);
+    }
+}
