@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.Rdf;
@@ -13,7 +14,7 @@ namespace EtAlii.Adp.Diagram.Rdf;
 /// <param name="Language">The label's language tag - the session's display language.</param>
 /// <param name="SchemeIri">The scheme to file it into, or empty for the unfiled band.</param>
 public sealed record AddSkosConceptCommand(
-    string BodyPath, string ConceptIri, string PrefLabel, string Language, string SchemeIri) : ICommand;
+    string BodyPath, string ConceptIri, string PrefLabel, string Language, string SchemeIri) : IDocumentEditCommand;
 
 /// <summary>
 /// Removes every asserted triple of one hierarchy or related pair - a both-ways pair goes as one
@@ -24,92 +25,71 @@ public sealed record AddSkosConceptCommand(
 /// <param name="BIri">The other end.</param>
 /// <param name="Hierarchy">True for a broader/narrower pair, false for related.</param>
 public sealed record DisconnectSkosPairCommand(
-    string BodyPath, string AIri, string BIri, bool Hierarchy) : ICommand;
+    string BodyPath, string AIri, string BIri, bool Hierarchy) : IDocumentEditCommand;
 
 /// <inheritdoc cref="AddSkosConceptCommand" />
-public sealed class AddSkosConceptCommandHandler(IRdfDocumentStore documents) : ICommandHandler<AddSkosConceptCommand>
+public sealed class AddSkosConceptCommandHandler(IRdfDocumentStore documents) : RdfEditHandler<AddSkosConceptCommand>(documents)
 {
-    public Task<CommandResult> ExecuteAsync(AddSkosConceptCommand command, CancellationToken cancellationToken = default)
+    /// <inheritdoc />
+    protected override EditOutcome Apply(LineDocument body, RdfModel model, AddSkosConceptCommand command)
     {
-        ArgumentNullException.ThrowIfNull(command);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        return RdfEdits.Run(documents, command.BodyPath, command, entry =>
+        // Three splices, one snapshot inverse. The writer's coordinates are valid only for
+        // the parse they came from, so the model is re-read between splices rather than
+        // trusted across them (the family's own stale-span rule).
+        var refusal = RdfWriter.AddTriple(
+            body, model,
+            command.ConceptIri, RdfVocabulary.Type, new IriTerm(SkosVocabulary.Concept, ""));
+        if (refusal.Length > 0)
         {
-            // Three splices, one snapshot inverse. The writer's coordinates are valid only for
-            // the parse they came from, so the model is re-read between splices rather than
-            // trusted across them (the family's own stale-span rule).
-            var refusal = RdfWriter.AddTriple(
-                entry.Document, entry.Model,
-                command.ConceptIri, RdfVocabulary.Type, new IriTerm(SkosVocabulary.Concept, ""));
-            if (refusal.Length > 0)
-            {
-                return refusal;
-            }
+            return Outcome(refusal);
+        }
 
-            var model = RdfParser.Parse(entry.Document);
-            refusal = RdfWriter.AddTriple(
-                entry.Document, model,
-                command.ConceptIri, SkosVocabulary.PrefLabel,
-                new LiteralTerm(command.PrefLabel, null, command.Language.Length > 0 ? command.Language : null, ""));
-            if (refusal.Length > 0)
-            {
-                return refusal;
-            }
+        refusal = RdfWriter.AddTriple(
+            body, RdfParser.Parse(body),
+            command.ConceptIri, SkosVocabulary.PrefLabel,
+            new LiteralTerm(command.PrefLabel, null, command.Language.Length > 0 ? command.Language : null, ""));
+        if (refusal.Length > 0 || command.SchemeIri.Length == 0)
+        {
+            return Outcome(refusal);
+        }
 
-            if (command.SchemeIri.Length > 0)
-            {
-                model = RdfParser.Parse(entry.Document);
-                refusal = RdfWriter.AddTriple(
-                    entry.Document, model,
-                    command.ConceptIri, SkosVocabulary.InScheme, new IriTerm(command.SchemeIri, ""));
-                if (refusal.Length > 0)
-                {
-                    return refusal;
-                }
-            }
-
-            return "";
-        });
+        return Outcome(RdfWriter.AddTriple(
+            body, RdfParser.Parse(body),
+            command.ConceptIri, SkosVocabulary.InScheme, new IriTerm(command.SchemeIri, "")));
     }
 }
 
 /// <inheritdoc cref="DisconnectSkosPairCommand" />
-public sealed class DisconnectSkosPairCommandHandler(IRdfDocumentStore documents) : ICommandHandler<DisconnectSkosPairCommand>
+public sealed class DisconnectSkosPairCommandHandler(IRdfDocumentStore documents) : RdfEditHandler<DisconnectSkosPairCommand>(documents)
 {
-    public Task<CommandResult> ExecuteAsync(DisconnectSkosPairCommand command, CancellationToken cancellationToken = default)
+    /// <inheritdoc />
+    protected override EditOutcome Apply(LineDocument body, RdfModel model, DisconnectSkosPairCommand command)
     {
-        ArgumentNullException.ThrowIfNull(command);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        return RdfEdits.Run(documents, command.BodyPath, command, entry =>
+        // One asserted direction or both: each splice invalidates the previous parse's
+        // coordinates, so the pair is re-found on a fresh model until none remains.
+        var removed = 0;
+        while (true)
         {
-            // One asserted direction or both: each splice invalidates the previous parse's
-            // coordinates, so the pair is re-found on a fresh model until none remains.
-            var removed = 0;
-            while (true)
+            var current = removed == 0 ? model : RdfParser.Parse(body);
+            var triple = (command.Hierarchy
+                    ? SkosPair.Hierarchy(current, command.AIri, command.BIri)
+                    : SkosPair.Related(current, command.AIri, command.BIri))
+                .FirstOrDefault();
+            if (triple is null)
             {
-                var model = removed == 0 ? entry.Model : RdfParser.Parse(entry.Document);
-                var triple = (command.Hierarchy
-                        ? SkosPair.Hierarchy(model, command.AIri, command.BIri)
-                        : SkosPair.Related(model, command.AIri, command.BIri))
-                    .FirstOrDefault();
-                if (triple is null)
-                {
-                    return removed > 0
-                        ? ""
-                        : "That connection is not in the file as it stands, so there is nothing to disconnect.";
-                }
-
-                var refusal = RdfWriter.RemoveTriple(entry.Document, model, triple);
-                if (refusal.Length > 0)
-                {
-                    return refusal;
-                }
-
-                removed++;
+                return Outcome(removed > 0
+                    ? ""
+                    : "That connection is not in the file as it stands, so there is nothing to disconnect.");
             }
-        });
+
+            var refusal = RdfWriter.RemoveTriple(body, current, triple);
+            if (refusal.Length > 0)
+            {
+                return Outcome(refusal);
+            }
+
+            removed++;
+        }
     }
 
     /// <summary>The pair lookups over a given model - the handler's fresh-parse loop needs them model-first.</summary>

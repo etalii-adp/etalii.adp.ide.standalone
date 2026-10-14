@@ -1,4 +1,5 @@
-﻿using EtAlii.Adp.History;
+﻿using EtAlii.Adp.Documents;
+using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.Rdf;
 
@@ -10,22 +11,20 @@ namespace EtAlii.Adp.Diagram.Rdf;
 public sealed record ReplaceRdfObjectLiteralCommand(
     string BodyPath, string SubjectIri, string PredicateIri,
     string OldLexical, string OldLanguage, string OldDatatypeIri,
-    string NewLexical, string NewLanguage = "", string NewDatatypeIri = "") : ICommand;
+    string NewLexical, string NewLanguage = "", string NewDatatypeIri = "") : IDocumentEditCommand;
 
 /// <inheritdoc cref="ReplaceRdfObjectLiteralCommand" />
-public sealed class ReplaceRdfObjectLiteralCommandHandler(IRdfDocumentStore documents) : ICommandHandler<ReplaceRdfObjectLiteralCommand>
+public sealed class ReplaceRdfObjectLiteralCommandHandler(IRdfDocumentStore documents) : RdfEditHandler<ReplaceRdfObjectLiteralCommand>(documents)
 {
-    public Task<CommandResult> ExecuteAsync(ReplaceRdfObjectLiteralCommand command, CancellationToken cancellationToken = default)
+    /// <inheritdoc />
+    protected override EditOutcome Apply(LineDocument body, RdfModel model, ReplaceRdfObjectLiteralCommand command)
     {
-        ArgumentNullException.ThrowIfNull(command);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        return RdfEdits.Run(documents, command.BodyPath, command, entry =>
-            RdfEdits.TripleOf(
-                entry.Model, command.SubjectIri, command.PredicateIri,
+        return Outcome(
+            TripleOf(
+                model, command.SubjectIri, command.PredicateIri,
                 "", command.OldLexical, command.OldLanguage, command.OldDatatypeIri) is { } triple
                 ? RdfWriter.ReplaceObjectLiteral(
-                    entry.Document, entry.Model, triple,
+                    body, model, triple,
                     command.NewLexical,
                     command.NewLanguage.Length > 0 ? command.NewLanguage : null,
                     command.NewDatatypeIri.Length > 0 ? command.NewDatatypeIri : null)

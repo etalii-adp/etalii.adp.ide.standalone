@@ -1,19 +1,18 @@
-﻿using EtAlii.Adp.History;
+﻿using EtAlii.Adp.Documents;
+using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.Rdf.Shacl;
 
 /// <summary>Declares one more target on a shape (Requirement 5.3).</summary>
-public sealed record AddShaclTargetCommand(string BodyPath, string ShapeIri, string TargetPredicateIri, string TermIri) : ICommand;
+public sealed record AddShaclTargetCommand(string BodyPath, string ShapeIri, string TargetPredicateIri, string TermIri) : IDocumentEditCommand;
 
 /// <inheritdoc cref="AddShaclTargetCommand" />
-public sealed class AddShaclTargetCommandHandler(IRdfDocumentStore documents) : ICommandHandler<AddShaclTargetCommand>
+public sealed class AddShaclTargetCommandHandler(IRdfDocumentStore documents) : RdfEditHandler<AddShaclTargetCommand>(documents)
 {
-    public Task<CommandResult> ExecuteAsync(AddShaclTargetCommand command, CancellationToken cancellationToken = default)
+    /// <inheritdoc />
+    protected override EditOutcome Apply(LineDocument body, RdfModel model, AddShaclTargetCommand command)
     {
-        ArgumentNullException.ThrowIfNull(command);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        return RdfEdits.Run(documents, command.BodyPath, command, entry =>
-            ShaclWriter.AddTarget(entry.Document, entry.Model, command.ShapeIri, command.TargetPredicateIri, new IriTerm(command.TermIri, "")));
+        return Outcome(
+            ShaclWriter.AddTarget(body, model, command.ShapeIri, command.TargetPredicateIri, new IriTerm(command.TermIri, "")));
     }
 }
