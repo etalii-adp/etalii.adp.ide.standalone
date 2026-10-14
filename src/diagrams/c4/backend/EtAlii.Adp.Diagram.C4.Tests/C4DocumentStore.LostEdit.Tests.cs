@@ -64,7 +64,7 @@ public class C4DocumentStoreLostEditTests : IDisposable
         var path = IoPath.Combine(_workspace, "sample.dsl");
         await File.WriteAllTextAsync(path, Sample, TestContext.Current.CancellationToken);
         var store = new C4DocumentStore();
-        var document = store.GetOrLoad(path);
+        var document = store.GetOrLoad(path).Document;
         document.ReplaceLine(3, EditedLine);
 
         // The edit is in memory and nowhere else yet, which is this test's precondition.

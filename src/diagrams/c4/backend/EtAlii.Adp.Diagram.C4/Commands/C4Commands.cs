@@ -38,14 +38,14 @@ public abstract class C4CommandHandler(IC4DocumentStore documents)
         Func<C4Element, string> previous,
         Func<string, ICommand> inverse)
     {
-        var workspace = Documents.WorkspaceOf(bodyPath);
+        var workspace = Documents.GetOrLoad(bodyPath).Model;
         var element = workspace.Find(elementId);
         if (element is null)
         {
             return CommandResult.Failure($"'{elementId}' is not in this model any more.");
         }
 
-        var document = Documents.GetOrLoad(bodyPath);
+        var document = Documents.GetOrLoad(bodyPath).Document;
         var line = document.Lines[(int)element.Line - 1];
         var keyword = KeywordIndexOf(line);
         if (keyword < 0)
@@ -70,14 +70,14 @@ public abstract class C4CommandHandler(IC4DocumentStore documents)
         Func<C4Relationship, string> previous,
         Func<string, ICommand> inverse)
     {
-        var workspace = Documents.WorkspaceOf(bodyPath);
+        var workspace = Documents.GetOrLoad(bodyPath).Model;
         var relationship = workspace.Relationships.FirstOrDefault(candidate => candidate.Id == relationshipId);
         if (relationship is null)
         {
             return CommandResult.Failure("That relationship is not in this model any more.");
         }
 
-        var document = Documents.GetOrLoad(bodyPath);
+        var document = Documents.GetOrLoad(bodyPath).Document;
         var line = document.Lines[(int)relationship.Line - 1];
         var tokens = C4Tokens.SplitWithSpans(line);
         // `source -> destination "description" "technology"`, or `-> destination ...` inside an
@@ -165,7 +165,7 @@ internal sealed class SetElementTechnologyCommandHandler(IC4DocumentStore docume
         ArgumentNullException.ThrowIfNull(command);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var workspace = Documents.WorkspaceOf(command.BodyPath);
+        var workspace = Documents.GetOrLoad(command.BodyPath).Model;
         var element = workspace.Find(command.ElementId);
         if (element is not null && element.Kind is not (C4ElementKind.Container or C4ElementKind.Component
             or C4ElementKind.DeploymentNode or C4ElementKind.InfrastructureNode))

@@ -55,7 +55,7 @@ public sealed class C4ContextSourceResolver : IContextSourceResolver
         }
 
         var bodyPath = routed.BodyPath!;
-        var workspace = _documents.WorkspaceOf(bodyPath);
+        var workspace = _documents.GetOrLoad(bodyPath).Model;
         var elementId = id.ElementId.Value;
         var element = workspace.Find(elementId);
         if (element is null)
@@ -109,15 +109,16 @@ public sealed class C4ContextSourceResolver : IContextSourceResolver
         _documents.Changed += OnChanged;
         return new CallbackDisposable(() => _documents.Changed -= OnChanged);
 
-        void OnChanged(object? sender, C4DocumentChangedEventArgs args)
+        void OnChanged(object? sender, DocumentChangedEventArgs args)
         {
             if (!string.Equals(args.Path, bodyPath, StringComparison.OrdinalIgnoreCase))
             {
                 return;
             }
 
-            var element = args.Workspace.Find(elementId);
-            onChange(element is null ? null : PathOf(args.Workspace, element));
+            var workspace = _documents.GetOrLoad(args.Path).Model;
+            var element = workspace.Find(elementId);
+            onChange(element is null ? null : PathOf(workspace, element));
         }
     }
 

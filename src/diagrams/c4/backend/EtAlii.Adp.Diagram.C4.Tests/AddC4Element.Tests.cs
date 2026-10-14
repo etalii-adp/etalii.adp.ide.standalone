@@ -66,7 +66,7 @@ public class AddC4ElementTests : IDisposable
         await _history.ExecuteAsync(
             new AddC4ElementCommand(_bodyPath, kind, name, parentId), TestContext.Current.CancellationToken);
 
-    private C4Workspace Workspace() => _documents.WorkspaceOf(_bodyPath);
+    private C4Workspace Workspace() => _documents.GetOrLoad(_bodyPath).Model;
 
     private string OnDisk() => File.ReadAllText(_bodyPath);
 
@@ -242,7 +242,7 @@ public class AddC4ElementTests : IDisposable
         // forbids and what the whole line-surgery approach exists to avoid.
         await AddAsync(C4ElementKind.Component, "Controller", parentId: "web");
 
-        var document = _documents.GetOrLoad(_bodyPath);
+        var document = _documents.GetOrLoad(_bodyPath).Document;
         var opened = document.CodeLines.Single(line => line.Code.Contains("container \"Web\"", StringComparison.Ordinal));
         document.InsertLine(opened.Number + 1, "                // Components arrive here as the design settles.");
         _documents.Save(_bodyPath, document);

@@ -31,13 +31,13 @@ internal sealed class AddC4ViewCommandHandler(IC4DocumentStore documents) : ICom
         ArgumentNullException.ThrowIfNull(command);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var workspace = documents.WorkspaceOf(command.BodyPath);
+        var workspace = documents.GetOrLoad(command.BodyPath).Model;
         if (workspace.FindView(command.ViewKey) is not null)
         {
             return Task.FromResult(CommandResult.Failure($"This model already has a view called '{command.ViewKey}'."));
         }
 
-        var document = documents.GetOrLoad(command.BodyPath);
+        var document = documents.GetOrLoad(command.BodyPath).Document;
         var insertAt = C4ViewBlock.EndOfViewsBlock(document);
         if (insertAt is null)
         {
@@ -92,7 +92,7 @@ internal sealed class RemoveC4ViewCommandHandler(IC4DocumentStore documents) : I
         ArgumentNullException.ThrowIfNull(command);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var workspace = documents.WorkspaceOf(command.BodyPath);
+        var workspace = documents.GetOrLoad(command.BodyPath).Model;
         var view = workspace.FindView(command.ViewKey);
         if (view is null)
         {
@@ -197,14 +197,14 @@ internal static class C4ViewBlock
     /// <summary>Removes a view's declaration, from its header line to its closing brace.</summary>
     public static void RemoveView(IC4DocumentStore documents, string bodyPath, string viewKey)
     {
-        var workspace = documents.WorkspaceOf(bodyPath);
+        var workspace = documents.GetOrLoad(bodyPath).Model;
         var view = workspace.FindView(viewKey);
         if (view is null)
         {
             return;
         }
 
-        var document = documents.GetOrLoad(bodyPath);
+        var document = documents.GetOrLoad(bodyPath).Document;
         var first = view.Line;
         var last = first;
         var depth = 0;

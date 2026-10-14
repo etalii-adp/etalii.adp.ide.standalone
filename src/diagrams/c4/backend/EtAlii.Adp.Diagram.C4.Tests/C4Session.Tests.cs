@@ -152,7 +152,7 @@ public class C4SessionTests : IDisposable
 
         // Act.
         // Edit through the document the containers view holds, and save.
-        var document = _documents.GetOrLoad(body);
+        var document = _documents.GetOrLoad(body).Document;
         var line = document.CodeLines.First(l => l.Code.Contains("softwareSystem", StringComparison.Ordinal));
         document.ReplaceLine(line.Number, line.Text.Replace("\"Banking\"", "\"Renamed\"", StringComparison.Ordinal));
         _documents.Save(body, document);
@@ -200,7 +200,7 @@ public class C4SessionTests : IDisposable
         var other = WriteModel("other.dsl");
         await using var session = Open(body, null);
         _ = session.Baseline();
-        _ = _documents.GetOrLoad(other);
+        _ = _documents.GetOrLoad(other).Document;
         Assert.Equal("", new C4LayoutSidecar().Write(body, "context", "u", new C4SidecarPosition(4321, 1234)));
 
         var pushed = new List<IReadOnlyList<DiagramDelta>>();
@@ -275,7 +275,7 @@ public class C4SessionTests : IDisposable
         await session.DisposeAsync();
 
         // Act.
-        _documents.Save(body, _documents.GetOrLoad(body));
+        _documents.Save(body, _documents.GetOrLoad(body).Document);
 
         // Assert.
         Assert.Equal(0, pushes);

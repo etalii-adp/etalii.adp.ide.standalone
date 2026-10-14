@@ -169,7 +169,7 @@ public sealed class C4ContextPropertyProvider : IContextPropertyProvider
             return false;
         }
 
-        workspace = _documents.WorkspaceOf(target.ResolvedFullPath);
+        workspace = _documents.GetOrLoad(target.ResolvedFullPath).Model;
         element = workspace.Find(target.ElementId);
         if (element is not null)
         {

@@ -71,7 +71,7 @@ public class AddC4ViewTests : IDisposable
         Assert.True(result.IsSuccess, result.Error);
 
         // The view is in the document...
-        var workspace = _documents.WorkspaceOf(_bodyPath);
+        var workspace = _documents.GetOrLoad(_bodyPath).Model;
         var view = workspace.FindView("containers");
         Assert.NotNull(view);
         Assert.Equal(C4ViewKind.Container, view.Kind);
@@ -106,7 +106,7 @@ public class AddC4ViewTests : IDisposable
         await _history.ExecuteAsync(AddContainers(), TestContext.Current.CancellationToken);
 
         // Act and assert, step by step.
-        var workspace = _documents.WorkspaceOf(_bodyPath);
+        var workspace = _documents.GetOrLoad(_bodyPath).Model;
         Assert.NotNull(workspace.FindView("context"));
         Assert.Equal(2, workspace.Views.Count);
     }
@@ -154,7 +154,7 @@ public class AddC4ViewTests : IDisposable
 
         // Assert.
         Assert.True(result.IsSuccess, result.Error);
-        var view = _documents.WorkspaceOf(_bodyPath).FindView("landscape")!;
+        var view = _documents.GetOrLoad(_bodyPath).Model.FindView("landscape")!;
         Assert.Equal(C4ViewKind.SystemLandscape, view.Kind);
         Assert.Null(view.ScopeId);
     }
@@ -171,7 +171,7 @@ public class AddC4ViewTests : IDisposable
         await _history.ExecuteAsync(command, TestContext.Current.CancellationToken);
 
         // Assert.
-        Assert.Equal("web", _documents.WorkspaceOf(_bodyPath).FindView("components")!.ScopeId);
+        Assert.Equal("web", _documents.GetOrLoad(_bodyPath).Model.FindView("components")!.ScopeId);
     }
 
     [Fact]
