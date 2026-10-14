@@ -210,7 +210,10 @@ public class AnsibleLayoutTests
             var boxes = AnsibleLayout.Compute(AnsibleGraph.Derive(Reader.Read(scratch)));
 
             // Assert.
+            // Each playbook is measured from itself, so neither sits right of the other merely for
+            // having been walked second.
             Assert.Equal(2, boxes.Count);
+            Assert.Equal(boxes["playbook:a.yml"].X, boxes["playbook:b.yml"].X);
         }
         finally
         {
