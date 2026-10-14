@@ -29,6 +29,7 @@ public static class DislCelLibrary
         ("elementById", 1, 1),
         ("label", 0, 0),
         ("other", 1, 1),
+        ("location", 0, 0),
     ];
 
     /// <summary>Adds the library to <paramref name="environment"/>; <paramref name="enums"/> finds the enumerations <c>enumLabel</c> reads.</summary>

@@ -6,7 +6,7 @@ namespace EtAlii.Adp.Specification.Disl;
 /// A node or a relation as DISL's CEL sees it (§12.2): <c>id</c>, <c>type</c>, <c>kind</c>, every
 /// attribute as a field, the containment members of a node, the ends of a relation, and the methods
 /// <c>isA</c>, <c>descendants</c>, <c>ancestors</c>, <c>childrenOfType</c>, <c>incomingOf</c>,
-/// <c>outgoingOf</c>, <c>positionIn</c>, <c>label</c> and <c>other</c>.
+/// <c>outgoingOf</c>, <c>positionIn</c>, <c>label</c>, <c>other</c> and <c>location</c>.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -91,6 +91,18 @@ public sealed class DislElement : ICelObject
 
     /// <summary>The 1-based line the reader found the element on, when it was read.</summary>
     public int? Line { get; internal init; }
+
+    /// <summary>
+    /// The file the reader found the element in, relative to the diagram's subject (§8.6), when it
+    /// recorded one; null for an element of the primary file, whose file is the diagram's.
+    /// </summary>
+    public string? File { get; internal init; }
+
+    /// <summary>
+    /// Where the element is in the files (§8.6): its own file, else the diagram's, with its line. The
+    /// file is null when neither is known, and the line when the reader recorded none.
+    /// </summary>
+    internal (string? File, int? Line) Location => (File ?? Diagram.File, Line);
 
     /// <summary>
     /// What <c>self.view</c> reads (§12.2): the viewer's state of this element, such as <c>collapsed</c>
@@ -207,7 +219,7 @@ public sealed class DislElement : ICelObject
     internal DislElement Snapshot() => new(Diagram, Type, Id, _attributes)
     {
         Parent = Parent, Slot = Slot, Source = Source, Target = Target, IsDerived = IsDerived, Sources = Sources,
-        IdIsStored = IdIsStored, SourceId = SourceId, TargetId = TargetId, HostAttributes = HostAttributes, Line = Line,
+        IdIsStored = IdIsStored, SourceId = SourceId, TargetId = TargetId, HostAttributes = HostAttributes, Line = Line, File = File,
     };
 
     public override string ToString() => $"{Type.Name} {Id}";
@@ -275,6 +287,7 @@ public sealed class DislElement : ICelObject
             ("incomingOf", 1) when !Type.IsRelation => List(Incoming.Where(relation => relation.IsA(Text(arguments[0])))),
             ("outgoingOf", 1) when !Type.IsRelation => List(Outgoing.Where(relation => relation.IsA(Text(arguments[0])))),
             ("other", 1) when Type.IsRelation => Other(arguments[0]),
+            ("location", 0) => LocationMap(),
             _ => Missing,
         };
         if (ReferenceEquals(value, Missing))
@@ -294,6 +307,20 @@ public sealed class DislElement : ICelObject
             if (ReferenceEquals(items[index], this)) return index;
         }
         return -1;
+    }
+
+    /// <summary>
+    /// <c>e.location()</c> (§12.2): the SourceLocation the reader recorded, a map with <c>file</c> and,
+    /// when known, <c>line</c>; <c>optional.none()</c> when no file is known, since a SourceLocation
+    /// always names one (§8.6).
+    /// </summary>
+    private CelOptional LocationMap()
+    {
+        (string? file, int? line) = Location;
+        if (file is null) return CelOptional.None;
+        var location = new CelMap { ["file"] = file };
+        if (line is { } known) location["line"] = (long)known;
+        return CelOptional.Of(location);
     }
 
     private DislElement? Other(object? end) =>
