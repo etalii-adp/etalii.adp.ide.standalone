@@ -61,7 +61,14 @@ public abstract class DocumentDiagramSession<TBody, TModel> : IDiagramSession
     public IReadOnlyList<DiagramDelta> Baseline()
     {
         var elements = _changes.Deliver();
-        return elements.Count > 0 ? [new DiagramAddDelta(elements)] : [];
+        var deltas = new List<DiagramDelta>();
+        if (elements.Count > 0)
+        {
+            deltas.Add(new DiagramAddDelta(elements));
+        }
+
+        deltas.AddRange(Groups(Model()));
+        return deltas;
     }
 
     /// <inheritdoc />
@@ -122,6 +129,12 @@ public abstract class DocumentDiagramSession<TBody, TModel> : IDiagramSession
 
     /// <summary>What the connection should hold of <paramref name="model"/> through <paramref name="viewport"/>.</summary>
     protected abstract IReadOnlyList<DiagramElement> Render(TModel model, DiagramViewport viewport);
+
+    /// <summary>
+    /// What the baseline sends after the elements: the groups a diagram draws around some of them,
+    /// such as a Wardley map's pipelines. None by default.
+    /// </summary>
+    protected virtual IReadOnlyList<DiagramDelta> Groups(TModel model) => [];
 
     /// <summary>
     /// What a drop of <paramref name="elementId"/> with its top-left at (<paramref name="x"/>,
