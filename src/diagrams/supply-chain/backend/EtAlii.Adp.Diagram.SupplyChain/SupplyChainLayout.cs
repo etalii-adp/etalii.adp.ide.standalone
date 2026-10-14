@@ -1,18 +1,7 @@
+using EtAlii.Adp.Layout;
 using System.Runtime.CompilerServices;
 
 namespace EtAlii.Adp.Diagram.SupplyChain;
-
-/// <summary>A rectangle on the canvas: left, top, width, height.</summary>
-public readonly record struct SupplyChainBox(double X, double Y, double Width, double Height)
-{
-    public double Right => X + Width;
-
-    public double Bottom => Y + Height;
-
-    public double CentreX => X + (Width / 2);
-
-    public double CentreY => Y + (Height / 2);
-}
 
 /// <summary>
 /// Where everything in one document is drawn: each node's box, each group's frame, and which
@@ -53,8 +42,8 @@ public sealed class SupplyChainLayout
         IReadOnlyList<SupplyChainGroup> groups,
         IReadOnlyList<SupplyChainNode> nodes,
         IReadOnlyList<SupplyChainFlow> flows,
-        IReadOnlyDictionary<string, SupplyChainBox> nodeBoxes,
-        IReadOnlyDictionary<string, SupplyChainBox> groupBoxes,
+        IReadOnlyDictionary<string, Rect> nodeBoxes,
+        IReadOnlyDictionary<string, Rect> groupBoxes,
         IReadOnlyDictionary<string, (double X, double Y)> arranged,
         IReadOnlyDictionary<string, IReadOnlyList<(double X, double Y)>> lanes)
     {
@@ -77,10 +66,10 @@ public sealed class SupplyChainLayout
     public IReadOnlyList<SupplyChainFlow> Flows { get; }
 
     /// <summary>Each drawable node's box, authored or arranged.</summary>
-    public IReadOnlyDictionary<string, SupplyChainBox> NodeBoxes { get; }
+    public IReadOnlyDictionary<string, Rect> NodeBoxes { get; }
 
     /// <summary>Each drawn group's frame.</summary>
-    public IReadOnlyDictionary<string, SupplyChainBox> GroupBoxes { get; }
+    public IReadOnlyDictionary<string, Rect> GroupBoxes { get; }
 
     /// <summary>Every drawable node's top-left as the layered layout places it, ignoring what the document states.</summary>
     public IReadOnlyDictionary<string, (double X, double Y)> Arranged { get; }
@@ -121,11 +110,11 @@ public sealed class SupplyChainLayout
             node =>
             {
                 (double x, double y) = node.IsPlaced ? (node.X!.Value, node.Y!.Value) : arranged[node.Id];
-                return new SupplyChainBox(x, y, SupplyChainGeometry.NodeWidth, SupplyChainGeometry.NodeHeight);
+                return new Rect(x, y, SupplyChainGeometry.NodeWidth, SupplyChainGeometry.NodeHeight);
             },
             StringComparer.Ordinal);
 
-        var groupBoxes = new Dictionary<string, SupplyChainBox>(StringComparer.Ordinal);
+        var groupBoxes = new Dictionary<string, Rect>(StringComparer.Ordinal);
         foreach (var group in declaredGroups)
         {
             var members = nodes.Where(node => GroupOf(node) == group.Id).Select(node => nodeBoxes[node.Id]).ToList();
@@ -133,7 +122,7 @@ public sealed class SupplyChainLayout
             {
                 if (group.IsPlaced)
                 {
-                    groupBoxes[group.Id] = new SupplyChainBox(group.X!.Value, group.Y!.Value, SupplyChainGeometry.EmptyGroupWidth, SupplyChainGeometry.EmptyGroupHeight);
+                    groupBoxes[group.Id] = new Rect(group.X!.Value, group.Y!.Value, SupplyChainGeometry.EmptyGroupWidth, SupplyChainGeometry.EmptyGroupHeight);
                 }
 
                 continue;
@@ -143,7 +132,7 @@ public sealed class SupplyChainLayout
             var top = members.Min(box => box.Y) - SupplyChainGeometry.GroupHeader;
             var right = members.Max(box => box.Right) + SupplyChainGeometry.GroupPadding;
             var bottom = members.Max(box => box.Bottom) + SupplyChainGeometry.GroupPadding;
-            groupBoxes[group.Id] = new SupplyChainBox(left, top, right - left, bottom - top);
+            groupBoxes[group.Id] = new Rect(left, top, right - left, bottom - top);
         }
 
         var lanes = flows
