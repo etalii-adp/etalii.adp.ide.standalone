@@ -1,4 +1,4 @@
-using System.Collections.Concurrent;
+using EtAlii.Adp.Documents;
 using Serilog;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
@@ -6,7 +6,8 @@ namespace EtAlii.Adp.Diagram.DotNetDependencyGraph;
 
 /// <summary>
 /// Holds one derived graph per solution, so every session and the property provider read the
-/// same one rather than each deriving its own.
+/// same one rather than each deriving its own, and keeps it true as the files it was derived from
+/// change - through the shared watched-folder store (code-structure FR-037).
 /// </summary>
 /// <remarks>
 /// <para>
@@ -19,60 +20,43 @@ namespace EtAlii.Adp.Diagram.DotNetDependencyGraph;
 /// yields an empty graph carrying its reason, because the diagram opens either way
 /// (Requirement 2.4) and a store that threw would take the diagram down with the file.
 /// </para>
+/// <para>
+/// <b>What is watched is what was read</b> - the solution, every project file it resolved, and
+/// every <c>Directory.Packages.props</c> above them, as <see cref="WatchedFiles"/> reports them,
+/// and keyed by the solution's path rather than its folder, which can hold two. A watch over only
+/// the solution would miss a reference added to a project; a watch over only project files would
+/// miss a version bump, which in a centrally managed repository lands in a props file and in no
+/// <c>.csproj</c> at all.
+/// </para>
 /// </remarks>
-public sealed class DependencyGraphStore : IDependencyGraphStore
+public sealed class DependencyGraphStore(
+    SolutionReader solutions,
+    ProjectReader projects,
+    PackageDescriptionReader descriptions,
+    TimeSpan? settleDelay = null)
+    : WatchedFolderStore<DependencyGraphModel>(settleDelay ?? DefaultSettleDelay), IDependencyGraphStore
 {
     private static readonly ILogger _logger = Log.ForContext<DependencyGraphStore>();
 
-    private readonly SolutionReader _solutions;
-    private readonly ProjectReader _projects;
-    private readonly PackageDescriptionReader _descriptions;
-    private readonly DependencyGraph _graphs = new();
-
-    /// <summary>Keyed by the solution's full path, so two spellings of one path share a graph.</summary>
-    private readonly ConcurrentDictionary<string, DependencyGraphModel> _cache = new(StringComparer.OrdinalIgnoreCase);
-
-    public DependencyGraphStore(SolutionReader solutions, ProjectReader projects, PackageDescriptionReader descriptions)
-    {
-        ArgumentNullException.ThrowIfNull(solutions);
-        ArgumentNullException.ThrowIfNull(projects);
-        ArgumentNullException.ThrowIfNull(descriptions);
-        _solutions = solutions;
-        _projects = projects;
-        _descriptions = descriptions;
-    }
-
-    /// <summary>The graph for <paramref name="solutionPath"/>, derived once and kept.</summary>
-    public DependencyGraphModel GetOrLoad(string solutionPath)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(solutionPath);
-        return _cache.GetOrAdd(IoPath.GetFullPath(solutionPath), Derive);
-    }
-
     /// <summary>
-    /// Derives afresh and replaces what is held - the refresh of Requirement 7.1, whether it
-    /// was asked for by a watcher or by the user.
+    /// A build or a package restore rewrites many files in a burst, and a graph rebuilt per event
+    /// would rebuild dozens of times for one logical change.
     /// </summary>
-    public DependencyGraphModel Reload(string solutionPath)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(solutionPath);
+    private static readonly TimeSpan DefaultSettleDelay = TimeSpan.FromMilliseconds(250);
 
-        var full = IoPath.GetFullPath(solutionPath);
-        var graph = Derive(full);
-        _cache[full] = graph;
-        return graph;
-    }
+    private readonly SolutionReader _solutions = solutions ?? throw new ArgumentNullException(nameof(solutions));
+    private readonly ProjectReader _projects = projects ?? throw new ArgumentNullException(nameof(projects));
+    private readonly PackageDescriptionReader _descriptions = descriptions ?? throw new ArgumentNullException(nameof(descriptions));
+    private readonly DependencyGraph _graphs = new();
 
     /// <summary>
     /// Every file whose change should make this graph stale: the solution, each project file it
-    /// resolved, and every <c>Directory.Packages.props</c> above them. The watcher reads this
+    /// resolved, and every <c>Directory.Packages.props</c> above them. The store watches this
     /// rather than guessing, so a graph derived from a file is refreshed by that file.
     /// </summary>
-    public IReadOnlyList<string> WatchedFiles(string solutionPath)
+    protected override IReadOnlyCollection<string> WatchedFiles(string folder, DependencyGraphModel snapshot)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(solutionPath);
-
-        var full = IoPath.GetFullPath(solutionPath);
+        var full = IoPath.GetFullPath(folder);
         var reading = _solutions.Read(full);
         var files = new List<string> { full };
 
@@ -98,6 +82,9 @@ public sealed class DependencyGraphStore : IDependencyGraphStore
 
         return files.Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
     }
+
+    /// <summary>Derives the graph of the solution at <paramref name="folder"/>, which names the solution file.</summary>
+    protected override DependencyGraphModel Read(string folder) => Derive(folder);
 
     private DependencyGraphModel Derive(string solutionPath)
     {

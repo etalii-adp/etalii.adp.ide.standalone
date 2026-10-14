@@ -35,11 +35,11 @@ internal sealed class DotNetDependencyGraphSession : IDiagramSession
     private readonly IHistoryStack? _history;
 
     /// <summary>
-    /// Watches the files this graph was derived from, so a change on disk pushes a refresh
-    /// (Requirement 7.1). Null when watching was declined - which the tests do, so that a test
-    /// asserting a refresh is asserting the refresh rather than the file system's timing.
+    /// The store's word for this solution, so a change on disk pushes a refresh (Requirement 7.1).
+    /// Null when watching was declined - which the tests do, so that a test asserting a refresh is
+    /// asserting the refresh rather than the file system's timing.
     /// </summary>
-    private readonly SolutionWatcher? _watcher;
+    private readonly IDisposable? _watch;
 
     private IReadOnlyList<DiagramElement> _delivered = [];
 
@@ -64,12 +64,14 @@ internal sealed class DotNetDependencyGraphSession : IDiagramSession
         _registrationPath = registrationPath;
         _history = history;
 
+        // Claimed for the session's lifetime, so a second connection closing does not stop the
+        // files this one shows being watched.
+        _store.Acquire(_solutionPath);
         if (watch)
         {
             // Automatic, because the product capability is live pushed updates and every other
             // module behaves that way.
-            _watcher = new SolutionWatcher(_store.WatchedFiles(solutionPath));
-            _watcher.Stale += OnSolutionStale;
+            _watch = _store.Watch(_solutionPath, Push);
         }
 
         // A position change arrives through the history, never through the watcher - see
@@ -139,14 +141,7 @@ internal sealed class DotNetDependencyGraphSession : IDiagramSession
     /// could miss one of the three.
     /// </para>
     /// </remarks>
-    private void OnHistoryChanged(object? sender, EventArgs args)
-    {
-        var deltas = Rediff(_store.GetOrLoad(_solutionPath));
-        if (deltas.Count > 0)
-        {
-            Changed?.Invoke(this, new DiagramDeltasEventArgs(deltas));
-        }
-    }
+    private void OnHistoryChanged(object? sender, EventArgs args) => Push(_store.GetOrLoad(_solutionPath));
 
     /// <summary>
     /// Refused, always. The graph's shape is the solution's, and nothing on this canvas can be
@@ -204,10 +199,12 @@ internal sealed class DotNetDependencyGraphSession : IDiagramSession
     /// appear short of reopening the diagram. The cache-only decision therefore reaches past the
     /// property it was about, and this method is where that shows.
     /// </remarks>
-    public void Refresh()
-    {
-        var deltas = Rediff(_store.Reload(_solutionPath));
+    public void Refresh() => Push(_store.Reload(_solutionPath));
 
+    /// <summary>Pushes what <paramref name="graph"/> changes of what was last delivered, if anything.</summary>
+    private void Push(DependencyGraphModel graph)
+    {
+        var deltas = Rediff(graph);
         if (deltas.Count > 0)
         {
             Changed?.Invoke(this, new DiagramDeltasEventArgs(deltas));
@@ -223,16 +220,10 @@ internal sealed class DotNetDependencyGraphSession : IDiagramSession
             ? RegistrationLayout.Read(_registrationPath)
             : new Dictionary<string, RegistrationPosition>(StringComparer.Ordinal);
 
-    /// <summary>The watcher's own signal: the files moved, so recompute and push.</summary>
-    private void OnSolutionStale(object? sender, EventArgs args) => Refresh();
-
     public ValueTask DisposeAsync()
     {
-        if (_watcher is not null)
-        {
-            _watcher.Stale -= OnSolutionStale;
-            _watcher.Dispose();
-        }
+        _watch?.Dispose();
+        _store.Release(_solutionPath);
 
         // The history outlives this session - it is the project's - so an unremoved handler would
         // keep a closed diagram alive and re-rendering on every command anyone runs.

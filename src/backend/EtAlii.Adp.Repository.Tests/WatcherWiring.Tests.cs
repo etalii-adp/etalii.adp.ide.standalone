@@ -133,12 +133,13 @@ public class WatcherWiringTests
             .Select(file => IoPath.GetFileNameWithoutExtension(file))
             .ToList();
 
-        // The four that were already correct, by name: if the sweep stops seeing these it is no
-        // longer looking where the hole was found.
+        // Watchers known to be in the tree, by name: if the sweep stops seeing these it is no
+        // longer looking where the hole was found. SolutionWatcher was one until the shared
+        // WatchedFolder took over its watching (code-structure FR-037).
         Assert.Contains("RootFolderWatcher", withWatchers);
         Assert.Contains("TrackedProblemRoot", withWatchers);
         Assert.Contains("PlainEditorSession", withWatchers);
-        Assert.Contains("SolutionWatcher", withWatchers);
+        Assert.Contains("WatchedFolder", withWatchers);
     }
 
     /// <summary>A file belonging to a test assembly, by its project folder's name.</summary>

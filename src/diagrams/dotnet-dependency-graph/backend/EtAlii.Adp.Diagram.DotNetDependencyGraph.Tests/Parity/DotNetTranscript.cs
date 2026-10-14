@@ -142,7 +142,7 @@ internal static partial class DotNetTranscript
         // A shipped copy of an example is written as the one it is the same as, so it costs a line
         // while it stays identical. Equal bytes alone are not enough: a solution is the files it
         // names too, so the projects are compared through the graph they give.
-        var store = new DependencyGraphStore(new SolutionReader(), new ProjectReader(), new PackageDescriptionReader(FixtureCache));
+        using var store = new DependencyGraphStore(new SolutionReader(), new ProjectReader(), new PackageDescriptionReader(FixtureCache));
         var graph = store.GetOrLoad(path);
         var key = $"{sha}|{Fingerprint(graph)}";
         if (recorded.TryGetValue(key, out var first))

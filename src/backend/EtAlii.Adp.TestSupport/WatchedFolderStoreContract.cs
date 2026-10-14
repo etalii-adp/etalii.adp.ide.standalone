@@ -19,7 +19,7 @@ public abstract class WatchedFolderStoreContract<TSnapshot> : IDisposable
 {
     /// <summary>The settle delay the store is made with: short, so a test waits for little.</summary>
     /// <remarks>Properties rather than fields: a static field of a generic type is one per closed type.</remarks>
-    private static TimeSpan SettleDelay => TimeSpan.FromMilliseconds(150);
+    protected static TimeSpan SettleDelay => TimeSpan.FromMilliseconds(150);
 
     private static TimeSpan WaitLimit => TimeSpan.FromSeconds(15);
 
@@ -30,6 +30,15 @@ public abstract class WatchedFolderStoreContract<TSnapshot> : IDisposable
 
     /// <summary>The folder the test works on, filled on first use.</summary>
     protected string Root => field ??= Fill("root");
+
+    /// <summary>What the store is asked for: <see cref="Root"/>, or what names the snapshot inside it.</summary>
+    protected string Subject => SubjectOf(Root);
+
+    /// <summary>
+    /// What names the snapshot read from the folder <paramref name="root"/>: the folder itself, unless
+    /// the store's subject is a file in it, such as a solution.
+    /// </summary>
+    protected virtual string SubjectOf(string root) => root;
 
     /// <summary>A new store, with nothing loaded, that settles after <paramref name="settleDelay"/>.</summary>
     protected abstract WatchedFolderStore<TSnapshot> CreateStore(TimeSpan settleDelay);
@@ -65,8 +74,8 @@ public abstract class WatchedFolderStoreContract<TSnapshot> : IDisposable
     public void GetOrLoad_ReadsOnce_AndHandsTheSameSnapshotBack()
     {
         // Act.
-        var first = Store.GetOrLoad(Root);
-        var second = Store.GetOrLoad(Root);
+        var first = Store.GetOrLoad(Subject);
+        var second = Store.GetOrLoad(Subject);
 
         // Assert: the same instance, not merely an equal one - one snapshot per folder is what
         // stops two connections seeing different things.
@@ -77,16 +86,16 @@ public abstract class WatchedFolderStoreContract<TSnapshot> : IDisposable
     public void Get_DoesNotLoad()
     {
         // Act and assert, step by step.
-        Assert.Null(Store.Get(Root));
-        Store.GetOrLoad(Root);
-        Assert.NotNull(Store.Get(Root));
+        Assert.Null(Store.Get(Subject));
+        Store.GetOrLoad(Subject);
+        Assert.NotNull(Store.Get(Subject));
     }
 
     [Fact]
     public async Task AChange_IsAnnouncedWithTheRereadSnapshot_AndTheStoreHandsThatOneOut()
     {
         // Arrange.
-        Store.GetOrLoad(Root);
+        Store.GetOrLoad(Subject);
         var changes = Changes();
 
         // Act.
@@ -94,9 +103,9 @@ public abstract class WatchedFolderStoreContract<TSnapshot> : IDisposable
 
         // Assert: re-read before announcing, so a listener that asks the store during the event
         // is not handed the snapshot the event exists to replace.
-        var snapshot = await WaitFor(changes, 1);
+        var snapshot = await WaitForTheChange(changes);
         Assert.True(ShowsTheChange(snapshot));
-        Assert.Same(snapshot, Store.Get(Root));
+        Assert.Same(snapshot, Store.Get(Subject));
     }
 
     [Fact]
@@ -104,7 +113,7 @@ public abstract class WatchedFolderStoreContract<TSnapshot> : IDisposable
     {
         // Arrange.
         const int changeCount = 6;
-        Store.GetOrLoad(Root);
+        Store.GetOrLoad(Subject);
         var changes = Changes();
 
         // Act: written back to back, as a multi-file save arrives. Any stall longer than the
@@ -128,39 +137,39 @@ public abstract class WatchedFolderStoreContract<TSnapshot> : IDisposable
     {
         // Arrange: a second connection closing must not tear the watcher out from under the
         // first, whose diagram would then go quietly stale.
-        Store.Acquire(Root);
-        Store.Acquire(Root);
+        Store.Acquire(Subject);
+        Store.Acquire(Subject);
 
         // Act.
-        Store.Release(Root);
+        Store.Release(Subject);
 
         // Assert.
-        Assert.NotNull(Store.Get(Root));
+        Assert.NotNull(Store.Get(Subject));
     }
 
     [Fact]
     public void ReleasingTheLastClaim_DropsTheFolder()
     {
         // Arrange.
-        Store.Acquire(Root);
+        Store.Acquire(Subject);
 
         // Act.
-        Store.Release(Root);
+        Store.Release(Subject);
 
         // Assert.
-        Assert.Null(Store.Get(Root));
+        Assert.Null(Store.Get(Subject));
     }
 
     [Fact]
     public async Task AReleasedFolder_IsReadAfreshOnTheNextAsk()
     {
         // Arrange.
-        var before = Store.Acquire(Root);
-        Store.Release(Root);
+        var before = Store.Acquire(Subject);
+        Store.Release(Subject);
 
         // Act: changed while nobody watches.
         await ChangeAsync(Root, TestContext.Current.CancellationToken);
-        var after = Store.GetOrLoad(Root);
+        var after = Store.GetOrLoad(Subject);
 
         // Assert.
         Assert.NotSame(before, after);
@@ -171,7 +180,7 @@ public abstract class WatchedFolderStoreContract<TSnapshot> : IDisposable
     public void ReleasingAFolderNobodyHeld_IsNotAnError()
     {
         // Act and assert.
-        Store.Release(Root);
+        Store.Release(Subject);
         Store.Release(Path.Combine(Root, "never-loaded"));
     }
 
@@ -180,9 +189,9 @@ public abstract class WatchedFolderStoreContract<TSnapshot> : IDisposable
     {
         // Arrange.
         var cancellationToken = TestContext.Current.CancellationToken;
-        Store.GetOrLoad(Root);
+        Store.GetOrLoad(Subject);
         var heard = new List<TSnapshot>();
-        var watch = Store.Watch(Root, snapshot =>
+        var watch = Store.Watch(Subject, snapshot =>
         {
             lock (heard)
             {
@@ -193,17 +202,27 @@ public abstract class WatchedFolderStoreContract<TSnapshot> : IDisposable
 
         // Act: heard while watched, then let go - twice, which is harmless - and changed again.
         await ChangeAsync(Root, cancellationToken);
-        await WaitFor(changes, 1);
+        await WaitForTheChange(changes);
         watch.Dispose();
         watch.Dispose();
-        await TouchAsync(Root, 0, cancellationToken);
-        await WaitFor(changes, 2);
-
-        // Assert.
+        int heardBefore;
         lock (heard)
         {
-            var only = Assert.Single(heard);
-            Assert.True(ShowsTheChange(only));
+            heardBefore = heard.Count;
+        }
+        int announcedBefore;
+        lock (changes)
+        {
+            announcedBefore = changes.Count;
+        }
+        await TouchAsync(Root, 0, cancellationToken);
+        await WaitFor(changes, announcedBefore + 1);
+
+        // Assert: the change was heard, and nothing after the watch was let go.
+        lock (heard)
+        {
+            Assert.Contains(heard, ShowsTheChange);
+            Assert.Equal(heardBefore, heard.Count);
         }
     }
 
@@ -212,10 +231,10 @@ public abstract class WatchedFolderStoreContract<TSnapshot> : IDisposable
     {
         // Arrange.
         var other = Fill("other");
-        Store.GetOrLoad(Root);
-        Store.GetOrLoad(other);
+        Store.GetOrLoad(Subject);
+        Store.GetOrLoad(SubjectOf(other));
         var heard = new int[1];
-        using var watch = Store.Watch(Root, _ => Interlocked.Increment(ref heard[0]));
+        using var watch = Store.Watch(Subject, _ => Interlocked.Increment(ref heard[0]));
         var changes = Changes();
 
         // Act.
@@ -224,6 +243,31 @@ public abstract class WatchedFolderStoreContract<TSnapshot> : IDisposable
 
         // Assert.
         Assert.Equal(0, Volatile.Read(ref heard[0]));
+    }
+
+    [Fact]
+    public async Task AnOverflow_IsReadAgain_AsThoughAFileHadChanged()
+    {
+        // Arrange: the one signal a watcher gives when it dropped events is Error, and which file
+        // changed is then unknowable, so the store must read again (backend-centralization R2.9).
+        var cancellationToken = TestContext.Current.CancellationToken;
+        Store.GetOrLoad(Subject);
+        var changes = Changes();
+
+        // Act: lose the change - nothing is watching while it happens, so no event can carry it -
+        // then overflow, as the watcher itself would.
+        var watchers = Store.WatchersOf(Subject);
+        Assert.NotEmpty(watchers);
+        foreach (var watcher in watchers)
+        {
+            watcher.EnableRaisingEvents = false;
+        }
+        await ChangeAsync(Root, cancellationToken);
+        watchers[0].RaiseOverflow();
+
+        // Assert.
+        var snapshot = await WaitFor(changes, 1);
+        Assert.True(ShowsTheChange(snapshot), "An overflow left the snapshot looking fresh.");
     }
 
     /// <summary>Every snapshot the store announces from now on, whichever folder it is of.</summary>
@@ -238,6 +282,30 @@ public abstract class WatchedFolderStoreContract<TSnapshot> : IDisposable
             }
         };
         return changes;
+    }
+
+    /// <summary>
+    /// The first announced snapshot that shows the change. Not merely the first announced: a write
+    /// lands as a truncation and then its content, and a runner that stalls between the two for
+    /// longer than the settle delay announces the empty file first, correctly.
+    /// </summary>
+    private async Task<TSnapshot> WaitForTheChange(List<TSnapshot> changes)
+    {
+        var start = DateTime.UtcNow;
+        while (DateTime.UtcNow - start < WaitLimit)
+        {
+            lock (changes)
+            {
+                if (changes.FirstOrDefault(ShowsTheChange) is { } snapshot)
+                {
+                    return snapshot;
+                }
+            }
+            await Task.Delay(25, TestContext.Current.CancellationToken);
+        }
+
+        Assert.Fail($"The change was not announced within {WaitLimit}.");
+        return null!;
     }
 
     private static async Task<TSnapshot> WaitFor(List<TSnapshot> changes, int count)

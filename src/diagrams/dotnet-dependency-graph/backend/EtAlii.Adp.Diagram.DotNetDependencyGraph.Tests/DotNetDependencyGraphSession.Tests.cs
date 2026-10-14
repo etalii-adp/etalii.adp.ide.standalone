@@ -15,6 +15,12 @@ public sealed class DotNetDependencyGraphSessionTests : IDisposable
     private readonly string _root = Directory.CreateTempSubdirectory("ddg-session-").FullName;
 
     /// <summary>
+    /// Every store a test made, disposed with it: a store watches what it reads, and on Linux each
+    /// watcher holds one of the user's inotify instances, of which there are only 128.
+    /// </summary>
+    private readonly List<DependencyGraphStore> _stores = [];
+
+    /// <summary>
     /// Stands in for core's <c>SetRegistrationLayoutCommandHandler</c>, applying the one command
     /// this module dispatches so that a stored position genuinely reaches the file - which is
     /// what makes these integration tests rather than assertions about a mock.
@@ -106,12 +112,12 @@ public sealed class DotNetDependencyGraphSessionTests : IDisposable
     /// FileSystemWatcher would be asserting the file system's timing rather than this module's
     /// behaviour: the settle delay, the platform's own event coalescing and the runner's
     /// scheduling would all be inside the assertion. Refresh() is called directly instead -
-    /// which is exactly what the watcher calls - and SolutionWatcher's wiring is tested apart.
+    /// which re-reads as a settled change does - and the store's watching is tested apart.
     /// </summary>
-    private static DotNetDependencyGraphSession SessionFor(string solution, string? registration, IHistoryStack? history = null) =>
+    private DotNetDependencyGraphSession SessionFor(string solution, string? registration, IHistoryStack? history = null) =>
         new(
             solution,
-            new DependencyGraphStore(new SolutionReader(), new ProjectReader(), new PackageDescriptionReader(Path.Combine("no", "such", "cache"))),
+            Store(),
             new DependencyElementMapper(),
             registration,
             history,
@@ -284,7 +290,7 @@ public sealed class DotNetDependencyGraphSessionTests : IDisposable
 
         // Arrange.
         var solution = Write("Broken.slnx", "not xml at all <<<");
-        var store = new DependencyGraphStore(new SolutionReader(), new ProjectReader(), new PackageDescriptionReader(Path.Combine("no", "such", "cache")));
+        var store = Store();
 
         // Act.
         var deltas = new DotNetDependencyGraphSession(solution, store, new DependencyElementMapper()).Baseline();
@@ -294,8 +300,20 @@ public sealed class DotNetDependencyGraphSessionTests : IDisposable
         Assert.NotEmpty(store.GetOrLoad(solution).Failures);
     }
 
+    private DependencyGraphStore Store()
+    {
+        var store = new DependencyGraphStore(new SolutionReader(), new ProjectReader(), new PackageDescriptionReader(Path.Combine("no", "such", "cache")));
+        _stores.Add(store);
+        return store;
+    }
+
     public void Dispose()
     {
+        foreach (var store in _stores)
+        {
+            store.Dispose();
+        }
+
         try
         {
             Directory.Delete(_root, recursive: true);
@@ -381,5 +399,50 @@ public sealed class DotNetDependencyGraphSessionTests : IDisposable
         history.AnnounceChange();
 
         Assert.Equal(0, pushed);
+    }
+
+    // ---- the files are watched through the shared store ------------------------------------------
+
+    [Fact]
+    public async Task AWatchingSession_PushesAChangeOnDisk()
+    {
+        // Arrange: watching on, as the product opens a diagram (Requirement 7.1).
+        var cancellationToken = TestContext.Current.CancellationToken;
+        (string solution, string registration) = Seed();
+        var session = new DotNetDependencyGraphSession(solution, Store(), new DependencyElementMapper(), registration);
+        await using (session)
+        {
+            session.Baseline();
+            var removed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            session.Changed += (_, args) =>
+            {
+                if (args.Deltas.OfType<DiagramRemoveDelta>().Any(delta => delta.ElementIds.Contains("project:App/App.csproj")))
+                {
+                    removed.TrySetResult();
+                }
+            };
+
+            // Act.
+            await File.WriteAllTextAsync(solution, """<Solution><Project Path="Library/Library.csproj" /></Solution>""", cancellationToken);
+
+            // Assert.
+            await removed.Task.WaitAsync(TimeSpan.FromSeconds(15), cancellationToken);
+        }
+    }
+
+    [Fact]
+    public async Task AClosedSession_GivesUpItsClaimOnTheSolution()
+    {
+        // Arrange: a session that kept its claim would keep the solution's files watched for good.
+        (string solution, string registration) = Seed();
+        var store = Store();
+        var session = new DotNetDependencyGraphSession(solution, store, new DependencyElementMapper(), registration);
+        Assert.NotNull(store.Get(solution));
+
+        // Act.
+        await session.DisposeAsync();
+
+        // Assert.
+        Assert.Null(store.Get(solution));
     }
 }
