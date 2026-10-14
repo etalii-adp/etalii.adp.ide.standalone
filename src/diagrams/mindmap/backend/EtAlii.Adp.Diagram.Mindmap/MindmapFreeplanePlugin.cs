@@ -111,7 +111,7 @@ public sealed class MindmapFreeplanePlugin : IPersistencePlugin
     public byte[] Template(PluginTemplateRequest request)
     {
         ArgumentNullException.ThrowIfNull(request);
-        return Encoding.UTF8.GetBytes(new MindmapDocumentFactory().CreateEmptyDocument(request.Name));
+        return Encoding.UTF8.GetBytes(MindmapDocument.EmptyDocument(request.Name));
     }
 
     /// <inheritdoc />

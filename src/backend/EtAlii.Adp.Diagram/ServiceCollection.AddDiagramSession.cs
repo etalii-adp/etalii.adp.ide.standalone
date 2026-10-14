@@ -31,4 +31,18 @@ public static class ServiceCollectionAddDiagramSessionExtension
 
         services.AddSingleton<IDiagramDocumentFactory>(new EmptyDocumentFactory(origin, text));
     }
+
+    /// <summary>
+    /// Registers <paramref name="textFromBaseName"/> as what writes the new, empty document of the
+    /// type at <paramref name="origin"/> from the file's base name - a map titled after its file,
+    /// a starter named after it - for a type whose new document is not one fixed text.
+    /// </summary>
+    public static void AddEmptyDocument(this IServiceCollection services, DiagramOrigin origin, Func<string, string> textFromBaseName)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(origin);
+        ArgumentNullException.ThrowIfNull(textFromBaseName);
+
+        services.AddSingleton<IDiagramDocumentFactory>(new EmptyDocumentFactory(origin, textFromBaseName));
+    }
 }

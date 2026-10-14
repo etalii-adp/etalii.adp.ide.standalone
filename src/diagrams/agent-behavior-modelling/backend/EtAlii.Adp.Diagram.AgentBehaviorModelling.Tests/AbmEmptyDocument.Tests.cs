@@ -3,13 +3,13 @@ using Xunit;
 
 namespace EtAlii.Adp.Diagram.AgentBehaviorModelling.Tests;
 
-public class AbmDocumentFactoryTests
+public class AbmEmptyDocumentTests
 {
     [Fact]
     public void ANewModel_HasOneRoot_AndExplainsEveryKeywordToTheAgent()
     {
         // Act.
-        var text = new AbmDocumentFactory().CreateEmptyDocument("Release notes writer");
+        var text = AbmWriter.EmptyDocument("Release notes writer", "\r\n");
         var model = AbmParser.Parse(LineDocument.Parse(text));
 
         // Assert: the legend's list is prose, not part of the tree.
@@ -40,7 +40,7 @@ public class AbmDocumentFactoryTests
     public void TheExamples_ExplainTheKeywordsAsANewModelDoes()
     {
         // Arrange.
-        var legend = string.Join("\r\n", AbmDocumentFactory.Legend());
+        var legend = string.Join("\r\n", AbmWriter.Legend());
 
         // Act and assert.
         foreach (var name in AbmExamples.Names)

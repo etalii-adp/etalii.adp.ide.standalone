@@ -1,5 +1,4 @@
 ﻿using EtAlii.Adp.Context;
-using EtAlii.Adp.Documents;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace EtAlii.Adp.Diagram.DotNetDependencyGraph;
@@ -11,8 +10,7 @@ namespace EtAlii.Adp.Diagram.DotNetDependencyGraph;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>What will never appear in this list.</b> No <c>IDiagramDocumentFactory</c>: the body is
-/// a solution the user's build owns, and this type creates one no more than it edits one. No
+/// <b>What will never appear in this list.</b> No
 /// <c>IDiagramToolboxProvider</c>: nothing can be dragged onto a diagram whose contents are
 /// derived. No command handlers of its own: the single edit this type permits - a reposition -
 /// is core's existing <c>SetRegistrationLayoutCommand</c>, so tech.md's every-change-is-a-command
@@ -40,13 +38,19 @@ public static class ServiceCollectionAddDotNetDependencyGraphExtension
         services.AddSingleton<DependencyGraphStore>();
         services.AddSingleton<IDependencyGraphStore>(provider => provider.GetRequiredService<DependencyGraphStore>());
 
-        // Core refuses to start when a type declares a document extension and registers no
-        // factory, and the design's body: binding requires the extension to be declared. That
-        // this does not breach the never-write-a-solution requirement is not a judgement call:
-        // core refuses to create at a name anything already occupies, so creation can only ever
-        // produce a new file. DotNetSolutionDocumentFactory carries the guard's location and the
-        // requirement's reading.
-        services.AddSingleton<IDiagramDocumentFactory, DotNetSolutionDocumentFactory>();
+        // A new diagram's body is an empty solution in the newer serialization: valid, openable by
+        // the .NET tooling (`dotnet solution list` answers "No projects found in the solution."),
+        // and drawn as a graph with nothing in it until the user adds projects with their own
+        // tools. It has to exist: Requirement 2.3 names the solution through a body: header, core
+        // honours one only for a type that declares a document extension
+        // (DiagramFilePair.BodyOf), and the host refuses to start for such a type without an
+        // empty document. That this does not breach the never-write-a-solution requirement is
+        // not a judgement call: core refuses to create at a name anything already occupies (the
+        // File.Exists(siblingPath) || Directory.Exists(siblingPath) guard in
+        // EtAlii.Adp.Hierarchy/AddDiagramContextActionProvider.cs), so creation can only ever
+        // produce a new file, and the requirement's target - the diagram never mutating the build
+        // it describes - is untouched. The ordinary way in is registering a solution that exists.
+        services.AddEmptyDocument(Diagram.DependencyGraph.Origin, "<Solution>\r\n</Solution>\r\n");
 
         services.AddSingleton<DependencyElementMapper>();
         services.AddSingleton<IDiagramSessionFactory, DotNetDependencyGraphSessionFactory>();

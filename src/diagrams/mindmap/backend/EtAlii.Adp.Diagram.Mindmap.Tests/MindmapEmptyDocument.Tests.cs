@@ -2,22 +2,13 @@ using Xunit;
 
 namespace EtAlii.Adp.Diagram.Mindmap.Tests;
 
-public class MindmapDocumentFactoryTests
+public class MindmapEmptyDocumentTests
 {
-    private readonly MindmapDocumentFactory _factory = new();
-
-    [Fact]
-    public void Origin_IsTheModulesOwn()
-    {
-        // Arrange, act and assert.
-        Assert.Equal(Diagram.Mindmap.Origin, _factory.Origin);
-    }
-
     [Fact]
     public void CreateEmptyDocument_HasOneRootNamedAfterTheFile_AndNothingElse()
     {
         // Act.
-        var document = MindmapDocument.Parse(_factory.CreateEmptyDocument("domain"));
+        var document = MindmapDocument.Parse(MindmapDocument.EmptyDocument("domain"));
 
         // Assert.
         Assert.Equal("domain", document.Root.Text);
@@ -30,7 +21,7 @@ public class MindmapDocumentFactoryTests
     public void CreateEmptyDocument_RoundTripsByteForByte()
     {
         // Act.
-        var text = _factory.CreateEmptyDocument("domain");
+        var text = MindmapDocument.EmptyDocument("domain");
 
         // Assert.
         Assert.Equal(text, MindmapDocument.Parse(text, assignMissingIds: false).ToText());
@@ -40,7 +31,7 @@ public class MindmapDocumentFactoryTests
     public void CreateEmptyDocument_EscapesTheName()
     {
         // Act.
-        var text = _factory.CreateEmptyDocument("a & \"b\"");
+        var text = MindmapDocument.EmptyDocument("a & \"b\"");
 
         // Assert.
         Assert.Contains("TEXT=\"a &amp; &quot;b&quot;\"", text, StringComparison.Ordinal);

@@ -1,5 +1,4 @@
 using EtAlii.Adp.Context;
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -22,9 +21,8 @@ public static class ServiceCollectionAddAgentBehaviorModellingExtension
         ArgumentNullException.ThrowIfNull(services);
 
         // Without a document factory the host refuses to start: a type that declares an extension
-        // must be creatable from the Add dialog. A class of its own rather than a registered text,
-        // because a new model's title is the file's name.
-        services.AddSingleton<IDiagramDocumentFactory, AbmDocumentFactory>();
+        // must be creatable from the Add dialog. Written from the file's name, which titles the model.
+        services.AddEmptyDocument(Diagram.AgentBehaviorModelling.Origin, baseName => AbmWriter.EmptyDocument(baseName, "\r\n"));
         services.AddSingleton<AbmElementMapper>();
 
         // One document per path, shared by every connection viewing it. TryAdd so a test that
