@@ -59,7 +59,7 @@ Classifying by path segment — "count the ones containing `backend`" — yields
 | Known projects and workspace roots | `EtAlii.Adp.Projects` |
 | Connection lifetime | `EtAlii.Adp.Sessions` |
 | Workspace tree and file watching | `EtAlii.Adp.Hierarchy` |
-| Geometry with no dependency: the rectangle, the viewport test's operand, row packing and text width | `EtAlii.Adp.Layout` |
+| Geometry with no dependency: the rectangle, the viewport test's operand, row packing, text width and graph layering | `EtAlii.Adp.Layout` |
 | Diagram-type abstractions, including the validation contract | `EtAlii.Adp.Diagram` |
 | Editor-family abstractions | `EtAlii.Adp.Editor` |
 | Designer-family abstractions: the definition, its discovery and its catalog | `EtAlii.Adp.Designer` |
