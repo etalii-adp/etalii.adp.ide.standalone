@@ -1,7 +1,5 @@
 using EtAlii.Adp.Context;
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.Hierarchy;
-using Xunit;
 using IoPath = System.IO.Path;
 
 namespace EtAlii.Adp.Diagram.Sparql.Tests;
