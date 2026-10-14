@@ -203,7 +203,7 @@ public sealed class SupplyChainLayout
             outgoing[flow.From].Add(flow.To);
         }
 
-        var forward = AcyclicEdges(nodes, outgoing);
+        var forward = Layering.AcyclicEdges([.. nodes.Select(node => node.Id)], outgoing);
         var layer = Layers(nodes, forward);
 
         // Every slot a layer holds: the nodes, then one lane per layer a forward flow skips. A lane's
@@ -353,53 +353,6 @@ public sealed class SupplyChainLayout
             neighbours[a].Add(b);
             neighbours[b].Add(a);
         }
-    }
-
-    /// <summary>The flows that do not close a cycle, found by a depth-first walk in document order.</summary>
-    private static Dictionary<string, List<string>> AcyclicEdges(IReadOnlyList<SupplyChainNode> nodes, Dictionary<string, List<string>> outgoing)
-    {
-        var forward = nodes.ToDictionary(node => node.Id, _ => new List<string>(), StringComparer.Ordinal);
-        var state = new Dictionary<string, int>(StringComparer.Ordinal);
-
-        foreach (var start in nodes)
-        {
-            if (state.ContainsKey(start.Id))
-            {
-                continue;
-            }
-
-            // An explicit stack: a long chain must not overflow the call stack.
-            var stack = new Stack<(string Id, int Next)>();
-            stack.Push((start.Id, 0));
-            state[start.Id] = 1;
-            while (stack.Count > 0)
-            {
-                (string id, int next) = stack.Pop();
-                var targets = outgoing[id];
-                if (next >= targets.Count)
-                {
-                    state[id] = 2;
-                    continue;
-                }
-
-                stack.Push((id, next + 1));
-                var target = targets[next];
-                if (!state.TryGetValue(target, out var seen))
-                {
-                    forward[id].Add(target);
-                    state[target] = 1;
-                    stack.Push((target, 0));
-                }
-                else if (seen == 2)
-                {
-                    forward[id].Add(target);
-                }
-
-                // seen == 1 is a node still on the walk: this flow closes a cycle and is left out.
-            }
-        }
-
-        return forward;
     }
 
     /// <summary>
