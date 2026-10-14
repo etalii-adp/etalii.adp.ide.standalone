@@ -1,5 +1,5 @@
 using EtAlii.Adp.Context;
-using EtAlii.Adp.Documents.Wire;
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.C4;
@@ -15,7 +15,8 @@ namespace EtAlii.Adp.Diagram.C4;
 /// and components are offered a technology, because only they have one. An action that does not
 /// apply is not offered at all rather than greyed out (Requirement 13.7).
 /// </remarks>
-public sealed class C4ContextActionProvider : IContextActionProvider
+public sealed class C4ContextActionProvider(IHistoryStackStore historyStacks, IC4DocumentStore documents)
+    : DiagramActionProvider<C4Document, C4Workspace>(historyStacks, documents)
 {
     public const string RenameActionId = "c4.rename";
     public const string EditDescriptionActionId = "c4.edit-description";
@@ -41,40 +42,37 @@ public sealed class C4ContextActionProvider : IContextActionProvider
 
     private const string Gone = "That element is no longer in this model.";
 
-    private readonly IHistoryStackStore _historyStacks;
-    private readonly IC4DocumentStore _documents;
+    /// <inheritdoc />
+    protected override bool IsBody(string path) => path.EndsWith(Diagram.DocumentExtension, StringComparison.OrdinalIgnoreCase);
 
-    public C4ContextActionProvider(IHistoryStackStore historyStacks, IC4DocumentStore documents)
+    /// <inheritdoc />
+    protected override IReadOnlyList<ContextActionGroupDefinition> Discover(DocumentEntry<C4Document, C4Workspace> entry, string elementId)
     {
-        ArgumentNullException.ThrowIfNull(historyStacks);
-        ArgumentNullException.ThrowIfNull(documents);
-        _historyStacks = historyStacks;
-        _documents = documents;
-    }
+        ArgumentNullException.ThrowIfNull(entry);
 
-    public ContextScope Scope => ContextScope.DiagramElement;
+        if (!entry.IsUsable)
+        {
+            // A document that could not be read offers nothing: every edit of it would be refused.
+            return [];
+        }
 
-    public ValueTask<IReadOnlyList<ContextActionGroupDefinition>> DiscoverAsync(ContextTarget target, CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(target);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        if (!TryResolve(target, out var workspace, out var element, out var relationship))
+        (C4Element? element, C4Relationship? relationship) = Resolve(entry.Model, elementId);
+        if (element is null && relationship is null)
         {
             // No element: the diagram itself. Only the adds that need no parent apply.
-            return target.ElementId.Length == 0
-                ? Groups(new ContextActionGroupDefinition(AddActionsFor(parent: null)))
-                : Empty();
+            return elementId.Length == 0
+                ? [new ContextActionGroupDefinition(AddActionsFor(parent: null))]
+                : [];
         }
 
         if (relationship is not null)
         {
             // C4 requires a relationship to be labelled, and a protocol where it crosses a
             // boundary - so those are the two things there are to do to one.
-            return Groups(new ContextActionGroupDefinition([
+            return [new ContextActionGroupDefinition([
                 new ContextActionDefinition(RelabelActionId, "Relabel…", "mdi-pencil-outline", new ContextShortcutDefinition("F2")),
                 new ContextActionDefinition(SetProtocolActionId, "Set technology…", "mdi-transit-connection-variant"),
-            ]));
+            ])];
         }
 
         var actions = new List<ContextActionDefinition>
@@ -94,18 +92,21 @@ public sealed class C4ContextActionProvider : IContextActionProvider
                 "mdi-tools"));
         }
 
-        _ = workspace;
-
         var adds = AddActionsFor(element);
         return adds.Count == 0
-            ? Groups(new ContextActionGroupDefinition(actions))
-            : Groups(new ContextActionGroupDefinition(actions), new ContextActionGroupDefinition(adds));
+            ? [new ContextActionGroupDefinition(actions)]
+            : [new ContextActionGroupDefinition(actions), new ContextActionGroupDefinition(adds)];
     }
 
-    public ValueTask<ContextExecutionResult> ExecuteAsync(ContextTarget target, string actionId, CancellationToken cancellationToken)
+    /// <inheritdoc />
+    protected override ValueTask<ContextExecutionResult> RunAsync(
+        ContextTarget target,
+        DocumentEntry<C4Document, C4Workspace> entry,
+        string actionId,
+        CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(target);
-        cancellationToken.ThrowIfCancellationRequested();
+        ArgumentNullException.ThrowIfNull(entry);
 
         if (KindOfAdd(actionId) is { } adding)
         {
@@ -119,7 +120,8 @@ public sealed class C4ContextActionProvider : IContextActionProvider
                 "Add")));
         }
 
-        if (!TryResolve(target, out _, out var element, out var relationship))
+        (C4Element? element, C4Relationship? relationship) = Resolve(entry.Model, target.ElementId);
+        if (element is null && relationship is null)
         {
             return Result(new ContextExecutionFailed(Gone));
         }
@@ -163,40 +165,27 @@ public sealed class C4ContextActionProvider : IContextActionProvider
     /// model mid-edit is routinely incomplete, and refusing the keystroke would make the rule a
     /// blocker rather than the guidance Requirement 10.7 says it is.
     /// </remarks>
-    public ValueTask<ContextValidationResult> ValidateAsync(ContextTarget target, string actionId, string value, CancellationToken cancellationToken)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-        _ = target;
+    protected override ContextValidationResult Validate(ContextTarget target, string actionId, string value) =>
+        (actionId == RenameActionId || KindOfAdd(actionId) is not null) && string.IsNullOrWhiteSpace(value)
+            ? ContextValidationResult.Rejected("Every C4 element needs a name.")
+            : ContextValidationResult.Accepted;
 
-        if ((actionId == RenameActionId || KindOfAdd(actionId) is not null) && string.IsNullOrWhiteSpace(value))
-        {
-            return ValueTask.FromResult(ContextValidationResult.Rejected("Every C4 element needs a name."));
-        }
-
-        return ValueTask.FromResult(ContextValidationResult.Accepted);
-    }
-
-    public async ValueTask<ContextCommitResult> CommitAsync(ContextTarget target, string actionId, string value, string text, CancellationToken cancellationToken)
+    /// <inheritdoc />
+    protected override ICommand? CommitCommand(ContextTarget target, C4Workspace model, string actionId, string value)
     {
         ArgumentNullException.ThrowIfNull(target);
+        var bodyPath = target.ResolvedFullPath;
 
+        // The parent is whatever the element was dropped on - a software system for a
+        // container, a container for a component, and nothing at all for a drop on empty
+        // canvas. The command judges whether that pairing is legal and says so if not.
         if (KindOfAdd(actionId) is { } adding)
         {
-            // The parent is whatever the element was dropped on - a software system for a
-            // container, a container for a component, and nothing at all for a drop on empty
-            // canvas. The command judges whether that pairing is legal and says so if not.
-            var add = new AddC4ElementCommand(target.ResolvedFullPath, adding, value, target.ElementId);
-            var added = await _historyStacks.Get(target.RootPath).ExecuteAsync(add, cancellationToken);
-            return added.IsSuccess ? ContextCommitResult.Succeeded : ContextCommitResult.Failed(added.Error);
+            return new AddC4ElementCommand(bodyPath, adding, value, target.ElementId);
         }
 
-        if (!TryResolve(target, out _, out var element, out var relationship))
-        {
-            return ContextCommitResult.Failed(Gone);
-        }
-
-        var bodyPath = target.ResolvedFullPath;
-        ICommand? command = actionId switch
+        (C4Element? element, C4Relationship? relationship) = Resolve(model, target.ElementId);
+        return actionId switch
         {
             RenameActionId when element is not null => new SetElementNameCommand(bodyPath, element.Id, value),
             EditDescriptionActionId when element is not null => new SetElementDescriptionCommand(bodyPath, element.Id, value),
@@ -205,21 +194,8 @@ public sealed class C4ContextActionProvider : IContextActionProvider
             SetProtocolActionId when relationship is not null => new SetRelationshipTechnologyCommand(bodyPath, relationship.Id, value),
             _ => null,
         };
-
-        if (command is null)
-        {
-            return ContextCommitResult.Failed($"Unknown action '{actionId}'.");
-        }
-
-        var result = await _historyStacks.Get(target.RootPath).ExecuteAsync(command, cancellationToken);
-        return result.IsSuccess ? ContextCommitResult.Succeeded : ContextCommitResult.Failed(result.Error);
     }
 
-    /// <summary>
-    /// What the target names: an element, or a relationship, or neither. A relationship has no
-    /// DSL identifier of its own, so it is looked up by the composite id the mapper puts on the
-    /// wire for it.
-    /// </summary>
     /// <summary>The kind an add action adds, or null when the id is not an add.</summary>
     private static C4ElementKind? KindOfAdd(string actionId)
     {
@@ -257,33 +233,22 @@ public sealed class C4ContextActionProvider : IContextActionProvider
         _ => kind.ToString(),
     };
 
-    private bool TryResolve(ContextTarget target, out C4Workspace workspace, out C4Element? element, out C4Relationship? relationship)
+    /// <summary>
+    /// What <paramref name="elementId"/> names: an element, or a relationship, or neither. A
+    /// relationship has no DSL identifier of its own, so it is looked up by the composite id the
+    /// mapper puts on the wire for it.
+    /// </summary>
+    private static (C4Element? Element, C4Relationship? Relationship) Resolve(C4Workspace workspace, string elementId)
     {
-        workspace = C4Workspace.Empty;
-        element = null;
-        relationship = null;
-
-        if (target.Scope != ContextScope.DiagramElement || target.ElementId.Length == 0)
+        if (elementId.Length == 0)
         {
-            return false;
+            return (null, null);
         }
 
-        workspace = _documents.GetOrLoad(target.ResolvedFullPath).Model;
-        element = workspace.Find(target.ElementId);
-        if (element is not null)
-        {
-            return true;
-        }
-
-        relationship = workspace.Relationships.FirstOrDefault(candidate => candidate.Id == target.ElementId);
-        return relationship is not null;
+        return workspace.Find(elementId) is { } element
+            ? (element, null)
+            : (null, workspace.Relationships.FirstOrDefault(candidate => candidate.Id == elementId));
     }
-
-    private static ValueTask<IReadOnlyList<ContextActionGroupDefinition>> Empty() =>
-        ValueTask.FromResult<IReadOnlyList<ContextActionGroupDefinition>>([]);
-
-    private static ValueTask<IReadOnlyList<ContextActionGroupDefinition>> Groups(params ContextActionGroupDefinition[] groups) =>
-        ValueTask.FromResult<IReadOnlyList<ContextActionGroupDefinition>>(groups);
 
     private static ValueTask<ContextExecutionResult> Result(ContextExecutionResult result) =>
         ValueTask.FromResult(result);

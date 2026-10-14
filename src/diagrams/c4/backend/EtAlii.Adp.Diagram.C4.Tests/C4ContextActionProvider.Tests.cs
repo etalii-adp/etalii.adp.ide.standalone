@@ -1,4 +1,5 @@
 using EtAlii.Adp.Context;
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 using Microsoft.Extensions.DependencyInjection;
@@ -238,5 +239,71 @@ public class C4ContextActionProviderTests : IDisposable
         // Act and assert, step by step.
         var failed = Assert.IsType<ContextExecutionFailed>(result);
         Assert.Contains("does not apply", failed.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task ADocumentThatCouldNotBeRead_IsRefusedByTheMenusAndTheGrid_AndWritesNothing()
+    {
+        // Arrange.
+        var unreadable = new UnreadableStore(_documents);
+        var historyStacks = _services.GetRequiredService<IHistoryStackStore>();
+        var actions = new C4ContextActionProvider(historyStacks, unreadable);
+        var properties = new C4ContextPropertyProvider(historyStacks, unreadable);
+        var before = await File.ReadAllBytesAsync(_bodyPath, TestContext.Current.CancellationToken);
+
+        // Act.
+        var offered = await actions.DiscoverAsync(TargetFor(""), TestContext.Current.CancellationToken);
+        var renamed = await actions.ExecuteAsync(TargetFor("web"), C4ContextActionProvider.RenameActionId, TestContext.Current.CancellationToken);
+        var committed = await actions.CommitAsync(TargetFor("web"), C4ContextActionProvider.RenameActionId, "Renamed", "", TestContext.Current.CancellationToken);
+        var set = await properties.SetAsync(TargetFor("web"), C4ContextPropertyProvider.NamePropertyId, "Renamed", TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.Empty(offered);
+        Assert.Contains("could not be read", Assert.IsType<ContextExecutionFailed>(renamed).Message, StringComparison.Ordinal);
+        Assert.False(committed.Completed);
+        Assert.Contains("could not be read", committed.Error, StringComparison.Ordinal);
+        Assert.False(set.IsSuccess);
+        Assert.Contains("could not be read", set.Error, StringComparison.Ordinal);
+        Assert.Equal(before, await File.ReadAllBytesAsync(_bodyPath, TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task AFileThatIsNotADslDocument_IsAnsweredWithNothing_WhateverItHolds()
+    {
+        // Arrange: the C4 model's very text, in a file no C4 type opens.
+        var other = IoPath.Combine(_root, "model.txt");
+        await File.WriteAllTextAsync(other, Model, TestContext.Current.CancellationToken);
+        var target = ContextTarget.ForElement(other, "", _root, ShortGuid.NewShortGuid());
+        var properties = new C4ContextPropertyProvider(_services.GetRequiredService<IHistoryStackStore>(), _documents);
+
+        // Act.
+        var offered = await _provider.DiscoverAsync(target, TestContext.Current.CancellationToken);
+        var rows = await properties.DescribeAsync(ContextTarget.ForElement(other, "web", _root, ShortGuid.NewShortGuid()), TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.Empty(offered);
+        Assert.Empty(rows);
+    }
+
+    /// <summary>A store whose every document reads as one that could not be read.</summary>
+    private sealed class UnreadableStore(IC4DocumentStore inner) : IC4DocumentStore
+    {
+        public event EventHandler<DocumentChangedEventArgs>? Changed
+        {
+            add => inner.Changed += value;
+            remove => inner.Changed -= value;
+        }
+
+        public DocumentEntry<C4Document, C4Workspace> GetOrLoad(string path) => inner.GetOrLoad(path) with { Unreadable = "it is locked" };
+
+        public DocumentSaveResult Save(string path, C4Document document) => inner.Save(path, document);
+
+        public void Reload(string path) => inner.Reload(path);
+
+        public void BodyDeleted(string path) => inner.BodyDeleted(path);
+
+        public void Forget(string path) => inner.Forget(path);
+
+        public void Touch(string path) => inner.Touch(path);
     }
 }

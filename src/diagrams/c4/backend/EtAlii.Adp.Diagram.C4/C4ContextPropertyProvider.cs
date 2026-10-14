@@ -1,4 +1,5 @@
 using EtAlii.Adp.Context;
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.History;
 
@@ -22,7 +23,8 @@ namespace EtAlii.Adp.Diagram.C4;
 /// value, and belongs to an action that can think about the consequences.
 /// </para>
 /// </remarks>
-public sealed class C4ContextPropertyProvider : IContextPropertyProvider
+public sealed class C4ContextPropertyProvider(IHistoryStackStore historyStacks, IC4DocumentStore documents)
+    : DiagramPropertyProvider<C4Document, C4Workspace>(historyStacks, documents)
 {
     public const string NamePropertyId = "c4.name";
     public const string DescriptionPropertyId = "c4.description";
@@ -45,44 +47,30 @@ public sealed class C4ContextPropertyProvider : IContextPropertyProvider
     private const string EndpointReason =
         "The ends of a relationship are what it is. Draw a different relationship to connect something else.";
 
-    private readonly IHistoryStackStore _historyStacks;
-    private readonly IC4DocumentStore _documents;
+    /// <inheritdoc />
+    protected override bool IsBody(string path) => path.EndsWith(Diagram.DocumentExtension, StringComparison.OrdinalIgnoreCase);
 
-    public C4ContextPropertyProvider(IHistoryStackStore historyStacks, IC4DocumentStore documents)
+    /// <inheritdoc />
+    protected override IReadOnlyList<ContextPropertyDefinition> Describe(DocumentEntry<C4Document, C4Workspace> entry, string elementId)
     {
-        ArgumentNullException.ThrowIfNull(historyStacks);
-        ArgumentNullException.ThrowIfNull(documents);
-        _historyStacks = historyStacks;
-        _documents = documents;
+        ArgumentNullException.ThrowIfNull(entry);
+
+        var workspace = entry.Model;
+        (C4Element? element, C4Relationship? relationship) = Resolve(workspace, elementId);
+        return element is not null ? Describe(element)
+            : relationship is not null ? Describe(workspace, relationship)
+            : [];
     }
 
-    public ContextScope Scope => ContextScope.DiagramElement;
-
-    public ValueTask<IReadOnlyList<ContextPropertyDefinition>> DescribeAsync(ContextTarget target, CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(target);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        if (!TryResolve(target, out var workspace, out var element, out var relationship))
-        {
-            return ValueTask.FromResult<IReadOnlyList<ContextPropertyDefinition>>([]);
-        }
-
-        return ValueTask.FromResult(
-            relationship is not null ? Describe(workspace, relationship) : Describe(element!));
-    }
-
-    public async ValueTask<ContextPropertyResult> SetAsync(
-        ContextTarget target,
-        string propertyId,
-        string value,
-        CancellationToken cancellationToken)
+    /// <inheritdoc />
+    protected override DiagramPropertyChange Change(ContextTarget target, C4Workspace model, string propertyId, string value)
     {
         ArgumentNullException.ThrowIfNull(target);
 
-        if (!TryResolve(target, out _, out var element, out var relationship))
+        (C4Element? element, C4Relationship? relationship) = Resolve(model, target.ElementId);
+        if (element is null && relationship is null)
         {
-            return ContextPropertyResult.Failure(Gone);
+            return DiagramPropertyChange.Refused(Gone);
         }
 
         var bodyPath = target.ResolvedFullPath;
@@ -96,13 +84,9 @@ public sealed class C4ContextPropertyProvider : IContextPropertyProvider
             _ => null,
         };
 
-        if (command is null)
-        {
-            return ContextPropertyResult.Failure($"'{propertyId}' is not a property of what is selected.");
-        }
-
-        var result = await _historyStacks.Get(target.RootPath).ExecuteAsync(command, cancellationToken);
-        return result.IsSuccess ? ContextPropertyResult.Success : ContextPropertyResult.Failure(result.Error);
+        return command is not null
+            ? DiagramPropertyChange.By(command)
+            : DiagramPropertyChange.Refused($"'{propertyId}' is not a property of what is selected.");
     }
 
     private static IReadOnlyList<ContextPropertyDefinition> Describe(C4Element element)
@@ -158,25 +142,20 @@ public sealed class C4ContextPropertyProvider : IContextPropertyProvider
         _ => kind.ToString(),
     };
 
-    private bool TryResolve(ContextTarget target, out C4Workspace workspace, out C4Element? element, out C4Relationship? relationship)
+    /// <summary>
+    /// What <paramref name="elementId"/> names: an element, or a relationship, or neither. A
+    /// relationship has no DSL identifier of its own, so it is looked up by the composite id the
+    /// mapper puts on the wire for it.
+    /// </summary>
+    private static (C4Element? Element, C4Relationship? Relationship) Resolve(C4Workspace workspace, string elementId)
     {
-        workspace = C4Workspace.Empty;
-        element = null;
-        relationship = null;
-
-        if (target.Scope != ContextScope.DiagramElement || target.ElementId.Length == 0)
+        if (elementId.Length == 0)
         {
-            return false;
+            return (null, null);
         }
 
-        workspace = _documents.GetOrLoad(target.ResolvedFullPath).Model;
-        element = workspace.Find(target.ElementId);
-        if (element is not null)
-        {
-            return true;
-        }
-
-        relationship = workspace.Relationships.FirstOrDefault(candidate => candidate.Id == target.ElementId);
-        return relationship is not null;
+        return workspace.Find(elementId) is { } element
+            ? (element, null)
+            : (null, workspace.Relationships.FirstOrDefault(candidate => candidate.Id == elementId));
     }
 }

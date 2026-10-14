@@ -19,51 +19,27 @@ public sealed record AddC4ViewCommand(
     string MimeType,
     C4ViewKind ViewKind,
     string ViewKey,
-    string BodyRelativePath) : ICommand;
+    string BodyRelativePath) : IDocumentEditCommand;
 
 /// <summary>Undoes an <see cref="AddC4ViewCommand"/>: removes the registration and the view block.</summary>
-public sealed record RemoveC4ViewCommand(string BodyPath, string RegistrationPath, string ViewKey) : ICommand;
+public sealed record RemoveC4ViewCommand(string BodyPath, string RegistrationPath, string ViewKey) : IDocumentEditCommand;
 
-internal sealed class AddC4ViewCommandHandler(IC4DocumentStore documents) : ICommandHandler<AddC4ViewCommand>
+/// <remarks>
+/// The view goes in through the edit run like every other edit; the registration is written only
+/// once the body that holds the view has been saved, because a registration naming a view its
+/// body does not contain would be worse than none.
+/// </remarks>
+internal sealed class AddC4ViewCommandHandler(IC4DocumentStore documents) : C4EditHandler<AddC4ViewCommand>(documents)
 {
-    public Task<CommandResult> ExecuteAsync(AddC4ViewCommand command, CancellationToken cancellationToken = default)
+    private readonly IC4DocumentStore _documents = documents;
+
+    /// <inheritdoc />
+    protected override CommandResult Execute(AddC4ViewCommand command)
     {
-        ArgumentNullException.ThrowIfNull(command);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        var workspace = documents.GetOrLoad(command.BodyPath).Model;
-        if (workspace.FindView(command.ViewKey) is not null)
+        var added = base.Execute(command);
+        if (!added.IsSuccess)
         {
-            return Task.FromResult(CommandResult.Failure($"This model already has a view called '{command.ViewKey}'."));
-        }
-
-        var document = documents.GetOrLoad(command.BodyPath).Document;
-        var insertAt = C4ViewBlock.EndOfViewsBlock(document);
-        if (insertAt is null)
-        {
-            return Task.FromResult(CommandResult.Failure("This document has no views block to add a view to."));
-        }
-
-        // The scope a view needs: the first software system for most kinds, and none at all for
-        // a landscape, which is a context diagram without a focus.
-        var scope = workspace.Elements.FirstOrDefault(element => element.Kind == C4ElementKind.SoftwareSystem)?.Id;
-        if (scope is null && command.ViewKind != C4ViewKind.SystemLandscape)
-        {
-            return Task.FromResult(CommandResult.Failure("This model has no software system for the view to be about."));
-        }
-
-        var lines = C4ViewBlock.Declare(command.ViewKind, command.ViewKey, scope, workspace);
-        for (var index = 0; index < lines.Count; index++)
-        {
-            document.InsertLine(insertAt.Value + (uint)index, lines[index]);
-        }
-
-        var saved = documents.Save(command.BodyPath, document);
-        if (saved.Failed)
-        {
-            // The body never reached the disk, so writing a registration pointing at a view
-            // it does not contain would be worse than stopping here.
-            return Task.FromResult(CommandResult.Failure(saved.Error));
+            return added;
         }
 
         try
@@ -76,31 +52,56 @@ internal sealed class AddC4ViewCommandHandler(IC4DocumentStore documents) : ICom
         {
             // The view is already in the document; leaving it there with no registration would
             // be a half-done job, so undo it before reporting.
-            C4ViewBlock.RemoveView(documents, command.BodyPath, command.ViewKey);
-            return Task.FromResult(CommandResult.Failure($"Could not create {Path.GetFileName(command.RegistrationPath)}: {exception.Message}"));
+            C4ViewBlock.RemoveView(_documents, command.BodyPath, command.ViewKey);
+            return CommandResult.Failure($"Could not create {Path.GetFileName(command.RegistrationPath)}: {exception.Message}");
         }
 
-        return Task.FromResult(CommandResult.Success(
-            new RemoveC4ViewCommand(command.BodyPath, command.RegistrationPath, command.ViewKey)));
+        return added;
+    }
+
+    /// <inheritdoc />
+    protected override EditOutcome Apply(C4Document body, C4Workspace model, AddC4ViewCommand command)
+    {
+        if (model.FindView(command.ViewKey) is not null)
+        {
+            return EditOutcome.Refused($"This model already has a view called '{command.ViewKey}'.");
+        }
+
+        var insertAt = C4ViewBlock.EndOfViewsBlock(body);
+        if (insertAt is null)
+        {
+            return EditOutcome.Refused("This document has no views block to add a view to.");
+        }
+
+        // The scope a view needs: the first software system for most kinds, and none at all for
+        // a landscape, which is a context diagram without a focus.
+        var scope = model.Elements.FirstOrDefault(element => element.Kind == C4ElementKind.SoftwareSystem)?.Id;
+        if (scope is null && command.ViewKind != C4ViewKind.SystemLandscape)
+        {
+            return EditOutcome.Refused("This model has no software system for the view to be about.");
+        }
+
+        var lines = C4ViewBlock.Declare(command.ViewKind, command.ViewKey, scope, model);
+        for (var index = 0; index < lines.Count; index++)
+        {
+            body.InsertLine(insertAt.Value + (uint)index, lines[index]);
+        }
+
+        return EditOutcome.UndoneBy(new RemoveC4ViewCommand(command.BodyPath, command.RegistrationPath, command.ViewKey));
     }
 }
 
-internal sealed class RemoveC4ViewCommandHandler(IC4DocumentStore documents) : ICommandHandler<RemoveC4ViewCommand>
+/// <remarks>The view comes out through the edit run, and its registration is deleted once it has.</remarks>
+internal sealed class RemoveC4ViewCommandHandler(IC4DocumentStore documents) : C4EditHandler<RemoveC4ViewCommand>(documents)
 {
-    public Task<CommandResult> ExecuteAsync(RemoveC4ViewCommand command, CancellationToken cancellationToken = default)
+    /// <inheritdoc />
+    protected override CommandResult Execute(RemoveC4ViewCommand command)
     {
-        ArgumentNullException.ThrowIfNull(command);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        var workspace = documents.GetOrLoad(command.BodyPath).Model;
-        var view = workspace.FindView(command.ViewKey);
-        if (view is null)
+        var removed = base.Execute(command);
+        if (!removed.IsSuccess)
         {
-            return Task.FromResult(CommandResult.Failure($"This model has no view called '{command.ViewKey}'."));
+            return removed;
         }
-
-        var kind = view.ViewKindOrDefault();
-        C4ViewBlock.RemoveView(documents, command.BodyPath, command.ViewKey);
 
         try
         {
@@ -111,18 +112,33 @@ internal sealed class RemoveC4ViewCommandHandler(IC4DocumentStore documents) : I
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
-            return Task.FromResult(CommandResult.Failure($"Could not remove {Path.GetFileName(command.RegistrationPath)}: {exception.Message}"));
+            return CommandResult.Failure($"Could not remove {Path.GetFileName(command.RegistrationPath)}: {exception.Message}");
         }
+
+        return removed;
+    }
+
+    /// <inheritdoc />
+    protected override EditOutcome Apply(C4Document body, C4Workspace model, RemoveC4ViewCommand command)
+    {
+        var view = model.FindView(command.ViewKey);
+        if (view is null)
+        {
+            return EditOutcome.Refused($"This model has no view called '{command.ViewKey}'.");
+        }
+
+        var kind = view.ViewKindOrDefault();
+        C4ViewBlock.RemoveView(body, view);
 
         // The inverse needs the body path relative to the registration's own folder; the
         // registration and its body sit side by side, so the file name is the whole path.
-        return Task.FromResult(CommandResult.Success(new AddC4ViewCommand(
+        return EditOutcome.UndoneBy(new AddC4ViewCommand(
             command.BodyPath,
             command.RegistrationPath,
             MimeTypeFor(kind),
             kind,
             command.ViewKey,
-            Path.GetFileName(command.BodyPath))));
+            Path.GetFileName(command.BodyPath)));
     }
 
     private static string MimeTypeFor(C4ViewKind kind) => kind switch
@@ -194,17 +210,9 @@ internal static class C4ViewBlock
             : [header, .. body, "        }"];
     }
 
-    /// <summary>Removes a view's declaration, from its header line to its closing brace.</summary>
-    public static void RemoveView(IC4DocumentStore documents, string bodyPath, string viewKey)
+    /// <summary>Removes a view's declaration from <paramref name="document"/>, from its header line to its closing brace.</summary>
+    public static void RemoveView(C4Document document, C4View view)
     {
-        var workspace = documents.GetOrLoad(bodyPath).Model;
-        var view = workspace.FindView(viewKey);
-        if (view is null)
-        {
-            return;
-        }
-
-        var document = documents.GetOrLoad(bodyPath).Document;
         var first = view.Line;
         var last = first;
         var depth = 0;
@@ -219,12 +227,25 @@ internal static class C4ViewBlock
         }
 
         document.RemoveLines(first, last);
+    }
+
+    /// <summary>Removes a view that was saved into the document at <paramref name="bodyPath"/>, and saves that.</summary>
+    public static void RemoveView(IC4DocumentStore documents, string bodyPath, string viewKey)
+    {
+        var entry = documents.GetOrLoad(bodyPath);
+        var copy = C4Document.Parse(entry.Document.Text);
+        if (C4Parser.Parse(copy).FindView(viewKey) is not { } view)
+        {
+            return;
+        }
+
+        RemoveView(copy, view);
 
         // Discarded deliberately, and this is the one place that is right: this undoes a
         // view whose registration could not be written, and the caller is already returning
         // that failure. A second sentence about the undo would replace the one that says
         // what actually went wrong.
-        _ = documents.Save(bodyPath, document);
+        _ = documents.Save(bodyPath, copy);
     }
 
     /// <summary>A component view is scoped to a container, so it needs one rather than a system.</summary>
