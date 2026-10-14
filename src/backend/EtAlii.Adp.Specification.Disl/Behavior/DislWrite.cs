@@ -75,7 +75,7 @@ public static class DislWrite
     private static string ReadId(DislSpecification specification, string id)
     {
         var prefix = specification.Metamodel.Types.Keys.Concat(specification.Metamodel.Relations.Keys)
-            .Select(type => specification.IdRuleOf(type))
+            .Select(specification.IdRuleOf)
             .Where(rule => rule is { Strategy: "natural", Prefix.Length: > 0 } && id.StartsWith(rule.Prefix, StringComparison.Ordinal))
             .Select(rule => rule.Prefix!)
             .OrderByDescending(declared => declared.Length)
