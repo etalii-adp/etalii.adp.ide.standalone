@@ -35,7 +35,7 @@ public sealed class RemoveTimelineElementCommandHandler(ITimelineDocumentStore d
         {
             // This removal is the undo of an insert that created the connections: key on demand,
             // so the key it created goes too - or the undo comes back one line different.
-            TimelineWriter.RemoveConnectionsSectionIfEmpty(body, TimelineParser.Parse(body));
+            TimelineWriter.RemoveConnectionsSectionIfEmpty(body, TimelineEdits.Read(body));
         }
 
         // Redoing the restore removes the element again - by id, which it has again by then.

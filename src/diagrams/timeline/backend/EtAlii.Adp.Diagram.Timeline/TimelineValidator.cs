@@ -1,6 +1,5 @@
 using EtAlii.Adp.Documents;
 using Serilog;
-using YamlDotNet.Core;
 
 namespace EtAlii.Adp.Diagram.Timeline;
 
@@ -9,12 +8,12 @@ namespace EtAlii.Adp.Diagram.Timeline;
 /// Warnings panel by (Requirement 12.1).
 /// </summary>
 /// <remarks>
-/// Text in, problems out: parse, and hand the model to <see cref="TimelineDefinition.Problems"/>. A file
-/// that will not parse is reported as one <b>error</b> naming the line - the definition's
-/// <c>std.unparseable</c>, with the parser's message as its reason, and the same message the
-/// unavailable state shows, so the panel and the canvas never disagree (Requirement 12.3) -
-/// because running rules over a model that is empty only because the parse failed would bury
-/// that one fact under a list of consequences.
+/// Text in, problems out: ask <see cref="TimelineYamlSyntax"/> whether it is YAML, read it through the
+/// binding, and hand the body to <see cref="TimelineDefinition.Problems"/>. A file that is not YAML is
+/// reported as one <b>error</b> naming the line - the definition's <c>std.unparseable</c>, with the YAML
+/// reader's message as its reason, and the same message the unavailable state shows, so the panel and
+/// the canvas never disagree (Requirement 12.3) - because running rules over a model that is empty
+/// only because the parse failed would bury that one fact under a list of consequences.
 /// </remarks>
 public sealed class TimelineValidator : IDiagramValidator
 {
@@ -33,18 +32,12 @@ public sealed class TimelineValidator : IDiagramValidator
         ArgumentNullException.ThrowIfNull(request);
         cancellationToken.ThrowIfCancellationRequested();
 
-        TimelineModel model;
-        try
+        if (TimelineYamlSyntax.Check(request.Document) is { } refusal)
         {
-            model = TimelineParser.Parse(LineDocument.Parse(request.Document));
-        }
-        catch (YamlException exception)
-        {
-            var line = (uint)Math.Max(exception.Start.Line, 1);
-            _logger.Debug(exception, "{BaseName} does not parse at line {Line}", request.BaseName, line);
-            return ValueTask.FromResult(TimelineDefinition.Unparseable(exception.Message, (int)line));
+            _logger.Debug("{BaseName} does not parse at line {Line}: {Reason}", request.BaseName, refusal.Line, refusal.Message);
+            return ValueTask.FromResult(TimelineDefinition.Unparseable(refusal.Message, refusal.Line));
         }
 
-        return ValueTask.FromResult(TimelineDefinition.Problems(model));
+        return ValueTask.FromResult(TimelineDefinition.Problems(TimelineBody.Parse(request.Document)));
     }
 }

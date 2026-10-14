@@ -15,7 +15,7 @@ public sealed class TimelineDocumentStoreTests : DocumentStoreContract<ITimeline
     protected override ITimelineDocumentStore CreateStore() => new TimelineDocumentStore();
 
     protected override void Edit(LineDocument document) =>
-        TimelineWriter.SetLabel(document, TimelineParser.Parse(document).Elements[0], EditMarker);
+        TimelineWriter.SetLabel(document, TimelineReading.Of(document.Text).Elements[0], EditMarker);
 
     protected override string TextOf(LineDocument document) => document.Text;
 

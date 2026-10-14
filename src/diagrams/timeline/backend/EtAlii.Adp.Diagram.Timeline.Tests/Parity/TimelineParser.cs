@@ -2,11 +2,13 @@ using System.Globalization;
 using EtAlii.Adp.Documents;
 using YamlDotNet.RepresentationModel;
 
-namespace EtAlii.Adp.Diagram.Timeline;
+namespace EtAlii.Adp.Diagram.Timeline.Tests.Parity;
 
 /// <summary>
 /// Reads a <see cref="LineDocument"/> into a <see cref="TimelineModel"/>, recording which
-/// lines declare what.
+/// lines declare what: the module's own reader before it read through its binding, kept here as the
+/// oracle <see cref="TimelineReadingTests"/> holds <see cref="TimelineReading"/> to (timeline-disl-fbl
+/// Requirement 4.1). Nothing in the product reads with it.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -22,7 +24,7 @@ namespace EtAlii.Adp.Diagram.Timeline;
 /// outright, and that is the validator's one-problem case.
 /// </para>
 /// </remarks>
-public static class TimelineParser
+internal static class TimelineParser
 {
     private const string ElementsKey = "elements";
     private const string ConnectionsKey = "connections";

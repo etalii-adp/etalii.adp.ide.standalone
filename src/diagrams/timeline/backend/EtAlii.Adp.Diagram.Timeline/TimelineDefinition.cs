@@ -4,6 +4,7 @@ using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Specification.Disl;
+using EtAlii.Adp.Specification.Fbl;
 
 namespace EtAlii.Adp.Diagram.Timeline;
 
@@ -20,9 +21,11 @@ namespace EtAlii.Adp.Diagram.Timeline;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>The model is the parsed document's</b> (<see cref="TimelineDisl"/>), so a menu, a row and a
-/// finding read the same snapshot. <b>An element is found by the id written in the document</b>, the
-/// first element with it, else the first relation, as <see cref="TimelineEdits"/> finds it.
+/// <b>The model is the DISL model of the body the <see cref="TimelineModel"/> was read from</b>
+/// (<see cref="TimelineBody.Disl"/>, built by <see cref="DislModelBuilder"/> from the binding's reading),
+/// so a menu, a row and a finding read the same snapshot. <b>An element is found by the id written in
+/// the document</b>, the binding's host attribute <c>storedId</c>: the first element with it, else the
+/// first relation, as <see cref="TimelineEdits"/> finds it.
 /// </para>
 /// <para>
 /// <b>The menus are derived editable</b>: the hand-written menus never asked whether a document could
@@ -42,6 +45,17 @@ internal static class TimelineDefinition
     ]);
 
     private static readonly Lazy<string> LoadedArrangeReason = new(ArrangeReasonOf);
+
+    /// <summary>The host attribute holding the id an element or relation is written with, absent for none.</summary>
+    private const string StoredId = "storedId";
+
+    /// <summary>
+    /// The reader's findings the tool reports: <c>std.unparseable</c> alone (timeline-disl-fbl Q2). The
+    /// library's notes on a missing or repeated id and a dangling reference are reported by the
+    /// definition's own rules under the tool's codes, and <c>fbl.duplicate-key</c>,
+    /// <c>fbl.header-mismatch</c> and <c>std.unreadableEntry</c> are findings the tool does not give.
+    /// </summary>
+    private static readonly HashSet<string> ReportedReaderFindings = new(StringComparer.Ordinal) { FindingCodes.Unparseable };
 
     /// <summary>The order the findings are reported in: the ids, then the times, then the relations' ends.</summary>
     private static readonly Dictionary<string, int> FindingGroups = new(StringComparer.Ordinal)
@@ -72,13 +86,13 @@ internal static class TimelineDefinition
     /// <summary>The context menu of <paramref name="elementId"/> in <paramref name="model"/>: an element, a relation, a placement, a relation gesture; none for anything else.</summary>
     public static IReadOnlyList<ContextActionGroupDefinition> Menus(TimelineModel model, string elementId)
     {
-        var diagram = TimelineDisl.Of(model).Diagram;
-        DislMenuTarget? target = TimelineDisl.ElementOf(diagram, elementId) is { } element
+        var diagram = DiagramOf(model);
+        DislMenuTarget? target = ElementOf(diagram, elementId) is { } element
             ? DislMenuTarget.Element(element)
             : GestureIds.TryParseRowPlacement(elementId, out _, out _)
                 ? DislMenuTarget.Canvas(diagram)
                 : GestureIds.TryParseRelation(elementId, out var from, out var to)
-                    ? DislMenuTarget.Connection(diagram, TimelineDisl.ElementOf(diagram, from), TimelineDisl.ElementOf(diagram, to), "Connection")
+                    ? DislMenuTarget.Connection(diagram, ElementOf(diagram, from), ElementOf(diagram, to), "Connection")
                     : null;
         if (target is null) return [];
 
@@ -92,27 +106,34 @@ internal static class TimelineDefinition
     /// <summary>The property rows of <paramref name="elementId"/> in <paramref name="model"/>: an element's or a relation's form; none for anything else.</summary>
     public static IReadOnlyList<ContextPropertyDefinition> Rows(TimelineModel model, string elementId)
     {
-        if (TimelineDisl.ElementOf(TimelineDisl.Of(model).Diagram, elementId) is not { } element) return [];
+        if (ElementOf(DiagramOf(model), elementId) is not { } element) return [];
 
         // Every row is a line: there is no date-aware editor (property-grid Requirement 9), and a row is typed as text too.
         return [.. FormDerivation.Derive(Specification, element, Env, Ids).Select(row => new ContextPropertyDefinition(row.Id, row.Label, row.Value, ContextPropertyEditor.Line, row.ReadOnlyReason, row.Group))];
     }
 
     /// <summary>
-    /// The findings of <paramref name="model"/>, grouped as the tool reports them: the ids, then the
+    /// The findings of <paramref name="body"/>, grouped as the tool reports them: the ids, then the
     /// times, then the relations' ends; within a group by declaration, elements before relations, and
-    /// within a declaration in the order the definition states its rules.
+    /// within a declaration in the order the definition states its rules. A body the library cannot
+    /// read has the one finding <c>std.unparseable</c>, with the library's reason.
     /// </summary>
-    public static IReadOnlyList<DiagramProblem> Problems(TimelineModel model)
+    public static IReadOnlyList<DiagramProblem> Problems(TimelineBody body)
     {
-        var built = TimelineDisl.Of(model);
-        var findings = ConstraintEvaluator.Evaluate(Specification, built.Diagram, new DislConstraintOptions(Env, WrittenId: TimelineDisl.WrittenIdOf));
+        ArgumentNullException.ThrowIfNull(body);
+        var built = body.Disl;
+        var declarations = Declarations(built.Diagram);
+        var reader = body.Model.Findings
+            .Where(finding => ReportedReaderFindings.Contains(finding.Code))
+            .Select(finding => DislReaderFinding.NotParsed(finding.Message, finding.Location?.Line))
+            .ToList();
+        var findings = ConstraintEvaluator.Evaluate(Specification, built.Diagram, new DislConstraintOptions(Env, reader, WrittenIdOf));
         return
         [
             .. findings
                 .Select((finding, arising) => (Finding: finding, Arising: arising))
                 .OrderBy(entry => FindingGroups.GetValueOrDefault(entry.Finding.Code, int.MaxValue))
-                .ThenBy(entry => entry.Finding.Line is { } line ? built.Declarations.GetValueOrDefault(line, int.MaxValue) : int.MaxValue)
+                .ThenBy(entry => entry.Finding.Line is { } line ? declarations.GetValueOrDefault(line, int.MaxValue) : int.MaxValue)
                 .ThenBy(entry => entry.Arising)
                 .Select(entry => Problem(entry.Finding)),
         ];
@@ -137,7 +158,7 @@ internal static class TimelineDefinition
         var transaction = OperationInterpreter.Run(
             Specification,
             operation,
-            TimelineDisl.Build(model).Diagram,
+            WorkingOf(model),
             null,
             DislIds.Fixed(id),
             new DislInvocation(new Dictionary<string, object?>(StringComparer.Ordinal) { ["x"] = begin, ["y"] = (long)row }),
@@ -163,8 +184,8 @@ internal static class TimelineDefinition
     /// </summary>
     public static (AddConnectedTimelineElementCommand? Command, string Refusal) Grown(TimelineModel model, string body, string operation, string elementId)
     {
-        var diagram = TimelineDisl.Build(model).Diagram;
-        if (TimelineDisl.ElementOf(diagram, elementId) is not { Kind: "node" } self) return (null, "That is no longer in this timeline.");
+        var diagram = WorkingOf(model);
+        if (ElementOf(diagram, elementId) is not { Kind: "node" } self) return (null, "That is no longer in this timeline.");
 
         var transaction = OperationInterpreter.Run(Specification, operation, diagram, self, NewIds(), null, Env);
         return Related(transaction, body, elementId, operation, newElementIsSource: false, self.Id);
@@ -178,8 +199,8 @@ internal static class TimelineDefinition
     /// </summary>
     public static (AddConnectedTimelineElementCommand? Command, string Refusal) RelatedHere(TimelineModel model, string body, string elementId, string newEnd, string begin, int row)
     {
-        var diagram = TimelineDisl.Build(model).Diagram;
-        if (TimelineDisl.ElementOf(diagram, elementId) is not { Kind: "node" } existing) return (null, "That is no longer in this timeline.");
+        var diagram = WorkingOf(model);
+        if (ElementOf(diagram, elementId) is not { Kind: "node" } existing) return (null, "That is no longer in this timeline.");
 
         var transaction = OperationInterpreter.ConnectToNew(
             Specification,
@@ -200,8 +221,8 @@ internal static class TimelineDefinition
     /// </summary>
     public static (SetTimelineEndCommand? Command, string Refusal) EndChange(TimelineModel model, string body, string operation, string elementId, string? end)
     {
-        var diagram = TimelineDisl.Build(model).Diagram;
-        if (TimelineDisl.ElementOf(diagram, elementId) is not { Kind: "node" } self || !OperationInterpreter.AppliesTo(Specification, operation, self)) return (null, "");
+        var diagram = WorkingOf(model);
+        if (ElementOf(diagram, elementId) is not { Kind: "node" } self || !OperationInterpreter.AppliesTo(Specification, operation, self)) return (null, "");
 
         var parameters = end is null ? null : new Dictionary<string, object?>(StringComparer.Ordinal) { ["end"] = end };
         var transaction = OperationInterpreter.Run(Specification, operation, diagram, self, DislIds.Fixed(), new DislInvocation(Parameters: parameters), Env);
@@ -244,9 +265,51 @@ internal static class TimelineDefinition
 
     /// <summary>What removing <paramref name="elementId"/> asks first; null when it asks nothing.</summary>
     public static DislConfirmation? RemoveConfirmation(TimelineModel model, string elementId) =>
-        TimelineDisl.ElementOf(TimelineDisl.Of(model).Diagram, elementId) is { Kind: "node" } element
+        ElementOf(DiagramOf(model), elementId) is { Kind: "node" } element
             ? DeletionPolicy.Confirmation(Specification, element, env: Env)
             : null;
+
+    /// <summary>The id <paramref name="element"/> is written with, the binding's <c>storedId</c>; empty for none.</summary>
+    private static string WrittenIdOf(DislElement element)
+    {
+        ArgumentNullException.ThrowIfNull(element);
+        return element.HostAttributes.TryGetValue(StoredId, out var id) ? id as string ?? "" : "";
+    }
+
+    /// <summary>The element, else the relation, written with <paramref name="id"/>, as <see cref="TimelineEdits"/> finds it; null for none.</summary>
+    private static DislElement? ElementOf(DislDiagram diagram, string? id)
+    {
+        ArgumentNullException.ThrowIfNull(diagram);
+        if (id is null) return null;
+        return diagram.Nodes.FirstOrDefault(node => WrittenIdOf(node) == id)
+            ?? diagram.Relations.FirstOrDefault(relation => WrittenIdOf(relation) == id);
+    }
+
+    /// <summary>The DISL diagram of the body <paramref name="model"/> was read from; read it, never change it. Empty for a model no body was read into.</summary>
+    private static DislDiagram DiagramOf(TimelineModel model) =>
+        TimelineReading.BodyOf(model)?.Disl.Diagram ?? Unread(model);
+
+    /// <summary>A DISL diagram of the body <paramref name="model"/> was read from of its own, for an operation to change as it runs.</summary>
+    private static DislDiagram WorkingOf(TimelineModel model) =>
+        TimelineReading.BodyOf(model)?.Working() ?? Unread(model);
+
+    /// <summary>The diagram of a model no body was read into: only the empty model, the one of a body that cannot be read, has none.</summary>
+    private static DislDiagram Unread(TimelineModel model) =>
+        model.Elements.Count == 0 && model.Connections.Count == 0
+            ? new DislDiagram(Specification)
+            : throw new InvalidOperationException("A timeline model is derived from only when TimelineReading read it from a body.");
+
+    /// <summary>Each element's and relation's place among the declarations, elements first, by the line it starts on.</summary>
+    private static Dictionary<int, int> Declarations(DislDiagram diagram)
+    {
+        var declarations = new Dictionary<int, int>();
+        foreach (var element in diagram.Nodes.OrderBy(node => node.Line).Concat(diagram.Relations.OrderBy(relation => relation.Line)))
+        {
+            if (element.Line is { } line) declarations.TryAdd(line, declarations.Count);
+        }
+
+        return declarations;
+    }
 
     private static DiagramProblem Problem(DislFinding finding)
     {

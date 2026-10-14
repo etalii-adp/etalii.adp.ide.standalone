@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 using Xunit;
 using IoPath = System.IO.Path;
@@ -117,7 +116,7 @@ public class TimelineArrangementTests : IDisposable
     public void ARelatedChain_IsArrangedOnOneRow()
     {
         // Arrange: a then b then c, related in a chain, beside an unrelated element overlapping a.
-        var model = TimelineParser.Parse(LineDocument.Parse("""
+        var model = TimelineReading.Of("""
             timeline: 1
             elements:
               - id: other
@@ -147,7 +146,7 @@ public class TimelineArrangementTests : IDisposable
               - id: bc
                 from: b
                 to: c
-            """));
+            """);
 
         // Act.
         var rows = TimelineArrangement.RowsOf(model);
@@ -162,7 +161,7 @@ public class TimelineArrangementTests : IDisposable
     public void AMomentAndTheLaterElementItLeadsTo_AreNeverOnOneRow_SoTheLinkMissesItsLabel()
     {
         // Arrange: the roadmap starts with a moment, "Project kick-off", linked to the later Discovery.
-        var model = TimelineParser.Parse(LineDocument.Parse(Roadmap));
+        var model = TimelineReading.Of(Roadmap);
         var byId = model.Elements.ToDictionary(element => element.Id, StringComparer.Ordinal);
 
         // Act.

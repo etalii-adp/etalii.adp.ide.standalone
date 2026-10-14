@@ -293,21 +293,21 @@
       "binding": "timeline",
       "file": "src/diagrams/timeline/backend/EtAlii.Adp.Diagram.Timeline.Tests/Fixtures/findings/dangling.tml",
       "observed": "Connection: the binding lacks 4 (bothgone, fromnowhere, noends, tonowhere)",
-      "reason": "The fixture is one of the timeline module's findings corpus, written to hold dangling connection ends on purpose. FBL section 5.4 resolves a relation's source and target to elements and reads no relation whose end names no element, while the module reads every connection and reports the dangling end as a finding. Candidate follow-up for etalii.adp: let a relation rule read an entry whose end does not resolve, so a host can report it."
+      "reason": "The fixture is one of the timeline module's findings corpus, written to hold dangling connection ends on purpose. The difference is between two bindings: the vendored example reads a connection as an FBL relation, and FBL section 5.4 reads no relation whose end names no element; the module's own binding (timeline.fbl) reads a connection as an element whose from and to are references, so every connection is read and the definition reports the dangling end (timeline-disl-fbl finding B2). Candidate follow-up for etalii.adp: let a relation rule read an entry whose end does not resolve, so a host can report it."
     },
     {
       "property": "cross-check",
       "binding": "timeline",
       "file": "src/diagrams/timeline/backend/EtAlii.Adp.Diagram.Timeline.Tests/Fixtures/findings/combined.tml",
       "observed": "Connection: the binding lacks 2 (beta, c1)",
-      "reason": "The fixture is one of the timeline module's findings corpus, written to hold every finding at once. Its connections c1 and beta each name an element that does not exist; FBL section 5.4 reads no relation whose end names no element, while the module reads every connection and reports the dangling end as a finding. Candidate follow-up for etalii.adp: let a relation rule read an entry whose end does not resolve, so a host can report it."
+      "reason": "The fixture is one of the timeline module's findings corpus, written to hold every finding at once. Its connections c1 and beta each name an element that does not exist. The difference is between two bindings: the vendored example reads a connection as an FBL relation, and FBL section 5.4 reads no relation whose end names no element; the module's own binding (timeline.fbl) reads a connection as an element whose from and to are references, so every connection is read and the definition reports the dangling end (timeline-disl-fbl finding B2). Candidate follow-up for etalii.adp: let a relation rule read an entry whose end does not resolve, so a host can report it."
     },
     {
       "property": "cross-check",
       "binding": "timeline",
       "file": "src/diagrams/timeline/backend/EtAlii.Adp.Diagram.Timeline.Tests/Fixtures/findings/identity.tml",
       "observed": "Connection: the binding lacks 1 (twice) | Moment: the binding lacks 1 (first)",
-      "reason": "The fixture is one of the timeline module's findings corpus, written to hold repeated ids on purpose. FBL gives a stored id to one holder only, so a later entry repeating it is read under its place, and the module's id check reads the id as written to report the repetition. Candidate follow-up for etalii.adp: let a reading keep a repeated stored id beside the place it falls back to."
+      "reason": "The fixture is one of the timeline module's findings corpus, written to hold repeated ids on purpose. The difference is between two bindings: FBL gives a stored id to one holder only, so under the vendored example a later entry repeating it is read under its place and its id is lost; the module's own binding (timeline.fbl) also reads every entry's id as written, as the host attribute storedId, so the definition reports the repetition and the module finds an entry by what is written (timeline-disl-fbl finding B3). Candidate follow-up for etalii.adp: let a reading keep a repeated stored id beside the place it falls back to."
     },
     {
       "property": "unreadable",
@@ -321,7 +321,7 @@
       "binding": "timeline",
       "file": "src/diagrams/timeline/backend/EtAlii.Adp.Diagram.Timeline.Tests/Fixtures/findings/end-shapes.tml",
       "observed": "Moment: the binding lacks 2 (esmapping, essequence) | Period: the binding adds 2 (esmapping, essequence)",
-      "reason": "The fixture is one of the timeline module's findings corpus, written for timeline-disl-fbl finding B11: an end key holding nothing, a mapping, a sequence, a quoted empty text and null. The module reads an entry as a period only when its end holds a scalar, so the entries whose end is a mapping or a sequence are moments to it; the binding's period rule asks has(entry.end), which is true for every end key. The empty end, the quoted empty end and null agree. Recorded for the module's own binding to state the module's rule or for the difference to be ruled on (Parity/timeline.findings.json, B11)."
+      "reason": "The fixture is one of the timeline module's findings corpus, written for timeline-disl-fbl finding B11: an end key holding nothing, a mapping, a sequence, a quoted empty text and null. The difference is between two bindings: the module's own binding (timeline.fbl) reads an entry as a period only when its end holds a scalar, as the module always has, so the entries whose end is a mapping or a sequence are moments to it; the vendored example's period rule asks has(entry.end), which is true for every end key. The empty end, the quoted empty end and null agree (Parity/timeline.findings.json, B11)."
     },
     {
       "property": "cross-check",

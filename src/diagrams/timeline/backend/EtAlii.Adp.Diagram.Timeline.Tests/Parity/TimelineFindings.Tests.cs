@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using EtAlii.Adp.Specification.Disl;
 using EtAlii.Adp.Specification.Fbl;
 using EtAlii.Adp.Specification.Fbl.Documents;
 using EtAlii.Adp.Specification.Fbl.History;
@@ -23,8 +24,8 @@ namespace EtAlii.Adp.Diagram.Timeline.Tests.Parity;
 /// <para>
 /// The binding is <c>src/backend/EtAlii.Adp.Specification.Fbl.Tests/Conformance/timeline.fbl</c>,
 /// linked into this project unchanged. It is read with the attribute types of the bundled
-/// definition (a label is a string, a begin and an end a date-time, a row an int), stated here as a
-/// literal set, because nothing yet gives a reading its types from a DISL specification.
+/// definition (a label is a string, a begin and an end a date-time, a row an int), as
+/// <see cref="DislAttributeTypes"/> gives them through the definition's <c>typeMap</c>.
 /// </para>
 /// <para>
 /// An edit is compared step for step: the transcript's text before the step is rebuilt by applying
@@ -273,7 +274,7 @@ public sealed partial class TimelineFindingsTests
 
     private static readonly Lazy<FblBinding> _binding = new(LoadBinding);
 
-    private static readonly HashSet<string> _timeAttributes = new(StringComparer.Ordinal) { "period.begin", "period.end", "moment.begin" };
+    private static readonly Lazy<IReadOnlySet<string>> _timeAttributes = new(() => DislAttributeTypes.TimeAttributes(TimelineDefinition.Specification, _binding.Value));
 
     private static FblBinding LoadBinding()
     {
@@ -283,19 +284,13 @@ public sealed partial class TimelineFindingsTests
     }
 
     /// <summary>The attribute types of the bundled definition, by the binding's type and attribute.</summary>
-    private static string? AttributeType(string type, string attribute) => (type, attribute) switch
-    {
-        (_, "label") => "string",
-        ("Period" or "Moment", "begin" or "end") => "datetime",
-        ("Period" or "Moment", "row") => "int",
-        _ => null,
-    };
+    private static readonly Lazy<Func<string, string, string?>> _attributeType = new(() => DislAttributeTypes.Of(TimelineDefinition.Specification));
 
     private static FblOptions Options(string fixture) => new()
     {
         FileName = fixture,
-        AttributeType = AttributeType,
-        TimeAttributes = _timeAttributes,
+        AttributeType = _attributeType.Value,
+        TimeAttributes = _timeAttributes.Value,
     };
 
     private static byte[] Bytes(string fixture) =>

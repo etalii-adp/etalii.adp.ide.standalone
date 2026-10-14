@@ -30,9 +30,9 @@ public sealed class AddConnectedTimelineElementCommandHandler(ITimelineDocumentS
         TimelineWriter.InsertElement(
             body, model, command.NewElementId, command.Label ?? NewElementLabel, command.Begin, command.End, command.Row);
 
-        // The insert moved lines, so the relation is spliced against a fresh parse rather than
+        // The insert moved lines, so the relation is spliced against a fresh reading rather than
         // the ranges the first model recorded.
-        var reparsed = TimelineParser.Parse(body);
+        var reparsed = TimelineEdits.Read(body);
         // Whether the insert is about to create the connections: key, so the inverse can take
         // the key back out and the undo return the file byte for byte.
         var hadSection = TimelineWriter.HasConnectionsSection(body);

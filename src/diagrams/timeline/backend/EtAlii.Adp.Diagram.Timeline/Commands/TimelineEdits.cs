@@ -8,6 +8,18 @@ namespace EtAlii.Adp.Diagram.Timeline;
 /// </summary>
 internal static class TimelineEdits
 {
+    /// <summary>
+    /// The model of <paramref name="body"/> as a command reads it: through the binding, once YamlDotNet
+    /// has accepted it (<see cref="TimelineYamlSyntax.Require"/>), so a command on a body that is not
+    /// YAML meets what it always has.
+    /// </summary>
+    /// <exception cref="YamlDotNet.Core.YamlException">The body is not well-formed YAML.</exception>
+    public static TimelineModel Read(LineDocument body)
+    {
+        TimelineYamlSyntax.Require(body.Text);
+        return TimelineReading.Of(body.Text);
+    }
+
     /// <summary>The element an id names in the current model, or null.</summary>
     public static TimelineElement? ElementOf(TimelineModel model, string elementId) =>
         model.Elements.FirstOrDefault(candidate =>

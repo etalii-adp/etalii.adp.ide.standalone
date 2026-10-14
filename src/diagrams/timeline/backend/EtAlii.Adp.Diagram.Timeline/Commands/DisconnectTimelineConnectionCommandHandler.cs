@@ -25,7 +25,7 @@ public sealed class DisconnectTimelineConnectionCommandHandler(ITimelineDocument
         if (command.RemoveEmptiedConnectionsSection)
         {
             // The undo of a connect that created the connections: key on demand.
-            TimelineWriter.RemoveConnectionsSectionIfEmpty(body, TimelineParser.Parse(body));
+            TimelineWriter.RemoveConnectionsSectionIfEmpty(body, TimelineEdits.Read(body));
         }
 
         return EditOutcome.UndoneBy(new ConnectTimelineElementsCommand(
