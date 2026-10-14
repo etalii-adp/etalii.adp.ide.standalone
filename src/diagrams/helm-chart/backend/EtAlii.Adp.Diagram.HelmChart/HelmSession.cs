@@ -1,6 +1,5 @@
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
-using Serilog;
 
 namespace EtAlii.Adp.Diagram.HelmChart;
 
@@ -24,11 +23,14 @@ namespace EtAlii.Adp.Diagram.HelmChart;
 /// back through the folder watcher like any other change, and the re-render overlays the
 /// authored position - one path for computed and dragged alike.
 /// </para>
+/// <para>
+/// <b>What this connection holds is kept by <see cref="DiagramDocumentChangeHandler"/></b>, as
+/// every session's is (code-structure FR-031): the baseline, a viewport report and a change to the
+/// chart all diff under its one lock against the one record of what was delivered.
+/// </para>
 /// </remarks>
 internal sealed class HelmSession : IDiagramSession
 {
-    private static readonly ILogger _logger = Log.ForContext<HelmSession>();
-
     private readonly string _folder;
     private readonly string _registrationPath;
     private readonly IHelmChartStore _store;
@@ -40,8 +42,7 @@ internal sealed class HelmSession : IDiagramSession
     /// <summary>The store's word for this folder, until the session goes.</summary>
     private readonly IDisposable _watch;
 
-    /// <summary>What this connection was last sent, so a change can be diffed against it.</summary>
-    private IReadOnlyList<DiagramElement> _delivered = [];
+    private readonly DiagramDocumentChangeHandler _changes;
 
     /// <summary>
     /// What this connection is looking at. Unbounded until the client reports, so a client
@@ -66,9 +67,10 @@ internal sealed class HelmSession : IDiagramSession
         _store = store;
         _mapper = mapper;
         _history = history;
+        _changes = new DiagramDocumentChangeHandler(_folder, Render, Raise);
 
         _store.Acquire(_folder);
-        _watch = _store.Watch(_folder, _ => OnChartChanged());
+        _watch = _store.Watch(_folder, _ => _changes.OnDocumentChanged(_folder));
     }
 
     /// <inheritdoc />
@@ -77,9 +79,7 @@ internal sealed class HelmSession : IDiagramSession
     /// <inheritdoc />
     public IReadOnlyList<DiagramDelta> Baseline()
     {
-        var elements = Render();
-        _delivered = elements;
-
+        var elements = _changes.Deliver();
         return elements.Count > 0
             ? [new DiagramAddDelta(elements)]
             : [];
@@ -89,16 +89,11 @@ internal sealed class HelmSession : IDiagramSession
     public IReadOnlyList<DiagramDelta> UpdateView(DiagramViewport viewport)
     {
         _viewport = viewport;
-        var after = Render();
 
-        // Diffed against what this connection holds, by the shared diff every module uses
-        // (backend-centralization R4): a Remove for what left the view, then an Add for what
-        // came into it - removals first, the one order R4.5 settles, where this used to add
-        // first. It is also what a chart change diffs against next, so that diffs against the
-        // narrowed set rather than against the whole diagram last seen at baseline.
-        var deltas = DiagramDiff.Between(_delivered, after);
-        _delivered = after;
-        return deltas;
+        // Diffed against what this connection holds, removals first (backend-centralization
+        // R4.5) - and recorded, so a chart change next diffs against the narrowed set rather
+        // than against the whole diagram last seen at baseline.
+        return _changes.Refresh();
     }
 
     /// <summary>Refused: nothing in this diagram nests under a parent - its place is a position.</summary>
@@ -147,58 +142,15 @@ internal sealed class HelmSession : IDiagramSession
         return ValueTask.CompletedTask;
     }
 
+    /// <summary>What this connection should hold: the chart as the store has it, arranged, through its viewport.</summary>
     private IReadOnlyList<DiagramElement> Render()
     {
         var chart = _store.GetOrLoad(_folder);
         var graph = HelmGraph.Derive(chart);
 
-        return _mapper.Visible(chart, graph, Boxes(chart, graph), _viewport);
+        return _mapper.Visible(chart, graph, HelmLayout.Arranged(chart, graph, RegistrationLayout.Read(_registrationPath)), _viewport);
     }
 
-    /// <summary>
-    /// Every box the chart currently has: computed positions first, stored ones winning
-    /// element by element, sizes staying measured - a stale stored id simply has nothing to
-    /// override (core's own overlay semantics). Every render - baseline, view report and chart
-    /// change - goes through it, so no two of them can disagree about where an element sits.
-    /// </summary>
-    private IReadOnlyDictionary<string, HelmBox> Boxes(HelmChart chart, HelmGraph graph)
-    {
-        var boxes = HelmLayout.Compute(chart, graph);
-        var stored = RegistrationLayout.Read(_registrationPath);
-        if (stored.Count == 0)
-        {
-            return boxes;
-        }
-
-        var overlaid = new Dictionary<string, HelmBox>(boxes.Count, StringComparer.Ordinal);
-        foreach ((string id, HelmBox box) in boxes)
-        {
-            overlaid[id] = stored.TryGetValue(id, out var position)
-                ? box with { X = position.X, Y = position.Y }
-                : box;
-        }
-
-        return overlaid;
-    }
-
-    private void OnChartChanged()
-    {
-        try
-        {
-            var current = Render();
-            var deltas = DiagramDiff.Between(_delivered, current);
-            _delivered = current;
-
-            if (deltas.Count > 0)
-            {
-                Changed?.Invoke(this, new DiagramDeltasEventArgs(deltas));
-            }
-        }
-        catch (Exception exception)
-        {
-            // A push that cannot be built loses that push and says so; the next change
-            // catches the diagram up. Never the connection's death.
-            _logger.Error(exception, "Re-rendering {Folder} after a change failed", _folder);
-        }
-    }
+    private void Raise(IReadOnlyList<DiagramDelta> deltas) =>
+        Changed?.Invoke(this, new DiagramDeltasEventArgs(deltas));
 }

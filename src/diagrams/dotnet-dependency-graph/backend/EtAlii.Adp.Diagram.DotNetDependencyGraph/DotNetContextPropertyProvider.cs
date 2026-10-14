@@ -30,6 +30,13 @@ namespace EtAlii.Adp.Diagram.DotNetDependencyGraph;
 /// <c>display</c>. A missing row and a missing value read very differently to someone wondering
 /// whether the diagram simply failed to look.
 /// </para>
+/// <para>
+/// <b>It does not derive from <see cref="DiagramPropertyProvider{TBody, TModel}"/></b>, because
+/// everything that frame carries is for a document that can be edited: it loads a document of a
+/// store, guards one that could not be read and dispatches a change through the project's history,
+/// while this reads a solution's derived graph and edits nothing (code-structure, spec 025: a module
+/// that cannot adopt a shared type keeps its own).
+/// </para>
 /// </remarks>
 public sealed class DotNetContextPropertyProvider : IContextPropertyProvider
 {
