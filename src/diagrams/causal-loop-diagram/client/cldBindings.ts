@@ -1,4 +1,4 @@
-import type { ClassDeclaration } from "@client/canvas/library/definition/diagramDefinition";
+import type { ClassDeclaration, LabelUnderline } from "@client/canvas/library/definition/diagramDefinition";
 import type { NotationBindings } from "@client/canvas/library/disl/compileNotation";
 
 /**
@@ -18,8 +18,11 @@ import type { NotationBindings } from "@client/canvas/library/disl/compileNotati
  *   backend's payload would have to compute them, which this conversion leaves to a change of its own.
  * - **The class names.** They tie the drawing to `causal-loop.css`, which paints the theme tokens;
  *   `moduleThemeContrast.test.ts` holds those tokens to readable values. The loop badge's colour
- *   follows its computed polarity through its caption's class, and a disagreeing loop carries the
- *   class the wavy underline is painted by, which DISL cannot say (the companion's gap 4).
+ *   follows its computed polarity through its caption's class, and a disagreeing loop carries a
+ *   class of its own, which marks it for a reader of the drawing and a test.
+ * - **The wavy underline.** The specification underlines a disagreeing loop's caption; DISL's text
+ *   decoration has no wavy form (the companion's gap 4), and a stylesheet's wavy underline is drawn
+ *   straight on SVG text, so the library draws the wave under the caption where the loop disagrees.
  * - **The weight ladder's classes.** The specification computes a link's width from its weight; each
  *   width it gives is painted by the class the stylesheet already has for it.
  *
@@ -37,6 +40,9 @@ const ELEMENT_CLASSES: Readonly<Record<string, readonly ClassDeclaration[]>> = {
   ],
 };
 
+/** A disagreeing loop's caption is underlined wavy: the specification's underline, in the tool's style. */
+const DISAGREEING_UNDERLINE: LabelUnderline = { style: "wavy", when: { path: "payload.disagrees", is: "true" } };
+
 /** The class each width of the weight ladder is painted by. */
 const WEIGHT_CLASSES: Readonly<Record<string, string>> = {
   "1": "causal-loop-weight-light",
@@ -53,6 +59,7 @@ export const CLD_BINDINGS: NotationBindings = {
   },
   classNames: (type) => ELEMENT_CLASSES[type] ?? [],
   labelClassName: (type) => (type === "Loop" ? { template: "causal-loop-badge causal-loop-{payload.computed}" } : "canvas-node-label"),
+  labelUnderline: (type) => (type === "Loop" ? DISAGREEING_UNDERLINE : undefined),
   relationClassName: () => "causal-loop-link",
   iconClassName: () => "causal-loop-marker",
   midMarkerClassNames: () => ({ group: "causal-loop-delay", marker: "causal-loop-delay-stroke" }),
