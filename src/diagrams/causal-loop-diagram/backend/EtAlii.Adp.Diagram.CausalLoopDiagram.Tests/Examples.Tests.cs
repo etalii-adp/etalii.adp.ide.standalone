@@ -140,7 +140,7 @@ public class ExamplesTests
         var model = Load("reference");
         var polarity = model.Loops.ToDictionary(
             loop => loop.Identifier,
-            loop => LoopPolarity.Of(model, loop.Variables),
+            loop => loop.Computed,
             StringComparer.Ordinal);
 
         // Assert.
@@ -159,10 +159,7 @@ public class ExamplesTests
             variable => model.Loops.Count(loop => loop.Variables.Contains(variable.Id, StringComparer.Ordinal)) > 1);
 
         // 5. A stated label that disagrees with the computed polarity.
-        Assert.Contains(model.Loops, loop =>
-            loop.ClaimsReinforcing is { } claimed
-            && polarity[loop.Identifier] is LoopPolarityResult.Reinforcing or LoopPolarityResult.Balancing
-            && claimed != (polarity[loop.Identifier] == LoopPolarityResult.Reinforcing));
+        Assert.Contains(model.Loops, loop => loop.Disagrees);
     }
 
     /// <summary>
@@ -181,7 +178,8 @@ public class ExamplesTests
         var findings = await Judge("reference");
 
         // Assert.
-        Assert.Equal(LoopPolarityResult.Balancing, LoopPolarity.Of(model, r3.Variables));
+        Assert.Equal(LoopPolarityResult.Balancing, r3.Computed);
+        Assert.True(r3.Disagrees);
         Assert.True(r3.ClaimsReinforcing);
 
         var disagreement = Assert.Single(
@@ -205,7 +203,7 @@ public class ExamplesTests
         Assert.Contains(model.Links, link => link.Polarity == CausalLoopPolarity.Unstated);
         Assert.Contains(
             model.Loops,
-            loop => LoopPolarity.Of(model, loop.Variables) == LoopPolarityResult.Undecidable);
+            loop => loop.Computed == LoopPolarityResult.Undecidable);
     }
 
     /// <summary>
@@ -228,7 +226,7 @@ public class ExamplesTests
 
         Assert.All(model.Loops, loop =>
         {
-            var computed = LoopPolarity.Of(model, loop.Variables);
+            var computed = loop.Computed;
             Assert.True(
                 loop.ClaimsReinforcing == (computed == LoopPolarityResult.Reinforcing),
                 $"{loop.Identifier} claims {(loop.ClaimsReinforcing == true ? "reinforcing" : "balancing")} but counts {computed}.");
