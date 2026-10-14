@@ -142,6 +142,7 @@ public class LoopArithmeticTests
     }
 
     // ---- the even/odd rule -----------------------------------------------------------------
+    // What the definition derives of a loop (its Loop's computed), as the module reads it.
 
     /// <summary>
     /// The rule, stated as a theory over the cases: reinforcing where the count of negative
@@ -158,12 +159,11 @@ public class LoopArithmeticTests
     [InlineData(LoopPolarityResult.Balancing, "-", "-", "-")]
     public void ParityDecidesTheLabel(LoopPolarityResult expected, params string[] polarities)
     {
-        // Arrange.
-        var model = Ring(polarities);
-        var cycle = Assert.Single(CycleFinder.Find(model).Cycles);
+        // Arrange & act.
+        var loop = RingLoop(polarities);
 
-        // Act & assert.
-        Assert.Equal(expected, LoopPolarity.Of(model, cycle));
+        // Assert.
+        Assert.Equal(expected, loop.Computed);
     }
 
     /// <summary>
@@ -173,14 +173,11 @@ public class LoopArithmeticTests
     [Fact]
     public void ZeroNegativeLinks_IsEven_AndThereforeReinforcing()
     {
-        // Arrange.
-        var model = Ring("+", "+");
-        var cycle = Assert.Single(CycleFinder.Find(model).Cycles);
+        // Arrange & act.
+        var loop = RingLoop("+", "+");
 
-        // Act & assert.
-        Assert.Equal(0, LoopPolarity.NegativeCount(model, cycle));
-        Assert.Equal(0, LoopPolarity.NegativeCount(model, cycle)!.Value % 2);
-        Assert.Equal(LoopPolarityResult.Reinforcing, LoopPolarity.Of(model, cycle));
+        // Assert.
+        Assert.Equal(LoopPolarityResult.Reinforcing, loop.Computed);
     }
 
     /// <summary>
@@ -191,25 +188,23 @@ public class LoopArithmeticTests
     [Fact]
     public void AnUnstatedLinkAnywhereInTheLoop_MakesItUndecidable_NotReinforcing()
     {
-        // Arrange.
-        var model = Ring("+", "");
-        var cycle = Assert.Single(CycleFinder.Find(model).Cycles);
+        // Arrange & act.
+        var loop = RingLoop("+", "");
 
-        // Act & assert.
-        Assert.Equal(LoopPolarityResult.Undecidable, LoopPolarity.Of(model, cycle));
-        Assert.NotEqual(LoopPolarityResult.Reinforcing, LoopPolarity.Of(model, cycle));
-        Assert.Null(LoopPolarity.NegativeCount(model, cycle));
+        // Assert.
+        Assert.Equal(LoopPolarityResult.Undecidable, loop.Computed);
+        Assert.False(loop.Disagrees);
     }
 
     [Fact]
     public void ASelfLink_ObeysTheSameRule()
     {
         // Arrange & act & assert.
-        var positive = Model("variable a", "link a -> a +");
-        Assert.Equal(LoopPolarityResult.Reinforcing, LoopPolarity.Of(positive, ["a"]));
+        var positive = Assert.Single(Model("variable a", "link a -> a +", "loop L1 \"self\" a").Loops);
+        Assert.Equal(LoopPolarityResult.Reinforcing, positive.Computed);
 
-        var negative = Model("variable a", "link a -> a -");
-        Assert.Equal(LoopPolarityResult.Balancing, LoopPolarity.Of(negative, ["a"]));
+        var negative = Assert.Single(Model("variable a", "link a -> a -", "loop L1 \"self\" a").Loops);
+        Assert.Equal(LoopPolarityResult.Balancing, negative.Computed);
     }
 
     [Fact]
@@ -218,9 +213,38 @@ public class LoopArithmeticTests
         // Arrange.
         // A loop statement can name a path the arrows do not actually form. That is a finding
         // rather than an answer, and the arithmetic must not fill the gap with a guess.
-        var model = Model("variable a", "variable b", "link a -> b +");
+        var model = Model("variable a", "variable b", "link a -> b +", "loop L1 \"open\" a b");
 
         // Act & assert.
-        Assert.Equal(LoopPolarityResult.Undecidable, LoopPolarity.Of(model, ["a", "b"]));
+        Assert.Equal(LoopPolarityResult.Undecidable, Assert.Single(model.Loops).Computed);
+    }
+
+    [Theory]
+    [InlineData("R1", "-", true)]
+    [InlineData("B1", "-", false)]
+    [InlineData("R1", "+", false)]
+    [InlineData("B1", "+", true)]
+    [InlineData("B1", "", false)]
+    [InlineData("Q1", "-", false)]
+    public void ALoopDisagrees_OnlyWhereItsIdentifierClaimsWhatItsArrowsDoNotSay(string identifier, string second, bool expected)
+    {
+        // Arrange & act: a ring of + and the second polarity, claimed by the identifier.
+        var loop = Assert.Single(Model("variable v0", "variable v1", "link v0 -> v1 +", $"link v1 -> v0 {second}".TrimEnd(), $"loop {identifier} \"ring\" v0 v1").Loops);
+
+        // Assert: R over a balancing ring and B over a reinforcing one disagree; an undecidable ring and an identifier that claims neither do not.
+        Assert.Equal(expected, loop.Disagrees);
+    }
+
+    /// <summary>The one loop of a ring of the given polarities, claimed under an identifier that claims nothing.</summary>
+    private static CausalLoopLoop RingLoop(params string[] polarities)
+    {
+        var names = Enumerable.Range(0, polarities.Length).Select(index => $"v{index}").ToArray();
+        var statements = names.Select(name => $"variable {name}")
+            .Concat(polarities.Select((polarity, index) =>
+                $"link {names[index]} -> {names[(index + 1) % names.Length]} {polarity}".TrimEnd()))
+            .Append($"loop L1 \"ring\" {string.Join(" ", names)}")
+            .ToArray();
+
+        return Assert.Single(Model(statements).Loops);
     }
 }
