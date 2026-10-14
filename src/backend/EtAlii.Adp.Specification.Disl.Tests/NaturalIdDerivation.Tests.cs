@@ -1,4 +1,3 @@
-using System.Text;
 using EtAlii.Adp.Specification.Fbl;
 using EtAlii.Adp.Specification.Fbl.Documents;
 using EtAlii.Adp.Specification.Fbl.History;
@@ -67,7 +66,7 @@ public class NaturalIdDerivationTests
     {
         // Arrange: a lines binding whose rules store no id, as a binding that leaves ids to DISL is.
         var specification = Specification("natural");
-        var problems = FblDocumentLoader.Load(Encoding.UTF8.GetBytes("""
+        var problems = FblDocumentLoader.Load("""
             {
               "fbl": "0.2",
               "bindings": {
@@ -87,7 +86,7 @@ public class NaturalIdDerivationTests
                 }
               }
             }
-            """), out var document);
+            """u8.ToArray(), out var document);
         Assert.NotNull(document);
         Assert.DoesNotContain(problems, problem => problem.Severity == ProblemSeverity.Error);
         var bytes = "pump p1\npump p2\nline p1 p2\n"u8.ToArray();

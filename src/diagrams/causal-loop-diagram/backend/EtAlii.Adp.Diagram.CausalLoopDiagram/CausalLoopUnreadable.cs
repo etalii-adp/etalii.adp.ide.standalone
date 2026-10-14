@@ -30,7 +30,7 @@ public static class CausalLoopUnreadable
             case "variable" when words is [_, { Length: 0 }, ..]:
                 return "A variable needs an id of at least one character.";
 
-            case "link" when words.Count >= 4 && words[2] == "->":
+            case "link" when words is [_, _, "->", _, ..]:
                 foreach (var word in words.Skip(4))
                 {
                     if (word.StartsWith("weight=", StringComparison.Ordinal)

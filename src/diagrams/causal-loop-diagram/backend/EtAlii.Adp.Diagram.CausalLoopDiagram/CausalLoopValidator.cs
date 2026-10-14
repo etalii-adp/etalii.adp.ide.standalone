@@ -1,5 +1,4 @@
 using EtAlii.Adp.Documents;
-using EtAlii.Adp.Specification.Disl;
 
 namespace EtAlii.Adp.Diagram.CausalLoopDiagram;
 

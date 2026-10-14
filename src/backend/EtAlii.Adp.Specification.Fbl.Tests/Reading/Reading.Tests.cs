@@ -137,11 +137,11 @@ public class ReadingTests
     {
         // Arrange: a lines binding with no rule that takes every statement, as the causal loop's
         // binding has since FBL 0.2 (its last rule reads such a line as an Unreadable entry).
-        var problems = FblDocumentLoader.Load(Encoding.UTF8.GetBytes("""
+        var problems = FblDocumentLoader.Load("""
             { "fbl": "0.2", "bindings": { "loop": { "claims": { "extensions": [".cld"] }, "body": { "kind": "file", "family": "lines" }, "reader": "declared",
               "unmatched": "report",
               "elements": [ { "name": "header", "type": "Header", "line": "^causal-loop$" } ] } } }
-            """), out var document);
+            """u8.ToArray(), out var document);
         Assert.Empty(problems);
 
         // Act.

@@ -58,11 +58,8 @@ public sealed class CausalLoopBody
     public static string Template => LoadedBinding.Value.Template?.Text
         ?? throw new InvalidOperationException("The causal loop diagram's FBL binding has no template.");
 
-    /// <summary>The body's text.</summary>
-    public string Text => Encoding.UTF8.GetString(_body.Bytes);
-
     /// <summary>What the binding reads from the body, with each link's note as the tool reads it (<see cref="CausalLoopNote"/>).</summary>
-    public FblModel Model { get; }
+    private FblModel Model { get; }
 
     /// <summary>The DISL model of what the binding reads: what the menus, the rows and the findings are derived from.</summary>
     public DislModel Disl => _disl.Value;
@@ -135,7 +132,7 @@ public sealed class CausalLoopBody
         Unquoted(element.Attributes.GetValueOrDefault(attribute) as string ?? "");
 
     private static string Unquoted(string text) =>
-        text.Length >= 2 && text[0] == '"' && text[^1] == '"' ? text[1..^1] : text;
+        text is ['"', .., '"'] ? text[1..^1] : text;
 
     /// <summary>The bodies of the last few texts read, by their bytes; each is only read, never changed.</summary>
     private sealed class RecentBodies

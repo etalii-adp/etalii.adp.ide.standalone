@@ -39,7 +39,7 @@ public static class CausalLoopNote
     }
 
     /// <summary>The note of the link statement <paramref name="statement"/>; empty for none.</summary>
-    public static string Of(string statement)
+    private static string Of(string statement)
     {
         ArgumentNullException.ThrowIfNull(statement);
         var note = "";
