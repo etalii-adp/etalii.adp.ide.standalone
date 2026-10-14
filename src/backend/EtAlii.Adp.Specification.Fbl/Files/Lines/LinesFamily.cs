@@ -376,18 +376,47 @@ internal sealed class LinesFamily(BodyText text, FblBinding binding, FblOptions 
 
     public override string Format(SlotRead read, AttributeBinding? binding, object? value)
     {
+        if (Words(value) is { } words) return string.Join(" ", words.Select(word => Format(read with { Quote = null, Wire = null }, binding, word)));
         var written = binding is null ? null : NewText.Wire(binding, value, read.Wire);
         written ??= NewText.Plain(value, binding);
-        return read.Quote is { } quote ? quote + written + quote : written;
+        if (read.Quote is { } quote) return quote + written + quote;
+        return read.Node is Word && HasSpace(written) ? "\"" + written + "\"" : written;
     }
 
     /// <summary>The written form of a value for an emit placeholder: a map's first key, a flag's word, a number by FBL §6.3.</summary>
     private string Emitted(AttributeBinding? binding, object? value)
     {
+        if (Words(value) is { } words) return string.Join(" ", words.Select(word => Emitted(binding, word)));
         if (binding is null) return NewText.Plain(value, null);
         if (binding.Flag) return value is true ? FlagWord(binding) : "";
         return NewText.Wire(binding, value, null) ?? NewText.Plain(value, binding);
     }
+
+    /// <summary>Whether a value written as one word would read back as several (FBL §4.6), so it is written between quotes.</summary>
+    private static bool HasSpace(string text) => text.Any(char.IsWhiteSpace);
+
+    /// <summary>
+    /// <paramref name="text"/> as placeholder <paramref name="name"/> of <paramref name="template"/> writes it:
+    /// between quotes where it holds a space and the template does not quote it itself.
+    /// </summary>
+    private static string? AsWord(string template, string name, object? value, string? text) =>
+        text is not null && Words(value) is null && HasSpace(text) && !template.Contains("\"{" + name + "}\"", StringComparison.Ordinal)
+            ? "\"" + text + "\""
+            : text;
+
+    /// <summary>Whether <paramref name="value"/> is the number <paramref name="read"/> already holds, however it is spelled there.</summary>
+    private static bool SameNumber(SlotRead read, object? value) =>
+        NewText.TryNumber(value, out var number) && read.Wire is { } wire
+        && double.TryParse(wire, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var held)
+        && held.Equals(number);
+
+    /// <summary>Whether <paramref name="value"/> is the list of words <paramref name="read"/> already holds, however they are spaced there.</summary>
+    private static bool SameWords(SlotRead read, object? value) =>
+        Words(value) is { } items && read.Words is { } words
+        && items.Select(item => NewText.Plain(item, null)).SequenceEqual(words.Select(word => word.Text), StringComparer.Ordinal);
+
+    /// <summary>The items of a list value, which a group holds as its words (FBL §4.6); null for any other value.</summary>
+    private static IEnumerable<object?>? Words(object? value) => value is not string and IEnumerable<object?> list ? list : null;
 
     private static string FlagWord(Slot slot)
     {
@@ -419,8 +448,10 @@ internal sealed class LinesFamily(BodyText text, FblBinding binding, FblOptions 
                 if (read.Present) pending.Add((SpliceOperation.RemoveKey, Removable(read), ""));
                 continue;
             }
-            if (read is { Present: true, Span: { } span })
+            if (read is { Present: true, Span: { } readSpan })
             {
+                if (SameNumber(read, change.Value) || SameWords(read, change.Value)) continue;
+                var span = AfterLeadingSpace(read, readSpan);
                 var text = Format(read, binding, change.Value);
                 if (text != Text.Text(span)) pending.Add((SpliceOperation.ReplaceValue, span, text));
                 continue;
@@ -428,7 +459,7 @@ internal sealed class LinesFamily(BodyText text, FblBinding binding, FblOptions 
             if (InsertPoint(element, change) is { } point) pending.Add((SpliceOperation.InsertKey, new Span(point.Offset, point.Offset), point.Text));
             else reEmit = true;
         }
-        if (!reEmit)
+        if (!reEmit && RemovalsReadBack(element, statement, changes, pending))
         {
             foreach ((SpliceOperation operation, Span span, string text) in pending) plan.Add(operation, span, text);
             return;
@@ -440,10 +471,57 @@ internal sealed class LinesFamily(BodyText text, FblBinding binding, FblOptions 
         }
         var values = new Dictionary<string, object?>(element.Attributes, StringComparer.Ordinal);
         foreach (var change in changes) values[change.Attribute] = change.IsEmpty ? null : change.Value;
-        var line = NewText.Render(emit, name => Placeholder(element.Rule, name, values, element.IdRead?.Value as string ?? element.Id,
-            element.SourceRead?.Value as string, element.TargetRead?.Value as string));
+        var line = NewText.Render(emit, name => AsWord(emit, name, values.GetValueOrDefault(name), Placeholder(element.Rule, name, values, element.IdRead?.Value as string ?? element.Id,
+            element.SourceRead?.Value as string, element.TargetRead?.Value as string)));
         plan.Add(SpliceOperation.ReEmitLine, ReEmitSpan(statement), line);
     }
+
+    /// <summary>
+    /// Whether the line, with <paramref name="pending"/> applied, still reads as the change says where a
+    /// value is removed: the rule still matches it, every group the change does not write reads as it
+    /// did, and a value that has a group of its own no longer reads one. A removal can fail that - the word after the value is glued to the
+    /// word before it, or moves into the value's place - and the line is then re-emitted instead.
+    /// </summary>
+    private bool RemovalsReadBack(ReadElement element, Statement statement, IReadOnlyList<SlotChange> changes, List<(SpliceOperation Operation, Span Span, string Text)> pending)
+    {
+        if (pending.All(splice => splice.Operation != SpliceOperation.RemoveKey) || element.Rule.Line is not { } expression) return true;
+        var start = statement.Offsets[0];
+        var end = statement.Offsets[^1];
+        var after = new StringBuilder();
+        var at = start;
+        foreach ((_, Span span, string text) in pending.OrderBy(splice => splice.Span.Start))
+        {
+            if (span.Start < at || span.End > end) return true;
+            after.Append(Text.Text(at, span.Start)).Append(text);
+            at = span.End;
+        }
+        after.Append(Text.Text(at, end));
+        Match? match;
+        try
+        {
+            match = Regex(expression, element.Rule.CaseInsensitive).Match(after.ToString());
+        }
+        catch (RegexMatchTimeoutException)
+        {
+            return false;
+        }
+        if (match is null) return false;
+        var changed = changes.Select(change => change.Binding.Group).OfType<string>().ToHashSet(StringComparer.Ordinal);
+        foreach ((string name, Group held) in Groups(statement, expression, element.Rule.CaseInsensitive))
+        {
+            if (!changed.Contains(name) && match.Groups[name].Value != held.Value) return false;
+        }
+        foreach (var change in changes)
+        {
+            if (!change.IsEmpty || change.Binding.Group is not { } group) continue;
+            var own = element.Rule.Attributes.Count(attribute => attribute.Value.Group == group) == 1;
+            if (own && match.Groups[group].Success) return false;
+        }
+        return true;
+    }
+
+    private IReadOnlyDictionary<string, Group> Groups(Statement statement, string expression, bool caseInsensitive) =>
+        Match(expression, caseInsensitive, statement) ?? new Dictionary<string, Group>();
 
     private Span ReEmitSpan(Statement statement)
     {
@@ -473,10 +551,25 @@ internal sealed class LinesFamily(BodyText text, FblBinding binding, FblOptions 
         return span with { Start = start };
     }
 
-    /// <summary>A removed value takes its quotes and the whitespace before it with it (FBL §6.1 <c>remove-key</c>).</summary>
+    /// <summary>
+    /// The span a new value of a whole group replaces: the group without the whitespace it opens with,
+    /// which separates it from what comes before and is the line's, not the value's.
+    /// </summary>
+    private Span AfterLeadingSpace(SlotRead read, Span span)
+    {
+        if (read.Node is not Group) return span;
+        var start = span.Start;
+        while (start < span.End && Text.Bytes[start] is (byte)' ' or (byte)'\t') start++;
+        return span with { Start = start };
+    }
+
+    /// <summary>
+    /// A removed value takes its quotes and the whitespace before it with it (FBL §6.1 <c>remove-key</c>),
+    /// and the whole word when it was read from part of one, as <c>size=(?&lt;value&gt;.+)</c> reads it.
+    /// </summary>
     private Span Removable(SlotRead read)
     {
-        var span = read.Span!.Value;
+        var span = read.Node is Word word ? word.Span : read.Span!.Value;
         if (span.Start > 0 && span.End < Text.Length && Text.Bytes[span.Start - 1] == (byte)'"' && Text.Bytes[span.End] == (byte)'"')
         {
             span = new Span(span.Start - 1, span.End + 1);
@@ -485,18 +578,19 @@ internal sealed class LinesFamily(BodyText text, FblBinding binding, FblOptions 
     }
 
     /// <summary>
-    /// Where an absent value can be written by <c>insert-key</c> (FBL §6.3): when the rule's emit
-    /// places it right after a value the statement has, and nothing after it in the emit is present
-    /// in the statement. Null when the line must be re-emitted instead.
+    /// Where an absent value can be written by <c>insert-key</c> (FBL §6.3), which a host must prefer to
+    /// re-emitting the line because it keeps every word no rule binds: when the rule's emit places it
+    /// right after a value the statement has, and every value the emit places after it stands after
+    /// that point, so nothing must move. Null when the line must be re-emitted instead.
     /// </summary>
     private (int Offset, string Text)? InsertPoint(ReadElement element, SlotChange change)
     {
         if (element.Rule.Insert?.Emit is not { } emit) return null;
-        var parts = NewText.Parts(emit);
-        var index = parts.ToList().FindIndex(p => p.Placeholder == change.Attribute);
+        var parts = NewText.Parts(emit).ToList();
+        var index = parts.FindIndex(p => p.Placeholder == change.Attribute);
         if (index < 0 || parts[index].Segment < 0) return null;
         var segment = parts[index].Segment;
-        var first = parts.ToList().FindIndex(p => p.Segment == segment);
+        var first = parts.FindIndex(p => p.Segment == segment);
         var previous = -1;
         for (var i = first - 1; i >= 0; i--)
         {
@@ -506,16 +600,18 @@ internal sealed class LinesFamily(BodyText text, FblBinding binding, FblOptions 
         if (SpanOf(element, parts[previous].Placeholder!) is not { } after) return null;
         for (var i = index + 1; i < parts.Count; i++)
         {
-            if (parts[i].Placeholder is { } later && SpanOf(element, later) is not null) return null;
+            if (parts[i].Placeholder is { } later && SpanOf(element, later) is { } span && span.Start < after.End) return null;
         }
         var offset = after.End;
-        var between = string.Concat(parts.Skip(previous + 1).Take(first - previous - 1).Select(p => p.Literal ?? ""));
+        // What the emit writes between that value and the new one, outside the optional parts left out.
+        var own = parts[previous].Segment;
+        var between = string.Concat(parts.Skip(previous + 1).Take(first - previous - 1).Where(p => p.Segment < 0 || p.Segment == own).Select(p => p.Literal ?? ""));
         if (between.Length > 0 && offset + Encoding.UTF8.GetByteCount(between) <= Text.Length && Text.Text(offset, offset + Encoding.UTF8.GetByteCount(between)) == between)
         {
             offset += Encoding.UTF8.GetByteCount(between);
         }
-        var segmentText = NewText.Render("[" + string.Concat(parts.Where(p => p.Segment == segment).Select(p => p.Literal ?? "{" + p.Placeholder + "}")) + "]",
-            name => name == change.Attribute ? Emitted(change.Binding, change.Value) : null);
+        var template = "[" + string.Concat(parts.Where(p => p.Segment == segment).Select(p => p.Literal ?? "{" + p.Placeholder + "}")) + "]";
+        var segmentText = NewText.Render(template, name => name == change.Attribute ? AsWord(template, name, change.Value, Emitted(change.Binding, change.Value)) : null);
         return segmentText.Length == 0 ? null : (offset, segmentText);
     }
 
@@ -535,7 +631,7 @@ internal sealed class LinesFamily(BodyText text, FblBinding binding, FblOptions 
             Plan.Refuse($"The binding gives no form to write a new {rule.Type} in.");
             return;
         }
-        var line = NewText.Render(emit, name => Placeholder(rule, name, request.Values, request.Id, request.Source?.Key, request.Target?.Key));
+        var line = NewText.Render(emit, name => AsWord(emit, name, request.Values.GetValueOrDefault(name), Placeholder(rule, name, request.Values, request.Id, request.Source?.Key, request.Target?.Key)));
         var insert = rule.Insert;
         Statement? container = null;
         if (blocks)

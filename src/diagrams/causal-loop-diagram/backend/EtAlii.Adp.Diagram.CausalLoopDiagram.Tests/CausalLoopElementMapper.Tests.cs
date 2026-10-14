@@ -11,7 +11,7 @@ public class CausalLoopElementMapperTests
     private readonly CausalLoopElementMapper _mapper = new();
 
     private static CausalLoopModel Model(params string[] statements) =>
-        CausalLoopParser.Parse(CausalLoopDocument.Parse(string.Join("", statements.Select(s => s + "\r\n")))).Model;
+        CausalLoopBody.Parse(string.Join("", statements.Select(s => s + "\r\n"))).Read();
 
     /// <summary>Three variables on a row, 100 apart, so a viewport can take any subset of them.</summary>
     private static IReadOnlyDictionary<string, CausalLoopBox> Row(params string[] ids) =>

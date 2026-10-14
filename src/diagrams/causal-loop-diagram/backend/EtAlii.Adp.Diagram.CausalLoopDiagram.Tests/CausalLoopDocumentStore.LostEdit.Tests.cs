@@ -15,10 +15,9 @@ namespace EtAlii.Adp.Diagram.CausalLoopDiagram.Tests;
 /// byte-identical. A discarded EDIT is invisible to it by construction.
 /// </para>
 /// <para>
-/// <b>The window is in <c>Save</c>'s shape.</b> <c>CausalLoopEdits.Run</c> does <c>GetOrLoad</c> -
-/// mutate <c>entry.Document</c> in place through <c>CausalLoopWriter</c> - <c>Save(path)</c>, and
-/// <c>Save(path)</c> looks the entry up in the cache AGAIN rather than writing the entry it was
-/// handed. <c>Reload</c> replaces <c>_entries[path]</c>, so a reload landing between those two
+/// <b>The window is in <c>Save</c>'s shape.</b> An edit does <c>GetOrLoad</c> - edit a body through
+/// the binding - <c>Save(path)</c>, and a <c>Save(path)</c> that looked the entry up in the cache AGAIN
+/// rather than writing the body it was handed would write what the cache holds by then. <c>Reload</c> replaces <c>_entries[path]</c>, so a reload landing between those two
 /// steps means the document the command edited is no longer the document that gets written, and
 /// the save persists the re-read file while returning <c>""</c> for success.
 /// </para>
@@ -51,17 +50,17 @@ public class CausalLoopDocumentStoreLostEditTests : IDisposable
     [Fact]
     public async Task ASaveAfterAReload_WritesTheEditRatherThanTheFileItJustReread()
     {
-        // Arrange: a document loaded and edited in memory, exactly as CausalLoopEdits.Run does it -
-        // GetOrLoad, edit the entry's own document, then ask the store to save.
+        // Arrange: a document loaded and edited in memory - GetOrLoad, edit the entry's own body, then
+        // ask the store to save.
         var path = IoPath.Combine(_workspace, "loop.cld");
         await File.WriteAllTextAsync(path, Text, TestContext.Current.CancellationToken);
         var store = new CausalLoopDocumentStore();
         var entry = store.GetOrLoad(path);
-        var refusal = CausalLoopWriter.AddVariable(entry.Document, entry.Model, "c", "Gamma");
+        var added = CausalLoopEdits.AddVariable(entry.Document, "c", "Gamma");
 
         // A refusal here would make the rest of the test vacuous, so it is asserted rather than
-        // assumed: without this line a writer that declined every edit would pass by doing nothing.
-        Assert.Equal("", refusal);
+        // assumed: without this line an edit that declined every change would pass by doing nothing.
+        Assert.True(added.WasApplied, added.Refusal);
 
         // The edit is in memory and nowhere else yet, which is this test's precondition.
         Assert.Contains("Gamma", entry.Document.Text, StringComparison.Ordinal);

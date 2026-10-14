@@ -137,7 +137,7 @@ public sealed class CausalLoopContextPropertyProvider(
         // whitespace or a quote; the label may, because it is quoted. Refused before writing.
         if (propertyId == VariableIdProperty && (value.Length == 0 || value.Any(char.IsWhiteSpace) || value.Contains('"', StringComparison.Ordinal)))
         {
-            return ContextPropertyResult.Failure(CausalLoopWriter.UnusableName);
+            return ContextPropertyResult.Failure(CausalLoopEdits.UnusableName);
         }
 
         var command = CommandFor(entry.Model, target, propertyId, value);

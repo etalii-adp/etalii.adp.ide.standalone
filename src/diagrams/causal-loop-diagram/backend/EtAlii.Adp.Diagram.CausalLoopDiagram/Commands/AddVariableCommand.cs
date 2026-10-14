@@ -3,17 +3,19 @@ using EtAlii.Adp.History;
 namespace EtAlii.Adp.Diagram.CausalLoopDiagram;
 
 /// <summary>Declares a new variable.</summary>
-public sealed record AddVariableCommand(string BodyPath, string Id, string Label) : ICommand;
+public sealed record AddVariableCommand(string BodyPath, string Id, string Label) : IDocumentEditCommand;
 
 /// <inheritdoc cref="AddVariableCommand" />
-public sealed class AddVariableCommandHandler(ICausalLoopDocumentStore documents) : ICommandHandler<AddVariableCommand>
+public sealed class AddVariableCommandHandler(ICausalLoopDocumentStore documents) : CausalLoopEditHandler<AddVariableCommand>(documents)
 {
-    public Task<CommandResult> ExecuteAsync(AddVariableCommand command, CancellationToken cancellationToken = default)
+    /// <inheritdoc />
+    protected override EditOutcome Apply(CausalLoopBody body, CausalLoopModel model, AddVariableCommand command)
     {
+        ArgumentNullException.ThrowIfNull(body);
+        ArgumentNullException.ThrowIfNull(model);
         ArgumentNullException.ThrowIfNull(command);
-        cancellationToken.ThrowIfCancellationRequested();
 
-        return CausalLoopEdits.Run(documents, command.BodyPath, command, entry =>
-            CausalLoopWriter.AddVariable(entry.Document, entry.Model, command.Id, command.Label));
+        if (CausalLoopEdits.AdditionRefusal(model, command.Id, command.Label) is { } refusal) return EditOutcome.Refused(refusal);
+        return CausalLoopEdits.AddVariable(body, command.Id, command.Label);
     }
 }

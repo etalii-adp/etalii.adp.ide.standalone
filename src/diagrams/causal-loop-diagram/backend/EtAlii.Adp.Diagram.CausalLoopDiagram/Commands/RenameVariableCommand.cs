@@ -3,17 +3,24 @@ using EtAlii.Adp.History;
 namespace EtAlii.Adp.Diagram.CausalLoopDiagram;
 
 /// <summary>Renames a variable, and every link and loop that names it.</summary>
-public sealed record RenameVariableCommand(string BodyPath, string Id, string Name) : ICommand;
+public sealed record RenameVariableCommand(string BodyPath, string Id, string Name) : IDocumentEditCommand;
 
 /// <inheritdoc cref="RenameVariableCommand" />
-public sealed class RenameVariableCommandHandler(ICausalLoopDocumentStore documents) : ICommandHandler<RenameVariableCommand>
+public sealed class RenameVariableCommandHandler(ICausalLoopDocumentStore documents) : CausalLoopEditHandler<RenameVariableCommand>(documents)
 {
-    public Task<CommandResult> ExecuteAsync(RenameVariableCommand command, CancellationToken cancellationToken = default)
+    /// <inheritdoc />
+    protected override EditOutcome Apply(CausalLoopBody body, CausalLoopModel model, RenameVariableCommand command)
     {
+        ArgumentNullException.ThrowIfNull(body);
+        ArgumentNullException.ThrowIfNull(model);
         ArgumentNullException.ThrowIfNull(command);
-        cancellationToken.ThrowIfCancellationRequested();
 
-        return CausalLoopEdits.Run(documents, command.BodyPath, command, entry =>
-            CausalLoopWriter.RenameVariable(entry.Document, entry.Model, command.Id, command.Name));
+        if (!CausalLoopEdits.IsUsableName(command.Name)) return EditOutcome.Refused(CausalLoopEdits.UnusableName);
+        if (!model.Declares(command.Id)) return EditOutcome.Refused(CausalLoopEdits.NoSuchVariable);
+        if (model.Declares(command.Name)) return EditOutcome.Refused(CausalLoopEdits.AlreadyDeclared);
+
+        // The binding carries the name into every link and loop that refers to it, in the same edit: a
+        // rename that left them behind would turn every link through the variable into a dangling one.
+        return CausalLoopEdits.Set(body, CausalLoopEdits.VariableId(command.Id), "Variable", ("name", command.Name));
     }
 }

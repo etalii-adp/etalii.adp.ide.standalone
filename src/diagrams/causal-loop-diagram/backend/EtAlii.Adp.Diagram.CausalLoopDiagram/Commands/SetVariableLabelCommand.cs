@@ -3,19 +3,25 @@ using EtAlii.Adp.History;
 namespace EtAlii.Adp.Diagram.CausalLoopDiagram;
 
 /// <summary>Sets what a reader sees on a variable, without moving what refers to it.</summary>
-public sealed record SetVariableLabelCommand(string BodyPath, string Id, string Label) : ICommand;
+public sealed record SetVariableLabelCommand(string BodyPath, string Id, string Label) : IDocumentEditCommand;
 
 /// <inheritdoc cref="SetVariableLabelCommand" />
-public sealed class SetVariableLabelCommandHandler(ICausalLoopDocumentStore documents)
-    : ICommandHandler<SetVariableLabelCommand>
+/// <remarks>
+/// The label and the identifier are edited separately on purpose. The identifier is what links and loops
+/// refer to, so changing it moves references (<see cref="RenameVariableCommand"/>); the label is prose
+/// nothing refers to, so changing it is a one-word edit that can hold spaces and punctuation a name cannot.
+/// </remarks>
+public sealed class SetVariableLabelCommandHandler(ICausalLoopDocumentStore documents) : CausalLoopEditHandler<SetVariableLabelCommand>(documents)
 {
-    public Task<CommandResult> ExecuteAsync(
-        SetVariableLabelCommand command, CancellationToken cancellationToken = default)
+    /// <inheritdoc />
+    protected override EditOutcome Apply(CausalLoopBody body, CausalLoopModel model, SetVariableLabelCommand command)
     {
+        ArgumentNullException.ThrowIfNull(body);
+        ArgumentNullException.ThrowIfNull(model);
         ArgumentNullException.ThrowIfNull(command);
-        cancellationToken.ThrowIfCancellationRequested();
 
-        return CausalLoopEdits.Run(documents, command.BodyPath, command, entry =>
-            CausalLoopWriter.SetVariableLabel(entry.Document, entry.Model, command.Id, command.Label));
+        if (!model.Declares(command.Id)) return EditOutcome.Refused(CausalLoopEdits.NoSuchVariable);
+        if (!CausalLoopEdits.IsUsableText(command.Label)) return EditOutcome.Refused(CausalLoopEdits.UnusableText);
+        return CausalLoopEdits.Set(body, CausalLoopEdits.VariableId(command.Id), "Variable", ("label", CausalLoopEdits.Text(command.Label)));
     }
 }

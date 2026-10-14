@@ -47,9 +47,9 @@ public class ExamplesTests
         var path = IoPath.Combine(ExamplesRoot, name, $"{name}.cld");
         Assert.True(File.Exists(path), $"The example '{name}' is missing: {path}");
 
-        var result = CausalLoopParser.Parse(CausalLoopDocument.Parse(File.ReadAllText(path)));
-        Assert.Empty(result.Problems);
-        return result.Model;
+        var body = CausalLoopBody.Parse(File.ReadAllText(path));
+        Assert.Empty(body.UnreadableStatements);
+        return body.Read();
     }
 
     private static async Task<IReadOnlyList<DiagramProblem>> Judge(string name)

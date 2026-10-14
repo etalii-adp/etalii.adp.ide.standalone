@@ -118,8 +118,8 @@
       "params": [],
       "returns": "int",
       "uses": ["diagram"],
-      "cel": "cel.bind(free, lists.range(100000).filter(n, n > 0 && !diagram.nodesOfType('Variable').exists(v, v.name == 'variable' + string(n))), free.size() > 0 ? free[0] : 0)",
-      "doc": "The number of the next new variable: the lowest from 1 for which `variable<n>` is not declared, or 0 when none below 100,000 is free (`CausalLoopWriter.NextVariableName`)."
+      "cel": "cel.bind(free, lists.range(diagram.nodesOfType('Variable').size() + 2).filter(n, n > 0 && !diagram.nodesOfType('Variable').exists(v, v.name == 'variable' + string(n))), free.size() > 0 ? free[0] : 0)",
+      "doc": "The number of the next new variable: the lowest from 1 for which `variable<n>` is not declared (`CausalLoopWriter.NextVariableName`). It searches only up to the number of variables plus one, which always holds a free number because n variables block at most n numbers, so the search stays within the CEL cost limit."
     },
     "usableName": {
       "params": [{ "name": "s", "type": "string" }],

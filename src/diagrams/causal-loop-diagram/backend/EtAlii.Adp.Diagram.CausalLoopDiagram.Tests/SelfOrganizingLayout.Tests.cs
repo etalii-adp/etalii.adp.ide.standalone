@@ -46,7 +46,7 @@ public class SelfOrganizingLayoutTests
         + "link rumour -> morale +\r\n");
 
     private static CausalLoopModel Parse(string text) =>
-        CausalLoopParser.Parse(CausalLoopDocument.Parse(text)).Model;
+        CausalLoopBody.Parse(text).Read();
 
     /// <summary>A chain of <paramref name="count"/> variables closing into one long loop.</summary>
     private static CausalLoopModel Ring(int count)

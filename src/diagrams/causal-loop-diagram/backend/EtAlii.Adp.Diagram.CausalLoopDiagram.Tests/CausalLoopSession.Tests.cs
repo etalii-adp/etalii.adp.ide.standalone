@@ -369,9 +369,9 @@ public class CausalLoopSessionTests : IDisposable
             remove => inner.Changed -= value;
         }
 
-        public DocumentEntry<CausalLoopDocument, CausalLoopModel> GetOrLoad(string path) => Failure is null ? inner.GetOrLoad(path) : throw Failure;
+        public DocumentEntry<CausalLoopBody, CausalLoopModel> GetOrLoad(string path) => Failure is null ? inner.GetOrLoad(path) : throw Failure;
 
-        public DocumentSaveResult Save(string path, CausalLoopDocument document) => inner.Save(path, document);
+        public DocumentSaveResult Save(string path, CausalLoopBody document) => inner.Save(path, document);
 
         public void Reload(string path) => inner.Reload(path);
 

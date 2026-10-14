@@ -10,7 +10,7 @@ namespace EtAlii.Adp.Diagram.CausalLoopDiagram.Tests;
 public class CausalLoopLayoutTests
 {
     private static CausalLoopModel Model(params string[] statements) =>
-        CausalLoopParser.Parse(CausalLoopDocument.Parse(string.Join("", statements.Select(s => s + "\r\n")))).Model;
+        CausalLoopBody.Parse(string.Join("", statements.Select(s => s + "\r\n"))).Read();
 
     private static CausalLoopModel Ring(int count) =>
         Model([.. Enumerable.Range(0, count).Select(index => $"variable v{index} \"Variable {index}\"")]);
