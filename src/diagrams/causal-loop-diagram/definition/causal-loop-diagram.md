@@ -114,7 +114,7 @@ These are not language gaps. Each is a place the transcript shows the tool doing
 Two findings are put to the owner and are not settled here.
 
 - **A quote in a label (B13).** The transcript shows the property grid refusing a quote in a variable's label and in a loop's name, and the rename dialog rejecting one. The specification's `pattern` on `label`, `title` and `note` forbids it.
-- **Two variables of one name (A7).** `duplicate-variable.cld` declares `a` twice. The module reports no finding for it; the transcript records its loop rows as throwing "System.ArgumentException: An item with the same key has already been added. Key: a". The specification switches `std.duplicateId` off, so the findings are the module's.
+- **Two variables of one name (A7).** `duplicate-variable.cld` declares `a` twice. The module reports no finding for it; the transcript records its loop rows in the specification's form, where the hand-written rows threw "System.ArgumentException: An item with the same key has already been added. Key: a"; an edit of those rows, the findings and the payloads still throw until the module's cycle finder and layout are removed. The specification switches `std.duplicateId` off, so the findings are the module's.
 
 ## What stays code
 
