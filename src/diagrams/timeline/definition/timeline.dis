@@ -77,7 +77,7 @@
           "returns": "string",
           "cost": 1,
           "fallback": "end == 'source' ? (has(relation.source) ? relation.source.id : '') : (has(relation.target) ? relation.target.id : '')",
-          "doc": "The id a relation's `source` or `target` end is written with in the file (`from` or `to`), also when it names no element and the end is null in the model; the empty text when the key is absent or empty."
+          "doc": "The id a relation's `source` or `target` end is written with in the file (`from` or `to`): the end the relation keeps, which the typeMap maps from `from` and `to`, also when it names no element and the end is unset in the model (11.2); the empty text when the key is absent or empty. It stays a function rather than `std.references`, because `std.references` reports every unset end and the tool does not report an end written empty or not written at all."
         }
       ]
     }
@@ -782,13 +782,8 @@
   },
 
   "persistence": {
-    "format": "yaml",
-    "encoding": "utf-8",
-    "indent": 2,
-    "newline": "crlf",
-    "finalNewline": true,
-    "mediaType": "application/yaml",
-    "files": { "mode": "single", "model": "{name}.tml" },
+    "format": "fbl",
+    "binding": "https://raw.githubusercontent.com/etalii-adp/etalii.adp.ide.standalone/develop/src/diagrams/timeline/backend/EtAlii.Adp.Diagram.Timeline/timeline.fbl#timeline",
     "ids": {
       "strategy": "uuid-v4",
       "encoding": "base36",
@@ -796,12 +791,27 @@
       "doc": "New elements and relations get a ShortGuid: a version 4 GUID written as 25 characters of base 36. Hand-written ids such as `discovery` are kept as written. Ids are unique across elements and relations together."
     },
     "references": "id",
-    "ordering": { "elements": "creation" },
-    "omitDefaults": false,
-    "timestamps": { "format": "rfc3339", "timezone": "preserve" },
     "view": { "store": [] },
     "collaboration": { "mode": "none" },
-    "doc": "A .tml document (Timeline Markup Language): YAML with a top-level schema marker 'timeline: 1', an 'elements' list and a 'connections' list, registered by a sibling .adp file whose first line is 'generic/timeline'. The exact file layout, and the rule that ADP only ever splices the lines an edit touches, are in timeline.md."
+    "typeMap": {
+      "Period": {
+        "as": "Period",
+        "hostAttributes": ["storedId"],
+        "doc": "An entry of `elements` with an `end` key. `storedId` is the id as written, kept beside the model, so that an id written more than once is reported and an element is found by what is written."
+      },
+      "Moment": {
+        "as": "Moment",
+        "hostAttributes": ["storedId"],
+        "doc": "An entry of `elements` without an `end` key."
+      },
+      "Connection": {
+        "as": "Connection",
+        "attributes": { "from": "source", "to": "target" },
+        "hostAttributes": ["storedId"],
+        "doc": "Read as an entry with reference attributes, so a relation whose end names no element is kept, with that end unset, and reported by the rules `danglingSource` and `danglingTarget`."
+      }
+    },
+    "doc": "A .tml document (Timeline Markup Language): YAML with a top-level schema marker 'timeline: 1', an 'elements' list and a 'connections' list, registered by a sibling .adp file whose first line is 'generic/timeline'. It is read and written through the timeline module's own FBL binding, whose types and attributes the typeMap maps onto this metamodel; the file layout and how the module's binding differs from the example `specifications/fbl/timeline.fbl` are in timeline.md."
   },
 
   "x-timeline": {

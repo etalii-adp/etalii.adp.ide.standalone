@@ -38,11 +38,13 @@ Paths below are relative to `src/diagrams/timeline/` in the standalone repositor
 
 The split into `Period` and `Moment` is a modelling choice of this specification. In the file there is one kind of element, and whether it is a period or a moment is decided only by whether an `end` key is present, even an empty one (`backend/EtAlii.Adp.Diagram.Timeline/TimelineParser.cs`, `ReadElements`). Giving a moment an end, or removing a period's end, is a retype in DISL (`giveEnd`, `removeEnd`) and a single-key edit in the file.
 
-**The model is built from the tool's own reader, not through FBL.** The standalone module builds the DISL model from what its YAML reader read (`backend/EtAlii.Adp.Diagram.Timeline/TimelineDisl.cs`), because the file is not a DID definition and a generic YAML reading types plain scalars (`1.0`, `null`, `yes`) while the timeline keeps every value as the text it was written with. Each element and relation is given a unique model id: the first declaration written with an id keeps it, and a later one, or one written without an id, gets an ephemeral id; the written id is kept beside the model, and findings name an element by it (DISL 11.5.4). A relation end resolves to the first **element** written with that id, never to a relation.
+**The model is read through an FBL binding.** `persistence` names the timeline module's own binding, `timeline.fbl#timeline` (see [The binding](#the-binding)), with a `typeMap` that maps its types onto this metamodel. A YAML reading under FBL 0.5 keeps every value as the text it was written with (FBL 4.1.5, 5.2), which the timeline needs: a label `yes`, `1.0` or `null` is that text. Each element and relation is given a unique model id: the first declaration written with an id keeps it, and a later one, or one written without an id, is addressed by its place; the written id is kept beside the model as the host attribute `storedId`, and findings name an element by it (DISL 11.5.4). A relation end resolves to the first **element** written with that id, never to a relation.
+
+The standalone module does not read through the binding yet: it builds the DISL model from what its own YAML reader read (`backend/EtAlii.Adp.Diagram.Timeline/TimelineDisl.cs`, `TimelineParser.cs`), and moves onto the binding in its specification `timeline-disl-fbl` (`.spec-workflow/specs/timeline-disl-fbl/` in etalii.adp.ide.standalone).
 
 ## The document on disk
 
-DISL's `persistence` layer describes a DID definition. The timeline does not store DID: it stores its own YAML format, so the whole file format is documented here.
+The timeline does not store DID: it stores its own YAML format. `persistence.format` is `fbl`, and `binding` names the module's own binding, which states the file's shape and how it is written (FBL 6); the account below is what the tool does, and [The binding](#the-binding) says how the module's binding states it.
 
 **Two files.** A timeline is `<name>.adp`, whose first line is the MIME-style origin `generic/timeline`, plus a sibling body `<name>.tml` (Timeline Markup Language) holding the timeline itself (R1.1). `.tml` is owned outright by this type: a bare `.tml` routes to it with no registration step, and the extension is not shared with any other tool (`backend/EtAlii.Adp.Diagram.Timeline/Diagram.cs`, R1.2).
 
@@ -70,7 +72,7 @@ connections:
 ```
 
 - `timeline: 1` is the schema marker. `elements` is a sequence of mappings with `id`, `label`, `begin`, optional `end` and `row`. `connections` is a sequence of mappings with `id`, `from`, `to` and optional `label`. Keys are read with those exact names; a missing `connections` key means no connections, and a missing key in an entry reads as the empty text.
-- A new document is exactly `timeline: 1\r\nelements: []\r\n`: CRLF, a trailing newline, no title and no sample content (registered in `backend/EtAlii.Adp.Diagram.Timeline/ServiceCollection.AddTimeline.cs`, R1.3).
+- A new document is exactly `timeline: 1\r\nelements: []\r\n`: CRLF, a trailing newline, no title and no sample content (`backend/EtAlii.Adp.Diagram.Timeline/TimelineDocumentFactory.cs`, R1.3).
 - An empty file, or one whose root is not a mapping, is an empty timeline, not an error (`TimelineParser.Parse`).
 
 **Only the affected lines change (R2.1, R2.2).** Nothing ever serializes a model back to the file. Every write is a splice of the line range the parser recorded for that element or connection (`backend/EtAlii.Adp.Diagram.Timeline/TimelineWriter.cs`). Consequences an implementation must reproduce:
@@ -82,9 +84,23 @@ connections:
 - Removing a period's end removes the `end` line (R11.3).
 - The fixture corpus in `backend/EtAlii.Adp.Diagram.Timeline.Tests/Fixtures/` (comments, CRLF/LF pair, no trailing newline, odd indentation, quoting, shared rows, unmodelled keys) is the test of all this; `*.tml -text` in `.gitattributes` keeps git from rewriting it.
 
+**The binding.** The module's binding is `backend/EtAlii.Adp.Diagram.Timeline/timeline.fbl` in the standalone repository, binding `timeline`, at FBL 0.5. It starts from the example `specifications/fbl/timeline.fbl` of this repository, which is not changed, because the conformance fixtures `timeline-edits`, `timeline-bom-lf` and `timeline-written-text` rest on its relation rule and its header. It differs from the example in these ways:
+
+| Difference | Why |
+| --- | --- |
+| A relation is an element rule `connection`, with `from` and `to` as reference attributes `by: "storedId"`, which the `typeMap` maps to `source` and `target`. | A relation whose end names no element is kept, not drawn, and reported as `timeline.dangling-connection`; an FBL relation whose end names nothing is not created at all (FBL 5.4). |
+| Every rule reads `storedId` from the `id` key, read-only, a host attribute. | A later holder of an id is addressed by its place, and the tool reports it as `timeline.duplicate-id` and finds an element by what is written. |
+| No `header`. | A missing `timeline:` key, or another version, raises nothing, as the tool raises nothing today; the key stays unbound and is kept, and the template still writes it. |
+| `row` is read as text, with `default: 0`, without `quoted` and `fallback`. | The tool reads a row with .NET's integer parse of the scalar's text: `1.0`, `0x10` and `0o17` are row 0 and `"3"` is 3, where FBL's conversion of a typed value would make `1.0` row 1 and `0x10` row 16. |
+| `begin` has `default: ""`. | A missing `begin` reads as the empty text, which the tool reports as an unreadable time; an absent slot would leave the attribute unset, and no rule would report it. |
+| The `connection` rule has `when: "entry.all(k, true)"`. | A sequence entry that is not a mapping is taken by no rule and passed over, as the tool passes it over; without the condition the rule would read a scalar item as a relation without an id. |
+| Both element rules insert with `place: "end"`, where the example has `after-last`. | The tool appends a new element after the last entry of `elements`; `after-last` is right after the last entry of the same rule (FBL 6.2), so once the last entry is a period a new moment would go after the last moment, in the middle of the list (standalone fixture `indentation.tml`, `Parity/timeline.findings.json` B16). |
+
+`label`, `from`, `to` and `storedId` need no `read`: under FBL 0.5 a string attribute, a reference and a host attribute read their written text unasked. `begin` and `end` keep `"read": "text"` and `time: "keep-precision"` as the example has them, and the period rule's `end` keeps `empty: "remove"`.
+
 **Ids.** Ids live in the file because the schema is ADP's own, and they are unique across elements and relations together. New ids are ShortGuids: a version 4 GUID written as 25 lowercase characters of base 36 (`src/backend/EtAlii.Adp/ShortGuid.cs`), for example `467lu0vgaiudevamnkpl6k052`, which `persistence.ids` states as `uuid-v4` with `encoding: "base36"`. Hand-written ids (`discovery`, `c1`) are equally valid. A command that creates an element generates its ids once, when the gesture happens, so a redo re-creates the element under the same ids.
 
-**An unreadable file** (not YAML) opens in the unavailable state naming the parser's message and line, and no edit is accepted until it is fixed, so a broken file is never made worse (R2.4, `TimelineDocumentStore.cs`). The store keeps the last good document across a reload that cannot read, and a deleted body closes rather than lingering (the shared reloader, registered in `ServiceCollection.AddTimeline.cs`). Changes made to the file outside ADP are picked up and pushed to every open view.
+**An unreadable file** (not YAML) opens in the unavailable state naming the parser's message and line, and no edit is accepted until it is fixed, so a broken file is never made worse (R2.4, `_Model/TimelineDocumentEntry.cs`). The store keeps the last good document across a reload that cannot read, and a deleted body closes rather than lingering (`TimelineDocumentReloader.cs`). Changes made to the file outside ADP are picked up and pushed to every open view.
 
 ## Times and the time plugin
 
@@ -98,7 +114,7 @@ DISL's CEL has no timestamps, so the specification reads times through the CEL f
 | `compareTimes(a, b)` | -1, 0 or 1 as the instant `a` names is before, at or after `b`'s, offsets applied. | Lexical comparison. |
 | `dateAfter(time, days)` | The date `days` days after the instant `time` names, written `yyyy-MM-dd`, in UTC. | None. |
 | `today()` | Today's date in UTC, `yyyy-MM-dd`; not deterministic. | None. |
-| `writtenEnd(relation, end)` | The id a relation's `source` or `target` end is written with (`from`, `to`), also when it names no element and the end is null in the model. | The resolved end's id, or the empty text. |
+| `writtenEnd(relation, end)` | The id a relation's `source` or `target` end is written with (`from`, `to`): the end the relation keeps, which the `typeMap` maps from `from` and `to`, also when it names no element and the end is unset in the model (DISL 11.2). It stays a function, rather than `std.references`, because `std.references` reports every unset end and the tool does not report an end written empty or not written at all. | The resolved end's id, or the empty text. |
 
 - A value is read at face value and pinned to offset zero; it is never interpreted in the machine's local time zone (`TimelineInstants.cs`). A value written is the value drawn (R3.7).
 - One element never mixes a date-only value with a date-time value (R3.2). The check is the tool's own: whether each text contains a `T`, so `Tuesday 7 July 2026` counts as a date-time. DISL's `std.mixedPrecision` compares written precisions, which a runtime does not know for a text kept as written, so the specification states the tool's test as the rule `mixedPrecision` and the form checks.
@@ -216,7 +232,7 @@ The standalone client and backend share their own ids for the toolbox entries, t
 
 ## What DISL 0.3 cannot express
 
-- **The file format and its writing discipline.** `persistence.format: "yaml"` describes a DID definition; the `.tml` layout, the splice-only writes, the indentation copied from the file and the `connections:` key created with its first entry are described in [The document on disk](#the-document-on-disk).
+- **The file format and its writing discipline** are not DISL's: `persistence.format: "fbl"` hands them to the module's binding, and [The document on disk](#the-document-on-disk) describes the `.tml` layout, the splice-only writes, the indentation copied from the file and the `connections:` key created with its first entry.
 - **Reading times.** CEL has no timestamps; the plugin functions above carry the tool's reading, and their fallbacks are an approximation.
 - **Precision-dependent snapping.** The x snapping depends on whether an element's times carry a time of day; the specification declares the day snapping of every element the tool creates.
 - **The connection route.** A forward loop when the target begins before the source ends is the tool's own route (`client/timelineBindings.ts`). The named begin and end anchors are the specification's fixed points, compiled as named points on the sides; that a period is drawn as the shared span and a moment as the library's marker is the client's.
