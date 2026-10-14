@@ -8,7 +8,7 @@
     "PackageDescriptionReader => PackageDescriptionReader (Singleton)",
     "DependencyGraphStore => DependencyGraphStore (Singleton)",
     "IDependencyGraphStore => factory (Singleton)",
-    "IDiagramDocumentFactory => DotNetSolutionDocumentFactory (Singleton)",
+    "IDiagramDocumentFactory => instance (Singleton)",
     "DependencyElementMapper => DependencyElementMapper (Singleton)",
     "IDiagramSessionFactory => DotNetDependencyGraphSessionFactory (Singleton)",
     "IContextSourceResolver => DotNetContextSourceResolver (Singleton)",

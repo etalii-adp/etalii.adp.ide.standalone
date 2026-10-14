@@ -2,25 +2,13 @@ using Xunit;
 
 namespace EtAlii.Adp.Diagram.WardleyMap.Tests;
 
-public class WardleyDocumentFactoryTests
+public class WardleyEmptyDocumentTests
 {
-    private readonly WardleyDocumentFactory _factory = new();
-
-    [Fact]
-    public void Origin_IsTheTypeThisWritesBodiesFor()
-    {
-        // Act.
-        var origin = _factory.Origin;
-
-        // Assert.
-        Assert.Equal(Diagram.WardleyMap.Origin, origin);
-    }
-
     [Fact]
     public void CreateEmptyDocument_CarriesTheFileBaseNameAsTheTitle()
     {
         // Act.
-        var document = _factory.CreateEmptyDocument("map");
+        var document = ServiceCollectionAddWardleyMapExtension.EmptyDocument("map");
 
         // Assert.
         Assert.Equal("title map\n", document);
@@ -33,7 +21,7 @@ public class WardleyDocumentFactoryTests
         const string baseName = "supply-chain";
 
         // Act.
-        var document = _factory.CreateEmptyDocument(baseName);
+        var document = ServiceCollectionAddWardleyMapExtension.EmptyDocument(baseName);
 
         // Assert.
         Assert.Equal($"title {baseName}\n", document);
@@ -43,7 +31,7 @@ public class WardleyDocumentFactoryTests
     public void CreateEmptyDocument_EndsWithALineFeedAndNoCarriageReturn()
     {
         // Act.
-        var document = _factory.CreateEmptyDocument("map");
+        var document = ServiceCollectionAddWardleyMapExtension.EmptyDocument("map");
 
         // Assert. A file ADP creates has no existing style to preserve, and LF is what the
         // rest of this ecosystem writes. The corpus's crlf/lf pair covers preserving what a
@@ -56,7 +44,7 @@ public class WardleyDocumentFactoryTests
     public void CreateEmptyDocument_IsAValidMapRatherThanAnEmptyFile()
     {
         // Act.
-        var document = _factory.CreateEmptyDocument("map");
+        var document = ServiceCollectionAddWardleyMapExtension.EmptyDocument("map");
 
         // Assert. Requirement 1.4 - a map with no components is a valid map, not an error, and
         // the body is never zero bytes. The stronger claim, that this parses through the real
@@ -69,6 +57,6 @@ public class WardleyDocumentFactoryTests
     public void CreateEmptyDocument_RejectsANullName()
     {
         // Act and assert.
-        Assert.Throws<ArgumentNullException>(() => _factory.CreateEmptyDocument(null!));
+        Assert.Throws<ArgumentNullException>(() => ServiceCollectionAddWardleyMapExtension.EmptyDocument(null!));
     }
 }

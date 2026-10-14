@@ -1,3 +1,4 @@
+using System.Text;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Hierarchy;
@@ -73,9 +74,9 @@ public static class ServiceCollectionAddDatabricksExtension
             services.AddSingleton<IDiagramToolboxProvider>(_ => new DatabricksToolboxProvider(origin));
 
             // The empty body a new diagram of this type starts as - the one thing core cannot
-            // derive from the definition on its own. A class rather than AddEmptyDocument: its
-            // keys are made from the file's name, so its text is not the same for every file.
-            services.AddSingleton<IDiagramDocumentFactory>(_ => new DatabricksDocumentFactory(origin));
+            // derive from the definition on its own. Written from the file's name, which its keys
+            // are made from.
+            services.AddEmptyDocument(origin, baseName => EmptyDocument(origin.Type, baseName));
 
             // The session seam: which declaration a session shows comes from the .adp file's
             // resource: header, so all three types open the same session under different origins.
@@ -100,5 +101,67 @@ public static class ServiceCollectionAddDatabricksExtension
         }
 
         return services;
+    }
+
+    /// <summary>
+    /// The minimal document a new diagram of the family's <paramref name="type"/> starts as -
+    /// complete enough to open, parse and validate clean, because a skeleton that opens with
+    /// findings would be a refusal factory.
+    /// </summary>
+    /// <remarks>
+    /// CRLF and a trailing newline: the writers preserve whatever a file already uses (Requirement
+    /// 2.1), but a file ADP creates has no existing style to preserve, and CRLF is the repository's
+    /// own house style.
+    /// </remarks>
+    public static string EmptyDocument(string type, string baseName)
+    {
+        ArgumentNullException.ThrowIfNull(type);
+        ArgumentNullException.ThrowIfNull(baseName);
+
+        var key = KeyOf(baseName);
+        return type switch
+        {
+            "job" =>
+                "resources:\r\n"
+                + "  jobs:\r\n"
+                + $"    {key}:\r\n"
+                + $"      name: {baseName}\r\n"
+                + "      tasks:\r\n"
+                + "        - task_key: main\r\n"
+                + "          notebook_task:\r\n"
+                + $"            notebook_path: notebooks/{key}\r\n",
+            "pipeline" =>
+                "{\r\n"
+                + $"  \"name\": \"{key}\",\r\n"
+                + "  \"libraries\": [\r\n"
+                + $"    {{ \"notebook\": {{ \"path\": \"transformations/{key}\" }} }}\r\n"
+                + "  ]\r\n"
+                + "}\r\n",
+            _ =>
+                "bundle:\r\n"
+                + $"  name: {key}\r\n"
+                + "targets:\r\n"
+                + "  dev:\r\n"
+                + "    mode: development\r\n"
+                + "    default: true\r\n",
+        };
+    }
+
+    /// <summary>
+    /// The base name as a Databricks key: lowercased, with anything a key cannot carry folded
+    /// to underscores - so "Nightly Ingest.job" starts life as <c>nightly_ingest_job</c>.
+    /// </summary>
+    private static string KeyOf(string baseName)
+    {
+        var builder = new StringBuilder(baseName.Length);
+        foreach (var character in baseName)
+        {
+            builder.Append(char.IsAsciiLetterOrDigit(character)
+                ? char.ToLowerInvariant(character)
+                : '_');
+        }
+
+        var key = builder.ToString().Trim('_');
+        return key.Length > 0 ? key : "untitled";
     }
 }

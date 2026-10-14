@@ -4,16 +4,13 @@ using Xunit;
 namespace EtAlii.Adp.Diagram.Rdf.Tests;
 
 /// <summary>The minimal new document: parses, validates clean, and carries the base name.</summary>
-public class RdfDocumentFactoryTests
+public class RdfEmptyDocumentTests
 {
     [Fact]
     public void ANewDocument_ParsesAndValidatesClean()
     {
-        // Arrange.
-        var factory = new RdfDocumentFactory(ServiceCollectionAddRdfExtension.RdfOrigin);
-
         // Act.
-        var text = factory.CreateEmptyDocument("My Graph");
+        var text = ServiceCollectionAddRdfExtension.EmptyRdfDocument("My Graph");
         var model = RdfParser.Parse(LineDocument.Parse(text));
 
         // Assert.
@@ -26,11 +23,8 @@ public class RdfDocumentFactoryTests
     [Fact]
     public void AHostileBaseName_FoldsToACleanLocalName()
     {
-        // Arrange.
-        var factory = new RdfDocumentFactory(ServiceCollectionAddRdfExtension.RdfOrigin);
-
         // Act.
-        var text = factory.CreateEmptyDocument("weird / name?!");
+        var text = ServiceCollectionAddRdfExtension.EmptyRdfDocument("weird / name?!");
 
         // Assert.
         var model = RdfParser.Parse(LineDocument.Parse(text));

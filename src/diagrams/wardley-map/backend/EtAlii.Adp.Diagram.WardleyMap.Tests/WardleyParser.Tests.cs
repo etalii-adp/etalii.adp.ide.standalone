@@ -379,10 +379,10 @@ public class WardleyParserTests
     }
 
     [Fact]
-    public void Parse_ReadsTheFactorysEmptyDocument()
+    public void Parse_ReadsTheNewEmptyDocument()
     {
         // Arrange. What Add writes (Requirement 1.4) must read back as a valid, titled map.
-        var body = new WardleyDocumentFactory().CreateEmptyDocument("map");
+        var body = ServiceCollectionAddWardleyMapExtension.EmptyDocument("map");
 
         // Act.
         var map = ParseText(body);
