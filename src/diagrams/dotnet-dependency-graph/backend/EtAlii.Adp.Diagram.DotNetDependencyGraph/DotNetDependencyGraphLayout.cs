@@ -1,4 +1,6 @@
-﻿namespace EtAlii.Adp.Diagram.DotNetDependencyGraph;
+﻿using EtAlii.Adp.Layout;
+
+namespace EtAlii.Adp.Diagram.DotNetDependencyGraph;
 
 /// <summary>
 /// Where the boxes go when nobody has said otherwise: projects layered by dependency depth,
@@ -71,16 +73,14 @@ public static class DotNetDependencyGraphLayout
     {
         ArgumentNullException.ThrowIfNull(graph);
 
-        var dependencies = graph.Edges
-            .Where(edge => edge.Kind == DependsOnKind.Project)
-            .GroupBy(edge => edge.FromElementId, StringComparer.Ordinal)
-            .ToDictionary(group => group.Key, group => group.Select(edge => edge.ToElementId).ToArray(), StringComparer.Ordinal);
-
-        var depths = new Dictionary<string, int>(StringComparer.Ordinal);
-        foreach (var project in graph.Projects)
-        {
-            DepthOf(project.Id, dependencies, depths, []);
-        }
+        // A project sits one layer beyond the deepest project it references, so the edge runs from
+        // the referenced project to the one referencing it. An id no project has still counts as a
+        // node, of depth zero.
+        var references = graph.Edges.Where(edge => edge.Kind == DependsOnKind.Project).ToArray();
+        var depths = Layering.LongestPath(
+            graph.Projects.Select(project => project.Id).Concat(references.SelectMany(edge => new[] { edge.ToElementId, edge.FromElementId })),
+            references.Select(edge => (edge.ToElementId, edge.FromElementId)),
+            CyclePolicy.BackEdgeIsZero);
 
         var positions = new Dictionary<string, (double X, double Y)>(StringComparer.Ordinal);
 
@@ -123,42 +123,5 @@ public static class DotNetDependencyGraphLayout
         }
 
         return positions;
-    }
-
-    /// <summary>
-    /// One beyond the deepest project this one references. <paramref name="visiting"/> makes a
-    /// cycle terminate rather than recurse: the node keeps the depth it has and the walk
-    /// unwinds.
-    /// </summary>
-    private static int DepthOf(
-        string id,
-        IReadOnlyDictionary<string, string[]> dependencies,
-        Dictionary<string, int> depths,
-        HashSet<string> visiting)
-    {
-        if (depths.TryGetValue(id, out var known))
-        {
-            return known;
-        }
-
-        if (!visiting.Add(id))
-        {
-            // Reached again while still being visited: a cycle. Zero rather than a throw - the
-            // diagram is derived from files that may be wrong, and being wrong must not hang it.
-            return 0;
-        }
-
-        var depth = 0;
-        if (dependencies.TryGetValue(id, out var referenced))
-        {
-            foreach (var target in referenced)
-            {
-                depth = Math.Max(depth, DepthOf(target, dependencies, depths, visiting) + 1);
-            }
-        }
-
-        visiting.Remove(id);
-        depths[id] = depth;
-        return depth;
     }
 }

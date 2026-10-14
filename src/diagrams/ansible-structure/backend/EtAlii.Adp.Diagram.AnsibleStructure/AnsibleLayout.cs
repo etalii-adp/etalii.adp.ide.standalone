@@ -88,14 +88,21 @@ public static class AnsibleLayout
 
         // Playbook depth by longest path over imports, so a playbook always sits to the right
         // of everything that imports it however many hops away that is.
-        var importers = graph.Edges
+        // Each playbook is measured by a walk of its own (see BackEdgeIsZeroPerNode): Ansible
+        // refuses an import cycle, but ADP reads a folder somebody is still editing, and a
+        // half-written cycle must neither hang the diagram nor depend on which playbook came first.
+        var imports = graph.Edges
             .Where(edge => edge is { Kind: AnsibleEdgeKind.ImportsPlaybook, TargetId.Length: > 0 })
-            .ToLookup(edge => edge.TargetId, edge => edge.SourceId, StringComparer.Ordinal);
-
-        var playbooks = graph.Nodes.Where(node => node.Kind == AnsibleNodeKind.Playbook).ToArray();
+            .Select(edge => (edge.SourceId, edge.TargetId))
+            .ToArray();
+        var playbooks = graph.Nodes.Where(node => node.Kind == AnsibleNodeKind.Playbook).Select(node => node.Id).ToArray();
+        var depths = Layering.LongestPath(
+            playbooks.Concat(imports.Select(edge => edge.SourceId)),
+            imports,
+            CyclePolicy.BackEdgeIsZeroPerNode);
         foreach (var playbook in playbooks)
         {
-            ranks[playbook.Id] = Depth(playbook.Id, importers, []);
+            ranks[playbook] = depths[playbook];
         }
 
         var deepestPlaybook = ranks.Count == 0 ? 0 : ranks.Values.Max();
@@ -121,30 +128,6 @@ public static class AnsibleLayout
         }
 
         return ranks;
-    }
-
-    /// <summary>
-    /// How far from an entry point this playbook is, by the longest path of imports.
-    /// <paramref name="visiting"/> makes an import cycle terminate rather than recurse for ever -
-    /// Ansible would refuse such a project, but ADP is reading a folder somebody is still
-    /// editing, and a half-written cycle must not hang the diagram.
-    /// </summary>
-    private static int Depth(string id, ILookup<string, string> importers, HashSet<string> visiting)
-    {
-        if (!visiting.Add(id))
-        {
-            return 0;
-        }
-
-        try
-        {
-            var parents = importers[id].ToArray();
-            return parents.Length == 0 ? 0 : parents.Max(parent => Depth(parent, importers, visiting)) + 1;
-        }
-        finally
-        {
-            visiting.Remove(id);
-        }
     }
 
     /// <summary>The playbook a play's id belongs to: <c>play:file#2</c> names <c>playbook:file</c>.</summary>

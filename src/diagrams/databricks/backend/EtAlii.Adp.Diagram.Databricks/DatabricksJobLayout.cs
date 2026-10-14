@@ -1,4 +1,5 @@
 using EtAlii.Adp.Hierarchy;
+using EtAlii.Adp.Layout;
 
 namespace EtAlii.Adp.Diagram.Databricks;
 
@@ -72,13 +73,10 @@ internal static class DatabricksJobLayout
             byKey.TryAdd(task.Key, task);
         }
 
-        var layers = new Dictionary<string, int>(StringComparer.Ordinal);
-        var walking = new HashSet<string>(StringComparer.Ordinal);
-
-        foreach (var key in byKey.Keys)
-        {
-            LayerOf(key);
-        }
+        var layers = Layering.LongestPath(
+            byKey.Keys,
+            byKey.Values.SelectMany(task => task.DependsOn.Select(dependency => (dependency.TaskKey, task.Key))),
+            CyclePolicy.BackEdgeIgnored);
 
         // The stubs: keys depends_on names and no task declares (Requirement 4.5), each with
         // the layer of the first task depending on it.
@@ -97,33 +95,5 @@ internal static class DatabricksJobLayout
 
         stubs = found;
         return layers;
-
-        int LayerOf(string key)
-        {
-            if (layers.TryGetValue(key, out var known))
-            {
-                return known;
-            }
-
-            if (!walking.Add(key))
-            {
-                // A back-edge: this task is already on the walk below us. Excluded from
-                // layering; the edge itself is still drawn by the mapper.
-                return -1;
-            }
-
-            var layer = 0;
-            foreach (var dependency in byKey[key].DependsOn)
-            {
-                if (byKey.ContainsKey(dependency.TaskKey))
-                {
-                    layer = Math.Max(layer, LayerOf(dependency.TaskKey) + 1);
-                }
-            }
-
-            walking.Remove(key);
-            layers[key] = layer;
-            return layer;
-        }
     }
 }
