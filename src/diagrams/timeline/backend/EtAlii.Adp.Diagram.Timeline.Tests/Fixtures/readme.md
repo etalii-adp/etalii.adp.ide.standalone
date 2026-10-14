@@ -36,6 +36,12 @@ here and these should be reduced to the edge cases they encode.
 | `indentation.tml` | Valid YAML in an indentation no generator would choose — four spaces at the sequence level, dashes indented under their key. A writer that "tidies" this has broken Requirement 2.2 even though the model is unchanged. |
 | `scalars.tml` | Quoting is the author's choice: double-quoted, single-quoted with an embedded apostrophe, plain with trailing whitespace, escaped quotes, and non-ASCII. Requoting is a rewrite. |
 | `unmodelled-keys.tml` | Keys this module does not model, at the document, element and connection level, including a nested sequence. Requirement 2.3 says every one survives verbatim. |
+| `trailing-comment.tml` | A trailing comment on every line the edit script changes: a label, a begin, an end, a row and a relation's label (timeline-disl-fbl, finding B5). |
+| `quoted-values.tml` | Labels, times and a row quoted where YAML does not need it, in both styles, on the lines the edit script changes (finding B5). |
+| `give-end.tml` | A moment alone, with `row` after its `begin`, so where the end it is given is written shows (finding B6). |
+| `no-header.tml` / `other-version.tml` | No `timeline:` marker, and `timeline: 2`: the tool reads both and reports nothing (finding B9). |
+| `dotnet-times.tml` | Times in forms .NET reads and ISO 8601 does not (`2026/07/01`, `July 5, 2026`). The edit script moves every element whose id starts with `move`, one row down and then one day on, so what a move writes over such a time is recorded (finding B12). |
+| `rows.tml` | Rows YAML reads as numbers and .NET's integer parse does not (`1.0`, `0x10`, `0o17`, `1e1`), and ones it does (`"3"`, `+4`) (finding B13). |
 
 ## Line endings are load-bearing here
 
@@ -49,7 +55,7 @@ in a way that makes no sense, check that the attribute is still there before sus
 
 ## Documents that exist to be judged: `findings/`
 
-The files above are all clean; nothing in them raises a finding. `findings/` holds the opposite: documents written to raise every finding the rules know, so the parity transcript (`Parity/timeline.transcript.json`) pins each message, its location and the order the findings arrive in. They sit in a folder of their own because the round-trip tests above enumerate `Fixtures/*.tml` and expect every document there to parse.
+The files above are all clean; nothing in them raises a finding, and every one has an element. `findings/` holds the opposite: documents written to raise every finding the rules know, and the documents without an element, so the parity transcript (`Parity/timeline.transcript.json`) pins each message, its location and the order the findings arrive in. They sit in a folder of their own because the round-trip tests above enumerate `Fixtures/*.tml` and expect every document there to parse.
 
 | File | Exists to prove |
 | --- | --- |
@@ -59,5 +65,10 @@ The files above are all clean; nothing in them raises a finding. `findings/` hol
 | `combined.tml` | Every kind at once, interleaved, plus a sequence entry that is not a mapping, so the order of the findings is pinned. |
 | `unparseable.tml` | A document that is not YAML: the one error finding. |
 | `empty.tml` | No elements: nothing to arrange. |
+| `first-element.tml` | A new document, in exactly the bytes the tool creates (`timeline: 1`, `elements: []`, CRLF): the first element is added to an empty flow sequence (timeline-disl-fbl, finding B4). |
+| `duplicate-key.tml` | A key written twice in one mapping (finding B10). |
+| `end-shapes.tml` | An `end` key holding nothing, a mapping, a sequence, a quoted empty text and `null`: which entries are periods (finding B11). |
+| `no-begin.tml` | A period and a moment without a `begin` key (finding B14). |
+| `scalar-connection.tml` | A `connections` entry that is not a mapping (finding B15). |
 
 `unparseable.tml` breaks the YAML with a mapping value where none is allowed. An unclosed flow sequence (`label: [unclosed` at the end of the file) would be the more obvious choice, and is not used because YamlDotNet throws an `InvalidOperationException` for it rather than a `YamlException`, which neither the store nor the validator catches.
