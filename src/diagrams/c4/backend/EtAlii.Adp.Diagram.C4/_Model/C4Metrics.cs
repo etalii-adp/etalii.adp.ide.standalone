@@ -1,22 +1,6 @@
-using EtAlii.Adp.Documents;
+using EtAlii.Adp.Layout;
 
 namespace EtAlii.Adp.Diagram.C4;
-
-/// <summary>Where an element sits and how big it is, in canvas units with the view's origin at (0,0).</summary>
-public readonly record struct C4Box(double X, double Y, double Width, double Height)
-{
-    public double CenterX => X + Width / 2;
-
-    public double CenterY => Y + Height / 2;
-
-    public double Right => X + Width;
-
-    public double Bottom => Y + Height;
-
-    /// <summary>Whether this box and <paramref name="other"/> share any area.</summary>
-    public bool Overlaps(C4Box other) =>
-        X < other.Right && other.X < Right && Y < other.Bottom && other.Y < Bottom;
-}
 
 /// <summary>
 /// The declared font metric the layout sizes C4 boxes with. Real metrics exist only in the
@@ -47,7 +31,7 @@ public sealed record C4Metrics(
     /// line, clamped so one long description does not make a box the width of the diagram, and
     /// the height grows with the lines the description wraps onto.
     /// </summary>
-    public C4Box Measure(string name, string typeLine, string description)
+    public Rect Measure(string name, string typeLine, string description)
     {
         var contentWidth = MaximumWidth - 2 * HorizontalPadding;
         var widest = Math.Max(TextWidth(name), TextWidth(typeLine));
@@ -57,7 +41,7 @@ public sealed record C4Metrics(
         var lines = 1 + (typeLine.Length > 0 ? 1 : 0) + Math.Max(0, descriptionLines);
         var height = lines * FontSize * LineHeight + 2 * VerticalPadding;
 
-        return new C4Box(0, 0, Math.Round(width, 2), Math.Round(height, 2));
+        return new Rect(0, 0, Math.Round(width, 2), Math.Round(height, 2));
     }
 
     private double TextWidth(string text) => TextMetric.WidthOf(text, FontSize);

@@ -84,6 +84,7 @@ One line each, with the project that owns it. Their internals are deliberately o
 | Known projects and workspace roots | `EtAlii.Adp.Projects` |
 | A connection's lifetime and its state | `EtAlii.Adp.Sessions` |
 | The workspace tree and file watching | `EtAlii.Adp.Hierarchy` |
+| Geometry: the rectangle, row packing and text width | `EtAlii.Adp.Layout` |
 | Diagram-type abstractions | `EtAlii.Adp.Diagram` |
 | Editor-family abstractions | `EtAlii.Adp.Editor` |
 | Designer-family abstractions | `EtAlii.Adp.Designer` |

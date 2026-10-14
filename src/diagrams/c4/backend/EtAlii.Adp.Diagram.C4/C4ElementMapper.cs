@@ -1,3 +1,4 @@
+using EtAlii.Adp.Layout;
 using Google.Protobuf;
 
 namespace EtAlii.Adp.Diagram.C4;
@@ -47,7 +48,7 @@ public sealed class C4ElementMapper
         var members = C4RuleSet.MembersOf(workspace, view);
         var shown = members.Where(element => layout.Boxes.ContainsKey(element.Id)).ToArray();
 
-        var inView = shown.Where(element => Intersects(layout.Boxes[element.Id], viewport)).ToHashSet();
+        var inView = shown.Where(element => viewport.Intersects(layout.Boxes[element.Id])).ToHashSet();
         var relationships = RelationshipsOf(workspace, view, layout).ToArray();
 
         // One hop: whatever an on-screen element's line reaches.
@@ -67,7 +68,7 @@ public sealed class C4ElementMapper
             elements.Add(ToElement(C4LayoutEngine.Displayed(workspace, element), layout.Boxes[element.Id], workspace.Styles));
         }
 
-        foreach ((C4Relationship relationship, C4Box source, C4Box destination, string order) in relationships)
+        foreach ((C4Relationship relationship, Rect source, Rect destination, string order) in relationships)
         {
             if (delivered.Contains(relationship.SourceId) && delivered.Contains(relationship.DestinationId))
             {
@@ -183,7 +184,7 @@ public sealed class C4ElementMapper
         return entries;
     }
 
-    private DiagramElement ToElement(C4Element element, C4Box box, IReadOnlyList<C4ElementStyle> styles)
+    private DiagramElement ToElement(C4Element element, Rect box, IReadOnlyList<C4ElementStyle> styles)
     {
         var payload = new C4ElementPayload
         {
@@ -208,7 +209,7 @@ public sealed class C4ElementMapper
             payload.ToByteArray());
     }
 
-    private static DiagramElement ToElement(C4Relationship relationship, C4Box source, C4Box destination, string order)
+    private static DiagramElement ToElement(C4Relationship relationship, Rect source, Rect destination, string order)
     {
         var payload = new C4RelationshipPayload
         {
@@ -259,7 +260,7 @@ public sealed class C4ElementMapper
     /// The relationships this view draws, paired with the boxes at their two ends and, on a
     /// dynamic view, the interaction's number - empty everywhere else.
     /// </summary>
-    private static IEnumerable<(C4Relationship Relationship, C4Box Source, C4Box Destination, string Order)> RelationshipsOf(
+    private static IEnumerable<(C4Relationship Relationship, Rect Source, Rect Destination, string Order)> RelationshipsOf(
         C4Workspace workspace,
         C4View view,
         C4Layout layout)
@@ -353,7 +354,4 @@ public sealed class C4ElementMapper
 
         return null;
     }
-
-    private static bool Intersects(C4Box box, DiagramViewport viewport) =>
-        box.Right >= viewport.MinX && box.X <= viewport.MaxX && box.Bottom >= viewport.MinY && box.Y <= viewport.MaxY;
 }
