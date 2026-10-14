@@ -21,6 +21,11 @@ namespace EtAlii.Adp.Diagram.AnsibleStructure;
 /// layout-in-.adp rule (Requirements 2.1, 2.3).
 /// </para>
 /// <para>
+/// <b>What this connection holds is kept by <see cref="DiagramDocumentChangeHandler"/></b>, as
+/// every session's is (code-structure FR-031): the baseline, a viewport report and a change to the
+/// folder all diff under its one lock against the one record of what was delivered.
+/// </para>
+/// <para>
 /// <b>The subject is the folder the <c>.adp</c> sits in.</b> For a type that declares no
 /// document extension the router hands over the registration as its own body, so the folder is
 /// one <c>GetDirectoryName</c> away - and the registration file itself is never parsed for
@@ -40,8 +45,8 @@ internal sealed class AnsibleSession : IDiagramSession
     /// <summary>The store's word for this folder, until the session goes.</summary>
     private readonly IDisposable _watch;
 
+    private readonly DiagramDocumentChangeHandler _changes;
     private DiagramViewport _viewport = DiagramViewport.Unbounded;
-    private IReadOnlyList<DiagramElement> _delivered = [];
 
     public AnsibleSession(
         string folder,
@@ -59,34 +64,24 @@ internal sealed class AnsibleSession : IDiagramSession
         _mapper = mapper;
         _registrationPath = registrationPath;
         _history = history;
+        _changes = new DiagramDocumentChangeHandler(_folder, Render, Raise);
 
         _store.Acquire(_folder);
-        _watch = _store.Watch(_folder, OnProjectChanged);
+        _watch = _store.Watch(_folder, _ => _changes.OnDocumentChanged(_folder));
     }
 
     public event EventHandler<DiagramDeltasEventArgs>? Changed;
 
     public IReadOnlyList<DiagramDelta> Baseline()
     {
-        var project = _store.GetOrLoad(_folder);
-        _delivered = _mapper.Visible(project, AnsibleGraph.Derive(project), _viewport, Stored());
-        return _delivered.Count == 0 ? [] : [new DiagramAddDelta(_delivered)];
+        var elements = _changes.Deliver();
+        return elements.Count == 0 ? [] : [new DiagramAddDelta(elements)];
     }
 
     public IReadOnlyList<DiagramDelta> UpdateView(DiagramViewport viewport)
     {
-        var project = _store.Get(_folder);
-        if (project is null)
-        {
-            _viewport = viewport;
-            return [];
-        }
-
         _viewport = viewport;
-        var after = _mapper.Visible(project, AnsibleGraph.Derive(project), _viewport, Stored());
-        var deltas = DiagramDiff.Between(_delivered, after);
-        _delivered = after;
-        return deltas;
+        return _changes.Refresh();
     }
 
     /// <summary>
@@ -158,20 +153,13 @@ internal sealed class AnsibleSession : IDiagramSession
         return ValueTask.CompletedTask;
     }
 
-    private void OnProjectChanged(AnsibleProject project)
+    /// <summary>What this connection should hold: the project as the store has it, through its viewport.</summary>
+    private IReadOnlyList<DiagramElement> Render()
     {
-        if (Changed is null)
-        {
-            return;
-        }
-
-        var after = _mapper.Visible(project, AnsibleGraph.Derive(project), _viewport, Stored());
-        var deltas = DiagramDiff.Between(_delivered, after);
-        _delivered = after;
-
-        if (deltas.Count > 0)
-        {
-            Changed.Invoke(this, new DiagramDeltasEventArgs(deltas));
-        }
+        var project = _store.GetOrLoad(_folder);
+        return _mapper.Visible(project, AnsibleGraph.Derive(project), _viewport, Stored());
     }
+
+    private void Raise(IReadOnlyList<DiagramDelta> deltas) =>
+        Changed?.Invoke(this, new DiagramDeltasEventArgs(deltas));
 }

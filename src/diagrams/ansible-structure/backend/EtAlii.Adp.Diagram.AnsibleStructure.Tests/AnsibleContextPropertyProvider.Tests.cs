@@ -22,10 +22,14 @@ public class AnsibleContextPropertyProviderTests : IDisposable
 
     public void Dispose() => _store.Dispose();
 
+    /// <summary>Describes an element as selected in the registration of <paramref name="folder"/>, the fixture's by default.</summary>
     private async Task<IReadOnlyList<ContextPropertyDefinition>> Describe(string elementId, string? folder = null) =>
         await _provider.DescribeAsync(
-            ContextTarget.ForElement(folder ?? _root, elementId, _root),
+            ContextTarget.ForElement(Registration(folder ?? _root), elementId, _root),
             TestContext.Current.CancellationToken);
+
+    /// <summary>Where a folder's registration sits: a selection's target, from which the provider takes the folder.</summary>
+    private static string Registration(string folder) => IoPath.Combine(folder, "infrastructure.adp");
 
     // ---- the headline: nothing is editable, and every reason names a real file ---------------
 
@@ -77,7 +81,7 @@ public class AnsibleContextPropertyProviderTests : IDisposable
         // Unreachable through the grid - the resolver stops a write to a read-only property
         // first - and written to refuse anyway, so it stays safe if that ever changes.
         var result = await _provider.SetAsync(
-            ContextTarget.ForElement(_root, "role:nginx", _root),
+            ContextTarget.ForElement(Registration(_root), "role:nginx", _root),
             "ansible.name", "something-else", TestContext.Current.CancellationToken);
 
         // Assert.

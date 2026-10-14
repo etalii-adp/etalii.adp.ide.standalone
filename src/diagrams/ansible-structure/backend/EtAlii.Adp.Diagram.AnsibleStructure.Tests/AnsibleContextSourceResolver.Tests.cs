@@ -32,7 +32,7 @@ public class AnsibleContextSourceResolverTests : IDisposable
         var catalog = new AnsibleTestDiagramDefinitionCatalog(
             Diagram.AnsibleStructure,
             new DiagramDefinition(new DiagramOrigin("freeplane", "mindmap"), "Mind map", Extension: ".mm"));
-        _resolver = new AnsibleContextSourceResolver(new DiagramFileRouter(catalog), _store);
+        _resolver = new AnsibleContextSourceResolver(new DiagramFileRouter(catalog), _store, new AnsibleElementMapper());
     }
 
     public void Dispose()
@@ -63,6 +63,19 @@ public class AnsibleContextSourceResolverTests : IDisposable
         Assert.Equal(["roles", "nginx"], level.RelativePath);
         Assert.Equal("nginx", level.Detail.Element.Text);
         Assert.Equal("role:nginx", level.Target.ElementId);
+    }
+
+    [Fact]
+    public async Task ANode_CarriesThePayloadTheCanvasWasSent_AndIsTargetedAtItsRegistration()
+    {
+        // Act.
+        var level = Assert.IsType<ResolvedContextLevel>(await Resolve("role:nginx")).Level;
+
+        // Assert: the selection describes the element as the stream did, and names the file it
+        // was selected in, as every diagram's selection does.
+        Assert.Equal(AnsibleElementMapper.RoleType, level.Detail.Element.ElementType);
+        Assert.NotNull(level.Detail.Element.Payload);
+        Assert.Equal(_registration, level.Target.ResolvedFullPath);
     }
 
     [Fact]
