@@ -1,10 +1,11 @@
-﻿using EtAlii.Adp.History;
+﻿using EtAlii.Adp.Documents;
+using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.Rdf.Shacl;
 
 /// <summary>
 /// This reading's edit commands (shacl-diagram Requirement 5.1). Each is one writer operation
-/// under the family's <see cref="RdfEdits.Run"/> discipline, so every one is a single undo whose
+/// under the family's <see cref="RdfEditHandler{TCommand}"/> discipline, so every one is a single undo whose
 /// inverse restores the document byte for byte - including the removals that sweep a blank-node
 /// subtree, which is exactly why the inverse is a whole-document snapshot rather than an
 /// inverted operation.
@@ -21,23 +22,21 @@ public sealed record AddShaclPropertyRowCommand(
     string DatatypeIri = "",
     int? MinCount = null,
     int? MaxCount = null,
-    string Name = "") : ICommand;
+    string Name = "") : IDocumentEditCommand;
 
 /// <inheritdoc cref="AddShaclPropertyRowCommand" />
-public sealed class AddShaclPropertyRowCommandHandler(IRdfDocumentStore documents) : ICommandHandler<AddShaclPropertyRowCommand>
+public sealed class AddShaclPropertyRowCommandHandler(IRdfDocumentStore documents) : RdfEditHandler<AddShaclPropertyRowCommand>(documents)
 {
-    public Task<CommandResult> ExecuteAsync(AddShaclPropertyRowCommand command, CancellationToken cancellationToken = default)
+    /// <inheritdoc />
+    protected override EditOutcome Apply(LineDocument body, RdfModel model, AddShaclPropertyRowCommand command)
     {
-        ArgumentNullException.ThrowIfNull(command);
-        cancellationToken.ThrowIfCancellationRequested();
-
         var options = new ShaclPropertyShapeOptions(
             command.DatatypeIri.Length > 0 ? command.DatatypeIri : null,
             command.MinCount,
             command.MaxCount,
             command.Name.Length > 0 ? command.Name : null);
 
-        return RdfEdits.Run(documents, command.BodyPath, command, entry =>
-            ShaclWriter.AppendPropertyShapeBlock(entry.Document, entry.Model, command.ShapeIri, command.PathIri, options));
+        return Outcome(
+            ShaclWriter.AppendPropertyShapeBlock(body, model, command.ShapeIri, command.PathIri, options));
     }
 }

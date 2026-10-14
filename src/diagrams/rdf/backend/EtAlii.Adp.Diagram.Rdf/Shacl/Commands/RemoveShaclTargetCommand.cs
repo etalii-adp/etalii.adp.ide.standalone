@@ -1,19 +1,18 @@
-﻿using EtAlii.Adp.History;
+﻿using EtAlii.Adp.Documents;
+using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.Rdf.Shacl;
 
 /// <summary>Withdraws one target declaration, addressed as its chip carries it (Requirement 5.3).</summary>
-public sealed record RemoveShaclTargetCommand(string BodyPath, string ShapeIri, string TargetPredicateIri, string TermIri) : ICommand;
+public sealed record RemoveShaclTargetCommand(string BodyPath, string ShapeIri, string TargetPredicateIri, string TermIri) : IDocumentEditCommand;
 
 /// <inheritdoc cref="RemoveShaclTargetCommand" />
-public sealed class RemoveShaclTargetCommandHandler(IRdfDocumentStore documents) : ICommandHandler<RemoveShaclTargetCommand>
+public sealed class RemoveShaclTargetCommandHandler(IRdfDocumentStore documents) : RdfEditHandler<RemoveShaclTargetCommand>(documents)
 {
-    public Task<CommandResult> ExecuteAsync(RemoveShaclTargetCommand command, CancellationToken cancellationToken = default)
+    /// <inheritdoc />
+    protected override EditOutcome Apply(LineDocument body, RdfModel model, RemoveShaclTargetCommand command)
     {
-        ArgumentNullException.ThrowIfNull(command);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        return RdfEdits.Run(documents, command.BodyPath, command, entry =>
-            ShaclWriter.RemoveTarget(entry.Document, entry.Model, command.ShapeIri, command.TargetPredicateIri, command.TermIri));
+        return Outcome(
+            ShaclWriter.RemoveTarget(body, model, command.ShapeIri, command.TargetPredicateIri, command.TermIri));
     }
 }

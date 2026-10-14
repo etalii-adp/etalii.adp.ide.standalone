@@ -1,4 +1,5 @@
-﻿using EtAlii.Adp.History;
+﻿using EtAlii.Adp.Documents;
+using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.Rdf.Shacl;
 
@@ -7,17 +8,15 @@ namespace EtAlii.Adp.Diagram.Rdf.Shacl;
 /// count the confirmation states comes from <see cref="ShaclWriter.CountShapeRemoval"/>, read
 /// before the command is dispatched.
 /// </summary>
-public sealed record RemoveShaclShapeCommand(string BodyPath, string ShapeIri) : ICommand;
+public sealed record RemoveShaclShapeCommand(string BodyPath, string ShapeIri) : IDocumentEditCommand;
 
 /// <inheritdoc cref="RemoveShaclShapeCommand" />
-public sealed class RemoveShaclShapeCommandHandler(IRdfDocumentStore documents) : ICommandHandler<RemoveShaclShapeCommand>
+public sealed class RemoveShaclShapeCommandHandler(IRdfDocumentStore documents) : RdfEditHandler<RemoveShaclShapeCommand>(documents)
 {
-    public Task<CommandResult> ExecuteAsync(RemoveShaclShapeCommand command, CancellationToken cancellationToken = default)
+    /// <inheritdoc />
+    protected override EditOutcome Apply(LineDocument body, RdfModel model, RemoveShaclShapeCommand command)
     {
-        ArgumentNullException.ThrowIfNull(command);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        return RdfEdits.Run(documents, command.BodyPath, command, entry =>
-            ShaclWriter.RemoveShapeWithSubtrees(entry.Document, entry.Model, command.ShapeIri));
+        return Outcome(
+            ShaclWriter.RemoveShapeWithSubtrees(body, model, command.ShapeIri));
     }
 }
