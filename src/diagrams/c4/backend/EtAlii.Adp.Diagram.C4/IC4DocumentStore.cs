@@ -2,66 +2,21 @@ using EtAlii.Adp.Documents;
 
 namespace EtAlii.Adp.Diagram.C4;
 
-/// <summary>What changed about a C4 document, for the sessions that show it.</summary>
-public sealed record C4DocumentChangedEventArgs(string Path, C4Workspace Workspace);
-
 /// <summary>
 /// The one owner of C4 documents on disk. Several diagrams may open one document - that is what
 /// "model once, view many" means - so they must share one instance of it, or an edit made
 /// through one view would be invisible to another until a reload (c4-diagrams Requirement 1.2).
 /// </summary>
-public interface IC4DocumentStore
+/// <remarks>
+/// Everything a store does is declared by <see cref="IDiagramDocumentStore{TBody, TModel}"/>; this
+/// names the C4 family's, and adds the one thing that is its own.
+/// </remarks>
+public interface IC4DocumentStore : IDiagramDocumentStore<C4Document, C4Workspace>
 {
-    /// <summary>
-    /// The document at <paramref name="path"/>, loading it once and keeping it. A missing file
-    /// yields an empty document rather than throwing: a diagram whose body has not been written
-    /// yet still opens, and the first save creates it.
-    /// </summary>
-    C4Document GetOrLoad(string path);
-
-    /// <summary>The parsed workspace for <paramref name="path"/>, reusing the loaded document.</summary>
-    C4Workspace WorkspaceOf(string path);
-
-    /// <summary>
-    /// Writes <paramref name="document"/> back and tells every session on it. Refuses while the
-    /// document on disk is unparseable, so a broken file is never made worse (Requirement 3.4).
-    /// </summary>
-    /// <param name="path">The path of the document to write.</param>
-    /// <param name="document">
-    /// The document to write - **the one the caller edited**, passed in rather than looked up
-    /// again. A save that re-fetched from the cache lost the edit whenever a reload landed
-    /// between the edit and the save, and reported success for it; the argument is what makes
-    /// that unwritable rather than merely discouraged.
-    /// </param>
-    /// <returns>
-    /// <see cref="DocumentSaveResult.Ok"/> when the document reached the disk, and a failure whose
-    /// <see cref="DocumentSaveResult.Error"/> is a sentence the user can read when it did not
-    /// (backend-centralization R3.1). **A caller must surface it rather than drop it.** The edit
-    /// survives in memory either way, so a caller that ignores this answers the user with a save
-    /// that never happened - which is exactly what returning nothing at all allowed.
-    /// </returns>
-    DocumentSaveResult Save(string path, C4Document document);
-
     /// <summary>
     /// Tells every session on this document to re-deliver, without changing the document.
     /// A drag changes where an element is drawn but not what the model says, so it has a
     /// sidecar to write and nothing to save (Requirement 8.3).
     /// </summary>
     void Touch(string path);
-
-    /// <summary>
-    /// Re-reads a document an external tool changed, and tells the sessions on it. A no-op
-    /// while the store's own save of that path is in flight: its own write on disk is not an
-    /// external change, and must not bounce back as one.
-    /// </summary>
-    void Reload(string path);
-
-    /// <summary>
-    /// The body was deleted - the watcher's evidence, not a read that failed - so the model ends
-    /// empty. A reload that cannot read keeps the last good model; this does not.
-    /// </summary>
-    void BodyDeleted(string path);
-
-    /// <summary>Raised after a save, and after an external edit is picked up.</summary>
-    event EventHandler<C4DocumentChangedEventArgs>? Changed;
 }

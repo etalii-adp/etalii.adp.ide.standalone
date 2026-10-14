@@ -30,7 +30,7 @@ internal sealed class MoveC4ElementCommandHandler(IC4DocumentStore documents, C4
         ArgumentNullException.ThrowIfNull(command);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var workspace = documents.WorkspaceOf(command.BodyPath);
+        var workspace = documents.GetOrLoad(command.BodyPath).Model;
         if (workspace.Find(command.ElementId) is null)
         {
             return Task.FromResult(CommandResult.Failure($"'{command.ElementId}' is not in this model any more."));

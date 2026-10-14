@@ -34,7 +34,7 @@ internal sealed class AddC4ElementCommandHandler(IC4DocumentStore documents) : I
         ArgumentNullException.ThrowIfNull(command);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var workspace = documents.WorkspaceOf(command.BodyPath);
+        var workspace = documents.GetOrLoad(command.BodyPath).Model;
         var name = command.Name.Trim();
         if (name.Length == 0)
         {
@@ -54,7 +54,7 @@ internal sealed class AddC4ElementCommandHandler(IC4DocumentStore documents) : I
             return Task.FromResult(CommandResult.Failure($"This model already has something called '{identifier}'."));
         }
 
-        var document = documents.GetOrLoad(command.BodyPath);
+        var document = documents.GetOrLoad(command.BodyPath).Document;
         if (!C4Placement.TryInsert(document, workspace, command.Kind, name, identifier, command.ParentId, out var error, out var openedBlock))
         {
             return Task.FromResult(CommandResult.Failure(error));
@@ -75,13 +75,13 @@ internal sealed class RemoveC4ElementCommandHandler(IC4DocumentStore documents) 
         ArgumentNullException.ThrowIfNull(command);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var workspace = documents.WorkspaceOf(command.BodyPath);
+        var workspace = documents.GetOrLoad(command.BodyPath).Model;
         if (workspace.Find(command.Identifier) is not { } element)
         {
             return Task.FromResult(CommandResult.Failure("That element is no longer in this model."));
         }
 
-        var document = documents.GetOrLoad(command.BodyPath);
+        var document = documents.GetOrLoad(command.BodyPath).Document;
         var inverse = new AddC4ElementCommand(
             command.BodyPath,
             element.Kind,

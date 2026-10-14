@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 using Serilog;
 
@@ -139,7 +140,7 @@ public sealed class C4Session : IDiagramSession
     /// <summary>The view this session shows: the one its <c>.adp</c> named, or the document's first.</summary>
     public C4View? View()
     {
-        var workspace = _documents.WorkspaceOf(_bodyPath);
+        var workspace = _documents.GetOrLoad(_bodyPath).Model;
         if (workspace.Views.Count == 0)
         {
             return null;
@@ -167,11 +168,11 @@ public sealed class C4Session : IDiagramSession
 
     private IReadOnlyList<DiagramElement> Visible()
     {
-        var workspace = _documents.WorkspaceOf(_bodyPath);
+        var workspace = _documents.GetOrLoad(_bodyPath).Model;
         var view = View();
         return view is null ? [] : _mapper.Visible(workspace, view, _viewport, _bodyPath);
     }
 
-    private void OnDocumentChanged(object? sender, C4DocumentChangedEventArgs args) =>
+    private void OnDocumentChanged(object? sender, DocumentChangedEventArgs args) =>
         _changes.OnDocumentChanged(args.Path);
 }

@@ -131,7 +131,7 @@ public class C4MoveElementTests : IDisposable
         await session.MoveElementToAsync("a", 250, 400, TestContext.Current.CancellationToken);
 
         // Act.
-        var workspace = _documents.WorkspaceOf(_bodyPath);
+        var workspace = _documents.GetOrLoad(_bodyPath).Model;
         var layout = C4LayoutEngine.Compute(
             workspace, workspace.Views[0], C4Metrics.Default, _sidecar.Read(_bodyPath, "all"));
 

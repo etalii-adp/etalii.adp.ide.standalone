@@ -60,7 +60,7 @@ public class C4SharedReadTests : IDisposable
         using var editor = new FileStream(path, FileMode.Open, FileAccess.Write, FileShare.Read);
 
         // Act.
-        var document = _documents.GetOrLoad(path);
+        var document = _documents.GetOrLoad(path).Document;
 
         // Assert: the model itself, not the empty fallback.
         Assert.Equal(Model, document.ToText());

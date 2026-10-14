@@ -173,5 +173,10 @@ public abstract class LifecycleDocumentStore<TBody, TModel> : IDiagramDocumentSt
             : empty with { Unreadable = reason.Length > 0 ? reason : "the body could not be read" };
     }
 
-    private void OnChanged(string path) => Changed?.Invoke(this, new DocumentChangedEventArgs(path));
+    /// <summary>
+    /// Tells the sessions on <paramref name="path"/> that its document changed: after a save, a
+    /// reload or a deletion here, and where a module changes how a document is drawn without
+    /// changing what it says.
+    /// </summary>
+    protected void OnChanged(string path) => Changed?.Invoke(this, new DocumentChangedEventArgs(path));
 }

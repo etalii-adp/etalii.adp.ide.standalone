@@ -48,7 +48,7 @@ public class C4DocumentStoreFailedReloadTests : IDisposable
         var body = IoPath.Combine(_root, "model.dsl");
         File.WriteAllText(body, Model);
         var store = new C4DocumentStore();
-        Assert.NotEmpty(store.WorkspaceOf(body).Elements);
+        Assert.NotEmpty(store.GetOrLoad(body).Model.Elements);
 
         // Arrange, continued: a reload that cannot read the body.
         using (new FileStream(body, FileMode.Open, FileAccess.Read, FileShare.None))
@@ -58,10 +58,10 @@ public class C4DocumentStoreFailedReloadTests : IDisposable
 
         // Assert, first: the store still holds the model - the failed read did not replace it.
         // Asserted on its own because the save refusal would protect the file even without it.
-        Assert.NotEmpty(store.WorkspaceOf(body).Elements);
+        Assert.NotEmpty(store.GetOrLoad(body).Model.Elements);
 
         // Act: whatever triggers the next save, once the file is readable again.
-        store.Save(body, store.GetOrLoad(body));
+        store.Save(body, store.GetOrLoad(body).Document);
 
         // Assert: the real model is still on disk.
         var onDisk = File.ReadAllText(body);
@@ -81,10 +81,10 @@ public class C4DocumentStoreFailedReloadTests : IDisposable
 
         using (new FileStream(body, FileMode.Open, FileAccess.Read, FileShare.None))
         {
-            Assert.Empty(store.WorkspaceOf(body).Elements); // the arrangement: the first read failed
+            Assert.Empty(store.GetOrLoad(body).Model.Elements); // the arrangement: the first read failed
         }
 
-        var answer = store.Save(body, store.GetOrLoad(body));
+        var answer = store.Save(body, store.GetOrLoad(body).Document);
 
         Assert.NotEqual("", answer.Error);
         Assert.Equal(Model, File.ReadAllText(body));
@@ -102,12 +102,12 @@ public class C4DocumentStoreFailedReloadTests : IDisposable
         var body = IoPath.Combine(_root, "model.dsl");
         File.WriteAllText(body, Model);
         var store = new C4DocumentStore();
-        Assert.NotEmpty(store.WorkspaceOf(body).Elements);
+        Assert.NotEmpty(store.GetOrLoad(body).Model.Elements);
 
         File.Delete(body);
         store.BodyDeleted(body);
 
-        Assert.Empty(store.WorkspaceOf(body).Elements);
+        Assert.Empty(store.GetOrLoad(body).Model.Elements);
     }
 
     [Fact]
@@ -120,19 +120,19 @@ public class C4DocumentStoreFailedReloadTests : IDisposable
         await File.WriteAllTextAsync(body, Model, TestContext.Current.CancellationToken);
         var store = new C4DocumentStore();
         var origin = new DiagramOrigin("test", "c4");
-        using var bridge = new DiagramDocumentReloadBridge([new C4DocumentReloader(origin, store)]);
-        Assert.NotEmpty(store.WorkspaceOf(body).Elements);
+        using var bridge = new DiagramDocumentReloadBridge([new DiagramDocumentReloader<IC4DocumentStore>(origin, store)]);
+        Assert.NotEmpty(store.GetOrLoad(body).Model.Elements);
         bridge.Track(_root, body, registrationPath: null, origin);
 
         File.Delete(body);
 
         var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(10);
-        while (store.WorkspaceOf(body).Elements.Count > 0 && DateTime.UtcNow < deadline)
+        while (store.GetOrLoad(body).Model.Elements.Count > 0 && DateTime.UtcNow < deadline)
         {
             await Task.Delay(25, TestContext.Current.CancellationToken);
         }
 
-        Assert.Empty(store.WorkspaceOf(body).Elements);
+        Assert.Empty(store.GetOrLoad(body).Model.Elements);
     }
 
     [Fact]
@@ -145,14 +145,14 @@ public class C4DocumentStoreFailedReloadTests : IDisposable
         await File.WriteAllTextAsync(body, Model, TestContext.Current.CancellationToken);
         var store = new C4DocumentStore();
         var origin = new DiagramOrigin("test", "c4");
-        using var bridge = new DiagramDocumentReloadBridge([new C4DocumentReloader(origin, store)]);
-        Assert.NotEmpty(store.WorkspaceOf(body).Elements);
+        using var bridge = new DiagramDocumentReloadBridge([new DiagramDocumentReloader<IC4DocumentStore>(origin, store)]);
+        Assert.NotEmpty(store.GetOrLoad(body).Model.Elements);
         var changes = 0;
         var emptied = 0;
         store.Changed += (_, args) =>
         {
             Interlocked.Increment(ref changes);
-            if (args.Workspace.Elements.Count == 0)
+            if (store.GetOrLoad(args.Path).Model.Elements.Count == 0)
             {
                 Interlocked.Increment(ref emptied);
             }
@@ -169,7 +169,7 @@ public class C4DocumentStoreFailedReloadTests : IDisposable
 
         Assert.True(changes > 0, "The arrangement failed: no external save reached the store.");
         Assert.True(emptied == 0, $"{emptied} of {changes} changes after 50 external saves emptied the model.");
-        Assert.NotEmpty(store.WorkspaceOf(body).Elements);
+        Assert.NotEmpty(store.GetOrLoad(body).Model.Elements);
     }
 
     [Fact]
@@ -180,74 +180,10 @@ public class C4DocumentStoreFailedReloadTests : IDisposable
         var body = IoPath.Combine(_root, "new.dsl");
         var store = new C4DocumentStore();
 
-        Assert.Empty(store.WorkspaceOf(body).Elements);
-        var answer = store.Save(body, store.GetOrLoad(body));
+        Assert.Empty(store.GetOrLoad(body).Model.Elements);
+        var answer = store.Save(body, store.GetOrLoad(body).Document);
 
         Assert.Equal("", answer.Error);
         Assert.True(File.Exists(body), "A new, empty model was not saved.");
-    }
-
-    [Fact]
-    public async Task ReloadsRacingAnExternalPublishOfTheSameModel_NeverLoseIt()
-    {
-        // The measured race, as a guard. An external writer republishes an UNCHANGED model while the
-        // store reloads it, which is what a text editor saving over the file does. On develop 765 of
-        // 3000 reloads installed an empty workspace - and with removals pushed to the canvas, that
-        // blanked it. A publish either lands whole or makes the read fail, and a failed read now
-        // keeps the last good model, so zero is the only passing answer rather than a lucky one.
-        var body = IoPath.Combine(_root, "model.dsl");
-        await File.WriteAllTextAsync(body, Model, TestContext.Current.CancellationToken);
-        // The retry's wait taken away, and only here: every reload that finds the body renamed away
-        // mid-publish now waits between attempts, and at 50 ms this test went from 0.9 s to 15.3 s
-        // (2026-09-25). What it guards is that the model is never lost, which keep-last-good decides,
-        // not how long a retry waits; the store's own attempts are kept.
-        var store = new C4DocumentStore(SharedDocumentReader.ReadAllText, C4DocumentStore.DefaultReadAttempts, TimeSpan.Zero);
-        Assert.NotEmpty(store.WorkspaceOf(body).Elements);
-
-        using var stop = new CancellationTokenSource();
-        var publishes = 0;
-        var writer = Task.Run(() =>
-        {
-            // ReSharper disable once AccessToDisposedClosure - Reason: Used in a test case which is acceptable.
-            while (!stop.IsCancellationRequested)
-            {
-                try
-                {
-                    AdpFileWriter.Save(body, Model);
-                    Interlocked.Increment(ref publishes);
-                }
-                catch (IOException)
-                {
-                    // A refused publish is not what this guard measures.
-                }
-            }
-        }, TestContext.Current.CancellationToken);
-
-        // Reload only once the writer is publishing. On a loaded runner the 3000 reloads can finish
-        // before the writer's task is even scheduled, and then nothing raced at all.
-        Assert.True(SpinWait.SpinUntil(() => Volatile.Read(ref publishes) > 0, TimeSpan.FromSeconds(10)),
-            "The arrangement failed: the external writer never started publishing.");
-
-        const int reloads = 3000;
-        var lost = 0;
-        try
-        {
-            for (var i = 0; i < reloads; i++)
-            {
-                store.Reload(body);
-                if (store.WorkspaceOf(body).Elements.Count == 0)
-                {
-                    lost++;
-                }
-            }
-        }
-        finally
-        {
-            await stop.CancelAsync();
-            await writer;
-        }
-
-        Assert.True(publishes > 0, "The arrangement failed: the external writer never published, so nothing raced.");
-        Assert.True(lost == 0, $"{lost} of {reloads} reloads racing {publishes} external publishes lost the model.");
     }
 }

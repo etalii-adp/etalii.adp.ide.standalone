@@ -81,9 +81,7 @@ public static class ServiceCollectionAddC4Extension
 
             // The reload seam: an external write to a C4 body reaches the shared store, and
             // through it every open session (modular-text-editors Requirement 5.3).
-            services.AddSingleton<IDiagramDocumentReloader>(provider => new C4DocumentReloader(
-                origin,
-                provider.GetRequiredService<IC4DocumentStore>()));
+            services.AddDiagramDocumentReloader<IC4DocumentStore>(origin);
 
             // The type's rules, resolved by origin through core's validator registry, so C4's
             // violations reach the errors and warnings panel like any other type's
