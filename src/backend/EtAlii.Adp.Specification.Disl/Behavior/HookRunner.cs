@@ -3,10 +3,11 @@ using System.Text.Json;
 namespace EtAlii.Adp.Specification.Disl;
 
 /// <summary>
-/// Runs a definition's <c>after</c> hooks for a change of an element's attributes (DISL §9.2): every
+/// Runs a definition's <c>after</c> hooks (DISL §9.2) for a change of an element's attributes - every
 /// hook <c>on: change</c> whose <c>for</c> takes the element and whose <c>attribute</c> list meets the
-/// changed attributes, in <c>order</c> and then declaration order, with <c>self</c> the element after
-/// the change and <c>old</c> a snapshot before it.
+/// changed attributes, with <c>self</c> the element after the change and <c>old</c> a snapshot before it -
+/// and for a relation drawn: every hook <c>on: connect</c> whose <c>for</c> takes the relation, with
+/// <c>self</c> the new relation and <c>old</c> null. Hooks run in <c>order</c> and then declaration order.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -18,8 +19,8 @@ namespace EtAlii.Adp.Specification.Disl;
 /// and no more than <c>behavior.maxHookDepth</c> (100) runs in all; past that the transaction is refused.
 /// </para>
 /// <para>
-/// <b>Only <c>change</c> events, and only <c>after</c> hooks, are run here.</b> A <c>before</c> hook
-/// is not run; neither bundled definition declares one.
+/// <b>Only <c>change</c> and <c>connect</c> events, and only <c>after</c> hooks, are run here.</b> A
+/// <c>before</c> hook is not run; no bundled definition declares one.
 /// </para>
 /// </remarks>
 public static class HookRunner
@@ -43,15 +44,47 @@ public static class HookRunner
         ArgumentNullException.ThrowIfNull(attributes);
         ArgumentNullException.ThrowIfNull(ids);
 
+        return Run(specification, self, old, "change", attributes, ids, env, source);
+    }
+
+    /// <summary>
+    /// The hooks' changes after <paramref name="relation"/> was drawn (an <c>on: connect</c> event): the
+    /// host has added it to the working diagram, ends and attributes, before calling this.
+    /// </summary>
+    public static DislTransaction AfterConnect(
+        DislSpecification specification,
+        DislElement relation,
+        IIdSource ids,
+        DislEnv? env = null,
+        string source = "user")
+    {
+        ArgumentNullException.ThrowIfNull(specification);
+        ArgumentNullException.ThrowIfNull(relation);
+        ArgumentNullException.ThrowIfNull(ids);
+        if (!relation.Type.IsRelation) throw new ArgumentException($"{relation} is no relation, so it was not drawn.", nameof(relation));
+
+        return Run(specification, relation, null, "connect", [], ids, env, source);
+    }
+
+    private static DislTransaction Run(
+        DislSpecification specification,
+        DislElement self,
+        DislElement? old,
+        string kind,
+        IReadOnlyCollection<string> attributes,
+        IIdSource ids,
+        DislEnv? env,
+        string source)
+    {
         var runner = new ActionRunner(specification, self.Diagram, ids, DislContexts.Hook);
         var ran = new HashSet<(string Hook, DislElement Element)>();
         var budget = MaxDepth(specification);
-        Changed(self, old, attributes);
+        Ran(self, old, kind, attributes);
         return runner.Transaction;
 
-        bool Changed(DislElement element, DislElement before, IReadOnlyCollection<string> changed)
+        bool Ran(DislElement element, DislElement? before, string happened, IReadOnlyCollection<string> changed)
         {
-            foreach ((JsonElement hook, string pointer) in Hooks(specification, element, changed))
+            foreach ((JsonElement hook, string pointer) in Hooks(specification, element, happened, changed))
             {
                 var id = DislJson.String(hook, "id") ?? pointer;
                 if (!ran.Add((id, element))) continue;
@@ -60,7 +93,7 @@ public static class HookRunner
                 var variables = OperationInterpreter.Variables(DislContexts.Hook, element.Diagram, env);
                 variables["self"] = element;
                 variables["old"] = before;
-                variables["event"] = Event(element, before, changed, source);
+                variables["event"] = Event(element, before, happened, changed, source);
                 if (hook.TryGetProperty("when", out var when) && !DislEvaluation.Holds(specification, when, DislJson.Pointer(pointer, "when"), DislContexts.Hook, variables)) continue;
 
                 var first = runner.Changes.Count;
@@ -72,7 +105,7 @@ public static class HookRunner
                 foreach (var set in runner.Changes.Skip(first).OfType<DislChange.Set>().ToList())
                 {
                     if (element.Diagram.Elements.FirstOrDefault(candidate => candidate.Id == set.ElementId) is { } target
-                        && !Changed(target, snapshots.GetValueOrDefault(target) ?? target.Snapshot(), [.. set.Attributes.Keys]))
+                        && !Ran(target, snapshots.GetValueOrDefault(target) ?? target.Snapshot(), "change", [.. set.Attributes.Keys]))
                     {
                         return false;
                     }
@@ -96,7 +129,7 @@ public static class HookRunner
         element.Store(attribute, value);
     }
 
-    private static IEnumerable<(JsonElement Hook, string Pointer)> Hooks(DislSpecification specification, DislElement element, IReadOnlyCollection<string> changed)
+    private static IEnumerable<(JsonElement Hook, string Pointer)> Hooks(DislSpecification specification, DislElement element, string kind, IReadOnlyCollection<string> changed)
     {
         if (!specification.Root.TryGetProperty("behavior", out var behavior) || !behavior.TryGetProperty("hooks", out var hooks) || hooks.ValueKind != JsonValueKind.Array)
         {
@@ -108,26 +141,26 @@ public static class HookRunner
         {
             var pointer = DislJson.Pointer("/behavior/hooks", index);
             var position = index++;
-            if (!DislJson.Strings(hook, "on").Contains("change")) continue;
+            if (!DislJson.Strings(hook, "on").Contains(kind)) continue;
             if ((DislJson.String(hook, "phase") ?? "after") != "after") continue;
             var types = DislJson.Strings(hook, "for");
             if (types.Count > 0 && !types.Any(element.IsA)) continue;
             var watched = DislJson.Strings(hook, "attribute");
-            if (watched.Count > 0 && !watched.Any(changed.Contains)) continue;
+            if (kind == "change" && watched.Count > 0 && !watched.Any(changed.Contains)) continue;
             var order = hook.TryGetProperty("order", out var declaredOrder) && declaredOrder.TryGetInt64(out var value) ? value : 0;
             declared.Add((hook, pointer, order, position));
         }
         return declared.OrderBy(hook => hook.Order).ThenBy(hook => hook.Index).Select(hook => (hook.Hook, hook.Pointer));
     }
 
-    private static Cel.CelMap Event(DislElement element, DislElement before, IReadOnlyCollection<string> changed, string source)
+    private static Cel.CelMap Event(DislElement element, DislElement? before, string kind, IReadOnlyCollection<string> changed, string source)
     {
         var attribute = changed.FirstOrDefault();
         return new Cel.CelMap
         {
-            ["kind"] = "change",
+            ["kind"] = kind,
             ["attribute"] = attribute,
-            ["oldValue"] = attribute is not null && before.Type.Attributes.ContainsKey(attribute) ? before.ValueOf(attribute) : null,
+            ["oldValue"] = attribute is not null && before is not null && before.Type.Attributes.ContainsKey(attribute) ? before.ValueOf(attribute) : null,
             ["newValue"] = attribute is not null && element.Type.Attributes.ContainsKey(attribute) ? element.ValueOf(attribute) : null,
             ["source"] = source,
         };
