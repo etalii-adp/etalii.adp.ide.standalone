@@ -222,27 +222,18 @@ public class CausalLoopContextActionsTests : IDisposable
     // ---- unavailable with a reason, never silently absent -----------------------------------
 
     /// <summary>
-    /// Requirement 5.4. A missing entry tells a user nothing; a greyed one with a sentence tells
-    /// them what to change.
+    /// Requirement 5.4 holds for what a selection offers (the tests below); an id that names no element
+    /// is no selection, so it is offered nothing (causal-loop-disl-fbl Requirement 3.1).
     /// </summary>
     [Fact]
-    public async Task AGestureThatCannotApply_IsOfferedUnavailableWithItsReason()
+    public async Task AnIdThatNamesNoElement_IsOfferedNothing()
     {
-        // Act.
+        // Act. The menus are derived from the definition, which targets an element; an id naming
+        // none has no menu, as an unknown id never had.
         var actions = await Discover("variable:nowhere");
 
         // Assert.
-        Assert.NotEmpty(actions);
-        Assert.All(actions, AssertAction);
-        return;
-
-        static void AssertAction(ContextActionDefinition action)
-        {
-            ArgumentNullException.ThrowIfNull(action);
-
-            Assert.False(action.Available);
-            Assert.Equal(CausalLoopWriter.NoSuchVariable, action.UnavailableReason);
-        }
+        Assert.Empty(actions);
     }
 
     [Fact]

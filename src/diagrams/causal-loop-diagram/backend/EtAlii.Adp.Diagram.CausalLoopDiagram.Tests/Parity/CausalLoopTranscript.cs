@@ -51,7 +51,7 @@ internal static class CausalLoopTranscript
     private const string FileName = "causal-loop.transcript.json";
 
     private const string TestProject = "EtAlii.Adp.Diagram.CausalLoopDiagram.Tests";
-    private const string Unknown = "parity:unknown";
+    internal const string Unknown = "parity:unknown";
     private const string Nobody = "nobody";
 
     private static readonly TypeRegistry _payloadTypes = TypeRegistry.FromFiles(Wire.CausalLoopReflection.Descriptor);
@@ -62,12 +62,12 @@ internal static class CausalLoopTranscript
     /// <summary>The checked-in transcript.</summary>
     public static string CheckedInPath => Path.Combine(ModuleFolder, "backend", TestProject, "Parity", FileName);
 
-    private static string SourceFolder => Path.GetFullPath(Path.Combine(ModuleFolder, "..", ".."));
+    internal static string SourceFolder => Path.GetFullPath(Path.Combine(ModuleFolder, "..", ".."));
 
     private static string Placement => GestureIds.Placement(240, 160);
 
     /// <summary>The corpus, as paths relative to <c>src/</c> with forward slashes, in the order they are recorded.</summary>
-    private static IReadOnlyList<string> Corpus()
+    internal static IReadOnlyList<string> Corpus()
     {
         var fixtures = Directory.GetFiles(Path.Combine(ModuleFolder, "backend", TestProject, "Fixtures"), "*.cld");
         var examples = Directory.GetDirectories(Path.Combine(ModuleFolder, "examples")).SelectMany(folder => Directory.GetFiles(folder, "*.cld"));

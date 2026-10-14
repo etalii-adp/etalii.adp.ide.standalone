@@ -2,7 +2,8 @@ using EtAlii.Adp.Documents;
 namespace EtAlii.Adp.Diagram.CausalLoopDiagram;
 
 /// <summary>
-/// The causal loop Toolbox: one entry per thing that can be added.
+/// The causal loop Toolbox: one entry per thing that can be added, derived from the DISL definition's
+/// toolbox with the wire ids of its <c>x-cld</c> block (causal-loop-disl-fbl Requirement 3.1).
 /// </summary>
 /// <remarks>
 /// Each entry names the context action it drops into, so a drop inherits that action's command,
@@ -18,25 +19,5 @@ public sealed class CausalLoopToolboxProvider : IDiagramToolboxProvider
     public DiagramOrigin Origin { get; } = Diagram.CausalLoop.Origin;
 
     /// <inheritdoc />
-    public IReadOnlyList<ToolboxItemDefinition> Items { get; } =
-    [
-        new(
-            "causal-loop.toolbox.variable",
-            "Variable",
-            "mdi-circle-outline",
-            "Drop on the canvas to declare a quantity the system has.",
-            CausalLoopContextActionProvider.AddVariableActionId),
-        new(
-            "causal-loop.toolbox.link",
-            "Causal link",
-            "mdi-arrow-right-thin",
-            "Drop on a variable to state that it affects another. It arrives stating the same direction; change it to the opposite from the link's own menu.",
-            CausalLoopContextActionProvider.AddLinkActionId),
-        new(
-            "causal-loop.toolbox.loop",
-            "Feedback loop",
-            "mdi-sync",
-            "Drop on a variable to claim the loop that runs through it. Whether it reinforces or balances is counted from the links rather than taken from the label.",
-            CausalLoopContextActionProvider.AddLoopActionId),
-    ];
+    public IReadOnlyList<ToolboxItemDefinition> Items => CausalLoopDefinition.Toolbox;
 }
