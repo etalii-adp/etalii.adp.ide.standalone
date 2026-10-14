@@ -1,5 +1,6 @@
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
+using EtAlii.Adp.Layout;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -101,7 +102,7 @@ public class ArrangeCausalLoopCommandTests : IDisposable
         // Assert.
         var stored = RegistrationLayout.Read(_adpPath);
         Assert.NotEmpty(expected);
-        foreach ((string id, CausalLoopBox box) in expected)
+        foreach ((string id, Rect box) in expected)
         {
             var position = stored[$"variable:{id}"];
             Assert.Equal(box.CenterX, position.X, 3);

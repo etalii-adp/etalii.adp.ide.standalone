@@ -1,3 +1,4 @@
+using EtAlii.Adp.Layout;
 using System.Diagnostics;
 using System.Globalization;
 using System.Text;
@@ -139,7 +140,7 @@ public class SelfOrganizingLayoutTests
     private static string Serialize(SelfOrganizingResult result)
     {
         var text = new StringBuilder();
-        foreach ((string id, CausalLoopBox box) in result.Boxes.OrderBy(entry => entry.Key, StringComparer.Ordinal))
+        foreach ((string id, Rect box) in result.Boxes.OrderBy(entry => entry.Key, StringComparer.Ordinal))
         {
             text.Append(CultureInfo.InvariantCulture, $"{id} {box.X:R} {box.Y:R} {box.Width:R} {box.Height:R}\n");
         }
@@ -309,7 +310,7 @@ public class SelfOrganizingLayoutTests
             $"A linked neighbour ({neighbour:F0}) should end up nearer than the variable opposite it ({opposite:F0}).");
     }
 
-    private static double Distance(CausalLoopBox first, CausalLoopBox second)
+    private static double Distance(Rect first, Rect second)
     {
         var dx = first.CenterX - second.CenterX;
         var dy = first.CenterY - second.CenterY;
@@ -341,7 +342,7 @@ public class SelfOrganizingLayoutTests
         var boxes = result.Boxes.Values.ToArray();
         Assert.Equal(count, boxes.Length);
 
-        foreach ((CausalLoopBox first, CausalLoopBox second) in Pairs(boxes))
+        foreach ((Rect first, Rect second) in Pairs(boxes))
         {
             Assert.False(
                 first.Overlaps(second),
@@ -390,7 +391,7 @@ public class SelfOrganizingLayoutTests
 
         // And the guard that actually decides: no two boxes share any area.
         Assert.NotEmpty(boxes);
-        foreach ((CausalLoopBox first, CausalLoopBox second) in Pairs(boxes))
+        foreach ((Rect first, Rect second) in Pairs(boxes))
         {
             Assert.False(first.Overlaps(second), $"A near-square arrangement still overlaps: {first} and {second}.");
         }
@@ -451,7 +452,7 @@ public class SelfOrganizingLayoutTests
 
         var boxes = result.Boxes.Values.ToArray();
         Assert.Equal(16, boxes.Length);
-        foreach ((CausalLoopBox first, CausalLoopBox second) in Pairs(boxes))
+        foreach ((Rect first, Rect second) in Pairs(boxes))
         {
             Assert.False(first.Overlaps(second), $"Tall boxes overlap: {first} and {second}.");
         }
@@ -544,7 +545,7 @@ public class SelfOrganizingLayoutTests
         Assert.Equal(first, second);
     }
 
-    private static IEnumerable<(CausalLoopBox First, CausalLoopBox Second)> Pairs(CausalLoopBox[] boxes)
+    private static IEnumerable<(Rect First, Rect Second)> Pairs(Rect[] boxes)
     {
         for (var first = 0; first < boxes.Length; first++)
         {

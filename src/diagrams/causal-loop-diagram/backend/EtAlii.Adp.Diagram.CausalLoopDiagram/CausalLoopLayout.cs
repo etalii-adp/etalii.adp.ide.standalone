@@ -1,3 +1,5 @@
+using EtAlii.Adp.Layout;
+
 namespace EtAlii.Adp.Diagram.CausalLoopDiagram;
 
 /// <summary>
@@ -35,7 +37,7 @@ public static class CausalLoopLayout
     /// it. That is Requirement 7.1: an absent position must be distinguishable from a position
     /// of <c>(0, 0)</c>, and the only way to keep that true is to never invent one here.
     /// </remarks>
-    public static IReadOnlyDictionary<string, CausalLoopBox> Compute(
+    public static IReadOnlyDictionary<string, Rect> Compute(
         CausalLoopModel model, CausalLoopMetrics? metrics = null)
     {
         ArgumentNullException.ThrowIfNull(model);
@@ -45,7 +47,7 @@ public static class CausalLoopLayout
         // placing both would ask for two boxes under one key.
         model = model with { Variables = [.. model.Variables.DistinctBy(variable => variable.Id, StringComparer.Ordinal)] };
 
-        var boxes = new Dictionary<string, CausalLoopBox>(model.Variables.Count, StringComparer.Ordinal);
+        var boxes = new Dictionary<string, Rect>(model.Variables.Count, StringComparer.Ordinal);
         if (model.Variables.Count == 0)
         {
             return boxes;
@@ -63,7 +65,7 @@ public static class CausalLoopLayout
         if (model.Variables.Count == 1)
         {
             var only = model.Variables[0];
-            boxes[only.Id] = new CausalLoopBox(0, 0, widths[only.Id], height);
+            boxes[only.Id] = new Rect(0, 0, widths[only.Id], height);
             return boxes;
         }
 
@@ -89,7 +91,7 @@ public static class CausalLoopLayout
             var centerX = radius * Math.Cos(angle);
             var centerY = radius * Math.Sin(angle);
 
-            boxes[variable.Id] = new CausalLoopBox(
+            boxes[variable.Id] = new Rect(
                 Settled(centerX - (widths[variable.Id] / 2)),
                 Settled(centerY - (height / 2)),
                 widths[variable.Id],
