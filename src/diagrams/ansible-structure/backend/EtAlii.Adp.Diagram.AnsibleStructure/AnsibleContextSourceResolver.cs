@@ -56,7 +56,7 @@ public sealed class AnsibleContextSourceResolver(DiagramFileRouter router, IAnsi
         }
 
         // An edge is selectable too, and it answers as its declaring side (Requirement 8.3).
-        return snapshot.Graph.Edges.FirstOrDefault(edge => string.Equals(edge.Id, elementId, StringComparison.Ordinal)) is { } edge
+        return snapshot.Graph.Edges.FirstOrDefault(candidate => string.Equals(candidate.Id, elementId, StringComparison.Ordinal)) is { } edge
             ? (Segments(edge.Directive.DeclaredIn), $"{DirectiveLabel(edge)} {edge.Directive.Target}")
             : null;
     }

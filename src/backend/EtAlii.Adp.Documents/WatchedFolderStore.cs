@@ -58,7 +58,7 @@ public abstract class WatchedFolderStore<TSnapshot>(TimeSpan settleDelay) : IWat
         return Watched(folder).Snapshot;
     }
 
-    /// <inheritdoc />
+    /// <summary>The snapshot of <paramref name="folder"/> if one is loaded, without loading one.</summary>
     public TSnapshot? Get(string folder)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(folder);
