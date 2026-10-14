@@ -16,7 +16,7 @@ namespace EtAlii.Adp.Documents;
 /// </para>
 /// </remarks>
 /// <typeparam name="TSnapshot">What one read of a folder makes; immutable, replaced wholesale.</typeparam>
-public interface IWatchedFolderStore<TSnapshot>
+public interface IWatchedFolderStore<out TSnapshot>
     where TSnapshot : class
 {
     /// <summary>The snapshot of <paramref name="folder"/>, reading and watching it if this is the first ask.</summary>
