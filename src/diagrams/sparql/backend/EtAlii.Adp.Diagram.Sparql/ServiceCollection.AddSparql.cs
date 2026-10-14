@@ -23,7 +23,7 @@ public static class ServiceCollectionAddSparqlExtension
     public static readonly DiagramOrigin SparqlOrigin = new("w3c", "sparql");
 
     /// <summary>The query a new SPARQL diagram starts as.</summary>
-    internal const string EmptyQuery = "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\r\n"
+    private const string EmptyQuery = "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\r\n"
         + "\r\n"
         + "SELECT ?subject ?label\r\n"
         + "WHERE {\r\n"
