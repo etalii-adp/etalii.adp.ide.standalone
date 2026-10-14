@@ -1,5 +1,6 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -46,10 +47,6 @@ public static class ServiceCollectionAddC4Extension
         services.AddSingleton<ICommandHandler<RemoveC4ElementCommand>, RemoveC4ElementCommandHandler>();
         services.AddSingleton<ICommandHandler<RemoveC4ViewCommand>, RemoveC4ViewCommandHandler>();
 
-        // Makes a C4 element selectable, once for the whole family: which C4 type a file
-        // is does not change what an element is (Requirement 13.2).
-        services.AddSingleton<IContextSourceResolver, C4ContextSourceResolver>();
-
         // What can be done to an element or a relationship, offered through the one path that
         // reaches the ribbon, the menu and the keyboard (Requirement 13.2).
         services.AddSingleton<IContextActionProvider, C4ContextActionProvider>();
@@ -66,6 +63,14 @@ public static class ServiceCollectionAddC4Extension
         {
             var origin = new DiagramOrigin("c4", type);
             services.AddSingleton<IDiagramDocumentFactory>(_ => new C4DocumentFactory(origin, viewKind));
+
+            // Makes a C4 element selectable, one per type, because the shared base answers for the
+            // files of one type; what an element is does not depend on which (Requirement 13.2).
+            services.AddSingleton<IContextSourceResolver>(provider => new C4ContextSourceResolver(
+                origin,
+                provider.GetRequiredService<DiagramFileRouter>(),
+                provider.GetRequiredService<IC4DocumentStore>(),
+                provider.GetRequiredService<C4ElementMapper>()));
 
             // The palette this view offers: exactly the kinds it permits, drawn from the
             // same rule the validator uses so the two cannot disagree (Requirement 12.2).

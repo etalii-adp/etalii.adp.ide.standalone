@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 using Serilog;
 
@@ -11,136 +10,66 @@ namespace EtAlii.Adp.Diagram.C4;
 /// store's change event (c4-diagrams Requirements 1.2, 1.5).
 /// </summary>
 /// <remarks>
+/// <para>
 /// A change of any shape - an edit here, an edit through another view, an external save, a
 /// viewport report - is answered the same way: the view is rendered again and diffed against what
-/// this connection was last given. Both the diff and the reaction to the store's event are the
-/// shared ones (backend-centralization R4 and R5).
+/// this connection was last given. Following the store, the diff and the dispatch of a drag are the
+/// shared session's (code-structure FR-031); what is C4's own is which view it shows.
+/// </para>
+/// <para>
+/// <b>A drag places an element; it never re-parents one.</b> A C4 element's parent is what the
+/// document declares - a container belongs to the software system it is written inside - so
+/// dropping a container onto another system would be a claim about the architecture, not an
+/// arrangement. The position is recorded in the layout sidecar beside the document, because a
+/// position is view state and the <c>.dsl</c> is another ecosystem's file (Requirements 3.5, 8.3).
+/// </para>
 /// </remarks>
-public sealed class C4Session : IDiagramSession
+public sealed class C4Session : DocumentDiagramSession<C4Document, C4Workspace>
 {
     private static readonly ILogger _logger = Log.ForContext<C4Session>();
 
-    private readonly string _bodyPath;
     private readonly string? _viewKey;
     private readonly IC4DocumentStore _documents;
     private readonly C4ElementMapper _mapper;
 
-    /// <summary>The project's history, so a drag is one undo away. Null makes the diagram read-only.</summary>
-    private readonly IHistoryStack? _history;
-
-    private DiagramViewport _viewport = DiagramViewport.Unbounded;
-
-    /// <summary>
-    /// What this connection was last given, and the one way it is changed. The removals a change
-    /// sends are measured against it, because by then the document no longer contains a deleted
-    /// element to compare with.
-    /// </summary>
-    private readonly DiagramDocumentChangeHandler _changes;
-
+    /// <param name="bodyPath">The document this session shows.</param>
+    /// <param name="viewKey">The view its <c>.adp</c> named, or null for the document's first.</param>
+    /// <param name="documents">The store every C4 session shares.</param>
+    /// <param name="mapper">What the view looks like on the canvas.</param>
+    /// <param name="history">The project's history, so a drag is one undo away. Null makes the diagram read-only.</param>
     public C4Session(
-        ShortGuid watchId,
         string bodyPath,
         string? viewKey,
         IC4DocumentStore documents,
         C4ElementMapper mapper,
         IHistoryStack? history = null)
+        : base(bodyPath, documents, history)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(bodyPath);
-        ArgumentNullException.ThrowIfNull(documents);
         ArgumentNullException.ThrowIfNull(mapper);
 
-        // Nothing here is per watch any longer: the watch id was only ever named in the push's
-        // log line, and the push is the shared handler's now.
-        _ = watchId;
-        _bodyPath = bodyPath;
         _viewKey = viewKey;
         _documents = documents;
         _mapper = mapper;
-        _history = history;
-        _changes = new DiagramDocumentChangeHandler(
-            bodyPath,
-            Visible,
-            deltas => Changed?.Invoke(this, new DiagramDeltasEventArgs(deltas)));
-        _documents.Changed += OnDocumentChanged;
     }
 
-    public event EventHandler<DiagramDeltasEventArgs>? Changed;
-
-    public IReadOnlyList<DiagramDelta> Baseline()
-    {
-        var elements = _changes.Deliver();
-        return elements.Count == 0 ? [] : [new DiagramAddDelta(elements)];
-    }
-
-    public IReadOnlyList<DiagramDelta> UpdateView(DiagramViewport viewport)
-    {
-        _viewport = viewport;
-        return _changes.Refresh();
-    }
-
-    /// <summary>
-    /// The drop half of a drag. On a C4 diagram a drag places an element on the canvas rather
-    /// than re-parenting it: containment is what the model says, and dropping a container onto
-    /// another system would be a claim about the architecture, not an arrangement. So the
-    /// position is recorded and the containment is left alone (Requirement 8.3).
-    /// </summary>
-    /// <remarks>
-    /// The core contract's <c>MoveElement</c> carries a parent and an index because a tree
-    /// needs them. Where the canvas sends a position instead, it packs it into
-    /// <paramref name="newParentId"/> as "x,y" - the one place the generic call shape and this
-    /// type's meaning have to be reconciled.
-    /// </remarks>
-    /// <summary>
-    /// Refused, always. A C4 element's parent is what the document declares - a container
-    /// belongs to the software system it is written inside - so a drag on the canvas has no
-    /// business changing it. Arranging is <see cref="MoveElementToAsync"/>.
-    /// </summary>
-    public Task<string> MoveElementAsync(string elementId, string newParentId, int index, CancellationToken cancellationToken)
-    {
-        _ = elementId;
-        _ = newParentId;
-        _ = index;
-        cancellationToken.ThrowIfCancellationRequested();
-
-        return Task.FromResult("Dragging changes where an element is drawn, not what contains it.");
-    }
-
-    /// <summary>
-    /// Records where the user put an element, in the layout sidecar beside the document - a
-    /// position is view state and the `.dsl` is another ecosystem's file (Requirement 3.5).
-    /// </summary>
-    public async Task<string> MoveElementToAsync(string elementId, double x, double y, CancellationToken cancellationToken)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-
-        var view = View();
-        if (view is null)
-        {
-            return "This diagram has no view to arrange.";
-        }
-
-        if (_history is null)
-        {
-            return "This diagram is read-only.";
-        }
-
-        var result = await _history.ExecuteAsync(
-            new MoveC4ElementCommand(_bodyPath, view.Key, elementId, x, y),
-            cancellationToken);
-
-        return result.IsSuccess ? "" : result.Error;
-    }
-
-    public ValueTask DisposeAsync()
-    {
-        _documents.Changed -= OnDocumentChanged;
-        return ValueTask.CompletedTask;
-    }
+    /// <inheritdoc />
+    protected override string ParentRefusal => "Dragging changes where an element is drawn, not what contains it.";
 
     /// <summary>The view this session shows: the one its <c>.adp</c> named, or the document's first.</summary>
-    public C4View? View()
+    public C4View? View() => ViewOf(_documents.GetOrLoad(BodyPath).Model);
+
+    /// <inheritdoc />
+    protected override IReadOnlyList<DiagramElement> Render(C4Workspace model, DiagramViewport viewport) =>
+        ViewOf(model) is { } view ? _mapper.Visible(model, view, viewport, BodyPath) : [];
+
+    /// <summary>A drop records where the user put the element in the view this session shows.</summary>
+    protected override DiagramPlacement PlacementOf(C4Workspace model, string elementId, double x, double y) =>
+        ViewOf(model) is { } view
+            ? DiagramPlacement.By(new MoveC4ElementCommand(BodyPath, view.Key, elementId, x, y))
+            : DiagramPlacement.Refused("This diagram has no view to arrange.");
+
+    private C4View? ViewOf(C4Workspace workspace)
     {
-        var workspace = _documents.GetOrLoad(_bodyPath).Model;
         if (workspace.Views.Count == 0)
         {
             return null;
@@ -160,19 +89,9 @@ public sealed class C4Session : IDiagramSession
 
         _logger.Warning(
             "{BodyPath} declares no view '{ViewKey}'; it declares {Available}",
-            _bodyPath,
+            BodyPath,
             _viewKey,
             workspace.Views.Select(view => view.Key));
         return null;
     }
-
-    private IReadOnlyList<DiagramElement> Visible()
-    {
-        var workspace = _documents.GetOrLoad(_bodyPath).Model;
-        var view = View();
-        return view is null ? [] : _mapper.Visible(workspace, view, _viewport, _bodyPath);
-    }
-
-    private void OnDocumentChanged(object? sender, DocumentChangedEventArgs args) =>
-        _changes.OnDocumentChanged(args.Path);
 }
