@@ -46,6 +46,59 @@ public static class Layering
     }
 
     /// <summary>
+    /// The edges that close no cycle, found by a depth-first walk in the order of <paramref name="nodes" />:
+    /// an edge into a node still on the walk is left out, every other edge is kept.
+    /// </summary>
+    /// <param name="nodes">The nodes, in the order the walk starts from them.</param>
+    /// <param name="outgoing">Each node's targets, in the order they are walked; every node has an entry.</param>
+    /// <returns>Each node's kept targets, keyed by the node with ordinal comparison.</returns>
+    public static Dictionary<string, List<string>> AcyclicEdges(IReadOnlyList<string> nodes, IReadOnlyDictionary<string, List<string>> outgoing)
+    {
+        var forward = nodes.ToDictionary(node => node, _ => new List<string>(), StringComparer.Ordinal);
+        var state = new Dictionary<string, int>(StringComparer.Ordinal);
+
+        foreach (var start in nodes)
+        {
+            if (state.ContainsKey(start))
+            {
+                continue;
+            }
+
+            // An explicit stack: a long chain must not overflow the call stack.
+            var stack = new Stack<(string Id, int Next)>();
+            stack.Push((start, 0));
+            state[start] = 1;
+            while (stack.Count > 0)
+            {
+                (string id, int next) = stack.Pop();
+                var targets = outgoing[id];
+                if (next >= targets.Count)
+                {
+                    state[id] = 2;
+                    continue;
+                }
+
+                stack.Push((id, next + 1));
+                var target = targets[next];
+                if (!state.TryGetValue(target, out var seen))
+                {
+                    forward[id].Add(target);
+                    state[target] = 1;
+                    stack.Push((target, 0));
+                }
+                else if (seen == 2)
+                {
+                    forward[id].Add(target);
+                }
+
+                // seen == 1 is a node still on the walk: this edge closes a cycle and is left out.
+            }
+        }
+
+        return forward;
+    }
+
+    /// <summary>
     /// A depth-first walk that remembers nothing, so a node reached along two paths is measured
     /// twice, each time against the stack of the path that reached it.
     /// </summary>
