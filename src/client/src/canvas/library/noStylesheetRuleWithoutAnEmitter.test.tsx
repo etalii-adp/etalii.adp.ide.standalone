@@ -355,6 +355,10 @@ const DRAWN_BUT_UNRULED: readonly Listed[] = [
     ],
   },
   {
+    reason: "a state the library marks by a shape of its own rather than a rule paints: a disagreeing causal loop, whose caption the library underlines wavy (LabelDeclaration.underline), because Chromium draws a stylesheet's wavy underline straight on SVG text; the class is what the module's tests find the loop by",
+    classes: ["causal-loop-disagrees"],
+  },
+  {
     reason: "the mind map's corner glyphs, left as they render by the user's ruling (2026-09-26): the muted, smaller rule written for them never applied, and was removed rather than made to",
     classes: ["mindmap-node-indicators"],
   },

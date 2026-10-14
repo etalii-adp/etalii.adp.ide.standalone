@@ -200,6 +200,22 @@
 }
 
 /*
+ * The wavy line under a declared label (`LabelDeclaration.underline`), drawn as a filled ribbon
+ * because Chromium draws `text-decoration: underline wavy` straight on SVG text. It carries the
+ * label's own classes, so whatever paints the label's fill paints it; the fallback below is at
+ * zero specificity for that reason, and applies only where nothing else gives it a colour. It takes
+ * no press, as the label it marks does not.
+ */
+.library-label-underline {
+  stroke: none;
+  pointer-events: none;
+}
+
+:where(.library-label-underline) {
+  fill: var(--color-text, #1c2333);
+}
+
+/*
  * Lists inside an element. A heading is a button and says so with its cursor; a row is text. The
  * hit rectangles are transparent and exist so the whole line takes the press, not only its glyphs.
  */
