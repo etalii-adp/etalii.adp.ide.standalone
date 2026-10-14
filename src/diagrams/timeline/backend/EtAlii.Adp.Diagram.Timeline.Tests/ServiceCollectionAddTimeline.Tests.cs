@@ -91,7 +91,7 @@ public class ServiceCollectionAddTimelineTests
         var text = EmptyDocument(provider, "plan");
 
         // Assert.
-        var model = TimelineParser.Parse(LineDocument.Parse(text));
+        var model = TimelineReading.Of(text);
         Assert.Empty(model.Elements);
         Assert.Empty(model.Connections);
         Assert.Equal("timeline: 1\r\nelements: []\r\n", text);
@@ -107,13 +107,13 @@ public class ServiceCollectionAddTimelineTests
         // timeline.
         using var provider = Build();
         var document = LineDocument.Parse(EmptyDocument(provider, "plan"));
-        var model = TimelineParser.Parse(document);
+        var model = TimelineReading.Of(document.Text);
 
         // Act.
         TimelineWriter.InsertElement(document, model, "first001", "First", "2026-01-01", "2026-01-31", 0);
 
         // Assert.
-        var reparsed = TimelineParser.Parse(LineDocument.Parse(document.Text));
+        var reparsed = TimelineReading.Of(document.Text);
         var element = Assert.Single(reparsed.Elements);
         Assert.Equal("First", element.Label);
         Assert.DoesNotContain("[]", document.Text, StringComparison.Ordinal);

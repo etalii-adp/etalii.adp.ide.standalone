@@ -46,7 +46,7 @@ public sealed class SetTimelinePlacementCommandHandler(ITimelineDocumentStore do
         };
 
         // Each edit is a one-for-one line replace within the element's range, so the ranges the
-        // parser recorded stay valid between them and no re-parse is needed mid-command. SetEnd
+        // reading recorded stay valid between them and no re-parse is needed mid-command. SetEnd
         // is skipped for a moment: a placement never gives an element an end it did not have -
         // that is the context menu's action, not a drag's side effect (Requirement 7.5).
         TimelineWriter.SetBegin(body, element, command.Begin);

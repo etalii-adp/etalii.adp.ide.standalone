@@ -1,6 +1,6 @@
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Specification.Fbl;
 using Serilog;
-using YamlDotNet.Core;
 
 namespace EtAlii.Adp.Diagram.Timeline;
 
@@ -16,7 +16,7 @@ namespace EtAlii.Adp.Diagram.Timeline;
 /// </para>
 /// <para>
 /// <b>A file that is not YAML is an ordinary state for a file somebody is editing</b>, so it is held
-/// as unreadable with the parser's sentence and the line it stopped at, rather than thrown out of
+/// as unreadable with the YAML reader's sentence and the line it stopped at, rather than thrown out of
 /// the store, and nothing is written to it until it parses (Requirement 2.4).
 /// </para>
 /// </remarks>
@@ -31,32 +31,43 @@ public sealed class TimelineDocumentStore : LifecycleDocumentStore<LineDocument,
     protected override string TextOf(LineDocument body) => body.Text;
 
     /// <inheritdoc />
-    /// <remarks>Empty for a body that does not parse: what it says is unknown, and <see cref="UnreadableOf"/> says why.</remarks>
-    protected override TimelineModel Rebuild(LineDocument body)
-    {
-        try
-        {
-            return TimelineParser.Parse(body);
-        }
-        catch (YamlException)
-        {
-            return TimelineModel.Empty;
-        }
-    }
+    /// <remarks>
+    /// Empty for a body that is not YAML (<see cref="TimelineYamlSyntax"/>) or that the binding cannot
+    /// read: what it says is unknown, and <see cref="UnreadableOf"/> says why.
+    /// </remarks>
+    protected override TimelineModel Rebuild(LineDocument body) =>
+        TimelineYamlSyntax.Check(body.Text) is null ? TimelineReading.Of(body.Text) : TimelineModel.Empty;
 
     /// <inheritdoc />
     protected override string UnreadableOf(LineDocument body)
     {
-        try
+        if (Refusal(body.Text) is not { } refusal)
         {
-            _ = TimelineParser.Parse(body);
             return "";
         }
-        catch (YamlException exception)
+
+        _logger.Debug("A timeline does not parse at line {Line}: {Reason}", refusal.Line, refusal.Message);
+        return $"it does not parse at line {refusal.Line}. {refusal.Message}";
+    }
+
+    /// <summary>
+    /// Why <paramref name="text"/> cannot be read, and at which 1-based line: YamlDotNet's refusal first,
+    /// else the library's unreadable body; null for a body that reads.
+    /// </summary>
+    private static (string Message, int Line)? Refusal(string text)
+    {
+        if (TimelineYamlSyntax.Check(text) is { } refusal)
         {
-            var line = Math.Max((int)exception.Start.Line, 1);
-            _logger.Debug(exception, "A timeline does not parse at line {Line}", line);
-            return $"it does not parse at line {line}. {exception.Message}";
+            return refusal;
         }
+
+        var model = TimelineBody.Parse(text).Model;
+        if (!model.Unreadable)
+        {
+            return null;
+        }
+
+        var unreadable = model.Findings.FirstOrDefault(finding => finding.Code == FindingCodes.Unparseable);
+        return (unreadable?.Message ?? "the binding cannot read it.", Math.Max(unreadable?.Location?.Line ?? 1, 1));
     }
 }

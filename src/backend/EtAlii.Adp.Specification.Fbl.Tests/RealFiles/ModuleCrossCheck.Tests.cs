@@ -4,16 +4,15 @@ using EtAlii.Adp.Diagram.C4;
 using EtAlii.Adp.Diagram.CausalLoopDiagram;
 using EtAlii.Adp.Diagram.Mindmap;
 using EtAlii.Adp.Diagram.Timeline;
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.Specification.Fbl.History;
 using Xunit;
-using YamlDotNet.Core;
 
 namespace EtAlii.Adp.Specification.Fbl.Tests.RealFiles;
 
 /// <summary>
 /// Requirement 11.6: for the four bindings whose module has a public reader, the ids per type the
-/// binding reads from each real file equal the ids the module's own reader reads, mapped from the
+/// binding reads from each real file equal the ids the module's own reader reads (for the timeline and
+/// the causal loop diagram, the module's own binding), mapped from the
 /// module's kinds to the binding's types by <see cref="ModuleIds"/>. Every difference is a listed
 /// divergence. Only public API of the modules is used, and nothing in them is changed.
 /// </summary>
@@ -123,21 +122,17 @@ internal static partial class ModuleIds
         switch (key)
         {
             case "timeline":
-                TimelineModel timeline;
-                try
+                // The module has no parser of its own since timeline-disl-fbl task 5: its side is what its
+                // body reads through the module's own binding, after its stand-in has asked whether the
+                // body is YAML at all. A body YamlDotNet refuses, such as one with a key written twice, is
+                // one the module reads nothing of: it reports timeline.unparseable. The vendored example
+                // may still read it, which is then a listed divergence. An entry is named by the id it is
+                // written with, the module binding's storedId, as the module finds it.
+                if (TimelineYamlSyntax.Check(text) is not null) break;
+                foreach (var element in TimelineBody.Parse(text).Model.Elements)
                 {
-                    timeline = TimelineParser.Parse(LineDocument.Parse(text));
+                    if (element.Attributes.GetValueOrDefault("storedId") is string { Length: > 0 } stored) Add(ids, element.Type, stored);
                 }
-                catch (YamlException)
-                {
-                    // A body YamlDotNet refuses, such as one with a key written twice, is one the
-                    // module reads nothing of: it reports timeline.unparseable. The binding may
-                    // still read it, which is then a listed divergence.
-                    break;
-                }
-
-                foreach (var element in timeline.Elements.Where(e => e.Id.Length > 0)) Add(ids, element.IsPeriod ? "Period" : "Moment", element.Id);
-                foreach (var connection in timeline.Connections.Where(c => c.Id.Length > 0)) Add(ids, "Connection", connection.Id);
                 break;
             case "causal-loop":
                 // The module has no parser of its own since causal-loop-disl-fbl task 7: its side is what its

@@ -42,6 +42,7 @@ here and these should be reduced to the edge cases they encode.
 | `no-header.tml` / `other-version.tml` | No `timeline:` marker, and `timeline: 2`: the tool reads both and reports nothing (finding B9). |
 | `dotnet-times.tml` | Times in forms .NET reads and ISO 8601 does not (`2026/07/01`, `July 5, 2026`). The edit script moves every element whose id starts with `move`, one row down and then one day on, so what a move writes over such a time is recorded (finding B12). |
 | `rows.tml` | Rows YAML reads as numbers and .NET's integer parse does not (`1.0`, `0x10`, `0o17`, `1e1`), and ones it does (`"3"`, `+4`) (finding B13). |
+| `written-text.tml` | Values a YAML reader types otherwise: labels `yes`, `1.0`, `null` and `~`, an id `007`, and a relation from `7`, which names nothing because no id is written `7`. The timeline reads every one as the text it was written with (timeline-disl-fbl, finding B1). It is the one file of this table that raises a finding: the relation from `7` dangles on purpose, to show that it is not read as the element written `007`. |
 
 ## Line endings are load-bearing here
 
@@ -55,7 +56,7 @@ in a way that makes no sense, check that the attribute is still there before sus
 
 ## Documents that exist to be judged: `findings/`
 
-The files above are all clean; nothing in them raises a finding, and every one has an element. `findings/` holds the opposite: documents written to raise every finding the rules know, and the documents without an element, so the parity transcript (`Parity/timeline.transcript.json`) pins each message, its location and the order the findings arrive in. They sit in a folder of their own because the round-trip tests above enumerate `Fixtures/*.tml` and expect every document there to parse.
+The files above are all clean; nothing in them raises a finding but the one dangling relation of `written-text.tml`, and every one has an element. `findings/` holds the opposite: documents written to raise every finding the rules know, and the documents without an element, so the parity transcript (`Parity/timeline.transcript.json`) pins each message, its location and the order the findings arrive in. They sit in a folder of their own because the round-trip tests above enumerate `Fixtures/*.tml` and expect every document there to parse.
 
 | File | Exists to prove |
 | --- | --- |

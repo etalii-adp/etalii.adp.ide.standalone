@@ -8,13 +8,14 @@
       compile and test with this module absent, which is what the timeline-diagram spec's
       "What this spec changes in core: nothing" claim rests on.
     -->
-    <!-- The toolbox, the context menus, the property rows, the findings and the placement additions are derived from the bundled DISL definition. -->
+    <!-- The body is read through the module's own FBL binding (timeline.fbl). -->
     <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Specification.Fbl\EtAlii.Adp.Specification.Fbl.csproj" />
+    <!-- The toolbox, the context menus, the property rows, the findings and the placement additions are derived from the bundled DISL definition. -->
     <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Specification.Disl\EtAlii.Adp.Specification.Disl.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Reading only. See the note beside its PackageVersion in src/Directory.Packages.props. -->
+    <!-- Reading only, by TimelineYamlSyntax: whether a body is YAML, and why not. See the note beside its PackageVersion in src/Directory.Packages.props. -->
     <PackageReference Include="YamlDotNet" />
     <!-- Google.Protobuf is the runtime; Grpc.Tools compiles the .proto below at build. -->
     <PackageReference Include="Google.Protobuf" />
@@ -32,6 +33,8 @@
     <!-- The DISL definition bundled from etalii-adp/etalii.adp (src/diagrams/tools/bundle-disl.sh), and its provenance. -->
     <EmbeddedResource Include="..\..\definition\timeline.dis" LogicalName="timeline.dis" />
     <EmbeddedResource Include="..\..\definition\provenance.json" LogicalName="timeline.provenance.json" />
+    <!-- The module's own FBL binding (timeline-disl-fbl Requirement 2.1), which the definition's persistence.binding names. -->
+    <EmbeddedResource Include="timeline.fbl" LogicalName="timeline.fbl" />
   </ItemGroup>
 
   <ItemGroup>

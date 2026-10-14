@@ -5,8 +5,8 @@ namespace EtAlii.Adp.Diagram.Timeline;
 
 /// <summary>
 /// A handler of a command that edits a timeline: the shared run, which edits a copy, saves it and
-/// carries a warning of the save to the result (code-structure FR-033), with the model a timeline's
-/// parser reads.
+/// carries a warning of the save to the result (code-structure FR-033), with the model the binding
+/// reads (<see cref="TimelineEdits.Read"/>).
 /// </summary>
 /// <remarks>
 /// Every timeline edit names its own undo through <see cref="EditOutcome.UndoneBy"/> - the same
@@ -19,5 +19,5 @@ public abstract class TimelineEditHandler<TCommand>(ITimelineDocumentStore docum
     where TCommand : IDocumentEditCommand
 {
     /// <inheritdoc />
-    protected sealed override TimelineModel Parse(LineDocument body) => TimelineParser.Parse(body);
+    protected sealed override TimelineModel Parse(LineDocument body) => TimelineEdits.Read(body);
 }

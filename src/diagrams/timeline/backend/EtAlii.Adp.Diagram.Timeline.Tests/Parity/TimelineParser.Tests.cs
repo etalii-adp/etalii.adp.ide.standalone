@@ -3,10 +3,11 @@ using Xunit;
 using YamlDotNet.Core;
 using IoPath = System.IO.Path;
 
-namespace EtAlii.Adp.Diagram.Timeline.Tests;
+namespace EtAlii.Adp.Diagram.Timeline.Tests.Parity;
 
 /// <summary>
-/// Reading a document into the model everything else is a function over.
+/// The oracle's own tests: <see cref="TimelineParser"/> reading a document into the model everything
+/// else is a function over, as the module did before it read through its binding.
 /// </summary>
 /// <remarks>
 /// The line ranges get more attention here than the values do, because a wrong value is visible

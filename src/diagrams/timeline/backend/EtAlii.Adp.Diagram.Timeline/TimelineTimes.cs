@@ -17,9 +17,11 @@ namespace EtAlii.Adp.Diagram.Timeline;
 /// fallbacks only approximate that, so the module always supplies these.
 /// </para>
 /// <para>
-/// <b>An end as written</b> (<c>writtenEnd</c>) is the <c>from</c> or <c>to</c> text the model keeps
-/// beside a relation (<see cref="TimelineDisl"/>), because a relation end that names no element is
-/// null in the model and CEL could not otherwise say what it named.
+/// <b>An end as written</b> (<c>writtenEnd</c>) is the <c>from</c> or <c>to</c> text a relation was
+/// read with, which the model keeps as <see cref="DislElement.SourceId"/> and
+/// <see cref="DislElement.TargetId"/> (the binding reads both as references, and the definition's
+/// <c>typeMap</c> maps them onto the relation's ends), because a relation end that names no element
+/// is null in the model and CEL could not otherwise say what it named.
 /// </para>
 /// </remarks>
 internal static class TimelineTimes
@@ -45,7 +47,7 @@ internal static class TimelineTimes
         argument as string ?? throw new CelException("A timeline time function takes text.");
 
     private static string WrittenEnd(object? relation, string end) =>
-        relation is DislElement element && element.HostAttributes.TryGetValue(end == "source" ? TimelineDisl.WrittenFrom : TimelineDisl.WrittenTo, out var written)
-            ? written as string ?? ""
+        relation is DislElement { Type.IsRelation: true } element
+            ? (end == "source" ? element.SourceId : element.TargetId) ?? ""
             : throw new CelException("writtenEnd() takes a relation of this timeline and 'source' or 'target'.");
 }
