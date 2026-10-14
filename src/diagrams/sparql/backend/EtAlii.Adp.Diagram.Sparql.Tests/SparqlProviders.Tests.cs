@@ -173,7 +173,7 @@ public class SparqlProvidersTests : IDisposable
     {
         // Arrange: the header of a SELECT, tracked.
         var body = CopyFixture("groups.rq");
-        var resolver = new SparqlContextSourceResolver(new DiagramFileRouter(new SparqlOnlyCatalog()), _documents);
+        var resolver = new SparqlContextSourceResolver(new DiagramFileRouter(new SparqlOnlyCatalog()), _documents, new SparqlElementMapper());
         var target = TargetFor(body, SparqlElementMapper.HeaderId);
         var level = new ContextResolvedLevel(new ContextSource(), ["Query"], ContextScope.DiagramElement, target, new ContextLevelDetail(), resolver);
         IReadOnlyList<string>? reported = null;
@@ -187,6 +187,13 @@ public class SparqlProvidersTests : IDisposable
         // Assert.
         Assert.NotNull(reported);
         Assert.StartsWith("ASK", Assert.Single(reported), StringComparison.Ordinal);
+
+        // Act: then into something that does not parse.
+        await File.WriteAllTextAsync(body, "ASK { ?s undeclared:p ?o }", TestContext.Current.CancellationToken);
+        _documents.Reload(body);
+
+        // Assert: a plain "Query", not the SELECT its empty model would otherwise be called.
+        Assert.Equal(["Query"], reported);
     }
 
     private static ContextPropertyDefinition Single(IReadOnlyList<ContextPropertyDefinition> rows, string id) =>

@@ -35,9 +35,11 @@ namespace EtAlii.Adp.Diagram;
 public abstract class DiagramElementSourceResolver<TBody, TModel> : IContextSourceResolver
 {
     private readonly DiagramFileRouter _router;
-    private readonly IDiagramDocumentStore<TBody, TModel> _documents;
+    private readonly IReadableDiagramDocumentStore<TBody, TModel> _documents;
 
-    protected DiagramElementSourceResolver(DiagramFileRouter router, IDiagramDocumentStore<TBody, TModel> documents)
+    /// <param name="router">Says which diagram type a selected file is.</param>
+    /// <param name="documents">The store the elements are read from; only its reading half, because a selection writes nothing.</param>
+    protected DiagramElementSourceResolver(DiagramFileRouter router, IReadableDiagramDocumentStore<TBody, TModel> documents)
     {
         ArgumentNullException.ThrowIfNull(router);
         ArgumentNullException.ThrowIfNull(documents);
@@ -89,13 +91,14 @@ public abstract class DiagramElementSourceResolver<TBody, TModel> : IContextSour
             return Proposed(id, GestureIds.IsPlacement(elementId) ? Texts.NewElement : Texts.NewRelation, target);
         }
 
-        var model = Load(bodyPath);
+        var entry = Load(bodyPath);
+        var model = entry.Model;
         if (ProposedOf(model, elementId) is { } other)
         {
             return Proposed(id, other, target);
         }
 
-        if (Describe(model, elementId) is not { } described)
+        if (Describe(entry, elementId) is not { } described)
         {
             return Rejected(Texts.Gone);
         }
@@ -135,11 +138,23 @@ public abstract class DiagramElementSourceResolver<TBody, TModel> : IContextSour
         return Follow(watchId, bodyPath, elementId, () => onChange(Describe(Load(bodyPath), elementId)?.Path));
     }
 
-    /// <summary>The model of the document whose body is at <paramref name="bodyPath"/>.</summary>
-    private TModel Load(string bodyPath) => _documents.GetOrLoad(bodyPath).Model;
+    /// <summary>The document whose body is at <paramref name="bodyPath"/>.</summary>
+    private DocumentEntry<TBody, TModel> Load(string bodyPath) => _documents.GetOrLoad(bodyPath);
 
     /// <summary>What a selection of <paramref name="elementId"/> shows, or null when nothing has that id.</summary>
-    protected abstract (IReadOnlyList<string> Path, string Text)? Describe(TModel model, string elementId);
+    /// <remarks>None by default, for a module that overrides the overload given the whole entry instead.</remarks>
+    protected virtual (IReadOnlyList<string> Path, string Text)? Describe(TModel model, string elementId) => null;
+
+    /// <summary>
+    /// What a selection of <paramref name="elementId"/> in <paramref name="entry"/> shows, or null when
+    /// nothing has that id: what <see cref="Describe(TModel, string)"/> says of its model, by default. A
+    /// module whose elements read differently in a document that could not be read answers here.
+    /// </summary>
+    protected virtual (IReadOnlyList<string> Path, string Text)? Describe(DocumentEntry<TBody, TModel> entry, string elementId)
+    {
+        ArgumentNullException.ThrowIfNull(entry);
+        return Describe(entry.Model, elementId);
+    }
 
     /// <summary>The element <paramref name="elementId"/> as the canvas was sent it, or null when none is drawn.</summary>
     protected abstract DiagramElement? Drawn(TModel model, string elementId);

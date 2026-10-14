@@ -1,6 +1,4 @@
-using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
-using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Hierarchy;
 
 namespace EtAlii.Adp.Diagram.Sparql;
@@ -9,114 +7,41 @@ namespace EtAlii.Adp.Diagram.Sparql;
 /// Makes a query element selectable: resolves an <c>element_id</c> against the file named by the
 /// enclosing level and verifies the id really is in it.
 /// </summary>
-public sealed class SparqlContextSourceResolver : IContextSourceResolver
+/// <remarks>
+/// <b>It describes the whole entry rather than its model</b>, because the header of a query that
+/// does not parse reads as a plain "Query": its empty model would otherwise call it a SELECT.
+/// </remarks>
+public sealed class SparqlContextSourceResolver(DiagramFileRouter router, ISparqlDocumentStore documents, SparqlElementMapper mapper)
+    : DiagramElementSourceResolver<string, SparqlQueryModel>(router, documents)
 {
-    private readonly DiagramFileRouter _router;
-    private readonly ISparqlDocumentStore _documents;
+    private readonly SparqlElementMapper _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
 
-    public SparqlContextSourceResolver(DiagramFileRouter router, ISparqlDocumentStore documents)
-    {
-        ArgumentNullException.ThrowIfNull(router);
-        ArgumentNullException.ThrowIfNull(documents);
-
-        _router = router;
-        _documents = documents;
-    }
+    /// <summary>No stored positions: a selection's payload says what an element is, not where it was dragged.</summary>
+    private static readonly IReadOnlyDictionary<string, RegistrationPosition> _computed =
+        new Dictionary<string, RegistrationPosition>(StringComparer.Ordinal);
 
     /// <inheritdoc />
-    public bool CanResolve(ContextSource source) => source.SourceCase == ContextSource.SourceOneofCase.ElementId;
+    protected override DiagramOrigin Origin => ServiceCollectionAddSparqlExtension.SparqlOrigin;
 
     /// <inheritdoc />
-    public ValueTask<ContextLevelResolution> ResolveAsync(
-        ShortGuid watchId,
-        string rootPath,
-        ContextSource id,
-        IReadOnlyList<string> clientPath,
-        ContextResolvedLevel? parent,
-        CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(id);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        if (parent is null || parent.Scope != ContextScope.Hierarchy)
-        {
-            return Rejected("A diagram element must be selected within its diagram.");
-        }
-
-        if (_router.Route(parent.Target.ResolvedFullPath, rootPath) is not DiagramRouted routed ||
-            routed.Definition.Origin != ServiceCollectionAddSparqlExtension.SparqlOrigin ||
-            routed.BodyPath is not { Length: > 0 } bodyPath)
-        {
-            return Rejected("The selected file is not a SPARQL query.");
-        }
-
-        var elementId = id.ElementId.Value;
-        var text = SparqlSelection.Describe(_documents.GetOrLoad(bodyPath), elementId);
-        if (text is null)
-        {
-            return Rejected("That element is no longer in this query.");
-        }
-
-        // The client's path is checked, never trusted.
-        if (clientPath.Count > 0 && !clientPath.SequenceEqual([text], StringComparer.Ordinal))
-        {
-            return Rejected("The path does not match the element.");
-        }
-
-        var level = new ContextResolvedLevel(
-            id,
-            [text],
-            ContextScope.DiagramElement,
-            new ContextTarget(
-                ContextScope.DiagramElement,
-                bodyPath,
-                IsContainer: false,
-                SourceId: default,
-                rootPath,
-                watchId,
-                elementId,
-                routed.Definition.Origin),
-            new ContextLevelDetail { Element = new ElementDetail { Text = text } },
-            this);
-
-        return ValueTask.FromResult<ContextLevelResolution>(new ResolvedContextLevel(level));
-    }
-
-    /// <summary>Nothing nests inside these elements for selection purposes.</summary>
-    public ContextNesting NestingOf(ContextResolvedLevel level) => ContextNesting.NotNestable;
+    /// <remarks>Nothing is created or connected on a query diagram; the two names are for gestures it never offers.</remarks>
+    protected override DiagramElementTexts Texts { get; } = new(
+        "The selected file is not a SPARQL query.",
+        "That element is no longer in this query.",
+        "New element",
+        "New relation");
 
     /// <inheritdoc />
-    public IDisposable Track(
-        ShortGuid watchId,
-        string rootPath,
-        ContextResolvedLevel level,
-        Action<IReadOnlyList<string>?> onChange)
+    protected override (IReadOnlyList<string> Path, string Text)? Describe(DocumentEntry<string, SparqlQueryModel> entry, string elementId) =>
+        SparqlSelection.Describe(entry, elementId) is { } text
+            ? ([text], text)
+            : null;
+
+    /// <inheritdoc />
+    protected override DiagramElement? Drawn(SparqlQueryModel model, string elementId)
     {
-        ArgumentNullException.ThrowIfNull(level);
-        ArgumentNullException.ThrowIfNull(onChange);
-        _ = watchId;
-        _ = rootPath;
-
-        var bodyPath = level.Target.ResolvedFullPath;
-        var elementId = level.Target.ElementId;
-
-        _documents.Changed += OnChanged;
-        return new SparqlUnsubscriber(() => _documents.Changed -= OnChanged);
-
-        void OnChanged(object? sender, DocumentChangedEventArgs args)
-        {
-            if (!string.Equals(args.Path, bodyPath, StringComparison.OrdinalIgnoreCase))
-            {
-                return;
-            }
-
-            // Re-read rather than carrying the previous reading: an edit in the text editor that
-            // drops a variable clears the selection.
-            var text = SparqlSelection.Describe(_documents.GetOrLoad(bodyPath), elementId);
-            onChange(text is null ? null : [text]);
-        }
+        var projection = SparqlProjection.Project(model);
+        return _mapper.Visible(projection, SparqlLayout.Compute(projection, _computed), DiagramViewport.Unbounded)
+            .FirstOrDefault(candidate => candidate.Id == elementId);
     }
-
-    private static ValueTask<ContextLevelResolution> Rejected(string reason) =>
-        ValueTask.FromResult<ContextLevelResolution>(new RejectedContextLevel(reason));
 }
