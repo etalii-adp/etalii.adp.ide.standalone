@@ -39,9 +39,6 @@ public sealed class CausalLoopContextPropertyProvider(
     /// <summary>The cause end of a link.</summary>
     public const string LinkFromProperty = "causal-loop.link-from";
 
-    /// <summary>The effect end of a link.</summary>
-    private const string LinkToProperty = "causal-loop.link-to";
-
     /// <summary>What the link asserts about the direction of the effect.</summary>
     public const string LinkPolarityProperty = "causal-loop.link-polarity";
 

@@ -52,7 +52,7 @@ internal static class CausalLoopDefinition
     public static IReadOnlyList<ToolboxItemDefinition> Toolbox => LoadedToolbox.Value;
 
     /// <summary>The model of <paramref name="entry"/>.</summary>
-    public static DislDiagram DiagramOf(DocumentEntry<CausalLoopDocument, CausalLoopModel> entry)
+    private static DislDiagram DiagramOf(DocumentEntry<CausalLoopDocument, CausalLoopModel> entry)
     {
         ArgumentNullException.ThrowIfNull(entry);
         return CausalLoopDislAdapter.Of(entry.Model);
@@ -97,7 +97,7 @@ internal static class CausalLoopDefinition
     }
 
     /// <summary>The element <paramref name="id"/> names: the first in model order with that id; null for none.</summary>
-    public static DislElement? ElementOf(DislDiagram diagram, string? id)
+    private static DislElement? ElementOf(DislDiagram diagram, string? id)
     {
         ArgumentNullException.ThrowIfNull(diagram);
         return id is null ? null : diagram.ElementById(id);
@@ -115,7 +115,7 @@ internal static class CausalLoopDefinition
         entry.Available,
         // An operation that can be unavailable carries its sentence even while it is available, as the
         // hand-written menu did; the client shows a reason only for an unavailable action.
-        entry.Available && entry.Operation is { } operation && LoadedStandingReasons.Value.TryGetValue(operation, out var standing) ? standing : entry.UnavailableReason);
+        entry is { Available: true, Operation: { } operation } && LoadedStandingReasons.Value.TryGetValue(operation, out var standing) ? standing : entry.UnavailableReason);
 
     /// <summary>
     /// A row as the grid draws it: a <c>select</c> is a Choice among its candidates, a <c>switch</c> a
@@ -141,7 +141,7 @@ internal static class CausalLoopDefinition
     /// </summary>
     private static DerivedRow WithNumbersShownAsTheToolShowsThem(DislElement element, DerivedRow row)
     {
-        foreach (var (name, stored) in element.Attributes)
+        foreach ((string name, object? stored) in element.Attributes)
         {
             if (stored is double number && Ids.PropertyId(name) == row.Id) return row with { Value = number.ToString(CultureInfo.InvariantCulture) };
         }
