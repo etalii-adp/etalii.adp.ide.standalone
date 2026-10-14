@@ -28,8 +28,17 @@ namespace EtAlii.Adp.Specification.Disl;
 /// element a rule was evaluated for, and for a group of duplicates, by the line of its first member.
 /// </para>
 /// <para>
+/// <b>Where a finding is</b> (§8.2, §8.6): a rule's <c>location</c>, a SourceLocation map or
+/// <c>null</c>, else the <c>location()</c> of its first target with a line, else of its first
+/// target; a built-in's is the element it is about; a reader's is the file and line the reader gave.
+/// A rule's <c>subject</c> is evaluated as a display string. A line that is not a positive int is no
+/// line.
+/// </para>
+/// <para>
 /// <b>A file that does not parse has no other finding</b> (§8.6): with a <c>std.unparseable</c>
-/// finding nothing else is evaluated.
+/// finding for the primary file - one naming no file, or the diagram's own - nothing else is
+/// evaluated; with one naming another file of a folder, everything is evaluated and only the
+/// findings located in that file are dropped.
 /// </para>
 /// <para>
 /// <b>An expression that fails proves nothing</b>: a <c>when</c> that fails skips the rule, a
@@ -47,7 +56,7 @@ public static class ConstraintEvaluator
 
         var run = new Run(specification, diagram, options);
         run.Reader();
-        if (!run.Unparseable)
+        if (!run.PrimaryUnparseable)
         {
             run.DuplicateIds();
             run.Endpoints();
@@ -62,8 +71,10 @@ public static class ConstraintEvaluator
         private readonly List<(DislFinding Finding, int Reading, int? Position)> _found = [];
         private readonly JsonElement _constraints = specification.Root.TryGetProperty("constraints", out var constraints) && constraints.ValueKind == JsonValueKind.Object ? constraints : default;
         private readonly CelMap _env = (options.Env ?? new DislEnv()).ToCel();
+        private readonly HashSet<string> _unparseable = new(StringComparer.Ordinal);
 
-        public bool Unparseable { get; private set; }
+        /// <summary>Whether the primary file did not parse, so that no constraint is evaluated (§8.6).</summary>
+        public bool PrimaryUnparseable { get; private set; }
 
         public void Reader()
         {
@@ -72,12 +83,16 @@ public static class ConstraintEvaluator
             {
                 var setting = Setting(finding.BuiltIn);
                 if (!setting.Enabled) continue;
-                Unparseable |= finding.BuiltIn == DislReaderFinding.Unparseable;
+                if (finding.BuiltIn == DislReaderFinding.Unparseable)
+                {
+                    if (finding.File is null || finding.File == diagram.File) PrimaryUnparseable = true;
+                    else _unparseable.Add(finding.File);
+                }
                 var detail = new CelMap();
                 foreach ((string key, object? value) in finding.Detail) detail[key] = value;
                 var variables = Variables(diagram, detail);
                 var fallback = detail.TryGetValue("reason", out var reason) && reason is string text ? text : finding.BuiltIn;
-                _found.Add((new DislFinding(setting.CodeOf(variables), finding.BuiltIn, setting.Severity, setting.MessageOf(variables, fallback), [], finding.Line), reading++, finding.Line));
+                _found.Add((new DislFinding(setting.CodeOf(variables), finding.BuiltIn, setting.Severity, setting.MessageOf(variables, fallback), [], finding.Line, finding.File), reading++, finding.Line));
             }
         }
 
@@ -210,8 +225,15 @@ public static class ConstraintEvaluator
                 var message = rule.TryGetProperty("message", out var text)
                     ? DislEvaluation.Message(specification, text, DislJson.Pointer(pointer, "message"), DislContexts.Constraint, bound, id)
                     : id;
-                var line = targets.Select(element => element.Line).FirstOrDefault(found => found is not null);
-                _found.Add((new DislFinding(code, id, severity, message, [.. targets.Select(WrittenId)], line), -1, (Unwrapped(self) ?? item)?.Line ?? line));
+                var at = targets.FirstOrDefault(element => element.Line is not null) ?? targets.FirstOrDefault();
+                (string? file, int? line) = rule.TryGetProperty("location", out var location)
+                    ? Located(DislEvaluation.Expression(specification, location, DislJson.Pointer(pointer, "location"), DislContexts.Constraint, bound), at)
+                    : at?.Location ?? (null, null);
+                var subject = rule.TryGetProperty("subject", out var about)
+                    ? DislEvaluation.Expression(specification, about, DislJson.Pointer(pointer, "subject"), DislContexts.Constraint, bound) as string
+                    : null;
+                var ordered = (Unwrapped(self) ?? item)?.Line ?? at?.Line;
+                _found.Add((new DislFinding(code, id, severity, message, [.. targets.Select(WrittenId)], line, file, subject), -1, ordered));
             }
 
             List<DislElement> Targets(Dictionary<string, object?> bound, DislElement? item)
@@ -230,14 +252,33 @@ public static class ConstraintEvaluator
             }
         }
 
-        /// <summary>The findings in the order of <c>constraints.order</c>, or as they arose.</summary>
+        /// <summary>
+        /// A rule's evaluated <c>location</c> (§8.2): a SourceLocation map, optional or not, gives its
+        /// file and line; <c>null</c> or <c>optional.none()</c> gives none. One that fails, or that
+        /// names no file, proves nothing, and the finding is located at <paramref name="target"/>.
+        /// </summary>
+        private static (string? File, int? Line) Located(object? value, DislElement? target)
+        {
+            if (value is CelOptional optional) value = optional.HasValue ? optional.Value : null;
+            if (value is null) return (null, null);
+            if (value is not IReadOnlyDictionary<string, object?> map || !map.TryGetValue("file", out var file) || file is not string named) return target?.Location ?? (null, null);
+            return (named, map.TryGetValue("line", out var line) && line is long and >= 1 and <= int.MaxValue and var number ? (int)number : null);
+        }
+
+        /// <summary>
+        /// The findings in the order of <c>constraints.order</c>, or as they arose, without those
+        /// located in a file of the folder that did not parse (§8.6), that file's own finding apart.
+        /// </summary>
         public IReadOnlyList<DislFinding> Ordered()
         {
+            var kept = _unparseable.Count == 0
+                ? _found
+                : [.. _found.Where(entry => entry.Finding.ConstraintId == DislReaderFinding.Unparseable || entry.Finding.File is not { } file || !_unparseable.Contains(file))];
             var order = _constraints.ValueKind == JsonValueKind.Object && _constraints.TryGetProperty("order", out var declared) ? DislJson.Strings(declared) : [];
-            if (order.Count == 0) return [.. _found.Select(found => found.Finding)];
+            if (order.Count == 0) return [.. kept.Select(entry => entry.Finding)];
             return
             [
-                .. _found
+                .. kept
                     .Select((found, arising) => (found.Finding, found.Reading, found.Position, Arising: arising))
                     .OrderBy(found => IndexOf(order, found.Finding.Code) is var position and >= 0 ? position : order.Count)
                     .ThenBy(found => found.Reading >= 0 ? 0 : 1)
@@ -270,7 +311,7 @@ public static class ConstraintEvaluator
         private void Add(BuiltIn setting, string builtIn, DislElement self, CelMap detail, string fallback, DislElement position)
         {
             var variables = Variables(View(self), detail);
-            _found.Add((new DislFinding(setting.CodeOf(variables), builtIn, setting.Severity, setting.MessageOf(variables, fallback), [WrittenId(self)], self.Line), -1, position.Line));
+            _found.Add((new DislFinding(setting.CodeOf(variables), builtIn, setting.Severity, setting.MessageOf(variables, fallback), [WrittenId(self)], self.Line, self.Location.File), -1, position.Line));
         }
 
         private Dictionary<string, object?> Variables(object self, CelMap? detail)
