@@ -157,12 +157,6 @@ export interface NotationBindings {
    * (`backendKey`), or a second key invokes it, which DISL's one `shortcut` per entry cannot say.
    */
   action?: (action: ActionDeclaration, entry: { shortcut?: string }) => ActionDeclaration;
-  /**
-   * What a DISL marker is drawn as, where a module has stated it ahead of the library's own reading
-   * of the name: a module whose arrowhead has always been drawn otherwise than its specification's
-   * marker says, until the specification is corrected.
-   */
-  builtInMarkers?: Readonly<Record<string, MarkerKind>>;
   /** The class of a node's icon, which the module's stylesheet paints. */
   iconClassName?: (type: string, icon: DislIcon) => string | undefined;
   /** The classes of a relation's bars across its line: the group's and each bar's. */
@@ -1024,9 +1018,9 @@ class Compiler {
     return undefined;
   }
 
-  /** A DISL marker as the library draws it: the module's override, else the library's reading of the name. */
+  /** A DISL marker as the library draws it. */
   private marker(marker: string): MarkerKind {
-    return this.bindings.builtInMarkers?.[marker] ?? libraryMarkerOf(marker);
+    return libraryMarkerOf(marker);
   }
 
   /**

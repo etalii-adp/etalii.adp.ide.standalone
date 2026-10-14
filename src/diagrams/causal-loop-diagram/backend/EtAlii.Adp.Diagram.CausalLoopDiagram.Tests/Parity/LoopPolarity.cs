@@ -1,8 +1,9 @@
-namespace EtAlii.Adp.Diagram.CausalLoopDiagram;
+namespace EtAlii.Adp.Diagram.CausalLoopDiagram.Tests.Parity;
 
 /// <summary>
 /// Whether a cycle is reinforcing or balancing, derived from its links rather than from what the
-/// document calls it.
+/// document calls it: the hand-written arithmetic, kept as the oracle the definition's derived
+/// <c>computed</c> of a <c>Loop</c> is held to (causal-loop-disl-fbl Requirement 7.3).
 /// </summary>
 /// <remarks>
 /// <para>
@@ -25,7 +26,7 @@ namespace EtAlii.Adp.Diagram.CausalLoopDiagram;
 /// (Requirement 3.6).
 /// </para>
 /// </remarks>
-public static class LoopPolarity
+internal static class LoopPolarity
 {
     /// <summary>Derives the polarity of the cycle running through <paramref name="cycle"/>, in order.</summary>
     public static LoopPolarityResult Of(CausalLoopModel model, IReadOnlyList<string> cycle)

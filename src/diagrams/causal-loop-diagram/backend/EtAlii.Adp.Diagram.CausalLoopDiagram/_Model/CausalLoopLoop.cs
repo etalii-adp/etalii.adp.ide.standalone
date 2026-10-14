@@ -14,8 +14,9 @@ namespace EtAlii.Adp.Diagram.CausalLoopDiagram;
 /// </para>
 /// <para>
 /// <b>The identifier is what the author claims, not what the arrows say.</b> Whether this loop
-/// is really reinforcing is arithmetic over its links, computed elsewhere and deliberately kept
-/// apart from this: the author's label may be the intent and the arrows the mistake, and a model
+/// is really reinforcing is arithmetic over its links, which the definition states (the derived
+/// <c>computed</c> and <c>disagrees</c> of a <c>Loop</c>) and is kept beside the claim rather than
+/// in place of it: the author's label may be the intent and the arrows the mistake, and a model
 /// that overwrote one with the other could not express the disagreement (Requirement 3.3).
 /// </para>
 /// </remarks>
@@ -29,6 +30,12 @@ public sealed record CausalLoopLoop(
     IReadOnlyList<string> Variables,
     LineRange Lines)
 {
+    /// <summary>What the arrows say the loop is: the definition's derived <c>computed</c>.</summary>
+    public LoopPolarityResult Computed { get; init; }
+
+    /// <summary>Whether the identifier's claim and the arrows disagree: the definition's derived <c>disagrees</c>. Undecidable is no disagreement.</summary>
+    public bool Disagrees { get; init; }
+
     /// <summary>The stable identity a selection and a delta address it by.</summary>
     public string Id => $"loop:{Identifier}";
 

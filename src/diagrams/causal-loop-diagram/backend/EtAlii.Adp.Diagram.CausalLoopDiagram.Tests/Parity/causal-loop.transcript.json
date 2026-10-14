@@ -560,12 +560,16 @@
       "readOnlySet": "set variable:a causal-loop.variable-label => refused: This causal loop diagram could not be read, so nothing can be edited until it is fixed.",
       "findings": [],
       "payloads": [
-        "throws System.ArgumentException: An item with the same key has already been added. Key: a"
+        "variable:a | systems/causal-loop+variable | 0, -130 | CausalLoopVariablePayload { \"display\": \"First\", \"id\": \"a\", \"width\": 90, \"height\": 39.599999999999994 }",
+        "variable:b | systems/causal-loop+variable | 0, 130 | CausalLoopVariablePayload { \"display\": \"B\", \"id\": \"b\", \"width\": 90, \"height\": 39.599999999999994 }",
+        "link:a|b | systems/causal-loop+link | 0, 0 | CausalLoopLinkPayload { \"fromElementId\": \"variable:a\", \"toElementId\": \"variable:b\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\" }",
+        "link:b|a | systems/causal-loop+link | 0, 0 | CausalLoopLinkPayload { \"fromElementId\": \"variable:b\", \"toElementId\": \"variable:a\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\" }",
+        "loop:R1 | systems/causal-loop+loop | 0, 0 | CausalLoopLoopPayload { \"identifier\": \"R1\", \"name\": \"Twice declared\", \"computed\": \"LOOP_POLARITY_PROTO_REINFORCING\", \"memberElementIds\": [ \"variable:a\", \"variable:b\" ] }"
       ],
       "edits": [
         {
           "do": "execute causal-loop.toggle-delay on link:a|b",
-          "answer": "throws System.ArgumentException: An item with the same key has already been added. Key: a",
+          "answer": "ok",
           "hunks": [
             "@9 -1 +\"link a -> b + delayed\\r\\n\""
           ],
@@ -573,7 +577,7 @@
         },
         {
           "do": "execute causal-loop.flip-curvature on link:a|b",
-          "answer": "throws System.ArgumentException: An item with the same key has already been added. Key: a",
+          "answer": "ok",
           "hunks": [
             "@9 -1 +\"link a -> b + delayed flipped\\r\\n\""
           ],
@@ -581,7 +585,7 @@
         },
         {
           "do": "set link:a|b causal-loop.link-label = \"Parity note\"",
-          "answer": "throws System.ArgumentException: An item with the same key has already been added. Key: a",
+          "answer": "ok",
           "hunks": [
             "@9 -1 +\"link a -> b + delayed flipped \\\"Parity note\\\"\\r\\n\""
           ],
@@ -594,7 +598,7 @@
         },
         {
           "do": "set link:a|b causal-loop.link-weight = \"1e21\"",
-          "answer": "throws System.ArgumentException: An item with the same key has already been added. Key: a",
+          "answer": "ok",
           "hunks": [
             "@9 -1 +\"link a -> b + delayed flipped weight=1e+21 \\\"Parity note\\\"\\r\\n\""
           ],
@@ -607,7 +611,7 @@
         },
         {
           "do": "set link:a|b causal-loop.link-weight = \"0.000001\"",
-          "answer": "throws System.ArgumentException: An item with the same key has already been added. Key: a",
+          "answer": "ok",
           "hunks": [
             "@9 -1 +\"link a -> b + delayed flipped weight=0.000001 \\\"Parity note\\\"\\r\\n\""
           ],
@@ -615,7 +619,7 @@
         },
         {
           "do": "set link:a|b causal-loop.link-weight = \"\"",
-          "answer": "throws System.ArgumentException: An item with the same key has already been added. Key: a",
+          "answer": "ok",
           "hunks": [
             "@9 -1 +\"link a -> b + delayed flipped \\\"Parity note\\\"\\r\\n\""
           ],
@@ -628,7 +632,7 @@
         },
         {
           "do": "set link:a|b causal-loop.link-polarity = \"unstated\"",
-          "answer": "throws System.ArgumentException: An item with the same key has already been added. Key: a",
+          "answer": "ok",
           "hunks": [
             "@9 -1 +\"link a -> b delayed flipped \\\"Parity note\\\"\\r\\n\""
           ],
@@ -636,7 +640,7 @@
         },
         {
           "do": "set link:a|b causal-loop.link-delayed = \"true\"",
-          "answer": "throws System.ArgumentException: An item with the same key has already been added. Key: a",
+          "answer": "ok",
           "unchanged": true
         },
         {
@@ -646,7 +650,7 @@
         },
         {
           "do": "execute causal-loop.make-positive on link:a|b",
-          "answer": "throws System.ArgumentException: An item with the same key has already been added. Key: a",
+          "answer": "ok",
           "hunks": [
             "@9 -1 +\"link a -> b + delayed flipped \\\"Parity note\\\"\\r\\n\""
           ],
@@ -654,7 +658,7 @@
         },
         {
           "do": "execute causal-loop.make-negative on link:a|b",
-          "answer": "throws System.ArgumentException: An item with the same key has already been added. Key: a",
+          "answer": "ok",
           "hunks": [
             "@9 -1 +\"link a -> b - delayed flipped \\\"Parity note\\\"\\r\\n\""
           ],
@@ -662,7 +666,7 @@
         },
         {
           "do": "execute causal-loop.make-negative on link:a|b",
-          "answer": "throws System.ArgumentException: An item with the same key has already been added. Key: a",
+          "answer": "ok",
           "unchanged": true
         },
         {
@@ -672,7 +676,7 @@
         },
         {
           "do": "commit causal-loop.rename-loop on loop:R1 = \"Parity loop\"",
-          "answer": "throws System.ArgumentException: An item with the same key has already been added. Key: a",
+          "answer": "ok",
           "hunks": [
             "@12 -1 +\"loop R1 \\\"Parity loop\\\" a b\\r\\n\""
           ],
@@ -680,7 +684,7 @@
         },
         {
           "do": "set loop:R1 causal-loop.loop-name = \"Parity name\"",
-          "answer": "throws System.ArgumentException: An item with the same key has already been added. Key: a",
+          "answer": "ok",
           "hunks": [
             "@12 -1 +\"loop R1 \\\"Parity name\\\" a b\\r\\n\""
           ],
@@ -708,7 +712,7 @@
         },
         {
           "do": "set loop:R1 causal-loop.loop-identifier = \"B99\"",
-          "answer": "throws System.ArgumentException: An item with the same key has already been added. Key: a",
+          "answer": "ok",
           "hunks": [
             "@12 -1 +\"loop B99 \\\"Parity name\\\" a b\\r\\n\""
           ],
@@ -731,7 +735,7 @@
         },
         {
           "do": "commit causal-loop.rename-variable on variable:a = \"Parity renamed\"",
-          "answer": "throws System.ArgumentException: An item with the same key has already been added. Key: a",
+          "answer": "ok",
           "hunks": [
             "@5 -1 +\"variable a \\\"Parity renamed\\\"\\r\\n\""
           ],
@@ -749,7 +753,7 @@
         },
         {
           "do": "set variable:a causal-loop.variable-label = \"Parity label\"",
-          "answer": "throws System.ArgumentException: An item with the same key has already been added. Key: a",
+          "answer": "ok",
           "hunks": [
             "@5 -1 +\"variable a \\\"Parity label\\\"\\r\\n\""
           ],
@@ -929,18 +933,7 @@
           "sha256": "9982e98bf572a525a40ba3bee1ddb99e2313f765dc387b8ed51ed134d9529aa2"
         }
       ],
-      "undoAll": "5 undone; the next throws System.ArgumentException: An item with the same key has already been added. Key: a; the original text is NOT back",
-      "undoAllLeaves": {
-        "hunks": [
-          "@5 -1 +\"variable a \\\"Parity label\\\"\\r\\n\"",
-          "@9 -1 +\"link a -> b - delayed flipped \\\"Parity note\\\"\\r\\n\"",
-          "@12 -1 +\"loop B99 \\\"Parity name\\\" a b\\r\\n\""
-        ],
-        "sha256": "78d31379b442f9cbe015e0c5d5e007fd06bdc2bc152a28012326846528b6a345"
-      },
-      "undoAllLeavesRegistration": {
-        "unchanged": true
-      }
+      "undoAll": "22 undone; the original text is back"
     },
     {
       "document": "diagrams/causal-loop-diagram/backend/EtAlii.Adp.Diagram.CausalLoopDiagram.Tests/Fixtures/header-twice.cld",

@@ -22,9 +22,9 @@ import type { NotationBindings } from "@client/canvas/library/disl/compileNotati
  *   class the wavy underline is painted by, which DISL cannot say (the companion's gap 4).
  * - **The weight ladder's classes.** The specification computes a link's width from its weight; each
  *   width it gives is painted by the class the stylesheet already has for it.
- * - **The arrowhead.** The specification says DISL's `arrow`, which is the open V; the canvas has
- *   always drawn the filled triangle. Kept as drawn until the specification says `arrowFilled`, as the
- *   hype cycle graph's was corrected.
+ *
+ * The arrowhead is the specification's own since it says `arrowFilled`, the filled triangle the canvas
+ * has always drawn (a definition defect repaired in etalii.adp).
  */
 const ELEMENT_CLASSES: Readonly<Record<string, readonly ClassDeclaration[]>> = {
   Variable: [
@@ -58,5 +58,4 @@ export const CLD_BINDINGS: NotationBindings = {
   midMarkerClassNames: () => ({ group: "causal-loop-delay", marker: "causal-loop-delay-stroke" }),
   edgeLabelClassName: () => "causal-loop-polarity",
   strokeWidthClassName: (_relation, width) => WEIGHT_CLASSES[String(width)],
-  builtInMarkers: { arrow: "arrow" },
 };
