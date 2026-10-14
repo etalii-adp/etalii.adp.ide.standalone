@@ -18,9 +18,10 @@ public abstract class WatchedFolderStoreContract<TSnapshot> : IDisposable
     where TSnapshot : class
 {
     /// <summary>The settle delay the store is made with: short, so a test waits for little.</summary>
-    protected static readonly TimeSpan SettleDelay = TimeSpan.FromMilliseconds(150);
+    /// <remarks>Properties rather than fields: a static field of a generic type is one per closed type.</remarks>
+    protected static TimeSpan SettleDelay => TimeSpan.FromMilliseconds(150);
 
-    private static readonly TimeSpan WaitLimit = TimeSpan.FromSeconds(15);
+    private static TimeSpan WaitLimit => TimeSpan.FromSeconds(15);
 
     private readonly TestFolder _folder = TestFolder.Create("EtAlii.Adp.WatchedFolderStoreContract");
 
@@ -222,8 +223,8 @@ public abstract class WatchedFolderStoreContract<TSnapshot> : IDisposable
         var other = Fill("other");
         Store.GetOrLoad(Subject);
         Store.GetOrLoad(SubjectOf(other));
-        var heard = 0;
-        using var watch = Store.Watch(Subject, _ => Interlocked.Increment(ref heard));
+        var heard = new int[1];
+        using var watch = Store.Watch(Subject, _ => Interlocked.Increment(ref heard[0]));
         var changes = Changes();
 
         // Act.
@@ -231,7 +232,7 @@ public abstract class WatchedFolderStoreContract<TSnapshot> : IDisposable
         await WaitFor(changes, 1);
 
         // Assert.
-        Assert.Equal(0, Volatile.Read(ref heard));
+        Assert.Equal(0, Volatile.Read(ref heard[0]));
     }
 
     [Fact]

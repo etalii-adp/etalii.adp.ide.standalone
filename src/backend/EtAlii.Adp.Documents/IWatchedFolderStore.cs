@@ -43,7 +43,4 @@ public interface IWatchedFolderStore<TSnapshot>
     /// is disposed no call follows.
     /// </summary>
     IDisposable Watch(string folder, Action<TSnapshot> onChanged);
-
-    /// <summary>Raised after a folder has been re-read because something in it changed.</summary>
-    event EventHandler<WatchedFolderChangedEventArgs<TSnapshot>>? Changed;
 }
