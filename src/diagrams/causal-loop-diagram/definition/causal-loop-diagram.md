@@ -72,7 +72,9 @@ Findings B1 and B12. The binding reads every spelling of `lenient-spellings.cld`
 - **The last candidate wins.** The tool reads `link a -> b + "first note" "second note"` with the note "second note" and `link b -> a - firstBare "second quoted"` with "second quoted" (`two-notes.cld`); a `word` slot takes the first word that matches, so the binding reads "first note" for the first.
 - **Quotes are optional when the value has no space.** The tool reads `variable a Label` and `loop R1 Unquoted a indented`; the binding reads them too, but its `emit` templates quote a label and a loop name, so a new statement is written with quotes where the file's own spelling had none.
 
-**Would resolve it:** a word grammar for `lines` that can say "any other word is the note, the last one winning" and "quote a value only when it needs it", short of regular expressions that restate the tool's tokenizer.
+**Would resolve it:** a word grammar for `lines` that can say "any other word is the note, the last one winning" and "quote a value only when it needs it", short of regular expressions that restate the tool's tokenizer. Two smaller additions would do for the note: a lookahead or not-followed-by in FBL's regular expressions, which FBL forbids today, so a bare word can be told from a flag; and a `word` slot that takes the last matching word rather than the first.
+
+Until then the standalone tool keeps its reading by a stand-in: once the binding has read a link statement, the module reads its note again as its own parser did, the bare word and the last of two notes included, and uses that in place of the binding's `note`. Only the note is read so; which lines are links, and every other attribute of one, are the binding's.
 
 ### 3. FBL: placing several new entries of different rules as one group
 
@@ -98,7 +100,7 @@ Finding A11. A variable's width is measured on the backend from its label, and t
 
 These are not language gaps. Each is a place the transcript shows the tool doing something a runtime of this specification might do otherwise, recorded so that a host does not have to find it again.
 
-- **The order of cycles.** DISL 12.4 orders cycles by first member in model order and then by member order. The module's finder is Johnson's algorithm, and its order differs: over `weight-forms.cld` it reports the cycle a → b → c → d before a → b. That order decides the order of the unlabelled-loop findings and which cycle Claim a loop picks. The standalone conversion compares the two over its corpus before the module's finder is removed.
+- **The order of cycles.** DISL 12.4 orders cycles by first member in model order and then by member order. The tool's finder is Johnson's algorithm, which reports them as a depth-first walk of the links in declaration order finds them, and the standalone conversion found the two orders different over its corpus: over `weight-forms.cld` the tool reports a → b → c → d, a → b → c, a → b → d, a → b, a → c → d, a → c → d → b, a → c, b → c → d, b → d, where DISL 12.4 gives a → b, a → b → c, a → b → c → d, a → b → d, a → c, a → c → d, a → c → d → b, b → c → d, b → d. The cycles are the same; their order decides the order of the unlabelled-loop findings and which of several shortest cycles Claim a loop picks. So the tool's finder stays, as the plugin function `causalCycles` of `net.etalii.adp.systems.cldCycles`, which `feedbackCycles` calls, with `diagram.cycles` as its fallback: a host without the plugin reports the same findings in DISL's order. **Candidate for DISL:** a way to ask `diagram.cycles` for discovery order, or a definition of its order that a depth-first finder gives.
 - **Numbers.** A weight is shown and written in .NET's shortest round-trip form: `1E+21`, `1E-07`, `1E-06`, `1.2345678901234568E+29` (`weight-forms.cld`). The binding's `number: "shortest"` is ECMAScript's (`1e+21`, `1e-7`). The two agree on ordinary values (finding B11).
 - **One attribute, two refusals.** A variable's label is refused with the quote sentence of `std.facets` in the property grid, and with "A name needs at least one character, and cannot contain a quote or a line break." in the inline rename dialog. A label `parse` takes no `accepts` or `refusal`, so the specification states the grid's.
 - **A reason sent with an entry that applies.** The menus carry a reason on entries that are enabled as well: Arrange diagram is sent "on (There is nothing to arrange until this diagram has two variables.)" with two variables present, and Opposite direction (−) "on (This link already states −.)" on a positive link. The specification states each reason with its `unavailable` condition only.
@@ -114,7 +116,7 @@ These are not language gaps. Each is a place the transcript shows the tool doing
 Two findings are put to the owner and are not settled here.
 
 - **A quote in a label (B13).** The transcript shows the property grid refusing a quote in a variable's label and in a loop's name, and the rename dialog rejecting one. The specification's `pattern` on `label`, `title` and `note` forbids it.
-- **Two variables of one name (A7).** `duplicate-variable.cld` declares `a` twice. The module reports no finding for it; the transcript records its loop rows in the specification's form, where the hand-written rows threw "System.ArgumentException: An item with the same key has already been added. Key: a"; an edit of those rows, the findings and the payloads still throw until the module's cycle finder and layout are removed. The specification switches `std.duplicateId` off, so the findings are the module's.
+- **Two variables of one name (A7).** `duplicate-variable.cld` declares `a` twice. The module reports no finding for it; the transcript records its loop rows in the specification's form, where the hand-written rows threw "System.ArgumentException: An item with the same key has already been added. Key: a"; its findings are derived too, and are none, where the hand-written ones threw the same; an edit of those rows and the payloads still throw until the module's layout is removed. The specification switches `std.duplicateId` off, so no finding names the second declaration.
 
 ## What stays code
 
@@ -123,6 +125,8 @@ Two findings are put to the owner and are not settled here.
 | The self-organizing layout and Arrange diagram's command | The specification names the layout as a plugin. |
 | The ring layout | Gap 5. |
 | The stand-in for unreadable lines | Gap 1. |
+| The stand-in for a link's note | Gap 2. |
+| The cycle finder, as the plugin function `causalCycles` | Its order (Other differences: the order of cycles). |
 | Adding a variable at a point | One undo step for a body change and a position. |
 | The payloads, the measured widths, the viewport filter | The host's wire (findings A11 and A12). |
 | The session, the document store and reloading | The shared document lifecycle. |
