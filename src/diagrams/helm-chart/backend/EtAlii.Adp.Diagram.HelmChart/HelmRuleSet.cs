@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using EtAlii.Adp.Documents;
 
 namespace EtAlii.Adp.Diagram.HelmChart;
 
@@ -86,7 +87,7 @@ public static class HelmRuleSet
             yield return Unreadable(DiagramProblemSeverity.Error, crd);
         }
 
-        static DiagramProblem Unreadable(DiagramProblemSeverity severity, HelmYamlFailure failure) => new(
+        static DiagramProblem Unreadable(DiagramProblemSeverity severity, TolerantYamlFailure failure) => new(
             severity,
             $"'{failure.RelativePath}' is not readable YAML: {failure.Message}",
             HelmRules.UnreadableYaml,

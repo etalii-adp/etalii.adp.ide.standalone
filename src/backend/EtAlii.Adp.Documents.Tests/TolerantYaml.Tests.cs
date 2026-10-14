@@ -113,6 +113,23 @@ public class TolerantYamlTests : IDisposable
         Assert.IsType<TolerantYamlDocument>(result);
     }
 
+    [Fact]
+    public void BinaryContent_DoesNotThrow()
+    {
+        // Arrange.
+        // The never-throws promise holds for content that is not text at all.
+        var path = IoPath.Combine(_scratch, "binary.yaml");
+        File.WriteAllBytes(path, [0x00, 0xFF, 0x13, 0x37, 0x00, 0x01]);
+
+        // Act.
+        var result = TolerantYaml.Read(path, "binary.yaml");
+
+        // Assert.
+        // Either outcome is acceptable - some binary happens to parse as a YAML scalar - but
+        // an exception never is.
+        Assert.True(result is TolerantYamlDocument or TolerantYamlUnreadable);
+    }
+
     private string Write(string name, string content)
     {
         var path = IoPath.Combine(_scratch, name);

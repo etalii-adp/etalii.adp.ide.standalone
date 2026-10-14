@@ -1,3 +1,5 @@
+using EtAlii.Adp.Documents;
+
 namespace EtAlii.Adp.Diagram.HelmChart;
 
 /// <summary>
@@ -6,4 +8,4 @@ namespace EtAlii.Adp.Diagram.HelmChart;
 /// </summary>
 /// <param name="FileCount">YAML files in the folder.</param>
 /// <param name="Failures">The ones that did not parse - <c>crds/</c> is chart-owned YAML, so parse errors are reportable (Requirement 10.3).</param>
-public sealed record CrdsSummary(int FileCount, IReadOnlyList<HelmYamlFailure> Failures);
+public sealed record CrdsSummary(int FileCount, IReadOnlyList<TolerantYamlFailure> Failures);

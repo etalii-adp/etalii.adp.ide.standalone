@@ -11,7 +11,7 @@ namespace EtAlii.Adp.Diagram.HelmChart;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Chart-owned YAML goes through <see cref="HelmYaml"/>; <c>templates/</c> content goes
+/// Chart-owned YAML goes through <see cref="TolerantYaml"/>; <c>templates/</c> content goes
 /// through <see cref="TemplateScan"/> and is never parsed as YAML (Requirement 3.2). Files
 /// and folders beyond the recognized inventory - a <c>ci/</c> folder, readmes, source code -
 /// are ignored without complaint: a chart living inside a larger repository is the normal
@@ -52,19 +52,19 @@ public sealed class HelmChartReader
         }
 
         ChartMetadata? metadata = null;
-        HelmYamlFailure? metadataFailure = null;
+        TolerantYamlFailure? metadataFailure = null;
         YamlMappingNode? chartRoot = null;
-        switch (HelmYaml.Read(chartYaml, "Chart.yaml"))
+        switch (TolerantYaml.Read(chartYaml, "Chart.yaml"))
         {
-            case HelmYamlDocument { Root: YamlMappingNode mapping }:
+            case TolerantYamlDocument { Root: YamlMappingNode mapping }:
                 chartRoot = mapping;
                 metadata = ReadMetadata(mapping);
                 break;
-            case HelmYamlDocument:
+            case TolerantYamlDocument:
                 // Parsed but empty, or not a mapping: no metadata to show, nothing to blame
                 // a line on. Validation reports the missing name/version off the null.
                 break;
-            case HelmYamlUnreadable unreadable:
+            case TolerantYamlUnreadable unreadable:
                 metadataFailure = unreadable.Failure;
                 break;
         }
@@ -72,7 +72,7 @@ public sealed class HelmChartReader
         var legacy = string.Equals(metadata?.ApiVersion, "v1", StringComparison.OrdinalIgnoreCase);
 
         (IReadOnlyList<ValuesFile> values, YamlMappingNode? defaultValuesRoot) = ReadValues(rootPath);
-        (IReadOnlyList<DependencyDeclaration> dependencies, HelmYamlFailure? dependenciesFailure) = ReadDependencies(rootPath, chartRoot, legacy, defaultValuesRoot);
+        (IReadOnlyList<DependencyDeclaration> dependencies, TolerantYamlFailure? dependenciesFailure) = ReadDependencies(rootPath, chartRoot, legacy, defaultValuesRoot);
 
         return new HelmChart(
             IsChart: true,
@@ -128,9 +128,9 @@ public sealed class HelmChartReader
             var isDefault = string.Equals(name, "values.yaml", StringComparison.OrdinalIgnoreCase)
                             || string.Equals(name, "values.yml", StringComparison.OrdinalIgnoreCase);
 
-            switch (HelmYaml.Read(path, name))
+            switch (TolerantYaml.Read(path, name))
             {
-                case HelmYamlDocument { Root: YamlMappingNode mapping }:
+                case TolerantYamlDocument { Root: YamlMappingNode mapping }:
                     if (isDefault)
                     {
                         defaultRoot = mapping;
@@ -144,11 +144,11 @@ public sealed class HelmChartReader
                         .ToArray();
                     result.Add(new ValuesFile(name, isDefault, keys.Contains("global", StringComparer.Ordinal), keys, null));
                     break;
-                case HelmYamlDocument:
+                case TolerantYamlDocument:
                     // Empty, or not a mapping: a values layer with nothing in it yet.
                     result.Add(new ValuesFile(name, isDefault, false, [], null));
                     break;
-                case HelmYamlUnreadable unreadable:
+                case TolerantYamlUnreadable unreadable:
                     result.Add(new ValuesFile(name, isDefault, false, [], unreadable.Failure));
                     break;
             }
@@ -215,7 +215,7 @@ public sealed class HelmChartReader
         }
 
         var count = 0;
-        var failures = new List<HelmYamlFailure>();
+        var failures = new List<TolerantYamlFailure>();
         foreach (var path in EnumerateFiles(crdsPath, "*", recurse: true))
         {
             var extension = IoPath.GetExtension(path);
@@ -226,7 +226,7 @@ public sealed class HelmChartReader
             }
 
             count++;
-            if (HelmYaml.Read(path, Relative(rootPath, path)) is HelmYamlUnreadable unreadable)
+            if (TolerantYaml.Read(path, Relative(rootPath, path)) is TolerantYamlUnreadable unreadable)
             {
                 failures.Add(unreadable.Failure);
             }
@@ -235,7 +235,7 @@ public sealed class HelmChartReader
         return new CrdsSummary(count, [.. failures.OrderBy(failure => failure.RelativePath, StringComparer.Ordinal)]);
     }
 
-    private static (IReadOnlyList<DependencyDeclaration> Dependencies, HelmYamlFailure? Failure) ReadDependencies(
+    private static (IReadOnlyList<DependencyDeclaration> Dependencies, TolerantYamlFailure? Failure) ReadDependencies(
         string rootPath, YamlMappingNode? chartRoot, bool legacy, YamlMappingNode? defaultValuesRoot)
     {
         YamlNode? list = null;
@@ -246,12 +246,12 @@ public sealed class HelmChartReader
             var requirements = IoPath.Combine(rootPath, "requirements.yaml");
             if (File.Exists(requirements))
             {
-                switch (HelmYaml.Read(requirements, "requirements.yaml"))
+                switch (TolerantYaml.Read(requirements, "requirements.yaml"))
                 {
-                    case HelmYamlDocument { Root: YamlMappingNode root }:
+                    case TolerantYamlDocument { Root: YamlMappingNode root }:
                         root.Children.TryGetValue(new YamlScalarNode("dependencies"), out list);
                         break;
-                    case HelmYamlUnreadable unreadable:
+                    case TolerantYamlUnreadable unreadable:
                         return ([], unreadable.Failure);
                 }
             }
@@ -387,10 +387,10 @@ public sealed class HelmChartReader
             return new VendoredEntry(entryName, relative, false, null, null, "application", templateCount, deeperCount, null);
         }
 
-        return HelmYaml.Read(nestedChartYaml, Relative(rootPath, nestedChartYaml)) switch
+        return TolerantYaml.Read(nestedChartYaml, Relative(rootPath, nestedChartYaml)) switch
         {
-            HelmYamlDocument { Root: YamlMappingNode mapping } => Summarize(mapping),
-            HelmYamlUnreadable unreadable => new VendoredEntry(
+            TolerantYamlDocument { Root: YamlMappingNode mapping } => Summarize(mapping),
+            TolerantYamlUnreadable unreadable => new VendoredEntry(
                 entryName, relative, false, null, null, "application", templateCount, deeperCount, unreadable.Failure),
             _ => new VendoredEntry(entryName, relative, false, null, null, "application", templateCount, deeperCount, null),
         };
@@ -420,11 +420,11 @@ public sealed class HelmChartReader
             return null;
         }
 
-        switch (HelmYaml.Read(path, name))
+        switch (TolerantYaml.Read(path, name))
         {
-            case HelmYamlUnreadable unreadable:
+            case TolerantYamlUnreadable unreadable:
                 return new LockFile(name, [], unreadable.Failure);
-            case HelmYamlDocument { Root: YamlMappingNode root }
+            case TolerantYamlDocument { Root: YamlMappingNode root }
                 when root.Children.TryGetValue(new YamlScalarNode("dependencies"), out var list)
                      && list is YamlSequenceNode sequence:
                 var entries = new List<LockEntry>();

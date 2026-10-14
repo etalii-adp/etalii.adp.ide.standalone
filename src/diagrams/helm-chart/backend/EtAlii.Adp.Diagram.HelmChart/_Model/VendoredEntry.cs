@@ -1,3 +1,5 @@
+using EtAlii.Adp.Documents;
+
 namespace EtAlii.Adp.Diagram.HelmChart;
 
 /// <summary>
@@ -22,4 +24,4 @@ public sealed record VendoredEntry(
     string ChartType,
     int TemplateCount,
     int DeeperCount,
-    HelmYamlFailure? Failure);
+    TolerantYamlFailure? Failure);
