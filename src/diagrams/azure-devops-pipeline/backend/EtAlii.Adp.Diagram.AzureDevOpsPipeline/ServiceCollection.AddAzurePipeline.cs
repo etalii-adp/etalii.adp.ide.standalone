@@ -21,9 +21,9 @@ public static class ServiceCollectionAddAzurePipelineExtension
         ArgumentNullException.ThrowIfNull(services);
 
         // A type that declares a document extension must be able to write an empty one; the
-        // host checks that at startup rather than at the first Add.
-        // Its class stays: the empty document names the diagram it was made for.
-        services.AddSingleton<IDiagramDocumentFactory, PipelineDocumentFactory>();
+        // host checks that at startup rather than at the first Add. Written from the file's name,
+        // which the new pipeline's first comment carries.
+        services.AddEmptyDocument(Diagram.Pipeline.Origin, NewPipeline);
 
         // One store for the process: two diagrams on one pipeline have to share its document, or
         // an edit through either would be invisible to the other until a reload.
@@ -81,4 +81,38 @@ public static class ServiceCollectionAddAzurePipelineExtension
         services.AddSingleton<ICommandHandler<MovePipelineStepCommand>, MovePipelineStepCommandHandler>();
         services.AddSingleton<ICommandHandler<RestoreDocumentCommand<IPipelineDocumentStore>>, RestoreDocumentCommandHandler<IPipelineDocumentStore>>();
     }
+
+    /// <summary>
+    /// The body written when a pipeline is created from the Add dialog: a minimal pipeline that
+    /// actually runs.
+    /// </summary>
+    /// <remarks>
+    /// Not an empty file, and not commented-out scaffolding. An Azure Pipelines document that does
+    /// not run is not a pipeline - Azure DevOps rejects it - so the smallest useful thing to create
+    /// is a trigger, a pool and one job with one step (Requirement 1.3). A user who wanted an empty
+    /// file would have made one; a user who chose "Azure DevOps pipeline" wants something that
+    /// builds.
+    /// <para>
+    /// Registering an existing file takes a different path entirely and never calls this: there the
+    /// body is the file being registered, and only the <c>.adp</c> is written.
+    /// </para>
+    /// </remarks>
+    private static string NewPipeline(string baseName) =>
+        $"""
+        # {baseName}
+
+        trigger:
+          - main
+
+        pool:
+          vmImage: ubuntu-latest
+
+        jobs:
+          - job: Build
+            displayName: Build
+            steps:
+              - script: echo "Replace this with your build"
+                displayName: Build
+
+        """;
 }

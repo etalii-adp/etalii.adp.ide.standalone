@@ -76,7 +76,7 @@ public sealed class SankeySessionTests : IDisposable
         var packaged = layout.Boxes["packaged"];
 
         // Act: the cafés dropped with their middle just below the packaged coffee's.
-        var refusal = await session.MoveElementToAsync("cafes", cafes.X + 40, packaged.CentreY + 1 - (cafes.Height / 2), TestContext.Current.CancellationToken);
+        var refusal = await session.MoveElementToAsync("cafes", cafes.X + 40, packaged.CenterY + 1 - (cafes.Height / 2), TestContext.Current.CancellationToken);
 
         // Assert: the order changed, the column did not.
         Assert.Equal("", refusal);
@@ -187,7 +187,7 @@ public sealed class SankeySessionTests : IDisposable
     {
         var layout = SankeyLayout.Of(_store.GetOrLoad(_folder.Body).Model);
         var cafes = layout.Boxes["cafes"];
-        var refusal = await session.MoveElementToAsync("cafes", cafes.X, layout.Boxes["packaged"].CentreY + 1 - (cafes.Height / 2), TestContext.Current.CancellationToken);
+        var refusal = await session.MoveElementToAsync("cafes", cafes.X, layout.Boxes["packaged"].CenterY + 1 - (cafes.Height / 2), TestContext.Current.CancellationToken);
         Assert.Equal("", refusal);
     }
 

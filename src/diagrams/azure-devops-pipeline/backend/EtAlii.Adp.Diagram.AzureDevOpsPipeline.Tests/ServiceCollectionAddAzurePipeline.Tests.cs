@@ -228,7 +228,6 @@ public class ServiceCollectionAddAzurePipelineTests
         // Act.
         var leaked = new[]
         {
-            nameof(PipelineDocumentFactory),
             nameof(PipelineContextSourceResolver),
             nameof(PipelineContextActionProvider),
             nameof(PipelineContextPropertyProvider),

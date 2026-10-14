@@ -34,7 +34,7 @@ public sealed class AddWardleyMapTests : IDisposable
     public void AllEightSeamsAreRegistered()
     {
         // Act and assert. Requirement 12.3 lists eight; this is the list.
-        Assert.Single(_services.GetServices<IDiagramDocumentFactory>().OfType<WardleyDocumentFactory>());
+        Assert.Single(_services.GetServices<IDiagramDocumentFactory>(), factory => factory.Origin == Diagram.WardleyMap.Origin);
         Assert.Single(_services.GetServices<IDiagramSessionFactory>(), factory => factory.Origin == Diagram.WardleyMap.Origin);
         Assert.Single(_services.GetServices<IContextSourceResolver>().OfType<WardleyContextSourceResolver>());
         Assert.Single(_services.GetServices<IContextActionProvider>().OfType<WardleyContextActionProvider>());
@@ -52,7 +52,6 @@ public sealed class AddWardleyMapTests : IDisposable
         Assert.Single(_services.GetServices<IDiagramDocumentReloader>(), reloader => reloader.Origin == Diagram.WardleyMap.Origin);
         Assert.Equal(Diagram.WardleyMap.Origin, _services.GetServices<IDiagramToolboxProvider>().OfType<WardleyToolboxProvider>().Single().Origin);
         Assert.Equal(Diagram.WardleyMap.Origin, _services.GetServices<IDiagramValidator>().OfType<WardleyValidator>().Single().Origin);
-        Assert.Equal(Diagram.WardleyMap.Origin, _services.GetServices<IDiagramDocumentFactory>().OfType<WardleyDocumentFactory>().Single().Origin);
     }
 
     [Fact]

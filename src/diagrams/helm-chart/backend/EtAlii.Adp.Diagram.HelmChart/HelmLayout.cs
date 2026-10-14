@@ -1,4 +1,5 @@
 using EtAlii.Adp.Hierarchy;
+using EtAlii.Adp.Layout;
 
 namespace EtAlii.Adp.Diagram.HelmChart;
 
@@ -28,7 +29,7 @@ public static class HelmLayout
     /// payload both come through here, so a selection can never place an element elsewhere
     /// than the canvas drew it.
     /// </summary>
-    public static IReadOnlyDictionary<string, HelmBox> Arranged(
+    public static IReadOnlyDictionary<string, Rect> Arranged(
         HelmChart chart, HelmGraph graph, IReadOnlyDictionary<string, RegistrationPosition> stored)
     {
         ArgumentNullException.ThrowIfNull(stored);
@@ -39,8 +40,8 @@ public static class HelmLayout
             return boxes;
         }
 
-        var overlaid = new Dictionary<string, HelmBox>(boxes.Count, StringComparer.Ordinal);
-        foreach ((string id, HelmBox box) in boxes)
+        var overlaid = new Dictionary<string, Rect>(boxes.Count, StringComparer.Ordinal);
+        foreach ((string id, Rect box) in boxes)
         {
             overlaid[id] = stored.TryGetValue(id, out var position)
                 ? box with { X = position.X, Y = position.Y }
@@ -50,12 +51,12 @@ public static class HelmLayout
         return overlaid;
     }
 
-    public static IReadOnlyDictionary<string, HelmBox> Compute(HelmChart chart, HelmGraph graph)
+    public static IReadOnlyDictionary<string, Rect> Compute(HelmChart chart, HelmGraph graph)
     {
         ArgumentNullException.ThrowIfNull(chart);
         ArgumentNullException.ThrowIfNull(graph);
 
-        var boxes = new Dictionary<string, HelmBox>(StringComparer.Ordinal);
+        var boxes = new Dictionary<string, Rect>(StringComparer.Ordinal);
 
         var metadata = graph.Nodes
             .Where(node => node.Kind is HelmNodeKind.Chart or HelmNodeKind.Lock or HelmNodeKind.Schema or HelmNodeKind.Crds)
@@ -90,14 +91,14 @@ public static class HelmLayout
         return boxes;
     }
 
-    private static double Column(Dictionary<string, HelmBox> boxes, IReadOnlyList<HelmNode> nodes, double x)
+    private static double Column(Dictionary<string, Rect> boxes, IReadOnlyList<HelmNode> nodes, double x)
     {
         var y = Top;
         double widest = 0;
         foreach (var node in nodes)
         {
             (double width, double height) = SizeOf(node.Kind);
-            boxes[node.Id] = new HelmBox(x, y, width, height);
+            boxes[node.Id] = new Rect(x, y, width, height);
             y += height + RowGap;
             widest = Math.Max(widest, width);
         }

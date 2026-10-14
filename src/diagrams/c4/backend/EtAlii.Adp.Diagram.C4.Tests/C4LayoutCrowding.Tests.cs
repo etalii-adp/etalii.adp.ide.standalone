@@ -1,3 +1,4 @@
+using EtAlii.Adp.Layout;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
@@ -142,7 +143,7 @@ public class C4LayoutCrowdingTests
             outside.Length > 0,
             "No box has an 'outside' key, so this guard checked no element against the boundary it was pushed out of.");
 
-        foreach ((string id, C4Box box) in outside)
+        foreach ((string id, Rect box) in outside)
         {
             Assert.False(box.Overlaps(boundary), $"'{id}' is drawn on top of the boundary it was pushed out of.");
         }

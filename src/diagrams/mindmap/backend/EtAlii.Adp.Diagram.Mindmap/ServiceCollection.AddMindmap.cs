@@ -28,9 +28,8 @@ public static class ServiceCollectionAddMindmapExtension
         services.AddMindmapCommands();
         services.AddSingleton<MindmapViewState>();
 
-        // A class rather than AddEmptyDocument: a new map's root is named after the file and has an
-        // id of its own, so its text is not the same for every file.
-        services.AddSingleton<IDiagramDocumentFactory, MindmapDocumentFactory>();
+        // Written from the file's name, which names the new map's root.
+        services.AddEmptyDocument(Diagram.Mindmap.Origin, MindmapDocument.EmptyDocument);
         services.AddSingleton<IContextSourceResolver, MindmapContextSourceResolver>();
         services.AddSingleton<IContextActionProvider, MindmapContextActionProvider>();
         services.AddSingleton<IContextPropertyProvider, MindmapContextPropertyProvider>();

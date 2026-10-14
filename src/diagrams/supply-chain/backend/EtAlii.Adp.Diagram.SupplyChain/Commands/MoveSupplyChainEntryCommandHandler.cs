@@ -1,5 +1,6 @@
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
+using EtAlii.Adp.Layout;
 
 namespace EtAlii.Adp.Diagram.SupplyChain;
 
@@ -82,10 +83,10 @@ public sealed class MoveSupplyChainEntryCommandHandler(ISupplyChainDocumentStore
             .Select(group => group.Id)
             .FirstOrDefault();
 
-        static bool Holds(SupplyChainBox box, double x, double y) => x >= box.X && x <= box.Right && y >= box.Y && y <= box.Bottom;
+        static bool Holds(Rect box, double x, double y) => x >= box.X && x <= box.Right && y >= box.Y && y <= box.Bottom;
     }
 
-    private static EditOutcome MoveGroup(LineDocument document, SupplyChainModel model, SupplyChainLayout layout, SupplyChainBox frame, MoveSupplyChainEntryCommand command)
+    private static EditOutcome MoveGroup(LineDocument document, SupplyChainModel model, SupplyChainLayout layout, Rect frame, MoveSupplyChainEntryCommand command)
     {
         var group = layout.Groups.First(candidate => candidate.Id == command.EntryId);
         (double dx, double dy) = (command.X - frame.X, command.Y - frame.Y);

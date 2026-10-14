@@ -217,8 +217,8 @@ public sealed class SupplyChainCommandsTests : IDisposable
         var group = model.Groups.Last();
         Assert.Equal("New group", group.Name);
         var frame = SupplyChainLayout.Of(model).GroupBoxes[group.Id];
-        Assert.Equal(2000, frame.CentreX);
-        Assert.Equal(2000, frame.CentreY);
+        Assert.Equal(2000, frame.CenterX);
+        Assert.Equal(2000, frame.CenterY);
         Assert.Empty(SupplyChainValidator.Validate(model));
     }
 

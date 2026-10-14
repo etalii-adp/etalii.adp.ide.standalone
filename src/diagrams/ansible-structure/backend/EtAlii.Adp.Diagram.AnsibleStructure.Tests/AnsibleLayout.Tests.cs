@@ -1,3 +1,4 @@
+using EtAlii.Adp.Layout;
 using Xunit;
 
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
@@ -14,7 +15,7 @@ public class AnsibleLayoutTests
 
     private static AnsibleGraph Graph(string fixture) => AnsibleGraph.Derive(Reader.Read(IoPath.Combine("Fixtures", fixture)));
 
-    private static IReadOnlyDictionary<string, AnsibleBox> Layout(string fixture) => AnsibleLayout.Compute(Graph(fixture));
+    private static IReadOnlyDictionary<string, Rect> Layout(string fixture) => AnsibleLayout.Compute(Graph(fixture));
 
     // ---- determinism -------------------------------------------------------------------------
 
@@ -157,7 +158,7 @@ public class AnsibleLayoutTests
             for (var j = i + 1; j < boxes.Length; j++)
             {
                 Assert.False(
-                    boxes[i].Value.Intersects(boxes[j].Value),
+                    boxes[i].Value.Overlaps(boxes[j].Value),
                     $"{boxes[i].Key} overlaps {boxes[j].Key}.");
             }
         }

@@ -1,3 +1,4 @@
+using EtAlii.Adp.Layout;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
@@ -22,7 +23,7 @@ public class C4DynamicAndDeploymentViewsTests
     private static C4Element InstanceOf(C4Workspace workspace, string containerId, string nodeId) =>
         workspace.Elements.Single(element => element.ReferencedId == containerId && element.ParentId == nodeId);
 
-    private static bool Encloses(C4Box outer, C4Box inner) =>
+    private static bool Encloses(Rect outer, Rect inner) =>
         inner.X > outer.X && inner.Y > outer.Y && inner.Right < outer.Right && inner.Bottom < outer.Bottom;
 
     [Fact]

@@ -1,3 +1,5 @@
+using EtAlii.Adp.Layout;
+
 namespace EtAlii.Adp.Diagram.CausalLoopDiagram;
 
 /// <summary>
@@ -132,7 +134,7 @@ public static class SelfOrganizingLayout
 
         if (variables.Count == 0)
         {
-            return SelfOrganizingResult.Arranged(new Dictionary<string, CausalLoopBox>(StringComparer.Ordinal));
+            return SelfOrganizingResult.Arranged(new Dictionary<string, Rect>(StringComparer.Ordinal));
         }
 
         var widths = new double[variables.Count];
@@ -160,10 +162,10 @@ public static class SelfOrganizingLayout
             return SelfOrganizingResult.CouldNotSeparate(variables.Count, remaining);
         }
 
-        var boxes = new Dictionary<string, CausalLoopBox>(variables.Count, StringComparer.Ordinal);
+        var boxes = new Dictionary<string, Rect>(variables.Count, StringComparer.Ordinal);
         for (var index = 0; index < variables.Count; index++)
         {
-            boxes[variables[index].Id] = new CausalLoopBox(
+            boxes[variables[index].Id] = new Rect(
                 positions[index].X - (widths[index] / 2),
                 positions[index].Y - (height / 2),
                 widths[index],

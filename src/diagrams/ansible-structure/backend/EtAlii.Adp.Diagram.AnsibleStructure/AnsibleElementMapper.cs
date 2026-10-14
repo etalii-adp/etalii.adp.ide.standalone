@@ -1,4 +1,5 @@
 using EtAlii.Adp.Hierarchy;
+using EtAlii.Adp.Layout;
 using Google.Protobuf;
 
 namespace EtAlii.Adp.Diagram.AnsibleStructure;
@@ -108,8 +109,8 @@ public sealed class AnsibleElementMapper
     /// <see cref="RegistrationLayout.Apply"/> rather than being drawn at a phantom position
     /// (Requirement 3.1).
     /// </remarks>
-    private static IReadOnlyDictionary<string, AnsibleBox> Arranged(
-        IReadOnlyDictionary<string, AnsibleBox> computed,
+    private static IReadOnlyDictionary<string, Rect> Arranged(
+        IReadOnlyDictionary<string, Rect> computed,
         IReadOnlyDictionary<string, RegistrationPosition>? stored)
     {
         if (stored is not { Count: > 0 })
@@ -129,7 +130,7 @@ public sealed class AnsibleElementMapper
             StringComparer.Ordinal);
     }
 
-    private DiagramElement NodeElement(AnsibleProject project, AnsibleNode node, AnsibleBox box)
+    private DiagramElement NodeElement(AnsibleProject project, AnsibleNode node, Rect box)
     {
         var payload = new Wire.AnsibleElementPayload
         {
@@ -169,7 +170,7 @@ public sealed class AnsibleElementMapper
         return new DiagramElement(node.Id, box.X, box.Y, TypeOf(node.Kind), PayloadTypeUrl, payload.ToByteArray());
     }
 
-    private static DiagramElement EdgeElement(AnsibleEdge edge, AnsibleBox anchor)
+    private static DiagramElement EdgeElement(AnsibleEdge edge, Rect anchor)
     {
         var payload = new Wire.AnsibleElementPayload
         {
@@ -240,7 +241,7 @@ public sealed class AnsibleElementMapper
     private static string[] Segments(string relativePath) =>
         relativePath.Split(['/', '\\'], StringSplitOptions.RemoveEmptyEntries);
 
-    private static bool Intersects(AnsibleBox box, DiagramViewport viewport) =>
+    private static bool Intersects(Rect box, DiagramViewport viewport) =>
         box.X <= viewport.MaxX && box.Right >= viewport.MinX &&
         box.Y <= viewport.MaxY && box.Bottom >= viewport.MinY;
 

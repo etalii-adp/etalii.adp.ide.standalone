@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Geometry with no dependency at all (code-structure FR-045, research R10): one rectangle, the
+    row packing every row canvas arranges with, and the text width both tiers estimate. Modules
+    and the diagram abstractions use it, and it references nothing, so a module can lay out without
+    reaching for the documents project.
+  -->
+
+</Project>

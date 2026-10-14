@@ -1,3 +1,4 @@
+using EtAlii.Adp.Layout;
 using Google.Protobuf;
 
 namespace EtAlii.Adp.Diagram.CausalLoopDiagram;
@@ -51,7 +52,7 @@ public sealed class CausalLoopElementMapper
     /// <summary>Everything the viewport admits, mapped to core elements.</summary>
     public IReadOnlyList<DiagramElement> Visible(
         CausalLoopModel model,
-        IReadOnlyDictionary<string, CausalLoopBox> boxes,
+        IReadOnlyDictionary<string, Rect> boxes,
         DiagramViewport viewport)
     {
         ArgumentNullException.ThrowIfNull(model);
@@ -61,7 +62,7 @@ public sealed class CausalLoopElementMapper
 
         // A variable is drawn when the layout placed it and the viewport touches it. Asked with
         // TryGetValue rather than GetValueOrDefault, so "not placed" cannot become "at (0, 0)".
-        var drawn = new Dictionary<string, CausalLoopBox>(StringComparer.Ordinal);
+        var drawn = new Dictionary<string, Rect>(StringComparer.Ordinal);
         foreach (var variable in model.Variables)
         {
             if (boxes.TryGetValue(variable.Id, out var box) && Intersects(box, viewport))
@@ -121,10 +122,10 @@ public sealed class CausalLoopElementMapper
     /// drifting once only the filtered one is exercised.
     /// </remarks>
     public IReadOnlyList<DiagramElement> Elements(
-        CausalLoopModel model, IReadOnlyDictionary<string, CausalLoopBox> boxes) =>
+        CausalLoopModel model, IReadOnlyDictionary<string, Rect> boxes) =>
         Visible(model, boxes, DiagramViewport.Unbounded);
 
-    private static DiagramElement VariableElement(CausalLoopVariable variable, CausalLoopBox box)
+    private static DiagramElement VariableElement(CausalLoopVariable variable, Rect box)
     {
         var payload = new Wire.CausalLoopVariablePayload
         {
@@ -138,7 +139,7 @@ public sealed class CausalLoopElementMapper
             ElementIdOf(variable), box.CenterX, box.CenterY, VariableType, _variableTypeUrl, payload.ToByteArray());
     }
 
-    private static DiagramElement LinkElement(CausalLoopLink link, CausalLoopBox from, CausalLoopBox to)
+    private static DiagramElement LinkElement(CausalLoopLink link, Rect from, Rect to)
     {
         var payload = new Wire.CausalLoopLinkPayload
         {
@@ -168,7 +169,7 @@ public sealed class CausalLoopElementMapper
             payload.ToByteArray());
     }
 
-    private static DiagramElement LoopElement(CausalLoopLoop loop, IReadOnlyList<CausalLoopBox> members)
+    private static DiagramElement LoopElement(CausalLoopLoop loop, IReadOnlyList<Rect> members)
     {
         var payload = new Wire.CausalLoopLoopPayload
         {
@@ -196,7 +197,7 @@ public sealed class CausalLoopElementMapper
             payload.ToByteArray());
     }
 
-    private static bool Intersects(CausalLoopBox box, DiagramViewport viewport) =>
+    private static bool Intersects(Rect box, DiagramViewport viewport) =>
         box.Right >= viewport.MinX && box.X <= viewport.MaxX
         && box.Bottom >= viewport.MinY && box.Y <= viewport.MaxY;
 
@@ -204,10 +205,10 @@ public sealed class CausalLoopElementMapper
     /// The smallest box holding both - a link's span. The arc bows a little beyond it, which
     /// is accepted: the criterion is the line's bounding box, not its every pixel.
     /// </summary>
-    private static CausalLoopBox Hull(CausalLoopBox first, CausalLoopBox second)
+    private static Rect Hull(Rect first, Rect second)
     {
         var x = Math.Min(first.X, second.X);
         var y = Math.Min(first.Y, second.Y);
-        return new CausalLoopBox(x, y, Math.Max(first.Right, second.Right) - x, Math.Max(first.Bottom, second.Bottom) - y);
+        return new Rect(x, y, Math.Max(first.Right, second.Right) - x, Math.Max(first.Bottom, second.Bottom) - y);
     }
 }

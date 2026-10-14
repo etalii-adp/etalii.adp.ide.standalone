@@ -1,4 +1,4 @@
-namespace EtAlii.Adp.Documents;
+namespace EtAlii.Adp.Layout;
 
 /// <summary>One thing a row canvas draws: where it starts and ends across, and how many rows it is tall.</summary>
 /// <param name="Id">Its id, unique among the items packed together.</param>

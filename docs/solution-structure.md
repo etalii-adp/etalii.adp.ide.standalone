@@ -22,20 +22,20 @@ flowchart LR
 
 ## The solution, with its counts
 
-`src/backend/EtAlii.Adp.slnx` holds **136** projects, as a flat list rather than a folder hierarchy, so the whole thing opens and builds as one solution in Rider:
+`src/backend/EtAlii.Adp.slnx` holds **138** projects, as a flat list rather than a folder hierarchy, so the whole thing opens and builds as one solution in Rider:
 
 | Split | Count |
 | --- | --- |
-| core | **38** |
+| core | **40** |
 | diagram | **86** |
 | editor | **10** |
 | designer | **2** |
-| production | **92** |
-| test | **44** |
+| production | **93** |
+| test | **45** |
 
-Those are **two different splits of the same 136**, and a figure appearing in both tables is a coincidence rather than a correspondence, which is exactly what makes a wrong classification look right.
+Those are **two different splits of the same 138**, and a figure appearing in both tables is a coincidence rather than a correspondence, which is exactly what makes a wrong classification look right.
 
-There are **151** tracked `.csproj` files under `src/`, which is **15** more than the solution holds. Every one of the 15 is fixture or example data belonging to `src/diagrams/dotnet-dependency-graph` — a module whose subject matter *is* reading `.csproj` files, so its test fixtures and its showcase project are themselves `.csproj`. **A page claiming "147 projects" would be wrong in the confident direction.**
+There are **153** tracked `.csproj` files under `src/`, which is **15** more than the solution holds. Every one of the 15 is fixture or example data belonging to `src/diagrams/dotnet-dependency-graph` — a module whose subject matter *is* reading `.csproj` files, so its test fixtures and its showcase project are themselves `.csproj`. **A page claiming "147 projects" would be wrong in the confident direction.**
 
 ## The relative-path trap
 
@@ -45,7 +45,7 @@ Classifying by path segment — "count the ones containing `backend`" — yields
 
 ## The core projects
 
-**19** production:
+**20** production:
 
 | Concern | Project |
 | --- | --- |
@@ -59,6 +59,7 @@ Classifying by path segment — "count the ones containing `backend`" — yields
 | Known projects and workspace roots | `EtAlii.Adp.Projects` |
 | Connection lifetime | `EtAlii.Adp.Sessions` |
 | Workspace tree and file watching | `EtAlii.Adp.Hierarchy` |
+| Geometry with no dependency: the rectangle, the viewport test's operand, row packing and text width | `EtAlii.Adp.Layout` |
 | Diagram-type abstractions, including the validation contract | `EtAlii.Adp.Diagram` |
 | Editor-family abstractions | `EtAlii.Adp.Editor` |
 | Designer-family abstractions: the definition, its discovery and its catalog | `EtAlii.Adp.Designer` |
@@ -68,7 +69,7 @@ Classifying by path segment — "count the ones containing `backend`" — yields
 | Evaluating CEL expressions (Common Expression Language), for FBL and DISL alike | `EtAlii.Adp.Specification.Cel` |
 | Loading DISL specifications (Diagram Specification Language) and the bundled definitions, building a diagram's model from a reading, and deriving its toolbox, context menus, property rows, findings and gesture refusals, and running its operations, hooks and deletion policy, and giving the FBL library the attribute types of a binding | `EtAlii.Adp.Specification.Disl` |
 
-**19** test: `EtAlii.Adp.Tests`, `EtAlii.Adp.Authentication.Tests`, `EtAlii.Adp.Backend.Tests`, `EtAlii.Adp.Client.Tests`, `EtAlii.Adp.Context.Tests`, `EtAlii.Adp.Designer.Tests`, `EtAlii.Adp.Diagram.Tests`, `EtAlii.Adp.Documents.Tests`, `EtAlii.Adp.Editor.Tests`, `EtAlii.Adp.Hierarchy.Tests`, `EtAlii.Adp.History.Tests`, `EtAlii.Adp.HostLogging.Tests`, `EtAlii.Adp.Problems.Tests`, `EtAlii.Adp.Projects.Tests`, `EtAlii.Adp.Repository.Tests`, `EtAlii.Adp.Sessions.Tests`, `EtAlii.Adp.Specification.Cel.Tests`, `EtAlii.Adp.Specification.Disl.Tests`, `EtAlii.Adp.Specification.Fbl.Tests`.
+**20** test: `EtAlii.Adp.Tests`, `EtAlii.Adp.Authentication.Tests`, `EtAlii.Adp.Backend.Tests`, `EtAlii.Adp.Client.Tests`, `EtAlii.Adp.Context.Tests`, `EtAlii.Adp.Designer.Tests`, `EtAlii.Adp.Diagram.Tests`, `EtAlii.Adp.Documents.Tests`, `EtAlii.Adp.Editor.Tests`, `EtAlii.Adp.Hierarchy.Tests`, `EtAlii.Adp.History.Tests`, `EtAlii.Adp.HostLogging.Tests`, `EtAlii.Adp.Layout.Tests`, `EtAlii.Adp.Problems.Tests`, `EtAlii.Adp.Projects.Tests`, `EtAlii.Adp.Repository.Tests`, `EtAlii.Adp.Sessions.Tests`, `EtAlii.Adp.Specification.Cel.Tests`, `EtAlii.Adp.Specification.Disl.Tests`, `EtAlii.Adp.Specification.Fbl.Tests`.
 
 Not every production project has a matching test project, and that is not a gap to close by reflex — some are covered from `EtAlii.Adp.Backend.Tests`.
 

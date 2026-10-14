@@ -7,7 +7,7 @@ namespace EtAlii.Adp.Diagram.Databricks.Tests;
 /// The minimal documents a new diagram starts as: complete enough to open, parse and validate
 /// clean - a skeleton that opens with findings would be a refusal factory.
 /// </summary>
-public class DatabricksDocumentFactoryTests
+public class DatabricksEmptyDocumentTests
 {
     [Theory]
     [InlineData("databricks", "bundle")]
@@ -16,11 +16,11 @@ public class DatabricksDocumentFactoryTests
     public async Task EachTypesMinimalDocument_ParsesAndValidatesClean(string vendor, string type)
     {
         // Arrange.
-        var factory = new DatabricksDocumentFactory(new DiagramOrigin(vendor, type));
+        var origin = new DiagramOrigin(vendor, type);
 
         // Act.
-        var text = factory.CreateEmptyDocument("Nightly Ingest");
-        var validator = new DatabricksValidator(factory.Origin);
+        var text = ServiceCollectionAddDatabricksExtension.EmptyDocument(origin.Type, "Nightly Ingest");
+        var validator = new DatabricksValidator(origin);
         var problems = await validator.ValidateAsync(
             new DiagramValidationRequest(text, "Nightly Ingest", "", "", null),
             TestContext.Current.CancellationToken);
@@ -32,11 +32,8 @@ public class DatabricksDocumentFactoryTests
     [Fact]
     public void TheJobSkeleton_CarriesAStarterTask_NamedFromTheBase()
     {
-        // Arrange.
-        var factory = new DatabricksDocumentFactory(new DiagramOrigin("databricks", "job"));
-
         // Act.
-        var document = LineDocument.Parse(factory.CreateEmptyDocument("Nightly Ingest"));
+        var document = LineDocument.Parse(ServiceCollectionAddDatabricksExtension.EmptyDocument("job", "Nightly Ingest"));
         var job = Assert.Single(JobParser.Parse(DatabricksYaml.Root(document), document));
 
         // Assert.
@@ -48,11 +45,8 @@ public class DatabricksDocumentFactoryTests
     [Fact]
     public void ThePipelineSkeleton_IsJson_WithOneLibrary()
     {
-        // Arrange.
-        var factory = new DatabricksDocumentFactory(new DiagramOrigin("databricks", "pipeline"));
-
         // Act.
-        var document = LineDocument.Parse(factory.CreateEmptyDocument("bronze"));
+        var document = LineDocument.Parse(ServiceCollectionAddDatabricksExtension.EmptyDocument("pipeline", "bronze"));
         var pipeline = Assert.Single(PipelineParser.Parse(DatabricksYaml.Root(document), document));
 
         // Assert.

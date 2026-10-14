@@ -1,3 +1,4 @@
+using EtAlii.Adp.Layout;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.CausalLoopDiagram.Tests;
@@ -14,9 +15,9 @@ public class CausalLoopElementMapperTests
         CausalLoopBody.Parse(string.Join("", statements.Select(s => s + "\r\n"))).Read();
 
     /// <summary>Three variables on a row, 100 apart, so a viewport can take any subset of them.</summary>
-    private static IReadOnlyDictionary<string, CausalLoopBox> Row(params string[] ids) =>
+    private static IReadOnlyDictionary<string, Rect> Row(params string[] ids) =>
         ids.Select((id, index) => (id, index))
-            .ToDictionary(entry => entry.id, entry => new CausalLoopBox(entry.index * 100, 0, 50, 30), StringComparer.Ordinal);
+            .ToDictionary(entry => entry.id, entry => new Rect(entry.index * 100, 0, 50, 30), StringComparer.Ordinal);
 
     private static Wire.CausalLoopLinkPayload LinkPayload(DiagramElement element) =>
         Wire.CausalLoopLinkPayload.Parser.ParseFrom(element.Payload.Span);
@@ -74,7 +75,7 @@ public class CausalLoopElementMapperTests
         // Arrange: the zoomed-in reading of a long line - both ends outside the window, the
         // line running straight through it.
         var model = Model("variable a", "variable b", "link a -> b +");
-        var far = new Dictionary<string, CausalLoopBox>(StringComparer.Ordinal)
+        var far = new Dictionary<string, Rect>(StringComparer.Ordinal)
         {
             ["a"] = new(0, 0, 50, 30),
             ["b"] = new(1000, 0, 50, 30),
@@ -99,7 +100,7 @@ public class CausalLoopElementMapperTests
             "variable a", "variable b", "variable c", "variable d",
             "link a -> b +", "link b -> c +", "link c -> d +", "link d -> a +",
             "loop R1 \"four\" a b c d");
-        var spread = new Dictionary<string, CausalLoopBox>(StringComparer.Ordinal)
+        var spread = new Dictionary<string, Rect>(StringComparer.Ordinal)
         {
             ["a"] = new(0, 0, 50, 30),
             ["b"] = new(300, 0, 50, 30),

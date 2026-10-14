@@ -1,6 +1,6 @@
 using Xunit;
 
-namespace EtAlii.Adp.Documents.Tests;
+namespace EtAlii.Adp.Layout.Tests;
 
 /// <summary>The arrangement every row canvas offers: fewest rows, nothing overlapping, linked items close.</summary>
 public class RowPackingTests

@@ -51,24 +51,14 @@ public sealed class MindmapDocumentStore : IMindmapDocumentStore
 {
     private static readonly ILogger _logger = Log.ForContext<MindmapDocumentStore>();
 
-    private readonly IDiagramDocumentFactory _factory;
-
     // A first open that cannot read opens as an empty map with a warning naming the path, which is
     // the lifecycle's own default (R2.2) and what the parse below makes of an empty text - so no
     // unavailable document is declared here.
     private readonly WritableDocumentLifecycle<MindmapDocument> _lifecycle;
 
-    public MindmapDocumentStore(IDiagramDocumentFactory factory)
-    {
-        ArgumentNullException.ThrowIfNull(factory);
-        _factory = factory;
-        _lifecycle = new WritableDocumentLifecycle<MindmapDocument>(Parse, document => document.ToText());
-    }
-
-    /// <summary>A store over the module's own factory; the shape the host and most tests want.</summary>
     public MindmapDocumentStore()
-        : this(new MindmapDocumentFactory())
     {
+        _lifecycle = new WritableDocumentLifecycle<MindmapDocument>(Parse, document => document.ToText());
     }
 
     public event EventHandler<MindmapChangedEventArgs>? Changed;
@@ -162,7 +152,7 @@ public sealed class MindmapDocumentStore : IMindmapDocumentStore
             // would otherwise throw here on every open attempt.
             _logger.Information("No readable body at {BodyPath}; opening an empty map", bodyPath);
             var baseName = IoPath.GetFileNameWithoutExtension(bodyPath);
-            return MindmapDocument.Parse(_factory.CreateEmptyDocument(baseName));
+            return MindmapDocument.Parse(MindmapDocument.EmptyDocument(baseName));
         }
 
         try

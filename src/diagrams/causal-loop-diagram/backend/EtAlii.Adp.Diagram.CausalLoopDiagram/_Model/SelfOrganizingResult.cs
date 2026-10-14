@@ -1,3 +1,5 @@
+using EtAlii.Adp.Layout;
+
 namespace EtAlii.Adp.Diagram.CausalLoopDiagram;
 
 /// <summary>
@@ -19,7 +21,7 @@ namespace EtAlii.Adp.Diagram.CausalLoopDiagram;
 /// <param name="Refusal">Empty when the layout ran; otherwise why it did not.</param>
 /// <param name="Size">The document's variable count, which is the size a refusal is about.</param>
 public sealed record SelfOrganizingResult(
-    IReadOnlyDictionary<string, CausalLoopBox> Boxes,
+    IReadOnlyDictionary<string, Rect> Boxes,
     string Refusal,
     int Size)
 {
@@ -27,7 +29,7 @@ public sealed record SelfOrganizingResult(
     public bool IsArranged => Refusal.Length == 0;
 
     /// <summary>The layout ran.</summary>
-    public static SelfOrganizingResult Arranged(IReadOnlyDictionary<string, CausalLoopBox> boxes)
+    public static SelfOrganizingResult Arranged(IReadOnlyDictionary<string, Rect> boxes)
     {
         ArgumentNullException.ThrowIfNull(boxes);
 
@@ -44,7 +46,7 @@ public sealed record SelfOrganizingResult(
     /// </remarks>
     public static SelfOrganizingResult OverBudget(int size, int budget) =>
         new(
-            new Dictionary<string, CausalLoopBox>(StringComparer.Ordinal),
+            new Dictionary<string, Rect>(StringComparer.Ordinal),
             $"This diagram has {size} variables, which is more than the {budget} this layout arranges. It has been left as it is.",
             size);
 
@@ -58,7 +60,7 @@ public sealed record SelfOrganizingResult(
     /// </remarks>
     public static SelfOrganizingResult CouldNotSeparate(int size, int overlaps) =>
         new(
-            new Dictionary<string, CausalLoopBox>(StringComparer.Ordinal),
+            new Dictionary<string, Rect>(StringComparer.Ordinal),
             $"This layout could not arrange {size} variables without {overlaps} of them overlapping, so the diagram has been left as it is.",
             size);
 }

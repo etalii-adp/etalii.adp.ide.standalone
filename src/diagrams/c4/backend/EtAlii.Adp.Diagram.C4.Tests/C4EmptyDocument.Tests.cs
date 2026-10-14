@@ -1,4 +1,5 @@
 using EtAlii.Adp.Documents;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.C4.Tests;
@@ -8,10 +9,10 @@ namespace EtAlii.Adp.Diagram.C4.Tests;
 /// view except the landscape is a view *of* something, so the document has to carry the thing
 /// its view is scoped to or the view would not be legal DSL (c4-diagrams Requirement 2.1).
 /// </summary>
-public class C4DocumentFactoryTests
+public class C4EmptyDocumentTests
 {
     private static string Create(C4ViewKind kind, string baseName = "payments") =>
-        new C4DocumentFactory(new DiagramOrigin("c4", "test"), kind).CreateEmptyDocument(baseName);
+        ServiceCollectionAddC4Extension.EmptyDocument(kind, baseName);
 
     public static TheoryData<C4ViewKind> EveryViewKind() =>
     [
@@ -130,14 +131,17 @@ public class C4DocumentFactoryTests
     }
 
     [Fact]
-    public void TheCodeFactory_RefusesAndSaysWhy()
+    public void TheCodeType_RefusesAndSaysWhy()
     {
         // Arrange.
-        var factory = new C4CodeDocumentFactory();
+        var services = new ServiceCollection();
+        services.AddC4();
+        using var provider = services.BuildServiceProvider();
+        var factory = new DiagramDocumentFactories(provider.GetServices<IDiagramDocumentFactory>()).Find(new DiagramOrigin("c4", "code"));
 
         // Act and assert, step by step.
+        Assert.NotNull(factory);
         var exception = Assert.Throws<NotSupportedException>(() => factory.CreateEmptyDocument("anything"));
-        Assert.Equal(C4CodeDocumentFactory.Unavailable, exception.Message);
-        Assert.Equal("c4/code", factory.Origin.Key);
+        Assert.Equal(ServiceCollectionAddC4Extension.CodeUnavailable, exception.Message);
     }
 }

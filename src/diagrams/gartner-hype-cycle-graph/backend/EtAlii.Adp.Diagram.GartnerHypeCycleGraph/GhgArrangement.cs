@@ -1,4 +1,4 @@
-using EtAlii.Adp.Documents;
+using EtAlii.Adp.Layout;
 
 namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
 
