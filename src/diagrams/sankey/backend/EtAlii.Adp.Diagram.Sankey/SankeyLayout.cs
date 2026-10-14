@@ -1,18 +1,7 @@
+using EtAlii.Adp.Layout;
 using System.Runtime.CompilerServices;
 
 namespace EtAlii.Adp.Diagram.Sankey;
-
-/// <summary>A rectangle on the canvas: left, top, width, height.</summary>
-public readonly record struct SankeyBox(double X, double Y, double Width, double Height)
-{
-    public double Right => X + Width;
-
-    public double Bottom => Y + Height;
-
-    public double CentreX => X + (Width / 2);
-
-    public double CentreY => Y + (Height / 2);
-}
 
 /// <summary>Where one flow is drawn: how thick, and where along each end's edge its centre sits.</summary>
 /// <param name="Thickness">The band's height, in canvas units - its value on the diagram's scale.</param>
@@ -58,7 +47,7 @@ public sealed class SankeyLayout
     private SankeyLayout(
         IReadOnlyList<SankeyNode> nodes,
         IReadOnlyList<SankeyFlow> flows,
-        IReadOnlyDictionary<string, SankeyBox> boxes,
+        IReadOnlyDictionary<string, Rect> boxes,
         IReadOnlyDictionary<string, int> columns,
         IReadOnlyDictionary<string, double> values,
         IReadOnlyDictionary<string, SankeyBand> bands,
@@ -82,7 +71,7 @@ public sealed class SankeyLayout
     public IReadOnlyList<SankeyFlow> Flows { get; }
 
     /// <summary>Each drawable node's bar.</summary>
-    public IReadOnlyDictionary<string, SankeyBox> Boxes { get; }
+    public IReadOnlyDictionary<string, Rect> Boxes { get; }
 
     /// <summary>Each drawable node's zero-based column.</summary>
     public IReadOnlyDictionary<string, int> Columns { get; }
@@ -215,7 +204,7 @@ public sealed class SankeyLayout
         // nobody can see and every connection pays for.
         var boxes = nodes.ToDictionary(
             node => node.Id,
-            node => new SankeyBox(LeftOf(columns[node.Id]), Math.Round(top[node.Id], 2), SankeyGeometry.NodeWidth, Math.Round(heights[node.Id], 2)),
+            node => new Rect(LeftOf(columns[node.Id]), Math.Round(top[node.Id], 2), SankeyGeometry.NodeWidth, Math.Round(heights[node.Id], 2)),
             StringComparer.Ordinal);
 
         var bands = flows.ToDictionary(

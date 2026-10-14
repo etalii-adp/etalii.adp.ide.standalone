@@ -66,7 +66,7 @@ public sealed class SankeySession : DocumentDiagramSession<LineDocument, SankeyM
             return null;
         }
 
-        var index = others.Count(other => layout.Boxes[other].CentreY < centreY);
+        var index = others.Count(other => layout.Boxes[other].CenterY < centreY);
         if (index == column.ToList().IndexOf(id))
         {
             return null;
