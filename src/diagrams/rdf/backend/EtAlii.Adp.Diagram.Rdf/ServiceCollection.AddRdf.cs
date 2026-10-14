@@ -1,6 +1,7 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Diagram.Rdf.Shacl;
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -30,6 +31,42 @@ public static class ServiceCollectionAddRdfExtension
 
     /// <summary>The idempotency marker: every family definition carries the same Build, and the first one registers.</summary>
     private sealed class FamilyRegistered;
+
+    /// <summary>
+    /// Registers one reading at <paramref name="origin"/>: its sessions, each an
+    /// <see cref="RdfFamilySession{TProjection}"/> over the family's store and the project's history,
+    /// and the resolver that makes its elements selectable (code-structure FR-038, FR-032).
+    /// </summary>
+    /// <param name="services">The host's services.</param>
+    /// <param name="origin">The reading's diagram type.</param>
+    /// <param name="reading">
+    /// The reading for a body opened with the registration it is given, or with none. A selection
+    /// is drawn without one, so a reading that takes a header from it draws a selection in its
+    /// default: the scheme reading's labels in the default language.
+    /// </param>
+    internal static void AddRdfReading<TProjection>(
+        this IServiceCollection services,
+        DiagramOrigin origin,
+        Func<IServiceProvider, string?, IRdfReading<TProjection>> reading)
+    {
+        services.AddDiagramSession(origin, (provider, opening) => new RdfFamilySession<TProjection>(
+            opening.BodyPath,
+            opening.RegistrationPath,
+            provider.GetRequiredService<IRdfDocumentStore>(),
+            reading(provider, opening.RegistrationPath),
+            // The project's history, so a drag on this canvas is one undo away like every other edit.
+            provider.GetRequiredService<IHistoryStackStore>().Get(opening.RootPath)));
+
+        services.AddSingleton<IContextSourceResolver>(provider =>
+        {
+            var drawing = reading(provider, null);
+            return new RdfContextSourceResolver(
+                origin,
+                provider.GetRequiredService<DiagramFileRouter>(),
+                provider.GetRequiredService<IRdfDocumentStore>(),
+                drawing.Drawn);
+        });
+    }
 
     public static IServiceCollection AddRdf(this IServiceCollection services)
     {
@@ -63,8 +100,8 @@ public static class ServiceCollectionAddRdfExtension
         services.AddSingleton<IDiagramValidator>(_ => new RdfValidator(RdfOrigin));
 
         // The context seams, once for the whole family: which reading a file is opened under
-        // does not change what an element is (the C4 precedent).
-        services.AddSingleton<IContextSourceResolver, RdfContextSourceResolver>();
+        // does not change what an element is (the C4 precedent). The resolver is registered with
+        // each reading's session, because the shared base answers for one type's files.
         services.AddSingleton<IContextActionProvider, RdfContextActionProvider>();
         services.AddSingleton<IContextPropertyProvider, RdfContextPropertyProvider>();
 
@@ -77,11 +114,7 @@ public static class ServiceCollectionAddRdfExtension
 
         // The session seam and the empty body a new diagram starts as, which every sibling reading
         // registers its own instances of.
-        services.AddSingleton<IDiagramSessionFactory>(provider => new RdfSessionFactory(
-            RdfOrigin,
-            provider.GetRequiredService<IRdfDocumentStore>(),
-            provider.GetRequiredService<RdfElementMapper>(),
-            provider.GetRequiredService<IHistoryStackStore>()));
+        services.AddRdfReading(RdfOrigin, (provider, _) => new RdfReading(provider.GetRequiredService<RdfElementMapper>()));
         services.AddSingleton<IDiagramDocumentFactory>(_ => new RdfDocumentFactory(RdfOrigin));
 
         // The ontology reading, over the same store: its own projection, layout and refusals in
@@ -91,11 +124,7 @@ public static class ServiceCollectionAddRdfExtension
         services.TryAddSingleton<OwlElementMapper>();
         services.AddSingleton<IDiagramValidator>(_ => new OwlValidator(OwlOrigin));
         services.AddSingleton<IDiagramToolboxProvider>(_ => new OwlToolboxProvider(OwlOrigin));
-        services.AddSingleton<IDiagramSessionFactory>(provider => new OwlSessionFactory(
-            OwlOrigin,
-            provider.GetRequiredService<IRdfDocumentStore>(),
-            provider.GetRequiredService<OwlElementMapper>(),
-            provider.GetRequiredService<IHistoryStackStore>()));
+        services.AddRdfReading(OwlOrigin, (provider, _) => new OwlReading(provider.GetRequiredService<OwlElementMapper>()));
         services.AddSingleton<IDiagramDocumentFactory>(_ => new OwlDocumentFactory(OwlOrigin));
 
         // The sibling readings ride the family's one Build (the C4 arrangement): each registers
