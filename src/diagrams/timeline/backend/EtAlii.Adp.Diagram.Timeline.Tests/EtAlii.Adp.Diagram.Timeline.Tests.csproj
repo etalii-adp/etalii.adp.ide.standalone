@@ -27,4 +27,13 @@
     <Content Include="Fixtures\**" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!--
+      The FBL conformance corpus's example timeline binding, unchanged, which Parity/TimelineFindings.Tests.cs
+      reads every finding's fixture through (timeline-disl-fbl task 1). Linked rather than copied, so it
+      cannot drift from the vendored file.
+    -->
+    <None Include="..\..\..\..\backend\EtAlii.Adp.Specification.Fbl.Tests\Conformance\timeline.fbl" Link="Parity\timeline.fbl" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

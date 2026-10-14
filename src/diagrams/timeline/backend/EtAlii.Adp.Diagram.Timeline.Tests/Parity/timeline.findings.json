@@ -1,0 +1,65 @@
+{
+  "doc": "What each finding of timeline-disl-fbl that was known only by reading looks like when its fixture is read or edited through the vendored example binding (src/backend/EtAlii.Adp.Specification.Fbl.Tests/Conformance/timeline.fbl) and compared with what Parity/timeline.transcript.json records today's code doing. Checked by Parity/TimelineFindings.Tests.cs: an unlisted difference fails, and so does a listed one that has changed or no longer occurs. Never edit the vendored binding, a fixture written before its test, or an assertion instead.",
+  "findings": [
+    {
+      "finding": "B5",
+      "fixture": "quoted-values.tml",
+      "observed": "set qvperiod timeline.label = \"Parity element\": the transcript writes @5 -1 +\"    label: Parity element\\r\\n\"; the binding writes @5 -1 +\"    label: 'Parity element'\\r\\n\" || set qvperiod timeline.begin = \"2026-01-05\": the transcript writes @6 -3 +\"    begin: 2026-01-05\\r\\n    end: 2026-03-20\\r\\n    row: 0\\r\\n\"; the binding writes @6 -1 +\"    begin: \\\"2026-01-05\\\"\\r\\n\" || set qvconn01 timeline.label = \"Parity relation\": the transcript writes @17 -1 +\"    label: Parity relation\\r\\n\"; the binding writes @17 -1 +\"    label: 'Parity relation'\\r\\n\"",
+      "reason": "Finding B5. The tool's writer replaces the whole line of a changed value with the key and a value quoted only where YAML needs it, so a trailing comment and the author's quotes are lost; setting a begin also rewrites the end and row lines, because the property is applied as a placement of all three. FBL replaces the value's span in its own style (FBL 6.3), so the comment and the quotes survive and a value set to what it already holds writes nothing. Behaviour change ruled by Q1's default: what FBL writes."
+    },
+    {
+      "finding": "B5",
+      "fixture": "trailing-comment.tml",
+      "observed": "set tcperiod timeline.label = \"Parity element\": the transcript writes @5 -1 +\"    label: Parity element\\r\\n\"; the binding writes @5 -1 +\"    label: Parity element   # what the phase is called\\r\\n\" || set tcperiod timeline.begin = \"2026-01-05\": the transcript writes @6 -3 +\"    begin: 2026-01-05\\r\\n    end: 2026-02-13\\r\\n    row: 0\\r\\n\"; the binding writes nothing || set tcconn01 timeline.label = \"Parity relation\": the transcript writes @17 -1 +\"    label: Parity relation\\r\\n\"; the binding writes @17 -1 +\"    label: Parity relation # why the one leads to the other\\r\\n\"",
+      "reason": "Finding B5. The tool's writer replaces the whole line of a changed value with the key and a value quoted only where YAML needs it, so a trailing comment and the author's quotes are lost; setting a begin also rewrites the end and row lines, because the property is applied as a placement of all three. FBL replaces the value's span in its own style (FBL 6.3), so the comment and the quotes survive and a value set to what it already holds writes nothing. Behaviour change ruled by Q1's default: what FBL writes."
+    },
+    {
+      "finding": "B6",
+      "fixture": "give-end.tml",
+      "observed": "commit timeline.give-end on gemoment = \"2100-01-01\": the transcript writes @5 -0 +\"    end: 2100-01-01\\r\\n\"; the binding writes @7 -0 +\"    end: 2100-01-01\\r\\n\"",
+      "reason": "Finding B6. The tool writes a given end directly after the entry's first line; FBL writes a new key where the binding's insert.keys order puts it, after begin. Behaviour change ruled by Q1's default: what FBL writes."
+    },
+    {
+      "finding": "B9",
+      "fixture": "no-header.tml",
+      "observed": "the transcript records no finding; the binding reports fbl.header-mismatch at line 1: The body does not carry the binding's header mark ('timeline: 1'); it is read anyway.",
+      "reason": "Finding B9. The tool reads a document without the timeline: 1 marker, or with another version, and reports nothing; the example binding's header reports fbl.header-mismatch. The module's binding declares no header (Q2's default: switched off in this conversion)."
+    },
+    {
+      "finding": "B9",
+      "fixture": "other-version.tml",
+      "observed": "the transcript records no finding; the binding reports fbl.header-mismatch at line 1: The body does not carry the binding's header mark ('timeline: 1'); it is read anyway.",
+      "reason": "Finding B9. The tool reads a document without the timeline: 1 marker, or with another version, and reports nothing; the example binding's header reports fbl.header-mismatch. The module's binding declares no header (Q2's default: switched off in this conversion)."
+    },
+    {
+      "finding": "B10",
+      "fixture": "findings/duplicate-key.tml",
+      "observed": "the transcript records line 6 | Error | timeline.unparseable | This is not YAML that can be read: Duplicate key label; the binding reads 2 elements and reports fbl.duplicate-key at line 6: The key 'label' appears again in this mapping; only the first is read.",
+      "reason": "Finding B10. YamlDotNet refuses a mapping with a key written twice, so the tool reports the file as timeline.unparseable and opens nothing; FBL 7.4 reads the body, binds the first key and reports fbl.duplicate-key as a warning. The module keeps TimelineYamlSyntax as the stand-in that refuses such a file as today (Requirement 4.2, Amendment 1); the finding is not forwarded (Q2)."
+    },
+    {
+      "finding": "B11",
+      "fixture": "findings/end-shapes.tml",
+      "observed": "esmapping: the transcript a moment, the binding a period | essequence: the transcript a moment, the binding a period",
+      "reason": "Finding B11. The tool reads an entry as a period only when its end key holds a scalar (the empty one and null included); when end holds a mapping or a sequence it is a moment. The binding's has(entry.end) is true for every end key, so those two are periods. An empty end: and end: null agree. Definition defect: the module's binding states the tool's rule, or the difference is ruled on."
+    },
+    {
+      "finding": "B13",
+      "fixture": "rows.tml",
+      "observed": "rowfloat: the transcript row 0, the binding 1 | rowhex: the transcript row 0, the binding 16 | rowoctal: the transcript row 0, the binding 15 | rowexponent: the transcript row 0, the binding 10",
+      "reason": "Finding B13. The tool reads a row with .NET's integer parse of the scalar's text, so 1.0, 0x10, 0o17 and 1e1 are row 0; the example binding converts the typed value, so they are rows 1, 16, 15 and 10. \"3\" and +4 agree. Definition defect: the module's binding reads row as text, without quoted and fallback, and the row is parsed as the tool parses it."
+    },
+    {
+      "finding": "B14",
+      "fixture": "findings/no-begin.tml",
+      "observed": "nbperiod: the transcript begin \"\", the binding unset | nbmoment: the transcript begin \"\", the binding unset",
+      "reason": "Finding B14. The tool reads a missing begin as the empty text and reports it as an unreadable time; the binding leaves the attribute unset, which a rule that reads it as null does not report. Definition defect: the module's binding gives begin default \"\"."
+    },
+    {
+      "finding": "B16",
+      "fixture": "indentation.tml",
+      "observed": "execute timeline.add-moment on new:1767312000,4: the transcript writes @30 -0 +\"    -   id: minted-6\\r\\n        label: New moment\\r\\n        begin: 2026-01-02\\r\\n        row: 4\\r\\n\"; the binding writes @10 -0 +\"    -   id: minted-6\\r\\n        label: New moment\\r\\n        begin: 2026-01-02\\r\\n        row: 4\\r\\n\"",
+      "reason": "Found by B7's fixture, not in the requirements. The tool appends a new element after the last entry of elements; the example binding's insert.place is after-last, which FBL defines as right after the last entry of the same rule, so once the last entry is a period a new moment goes after the last moment, in the middle of the list. Definition defect: the module's binding writes place end for both element rules."
+    }
+  ]
+}
