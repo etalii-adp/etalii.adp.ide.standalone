@@ -1,19 +1,18 @@
-﻿using EtAlii.Adp.History;
+﻿using EtAlii.Adp.Documents;
+using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.Rdf.Shacl;
 
 /// <summary>States a new node shape (Requirement 5.2).</summary>
-public sealed record CreateShaclNodeShapeCommand(string BodyPath, string ShapeIri) : ICommand;
+public sealed record CreateShaclNodeShapeCommand(string BodyPath, string ShapeIri) : IDocumentEditCommand;
 
 /// <inheritdoc cref="CreateShaclNodeShapeCommand" />
-public sealed class CreateShaclNodeShapeCommandHandler(IRdfDocumentStore documents) : ICommandHandler<CreateShaclNodeShapeCommand>
+public sealed class CreateShaclNodeShapeCommandHandler(IRdfDocumentStore documents) : RdfEditHandler<CreateShaclNodeShapeCommand>(documents)
 {
-    public Task<CommandResult> ExecuteAsync(CreateShaclNodeShapeCommand command, CancellationToken cancellationToken = default)
+    /// <inheritdoc />
+    protected override EditOutcome Apply(LineDocument body, RdfModel model, CreateShaclNodeShapeCommand command)
     {
-        ArgumentNullException.ThrowIfNull(command);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        return RdfEdits.Run(documents, command.BodyPath, command, entry =>
-            ShaclWriter.CreateNodeShape(entry.Document, entry.Model, command.ShapeIri));
+        return Outcome(
+            ShaclWriter.CreateNodeShape(body, model, command.ShapeIri));
     }
 }

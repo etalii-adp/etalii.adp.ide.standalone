@@ -1,4 +1,5 @@
-﻿using EtAlii.Adp.History;
+﻿using EtAlii.Adp.Documents;
+using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.Rdf;
 
@@ -16,16 +17,14 @@ namespace EtAlii.Adp.Diagram.Rdf;
 /// <param name="ObjectDatatypeIri">The literal's datatype IRI.</param>
 public sealed record AddRdfTripleCommand(
     string BodyPath, string SubjectIri, string PredicateIri,
-    string ObjectIri, string ObjectLiteral = "", string ObjectLanguage = "", string ObjectDatatypeIri = "") : ICommand;
+    string ObjectIri, string ObjectLiteral = "", string ObjectLanguage = "", string ObjectDatatypeIri = "") : IDocumentEditCommand;
 
 /// <inheritdoc cref="AddRdfTripleCommand" />
-public sealed class AddRdfTripleCommandHandler(IRdfDocumentStore documents) : ICommandHandler<AddRdfTripleCommand>
+public sealed class AddRdfTripleCommandHandler(IRdfDocumentStore documents) : RdfEditHandler<AddRdfTripleCommand>(documents)
 {
-    public Task<CommandResult> ExecuteAsync(AddRdfTripleCommand command, CancellationToken cancellationToken = default)
+    /// <inheritdoc />
+    protected override EditOutcome Apply(LineDocument body, RdfModel model, AddRdfTripleCommand command)
     {
-        ArgumentNullException.ThrowIfNull(command);
-        cancellationToken.ThrowIfCancellationRequested();
-
         RdfTerm objectTerm = command.ObjectIri.Length > 0
             ? new IriTerm(command.ObjectIri, "")
             : new LiteralTerm(
@@ -34,7 +33,7 @@ public sealed class AddRdfTripleCommandHandler(IRdfDocumentStore documents) : IC
                 command.ObjectLanguage.Length > 0 ? command.ObjectLanguage : null,
                 "");
 
-        return RdfEdits.Run(documents, command.BodyPath, command, entry =>
-            RdfWriter.AddTriple(entry.Document, entry.Model, command.SubjectIri, command.PredicateIri, objectTerm));
+        return Outcome(
+            RdfWriter.AddTriple(body, model, command.SubjectIri, command.PredicateIri, objectTerm));
     }
 }

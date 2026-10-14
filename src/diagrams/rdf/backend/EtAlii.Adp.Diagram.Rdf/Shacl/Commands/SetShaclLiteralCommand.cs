@@ -1,4 +1,5 @@
-﻿using EtAlii.Adp.History;
+﻿using EtAlii.Adp.Documents;
+using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.Rdf.Shacl;
 
@@ -7,17 +8,15 @@ namespace EtAlii.Adp.Diagram.Rdf.Shacl;
 /// Requirement 6.3 routes through the grid rather than through a menu, because it is a plain
 /// literal on an IRI-named subject and has nowhere else to live.
 /// </summary>
-public sealed record SetShaclLiteralCommand(string BodyPath, string ShapeIri, string PredicateIri, string Value) : ICommand;
+public sealed record SetShaclLiteralCommand(string BodyPath, string ShapeIri, string PredicateIri, string Value) : IDocumentEditCommand;
 
 /// <inheritdoc cref="SetShaclLiteralCommand" />
-public sealed class SetShaclLiteralCommandHandler(IRdfDocumentStore documents) : ICommandHandler<SetShaclLiteralCommand>
+public sealed class SetShaclLiteralCommandHandler(IRdfDocumentStore documents) : RdfEditHandler<SetShaclLiteralCommand>(documents)
 {
-    public Task<CommandResult> ExecuteAsync(SetShaclLiteralCommand command, CancellationToken cancellationToken = default)
+    /// <inheritdoc />
+    protected override EditOutcome Apply(LineDocument body, RdfModel model, SetShaclLiteralCommand command)
     {
-        ArgumentNullException.ThrowIfNull(command);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        return RdfEdits.Run(documents, command.BodyPath, command, entry =>
-            ShaclWriter.SetLiteral(entry.Document, entry.Model, command.ShapeIri, command.PredicateIri, command.Value));
+        return Outcome(
+            ShaclWriter.SetLiteral(body, model, command.ShapeIri, command.PredicateIri, command.Value));
     }
 }

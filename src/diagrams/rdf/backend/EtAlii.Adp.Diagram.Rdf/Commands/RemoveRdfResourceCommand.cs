@@ -1,19 +1,18 @@
-﻿using EtAlii.Adp.History;
+﻿using EtAlii.Adp.Documents;
+using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.Rdf;
 
 /// <summary>Removes a resource and every triple it is subject or object of, as one undo (Requirement 5.3).</summary>
-public sealed record RemoveRdfResourceCommand(string BodyPath, string Iri) : ICommand;
+public sealed record RemoveRdfResourceCommand(string BodyPath, string Iri) : IDocumentEditCommand;
 
 /// <inheritdoc cref="RemoveRdfResourceCommand" />
-public sealed class RemoveRdfResourceCommandHandler(IRdfDocumentStore documents) : ICommandHandler<RemoveRdfResourceCommand>
+public sealed class RemoveRdfResourceCommandHandler(IRdfDocumentStore documents) : RdfEditHandler<RemoveRdfResourceCommand>(documents)
 {
-    public Task<CommandResult> ExecuteAsync(RemoveRdfResourceCommand command, CancellationToken cancellationToken = default)
+    /// <inheritdoc />
+    protected override EditOutcome Apply(LineDocument body, RdfModel model, RemoveRdfResourceCommand command)
     {
-        ArgumentNullException.ThrowIfNull(command);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        return RdfEdits.Run(documents, command.BodyPath, command, entry =>
-            RdfWriter.RemoveResource(entry.Document, entry.Model, command.Iri));
+        return Outcome(
+            RdfWriter.RemoveResource(body, model, command.Iri));
     }
 }
