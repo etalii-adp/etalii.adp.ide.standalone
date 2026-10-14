@@ -1,3 +1,5 @@
+using EtAlii.Adp.Layout;
+
 namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline;
 
 /// <summary>
@@ -168,54 +170,9 @@ public static class PipelineLayout
     /// canvas draws it; what this does is refuse to hang over it, so a pipeline with a mistake in
     /// it still produces the picture that shows the mistake.
     /// </remarks>
-    private static Dictionary<string, int> Layers(PipelineGraph graph)
-    {
-        var order = graph.NodeIds
-            .Select((id, index) => (id, index))
-            .ToDictionary(pair => pair.id, pair => pair.index, StringComparer.Ordinal);
-
-        var forward = graph.NodeIds.ToDictionary(id => id, _ => new List<string>(), StringComparer.Ordinal);
-        foreach (var edge in graph.Edges.Where(edge => !edge.IsBroken))
-        {
-            if (order.ContainsKey(edge.FromId) && forward.TryGetValue(edge.ToId, out var dependencies))
-            {
-                dependencies.Add(edge.FromId);
-            }
-        }
-
-        var layers = new Dictionary<string, int>(StringComparer.Ordinal);
-        var resolving = new HashSet<string>(StringComparer.Ordinal);
-
-        foreach (var id in graph.NodeIds)
-        {
-            Depth(id);
-        }
-
-        return layers;
-
-        int Depth(string id)
-        {
-            if (layers.TryGetValue(id, out var known))
-            {
-                return known;
-            }
-
-            // Already on the stack, so following this edge would go round a cycle. Treated as
-            // depth zero, which drops the back edge rather than chasing it.
-            if (!resolving.Add(id))
-            {
-                return 0;
-            }
-
-            var depth = 0;
-            foreach (var dependency in forward[id])
-            {
-                depth = Math.Max(depth, Depth(dependency) + 1);
-            }
-
-            resolving.Remove(id);
-            layers[id] = depth;
-            return depth;
-        }
-    }
+    private static Dictionary<string, int> Layers(PipelineGraph graph) =>
+        Layering.LongestPath(
+            graph.NodeIds,
+            graph.Edges.Where(edge => !edge.IsBroken).Select(edge => (edge.FromId, edge.ToId)),
+            CyclePolicy.BackEdgeIsZero);
 }
