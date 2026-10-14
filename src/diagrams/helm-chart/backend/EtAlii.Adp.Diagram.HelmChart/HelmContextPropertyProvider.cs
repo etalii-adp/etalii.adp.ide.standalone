@@ -1,5 +1,6 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents.Wire;
+using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
 namespace EtAlii.Adp.Diagram.HelmChart;
 
@@ -43,12 +44,14 @@ public sealed class HelmContextPropertyProvider : IContextPropertyProvider
         ArgumentNullException.ThrowIfNull(target);
         cancellationToken.ThrowIfCancellationRequested();
 
-        if (target.ElementId.Length == 0 || !Directory.Exists(target.ResolvedFullPath))
+        // The target is the registration the element was selected in; the chart is its folder.
+        var folder = IoPath.GetDirectoryName(target.ResolvedFullPath);
+        if (target.ElementId.Length == 0 || folder is null || !Directory.Exists(folder))
         {
             return Empty;
         }
 
-        var chart = _store.GetOrLoad(target.ResolvedFullPath);
+        var chart = _store.GetOrLoad(folder);
         var graph = HelmGraph.Derive(chart);
 
         if (graph.Node(target.ElementId) is { } node)

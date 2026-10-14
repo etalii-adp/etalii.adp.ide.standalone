@@ -133,5 +133,6 @@ public class HelmContextPropertyProviderTests : IDisposable
         Assert.Contains("changes nothing", result.Error, StringComparison.Ordinal);
     }
 
-    private ContextTarget Target(string elementId) => ContextTarget.ForElement(_root, elementId, _root);
+    /// <summary>A selected element's target: the registration it was selected in, beside the chart.</summary>
+    private ContextTarget Target(string elementId) => ContextTarget.ForElement(IoPath.Combine(_root, "helm-chart.adp"), elementId, _root);
 }

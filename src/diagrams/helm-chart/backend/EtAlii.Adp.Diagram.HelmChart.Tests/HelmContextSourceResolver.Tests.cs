@@ -37,7 +37,7 @@ public class HelmContextSourceResolverTests : IDisposable
         var catalog = new HelmTestDiagramDefinitionCatalog(
             Diagram.HelmCharts,
             new DiagramDefinition(new DiagramOrigin("freeplane", "mindmap"), "Mind map", Extension: ".mm"));
-        _resolver = new HelmContextSourceResolver(new DiagramFileRouter(catalog), _store);
+        _resolver = new HelmContextSourceResolver(new DiagramFileRouter(catalog), _store, new HelmElementMapper());
     }
 
     public void Dispose()
@@ -66,8 +66,25 @@ public class HelmContextSourceResolverTests : IDisposable
         Assert.Equal(["templates", "deployment.yaml"], level.RelativePath);
         Assert.Equal("deployment.yaml", level.Detail.Element.Text);
         Assert.Equal("tpl:templates/deployment.yaml", level.Target.ElementId);
-        // The target's own path is the chart FOLDER - what everything downstream keys on.
-        Assert.Equal(IoPath.GetFullPath(_root), IoPath.GetFullPath(level.Target.ResolvedFullPath));
+    }
+
+    [Fact]
+    public async Task ANode_CarriesThePayloadTheCanvasWasSent_AndIsTargetedAtItsRegistration()
+    {
+        // Arrange.
+        var chart = _store.GetOrLoad(_root);
+        var graph = HelmGraph.Derive(chart);
+        var sent = new HelmElementMapper().Elements(chart, graph, HelmLayout.Compute(chart, graph))
+            .Single(element => element.Id == "tpl:templates/deployment.yaml");
+
+        // Act.
+        var level = Assert.IsType<ResolvedContextLevel>(await Resolve("tpl:templates/deployment.yaml")).Level;
+
+        // Assert: the selection describes the element as the stream did, and names the file it
+        // was selected in, as every diagram's selection does.
+        Assert.Equal(sent.Type, level.Detail.Element.ElementType);
+        Assert.Equal(sent.Payload.ToArray(), level.Detail.Element.Payload.Value.ToByteArray());
+        Assert.Equal(_registration, level.Target.ResolvedFullPath);
     }
 
     [Fact]
