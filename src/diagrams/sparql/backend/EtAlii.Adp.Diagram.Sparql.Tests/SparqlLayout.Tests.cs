@@ -1,4 +1,5 @@
 using EtAlii.Adp.Hierarchy;
+using EtAlii.Adp.Layout;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -37,7 +38,7 @@ public class SparqlLayoutTests
                 // Only computed positions owe containment: an authored node position is the
                 // author's own choice of spot.
                 var position = layout.NodePositions[node.Id];
-                var nodeRect = new SparqlRect(position.X, position.Y, 170, 64);
+                var nodeRect = new Rect(position.X, position.Y, 170, 64);
                 Assert.True(
                     frame.Contains(nodeRect),
                     $"{node.Id} at ({position.X},{position.Y}) escapes {region.Id} {frame}");

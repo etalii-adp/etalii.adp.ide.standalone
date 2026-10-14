@@ -1,5 +1,6 @@
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
+using EtAlii.Adp.Layout;
 
 namespace EtAlii.Adp.Diagram.CausalLoopDiagram;
 
@@ -137,8 +138,8 @@ internal sealed class CausalLoopSession : DocumentDiagramSession<CausalLoopBody,
 
         if (stored.Count > 0)
         {
-            var overlaid = new Dictionary<string, CausalLoopBox>(boxes.Count, StringComparer.Ordinal);
-            foreach ((string id, CausalLoopBox box) in boxes)
+            var overlaid = new Dictionary<string, Rect>(boxes.Count, StringComparer.Ordinal);
+            foreach ((string id, Rect box) in boxes)
             {
                 // Positions are stored under the element id, which is what a drag reports.
                 overlaid[id] = stored.TryGetValue($"variable:{id}", out var position)

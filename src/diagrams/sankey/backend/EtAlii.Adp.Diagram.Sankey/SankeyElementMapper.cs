@@ -1,3 +1,4 @@
+using EtAlii.Adp.Layout;
 using Google.Protobuf;
 
 namespace EtAlii.Adp.Diagram.Sankey;
@@ -61,7 +62,7 @@ public sealed class SankeyElementMapper
         ];
     }
 
-    private static bool Overlaps(SankeyBox box, DiagramViewport viewport) =>
+    private static bool Overlaps(Rect box, DiagramViewport viewport) =>
         box.Right >= viewport.MinX && box.X <= viewport.MaxX && box.Bottom >= viewport.MinY && box.Y <= viewport.MaxY;
 
     private static DiagramElement Node(SankeyModel model, SankeyLayout layout, SankeyNode node)
@@ -84,7 +85,7 @@ public sealed class SankeyElementMapper
             Side = layout.Columns[node.Id] == 0 ? LeftSide : RightSide,
         };
 
-        return Pack(node.Id, box.CentreX, box.CentreY, NodeType, payload);
+        return Pack(node.Id, box.CenterX, box.CenterY, NodeType, payload);
     }
 
     private static DiagramElement Flow(SankeyModel model, SankeyLayout layout, SankeyFlow flow, Dictionary<string, SankeyNode> nodes)

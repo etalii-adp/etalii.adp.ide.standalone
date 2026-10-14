@@ -1,3 +1,4 @@
+using EtAlii.Adp.Layout;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.Mindmap.Tests;
@@ -11,7 +12,7 @@ public class MindmapLayoutTests
 
     private static bool Nothing(MindmapNode _) => false;
 
-    private static IReadOnlyDictionary<string, MindmapBox> Layout(MindmapDocument document, Func<MindmapNode, bool>? isFolded = null) =>
+    private static IReadOnlyDictionary<string, Rect> Layout(MindmapDocument document, Func<MindmapNode, bool>? isFolded = null) =>
         MindmapLayout.Compute(document.Root, Metrics, isFolded ?? Nothing);
 
     [Fact]
@@ -359,6 +360,6 @@ public class MindmapLayoutTests
         Assert.True(Distance(far) > Distance(near), "a larger ratio must push the siblings further apart");
         return;
 
-        static double Distance(IReadOnlyDictionary<string, MindmapBox> boxes) => boxes["b"].Y - boxes["a"].Bottom;
+        static double Distance(IReadOnlyDictionary<string, Rect> boxes) => boxes["b"].Y - boxes["a"].Bottom;
     }
 }

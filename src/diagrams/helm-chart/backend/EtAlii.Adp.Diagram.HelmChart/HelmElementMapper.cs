@@ -1,4 +1,5 @@
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Layout;
 using Google.Protobuf;
 
 namespace EtAlii.Adp.Diagram.HelmChart;
@@ -45,7 +46,7 @@ public sealed class HelmElementMapper
     /// a dragged box from a computed one, which is the point.
     /// </summary>
     public IReadOnlyList<DiagramElement> Elements(
-        HelmChart chart, HelmGraph graph, IReadOnlyDictionary<string, HelmBox> boxes)
+        HelmChart chart, HelmGraph graph, IReadOnlyDictionary<string, Rect> boxes)
     {
         ArgumentNullException.ThrowIfNull(chart);
         ArgumentNullException.ThrowIfNull(graph);
@@ -78,7 +79,7 @@ public sealed class HelmElementMapper
     /// something is missing rather than seeing nothing at all.
     /// </remarks>
     public IReadOnlyList<DiagramElement> Visible(
-        HelmChart chart, HelmGraph graph, IReadOnlyDictionary<string, HelmBox> boxes, DiagramViewport viewport)
+        HelmChart chart, HelmGraph graph, IReadOnlyDictionary<string, Rect> boxes, DiagramViewport viewport)
     {
         ArgumentNullException.ThrowIfNull(chart);
         ArgumentNullException.ThrowIfNull(graph);
@@ -122,11 +123,11 @@ public sealed class HelmElementMapper
         return elements;
     }
 
-    private static bool Intersects(HelmBox box, DiagramViewport viewport) =>
+    private static bool Intersects(Rect box, DiagramViewport viewport) =>
         box.X <= viewport.MaxX && box.Right >= viewport.MinX &&
         box.Y <= viewport.MaxY && box.Bottom >= viewport.MinY;
 
-    private static DiagramElement NodeElement(HelmChart chart, HelmGraph graph, HelmNode node, HelmBox box)
+    private static DiagramElement NodeElement(HelmChart chart, HelmGraph graph, HelmNode node, Rect box)
     {
         var payload = new Wire.HelmElementPayload
         {
@@ -210,7 +211,7 @@ public sealed class HelmElementMapper
         return new DiagramElement(node.Id, box.X, box.Y, TypeOf(node), PayloadTypeUrl, payload.ToByteArray());
     }
 
-    private static DiagramElement EdgeElement(HelmEdge edge, HelmBox anchor)
+    private static DiagramElement EdgeElement(HelmEdge edge, Rect anchor)
     {
         var payload = new Wire.HelmElementPayload
         {

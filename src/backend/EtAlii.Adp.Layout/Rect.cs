@@ -17,4 +17,8 @@ public readonly record struct Rect(double X, double Y, double Width, double Heig
     /// <summary>Whether this rectangle and <paramref name="other"/> share any area; touching edges share none.</summary>
     public bool Overlaps(Rect other) =>
         X < other.Right && other.X < Right && Y < other.Bottom && other.Y < Bottom;
+
+    /// <summary>Whether <paramref name="other"/> lies entirely inside this rectangle; a shared edge is inside.</summary>
+    public bool Contains(Rect other) =>
+        other.X >= X && other.Y >= Y && other.Right <= Right && other.Bottom <= Bottom;
 }

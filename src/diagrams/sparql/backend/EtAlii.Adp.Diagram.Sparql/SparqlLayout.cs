@@ -1,27 +1,14 @@
 using EtAlii.Adp.Hierarchy;
+using EtAlii.Adp.Layout;
 
 namespace EtAlii.Adp.Diagram.Sparql;
-
-/// <summary>A region frame's computed rectangle.</summary>
-/// <param name="X">Left edge.</param>
-/// <param name="Y">Top edge.</param>
-/// <param name="Width">Frame width.</param>
-/// <param name="Height">Frame height.</param>
-public readonly record struct SparqlRect(double X, double Y, double Width, double Height)
-{
-    /// <summary>Whether <paramref name="other"/> lies entirely inside this rectangle.</summary>
-    public bool Contains(SparqlRect other) =>
-        other.X >= X && other.Y >= Y
-        && other.X + other.Width <= X + Width
-        && other.Y + other.Height <= Y + Height;
-}
 
 /// <summary>Everything the session positions: node points, and region frames with their extents.</summary>
 /// <param name="NodePositions">Every node's position, authored overrides already applied.</param>
 /// <param name="RegionBounds">Every region's frame, keyed by region id, anchors already applied.</param>
 public sealed record SparqlLayoutResult(
     IReadOnlyDictionary<string, RegistrationPosition> NodePositions,
-    IReadOnlyDictionary<string, SparqlRect> RegionBounds);
+    IReadOnlyDictionary<string, Rect> RegionBounds);
 
 /// <summary>
 /// Pure and deterministic: same projection, same picture - recursive bottom-up over the scope
@@ -69,7 +56,7 @@ public static class SparqlLayout
             .ToDictionary(group => group.Key, group => group.ToList(), StringComparer.Ordinal);
 
         var nodePositions = new Dictionary<string, RegistrationPosition>(StringComparer.Ordinal);
-        var regionBounds = new Dictionary<string, SparqlRect>(StringComparer.Ordinal);
+        var regionBounds = new Dictionary<string, Rect>(StringComparer.Ordinal);
 
         // Root pass: the open canvas holds the where scope's own nodes, its top-level regions,
         // and the template region beside them.
@@ -122,7 +109,7 @@ public static class SparqlLayout
         return region.ScopePath == "template" ? "" : "where";
     }
 
-    private sealed record Item(string Id, SparqlRect Size, SparqlRegion? Region);
+    private sealed record Item(string Id, Rect Size, SparqlRegion? Region);
 
     private static List<Item> ItemsOf(
         string scopePath,
@@ -133,7 +120,7 @@ public static class SparqlLayout
         var items = new List<Item>();
         if (nodesByScope.TryGetValue(scopePath, out var nodes))
         {
-            items.AddRange(nodes.Select(node => new Item(node.Id, new SparqlRect(0, 0, NodeWidth, NodeHeight), null)));
+            items.AddRange(nodes.Select(node => new Item(node.Id, new Rect(0, 0, NodeWidth, NodeHeight), null)));
         }
 
         if (regionsByParentPath.TryGetValue(scopePath, out var regions))
@@ -150,7 +137,7 @@ public static class SparqlLayout
     }
 
     /// <summary>Bottom-up: a region's extent is its own grid's extent plus padding and its label band.</summary>
-    private static SparqlRect MeasureRegion(
+    private static Rect MeasureRegion(
         string scopePath,
         Dictionary<string, List<SparqlNode>> nodesByScope,
         Dictionary<string, List<SparqlRegion>> regionsByParentPath,
@@ -158,7 +145,7 @@ public static class SparqlLayout
     {
         var items = ItemsOf(scopePath, nodesByScope, regionsByParentPath, projection);
         (double width, double height) = GridExtent(items);
-        return new SparqlRect(
+        return new Rect(
             0,
             0,
             Math.Max(width + 2 * RegionPadding, NodeWidth),
@@ -208,7 +195,7 @@ public static class SparqlLayout
         Dictionary<string, List<SparqlRegion>> regionsByParentPath,
         SparqlProjectionResult projection,
         Dictionary<string, RegistrationPosition> nodePositions,
-        Dictionary<string, SparqlRect> regionBounds)
+        Dictionary<string, Rect> regionBounds)
     {
         var x = originX;
         var y = originY;
@@ -257,7 +244,7 @@ public static class SparqlLayout
         double deltaY,
         SparqlProjectionResult projection,
         Dictionary<string, RegistrationPosition> nodePositions,
-        Dictionary<string, SparqlRect> regionBounds)
+        Dictionary<string, Rect> regionBounds)
     {
         var prefix = scopePath + "/";
         foreach (var node in projection.Nodes)

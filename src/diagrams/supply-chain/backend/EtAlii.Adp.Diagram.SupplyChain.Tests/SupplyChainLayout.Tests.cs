@@ -1,4 +1,5 @@
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Layout;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.SupplyChain.Tests;
@@ -57,16 +58,16 @@ public sealed class SupplyChainLayoutTests
         // through the middle of every lane slot to the consumer's left side - touches no card but its own two.
         foreach (var flow in layout.Flows)
         {
-            (SupplyChainBox from, SupplyChainBox to) = (layout.NodeBoxes[flow.From], layout.NodeBoxes[flow.To]);
-            var stops = new List<(double X, double Y)> { (from.Right, from.CentreY) };
+            (Rect from, Rect to) = (layout.NodeBoxes[flow.From], layout.NodeBoxes[flow.To]);
+            var stops = new List<(double X, double Y)> { (from.Right, from.CenterY) };
             foreach ((double laneX, double laneY) in layout.Lanes.GetValueOrDefault(flow.Id) ?? [])
             {
                 stops.Add((laneX - (SupplyChainGeometry.NodeWidth / 2), laneY));
                 stops.Add((laneX + (SupplyChainGeometry.NodeWidth / 2), laneY));
             }
 
-            stops.Add((to.X, to.CentreY));
-            foreach ((string id, SupplyChainBox box) in layout.NodeBoxes.Where(pair => pair.Key != flow.From && pair.Key != flow.To))
+            stops.Add((to.X, to.CenterY));
+            foreach ((string id, Rect box) in layout.NodeBoxes.Where(pair => pair.Key != flow.From && pair.Key != flow.To))
             {
                 foreach ((double x, double y) in Sampled(stops))
                 {
@@ -107,7 +108,7 @@ public sealed class SupplyChainLayoutTests
         {
             for (var j = i + 1; j < boxes.Count; j++)
             {
-                (SupplyChainBox a, SupplyChainBox b) = (boxes[i], boxes[j]);
+                (Rect a, Rect b) = (boxes[i], boxes[j]);
                 Assert.False(a.X < b.Right && b.X < a.Right && a.Y < b.Bottom && b.Y < a.Bottom, $"{a} overlaps {b}");
             }
         }
@@ -124,7 +125,7 @@ public sealed class SupplyChainLayoutTests
         Assert.NotEmpty(layout.Groups);
         foreach (var node in layout.Nodes.Where(node => node.Group.Length > 0))
         {
-            (SupplyChainBox frame, SupplyChainBox box) = (layout.GroupBoxes[node.Group], layout.NodeBoxes[node.Id]);
+            (Rect frame, Rect box) = (layout.GroupBoxes[node.Group], layout.NodeBoxes[node.Id]);
             Assert.True(frame.X < box.X && frame.Y < box.Y && frame.Right > box.Right && frame.Bottom > box.Bottom, $"{node.Id} is outside {node.Group}");
         }
     }

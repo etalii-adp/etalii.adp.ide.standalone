@@ -1,3 +1,4 @@
+using EtAlii.Adp.Layout;
 using Google.Protobuf;
 
 namespace EtAlii.Adp.Diagram.SupplyChain;
@@ -101,7 +102,7 @@ public sealed class SupplyChainElementMapper
         ];
     }
 
-    private static bool Overlaps(SupplyChainBox box, DiagramViewport viewport) =>
+    private static bool Overlaps(Rect box, DiagramViewport viewport) =>
         box.Right >= viewport.MinX && box.X <= viewport.MaxX && box.Bottom >= viewport.MinY && box.Y <= viewport.MaxY;
 
     private static DiagramElement Group(SupplyChainLayout layout, SupplyChainGroup group, SupplyChainTrace trace)
@@ -116,7 +117,7 @@ public sealed class SupplyChainElementMapper
             Trace = trace.Of(group.Id),
         };
 
-        return Pack(group.Id, box.CentreX, box.CentreY, GroupType, payload);
+        return Pack(group.Id, box.CenterX, box.CenterY, GroupType, payload);
     }
 
     private static DiagramElement Node(SupplyChainLayout layout, SupplyChainNode node, Dictionary<string, double> largest, SupplyChainTrace trace)
@@ -137,7 +138,7 @@ public sealed class SupplyChainElementMapper
             Share = node.Quantity is { } quantity && largest.TryGetValue(node.Unit, out var most) && most > 0 ? Math.Clamp(quantity / most, 0, 1) : 0,
         };
 
-        return Pack(node.Id, box.CentreX, box.CentreY, NodeTypeOf(node.Type), payload);
+        return Pack(node.Id, box.CenterX, box.CenterY, NodeTypeOf(node.Type), payload);
     }
 
     private static DiagramElement Flow(SupplyChainFlow flow, double heaviest, IReadOnlyList<(double X, double Y)>? lanes, SupplyChainTrace trace)

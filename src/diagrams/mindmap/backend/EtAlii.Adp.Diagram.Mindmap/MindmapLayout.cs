@@ -1,3 +1,5 @@
+using EtAlii.Adp.Layout;
+
 namespace EtAlii.Adp.Diagram.Mindmap;
 
 /// <summary>
@@ -23,15 +25,15 @@ public static class MindmapLayout
     /// Boxes for every visible node, keyed by node id. <paramref name="isFolded"/> says which
     /// nodes hide their children on the connection being laid out.
     /// </summary>
-    public static IReadOnlyDictionary<string, MindmapBox> Compute(MindmapNode root, MindmapMetrics metrics, Func<MindmapNode, bool> isFolded)
+    public static IReadOnlyDictionary<string, Rect> Compute(MindmapNode root, MindmapMetrics metrics, Func<MindmapNode, bool> isFolded)
     {
         ArgumentNullException.ThrowIfNull(root);
         ArgumentNullException.ThrowIfNull(metrics);
         ArgumentNullException.ThrowIfNull(isFolded);
 
-        var boxes = new Dictionary<string, MindmapBox>(StringComparer.Ordinal);
+        var boxes = new Dictionary<string, Rect>(StringComparer.Ordinal);
         var rootSize = metrics.Measure(root.Text);
-        var rootBox = new MindmapBox(-rootSize.Width / 2, -rootSize.Height / 2, rootSize.Width, rootSize.Height);
+        var rootBox = new Rect(-rootSize.Width / 2, -rootSize.Height / 2, rootSize.Width, rootSize.Height);
         boxes[root.Id] = rootBox;
 
         if (isFolded(root))
@@ -69,7 +71,7 @@ public static class MindmapLayout
         bool towardsRight,
         MindmapMetrics metrics,
         Func<MindmapNode, bool> isFolded,
-        Dictionary<string, MindmapBox> boxes)
+        Dictionary<string, Rect> boxes)
     {
         if (siblings.Count == 0)
         {
@@ -106,11 +108,11 @@ public static class MindmapLayout
         bool towardsRight,
         MindmapMetrics metrics,
         Func<MindmapNode, bool> isFolded,
-        Dictionary<string, MindmapBox> boxes)
+        Dictionary<string, Rect> boxes)
     {
         var size = metrics.Measure(node.Text);
         var x = towardsRight ? edgeX : edgeX - size.Width;
-        var box = new MindmapBox(Math.Round(x, 2), Math.Round(centerY - size.Height / 2, 2), size.Width, size.Height);
+        var box = new Rect(Math.Round(x, 2), Math.Round(centerY - size.Height / 2, 2), size.Width, size.Height);
         boxes[node.Id] = box;
 
         if (isFolded(node))

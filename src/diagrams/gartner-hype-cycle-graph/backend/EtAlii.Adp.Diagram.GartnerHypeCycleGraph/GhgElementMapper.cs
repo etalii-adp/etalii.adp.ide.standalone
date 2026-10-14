@@ -1,4 +1,5 @@
 using System.Globalization;
+using EtAlii.Adp.Layout;
 using Google.Protobuf;
 
 namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
@@ -62,7 +63,7 @@ public sealed class GhgElementMapper
 
         (IReadOnlyList<GhgTrend> trends, IReadOnlyList<GhgTrigger> triggers, IReadOnlyList<GhgNote> notes, IReadOnlyList<GhgInfluence> influences) = Drawable(model);
         var unit = model.TimeUnit;
-        var bounds = new Dictionary<string, Box>(StringComparer.Ordinal);
+        var bounds = new Dictionary<string, Rect>(StringComparer.Ordinal);
         foreach (var trend in trends)
         {
             bounds[trend.Id] = Bounds(trend, unit);
@@ -74,12 +75,12 @@ public sealed class GhgElementMapper
         }
 
         var shownIds = bounds
-            .Where(entry => Overlaps(entry.Value, viewport))
+            .Where(entry => viewport.Intersects(entry.Value))
             .Select(entry => entry.Key)
             .ToHashSet(StringComparer.Ordinal);
 
         var shownInfluences = influences
-            .Where(influence => Overlaps(Union(bounds[influence.From], bounds[influence.To]), viewport))
+            .Where(influence => viewport.Intersects(Union(bounds[influence.From], bounds[influence.To])))
             .ToArray();
 
         foreach (var influence in shownInfluences)
@@ -92,7 +93,7 @@ public sealed class GhgElementMapper
         [
             .. trends.Where(trend => shownIds.Contains(trend.Id)).Select(trend => Trend(trend, unit)),
             .. triggers.Where(trigger => shownIds.Contains(trigger.Id)).Select(trigger => Trigger(trigger, unit)),
-            .. notes.Where(note => Overlaps(Bounds(note, unit), viewport)).Select(note => Note(note, unit)),
+            .. notes.Where(note => viewport.Intersects(Bounds(note, unit))).Select(note => Note(note, unit)),
             .. shownInfluences.Select(Influence),
         ];
     }
@@ -170,38 +171,37 @@ public sealed class GhgElementMapper
         public bool IsKept(string id) => !_ephemeral.Contains(id);
     }
 
-    private readonly record struct Box(double MinX, double MinY, double MaxX, double MaxY);
-
-    private static Box Bounds(GhgTrend trend, GhgTimeUnit unit)
+    private static Rect Bounds(GhgTrend trend, GhgTimeUnit unit)
     {
         var left = GhgScale.XOf(trend.Start!.Value, unit);
         var top = GhgScale.TopOf(trend.Row);
-        return new Box(left, top, left + GhgScale.WidthOf(trend.Months, unit), top + GhgScale.TrendHeight);
+        return new Rect(left, top, GhgScale.WidthOf(trend.Months, unit), GhgScale.TrendHeight);
     }
 
-    private static Box Bounds(GhgTrigger trigger, GhgTimeUnit unit)
+    private static Rect Bounds(GhgTrigger trigger, GhgTimeUnit unit)
     {
         (double x, double y) = CentreOf(trigger, unit);
         var half = GhgScale.TriggerSize / 2;
-        return new Box(x - half, y - half, x + half, y + half);
+        return new Rect(x - half, y - half, GhgScale.TriggerSize, GhgScale.TriggerSize);
     }
 
-    private static Box Bounds(GhgNote note, GhgTimeUnit unit)
+    private static Rect Bounds(GhgNote note, GhgTimeUnit unit)
     {
         var left = GhgScale.XOf(note.At!.Value, unit);
         var top = GhgScale.TopOf(note.Row);
-        return new Box(left, top, left + note.Width!.Value, top + note.Height!.Value);
+        return new Rect(left, top, note.Width!.Value, note.Height!.Value);
     }
 
     /// <summary>A trigger's centre: the start of its month, and its row's middle.</summary>
     private static (double X, double Y) CentreOf(GhgTrigger trigger, GhgTimeUnit unit) =>
         (GhgScale.XOf(trigger.Date!.Value, unit), GhgScale.TopOf(trigger.Row) + (GhgScale.TrendHeight / 2));
 
-    private static Box Union(Box a, Box b) =>
-        new(Math.Min(a.MinX, b.MinX), Math.Min(a.MinY, b.MinY), Math.Max(a.MaxX, b.MaxX), Math.Max(a.MaxY, b.MaxY));
-
-    private static bool Overlaps(Box box, DiagramViewport viewport) =>
-        box.MaxX >= viewport.MinX && box.MinX <= viewport.MaxX && box.MaxY >= viewport.MinY && box.MinY <= viewport.MaxY;
+    private static Rect Union(Rect a, Rect b)
+    {
+        var x = Math.Min(a.X, b.X);
+        var y = Math.Min(a.Y, b.Y);
+        return new Rect(x, y, Math.Max(a.Right, b.Right) - x, Math.Max(a.Bottom, b.Bottom) - y);
+    }
 
     private static DiagramElement Trend(GhgTrend trend, GhgTimeUnit unit)
     {
@@ -247,7 +247,7 @@ public sealed class GhgElementMapper
     {
         var payload = new GhgNotePayload { Text = note.Text, Width = note.Width!.Value, Height = note.Height!.Value, Unit = unit.Name };
         var box = Bounds(note, unit);
-        return Pack(note.Id, (box.MinX + box.MaxX) / 2, (box.MinY + box.MaxY) / 2, NoteType, payload);
+        return Pack(note.Id, (box.X + box.Right) / 2, (box.Y + box.Bottom) / 2, NoteType, payload);
     }
 
     private static DiagramElement Influence(GhgInfluence influence)

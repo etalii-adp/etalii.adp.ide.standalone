@@ -29,7 +29,7 @@ public sealed class AddSankeyNodeCommandHandler(ISankeyDocumentStore documents) 
         var layout = SankeyLayout.Of(model);
         var column = SankeyLayout.ColumnAt(command.X);
         var below = column < layout.ColumnOrder.Count
-            ? layout.ColumnOrder[column].FirstOrDefault(id => layout.Boxes[id].CentreY > command.Y)
+            ? layout.ColumnOrder[column].FirstOrDefault(id => layout.Boxes[id].CenterY > command.Y)
             : null;
 
         var node = new SankeyNode(
