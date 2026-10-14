@@ -41,7 +41,7 @@ Six criteria are worked or held in more than one task and claimed by the one tha
 
 ## The tasks
 
-- [-] 1. Freeze the parity transcript from today's code
+- [x] 1. Freeze the parity transcript from today's code
   - Files: `src/diagrams/helm-chart/backend/EtAlii.Adp.Diagram.HelmChart.Tests/Parity/HelmTranscript.cs` (new), `Parity/HelmTranscript.Tests.cs` (new), `Parity/TranscriptText.cs` (new), `Parity/helm-chart.transcript.json` (new), eleven new fixture charts under `Fixtures/`, `Fixtures/readme.md`, `EtAlii.Adp.Diagram.HelmChart.Tests.csproj`
   - Write the generator in the shape of the hype cycle's. Per chart folder: the elements with id, wire type and payload in delivery order, the computed boxes, the rows of every node, every relation and an unknown id, the findings with code, severity, sentence, file and line in order, and the answers to a move of a node, of a relation and of an unknown id. There is no edit sequence over chart files.
   - The corpus: the fixture charts `well-formed`, `unconventional` and `broken`, the three examples under `src/diagrams/helm-chart/examples/` and their copies under `src/examples/diagrams/helm-chart/`, and one new fixture chart per Read finding that concerns a folder's content: `includes-per-name` (A4), `open-ends` (A5), `finding-shapes` (A7), `finding-order` (A8), `same-named-dependencies` (A10), `unselected-files` (B3), `empty-directories` (B4), `scalars-as-written` (B7), `template-lines` (B8), `not-a-chart` (B10) and `finding-lines` (B11). Every new fixture lies under `Fixtures/.gitattributes`, so it is `-text`; check with `git ls-files --eol`.
