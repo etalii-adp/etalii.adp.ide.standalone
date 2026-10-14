@@ -160,8 +160,13 @@ public sealed partial class TimelineFindingsTests
         var differences = new List<string>();
         foreach ((string id, string type) in RecordedTypes(fixture))
         {
-            var read = model.Elements.FirstOrDefault(element => !element.IsRelation && element.IdIsStored && element.Id == id);
-            var readType = read is null ? "no element" : read.Type == "Period" ? "a period" : "a moment";
+            var read = model.Elements.FirstOrDefault(element => element is { IsRelation: false, IdIsStored: true } && element.Id == id);
+            var readType = read switch
+            {
+                null => "no element",
+                { Type: "Period" } => "a period",
+                _ => "a moment",
+            };
             var recordedType = type == "period" ? "a period" : "a moment";
             if (readType != recordedType)
             {
@@ -437,9 +442,12 @@ public sealed partial class TimelineFindingsTests
         }
 
         var change = JsonDocument.Parse(stream.ToArray()).RootElement;
-        return change.TryGetProperty("hunks", out var hunks)
-            ? string.Join(" ", hunks.EnumerateArray().Select(hunk => hunk.GetString()))
-            : change.TryGetProperty("unchanged", out _) ? "nothing" : change.GetProperty("summary").GetString()!;
+        if (change.TryGetProperty("hunks", out var hunks))
+        {
+            return string.Join(" ", hunks.EnumerateArray().Select(hunk => hunk.GetString()));
+        }
+
+        return change.TryGetProperty("unchanged", out _) ? "nothing" : change.GetProperty("summary").GetString()!;
     }
 
     // The changes.
