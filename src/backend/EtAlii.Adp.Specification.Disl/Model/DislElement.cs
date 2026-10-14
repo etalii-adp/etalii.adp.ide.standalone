@@ -102,10 +102,14 @@ public sealed class DislElement : ICelObject
     /// <summary>Whether the element's type is <paramref name="type"/> or one of its subtypes (§2.7).</summary>
     public bool IsA(string type) => Type.Linearisation.Contains(type);
 
-    /// <summary>The value CEL reads for <paramref name="name"/>: stored, else its default, else its type's zero value; a reference resolved to its element.</summary>
+    /// <summary>
+    /// The value CEL reads for <paramref name="name"/>: a derived attribute's expression (§4.3), else
+    /// stored, else its default, else its type's zero value; a reference resolved to its element.
+    /// </summary>
     public object? ValueOf(string name)
     {
         if (!Type.Attributes.TryGetValue(name, out var attribute)) throw new ArgumentException($"'{name}' is not an attribute of {Type.Name}.", nameof(name));
+        if (attribute.Json.TryGetProperty("derived", out _)) return Derived(attribute);
         if (!_attributes.TryGetValue(name, out var value)) return DislValues.Unset(attribute, Diagram.Specification.Metamodel);
         if (Diagram.Specification.Metamodel.TypeOf(attribute.Type) is null) return value;
         return value switch
@@ -115,6 +119,38 @@ public sealed class DislElement : ICelObject
             _ => value,
         };
     }
+
+    /// <summary>
+    /// A derived attribute's value (§4.3): its expression, compiled by the loader in the
+    /// <c>element</c> context, with <c>self</c> this element and <c>env</c> a headless one. An expression
+    /// that fails, or that reads its own value, gives the attribute's unset value, as a visual property
+    /// falls back to its default (§2.5).
+    /// </summary>
+    private object? Derived(DislAttribute attribute)
+    {
+        var metamodel = Diagram.Specification.Metamodel;
+        var declaredIn = metamodel.Types.ContainsKey(attribute.DeclaredBy) ? "/metamodel/types" : "/metamodel/relations";
+        var pointer = DislJson.Pointer(DislJson.Pointer(DislJson.Pointer(DislJson.Pointer(declaredIn, attribute.DeclaredBy), "attributes"), attribute.Name), "derived");
+        if (Diagram.Specification.ExpressionAt(pointer) is not { } expression) return DislValues.Unset(attribute, metamodel);
+
+        _computing ??= new HashSet<(DislElement, string)>();
+        if (!_computing.Add((this, attribute.Name))) return DislValues.Unset(attribute, metamodel);
+        try
+        {
+            var value = expression.Program.Evaluate(new Dictionary<string, object?> { ["self"] = this, ["diagram"] = Diagram, ["env"] = HeadlessEnv });
+            return value is CelError ? DislValues.Unset(attribute, metamodel) : value;
+        }
+        finally
+        {
+            _computing.Remove((this, attribute.Name));
+        }
+    }
+
+    /// <summary>The derived attributes being computed on this thread, so one that reads itself stops.</summary>
+    [ThreadStatic]
+    private static HashSet<(DislElement Element, string Attribute)>? _computing;
+
+    private static readonly CelMap HeadlessEnv = new DislEnv().ToCel();
 
     /// <summary>Every node beneath this one, depth first in model order.</summary>
     public IEnumerable<DislElement> Descendants() => _children.SelectMany(child => child.Descendants().Prepend(child));
@@ -196,8 +232,8 @@ public sealed class DislElement : ICelObject
     }
 
     /// <inheritdoc />
-    public bool HasMember(string name) => Type.Attributes.ContainsKey(name)
-        ? _attributes.ContainsKey(name)
+    public bool HasMember(string name) => Type.Attributes.TryGetValue(name, out var attribute)
+        ? _attributes.ContainsKey(name) || attribute.Json.TryGetProperty("derived", out _)
         : Member(name) is var value && !ReferenceEquals(value, Missing) && value is not null;
 
     private object? Member(string name)

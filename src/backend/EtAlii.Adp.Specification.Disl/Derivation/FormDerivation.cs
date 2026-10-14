@@ -200,10 +200,10 @@ public static class FormDerivation
             return null;
         }
 
-        /// <summary>An attribute's text: stored, else its default when it declares one, else empty.</summary>
+        /// <summary>An attribute's text: derived, else stored, else its default when it declares one, else empty.</summary>
         private string AttributeText(DislAttribute attribute)
         {
-            if (!self.Attributes.ContainsKey(attribute.Name) && attribute.Default is null) return "";
+            if (!self.Attributes.ContainsKey(attribute.Name) && attribute.Default is null && !attribute.Json.TryGetProperty("derived", out _)) return "";
             return Format(self.ValueOf(attribute.Name), attribute.Type);
         }
 
