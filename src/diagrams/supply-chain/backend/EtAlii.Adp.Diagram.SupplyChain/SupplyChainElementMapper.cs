@@ -1,4 +1,3 @@
-using EtAlii.Adp.Layout;
 using Google.Protobuf;
 
 namespace EtAlii.Adp.Diagram.SupplyChain;
@@ -70,7 +69,7 @@ public sealed class SupplyChainElementMapper
         var layout = SupplyChainLayout.Of(model);
 
         var kept = layout.Nodes
-            .Where(node => Overlaps(layout.NodeBoxes[node.Id], viewport))
+            .Where(node => viewport.Intersects(layout.NodeBoxes[node.Id]))
             .Select(node => node.Id)
             .ToHashSet(StringComparer.Ordinal);
 
@@ -95,15 +94,12 @@ public sealed class SupplyChainElementMapper
         return
         [
             .. layout.Groups
-                .Where(group => Overlaps(layout.GroupBoxes[group.Id], viewport))
+                .Where(group => viewport.Intersects(layout.GroupBoxes[group.Id]))
                 .Select(group => Group(layout, group, trace)),
             .. layout.Nodes.Where(node => kept.Contains(node.Id)).Select(node => Node(layout, node, largest, trace)),
             .. layout.Flows.Where(flow => kept.Contains(flow.From) && kept.Contains(flow.To)).Select(flow => Flow(flow, heaviest[flow.Unit], layout.Lanes.GetValueOrDefault(flow.Id), trace)),
         ];
     }
-
-    private static bool Overlaps(Rect box, DiagramViewport viewport) =>
-        box.Right >= viewport.MinX && box.X <= viewport.MaxX && box.Bottom >= viewport.MinY && box.Y <= viewport.MaxY;
 
     private static DiagramElement Group(SupplyChainLayout layout, SupplyChainGroup group, SupplyChainTrace trace)
     {

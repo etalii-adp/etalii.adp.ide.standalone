@@ -1,3 +1,4 @@
+using EtAlii.Adp.Layout;
 using Google.Protobuf;
 
 namespace EtAlii.Adp.Diagram.DependencyGraph;
@@ -127,10 +128,7 @@ public sealed class DependencyGraphElementMapper
     private static bool Intersects(DependencyGraphElement element, DiagramViewport viewport)
     {
         var top = DependencyGraphRows.ToY(element.Row);
-        return element.X + NodeWidth >= viewport.MinX
-            && element.X <= viewport.MaxX
-            && top + NodeHeight >= viewport.MinY
-            && top <= viewport.MaxY;
+        return viewport.Intersects(new Rect(element.X, top, NodeWidth, NodeHeight));
     }
 
     /// <summary>
@@ -142,10 +140,9 @@ public sealed class DependencyGraphElementMapper
     {
         var fromTop = DependencyGraphRows.ToY(from.Row);
         var toTop = DependencyGraphRows.ToY(to.Row);
-        return Math.Max(from.X, to.X) + NodeWidth >= viewport.MinX
-            && Math.Min(from.X, to.X) <= viewport.MaxX
-            && Math.Max(fromTop, toTop) + NodeHeight >= viewport.MinY
-            && Math.Min(fromTop, toTop) <= viewport.MaxY;
+        var left = Math.Min(from.X, to.X);
+        var top = Math.Min(fromTop, toTop);
+        return viewport.Intersects(new Rect(left, top, Math.Abs(from.X - to.X) + NodeWidth, Math.Abs(fromTop - toTop) + NodeHeight));
     }
 
     private static DiagramElement Element(DependencyGraphElement element)
