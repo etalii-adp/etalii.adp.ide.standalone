@@ -1,3 +1,5 @@
+using EtAlii.Adp.Layout;
+
 namespace EtAlii.Adp.Diagram.AnsibleStructure;
 
 /// <summary>
@@ -22,13 +24,13 @@ public static class AnsibleLayout
     /// <summary>
     /// The box for every node in <paramref name="graph"/>, keyed by node id.
     /// </summary>
-    public static IReadOnlyDictionary<string, AnsibleBox> Compute(AnsibleGraph graph, AnsibleMetrics? metrics = null)
+    public static IReadOnlyDictionary<string, Rect> Compute(AnsibleGraph graph, AnsibleMetrics? metrics = null)
     {
         ArgumentNullException.ThrowIfNull(graph);
         var scale = metrics ?? AnsibleMetrics.Default;
 
         var ranks = Ranks(graph);
-        var boxes = new Dictionary<string, AnsibleBox>(StringComparer.Ordinal);
+        var boxes = new Dictionary<string, Rect>(StringComparer.Ordinal);
 
         // The flow: everything that has a rank, laid out in columns.
         var flow = graph.Nodes
@@ -52,7 +54,7 @@ public static class AnsibleLayout
             var y = 0.0;
             foreach ((AnsibleNode node, var _) in members)
             {
-                boxes[node.Id] = new AnsibleBox(x, y, width, scale.NodeHeight);
+                boxes[node.Id] = new Rect(x, y, width, scale.NodeHeight);
                 y += scale.NodeHeight + scale.RowGap;
             }
 
@@ -68,7 +70,7 @@ public static class AnsibleLayout
         foreach (var node in graph.Nodes.Where(node => !ranks.ContainsKey(node.Id)))
         {
             var width = scale.Measure(node.Name);
-            boxes[node.Id] = new AnsibleBox(bandX, bandY, width, scale.NodeHeight);
+            boxes[node.Id] = new Rect(bandX, bandY, width, scale.NodeHeight);
             bandX += width + scale.RankGap;
         }
 
