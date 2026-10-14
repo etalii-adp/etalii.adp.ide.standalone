@@ -557,9 +557,7 @@
         }
       ],
       "readOnlySet": "set variable:a causal-loop.variable-label => refused: This causal loop diagram could not be read, so nothing can be edited until it is fixed.",
-      "findings": [
-        "throws System.ArgumentException: An item with the same key has already been added. Key: a"
-      ],
+      "findings": [],
       "payloads": [
         "throws System.ArgumentException: An item with the same key has already been added. Key: a"
       ],
