@@ -1,5 +1,6 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents.Wire;
+using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
 namespace EtAlii.Adp.Diagram.AnsibleStructure;
 
@@ -49,12 +50,14 @@ public sealed class AnsibleContextPropertyProvider : IContextPropertyProvider
         ArgumentNullException.ThrowIfNull(target);
         cancellationToken.ThrowIfCancellationRequested();
 
-        if (target.ElementId.Length == 0 || !Directory.Exists(target.ResolvedFullPath))
+        // The target is the registration the element was selected in; the project is its folder.
+        var folder = IoPath.GetDirectoryName(target.ResolvedFullPath);
+        if (target.ElementId.Length == 0 || folder is null || !Directory.Exists(folder))
         {
             return Empty;
         }
 
-        var project = _store.GetOrLoad(target.ResolvedFullPath);
+        var project = _store.GetOrLoad(folder);
         var graph = AnsibleGraph.Derive(project);
 
         var node = graph.Node(target.ElementId);

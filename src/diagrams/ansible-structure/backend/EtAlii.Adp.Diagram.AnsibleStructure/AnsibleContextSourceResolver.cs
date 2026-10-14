@@ -1,204 +1,94 @@
-using EtAlii.Adp.Context;
-using EtAlii.Adp.Documents.Wire;
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.Hierarchy;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
 namespace EtAlii.Adp.Diagram.AnsibleStructure;
 
 /// <summary>
-/// Makes an Ansible node selectable: resolves an <c>element_id</c> against the project named by
-/// the enclosing selection level, verifies the node really is in that project, and fills in the
-/// detail a consumer shows (Requirement 8.2).
+/// Makes an Ansible node or edge selectable: resolves an <c>element_id</c> against the project whose
+/// registration the selection sits in, verifies the element really is in that project, and fills in
+/// the detail a consumer shows (Requirement 8.2).
 /// </summary>
 /// <remarks>
-/// Registering this is the whole of it - the context service itself is untouched, which is
-/// tech.md's rule that a new selectable thing is one resolver and never a bespoke RPC.
+/// <para>
+/// <b>The steps every resolver repeats are the base's</b> (code-structure FR-032). This says where
+/// an Ansible diagram is read from and what its elements are called: the folder the registration
+/// sits in, through the shared watched-folder store, and a node by its path and name, an edge by the
+/// side that declares it (Requirement 8.3).
+/// </para>
+/// <para>
+/// <b>The target is the registration</b>, as every diagram's is the file it was selected in; the
+/// folder is one <c>GetDirectoryName</c> away, and the stored positions the canvas was drawn with
+/// are in that file.
+/// </para>
 /// </remarks>
-public sealed class AnsibleContextSourceResolver : IContextSourceResolver
+public sealed class AnsibleContextSourceResolver(DiagramFileRouter router, IAnsibleProjectStore store, AnsibleElementMapper mapper)
+    : DiagramSnapshotSourceResolver<AnsibleContextSourceResolver.Selected>(router)
 {
-    private readonly DiagramFileRouter _router;
-    private readonly IAnsibleProjectStore _store;
+    /// <summary>A selected diagram: its project, the graph derived from it, and the registration it was selected in.</summary>
+    public sealed record Selected(AnsibleProject Project, AnsibleGraph Graph, string Registration);
 
-    public AnsibleContextSourceResolver(DiagramFileRouter router, IAnsibleProjectStore store)
+    /// <inheritdoc />
+    protected override DiagramOrigin Origin => Diagram.AnsibleStructure.Origin;
+
+    /// <inheritdoc />
+    protected override DiagramElementTexts Texts { get; } = new(
+        "The selected file is not an Ansible structure diagram.",
+        "Unknown element.",
+        "New element",
+        "New relation");
+
+    /// <inheritdoc />
+    protected override Selected Load(string bodyPath)
     {
-        ArgumentNullException.ThrowIfNull(router);
-        ArgumentNullException.ThrowIfNull(store);
-        _router = router;
-        _store = store;
+        var project = store.GetOrLoad(FolderOf(bodyPath));
+        return new Selected(project, AnsibleGraph.Derive(project), bodyPath);
     }
 
-    public bool CanResolve(ContextSource source) => source.SourceCase == ContextSource.SourceOneofCase.ElementId;
-
-    public ValueTask<ContextLevelResolution> ResolveAsync(
-        ShortGuid watchId,
-        string rootPath,
-        ContextSource id,
-        IReadOnlyList<string> clientPath,
-        ContextResolvedLevel? parent,
-        CancellationToken cancellationToken)
+    /// <inheritdoc />
+    protected override (IReadOnlyList<string> Path, string Text)? Describe(Selected snapshot, string elementId)
     {
-        ArgumentNullException.ThrowIfNull(id);
+        ArgumentNullException.ThrowIfNull(snapshot);
 
-        // A node is only ever selected inside its diagram: with no file level above it there is
-        // nothing to verify it against, and an unverifiable selection is never recorded.
-        if (parent is null || parent.Scope != ContextScope.Hierarchy)
+        if (snapshot.Graph.Node(elementId) is { } node)
         {
-            return Rejected("A diagram element must be selected within its diagram.");
+            return (Segments(node.RelativePath), node.Name);
         }
 
-        if (_router.Route(parent.Target.ResolvedFullPath) is not DiagramRouted { Definition.Origin: var origin } ||
-            origin != Diagram.AnsibleStructure.Origin)
-        {
-            // Not ours. Another type's resolver answers for its own elements; saying so plainly
-            // is how several resolvers share one ContextSource member without fighting.
-            return Rejected("The selected file is not an Ansible structure diagram.");
-        }
-
-        var folder = FolderOf(parent.Target.ResolvedFullPath);
-        if (folder is null)
-        {
-            return Rejected("The Ansible project folder could not be resolved.");
-        }
-
-        var project = _store.GetOrLoad(folder);
-        var graph = AnsibleGraph.Derive(project);
-
-        var elementId = id.ElementId.Value;
-        var node = graph.Node(elementId);
-        if (node is null)
-        {
-            // An edge is selectable too, and it answers as its declaring side (Requirement 8.3).
-            var edge = graph.Edges.FirstOrDefault(candidate => string.Equals(candidate.Id, elementId, StringComparison.Ordinal));
-            if (edge is null)
-            {
-                return Rejected("Unknown element.");
-            }
-
-            return Resolve(
-                watchId, rootPath, id, clientPath, folder, elementId,
-                Segments(edge.Directive.DeclaredIn),
-                new ContextLevelDetail
-                {
-                    Element = new ElementDetail
-                    {
-                        Text = $"{DirectiveLabel(edge)} {edge.Directive.Target}",
-                        HasChildren = false,
-                    },
-                });
-        }
-
-        return Resolve(
-            watchId, rootPath, id, clientPath, folder, elementId,
-            Segments(node.RelativePath),
-            new ContextLevelDetail
-            {
-                Element = new ElementDetail
-                {
-                    Text = node.Name,
-                    // Nothing on this diagram folds, so nothing has children for selection
-                    // purposes and nothing is ever reported folded.
-                    HasChildren = false,
-                },
-            });
+        // An edge is selectable too, and it answers as its declaring side (Requirement 8.3).
+        return snapshot.Graph.Edges.FirstOrDefault(edge => string.Equals(edge.Id, elementId, StringComparison.Ordinal)) is { } edge
+            ? (Segments(edge.Directive.DeclaredIn), $"{DirectiveLabel(edge)} {edge.Directive.Target}")
+            : null;
     }
 
-    /// <summary>Nothing nests inside an Ansible node; a role's task files are their own selections.</summary>
-    public ContextNesting NestingOf(ContextResolvedLevel level) => ContextNesting.NotNestable;
-
-    /// <summary>
-    /// Re-resolves the element after every change to its folder: a deleted role clears the
-    /// selection, a renamed file changes the path (Requirement 8.2).
-    /// </summary>
-    public IDisposable Track(ShortGuid watchId, string rootPath, ContextResolvedLevel level, Action<IReadOnlyList<string>?> onChange)
+    /// <inheritdoc />
+    /// <remarks>Drawn as the canvas draws it: the whole diagram, with the positions the registration stores.</remarks>
+    protected override DiagramElement? Drawn(Selected snapshot, string elementId)
     {
-        ArgumentNullException.ThrowIfNull(level);
-        ArgumentNullException.ThrowIfNull(onChange);
+        ArgumentNullException.ThrowIfNull(snapshot);
+        var stored = RegistrationLayout.Read(snapshot.Registration);
+        return mapper.Visible(snapshot.Project, snapshot.Graph, DiagramViewport.Unbounded, stored)
+            .FirstOrDefault(element => string.Equals(element.Id, elementId, StringComparison.Ordinal));
+    }
 
-        // The target's path is already the folder - Resolve put it there, because for this type
-        // the folder IS what an element resolved within. Taking GetDirectoryName of it here
-        // would silently watch the folder above and never hear a thing; that is exactly the bug
-        // ADeletedRole_ClearsTheSelection caught.
-        var folder = IoPath.GetFullPath(level.Target.ResolvedFullPath);
-        var elementId = level.Target.ElementId;
-        var lastPath = level.RelativePath;
-
-        return _store.Watch(folder, OnChanged);
-
-        void Announce(string[] current)
-        {
-            if (current.SequenceEqual(lastPath, StringComparer.Ordinal))
-            {
-                return;
-            }
-
-            lastPath = current;
-            onChange(current);
-        }
-
-        void OnChanged(AnsibleProject project)
-        {
-            var graph = AnsibleGraph.Derive(project);
-            var node = graph.Node(elementId);
-            if (node is null)
-            {
-                var edge = graph.Edges.FirstOrDefault(candidate => string.Equals(candidate.Id, elementId, StringComparison.Ordinal));
-                if (edge is null)
-                {
-                    onChange(null); // Gone from the folder; the selection goes with it.
-                    return;
-                }
-
-                Announce(Segments(edge.Directive.DeclaredIn));
-                return;
-            }
-
-            Announce(Segments(node.RelativePath));
-        }
+    /// <inheritdoc />
+    /// <remarks>
+    /// After every change to the folder: a deleted role clears the selection, a renamed file
+    /// changes the path (Requirement 8.2).
+    /// </remarks>
+    protected override IDisposable Follow(ShortGuid watchId, string bodyPath, string elementId, Action changed)
+    {
+        ArgumentNullException.ThrowIfNull(changed);
+        return store.Watch(FolderOf(bodyPath), _ => changed());
     }
 
     /// <summary>
     /// The folder a registration marks. The <c>.adp</c> routes as its own body for a type with
-    /// no extension, so the parent level's path is the registration itself.
+    /// no extension, so the body is the registration itself.
     /// </summary>
-    private static string? FolderOf(string registrationPath)
-    {
-        var folder = IoPath.GetDirectoryName(IoPath.GetFullPath(registrationPath));
-        return folder is null ? null : IoPath.GetFullPath(folder);
-    }
-
-    private ValueTask<ContextLevelResolution> Resolve(
-        ShortGuid watchId,
-        string rootPath,
-        ContextSource id,
-        IReadOnlyList<string> clientPath,
-        string folder,
-        string elementId,
-        string[] relativePath,
-        ContextLevelDetail detail)
-    {
-        // The client's version of the path is checked, never trusted.
-        if (clientPath.Count > 0 && !clientPath.SequenceEqual(relativePath, StringComparer.Ordinal))
-        {
-            return Rejected("The path does not match the element.");
-        }
-
-        var level = new ContextResolvedLevel(
-            id,
-            relativePath,
-            ContextScope.DiagramElement,
-            new ContextTarget(
-                ContextScope.DiagramElement,
-                folder,
-                IsContainer: false,
-                SourceId: default,
-                rootPath,
-                watchId,
-                elementId),
-            detail,
-            this);
-
-        return ValueTask.FromResult<ContextLevelResolution>(new ResolvedContextLevel(level));
-    }
+    private static string FolderOf(string registrationPath) =>
+        IoPath.GetDirectoryName(IoPath.GetFullPath(registrationPath))
+        ?? throw new InvalidOperationException($"'{registrationPath}' has no folder to read.");
 
     /// <summary>The directive as the file spells it, for an edge's own label.</summary>
     private static string DirectiveLabel(AnsibleEdge edge) => edge.Directive.Kind switch
@@ -215,7 +105,4 @@ public sealed class AnsibleContextSourceResolver : IContextSourceResolver
 
     private static string[] Segments(string relativePath) =>
         relativePath.Split(['/', '\\'], StringSplitOptions.RemoveEmptyEntries);
-
-    private static ValueTask<ContextLevelResolution> Rejected(string reason) =>
-        ValueTask.FromResult<ContextLevelResolution>(new RejectedContextLevel(reason));
 }
