@@ -488,6 +488,9 @@
           "positive",
           "negative",
           "unstated"
+        ],
+        [
+          "a → b"
         ]
       ],
       "targets": [
@@ -545,7 +548,10 @@
         {
           "target": "loop:R1",
           "rows": [
-            "throws System.ArgumentException: An item with the same key has already been added. Key: a"
+            "causal-loop.loop-identifier | Identifier | \"R1\" | Line | editable | group Identity",
+            "causal-loop.loop-name | Name | \"Twice declared\" | Line | editable | group Identity",
+            "causal-loop.loop-computed | Computed polarity | \"reinforcing\" | Line | read-only (Counted from the polarity of the links around the cycle. Change an arrow to change this.) | group Feedback",
+            "causal-loop.loop-variables | Runs through | \"a → b\" | Choice | editable | group Feedback | choices #1"
           ],
           "rowsReadOnly": []
         }
@@ -687,7 +693,7 @@
           "unchanged": true
         },
         {
-          "do": "set loop:R1 causal-loop.loop-variables = \"\"",
+          "do": "set loop:R1 causal-loop.loop-variables = \"a → b\"",
           "answer": "throws System.ArgumentException: An item with the same key has already been added. Key: a",
           "unchanged": true
         },

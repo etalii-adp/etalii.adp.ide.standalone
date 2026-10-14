@@ -1,5 +1,6 @@
 using System.Globalization;
 using EtAlii.Adp.Context;
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.History;
 
@@ -12,17 +13,14 @@ namespace EtAlii.Adp.Diagram.CausalLoopDiagram;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>Every gesture is discovered unavailable with its reason rather than silently absent.</b> A
-/// missing menu entry tells a user nothing; an entry greyed out with a sentence tells them what
-/// to change. The one exception is a gesture that makes no sense for the selection at all - there
-/// is no "set polarity" on a variable, because polarity is not a thing a variable has.
+/// <b>The menus are the definition's.</b> What a selection offers, which entries are unavailable and
+/// why, and what removing a variable asks first are derived from the bundled DISL definition by
+/// <see cref="CausalLoopDefinition"/> (causal-loop-disl-fbl Requirement 3.1); this provider holds no
+/// rule of its own about them. An id that names no element is offered nothing, as an unknown id always was.
 /// </para>
 /// <para>
-/// <b>What is offered depends only on what is selected.</b> A variable offers rename, remove and
-/// a new link from it; a link offers its polarity, its delay, which way its arc bows and
-/// removal; a loop offers rename
-/// and removal; and a placement offers a new variable. The provider reads the document to fill in
-/// the counts and the current values, and never to decide whether the user is allowed.
+/// <b>What an action does is still the module's command</b>, dispatched through the history stack, until
+/// the body is written through the binding.
 /// </para>
 /// </remarks>
 public sealed class CausalLoopContextActionProvider(
@@ -100,50 +98,10 @@ public sealed class CausalLoopContextActionProvider(
             return Groups([]);
         }
 
-        var entry = documents.GetOrLoad(target.ResolvedFullPath);
-        if (!entry.IsUsable)
-        {
-            return Groups([]);
-        }
-
-        // A relation gesture is a link the user drew; the only thing offered on it is stating that
-        // link, which is what the gesture asked for. Discovered so ExecuteAction accepts it.
-        if (CausalLoopSelection.RelationOf(target.ElementId) is not null)
-        {
-            return Groups([new ContextActionGroupDefinition(
-                [new ContextActionDefinition(ConnectActionId, "Add link", "mdi-arrow-right-thin")])]);
-        }
-
-        if (CausalLoopSelection.IsPlacement(target.ElementId))
-        {
-            var arrangeable = entry.Model.Variables.Count > 1;
-
-            return Groups([new ContextActionGroupDefinition(
-            [
-                new ContextActionDefinition(AddVariableActionId, "Add variable", "mdi-plus-circle-outline"),
-                new ContextActionDefinition(
-                    ArrangeActionId, "Arrange diagram", "mdi-graph-outline", null,
-                    arrangeable,
-                    "There is nothing to arrange until this diagram has two variables."),
-            ])]);
-        }
-
-        if (CausalLoopSelection.VariableOf(target.ElementId) is { } variable)
-        {
-            return Groups(VariableActions(entry.Model, variable));
-        }
-
-        if (CausalLoopSelection.LinkOf(target.ElementId) is { } ends)
-        {
-            return Groups(LinkActions(entry.Model, ends.From, ends.To));
-        }
-
-        if (CausalLoopSelection.LoopOf(target.ElementId) is { } loop)
-        {
-            return Groups(LoopActions(entry.Model, loop));
-        }
-
-        return Groups([]);
+        // Derived from the DISL definition: the element's, the empty canvas's or the connect gesture's
+        // menu, nothing offered on a document that could not be read. Executing an action by id only
+        // finds actions its target discovers, so a drop and a finished gesture each discover theirs.
+        return Groups(CausalLoopDefinition.Menus(documents.GetOrLoad(target.ResolvedFullPath), target.ElementId));
     }
 
     /// <inheritdoc />
@@ -172,7 +130,7 @@ public sealed class CausalLoopContextActionProvider(
             RenameLoopActionId => Ask(
                 "Rename loop", "mdi-rename-outline", "Name",
                 entry.Model.Loops.FirstOrDefault(loop => loop.Id == target.ElementId)?.Name ?? ""),
-            RemoveVariableActionId => Confirm(entry.Model, target),
+            RemoveVariableActionId => Confirm(entry, target),
             ArrangeActionId => ArrangeAsync(target, cancellationToken),
             _ => RunAsync(target, actionId, "", cancellationToken),
         };
@@ -306,22 +264,20 @@ public sealed class CausalLoopContextActionProvider(
 
     /// <summary>
     /// Removing a variable takes the links and loops that named it, so the count is stated before
-    /// anything runs rather than discovered afterwards.
+    /// anything runs rather than discovered afterwards: the definition's deletion confirmation.
     /// </summary>
-    private static ValueTask<ContextExecutionResult> Confirm(CausalLoopModel model, ContextTarget target)
+    /// <remarks>
+    /// A target the document does not hold has no confirmation to derive; it is asked about by the name
+    /// its id carries, as it always was, and the removal it confirms then refuses.
+    /// </remarks>
+    private static ValueTask<ContextExecutionResult> Confirm(DocumentEntry<CausalLoopDocument, CausalLoopModel> entry, ContextTarget target)
     {
-        var variable = CausalLoopSelection.VariableOf(target.ElementId) ?? "";
-        var count = CausalLoopWriter.CountVariableRemoval(model, variable);
+        var asked = CausalLoopDefinition.RemovalConfirmation(entry, target.ElementId);
+        var request = asked is null
+            ? new ContextConfirmationRequest("Remove variable", "mdi-delete-outline", $"Remove '{CausalLoopSelection.VariableOf(target.ElementId) ?? ""}'?", "Remove", Danger: true)
+            : new ContextConfirmationRequest(asked.Title, "mdi-delete-outline", asked.Message, asked.ConfirmLabel, asked.Danger);
 
-        return ValueTask.FromResult<ContextExecutionResult>(new ContextExecutionRequiresConfirmation(
-            new ContextConfirmationRequest(
-                "Remove variable",
-                "mdi-delete-outline",
-                count > 1
-                    ? $"Removing '{variable}' also removes the {count - 1} links and loops that name it."
-                    : $"Remove '{variable}'?",
-                "Remove",
-                Danger: true)));
+        return ValueTask.FromResult<ContextExecutionResult>(new ContextExecutionRequiresConfirmation(request));
     }
 
     private async ValueTask<ContextExecutionResult> RunAsync(
@@ -356,80 +312,6 @@ public sealed class CausalLoopContextActionProvider(
 
         var refusal = await session.ArrangeAsync(cancellationToken);
         return refusal.Length == 0 ? new ContextExecutionCompleted() : new ContextExecutionFailed(refusal);
-    }
-
-    private static IReadOnlyList<ContextActionGroupDefinition> VariableActions(CausalLoopModel model, string variable)
-    {
-        var known = model.Declares(variable);
-        var reason = known ? "" : CausalLoopWriter.NoSuchVariable;
-        var count = CausalLoopWriter.CountVariableRemoval(model, variable);
-
-        return
-        [
-            new ContextActionGroupDefinition(
-            [
-                new ContextActionDefinition(AddLinkActionId, "Add link from here…", "mdi-arrow-right-thin", null, known, reason),
-                new ContextActionDefinition(AddLoopActionId, "Claim a loop from here…", "mdi-sync", null, known, reason),
-                new ContextActionDefinition(RenameVariableActionId, "Rename…", "mdi-rename-outline", null, known, reason),
-                new ContextActionDefinition(
-                    RemoveVariableActionId,
-                    count > 1 ? $"Remove variable (with {count - 1} references)" : "Remove variable",
-                    "mdi-delete-outline",
-                    new ContextShortcutDefinition("Delete"),
-                    known,
-                    reason),
-            ]),
-        ];
-    }
-
-    private static IReadOnlyList<ContextActionGroupDefinition> LinkActions(CausalLoopModel model, string from, string to)
-    {
-        var link = model.Links.FirstOrDefault(candidate => candidate.From == from && candidate.To == to);
-        var known = link is not null;
-        var reason = known ? "" : CausalLoopWriter.NoSuchLink;
-
-        return
-        [
-            new ContextActionGroupDefinition(
-            [
-                new ContextActionDefinition(
-                    MakePositiveActionId, "Same direction (+)", "mdi-plus", null,
-                    known && link!.Polarity != CausalLoopPolarity.Positive,
-                    known ? "This link already states +." : reason),
-                new ContextActionDefinition(
-                    MakeNegativeActionId, "Opposite direction (−)", "mdi-minus", null,
-                    known && link!.Polarity != CausalLoopPolarity.Negative,
-                    known ? "This link already states −." : reason),
-                new ContextActionDefinition(
-                    ToggleDelayActionId,
-                    known && link!.Delayed ? "Not delayed" : "Delayed",
-                    "mdi-timer-sand", null, known, reason),
-                new ContextActionDefinition(
-                    FlipCurvatureActionId,
-                    known && link!.Flipped ? "Curve back the other way" : "Flip the curve",
-                    "mdi-vector-curve", null, known, reason),
-                new ContextActionDefinition(
-                    RemoveLinkActionId, "Remove link", "mdi-delete-outline",
-                    new ContextShortcutDefinition("Delete"), known, reason),
-            ]),
-        ];
-    }
-
-    private static IReadOnlyList<ContextActionGroupDefinition> LoopActions(CausalLoopModel model, string identifier)
-    {
-        var known = model.Loops.Any(loop => loop.Identifier == identifier);
-        var reason = known ? "" : CausalLoopWriter.NoSuchLoop;
-
-        return
-        [
-            new ContextActionGroupDefinition(
-            [
-                new ContextActionDefinition(RenameLoopActionId, "Rename loop…", "mdi-rename-outline", null, known, reason),
-                new ContextActionDefinition(
-                    RemoveLoopActionId, "Remove loop", "mdi-delete-outline",
-                    new ContextShortcutDefinition("Delete"), known, reason),
-            ]),
-        ];
     }
 
     private static bool IsDelayed(CausalLoopModel model, (string From, string To) link) =>

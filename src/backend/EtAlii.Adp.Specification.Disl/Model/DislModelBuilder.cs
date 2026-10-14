@@ -33,7 +33,8 @@ public sealed record DislModel(DislDiagram Diagram, IReadOnlyList<Finding> Findi
 /// element of a type that declares one has that prefix followed by its natural id - the id a node
 /// was read with, or for a relation read without an id its ends as read joined by <c>|</c> - and an
 /// element of a type that declares none keeps the id it was read with. A relation's ends are found
-/// by the ids they were read with, and kept as read in <c>SourceId</c> and <c>TargetId</c>.
+/// by the ids they were read with, and kept as read in <c>SourceId</c> and <c>TargetId</c>; a reference
+/// attribute is stored as the model id of the node it names, so it resolves under a prefix too.
 /// </para>
 /// </remarks>
 public static class DislModelBuilder
@@ -114,8 +115,27 @@ public static class DislModelBuilder
             });
         }
 
+        // A reference attribute holds the id its target was read with, which under a prefix is not the
+        // target's model id: it is stored as the model id of the first node read with it (§11.5.4), and
+        // one that names nothing stays as read.
+        foreach (var element in diagram.Elements)
+        {
+            foreach (var attribute in element.Type.Attributes.Values)
+            {
+                if (metamodel.TypeOf(attribute.Type) is null || !element.Attributes.TryGetValue(attribute.Name, out var stored)) continue;
+                element.Store(attribute.Name, stored switch
+                {
+                    string id => ModelId(id),
+                    IReadOnlyList<object?> ids => ids.Select(id => id is string text ? ModelId(text) : id).ToList(),
+                    _ => stored,
+                });
+            }
+        }
+
         findings.AddRange(Complete(diagram));
         return new DislModel(diagram, findings, header, unreadable, false);
+
+        string ModelId(string id) => byReadId.TryGetValue(id, out var node) ? node.Id : id;
 
         DislElement Node(FblElement element, DislTypeMapping mapping, DislType type)
         {

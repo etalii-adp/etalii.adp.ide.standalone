@@ -14,7 +14,9 @@ public class NaturalIdPrefixesTests
     private static DislSpecification Specification(string ids) => Specifications.Loaded(Specifications.With($$"""
         "metamodel": {
           "types": { "Pump": { "attributes": { "tag": { "type": "string", "key": true } } },
-                     "Tank": { "attributes": { "tag": { "type": "string", "key": true } } } },
+                     "Tank": { "attributes": { "tag": { "type": "string", "key": true },
+                                               "feeds": { "type": "Pump", "many": true },
+                                               "spare": { "type": "Pump" } } } },
           "relations": { "Pipe": { "source": ["Pump", "Tank"], "target": ["Pump", "Tank"] } } },
         "persistence": {
           "ids": {{ids}},
@@ -120,5 +122,48 @@ public class NaturalIdPrefixesTests
 
         // Assert.
         Assert.Equal("p1", Assert.Single(diagram.Nodes).Id);
+    }
+
+    /// <summary>A tank read with the pumps it references, by the ids they were read with, as a binding reads a reference.</summary>
+    private static FblElement Tank(string id, int line, string? spare, params string[] feeds)
+    {
+        var attributes = new Dictionary<string, object?> { ["tag"] = id, ["feeds"] = feeds.Cast<object?>().ToList() };
+        if (spare is not null) attributes["spare"] = spare;
+        return new(id, true, "Tank", "tank", false, attributes, null, null, null, null, new Span(0, 0), line);
+    }
+
+    [Fact]
+    public void AReferenceReadByTheIdItsTargetWasReadWith_ResolvesToThatElement()
+    {
+        // Act: the pumps' ids gain their prefix; the tank still names them as they were read.
+        var diagram = Read(Prefixed, Node("p1", "Pump", 1), Node("p2", "Pump", 2), Tank("t1", 3, "p2", "p1", "p2"));
+
+        // Assert.
+        var tank = diagram.NodesOfType("Tank").Single();
+        Assert.Equal(["pump:p1", "pump:p2"], ((IReadOnlyList<object?>)tank.ValueOf("feeds")!).Select(feed => ((DislElement)feed!).Id));
+        Assert.Same(diagram.Nodes[1], tank.ValueOf("spare"));
+    }
+
+    [Fact]
+    public void AReferenceThatNamesNothing_StaysAsRead_AndResolvesToNull()
+    {
+        // Act.
+        var diagram = Read(Prefixed, Node("p1", "Pump", 1), Tank("t1", 2, "ghost", "p1", "ghost"));
+
+        // Assert.
+        var tank = diagram.NodesOfType("Tank").Single();
+        Assert.Equal([diagram.Nodes[0], null], (IReadOnlyList<object?>)tank.ValueOf("feeds")!);
+        Assert.Null(tank.ValueOf("spare"));
+        Assert.Equal("ghost", tank.Attributes["spare"]);
+    }
+
+    [Fact]
+    public void AReferenceToOneOfTwoNodesReadWithOneId_ResolvesToTheFirst()
+    {
+        // Act.
+        var diagram = Read(Prefixed, Node("p1", "Pump", 1), Node("p1", "Pump", 2), Tank("t1", 3, "p1"));
+
+        // Assert.
+        Assert.Same(diagram.Nodes[0], diagram.NodesOfType("Tank").Single().ValueOf("spare"));
     }
 }

@@ -150,4 +150,24 @@ public class FormDerivationTests
         Assert.Equal(["name | name | B | - | editable | group ", "size | Size | 7 | - | editable | group ", "when | when | -0001-12 | - | editable | group ", "weight | weight | 2.5 | - | editable | group "],
             Lines(FormDerivation.Derive(specification, full, new DislEnv(), WireIdMap.None)));
     }
+
+    [Fact]
+    public void OptionsGivenAsValueAndLabelMaps_OfferTheirLabels_ElseTheirValues()
+    {
+        // Arrange: options are values or {value, label, icon, doc} maps (DISL 7.5), from CEL or written out.
+        var specification = Specifications.Loaded(Specifications.With("""
+            "metamodel": { "types": { "Thing": { "attributes": { "size": { "type": "int" }, "flavour": { "type": "string" } } } } },
+            "forms": { "thing": { "for": "Thing", "items": [
+              { "attribute": "size", "widget": "select", "options": { "cel": "[{'value': 1, 'label': 'One'}, {'value': 2}, 3]" } },
+              { "attribute": "flavour", "widget": "select", "options": [ { "value": "a", "label": "Alpha" }, { "value": "b" }, "c" ] } ] } }
+            """));
+        var thing = new DislDiagram(specification).AddNode("Thing", "a");
+
+        // Act.
+        var rows = FormDerivation.Derive(specification, thing, new DislEnv(), WireIdMap.None);
+
+        // Assert.
+        Assert.Equal(["One", "2", "3"], rows[0].Candidates);
+        Assert.Equal(["Alpha", "b", "c"], rows[1].Candidates);
+    }
 }
