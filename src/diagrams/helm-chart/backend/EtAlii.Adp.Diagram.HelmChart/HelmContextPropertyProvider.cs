@@ -21,6 +21,13 @@ namespace EtAlii.Adp.Diagram.HelmChart;
 /// the counts) - Requirement 9.4's nothing-selected summary rides the chart node, the one
 /// element that means "this chart".
 /// </para>
+/// <para>
+/// <b>It does not derive from <see cref="DiagramPropertyProvider{TBody, TModel}"/></b>, because
+/// everything that frame carries is for a document that can be edited: it loads a document of a
+/// store, guards one that could not be read and dispatches a change through the project's history,
+/// while this reads a folder and edits nothing (code-structure, spec 025: a module that cannot adopt
+/// a shared type keeps its own).
+/// </para>
 /// </remarks>
 public sealed class HelmContextPropertyProvider : IContextPropertyProvider
 {
