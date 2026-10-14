@@ -1,19 +1,18 @@
-﻿using EtAlii.Adp.History;
+﻿using EtAlii.Adp.Documents;
+using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.Rdf;
 
 /// <summary>Renames a term everywhere it occurs, in one operation, so no reference is stranded (Requirement 5.4).</summary>
-public sealed record RenameRdfTermCommand(string BodyPath, string OldIri, string NewIri) : ICommand;
+public sealed record RenameRdfTermCommand(string BodyPath, string OldIri, string NewIri) : IDocumentEditCommand;
 
 /// <inheritdoc cref="RenameRdfTermCommand" />
-public sealed class RenameRdfTermCommandHandler(IRdfDocumentStore documents) : ICommandHandler<RenameRdfTermCommand>
+public sealed class RenameRdfTermCommandHandler(IRdfDocumentStore documents) : RdfEditHandler<RenameRdfTermCommand>(documents)
 {
-    public Task<CommandResult> ExecuteAsync(RenameRdfTermCommand command, CancellationToken cancellationToken = default)
+    /// <inheritdoc />
+    protected override EditOutcome Apply(LineDocument body, RdfModel model, RenameRdfTermCommand command)
     {
-        ArgumentNullException.ThrowIfNull(command);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        return RdfEdits.Run(documents, command.BodyPath, command, entry =>
-            RdfWriter.RenameTerm(entry.Document, entry.Model, command.OldIri, command.NewIri));
+        return Outcome(
+            RdfWriter.RenameTerm(body, model, command.OldIri, command.NewIri));
     }
 }

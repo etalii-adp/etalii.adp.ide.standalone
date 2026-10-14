@@ -1,19 +1,18 @@
-﻿using EtAlii.Adp.History;
+﻿using EtAlii.Adp.Documents;
+using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.Rdf.Shacl;
 
 /// <summary>Switches a shape off or back on (Requirement 5.5).</summary>
-public sealed record SetShaclDeactivatedCommand(string BodyPath, string ShapeIri, bool Deactivated) : ICommand;
+public sealed record SetShaclDeactivatedCommand(string BodyPath, string ShapeIri, bool Deactivated) : IDocumentEditCommand;
 
 /// <inheritdoc cref="SetShaclDeactivatedCommand" />
-public sealed class SetShaclDeactivatedCommandHandler(IRdfDocumentStore documents) : ICommandHandler<SetShaclDeactivatedCommand>
+public sealed class SetShaclDeactivatedCommandHandler(IRdfDocumentStore documents) : RdfEditHandler<SetShaclDeactivatedCommand>(documents)
 {
-    public Task<CommandResult> ExecuteAsync(SetShaclDeactivatedCommand command, CancellationToken cancellationToken = default)
+    /// <inheritdoc />
+    protected override EditOutcome Apply(LineDocument body, RdfModel model, SetShaclDeactivatedCommand command)
     {
-        ArgumentNullException.ThrowIfNull(command);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        return RdfEdits.Run(documents, command.BodyPath, command, entry =>
-            ShaclWriter.SetDeactivated(entry.Document, entry.Model, command.ShapeIri, command.Deactivated));
+        return Outcome(
+            ShaclWriter.SetDeactivated(body, model, command.ShapeIri, command.Deactivated));
     }
 }

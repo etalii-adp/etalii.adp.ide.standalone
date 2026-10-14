@@ -130,5 +130,5 @@ public abstract class WatchedFolderStore<TSnapshot>(TimeSpan settleDelay) : IWat
         Changed?.Invoke(this, new WatchedFolderChangedEventArgs<TSnapshot>(watched.Path, watched.Snapshot));
     }
 
-    private static string Key(string folder) => System.IO.Path.GetFullPath(folder);
+    private static string Key(string folder) => Path.GetFullPath(folder);
 }
