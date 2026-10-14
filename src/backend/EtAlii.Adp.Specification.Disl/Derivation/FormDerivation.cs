@@ -9,7 +9,7 @@ namespace EtAlii.Adp.Specification.Disl;
 /// <param name="Widget">The item's <c>widget</c>, or null when it states none; the host chooses its editor from it.</param>
 /// <param name="ReadOnlyReason">Why it cannot be edited; empty when it can.</param>
 /// <param name="Group">The title of the section (or group, or tab) it is in; empty outside one.</param>
-/// <param name="Candidates">What the value may be chosen from: a tags or select item's <c>options</c>, a slider's mark labels; null for none.</param>
+/// <param name="Candidates">What the value may be chosen from: a tags or select item's <c>options</c>, each a value or a <c>{value, label}</c> map's label, a slider's mark labels; null for none.</param>
 /// <param name="Retypes">
 /// Whether the row changes the element's type: an item of kind <c>type</c> (DISL 0.3 §7.5), whose
 /// <c>options</c> are the types it can become and whose <c>optionLabel</c> names each.
@@ -184,12 +184,12 @@ public static class FormDerivation
                 switch (options.ValueKind)
                 {
                     case JsonValueKind.Array:
-                        return [.. options.EnumerateArray().Select(option => option.ValueKind == JsonValueKind.String ? option.GetString()! : DislEvaluation.TextOf(DislValues.Json(option)))];
+                        return [.. options.EnumerateArray().Select(option => option.ValueKind == JsonValueKind.String ? option.GetString()! : OptionText(DislValues.Json(option)))];
                     case JsonValueKind.Object when DislJson.String(options, "enum") is { } name:
                         return specification.Metamodel.Enums.TryGetValue(name, out var enumeration) ? [.. enumeration.Values.Select(value => value.Label ?? value.Key)] : [];
                     case JsonValueKind.Object or JsonValueKind.String:
                         return DislEvaluation.Expression(specification, options, DislJson.Pointer(pointer, "options"), DislContexts.Form, variables) is IReadOnlyList<object?> list
-                            ? [.. list.Select(Text)]
+                            ? [.. list.Select(OptionText)]
                             : [];
                 }
             }
@@ -199,6 +199,14 @@ public static class FormDerivation
             }
             return null;
         }
+
+        /// <summary>An option as it is offered: a <c>{value, label}</c> map by its label, else by its value; any other value as text (§7.5).</summary>
+        private static string OptionText(object? option) => option switch
+        {
+            CelMap map when map.TryGetValue("label", out var label) && label is string text => text,
+            CelMap map when map.TryGetValue("value", out var value) => Text(value),
+            _ => Text(option),
+        };
 
         /// <summary>An attribute's text: derived, else stored, else its default when it declares one, else empty.</summary>
         private string AttributeText(DislAttribute attribute)
