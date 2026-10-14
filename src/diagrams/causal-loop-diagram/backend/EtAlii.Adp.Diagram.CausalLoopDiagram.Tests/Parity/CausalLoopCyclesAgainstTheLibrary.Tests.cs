@@ -41,8 +41,8 @@ public class CausalLoopCyclesAgainstTheLibraryTests
         var diagram = CausalLoopBody.Parse(text).Disl.Diagram;
 
         // Act.
-        var (found, truncated) = diagram.Cycles("CausalLink", Bound);
-        var library = found.Select(cycle => Text(cycle)).ToList();
+        (IReadOnlyList<IReadOnlyList<DislElement>> found, bool truncated) = diagram.Cycles("CausalLink", Bound);
+        var library = found.Select(Text).ToList();
         var tool = CausalLoopCycles.Find(diagram.NodesOfType("Variable"), diagram.RelationsOfType("CausalLink"), Bound)
             .Select(cycle => Text([.. ((IEnumerable<object?>)cycle!).Cast<DislElement>()]))
             .ToList();
@@ -62,7 +62,7 @@ public class CausalLoopCyclesAgainstTheLibraryTests
         var diagram = CausalLoopBody.Parse(text).Disl.Diagram;
 
         // Act.
-        var library = diagram.Cycles("CausalLink", Bound).Cycles.Select(cycle => Text(cycle)).ToList();
+        var library = diagram.Cycles("CausalLink", Bound).Cycles.Select(Text).ToList();
 
         // Assert: DISL 12.4's order, by first member and then by member order.
         Assert.Equal(["a → b", "a → b → c", "a → b → c → d", "a → b → d", "a → c", "a → c → d", "a → c → d → b", "b → c → d", "b → d"], library);
