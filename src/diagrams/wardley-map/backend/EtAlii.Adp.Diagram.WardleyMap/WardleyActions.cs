@@ -189,7 +189,9 @@ public static class WardleyActions
         new(UnlinkActionId, subject => subject.Entry is not null, (subject, value) =>
             LinksOf(subject) is var links && value.Length == 0 && links.Count == 1
                 ? Unlink(subject, links[0])
-                : links.FirstOrDefault(link => link.Id == value) is { } link ? Unlink(subject, link) : null)
+                : links.FirstOrDefault(candidate => candidate.Id == value) is { } chosen
+                    ? Unlink(subject, chosen)
+                    : null)
         {
             Group = LinkGroup,
             Offer = subject => subject.Entry?.Kind switch
