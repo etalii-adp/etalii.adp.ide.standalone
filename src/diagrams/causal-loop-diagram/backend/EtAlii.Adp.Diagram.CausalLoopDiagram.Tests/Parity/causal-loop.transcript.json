@@ -166,9 +166,9 @@
           "do": "set link:a|b causal-loop.link-weight = \"1e21\"",
           "answer": "ok",
           "hunks": [
-            "@8 -1 +\"link a -> b + delayed flipped weight=1E+21 \\\"Parity note\\\"\\r\\n\""
+            "@8 -1 +\"link a -> b + delayed flipped weight=1e+21 \\\"Parity note\\\"\\r\\n\""
           ],
-          "sha256": "5e46299779990f018fb234c0f93c0600f948e6bb2a5827c43301aee7e4749db3"
+          "sha256": "024246726a9a6f640b225eb777cee7fcc4ded5d93dc722b8623059b99be63f4b"
         },
         {
           "do": "describe link:a|b",
@@ -179,9 +179,9 @@
           "do": "set link:a|b causal-loop.link-weight = \"0.000001\"",
           "answer": "ok",
           "hunks": [
-            "@8 -1 +\"link a -> b + delayed flipped weight=1E-06 \\\"Parity note\\\"\\r\\n\""
+            "@8 -1 +\"link a -> b + delayed flipped weight=0.000001 \\\"Parity note\\\"\\r\\n\""
           ],
-          "sha256": "c164dc356ecf960deae1cb11660ab7340a591528fa3983ff605b27130f3d2120"
+          "sha256": "24060f83fc212c21799a0aabb28874849f1b5d6bbb84b4bbc4a69ab0714c64d2"
         },
         {
           "do": "set link:a|b causal-loop.link-weight = \"\"",
@@ -343,9 +343,10 @@
           "do": "execute causal-loop.connect on rel:b->parityId",
           "answer": "ok",
           "hunks": [
-            "@11 -0 +\"link b -> parityId +\\r\\nloop B1 \\\"\\\" parityId b\\r\\n\""
+            "@11 -0 +\"link b -> parityId +\\r\\n\"",
+            "@12 -0 +\"loop B1 \\\"\\\" parityId b\\r\\n\""
           ],
-          "sha256": "44f508e6f6310f1b19680c507ecefe941ec75fe55ca8b0ea2e58bac69480b0d6"
+          "sha256": "664428accf6935196cedff85f9f94b9c20a740e762549df548cc63adf72423f5"
         },
         {
           "do": "execute causal-loop.connect on rel:b->parityId",
@@ -358,7 +359,7 @@
           "hunks": [
             "@12 -0 +\"link parityId -> parityId +\\r\\n\""
           ],
-          "sha256": "a6bc221d24f57912b1bdf82fe253fab6cd0108517982217d632ceadfbc52be33"
+          "sha256": "612107ef4966773668901f9cca035e498f2143790e02d47d3652e67c64d566ec"
         },
         {
           "do": "execute causal-loop.connect on rel:parityId->nobody",
@@ -376,7 +377,7 @@
           "hunks": [
             "@7 -0 +\"variable variable1 \\\"Variable 1\\\"\\r\\n\""
           ],
-          "sha256": "1d8f34058b75b0fd1b0fc96b1b0a137ba3167f69f61f9413a2e912c331c6601a"
+          "sha256": "75be8bb7a3ba7edd7be1b0100dab998e23dcd2980801c58747ac2a8972a9d6bd"
         },
         {
           "do": "move variable:b to (100, 200)",
@@ -424,15 +425,15 @@
           "hunks": [
             "@9 -1 +\"\""
           ],
-          "sha256": "3c0dd115f642138bc715c82df0cddd9d5a7729bdb0f2e9333162e3f1f9c7239f"
+          "sha256": "b11abd59b66474569db66beb00f24574d77b5d6375ad7c5fafc4adf5bf2f2eed"
         },
         {
-          "do": "execute causal-loop.remove-loop on loop:B1",
+          "do": "execute causal-loop.remove-loop on loop:R99",
           "answer": "ok",
           "hunks": [
             "@13 -1 +\"\""
           ],
-          "sha256": "bdfef422a7f3c5e36dcd8f644ad07b900e3938e5281d2f4e511be2909fb14cb0"
+          "sha256": "da34b55e469205b7897c153a1d5a9e45a87851b3dd7493c9a445fca1f3727bf8"
         },
         {
           "do": "execute causal-loop.remove-variable on variable:parityId",
@@ -595,9 +596,9 @@
           "do": "set link:a|b causal-loop.link-weight = \"1e21\"",
           "answer": "throws System.ArgumentException: An item with the same key has already been added. Key: a",
           "hunks": [
-            "@9 -1 +\"link a -> b + delayed flipped weight=1E+21 \\\"Parity note\\\"\\r\\n\""
+            "@9 -1 +\"link a -> b + delayed flipped weight=1e+21 \\\"Parity note\\\"\\r\\n\""
           ],
-          "sha256": "81d90ba2df6549dee3540972be87a18e67bea352a30cb52c4990b595def8867e"
+          "sha256": "d0cf1cec4565405f697069433e04cd167da090c007f93837169950f0f0c158e9"
         },
         {
           "do": "describe link:a|b",
@@ -608,9 +609,9 @@
           "do": "set link:a|b causal-loop.link-weight = \"0.000001\"",
           "answer": "throws System.ArgumentException: An item with the same key has already been added. Key: a",
           "hunks": [
-            "@9 -1 +\"link a -> b + delayed flipped weight=1E-06 \\\"Parity note\\\"\\r\\n\""
+            "@9 -1 +\"link a -> b + delayed flipped weight=0.000001 \\\"Parity note\\\"\\r\\n\""
           ],
-          "sha256": "a1275a9d88019030b83c8c7dbb00bd661fe9649a96ac4ee42e86fa5eabe09d73"
+          "sha256": "73beab0ad190a4a0765536ac9c13601aea852cd84a83bf1c3ade119f5e3e54d1"
         },
         {
           "do": "set link:a|b causal-loop.link-weight = \"\"",
@@ -833,9 +834,10 @@
           "do": "execute causal-loop.connect on rel:parityId->parityId",
           "answer": "ok",
           "hunks": [
-            "@11 -0 +\"link parityId -> parityId +\\r\\nloop R1 \\\"\\\" parityId\\r\\n\""
+            "@11 -0 +\"link parityId -> parityId +\\r\\n\"",
+            "@13 -0 +\"loop R1 \\\"\\\" parityId\\r\\n\""
           ],
-          "sha256": "4e25ead9048299662b687776fc7abd76285e5759dfb1e3a75a572bc140b97b93"
+          "sha256": "bb1d77fbd21c1af2834a48084e16f1bdd24e171e59060cfd4c83b6a0f2b9c01d"
         },
         {
           "do": "execute causal-loop.connect on rel:parityId->nobody",
@@ -853,7 +855,7 @@
           "hunks": [
             "@8 -0 +\"variable variable1 \\\"Variable 1\\\"\\r\\n\""
           ],
-          "sha256": "c184238effa37c5fc83d2cc80481e8dfc95e078a570194ea4b89d12eb2329725"
+          "sha256": "3658e1e02b81627facc344ad399a356ec0197fc80d26a00c78e318ff1f6f9769"
         },
         {
           "do": "move variable:b to (100, 200)",
@@ -901,15 +903,15 @@
           "hunks": [
             "@10 -1 +\"\""
           ],
-          "sha256": "76d59f750c5599098e235e6ccd4d57c7693ccd1b703dd41b91044dedbe3b9a3a"
+          "sha256": "825d3f7706b15d694628d85f6df1710002ad897db52d2397751a7276e4514dc1"
         },
         {
-          "do": "execute causal-loop.remove-loop on loop:R1",
+          "do": "execute causal-loop.remove-loop on loop:B99",
           "answer": "ok",
           "hunks": [
-            "@12 -1 +\"\""
+            "@13 -1 +\"\""
           ],
-          "sha256": "e001cb92904a38ce4e73bed9649bccc3c255f3bce54d259dbc3df85f5b526993"
+          "sha256": "d27ce837023dd7074ae64e6a22f6dc0fc4dc1aba358cb5658e72d4a616c82a55"
         },
         {
           "do": "execute causal-loop.remove-variable on variable:parityId",
@@ -1087,9 +1089,9 @@
           "do": "set link:a|b causal-loop.link-weight = \"1e21\"",
           "answer": "ok",
           "hunks": [
-            "@10 -1 +\"link a -> b + delayed flipped weight=1E+21 \\\"Parity note\\\"\\r\\n\""
+            "@10 -1 +\"link a -> b + delayed flipped weight=1e+21 \\\"Parity note\\\"\\r\\n\""
           ],
-          "sha256": "a69ae9ad863ea91e9ff6d5544a0830660e01292d3ce7fe0dafadde6197abba46"
+          "sha256": "adcd90170a6c121a3263950cc80a7d6d07898ca3e1de5cccdf7fe7018404411e"
         },
         {
           "do": "describe link:a|b",
@@ -1100,9 +1102,9 @@
           "do": "set link:a|b causal-loop.link-weight = \"0.000001\"",
           "answer": "ok",
           "hunks": [
-            "@10 -1 +\"link a -> b + delayed flipped weight=1E-06 \\\"Parity note\\\"\\r\\n\""
+            "@10 -1 +\"link a -> b + delayed flipped weight=0.000001 \\\"Parity note\\\"\\r\\n\""
           ],
-          "sha256": "b109a49039361eaf3616084a4dcba01ca77ffd5c857849f172419b16a95893f1"
+          "sha256": "cebc4fa6e57428c0bf62fd7fca38e4462b4bd34d599084756d936ce876ad1023"
         },
         {
           "do": "set link:a|b causal-loop.link-weight = \"\"",
@@ -1328,9 +1330,10 @@
           "do": "execute causal-loop.connect on rel:parityId->parityId",
           "answer": "ok",
           "hunks": [
-            "@12 -0 +\"link parityId -> parityId +\\r\\nloop R100 \\\"\\\" parityId\\r\\n\""
+            "@12 -0 +\"link parityId -> parityId +\\r\\n\"",
+            "@16 -0 +\"loop R100 \\\"\\\" parityId\\r\\n\""
           ],
-          "sha256": "df07e46f0eca4b5871aedbe23344fe591800e332fe2cea0d7f99b0874755a829"
+          "sha256": "735731303d0f4acfe677d92081275231c668d4fbdeb548b47513bf8f55d68caa"
         },
         {
           "do": "execute causal-loop.connect on rel:parityId->nobody",
@@ -1348,7 +1351,7 @@
           "hunks": [
             "@7 -0 +\"variable variable1 \\\"Variable 1\\\"\\r\\n\""
           ],
-          "sha256": "9ab98ecac55ecb1657188c2e58c09a84773d9d11a0386e0a299eafa5357bccbc"
+          "sha256": "340c88bf5f5acc63c0609feb84138bd9a6b2d9fb8b48846cd3b43926a7027e56"
         },
         {
           "do": "move variable:b to (100, 200)",
@@ -1396,15 +1399,15 @@
           "hunks": [
             "@11 -1 +\"\""
           ],
-          "sha256": "f86985833e68516d75db05add53cbba1081a796bcf4d6ed1cd6e7e606ffbdb49"
+          "sha256": "ca154b530be436015317fd455d5f51a874aaa33860bf517df7cb486f341efe5c"
         },
         {
-          "do": "execute causal-loop.remove-loop on loop:R100",
+          "do": "execute causal-loop.remove-loop on loop:B99",
           "answer": "ok",
           "hunks": [
-            "@13 -1 +\"\""
+            "@15 -1 +\"\""
           ],
-          "sha256": "ce6c791e42b81cb8021d3f56bb26345b85a6941f868cca2289841c94eb525281"
+          "sha256": "196a5fec4ae6f15c6b6951d5645174598b15d9c8a2eac13cc7792a133b54a4c2"
         },
         {
           "do": "execute causal-loop.remove-variable on variable:parityId",
@@ -1554,9 +1557,9 @@
           "do": "set link:a|b causal-loop.link-weight = \"1e21\"",
           "answer": "ok",
           "hunks": [
-            "@9 -1 +\"link a -> b + delayed flipped weight=1E+21 \\\"Parity note\\\"\\r\\n\""
+            "@9 -1 +\"link a -> b + delayed flipped weight=1e+21 \\\"Parity note\\\"\\r\\n\""
           ],
-          "sha256": "dec76536f506dde4cc0718802d5cb9d2eb4b5a52925b547ea9904e5cae98a4bf"
+          "sha256": "f3e896102980fd29f30ad837fc9979c5bc54cc245130636d3921fb2b4db1c418"
         },
         {
           "do": "describe link:a|b",
@@ -1567,9 +1570,9 @@
           "do": "set link:a|b causal-loop.link-weight = \"0.000001\"",
           "answer": "ok",
           "hunks": [
-            "@9 -1 +\"link a -> b + delayed flipped weight=1E-06 \\\"Parity note\\\"\\r\\n\""
+            "@9 -1 +\"link a -> b + delayed flipped weight=0.000001 \\\"Parity note\\\"\\r\\n\""
           ],
-          "sha256": "426996d1e0a55e98428db2bbc6f1fc4b5cabfed5f740d16cda793f6e05684755"
+          "sha256": "f282818a1f5dfc75f5e62d641d49340f9c8825369192b63c9ccb7a2c23b8d431"
         },
         {
           "do": "set link:a|b causal-loop.link-weight = \"\"",
@@ -1642,9 +1645,9 @@
           "do": "commit causal-loop.rename-variable on variable:a = \"Parity renamed\"",
           "answer": "ok",
           "hunks": [
-            "@6 -1 +\"variable a \\\"Parity renamed\\\"\\r\\n\""
+            "@6 -1 +\"variable a \\\"Parity renamed\\\"hi\\\"\\\"\\r\\n\""
           ],
-          "sha256": "ac2bf9f630a27f4a4e9cd68307a90f1b34ae417a38f3900f19ee5d50b2ad0545"
+          "sha256": "8ea81d5a0f9a23c03d5c99023a9f96672386ee331021f3b809a0a8e5e3c5820f"
         },
         {
           "do": "set variable:a causal-loop.variable-label = \"Say \\\"hi\\\"\"",
@@ -1660,9 +1663,9 @@
           "do": "set variable:a causal-loop.variable-label = \"Parity label\"",
           "answer": "ok",
           "hunks": [
-            "@6 -1 +\"variable a \\\"Parity label\\\"\\r\\n\""
+            "@6 -1 +\"variable a \\\"Parity label\\\"hi\\\"\\\"\\r\\n\""
           ],
-          "sha256": "8881c6edba1d019047edb0ef4844fa2e3c6834818ccb439e3bab552512116366"
+          "sha256": "c98ba8efb5d568a20992b3ff41ea6d62c499fde588021d0f79fcc13fc5b18c2f"
         },
         {
           "do": "validate causal-loop.add-link on variable:a = \"nobody\"",
@@ -1700,7 +1703,7 @@
           "hunks": [
             "@11 -0 +\"loop R99 \\\"R99\\\" a b\\r\\n\""
           ],
-          "sha256": "7eb497e2b1b6566c5203f0bb33ba3df3a7d2b79ac2d3154c5799dbe3caf6b7ab"
+          "sha256": "9a2692100a6de80b291b752fb4e965c1a2403d0ee0422474525092625114f793"
         },
         {
           "do": "set variable:a causal-loop.variable-id = \"b\"",
@@ -1721,10 +1724,10 @@
           "do": "set variable:a causal-loop.variable-id = \"parityId\"",
           "answer": "ok",
           "hunks": [
-            "@6 -1 +\"variable parityId \\\"Parity label\\\"\\r\\n\"",
+            "@6 -1 +\"variable parityId \\\"Parity label\\\"hi\\\"\\\"\\r\\n\"",
             "@9 -3 +\"link parityId -> b - delayed flipped \\\"Parity note\\\"\\r\\nlink b -> parityId +\\r\\nloop R99 \\\"R99\\\" parityId b\\r\\n\""
           ],
-          "sha256": "451666ffe1388c49757cf48a656f39ad25dd43deaa0867cf114ff2ed98ceaaa9"
+          "sha256": "76b3398538c68896c332714da06c72d2e8e4a92fa64b1526bb6ddbd57606e183"
         },
         {
           "do": "execute causal-loop.connect on rel:b->parityId",
@@ -1740,9 +1743,10 @@
           "do": "execute causal-loop.connect on rel:parityId->parityId",
           "answer": "ok",
           "hunks": [
-            "@11 -0 +\"link parityId -> parityId +\\r\\nloop R100 \\\"\\\" parityId\\r\\n\""
+            "@11 -0 +\"link parityId -> parityId +\\r\\n\"",
+            "@12 -0 +\"loop R100 \\\"\\\" parityId\\r\\n\""
           ],
-          "sha256": "f4e0badc54e7c432427bd1c60e9c6ebb43622deef0e9e8cd3de111a5d258448b"
+          "sha256": "9ec38b3f01d13097720cb2b19f20812e34db3c6016556c17af3e5a8d5ad0355a"
         },
         {
           "do": "execute causal-loop.connect on rel:parityId->nobody",
@@ -1760,7 +1764,7 @@
           "hunks": [
             "@8 -0 +\"variable variable1 \\\"Variable 1\\\"\\r\\n\""
           ],
-          "sha256": "a251fe9cb1166b45b4684b4a8f542cbe40161e60d4e033c2b7ee4b3067317091"
+          "sha256": "375a7cf4942d331e7b718cb8bd79ebeb3d578bcbb08e41887d3839f247d7395f"
         },
         {
           "do": "move variable:b to (100, 200)",
@@ -1808,15 +1812,15 @@
           "hunks": [
             "@10 -1 +\"\""
           ],
-          "sha256": "58d0b54b36c40ab7534f9ecb2caa074a539c5721faafe945bbbbd9caccfc02f1"
+          "sha256": "fd5f53c4e043d477bbda838b13dd5fcef8f5006f561bee167dabda06cd40b1dc"
         },
         {
-          "do": "execute causal-loop.remove-loop on loop:R100",
+          "do": "execute causal-loop.remove-loop on loop:R99",
           "answer": "ok",
           "hunks": [
             "@12 -1 +\"\""
           ],
-          "sha256": "8a4a7ec92462fca96c8eee41f67537d6bdf699d3ba03027ce59dbdf30859bd06"
+          "sha256": "802f0fb57fa23f78f91a1e07bb672fb25a1edda4d6bb5ed142ae98beef0e9df2"
         },
         {
           "do": "execute causal-loop.remove-variable on variable:parityId",
@@ -2052,17 +2056,17 @@
           "do": "execute causal-loop.toggle-delay on link:a|b",
           "answer": "ok",
           "hunks": [
-            "@12 -1 +\"link a -> b + delayed\\r\\n\""
+            "@12 -1 +\"link a -> b S delayed\\r\\n\""
           ],
-          "sha256": "5dbe55f2888c2578cf2ee7cfa9928f43730b08339558e846b381c3d4f79e9f9f"
+          "sha256": "430e33dfc2f2e947b1c6fa56918aca66372be858b7e82a53e662f7c0ba2b23c1"
         },
         {
           "do": "execute causal-loop.flip-curvature on link:a|b",
           "answer": "ok",
           "hunks": [
-            "@12 -1 +\"link a -> b + delayed flipped\\r\\n\""
+            "@12 -1 +\"link a -> b S delayed flipped\\r\\n\""
           ],
-          "sha256": "02fc56f8b2c9a830aaaa59f5c98982bae7cc70b68bb4c0119a6fb5e83a12acb0"
+          "sha256": "42713d113ad5f79133317153f92021f2c3ca5bcd4377a05df1194a3202a5c828"
         },
         {
           "do": "set link:a|b causal-loop.link-label = \"Parity note\"",
@@ -2081,9 +2085,9 @@
           "do": "set link:a|b causal-loop.link-weight = \"1e21\"",
           "answer": "ok",
           "hunks": [
-            "@12 -1 +\"link a -> b + delayed flipped weight=1E+21 \\\"Parity note\\\"\\r\\n\""
+            "@12 -1 +\"link a -> b + delayed flipped weight=1e+21 \\\"Parity note\\\"\\r\\n\""
           ],
-          "sha256": "c0aa93ef2a0dc954f92b56904abde8dedb8a5f80474f422d296587b248898d50"
+          "sha256": "c78f44662923d0cb15d3786fa508a37874c83df12f3d3e9cd9b1dfce605e00a3"
         },
         {
           "do": "describe link:a|b",
@@ -2094,9 +2098,9 @@
           "do": "set link:a|b causal-loop.link-weight = \"0.000001\"",
           "answer": "ok",
           "hunks": [
-            "@12 -1 +\"link a -> b + delayed flipped weight=1E-06 \\\"Parity note\\\"\\r\\n\""
+            "@12 -1 +\"link a -> b + delayed flipped weight=0.000001 \\\"Parity note\\\"\\r\\n\""
           ],
-          "sha256": "51e5411be189db23dc758db948b2998d4603d964c83d344c65b5a7fc02cf656e"
+          "sha256": "3a25d74734721707992bd1389531f862bf7a95db8c8fea994d0eba996196f44f"
         },
         {
           "do": "set link:a|b causal-loop.link-weight = \"\"",
@@ -2264,9 +2268,10 @@
           "do": "commit causal-loop.add-link on variable:a = \"my id\"",
           "answer": "ok",
           "hunks": [
-            "@17 -0 +\"link a -> my id +\\r\\nloop R1 \\\"\\\" a my id\\r\\n\""
+            "@17 -0 +\"  link a -> \\\"my id\\\" +\\r\\n\"",
+            "@20 -0 +\"loop R1 \\\"\\\" a my id\\r\\n\""
           ],
-          "sha256": "61156d497b8d4f01e341c983408cc086d60ecbff7e8b0f54801dc721ab942a40"
+          "sha256": "e12c01c83b2c1ec6a72d9a90c398ccf2ddcfe601b0d8423a257d0d49bb7d5687"
         },
         {
           "do": "commit causal-loop.add-link on variable:a = \"nobody\"",
@@ -2279,7 +2284,7 @@
           "unchanged": true
         },
         {
-          "do": "validate causal-loop.add-loop on variable:a = \"R1\"",
+          "do": "validate causal-loop.add-loop on variable:a = \"B99\"",
           "answer": "rejected: A loop of that identifier is already stated in this diagram.",
           "unchanged": true
         },
@@ -2289,7 +2294,7 @@
           "hunks": [
             "@22 -0 +\"loop R99 \\\"R99\\\" a b\\r\\n\""
           ],
-          "sha256": "dd578fc8fd678c17585b1e6a1c8988cee52b8abb875950f31a409233e60a7ef0"
+          "sha256": "cebe0a6182051ec574f536c6a42835df8635adb2cccce78384a35b8bf00955e0"
         },
         {
           "do": "set variable:a causal-loop.variable-id = \"my id\"",
@@ -2311,34 +2316,28 @@
           "answer": "ok",
           "hunks": [
             "@7 -1 +\"variable parityId \\\"Parity label\\\"\\r\\n\"",
-            "@12 -7 +\"link parityId -> b - delayed flipped \\\"Parity note\\\"\\r\\nlink b -> parityId -\\r\\nlink my id -> parityId +\\r\\nlink parityId -> indented + \\\"bareNote\\\"\\r\\nlink indented -> parityId -\\r\\nlink parityId -> my + \\\"id\\\"\\r\\nloop R1 \\\"\\\" parityId my id\\r\\n\"",
-            "@20 -3 +\"loop B99 \\\"Parity name\\\" parityId indented\\r\\nloop B2 \\\"Through b\\\" parityId b\\r\\nloop R99 \\\"R99\\\" parityId b\\r\\n\""
+            "@12 -6 +\"link parityId -> b - delayed flipped \\\"Parity note\\\"\\r\\nlink b -> parityId O\\r\\nlink \\\"my id\\\" -> parityId +\\r\\nlink parityId -> indented + bareNote\\r\\n  link indented -> parityId -\\r\\n  link parityId -> \\\"my id\\\" +\\r\\n\"",
+            "@19 -4 +\"loop B99 \\\"Parity name\\\" parityId indented\\r\\nloop B2 \\\"Through b\\\" parityId b\\r\\nloop R1 \\\"\\\" parityId my id\\r\\nloop R99 \\\"R99\\\" parityId b\\r\\n\""
           ],
-          "sha256": "bc6f481e427b8683c9aedd073246ff7ac9a1109d74b1e16e4e37baf85f1061b1"
+          "sha256": "df318d7f14201b94dd4626eb3e954f8991fc17122141d2294e5ecc79fa4a9be3"
         },
         {
           "do": "execute causal-loop.connect on rel:my id->parityId",
-          "answer": "ok",
-          "hunks": [
-            "@18 -0 +\"link my id -> parityId +\\r\\n\""
-          ],
-          "sha256": "81afbb7c30a64cd662635dc9b539f6495d48dacdda63f5e6f3a6cf57ad0e5202"
+          "answer": "refused: That link is already stated in this diagram.",
+          "unchanged": true
         },
         {
           "do": "execute causal-loop.connect on rel:my id->parityId",
-          "answer": "ok",
-          "hunks": [
-            "@19 -0 +\"link my id -> parityId +\\r\\n\""
-          ],
-          "sha256": "32d8a6d00e308c17e3e5ae42e970ad3fdcbde9932a33a76a7138b026e3c5e8a4"
+          "answer": "refused: That link is already stated in this diagram.",
+          "unchanged": true
         },
         {
           "do": "execute causal-loop.connect on rel:parityId->parityId",
           "answer": "ok",
           "hunks": [
-            "@18 -0 +\"link parityId -> parityId +\\r\\nloop R100 \\\"\\\" parityId\\r\\n\""
+            "@18 -0 +\"  link parityId -> parityId +\\r\\n\""
           ],
-          "sha256": "df864ff9d85093dd99573bb7339197a69d1c5f9d764cfd15de11f8cbcc19674f"
+          "sha256": "90753616aab566c88a3e5c0aa4f68c82741f1e45090d4cac02ad730014702369"
         },
         {
           "do": "execute causal-loop.connect on rel:parityId->nobody",
@@ -2356,7 +2355,7 @@
           "hunks": [
             "@11 -0 +\"variable variable1 \\\"Variable 1\\\"\\r\\n\""
           ],
-          "sha256": "c276e07868f1caceaab41b0eb03ba8ac05d880c4de3452bdab7a4b32276bd44f"
+          "sha256": "341dba4ca80dc08b04354bff23c9c3a756d198a405a64add6416e1ccae93d63e"
         },
         {
           "do": "move variable:my id to (100, 200)",
@@ -2404,15 +2403,15 @@
           "hunks": [
             "@13 -1 +\"\""
           ],
-          "sha256": "64bfaec90e1243c599c1f26f1613dfa714ba7026e7fb9bb62b5072aa8eac434b"
+          "sha256": "01d46fe9d97fad976b18428e04fecb645b127d407297078abd63770bf697cea4"
         },
         {
-          "do": "execute causal-loop.remove-loop on loop:R100",
+          "do": "execute causal-loop.remove-loop on loop:B99",
           "answer": "ok",
           "hunks": [
-            "@19 -1 +\"\""
+            "@20 -1 +\"\""
           ],
-          "sha256": "ff73ce26b41826ed561721de06cc3849c7ef5c6e5ee9754ee44ec56b44146eca"
+          "sha256": "f1ea34f7e323e766ab1870c0317364e8c448db72df4888840e21daa1830adc4e"
         },
         {
           "do": "execute causal-loop.remove-variable on variable:parityId",
@@ -2424,15 +2423,13 @@
           "answer": "ok",
           "hunks": [
             "@7 -1 +\"\"",
-            "@13 -1 +\"\"",
-            "@15 -4 +\"\"",
-            "@21 -1 +\"\"",
-            "@23 -3 +\"\""
+            "@13 -6 +\"\"",
+            "@20 -3 +\"\""
           ],
-          "sha256": "a883e0c917b90c33d514c7b71fa7a58a7c491cbbf61b103913b1ee1a85855380"
+          "sha256": "e7d3c82fac0b859ba66ba82ad10eb1849c724c07939b3448cd95e8bc1b5138f4"
         }
       ],
-      "undoAll": "26 undone; the original text is back"
+      "undoAll": "24 undone; the original text is back"
     },
     {
       "document": "diagrams/causal-loop-diagram/backend/EtAlii.Adp.Diagram.CausalLoopDiagram.Tests/Fixtures/no-header.cld",
@@ -2588,9 +2585,9 @@
           "do": "set link:a|b causal-loop.link-weight = \"1e21\"",
           "answer": "ok",
           "hunks": [
-            "@6 -1 +\"link a -> b + delayed flipped weight=1E+21 \\\"Parity note\\\"\\r\\n\""
+            "@6 -1 +\"link a -> b + delayed flipped weight=1e+21 \\\"Parity note\\\"\\r\\n\""
           ],
-          "sha256": "a99831fe0fd6d5cf5054a8ff435b6046a3b8a0d547d85ea2975a7065a5c545e8"
+          "sha256": "7f53f01276d8d4d189bd9384563fbce09fde4c1b0fef97d10995c5d3ee18fadb"
         },
         {
           "do": "describe link:a|b",
@@ -2601,9 +2598,9 @@
           "do": "set link:a|b causal-loop.link-weight = \"0.000001\"",
           "answer": "ok",
           "hunks": [
-            "@6 -1 +\"link a -> b + delayed flipped weight=1E-06 \\\"Parity note\\\"\\r\\n\""
+            "@6 -1 +\"link a -> b + delayed flipped weight=0.000001 \\\"Parity note\\\"\\r\\n\""
           ],
-          "sha256": "95be1bb61dc1062c07d5dd4859096043a6385b497dfc4234f597633ad7ab462d"
+          "sha256": "3bf7c0aa9a4213f9adcb45fdaf9bf1e8e8adac7054c3b6b350df595c3b7c84f3"
         },
         {
           "do": "set link:a|b causal-loop.link-weight = \"\"",
@@ -2829,9 +2826,10 @@
           "do": "execute causal-loop.connect on rel:parityId->parityId",
           "answer": "ok",
           "hunks": [
-            "@8 -0 +\"link parityId -> parityId +\\r\\nloop R100 \\\"\\\" parityId\\r\\n\""
+            "@8 -0 +\"link parityId -> parityId +\\r\\n\"",
+            "@11 -0 +\"loop R100 \\\"\\\" parityId\\r\\n\""
           ],
-          "sha256": "6f40c97b7f938fed6cc27925aa93fbedf8451362d5ca330aa249f75632e1444d"
+          "sha256": "55c13d9049c9227636f84a75366aae485e2cf3731f5146d79d381ad84c7dfbfd"
         },
         {
           "do": "execute causal-loop.connect on rel:parityId->nobody",
@@ -2849,7 +2847,7 @@
           "hunks": [
             "@5 -0 +\"variable variable1 \\\"Variable 1\\\"\\r\\n\""
           ],
-          "sha256": "73360a8115f90cc06b9e462303c36ba6cc6ef1b275c3a81f7fd261e11ac02179"
+          "sha256": "949998690f94258ce6a35f2a400b49328217d6a1348af99ec4a5c35c1ce2e7df"
         },
         {
           "do": "move variable:b to (100, 200)",
@@ -2897,15 +2895,15 @@
           "hunks": [
             "@7 -1 +\"\""
           ],
-          "sha256": "4eec557c1d45a01a000e0641b3e93c88ee82f003dc7194344c764e1ea716a687"
+          "sha256": "78788a88703a9daaa4604f3924766ccc941e6d67fde6cac020876108ab7681ec"
         },
         {
-          "do": "execute causal-loop.remove-loop on loop:R100",
+          "do": "execute causal-loop.remove-loop on loop:B99",
           "answer": "ok",
           "hunks": [
-            "@9 -1 +\"\""
+            "@10 -1 +\"\""
           ],
-          "sha256": "f3e51c0ec5560e69d55d6f7495e40912f4dc4e6f53d963a3e0db6e98f7a7c9cb"
+          "sha256": "41b9350c4c7ff8f4a47e80d206a72879e4b306862a3699c6d24f92a4d3c4af13"
         },
         {
           "do": "execute causal-loop.remove-variable on variable:parityId",
@@ -3068,9 +3066,9 @@
           "do": "execute causal-loop.toggle-delay on link:a|b",
           "answer": "ok",
           "hunks": [
-            "@10 -1 +\"link a -> b + \\\"kept note\\\"\\r\\n\""
+            "@10 -1 +\"link   a  ->  b   s   unknownWord   \\\"kept note\\\"\\r\\n\""
           ],
-          "sha256": "95fc8d88c1787de05dd916b3b56b256a5db700ade7cc535ef3ca6715219175b0"
+          "sha256": "5b5668bb35e44839aabeff7e1e40ec456bb664496c61efad8c3f1e5abfe57bee"
         },
         {
           "do": "execute causal-loop.flip-curvature on link:a|b",
@@ -3097,9 +3095,9 @@
           "do": "set link:a|b causal-loop.link-weight = \"1e21\"",
           "answer": "ok",
           "hunks": [
-            "@10 -1 +\"link a -> b + flipped weight=1E+21 \\\"Parity note\\\"\\r\\n\""
+            "@10 -1 +\"link a -> b + flipped weight=1e+21 \\\"Parity note\\\"\\r\\n\""
           ],
-          "sha256": "38ab7a87f1804aeb3ecf9728d4c5e84f3a267c231abf67f60854d8a0816f128f"
+          "sha256": "d7bd8e47a67d447b2a9733763dff1ecbdb37aed1ecfd608649c608da8d649e19"
         },
         {
           "do": "describe link:a|b",
@@ -3110,9 +3108,9 @@
           "do": "set link:a|b causal-loop.link-weight = \"0.000001\"",
           "answer": "ok",
           "hunks": [
-            "@10 -1 +\"link a -> b + flipped weight=1E-06 \\\"Parity note\\\"\\r\\n\""
+            "@10 -1 +\"link a -> b + flipped weight=0.000001 \\\"Parity note\\\"\\r\\n\""
           ],
-          "sha256": "c949cc3460f45b33bc796107b66f9ccfcc934fe77d3a8f3d890ae44072b1c046"
+          "sha256": "df84ab260428d163c996dd37452efead4c39e63da3c2016d8dbd5ce711ec2827"
         },
         {
           "do": "set link:a|b causal-loop.link-weight = \"\"",
@@ -3331,9 +3329,10 @@
           "do": "execute causal-loop.connect on rel:b->parityId",
           "answer": "ok",
           "hunks": [
-            "@12 -0 +\"link b -> parityId +\\r\\nloop B100 \\\"\\\" parityId b\\r\\n\""
+            "@12 -0 +\"link b -> parityId +\\r\\n\"",
+            "@15 -0 +\"loop B100 \\\"\\\" parityId b\\r\\n\""
           ],
-          "sha256": "6ec06593e90c2d50d51338bbe8dc3b8aff614a8d1a4b01f80e87321444dd0643"
+          "sha256": "819b702bb4d35b263f44eb580e07daa76433df1e6ae246df43db4eb977cddc6a"
         },
         {
           "do": "execute causal-loop.connect on rel:b->parityId",
@@ -3346,7 +3345,7 @@
           "hunks": [
             "@13 -0 +\"link parityId -> parityId +\\r\\n\""
           ],
-          "sha256": "307fe2919191010ae8e84bea2210569a80c66586e5aeb73bd05ce60b2099259e"
+          "sha256": "6c85499befc728b08070c0118c2dd17fb952b9b8bf2c279cac73d40de28701c3"
         },
         {
           "do": "execute causal-loop.connect on rel:parityId->nobody",
@@ -3364,7 +3363,7 @@
           "hunks": [
             "@9 -0 +\"variable variable1 \\\"Variable 1\\\"\\r\\n\""
           ],
-          "sha256": "49544c9c06d94a3a9061fa024effd0288cba0e2719be97c123f73f60d312f993"
+          "sha256": "cf0e57ea70f0b1307985108a012ba878f10901257dc124f01d8bdc78ca39776a"
         },
         {
           "do": "move variable:b to (100, 200)",
@@ -3412,15 +3411,15 @@
           "hunks": [
             "@11 -1 +\"\""
           ],
-          "sha256": "e610b459af053014500de4cbdc0dd9190ef6293915ec2f629c712e48cf22c519"
+          "sha256": "2d0d304054304c936a36224f09ef5c8a0d4dc5a82216e14eeba3257b76d4d8ce"
         },
         {
-          "do": "execute causal-loop.remove-loop on loop:B100",
+          "do": "execute causal-loop.remove-loop on loop:B99",
           "answer": "ok",
           "hunks": [
-            "@14 -1 +\"\""
+            "@15 -1 +\"\""
           ],
-          "sha256": "d037ee6b1e176204ff43a6ff0826597327d37d2995a559e37fd2ef91a0c6f91b"
+          "sha256": "6739d592a2b03e44dbf7604f067c9b6872677e9b8eee03918a565da0d2bf620c"
         },
         {
           "do": "execute causal-loop.remove-variable on variable:parityId",
@@ -3554,9 +3553,9 @@
           "do": "set link:a|b causal-loop.link-weight = \"1e21\"",
           "answer": "ok",
           "hunks": [
-            "@6 -1 +\"link a -> b + delayed flipped weight=1E+21 \\\"Parity note\\\"\\r\\n\""
+            "@6 -1 +\"link a -> b + delayed flipped weight=1e+21 \\\"Parity note\\\"\\r\\n\""
           ],
-          "sha256": "cb11335f98dd30fd82a00a5c43d6c7b938fdb6f4c480625b7da9338c6cb8192c"
+          "sha256": "9c6da7ea19bf8826d80f3435201641bf1f9a6b1ffb8f5a2134c62dd11fac5a86"
         },
         {
           "do": "describe link:a|b",
@@ -3567,9 +3566,9 @@
           "do": "set link:a|b causal-loop.link-weight = \"0.000001\"",
           "answer": "ok",
           "hunks": [
-            "@6 -1 +\"link a -> b + delayed flipped weight=1E-06 \\\"Parity note\\\"\\r\\n\""
+            "@6 -1 +\"link a -> b + delayed flipped weight=0.000001 \\\"Parity note\\\"\\r\\n\""
           ],
-          "sha256": "597f3f53d4ca86f2139fe048840c8f8f80dc514f6a01c3e101069ba52cb1d93b"
+          "sha256": "c45351a4c9cd395b780974ebca3b8f91671668a8057ef9c67560e65f12a97685"
         },
         {
           "do": "set link:a|b causal-loop.link-weight = \"\"",
@@ -3698,9 +3697,9 @@
           "do": "commit causal-loop.add-loop on variable:a = \"R99\"",
           "answer": "ok",
           "hunks": [
-            "@13 -0 +\"loop R99 \\\"R99\\\" a\\r\\n\""
+            "@7 -0 +\"loop R99 \\\"R99\\\" a\\r\\n\""
           ],
-          "sha256": "b905980ad689445b43f257584dff530dcc61d910fad95141d1293f9a3a77ad1b"
+          "sha256": "6b91577a6ae1bf7cd99c505c4eab366ff6b8ab39bd7478e60ab9a86bf54406ac"
         },
         {
           "do": "set variable:a causal-loop.variable-id = \"b\"",
@@ -3722,18 +3721,18 @@
           "answer": "ok",
           "hunks": [
             "@3 -1 +\"variable parityId \\\"Parity label\\\"\\r\\n\"",
-            "@6 -1 +\"link parityId -> b - delayed flipped \\\"Parity note\\\"\\r\\n\"",
-            "@13 -1 +\"loop R99 \\\"R99\\\" parityId\\r\\n\""
+            "@6 -2 +\"link parityId -> b - delayed flipped \\\"Parity note\\\"\\r\\nloop R99 \\\"R99\\\" parityId\\r\\n\""
           ],
-          "sha256": "dcc22b9336fbcc7da0b648f3e8bb2abf51d1d414825ae25b11080568c3cd0808"
+          "sha256": "3a26edf799e43a33492a265772549f202eaa7ac2408376387a5211cf6f99c8b7"
         },
         {
           "do": "execute causal-loop.connect on rel:b->parityId",
           "answer": "ok",
           "hunks": [
-            "@7 -0 +\"link b -> parityId +\\r\\nloop B1 \\\"\\\" parityId b\\r\\n\""
+            "@7 -0 +\"link b -> parityId +\\r\\n\"",
+            "@8 -0 +\"loop B1 \\\"\\\" parityId b\\r\\n\""
           ],
-          "sha256": "8072a828bc9b4c2697fefdf0cb96ac9abbbe27e258cb295c74501b1238864541"
+          "sha256": "8be905cc9f440f186b44bdb98f587ed95f9906c002ad2e016924661faf0c61b0"
         },
         {
           "do": "execute causal-loop.connect on rel:b->parityId",
@@ -3746,7 +3745,7 @@
           "hunks": [
             "@8 -0 +\"link parityId -> parityId +\\r\\n\""
           ],
-          "sha256": "3765725331cb0c73f7b09ce9deb8d5ec0c232136bc8467fb339b6b238ea0669e"
+          "sha256": "57ba584ce290973675c450bbaeba4f76e501018b5f266ddf894a278eeb856d98"
         },
         {
           "do": "execute causal-loop.connect on rel:parityId->nobody",
@@ -3764,7 +3763,7 @@
           "hunks": [
             "@5 -0 +\"variable variable1 \\\"Variable 1\\\"\\r\\n\""
           ],
-          "sha256": "25b3b9f583c034eb89a6784ae0d760945bf29c5bf329682e9d6423691085512d"
+          "sha256": "f915bdb3f142be74cc9e728e80012c8c34224ac3ed2b738f12eae783f5f93dd1"
         },
         {
           "do": "move variable:b to (100, 200)",
@@ -3812,15 +3811,15 @@
           "hunks": [
             "@7 -1 +\"\""
           ],
-          "sha256": "a396463a808410fd7164539f1e523f54039e9eb6bb6739f711f505badf762670"
+          "sha256": "dacbf7a3ccbdbeab23d88430c85125c0cda20009865c31f7927b7d3dd8a29e30"
         },
         {
-          "do": "execute causal-loop.remove-loop on loop:B1",
+          "do": "execute causal-loop.remove-loop on loop:R99",
           "answer": "ok",
           "hunks": [
             "@9 -1 +\"\""
           ],
-          "sha256": "fcbd46bdfcd1fa92c27fb288ff179c80b9a0182015305b0bed3170323753dbec"
+          "sha256": "ce1469fb950aa34a855c18b61587eba1c8fa5e1f1dffafeeb8d58726d0705078"
         },
         {
           "do": "execute causal-loop.remove-variable on variable:parityId",
@@ -3832,8 +3831,7 @@
           "answer": "ok",
           "hunks": [
             "@3 -1 +\"\"",
-            "@7 -2 +\"\"",
-            "@15 -1 +\"\""
+            "@7 -3 +\"\""
           ],
           "sha256": "bfb8f775fcef4ade6af0ec4e9245509c434085c7bdb6cad6c66a3cfe574caceb"
         }
@@ -3948,25 +3946,25 @@
           "do": "execute causal-loop.toggle-delay on link:a|b",
           "answer": "ok",
           "hunks": [
-            "@8 -1 +\"link a -> b + delayed \\\"second note\\\"\\r\\n\""
+            "@8 -1 +\"link a -> b + delayed \\\"first note\\\" \\\"second note\\\"\\r\\n\""
           ],
-          "sha256": "fce95f6feed3a9097e6fb13de6959758739467faf95416fce41fa6b209811f79"
+          "sha256": "da52cda21c2d2171e735d519d4f1d6a7e130e814d8ff14c3dda759a6b6d5efea"
         },
         {
           "do": "execute causal-loop.flip-curvature on link:a|b",
           "answer": "ok",
           "hunks": [
-            "@8 -1 +\"link a -> b + delayed flipped \\\"second note\\\"\\r\\n\""
+            "@8 -1 +\"link a -> b + delayed flipped \\\"first note\\\" \\\"second note\\\"\\r\\n\""
           ],
-          "sha256": "a8d6ee3e718ae24782b17823f80ee28b26a19e6fc50c6e334721b0f6b3fe4c6e"
+          "sha256": "103136c70ad365058d5522178fdf0d7e90fd63dcaf0725cf9d50025f56d1abf4"
         },
         {
           "do": "set link:a|b causal-loop.link-label = \"Parity note\"",
           "answer": "ok",
           "hunks": [
-            "@8 -1 +\"link a -> b + delayed flipped \\\"Parity note\\\"\\r\\n\""
+            "@8 -1 +\"link a -> b + delayed flipped \\\"first note\\\" \\\"Parity note\\\"\\r\\n\""
           ],
-          "sha256": "3186676d648e78ca6f8693b7c26913a7d8d1b98a27ed5b5b9f0237fee4179c33"
+          "sha256": "035ef11ded61c4910dd2c24eaa093b721a170892f1fe61517cb4a7bd90cfcb96"
         },
         {
           "do": "set link:a|b causal-loop.link-weight = \"heavy\"",
@@ -3977,9 +3975,9 @@
           "do": "set link:a|b causal-loop.link-weight = \"1e21\"",
           "answer": "ok",
           "hunks": [
-            "@8 -1 +\"link a -> b + delayed flipped weight=1E+21 \\\"Parity note\\\"\\r\\n\""
+            "@8 -1 +\"link a -> b + delayed flipped weight=1e+21 \\\"first note\\\" \\\"Parity note\\\"\\r\\n\""
           ],
-          "sha256": "96f85ce107c5fe0ddb75ca8d7d88e525a8eb60f7d45e1bda26df7f3839e16451"
+          "sha256": "8bbc6d056a165f725ff58ac6a8d8b0f0d63c67e1c0179dcd21bb6c83a2e5c277"
         },
         {
           "do": "describe link:a|b",
@@ -3990,17 +3988,17 @@
           "do": "set link:a|b causal-loop.link-weight = \"0.000001\"",
           "answer": "ok",
           "hunks": [
-            "@8 -1 +\"link a -> b + delayed flipped weight=1E-06 \\\"Parity note\\\"\\r\\n\""
+            "@8 -1 +\"link a -> b + delayed flipped weight=0.000001 \\\"first note\\\" \\\"Parity note\\\"\\r\\n\""
           ],
-          "sha256": "8dca66433f22e6b8653d88d654b00c176fe83adf4d5b5811b17e3f60c300fb88"
+          "sha256": "e296ff895fb268c647b858725c6dff86120e55e62c7968f0cde01cb1ec9b4a11"
         },
         {
           "do": "set link:a|b causal-loop.link-weight = \"\"",
           "answer": "ok",
           "hunks": [
-            "@8 -1 +\"link a -> b + delayed flipped \\\"Parity note\\\"\\r\\n\""
+            "@8 -1 +\"link a -> b + delayed flipped \\\"first note\\\" \\\"Parity note\\\"\\r\\n\""
           ],
-          "sha256": "3186676d648e78ca6f8693b7c26913a7d8d1b98a27ed5b5b9f0237fee4179c33"
+          "sha256": "035ef11ded61c4910dd2c24eaa093b721a170892f1fe61517cb4a7bd90cfcb96"
         },
         {
           "do": "set link:a|b causal-loop.link-polarity = \"sideways\"",
@@ -4011,9 +4009,9 @@
           "do": "set link:a|b causal-loop.link-polarity = \"unstated\"",
           "answer": "ok",
           "hunks": [
-            "@8 -1 +\"link a -> b delayed flipped \\\"Parity note\\\"\\r\\n\""
+            "@8 -1 +\"link a -> b delayed flipped \\\"first note\\\" \\\"Parity note\\\"\\r\\n\""
           ],
-          "sha256": "8cb34be1f325b0b60d56313d71c1a0cf16a0554c52f5ceb3726fc1a8b30e7fa5"
+          "sha256": "f1dc85d7b33e9a8abfecc97a229b40ffb581923a4885cda7de05af9afbf00d38"
         },
         {
           "do": "set link:a|b causal-loop.link-delayed = \"true\"",
@@ -4029,17 +4027,17 @@
           "do": "execute causal-loop.make-positive on link:a|b",
           "answer": "ok",
           "hunks": [
-            "@8 -1 +\"link a -> b + delayed flipped \\\"Parity note\\\"\\r\\n\""
+            "@8 -1 +\"link a -> b + delayed flipped \\\"first note\\\" \\\"Parity note\\\"\\r\\n\""
           ],
-          "sha256": "3186676d648e78ca6f8693b7c26913a7d8d1b98a27ed5b5b9f0237fee4179c33"
+          "sha256": "035ef11ded61c4910dd2c24eaa093b721a170892f1fe61517cb4a7bd90cfcb96"
         },
         {
           "do": "execute causal-loop.make-negative on link:a|b",
           "answer": "ok",
           "hunks": [
-            "@8 -1 +\"link a -> b - delayed flipped \\\"Parity note\\\"\\r\\n\""
+            "@8 -1 +\"link a -> b - delayed flipped \\\"first note\\\" \\\"Parity note\\\"\\r\\n\""
           ],
-          "sha256": "345e70b089145fe47034a98e0f76d2594c9996750e3e8d43573dd31d0ce5fab0"
+          "sha256": "bb3d72482eb9d4398cb5aad02267aa77aae354cb86b2428b582d872aac9fcffd"
         },
         {
           "do": "execute causal-loop.make-negative on link:a|b",
@@ -4067,7 +4065,7 @@
           "hunks": [
             "@5 -1 +\"variable a \\\"Parity renamed\\\"\\r\\n\""
           ],
-          "sha256": "b9345efafb4a5dffe63ab18fc61782deb0bad8f09833ec305bb68cb1127c042d"
+          "sha256": "3fc1a9457c6cd09121ce02b4cc7330fc0703aa34ef443ea387ee581b5d5b1c83"
         },
         {
           "do": "set variable:a causal-loop.variable-label = \"Say \\\"hi\\\"\"",
@@ -4085,7 +4083,7 @@
           "hunks": [
             "@5 -1 +\"variable a \\\"Parity label\\\"\\r\\n\""
           ],
-          "sha256": "6e4cca7ae0d9d08fd7e165b5fc1ca5394759ec55c27a1c7f004e9d296274a719"
+          "sha256": "b7e4c63425a2532d16d8c7ce44b0de1ee2b5023a7452a113d51f9fb744a5499f"
         },
         {
           "do": "validate causal-loop.add-link on variable:a = \"nobody\"",
@@ -4123,7 +4121,7 @@
           "hunks": [
             "@10 -0 +\"loop R99 \\\"R99\\\" a b\\r\\n\""
           ],
-          "sha256": "c63984cb86f94eaf659e87cb8f25f309dd7ffc51ebc35aecbcebef901b78cf7d"
+          "sha256": "9a66a165fc7b3bed43e810e22e4822f49752b91e3496552987683b0028ed39fb"
         },
         {
           "do": "set variable:a causal-loop.variable-id = \"b\"",
@@ -4145,9 +4143,9 @@
           "answer": "ok",
           "hunks": [
             "@5 -1 +\"variable parityId \\\"Parity label\\\"\\r\\n\"",
-            "@8 -3 +\"link parityId -> b - delayed flipped \\\"Parity note\\\"\\r\\nlink b -> parityId - \\\"second quoted\\\"\\r\\nloop R99 \\\"R99\\\" parityId b\\r\\n\""
+            "@8 -3 +\"link parityId -> b - delayed flipped \\\"first note\\\" \\\"Parity note\\\"\\r\\nlink b -> parityId - firstBare \\\"second quoted\\\"\\r\\nloop R99 \\\"R99\\\" parityId b\\r\\n\""
           ],
-          "sha256": "f3f77c3f04dfab80f931ded56bb3f6b5caa9e66056d1598d065bb8b896283ad6"
+          "sha256": "b9590415804687871abf50aaeeb882a782073a02c5ae1acdebd766d9e313f4c7"
         },
         {
           "do": "execute causal-loop.connect on rel:b->parityId",
@@ -4163,9 +4161,10 @@
           "do": "execute causal-loop.connect on rel:parityId->parityId",
           "answer": "ok",
           "hunks": [
-            "@10 -0 +\"link parityId -> parityId +\\r\\nloop R100 \\\"\\\" parityId\\r\\n\""
+            "@10 -0 +\"link parityId -> parityId +\\r\\n\"",
+            "@11 -0 +\"loop R100 \\\"\\\" parityId\\r\\n\""
           ],
-          "sha256": "bfc14cbf86a43388d2b6a0e1999d55c0a8664badc5401d4c4b5521b58030143c"
+          "sha256": "9adcc0df1db54dbe29aae2339a1ab0c4381be9c6b6afd0649f95f542cd05c006"
         },
         {
           "do": "execute causal-loop.connect on rel:parityId->nobody",
@@ -4183,7 +4182,7 @@
           "hunks": [
             "@7 -0 +\"variable variable1 \\\"Variable 1\\\"\\r\\n\""
           ],
-          "sha256": "c1d1a966f93e34923e9018ac4a576d66d1480d96d1c63a9434317be103bde23e"
+          "sha256": "923f83dee8e95f4ec995de3261f94a72b34ce90b93669a344f3a0a7f193ea6e0"
         },
         {
           "do": "move variable:b to (100, 200)",
@@ -4231,15 +4230,15 @@
           "hunks": [
             "@9 -1 +\"\""
           ],
-          "sha256": "d8b5a3c83154c3d68fef3b3348447f1aa5064d0e00d857a03e0994f568745a75"
+          "sha256": "eb1d38ac23844699509eefd9e311486569518f04c8e67ddd7fbca98a6b9278c7"
         },
         {
-          "do": "execute causal-loop.remove-loop on loop:R100",
+          "do": "execute causal-loop.remove-loop on loop:R99",
           "answer": "ok",
           "hunks": [
             "@11 -1 +\"\""
           ],
-          "sha256": "c05b220f6f562846fdc3cd527fc4cf5764be6c14069a9e11550abd2c88ce8147"
+          "sha256": "d059b1a1f2a781406c1e039a337ef050607305118e6f9e16ee822cc6d0d5e07d"
         },
         {
           "do": "execute causal-loop.remove-variable on variable:parityId",
@@ -4377,9 +4376,9 @@
           "do": "set link:a|b causal-loop.link-weight = \"1e21\"",
           "answer": "ok",
           "hunks": [
-            "@13 -1 +\"link a -> b + delayed flipped weight=1E+21 \\\"Parity note\\\"\\r\\n\""
+            "@13 -1 +\"link a -> b + delayed flipped weight=1e+21 \\\"Parity note\\\"\\r\\n\""
           ],
-          "sha256": "56260f71677d6c6940981e191eadbcbd88b8984af356b4d53022e548752039e7"
+          "sha256": "230481034ef0a7b7d3731003b875e0012b2a53a5e0247faa058005a9781516ff"
         },
         {
           "do": "describe link:a|b",
@@ -4390,9 +4389,9 @@
           "do": "set link:a|b causal-loop.link-weight = \"0.000001\"",
           "answer": "ok",
           "hunks": [
-            "@13 -1 +\"link a -> b + delayed flipped weight=1E-06 \\\"Parity note\\\"\\r\\n\""
+            "@13 -1 +\"link a -> b + delayed flipped weight=0.000001 \\\"Parity note\\\"\\r\\n\""
           ],
-          "sha256": "4be5f556fc909c7b82ce3308bd097637d01f211b01473e99d57f7490474bec97"
+          "sha256": "ddcf42a3ea58e8872111c8bed1fed2490167d4de1da0a5744c17885269d523a6"
         },
         {
           "do": "set link:a|b causal-loop.link-weight = \"\"",
@@ -4553,9 +4552,10 @@
           "do": "execute causal-loop.connect on rel:b->parityId",
           "answer": "ok",
           "hunks": [
-            "@14 -0 +\"link b -> parityId +\\r\\nloop B1 \\\"\\\" parityId b\\r\\n\""
+            "@14 -0 +\"link b -> parityId +\\r\\n\"",
+            "@15 -0 +\"loop B1 \\\"\\\" parityId b\\r\\n\""
           ],
-          "sha256": "d361e0b4a44736c641d25d4fa63f4a5624c008ba22224066915e26fabaa5bade"
+          "sha256": "cab8eea8a60e7b4db9acd4b26c2906d4b00f6b3b0d8af65af8172cc734ed55b6"
         },
         {
           "do": "execute causal-loop.connect on rel:b->parityId",
@@ -4568,7 +4568,7 @@
           "hunks": [
             "@15 -0 +\"link parityId -> parityId +\\r\\n\""
           ],
-          "sha256": "5071141559b507df84a6e3fc466c754649d9b56bcb4a7e2c899b153f8ba0ce59"
+          "sha256": "ef7c19322234a9077ea9cbf7f0a3bb6351e332be4f9e0e349b921acc8d30b4b2"
         },
         {
           "do": "execute causal-loop.connect on rel:parityId->nobody",
@@ -4586,7 +4586,7 @@
           "hunks": [
             "@8 -0 +\"variable variable1 \\\"Variable 1\\\"\\r\\n\""
           ],
-          "sha256": "220bbc7e653d1c6c377005f280ca7805400021598682d198934e66ce7f5fc06f"
+          "sha256": "c587a37acbc6c9265cd990a6ec3a9c3c16792e0c2b9ff48d4df6bbcbf5768265"
         },
         {
           "do": "move variable:b to (100, 200)",
@@ -4634,15 +4634,15 @@
           "hunks": [
             "@14 -1 +\"\""
           ],
-          "sha256": "86e69778e7a00eef5fdf878ef26e35e5c768474230276ca1152af369b90b9c16"
+          "sha256": "35a8b69a6b67550da4657f31320b3a7747061a86d18d12e11b09445dd4b9bba6"
         },
         {
-          "do": "execute causal-loop.remove-loop on loop:B1",
+          "do": "execute causal-loop.remove-loop on loop:R99",
           "answer": "ok",
           "hunks": [
             "@16 -1 +\"\""
           ],
-          "sha256": "8d19e2d5e850d42fab5942f0ef0b8d2e34ed785f605b2fca05f86bde384114d3"
+          "sha256": "3f2eb6e9b50e88d9a057e4f891b2610571d1373debae7cf786abeff994f962d5"
         },
         {
           "do": "execute causal-loop.remove-variable on variable:parityId",
@@ -4901,25 +4901,25 @@
           "do": "execute causal-loop.toggle-delay on link:a|b",
           "answer": "ok",
           "hunks": [
-            "@11 -1 +\"link a -> b + delayed weight=1E+21\\r\\n\""
+            "@11 -1 +\"link a -> b + delayed weight=1e21\\r\\n\""
           ],
-          "sha256": "b37d3250967e4455e0ea49b3202d08cee1b418238cd4bd15cf496316aff4674e"
+          "sha256": "a45032d7f9388e00daf14d083583737dca0b8701aaf6afab57abd3010a297d26"
         },
         {
           "do": "execute causal-loop.flip-curvature on link:a|b",
           "answer": "ok",
           "hunks": [
-            "@11 -1 +\"link a -> b + delayed flipped weight=1E+21\\r\\n\""
+            "@11 -1 +\"link a -> b + delayed flipped weight=1e21\\r\\n\""
           ],
-          "sha256": "a73a3ec60dd3e5c82f6b74c3c324cab077ca89126741b8598a815654a82b43e3"
+          "sha256": "076f13871b34f2b775b6ff4d15d604ef86cdf247190ed26fc3c3f50ce0a388ae"
         },
         {
           "do": "set link:a|b causal-loop.link-label = \"Parity note\"",
           "answer": "ok",
           "hunks": [
-            "@11 -1 +\"link a -> b + delayed flipped weight=1E+21 \\\"Parity note\\\"\\r\\n\""
+            "@11 -1 +\"link a -> b + delayed flipped weight=1e21 \\\"Parity note\\\"\\r\\n\""
           ],
-          "sha256": "cdbc70baafb3935f3e6f9639d802a9329d89e444e21c7df2f1209927aa051569"
+          "sha256": "cbec24788e77a10cfd034841085b55364a035bb10cadb31c26011f230a4389f5"
         },
         {
           "do": "set link:a|b causal-loop.link-weight = \"heavy\"",
@@ -4940,9 +4940,9 @@
           "do": "set link:a|b causal-loop.link-weight = \"0.000001\"",
           "answer": "ok",
           "hunks": [
-            "@11 -1 +\"link a -> b + delayed flipped weight=1E-06 \\\"Parity note\\\"\\r\\n\""
+            "@11 -1 +\"link a -> b + delayed flipped weight=0.000001 \\\"Parity note\\\"\\r\\n\""
           ],
-          "sha256": "956acadc9e98db60dab56b87d32a354d19449565be29a3b9133d196ddd1e16d3"
+          "sha256": "2712ec9573235609add2cecff0f024ef6a91e2b6f6e68baf102d8d4da2e40bc1"
         },
         {
           "do": "set link:a|b causal-loop.link-weight = \"\"",
@@ -5096,10 +5096,10 @@
           "hunks": [
             "@6 -1 +\"variable parityId \\\"Parity label\\\"\\r\\n\"",
             "@11 -1 +\"link parityId -> b - delayed flipped \\\"Parity note\\\"\\r\\n\"",
-            "@14 -3 +\"link d -> parityId + weight=-3\\r\\nlink parityId -> c - weight=1\\r\\nlink c -> parityId - weight=2\\r\\n\"",
-            "@19 -2 +\"link b -> parityId + weight=1E-06\\r\\nloop R99 \\\"R99\\\" parityId b\\r\\n\""
+            "@14 -3 +\"link d -> parityId + weight=-3\\r\\nlink parityId -> c - weight=1.0\\r\\nlink c -> parityId - weight=+2\\r\\n\"",
+            "@19 -2 +\"link b -> parityId + weight=0.000001\\r\\nloop R99 \\\"R99\\\" parityId b\\r\\n\""
           ],
-          "sha256": "66e3195d21d21af36380c0c21566d9441839dfb772a988f001cd6781657350f7"
+          "sha256": "7d6814ab0504a0ba7dedd42abfe73dc176398e41ea2d08ccd90ea1a0f970957e"
         },
         {
           "do": "execute causal-loop.connect on rel:b->parityId",
@@ -5115,9 +5115,10 @@
           "do": "execute causal-loop.connect on rel:parityId->parityId",
           "answer": "ok",
           "hunks": [
-            "@20 -0 +\"link parityId -> parityId +\\r\\nloop R100 \\\"\\\" parityId\\r\\n\""
+            "@20 -0 +\"link parityId -> parityId +\\r\\n\"",
+            "@21 -0 +\"loop R100 \\\"\\\" parityId\\r\\n\""
           ],
-          "sha256": "03bdecd0731190325001a8be3bdb506e882b556c37b0a35d6435481f298d13a3"
+          "sha256": "22516e6bf02f4cd3297e737eaf4bab85439c6a7f03955b7e1df13e0350a59634"
         },
         {
           "do": "execute causal-loop.connect on rel:parityId->nobody",
@@ -5135,7 +5136,7 @@
           "hunks": [
             "@10 -0 +\"variable variable1 \\\"Variable 1\\\"\\r\\n\""
           ],
-          "sha256": "046c870e56d3fc958eee4e96183720a4593d755a01ec5fbac6015e5d5822ee98"
+          "sha256": "ea9ef80570bc782d978c8b738951a400b8ebe9791bd29cb43f1c3d4ff0f788e5"
         },
         {
           "do": "move variable:b to (100, 200)",
@@ -5183,15 +5184,15 @@
           "hunks": [
             "@12 -1 +\"\""
           ],
-          "sha256": "13fe316bb605781f15cdd21b49d17ee17c0fc4123d0fbc3db96f8fb81cf9aec1"
+          "sha256": "1531ebfabb3395b0494c4303e97a7b34f14126f97ae9667157289251bd38a856"
         },
         {
-          "do": "execute causal-loop.remove-loop on loop:R100",
+          "do": "execute causal-loop.remove-loop on loop:R99",
           "answer": "ok",
           "hunks": [
             "@21 -1 +\"\""
           ],
-          "sha256": "164f8609552a8fe02ce44357ee02c66a738bdb864c7ff02e0862531920987ac0"
+          "sha256": "a2bd0a379a33005ae7c3a0865b8dc6c22b9695ab39f53d47ee0db092db34e1ca"
         },
         {
           "do": "execute causal-loop.remove-variable on variable:parityId",
@@ -5593,9 +5594,9 @@
           "do": "set link:incidents|onCallLoad causal-loop.link-weight = \"1e21\"",
           "answer": "ok",
           "hunks": [
-            "@22 -1 +\"link incidents -> onCallLoad + delayed flipped weight=1E+21 \\\"Parity note\\\"\\r\\n\""
+            "@22 -1 +\"link incidents -> onCallLoad + delayed flipped weight=1e+21 \\\"Parity note\\\"\\r\\n\""
           ],
-          "sha256": "70ddd3281e0e9315ac9a6dd805b6d701d5a902717283937ddbff32d2076b44fc"
+          "sha256": "f1af757462062f9e849228a2f7bb06ff4e802304204d2f2fa2cbdb16fa008dcc"
         },
         {
           "do": "describe link:incidents|onCallLoad",
@@ -5606,9 +5607,9 @@
           "do": "set link:incidents|onCallLoad causal-loop.link-weight = \"0.000001\"",
           "answer": "ok",
           "hunks": [
-            "@22 -1 +\"link incidents -> onCallLoad + delayed flipped weight=1E-06 \\\"Parity note\\\"\\r\\n\""
+            "@22 -1 +\"link incidents -> onCallLoad + delayed flipped weight=0.000001 \\\"Parity note\\\"\\r\\n\""
           ],
-          "sha256": "5f9e69846f96e010a4d2532264f82fda44a804e231733800db6b72e8669b3222"
+          "sha256": "15782fa3719f0011816e71fba72ffd3cf873637b0087645236f44584277d8658"
         },
         {
           "do": "set link:incidents|onCallLoad causal-loop.link-weight = \"\"",
@@ -5831,9 +5832,10 @@
           "do": "execute causal-loop.connect on rel:onCallLoad->parityId",
           "answer": "ok",
           "hunks": [
-            "@56 -0 +\"link onCallLoad -> parityId +\\r\\nloop B100 \\\"\\\" parityId onCallLoad\\r\\n\""
+            "@56 -0 +\"link onCallLoad -> parityId +\\r\\n\"",
+            "@59 -0 +\"loop B100 \\\"\\\" parityId onCallLoad\\r\\n\""
           ],
-          "sha256": "060e16d13e773801936a1f3f7347a81a8b1f6e39ea8145bc3c97ba3ef9ad15fa"
+          "sha256": "788f179838b20ad8586210b2420a781b108d4fe8e9fd7bb50028a2516106704a"
         },
         {
           "do": "execute causal-loop.connect on rel:onCallLoad->parityId",
@@ -5844,9 +5846,10 @@
           "do": "execute causal-loop.connect on rel:parityId->parityId",
           "answer": "ok",
           "hunks": [
-            "@57 -0 +\"link parityId -> parityId +\\r\\nloop R100 \\\"\\\" parityId\\r\\n\""
+            "@57 -0 +\"link parityId -> parityId +\\r\\n\"",
+            "@61 -0 +\"loop R100 \\\"\\\" parityId\\r\\n\""
           ],
-          "sha256": "4eb8e5ab493d0409aa0127459423e908af7b891c5faeeb597037597614a62a6a"
+          "sha256": "84006c7fdf4cce80962059304b613d62f5d017573782e69db1a06498f3c60aef"
         },
         {
           "do": "execute causal-loop.connect on rel:parityId->nobody",
@@ -5859,7 +5862,7 @@
           "hunks": [
             "@17 -0 +\"variable variable1 \\\"Variable 1\\\"\\r\\n\""
           ],
-          "sha256": "b3926abf84ae48061992f4844a56ea5a2b8c194a1a1823f3efcafa1d8b8c226f",
+          "sha256": "fad908995f0ad3ae89dcbc4b6d7d35120d9e89d88cf694b0d132313dc0e0aff5",
           "registration": {
             "hunks": [
               "@2 -0 +\"layout:\\r\\n  variable:variable1: 240 160\\r\\n\""
@@ -5873,7 +5876,7 @@
           "hunks": [
             "@18 -0 +\"variable variable2 \\\"Variable 2\\\"\\r\\n\""
           ],
-          "sha256": "914d7aadfc4cebc77d33bbcd4c519519af110be7d00f5f0a2ee7f5569b82642c"
+          "sha256": "710f723cff1a3cd797d4fd67667440dfcf2721ff3dc482be93635a99b88feb56"
         },
         {
           "do": "move variable:onCallLoad to (100, 200)",
@@ -5933,7 +5936,7 @@
           "hunks": [
             "@24 -1 +\"\""
           ],
-          "sha256": "fb8e524a7bf44822f24ade91ae97dc2ca42adf105ed031515b3000210ad42642"
+          "sha256": "d15827871ac47467baac7d6357e690fc2b80c67e9ee083abbd2326ac5d224b79"
         },
         {
           "do": "execute causal-loop.remove-loop on loop:B99",
@@ -5941,7 +5944,7 @@
           "hunks": [
             "@28 -1 +\"\""
           ],
-          "sha256": "2b792bf6909cffb77112ae2224e914bc9c3530de41124e503ecef4a23ce92bb2"
+          "sha256": "32e6ae51b8d08b8d495a16639f031a393e301a8cb0004f44a394a72a3184efeb"
         },
         {
           "do": "execute causal-loop.remove-variable on variable:parityId",
@@ -5954,8 +5957,8 @@
           "hunks": [
             "@9 -1 +\"\"",
             "@26 -1 +\"\"",
-            "@56 -4 +\"\"",
-            "@62 -1 +\"\""
+            "@56 -2 +\"\"",
+            "@60 -3 +\"\""
           ],
           "sha256": "8f998d6b5364e882f38e1c54266b1ac887ae14c4a798ae69f3aa059e21954bb7"
         }
@@ -6336,9 +6339,9 @@
           "do": "set link:population|births causal-loop.link-weight = \"1e21\"",
           "answer": "ok",
           "hunks": [
-            "@28 -1 +\"link population -> births + delayed flipped weight=1E+21 \\\"Parity note\\\"\\r\\n\""
+            "@28 -1 +\"link population -> births + delayed flipped weight=1e+21 \\\"Parity note\\\"\\r\\n\""
           ],
-          "sha256": "a8d24efe01853143ef2906019694196d92ef2f2a9ed443bcb6589a60602b3e37"
+          "sha256": "b294095bafd4017cff314978dba5e61cb8b92142c7354cad7f906e4784fb2157"
         },
         {
           "do": "describe link:population|births",
@@ -6349,9 +6352,9 @@
           "do": "set link:population|births causal-loop.link-weight = \"0.000001\"",
           "answer": "ok",
           "hunks": [
-            "@28 -1 +\"link population -> births + delayed flipped weight=1E-06 \\\"Parity note\\\"\\r\\n\""
+            "@28 -1 +\"link population -> births + delayed flipped weight=0.000001 \\\"Parity note\\\"\\r\\n\""
           ],
-          "sha256": "5d1d1bb937df13a5f3756af976070e6f51e7d752948e0d44628cc9d8a7e33bef"
+          "sha256": "4e40971038389ba204604f018694ac37b2923a7396b7af090f46ce19a6784031"
         },
         {
           "do": "set link:population|births causal-loop.link-weight = \"\"",
@@ -6588,9 +6591,10 @@
           "do": "execute causal-loop.connect on rel:parityId->parityId",
           "answer": "ok",
           "hunks": [
-            "@42 -0 +\"link parityId -> parityId +\\r\\nloop R100 \\\"\\\" parityId\\r\\n\""
+            "@42 -0 +\"link parityId -> parityId +\\r\\n\"",
+            "@70 -0 +\"loop R100 \\\"\\\" parityId\\r\\n\""
           ],
-          "sha256": "d0749ff8442dbbff5a617bc13023c364af909ccd330c8cbfdf0bb276b678d903"
+          "sha256": "f6372be7af78e4326cbbc7cd3956b7142c7f55cc5f642b759ef941bdb938882c"
         },
         {
           "do": "execute causal-loop.connect on rel:parityId->nobody",
@@ -6603,7 +6607,7 @@
           "hunks": [
             "@18 -0 +\"variable variable1 \\\"Variable 1\\\"\\r\\n\""
           ],
-          "sha256": "651e9e2fd2d1f4078d47b0340d7305d5d8c984b5efee06ca60fa5fa61b3158aa",
+          "sha256": "51c3b63b3aeb5929320ca05fd238d6be9190015ba16386308199beef3d21f524",
           "registration": {
             "hunks": [
               "@2 -0 +\"layout:\\r\\n  variable:variable1: 240 160\\r\\n\""
@@ -6617,7 +6621,7 @@
           "hunks": [
             "@19 -0 +\"variable variable2 \\\"Variable 2\\\"\\r\\n\""
           ],
-          "sha256": "1bac94590918cf0e4bb0484fec9245e48a25904fbebbc8ce4f3a9cfe194a4b32"
+          "sha256": "7d12891f490a76b40569ec1a09ab696f2a80ae0166f531353ce6c95fc3d7b7e7"
         },
         {
           "do": "move variable:births to (100, 200)",
@@ -6677,15 +6681,15 @@
           "hunks": [
             "@30 -1 +\"\""
           ],
-          "sha256": "f847d8713775f117399a69c5c72ec9e9e7f1fa915717b296382366a13c9089fe"
+          "sha256": "adb7dfdd311aae231e2e363a5e6f164a9867efa223f1293bcf02a0ae27c11c25"
         },
         {
-          "do": "execute causal-loop.remove-loop on loop:R100",
+          "do": "execute causal-loop.remove-loop on loop:B99",
           "answer": "ok",
           "hunks": [
-            "@44 -1 +\"\""
+            "@50 -2 +\"\""
           ],
-          "sha256": "41bfe7f56ef87d3469c0cd20a4c1161f6d9f05aadf3436b8ab936463416e5e4b"
+          "sha256": "305c84396c47e8a5bd2899c1435c2ba330347f1191e3d78dc606af0a98033680"
         },
         {
           "do": "execute causal-loop.remove-variable on variable:parityId",
@@ -6700,14 +6704,13 @@
             "@30 -1 +\"\"",
             "@32 -2 +\"\"",
             "@35 -1 +\"\"",
-            "@41 -1 +\"\"",
+            "@39 -3 +\"\"",
             "@43 -1 +\"\"",
-            "@51 -1 +\"\"",
-            "@54 -1 +\"\"",
-            "@65 -1 +\"\"",
-            "@70 -2 +\"\""
+            "@51 -2 +\"\"",
+            "@54 -10 +\"\"",
+            "@65 -6 +\"\""
           ],
-          "sha256": "b0a454ea7fe22f6258a0e9f290358bdffeccc6f4785190bf30f7fabac639bb2d"
+          "sha256": "5a1652cb1a13c1bccacaeb2558f4fed03d952c33d353ff5d117bf960dd94ea3b"
         }
       ],
       "undoAll": "26 undone; the original text is back"
@@ -7101,9 +7104,9 @@
           "do": "set link:incidents|onCallLoad causal-loop.link-weight = \"1e21\"",
           "answer": "ok",
           "hunks": [
-            "@22 -1 +\"link incidents -> onCallLoad + delayed weight=1E+21 \\\"Parity note\\\"\\r\\n\""
+            "@22 -1 +\"link incidents -> onCallLoad + delayed weight=1e+21 \\\"Parity note\\\"\\r\\n\""
           ],
-          "sha256": "549df1e0c87d97df95fb385c95b3d56e041b9f8f7e91acd0e95249c95b8759c4"
+          "sha256": "7266991879af438861e12fbb653045a13680dda99ac3cdf3176ea2e6340fb4b6"
         },
         {
           "do": "describe link:incidents|onCallLoad",
@@ -7114,9 +7117,9 @@
           "do": "set link:incidents|onCallLoad causal-loop.link-weight = \"0.000001\"",
           "answer": "ok",
           "hunks": [
-            "@22 -1 +\"link incidents -> onCallLoad + delayed weight=1E-06 \\\"Parity note\\\"\\r\\n\""
+            "@22 -1 +\"link incidents -> onCallLoad + delayed weight=0.000001 \\\"Parity note\\\"\\r\\n\""
           ],
-          "sha256": "304a1095ad9bd005ee7f800efbf3237862093e060e8724c26f2bc38050ee2599"
+          "sha256": "fb63ee475db0f9776fd4d463196087317ce2a6562b85d6e49f20b2dad10d49f2"
         },
         {
           "do": "set link:incidents|onCallLoad causal-loop.link-weight = \"\"",
@@ -7339,9 +7342,10 @@
           "do": "execute causal-loop.connect on rel:onCallLoad->parityId",
           "answer": "ok",
           "hunks": [
-            "@56 -0 +\"link onCallLoad -> parityId +\\r\\nloop B100 \\\"\\\" parityId onCallLoad\\r\\n\""
+            "@56 -0 +\"link onCallLoad -> parityId +\\r\\n\"",
+            "@59 -0 +\"loop B100 \\\"\\\" parityId onCallLoad\\r\\n\""
           ],
-          "sha256": "5eea5346e616924a5bea8e5655b47936cd99d54be4686e58935a469793fd2edf"
+          "sha256": "37817713463444707fdd8890aef8f3347022c11f40f0259eb155be49a6efccc5"
         },
         {
           "do": "execute causal-loop.connect on rel:onCallLoad->parityId",
@@ -7352,9 +7356,10 @@
           "do": "execute causal-loop.connect on rel:parityId->parityId",
           "answer": "ok",
           "hunks": [
-            "@57 -0 +\"link parityId -> parityId +\\r\\nloop R100 \\\"\\\" parityId\\r\\n\""
+            "@57 -0 +\"link parityId -> parityId +\\r\\n\"",
+            "@61 -0 +\"loop R100 \\\"\\\" parityId\\r\\n\""
           ],
-          "sha256": "f0d71ec1a9556cd9571fe604492f00fe2dbde7b1a0c60e3e3bf8c1963e1718f3"
+          "sha256": "0710ee2cffbcb10d782390c4af31985042104cdee614bd7ace9488e3358da45d"
         },
         {
           "do": "execute causal-loop.connect on rel:parityId->nobody",
@@ -7367,7 +7372,7 @@
           "hunks": [
             "@17 -0 +\"variable variable1 \\\"Variable 1\\\"\\r\\n\""
           ],
-          "sha256": "44e800c216f80d78384d0c6702566f5b24ae4c532db0db873fef90cb9ed3da5f",
+          "sha256": "72386b6419b559ee834601045f7758f53b68ec6114cf8ff6ff5b1f175554895f",
           "registration": {
             "hunks": [
               "@12 -1 +\"  variable:variable1: 240 160\\r\\n\""
@@ -7381,7 +7386,7 @@
           "hunks": [
             "@18 -0 +\"variable variable2 \\\"Variable 2\\\"\\r\\n\""
           ],
-          "sha256": "ba599e4c3b804ea496857f2c62cde281682bb1a58dcf535d0110f854bb646b3f"
+          "sha256": "7f9a40a2680055bd92d60c908c057ff3870ec33312c3b658cc9bfb213a4c8694"
         },
         {
           "do": "move variable:onCallLoad to (100, 200)",
@@ -7442,7 +7447,7 @@
           "hunks": [
             "@24 -1 +\"\""
           ],
-          "sha256": "a6434d8f761d4bed53150a23f1d43a802fe516575aefbd7712382d99434a8ebd"
+          "sha256": "86b9887492bb0ec3f25a1ddb1ec2588adfe672a7fe98a45fabcf739036e64031"
         },
         {
           "do": "execute causal-loop.remove-loop on loop:B99",
@@ -7450,7 +7455,7 @@
           "hunks": [
             "@28 -1 +\"\""
           ],
-          "sha256": "f59f28bd16ab54c9bba6ca7debd79419f642164cb14e1adc692b668177fb9ebc"
+          "sha256": "6cfb03db106aec0bbec1ef4f1383d37c17b8f122deca2eaf4118116e131c40c9"
         },
         {
           "do": "execute causal-loop.remove-variable on variable:parityId",
@@ -7463,8 +7468,8 @@
           "hunks": [
             "@9 -1 +\"\"",
             "@26 -1 +\"\"",
-            "@56 -4 +\"\"",
-            "@62 -1 +\"\""
+            "@56 -2 +\"\"",
+            "@60 -3 +\"\""
           ],
           "sha256": "054750bea5dcc154c4aa6de44ed86cba62a0b1a4fde742ff12485baae534ea43"
         }
@@ -7834,9 +7839,9 @@
           "do": "set link:population|births causal-loop.link-weight = \"1e21\"",
           "answer": "ok",
           "hunks": [
-            "@28 -1 +\"link population -> births + delayed flipped weight=1E+21 \\\"Parity note\\\"\\r\\n\""
+            "@28 -1 +\"link population -> births + delayed flipped weight=1e+21 \\\"Parity note\\\"\\r\\n\""
           ],
-          "sha256": "12092f2f0caba26e7396c26ba0a6199c09e945aae2d89b4730f47ce49ae961fb"
+          "sha256": "acebde7c49abd99b581c37e0092c117976424150bff3cd7b7042e53c0bd0c31c"
         },
         {
           "do": "describe link:population|births",
@@ -7847,9 +7852,9 @@
           "do": "set link:population|births causal-loop.link-weight = \"0.000001\"",
           "answer": "ok",
           "hunks": [
-            "@28 -1 +\"link population -> births + delayed flipped weight=1E-06 \\\"Parity note\\\"\\r\\n\""
+            "@28 -1 +\"link population -> births + delayed flipped weight=0.000001 \\\"Parity note\\\"\\r\\n\""
           ],
-          "sha256": "cbc13ff8549d36220cb76783d941da9a7913f8340ddcfcdbfb2fad2678c42f27"
+          "sha256": "933759faa36630ccd83508a025cbddd1560b909c3a067df4b2dbcd6f22249629"
         },
         {
           "do": "set link:population|births causal-loop.link-weight = \"\"",
@@ -8086,9 +8091,10 @@
           "do": "execute causal-loop.connect on rel:parityId->parityId",
           "answer": "ok",
           "hunks": [
-            "@42 -0 +\"link parityId -> parityId +\\r\\nloop R100 \\\"\\\" parityId\\r\\n\""
+            "@42 -0 +\"link parityId -> parityId +\\r\\n\"",
+            "@70 -0 +\"loop R100 \\\"\\\" parityId\\r\\n\""
           ],
-          "sha256": "f75960532dd5646ee388701ca2942c9ec60f90cb21b392300dc3fbd4a7d64636"
+          "sha256": "f6d113077bba018a1b11ec7943ddae1484f3ad85e0a48f31b9bd89a8a08121a7"
         },
         {
           "do": "execute causal-loop.connect on rel:parityId->nobody",
@@ -8101,7 +8107,7 @@
           "hunks": [
             "@18 -0 +\"variable variable1 \\\"Variable 1\\\"\\r\\n\""
           ],
-          "sha256": "cf87b00d6baa1a405240788c85f3a818c17000f234771e2e8babd8eb09b81de6",
+          "sha256": "fc870d817f8cf3a601a43312597d6d09a5aa734b41b993620e9cf4918d38128b",
           "registration": {
             "hunks": [
               "@9 -0 +\"  variable:variable1: 240 160\\r\\n\""
@@ -8115,7 +8121,7 @@
           "hunks": [
             "@19 -0 +\"variable variable2 \\\"Variable 2\\\"\\r\\n\""
           ],
-          "sha256": "0deef2e39b2c654de00bd36712df49b4507b43e3733225379a03fe768fee8eed"
+          "sha256": "231f394c568af4f6eb5c98bf572fa57bf1efb8efb3844fd323d663dd183d3fa0"
         },
         {
           "do": "move variable:births to (100, 200)",
@@ -8176,15 +8182,15 @@
           "hunks": [
             "@30 -1 +\"\""
           ],
-          "sha256": "576615ba1ebab87114b5a877d20064b05ff59825c17da2fd9b69eda97367f283"
+          "sha256": "d2ee09a0885bf32d211c54fed506a378ef67993b99c2ac0b78b5241f63fab9fc"
         },
         {
-          "do": "execute causal-loop.remove-loop on loop:R100",
+          "do": "execute causal-loop.remove-loop on loop:B99",
           "answer": "ok",
           "hunks": [
-            "@44 -1 +\"\""
+            "@50 -2 +\"\""
           ],
-          "sha256": "42190ddeb26ce831bf48e275ffc0d2168a11de8d22fd0f65786985d850c7b08c"
+          "sha256": "7e9d59e4134c08643ee5b0ecc92b91c2c2547833d2aead4132a0fdb41dd2152c"
         },
         {
           "do": "execute causal-loop.remove-variable on variable:parityId",
@@ -8199,14 +8205,13 @@
             "@30 -1 +\"\"",
             "@32 -2 +\"\"",
             "@35 -1 +\"\"",
-            "@41 -1 +\"\"",
+            "@39 -3 +\"\"",
             "@43 -1 +\"\"",
-            "@51 -1 +\"\"",
-            "@54 -1 +\"\"",
-            "@65 -1 +\"\"",
-            "@70 -2 +\"\""
+            "@51 -2 +\"\"",
+            "@54 -10 +\"\"",
+            "@65 -6 +\"\""
           ],
-          "sha256": "9fd1d4bfd44708feda27e0a77fc86010eef2e920d69e594c78194651b0fba728"
+          "sha256": "04a8bed14d04b23e01b0316a16f713dbbe8e6eed0ae682cceebc072583c34a67"
         }
       ],
       "undoAll": "26 undone; the original text is back"

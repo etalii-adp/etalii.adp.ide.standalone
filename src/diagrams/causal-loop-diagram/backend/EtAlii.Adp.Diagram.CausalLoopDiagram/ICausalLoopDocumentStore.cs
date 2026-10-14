@@ -9,7 +9,7 @@ namespace EtAlii.Adp.Diagram.CausalLoopDiagram;
 /// <remarks>
 /// <b>A marker.</b> Everything a store does is declared by <see cref="IDiagramDocumentStore{TBody, TModel}"/>;
 /// this names the causal loop diagram's, so a registration and a constructor say which store they mean.
-/// The body is the document as lines rather than the model, because every edit in this module is a
-/// splice into those lines.
+/// The body is the document as the binding opened it rather than the model, because every edit in this
+/// module is a model change the binding plans as splices into its bytes.
 /// </remarks>
-public interface ICausalLoopDocumentStore : IDiagramDocumentStore<CausalLoopDocument, CausalLoopModel>;
+public interface ICausalLoopDocumentStore : IDiagramDocumentStore<CausalLoopBody, CausalLoopModel>;

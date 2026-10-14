@@ -540,9 +540,9 @@ internal static class CausalLoopTranscript
             remove => inner.Changed -= value;
         }
 
-        public DocumentEntry<CausalLoopDocument, CausalLoopModel> GetOrLoad(string path) => inner.GetOrLoad(path) with { Unreadable = "parity: read-only" };
+        public DocumentEntry<CausalLoopBody, CausalLoopModel> GetOrLoad(string path) => inner.GetOrLoad(path) with { Unreadable = "parity: read-only" };
 
-        public DocumentSaveResult Save(string path, CausalLoopDocument document) => inner.Save(path, document);
+        public DocumentSaveResult Save(string path, CausalLoopBody document) => inner.Save(path, document);
 
         public void Forget(string path) => inner.Forget(path);
 

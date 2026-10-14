@@ -51,11 +51,12 @@ public class CausalLoopEmptyVariableIdTests : IDisposable
     [Fact]
     public void AVariableWithAnEmptyId_IsReportedAsAProblem_NotDeclared()
     {
-        var parsed = CausalLoopParser.Parse(CausalLoopDocument.Parse(WithEmptyVariable));
+        var body = CausalLoopBody.Parse(WithEmptyVariable);
+        var model = body.Read();
 
-        Assert.Contains(parsed.Problems, problem => problem.Lines.Start == 2);
-        Assert.False(parsed.Model.Declares(""), "A variable with an empty id was declared.");
-        Assert.True(parsed.Model.Declares("a"));
+        Assert.Contains(body.UnreadableStatements, statement => statement.Line == 3);
+        Assert.False(model.Declares(""), "A variable with an empty id was declared.");
+        Assert.True(model.Declares("a"));
     }
 
     [Theory]

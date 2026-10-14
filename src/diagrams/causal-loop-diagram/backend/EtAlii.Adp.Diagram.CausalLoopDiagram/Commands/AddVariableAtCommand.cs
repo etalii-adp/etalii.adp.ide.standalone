@@ -35,14 +35,20 @@ public sealed class AddVariableAtCommandHandler(ICausalLoopDocumentStore documen
         }
 
         var beforeBody = entry.Document.Text;
-
-        var refusal = CausalLoopWriter.AddVariable(entry.Document, entry.Model, command.Id, command.Label);
-        if (refusal.Length > 0)
+        if (CausalLoopEdits.AdditionRefusal(entry.Model, command.Id, command.Label) is { } refusal)
         {
             return Task.FromResult(CommandResult.Failure(refusal));
         }
 
-        var saved = documents.Save(command.BodyPath, entry.Document);
+        // Edited on a copy, as every other edit is, so a refusal leaves nothing behind for the next save.
+        var body = CausalLoopBody.Parse(beforeBody);
+        var added = CausalLoopEdits.AddVariable(body, command.Id, command.Label);
+        if (!added.WasApplied)
+        {
+            return Task.FromResult(CommandResult.Failure(added.Refusal!));
+        }
+
+        var saved = documents.Save(command.BodyPath, body);
         if (saved.Failed)
         {
             return Task.FromResult(CommandResult.Failure(saved.Error));

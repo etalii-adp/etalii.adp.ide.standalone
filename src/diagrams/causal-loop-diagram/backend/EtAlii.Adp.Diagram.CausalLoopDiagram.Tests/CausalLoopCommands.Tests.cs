@@ -6,7 +6,7 @@ namespace EtAlii.Adp.Diagram.CausalLoopDiagram.Tests;
 
 /// <summary>
 /// The edit commands over real files (causal-loop-diagram Requirements 4.1-4.6): each lands its
-/// writer's splice through the store, each inverse restores the document byte for byte, and each
+/// binding's splices through the store, each inverse restores the document byte for byte, and each
 /// touches only the lines it must.
 /// </summary>
 public class CausalLoopCommandsTests : IDisposable
@@ -197,7 +197,7 @@ public class CausalLoopCommandsTests : IDisposable
         Assert.Contains("\"Births beget births\"", text, StringComparison.Ordinal);
 
         // No identifier anywhere still refers to the old name, and nothing dangles.
-        var model = CausalLoopParser.Parse(CausalLoopDocument.Parse(text)).Model;
+        var model = CausalLoopBody.Parse(text).Read();
         Assert.DoesNotContain(model.Variables, variable => variable.Id == "births");
         Assert.DoesNotContain(model.Links, link => link.From == "births" || link.To == "births");
         Assert.DoesNotContain(model.Loops, loop => loop.Variables.Contains("births", StringComparer.Ordinal));
@@ -208,17 +208,17 @@ public class CausalLoopCommandsTests : IDisposable
     public async Task RemovingAVariable_TakesTheLinksAndLoopsThatNamedIt_AndSaysHowMany()
     {
         // Arrange.
-        var model = _store.GetOrLoad(_path).Model;
+        var entry = _store.GetOrLoad(_path);
 
         // Act.
-        var count = CausalLoopWriter.CountVariableRemoval(model, "births");
+        var count = CausalLoopDefinition.RemovalConfirmation(entry, "variable:births")?.Message;
         await new RemoveVariableCommandHandler(_store).ExecuteAsync(
             new RemoveVariableCommand(_path, "births"), TestContext.Current.CancellationToken);
 
         // Assert.
         // The variable, two links and one loop: stated before anything runs, so a confirmation
         // can say what it is about to take.
-        Assert.Equal(4, count);
+        Assert.Equal("Removing 'births' also removes the 3 links and loops that name it.", count);
 
         var text = await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken);
         Assert.DoesNotContain("births", text, StringComparison.Ordinal);
@@ -237,7 +237,7 @@ public class CausalLoopCommandsTests : IDisposable
 
         // Assert.
         Assert.False(result.IsSuccess);
-        Assert.Equal(CausalLoopWriter.NoSuchLink, result.Error);
+        Assert.Equal(CausalLoopEdits.NoSuchLink, result.Error);
         Assert.Equal(Corpus, await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken));
     }
 
@@ -251,7 +251,7 @@ public class CausalLoopCommandsTests : IDisposable
 
         // Assert.
         Assert.False(result.IsSuccess);
-        Assert.Equal(CausalLoopWriter.NoSuchVariable, result.Error);
+        Assert.Equal(CausalLoopEdits.NoSuchVariable, result.Error);
         Assert.Equal(Corpus, await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken));
     }
 
@@ -266,7 +266,7 @@ public class CausalLoopCommandsTests : IDisposable
 
         // Assert.
         Assert.False(result.IsSuccess);
-        Assert.Equal(CausalLoopWriter.UnusableName, result.Error);
+        Assert.Equal(CausalLoopEdits.UnusableName, result.Error);
         Assert.Equal(Corpus, await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken));
     }
 
@@ -361,45 +361,46 @@ public class CausalLoopCommandsTests : IDisposable
     private static string OnCallExample() =>
         File.ReadAllText(IoPath.Combine(ExamplesTests.ExamplesRoot, "on-call", "on-call.cld"));
 
-    /// <summary>
-    /// Requirement 4.3. The writer restates the loop's line with the new cycle and leaves every
-    /// other byte of a real document - its comments, blank lines and the other loops - alone.
-    /// </summary>
-    [Fact]
-    public void SettingALoopsMembership_RewritesItsLineAndLeavesEveryOtherByte()
+    /// <summary>The on-call example with the loop R3 set to run through <paramref name="variables"/>, and what that answered.</summary>
+    private async Task<(CommandResult Result, string Before, string After)> SetR3(params string[] variables)
     {
-        // Arrange.
         var text = OnCallExample();
         Assert.Contains(R3AsShipped, text, StringComparison.Ordinal);
-        var document = CausalLoopDocument.Parse(text);
-        var model = CausalLoopParser.Parse(document).Model;
+        await File.WriteAllTextAsync(_path, text, TestContext.Current.CancellationToken);
+        _store.Reload(_path);
+        var result = await new SetLoopMembershipCommandHandler(_store).ExecuteAsync(
+            new SetLoopMembershipCommand(_path, "R3", variables), TestContext.Current.CancellationToken);
+        return (result, text, await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken));
+    }
 
+    /// <summary>
+    /// Requirement 4.3. The loop's members are restated with the new cycle, and every other byte of a
+    /// real document - its comments, blank lines and the other loops - is left alone.
+    /// </summary>
+    [Fact]
+    public async Task SettingALoopsMembership_RewritesItsMembersAndLeavesEveryOtherByte()
+    {
         // Act.
-        var refusal = CausalLoopWriter.SetLoopMembership(
-            document, model, "R3", ["onCallLoad", "fatigue", "attrition", "teamSize"]);
+        (CommandResult result, string before, string after) = await SetR3("onCallLoad", "fatigue", "attrition", "teamSize");
 
         // Assert.
-        Assert.Equal("", refusal);
-        Assert.Equal(text.Replace(R3AsShipped, R3OnTheRota, StringComparison.Ordinal), document.Text);
+        Assert.True(result.IsSuccess, result.Error);
+        Assert.Equal(before.Replace(R3AsShipped, R3OnTheRota, StringComparison.Ordinal), after);
     }
 
     [Fact]
-    public void AMembershipThroughAnUndeclaredVariable_IsRefusedNamingIt_AndNothingIsWritten()
+    public async Task AMembershipThroughAnUndeclaredVariable_IsRefusedNamingIt_AndNothingIsWritten()
     {
-        // Arrange.
-        var text = OnCallExample();
-        var document = CausalLoopDocument.Parse(text);
-        var model = CausalLoopParser.Parse(document).Model;
-
         // Act.
-        var refusal = CausalLoopWriter.SetLoopMembership(document, model, "R3", ["onCallLoad", "nowhere"]);
+        (CommandResult result, string before, string after) = await SetR3("onCallLoad", "nowhere");
 
         // Assert.
-        Assert.Contains("'nowhere'", refusal, StringComparison.Ordinal);
-        Assert.Equal(text, document.Text);
+        Assert.False(result.IsSuccess);
+        Assert.Contains("'nowhere'", result.Error, StringComparison.Ordinal);
+        Assert.Equal(before, after);
     }
 
-    /// <summary>The command lands the writer's line through the store, and its inverse puts the bytes back.</summary>
+    /// <summary>The command lands its splices through the store, and its inverse puts the bytes back.</summary>
     [Fact]
     public async Task SettingALoopsMembership_IsOneUndoAway()
     {

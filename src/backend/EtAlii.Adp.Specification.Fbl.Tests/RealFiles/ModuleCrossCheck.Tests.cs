@@ -11,8 +11,8 @@ using Xunit;
 namespace EtAlii.Adp.Specification.Fbl.Tests.RealFiles;
 
 /// <summary>
-/// Requirement 11.6: for the four bindings whose module has a public parser, the ids per type the
-/// binding reads from each real file equal the ids the module's own parser reads, mapped from the
+/// Requirement 11.6: for the four bindings whose module has a public reader, the ids per type the
+/// binding reads from each real file equal the ids the module's own reader reads, mapped from the
 /// module's kinds to the binding's types by <see cref="ModuleIds"/>. Every difference is a listed
 /// divergence. Only public API of the modules is used, and nothing in them is changed.
 /// </summary>
@@ -115,7 +115,7 @@ internal static partial class ModuleIds
         return ids;
     }
 
-    /// <summary>The module's side, through its own public parser.</summary>
+    /// <summary>The module's side, through its own public reader.</summary>
     public static IReadOnlyDictionary<string, SortedSet<string>> OfModule(string key, string text)
     {
         var ids = new Dictionary<string, SortedSet<string>>(StringComparer.Ordinal);
@@ -127,9 +127,11 @@ internal static partial class ModuleIds
                 foreach (var connection in timeline.Connections.Where(c => c.Id.Length > 0)) Add(ids, "Connection", connection.Id);
                 break;
             case "causal-loop":
-                var loop = CausalLoopParser.Parse(CausalLoopDocument.Parse(text)).Model;
-                // The binding's ids are DISL's (causal-loop-diagram.dis: natural, with its prefixes),
-                // which the module's parser gives its links and loops but not its variables.
+                // The module has no parser of its own since causal-loop-disl-fbl task 7: its side is what its
+                // body reads, the module's own options over the module's embedded binding. The binding's ids
+                // are DISL's (causal-loop-diagram.dis: natural, with its prefixes), which the module's model
+                // gives its links and loops but not its variables.
+                var loop = CausalLoopBody.Parse(text).Read();
                 foreach (var variable in loop.Variables) Add(ids, "Variable", $"variable:{variable.Id}");
                 foreach (var link in loop.Links) Add(ids, "Link", link.Id);
                 foreach (var cycle in loop.Loops) Add(ids, "Loop", cycle.Id);

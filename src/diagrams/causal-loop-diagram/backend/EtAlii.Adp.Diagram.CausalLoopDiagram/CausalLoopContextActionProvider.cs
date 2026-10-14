@@ -248,7 +248,7 @@ public sealed class CausalLoopContextActionProvider(
     private async ValueTask<ContextExecutionResult> AddVariableAsync(ContextTarget target, CancellationToken cancellationToken)
     {
         var entry = documents.GetOrLoad(target.ResolvedFullPath);
-        (string id, string label) = CausalLoopWriter.NextVariableName(entry.Model);
+        (string id, string label) = CausalLoopEdits.NextVariableName(entry.Model);
 
         if (CausalLoopSelection.PlacementPoint(target.ElementId) is { } point &&
             sessions.Find(target.WatchId, target.ResolvedFullPath) is CausalLoopSession session)
@@ -270,7 +270,7 @@ public sealed class CausalLoopContextActionProvider(
     /// A target the document does not hold has no confirmation to derive; it is asked about by the name
     /// its id carries, as it always was, and the removal it confirms then refuses.
     /// </remarks>
-    private static ValueTask<ContextExecutionResult> Confirm(DocumentEntry<CausalLoopDocument, CausalLoopModel> entry, ContextTarget target)
+    private static ValueTask<ContextExecutionResult> Confirm(DocumentEntry<CausalLoopBody, CausalLoopModel> entry, ContextTarget target)
     {
         var asked = CausalLoopDefinition.RemovalConfirmation(entry, target.ElementId);
         var request = asked is null

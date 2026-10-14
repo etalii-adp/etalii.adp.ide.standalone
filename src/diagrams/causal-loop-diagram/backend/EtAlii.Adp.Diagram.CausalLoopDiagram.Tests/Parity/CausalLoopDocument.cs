@@ -1,13 +1,14 @@
 using System.Text;
 using EtAlii.Adp.Documents;
 
-namespace EtAlii.Adp.Diagram.CausalLoopDiagram;
+namespace EtAlii.Adp.Diagram.CausalLoopDiagram.Tests.Parity;
 
 /// <summary>
 /// A <c>.cld</c> document as lines, each keeping the ending it arrived with, so an edit splices
 /// the lines it must and leaves every other byte exactly as the author wrote it.
 /// </summary>
 /// <remarks>
+/// <para>The parity oracle (causal-loop-disl-fbl task 7): the module's hand-written reading and writing, kept in the test project to hold the definition and binding to what the tool did, and used by no product code.</para>
 /// <para>
 /// The format is line-oriented on purpose: one statement per line means adding a link produces a
 /// one-line diff rather than a rewritten file (Requirement 1.3), which is what makes a causal
@@ -19,7 +20,7 @@ namespace EtAlii.Adp.Diagram.CausalLoopDiagram;
 /// and wrong about everything else in the file.
 /// </para>
 /// </remarks>
-public sealed class CausalLoopDocument
+internal sealed class CausalLoopDocument
 {
     private readonly List<CausalLoopLine> _lines;
 

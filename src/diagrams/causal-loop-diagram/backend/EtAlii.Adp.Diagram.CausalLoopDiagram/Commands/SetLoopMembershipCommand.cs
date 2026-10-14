@@ -3,17 +3,21 @@ using EtAlii.Adp.History;
 namespace EtAlii.Adp.Diagram.CausalLoopDiagram;
 
 /// <summary>Changes the cycle a loop claims.</summary>
-public sealed record SetLoopMembershipCommand(string BodyPath, string Identifier, IReadOnlyList<string> Variables) : ICommand;
+public sealed record SetLoopMembershipCommand(string BodyPath, string Identifier, IReadOnlyList<string> Variables) : IDocumentEditCommand;
 
 /// <inheritdoc cref="SetLoopMembershipCommand" />
-public sealed class SetLoopMembershipCommandHandler(ICausalLoopDocumentStore documents) : ICommandHandler<SetLoopMembershipCommand>
+public sealed class SetLoopMembershipCommandHandler(ICausalLoopDocumentStore documents) : CausalLoopEditHandler<SetLoopMembershipCommand>(documents)
 {
-    public Task<CommandResult> ExecuteAsync(SetLoopMembershipCommand command, CancellationToken cancellationToken = default)
+    /// <inheritdoc />
+    protected override EditOutcome Apply(CausalLoopBody body, CausalLoopModel model, SetLoopMembershipCommand command)
     {
+        ArgumentNullException.ThrowIfNull(body);
+        ArgumentNullException.ThrowIfNull(model);
         ArgumentNullException.ThrowIfNull(command);
-        cancellationToken.ThrowIfCancellationRequested();
 
-        return CausalLoopEdits.Run(documents, command.BodyPath, command, entry =>
-            CausalLoopWriter.SetLoopMembership(entry.Document, entry.Model, command.Identifier, command.Variables));
+        if (CausalLoopEdits.MembershipRefusal(model, command.Variables) is { } refusal) return EditOutcome.Refused(refusal);
+        return CausalLoopEdits.HasLoop(model, command.Identifier)
+            ? CausalLoopEdits.Set(body, CausalLoopEdits.LoopId(command.Identifier), "Loop", ("members", CausalLoopEdits.Members(command.Variables)))
+            : EditOutcome.Refused(CausalLoopEdits.NoSuchLoop);
     }
 }

@@ -1,6 +1,6 @@
 using Xunit;
 
-namespace EtAlii.Adp.Diagram.CausalLoopDiagram.Tests;
+namespace EtAlii.Adp.Diagram.CausalLoopDiagram.Tests.Parity;
 
 /// <summary>
 /// The body format and its reading (causal-loop-diagram Requirements 1.2, 1.3, 2.2, 3.6): one
