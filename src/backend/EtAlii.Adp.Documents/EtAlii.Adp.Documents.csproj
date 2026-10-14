@@ -36,6 +36,9 @@
     <!-- AdpFileWriter.Save takes its replace through an internal overload, so a guard can stop a
          save inside its replace and prove concurrent saves take turns without relying on timing. -->
     <InternalsVisibleTo Include="EtAlii.Adp.Documents.Tests" />
+    <!-- The watched-folder contract makes a store's own watcher overflow, which only its internal
+         watchers allow; every module's store test inherits that one test. -->
+    <InternalsVisibleTo Include="EtAlii.Adp.TestSupport" />
   </ItemGroup>
 
   <ItemGroup>
