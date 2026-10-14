@@ -35,7 +35,7 @@ public static class DislContexts
     public const string Budget = "budget";
     public const string Connection = "connection";
     public const string Simulation = "simulation";
-    private const string Template = "template";
+    public const string Template = "template";
     public const string Migration = "migration";
     public const string Retype = "retype";
     public const string LabelParse = "labelParse";

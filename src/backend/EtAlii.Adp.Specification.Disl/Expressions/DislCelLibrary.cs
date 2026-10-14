@@ -42,7 +42,12 @@ public static class DislCelLibrary
             environment.AddFunction(CelFunction.Method(name, min, max));
         }
 
+        environment.AddFunction(CelFunction.Receiver("cycles", 2, arguments => Cycles(arguments).Cycles.Select(cycle => (object?)cycle.Cast<object?>().ToList()).ToList(), CyclesCost));
+        environment.AddFunction(CelFunction.Receiver("cyclesTruncated", 2, arguments => Cycles(arguments).Truncated, CyclesCost));
         environment.AddFunction(CelFunction.Global("enumLabel", 2, arguments => EnumLabel(enums, arguments[0], arguments[1])));
+        environment.AddFunction(CelFunction.Receiver("avg", 0, arguments => Average(arguments[0]), arguments => arguments[0] is IReadOnlyList<object?> list ? list.Count : 1));
+        environment.AddFunction(CelFunction.Receiver("center", 0, arguments => Center(arguments[0])));
+        environment.AddFunction(CelFunction.Global("token", 1, arguments => throw new CelException($"The theme token '{Text(arguments[0])}' is resolved where the diagram is drawn; this runtime has no theme.")));
         environment.AddFunction(CelFunction.Global("clamp", 3, arguments => Clamp(arguments[0], arguments[1], arguments[2])));
         environment.AddFunction(new CelFunction("min", CelCallStyle.Global, 2, 4, call => Extreme(call.Arguments, -1)));
         environment.AddFunction(new CelFunction("max", CelCallStyle.Global, 2, 4, call => Extreme(call.Arguments, 1)));
@@ -54,12 +59,46 @@ public static class DislCelLibrary
         environment.AddFunction(CelFunction.Receiver("month", 0, arguments => YearMonth.MonthOf(Int(arguments[0]))));
     }
 
+    /// <summary><c>diagram.cycles(relType, max)</c> and <c>diagram.cyclesTruncated(relType, max)</c> (§12.4), on the diagram that receives them.</summary>
+    private static (IReadOnlyList<IReadOnlyList<DislElement>> Cycles, bool Truncated) Cycles(IReadOnlyList<object?> arguments)
+    {
+        var diagram = arguments[0] as DislDiagram ?? throw new CelException("cycles() and cyclesTruncated() are methods of the diagram.");
+        var max = Int(arguments[2]);
+        return max < 0 ? throw new CelException($"The bound of cycles() is a count, not {max}.") : diagram.Cycles(Text(arguments[1]), max);
+    }
+
+    /// <summary>The cost §12.4 sets for the cycle search: proportional to (nodes + relations) × (<c>max</c> + 1), so a bound keeps CEL's termination guarantee.</summary>
+    private static long CyclesCost(IReadOnlyList<object?> arguments) =>
+        arguments is [DislDiagram diagram, _, long and >= 0 and var max, ..]
+            ? (long)(diagram.Nodes.Count + diagram.Relations.Count) is var size && max >= long.MaxValue / Math.Max(size, 1) ? long.MaxValue : size * (max + 1)
+            : 1;
+
     /// <summary>The label of an enumeration's value (§4.5): its declared label, else its key; a value the enumeration lacks, as an extensible one may hold, is its own label.</summary>
     private static string EnumLabel(Func<string, DislEnum?> enums, object? name, object? value)
     {
         var enumeration = enums(Text(name)) ?? throw new CelException($"'{name}' is not an enumeration of this specification.");
         var key = Text(value);
         return enumeration.ValueOf(key) is { } known ? known.Label ?? known.Key : key;
+    }
+
+    /// <summary><c>l.avg()</c> (§12.4): the mean of a list of ints and doubles, as a double; an empty list has none.</summary>
+    private static double Average(object? value)
+    {
+        var list = value as IReadOnlyList<object?> ?? throw new CelException("avg() takes a list of numbers.");
+        if (list.Count == 0) throw new CelException("avg() of an empty list has no value.");
+        return list.Sum(item => item is long or double ? Number(item) : throw new CelException("avg() takes a list of numbers.")) / list.Count;
+    }
+
+    /// <summary><c>b.center()</c> on a Bounds (§12.2): <c>[x + width / 2, y + height / 2]</c>, as doubles.</summary>
+    private static List<object?> Center(object? value)
+    {
+        if (value is not CelMap bounds || !bounds.TryGetValue("x", out var x) || !bounds.TryGetValue("y", out var y)
+            || !bounds.TryGetValue("width", out var width) || !bounds.TryGetValue("height", out var height)
+            || x is not (long or double) || y is not (long or double) || width is not (long or double) || height is not (long or double))
+        {
+            throw new CelException("center() needs bounds with x, y, width and height.");
+        }
+        return [Number(x) + Number(width) / 2, Number(y) + Number(height) / 2];
     }
 
     /// <summary><c>clamp(v, lo, hi)</c>: <c>lo</c> below it, <c>hi</c> above it, otherwise <c>v</c> itself, of whichever kind each is.</summary>

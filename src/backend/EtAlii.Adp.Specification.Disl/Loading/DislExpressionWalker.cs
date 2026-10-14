@@ -294,6 +294,16 @@ internal static partial class DislExpressionWalker
                 return frame;
             }
 
+            if (path is [_, "templates", ..])
+            {
+                // A template's fragment (§7.4): its attribute values and positions are Expressions in the
+                // template context, which binds refs; everything else in a template is literal.
+                if (path is [.., "fragment", "nodes" or "relations", "attributes"]) return frame;
+                return key is "attributes" or "at" && path is [.., "fragment", "nodes" or "relations"]
+                    ? frame.In(DislContexts.Template).As(Mode.Expression)
+                    : frame.In(DislContexts.Template).As(Mode.Literal);
+            }
+
             return key switch
             {
                 // A palette tool: its initial values in the create context, everything else in the element context on the diagram.
