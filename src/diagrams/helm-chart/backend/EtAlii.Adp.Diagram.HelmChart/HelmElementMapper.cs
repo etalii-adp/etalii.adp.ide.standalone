@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using Google.Protobuf;
 
 namespace EtAlii.Adp.Diagram.HelmChart;
@@ -262,7 +263,7 @@ public sealed class HelmElementMapper
         };
     }
 
-    private static void Mark(Wire.HelmElementPayload payload, HelmYamlFailure failure)
+    private static void Mark(Wire.HelmElementPayload payload, TolerantYamlFailure failure)
     {
         payload.Unreadable = true;
         payload.FailureMessage = failure.Message;

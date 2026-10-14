@@ -37,6 +37,9 @@ internal sealed class HelmSession : IDiagramSession
     /// <summary>The project's history, so a drag is one undo away. Null makes the diagram fully read-only.</summary>
     private readonly IHistoryStack? _history;
 
+    /// <summary>The store's word for this folder, until the session goes.</summary>
+    private readonly IDisposable _watch;
+
     /// <summary>What this connection was last sent, so a change can be diffed against it.</summary>
     private IReadOnlyList<DiagramElement> _delivered = [];
 
@@ -65,7 +68,7 @@ internal sealed class HelmSession : IDiagramSession
         _history = history;
 
         _store.Acquire(_folder);
-        _store.Changed += OnChartChanged;
+        _watch = _store.Watch(_folder, _ => OnChartChanged());
     }
 
     /// <inheritdoc />
@@ -139,7 +142,7 @@ internal sealed class HelmSession : IDiagramSession
     /// <inheritdoc />
     public ValueTask DisposeAsync()
     {
-        _store.Changed -= OnChartChanged;
+        _watch.Dispose();
         _store.Release(_folder);
         return ValueTask.CompletedTask;
     }
@@ -178,13 +181,8 @@ internal sealed class HelmSession : IDiagramSession
         return overlaid;
     }
 
-    private void OnChartChanged(object? sender, HelmChartChangedEventArgs args)
+    private void OnChartChanged()
     {
-        if (!string.Equals(args.FolderPath, _folder, StringComparison.OrdinalIgnoreCase))
-        {
-            return;
-        }
-
         try
         {
             var current = Render();

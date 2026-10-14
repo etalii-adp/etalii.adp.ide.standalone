@@ -1,3 +1,5 @@
+using EtAlii.Adp.Documents;
+
 namespace EtAlii.Adp.Diagram.HelmChart;
 
 /// <summary>One file of the values stack.</summary>
@@ -11,4 +13,4 @@ public sealed record ValuesFile(
     bool IsDefault,
     bool HasGlobal,
     IReadOnlyList<string> TopLevelKeys,
-    HelmYamlFailure? Failure);
+    TolerantYamlFailure? Failure);
