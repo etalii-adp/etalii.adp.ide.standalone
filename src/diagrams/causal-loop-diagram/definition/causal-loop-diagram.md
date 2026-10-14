@@ -9,9 +9,10 @@ The tool it describes is the standalone module `src/diagrams/causal-loop-diagram
 1. [How the specification maps the tool](#how-the-specification-maps-the-tool)
 2. [What the definition now states](#what-the-definition-now-states)
 3. [Language gaps](#language-gaps)
-4. [Other differences a runtime will meet](#other-differences-a-runtime-will-meet)
-5. [Pending with the owner](#pending-with-the-owner)
-6. [What stays code](#what-stays-code)
+4. [Definition defects repaired](#definition-defects-repaired)
+5. [Other differences a runtime will meet](#other-differences-a-runtime-will-meet)
+6. [Pending with the owner](#pending-with-the-owner)
+7. [What stays code](#what-stays-code)
 
 ## How the specification maps the tool
 
@@ -22,7 +23,7 @@ The tool it describes is the standalone module `src/diagrams/causal-loop-diagram
 | Loop (a claim about a cycle) | node type `Loop` | Key attribute `identifier`; `title` is shown as "Name"; `members` lists the variables in loop order. Element id `loop:<identifier>`. It is a node because DISL has no construct for a claim about a path. |
 | Link polarity | enum `Polarity` | `positive`, `negative`, `unstated`. |
 | Computed loop polarity | enum `LoopPolarity`, derived `Loop.computed` | Reinforcing, balancing, undecidable, from the count of negative links around the cycle. |
-| Cycle enumeration | `diagram.cycles('CausalLink', 1000)` and `diagram.cyclesTruncated` | DISL 12.4. |
+| Cycle enumeration | `causalCycles` of the plugin `net.etalii.adp.systems.cldCycles`, with `diagram.cycles('CausalLink', max)` as its fallback, and `diagram.cyclesTruncated` | DISL 12.4 and 13.1.1. The plugin is the tool's order; see [Other differences: the order of cycles](#other-differences-a-runtime-will-meet). |
 | The body | `persistence.format: "fbl"`, binding `cld` | The standalone module's own copy of the binding; `typeMap` maps its entry types onto the metamodel. |
 | Positions | `persistence.view.store: ["bounds"]` | Stored in the `.adp` registration's `layout:` block under the element ids, never in the body. |
 | Ring layout | layout `ring`, `circular` with `adp.ring.*` options | See [gap 5](#5-disl-the-seating-order-and-radius-of-circular). |
@@ -53,6 +54,16 @@ The rest of the rewrite is the same move: a link is `routing: "curved"` with `cu
 
 Each gap is a candidate change to DISL or FBL. None is worked around in the specification by stating something the tool does not do; where the specification and the tool differ because of one, the tool's behaviour is the one described here.
 
+| # | Gap | Construct | Evidence | Would resolve it | Kept in the standalone module by |
+| --- | --- | --- | --- | --- | --- |
+| 1 | A reason for a statement that almost matched (B2) | FBL `lines` rule, `unmatched` | `unreadable-lines.cld`; `CausalLoopUnreadable` and the transcript's findings | A `fallback` on a rule: a looser expression with a message | `CausalLoopUnreadable` |
+| 2 | A tolerant word grammar (B1, B12) | FBL `word` slots, `emit` | `lenient-spellings.cld`, `two-notes.cld`; `CausalLoopNoteWriting.Tests` | A word grammar for `lines`, or a last-match `word` slot and a lookahead | `CausalLoopNote` |
+| 3 | Placing new entries of several rules as one group (B6) | FBL `insert.place` | `spellings-kept.cld`, `trailing-comments.cld`; the transcript's edit hunks | An `insert` that places one change's entries as a group | Nothing: the binding's placement is the tool's now (Q1) |
+| 4 | A wavy underline (A8) | DISL text `decoration` | `client/causal-loop.css`; the browser pass of the standalone `tests.md` | A `style` on a text decoration | `client/cldBindings.ts` (the class) and `client/causal-loop.css` |
+| 5 | The seating order and radius of `circular` (A9) | DISL standard layout `circular` (D.2, open question 9) | `CausalLoopLayout.Tests`; the transcript's payloads | An order and a radius rule for `circular` | `CausalLoopLayout` |
+| 6 | A committed value that did not change (A10) | DISL transactions (forms, operations) | Every document's edit script in the transcript (`"unchanged": true` on setting a loop's own cycle and on Delayed when delayed) | A sentence that a transaction which changes no value is not recorded | The shared history, which records no unchanged edit |
+| 7 | Whether a size sent on the wire is a layout-time measurement (A11) | DISL `autoSize: "fitWidth"`, `textMetric` | `CausalLoopMetrics.Tests`; the transcript's payloads | A statement of where a fitted size is measured and whether a host may send it | `CausalLoopMetrics`, `CausalLoopElementMapper` |
+
 ### 1. FBL: a reason for a statement that almost matched
 
 Finding B2. A rule says what it matches, not what a line that starts like it and fails should be told. The binding's last rule, of entry type `Unreadable`, takes every statement no other rule read, and the specification maps it to `unreadable`, so DISL reports it once on its line under `causal-loop.unreadable-line` with the reason `std.unreadableEntry` gives. The tool says why, in four sentences of its own, recorded over `unreadable-lines.cld`:
@@ -74,7 +85,7 @@ Findings B1 and B12. The binding reads every spelling of `lenient-spellings.cld`
 
 **Would resolve it:** a word grammar for `lines` that can say "any other word is the note, the last one winning" and "quote a value only when it needs it", short of regular expressions that restate the tool's tokenizer. Two smaller additions would do for the note: a lookahead or not-followed-by in FBL's regular expressions, which FBL forbids today, so a bare word can be told from a flag; and a `word` slot that takes the last matching word rather than the first.
 
-Until then the standalone tool keeps its reading by a stand-in: once the binding has read a link statement, the module reads its note again as its own parser did, the bare word and the last of two notes included, and uses that in place of the binding's `note`. Only the note is read so; which lines are links, and every other attribute of one, are the binding's.
+Until then the standalone tool keeps its reading by a stand-in, `CausalLoopNote`: once the binding has read a link statement, the module reads its note again as its own parser did, the bare word and the last of two notes included, and uses that in place of the binding's `note`, and writes an edited note over the word it read it from. Only the note is read so; which lines are links, and every other attribute of one, are the binding's. **Open with the owner:** keep the stand-in (the default, what the tool does now), drop bare-word and last-of-two notes so that the binding's reading is the tool's, or extend FBL first and remove the stand-in then.
 
 ### 3. FBL: placing several new entries of different rules as one group
 
@@ -83,6 +94,8 @@ Finding B6. Drawing a link that closes cycles writes the link and its loop claim
 ### 4. DISL: a wavy underline
 
 Finding A8. A loop whose stated letter disagrees with its arrows is underlined with a **wavy** line (`client/causal-loop.css`, `text-decoration: underline wavy`). DISL's text decoration has `underline` and no wavy form; the specification states the underline and documents the difference on the condition. **Would resolve it:** a `style` on a text decoration (`solid`, `wavy`, `dotted`, `dashed`), as CSS has.
+
+A host meets a second limit under this one. The standalone canvas draws a label as SVG text, and Chromium ignores `text-decoration-style` on SVG text, so the stylesheet's wavy line is drawn straight there; the standalone `tests.md` browser pass recorded it, and it was so before the conversion too. A host that draws labels as SVG therefore needs a decoration of its own that draws a wavy line under a label, whatever DISL states. **Open with the owner:** the default is a follow-up in the standalone canvas library adding that decoration.
 
 ### 5. DISL: the seating order and radius of `circular`
 
@@ -96,11 +109,29 @@ Finding A10. Committing a value equal to the current one succeeds and changes no
 
 Finding A11. A variable's width is measured on the backend from its label, and the positions the layouts compute depend on it. DISL 0.3 limits `textMetric` to layout-time measurement, and does not say whether a node's `autoSize: "fitWidth"`, sent on the wire, is such a measurement. **Would resolve it:** a statement in DISL of where a fitted size is measured, and whether a host may send it.
 
+## Definition defects repaired
+
+A definition defect is the specification or the binding saying something the tool does not do. Each of these was found by the standalone conversion and repaired here, in the specification or the binding:
+
+| Finding | Was | Is |
+| --- | --- | --- |
+| A1 | Written against DISL 0.1, which no 0.3 runtime reads | DISL 0.3 |
+| A2 | Twelve workarounds for what DISL 0.2 and 0.3 express | The constructs of [What the definition now states](#what-the-definition-now-states) |
+| A3 | `routing: "arc"`, which DISL 0.2 made a circular arc | `routing: "curved"` with `curvature: 0.2`, and `-0.2` for a flipped link |
+| A4 | `persistence` named a plugin that reads and writes the body, with keys DISL 11.2 forbids beside a binding | `format: "fbl"` with the binding and a `typeMap` |
+| B1 | The binding read a narrower grammar than the tool | Its expressions admit an unquoted label, a quoted identifier, leading whitespace, an unquoted loop name and `S` and `O` (what is beyond an expression is gap 2) |
+| B3 | A link whose end names no variable was dropped | Read as an entry with reference attributes that the `typeMap` maps to the relation's ends, so it is kept, not drawn, and reported |
+| B4 | Removing a variable left the loops through it | `remove.cascade` names `link` and `loop` |
+| B7 | A loop had no id | `loop:<identifier>`, from the binding's `id` and the specification's prefix |
+| B9 | The binding's template was two variables and a link | The tool's *Births beget births* starter |
+| B10 | Stored positions named no element | `persistence.ids` with a `prefix` per type, so the ids are the keys a registration stores |
+| The arrowhead | `targetMarker: "arrow"`, DISL's open V | `targetMarker: "arrowFilled"`, the filled triangle the tool has always drawn (DISL 6.11); the standalone client stated the filled triangle in code until this was repaired |
+
 ## Other differences a runtime will meet
 
 These are not language gaps. Each is a place the transcript shows the tool doing something a runtime of this specification might do otherwise, recorded so that a host does not have to find it again.
 
-- **The order of cycles.** DISL 12.4 orders cycles by first member in model order and then by member order. The tool's finder is Johnson's algorithm, which reports them as a depth-first walk of the links in declaration order finds them, and the standalone conversion found the two orders different over its corpus: over `weight-forms.cld` the tool reports a → b → c → d, a → b → c, a → b → d, a → b, a → c → d, a → c → d → b, a → c, b → c → d, b → d, where DISL 12.4 gives a → b, a → b → c, a → b → c → d, a → b → d, a → c, a → c → d, a → c → d → b, b → c → d, b → d. The cycles are the same; their order decides the order of the unlabelled-loop findings and which of several shortest cycles Claim a loop picks. So the tool's finder stays, as the plugin function `causalCycles` of `net.etalii.adp.systems.cldCycles`, which `feedbackCycles` calls, with `diagram.cycles` as its fallback: a host without the plugin reports the same findings in DISL's order. **Candidate for DISL:** a way to ask `diagram.cycles` for discovery order, or a definition of its order that a depth-first finder gives.
+- **The order of cycles.** DISL 12.4 orders cycles by first member in model order and then by member order. The tool's finder is Johnson's algorithm, which reports them as a depth-first walk of the links in declaration order finds them, and the standalone conversion compared the two over its corpus of fifteen documents (`CausalLoopCyclesAgainstTheLibraryTests`): the cycles are the same on every one, and the order differs on two. Over `weight-forms.cld` the tool reports a → b → c → d, a → b → c, a → b → d, a → b, a → c → d, a → c → d → b, a → c, b → c → d, b → d, where DISL 12.4 gives a → b, a → b → c, a → b → c → d, a → b → d, a → c, a → c → d, a → c → d → b, b → c → d, b → d; over `lenient-spellings.cld` the tool reports a → b, a → indented, where DISL 12.4 gives a → indented, a → b, because `indented` is declared before `b` and the link to `b` before the link to `indented`. The cycles are the same; their order decides the order of the unlabelled-loop findings and which of several shortest cycles Claim a loop picks. So the tool's finder stays, as the plugin function `causalCycles` of `net.etalii.adp.systems.cldCycles`, which `feedbackCycles` calls, with `diagram.cycles` as its fallback: a host without the plugin reports the same findings in DISL's order. **Candidate for DISL:** a way to ask `diagram.cycles` for discovery order, or a definition of its order that a depth-first finder gives.
 - **Numbers.** A weight is shown and written in .NET's shortest round-trip form: `1E+21`, `1E-07`, `1E-06`, `1.2345678901234568E+29` (`weight-forms.cld`). The binding's `number: "shortest"` is ECMAScript's (`1e+21`, `1e-7`). The two agree on ordinary values (finding B11).
 - **One attribute, two refusals.** A variable's label is refused with the quote sentence of `std.facets` in the property grid, and with "A name needs at least one character, and cannot contain a quote or a line break." in the inline rename dialog. A label `parse` takes no `accepts` or `refusal`, so the specification states the grid's.
 - **A reason sent with an entry that applies.** The menus carry a reason on entries that are enabled as well: Arrange diagram is sent "on (There is nothing to arrange until this diagram has two variables.)" with two variables present, and Opposite direction (−) "on (This link already states −.)" on a positive link. The specification states each reason with its `unavailable` condition only.
@@ -109,24 +140,38 @@ These are not language gaps. Each is a place the transcript shows the tool doing
 - **Adding a variable at a point.** Add variable on the canvas writes the statement and its position as one undo step (`AddVariableAtCommand`). A DISL operation's `create` and a registration write are two changes.
 - **The link's names are read, not written.** `causeName` and `effectName` are read-only `value` slots of the binding that the specification keys a link by. A new link's are given by the operation's `connect` attributes; a runtime **MUST NOT** plan those as writes to the body, since the `from` and `to` reference attributes the link is written from already carry them.
 - **The declared order.** `constraints.order` lists three codes. The other codes share one position after them, sorted by line, and the findings of `unlabelledLoop`, which have no line, come last. That is one reading of DISL's rule for unlisted codes and for findings without a line; the transcript records the order the tool gives, which a runtime checks itself against.
+- **The turn of an undecidable loop's marker.** The specification mirrors the loop arrow for a balancing loop only, so an undecidable loop's arrow turns clockwise, as a reinforcing one's does. The standalone canvas drew it anticlockwise before it was compiled from this specification. **Open with the owner:** the default keeps the specification's drawing; the alternative is a third value of `flip` under a condition on `undecidable`, which DISL can state, so it is a choice and not a gap.
+- **Tooltips.** The specification states a tooltip for a variable, a loop and a link in CEL. The standalone canvas has no CEL and reads a CEL text from the payload its backend computes; no payload carries a tooltip, and a variable's payload carries neither its name nor its label separately, from which one could be built. So the standalone tool draws no tooltip, as it drew none before. A host concern, not a gap: the payload would have to carry the text.
 - **A loop that is not a cycle.** `std.references` reports a loop member that names no variable under `causal-loop.loop-is-not-a-cycle`; no fixture of the corpus has such a loop, so that case is not in the transcript.
 
 ## Pending with the owner
 
-Two findings are put to the owner and are not settled here.
-
-- **A quote in a label (B13).** The transcript shows the property grid refusing a quote in a variable's label and in a loop's name, and the rename dialog rejecting one. The specification's `pattern` on `label`, `title` and `note` forbids it.
-- **Two variables of one name (A7).** `duplicate-variable.cld` declares `a` twice. The module reports no finding for it; the transcript records its loop rows in the specification's form, where the hand-written rows threw "System.ArgumentException: An item with the same key has already been added. Key: a"; its findings are derived too, and are none, where the hand-written ones threw the same; an edit of those rows and the payloads still throw until the module's layout is removed. The specification switches `std.duplicateId` off, so no finding names the second declaration.
+- **A quote in a label (B13).** Struck by the owner's ruling in chat, 2026-10-13: every path that sets a label already refuses a quote (`label-with-quote.cld`), so the finding does not occur. The specification's `pattern` on `label`, `title` and `note` forbids it as the tool does.
+- **Two variables of one name (A7).** `duplicate-variable.cld` declares `a` twice. The specification switches `std.duplicateId` off, so no finding names the second declaration, and the derived findings are none where the hand-written ones threw. The requirement was reworded by the owner's ruling in chat, 2026-10-13: the converted tool **SHALL** at least not throw. It still does in one place, which is the standalone module's and not the specification's: its ring layout (`CausalLoopLayout`) keys the variables by name, so the payloads, and the re-render after every edit of that document, throw "System.ArgumentException: An item with the same key has already been added. Key: a"; the edit itself is written.
 
 ## What stays code
 
-| Part | Why |
+Every class left in the standalone module, `src/diagrams/causal-loop-diagram/`, beside the gap or the host concern that keeps it. A class with neither was removed: the module's `LoopPolarity`, whose arithmetic the specification states as `Loop.computed` and `Loop.disagrees`, went to the test project as the oracle the derived values are held to. The parser, the writer, the validator's rules and the providers' menus and rows went before it, to the same place.
+
+| Class | Kept by |
 | --- | --- |
-| The self-organizing layout and Arrange diagram's command | The specification names the layout as a plugin. |
-| The ring layout | Gap 5. |
-| The stand-in for unreadable lines | Gap 1. |
-| The stand-in for a link's note | Gap 2. |
-| The cycle finder, as the plugin function `causalCycles` | Its order (Other differences: the order of cycles). |
-| Adding a variable at a point | One undo step for a body change and a position. |
-| The payloads, the measured widths, the viewport filter | The host's wire (findings A11 and A12). |
-| The session, the document store and reloading | The shared document lifecycle. |
+| `CausalLoopCycles`, `CycleFinder`, `CycleFinderResult` | The order of cycles: `CausalLoopCycles` is the plugin function `causalCycles`, `CycleFinder` the algorithm it runs. |
+| `CausalLoopUnreadable` | Gap 1. |
+| `CausalLoopNote` | Gap 2. |
+| `CausalLoopLayout` | Gap 5: the ring a document opens on. |
+| `SelfOrganizingLayout`, `SelfOrganizingResult`, `Commands/ArrangeCausalLoopCommand` | Host: the layout the specification names as the plugin `net.etalii.adp.systems.cld`, and Arrange diagram writing the registration's `layout:` block. |
+| `Commands/AddVariableAtCommand` | Host: a body change and a position as one undo step, which no single DISL operation is. |
+| `CausalLoopMetrics`, `CausalLoopBox` | Gap 7, and host: the widths measured on the backend and the boxes the layouts place. |
+| `CausalLoopElementMapper`, `LoopPolarityResult` | Host: the `.proto` payloads and the viewport filter (A12); a loop's polarity on the wire is the specification's `computed`. |
+| `CausalLoopModel`, `CausalLoopVariable`, `CausalLoopLink`, `CausalLoopLoop`, `CausalLoopPolarity` | Host: the binding's reading as the layouts, the mapper and the commands read it, made by `CausalLoopBody.Read`. |
+| `CausalLoopBody` | Host: the shared document lifecycle's body, opened through the embedded binding, with the specification's model built from it. |
+| `CausalLoopDefinition` | Host: the bundled specification loaded with its plugin, and the derivations mapped onto the host's types and the `x-cld` wire ids. |
+| `CausalLoopSession`, `CausalLoopDocumentStore`, `ICausalLoopDocumentStore` | Host: the shared document lifecycle, the reload and the registration's positions. |
+| `CausalLoopSelection`, `CausalLoopContextSourceResolver` | Host: what a wire id selects, and resolving a selection to an element of the document. |
+| `CausalLoopToolboxProvider`, `CausalLoopContextActionProvider`, `CausalLoopContextPropertyProvider` | Host: handing out the derived toolbox, menus and rows, and dispatching a chosen entry or an edited row as the module's command on the history stack. They also still compute a few things the specification states (the cycle Claim a loop starts from, the next loop identifier, the choices of a loop's members, three validation sentences); the standalone delivery report lists them. |
+| `CausalLoopValidator` | Host: the specification's findings as the host's problems. |
+| `Commands/*Command` and their handlers, `Commands/CausalLoopEditHandler`, `Commands/CausalLoopEdits` | Host: the command records the history stack and the wire carry, each writing its change through the binding; the standalone parity tests hold each to the specification's operation. |
+| `Diagram`, `ServiceCollection.AddCausalLoop` | Host: the tool's registration and its services. |
+| `client/CausalLoopCanvas.tsx`, `client/cldBindings.ts` | Host: the canvas compiled from this specification, with what the library cannot read from it (CEL paths, class names, the weight ladder's classes). |
+| `client/causalLoopModel.ts`, `client/useCausalLoopStream.ts`, `client/register.ts` | Host: decoding the payloads, the stream and the module's registration. |
+| `client/causal-loop.css` | Host: the theme's colours, and gap 4's wavy underline. |
