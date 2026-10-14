@@ -103,7 +103,7 @@ public abstract class WatchedFolderStoreContract<TSnapshot> : IDisposable
 
         // Assert: re-read before announcing, so a listener that asks the store during the event
         // is not handed the snapshot the event exists to replace.
-        var snapshot = await WaitFor(changes, 1);
+        var snapshot = await WaitForTheChange(changes);
         Assert.True(ShowsTheChange(snapshot));
         Assert.Same(snapshot, Store.Get(Subject));
     }
@@ -202,17 +202,27 @@ public abstract class WatchedFolderStoreContract<TSnapshot> : IDisposable
 
         // Act: heard while watched, then let go - twice, which is harmless - and changed again.
         await ChangeAsync(Root, cancellationToken);
-        await WaitFor(changes, 1);
+        await WaitForTheChange(changes);
         watch.Dispose();
         watch.Dispose();
-        await TouchAsync(Root, 0, cancellationToken);
-        await WaitFor(changes, 2);
-
-        // Assert.
+        int heardBefore;
         lock (heard)
         {
-            var only = Assert.Single(heard);
-            Assert.True(ShowsTheChange(only));
+            heardBefore = heard.Count;
+        }
+        int announcedBefore;
+        lock (changes)
+        {
+            announcedBefore = changes.Count;
+        }
+        await TouchAsync(Root, 0, cancellationToken);
+        await WaitFor(changes, announcedBefore + 1);
+
+        // Assert: the change was heard, and nothing after the watch was let go.
+        lock (heard)
+        {
+            Assert.Contains(heard, ShowsTheChange);
+            Assert.Equal(heardBefore, heard.Count);
         }
     }
 
@@ -272,6 +282,30 @@ public abstract class WatchedFolderStoreContract<TSnapshot> : IDisposable
             }
         };
         return changes;
+    }
+
+    /// <summary>
+    /// The first announced snapshot that shows the change. Not merely the first announced: a write
+    /// lands as a truncation and then its content, and a runner that stalls between the two for
+    /// longer than the settle delay announces the empty file first, correctly.
+    /// </summary>
+    private async Task<TSnapshot> WaitForTheChange(List<TSnapshot> changes)
+    {
+        var start = DateTime.UtcNow;
+        while (DateTime.UtcNow - start < WaitLimit)
+        {
+            lock (changes)
+            {
+                if (changes.FirstOrDefault(ShowsTheChange) is { } snapshot)
+                {
+                    return snapshot;
+                }
+            }
+            await Task.Delay(25, TestContext.Current.CancellationToken);
+        }
+
+        Assert.Fail($"The change was not announced within {WaitLimit}.");
+        return null!;
     }
 
     private static async Task<TSnapshot> WaitFor(List<TSnapshot> changes, int count)
