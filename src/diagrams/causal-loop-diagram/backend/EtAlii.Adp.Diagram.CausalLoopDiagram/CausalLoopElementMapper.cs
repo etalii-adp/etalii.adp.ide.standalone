@@ -89,7 +89,8 @@ public sealed class CausalLoopElementMapper
             drawn[link.To] = to;
         }
 
-        foreach (var variable in model.Variables)
+        // A name written twice is drawn once, as the first (finding A7).
+        foreach (var variable in model.Variables.DistinctBy(variable => variable.Id, StringComparer.Ordinal))
         {
             if (drawn.TryGetValue(variable.Id, out var box))
             {
