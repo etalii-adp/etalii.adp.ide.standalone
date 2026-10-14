@@ -30,4 +30,11 @@ public enum CyclePolicy
     /// the cost grows with the number of paths and it suits small graphs only.
     /// </summary>
     BackEdgeIsZeroPerNode,
+
+    /// <summary>
+    /// Kahn's algorithm: a node is placed once every node before it is. A node on a cycle, or
+    /// downstream of one, is never released, so it keeps its floor raised only by the predecessors
+    /// that were. Fed edges with the cycles already taken out, it is plain longest-path layering.
+    /// </summary>
+    Kahn,
 }
