@@ -1,3 +1,5 @@
+using EtAlii.Adp.Documents;
+
 namespace EtAlii.Adp.Diagram.HelmChart;
 
 /// <summary>
@@ -23,7 +25,7 @@ namespace EtAlii.Adp.Diagram.HelmChart;
 public sealed record HelmChart(
     bool IsChart,
     ChartMetadata? Metadata,
-    HelmYamlFailure? MetadataFailure,
+    TolerantYamlFailure? MetadataFailure,
     bool Legacy,
     IReadOnlyList<ValuesFile> Values,
     SchemaFile? Schema,
@@ -32,7 +34,7 @@ public sealed record HelmChart(
     IReadOnlyList<DependencyDeclaration> Dependencies,
     IReadOnlyList<VendoredEntry> Vendored,
     LockFile? Lock,
-    HelmYamlFailure? DependenciesFailure = null)
+    TolerantYamlFailure? DependenciesFailure = null)
 {
     /// <summary>The folder had no <c>Chart.yaml</c>: a registered non-chart, not an error page.</summary>
     public static HelmChart NotAChart { get; } = new(

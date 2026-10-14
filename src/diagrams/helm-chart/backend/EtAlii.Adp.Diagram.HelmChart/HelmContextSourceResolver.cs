@@ -88,25 +88,13 @@ public sealed class HelmContextSourceResolver : IContextSourceResolver
         var folder = IoPath.GetFullPath(level.Target.ResolvedFullPath);
         var elementId = level.Target.ElementId;
         var lastPath = level.RelativePath;
-        var disposed = false;
 
-        _store.Changed += OnChanged;
-        return new HelmNodeSubscription(() =>
+        return _store.Watch(folder, OnChanged);
+
+        void OnChanged(HelmChart chart)
         {
-            disposed = true;
-            _store.Changed -= OnChanged;
-        });
-
-        void OnChanged(object? sender, HelmChartChangedEventArgs args)
-        {
-            if (disposed ||
-                !string.Equals(IoPath.GetFullPath(args.FolderPath), folder, StringComparison.OrdinalIgnoreCase))
-            {
-                return;
-            }
-
-            var graph = HelmGraph.Derive(args.Chart);
-            if (Locate(args.Chart, graph, elementId) is not { } located)
+            var graph = HelmGraph.Derive(chart);
+            if (Locate(chart, graph, elementId) is not { } located)
             {
                 onChange(null); // Gone from the folder; the selection goes with it.
                 return;

@@ -88,9 +88,9 @@ public sealed class PlainEditorSession : IEditorSession
                 OnExternalChange();
             };
 
-            // Subscribed BEFORE the watcher is enabled. Four other watchers in this tree do it
-            // this way - RootFolderWatcher, TrackedProblemRoot, WatchedFolder and
-            // HelmWatchedFolder - and enabling first leaves the watcher live with no handlers
+            // Subscribed BEFORE the watcher is enabled. Three other watchers in this tree do it
+            // this way - RootFolderWatcher, TrackedProblemRoot and the shared WatchedFolder -
+            // and enabling first leaves the watcher live with no handlers
             // attached, so anything raised in that window is received by nobody. The window is
             // small and nothing has been shown to fall through it; a hole is worth closing on
             // its own terms.
