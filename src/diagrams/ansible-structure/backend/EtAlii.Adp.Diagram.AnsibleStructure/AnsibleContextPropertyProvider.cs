@@ -1,5 +1,6 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents.Wire;
+using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
 namespace EtAlii.Adp.Diagram.AnsibleStructure;
 
@@ -27,6 +28,13 @@ namespace EtAlii.Adp.Diagram.AnsibleStructure;
 /// the remedy. "Defined in X; edit it in a text editor." A reader who cannot change a value here
 /// deserves to be told what would have to change instead.
 /// </para>
+/// <para>
+/// <b>It does not derive from <see cref="DiagramPropertyProvider{TBody, TModel}"/></b>, because
+/// everything that frame carries is for a document that can be edited: it loads a document of a
+/// store, guards one that could not be read and dispatches a change through the project's history,
+/// while this reads a folder and edits nothing (code-structure, spec 025: a module that cannot adopt
+/// a shared type keeps its own).
+/// </para>
 /// </remarks>
 public sealed class AnsibleContextPropertyProvider : IContextPropertyProvider
 {
@@ -49,12 +57,14 @@ public sealed class AnsibleContextPropertyProvider : IContextPropertyProvider
         ArgumentNullException.ThrowIfNull(target);
         cancellationToken.ThrowIfCancellationRequested();
 
-        if (target.ElementId.Length == 0 || !Directory.Exists(target.ResolvedFullPath))
+        // The target is the registration the element was selected in; the project is its folder.
+        var folder = IoPath.GetDirectoryName(target.ResolvedFullPath);
+        if (target.ElementId.Length == 0 || folder is null || !Directory.Exists(folder))
         {
             return Empty;
         }
 
-        var project = _store.GetOrLoad(target.ResolvedFullPath);
+        var project = _store.GetOrLoad(folder);
         var graph = AnsibleGraph.Derive(project);
 
         var node = graph.Node(target.ElementId);

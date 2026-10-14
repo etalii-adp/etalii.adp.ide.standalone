@@ -22,9 +22,6 @@ public interface IWatchedFolderStore<out TSnapshot>
     /// <summary>The snapshot of <paramref name="folder"/>, reading and watching it if this is the first ask.</summary>
     TSnapshot GetOrLoad(string folder);
 
-    /// <summary>The snapshot of <paramref name="folder"/> if one is loaded, without loading one.</summary>
-    TSnapshot? Get(string folder);
-
     /// <summary>
     /// <see cref="GetOrLoad"/>, and a claim on the folder's lifetime. Every call must be matched
     /// by a <see cref="Release"/>.

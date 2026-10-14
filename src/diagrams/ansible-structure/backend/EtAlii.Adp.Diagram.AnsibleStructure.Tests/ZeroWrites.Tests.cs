@@ -94,7 +94,7 @@ public class ZeroWritesTests : IDisposable
 
             foreach (var id in ids)
             {
-                var target = ContextTarget.ForElement(_root, id, _root);
+                var target = ContextTarget.ForElement(IoPath.Combine(_root, "infrastructure.adp"), id, _root);
                 await properties.DescribeAsync(target, TestContext.Current.CancellationToken);
 
                 // The refused write. Included on purpose: this is the path most likely to grow
