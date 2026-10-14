@@ -31,12 +31,41 @@ public static class Layering
 
         return policy switch
         {
-            CyclePolicy.BackEdgeIsZero => DepthFirst(order, before),
+            CyclePolicy.BackEdgeIsZero => DepthFirst(order, before, backEdge: 0),
+            CyclePolicy.BackEdgeIgnored => DepthFirst(order, before, backEdge: -1),
+            CyclePolicy.BackEdgeIsZeroPerNode => order.Distinct(StringComparer.Ordinal).ToDictionary(
+                node => node, node => Unremembered(node, before, []), StringComparer.Ordinal),
             _ => throw new ArgumentOutOfRangeException(nameof(policy), policy, null),
         };
     }
 
-    private static Dictionary<string, int> DepthFirst(List<string> order, Dictionary<string, List<string>> before)
+    /// <summary>
+    /// A depth-first walk that remembers nothing, so a node reached along two paths is measured
+    /// twice, each time against the stack of the path that reached it.
+    /// </summary>
+    private static int Unremembered(string node, Dictionary<string, List<string>> before, HashSet<string> resolving)
+    {
+        if (!resolving.Add(node))
+        {
+            return 0;
+        }
+
+        var depth = 0;
+        foreach (var dependency in before[node])
+        {
+            depth = Math.Max(depth, Unremembered(dependency, before, resolving) + 1);
+        }
+
+        resolving.Remove(node);
+        return depth;
+    }
+
+    /// <summary>
+    /// A memoised depth-first walk; <paramref name="backEdge" /> is the depth a node already on
+    /// the stack counts as, so 0 lets the edge into it push one layer and -1 lets it push none.
+    /// </summary>
+    private static Dictionary<string, int> DepthFirst(
+        List<string> order, Dictionary<string, List<string>> before, int backEdge)
     {
         var layers = new Dictionary<string, int>(StringComparer.Ordinal);
         var resolving = new HashSet<string>(StringComparer.Ordinal);
@@ -57,7 +86,7 @@ public static class Layering
 
             if (!resolving.Add(node))
             {
-                return 0;
+                return backEdge;
             }
 
             var depth = 0;

@@ -50,9 +50,13 @@ public class DatabricksLayoutTests
         var positions = DatabricksJobLayout.Positions(job);
 
         // Assert.
-        // Both members land somewhere drawable; the back-edge just contributes nothing.
+        // Both members land somewhere drawable; the back-edge just contributes nothing. The walk
+        // starts at loop_a and meets it again from loop_b, so loop_b takes the first column and
+        // loop_a, waiting for it, the next.
         Assert.True(positions.ContainsKey("task:loop_a"));
         Assert.True(positions.ContainsKey("task:loop_b"));
+        Assert.Equal(0, positions["task:loop_b"].X);
+        Assert.True(positions["task:loop_a"].X > positions["task:loop_b"].X);
     }
 
     [Fact]
