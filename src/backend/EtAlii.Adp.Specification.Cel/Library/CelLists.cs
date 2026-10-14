@@ -3,7 +3,8 @@ namespace EtAlii.Adp.Specification.Cel;
 /// <summary>
 /// CEL's lists extension: <c>lists.range(n)</c>, and on a list <c>distinct()</c>, <c>flatten()</c>
 /// (one level, or <c>flatten(depth)</c>), <c>slice(start, end)</c>, <c>sort()</c> and the macro
-/// <c>sortBy(x, key)</c>. Both sorts are stable and order strings by code point (DISL §12.1);
+/// <c>sortBy(x, key)</c>; with CEL's optional values, <c>first()</c> and <c>last()</c>, none for an
+/// empty list. Both sorts are stable and order strings by code point (DISL §12.1);
 /// <c>reverse()</c> and <c>join()</c> are shared with strings.
 /// </summary>
 public static class CelLists
@@ -16,6 +17,8 @@ public static class CelLists
         environment.AddFunction(CelFunction.Receiver("slice", 2, a => Slice(CelValues.AsList(a[0]), CelValues.AsInt(a[1]), CelValues.AsInt(a[2])), CelCore.Length));
         environment.AddFunction(CelFunction.Receiver("sort", 0, a => Sort(CelValues.AsList(a[0]), item => item), Logarithmic));
         environment.AddMacro(new CelMacro("sortBy", Sort));
+        environment.AddFunction(CelFunction.Receiver("first", 0, a => CelValues.AsList(a[0]) is [var first, ..] ? CelOptional.Of(first) : CelOptional.None));
+        environment.AddFunction(CelFunction.Receiver("last", 0, a => CelValues.AsList(a[0]) is [.., var last] ? CelOptional.Of(last) : CelOptional.None));
     }
 
     private static List<object?> Range(long count)

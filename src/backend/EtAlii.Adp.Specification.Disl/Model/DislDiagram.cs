@@ -20,6 +20,7 @@ public sealed class DislDiagram : ICelObject
     private readonly List<DislElement> _nodes = [];
     private readonly List<DislElement> _relations = [];
     private Dictionary<DislElement, (List<DislElement> Incoming, List<DislElement> Outgoing)>? _ends;
+    private readonly Dictionary<(string Type, long Max), (IReadOnlyList<IReadOnlyList<DislElement>> Cycles, bool Truncated)> _cycles = [];
 
     /// <summary>A diagram of <paramref name="specification"/> with the diagram attributes <paramref name="attributes"/>, as CEL values.</summary>
     public DislDiagram(DislSpecification specification, IReadOnlyDictionary<string, object?>? attributes = null)
@@ -77,7 +78,7 @@ public sealed class DislDiagram : ICelObject
                 throw new ArgumentException("A relation's ends belong to its own diagram.", nameof(element));
             }
             _relations.Add(element);
-            _ends = null;
+            Changed();
             return element;
         }
         if (element.Parent is { } parent)
@@ -86,6 +87,7 @@ public sealed class DislDiagram : ICelObject
             parent.AddChild(element);
         }
         _nodes.Add(element);
+        Changed();
         return element;
     }
 
@@ -95,12 +97,12 @@ public sealed class DislDiagram : ICelObject
         if (element.Type.IsRelation)
         {
             _relations.Remove(element);
-            _ends = null;
+            Changed();
             return;
         }
         element.Parent?.RemoveChild(element);
         _nodes.Remove(element);
-        _ends = null;
+        Changed();
     }
 
     /// <summary>
@@ -140,7 +142,14 @@ public sealed class DislDiagram : ICelObject
                     ? first
                     : _nodes.Count;
         _nodes.InsertRange(position, block);
+        Changed();
+    }
+
+    /// <summary>What is computed from the elements and their order is computed again.</summary>
+    private void Changed()
+    {
         _ends = null;
+        _cycles.Clear();
     }
 
     /// <summary>The children of <paramref name="parent"/>, or the top-level nodes, in model order.</summary>
@@ -165,6 +174,20 @@ public sealed class DislDiagram : ICelObject
 
     /// <summary>The relations that are <paramref name="type"/> or one of its subtypes, in model order.</summary>
     public IReadOnlyList<DislElement> RelationsOfType(string type) => [.. _relations.Where(relation => relation.IsA(type))];
+
+    /// <summary>
+    /// The elementary cycles over the relations that are <paramref name="relationType"/> or one of its
+    /// subtypes, at most <paramref name="max"/> of them, and whether the bound cut them (§12.4,
+    /// <c>diagram.cycles</c> and <c>diagram.cyclesTruncated</c>): each cycle in loop order from its
+    /// member that comes first in model order, the cycles ordered by that member and then
+    /// lexicographically by member order, a self-loop a cycle of one. Memoised until the diagram changes.
+    /// </summary>
+    public (IReadOnlyList<IReadOnlyList<DislElement>> Cycles, bool Truncated) Cycles(string relationType, long max)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(max);
+        if (_cycles.TryGetValue((relationType, max), out var known)) return known;
+        return _cycles[(relationType, max)] = DislCycles.Find(_nodes, _relations.Where(relation => relation.IsA(relationType)), max);
+    }
 
     internal IReadOnlyList<DislElement> IncomingOf(DislElement node) => Ends().GetValueOrDefault(node).Incoming ?? [];
 

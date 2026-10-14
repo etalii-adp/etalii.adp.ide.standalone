@@ -33,6 +33,9 @@ public sealed class DislSpecification
             : default;
         Ids = IdRuleOf(ids);
         IdTypes = DislJson.Members(ids, "types").ToDictionary(type => type.Name, type => IdRuleOf(type.Value), StringComparer.Ordinal);
+        IdPrefixes = ids.ValueKind == JsonValueKind.Object && ids.TryGetProperty("prefix", out var prefix) && prefix.ValueKind == JsonValueKind.Object
+            ? prefix.EnumerateObject().Where(type => type.Value.ValueKind == JsonValueKind.String).ToDictionary(type => type.Name, type => type.Value.GetString()!, StringComparer.Ordinal)
+            : new Dictionary<string, string>(StringComparer.Ordinal);
     }
 
     /// <summary>The specification's JSON, as it was read.</summary>
@@ -63,6 +66,9 @@ public sealed class DislSpecification
     /// <summary>The per-type id rules (§11.5.2), by type name.</summary>
     private IReadOnlyDictionary<string, DislIdRule> IdTypes { get; }
 
+    /// <summary>The top level's <c>prefix</c> when it is a map (§11.5), by type name.</summary>
+    private IReadOnlyDictionary<string, string> IdPrefixes { get; }
+
     /// <summary>The per-evaluation cost limit (§2.5): <c>language.limits.celCost</c>, one million by default.</summary>
     public long CostLimit => _functions.Budget;
 
@@ -76,19 +82,23 @@ public sealed class DislSpecification
     public CelEnvironment Environment(string context, params IEnumerable<string> bindings) =>
         _functions.Clone().DeclareVariables(DislContexts.VariablesOf(context)).DeclareVariables(bindings);
 
-    /// <summary>The id rule that applies to <paramref name="type"/> (§11.5.2): its own, the nearest in its linearisation, or the top-level one.</summary>
+    /// <summary>
+    /// The id rule that applies to <paramref name="type"/> (§11.5.2): its own, the nearest in its
+    /// linearisation, or the top-level one; with the prefix it gives the type (§11.5): the rule's own,
+    /// else the top level's for the nearest type in the linearisation that the map names.
+    /// </summary>
     public DislIdRule IdRuleOf(string type)
     {
         var linearisation = Metamodel.TypeOf(type)?.Linearisation ?? [type];
-        foreach (var candidate in linearisation)
-        {
-            if (IdTypes.TryGetValue(candidate, out var rule)) return rule;
-        }
-        return Ids;
+        var rule = linearisation.Select(candidate => IdTypes.GetValueOrDefault(candidate)).FirstOrDefault(found => found is not null) ?? Ids;
+        if (rule.Prefix is not null) return rule;
+        var prefix = linearisation.Select(candidate => IdPrefixes.GetValueOrDefault(candidate)).FirstOrDefault(found => found is not null) ?? Ids.Prefix;
+        return prefix is null ? rule : rule with { Prefix = prefix };
     }
 
+    /// <summary>A rule as declared; its prefix only when it is one string, which a map (top level only) is not.</summary>
     private static DislIdRule IdRuleOf(JsonElement json) =>
-        new(DislJson.String(json, "strategy") ?? "uuid-v7", DislJson.String(json, "expression"));
+        new(DislJson.String(json, "strategy") ?? "uuid-v7", DislJson.String(json, "expression"), DislJson.String(json, "prefix"));
 }
 
 /// <summary>The metamodel of a specification (DISL §4), inheritance flattened.</summary>
