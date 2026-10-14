@@ -1,5 +1,6 @@
 using System.Globalization;
 using EtAlii.Adp.Context;
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.History;
 
@@ -26,9 +27,14 @@ namespace EtAlii.Adp.Diagram.CausalLoopDiagram;
 /// A loop's membership is accepted only as one of the cycles <see cref="CycleFinder"/> finds through its
 /// variables that no other loop claims, or its own.
 /// </para>
+/// <para>
+/// The scope, the could-not-be-read guard and the dispatch are the shared frame's (code-structure
+/// FR-034); this says which rows a selection has and which command a value is.
+/// </para>
 /// </remarks>
 public sealed class CausalLoopContextPropertyProvider(
-    IHistoryStackStore historyStacks, ICausalLoopDocumentStore documents) : IContextPropertyProvider
+    IHistoryStackStore historyStacks, ICausalLoopDocumentStore documents)
+    : DiagramPropertyProvider<CausalLoopBody, CausalLoopModel>(historyStacks, documents)
 {
     /// <summary>What a reader sees on a variable.</summary>
     public const string VariableLabelProperty = "causal-loop.variable-label";
@@ -73,63 +79,47 @@ public sealed class CausalLoopContextPropertyProvider(
     internal const string Undecidable = "undecidable";
 
     /// <inheritdoc />
-    public ContextScope Scope => ContextScope.DiagramElement;
+    protected override bool IsBody(string path) => Diagram.IsBody(path);
 
     /// <inheritdoc />
-    public ValueTask<IReadOnlyList<ContextPropertyDefinition>> DescribeAsync(
-        ContextTarget target, CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(target);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        if (!Diagram.IsBody(target.ResolvedFullPath))
-        {
-            return Rows([]);
-        }
-
-        // Derived from the DISL definition's forms, with the row ids of its x-cld block; nothing on a
-        // document that could not be read.
-        return Rows(CausalLoopDefinition.Rows(documents.GetOrLoad(target.ResolvedFullPath), target.ElementId));
-    }
+    /// <remarks>
+    /// Derived from the DISL definition's forms, with the row ids of its x-cld block; nothing on a
+    /// document that could not be read.
+    /// </remarks>
+    protected override IReadOnlyList<ContextPropertyDefinition> Describe(DocumentEntry<CausalLoopBody, CausalLoopModel> entry, string elementId) =>
+        CausalLoopDefinition.Rows(entry, elementId);
 
     /// <inheritdoc />
-    public async ValueTask<ContextPropertyResult> SetAsync(
-        ContextTarget target, string propertyId, string value, CancellationToken cancellationToken)
+    protected override DiagramPropertyChange Change(ContextTarget target, CausalLoopModel model, string propertyId, string value)
     {
         ArgumentNullException.ThrowIfNull(target);
-
-        var entry = documents.GetOrLoad(target.ResolvedFullPath);
-        if (!entry.IsUsable)
-        {
-            return ContextPropertyResult.Failure(
-                "This causal loop diagram could not be read, so nothing can be edited until it is fixed.");
-        }
+        ArgumentNullException.ThrowIfNull(model);
 
         // Refused before any command is made, so the message names the value the user typed
         // rather than reporting a command failure - and so nothing unreadable is ever written.
         if (propertyId == LinkWeightProperty && ParseWeight(value) is null && value.Trim().Length > 0)
         {
-            return ContextPropertyResult.Failure(
+            return DiagramPropertyChange.Refused(
                 $"'{value}' is not a number. A weight is an annotation this diagram records and never evaluates; leave it empty to remove it.");
         }
 
         if (propertyId == LinkPolarityProperty && ParsePolarity(value) is null)
         {
-            return ContextPropertyResult.Failure($"'{value}' is not a polarity a link can state.");
+            return DiagramPropertyChange.Refused($"'{value}' is not a polarity a link can state.");
         }
 
-        if (propertyId == LoopVariablesProperty && LoopOf(entry.Model, target.ElementId) is { } chosenFor)
+        if (propertyId == LoopVariablesProperty && LoopOf(model, target.ElementId) is { } chosenFor)
         {
-            if (CycleChosen(entry.Model, chosenFor, value) is null)
+            if (CycleChosen(model, chosenFor, value) is null)
             {
-                return ContextPropertyResult.Failure(
+                return DiagramPropertyChange.Refused(
                     $"'{value}' is not a cycle this loop can run through: choose one the arrows form through its variables that no other loop claims.");
             }
 
             // Choosing what is already there changes nothing, so it lands nothing on the undo stack.
             if (value == CycleText(chosenFor.Variables))
             {
-                return ContextPropertyResult.Success;
+                return DiagramPropertyChange.Unchanged;
             }
         }
 
@@ -137,18 +127,13 @@ public sealed class CausalLoopContextPropertyProvider(
         // whitespace or a quote; the label may, because it is quoted. Refused before writing.
         if (propertyId == VariableIdProperty && (value.Length == 0 || value.Any(char.IsWhiteSpace) || value.Contains('"', StringComparison.Ordinal)))
         {
-            return ContextPropertyResult.Failure(CausalLoopEdits.UnusableName);
-        }
-
-        var command = CommandFor(entry.Model, target, propertyId, value);
-        if (command is null)
-        {
-            return ContextPropertyResult.Failure($"'{propertyId}' cannot be edited on this selection.");
+            return DiagramPropertyChange.Refused(CausalLoopEdits.UnusableName);
         }
 
         // Through the project's history and out through the delta stream - never written here.
-        var result = await historyStacks.Get(target.RootPath).ExecuteAsync(command, cancellationToken);
-        return result.IsSuccess ? ContextPropertyResult.Success : ContextPropertyResult.Failure(result.Error);
+        return CommandFor(model, target, propertyId, value) is { } command
+            ? DiagramPropertyChange.By(command)
+            : DiagramPropertyChange.Refused($"'{propertyId}' cannot be edited on this selection.");
     }
 
     private static ICommand? CommandFor(
@@ -264,8 +249,4 @@ public sealed class CausalLoopContextPropertyProvider(
         "UNSTATED" or "" => CausalLoopPolarity.Unstated,
         _ => null,
     };
-
-    private static ValueTask<IReadOnlyList<ContextPropertyDefinition>> Rows(
-        IReadOnlyList<ContextPropertyDefinition> rows) =>
-        ValueTask.FromResult(rows);
 }

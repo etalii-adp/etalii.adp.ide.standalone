@@ -121,7 +121,7 @@
           "rowsReadOnly": []
         }
       ],
-      "readOnlySet": "set variable:a causal-loop.variable-label => refused: This causal loop diagram could not be read, so nothing can be edited until it is fixed.",
+      "readOnlySet": "set variable:a causal-loop.variable-label => refused: dangling-link.cld could not be read, so it cannot be edited.",
       "findings": [
         "line 9 | Warning | causal-loop.dangling-link | The link from 'a' to 'ghost' names 'ghost', which this document does not declare as a variable, so the link is not drawn.",
         "line 10 | Warning | causal-loop.dangling-link | The link from 'phantom' to 'spectre' names 'phantom', which this document does not declare as a variable, so the link is not drawn.",
@@ -406,7 +406,7 @@
         },
         {
           "do": "commit causal-loop.rename-variable on parity:unknown = \"Nobody\"",
-          "answer": "refused: That action does not apply to this selection.",
+          "answer": "refused: 'causal-loop.rename-variable' does not apply to this selection.",
           "unchanged": true
         },
         {
@@ -557,7 +557,7 @@
           "rowsReadOnly": []
         }
       ],
-      "readOnlySet": "set variable:a causal-loop.variable-label => refused: This causal loop diagram could not be read, so nothing can be edited until it is fixed.",
+      "readOnlySet": "set variable:a causal-loop.variable-label => refused: duplicate-variable.cld could not be read, so it cannot be edited.",
       "findings": [],
       "payloads": [
         "variable:a | systems/causal-loop+variable | 0, -130 | CausalLoopVariablePayload { \"display\": \"First\", \"id\": \"a\", \"width\": 90, \"height\": 39.599999999999994 }",
@@ -888,7 +888,7 @@
         },
         {
           "do": "commit causal-loop.rename-variable on parity:unknown = \"Nobody\"",
-          "answer": "refused: That action does not apply to this selection.",
+          "answer": "refused: 'causal-loop.rename-variable' does not apply to this selection.",
           "unchanged": true
         },
         {
@@ -1039,7 +1039,7 @@
           "rowsReadOnly": []
         }
       ],
-      "readOnlySet": "set variable:a causal-loop.variable-label => refused: This causal loop diagram could not be read, so nothing can be edited until it is fixed.",
+      "readOnlySet": "set variable:a causal-loop.variable-label => refused: header-twice.cld could not be read, so it cannot be edited.",
       "findings": [],
       "payloads": [
         "variable:a | systems/causal-loop+variable | 0, -130 | CausalLoopVariablePayload { \"display\": \"A\", \"id\": \"a\", \"width\": 90, \"height\": 39.599999999999994 }",
@@ -1373,7 +1373,7 @@
         },
         {
           "do": "commit causal-loop.rename-variable on parity:unknown = \"Nobody\"",
-          "answer": "refused: That action does not apply to this selection.",
+          "answer": "refused: 'causal-loop.rename-variable' does not apply to this selection.",
           "unchanged": true
         },
         {
@@ -1506,7 +1506,7 @@
           "rowsReadOnly": []
         }
       ],
-      "readOnlySet": "set variable:a causal-loop.variable-label => refused: This causal loop diagram could not be read, so nothing can be edited until it is fixed.",
+      "readOnlySet": "set variable:a causal-loop.variable-label => refused: label-with-quote.cld could not be read, so it cannot be edited.",
       "findings": [
         "nowhere | Info | causal-loop.unlabelled-loop | The links form a feedback loop through a → b that no loop statement names. It is reinforcing."
       ],
@@ -1786,7 +1786,7 @@
         },
         {
           "do": "commit causal-loop.rename-variable on parity:unknown = \"Nobody\"",
-          "answer": "refused: That action does not apply to this selection.",
+          "answer": "refused: 'causal-loop.rename-variable' does not apply to this selection.",
           "unchanged": true
         },
         {
@@ -2027,7 +2027,7 @@
           "rowsReadOnly": []
         }
       ],
-      "readOnlySet": "set variable:a causal-loop.variable-label => refused: This causal loop diagram could not be read, so nothing can be edited until it is fixed.",
+      "readOnlySet": "set variable:a causal-loop.variable-label => refused: lenient-spellings.cld could not be read, so it cannot be edited.",
       "findings": [
         "line 18 | Warning | causal-loop.label-disagrees | Loop R1 is labelled reinforcing but its links make it balancing: it runs through 1 negative link, and a loop reinforces on an even count and balances on an odd one. Either the label or one of the arrows is wrong, and this reading does not assume which."
       ],
@@ -2377,7 +2377,7 @@
         },
         {
           "do": "commit causal-loop.rename-variable on parity:unknown = \"Nobody\"",
-          "answer": "refused: That action does not apply to this selection.",
+          "answer": "refused: 'causal-loop.rename-variable' does not apply to this selection.",
           "unchanged": true
         },
         {
@@ -2535,7 +2535,7 @@
           "rowsReadOnly": []
         }
       ],
-      "readOnlySet": "set variable:a causal-loop.variable-label => refused: This causal loop diagram could not be read, so nothing can be edited until it is fixed.",
+      "readOnlySet": "set variable:a causal-loop.variable-label => refused: no-header.cld could not be read, so it cannot be edited.",
       "findings": [],
       "payloads": [
         "variable:a | systems/causal-loop+variable | 0, -130 | CausalLoopVariablePayload { \"display\": \"A\", \"id\": \"a\", \"width\": 90, \"height\": 39.599999999999994 }",
@@ -2869,7 +2869,7 @@
         },
         {
           "do": "commit causal-loop.rename-variable on parity:unknown = \"Nobody\"",
-          "answer": "refused: That action does not apply to this selection.",
+          "answer": "refused: 'causal-loop.rename-variable' does not apply to this selection.",
           "unchanged": true
         },
         {
@@ -3042,7 +3042,7 @@
           "rowsReadOnly": []
         }
       ],
-      "readOnlySet": "set variable:a causal-loop.variable-label => refused: This causal loop diagram could not be read, so nothing can be edited until it is fixed.",
+      "readOnlySet": "set variable:a causal-loop.variable-label => refused: spellings-kept.cld could not be read, so it cannot be edited.",
       "findings": [
         "line 13 | Warning | causal-loop.loop-is-not-a-cycle | Loop B1 names a path the links do not close into a cycle, so nothing can be said about whether it reinforces or balances."
       ],
@@ -3385,7 +3385,7 @@
         },
         {
           "do": "commit causal-loop.rename-variable on parity:unknown = \"Nobody\"",
-          "answer": "refused: That action does not apply to this selection.",
+          "answer": "refused: 'causal-loop.rename-variable' does not apply to this selection.",
           "unchanged": true
         },
         {
@@ -3505,7 +3505,7 @@
           "rowsReadOnly": []
         }
       ],
-      "readOnlySet": "set variable:a causal-loop.variable-label => refused: This causal loop diagram could not be read, so nothing can be edited until it is fixed.",
+      "readOnlySet": "set variable:a causal-loop.variable-label => refused: trailing-comments.cld could not be read, so it cannot be edited.",
       "findings": [],
       "payloads": [
         "variable:a | systems/causal-loop+variable | 0, -130 | CausalLoopVariablePayload { \"display\": \"A\", \"id\": \"a\", \"width\": 90, \"height\": 39.599999999999994 }",
@@ -3785,7 +3785,7 @@
         },
         {
           "do": "commit causal-loop.rename-variable on parity:unknown = \"Nobody\"",
-          "answer": "refused: That action does not apply to this selection.",
+          "answer": "refused: 'causal-loop.rename-variable' does not apply to this selection.",
           "unchanged": true
         },
         {
@@ -3924,7 +3924,7 @@
           "rowsReadOnly": []
         }
       ],
-      "readOnlySet": "set variable:a causal-loop.variable-label => refused: This causal loop diagram could not be read, so nothing can be edited until it is fixed.",
+      "readOnlySet": "set variable:a causal-loop.variable-label => refused: two-notes.cld could not be read, so it cannot be edited.",
       "findings": [
         "nowhere | Info | causal-loop.unlabelled-loop | The links form a feedback loop through a → b that no loop statement names. It is balancing."
       ],
@@ -4204,7 +4204,7 @@
         },
         {
           "do": "commit causal-loop.rename-variable on parity:unknown = \"Nobody\"",
-          "answer": "refused: That action does not apply to this selection.",
+          "answer": "refused: 'causal-loop.rename-variable' does not apply to this selection.",
           "unchanged": true
         },
         {
@@ -4323,7 +4323,7 @@
           "rowsReadOnly": []
         }
       ],
-      "readOnlySet": "set variable:a causal-loop.variable-label => refused: This causal loop diagram could not be read, so nothing can be edited until it is fixed.",
+      "readOnlySet": "set variable:a causal-loop.variable-label => refused: unreadable-lines.cld could not be read, so it cannot be edited.",
       "findings": [
         "line 9 | Warning | causal-loop.unreadable-line | 'bogus' is not a statement this reading knows.",
         "line 10 | Warning | causal-loop.unreadable-line | A link reads 'link <from> -> <to>', optionally followed by a polarity, 'delayed', 'flipped', a weight and a label.",
@@ -4608,7 +4608,7 @@
         },
         {
           "do": "commit causal-loop.rename-variable on parity:unknown = \"Nobody\"",
-          "answer": "refused: That action does not apply to this selection.",
+          "answer": "refused: 'causal-loop.rename-variable' does not apply to this selection.",
           "unchanged": true
         },
         {
@@ -4862,7 +4862,7 @@
           "rowsReadOnly": []
         }
       ],
-      "readOnlySet": "set variable:a causal-loop.variable-label => refused: This causal loop diagram could not be read, so nothing can be edited until it is fixed.",
+      "readOnlySet": "set variable:a causal-loop.variable-label => refused: weight-forms.cld could not be read, so it cannot be edited.",
       "findings": [
         "nowhere | Info | causal-loop.unlabelled-loop | The links form a feedback loop through a → b → c → d that no loop statement names. It is reinforcing.",
         "nowhere | Info | causal-loop.unlabelled-loop | The links form a feedback loop through a → b → c that no loop statement names. It is balancing.",
@@ -5158,7 +5158,7 @@
         },
         {
           "do": "commit causal-loop.rename-variable on parity:unknown = \"Nobody\"",
-          "answer": "refused: That action does not apply to this selection.",
+          "answer": "refused: 'causal-loop.rename-variable' does not apply to this selection.",
           "unchanged": true
         },
         {
@@ -5528,7 +5528,7 @@
           "rowsReadOnly": []
         }
       ],
-      "readOnlySet": "set variable:incidents causal-loop.variable-label => refused: This causal loop diagram could not be read, so nothing can be edited until it is fixed.",
+      "readOnlySet": "set variable:incidents causal-loop.variable-label => refused: on-call.cld could not be read, so it cannot be edited.",
       "findings": [],
       "payloads": [
         "variable:incidents | systems/causal-loop+variable | 7.105427357601002E-15, -233.639456 | CausalLoopVariablePayload { \"display\": \"Incidents\", \"id\": \"incidents\", \"width\": 97.30000000000001, \"height\": 39.599999999999994 }",
@@ -5910,7 +5910,7 @@
         },
         {
           "do": "commit causal-loop.rename-variable on parity:unknown = \"Nobody\"",
-          "answer": "refused: That action does not apply to this selection.",
+          "answer": "refused: 'causal-loop.rename-variable' does not apply to this selection.",
           "unchanged": true
         },
         {
@@ -6272,7 +6272,7 @@
           "rowsReadOnly": []
         }
       ],
-      "readOnlySet": "set variable:population causal-loop.variable-label => refused: This causal loop diagram could not be read, so nothing can be edited until it is fixed.",
+      "readOnlySet": "set variable:population causal-loop.variable-label => refused: reference.cld could not be read, so it cannot be edited.",
       "findings": [
         "line 63 | Warning | causal-loop.label-disagrees | Loop R3 is labelled reinforcing but its links make it balancing: it runs through 3 negative links, and a loop reinforces on an even count and balances on an odd one. Either the label or one of the arrows is wrong, and this reading does not assume which.",
         "line 68 | Warning | causal-loop.undecidable-loop | Loop B4 runs through a link with no stated polarity, so whether it reinforces or balances cannot be counted. Mark every link in it with + or - to decide it."
@@ -6655,7 +6655,7 @@
         },
         {
           "do": "commit causal-loop.rename-variable on parity:unknown = \"Nobody\"",
-          "answer": "refused: That action does not apply to this selection.",
+          "answer": "refused: 'causal-loop.rename-variable' does not apply to this selection.",
           "unchanged": true
         },
         {
@@ -7038,7 +7038,7 @@
           "rowsReadOnly": []
         }
       ],
-      "readOnlySet": "set variable:incidents causal-loop.variable-label => refused: This causal loop diagram could not be read, so nothing can be edited until it is fixed.",
+      "readOnlySet": "set variable:incidents causal-loop.variable-label => refused: on-call.cld could not be read, so it cannot be edited.",
       "findings": [],
       "payloads": [
         "variable:incidents | systems/causal-loop+variable | 225.31, -193.149 | CausalLoopVariablePayload { \"display\": \"Incidents\", \"id\": \"incidents\", \"width\": 97.30000000000001, \"height\": 39.599999999999994 }",
@@ -7421,7 +7421,7 @@
         },
         {
           "do": "commit causal-loop.rename-variable on parity:unknown = \"Nobody\"",
-          "answer": "refused: That action does not apply to this selection.",
+          "answer": "refused: 'causal-loop.rename-variable' does not apply to this selection.",
           "unchanged": true
         },
         {
@@ -7775,7 +7775,7 @@
           "rowsReadOnly": []
         }
       ],
-      "readOnlySet": "set variable:population causal-loop.variable-label => refused: This causal loop diagram could not be read, so nothing can be edited until it is fixed.",
+      "readOnlySet": "set variable:population causal-loop.variable-label => refused: reference.cld could not be read, so it cannot be edited.",
       "findings": [],
       "payloads": [
         "variable:population | systems/causal-loop+variable | 42.197, 193.161 | CausalLoopVariablePayload { \"display\": \"Population\", \"id\": \"population\", \"width\": 105, \"height\": 39.599999999999994 }",
@@ -8156,7 +8156,7 @@
         },
         {
           "do": "commit causal-loop.rename-variable on parity:unknown = \"Nobody\"",
-          "answer": "refused: That action does not apply to this selection.",
+          "answer": "refused: 'causal-loop.rename-variable' does not apply to this selection.",
           "unchanged": true
         },
         {
