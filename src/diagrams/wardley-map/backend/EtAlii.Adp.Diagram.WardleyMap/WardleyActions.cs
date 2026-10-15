@@ -1,5 +1,6 @@
 using System.Globalization;
 using EtAlii.Adp.Context;
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 using static EtAlii.Adp.Diagram.WardleyMap.WardleyContextActionProvider;
 
@@ -153,7 +154,7 @@ public static class WardleyActions
                 "Evolve element",
                 "mdi-arrow-right-bold-outline",
                 "Target maturity (0 to 1)",
-                Number(subject.Evolve?.Maturity ?? subject.Component!.Position.Maturity),
+                DslNumber.Format(subject.Evolve?.Maturity ?? subject.Component!.Position.Maturity),
                 "Save")),
 
             // Refused rather than clamped, unlike a drag: a drag past the edge is a slip of the
@@ -365,6 +366,4 @@ public static class WardleyActions
 
     private static Func<string, ContextValidationResult> Named(string refusal) =>
         value => string.IsNullOrWhiteSpace(value) ? ContextValidationResult.Rejected(refusal) : ContextValidationResult.Accepted;
-
-    private static string Number(double value) => value.ToString("0.####", CultureInfo.InvariantCulture);
 }

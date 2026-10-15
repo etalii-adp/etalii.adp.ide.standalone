@@ -19,6 +19,7 @@ import type {
   LayoutMode,
   LinkDeclaration,
   MarkerKind,
+  StubDeclaration,
   RelationTypeDefinition,
   RouteLabelRule,
   SegmentDeclaration,
@@ -48,6 +49,7 @@ import {
   type DislMidMarker,
   type DislNodeNotation,
   type DislRelation,
+  type DislStub,
   type DislViewpoint,
 } from "./disTypes";
 import { libraryMarkerOf, libraryRouteOf, libraryShapeOf, shapeNameOf, type CustomShapeBinding } from "./shapeCatalog";
@@ -152,6 +154,14 @@ export interface NotationBindings {
   builtInShapes?: Readonly<Record<string, BuiltInShape>>;
   /** Whether every element is in the tab order, which DISL leaves to the runtime (§6.15: keyboard navigation). */
   focusable?: boolean;
+  /**
+   * The role every element is announced with, which DISL leaves to the runtime (§6.15). Given, or with
+   * {@link focusable}, a node that states no `accessibility` is named as DISL's default names it: its
+   * type's label and its label attribute.
+   */
+  accessibleRole?: string;
+  /** The class a relation's stub is painted by (DISL §6.10 *Stubs*), standing for the stub's `style`. */
+  stubClassName?: (relation: string, stub: DislStub) => string | undefined;
   /**
    * The route each edge is drawn with where the library's built-in route for its DISL routing is not
    * the drawing: a bezier's exact reach and its way back round, which DISL states only in outline.
@@ -515,7 +525,7 @@ class Compiler {
 
   /**
    * A CEL expression as a path or template over the payload: the module's `celPaths` for the whole
-   * expression, or string literals, `self.<attribute>` and the module's `celPaths`, joined by `+`. Anything else is refused, naming the expression, because
+   * expression, or string literals, the module's `celPaths` and `self.<attribute>`, joined by `+`. Anything else is refused, naming the expression, because
    * the library cannot evaluate it and a guess would draw something the specification never said.
    */
   private celBinding(expression: string, where: string): Binding {
@@ -532,14 +542,16 @@ class Compiler {
         return { text: literal[1]! };
       }
 
-      const attribute = /^self\.([A-Za-z_][A-Za-z0-9_]*)$/.exec(term);
-      if (attribute !== null) {
-        return { path: `payload.${attribute[1]}` };
-      }
-
+      // The module's table first, as for the whole expression: a payload that carries one value for
+      // what the specification reads from several attributes names it there.
       const path = this.bindings.celPaths[term];
       if (path !== undefined) {
         return { path };
+      }
+
+      const attribute = /^self\.([A-Za-z_][A-Za-z0-9_]*)$/.exec(term);
+      if (attribute !== null) {
+        return { path: `payload.${attribute[1]}` };
       }
 
       return fail(`${where}: the CEL term "${term}" (in "${expression}") has no payload path in the module's celPaths.`);
@@ -578,7 +590,7 @@ class Compiler {
       ...(compartments.length > 0 ? { compartments } : {}),
       ...(links.length > 0 ? { links } : {}),
       ...(node.tooltip !== undefined ? { tooltip: this.binding(node.tooltip, `${where} tooltip`) } : {}),
-      ...(node.accessibility !== undefined ? { accessibility: this.accessibility(node, where) } : {}),
+      ...this.accessibilityOf(name, node, where),
       anchors: this.anchors(name, node),
       sizing,
       ...(resize !== undefined ? { resize } : {}),
@@ -821,6 +833,37 @@ class Compiler {
     return { path: binding.path, is: "non-empty" };
   }
 
+  /**
+   * The node's accessibility: what it states, else - where the module asks for a role or a tab order -
+   * DISL's default name (§6.15), the type's label and its label attribute, which a type inherits.
+   */
+  private accessibilityOf(name: string, node: DislNodeNotation, where: string): Pick<ElementTypeDefinition, "accessibility"> {
+    if (node.accessibility !== undefined) {
+      return { accessibility: this.accessibility(node, where) };
+    }
+
+    if (this.bindings.accessibleRole === undefined && this.bindings.focusable !== true) {
+      return {};
+    }
+
+    const label = this.spec.metamodel.types[name]?.label ?? name;
+    let attribute: string | undefined;
+    for (let current: string | undefined = name; current !== undefined && attribute === undefined; current = this.spec.metamodel.types[current]?.extends) {
+      attribute = this.spec.metamodel.types[current]?.labelAttribute;
+    }
+    if (label.includes("'") || label.includes("{")) {
+      fail(`${where}: the type label "${label}" cannot be written into an accessible name.`);
+    }
+
+    return {
+      accessibility: {
+        ...(this.bindings.accessibleRole !== undefined ? { role: this.bindings.accessibleRole } : {}),
+        ...(this.bindings.focusable === true ? { focusable: true } : {}),
+        label: attribute === undefined ? { template: label } : this.celBinding(`'${label} ' + self.${attribute}`, `${where} accessible name`),
+      },
+    } as Pick<ElementTypeDefinition, "accessibility">;
+  }
+
   private accessibility(node: DislNodeNotation, where: string): NonNullable<ElementTypeDefinition["accessibility"]> {
     const { role, name } = node.accessibility!;
     return {
@@ -964,6 +1007,7 @@ class Compiler {
     const along = this.alongTheLine(name, edge, routing);
     const label = this.edgeLabel(name, edge);
     const strokeLadder = this.strokeLadder(name, edge);
+    const stub = this.stub(name, edge);
 
     // Only a type that may hold children can be the parent end of a relation derived from containment.
     const derivedFromParent = isObject(relation.derived) && relation.derived.source === "item.parent";
@@ -986,6 +1030,7 @@ class Compiler {
       style: { ...(source !== "none" ? { startMarker: this.marker(source) } : {}), endMarker: this.marker(target) },
       ...(along !== undefined && ((along.bars?.length ?? 0) > 0 || (along.marks?.length ?? 0) > 0) ? { adorn: bowedArcAdornment(along) } : {}),
       ...(strokeLadder !== undefined ? { strokeLadder } : {}),
+      ...(stub !== undefined ? { stub } : {}),
       ...(className !== undefined ? { className } : {}),
       ...(lineClassName !== undefined ? { lineClassName } : {}),
       ...(hitClassName !== undefined ? { hitClassName } : {}),
@@ -1340,7 +1385,9 @@ class Compiler {
     }
 
     const label = labels[0]!;
-    if (!isObject(label.text) || !("attribute" in label.text) || typeof label.text.attribute !== "string") {
+    // `self.<attribute>` as CEL is the attribute itself: the connection's own label either way.
+    const ownAttribute = isObject(label.text) && "cel" in label.text && typeof label.text.cel === "string" && /^self\.[A-Za-z_][A-Za-z0-9_]*$/.test(label.text.cel.trim());
+    if (!ownAttribute && (!isObject(label.text) || !("attribute" in label.text) || typeof label.text.attribute !== "string")) {
       fail(`${where} "${label.id}" binds ${JSON.stringify(label.text)}; the library draws a line's label from the connection's own label, an attribute.`);
     }
 
@@ -1351,6 +1398,51 @@ class Compiler {
     const offset = side === "above" ? -distance : side === "below" ? distance : side === "on" && distance === 0 ? 0 : fail(`${where} "${label.id}" sits ${distance} ${side} its line, which the library cannot place.`);
     const editable = label.editable === true || label.editable === "inline" || label.editable === "multiline";
     return { placement, ...(offset !== 0 ? { offset } : {}), ...(editable ? { editable } : {}) };
+  }
+
+  /**
+   * How a relation without a target is drawn (DISL §6.10 *Stubs*): a line of its length out of the
+   * middle of the source's side, painted by the class the module names for its style, with its label
+   * above or below it, bound as any text is. `auto`, which leaves the side to the runtime, is refused:
+   * the library draws a stub out of the side it is given.
+   */
+  private stub(name: string, edge: DislEdgeNotation): StubDeclaration | undefined {
+    const stub = edge.stub;
+    if (stub === undefined) {
+      return undefined;
+    }
+
+    const where = `edge "${name}"`;
+    if (stub.side !== "right" && stub.side !== "left" && stub.side !== "top" && stub.side !== "bottom") {
+      fail(`${where}: its stub leaves "${String(stub.side)}"; the library draws a stub out of the right, left, top or bottom.`);
+    }
+    if (typeof stub.length !== "number" || stub.length <= 0) {
+      fail(`${where}: its stub is ${JSON.stringify(stub.length)} long; the library draws a stub of a positive length.`);
+    }
+
+    const className = this.bindings.stubClassName?.(name, stub);
+    const label = stub.label;
+    const side = label?.side ?? "above";
+    if (label !== undefined && side !== "above" && side !== "below") {
+      fail(`${where}: its stub label "${label.id}" sits "${side}"; the library writes a stub's label above or below it.`);
+    }
+    const labelClass = label === undefined ? undefined : this.bindings.edgeLabelClassName?.(name, label.id);
+
+    return {
+      length: stub.length,
+      side: stub.side,
+      ...(className !== undefined ? { className } : {}),
+      ...(label !== undefined
+        ? {
+          label: {
+            text: this.binding(label.text, `${where} stub label "${label.id}"`) as NonNullable<StubDeclaration["label"]>["text"],
+            side: side as "above" | "below",
+            ...(label.distance !== undefined ? { distance: label.distance } : {}),
+            ...(labelClass !== undefined ? { className: labelClass } : {}),
+          },
+        }
+        : {}),
+    };
   }
 
   // ---- actions ------------------------------------------------------------------------------

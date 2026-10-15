@@ -66,6 +66,10 @@ export interface DiagramModelConnection {
   /** A definition `relationTypes` id. */
   type: string;
   sourceId: string;
+  /**
+   * The element the connection ends at, or empty for a relation without a target (DISL 4.9),
+   * which is drawn as its relation type's `stub` and otherwise not at all.
+   */
   targetId: string;
   /** The anchor names the connection attaches to; omitted means edge attachment. */
   sourceAnchor?: string;

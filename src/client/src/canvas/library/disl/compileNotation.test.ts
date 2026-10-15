@@ -265,7 +265,7 @@ describe("compileNotation", () => {
     expect(compileNotation({ ...spec, toolbox: { tools: { relate: { id: "relate", creates: "Next" } } } }, SPAN_BINDINGS).relationTypes[0]).not.toHaveProperty("emptyRelease");
     expect(() => compileNotation(withEdge({ connect: { tool: "absent" } }), SPAN_BINDINGS)).toThrow(/"absent", which the toolbox does not declare/);
     expect(compileNotation(withEdge({ labels: [{ id: "l", text: { attribute: "label" }, at: "end", side: "below", distance: 4 }] }), SPAN_BINDINGS).relationTypes[0]!.label).toEqual({ placement: "target", offset: 4 });
-    expect(() => compileNotation(withEdge({ labels: [{ id: "l", text: { cel: "self.label" } }] }), SPAN_BINDINGS)).toThrow(/connection's own label/);
+    expect(() => compileNotation(withEdge({ labels: [{ id: "l", text: { cel: "upper(self.label)" } }] }), SPAN_BINDINGS)).toThrow(/connection's own label/);
     expect(() => compileNotation(withEdge({ labels: [{ id: "l", text: { attribute: "label" }, at: 0.25 }] }), SPAN_BINDINGS)).toThrow(/labels at a fraction along a "bezier" line/);
   });
 
@@ -289,5 +289,97 @@ describe("compileNotation", () => {
     });
     expect(() => compileNotation(spec, BINDINGS)).toThrow(/only a view-fixed bottom ruler/);
     expect(compileNotation(spec, { ...BINDINGS, ownRulers: true }).chrome).toBeUndefined();
+  });
+});
+
+/**
+ * A relation without a target (DISL 4.9, an `optional` target end) and the stub it is drawn as
+ * (DISL 6.10 *Stubs*), a line's label bound to the relation's own attribute through CEL, and the
+ * accessible name DISL gives a node that states none (6.15).
+ */
+describe("compileNotation, for a relation that may have no target", () => {
+  function openSpec(stub: Readonly<Record<string, unknown>> | undefined, label: Readonly<Record<string, unknown>> = { attribute: "label" }): DislDocument {
+    return {
+      disl: "0.3",
+      language: { id: "test", version: "1.0.0" },
+      metamodel: {
+        types: {
+          File: { label: "File", labelAttribute: "path", attributes: { path: { type: "string" } } },
+          Part: { label: "Part", extends: "File" },
+        },
+        relations: { Uses: { source: "File", target: { types: ["Part"], optional: true }, attributes: { label: { type: "string" } } } },
+      },
+      notation: {
+        nodes: { File: { shape: "rect", connectable: false }, Part: { shape: "rect", connectable: false } },
+        edges: {
+          Uses: {
+            line: { routing: "straight" },
+            targetMarker: "arrowFilled",
+            labels: [{ id: "label", text: label, at: "middle", side: "above", distance: 6 }],
+            ...(stub !== undefined ? { stub } : {}),
+          },
+        },
+      },
+    } as unknown as DislDocument;
+  }
+
+  const OPEN_BINDINGS: NotationBindings = {
+    celPaths: {},
+    classNames: () => [],
+    stubClassName: (relation) => `t-${relation.toLowerCase()}-open`,
+    edgeLabelClassName: (relation, label) => `t-${relation.toLowerCase()}-${label}`,
+  };
+
+  const STUB = { length: 48, side: "right", style: "missing", label: { id: "asWritten", text: { cel: "self.label + ' (missing)'" }, side: "above" } };
+
+  it("reads the stub: its length, its side, its style's class and its label", () => {
+    const [uses] = compileNotation(openSpec(STUB), OPEN_BINDINGS).relationTypes;
+
+    expect(uses?.stub).toEqual({
+      length: 48,
+      side: "right",
+      className: "t-uses-open",
+      label: { text: { template: "{payload.label} (missing)" }, side: "above", className: "t-uses-asWritten" },
+    });
+  });
+
+  it("keeps a stated distance, leaves out what the stub does not state, and states no stub where there is none", () => {
+    const [stated] = compileNotation(openSpec({ length: 30, side: "left", label: { id: "n", text: { attribute: "label" }, side: "below", distance: 4 } }), { celPaths: {}, classNames: () => [] }).relationTypes;
+    expect(stated?.stub).toEqual({ length: 30, side: "left", label: { text: { path: "payload.label" }, side: "below", distance: 4 } });
+
+    const [none] = compileNotation(openSpec(undefined), OPEN_BINDINGS).relationTypes;
+    expect(none?.stub).toBeUndefined();
+  });
+
+  it("refuses a stub side it cannot place and a label beside a stub it cannot write", () => {
+    expect(() => compileNotation(openSpec({ ...STUB, side: "auto" }), OPEN_BINDINGS)).toThrow(/stub leaves "auto"/);
+    expect(() => compileNotation(openSpec({ ...STUB, label: { ...STUB.label, side: "on" } }), OPEN_BINDINGS)).toThrow(/stub label .* "on"/);
+  });
+
+  it("reads a term the module's celPaths names from its path, even where the term is an attribute of its own", () => {
+    // A module whose payload carries one name for what the specification computes several ways.
+    const spec = openSpec(undefined);
+    const nodes = { ...spec.notation.nodes, File: { ...spec.notation.nodes.File!, tooltip: { cel: "'File ' + self.path" } } };
+    const [file] = compileNotation({ ...spec, notation: { ...spec.notation, nodes } }, { ...OPEN_BINDINGS, celPaths: { "self.path": "payload.name" } }).elementTypes;
+
+    expect(file?.tooltip).toEqual({ template: "File {payload.name}" });
+  });
+
+  it("draws a line's label from the relation's own attribute when the specification binds it as CEL", () => {
+    const [uses] = compileNotation(openSpec(undefined, { cel: "self.label" }), OPEN_BINDINGS).relationTypes;
+
+    expect(uses?.label).toEqual({ placement: "midpoint", offset: -6 });
+    expect(() => compileNotation(openSpec(undefined, { cel: "self.label + '!'" }), OPEN_BINDINGS)).toThrow(/connection's own label/);
+  });
+
+  it("names a node that states no accessible name as DISL does: its type's label and its label attribute", () => {
+    const announced: NotationBindings = { ...OPEN_BINDINGS, focusable: true, accessibleRole: "button" };
+    const [file, part] = compileNotation(openSpec(undefined), announced).elementTypes;
+
+    expect(file?.accessibility).toEqual({ role: "button", focusable: true, label: { template: "File {payload.path}" } });
+    // The label attribute is inherited from the type it extends.
+    expect(part?.accessibility).toEqual({ role: "button", focusable: true, label: { template: "Part {payload.path}" } });
+    // A module that asks for neither a role nor a tab order is left as it was.
+    expect(compileNotation(openSpec(undefined), OPEN_BINDINGS).elementTypes[0]?.accessibility).toBeUndefined();
   });
 });

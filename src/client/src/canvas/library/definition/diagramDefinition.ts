@@ -1,4 +1,4 @@
-import type { Binding, BindingPath, Condition } from "./binding";
+import type { Binding, BindingPath, Condition, FieldBinding, PartsBinding, TemplateBinding } from "./binding";
 import type { BackgroundDeclaration } from "./background";
 import type { ActionDeclaration, DeclaredFlag } from "./actions";
 import type { ChromeDeclaration } from "./chrome";
@@ -1073,6 +1073,46 @@ export interface RelationTypeDefinition {
   hideWhenAttachmentHidden?: boolean;
   /** The line's width, chosen per connection by thresholds on one number. See {@link StrokeLadder}. */
   strokeLadder?: StrokeLadder;
+  /**
+   * How a connection of this type that has no target is drawn. See {@link StubDeclaration}.
+   * Omitted, such a connection is not drawn at all, as a connection with a dangling end never is.
+   */
+  stub?: StubDeclaration;
+}
+
+/** The side of its source a stub leaves from. */
+export type StubSide = "right" | "left" | "top" | "bottom";
+
+/**
+ * A relation without a target (DISL 4.9, 6.10 *Stubs*): a straight line of {@link length} canvas
+ * units out of the middle of one side of the source, ending nowhere, with a label beside it saying
+ * what is not there - a dependency nothing vendors, a role the folder does not hold.
+ *
+ * A connection is drawn so when its `targetId` is empty. The stub IS the connection: its group
+ * carries the relation's classes and its id, and it is pressed, selected and followed through a
+ * drag as any other connection is. It draws no arrowhead, because it points at nothing.
+ */
+export interface StubDeclaration {
+  length: number;
+  side: StubSide;
+  /** Classes on the stub's group, after the relation's own: what a stylesheet paints an open end with. */
+  className?: string;
+  label?: StubLabel;
+}
+
+/**
+ * The stub's label: written beside the line from {@link inset} past the source, {@link distance}
+ * off it on the {@link side} - above or below a stub that leaves sideways, and beyond the free end
+ * of one that leaves upwards or downwards. It resolves against the connection's payload.
+ */
+export interface StubLabel {
+  text: FieldBinding | TemplateBinding | PartsBinding;
+  side?: "above" | "below";
+  /** How far off the line, in canvas units. Defaults to 6, as a line's label sits. */
+  distance?: number;
+  /** How far past the source the text begins, in canvas units. Defaults to 8. */
+  inset?: number;
+  className?: string;
 }
 
 /**

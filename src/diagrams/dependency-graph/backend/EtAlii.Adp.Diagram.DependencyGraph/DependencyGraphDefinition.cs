@@ -241,7 +241,7 @@ internal static class DependencyGraphDefinition
 
     /// <summary>
     /// The values the code has always written itself, by row id. A node's X is the number as the file
-    /// writes it (<see cref="DependencyGraphWriter.Number"/>, .NET's shortest invariant text), which
+    /// writes it (<see cref="DslNumber.Format(double)"/>, at most four decimals), which
     /// CEL's <c>string(double)</c> writes in exponent form from 1e+06 on. A dependency's end that resolves
     /// to no node is the id the file names: DISL hands CEL such an end as null and gives it no way to read
     /// the id it was written with (§4.9). Every other value is the definition's.
@@ -251,7 +251,7 @@ internal static class DependencyGraphDefinition
         var values = new Dictionary<string, string>(StringComparer.Ordinal);
         if (element.IsA("Node"))
         {
-            if (element.ValueOf("x") is double x) values[Ids.PropertyId("x")] = DependencyGraphWriter.Number(x);
+            if (element.ValueOf("x") is double x) values[Ids.PropertyId("x")] = DslNumber.Format(x);
         }
         else if (element.Source is null || element.Target is null)
         {

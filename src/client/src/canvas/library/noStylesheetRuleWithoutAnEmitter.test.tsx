@@ -319,6 +319,7 @@ const DRAWN_BUT_UNRULED: readonly Listed[] = [
       "library-canvas-background",
       "library-connection",
       "library-connection-line",
+      "library-connection-stub",
       "library-decoration",
       "library-decoration-text",
       "library-element",
