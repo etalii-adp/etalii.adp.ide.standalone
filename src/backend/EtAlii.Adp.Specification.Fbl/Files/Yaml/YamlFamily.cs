@@ -72,6 +72,13 @@ internal sealed class YamlFamily(BodyText text, FblBinding binding, FblOptions o
             var index = (int)Math.Clamp(e.Start.Index, 0, content.Length);
             return (Text.BomLength + Encoding.UTF8.GetByteCount(content.AsSpan(0, index)), $"The body is not well-formed YAML: {e.Message}");
         }
+        catch (InvalidOperationException)
+        {
+            // YamlDotNet's scanner throws this rather than a YamlException on some bodies it cannot
+            // finish, such as a flow sequence left open before the next key. It names no place, so the
+            // body is reported unreadable at its end.
+            return (Text.Length, "The body is not well-formed YAML: the reader could not finish it.");
+        }
     }
 
     /// <summary>Between leaves there is only whitespace, comments, indicators, anchors, tags and document markers.</summary>
