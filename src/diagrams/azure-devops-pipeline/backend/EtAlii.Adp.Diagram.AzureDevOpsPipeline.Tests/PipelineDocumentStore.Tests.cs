@@ -81,6 +81,8 @@ public class PipelineDocumentStoreTests : IDisposable
         Assert.False(entry.IsUsable);
         Assert.StartsWith("Line 3: ", entry.Unreadable, StringComparison.Ordinal);
         Assert.Empty(entry.Model.Stages);
+        var problem = Assert.Single(entry.Problems);
+        Assert.Equal((2, entry.Unreadable), (problem.Line, $"Line 3: {problem.Message}"));
     }
 
     [Fact]

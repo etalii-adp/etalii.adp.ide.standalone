@@ -99,6 +99,32 @@ public sealed class PipelineParser
         return new PipelineParser(document, resolver, documentPath, "", []).Read();
     }
 
+    /// <summary>
+    /// What the store and the validator keep of <paramref name="document"/>: its model, or, for a
+    /// text that is not YAML this can read, the empty model, the reader's sentence on the line it
+    /// names, and that line and sentence as the reason nothing is written to it. <b>Never throws.</b>
+    /// </summary>
+    /// <param name="document">The document to read.</param>
+    /// <param name="resolver">Bounds which templates may be followed; none are followed without one.</param>
+    /// <param name="documentPath">Where the document lives, absolute - relative references start here.</param>
+    public static ParseOutcome<PipelineModel> Outcome(LineDocument document, PipelineTemplates? resolver = null, string documentPath = "")
+    {
+        ArgumentNullException.ThrowIfNull(document);
+        try
+        {
+            return new ParseOutcome<PipelineModel>(new PipelineParser(document, resolver, documentPath, "", []).Read(), []);
+        }
+        catch (YamlException exception)
+        {
+            var line = (int)exception.Start.Line;
+            _logger.Debug(exception, "{Path} does not parse at line {Line}", documentPath, line);
+            return new ParseOutcome<PipelineModel>(
+                PipelineModel.Empty,
+                [new ParseProblem(Math.Max(line, 1) - 1, exception.Message)],
+                $"Line {line}: {exception.Message}");
+        }
+    }
+
     private PipelineModel Read()
     {
         var stream = new YamlStream();
