@@ -1,4 +1,5 @@
 using System.Text;
+using EtAlii.Adp.Documents;
 
 namespace EtAlii.Adp.Diagram.C4;
 
@@ -8,74 +9,20 @@ namespace EtAlii.Adp.Diagram.C4;
 /// makes <c>softwareSystem "Internet Banking System" "Lets customers view accounts"</c> three
 /// tokens rather than nine.
 /// </summary>
-public static class C4Tokens
-{
+public static class C4Tokens
+{
+    /// <summary>
+    /// The DSL's line lexer: <c>//</c> and <c>#</c> comments outside quoted strings, <c>\"</c> for a
+    /// quote inside one, and braces as tokens of their own.
+    /// </summary>
+    internal static readonly LineLexer Lexer = new(new CommentPolicy(["#", "//"], OutsideQuotesOnly: true), EscapePolicy.BackslashQuote, "{}");
 
     /// <summary>
     /// The tokens of <paramref name="line"/> with their positions, so an edit can replace one
     /// argument and leave every other character of the line exactly as it was - which is the
     /// whole of Requirement 3.2.
     /// </summary>
-    public static IReadOnlyList<C4Token> SplitWithSpans(string line)
-    {
-        ArgumentNullException.ThrowIfNull(line);
-
-        var code = C4Line.StripComment(line);
-        var tokens = new List<C4Token>();
-        var index = 0;
-        while (index < code.Length)
-        {
-            if (char.IsWhiteSpace(code[index]))
-            {
-                index++;
-                continue;
-            }
-
-            var start = index;
-            if (code[index] == '"')
-            {
-                index++;
-                var builder = new StringBuilder();
-                while (index < code.Length)
-                {
-                    if (code[index] == '\\' && index + 1 < code.Length && code[index + 1] == '"')
-                    {
-                        builder.Append('"');
-                        index += 2;
-                        continue;
-                    }
-
-                    if (code[index] == '"')
-                    {
-                        index++;
-                        break;
-                    }
-
-                    builder.Append(code[index]);
-                    index++;
-                }
-
-                tokens.Add(new C4Token(builder.ToString(), start, index - start, Quoted: true));
-                continue;
-            }
-
-            if (code[index] is '{' or '}')
-            {
-                tokens.Add(new C4Token(code[index].ToString(), start, 1, Quoted: false));
-                index++;
-                continue;
-            }
-
-            while (index < code.Length && !char.IsWhiteSpace(code[index]) && code[index] is not ('{' or '}' or '"'))
-            {
-                index++;
-            }
-
-            tokens.Add(new C4Token(code[start..index], start, index - start, Quoted: false));
-        }
-
-        return tokens;
-    }
+    public static IReadOnlyList<LineToken> SplitWithSpans(string line) => Lexer.Tokens(line);
 
     /// <summary>
     /// <paramref name="line"/> with the argument at <paramref name="argumentIndex"/> (counted
@@ -95,7 +42,7 @@ public static class C4Tokens
 
         var tokens = SplitWithSpans(line);
         var target = keywordIndex + 1 + argumentIndex;
-        var quoted = "\"" + value.Replace("\"", "\\\"", StringComparison.Ordinal) + "\"";
+        var quoted = QuotedString.Write(value);
 
         // The arguments stop at an opening brace: `container "A" "b" {` has two, not three.
         var end = tokens.Count;

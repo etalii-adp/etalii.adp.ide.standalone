@@ -9,40 +9,13 @@ namespace EtAlii.Adp.Diagram.C4;
 /// <param name="Number">Its 1-based position, which problems and errors report.</param>
 public readonly record struct C4Line(string Text, uint Number)
 {
-    /// <summary>The line with comments and surrounding whitespace removed - what the parser reads.</summary>
-    public string Code => StripComment(Text).Trim();
+    /// <summary>
+    /// The line with comments and surrounding whitespace removed - what the parser reads. Both
+    /// line-comment forms the DSL accepts are honoured, and a <c>//</c> or <c>#</c> inside a
+    /// name - a URL in a description, say - is not mistaken for one.
+    /// </summary>
+    public string Code => C4Tokens.Lexer.StripComment(Text).Trim();
 
     /// <summary>Whether the line carries nothing but whitespace and comments.</summary>
     public bool IsBlank => Code.Length == 0;
-
-    /// <summary>
-    /// <paramref name="text"/> up to the first comment that starts outside a quoted string.
-    /// Both line-comment forms the DSL accepts are honoured, and a <c>//</c> or <c>#</c> inside
-    /// a name - a URL in a description, say - is not mistaken for one.
-    /// </summary>
-    public static string StripComment(string text)
-    {
-        var inQuotes = false;
-        for (var index = 0; index < text.Length; index++)
-        {
-            var character = text[index];
-            if (character == '"' && (index == 0 || text[index - 1] != '\\'))
-            {
-                inQuotes = !inQuotes;
-                continue;
-            }
-
-            if (inQuotes)
-            {
-                continue;
-            }
-
-            if (character == '#' || (character == '/' && index + 1 < text.Length && text[index + 1] == '/'))
-            {
-                return text[..index];
-            }
-        }
-
-        return text;
-    }
 }
