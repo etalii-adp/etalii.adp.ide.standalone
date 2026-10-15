@@ -48,6 +48,12 @@ namespace EtAlii.Adp.Documents;
 /// line was appended after it, and left a terminated line last when an unterminated one was
 /// removed; this class's behaviour won all three (behaviour changes B-05 and B-15).
 /// </para>
+/// <para>
+/// C4 held the last, and moved onto this one in code-structure T128. Its copy took the platform's
+/// own ending for a file with no line breaks and left a terminated line last when an
+/// unterminated one was removed; this class's behaviour won both (behaviour changes B-05 and
+/// B-16).
+/// </para>
 /// </remarks>
 public sealed class LineDocument : ITextBody<LineDocument>
 {

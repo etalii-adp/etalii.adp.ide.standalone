@@ -24,7 +24,7 @@ namespace EtAlii.Adp.Diagram.C4;
 /// </para>
 /// </remarks>
 public sealed class C4ContextPropertyProvider(IHistoryStackStore historyStacks, IC4DocumentStore documents)
-    : DiagramPropertyProvider<C4Document, C4Workspace>(historyStacks, documents)
+    : DiagramPropertyProvider<LineDocument, C4Workspace>(historyStacks, documents)
 {
     public const string NamePropertyId = "c4.name";
     public const string DescriptionPropertyId = "c4.description";
@@ -51,7 +51,7 @@ public sealed class C4ContextPropertyProvider(IHistoryStackStore historyStacks, 
     protected override bool IsBody(string path) => path.EndsWith(Diagram.DocumentExtension, StringComparison.OrdinalIgnoreCase);
 
     /// <inheritdoc />
-    protected override IReadOnlyList<ContextPropertyDefinition> Describe(DocumentEntry<C4Document, C4Workspace> entry, string elementId)
+    protected override IReadOnlyList<ContextPropertyDefinition> Describe(DocumentEntry<LineDocument, C4Workspace> entry, string elementId)
     {
         ArgumentNullException.ThrowIfNull(entry);
 

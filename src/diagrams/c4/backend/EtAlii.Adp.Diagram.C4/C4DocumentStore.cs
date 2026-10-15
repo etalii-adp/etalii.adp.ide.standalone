@@ -18,7 +18,7 @@ namespace EtAlii.Adp.Diagram.C4;
 /// so no body of this type is unreadable for what it says - only for a read that failed.
 /// </para>
 /// </remarks>
-public sealed class C4DocumentStore : LifecycleDocumentStore<C4Document, C4Workspace>, IC4DocumentStore
+public sealed class C4DocumentStore : LifecycleDocumentStore<LineDocument, C4Workspace>, IC4DocumentStore
 {
     /// <inheritdoc />
     public void Touch(string path)
@@ -29,11 +29,11 @@ public sealed class C4DocumentStore : LifecycleDocumentStore<C4Document, C4Works
     }
 
     /// <inheritdoc />
-    protected override C4Document Read(string text) => C4Document.Parse(text);
+    protected override LineDocument Read(string text) => LineDocument.Parse(text);
 
     /// <inheritdoc />
-    protected override string TextOf(C4Document body) => body.ToText();
+    protected override string TextOf(LineDocument body) => body.Text;
 
     /// <inheritdoc />
-    protected override C4Workspace Rebuild(C4Document body) => C4Parser.Parse(body);
+    protected override C4Workspace Rebuild(LineDocument body) => C4Parser.Parse(body);
 }

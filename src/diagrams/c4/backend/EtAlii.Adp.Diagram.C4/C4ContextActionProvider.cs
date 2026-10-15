@@ -16,7 +16,7 @@ namespace EtAlii.Adp.Diagram.C4;
 /// apply is not offered at all rather than greyed out (Requirement 13.7).
 /// </remarks>
 public sealed class C4ContextActionProvider(IHistoryStackStore historyStacks, IC4DocumentStore documents)
-    : DiagramActionProvider<C4Document, C4Workspace>(historyStacks, documents)
+    : DiagramActionProvider<LineDocument, C4Workspace>(historyStacks, documents)
 {
     public const string RenameActionId = "c4.rename";
     public const string EditDescriptionActionId = "c4.edit-description";
@@ -46,7 +46,7 @@ public sealed class C4ContextActionProvider(IHistoryStackStore historyStacks, IC
     protected override bool IsBody(string path) => path.EndsWith(Diagram.DocumentExtension, StringComparison.OrdinalIgnoreCase);
 
     /// <inheritdoc />
-    protected override IReadOnlyList<ContextActionGroupDefinition> Discover(DocumentEntry<C4Document, C4Workspace> entry, string elementId)
+    protected override IReadOnlyList<ContextActionGroupDefinition> Discover(DocumentEntry<LineDocument, C4Workspace> entry, string elementId)
     {
         ArgumentNullException.ThrowIfNull(entry);
 
@@ -101,7 +101,7 @@ public sealed class C4ContextActionProvider(IHistoryStackStore historyStacks, IC
     /// <inheritdoc />
     protected override ValueTask<ContextExecutionResult> RunAsync(
         ContextTarget target,
-        DocumentEntry<C4Document, C4Workspace> entry,
+        DocumentEntry<LineDocument, C4Workspace> entry,
         string actionId,
         CancellationToken cancellationToken)
     {

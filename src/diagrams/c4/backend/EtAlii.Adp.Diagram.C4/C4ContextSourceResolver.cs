@@ -23,7 +23,7 @@ namespace EtAlii.Adp.Diagram.C4;
 /// open, so a relationship's end coordinates are those of that first view's computed layout.
 /// </para>
 /// </remarks>
-public sealed class C4ContextSourceResolver : DiagramElementSourceResolver<C4Document, C4Workspace>
+public sealed class C4ContextSourceResolver : DiagramElementSourceResolver<LineDocument, C4Workspace>
 {
     private readonly C4ElementMapper _mapper;
 

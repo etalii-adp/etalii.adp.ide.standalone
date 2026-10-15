@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.C4.Tests;
@@ -37,7 +38,7 @@ public class C4ElementMapperTests
 
     private static (C4Workspace Workspace, C4View View) Load(string key, string dsl = Sample)
     {
-        var workspace = C4Parser.Parse(C4Document.Parse(dsl));
+        var workspace = C4Parser.Parse(LineDocument.Parse(dsl));
         return (workspace, workspace.FindView(key)!);
     }
 
@@ -174,7 +175,7 @@ public class C4ElementMapperTests
         """, StringComparison.Ordinal);
 
         // Act and assert, step by step.
-        var workspace = C4Parser.Parse(C4Document.Parse(dsl));
+        var workspace = C4Parser.Parse(LineDocument.Parse(dsl));
         Assert.Contains(workspace.Styles, style => style.Tag == "Person");
     }
 
@@ -379,7 +380,7 @@ public class C4ElementMapperTests
         // The same missing description, reported the one way it should be.
         var dsl = Sample.Replace("person \"Customer\" \"A retail banking customer.\"", "person \"Customer\"", StringComparison.Ordinal);
 
-        var problems = C4RuleSet.Validate(C4Parser.Parse(C4Document.Parse(dsl)));
+        var problems = C4RuleSet.Validate(C4Parser.Parse(LineDocument.Parse(dsl)));
 
         // Act and assert, step by step.
         var problem = Assert.Single(problems, p => p.RuleId == C4Rules.MissingDescription);
