@@ -1,6 +1,7 @@
 using EtAlii.Adp.Diagram;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Hierarchy;
+using Microsoft.Extensions.Time.Testing;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -111,8 +112,9 @@ public class ProblemStoreFlushKeepsTheLastWriteTests : IDisposable
         new(_appData,
             new DiagramFileRouter(new TestDiagramDefinitionCatalog(MindmapDefinition)),
             new DiagramValidators([]),
-            // Long enough that the real timer never fires during the test: the interleaving is
-            // driven through the seam, so nothing here depends on how fast the machine is.
+            // A clock nobody advances, so the debounce timer never fires during the test: the
+            // interleaving is driven through the seam, so nothing here depends on the machine.
+            new FakeTimeProvider(),
             writeDelay: TimeSpan.FromMinutes(5));
 
     private static StoredProblem Verdict() =>

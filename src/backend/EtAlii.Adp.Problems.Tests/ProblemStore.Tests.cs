@@ -2,6 +2,7 @@ using System.Reflection;
 using EtAlii.Adp.Diagram;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Hierarchy;
+using Microsoft.Extensions.Time.Testing;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -12,6 +13,7 @@ public class ProblemStoreTests : IDisposable
     private static readonly DiagramOrigin Mindmap = new("freeplane", "mindmap");
     private static readonly DiagramDefinition MindmapDefinition = new(Mindmap, "Mind map", Extension: ".mm");
 
+    private readonly FakeTimeProvider _clock = new();
     private readonly string _appData;
     private readonly string _root;
 
@@ -390,6 +392,7 @@ public class ProblemStoreTests : IDisposable
             _appData,
             new DiagramFileRouter(new TestDiagramDefinitionCatalog(MindmapDefinition)),
             new DiagramValidators([]),
+            _clock,
             writeDelay: TimeSpan.FromMilliseconds(50),
             maxReported: 1000);
 
@@ -406,15 +409,10 @@ public class ProblemStoreTests : IDisposable
         // Act: late work reports its verdict to a store that is already gone.
         store.Replace(_root, [Problem("after.adp")]);
 
-        // Assert. Well past the 50ms debounce, and polled rather than slept once, so the window
-        // is generous in the direction that would let the defect through.
-        var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(3);
-        while (DateTime.UtcNow < deadline)
-        {
-            Assert.False(File.Exists(cachePath), "A disposed store wrote its cache, recreating the folder it was told to leave.");
-            Thread.Sleep(25);
-        }
-
+        // Assert. The clock runs well past the 50ms debounce: a timer armed by that mutation would
+        // have fired, and written, inside this call.
+        _clock.Advance(TimeSpan.FromSeconds(3));
+        Assert.False(File.Exists(cachePath), "A disposed store wrote its cache, recreating the folder it was told to leave.");
         Assert.False(Directory.Exists(_appData), "A disposed store recreated its app-data folder.");
     }
 
@@ -663,7 +661,8 @@ public class ProblemStoreTests : IDisposable
             _appData,
             new DiagramFileRouter(catalog),
             new DiagramValidators(validator is null ? [] : [validator]),
-            writeDelay: TimeSpan.FromMinutes(5), // Only Dispose writes - the tests stay deterministic.
+            _clock, // Never advanced, so only Dispose writes - the tests stay deterministic.
+            writeDelay: TimeSpan.FromMinutes(5),
             maxReported);
     }
 

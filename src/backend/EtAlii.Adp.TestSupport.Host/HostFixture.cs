@@ -51,7 +51,8 @@ public class HostFixture : IDisposable
                 services.AddSingleton<IProblemStore>(provider => new ProblemStore(
                     AppDataRoot,
                     provider.GetRequiredService<DiagramFileRouter>(),
-                    provider.GetRequiredService<DiagramValidators>()));
+                    provider.GetRequiredService<DiagramValidators>(),
+                    provider.GetRequiredService<TimeProvider>()));
                 ConfigureServices(services);
             });
         });

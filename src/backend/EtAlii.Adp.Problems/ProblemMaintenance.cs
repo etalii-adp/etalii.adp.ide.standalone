@@ -28,18 +28,21 @@ public sealed class ProblemMaintenance : IDisposable
     private readonly IProblemStore _store;
     private readonly ProjectValidator _validator;
     private readonly DiagramFileRouter _router;
-    internal TimeSpan SettleDelay { get; }
     private readonly ConcurrentDictionary<string, TrackedProblemRoot> _tracked = new(StringComparer.OrdinalIgnoreCase);
 
-    public ProblemMaintenance(IProblemStore store, ProjectValidator validator, DiagramFileRouter router, TimeSpan? settleDelay = null)
+    /// <summary>Rapid changes coalesce per root: the window starts over until the burst settles.</summary>
+    internal Debouncer<TrackedProblemRoot> Settling { get; }
+
+    public ProblemMaintenance(IProblemStore store, ProjectValidator validator, DiagramFileRouter router, TimeProvider time, TimeSpan? settleDelay = null)
     {
         ArgumentNullException.ThrowIfNull(store);
         ArgumentNullException.ThrowIfNull(validator);
         ArgumentNullException.ThrowIfNull(router);
+        ArgumentNullException.ThrowIfNull(time);
         _store = store;
         _validator = validator;
         _router = router;
-        SettleDelay = settleDelay ?? DefaultSettleDelay;
+        Settling = new Debouncer<TrackedProblemRoot>(settleDelay ?? DefaultSettleDelay, root => root.Settle(), time);
     }
 
     /// <summary>Start keeping <paramref name="rootPath"/>'s set current. Idempotent; a missing root is quietly not tracked.</summary>
@@ -62,6 +65,7 @@ public sealed class ProblemMaintenance : IDisposable
 
     public void Dispose()
     {
+        Settling.Dispose();
         foreach (var root in _tracked.Values)
         {
             root.Dispose();

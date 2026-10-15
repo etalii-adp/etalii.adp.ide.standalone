@@ -1,11 +1,17 @@
 using EtAlii.Adp.Diagram;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Hierarchy;
+using Microsoft.Extensions.Time.Testing;
 using Xunit;
 using IoPath = System.IO.Path;
 
 namespace EtAlii.Adp.Problems.Tests;
 
+/// <summary>
+/// Maintenance over a real folder and its real watcher, settling on a fake clock: the watcher's
+/// events arrive in their own time, and the clock is advanced while a test waits for what they
+/// cause, so no test waits for a settle delay to pass (code-structure FR-051).
+/// </summary>
 public class ProblemMaintenanceTests : IDisposable
 {
     private static readonly TimeSpan SettleDelay = TimeSpan.FromMilliseconds(750);
@@ -23,6 +29,7 @@ public class ProblemMaintenanceTests : IDisposable
     private readonly ProblemMaintenanceCountingValidator _validator = new(Mindmap);
     private readonly ProblemMaintenanceFolderValidator _folderValidator =
         new(FolderType, IoPath.Combine("infrastructure", "roles", "web", "meta", "main.yml"));
+    private readonly FakeTimeProvider _clock = new();
     private readonly ProblemMaintenance _maintenance;
 
     public ProblemMaintenanceTests()
@@ -31,7 +38,7 @@ public class ProblemMaintenanceTests : IDisposable
         Directory.CreateDirectory(_root);
         var router = new DiagramFileRouter(new TestDiagramDefinitionCatalog(MindmapDefinition, FolderDefinition));
         var projectValidator = new ProjectValidator(router, new DiagramValidators([_validator, _folderValidator]));
-        _maintenance = new ProblemMaintenance(_store, projectValidator, router, SettleDelay);
+        _maintenance = new ProblemMaintenance(_store, projectValidator, router, _clock, SettleDelay);
     }
 
     public void Dispose()
@@ -92,18 +99,24 @@ public class ProblemMaintenanceTests : IDisposable
     [Fact]
     public async Task RapidChangesCoalesceIntoOneValidation()
     {
-        // Arrange.
+        // Arrange. The burst is handed to the root directly, so the clock alone decides when it
+        // settles; the watcher sees no change of its own here.
         CreatePair("busy");
-        _maintenance.Track(_root);
+        using var root = new TrackedProblemRoot(_root, _maintenance);
+        var busy = IoPath.Combine(_root, "busy.mm");
 
+        // Act and assert, step by step. Every change starts the window over.
         for (var edit = 0; edit < 5; edit++)
         {
-            await File.AppendAllTextAsync(IoPath.Combine(_root, "busy.mm"), " more", TestContext.Current.CancellationToken);
+            root.Enqueue(busy);
+            _clock.Advance(SettleDelay - TimeSpan.FromMilliseconds(1));
         }
 
-        // Act and assert, step by step.
+        Assert.Empty(_store.Mutations);
+
+        _clock.Advance(TimeSpan.FromMilliseconds(1));
         await WaitForMutation("ReplaceFor");
-        await Task.Delay(SettleDelay + SettleDelay, TestContext.Current.CancellationToken);
+        _clock.Advance(SettleDelay + SettleDelay);
         Assert.Equal(1, _validator.Calls);
     }
 
@@ -163,7 +176,6 @@ public class ProblemMaintenanceTests : IDisposable
         _maintenance.Track(_root);
 
         await File.WriteAllTextAsync(IoPath.Combine(_root, "notes.txt"), "just notes", TestContext.Current.CancellationToken);
-        await Task.Delay(SettleDelay + SettleDelay, TestContext.Current.CancellationToken);
 
         // Act.
         await File.AppendAllTextAsync(IoPath.Combine(_root, "real.mm"), " and more", TestContext.Current.CancellationToken);
@@ -217,11 +229,16 @@ public class ProblemMaintenanceTests : IDisposable
         File.WriteAllText(IoPath.Combine(_root, baseName + ".mm"), "the document");
     }
 
+    /// <summary>
+    /// Waits for the store to see <paramref name="kind"/>, advancing the clock a settle delay at a
+    /// time meanwhile: whatever the watcher has handed over by then settles, and nothing else does.
+    /// </summary>
     private async Task<(string Kind, object Payload)> WaitForMutation(string kind)
     {
         var start = DateTime.UtcNow;
         while (DateTime.UtcNow - start < WaitLimit)
         {
+            _clock.Advance(SettleDelay);
             var found = _store.Mutations.FirstOrDefault(mutation => mutation.Kind == kind);
             if (found.Kind is not null)
             {

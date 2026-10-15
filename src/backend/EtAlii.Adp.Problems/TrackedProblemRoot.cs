@@ -13,7 +13,6 @@ internal sealed class TrackedProblemRoot : IDisposable
     private readonly FileSystemWatcher _watcher;
     private readonly Lock _gate = new();
     private readonly HashSet<string> _pending = new(StringComparer.OrdinalIgnoreCase);
-    private Timer? _settleTimer;
 
     public string Path { get; }
 
@@ -46,30 +45,28 @@ internal sealed class TrackedProblemRoot : IDisposable
         lock (_gate)
         {
             _pending.Add(path);
-            // Rapid changes coalesce: the timer starts over until the burst settles.
-            _settleTimer?.Dispose();
-            _settleTimer = new Timer(_ => Settle(), null, _owner.SettleDelay, Timeout.InfiniteTimeSpan);
         }
+
+        // Rapid changes coalesce: the window starts over until the burst settles.
+        _owner.Settling.Schedule(this);
     }
 
     public void Dispose()
     {
         _watcher.Dispose();
+        _owner.Settling.Cancel(this);
         lock (_gate)
         {
-            _settleTimer?.Dispose();
-            _settleTimer = null;
             _pending.Clear();
         }
     }
 
-    private void Settle()
+    /// <summary>The burst has settled: hand everything it touched to one re-validation.</summary>
+    internal void Settle()
     {
         string[] paths;
         lock (_gate)
         {
-            _settleTimer?.Dispose();
-            _settleTimer = null;
             paths = _pending.ToArray();
             _pending.Clear();
         }

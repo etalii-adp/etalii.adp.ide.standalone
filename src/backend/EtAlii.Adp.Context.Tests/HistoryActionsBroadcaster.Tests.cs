@@ -1,112 +1,113 @@
-﻿using Xunit;
+﻿using Microsoft.Extensions.Time.Testing;
+using Xunit;
 
 namespace EtAlii.Adp.Context.Tests;
 
 /// <summary>
 /// The broadcaster turns a history change into one project-actions push. Driven with a fake
-/// store it can raise <c>Changed</c> on by hand, a resolver it can count and make throw, and a
-/// selection store that records the pushes (diagram-undo-redo Requirement 5.3).
+/// store it can raise <c>Changed</c> on by hand, a resolver it can count and make throw, a
+/// selection store that records the pushes (diagram-undo-redo Requirement 5.3), and a fake clock
+/// whose advance runs the coalescing window's timer in the test's own thread (code-structure
+/// FR-051), so nothing here waits on a scheduler.
 /// </summary>
 public class HistoryActionsBroadcasterTests
 {
     private const string Root = @"C:\project";
-    private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(5);
+    private static readonly TimeSpan Window = HistoryActionsBroadcaster.CoalesceWindow;
+    private static readonly TimeSpan JustShort = Window - TimeSpan.FromMilliseconds(1);
+
+    private readonly FakeTimeProvider _clock = new();
+    private readonly HistoryActionsBroadcasterFakeStore _store = new();
+    private readonly HistoryActionsBroadcasterCountingResolver _resolver = new();
+    private readonly HistoryActionsBroadcasterRecordingSelectionStore _selection = new();
 
     [Fact]
-    public async Task OneChange_ResultsInOneDiscoveryAndOnePush()
+    public void OneChange_ResultsInOneDiscoveryAndOnePush_OnceTheWindowPasses()
     {
         // Arrange.
-        var store = new HistoryActionsBroadcasterFakeStore();
-        var resolver = new HistoryActionsBroadcasterCountingResolver();
-        var selection = new HistoryActionsBroadcasterRecordingSelectionStore();
-        using var broadcaster = new HistoryActionsBroadcaster(store, resolver, selection);
-
-        store.Raise(Root);
+        using var broadcaster = new HistoryActionsBroadcaster(_store, _resolver, _selection, _clock);
+        _store.Raise(Root);
 
         // Act and assert, step by step.
-        await WaitUntilAsync(() => selection.Pushes.Count >= 1);
-        Assert.Single(selection.Pushes);
-        Assert.Equal(Root, selection.Pushes[0].RootPath);
-        Assert.Equal(1, resolver.DiscoverCount);
+        _clock.Advance(JustShort);
+        Assert.Empty(_selection.Pushes);
+
+        _clock.Advance(TimeSpan.FromMilliseconds(1));
+        Assert.Single(_selection.Pushes);
+        Assert.Equal(Root, _selection.Pushes[0].RootPath);
+        Assert.Equal(1, _resolver.DiscoverCount);
     }
 
     [Fact]
-    public async Task ABurstForOneProject_CollapsesIntoOnePush()
+    public void ABurstForOneProject_CollapsesIntoOnePush()
     {
         // Arrange.
-        var store = new HistoryActionsBroadcasterFakeStore();
-        var resolver = new HistoryActionsBroadcasterCountingResolver();
-        var selection = new HistoryActionsBroadcasterRecordingSelectionStore();
-        using var broadcaster = new HistoryActionsBroadcaster(store, resolver, selection);
+        using var broadcaster = new HistoryActionsBroadcaster(_store, _resolver, _selection, _clock);
 
-        // Several changes within the coalescing window - a redo that touched several entries.
-        store.Raise(Root);
-        store.Raise(Root);
-        store.Raise(Root);
+        // Act: several changes, each inside the window the one before it started - a redo that
+        // touched several entries. Every change starts the window over.
+        _store.Raise(Root);
+        _clock.Advance(JustShort);
+        _store.Raise(Root);
+        _clock.Advance(JustShort);
+        _store.Raise(Root);
+        _clock.Advance(JustShort);
 
-        // Act and assert, step by step.
-        await WaitUntilAsync(() => selection.Pushes.Count >= 1);
-        // Give any second push its chance to arrive before asserting there is none.
-        await Task.Delay(150, TestContext.Current.CancellationToken);
-        Assert.Single(selection.Pushes);
-        Assert.Equal(1, resolver.DiscoverCount);
+        // Assert, step by step.
+        Assert.Empty(_selection.Pushes);
+        _clock.Advance(Window);
+        Assert.Single(_selection.Pushes);
+        Assert.Equal(1, _resolver.DiscoverCount);
     }
 
     [Fact]
-    public async Task ChangesInTwoProjects_EachGetTheirOwnPush()
+    public void ChangesInTwoProjects_EachGetTheirOwnPush()
     {
         // Arrange.
         const string other = @"C:\other";
-        var store = new HistoryActionsBroadcasterFakeStore();
-        var resolver = new HistoryActionsBroadcasterCountingResolver();
-        var selection = new HistoryActionsBroadcasterRecordingSelectionStore();
-        using var broadcaster = new HistoryActionsBroadcaster(store, resolver, selection);
+        using var broadcaster = new HistoryActionsBroadcaster(_store, _resolver, _selection, _clock);
 
-        store.Raise(Root);
-        store.Raise(other);
+        // Act.
+        _store.Raise(Root);
+        _store.Raise(other);
+        _clock.Advance(Window);
 
-        // Act and assert, step by step.
-        await WaitUntilAsync(() => selection.Pushes.Count >= 2);
-        Assert.Equal(2, selection.Pushes.Count);
-        Assert.Contains(selection.Pushes, push => push.RootPath == Root);
-        Assert.Contains(selection.Pushes, push => push.RootPath == other);
+        // Assert.
+        Assert.Equal(2, _selection.Pushes.Count);
+        Assert.Contains(_selection.Pushes, push => push.RootPath == Root);
+        Assert.Contains(_selection.Pushes, push => push.RootPath == other);
     }
 
     [Fact]
-    public async Task AThrowingResolver_PushesNothingAndDoesNotEscape()
+    public void AThrowingResolver_PushesNothingAndDoesNotEscape()
     {
         // Arrange.
-        var store = new HistoryActionsBroadcasterFakeStore();
         var resolver = new HistoryActionsBroadcasterCountingResolver { Throw = true };
-        var selection = new HistoryActionsBroadcasterRecordingSelectionStore();
-        using var broadcaster = new HistoryActionsBroadcaster(store, resolver, selection);
+        using var broadcaster = new HistoryActionsBroadcaster(_store, resolver, _selection, _clock);
+        _store.Raise(Root);
 
-        store.Raise(Root);
+        // Act: the discovery runs, and throws, inside this call.
+        _clock.Advance(Window);
 
-        // Act and assert, step by step.
-        // The discovery runs on a timer thread, so wait for it to have run rather than for a
-        // fixed span. This waited 200ms and asserted the count afterwards, which is a race the
-        // machine wins whenever it is busy: the assertion failed in two of three full-suite
-        // runs while passing three of three in isolation, because a loaded machine had not got
-        // to the timer thread yet. Waiting on the observable fact is deterministic; waiting on
-        // a duration is a bet on the scheduler.
-        await WaitUntilAsync(() => resolver.DiscoverCount >= 1);
-
-        // The negative cannot be waited for, and does not need to be: once the discovery has
-        // run and thrown, a push either happened or never will.
-        Assert.Empty(selection.Pushes);
+        // Assert.
+        Assert.Empty(_selection.Pushes);
         Assert.Equal(1, resolver.DiscoverCount);
     }
 
-    private static async Task WaitUntilAsync(Func<bool> condition)
+    [Fact]
+    public void AChangeAfterDispose_PushesNothing()
     {
-        var deadline = DateTime.UtcNow + Timeout;
-        while (!condition() && DateTime.UtcNow < deadline)
-        {
-            await Task.Delay(10, TestContext.Current.CancellationToken);
-        }
+        // Arrange.
+        var broadcaster = new HistoryActionsBroadcaster(_store, _resolver, _selection, _clock);
+        _store.Raise(Root);
 
-        Assert.True(condition(), "The awaited condition did not hold within the timeout.");
+        // Act.
+        broadcaster.Dispose();
+        _store.Raise(Root);
+        _clock.Advance(Window);
+
+        // Assert: neither the change pending at disposal nor the one after it.
+        Assert.Empty(_selection.Pushes);
+        Assert.Equal(0, _resolver.DiscoverCount);
     }
-
 }

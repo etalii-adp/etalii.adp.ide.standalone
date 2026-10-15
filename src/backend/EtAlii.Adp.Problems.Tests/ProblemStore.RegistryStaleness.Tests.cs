@@ -1,6 +1,7 @@
 using EtAlii.Adp.Diagram;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Hierarchy;
+using Microsoft.Extensions.Time.Testing;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -139,6 +140,7 @@ public class ProblemStoreRegistryStalenessTests : IDisposable
         new(_appData,
             new DiagramFileRouter(new TestDiagramDefinitionCatalog(definitions)),
             new DiagramValidators([]),
+            new FakeTimeProvider(), // Never advanced: what a restart reads back is what Dispose flushed.
             writeDelay: TimeSpan.FromMilliseconds(1));
 
     private void CreatePair(string baseName, string mimeType, string bodyExtension)

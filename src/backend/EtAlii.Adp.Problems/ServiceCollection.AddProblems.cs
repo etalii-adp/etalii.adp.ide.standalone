@@ -2,6 +2,7 @@ using EtAlii.Adp.Context;
 using EtAlii.Adp.Diagram;
 using EtAlii.Adp.Hierarchy;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 
 namespace EtAlii.Adp.Problems;
@@ -28,11 +29,16 @@ public static class ServiceCollectionAddProblemsExtension
         // simply absent here, which is legitimate (Requirement 3.3).
         services.AddSingleton<DiagramValidators>();
 
+        // The clock the cache writes and the settling of a burst coalesce on; the host
+        // registers it, a test host may not.
+        services.TryAddSingleton(TimeProvider.System);
+
         services.AddSingleton<ProjectValidator>();
         services.AddSingleton<IProblemStore>(provider => new ProblemStore(
             appDataRoot,
             provider.GetRequiredService<DiagramFileRouter>(),
-            provider.GetRequiredService<DiagramValidators>()));
+            provider.GetRequiredService<DiagramValidators>(),
+            provider.GetRequiredService<TimeProvider>()));
         services.AddSingleton<ProblemBroadcaster>();
         services.AddSingleton<ProblemMaintenance>();
         services.AddSingleton<StartupRevalidation>();
