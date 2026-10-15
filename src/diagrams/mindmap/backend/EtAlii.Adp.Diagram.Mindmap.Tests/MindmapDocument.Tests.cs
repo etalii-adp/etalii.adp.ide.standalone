@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.Mindmap.Tests;
@@ -184,6 +185,42 @@ public class MindmapDocumentTests
     {
         // Arrange, act and assert.
         Assert.Throws<MindmapFormatException>(() => MindmapDocument.Parse("<map><node TEXT=\"a\"/><node TEXT=\"b\"/></map>"));
+    }
+
+    [Fact]
+    public void Outcome_AMalformedFile_IsUnusable_WithTheLineTheReaderStoppedAt()
+    {
+        // Act: the element left open on the second line is found unclosed on the third.
+        var outcome = MindmapDocument.Outcome("<map>\n<node TEXT='unclosed'>\n</map>\n");
+
+        // Assert.
+        Assert.False(outcome.IsUsable);
+        Assert.Contains("well-formed", outcome.Unreadable, StringComparison.Ordinal);
+        Assert.Equal(new ParseProblem(2, outcome.Unreadable), Assert.Single(outcome.Problems));
+        Assert.Empty(outcome.Model.Root.Children);
+    }
+
+    [Fact]
+    public void Outcome_AMapWithTwoRoots_IsUnusable_AtTheFirstLine()
+    {
+        // Act.
+        var outcome = MindmapDocument.Outcome("<map><node TEXT=\"a\"/><node TEXT=\"b\"/></map>");
+
+        // Assert.
+        Assert.Equal(new ParseProblem(0, "A map has exactly one root node; this one has 2."), Assert.Single(outcome.Problems));
+        Assert.Equal(outcome.Problems[0].Message, outcome.Unreadable);
+    }
+
+    [Fact]
+    public void Outcome_AMap_IsUsable_WithNoProblems()
+    {
+        // Act.
+        var outcome = MindmapDocument.Outcome("<map><node TEXT=\"a\"/></map>");
+
+        // Assert.
+        Assert.True(outcome.IsUsable);
+        Assert.Empty(outcome.Problems);
+        Assert.Equal("a", outcome.Model.Root.Text);
     }
 
     // ---- structural edits ---------------------------------------------------------------------

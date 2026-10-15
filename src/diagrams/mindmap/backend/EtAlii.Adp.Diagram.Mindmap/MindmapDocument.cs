@@ -1,6 +1,7 @@
 using System.Text;
 using System.Xml;
 using System.Xml.Linq;
+using EtAlii.Adp.Documents;
 
 namespace EtAlii.Adp.Diagram.Mindmap;
 
@@ -33,7 +34,31 @@ public sealed class MindmapDocument
     /// exactly, and the store wants ids (Requirement 3.4).
     /// </summary>
     /// <exception cref="MindmapFormatException">The text is not a well-formed Freeplane map.</exception>
-    public static MindmapDocument Parse(string text, bool assignMissingIds = true)
+    public static MindmapDocument Parse(string text, bool assignMissingIds = true) =>
+        Read(text, assignMissingIds);
+
+    /// <summary>
+    /// <see cref="Parse"/> as a <see cref="ParseOutcome{TModel}"/>: a text that is not a Freeplane map
+    /// is an unusable outcome with the reason and, for XML that is not well-formed, the line it
+    /// stopped at, rather than an exception. The model of an unusable outcome is an empty map.
+    /// </summary>
+    public static ParseOutcome<MindmapDocument> Outcome(string text, bool assignMissingIds = true)
+    {
+        try
+        {
+            return new ParseOutcome<MindmapDocument>(Read(text, assignMissingIds), []);
+        }
+        catch (MindmapFormatException exception)
+        {
+            var line = exception.InnerException is XmlException xml ? Math.Max(xml.LineNumber, 1) - 1 : 0;
+            return new ParseOutcome<MindmapDocument>(
+                Read(EmptyDocument(""), assignMissingIds),
+                [new ParseProblem(line, exception.Message)],
+                exception.Message);
+        }
+    }
+
+    private static MindmapDocument Read(string text, bool assignMissingIds)
     {
         ArgumentNullException.ThrowIfNull(text);
 
