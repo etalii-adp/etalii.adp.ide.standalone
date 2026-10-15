@@ -43,11 +43,9 @@ public static class SkosLayout
         var hierarchy = projection.Edges.Where(edge => edge.Kind == SkosEdgeKind.Hierarchy).ToList();
         (IReadOnlyList<SkosEdge> acyclic, IReadOnlyList<SkosCycle> cycles) = BreakCycles(hierarchy);
 
-        var childrenOf = new Dictionary<string, List<string>>(StringComparer.Ordinal);
         var broadersOf = new Dictionary<string, List<string>>(StringComparer.Ordinal);
         foreach (var edge in acyclic)
         {
-            AddTo(childrenOf, edge.FromId, edge.ToId);
             AddTo(broadersOf, edge.ToId, edge.FromId);
         }
 
@@ -82,50 +80,22 @@ public static class SkosLayout
 
         return new SkosLayoutResult(positions, cycles);
 
-        // Layers a band's members: layer 0 is everyone with no placed broader inside the band,
-        // then longest-path depth below; a member every path missed still lands, by id, at the
-        // bottom. Returns the y just past the band.
+        // Layers a band's members: layer 0 is everyone with no broader inside the band, then
+        // longest-path depth below over the acyclic hierarchy. Returns the y just past the band.
         double PlaceBand(HashSet<string> members, double top)
         {
-            var depth = new Dictionary<string, int>(StringComparer.Ordinal);
-            var layer = members
-                .Where(id => !(broadersOf.TryGetValue(id, out var b) && b.Any(members.Contains)))
-                .Order(StringComparer.Ordinal)
-                .ToList();
-            var current = 0;
-            while (layer.Count > 0)
-            {
-                foreach (var id in layer)
-                {
-                    depth[id] = current; // The deepest broader wins: later, deeper visits overwrite.
-                }
-
-                layer = layer
-                    .SelectMany(id => childrenOf.TryGetValue(id, out var children) ? children : [])
-                    .Where(id => members.Contains(id) && (!depth.TryGetValue(id, out var d) || d < current + 1))
-                    .Distinct(StringComparer.Ordinal)
-                    .Order(StringComparer.Ordinal)
-                    .ToList();
-                current++;
-                if (current > members.Count)
-                {
-                    break; // A knot the exclusion did not fully unwind; the remainder lands below.
-                }
-            }
-
+            var depth = Layering.LongestPath(
+                members.Order(StringComparer.Ordinal),
+                acyclic.Select(edge => (edge.FromId, edge.ToId)),
+                CyclePolicy.Kahn);
             var layers = depth
                 .GroupBy(pair => pair.Value)
                 .OrderBy(group => group.Key)
                 .Select(group => group.Select(pair => pair.Key).ToList())
                 .ToList();
-            var leftover = members.Where(id => !depth.ContainsKey(id)).Order(StringComparer.Ordinal).ToList();
-            if (leftover.Count > 0)
-            {
-                layers.Add(leftover);
-            }
 
             // Each layer in the order of its broader concepts already placed, so siblings sit
-            // together; a concept with no placed broader (layer 0, the leftovers) keeps id order.
+            // together; a concept with no placed broader (layer 0) keeps id order.
             var sequence = new Dictionary<string, int>(StringComparer.Ordinal);
             var ordered = new List<List<string>>();
             foreach (var level in layers)

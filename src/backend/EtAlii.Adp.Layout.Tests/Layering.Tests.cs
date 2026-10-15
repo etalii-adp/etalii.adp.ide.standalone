@@ -152,4 +152,37 @@ public class LayeringTests
         Assert.Equal(3, layers["b"]);
         Assert.Equal(4, layers["c"]);
     }
+
+    [Fact]
+    public void AcyclicEdges_LeaveOutTheEdgeThatClosesACycle()
+    {
+        // Arrange: a -> b -> c -> a, walked from a, so c -> a is the edge that closes it.
+        string[] nodes = ["a", "b", "c"];
+        var outgoing = new Dictionary<string, List<string>> { ["a"] = ["b"], ["b"] = ["c"], ["c"] = ["a"] };
+
+        // Act.
+        var forward = Layering.AcyclicEdges(nodes, outgoing);
+
+        // Assert.
+        Assert.Equal(["b"], forward["a"]);
+        Assert.Equal(["c"], forward["b"]);
+        Assert.Empty(forward["c"]);
+    }
+
+    [Fact]
+    public void AcyclicEdges_KeepEveryEdgeOfADiamond()
+    {
+        // Arrange: two paths from a to d; the second reaches d after it is finished.
+        string[] nodes = ["a", "b", "c", "d"];
+        var outgoing = new Dictionary<string, List<string>> { ["a"] = ["b", "c"], ["b"] = ["d"], ["c"] = ["d"], ["d"] = [] };
+
+        // Act.
+        var forward = Layering.AcyclicEdges(nodes, outgoing);
+
+        // Assert.
+        Assert.Equal(["b", "c"], forward["a"]);
+        Assert.Equal(["d"], forward["b"]);
+        Assert.Equal(["d"], forward["c"]);
+        Assert.Empty(forward["d"]);
+    }
 }

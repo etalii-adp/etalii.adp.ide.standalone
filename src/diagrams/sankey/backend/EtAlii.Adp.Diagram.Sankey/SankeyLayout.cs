@@ -279,80 +279,15 @@ public sealed class SankeyLayout
             outgoing[flow.From].Add(flow.To);
         }
 
-        var forward = AcyclicEdges(nodes, outgoing);
-        var incoming = nodes.ToDictionary(node => node.Id, _ => 0, StringComparer.Ordinal);
-        foreach (var target in forward.Values.SelectMany(targets => targets))
-        {
-            incoming[target]++;
-        }
-
+        var ids = nodes.Select(node => node.Id).ToList();
+        var forward = Layering.AcyclicEdges(ids, outgoing);
         var stated = nodes.Where(node => node.Column is not null).ToDictionary(node => node.Id, node => node.Column!.Value - 1, StringComparer.Ordinal);
-        var column = nodes.ToDictionary(node => node.Id, node => stated.GetValueOrDefault(node.Id, 0), StringComparer.Ordinal);
-        var ready = new Queue<string>(nodes.Where(node => incoming[node.Id] == 0).Select(node => node.Id));
-        while (ready.Count > 0)
-        {
-            var id = ready.Dequeue();
-            foreach (var target in forward[id])
-            {
-                if (!stated.ContainsKey(target))
-                {
-                    column[target] = Math.Max(column[target], column[id] + 1);
-                }
 
-                if (--incoming[target] == 0)
-                {
-                    ready.Enqueue(target);
-                }
-            }
-        }
-
-        return column;
-    }
-
-    /// <summary>The edges that do not close a cycle, found by a depth-first walk in document order.</summary>
-    private static Dictionary<string, List<string>> AcyclicEdges(IReadOnlyList<SankeyNode> nodes, Dictionary<string, List<string>> outgoing)
-    {
-        var forward = nodes.ToDictionary(node => node.Id, _ => new List<string>(), StringComparer.Ordinal);
-        var state = new Dictionary<string, int>(StringComparer.Ordinal);
-
-        foreach (var start in nodes)
-        {
-            if (state.ContainsKey(start.Id))
-            {
-                continue;
-            }
-
-            // An explicit stack: a long chain must not overflow the call stack.
-            var stack = new Stack<(string Id, int Next)>();
-            stack.Push((start.Id, 0));
-            state[start.Id] = 1;
-            while (stack.Count > 0)
-            {
-                (string id, int next) = stack.Pop();
-                var targets = outgoing[id];
-                if (next >= targets.Count)
-                {
-                    state[id] = 2;
-                    continue;
-                }
-
-                stack.Push((id, next + 1));
-                var target = targets[next];
-                if (!state.TryGetValue(target, out var seen))
-                {
-                    forward[id].Add(target);
-                    state[target] = 1;
-                    stack.Push((target, 0));
-                }
-                else if (seen == 2)
-                {
-                    forward[id].Add(target);
-                }
-
-                // seen == 1 is a node still on the walk: this flow closes a cycle and is left out.
-            }
-        }
-
-        return forward;
+        // A node that states its column keeps it, so the flows into it place nothing.
+        return Layering.LongestPath(
+            ids,
+            forward.SelectMany(pair => pair.Value.Where(target => !stated.ContainsKey(target)).Select(target => (pair.Key, target))),
+            CyclePolicy.Kahn,
+            id => stated.GetValueOrDefault(id, 0));
     }
 }

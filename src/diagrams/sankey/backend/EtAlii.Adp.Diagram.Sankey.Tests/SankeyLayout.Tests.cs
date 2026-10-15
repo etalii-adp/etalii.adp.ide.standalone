@@ -135,6 +135,18 @@ public sealed class SankeyLayoutTests
     }
 
     [Fact]
+    public void ANodeThatStatesItsColumn_StaysThere_WhateverFlowsIntoIt()
+    {
+        // Act: c states the first column though b, one column right of a, flows into it.
+        var layout = SankeyLayout.Of(Parse(
+            "sankey: 1\nnodes:\n  - id: a\n  - id: b\n  - id: c\n    column: 1\n  - id: d\nflows:\n" +
+            "  - from: a\n    to: b\n    value: 1\n  - from: b\n    to: c\n    value: 1\n  - from: c\n    to: d\n    value: 1\n"));
+
+        // Assert: c keeps its column, and d follows c rather than b.
+        Assert.Equal([0, 1, 0, 1], new[] { "a", "b", "c", "d" }.Select(id => layout.Columns[id]));
+    }
+
+    [Fact]
     public void WhatCannotBeDrawn_IsLeftOut_AndTheRestIsLaidOut()
     {
         // Act.
