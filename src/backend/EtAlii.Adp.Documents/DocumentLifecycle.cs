@@ -7,7 +7,7 @@ public class DocumentLifecycle
 {
     // Five tries, 50 ms apart: a refusal is believed after about a fifth of a second. Chosen for a
     // sharing violation just after a save, which may be held longer than the microsecond-wide missing
-    // file PlainEditorSession retries for (3 x 20 ms) - so it is wider than that, and it is a choice,
+    // file TextEditorSession retries for (3 x 20 ms) - so it is wider than that, and it is a choice,
     // not a measurement.
     protected const int DefaultReadAttempts = 5;
     protected static readonly TimeSpan DefaultBetweenReadAttempts = TimeSpan.FromMilliseconds(50);
@@ -42,7 +42,7 @@ public class DocumentLifecycle
 /// traced the EditorResolution 60-second flake to exactly that in c4's store: saved, read refused by
 /// another holder, last good kept, and no further event (2026-09-25). So a read that is refused, or
 /// that finds the body missing during a reload, is tried again a few times before anything is
-/// concluded, as <c>PlainEditorSession.ReadWithRetry</c> already does. <b>Retrying narrows that window
+/// concluded, as <c>TextEditorSession.ReadWithRetry</c> already does. <b>Retrying narrows that window
 /// and does not close it</b>: a hold longer than the retries still loses the change. The window is a
 /// choice rather than a measurement, because what held the file is not yet known, so a read that
 /// needed a retry logs how many it took. Those log lines are how the real hold gets measured.

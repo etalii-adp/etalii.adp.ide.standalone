@@ -2,7 +2,7 @@ using System.Reflection;
 using Xunit;
 using IoPath = System.IO.Path;
 
-namespace EtAlii.Adp.Editor.Yaml.Tests;
+namespace EtAlii.Adp.Editor.Tests;
 
 /// <summary>
 /// The session learns of every change the shared writer can make to its file - here a deletion and a
@@ -25,11 +25,11 @@ namespace EtAlii.Adp.Editor.Yaml.Tests;
 /// than patient.
 /// </para>
 /// </remarks>
-public class YamlEditorSessionWatcherObligationsTests : IDisposable
+public class TextEditorSessionWatcherObligationsTests : IDisposable
 {
     private static readonly TimeSpan Patience = TimeSpan.FromSeconds(10);
 
-    private readonly string _root = Directory.CreateTempSubdirectory("adp-yaml-obligations-").FullName;
+    private readonly string _root = Directory.CreateTempSubdirectory("adp-text-obligations-").FullName;
 
     public void Dispose()
     {
@@ -41,7 +41,7 @@ public class YamlEditorSessionWatcherObligationsTests : IDisposable
     public async Task ADeletion_IsLearned()
     {
         var path = Write("notes.txt", "content");
-        await using var session = new YamlEditorSession(path);
+        await using var session = new TextEditorSession(path);
         Assert.Equal("", session.Refusal);
 
         File.Delete(path);
@@ -56,7 +56,7 @@ public class YamlEditorSessionWatcherObligationsTests : IDisposable
     public async Task ALostEventsWindow_IsLearned_ByReadingTheFileAgain()
     {
         var path = Write("notes.txt", "before");
-        await using var session = new YamlEditorSession(path);
+        await using var session = new TextEditorSession(path);
         var watcher = WatcherOf(session);
         string? delivered = null;
         session.Changed += (_, args) => delivered = args.Content;
@@ -71,9 +71,9 @@ public class YamlEditorSessionWatcherObligationsTests : IDisposable
         Assert.Equal("after", session.Content);
     }
 
-    private static FileSystemWatcher WatcherOf(YamlEditorSession session) =>
-        typeof(YamlEditorSession).GetField("_watcher", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(session) as FileSystemWatcher
-        ?? throw new InvalidOperationException("YamlEditorSession no longer keeps its watcher in _watcher; this test must follow it.");
+    private static FileSystemWatcher WatcherOf(TextEditorSession session) =>
+        typeof(TextEditorSession).GetField("_watcher", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(session) as FileSystemWatcher
+        ?? throw new InvalidOperationException("TextEditorSession no longer keeps its watcher in _watcher; this test must follow it.");
 
     // The one signal a watcher gives when it has dropped events, raised the way the watcher raises it.
 

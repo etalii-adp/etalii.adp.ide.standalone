@@ -3,12 +3,15 @@ using IoPath = System.IO.Path;
 
 namespace EtAlii.Adp.Editor.Plain.Tests;
 
-/// <summary>The plain session over real temp files: open, save, refuse (Requirements 3.1, 6.x, 7.x).</summary>
-public class PlainEditorSessionTests : IDisposable
+/// <summary>
+/// The plain editor's session over real temp files: open and refuse (Requirements 3.1, 6.x, 7.x).
+/// Opened through the module's factory, which hands out the shared <see cref="TextEditorSession"/>.
+/// </summary>
+public class PlainEditorSessionFactoryTests : IDisposable
 {
     private readonly string _root;
 
-    public PlainEditorSessionTests()
+    public PlainEditorSessionFactoryTests()
     {
         _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(_root);
@@ -18,6 +21,10 @@ public class PlainEditorSessionTests : IDisposable
     {
         TestFolder.TryDelete(_root);
     }
+
+    private static TextEditorSession Open(string path) =>
+        Assert.IsType<TextEditorSession>(
+            new PlainEditorSessionFactory().Open(ShortGuid.NewShortGuid(), IoPath.GetDirectoryName(path)!, path));
 
     private string Write(string name, byte[] bytes)
     {
@@ -33,7 +40,7 @@ public class PlainEditorSessionTests : IDisposable
         var path = Write("a.txt", "hello\nworld\n"u8.ToArray());
 
         // Act.
-        await using var session = new PlainEditorSession(path);
+        await using var session = Open(path);
 
         // Assert: reading is the session's; saving is the shared save command's, not the session's.
         Assert.Equal("", session.Refusal);
@@ -45,7 +52,7 @@ public class PlainEditorSessionTests : IDisposable
     {
         // Arrange (Requirement 7.1/7.2).
         var path = Write("a.bin", [0x00, 0x01, 0x02, 0xFF]);
-        await using var session = new PlainEditorSession(path);
+        await using var session = Open(path);
 
         // Act and assert.
         Assert.Equal("", session.Content);

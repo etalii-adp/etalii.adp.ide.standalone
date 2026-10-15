@@ -20,7 +20,7 @@ public interface IDiagramDocumentReloader
     /// Re-reads the document whose body is at <paramref name="bodyPath"/>, within the project
     /// rooted at <paramref name="rootPath"/>, and tells the sessions on it. The store's own
     /// in-flight save is not an external change and must not bounce back through here - each
-    /// store suppresses that itself, the way <c>PlainEditorSession</c>'s saving guard does.
+    /// store suppresses that itself, the way <c>TextEditorSession</c>'s saving guard does.
     /// </summary>
     void Reload(string rootPath, string bodyPath);
 

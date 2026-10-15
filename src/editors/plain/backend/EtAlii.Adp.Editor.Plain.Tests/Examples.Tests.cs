@@ -55,7 +55,7 @@ public class ExamplesTests
 
             // Act: the module's own session opens it, and what it read is written back the way
             // every editor's save writes - the shared save command's TextFileBuffer.
-            await using var session = new PlainEditorSession(temp);
+            await using var session = new TextEditorSession(temp);
             Assert.Equal("", session.Refusal);
             var opened = TextFileBuffer.Open(temp);
             Assert.NotNull(opened.Buffer);
