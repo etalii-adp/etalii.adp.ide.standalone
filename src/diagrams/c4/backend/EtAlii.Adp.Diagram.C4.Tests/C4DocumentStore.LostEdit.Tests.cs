@@ -68,7 +68,7 @@ public class C4DocumentStoreLostEditTests : IDisposable
         document.ReplaceLine(3, EditedLine);
 
         // The edit is in memory and nowhere else yet, which is this test's precondition.
-        Assert.Contains("Renamed by the command.", document.ToText(), StringComparison.Ordinal);
+        Assert.Contains("Renamed by the command.", document.Text, StringComparison.Ordinal);
 
         // Act: the notification for an EARLIER write of this same file lands now. The store's own
         // self-write guard is already cleared, so this is exactly what the reload bridge does.

@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 using Microsoft.Extensions.DependencyInjection;
@@ -223,7 +224,7 @@ public class AddC4ElementTests : IDisposable
         await _history.UndoAsync(TestContext.Current.CancellationToken);
 
         // Act.
-        var workspace = C4Parser.Parse(C4Document.Parse(OnDisk()));
+        var workspace = C4Parser.Parse(LineDocument.Parse(OnDisk()));
 
         // Assert.
         // The point: braces balance whatever order the edits happened in.
@@ -243,7 +244,7 @@ public class AddC4ElementTests : IDisposable
         await AddAsync(C4ElementKind.Component, "Controller", parentId: "web");
 
         var document = _documents.GetOrLoad(_bodyPath).Document;
-        var opened = document.CodeLines.Single(line => line.Code.Contains("container \"Web\"", StringComparison.Ordinal));
+        var opened = document.CodeLines().Single(line => line.Code.Contains("container \"Web\"", StringComparison.Ordinal));
         document.InsertLine(opened.Number + 1, "                // Components arrive here as the design settles.");
         _documents.Save(_bodyPath, document);
 

@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 using Microsoft.Extensions.DependencyInjection;
@@ -185,7 +186,7 @@ public class C4CommandsTests : IDisposable
         // Act and assert, step by step.
         var after = OnDisk();
         Assert.Equal(2, DifferingLines(before, after));
-        var workspace = C4Parser.Parse(C4Document.Parse(after));
+        var workspace = C4Parser.Parse(LineDocument.Parse(after));
         Assert.Equal("Internet Banking", workspace.Find("s")!.Name);
         Assert.Equal("Delivers the app.", workspace.Find("web")!.Description);
     }

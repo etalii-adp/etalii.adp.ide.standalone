@@ -52,7 +52,7 @@ public sealed class WardleyDocumentStoreSharingTests : IDisposable
         var document = _store.GetOrLoad(path).Document;
 
         // Assert.
-        Assert.Equal("", document.ToText());
+        Assert.Equal("", document.Text);
     }
 
     [Fact]
@@ -61,7 +61,7 @@ public sealed class WardleyDocumentStoreSharingTests : IDisposable
         // Arrange.
         var path = Write("map.owm", "title Before\n");
         var document = _store.GetOrLoad(path).Document;
-        document.ReplaceLine(1, "title After");
+        WardleyWriter.ReplaceLine(document, 1, "title After");
 
         // Act.
         _store.Save(path, document);
@@ -92,16 +92,17 @@ public sealed class WardleyDocumentStoreSharingTests : IDisposable
         // Arrange. Requirement 2.4 - the sibling is created on the first save.
         var path = IoPath.Combine(_folder, "new.owm");
         var document = _store.GetOrLoad(path).Document;
-        document.InsertLine(1, "title Created");
+        WardleyWriter.InsertLine(document, 1, "title Created");
 
         // Act.
         _store.Save(path, document);
 
         // Assert.
         Assert.True(File.Exists(path));
-        // LF, and terminated: a document with no line breaks to learn from writes LF rather
-        // than the platform's ending, so the same edit produces the same bytes on any machine.
-        Assert.Equal("title Created\n", File.ReadAllText(path));
+        // CRLF, and terminated: a document with no line breaks to learn from takes the core line
+        // document's ending, the same on any machine. This module wrote LF here until it moved
+        // onto the core line document (code-structure behaviour change B-05).
+        Assert.Equal("title Created\r\n", File.ReadAllText(path));
     }
 
     [Fact]
@@ -109,7 +110,7 @@ public sealed class WardleyDocumentStoreSharingTests : IDisposable
     {
         // Arrange.
         var path = Write("map.owm", "title X\n");
-        _store.GetOrLoad(path).Document.ReplaceLine(1, "title Edited in memory");
+        WardleyWriter.ReplaceLine(_store.GetOrLoad(path).Document, 1, "title Edited in memory");
         var raised = 0;
         _store.Changed += (_, _) => raised++;
 

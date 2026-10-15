@@ -60,7 +60,7 @@ internal sealed class AddC4ViewCommandHandler(IC4DocumentStore documents) : C4Ed
     }
 
     /// <inheritdoc />
-    protected override EditOutcome Apply(C4Document body, C4Workspace model, AddC4ViewCommand command)
+    protected override EditOutcome Apply(LineDocument body, C4Workspace model, AddC4ViewCommand command)
     {
         if (model.FindView(command.ViewKey) is not null)
         {
@@ -119,7 +119,7 @@ internal sealed class RemoveC4ViewCommandHandler(IC4DocumentStore documents) : C
     }
 
     /// <inheritdoc />
-    protected override EditOutcome Apply(C4Document body, C4Workspace model, RemoveC4ViewCommand command)
+    protected override EditOutcome Apply(LineDocument body, C4Workspace model, RemoveC4ViewCommand command)
     {
         var view = model.FindView(command.ViewKey);
         if (view is null)
@@ -160,11 +160,11 @@ internal static class C4ViewBlock
     public static C4ViewKind ViewKindOrDefault(this C4View view) => view.Kind;
 
     /// <summary>The line the closing brace of the views block sits on - where a new view goes above.</summary>
-    public static uint? EndOfViewsBlock(C4Document document)
+    public static uint? EndOfViewsBlock(LineDocument document)
     {
         var depth = 0;
         var inViews = false;
-        foreach (var line in document.CodeLines)
+        foreach (var line in document.CodeLines())
         {
             var code = line.Code;
             if (!inViews && code.StartsWith("views", StringComparison.OrdinalIgnoreCase) && code.EndsWith('{'))
@@ -211,12 +211,12 @@ internal static class C4ViewBlock
     }
 
     /// <summary>Removes a view's declaration from <paramref name="document"/>, from its header line to its closing brace.</summary>
-    public static void RemoveView(C4Document document, C4View view)
+    public static void RemoveView(LineDocument document, C4View view)
     {
         var first = view.Line;
         var last = first;
         var depth = 0;
-        foreach (var line in document.CodeLines.Where(line => line.Number >= first))
+        foreach (var line in document.CodeLines().Where(line => line.Number >= first))
         {
             depth += line.Code.Count(character => character == '{') - line.Code.Count(character => character == '}');
             last = line.Number;
@@ -233,7 +233,7 @@ internal static class C4ViewBlock
     public static void RemoveView(IC4DocumentStore documents, string bodyPath, string viewKey)
     {
         var entry = documents.GetOrLoad(bodyPath);
-        var copy = C4Document.Parse(entry.Document.Text);
+        var copy = LineDocument.Parse(entry.Document.Text);
         if (C4Parser.Parse(copy).FindView(viewKey) is not { } view)
         {
             return;

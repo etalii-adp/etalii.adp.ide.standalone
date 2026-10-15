@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.Layout;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
@@ -16,7 +17,7 @@ public class C4DynamicAndDeploymentViewsTests
 
     private static (C4Workspace Workspace, C4View View) LoadFixture(string name)
     {
-        var workspace = C4Parser.Parse(C4Document.Parse(File.ReadAllText(IoPath.Combine("Fixtures", name))));
+        var workspace = C4Parser.Parse(LineDocument.Parse(File.ReadAllText(IoPath.Combine("Fixtures", name))));
         return (workspace, workspace.Views[0]);
     }
 
@@ -77,7 +78,7 @@ public class C4DynamicAndDeploymentViewsTests
             """;
 
         // Act.
-        var problems = C4RuleSet.Validate(C4Parser.Parse(C4Document.Parse(dsl)));
+        var problems = C4RuleSet.Validate(C4Parser.Parse(LineDocument.Parse(dsl)));
 
         // Assert.
         Assert.Contains(problems, problem => problem.RuleId == C4Rules.EmptyView);
@@ -196,7 +197,7 @@ public class C4DynamicAndDeploymentViewsTests
     public void ADeploymentView_DrawsContainerRelationships_BetweenTheirInstances()
     {
         // Arrange.
-        var workspace = C4Parser.Parse(C4Document.Parse(Deployed));
+        var workspace = C4Parser.Parse(LineDocument.Parse(Deployed));
         var view = workspace.Views[0];
         var web = InstanceOf(workspace, "web", "node").Id;
         var api = InstanceOf(workspace, "api", "node").Id;

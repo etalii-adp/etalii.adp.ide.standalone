@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
@@ -8,7 +9,7 @@ namespace EtAlii.Adp.Diagram.C4.Tests;
 /// byte-identical, and one it did change differs only in the lines the edit touched
 /// (c4-diagrams Requirements 3.1, 3.2).
 /// </summary>
-public class C4DocumentTests
+public class C4LinesTests
 {
     public static TheoryData<string> Corpus() =>
     [
@@ -36,7 +37,7 @@ public class C4DocumentTests
         var text = Read(name);
 
         // Assert.
-        Assert.Equal(text, C4Document.Parse(text).ToText());
+        Assert.Equal(text, LineDocument.Parse(text).Text);
     }
 
     [Theory]
@@ -46,22 +47,22 @@ public class C4DocumentTests
         // Arrange.
         var text = Read(name);
 
-        var document = C4Document.Parse(text);
+        var document = LineDocument.Parse(text);
 
         // Act and assert, step by step.
         var expected = text.Contains("\r\n", StringComparison.Ordinal) ? "\r\n" : "\n";
-        Assert.Equal(expected, document.Newline);
+        Assert.Equal(expected, document.DominantEnding);
     }
 
     [Fact]
     public void AFileWithoutATrailingNewline_StillHasNoneAfterARoundTrip()
     {
         // Act.
-        var document = C4Document.Parse(Read("no-trailing-newline.dsl"));
+        var document = LineDocument.Parse(Read("no-trailing-newline.dsl"));
 
         // Assert.
-        Assert.False(document.EndsWithNewline);
-        Assert.False(document.ToText().EndsWith('\n'));
+        Assert.Equal("", document.Lines[^1].Ending);
+        Assert.False(document.Text.EndsWith('\n'));
     }
 
     [Fact]
@@ -69,14 +70,14 @@ public class C4DocumentTests
     {
         // Arrange.
         var text = Read("minimal.dsl");
-        var document = C4Document.Parse(text);
-        var target = document.CodeLines.First(line => line.Code.Contains("softwareSystem", StringComparison.Ordinal));
+        var document = LineDocument.Parse(text);
+        var target = document.CodeLines().First(line => line.Code.Contains("softwareSystem", StringComparison.Ordinal));
 
         document.ReplaceLine(target.Number, target.Text.Replace("\"System\"", "\"Renamed\"", StringComparison.Ordinal));
 
         // Act and assert, step by step.
         var before = text.Split('\n');
-        var after = document.ToText().Split('\n');
+        var after = document.Text.Split('\n');
         Assert.Equal(before.Length, after.Length);
         var differing = before.Zip(after).Select((pair, index) => (pair, index)).Where(x => x.pair.First != x.pair.Second).ToArray();
         Assert.Single(differing);
@@ -93,7 +94,7 @@ public class C4DocumentTests
     public void DegenerateTexts_RoundTripToo(string text, string expected)
     {
         // Arrange, act and assert.
-        Assert.Equal(expected, C4Document.Parse(text).ToText());
+        Assert.Equal(expected, LineDocument.Parse(text).Text);
     }
 
     [Fact]
@@ -105,15 +106,15 @@ public class C4DocumentTests
         var text = "a\r\nb\r\nc\nd\r\n";
 
         // Act.
-        var document = C4Document.Parse(text);
+        var document = LineDocument.Parse(text);
 
         // Assert.
-        Assert.Equal("\r\n", document.Newline);
+        Assert.Equal("\r\n", document.DominantEnding);
         Assert.Equal(4, document.Lines.Count);
         // The half this test was named for and never checked. It asserted the dominant
         // terminator was *detected* and stopped there, so the writer rewriting every line to it
         // - which is what it did - passed unnoticed.
-        Assert.Equal(text, document.ToText());
+        Assert.Equal(text, document.Text);
     }
 
     [Theory]
@@ -128,21 +129,21 @@ public class C4DocumentTests
         // ADP's whole claim on the Structurizr DSL is that it edits somebody else's format by
         // the line and changes nothing it did not touch. Rewriting every terminator makes the
         // first save a whole-file diff (Requirement 3.1).
-        Assert.Equal(text, C4Document.Parse(text).ToText());
+        Assert.Equal(text, LineDocument.Parse(text).Text);
     }
 
     [Fact]
     public void EditingOneLineOfAMixedDocument_LeavesEveryOtherTerminatorAlone()
     {
         // Arrange.
-        var document = C4Document.Parse("a\r\nb\nc\r\n");
+        var document = LineDocument.Parse("a\r\nb\nc\r\n");
 
         // Act.
         document.ReplaceLine(1, "changed");
 
         // Assert.
         // The edited line keeps its own terminator too - it was replaced, not re-terminated.
-        Assert.Equal("changed\r\nb\nc\r\n", document.ToText());
+        Assert.Equal("changed\r\nb\nc\r\n", document.Text);
     }
 
     [Fact]
@@ -150,14 +151,14 @@ public class C4DocumentTests
     {
         // Arrange.
         // A new line has no terminator of its own to keep, so it gets the document's prevailing
-        // style - which is what `Newline` was always for.
-        var document = C4Document.Parse("a\r\nb\nc\r\n");
+        // style - which is what `DominantEnding` is for.
+        var document = LineDocument.Parse("a\r\nb\nc\r\n");
 
         // Act.
         document.InsertLine(2, "inserted");
 
         // Assert.
-        Assert.Equal("a\r\ninserted\r\nb\nc\r\n", document.ToText());
+        Assert.Equal("a\r\ninserted\r\nb\nc\r\n", document.Text);
     }
 
     // ---- what the parsers read ---------------------------------------------------------
@@ -179,14 +180,14 @@ public class C4DocumentTests
     public void TheCommentsFixture_HasCodeOnPreciselyTheLinesThatAreNotComments()
     {
         // Act.
-        var document = C4Document.Parse(Read("comments-everywhere.dsl"));
+        var document = LineDocument.Parse(Read("comments-everywhere.dsl"));
 
         // Assert.
         // The five leading comment lines and the trailing one carry no code at all.
-        Assert.True(document.CodeLines.First().IsBlank);
-        Assert.True(document.CodeLines.Last(line => line.Text.Length > 0).IsBlank);
+        Assert.True(document.CodeLines().First().IsBlank);
+        Assert.True(document.CodeLines().Last(line => line.Text.Length > 0).IsBlank);
         // ...while the workspace line does, with its comment gone.
-        Assert.Contains(document.CodeLines, line => line.Code.StartsWith("workspace ", StringComparison.Ordinal));
-        Assert.Contains(document.CodeLines, line => line.Code == "model {");
+        Assert.Contains(document.CodeLines(), line => line.Code.StartsWith("workspace ", StringComparison.Ordinal));
+        Assert.Contains(document.CodeLines(), line => line.Code == "model {");
     }
 }

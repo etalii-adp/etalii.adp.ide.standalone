@@ -37,7 +37,7 @@ namespace EtAlii.Adp.Diagram.WardleyMap;
 /// </para>
 /// </remarks>
 public sealed class WardleyContextPropertyProvider(IHistoryStackStore historyStacks, IWardleyDocumentStore documents)
-    : DiagramPropertyProvider<WardleyDocument, WardleyMap>(historyStacks, documents)
+    : DiagramPropertyProvider<LineDocument, WardleyMap>(historyStacks, documents)
 {
     public const string NamePropertyId = "wardley.name";
     public const string KindPropertyId = "wardley.kind";
@@ -101,7 +101,7 @@ public sealed class WardleyContextPropertyProvider(IHistoryStackStore historySta
         base.Serves(target) && target.ElementId.Length > 0;
 
     /// <inheritdoc />
-    protected override IReadOnlyList<ContextPropertyDefinition> Describe(ContextTarget target, DocumentEntry<WardleyDocument, WardleyMap> entry)
+    protected override IReadOnlyList<ContextPropertyDefinition> Describe(ContextTarget target, DocumentEntry<LineDocument, WardleyMap> entry)
     {
         ArgumentNullException.ThrowIfNull(target);
         ArgumentNullException.ThrowIfNull(entry);

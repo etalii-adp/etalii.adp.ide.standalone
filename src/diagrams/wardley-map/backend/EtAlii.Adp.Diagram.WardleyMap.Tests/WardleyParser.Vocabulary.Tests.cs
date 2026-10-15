@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
@@ -11,10 +12,10 @@ public class WardleyParserVocabularyTests
 {
     private static string FixturesPath => IoPath.Combine(AppContext.BaseDirectory, "Fixtures");
 
-    private static WardleyMap ParseText(string text) => WardleyParser.Parse(WardleyDocument.Parse(text));
+    private static WardleyMap ParseText(string text) => WardleyParser.Parse(LineDocument.Parse(text));
 
     private static WardleyMap ParseFixture(string name) =>
-        WardleyParser.Parse(WardleyDocument.Parse(File.ReadAllText(IoPath.Combine(FixturesPath, name))));
+        WardleyParser.Parse(LineDocument.Parse(File.ReadAllText(IoPath.Combine(FixturesPath, name))));
 
     [Fact]
     public void Parse_ReadsEvolveWithoutARename()

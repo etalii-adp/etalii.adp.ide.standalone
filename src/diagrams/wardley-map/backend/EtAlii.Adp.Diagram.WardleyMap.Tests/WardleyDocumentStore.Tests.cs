@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
 namespace EtAlii.Adp.Diagram.WardleyMap.Tests;
@@ -8,7 +9,7 @@ namespace EtAlii.Adp.Diagram.WardleyMap.Tests;
 /// connection, the bytes a save keeps, the sibling a first save creates, and a document an editor is
 /// still writing. The identities held beside a document are held to their own facts below.
 /// </remarks>
-public sealed class WardleyDocumentStoreTests : DocumentStoreContract<IWardleyDocumentStore, WardleyDocument, WardleyMap>
+public sealed class WardleyDocumentStoreTests : DocumentStoreContract<IWardleyDocumentStore, LineDocument, WardleyMap>
 {
     internal static string Minimal => IoPath.Combine(AppContext.BaseDirectory, "Fixtures", "minimal.owm");
 
@@ -18,9 +19,9 @@ public sealed class WardleyDocumentStoreTests : DocumentStoreContract<IWardleyDo
 
     protected override IWardleyDocumentStore CreateStore() => new WardleyDocumentStore();
 
-    protected override void Edit(WardleyDocument document) => document.ReplaceLine(1, "title " + EditMarker);
+    protected override void Edit(LineDocument document) => WardleyWriter.ReplaceLine(document, 1, "title " + EditMarker);
 
-    protected override string TextOf(WardleyDocument document) => document.ToText();
+    protected override string TextOf(LineDocument document) => document.Text;
 
     protected override bool IsEmpty(WardleyMap model) => model.Components.Count == 0;
 }

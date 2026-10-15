@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.Problems;
 using Xunit;
@@ -33,7 +34,7 @@ public class ExamplesTests
     private static string[] ModelsOf(string project) =>
         Directory.GetFiles(IoPath.Combine(ExamplesRoot, project), "*.dsl", SearchOption.AllDirectories);
 
-    private static C4Workspace Read(string dslPath) => C4Parser.Parse(C4Document.Parse(File.ReadAllText(dslPath)));
+    private static C4Workspace Read(string dslPath) => C4Parser.Parse(LineDocument.Parse(File.ReadAllText(dslPath)));
 
     [Theory]
     [MemberData(nameof(EveryProject))]
@@ -56,10 +57,10 @@ public class ExamplesTests
         var text = File.ReadAllText(path);
 
         // Act.
-        var document = C4Document.Parse(text);
+        var document = LineDocument.Parse(text);
 
         // Assert.
-        Assert.Equal(text, document.ToText());
+        Assert.Equal(text, document.Text);
         Assert.NotEmpty(C4Parser.Parse(document).Elements);
     }
 

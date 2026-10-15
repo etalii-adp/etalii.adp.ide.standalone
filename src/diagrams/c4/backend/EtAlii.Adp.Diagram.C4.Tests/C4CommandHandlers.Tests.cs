@@ -1,4 +1,5 @@
-﻿using EtAlii.Adp.Hierarchy;
+﻿using EtAlii.Adp.Documents;
+using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
@@ -6,7 +7,7 @@ using Xunit;
 namespace EtAlii.Adp.Diagram.C4.Tests;
 
 /// <summary>The C4 command handlers, held to the contract every module's are, through the dispatcher the host builds.</summary>
-public sealed class C4CommandHandlersTests : EditHandlerContract<IC4DocumentStore, C4Document, C4Workspace>
+public sealed class C4CommandHandlersTests : EditHandlerContract<IC4DocumentStore, LineDocument, C4Workspace>
 {
     protected override string Example => C4DocumentStoreTests.Courier;
 
@@ -54,7 +55,7 @@ public sealed class C4CommandHandlersTests : EditHandlerContract<IC4DocumentStor
     }
 
     private sealed class WarningStore(IC4DocumentStore inner, string warning)
-        : WarningDocumentStore<C4Document, C4Workspace>(inner, warning), IC4DocumentStore
+        : WarningDocumentStore<LineDocument, C4Workspace>(inner, warning), IC4DocumentStore
     {
         public void Touch(string path) => inner.Touch(path);
     }
