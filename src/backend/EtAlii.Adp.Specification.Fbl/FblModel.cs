@@ -16,7 +16,14 @@ public sealed record FblElement(
     string? Source,
     string? Target,
     Span OwnSpan,
-    int Line);
+    int Line)
+{
+    /// <summary>
+    /// The file the element is in, relative to a folder subject and <c>/</c>-separated, as the plugin
+    /// that read it says (FBL §11.2); null for an element of a file body, whose file is the body's.
+    /// </summary>
+    public string? File { get; init; }
+}
 
 /// <summary>What reading a body gives: its elements and relations in document order, and its findings.</summary>
 public sealed record FblModel(IReadOnlyList<FblElement> Elements, IReadOnlyList<Finding> Findings, bool Unreadable)
@@ -71,8 +78,11 @@ public sealed class FblOptions
 
     public TimeSpan RegexTimeout { get; } = TimeSpan.FromMilliseconds(250);
 
-    /// <summary>A body larger than this is unreadable rather than read in part (FBL §16).</summary>
-    public int MaxBodyBytes { get; } = 32 * 1024 * 1024;
+    /// <summary>
+    /// A body larger than this is unreadable rather than read in part (FBL §16); for a folder subject,
+    /// a selected file larger than this is handed to the plugin by its path alone (<see cref="Plugins.PluginFile.IsOversized"/>).
+    /// </summary>
+    public int MaxBodyBytes { get; init; } = 32 * 1024 * 1024;
 
     /// <summary>A body with more entries than this is unreadable rather than read in part (FBL §16).</summary>
     public int MaxEntries { get; } = 500_000;
@@ -112,6 +122,15 @@ public sealed class FblOptions
 
     /// <summary>The registration's <c>resource</c> header (FBL §8.2): which value of the binding's resource capture is read.</summary>
     public string? Resource { get; init; }
+
+    /// <summary>
+    /// For a folder subject, the entries the host adds beside the files the file rules select, each a
+    /// path relative to the folder and handed to the plugin with no bytes (<see cref="Plugins.PluginReadRequest.SupplementaryEntries"/>);
+    /// it is given the folder's full path. This is outside FBL 0.2, whose file rules select files only:
+    /// it lets a host tell a plugin about entries, such as a directory, that no file rule can select,
+    /// so that the plugin itself opens nothing.
+    /// </summary>
+    public Func<string, IReadOnlyList<string>>? SupplementaryEntries { get; init; }
 
     /// <summary>The registration's <c>identities</c> block, for rules with <c>id.sidecar</c>.</summary>
     public IReadOnlyDictionary<string, string> Identities { get; init; } = new Dictionary<string, string>();

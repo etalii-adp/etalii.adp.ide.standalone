@@ -1,4 +1,6 @@
 using EtAlii.Adp.Specification.Fbl;
+using EtAlii.Adp.Specification.Fbl.Documents;
+using EtAlii.Adp.Specification.Fbl.Plugins;
 using Xunit;
 
 namespace EtAlii.Adp.Specification.Disl.Tests;
@@ -93,6 +95,39 @@ public class DislModelBuilderTests
         Assert.True(model.IsUnreadable);
         Assert.Empty(model.Diagram.Elements);
         Assert.Equal(["std.unparseable"], model.Findings.Select(finding => finding.Code));
+    }
+
+    [Fact]
+    public void AnElementOfAFolderSubject_KeepsTheFileItWasReadIn()
+    {
+        // Arrange: a folder on disk read by a folder body, whose plugin says which file each element is in.
+        var folder = Path.Combine(Path.GetTempPath(), "disl-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(Path.Combine(folder, "pages"));
+        try
+        {
+            File.WriteAllText(Path.Combine(folder, "index.txt"), "index");
+            File.WriteAllText(Path.Combine(folder, "pages", "a.txt"), "a");
+            var problems = FblDocumentLoader.Load("""
+                { "fbl": "0.1", "bindings": { "notes": {
+                  "claims": { "names": ["index.txt"] },
+                  "body": { "kind": "folder", "recognise": { "all": ["index.txt"] },
+                    "files": [ { "name": "all", "glob": "**", "family": "lines" } ] },
+                  "reader": { "plugin": "net.example.files" } } } }
+                """u8.ToArray(), out var document);
+            Assert.Empty(problems);
+            var body = FolderBody.Open(folder, document!.Bindings["notes"], new FilePerItemPlugin());
+
+            // Act.
+            var diagram = DislModelBuilder.From(body.Model, Mapped).Diagram;
+
+            // Assert.
+            Assert.Equal([("index.txt", "index.txt"), ("pages/a.txt", "pages/a.txt")], diagram.Nodes.Select(node => (node.Id, node.File)));
+            Assert.Equal(("index.txt|pages/a.txt", "pages/a.txt"), (diagram.Relations.Single().Id, diagram.Relations.Single().File));
+        }
+        finally
+        {
+            Directory.Delete(folder, recursive: true);
+        }
     }
 
     /// <summary>Each read value against what the attribute stores: the value in its CEL type, or nothing when it does not fit.</summary>
@@ -234,4 +269,28 @@ public class DislModelBuilderTests
         Assert.Equal(DislModelBuilder.DerivedFailed, finding.Code);
         Assert.Empty(diagram.Relations);
     }
+}
+
+/// <summary>A folder plugin that reads each file as one <c>Item</c> in that file, and links the first to every other from the other's file.</summary>
+internal sealed class FilePerItemPlugin : IPersistencePlugin
+{
+    public string Id => "net.example.files";
+
+    public PluginReadResult Read(PluginReadRequest request)
+    {
+        var items = request.Files.Select(file => Element(file.RelativePath, "Item", file.RelativePath, null, null)).ToList();
+        var links = request.Files.Skip(1).Select(file => Element(request.Files[0].RelativePath + "|" + file.RelativePath, "Link", file.RelativePath, request.Files[0].RelativePath, file.RelativePath));
+        return new PluginReadResult([.. items, .. links], [], false);
+    }
+
+    private static FblElement Element(string id, string type, string file, string? from, string? to) =>
+        new(id, true, type, type.ToLowerInvariant(), false,
+            from is null ? new Dictionary<string, object?>() : new Dictionary<string, object?> { ["from"] = from, ["to"] = to },
+            null, null, null, null, new Span(0, 0), 1) { File = file };
+
+    public PluginPlanResult Plan(PluginPlanRequest request) => new PluginPlanResult.Refused("Nothing is planned.");
+
+    public byte[] Template(PluginTemplateRequest request) => throw new NotSupportedException();
+
+    public IReadOnlyList<string> Watch(PluginReadResult last) => [];
 }

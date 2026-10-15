@@ -111,6 +111,7 @@ public static class DislModelBuilder
                 TargetId = targetId,
                 HostAttributes = host,
                 Line = element.Line,
+                File = FileOf(element),
                 IdIsStored = element.IdIsStored,
             });
         }
@@ -150,6 +151,7 @@ public static class DislModelBuilder
                 Slot = parent is null ? null : element.ParentSlot,
                 HostAttributes = host,
                 Line = element.Line,
+                File = FileOf(element),
                 IdIsStored = element.IdIsStored,
             });
             built[element] = node;
@@ -161,6 +163,9 @@ public static class DislModelBuilder
         // node's as it was read; the first element with it keeps it (§11.5.4).
         DislElement? End(string? id) => id is null ? null : byReadId.GetValueOrDefault(id) ?? diagram.ElementById(id);
     }
+
+    /// <summary>The file a folder subject's plugin read the element in (FBL §11.2); null for an element of the primary file.</summary>
+    private static string? FileOf(FblElement element) => string.IsNullOrEmpty(element.File) ? null : element.File;
 
     /// <summary>
     /// The id of <paramref name="element"/>: under the <c>natural</c> strategy, the prefix its type
