@@ -1,7 +1,11 @@
-namespace EtAlii.Adp.Diagram.AnsibleStructure;
+namespace EtAlii.Adp.Diagram.AnsibleStructure.Tests.Parity;
 
-/// <summary>Every rule's stable id, prefixed with the module's short name as core expects.</summary>
-public static class AnsibleRules
+/// <summary>
+/// Every rule's stable id, prefixed with the module's short name as core expects, as the hand-written rule
+/// set named them before the findings were derived from the definition (ansible-structure-disl-fbl, task 6),
+/// whose rules carry the same codes. Kept with the oracle, <see cref="HandWrittenAnsible"/>.
+/// </summary>
+internal static class AnsibleRules
 {
     /// <summary>A playbook or a <c>meta/main.yml</c> names a role with no folder under <c>roles/</c>.</summary>
     public const string RoleMissing = "ansible.role-missing";
