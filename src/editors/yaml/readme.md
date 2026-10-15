@@ -28,6 +28,6 @@ EDSL, the editor specification language, is a placeholder in [etalii.adp](https:
 | How a schema's findings map to severities: a violation an error, a deprecated key a warning, a reference that cannot be followed information on the schema line | `client/yamlAnalysis.ts` |
 | Completion and hover from the schema, and that nothing is offered without one | `client/yamlAnalysis.ts`, `client/completionWindow.ts` |
 | The size past which nothing is checked | `client/yamlAnalysis.ts` (`largestChecked`) |
-| That nothing the editor reads is written back, and the file's encoding, BOM and line endings are kept | `backend/EtAlii.Adp.Editor.Yaml/YamlEditorSession.cs` on the shared `TextFileBuffer`; `client/nothingWrittenBack.test.tsx` |
+| That nothing the editor reads is written back, and the file's encoding, BOM and line endings are kept | `backend/EtAlii.Adp.Editor.Yaml/YamlEditorSession.cs`, the shared `TextEditorSession` on the shared `TextFileBuffer`; `client/nothingWrittenBack.test.tsx` |
 
 This list is posted in [etalii-adp/etalii.adp#154](https://github.com/etalii-adp/etalii.adp/issues/154), the issue that collects every editor's EDSL list (opened 2026-10-13 on Peter's ruling).

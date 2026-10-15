@@ -6,13 +6,6 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Hosting.Abstractions" />
-    <PackageReference Include="Serilog" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <!-- The re-read's guard supplies an open that refuses exactly as often as it chooses, through
-         an internal constructor, as TextEditorSession's guard does. -->
-    <InternalsVisibleTo Include="EtAlii.Adp.Editor.Json.Tests" />
   </ItemGroup>
 
 </Project>
