@@ -36,12 +36,15 @@ public static class ServiceCollectionAddCommandsExtension
         // dispatches hierarchy commands calls AddHierarchy alongside AddCommands.
 
         // One history per project, keyed by root path. A provider reaches its project's stack
-        // through Get(target.RootPath); a connection's Watch lifetime retains and releases it.
+        // through Get(target.RootPath); a connection's Watch lifetime retains and releases it,
+        // and the grace after the last release runs on the one clock.
+        services.TryAddSingleton(TimeProvider.System);
         services.AddSingleton<IHistoryStackStore>(provider =>
             new HistoryStackStore(
                 provider.GetRequiredService<ICommandDispatcher>(),
                 grace: null,
-                notices: provider.GetService<IContextNoticeSink>()));
+                notices: provider.GetService<IContextNoticeSink>(),
+                time: provider.GetRequiredService<TimeProvider>()));
 
 
         return services;

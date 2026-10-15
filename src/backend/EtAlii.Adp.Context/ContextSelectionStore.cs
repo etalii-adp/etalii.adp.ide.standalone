@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using System.Threading.Channels;
 using EtAlii.Adp.Context.Wire;
 using EtAlii.Adp.Documents.Wire;
@@ -13,12 +12,18 @@ public sealed class ContextSelectionStore : IContextSelectionStore, IDisposable
 
     private static readonly ILogger _logger = Log.ForContext<ContextSelectionStore>();
 
-    private readonly TimeSpan _idleTimeout;
-    private readonly ConcurrentDictionary<ShortGuid, ContextSelectionStoreEntry> _entries = new();
+    // A selection recorded before any stream opens must not outlive a client that never comes
+    // back - the same eviction HierarchyModelStore applies to a model that ListEntries created
+    // but no WatchHierarchy ever claimed. Registering the stream claims it.
+    private readonly RetainedRegistry<ShortGuid, ContextSelectionStoreEntry> _entries;
 
-    public ContextSelectionStore(TimeSpan? idleTimeout = null)
+    public ContextSelectionStore(TimeSpan? idleTimeout = null, TimeProvider? time = null)
     {
-        _idleTimeout = idleTimeout ?? DefaultIdleTimeout;
+        _entries = new RetainedRegistry<ShortGuid, ContextSelectionStoreEntry>(
+            idleTimeout ?? DefaultIdleTimeout,
+            (_, entry) => Drop(entry),
+            time ?? TimeProvider.System,
+            dropUnclaimed: true);
     }
 
     public void Register(
@@ -29,11 +34,9 @@ public sealed class ContextSelectionStore : IContextSelectionStore, IDisposable
         IReadOnlyList<ContextActionGroupDefinition> projectActions,
         ProjectProblems problems)
     {
-        var entry = GetOrCreate(watchId);
+        var entry = _entries.Retain(watchId, CreateEntry);
         lock (entry.Gate)
         {
-            entry.IdleTimer?.Dispose();
-            entry.IdleTimer = null;
             entry.Writer = writer;
             entry.RootPath = rootPath;
             entry.RootActions = rootActions;
@@ -49,7 +52,7 @@ public sealed class ContextSelectionStore : IContextSelectionStore, IDisposable
     public void PushProjectActions(string rootPath, IReadOnlyList<ContextActionGroupDefinition> actions)
     {
         var message = ContextActionGroups.ToProto(actions);
-        foreach (var entry in _entries.Values)
+        foreach (var entry in _entries.Values())
         {
             lock (entry.Gate)
             {
@@ -66,7 +69,7 @@ public sealed class ContextSelectionStore : IContextSelectionStore, IDisposable
     public void PushProblems(string rootPath, ProjectProblems problems)
     {
         var message = new ContextMessage { Problems = problems };
-        foreach (var entry in _entries.Values)
+        foreach (var entry in _entries.Values())
         {
             lock (entry.Gate)
             {
@@ -87,7 +90,7 @@ public sealed class ContextSelectionStore : IContextSelectionStore, IDisposable
         ArgumentException.ThrowIfNullOrWhiteSpace(message);
 
         var notice = new ContextMessage { Notice = new ContextNotice { Message = message } };
-        foreach (var entry in _entries.Values)
+        foreach (var entry in _entries.Values())
         {
             lock (entry.Gate)
             {
@@ -101,24 +104,10 @@ public sealed class ContextSelectionStore : IContextSelectionStore, IDisposable
         }
     }
 
-    public void Remove(ShortGuid watchId)
-    {
-        if (!_entries.TryRemove(watchId, out var entry))
-        {
-            return;
-        }
-
-        lock (entry.Gate)
-        {
-            DisposeTracks(entry.Record);
-            entry.IdleTimer?.Dispose();
-            entry.Writer = null;
-            entry.Record = null;
-        }
-    }
+    public void Remove(ShortGuid watchId) => _entries.Remove(watchId);
 
     public ContextSelectionRecord? Get(ShortGuid watchId) =>
-        _entries.TryGetValue(watchId, out var entry) ? entry.Record : null;
+        _entries.TryGet(watchId, out var entry) ? entry.Record : null;
 
     public void Set(ShortGuid watchId, string rootPath, ContextSelectionRecord record, ContextRediscovery rediscover)
     {
@@ -154,7 +143,7 @@ public sealed class ContextSelectionStore : IContextSelectionStore, IDisposable
 
     public void Refresh(ShortGuid watchId)
     {
-        if (!_entries.TryGetValue(watchId, out var entry))
+        if (!_entries.TryGet(watchId, out var entry))
         {
             return;
         }
@@ -179,7 +168,7 @@ public sealed class ContextSelectionStore : IContextSelectionStore, IDisposable
 
     public void PushTransient(ShortGuid watchId, ContextSelectionRecord record)
     {
-        if (!_entries.TryGetValue(watchId, out var entry))
+        if (!_entries.TryGet(watchId, out var entry))
         {
             return;
         }
@@ -198,7 +187,7 @@ public sealed class ContextSelectionStore : IContextSelectionStore, IDisposable
             return;
         }
 
-        if (!_entries.TryGetValue(watchId, out var entry))
+        if (!_entries.TryGet(watchId, out var entry))
         {
             return;
         }
@@ -222,13 +211,7 @@ public sealed class ContextSelectionStore : IContextSelectionStore, IDisposable
         _ = RediscoverAndPushAsync(entry, rewritten, rediscover);
     }
 
-    public void Dispose()
-    {
-        foreach (var watchId in _entries.Keys.ToList())
-        {
-            Remove(watchId);
-        }
-    }
+    public void Dispose() => _entries.Dispose();
 
     private static async Task RediscoverAndPushAsync(ContextSelectionStoreEntry entry, ContextSelectionRecord rewritten, ContextRediscovery? rediscover)
     {
@@ -309,22 +292,15 @@ public sealed class ContextSelectionStore : IContextSelectionStore, IDisposable
 
     private ContextSelectionStoreEntry GetOrCreate(ShortGuid watchId) => _entries.GetOrAdd(watchId, CreateEntry);
 
-    private ContextSelectionStoreEntry CreateEntry(ShortGuid watchId)
-    {
-        // A selection recorded before any stream opens must not outlive a client that
-        // never comes back - the same eviction HierarchyModelStore applies to a model
-        // that ListEntries created but no WatchHierarchy ever claimed.
-        return new ContextSelectionStoreEntry
-        {
-            IdleTimer = new Timer(_ => EvictIfIdle(watchId), null, _idleTimeout, Timeout.InfiniteTimeSpan),
-        };
-    }
+    private static ContextSelectionStoreEntry CreateEntry(ShortGuid watchId) => new();
 
-    private void EvictIfIdle(ShortGuid watchId)
+    private static void Drop(ContextSelectionStoreEntry entry)
     {
-        if (_entries.TryGetValue(watchId, out var entry) && entry.Writer is null)
+        lock (entry.Gate)
         {
-            Remove(watchId);
+            DisposeTracks(entry.Record);
+            entry.Writer = null;
+            entry.Record = null;
         }
     }
 

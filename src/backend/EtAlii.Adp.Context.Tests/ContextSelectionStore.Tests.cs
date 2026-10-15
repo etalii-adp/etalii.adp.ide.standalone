@@ -1,6 +1,7 @@
 ﻿using System.Threading.Channels;
 using EtAlii.Adp.Context.Wire;
 using EtAlii.Adp.Documents.Wire;
+using Microsoft.Extensions.Time.Testing;
 using Xunit;
 using Path = EtAlii.Adp.Documents.Wire.Path;
 namespace EtAlii.Adp.Context.Tests;
@@ -332,35 +333,40 @@ public class ContextSelectionStoreTests : IDisposable
     }
 
     [Fact]
-    public async Task IdleEviction_RemovesAnEntryNoStreamEverClaimed()
+    public void IdleEviction_RemovesAnEntryNoStreamEverClaimed()
     {
         // Arrange.
-        using var store = new ContextSelectionStore(idleTimeout: TimeSpan.FromMilliseconds(50));
+        var idle = TimeSpan.FromSeconds(30);
+        var clock = new FakeTimeProvider();
+        using var store = new ContextSelectionStore(idle, clock);
         var watchId = ShortGuid.NewShortGuid();
-        store.Set(watchId, Root, Record(new ContextSelectionStoreStubResolver(), "a.txt"), NoRediscovery);
+        var resolver = new ContextSelectionStoreStubResolver();
+        store.Set(watchId, Root, Record(resolver, "a.txt"), NoRediscovery);
 
-        // Act.
-        var deadline = DateTime.UtcNow + Timeout;
-        while (store.Get(watchId) is not null && DateTime.UtcNow < deadline)
-        {
-            await Task.Delay(10, TestContext.Current.CancellationToken);
-        }
+        // Act and assert, step by step: kept until the timeout, dropped once it passes, and its
+        // tracking let go with it.
+        clock.Advance(idle - TimeSpan.FromMilliseconds(1));
+        Assert.NotNull(store.Get(watchId));
+        Assert.Equal(0, resolver.Disposed);
 
-        // Assert.
+        clock.Advance(TimeSpan.FromMilliseconds(1));
         Assert.Null(store.Get(watchId));
+        Assert.Equal(1, resolver.Disposed);
     }
 
     [Fact]
-    public async Task Register_CancelsIdleEviction()
+    public void Register_CancelsIdleEviction()
     {
         // Arrange.
-        using var store = new ContextSelectionStore(idleTimeout: TimeSpan.FromMilliseconds(50));
+        var idle = TimeSpan.FromSeconds(30);
+        var clock = new FakeTimeProvider();
+        using var store = new ContextSelectionStore(idle, clock);
         var watchId = ShortGuid.NewShortGuid();
         store.Set(watchId, Root, Record(new ContextSelectionStoreStubResolver(), "a.txt"), NoRediscovery);
         store.Register(watchId, Root, Channel.CreateUnbounded<ContextMessage>().Writer, [], [], new ProjectProblems());
 
         // Act.
-        await Task.Delay(200, TestContext.Current.CancellationToken);
+        clock.Advance(idle * 2);
 
         // Assert.
         Assert.NotNull(store.Get(watchId));

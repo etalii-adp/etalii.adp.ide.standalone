@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using EtAlii.Adp.Documents;
 using Serilog;
 
@@ -10,35 +9,49 @@ public sealed class HierarchyModelStore : IHierarchyModelStore, IDisposable
 
     private static readonly ILogger _logger = Log.ForContext<HierarchyModelStore>();
 
-    private readonly TimeSpan _idleTimeout;
-    private readonly ConcurrentDictionary<ShortGuid, HierarchyModelEntry> _entries = new();
+    // A model built by ListEntries that no WatchHierarchy ever claims - a client that listed
+    // and then went away - is dropped once the idle window passes; attaching the watch claims
+    // it. The registry logs each such drop, worth seeing because a steady stream of them means
+    // clients are not opening the watch they were expected to.
+    private readonly RetainedRegistry<ShortGuid, HierarchyModelEntry> _entries;
 
     private readonly IDiagramDefinitionCatalog? _catalog;
     private readonly DiagramFileRouter? _router;
     private readonly EditorResolver? _editorResolver;
     private readonly DesignerFileRouter? _designerRouter;
 
-    public HierarchyModelStore(IDiagramDefinitionCatalog? catalog = null, TimeSpan? idleTimeout = null, DiagramFileRouter? router = null, EditorResolver? editorResolver = null, DesignerFileRouter? designerRouter = null)
+    public HierarchyModelStore(
+        IDiagramDefinitionCatalog? catalog = null,
+        TimeSpan? idleTimeout = null,
+        DiagramFileRouter? router = null,
+        EditorResolver? editorResolver = null,
+        DesignerFileRouter? designerRouter = null,
+        TimeProvider? time = null)
     {
         _catalog = catalog;
-        _idleTimeout = idleTimeout ?? DefaultIdleTimeout;
         _router = router;
         _editorResolver = editorResolver;
         _designerRouter = designerRouter;
+        _entries = new RetainedRegistry<ShortGuid, HierarchyModelEntry>(
+            idleTimeout ?? DefaultIdleTimeout,
+            (_, entry) => entry.Watcher?.Dispose(),
+            time ?? TimeProvider.System,
+            dropUnclaimed: true);
     }
 
     public HierarchyModel GetOrCreate(ShortGuid watchId, string rootPath) =>
-        _entries.GetOrAdd(watchId, _ => CreateEntry(watchId, rootPath)).Model;
+        _entries.GetOrAdd(watchId, _ => new HierarchyModelEntry
+        {
+            Model = new HierarchyModel(rootPath, _catalog, _router, _editorResolver, _designerRouter),
+        }).Model;
 
     public void AttachWatcher(ShortGuid watchId, RootFolderWatcher watcher)
     {
-        if (!_entries.TryGetValue(watchId, out var entry))
+        if (!_entries.TryRetain(watchId) || !_entries.TryGet(watchId, out var entry))
         {
             return;
         }
 
-        entry.IdleTimer?.Dispose();
-        entry.IdleTimer = null;
         entry.Watcher = watcher;
     }
 
@@ -69,7 +82,7 @@ public sealed class HierarchyModelStore : IHierarchyModelStore, IDisposable
     {
         ArgumentNullException.ThrowIfNull(path);
         var fullPath = Path.GetFullPath(path);
-        foreach (var entry in _entries.Values)
+        foreach (var entry in _entries.Values())
         {
             if (Contains(entry.Model.RootPath, fullPath))
             {
@@ -83,45 +96,11 @@ public sealed class HierarchyModelStore : IHierarchyModelStore, IDisposable
 
     public void Remove(ShortGuid watchId)
     {
-        if (_entries.TryRemove(watchId, out var entry))
+        if (_entries.Remove(watchId))
         {
-            entry.Watcher?.Dispose();
-            entry.IdleTimer?.Dispose();
             _logger.Debug("Dropped the hierarchy model for watch {WatchId}; {Remaining} still held", watchId, _entries.Count);
         }
     }
 
-    public void Dispose()
-    {
-        foreach (var watchId in _entries.Keys.ToList())
-        {
-            Remove(watchId);
-        }
-    }
-
-    private HierarchyModelEntry CreateEntry(ShortGuid watchId, string rootPath)
-    {
-        var entry = new HierarchyModelEntry
-        {
-            Model = new HierarchyModel(rootPath, _catalog, _router, _editorResolver, _designerRouter),
-            IdleTimer = new Timer(_ => EvictIfIdle(watchId), null, _idleTimeout, Timeout.InfiniteTimeSpan),
-        };
-        return entry;
-    }
-
-    private void EvictIfIdle(ShortGuid watchId)
-    {
-        if (_entries.TryGetValue(watchId, out var entry) && entry.Watcher is null)
-        {
-            // A model built by ListEntries that no WatchHierarchy ever claimed - a client that
-            // listed and then went away. Worth seeing, because a steady stream of these means
-            // clients are not opening the watch they were expected to.
-            _logger.Debug(
-                "Evicting the hierarchy model for watch {WatchId}: no watch attached within {IdleTimeout}",
-                watchId,
-                _idleTimeout);
-            Remove(watchId);
-        }
-    }
-
+    public void Dispose() => _entries.Dispose();
 }

@@ -19,6 +19,8 @@ public static class ServiceCollectionAddHierarchyExtension
     {
         ArgumentNullException.ThrowIfNull(services);
 
+        // The clock a listed but never watched model is dropped on; the host registers it.
+        services.TryAddSingleton(TimeProvider.System);
         services.AddSingleton<IHierarchyModelStore, HierarchyModelStore>();
 
         // Which type a file on disk belongs to - by its .adp first line, or by a declared

@@ -9,7 +9,6 @@ internal sealed class ContextSelectionStoreEntry
     public ChannelWriter<ContextMessage>? Writer { get; set; }
     public ContextSelectionRecord? Record { get; set; }
     public ContextRediscovery? Rediscover { get; set; }
-    public Timer? IdleTimer { get; set; }
 
     /// <summary>
     /// The project root's actions, given on Register and carried on every "nothing

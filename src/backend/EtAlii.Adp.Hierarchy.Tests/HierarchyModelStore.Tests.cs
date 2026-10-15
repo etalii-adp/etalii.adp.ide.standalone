@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Time.Testing;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -5,6 +6,9 @@ namespace EtAlii.Adp.Hierarchy.Tests;
 
 public class HierarchyModelStoreTests : IDisposable
 {
+    private static readonly TimeSpan IdleTimeout = TimeSpan.FromSeconds(30);
+
+    private readonly FakeTimeProvider _clock = new();
     private readonly string _root;
 
     public HierarchyModelStoreTests()
@@ -68,31 +72,32 @@ public class HierarchyModelStoreTests : IDisposable
     }
 
     [Fact]
-    public async Task IdleEntry_WithNoWatcherAttached_IsEvictedAfterTheTimeout()
+    public void IdleEntry_WithNoWatcherAttached_IsEvictedAfterTheTimeout()
     {
         // Arrange.
-        using var store = new HierarchyModelStore(idleTimeout: TimeSpan.FromMilliseconds(50));
+        using var store = new HierarchyModelStore(idleTimeout: IdleTimeout, time: _clock);
         var watchId = ShortGuid.NewShortGuid();
         var first = store.GetOrCreate(watchId, _root);
 
-        await Task.Delay(TimeSpan.FromMilliseconds(300), TestContext.Current.CancellationToken);
+        // Act and assert, step by step: kept until the timeout, dropped once it passes.
+        _clock.Advance(IdleTimeout - TimeSpan.FromMilliseconds(1));
+        Assert.Same(first, store.GetOrCreate(watchId, _root));
 
-        // Act and assert, step by step.
-        var second = store.GetOrCreate(watchId, _root);
-        Assert.NotSame(first, second);
+        _clock.Advance(TimeSpan.FromMilliseconds(1));
+        Assert.NotSame(first, store.GetOrCreate(watchId, _root));
     }
 
     [Fact]
-    public async Task AttachingAWatcher_CancelsTheIdleEviction()
+    public void AttachingAWatcher_CancelsTheIdleEviction()
     {
         // Arrange.
-        using var store = new HierarchyModelStore(idleTimeout: TimeSpan.FromMilliseconds(50));
+        using var store = new HierarchyModelStore(idleTimeout: IdleTimeout, time: _clock);
         var watchId = ShortGuid.NewShortGuid();
         var first = store.GetOrCreate(watchId, _root);
         using var watcher = new RootFolderWatcher(_root, (_, _, _) => { }, _ => { });
         store.AttachWatcher(watchId, watcher);
 
-        await Task.Delay(TimeSpan.FromMilliseconds(300), TestContext.Current.CancellationToken);
+        _clock.Advance(IdleTimeout * 2);
 
         // Act and assert, step by step.
         var second = store.GetOrCreate(watchId, _root);
