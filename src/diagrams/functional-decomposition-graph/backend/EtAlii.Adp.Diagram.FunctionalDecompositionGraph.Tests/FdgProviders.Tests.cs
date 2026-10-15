@@ -176,6 +176,25 @@ public sealed class FdgProvidersTests : IDisposable
         Assert.Equal(140d, model.Elements.Single(element => element.Id == "note-offline").Height);
     }
 
+    /// <summary>
+    /// The grid shows a size as the file holds it, to four decimals like every other number
+    /// (behaviour-changes B-01): it used to round to two, so the row and the file disagreed.
+    /// </summary>
+    [Fact]
+    public async Task ASizeWithThreeDecimals_IsShownAsTheFileHoldsIt()
+    {
+        // Arrange.
+        var set = await _properties.SetAsync(Target("planning"), FdgContextPropertyProvider.WidthProperty, "220.125", TestContext.Current.CancellationToken);
+        Assert.True(set.IsSuccess, set.Error);
+
+        // Act.
+        var rows = await _properties.DescribeAsync(Target("planning"), TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.Equal("220.125", rows.Single(row => row.Id == FdgContextPropertyProvider.WidthProperty).Value);
+        Assert.Contains("width: 220.125", await File.ReadAllTextAsync(Body, TestContext.Current.CancellationToken));
+    }
+
     [Theory]
     [InlineData("planning", FdgContextPropertyProvider.WidthProperty, "wide")]
     [InlineData("planning", FdgContextPropertyProvider.WidthProperty, "0")]

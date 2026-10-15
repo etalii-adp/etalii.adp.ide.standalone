@@ -1,26 +1,21 @@
 import { useMemo, useState } from "react";
 
-import { forwardBezierPath } from "@client/canvas/connectors";
 import { DiagramCanvas } from "@client/canvas/library/DiagramCanvas";
 import { assertValidDiagramDefinition } from "@client/canvas/library/definition/validateDiagramDefinition";
-import type {
-  CustomRouteRef,
-  DiagramDefinition,
-  ShapeBounds,
-  ShapePoint,
-} from "@client/canvas/library/definition/diagramDefinition";
+import type { DiagramDefinition, ShapeBounds } from "@client/canvas/library/definition/diagramDefinition";
 import type { DiagramEventHandlers } from "@client/canvas/library/api/diagramEvents";
-import type { DiagramModel, DiagramModelElement } from "@client/canvas/library/api/diagramModel";
+import type { DiagramModel, DiagramModelConnection, DiagramModelElement } from "@client/canvas/library/api/diagramModel";
+import { compileNotation } from "@client/canvas/library/disl/compileNotation";
+import { parseDisl } from "@client/canvas/library/disl/disTypes";
 import { useContextConnection } from "@client/shell/context/ContextConnectionProvider";
 import { useRegisterDiagramToolbox } from "@client/shell/panels/DiagramToolboxContext";
 import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
 import { useViewReport } from "@client/diagrams/useViewReport";
-import { HelmEdgeKind, HelmElementKind } from "@client/generated/helm-charts_pb";
-import { anchorsOf, edgesOf, nodesOf, type HelmElement } from "./helmModel";
+import { HelmEdgeKind } from "@client/generated/helm-charts_pb";
+import disText from "../definition/helm-chart.dis?raw";
+import { HELM_BINDINGS } from "./helmBindings";
+import { edgesOf, nodesOf, type HelmElement } from "./helmModel";
 import { useHelmStream } from "./useHelmStream";
-
-/** How far an open edge's stub reaches out of its source, in canvas units. */
-const STUB_LENGTH = 48;
 
 export interface HelmCanvasProps {
   projectId: Uint8Array;
@@ -34,118 +29,17 @@ type NodeElement = DiagramModelElement & {
   activate: () => void;
 };
 
-/** An open edge, drawn as a stub element: a line to nothing and the name that failed. */
-type StubElement = DiagramModelElement & {
-  from: ShapePoint;
-  text: string;
-  stubClass: string;
-};
-
-
-
-
 /**
- * One relationship, exactly as before: out of the source's right side and into the target's
- * left - the bands run left to right, so the edges read the same way.
+ * What this diagram allows, compiled from the bundled specification the backend runs: nodes that
+ * drag into the layout block and select, relations that only render, and an open end drawn as its
+ * relation's stub. No relation declares a source anchor and no type is deletable - chart content is
+ * created by helm tooling, and this canvas's one edit is the drag. What the library cannot read
+ * from the specification is `helmBindings.ts`.
  */
-const helmRoute: CustomRouteRef = {
-  customRoute: "helm-forward-bezier",
-  path: (from, to, _waypoints, ends) => {
-    const a = ends ? { x: ends.source.x + ends.source.width, y: ends.source.y + ends.source.height / 2 } : from;
-    const b = ends ? { x: ends.target.x, y: ends.target.y + ends.target.height / 2 } : to;
-    return forwardBezierPath(a, b);
-  },
-};
+export const HELM_DEFINITION: DiagramDefinition = assertValidDiagramDefinition(compileNotation(parseDisl(disText), HELM_BINDINGS));
 
-/**
- * What this diagram allows, stated once: nodes that drag into the layout block and select,
- * stubs and edges that only render. No relation declares a source anchor and no type is
- * deletable - chart content is created by helm tooling, and this canvas's one edit is the
- * drag.
- */
-const HELM_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
-  elementTypes: [
-    {
-      id: "node",
-      shape: "box",
-      classNames: [
-        { className: "helm-node" },
-        { className: { template: "helm-node-{payload.kindClass}" } },
-        { className: "helm-node-unreadable", when: { path: "payload.unreadable", is: "true" } },
-        { className: "helm-node-box", on: "shape" },
-      ],
-      labels: [
-        {
-          text: { path: "payload.name" },
-          truncate: true,
-          className: "helm-node-label",
-        },
-      ],
-      tooltip: { template: "{payload.title}" },
-      data: { kind: { path: "payload.kindClass" } },
-      accessibility: { role: "button", focusable: true, label: { path: "payload.title" } },
-      actions: [
-        // What `onDoubleClick` did on the rendered element. The right-click that used to sit
-        // beside it pushed a context-menu selection by hand - selection glue, now the library's
-        // shared menu (centralized-selection Requirement 1.3).
-        { id: "helm.activate", invokedBy: [{ kind: "gesture", gesture: "activate" }], appliesTo: [{ kind: "element" }] },
-      ],
-      anchors: { kind: "edge" },
-      sizing: "model",
-      deletable: false,
-    },
-    {
-      id: "stub",
-      // AN ELEMENT THAT IS ONLY AN ORNAMENT: a short rule out of the source with the
-      // target's own words beside it, for a dependency this document names and does not
-      // resolve. `none` is the shape that made this declarable at all.
-      shape: "none",
-      classNames: [{ className: { path: "payload.stubClass" }, on: "element" }],
-      decorations: [
-        {
-          glyph: "line",
-          // Canvas units: these read `bounds`, which resolves to a position rather than an offset.
-          anchor: "canvas",
-          from: { x: { path: "bounds.left" }, y: { path: "bounds.centreY" } },
-          to: { x: { path: "bounds.right" }, y: { path: "bounds.centreY" } },
-          className: "helm-edge-line",
-        },
-      ],
-      labels: [
-        {
-          text: { path: "payload.text" },
-          anchorTo: "top",
-          offset: { x: 0, y: 0 },
-          align: "start",
-          insetX: 8,
-          className: "helm-edge-label",
-        },
-      ],
-      data: { "edge-id": { path: "element.id" } },
-      anchors: { kind: "edge" },
-      sizing: "model",
-      draggable: false,
-      deletable: false,
-    },
-  ],
-  relationTypes: [
-    {
-      id: "edge",
-      route: helmRoute,
-      style: { endMarker: "arrow" },
-      label: { placement: "midpoint", offset: -6 },
-      className: "helm-edge",
-      lineClassName: "helm-edge-line",
-      endpoints: {
-        source: { elementTypes: ["node"], anchors: [] },
-        target: { elementTypes: ["node"], anchors: "edge" },
-        allowSelf: false,
-      },
-    },
-  ],
-  layout: { modes: ["manual"] },
-  dragging: "enabled",
-});
+/** The operation a double-click runs on a file-backed node (`behavior.operations` of the specification). */
+const REVEAL = "openArtifact";
 
 /**
  * Renders a helm chart's anatomy and reports what the user selects - drawn through the
@@ -179,72 +73,38 @@ export function HelmCanvas({ projectId, entryId, path }: HelmCanvasProps) {
   };
 
   const diagramModel = useMemo<DiagramModel>(() => {
-    const elements: DiagramModelElement[] = [];
-    const connections = [];
-
-    // Stubs first, so a node their label happens to cross still draws over it.
+    const connections: DiagramModelConnection[] = [];
     for (const edge of edges) {
       const wire = edge.payload.edge;
       if (!wire) {
         continue;
       }
 
-      const anchors = anchorsOf(model, edge);
-      if (!anchors) {
-        const source = model.elements.get(wire.sourceId);
-        if (!source) {
-          continue;
-        }
-
-        const from = { x: source.x + source.payload.width, y: source.y + source.payload.height / 2 };
-        elements.push({
-          id: edge.id,
-          type: "stub",
-          x: from.x + STUB_LENGTH / 2,
-          y: from.y,
-          width: STUB_LENGTH,
-          height: 12,
-          from,
-          text: `${wire.label}${wire.kind === HelmEdgeKind.RESOLVES ? " (unvendored)" : " (not defined here)"}`,
-          stubClass: `helm-edge helm-edge-${edgeClass(wire.kind)} helm-edge-open`,
-          payload: {
-            text: `${wire.label}${wire.kind === HelmEdgeKind.RESOLVES ? " (unvendored)" : " (not defined here)"}`,
-            stubClass: `helm-edge helm-edge-${edgeClass(wire.kind)} helm-edge-open`,
-          },
-        } as StubElement);
-        continue;
-      }
-
       connections.push({
         id: edge.id,
-        type: "edge",
-        sourceId: anchors.from.id,
-        targetId: anchors.to.id,
+        type: relationTypeOf(wire.kind),
+        sourceId: wire.sourceId,
+        // An open end has no target: the library draws it as the relation's stub.
+        targetId: wire.openEnd ? "" : wire.targetId,
         label: wire.label || undefined,
-        className: `helm-edge-${edgeClass(wire.kind)}`,
+        // What the stub's label reads (`self.label`).
+        payload: { label: wire.label },
       });
     }
 
-    for (const node of nodes) {
-      elements.push({
-        id: node.id,
-        type: "node",
-        x: node.x + node.payload.width / 2,
-        y: node.y + node.payload.height / 2,
-        width: node.payload.width,
-        height: node.payload.height,
-        label: node.payload.name,
-        // What the declaration reads.
-        payload: {
-          name: node.payload.name,
-          kindClass: kindClass(node.payload.kind),
-          unreadable: node.payload.unreadable,
-          title: `${kindLabel(node.payload.kind)} ${node.payload.name}`,
-        },
-        node,
-        activate: () => activate(node),
-      } as NodeElement);
-    }
+    const elements = nodes.map((node): NodeElement => ({
+      id: node.id,
+      type: node.type,
+      x: node.x + node.payload.width / 2,
+      y: node.y + node.payload.height / 2,
+      width: node.payload.width,
+      height: node.payload.height,
+      label: node.payload.name,
+      // What the compiled declaration reads.
+      payload: { name: node.payload.name, unreadable: node.payload.unreadable },
+      node,
+      activate: () => activate(node),
+    }));
 
     return { elements, connections };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- the closures read stable setters
@@ -260,7 +120,7 @@ export function HelmCanvas({ projectId, entryId, path }: HelmCanvasProps) {
       }
 
       const node = model.elements.get(targetId);
-      if (actionId === "helm.activate" && node !== undefined) {
+      if (actionId === REVEAL && node !== undefined) {
         activate(node);
       }
     },
@@ -318,57 +178,8 @@ export function HelmCanvas({ projectId, entryId, path }: HelmCanvasProps) {
   );
 }
 
-function kindClass(kind: HelmElementKind): string {
-  switch (kind) {
-    case HelmElementKind.CHART:
-      return "chart";
-    case HelmElementKind.VALUES:
-      return "values";
-    case HelmElementKind.SCHEMA:
-      return "schema";
-    case HelmElementKind.TEMPLATE:
-      return "template";
-    case HelmElementKind.CRDS:
-      return "crds";
-    case HelmElementKind.DEPENDENCY:
-      return "dependency";
-    case HelmElementKind.SUBCHART:
-      return "subchart";
-    case HelmElementKind.ARCHIVE:
-      return "archive";
-    case HelmElementKind.LOCK:
-      return "lock";
-    default:
-      return "unknown";
-  }
-}
-
-function kindLabel(kind: HelmElementKind): string {
-  switch (kind) {
-    case HelmElementKind.CHART:
-      return "Chart";
-    case HelmElementKind.VALUES:
-      return "Values";
-    case HelmElementKind.SCHEMA:
-      return "Values schema";
-    case HelmElementKind.TEMPLATE:
-      return "Template";
-    case HelmElementKind.CRDS:
-      return "CRDs";
-    case HelmElementKind.DEPENDENCY:
-      return "Dependency";
-    case HelmElementKind.SUBCHART:
-      return "Subchart";
-    case HelmElementKind.ARCHIVE:
-      return "Archive";
-    case HelmElementKind.LOCK:
-      return "Lock";
-    default:
-      return "Element";
-  }
-}
-
-function edgeClass(kind: HelmEdgeKind): string {
+/** The relation type an edge of the wire is: the specification's relation name in lower case. */
+function relationTypeOf(kind: HelmEdgeKind): string {
   switch (kind) {
     case HelmEdgeKind.DECLARES:
       return "declares";

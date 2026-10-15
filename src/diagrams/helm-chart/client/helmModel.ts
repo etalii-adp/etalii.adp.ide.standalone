@@ -17,6 +17,12 @@ import {
 /** One node or edge as the canvas holds it: where the backend put it, and its decoded payload. */
 export interface HelmElement {
   id: string;
+  /**
+   * The element's type on the wire after the type's prefix - `chart`, `partial`, `edge` - which is
+   * the specification's type name in lower case and so the compiled definition's element type id.
+   * A partial travels as a template's kind and only its type says it is a partial.
+   */
+  type: string;
   x: number;
   y: number;
   payload: HelmElementPayload;
@@ -33,6 +39,8 @@ export const emptyModel: HelmModel = { elements: new Map() };
  * The element kinds this type puts on the wire. Anything else on the stream is ignored - the
  * canvas draws what it understands and never guesses at what it does not.
  */
+const TYPE_PREFIX = "helm/chart+";
+
 const ELEMENT_TYPES = new Set([
   "helm/chart+chart",
   "helm/chart+values",
@@ -54,6 +62,7 @@ function decode(element: Element): HelmElement | null {
 
   return {
     id: element.id.value,
+    type: element.type.slice(TYPE_PREFIX.length),
     x: element.position?.x ?? 0,
     y: element.position?.y ?? 0,
     payload: fromBinary(HelmElementPayloadSchema, element.payload.value),
@@ -104,23 +113,4 @@ export function edgesOf(model: HelmModel): readonly HelmElement[] {
   return [...model.elements.values()]
     .filter((element) => element.payload.kind === HelmElementKind.EDGE)
     .sort((left, right) => (left.id < right.id ? -1 : left.id > right.id ? 1 : 0));
-}
-
-/**
- * Where an edge should be drawn from and to, or null when either end is not delivered - which
- * includes every open end, whose stub the canvas draws from the source instead. The canvas
- * anchors on the boxes the backend measured rather than guessing at their size.
- */
-export function anchorsOf(
-  model: HelmModel,
-  edge: HelmElement,
-): { from: HelmElement; to: HelmElement } | null {
-  const wire = edge.payload.edge;
-  if (!wire) {
-    return null;
-  }
-
-  const from = model.elements.get(wire.sourceId);
-  const to = wire.targetId ? model.elements.get(wire.targetId) : undefined;
-  return from && to ? { from, to } : null;
 }

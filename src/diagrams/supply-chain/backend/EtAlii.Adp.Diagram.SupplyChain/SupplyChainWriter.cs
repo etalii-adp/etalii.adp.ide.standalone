@@ -52,7 +52,7 @@ public static class SupplyChainWriter
         }
         else
         {
-            LineSplice.SetKey(document, range, key, Number(value.Value));
+            LineSplice.SetKey(document, range, key, DslNumber.Format(value.Value));
         }
 
         return EditOutcome.Applied;
@@ -89,8 +89,8 @@ public static class SupplyChainWriter
             // y first: inserting a missing key lands it after the entry's first line, so writing y
             // and then x reads `x` before `y` in a newly placed entry, as a person writes them.
             var grows = LineSplice.FindKey(document, node.Range, "y") < 0 ? 1 : 0;
-            LineSplice.SetKey(document, node.Range, "y", Number(Math.Round(y)));
-            LineSplice.SetKey(document, ExtendedBy(node.Range, grows), "x", Number(Math.Round(x)));
+            LineSplice.SetKey(document, node.Range, "y", DslNumber.Format(Math.Round(y)));
+            LineSplice.SetKey(document, ExtendedBy(node.Range, grows), "x", DslNumber.Format(Math.Round(x)));
         }
 
         return EditOutcome.Applied;
@@ -104,8 +104,8 @@ public static class SupplyChainWriter
 
         // y first, for the same reason as Place: a newly placed entry reads `x` before `y`.
         var grows = LineSplice.FindKey(document, group.Range, "y") < 0 ? 1 : 0;
-        LineSplice.SetKey(document, group.Range, "y", Number(Math.Round(y)));
-        LineSplice.SetKey(document, ExtendedBy(group.Range, grows), "x", Number(Math.Round(x)));
+        LineSplice.SetKey(document, group.Range, "y", DslNumber.Format(Math.Round(y)));
+        LineSplice.SetKey(document, ExtendedBy(group.Range, grows), "x", DslNumber.Format(Math.Round(x)));
     }
 
     /// <summary>Removes a node and every flow to or from it, bottom-up.</summary>
@@ -176,7 +176,7 @@ public static class SupplyChainWriter
 
         if (node.Quantity is { } quantity)
         {
-            keys.Add(("quantity", Number(quantity)));
+            keys.Add(("quantity", DslNumber.Format(quantity)));
         }
 
         if (node.Unit.Length > 0)
@@ -186,8 +186,8 @@ public static class SupplyChainWriter
 
         if (node is { X: { } x, Y: { } y })
         {
-            keys.Add(("x", Number(Math.Round(x))));
-            keys.Add(("y", Number(Math.Round(y))));
+            keys.Add(("x", DslNumber.Format(Math.Round(x))));
+            keys.Add(("y", DslNumber.Format(Math.Round(y))));
         }
 
         return Append(document, model.Nodes.Select(existing => existing.Range), NodesSection, node.Id, keys);
@@ -203,8 +203,8 @@ public static class SupplyChainWriter
         List<(string Key, string Value)> keys = [("name", Text(group.Name))];
         if (group is { X: { } x, Y: { } y })
         {
-            keys.Add(("x", Number(Math.Round(x))));
-            keys.Add(("y", Number(Math.Round(y))));
+            keys.Add(("x", DslNumber.Format(Math.Round(x))));
+            keys.Add(("y", DslNumber.Format(Math.Round(y))));
         }
 
         return Append(document, model.Groups.Select(existing => existing.Range), GroupsSection, group.Id, keys);
@@ -230,7 +230,7 @@ public static class SupplyChainWriter
 
         if (flow.Volume is { } volume)
         {
-            keys.Add(("volume", Number(volume)));
+            keys.Add(("volume", DslNumber.Format(volume)));
         }
 
         if (flow.Unit.Length > 0)
@@ -302,7 +302,4 @@ public static class SupplyChainWriter
 
         return reads ? $"\"{value.Replace("\\", "\\\\", StringComparison.Ordinal).Replace("\"", "\\\"", StringComparison.Ordinal)}\"" : quoted;
     }
-
-    /// <summary>A number the way the document reads it: invariant culture, no trailing zeros.</summary>
-    private static string Number(double value) => value.ToString("0.####", CultureInfo.InvariantCulture);
 }

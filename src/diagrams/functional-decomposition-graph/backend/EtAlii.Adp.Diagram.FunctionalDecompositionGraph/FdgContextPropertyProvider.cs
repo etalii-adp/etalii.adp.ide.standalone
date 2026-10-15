@@ -65,10 +65,10 @@ public sealed class FdgContextPropertyProvider(IHistoryStackStore historyStacks,
                 ? [new ContextPropertyDefinition(TextProperty, "Text", element.Text, ContextPropertyEditor.Text, Group: IdentityGroup)]
                 : [new ContextPropertyDefinition(NameProperty, "Name", element.Name, Group: IdentityGroup)];
             rows.Add(new ContextPropertyDefinition(DescriptionProperty, "Description", element.Description, ContextPropertyEditor.Text, Group: IdentityGroup));
-            rows.Add(new ContextPropertyDefinition(WidthProperty, "Width", Number(element.Width), Group: SizeGroup));
+            rows.Add(new ContextPropertyDefinition(WidthProperty, "Width", DslNumber.Format(element.Width), Group: SizeGroup));
             if (element.IsComment)
             {
-                rows.Add(new ContextPropertyDefinition(HeightProperty, "Height", Number(element.DrawnHeight), Group: SizeGroup));
+                rows.Add(new ContextPropertyDefinition(HeightProperty, "Height", DslNumber.Format(element.DrawnHeight), Group: SizeGroup));
             }
 
             return rows;
@@ -121,6 +121,4 @@ public sealed class FdgContextPropertyProvider(IHistoryStackStore historyStacks,
             ? DiagramPropertyChange.Refused($"'{propertyId}' cannot be edited on this selection.")
             : DiagramPropertyChange.By(command);
     }
-
-    private static string Number(double value) => value.ToString("0.##", CultureInfo.InvariantCulture);
 }

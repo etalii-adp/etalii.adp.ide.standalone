@@ -1,4 +1,3 @@
-using System.Globalization;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 
@@ -58,9 +57,6 @@ internal static class WardleyEdit
             ? null
             : map.Components.FirstOrDefault(candidate => WardleyIdentityKeys.Of(candidate) == entry.Key);
     }
-
-    /// <summary>A number as the DSL writes it, without a trailing zero.</summary>
-    public static string Number(double value) => value.ToString("0.####", CultureInfo.InvariantCulture);
 }
 
 public sealed class AddWardleyElementCommandHandler(IWardleyDocumentStore documents) : WardleyEditHandler<AddWardleyElementCommand>(documents)
@@ -91,7 +87,7 @@ public sealed class AddWardleyElementCommandHandler(IWardleyDocumentStore docume
         var decorator = command.Decorator is { } word ? $" ({word.ToString().ToLowerInvariant()})" : "";
         WardleyWriter.Append(
             body,
-            $"{command.Kind.ToLowerInvariant()} {command.Name} [{WardleyEdit.Number(position.Visibility)}, {WardleyEdit.Number(position.Maturity)}]{decorator}");
+            $"{command.Kind.ToLowerInvariant()} {command.Name} [{DslNumber.Format(position.Visibility)}, {DslNumber.Format(position.Maturity)}]{decorator}");
         return EditOutcome.Applied;
     }
 }
@@ -239,7 +235,7 @@ public sealed class AddWardleyNoteCommandHandler(IWardleyDocumentStore documents
         var position = WardleyAxis.Clamp(new WardleyCoordinate(command.Visibility, command.Maturity));
         WardleyWriter.Append(
             body,
-            $"note {command.Text.Trim()} [{WardleyEdit.Number(position.Visibility)}, {WardleyEdit.Number(position.Maturity)}]");
+            $"note {command.Text.Trim()} [{DslNumber.Format(position.Visibility)}, {DslNumber.Format(position.Maturity)}]");
         return EditOutcome.Applied;
     }
 }
@@ -261,7 +257,7 @@ public sealed class AddWardleyAnnotationCommandHandler(IWardleyDocumentStore doc
 
         WardleyWriter.Append(
             body,
-            $"annotation {number} [{WardleyEdit.Number(position.Visibility)}, {WardleyEdit.Number(position.Maturity)}] {command.Text.Trim()}");
+            $"annotation {number} [{DslNumber.Format(position.Visibility)}, {DslNumber.Format(position.Maturity)}] {command.Text.Trim()}");
         return EditOutcome.Applied;
     }
 }
@@ -346,7 +342,7 @@ public sealed class SetWardleyEvolveCommandHandler(IWardleyDocumentStore documen
         var name = command.OverrideName.Trim().Length > 0
             ? $"{component.Name}->{command.OverrideName.Trim()}"
             : component.Name;
-        var statement = $"evolve {name} {WardleyEdit.Number(maturity)}";
+        var statement = $"evolve {name} {DslNumber.Format(maturity)}";
 
         if (existing is null)
         {
@@ -408,7 +404,7 @@ public sealed class SetWardleyPipelineMembershipCommandHandler(IWardleyDocumentS
                 $"'{parent.Name}' has a pipeline written in the older two-coordinate form, which holds no components. Rewrite it as a nested pipeline first.");
         }
 
-        var statement = $"  component {command.ChildName} [{WardleyEdit.Number(Math.Clamp(command.Maturity, 0d, 1d))}]";
+        var statement = $"  component {command.ChildName} [{DslNumber.Format(Math.Clamp(command.Maturity, 0d, 1d))}]";
 
         if (pipeline is null)
         {

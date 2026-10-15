@@ -1,4 +1,3 @@
-using System.Globalization;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Documents.Wire;
@@ -88,9 +87,9 @@ public sealed class SankeyContextPropertyProvider(IHistoryStackStore historyStac
                 new ContextPropertyDefinition(DescriptionProperty, "Description", node.Description, ContextPropertyEditor.Text, Group: IdentityGroup),
                 new ContextPropertyDefinition(ColorProperty, "Colour", ColorChoice(node.Color), ContextPropertyEditor.Choice, Group: LookGroup, Candidates: ColorChoices(node.Color)),
                 new ContextPropertyDefinition(CustomColorProperty, "Custom colour", SankeyColors.IsHex(node.Color) ? node.Color : "", Group: LookGroup),
-                new ContextPropertyDefinition(ColumnProperty, "Column", node.Column is { } column ? Number(column) : AutoColumn, ContextPropertyEditor.Choice, Group: LookGroup,
-                    Candidates: [AutoColumn, .. Enumerable.Range(1, Math.Max(columns, node.Column ?? 0) + 1).Select(c => Number(c))]),
-                new ContextPropertyDefinition(ValueProperty, "Value", Number(value), ReadOnlyReason: "A node's value is what flows through it; change a flow's value instead.", Group: AmountGroup),
+                new ContextPropertyDefinition(ColumnProperty, "Column", node.Column is { } column ? DslNumber.Format(column) : AutoColumn, ContextPropertyEditor.Choice, Group: LookGroup,
+                    Candidates: [AutoColumn, .. Enumerable.Range(1, Math.Max(columns, node.Column ?? 0) + 1).Select(c => DslNumber.Format(c))]),
+                new ContextPropertyDefinition(ValueProperty, "Value", DslNumber.Format(value), ReadOnlyReason: "A node's value is what flows through it; change a flow's value instead.", Group: AmountGroup),
                 new ContextPropertyDefinition(NoteProperty, "Note", node.Note, Group: AmountGroup),
                 new ContextPropertyDefinition(FormatProperty, "Format", node.Format, Group: AmountGroup),
             ];
@@ -103,8 +102,8 @@ public sealed class SankeyContextPropertyProvider(IHistoryStackStore historyStac
                 new ContextPropertyDefinition(DescriptionProperty, "Description", flow.Description, ContextPropertyEditor.Text, Group: IdentityGroup),
                 new ContextPropertyDefinition(ColorProperty, "Colour", ColorChoice(flow.Color), ContextPropertyEditor.Choice, Group: LookGroup, Candidates: ColorChoices(flow.Color)),
                 new ContextPropertyDefinition(CustomColorProperty, "Custom colour", SankeyColors.IsHex(flow.Color) ? flow.Color : "", Group: LookGroup),
-                new ContextPropertyDefinition(ValueProperty, "Value", Number(flow.Value), Group: AmountGroup),
-                new ContextPropertyDefinition(StepProperty, "Step", Number(flow.Step ?? StepSankeyValueCommandHandler.DefaultStep(flow.Value)), Group: AmountGroup),
+                new ContextPropertyDefinition(ValueProperty, "Value", DslNumber.Format(flow.Value), Group: AmountGroup),
+                new ContextPropertyDefinition(StepProperty, "Step", DslNumber.Format(flow.Step ?? StepSankeyValueCommandHandler.DefaultStep(flow.Value)), Group: AmountGroup),
             ];
         }
 
@@ -159,6 +158,4 @@ public sealed class SankeyContextPropertyProvider(IHistoryStackStore historyStac
         .. SankeyColors.Palette,
         .. SankeyColors.IsHex(color) ? new[] { CustomColor } : [],
     ];
-
-    private static string Number(double? value) => value is { } number ? number.ToString("0.####", CultureInfo.InvariantCulture) : "";
 }

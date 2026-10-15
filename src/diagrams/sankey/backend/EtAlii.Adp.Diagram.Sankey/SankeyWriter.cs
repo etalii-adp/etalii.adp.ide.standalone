@@ -51,7 +51,7 @@ public static class SankeyWriter
         }
         else
         {
-            LineSplice.SetKey(document, range, key, Number(value.Value));
+            LineSplice.SetKey(document, range, key, DslNumber.Format(value.Value));
         }
 
         return EditOutcome.Applied;
@@ -185,7 +185,7 @@ public static class SankeyWriter
         List<string> lines = [$"{itemIndent}-{dashGap}from: {Text(flow.From)}", $"{keyIndent}to: {Text(flow.To)}"];
         if (flow.Value is { } value)
         {
-            lines.Add($"{keyIndent}value: {Number(value)}");
+            lines.Add($"{keyIndent}value: {DslNumber.Format(value)}");
         }
 
         document.Insert(at, lines);
@@ -254,7 +254,4 @@ public static class SankeyWriter
 
         return reads ? $"\"{value.Replace("\\", "\\\\", StringComparison.Ordinal).Replace("\"", "\\\"", StringComparison.Ordinal)}\"" : quoted;
     }
-
-    /// <summary>A number the way the document reads it: invariant culture, no trailing zeros.</summary>
-    internal static string Number(double value) => value.ToString("0.####", CultureInfo.InvariantCulture);
 }
