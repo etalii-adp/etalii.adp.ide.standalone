@@ -736,6 +736,10 @@ public sealed class PipelineParser
     private static YamlNode? Entry(YamlMappingNode mapping, string key) =>
         Entries(mapping).FirstOrDefault(entry => entry.Key == key).Value;
 
+    /// <remarks>
+    /// Not <see cref="YamlAccess.Scalar"/>: a pipeline's keys are read through <see cref="Entries"/>,
+    /// which follows YAML merge keys (<c>&lt;&lt;</c>), and the shared helper looks at the mapping's own keys only.
+    /// </remarks>
     private static string Scalar(YamlMappingNode mapping, string key) =>
         Entry(mapping, key) is YamlScalarNode { Value: { } value } ? value : "";
 

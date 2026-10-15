@@ -44,6 +44,8 @@ public class YamlAccessTests
         // Act and assert.
         Assert.Equal("3", YamlAccess.Scalar(YamlAccess.Mapping(root, "settings")!, "retries"));
         Assert.Null(YamlAccess.Mapping(root, "name"));
+        Assert.IsType<YamlSequenceNode>(YamlAccess.Node(root, "stages"));
+        Assert.Null(YamlAccess.Node(root, "missing"));
         Assert.True(YamlAccess.Flag(root, "enabled"));
         Assert.False(YamlAccess.Flag(root, "name"));
     }
