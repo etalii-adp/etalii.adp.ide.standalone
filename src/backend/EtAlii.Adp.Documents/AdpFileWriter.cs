@@ -27,6 +27,73 @@ public static class AdpFileWriter
 
     public const string TempExtension = ".tmp";
 
+    /// <summary>The marker <c>File.Replace</c> puts between a destination's name and the hex of its backup.</summary>
+    private const string ReplaceBackupMarker = "~RF";
+
+    /// <summary>The extension of a <c>File.Replace</c> backup.</summary>
+    private const string ReplaceBackupExtension = ".TMP";
+
+    /// <summary>
+    /// Whether a file name belongs to a write in flight rather than to anything a user made: one of
+    /// ADP's own scratch files (<see cref="IsScratch"/>) or the backup <c>File.Replace</c> moves a
+    /// destination aside to for the instant of a swap (<see cref="IsReplaceBackup"/>). The one test
+    /// for a transient name, so the hierarchy, the problems and the save diagnostics agree on it
+    /// (code-structure FR-050).
+    /// </summary>
+    /// <param name="name">A file name or a path; only its last segment is read.</param>
+    public static bool IsTransient(string name) => IsScratch(name) || IsReplaceBackup(name);
+
+    /// <summary>Whether a file name is one of ADP's own scratch files: <c>~adp-&lt;guid&gt;.tmp</c>.</summary>
+    /// <param name="name">A file name or a path; only its last segment is read.</param>
+    public static bool IsScratch(string name)
+    {
+        var file = IoPath.GetFileName(name);
+        return file.StartsWith(TempPrefix, StringComparison.Ordinal)
+            && file.EndsWith(TempExtension, StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// Whether a file name is a <c>File.Replace</c> backup - <c>&lt;name&gt;~RF&lt;hex&gt;.TMP</c> -
+    /// and, when <paramref name="of"/> is given, the backup of that destination.
+    /// </summary>
+    /// <param name="name">A file name or a path; only its last segment is read.</param>
+    /// <param name="of">The destination's file name, or null for the backup of any.</param>
+    public static bool IsReplaceBackup(string name, string? of = null)
+    {
+        var file = IoPath.GetFileName(name);
+        if (!file.EndsWith(ReplaceBackupExtension, StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        var marker = file.LastIndexOf(ReplaceBackupMarker, StringComparison.OrdinalIgnoreCase);
+        if (marker < 0)
+        {
+            return false;
+        }
+
+        if (of is not null && !file.AsSpan(0, marker).Equals(IoPath.GetFileName(of), StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        var hex = file.AsSpan(marker + ReplaceBackupMarker.Length, file.Length - marker - ReplaceBackupMarker.Length - ReplaceBackupExtension.Length);
+        if (hex.IsEmpty)
+        {
+            return false;
+        }
+
+        foreach (var character in hex)
+        {
+            if (!Uri.IsHexDigit(character))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     /// <summary>
     /// The terminator every NEW line ADP writes into a repository file gets: CRLF, the house
     /// style the root <c>.gitattributes</c> and <c>src/.editorconfig</c> agree on for the
