@@ -1,0 +1,5 @@
+- name: uses an empty role and a role with an empty meta
+  hosts: web
+  roles:
+    - empty
+    - metaonly

@@ -1,0 +1,6 @@
+- name: targets a group the INI file defines
+  hosts: web
+  tasks: []
+- name: targets a group only the broken YAML names
+  hosts: cache
+  tasks: []

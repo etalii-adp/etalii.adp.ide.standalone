@@ -1,0 +1,3 @@
+- name: reached through a linked file
+  hosts: localhost
+  tasks: []

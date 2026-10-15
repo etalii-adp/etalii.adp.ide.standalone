@@ -1,0 +1,3 @@
+- name: targets a group only the notes name
+  hosts: retired
+  tasks: []

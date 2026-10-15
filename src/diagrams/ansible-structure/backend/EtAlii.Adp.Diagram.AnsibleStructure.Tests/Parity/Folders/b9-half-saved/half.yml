@@ -1,0 +1,4 @@
+- name: saved half way
+  hosts: localhost
+  roles:
+    - [unclosed
