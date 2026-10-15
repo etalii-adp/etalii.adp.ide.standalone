@@ -37,7 +37,7 @@ public static class DependencyGraphWriter
     public static void SetX(LineDocument document, DependencyGraphElement element, double x)
     {
         ArgumentNullException.ThrowIfNull(element);
-        LineSplice.SetKey(document, element.Range, "x", Number(x));
+        LineSplice.SetKey(document, element.Range, "x", DslNumber.Format(x));
     }
 
     /// <summary>Rewrites an element's row.</summary>
@@ -85,7 +85,7 @@ public static class DependencyGraphWriter
         {
             $"{itemIndent}-{dashGap}id: {id}",
             $"{keyIndent}label: {LineSplice.Quote(label)}",
-            $"{keyIndent}x: {Number(x)}",
+            $"{keyIndent}x: {DslNumber.Format(x)}",
             $"{keyIndent}row: {row.ToString(CultureInfo.InvariantCulture)}",
         };
 
@@ -221,10 +221,4 @@ public static class DependencyGraphWriter
                 string.Equals(relation.To, elementId, StringComparison.Ordinal))
             .ToList();
     }
-
-    /// <summary>
-    /// A coordinate as document text: invariant, and in its shortest round-trippable form so a
-    /// whole number stays a whole number rather than sprouting a decimal point on every drag.
-    /// </summary>
-    internal static string Number(double value) => value.ToString(CultureInfo.InvariantCulture);
 }

@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Text.RegularExpressions;
 using EtAlii.Adp.Documents;
 
@@ -60,7 +59,7 @@ public static partial class WardleyWriter
         }
 
         var value = match.Groups["value"];
-        ReplaceLine(document, child.Line, Splice(line, value.Index, value.Length, Number(maturity)));
+        ReplaceLine(document, child.Line, Splice(line, value.Index, value.Length, DslNumber.Format(maturity)));
         return true;
     }
 
@@ -281,8 +280,8 @@ public static partial class WardleyWriter
         // spacing the author used - survives untouched.
         var first = match.Groups["first"];
         var second = match.Groups["second"];
-        var updated = Splice(line, second.Index, second.Length, Number(position.Maturity));
-        updated = Splice(updated, first.Index, first.Length, Number(position.Visibility));
+        var updated = Splice(line, second.Index, second.Length, DslNumber.Format(position.Maturity));
+        updated = Splice(updated, first.Index, first.Length, DslNumber.Format(position.Visibility));
 
         ReplaceLine(document, number, updated);
         return true;
@@ -350,12 +349,6 @@ public static partial class WardleyWriter
 
     private static string Splice(string line, int index, int length, string replacement) =>
         string.Concat(line.AsSpan(0, index), replacement, line.AsSpan(index + length));
-
-    /// <summary>
-    /// A number as the DSL writes it: invariant, and without a trailing `.0` that would appear
-    /// as noise in a diff of a file the author wrote by hand.
-    /// </summary>
-    private static string Number(double value) => value.ToString("0.####", CultureInfo.InvariantCulture);
 
     /// <summary>The two numbers of a coordinate pair, captured separately so the separator survives.</summary>
     [GeneratedRegex(@"\[\s*(?<first>-?[\d.]+)\s*,\s*(?<second>-?[\d.]+)\s*\]")]
