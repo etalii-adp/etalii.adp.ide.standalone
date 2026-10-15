@@ -9,7 +9,7 @@ namespace EtAlii.Adp.Editor.Json.Tests;
 /// <remarks>
 /// <para>
 /// This session re-read ONCE while a comment beside its watcher said the re-read retried - a
-/// sentence copied from <c>PlainEditorSession</c>, where it was true. A re-read refused on a
+/// sentence copied from the plain editor's session, where it was true. A re-read refused on a
 /// write's last event therefore lost that change for good, the defect traced in c4's store as the
 /// EditorResolution 60-second flake.
 /// </para>
@@ -73,7 +73,7 @@ public class JsonEditorSessionReadRetryTests : IDisposable
 
         session.OnExternalChange();
 
-        // Three attempts, PlainEditorSession's figure: a retry that gave up at once and one that
+        // Three attempts, TextEditorSession's figure: a retry that gave up at once and one that
         // gave up after three leave the same content, so only the count tells them apart.
         Assert.Equal(3, opener.Reads - readsBefore);
         Assert.Equal(0, changes);

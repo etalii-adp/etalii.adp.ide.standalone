@@ -5,7 +5,7 @@ using Serilog.Events;
 using Xunit;
 using IoPath = System.IO.Path;
 
-namespace EtAlii.Adp.Editor.Plain.Tests;
+namespace EtAlii.Adp.Editor.Tests;
 
 /// <summary>
 /// The refusal record reaches a Serilog pipeline installed AFTER this class was first used, which is
@@ -32,7 +32,7 @@ namespace EtAlii.Adp.Editor.Plain.Tests;
 /// </para>
 /// <para>
 /// <b>Seen to fail:</b> reverting the property to
-/// <c>private static readonly ILogger _logger = Log.ForContext&lt;PlainEditorSession&gt;()</c> reddens
+/// <c>private static readonly ILogger _logger = Log.ForContext&lt;TextEditorSession&gt;()</c> reddens
 /// this and nothing else - the cached field keeps writing to the pipeline of its first use, where
 /// this sink is not.
 /// </para>
@@ -71,14 +71,14 @@ namespace EtAlii.Adp.Editor.Plain.Tests;
 /// this test and its warm-up).
 /// </para>
 /// </remarks>
-public class PlainEditorSessionSpeaksAfterLateConfigurationTests : IDisposable
+public class TextEditorSessionSpeaksAfterLateConfigurationTests : IDisposable
 {
     private static readonly TimeSpan Patience = TimeSpan.FromSeconds(10);
 
-    private readonly string _folder = IoPath.Combine(IoPath.GetTempPath(), "adp-plain-late-" + Guid.NewGuid().ToString("N"));
+    private readonly string _folder = IoPath.Combine(IoPath.GetTempPath(), "adp-text-late-" + Guid.NewGuid().ToString("N"));
     private readonly ILogger _original = Log.Logger;
 
-    public PlainEditorSessionSpeaksAfterLateConfigurationTests() => Directory.CreateDirectory(_folder);
+    public TextEditorSessionSpeaksAfterLateConfigurationTests() => Directory.CreateDirectory(_folder);
 
     public void Dispose()
     {
@@ -114,7 +114,7 @@ public class PlainEditorSessionSpeaksAfterLateConfigurationTests : IDisposable
         var early = ConfigureSerilog();
         var warmUp = IoPath.Combine(_folder, "warm-up.txt");
         await File.WriteAllTextAsync(warmUp, "before", TestContext.Current.CancellationToken);
-        await using (new PlainEditorSession(warmUp))
+        await using (new TextEditorSession(warmUp))
         {
             File.Delete(warmUp);
             await UntilRefusalOf(early, "warm-up.txt");
@@ -126,7 +126,7 @@ public class PlainEditorSessionSpeaksAfterLateConfigurationTests : IDisposable
 
         var path = IoPath.Combine(_folder, "notes.txt");
         await File.WriteAllTextAsync(path, "before", TestContext.Current.CancellationToken);
-        await using var session = new PlainEditorSession(path);
+        await using var session = new TextEditorSession(path);
         Assert.Equal("before", session.Content);
 
         // Only then is a new pipeline installed - a host that opens a file before it builds logging.

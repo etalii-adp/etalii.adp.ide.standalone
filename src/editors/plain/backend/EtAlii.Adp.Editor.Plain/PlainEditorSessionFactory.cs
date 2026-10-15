@@ -5,5 +5,5 @@ public sealed class PlainEditorSessionFactory : IEditorSessionFactory
 {
     public string EditorId => Editor.Plain.Id;
 
-    public IEditorSession Open(ShortGuid watchId, string rootPath, string filePath) => new PlainEditorSession(filePath);
+    public IEditorSession Open(ShortGuid watchId, string rootPath, string filePath) => new TextEditorSession(filePath);
 }

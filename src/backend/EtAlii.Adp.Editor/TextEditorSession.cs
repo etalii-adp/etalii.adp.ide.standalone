@@ -1,13 +1,21 @@
 using Serilog;
 
-namespace EtAlii.Adp.Editor.Plain;
+namespace EtAlii.Adp.Editor;
 
 /// <summary>
-/// One open plain-text file: <see cref="TextFileBuffer"/> for reading and every
-/// refusal rule (encoding, size, binary), plus a watcher so an external edit reaches the
-/// session as a <see cref="IEditorSession.Changed"/> event rather than a stale buffer.
+/// One open text file: <see cref="TextFileBuffer"/> for reading and every refusal rule
+/// (encoding, size, binary), plus a watcher so an external edit reaches the session as a
+/// <see cref="IEditorSession.Changed"/> event rather than a stale buffer (code-structure
+/// FR-053). The plain editor opens it as it is; the markdown editor is a thin variant, because
+/// what makes markdown worth its own module - preview, heading navigation - is client-side.
 /// </summary>
-public sealed class PlainEditorSession : IEditorSession
+/// <remarks>
+/// One class where the plain and markdown editors each had a copy, and the copies drifted: the
+/// markdown one re-read once while a comment beside its watcher said the re-read retried, a
+/// sentence copied from the plain one, where it was true. A premise copied between siblings has
+/// to be checked in the sibling it lands in, and one class has no sibling.
+/// </remarks>
+public class TextEditorSession : IEditorSession
 {
     /// <summary>
     /// Resolved AT THE CALL SITE rather than cached in a static field, following
@@ -29,24 +37,39 @@ public sealed class PlainEditorSession : IEditorSession
     /// for evidence of a drop" were indistinguishable for two days.
     /// </para>
     /// <para>
-    /// <b>The tree-wide conversion stays deferred by the user, not declined.</b> 92 classes hold the
-    /// cached-static shape and 90 still do; the pattern remains house style and no session should
-    /// convert files on its own initiative. This is one class, changed because its silence was
-    /// standing in the way of a specific diagnosis.
+    /// <b>The tree-wide conversion stays deferred by the user, not declined.</b> Most classes still
+    /// hold the cached-static shape; the pattern remains house style and no session should convert
+    /// files on its own initiative. This is one class, changed because its silence was standing in
+    /// the way of a specific diagnosis.
+    /// </para>
+    /// <para>
+    /// Of the concrete type, so a markdown session's records say markdown.
     /// </para>
     /// </remarks>
-    private static ILogger Logger => Log.ForContext<PlainEditorSession>();
+    private ILogger Logger => Log.ForContext(GetType());
 
     private readonly string _path;
+    private readonly Func<string, TextFileBufferOpenResult> _open;
     private readonly FileSystemWatcher? _watcher;
     private TextFileBuffer? _buffer;
 
-    public PlainEditorSession(string path)
+    public TextEditorSession(string path)
+        : this(path, TextFileBuffer.Open)
+    {
+    }
+
+    /// <summary>
+    /// With the open supplied, so a test can refuse a re-read exactly as often as it chooses - the
+    /// window the retry exists for is too narrow to land in on purpose with a real file.
+    /// </summary>
+    internal TextEditorSession(string path, Func<string, TextFileBufferOpenResult> open)
     {
         ArgumentNullException.ThrowIfNull(path);
+        ArgumentNullException.ThrowIfNull(open);
         _path = path;
+        _open = open;
 
-        var result = TextFileBuffer.Open(path);
+        var result = _open(path);
         _buffer = result.Buffer;
         Refusal = result.Refusal;
 
@@ -129,14 +152,15 @@ public sealed class PlainEditorSession : IEditorSession
 
     private static readonly TimeSpan BetweenReadAttempts = TimeSpan.FromMilliseconds(20);
 
-    private void OnExternalChange()
+    /// <summary>Internal for the guard, which calls it as the watcher would.</summary>
+    internal void OnExternalChange()
     {
         var reads = 0;
         var result = ReadWithRetry(
             () =>
             {
                 reads++;
-                return TextFileBuffer.Open(_path);
+                return _open(_path);
             },
             ReadAttempts,
             BetweenReadAttempts);
@@ -174,7 +198,7 @@ public sealed class PlainEditorSession : IEditorSession
     /// which always passes the same one.</b> The window this retry exists for is microseconds wide
     /// by design, so a test deleting and recreating a file could only land inside it by luck, and a
     /// guard that passes by luck is not a guard. Taking the read as a parameter lets
-    /// <c>PlainEditorSession.ReadRetry.Tests</c> supply a reader that refuses exactly as often as it
+    /// <c>TextEditorSession.ReadRetry.Tests</c> supply a reader that refuses exactly as often as it
     /// chooses, which makes the retry deterministic instead of making the test patient.
     /// <para>
     /// <b>Internal rather than private for the same reason</b>, via <c>InternalsVisibleTo</c> in this
@@ -206,6 +230,7 @@ public sealed class PlainEditorSession : IEditorSession
     public ValueTask DisposeAsync()
     {
         _watcher?.Dispose();
+        GC.SuppressFinalize(this);
         return ValueTask.CompletedTask;
     }
 }

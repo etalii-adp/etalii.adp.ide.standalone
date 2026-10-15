@@ -138,7 +138,7 @@ public class WatcherWiringTests
         // WatchedFolder took over its watching (code-structure FR-037).
         Assert.Contains("RootFolderWatcher", withWatchers);
         Assert.Contains("TrackedProblemRoot", withWatchers);
-        Assert.Contains("PlainEditorSession", withWatchers);
+        Assert.Contains("TextEditorSession", withWatchers);
         Assert.Contains("WatchedFolder", withWatchers);
     }
 

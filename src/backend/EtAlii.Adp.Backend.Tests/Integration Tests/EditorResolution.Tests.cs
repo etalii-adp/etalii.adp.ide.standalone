@@ -178,7 +178,7 @@ public class EditorResolutionTests(HostFixture host) : IClassFixture<HostFixture
     // without saying through what. Corrected, because a coalescing argument built on "two of one
     // type" would be resting on one watcher's configuration:
     //
-    //   * PlainEditorSession watches `new FileSystemWatcher(directory, Path.GetFileName(path))` - a
+    //   * TextEditorSession watches `new FileSystemWatcher(directory, Path.GetFileName(path))` - a
     //     PER-FILENAME filter with NO explicit NotifyFilter, so the default LastWrite | FileName.
     //     Through that, one temp-then-replace publish showed TWO transitions, both Renamed.
     //   * RootFolderWatcher - which is what the diagram stores' reload rides - is recursive with
@@ -199,7 +199,7 @@ public class EditorResolutionTests(HostFixture host) : IClassFixture<HostFixture
     // WHAT LANDED INSTEAD IS DIAGNOSTICS AND FOUR CORRECTNESS FIXES, none of them claimed as the
     // cause: NextAddAsync now names what it discarded, a refused re-read no longer consumes the
     // change, every watcher is enabled after its handlers and reports its own overflow, and
-    // PlainEditorSession's logger is resolved at the call site so its refusal record cannot land in a
+    // TextEditorSession's logger is resolved at the call site so its refusal record cannot land in a
     // silent sink. THE MECHANISM REMAINS UNKNOWN. The next occurrence is the first one that will say
     // something, because until now four of them said nothing at all.
     //

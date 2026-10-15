@@ -100,7 +100,7 @@ public sealed class JsonEditorSession : IEditorSession
 
     /// <summary>
     /// How many times a re-read is tried before the notification is given up on, and how long
-    /// between attempts - <c>PlainEditorSession</c>'s figures, mirrored exactly.
+    /// between attempts - <c>TextEditorSession</c>'s figures, mirrored exactly.
     /// </summary>
     /// <remarks>
     /// <b>A refusal must not consume the change.</b> A publish is a temp-then-replace, and
@@ -154,7 +154,7 @@ public sealed class JsonEditorSession : IEditorSession
     }
 
     /// <summary>
-    /// Reads until it succeeds or runs out of attempts - <c>PlainEditorSession.ReadWithRetry</c>,
+    /// Reads until it succeeds or runs out of attempts - <c>TextEditorSession.ReadWithRetry</c>,
     /// copied rather than shared because the two modules reference nothing of each other's.
     /// </summary>
     private static TextFileBufferOpenResult ReadWithRetry(
