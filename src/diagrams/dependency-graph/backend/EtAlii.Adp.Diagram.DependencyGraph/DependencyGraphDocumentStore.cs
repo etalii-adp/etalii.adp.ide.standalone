@@ -1,6 +1,4 @@
 using EtAlii.Adp.Documents;
-using Serilog;
-using YamlDotNet.Core;
 
 namespace EtAlii.Adp.Diagram.DependencyGraph;
 
@@ -11,8 +9,8 @@ namespace EtAlii.Adp.Diagram.DependencyGraph;
 /// before a refused read is believed, keeping the last good document through a reload that cannot
 /// read (R2.4), clearing it only on the watcher's delete (R2.5), ignoring this store's own save
 /// (R2.3) and telling the sessions are all <see cref="LifecycleDocumentStore{TBody, TModel}"/>'s.
-/// What stays here is what is this module's: what a body's lines mean, and why a body that is not
-/// YAML cannot be read.
+/// What stays here is what is this module's: what a body's lines mean, read through the parser's
+/// <see cref="ParseOutcome{TModel}"/>, which says why a body that is not YAML cannot be read.
 /// </para>
 /// <para>
 /// <b>A file that is not YAML is an ordinary state for a file somebody is editing</b>, so it is held
@@ -22,8 +20,6 @@ namespace EtAlii.Adp.Diagram.DependencyGraph;
 /// </remarks>
 public sealed class DependencyGraphDocumentStore : LifecycleDocumentStore<LineDocument, DependencyGraphModel>, IDependencyGraphDocumentStore
 {
-    private static readonly ILogger _logger = Log.ForContext<DependencyGraphDocumentStore>();
-
     /// <inheritdoc />
     protected override LineDocument Read(string text) => LineDocument.Parse(text);
 
@@ -31,31 +27,8 @@ public sealed class DependencyGraphDocumentStore : LifecycleDocumentStore<LineDo
     protected override string TextOf(LineDocument body) => body.Text;
 
     /// <inheritdoc />
-    /// <remarks>Empty for a body that does not parse: what it says is unknown, and <see cref="UnreadableOf"/> says why.</remarks>
-    protected override DependencyGraphModel Rebuild(LineDocument body)
-    {
-        try
-        {
-            return DependencyGraphParser.Parse(body);
-        }
-        catch (YamlException)
-        {
-            return DependencyGraphModel.Empty;
-        }
-    }
+    protected override DependencyGraphModel Rebuild(LineDocument body) => DependencyGraphParser.Outcome(body).Model;
 
     /// <inheritdoc />
-    protected override string UnreadableOf(LineDocument body)
-    {
-        try
-        {
-            _ = DependencyGraphParser.Parse(body);
-            return "";
-        }
-        catch (YamlException exception)
-        {
-            _logger.Debug(exception, "A dependency graph does not parse at line {Line}", exception.Start.Line);
-            return exception.Message;
-        }
-    }
+    protected override ParseOutcome<DependencyGraphModel> Parse(LineDocument body) => DependencyGraphParser.Outcome(body);
 }
