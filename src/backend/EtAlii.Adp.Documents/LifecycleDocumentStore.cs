@@ -161,6 +161,16 @@ public abstract class LifecycleDocumentStore<TBody, TModel> : IDiagramDocumentSt
     protected abstract TModel Rebuild(TBody body);
 
     /// <summary>
+    /// What the module's parser reads from <paramref name="body"/>, with what it passed over and whether
+    /// the body could be read at all; a body that could not be is not written to until it can be.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="Rebuild"/>'s model with no problems, unless the module says otherwise. A module whose
+    /// parser reports through a <see cref="ParseOutcome{TModel}"/> overrides this (code-structure FR-049).
+    /// </remarks>
+    protected virtual ParseOutcome<TModel> Parse(TBody body) => new(Rebuild(body), []);
+
+    /// <summary>
     /// Empty for a body that was read; otherwise why its text, though it could be opened, cannot be
     /// read as a document of this type - and then nothing is written to it until it can be.
     /// </summary>
@@ -190,19 +200,21 @@ public abstract class LifecycleDocumentStore<TBody, TModel> : IDiagramDocumentSt
             ? result
             : DocumentSaveResult.WithWarning(result.Warning.Length == 0 ? warning : $"{result.Warning} {warning}");
 
-    private DocumentEntry<TBody, TModel> Entry(TBody body) => new(body, Rebuild(body));
+    private DocumentEntry<TBody, TModel> Entry(TBody body) => new(body, Parse(body));
 
     private DocumentEntry<TBody, TModel> ReadEntry(string text)
     {
         var body = Read(text);
-        return Entry(body) with { Unreadable = UnreadableOf(body) };
+        var outcome = Parse(body);
+        return new(body, outcome.IsUsable ? outcome with { Unreadable = UnreadableOf(body) } : outcome);
     }
 
+    // A missing body opens as a new, empty document, which is usable whatever its parser makes of no text.
     private DocumentEntry<TBody, TModel> Unavailable(DocumentUnavailability unavailability, string reason)
     {
         var empty = Entry(Read(""));
         return unavailability == DocumentUnavailability.Missing
-            ? empty
+            ? empty with { Unreadable = "" }
             : empty with { Unreadable = reason.Length > 0 ? reason : "the body could not be read" };
     }
 

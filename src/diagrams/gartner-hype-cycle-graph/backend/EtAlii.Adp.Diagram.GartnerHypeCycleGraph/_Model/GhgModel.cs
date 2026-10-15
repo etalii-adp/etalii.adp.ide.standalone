@@ -1,3 +1,5 @@
+using EtAlii.Adp.Documents;
+
 namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
 
 /// <summary>
@@ -17,7 +19,7 @@ namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
 public sealed record GhgModel(
     IReadOnlyList<GhgTrend> Trends,
     IReadOnlyList<GhgInfluence> Influences,
-    IReadOnlyList<GhgProblem> Problems,
+    IReadOnlyList<ParseProblem> Problems,
     int? Version,
     GhgTimeUnit? Unit = null)
 {
@@ -63,8 +65,3 @@ public sealed record GhgModel(
     /// <summary>The version this module writes, and the only one it understands.</summary>
     public const int CurrentVersion = 1;
 }
-
-/// <summary>Something the parser could not read, and where.</summary>
-/// <param name="Line">The zero-based line it was found on.</param>
-/// <param name="Message">What could not be read, in a sentence meant for the panel.</param>
-public sealed record GhgProblem(int Line, string Message);
