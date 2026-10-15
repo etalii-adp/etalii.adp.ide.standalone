@@ -1,5 +1,6 @@
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Hierarchy;
+using EtAlii.Adp.Specification.Disl;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
 namespace EtAlii.Adp.Diagram.AnsibleStructure;
@@ -17,6 +18,11 @@ namespace EtAlii.Adp.Diagram.AnsibleStructure;
 /// side that declares it (Requirement 8.3).
 /// </para>
 /// <para>
+/// <b>It reads the definition's model of the folder</b> (ansible-structure-disl-fbl, Requirement 3.5): a
+/// node's <c>path</c> and <c>name</c>, a relation's <c>declaredIn</c>, <c>targetAsWritten</c> and the
+/// definition's label of its <c>directive</c>, and the payload the mapper draws from the same model.
+/// </para>
+/// <para>
 /// <b>The target is the registration</b>, as every diagram's is the file it was selected in; the
 /// folder is one <c>GetDirectoryName</c> away, and the stored positions the canvas was drawn with
 /// are in that file.
@@ -25,8 +31,8 @@ namespace EtAlii.Adp.Diagram.AnsibleStructure;
 public sealed class AnsibleContextSourceResolver(DiagramFileRouter router, IAnsibleProjectStore store, AnsibleElementMapper mapper)
     : DiagramSnapshotSourceResolver<AnsibleContextSourceResolver.Selected>(router)
 {
-    /// <summary>A selected diagram: its project, the graph derived from it, and the registration it was selected in.</summary>
-    public sealed record Selected(AnsibleProject Project, AnsibleGraph Graph, string Registration);
+    /// <summary>A selected diagram: the definition's model of its folder, and the registration it was selected in.</summary>
+    public sealed record Selected(DislDiagram Diagram, string Registration);
 
     /// <inheritdoc />
     protected override DiagramOrigin Origin => Diagram.AnsibleStructure.Origin;
@@ -41,8 +47,7 @@ public sealed class AnsibleContextSourceResolver(DiagramFileRouter router, IAnsi
     /// <inheritdoc />
     protected override Selected Load(string bodyPath)
     {
-        var project = store.GetOrLoad(FolderOf(bodyPath));
-        return new Selected(project, AnsibleGraph.Derive(project), bodyPath);
+        return new Selected(AnsibleDefinition.ModelOf(store.GetOrLoad(FolderOf(bodyPath))), bodyPath);
     }
 
     /// <inheritdoc />
@@ -50,15 +55,14 @@ public sealed class AnsibleContextSourceResolver(DiagramFileRouter router, IAnsi
     {
         ArgumentNullException.ThrowIfNull(snapshot);
 
-        if (snapshot.Graph.Node(elementId) is { } node)
+        return snapshot.Diagram.ElementById(elementId) switch
         {
-            return (Segments(node.RelativePath), node.Name);
-        }
+            null => null,
+            { Type.IsRelation: false } node => (Segments(Text(node, "path")), Text(node, "name")),
 
-        // An edge is selectable too, and it answers as its declaring side (Requirement 8.3).
-        return snapshot.Graph.Edges.FirstOrDefault(candidate => string.Equals(candidate.Id, elementId, StringComparison.Ordinal)) is { } edge
-            ? (Segments(edge.Directive.DeclaredIn), $"{DirectiveLabel(edge)} {edge.Directive.Target}")
-            : null;
+            // An edge is selectable too, and it answers as its declaring side (Requirement 8.3).
+            var relation => (Segments(Text(relation, "declaredIn")), $"{DirectiveLabel(relation)} {Text(relation, "targetAsWritten")}"),
+        };
     }
 
     /// <inheritdoc />
@@ -67,7 +71,7 @@ public sealed class AnsibleContextSourceResolver(DiagramFileRouter router, IAnsi
     {
         ArgumentNullException.ThrowIfNull(snapshot);
         var stored = RegistrationLayout.Read(snapshot.Registration);
-        return mapper.Visible(snapshot.Project, snapshot.Graph, DiagramViewport.Unbounded, stored)
+        return mapper.Visible(snapshot.Diagram, DiagramViewport.Unbounded, stored)
             .FirstOrDefault(element => string.Equals(element.Id, elementId, StringComparison.Ordinal));
     }
 
@@ -90,18 +94,17 @@ public sealed class AnsibleContextSourceResolver(DiagramFileRouter router, IAnsi
         IoPath.GetDirectoryName(IoPath.GetFullPath(registrationPath))
         ?? throw new InvalidOperationException($"'{registrationPath}' has no folder to read.");
 
-    /// <summary>The directive as the file spells it, for an edge's own label.</summary>
-    private static string DirectiveLabel(AnsibleEdge edge) => edge.Directive.Kind switch
+    /// <summary>
+    /// The directive as the file spells it, for an edge's own label: the definition's label, as a key, so
+    /// <c>import_role</c> reads <c>import_role:</c> and <c>roles:</c>, which is already one, stays as it is.
+    /// </summary>
+    private static string DirectiveLabel(DislElement relation)
     {
-        AnsibleDirectiveKind.Roles => "roles:",
-        AnsibleDirectiveKind.ImportRole => "import_role:",
-        AnsibleDirectiveKind.IncludeRole => "include_role:",
-        AnsibleDirectiveKind.ImportPlaybook => "import_playbook:",
-        AnsibleDirectiveKind.ImportTasks => "import_tasks:",
-        AnsibleDirectiveKind.IncludeTasks => "include_tasks:",
-        AnsibleDirectiveKind.Dependency => "dependencies:",
-        _ => "",
-    };
+        var label = AnsibleDefinition.Label(relation, "directive");
+        return label.EndsWith(':') ? label : label + ":";
+    }
+
+    private static string Text(DislElement element, string attribute) => element.ValueOf(attribute) as string ?? "";
 
     private static string[] Segments(string relativePath) =>
         relativePath.Split(['/', '\\'], StringSplitOptions.RemoveEmptyEntries);

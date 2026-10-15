@@ -1,4 +1,5 @@
 using EtAlii.Adp.Layout;
+using EtAlii.Adp.Specification.Disl;
 using Xunit;
 
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
@@ -15,7 +16,10 @@ public class AnsibleLayoutTests
 
     private static AnsibleGraph Graph(string fixture) => AnsibleGraph.Derive(Reader.Read(IoPath.Combine("Fixtures", fixture)));
 
-    private static IReadOnlyDictionary<string, Rect> Layout(string fixture) => AnsibleLayout.Compute(Graph(fixture));
+    /// <summary>The definition's model of a fixture, which the layout reads.</summary>
+    private static DislDiagram Model(string fixture) => AnsibleDefinition.ModelOf(Reader.Read(IoPath.Combine("Fixtures", fixture)));
+
+    private static IReadOnlyDictionary<string, Rect> Layout(string fixture) => AnsibleLayout.Compute(Model(fixture));
 
     // ---- determinism -------------------------------------------------------------------------
 
@@ -36,7 +40,7 @@ public class AnsibleLayoutTests
     {
         // Act.
         var graph = Graph("infrastructure");
-        var boxes = AnsibleLayout.Compute(graph);
+        var boxes = AnsibleLayout.Compute(Model("infrastructure"));
 
         // Assert.
         // A node with no box would simply not be drawn, and nothing else would say so.
@@ -207,7 +211,7 @@ public class AnsibleLayoutTests
             File.WriteAllText(IoPath.Combine(scratch, "b.yml"), "---\n- import_playbook: a.yml\n");
 
             // Act.
-            var boxes = AnsibleLayout.Compute(AnsibleGraph.Derive(Reader.Read(scratch)));
+            var boxes = AnsibleLayout.Compute(AnsibleDefinition.ModelOf(Reader.Read(scratch)));
 
             // Assert.
             // Each playbook is measured from itself, so neither sits right of the other merely for

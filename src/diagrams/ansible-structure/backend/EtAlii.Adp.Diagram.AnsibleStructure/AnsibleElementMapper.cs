@@ -1,14 +1,23 @@
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.Layout;
+using EtAlii.Adp.Specification.Cel;
+using EtAlii.Adp.Specification.Disl;
 using Google.Protobuf;
 
 namespace EtAlii.Adp.Diagram.AnsibleStructure;
 
 /// <summary>
-/// Turns a project, its graph and its layout into the core element and delta vocabulary
-/// (Requirement 7.1) - without extending that vocabulary by a single field.
+/// Turns the definition's model of a folder and its layout into the core element and delta
+/// vocabulary (Requirement 7.1) - without extending that vocabulary by a single field.
 /// </summary>
 /// <remarks>
+/// <para>
+/// <b>It reads the DISL model and nothing else</b> (ansible-structure-disl-fbl, Requirement 3.5):
+/// every fact a payload carries is an attribute the plugin delivers and the definition declares, the
+/// directive's words are the definition's labels, and nodes and relations go out in the model's
+/// order, which is the plugin's (finding B6). The <c>.proto</c> payloads are the host's wire and do
+/// not change.
+/// </para>
 /// <para>
 /// <b>Two of the four delta kinds are never emitted, and that is the design rather than an
 /// omission.</b> Nothing on this diagram folds, so no group or ungroup delta exists; nothing on
@@ -43,54 +52,56 @@ public sealed class AnsibleElementMapper
 
     /// <summary>
     /// Every element a connection with this viewport should see: the nodes it intersects, their
-    /// one-hop partners, and every edge whose two ends are both delivered.
+    /// one-hop partners, and every relation whose two ends are both delivered.
     /// </summary>
     public IReadOnlyList<DiagramElement> Visible(
-        AnsibleProject project,
-        AnsibleGraph graph,
+        DislDiagram diagram,
         DiagramViewport viewport,
         IReadOnlyDictionary<string, RegistrationPosition>? stored = null)
     {
-        ArgumentNullException.ThrowIfNull(project);
-        ArgumentNullException.ThrowIfNull(graph);
+        ArgumentNullException.ThrowIfNull(diagram);
 
-        var boxes = Arranged(AnsibleLayout.Compute(graph, _metrics), stored);
+        var boxes = Arranged(AnsibleLayout.Compute(diagram, _metrics), stored);
 
         var delivered = new HashSet<string>(StringComparer.Ordinal);
-        foreach (var node in graph.Nodes.Where(node => boxes.TryGetValue(node.Id, out var box) && viewport.Intersects(box)))
+        foreach (var node in diagram.Nodes.Where(node => boxes.TryGetValue(node.Id, out var box) && viewport.Intersects(box)))
         {
             delivered.Add(node.Id);
         }
 
-        // One hop, exactly: an edge with one end in view brings the other end with it, so the
+        // One hop, exactly: a relation with one end in view brings the other end with it, so the
         // connector always has two boxes to be drawn between.
-        foreach (var edge in graph.Edges)
+        foreach (var relation in diagram.Relations)
         {
-            if (delivered.Contains(edge.SourceId) && edge.TargetId.Length > 0)
+            var sourceId = SourceIdOf(relation);
+            var targetId = TargetIdOf(relation);
+            if (delivered.Contains(sourceId) && targetId.Length > 0)
             {
-                delivered.Add(edge.TargetId);
+                delivered.Add(targetId);
             }
-            else if (edge.TargetId.Length > 0 && delivered.Contains(edge.TargetId))
+            else if (targetId.Length > 0 && delivered.Contains(targetId))
             {
-                delivered.Add(edge.SourceId);
+                delivered.Add(sourceId);
             }
         }
 
         var elements = new List<DiagramElement>();
-        foreach (var node in graph.Nodes.Where(node => delivered.Contains(node.Id)))
+        foreach (var node in diagram.Nodes.Where(node => delivered.Contains(node.Id)))
         {
-            elements.Add(NodeElement(project, node, boxes.GetValueOrDefault(node.Id)));
+            elements.Add(NodeElement(node, boxes.GetValueOrDefault(node.Id)));
         }
 
-        foreach (var edge in graph.Edges)
+        foreach (var relation in diagram.Relations)
         {
-            // An edge with an unresolved target still draws - from its source, to nothing, which
-            // is how a reader sees that something is missing rather than seeing nothing at all.
-            var sourceDelivered = delivered.Contains(edge.SourceId);
-            var targetDelivered = edge.TargetId.Length == 0 || delivered.Contains(edge.TargetId);
+            // A relation with no target still draws - from its source, to nothing, which is how a
+            // reader sees that something is missing rather than seeing nothing at all.
+            var sourceId = SourceIdOf(relation);
+            var targetId = TargetIdOf(relation);
+            var sourceDelivered = delivered.Contains(sourceId);
+            var targetDelivered = targetId.Length == 0 || delivered.Contains(targetId);
             if (sourceDelivered && targetDelivered)
             {
-                elements.Add(EdgeElement(edge, boxes.GetValueOrDefault(edge.SourceId)));
+                elements.Add(EdgeElement(relation, sourceId, targetId, boxes.GetValueOrDefault(sourceId)));
             }
         }
 
@@ -130,159 +141,136 @@ public sealed class AnsibleElementMapper
             StringComparer.Ordinal);
     }
 
-    private DiagramElement NodeElement(AnsibleProject project, AnsibleNode node, Rect box)
+    private static DiagramElement NodeElement(DislElement node, Rect box)
     {
+        var type = node.Type.Name;
         var payload = new Wire.AnsibleElementPayload
         {
-            Name = node.Name,
-            Kind = KindOf(node.Kind),
-            PlayIndex = node.PlayIndex,
+            Name = Text(node, "name"),
+            Kind = KindOf(type),
+            PlayIndex = type == "Play" ? (int)Number(node, "playIndex") : -1,
             Width = box.Width,
             Height = box.Height,
         };
-        payload.ProjectRelativePath.AddRange(Segments(node.RelativePath));
+        payload.ProjectRelativePath.AddRange(Segments(Text(node, "path")));
 
-        switch (node.Kind)
+        switch (type)
         {
-            case AnsibleNodeKind.Playbook:
-            case AnsibleNodeKind.Play:
-                payload.Hosts = HostsOf(project, node);
+            case "Playbook":
+            case "Play":
+                payload.Hosts = Text(node, "hosts");
                 // The project's annotations ride the entry playbook, which is where a reader
                 // looking for "what is this project" will be looking (Requirement 4.1).
-                payload.Annotations.AddRange(project.Annotations);
+                payload.Annotations.AddRange(Items(node, "annotations").OfType<string>());
                 break;
 
-            case AnsibleNodeKind.Role when project.Role(node.Name) is { } role:
-                payload.Contents = ContentsOf(role.Contents);
-                payload.Hollow = role.Contents.IsHollow;
+            // A role, an inventory and a variable folder carry what the plugin read of them; one
+            // it found nothing for carries nothing, as the payload of a role it did not find did.
+            case "Role" when node.Attributes.ContainsKey("contents") && node.ValueOf("contents") is CelMap contents:
+                payload.Contents = ContentsOf(contents);
+                payload.Hollow = node.ValueOf("hollow") is true;
                 break;
 
-            case AnsibleNodeKind.Inventory when Inventory(project, node) is { } inventory:
-                payload.Groups.AddRange(inventory.Groups.Select(group =>
-                    new Wire.AnsibleInventoryGroup { Name = group.Name, HostCount = group.HostCount }));
+            case "Inventory" when node.Attributes.ContainsKey("groups"):
+                payload.Groups.AddRange(Items(node, "groups").OfType<CelMap>().Select(group =>
+                    new Wire.AnsibleInventoryGroup { Name = group.GetValueOrDefault("name") as string ?? "", HostCount = (int)Count(group, "hostCount") }));
                 break;
 
-            case AnsibleNodeKind.VariableFolder when VariableFolder(project, node) is { } folder:
-                payload.FileCount = folder.FileCount;
+            case "VariableFolder" when node.Attributes.ContainsKey("fileCount"):
+                payload.FileCount = (int)Number(node, "fileCount");
                 break;
         }
 
-        return new DiagramElement(node.Id, box.X, box.Y, TypeOf(node.Kind), PayloadTypeUrl, payload.ToByteArray());
+        return new DiagramElement(node.Id, box.X, box.Y, TypeOf(type), PayloadTypeUrl, payload.ToByteArray());
     }
 
-    private static DiagramElement EdgeElement(AnsibleEdge edge, Rect anchor)
+    private static DiagramElement EdgeElement(DislElement relation, string sourceId, string targetId, Rect anchor)
     {
+        var resolution = Text(relation, "resolution");
+        var target = Text(relation, "targetAsWritten");
         var payload = new Wire.AnsibleElementPayload
         {
-            Name = edge.Directive.Target,
+            Name = target,
             Kind = Wire.AnsibleElementKind.Edge,
-            Unresolvable = edge.Resolution == AnsibleTargetResolution.Unresolvable,
+            Unresolvable = resolution == "expression",
             Edge = new Wire.AnsibleEdge
             {
-                SourceId = edge.SourceId,
-                TargetId = edge.TargetId,
-                Kind = EdgeKindOf(edge.Kind),
-                Dynamic = edge.IsDynamic,
-                Directive = DirectiveNameOf(edge.Directive.Kind),
-                TargetAsWritten = edge.Directive.Target,
-                Condition = edge.Directive.Condition,
-                DeclaredAtLine = edge.Directive.Line,
-                Missing = edge.Resolution == AnsibleTargetResolution.Missing,
+                SourceId = sourceId,
+                TargetId = targetId,
+                Kind = EdgeKindOf(relation.Type.Name),
+                Dynamic = relation.ValueOf("dynamic") is true,
+                Directive = AnsibleDefinition.Label(relation, "directive"),
+                TargetAsWritten = target,
+                Condition = Text(relation, "condition"),
+                DeclaredAtLine = (uint)Number(relation, "declaredAtLine"),
+                Missing = resolution == "missing",
             },
         };
-        payload.Edge.DeclaredIn.AddRange(Segments(edge.Directive.DeclaredIn));
+        payload.Edge.DeclaredIn.AddRange(Segments(Text(relation, "declaredIn")));
 
         // An edge is positioned at its source; the canvas routes it between the two boxes.
-        return new DiagramElement(edge.Id, anchor.X, anchor.Y, EdgeType, PayloadTypeUrl, payload.ToByteArray());
+        return new DiagramElement(relation.Id, anchor.X, anchor.Y, EdgeType, PayloadTypeUrl, payload.ToByteArray());
     }
 
-    private static string HostsOf(AnsibleProject project, AnsibleNode node)
+    /// <summary>The id of the node a relation is declared by.</summary>
+    private static string SourceIdOf(DislElement relation) => relation.Source?.Id ?? relation.SourceId ?? "";
+
+    /// <summary>The id of the node a relation reaches; empty for one that is missing or an expression, which reaches none.</summary>
+    private static string TargetIdOf(DislElement relation) => relation.Target?.Id ?? "";
+
+    private static Wire.AnsibleRoleContents ContentsOf(CelMap contents) => new()
     {
-        var playbook = project.Playbooks.FirstOrDefault(candidate =>
-            string.Equals(candidate.RelativePath, node.RelativePath, StringComparison.Ordinal));
-        if (playbook is null)
-        {
-            return "";
-        }
-
-        if (node.Kind == AnsibleNodeKind.Play)
-        {
-            var hash = node.Id.LastIndexOf('#');
-            return hash >= 0 && int.TryParse(node.Id[(hash + 1)..], out var index)
-                ? playbook.Plays.FirstOrDefault(play => play.Index == index)?.Hosts ?? ""
-                : "";
-        }
-
-        // A single-play playbook carries its play's pattern, since no play box is drawn for it.
-        return playbook.Plays.Count == 1 ? playbook.Plays[0].Hosts : "";
-    }
-
-    private static AnsibleInventory? Inventory(AnsibleProject project, AnsibleNode node) =>
-        project.Inventories.FirstOrDefault(inventory =>
-            string.Equals(inventory.RelativePath, node.RelativePath, StringComparison.Ordinal));
-
-    private static AnsibleVariableFolder? VariableFolder(AnsibleProject project, AnsibleNode node) =>
-        project.Inventories
-            .SelectMany(inventory => inventory.VariableFolders)
-            .FirstOrDefault(folder => string.Equals(folder.RelativePath, node.RelativePath, StringComparison.Ordinal));
-
-    private static Wire.AnsibleRoleContents ContentsOf(AnsibleRoleContents contents) => new()
-    {
-        TaskFiles = contents.TaskFiles,
-        Handlers = contents.Handlers,
-        Templates = contents.Templates,
-        Files = contents.Files,
-        Defaults = contents.Defaults,
-        Vars = contents.Vars,
-        HasMeta = contents.HasMeta,
-        HasLibrary = contents.HasLibrary,
+        TaskFiles = (int)Count(contents, "taskFiles"),
+        Handlers = (int)Count(contents, "handlers"),
+        Templates = (int)Count(contents, "templates"),
+        Files = (int)Count(contents, "files"),
+        Defaults = (int)Count(contents, "defaults"),
+        Vars = (int)Count(contents, "vars"),
+        HasMeta = contents.GetValueOrDefault("hasMeta") is true,
+        HasLibrary = contents.GetValueOrDefault("hasLibrary") is true,
     };
+
+    private static string Text(DislElement element, string attribute) => element.ValueOf(attribute) as string ?? "";
+
+    private static long Number(DislElement element, string attribute) => element.ValueOf(attribute) is long number ? number : 0;
+
+    private static IReadOnlyList<object?> Items(DislElement element, string attribute) =>
+        element.ValueOf(attribute) as IReadOnlyList<object?> ?? [];
+
+    private static long Count(CelMap item, string field) => item.GetValueOrDefault(field) is long count ? count : 0;
 
     private static string[] Segments(string relativePath) =>
         relativePath.Split(['/', '\\'], StringSplitOptions.RemoveEmptyEntries);
 
-    private static string TypeOf(AnsibleNodeKind kind) => kind switch
+    private static string TypeOf(string type) => type switch
     {
-        AnsibleNodeKind.Playbook => PlaybookType,
-        AnsibleNodeKind.Play => PlayType,
-        AnsibleNodeKind.Role => RoleType,
-        AnsibleNodeKind.TaskFile => TaskFileType,
-        AnsibleNodeKind.Inventory => InventoryType,
-        AnsibleNodeKind.VariableFolder => VariableFolderType,
+        "Playbook" => PlaybookType,
+        "Play" => PlayType,
+        "Role" => RoleType,
+        "TaskFile" => TaskFileType,
+        "Inventory" => InventoryType,
+        "VariableFolder" => VariableFolderType,
         _ => EdgeType,
     };
 
-    private static Wire.AnsibleElementKind KindOf(AnsibleNodeKind kind) => kind switch
+    private static Wire.AnsibleElementKind KindOf(string type) => type switch
     {
-        AnsibleNodeKind.Playbook => Wire.AnsibleElementKind.Playbook,
-        AnsibleNodeKind.Play => Wire.AnsibleElementKind.Play,
-        AnsibleNodeKind.Role => Wire.AnsibleElementKind.Role,
-        AnsibleNodeKind.TaskFile => Wire.AnsibleElementKind.TaskFile,
-        AnsibleNodeKind.Inventory => Wire.AnsibleElementKind.Inventory,
-        AnsibleNodeKind.VariableFolder => Wire.AnsibleElementKind.VariableFolder,
+        "Playbook" => Wire.AnsibleElementKind.Playbook,
+        "Play" => Wire.AnsibleElementKind.Play,
+        "Role" => Wire.AnsibleElementKind.Role,
+        "TaskFile" => Wire.AnsibleElementKind.TaskFile,
+        "Inventory" => Wire.AnsibleElementKind.Inventory,
+        "VariableFolder" => Wire.AnsibleElementKind.VariableFolder,
         _ => Wire.AnsibleElementKind.Unspecified,
     };
 
-    private static Wire.AnsibleEdgeKind EdgeKindOf(AnsibleEdgeKind kind) => kind switch
+    private static Wire.AnsibleEdgeKind EdgeKindOf(string type) => type switch
     {
-        AnsibleEdgeKind.UsesRole => Wire.AnsibleEdgeKind.UsesRole,
-        AnsibleEdgeKind.ImportsPlaybook => Wire.AnsibleEdgeKind.ImportsPlaybook,
-        AnsibleEdgeKind.IncludesTasks => Wire.AnsibleEdgeKind.IncludesTasks,
-        AnsibleEdgeKind.DependsOn => Wire.AnsibleEdgeKind.DependsOn,
-        AnsibleEdgeKind.Targets => Wire.AnsibleEdgeKind.Targets,
+        "UsesRole" => Wire.AnsibleEdgeKind.UsesRole,
+        "ImportsPlaybook" => Wire.AnsibleEdgeKind.ImportsPlaybook,
+        "IncludesTasks" => Wire.AnsibleEdgeKind.IncludesTasks,
+        "DependsOn" => Wire.AnsibleEdgeKind.DependsOn,
+        "Targets" => Wire.AnsibleEdgeKind.Targets,
         _ => Wire.AnsibleEdgeKind.Unspecified,
-    };
-
-    /// <summary>The directive as the file spells it, which is what the property grid shows.</summary>
-    private static string DirectiveNameOf(AnsibleDirectiveKind kind) => kind switch
-    {
-        AnsibleDirectiveKind.Roles => "roles:",
-        AnsibleDirectiveKind.ImportRole => "import_role",
-        AnsibleDirectiveKind.IncludeRole => "include_role",
-        AnsibleDirectiveKind.ImportPlaybook => "import_playbook",
-        AnsibleDirectiveKind.ImportTasks => "import_tasks",
-        AnsibleDirectiveKind.IncludeTasks => "include_tasks",
-        AnsibleDirectiveKind.Dependency => "dependencies",
-        _ => "",
     };
 }

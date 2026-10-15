@@ -4,9 +4,10 @@ using EtAlii.Adp.History;
 namespace EtAlii.Adp.Diagram.AnsibleStructure;
 
 /// <summary>
-/// One connection's live view of one Ansible project. Holds nothing the store holds - it reads
-/// the shared <see cref="AnsibleProject"/> - and adds only what is this connection's: its
-/// viewport, and the set of elements it has already been sent.
+/// One connection's live view of one Ansible project. Holds nothing the store holds - it draws the
+/// definition's model of the store's reading (<see cref="AnsibleDefinition.ModelOf"/>), built once per
+/// reading - and adds only what is this connection's: its viewport, and the set of elements it has
+/// already been sent.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -152,12 +153,9 @@ internal sealed class AnsibleSession : IDiagramSession
         return ValueTask.CompletedTask;
     }
 
-    /// <summary>What this connection should hold: the project as the store has it, through its viewport.</summary>
-    private IReadOnlyList<DiagramElement> Render()
-    {
-        var project = _store.GetOrLoad(_folder);
-        return _mapper.Visible(project, AnsibleGraph.Derive(project), _viewport, Stored());
-    }
+    /// <summary>What this connection should hold: the model of the folder as the store has read it, through its viewport.</summary>
+    private IReadOnlyList<DiagramElement> Render() =>
+        _mapper.Visible(AnsibleDefinition.ModelOf(_store.GetOrLoad(_folder)), _viewport, Stored());
 
     private void Raise(IReadOnlyList<DiagramDelta> deltas) =>
         Changed?.Invoke(this, new DiagramDeltasEventArgs(deltas));

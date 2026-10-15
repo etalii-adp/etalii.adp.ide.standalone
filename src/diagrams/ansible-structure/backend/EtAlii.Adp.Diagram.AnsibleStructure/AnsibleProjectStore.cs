@@ -12,10 +12,18 @@ namespace EtAlii.Adp.Diagram.AnsibleStructure;
 /// later (ansible-structure-disl-fbl, task 10).
 /// </summary>
 /// <remarks>
+/// <para>
+/// <b>What it holds is the plugin's reading, and it is read only as the definition's model</b>
+/// (ansible-structure-disl-fbl, Requirement 3.5): the session, the selection resolver and the property
+/// provider hand it to <see cref="AnsibleDefinition.ModelOf"/>, which builds the model once per reading, and
+/// draw, select and describe from that. It goes with the store in task 10.
+/// </para>
+/// <para>
 /// A registered folder is one Ansible project, the burst timer collapses a multi-file save into a
 /// single re-read, and the walk is milliseconds, so every settled burst re-reads the whole project.
 /// If a project ever appears where that is not true, the place to fix it is
 /// <see cref="AnsibleProjectReader"/>.
+/// </para>
 /// </remarks>
 public sealed class AnsibleProjectStore(AnsibleProjectReader reader, TimeSpan? settleDelay = null)
     : WatchedFolderStore<AnsibleProject>(settleDelay ?? DefaultSettleDelay), IAnsibleProjectStore

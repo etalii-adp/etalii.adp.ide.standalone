@@ -70,8 +70,15 @@ internal static class AnsibleDefinition
     public static IReadOnlyList<ContextPropertyDefinition> Rows(AnsibleProject project, string elementId)
     {
         ArgumentNullException.ThrowIfNull(project);
+        return Rows(ModelOf(project), elementId);
+    }
+
+    /// <summary>The property rows of the element <paramref name="elementId"/> names in <paramref name="diagram"/>: its form's, and an inventory's groups and variable folders; none for an id the model does not hold.</summary>
+    public static IReadOnlyList<ContextPropertyDefinition> Rows(DislDiagram diagram, string elementId)
+    {
+        ArgumentNullException.ThrowIfNull(diagram);
         ArgumentNullException.ThrowIfNull(elementId);
-        if (ModelOf(project).ElementById(elementId) is not { } element) return [];
+        if (diagram.ElementById(elementId) is not { } element) return [];
 
         return [.. FormDerivation.Derive(Specification, element, Env, Ids).Select(Row), .. AnsibleInventoryRows.Of(element)];
     }
@@ -94,11 +101,30 @@ internal static class AnsibleDefinition
         return ConstraintEvaluator.Evaluate(Specification, model.Diagram, new DislConstraintOptions(Env, [.. model.Findings.Select(ReaderFinding)]));
     }
 
-    /// <summary><paramref name="project"/> as the definition's model.</summary>
+    /// <summary>
+    /// <paramref name="project"/> as the definition's model, which is what the payloads, the layout and the
+    /// selection read: the store's reading leaves the plugin only through here, until the library's folder body
+    /// hands the model over itself (task 10).
+    /// </summary>
     public static DislDiagram ModelOf(AnsibleProject project)
     {
         ArgumentNullException.ThrowIfNull(project);
         return Built(project).Diagram;
+    }
+
+    /// <summary>
+    /// The label the definition gives the value of the enumerated <paramref name="attribute"/> of
+    /// <paramref name="element"/>, which are the words a file spells a directive with; the value itself when
+    /// the enumeration words none.
+    /// </summary>
+    public static string Label(DislElement element, string attribute)
+    {
+        ArgumentNullException.ThrowIfNull(element);
+        ArgumentNullException.ThrowIfNull(attribute);
+        var value = element.ValueOf(attribute) as string ?? "";
+        return Specification.Metamodel.Enums.TryGetValue(element.Type.Attributes[attribute].Type, out var enumeration) && enumeration.ValueOf(value) is { } known
+            ? known.Label ?? known.Key
+            : value;
     }
 
     /// <summary>The model of a reading through the binding, as <see cref="DislModelBuilder"/> builds it under the definition.</summary>
