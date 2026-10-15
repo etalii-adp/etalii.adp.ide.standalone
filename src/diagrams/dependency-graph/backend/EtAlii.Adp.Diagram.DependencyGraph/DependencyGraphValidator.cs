@@ -1,6 +1,4 @@
 using EtAlii.Adp.Documents;
-using Serilog;
-using YamlDotNet.Core;
 
 namespace EtAlii.Adp.Diagram.DependencyGraph;
 
@@ -17,8 +15,6 @@ namespace EtAlii.Adp.Diagram.DependencyGraph;
 /// </remarks>
 public sealed class DependencyGraphValidator : IDiagramValidator
 {
-    private static readonly ILogger _logger = Log.ForContext<DependencyGraphValidator>();
-
     /// <summary>The rule reported when the file is not YAML this can read.</summary>
     public const string UnparseableRuleId = "dependencies.unparseable";
 
@@ -32,18 +28,9 @@ public sealed class DependencyGraphValidator : IDiagramValidator
         ArgumentNullException.ThrowIfNull(request);
         cancellationToken.ThrowIfCancellationRequested();
 
-        DependencyGraphModel model;
-        try
-        {
-            model = DependencyGraphParser.Parse(LineDocument.Parse(request.Document));
-        }
-        catch (YamlException exception)
-        {
-            var line = (uint)Math.Max(exception.Start.Line, 1);
-            _logger.Debug(exception, "{BaseName} does not parse at line {Line}", request.BaseName, line);
-            return ValueTask.FromResult(DependencyGraphFindings.Unparseable(exception.Message, (int)line));
-        }
-
-        return ValueTask.FromResult(DependencyGraphFindings.Judge(model));
+        var outcome = DependencyGraphParser.Outcome(LineDocument.Parse(request.Document));
+        return ValueTask.FromResult(outcome.IsUsable
+            ? DependencyGraphFindings.Judge(outcome.Model)
+            : DependencyGraphFindings.Unparseable(outcome.Unreadable, outcome.Problems[0].Line + 1));
     }
 }

@@ -1,5 +1,7 @@
 using System.Globalization;
 using EtAlii.Adp.Documents;
+using Serilog;
+using YamlDotNet.Core;
 using YamlDotNet.RepresentationModel;
 
 namespace EtAlii.Adp.Diagram.DependencyGraph;
@@ -29,11 +31,35 @@ namespace EtAlii.Adp.Diagram.DependencyGraph;
 /// </remarks>
 public static class DependencyGraphParser
 {
+    private static readonly ILogger _logger = Log.ForContext(typeof(DependencyGraphParser));
+
     private const string ElementsKey = "elements";
     private const string RelationsKey = "relations";
 
+    /// <summary>
+    /// Reads the document, <b>without throwing</b>: a body that is not YAML is an outcome that could
+    /// not be read, with the YAML reader's sentence as its reason and its one problem, on the line the
+    /// reader names, and an empty model.
+    /// </summary>
+    /// <remarks>A file that is not YAML is an ordinary state for a file somebody is editing (code-structure FR-049).</remarks>
+    public static ParseOutcome<DependencyGraphModel> Outcome(LineDocument document)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+
+        try
+        {
+            return new ParseOutcome<DependencyGraphModel>(Parse(document), []);
+        }
+        catch (YamlException exception)
+        {
+            _logger.Debug(exception, "A dependency graph does not parse at line {Line}", exception.Start.Line);
+            var line = (int)Math.Max(exception.Start.Line, 1) - 1;
+            return new ParseOutcome<DependencyGraphModel>(DependencyGraphModel.Empty, [new ParseProblem(line, exception.Message)], exception.Message);
+        }
+    }
+
     /// <summary>Reads the document. Throws only when the text is not YAML.</summary>
-    /// <exception cref="YamlDotNet.Core.YamlException">The document is not well-formed YAML.</exception>
+    /// <exception cref="YamlException">The document is not well-formed YAML.</exception>
     public static DependencyGraphModel Parse(LineDocument document)
     {
         ArgumentNullException.ThrowIfNull(document);
