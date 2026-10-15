@@ -67,7 +67,13 @@ public static class FdgParser
         ["id", "type", "from", "to", "name", "description"];
 
     /// <summary>Reads the document. <b>Never throws.</b></summary>
-    public static FdgModel Parse(LineDocument document)
+    public static FdgModel Parse(LineDocument document) => Outcome(document).Model;
+
+    /// <summary>
+    /// What the store keeps of <paramref name="document"/>: the model, its problems, and, for a text
+    /// that is not YAML, why, so that nothing is edited or written until it is. <b>Never throws.</b>
+    /// </summary>
+    public static ParseOutcome<FdgModel> Outcome(LineDocument document)
     {
         ArgumentNullException.ThrowIfNull(document);
 
@@ -81,9 +87,11 @@ public static class FdgParser
         {
             // The one case the design names: not YAML at all. The text is the caller's and is
             // untouched; what comes back is an empty model carrying the reason and the line, so
-            // the document still opens and the panel still says what is wrong.
+            // the document still opens, the panel still says what is wrong, and no edit is made
+            // to it until it reads.
             var line = Math.Max(0, (int)exception.Start.Line - 1);
-            return FdgModel.Empty with { Problems = [new FdgProblem(line, $"The document could not be read as YAML: {exception.Message}")] };
+            var problem = new ParseProblem(line, $"The document could not be read as YAML: {exception.Message}");
+            return new ParseOutcome<FdgModel>(FdgModel.Empty with { Problems = [problem] }, [problem], problem.Message);
         }
 
         if (stream.Documents.Count == 0 || stream.Documents[0].RootNode is not YamlMappingNode root)
@@ -91,52 +99,53 @@ public static class FdgParser
             // An empty file, or a root that is not a mapping, declares nothing. That is a model
             // with nothing in it rather than a failure: whether an empty document is worth
             // complaining about is the rule set's decision, not the parser's.
-            return FdgModel.Empty;
+            return new ParseOutcome<FdgModel>(FdgModel.Empty, []);
         }
 
-        List<FdgProblem> problems = [];
-        return new FdgModel(
+        List<ParseProblem> problems = [];
+        var model = new FdgModel(
             ReadElements(root, document, problems),
             ReadConnections(root, document, problems),
             problems,
             ReadVersion(root, document, problems));
+        return new ParseOutcome<FdgModel>(model, model.Problems);
     }
 
     /// <summary>
     /// The header's version. A missing or unreadable header opens the document and is reported,
     /// as <c>.dgr</c> does - it is never a reason to refuse the file.
     /// </summary>
-    private static int? ReadVersion(YamlMappingNode root, LineDocument document, List<FdgProblem> problems)
+    private static int? ReadVersion(YamlMappingNode root, LineDocument document, List<ParseProblem> problems)
     {
         var node = YamlAccess.Node(root, HeaderKey);
         if (node is not YamlScalarNode scalar)
         {
-            problems.Add(new FdgProblem(0, $"The document does not begin with `{HeaderKey}: {FdgModel.CurrentVersion}`."));
+            problems.Add(new ParseProblem(0, $"The document does not begin with `{HeaderKey}: {FdgModel.CurrentVersion}`."));
             return null;
         }
 
         if (!int.TryParse(scalar.Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var version))
         {
-            problems.Add(new FdgProblem(YamlAccess.LineOf(scalar, document), $"The version `{scalar.Value}` is not a number."));
+            problems.Add(new ParseProblem(YamlAccess.LineOf(scalar, document), $"The version `{scalar.Value}` is not a number."));
             return null;
         }
 
         if (version != FdgModel.CurrentVersion)
         {
-            problems.Add(new FdgProblem(YamlAccess.LineOf(scalar, document), $"This document states version {version}; this module reads version {FdgModel.CurrentVersion}."));
+            problems.Add(new ParseProblem(YamlAccess.LineOf(scalar, document), $"This document states version {version}; this module reads version {FdgModel.CurrentVersion}."));
         }
 
         return version;
     }
 
-    private static List<FdgElement> ReadElements(YamlMappingNode root, LineDocument document, List<FdgProblem> problems)
+    private static List<FdgElement> ReadElements(YamlMappingNode root, LineDocument document, List<ParseProblem> problems)
     {
         List<FdgElement> elements = [];
         foreach (var node in YamlAccess.Sequence(root, ElementsKey))
         {
             if (node is not YamlMappingNode mapping)
             {
-                problems.Add(new FdgProblem(YamlAccess.LineOf(node, document), "An element entry is not a mapping and was passed over."));
+                problems.Add(new ParseProblem(YamlAccess.LineOf(node, document), "An element entry is not a mapping and was passed over."));
                 continue;
             }
 
@@ -146,14 +155,14 @@ public static class FdgParser
 
             if (!FdgElementTypes.IsKnown(type))
             {
-                problems.Add(new FdgProblem(YamlAccess.LineOf(mapping, document), $"`{type}` is not an element type this module knows."));
+                problems.Add(new ParseProblem(YamlAccess.LineOf(mapping, document), $"`{type}` is not an element type this module knows."));
             }
 
             if (isComment && YamlAccess.Scalar(mapping, "name") is not null)
             {
                 // Named rather than dropped: the line survives the round trip, and the author is
                 // told the name means nothing on a Comment.
-                problems.Add(new FdgProblem(YamlAccess.LineOf(mapping, document), "A Comment has no name; the `name` here is kept and ignored."));
+                problems.Add(new ParseProblem(YamlAccess.LineOf(mapping, document), "A Comment has no name; the `name` here is kept and ignored."));
             }
 
             elements.Add(new FdgElement(
@@ -172,14 +181,14 @@ public static class FdgParser
         return elements;
     }
 
-    private static List<FdgConnection> ReadConnections(YamlMappingNode root, LineDocument document, List<FdgProblem> problems)
+    private static List<FdgConnection> ReadConnections(YamlMappingNode root, LineDocument document, List<ParseProblem> problems)
     {
         List<FdgConnection> connections = [];
         foreach (var node in YamlAccess.Sequence(root, ConnectionsKey))
         {
             if (node is not YamlMappingNode mapping)
             {
-                problems.Add(new FdgProblem(YamlAccess.LineOf(node, document), "A connection entry is not a mapping and was passed over."));
+                problems.Add(new ParseProblem(YamlAccess.LineOf(node, document), "A connection entry is not a mapping and was passed over."));
                 continue;
             }
 
@@ -188,7 +197,7 @@ public static class FdgParser
             var type = YamlAccess.Scalar(mapping, "type") ?? "";
             if (!FdgConnectionTypes.IsKnown(type))
             {
-                problems.Add(new FdgProblem(YamlAccess.LineOf(mapping, document), $"`{type}` is not a relation this module knows."));
+                problems.Add(new ParseProblem(YamlAccess.LineOf(mapping, document), $"`{type}` is not a relation this module knows."));
             }
 
             connections.Add(new FdgConnection(
@@ -208,14 +217,14 @@ public static class FdgParser
         YamlMappingNode mapping,
         string[] known,
         LineDocument document,
-        List<FdgProblem> problems,
+        List<ParseProblem> problems,
         string what)
     {
         foreach ((YamlNode key, var _) in mapping.Children)
         {
             if (key is YamlScalarNode { Value: { } name } scalar && !known.Contains(name, StringComparer.Ordinal))
             {
-                problems.Add(new FdgProblem(YamlAccess.LineOf(scalar, document), $"`{name}` is not a key this module reads on a {what}; the line is kept."));
+                problems.Add(new ParseProblem(YamlAccess.LineOf(scalar, document), $"`{name}` is not a key this module reads on a {what}; the line is kept."));
             }
         }
     }
@@ -229,7 +238,7 @@ public static class FdgParser
     /// at the origin with nothing said, which is the shape of bug that gets reported as "the
     /// diagram moved my box".
     /// </remarks>
-    private static double Number(YamlMappingNode mapping, string key, LineDocument document, List<FdgProblem> problems)
+    private static double Number(YamlMappingNode mapping, string key, LineDocument document, List<ParseProblem> problems)
     {
         if (YamlAccess.Node(mapping, key) is not YamlScalarNode scalar)
         {
@@ -241,7 +250,7 @@ public static class FdgParser
             return value;
         }
 
-        problems.Add(new FdgProblem(YamlAccess.LineOf(scalar, document), $"`{key}: {scalar.Value}` is not a number; zero was used."));
+        problems.Add(new ParseProblem(YamlAccess.LineOf(scalar, document), $"`{key}: {scalar.Value}` is not a number; zero was used."));
         return 0;
     }
 
