@@ -1,5 +1,3 @@
-using System.Globalization;
-using System.Text;
 using EtAlii.Adp.Documents;
 
 namespace EtAlii.Adp.Diagram.Rdf;
@@ -91,7 +89,7 @@ public sealed class RdfParser
             throw Error($"{directive.Value} expects a '<...>' IRI after the prefix.");
         }
 
-        var iri = ResolveIri(DecodeIri(_current.Value));
+        var iri = ResolveIri(RdfEscapes.Iri(_current.Value));
         Advance();
 
         if (expectDot)
@@ -114,7 +112,7 @@ public sealed class RdfParser
         }
 
         // A new base resolves against the one before it, so a document can narrow in steps.
-        _base = ResolveIri(DecodeIri(_current.Value));
+        _base = ResolveIri(RdfEscapes.Iri(_current.Value));
         _baseLine = _tokenizer.LineOf(directive.Start);
         Advance();
 
@@ -247,12 +245,7 @@ public sealed class RdfParser
             {
                 var token = _current;
                 Advance();
-                var datatype = token.Value.Contains('e') || token.Value.Contains('E')
-                    ? RdfVocabulary.XsdDouble
-                    : token.Value.Contains('.')
-                        ? RdfVocabulary.XsdDecimal
-                        : RdfVocabulary.XsdInteger;
-                return (new LiteralTerm(token.Value, datatype, null, token.Value), token.End);
+                return (new LiteralTerm(token.Value, NumericLiteral.Datatype(token.Value), null, token.Value), token.End);
             }
             case RdfTokenKind.Boolean:
             {
@@ -274,7 +267,7 @@ public sealed class RdfParser
         var stringToken = _current;
         Advance();
 
-        var lexical = DecodeString(stringToken.Value);
+        var lexical = RdfEscapes.String(stringToken.Value);
 
         if (_current.Kind == RdfTokenKind.LanguageTag)
         {
@@ -308,14 +301,14 @@ public sealed class RdfParser
 
         if (token.Kind == RdfTokenKind.Iri)
         {
-            return new IriTerm(ResolveIri(DecodeIri(token.Value)), token.Value);
+            return new IriTerm(ResolveIri(RdfEscapes.Iri(token.Value)), token.Value);
         }
 
         var colon = token.Value.IndexOf(':');
         var prefix = token.Value[..colon];
         return !_prefixes.TryGetValue(prefix, out var expansion)
             ? throw Error($"The prefix '{prefix}:' is not declared.")
-            : new IriTerm(expansion + DecodeLocal(token.Value[(colon + 1)..]), token.Value);
+            : new IriTerm(expansion + RdfEscapes.Local(token.Value[(colon + 1)..]), token.Value);
     }
 
     private BlankTerm ParseLabeledBlank()
@@ -495,108 +488,5 @@ public sealed class RdfParser
         }
 
         return false;
-    }
-
-    /// <summary>The inside of a <c>&lt;...&gt;</c> token with its numeric escapes decoded - the only escapes an IRI may carry.</summary>
-    private static string DecodeIri(string raw) => DecodeNumericEscapes(raw[1..^1]);
-
-    /// <summary>A prefixed name's local part with its reserved-character escapes dropped: <c>\.</c> written for <c>.</c>, and so on.</summary>
-    private static string DecodeLocal(string raw)
-    {
-        if (!raw.Contains('\\'))
-        {
-            return raw;
-        }
-
-        var builder = new StringBuilder(raw.Length);
-        for (var i = 0; i < raw.Length; i++)
-        {
-            if (raw[i] == '\\' && i + 1 < raw.Length)
-            {
-                i++;
-            }
-
-            builder.Append(raw[i]);
-        }
-
-        return builder.ToString();
-    }
-
-    /// <summary>A string token's value: quotes stripped, escapes decoded.</summary>
-    private static string DecodeString(string raw)
-    {
-        var quote = raw[0];
-        var isLong = raw.Length >= 6 && raw[1] == quote && raw[2] == quote;
-        var inner = isLong ? raw[3..^3] : raw[1..^1];
-
-        if (!inner.Contains('\\'))
-        {
-            return inner;
-        }
-
-        var builder = new StringBuilder(inner.Length);
-        for (var i = 0; i < inner.Length; i++)
-        {
-            if (inner[i] != '\\' || i + 1 >= inner.Length)
-            {
-                builder.Append(inner[i]);
-                continue;
-            }
-
-            i++;
-            switch (inner[i])
-            {
-                case 't': builder.Append('\t'); break;
-                case 'b': builder.Append('\b'); break;
-                case 'n': builder.Append('\n'); break;
-                case 'r': builder.Append('\r'); break;
-                case 'f': builder.Append('\f'); break;
-                case 'u' or 'U':
-                    var length = inner[i] == 'u' ? 4 : 8;
-                    AppendCodePoint(builder, inner, ref i, length);
-                    break;
-                default: builder.Append(inner[i]); break;
-            }
-        }
-
-        return builder.ToString();
-    }
-
-    private static string DecodeNumericEscapes(string value)
-    {
-        if (!value.Contains('\\'))
-        {
-            return value;
-        }
-
-        var builder = new StringBuilder(value.Length);
-        for (var i = 0; i < value.Length; i++)
-        {
-            if (value[i] == '\\' && i + 1 < value.Length && value[i + 1] is 'u' or 'U')
-            {
-                var length = value[i + 1] == 'u' ? 4 : 8;
-                i++;
-                AppendCodePoint(builder, value, ref i, length);
-                continue;
-            }
-
-            builder.Append(value[i]);
-        }
-
-        return builder.ToString();
-    }
-
-    private static void AppendCodePoint(StringBuilder builder, string source, ref int index, int digits)
-    {
-        if (index + digits < source.Length
-            && int.TryParse(source.AsSpan(index + 1, digits), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var codePoint))
-        {
-            builder.Append(char.ConvertFromUtf32(codePoint));
-            index += digits;
-        }
-        else
-        {
-            builder.Append(source[index]);
-        }
     }
 }
