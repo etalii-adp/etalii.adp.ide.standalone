@@ -1,5 +1,4 @@
 using EtAlii.Adp.Documents;
-using Serilog;
 
 namespace EtAlii.Adp.Diagram.Sparql;
 
@@ -11,8 +10,6 @@ namespace EtAlii.Adp.Diagram.Sparql;
 /// </summary>
 public sealed class SparqlValidator(DiagramOrigin origin) : IDiagramValidator
 {
-    private static readonly ILogger _logger = Log.ForContext<SparqlValidator>();
-
     /// <summary>The rule reported when the file is not a SPARQL query this can read - SPARQL Update included.</summary>
     public const string UnparseableRuleId = "sparql.unparseable";
 
@@ -34,27 +31,23 @@ public sealed class SparqlValidator(DiagramOrigin origin) : IDiagramValidator
 
         // ReSharper disable once NullCoalescingConditionIsAlwaysNotNullAccordingToAPIContract - Reason: IDiagramValidator.ValidateAsync is a public module seam and the record's non-nullable Document is a compile-time annotation the runtime does not enforce, so a caller that passes null (null!, or code built without nullable checks) gets an empty document here rather than a NullReferenceException; ProjectValidator, the one caller in this repository, always passes the text it read, so an empty file arrives as "", not null.
         var text = request.Document ?? "";
-        SparqlQueryModel model;
-        try
-        {
-            model = SparqlParser.Parse(text);
-        }
-        catch (SparqlParseException exception)
+        var outcome = SparqlParser.Outcome(text);
+        if (!outcome.IsUsable)
         {
             // One finding, not a list of consequences: running the rules over an empty model
             // would bury the reason the file could not be read (Requirement 7.1).
-            _logger.Debug(exception, "{BaseName} does not parse at line {Line}", request.BaseName, exception.Line);
+            var problem = outcome.Problems[0];
             return ValueTask.FromResult<IReadOnlyList<DiagramProblem>>(
             [
                 new DiagramProblem(
                     DiagramProblemSeverity.Error,
-                    $"This is not a SPARQL query that can be read: {exception.Message}",
+                    $"This is not a SPARQL query that can be read: {problem.Message}",
                     UnparseableRuleId,
-                    new DiagramProblemLineLocation((uint)Math.Max(exception.Line, 1))),
+                    new DiagramProblemLineLocation((uint)problem.Line + 1)),
             ]);
         }
 
-        return ValueTask.FromResult(Judge(model, text));
+        return ValueTask.FromResult(Judge(outcome.Model, text));
     }
 
     /// <summary>The Requirement 7 findings over a parsed query - a pure function, tested as one.</summary>

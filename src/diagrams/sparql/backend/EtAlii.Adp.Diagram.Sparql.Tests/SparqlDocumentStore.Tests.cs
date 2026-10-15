@@ -79,6 +79,9 @@ public class SparqlDocumentStoreTests : IDisposable
         Assert.False(entry.IsUsable);
         Assert.Contains("undeclared", entry.Unreadable);
         Assert.Same(SparqlQueryModel.Empty, entry.Model);
+        var problem = Assert.Single(entry.Problems);
+        // broken.rq uses the undeclared prefix on its fourth line, which is zero-based line 3.
+        Assert.Equal((3, entry.Unreadable), (problem.Line, problem.Message));
     }
 
     [Fact]

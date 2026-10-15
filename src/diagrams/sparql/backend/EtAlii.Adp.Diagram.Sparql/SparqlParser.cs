@@ -1,4 +1,6 @@
 using System.Text;
+using EtAlii.Adp.Documents;
+using Serilog;
 
 namespace EtAlii.Adp.Diagram.Sparql;
 
@@ -20,6 +22,8 @@ namespace EtAlii.Adp.Diagram.Sparql;
 /// </remarks>
 public static class SparqlParser
 {
+    private static readonly ILogger _logger = Log.ForContext(typeof(SparqlParser));
+
     private static readonly string[] _updateVerbs =
         ["INSERT", "DELETE", "LOAD", "CLEAR", "CREATE", "DROP", "COPY", "MOVE", "ADD", "WITH"];
 
@@ -28,6 +32,27 @@ public static class SparqlParser
     {
         ArgumentNullException.ThrowIfNull(text);
         return new Parser(text).ParseQuery();
+    }
+
+    /// <summary>
+    /// What <paramref name="text"/> asks, as a <see cref="ParseOutcome{TModel}"/>: a query that does
+    /// not parse is an ordinary state for a file somebody is editing, so it is an unusable outcome with
+    /// an empty model, the parser's sentence and the line it stopped at, rather than an exception.
+    /// </summary>
+    public static ParseOutcome<SparqlQueryModel> Outcome(string text)
+    {
+        try
+        {
+            return new ParseOutcome<SparqlQueryModel>(Parse(text), []);
+        }
+        catch (SparqlParseException exception)
+        {
+            _logger.Debug(exception, "A query does not parse at line {Line}", exception.Line);
+            return new ParseOutcome<SparqlQueryModel>(
+                SparqlQueryModel.Empty,
+                [new ParseProblem(Math.Max(exception.Line, 1) - 1, exception.Message)],
+                exception.Message);
+        }
     }
 
     private sealed class Parser
