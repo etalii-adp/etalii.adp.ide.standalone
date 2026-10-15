@@ -153,6 +153,16 @@ public sealed partial class DiagramService
                 baseline.Count,
                 KindsOf(baseline));
 
+            // A diagram with nothing in it still has a baseline: an empty Add. The client knows
+            // the open has answered only when the first delta arrives, so a session whose
+            // baseline is no deltas at all - a Helm chart over a folder without Chart.yaml, an
+            // empty mindmap - left its tab on "Opening…" until something changed. Said here,
+            // once, rather than in every module's Baseline().
+            if (baseline.Count == 0)
+            {
+                await write(new Delta { Add = new Add() }, cancellationToken);
+            }
+
             foreach (var delta in baseline)
             {
                 await write(DiagramWire.ToProto(delta), cancellationToken);

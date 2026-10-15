@@ -12,7 +12,10 @@ namespace EtAlii.Adp.Diagram;
 /// </summary>
 public interface IDiagramSession : IAsyncDisposable
 {
-    /// <summary>The baseline: an add for everything currently in the connection's view (grpc-core-communication Requirement 3.2).</summary>
+    /// <summary>
+    /// The baseline: an add for everything currently in the connection's view (grpc-core-communication Requirement 3.2).
+    /// An empty list is a valid answer for an empty diagram: core's pump sends the client an empty add for it, so a module need not.
+    /// </summary>
     IReadOnlyList<DiagramDelta> Baseline();
 
     /// <summary>Narrows or widens what is delivered to this connection; returns the deltas that brings it into line.</summary>
