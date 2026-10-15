@@ -113,6 +113,29 @@ public class ReadingTests
         Assert.Equal(FindingCodes.Unparseable, Assert.Single(body.Model.Findings).Code);
     }
 
+    /// <summary>
+    /// YamlDotNet's scanner throws an <see cref="InvalidOperationException"/>, not a YamlException, on a
+    /// flow sequence left open before the next key. The reader let it escape, so every module reading
+    /// such a body through FBL threw where it should have reported the body unreadable.
+    /// </summary>
+    [Fact]
+    public void AFlowSequenceLeftOpen_MakesTheBodyUnreadable_RatherThanThrowing()
+    {
+        // Arrange.
+        var binding = Inline("""[{ "name": "item", "type": "Item", "at": "/items/*" }]""");
+        var text = "items: [\nother: []\n";
+
+        // Act.
+        var body = OpenBody.Open(Encoding.UTF8.GetBytes(text), binding, new FblOptions { FileName = "plan.t" });
+
+        // Assert.
+        Assert.True(body.Model.Unreadable);
+        Assert.Empty(body.Model.Elements);
+        var finding = Assert.Single(body.Model.Findings);
+        Assert.Equal(FindingCodes.Unparseable, finding.Code);
+        Assert.StartsWith("The body is not well-formed YAML: ", finding.Message, StringComparison.Ordinal);
+    }
+
     [Fact]
     public void AnEntryARuleMatchesButCannotReadIsReportedAndKept()
     {
