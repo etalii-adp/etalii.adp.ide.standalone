@@ -51,7 +51,7 @@ public static partial class WardleyParser
 
         foreach (var line in CodeLines(document))
         {
-            var text = WithoutComment(line.Text).Trim();
+            var text = _comments.StripComment(line.Text).Trim();
             if (text.Length == 0)
             {
                 continue;
@@ -370,24 +370,16 @@ public static partial class WardleyParser
     }
 
     /// <summary>
-    /// The line without its `//` comment.
+    /// The DSL's comments: everything from a `//` on, quoted or not.
     /// </summary>
     /// <remarks>
     /// A `//` preceded by a colon is a URL scheme, not a comment. The DSL has no quoted string,
     /// so this is the only place two slashes can appear without starting a comment - and
     /// missing it silently truncated every `url name [https://...]` definition to
-    /// `url name [https:`, which parsed as nothing at all.
+    /// `url name [https:`, which parsed as nothing at all. A `//` inside a quoted name does start
+    /// one (behaviour-changes B-04, kept as the rule until it is fixed as a defect of its own).
     /// </remarks>
-    private static string WithoutComment(string text)
-    {
-        var index = text.IndexOf("//", StringComparison.Ordinal);
-        while (index > 0 && text[index - 1] == ':')
-        {
-            index = text.IndexOf("//", index + 2, StringComparison.Ordinal);
-        }
-
-        return index < 0 ? text : text[..index];
-    }
+    private static readonly LineLexer _comments = new(new CommentPolicy(["//"], OutsideQuotesOnly: false, NotAfter: ':'), EscapePolicy.None);
 
     /// <summary>Matches `keyword rest`, requiring whitespace after the keyword so `titles` is not `title`.</summary>
     private static bool TryKeyword(string text, string keyword, out string rest)
