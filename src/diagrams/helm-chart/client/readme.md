@@ -9,6 +9,11 @@ registration's `layout:` block through the core layout command (undoable, never 
 chart file). Activation reveals a node's artifact in the explorer; open ends (an unvendored
 dependency, an include no local partial defines) draw as labeled stubs.
 
+The canvas definition is compiled from the bundled specification, `../definition/helm-chart.dis`,
+with `compileNotation`; `helmBindings.ts` holds what the library cannot read from it, and the
+definition the canvas stated by hand before is kept in `handWrittenDefinition.ts` as the oracle
+`helmCompiledDefinition.test.tsx` holds the compiled drawing to.
+
 Styling lives entirely in `helm-charts.css`, one hue per element kind - a theme change is a
 stylesheet change, never a protocol one.
 

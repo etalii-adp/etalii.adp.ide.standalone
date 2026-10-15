@@ -1,4 +1,3 @@
-using System.Globalization;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 
@@ -35,7 +34,7 @@ public static class SupplyChainWriter
         }
         else
         {
-            LineSplice.SetKey(document, range, key, Text(value));
+            LineSplice.SetKey(document, range, key, LineSplice.QuoteText(value));
         }
 
         return EditOutcome.Applied;
@@ -52,7 +51,7 @@ public static class SupplyChainWriter
         }
         else
         {
-            LineSplice.SetKey(document, range, key, Number(value.Value));
+            LineSplice.SetKey(document, range, key, DslNumber.Format(value.Value));
         }
 
         return EditOutcome.Applied;
@@ -89,8 +88,8 @@ public static class SupplyChainWriter
             // y first: inserting a missing key lands it after the entry's first line, so writing y
             // and then x reads `x` before `y` in a newly placed entry, as a person writes them.
             var grows = LineSplice.FindKey(document, node.Range, "y") < 0 ? 1 : 0;
-            LineSplice.SetKey(document, node.Range, "y", Number(Math.Round(y)));
-            LineSplice.SetKey(document, ExtendedBy(node.Range, grows), "x", Number(Math.Round(x)));
+            LineSplice.SetKey(document, node.Range, "y", DslNumber.Format(Math.Round(y)));
+            LineSplice.SetKey(document, ExtendedBy(node.Range, grows), "x", DslNumber.Format(Math.Round(x)));
         }
 
         return EditOutcome.Applied;
@@ -104,8 +103,8 @@ public static class SupplyChainWriter
 
         // y first, for the same reason as Place: a newly placed entry reads `x` before `y`.
         var grows = LineSplice.FindKey(document, group.Range, "y") < 0 ? 1 : 0;
-        LineSplice.SetKey(document, group.Range, "y", Number(Math.Round(y)));
-        LineSplice.SetKey(document, ExtendedBy(group.Range, grows), "x", Number(Math.Round(x)));
+        LineSplice.SetKey(document, group.Range, "y", DslNumber.Format(Math.Round(y)));
+        LineSplice.SetKey(document, ExtendedBy(group.Range, grows), "x", DslNumber.Format(Math.Round(x)));
     }
 
     /// <summary>Removes a node and every flow to or from it, bottom-up.</summary>
@@ -166,28 +165,28 @@ public static class SupplyChainWriter
         List<(string Key, string Value)> keys =
         [
             ("type", node.Type),
-            ("name", Text(node.Name)),
+            ("name", LineSplice.QuoteText(node.Name)),
         ];
 
         if (node.Group.Length > 0)
         {
-            keys.Add(("group", Text(node.Group)));
+            keys.Add(("group", LineSplice.QuoteText(node.Group)));
         }
 
         if (node.Quantity is { } quantity)
         {
-            keys.Add(("quantity", Number(quantity)));
+            keys.Add(("quantity", DslNumber.Format(quantity)));
         }
 
         if (node.Unit.Length > 0)
         {
-            keys.Add(("unit", Text(node.Unit)));
+            keys.Add(("unit", LineSplice.QuoteText(node.Unit)));
         }
 
         if (node is { X: { } x, Y: { } y })
         {
-            keys.Add(("x", Number(Math.Round(x))));
-            keys.Add(("y", Number(Math.Round(y))));
+            keys.Add(("x", DslNumber.Format(Math.Round(x))));
+            keys.Add(("y", DslNumber.Format(Math.Round(y))));
         }
 
         return Append(document, model.Nodes.Select(existing => existing.Range), NodesSection, node.Id, keys);
@@ -200,11 +199,11 @@ public static class SupplyChainWriter
         ArgumentNullException.ThrowIfNull(model);
         ArgumentNullException.ThrowIfNull(group);
 
-        List<(string Key, string Value)> keys = [("name", Text(group.Name))];
+        List<(string Key, string Value)> keys = [("name", LineSplice.QuoteText(group.Name))];
         if (group is { X: { } x, Y: { } y })
         {
-            keys.Add(("x", Number(Math.Round(x))));
-            keys.Add(("y", Number(Math.Round(y))));
+            keys.Add(("x", DslNumber.Format(Math.Round(x))));
+            keys.Add(("y", DslNumber.Format(Math.Round(y))));
         }
 
         return Append(document, model.Groups.Select(existing => existing.Range), GroupsSection, group.Id, keys);
@@ -219,23 +218,23 @@ public static class SupplyChainWriter
 
         List<(string Key, string Value)> keys =
         [
-            ("from", Text(flow.From)),
-            ("to", Text(flow.To)),
+            ("from", LineSplice.QuoteText(flow.From)),
+            ("to", LineSplice.QuoteText(flow.To)),
         ];
 
         if (flow.Product.Length > 0)
         {
-            keys.Add(("product", Text(flow.Product)));
+            keys.Add(("product", LineSplice.QuoteText(flow.Product)));
         }
 
         if (flow.Volume is { } volume)
         {
-            keys.Add(("volume", Number(volume)));
+            keys.Add(("volume", DslNumber.Format(volume)));
         }
 
         if (flow.Unit.Length > 0)
         {
-            keys.Add(("unit", Text(flow.Unit)));
+            keys.Add(("unit", LineSplice.QuoteText(flow.Unit)));
         }
 
         return Append(document, model.Flows.Select(existing => existing.Range), FlowsSection, flow.Id, keys);
@@ -258,7 +257,7 @@ public static class SupplyChainWriter
         }
 
         (string itemIndent, string dashGap, string keyIndent) = LineSplice.IndentOf(document, ranges);
-        List<string> lines = [$"{itemIndent}-{dashGap}id: {Text(id)}", .. keys.Select(entry => $"{keyIndent}{entry.Key}: {entry.Value}")];
+        List<string> lines = [$"{itemIndent}-{dashGap}id: {LineSplice.QuoteText(id)}", .. keys.Select(entry => $"{keyIndent}{entry.Key}: {entry.Value}")];
 
         document.Insert(at, lines);
         return EditOutcome.Applied;
@@ -273,36 +272,4 @@ public static class SupplyChainWriter
     }
 
     private static LineRange ExtendedBy(LineRange range, int lines) => new(range.Start, range.End + lines);
-
-    /// <summary>
-    /// A text value as YAML reads it back: plain where it can be, double-quoted where a plain
-    /// scalar would mean something else.
-    /// </summary>
-    /// <remarks>
-    /// The shared <see cref="LineSplice.Quote"/> covers colons, hashes and leading dashes; a name
-    /// like <c>[EU]</c>, <c>yes</c> or <c>12</c> would read back as a list, a boolean or a number,
-    /// so those are quoted here as well.
-    /// </remarks>
-    private static string Text(string value)
-    {
-        var quoted = LineSplice.Quote(value);
-        if (quoted.StartsWith('"'))
-        {
-            return quoted;
-        }
-
-        var reads = value.Length > 0 && ("[]{}&*!|>%@`,?".Contains(value[0], StringComparison.Ordinal)
-            || double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out _)
-            || value.Equals("true", StringComparison.OrdinalIgnoreCase)
-            || value.Equals("false", StringComparison.OrdinalIgnoreCase)
-            || value.Equals("yes", StringComparison.OrdinalIgnoreCase)
-            || value.Equals("no", StringComparison.OrdinalIgnoreCase)
-            || value.Equals("null", StringComparison.OrdinalIgnoreCase)
-            || value == "~");
-
-        return reads ? $"\"{value.Replace("\\", "\\\\", StringComparison.Ordinal).Replace("\"", "\\\"", StringComparison.Ordinal)}\"" : quoted;
-    }
-
-    /// <summary>A number the way the document reads it: invariant culture, no trailing zeros.</summary>
-    private static string Number(double value) => value.ToString("0.####", CultureInfo.InvariantCulture);
 }

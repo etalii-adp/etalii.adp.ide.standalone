@@ -100,6 +100,12 @@ public sealed class BodySettings
     public IReadOnlyList<FileRule> Files { get; init; } = [];
 
     public IReadOnlyList<string> Ignore { get; init; } = [];
+
+    /// <summary>How long, in milliseconds, a watched folder must be quiet before it is read again (FBL §10.3).</summary>
+    public int Settle { get; init; } = DefaultSettle;
+
+    /// <summary>The <c>settle</c> of a folder whose binding states none (FBL §10.3).</summary>
+    public const int DefaultSettle = 400;
 }
 
 public sealed record FileRule(string? Name, string Glob, Family? Family);

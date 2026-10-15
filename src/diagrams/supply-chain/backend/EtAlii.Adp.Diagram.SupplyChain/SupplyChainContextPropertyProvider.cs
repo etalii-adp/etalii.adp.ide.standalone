@@ -1,4 +1,3 @@
-using System.Globalization;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Documents.Wire;
@@ -74,9 +73,9 @@ public sealed class SupplyChainContextPropertyProvider(IHistoryStackStore histor
                 new ContextPropertyDefinition(StageProperty, "Stage", node.Type, ContextPropertyEditor.Choice, Group: IdentityGroup, Candidates: SupplyChainNodeTypes.All),
                 new ContextPropertyDefinition(GroupProperty, "Group", group is null ? NoGroup : NameOf(group), ContextPropertyEditor.Choice, Group: IdentityGroup, Candidates: GroupChoices(model)),
                 new ContextPropertyDefinition(DescriptionProperty, "Description", node.Description, ContextPropertyEditor.Text, Group: IdentityGroup),
-                new ContextPropertyDefinition(QuantityProperty, "Quantity", Number(node.Quantity), Group: AmountGroup),
+                new ContextPropertyDefinition(QuantityProperty, "Quantity", DslNumber.Format(node.Quantity), Group: AmountGroup),
                 new ContextPropertyDefinition(UnitProperty, "Unit", node.Unit, Group: AmountGroup),
-                new ContextPropertyDefinition(StepProperty, "Step", Number(node.Step ?? SupplyChainGeometry.DefaultStep), Group: AmountGroup),
+                new ContextPropertyDefinition(StepProperty, "Step", DslNumber.Format(node.Step ?? SupplyChainGeometry.DefaultStep), Group: AmountGroup),
             ];
         }
 
@@ -86,9 +85,9 @@ public sealed class SupplyChainContextPropertyProvider(IHistoryStackStore histor
             [
                 new ContextPropertyDefinition(ProductProperty, "Product", flow.Product, Group: IdentityGroup),
                 new ContextPropertyDefinition(DescriptionProperty, "Description", flow.Description, ContextPropertyEditor.Text, Group: IdentityGroup),
-                new ContextPropertyDefinition(VolumeProperty, "Volume", Number(flow.Volume), Group: AmountGroup),
+                new ContextPropertyDefinition(VolumeProperty, "Volume", DslNumber.Format(flow.Volume), Group: AmountGroup),
                 new ContextPropertyDefinition(UnitProperty, "Unit", flow.Unit, Group: AmountGroup),
-                new ContextPropertyDefinition(StepProperty, "Step", Number(flow.Step ?? SupplyChainGeometry.DefaultStep), Group: AmountGroup),
+                new ContextPropertyDefinition(StepProperty, "Step", DslNumber.Format(flow.Step ?? SupplyChainGeometry.DefaultStep), Group: AmountGroup),
             ];
         }
 
@@ -144,6 +143,4 @@ public sealed class SupplyChainContextPropertyProvider(IHistoryStackStore histor
         NoGroup,
         .. model.Groups.Where(group => group.Id.Length > 0).Select(NameOf).Distinct(StringComparer.Ordinal),
     ];
-
-    private static string Number(double? value) => value is { } number ? number.ToString("0.####", CultureInfo.InvariantCulture) : "";
 }
