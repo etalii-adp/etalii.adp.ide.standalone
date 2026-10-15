@@ -212,7 +212,8 @@ public class ZeroWritesTests : IDisposable
         // Act.
         // No cache file, no index, no sidecar. Some tools leave one; this one may not - the
         // .adp is the only file ADP contributes to the folder, and it was already there.
-        _ = AnsibleRuleSet.Judge(new AnsibleProjectReader().Read(_root));
+        var project = new AnsibleProjectReader().Read(_root);
+        _ = AnsibleFindings.For(AnsibleDefinition.ModelOf(project), AnsibleDefinition.Findings(project));
 
         // Assert.
         Assert.Equal(before, Directory.GetFileSystemEntries(_root, "*", SearchOption.AllDirectories).Order(StringComparer.Ordinal));
