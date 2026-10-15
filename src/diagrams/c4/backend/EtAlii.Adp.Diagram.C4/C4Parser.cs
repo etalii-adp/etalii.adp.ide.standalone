@@ -1,3 +1,5 @@
+using EtAlii.Adp.Documents;
+
 namespace EtAlii.Adp.Diagram.C4;
 
 /// <summary>What a document parsed to: its model, its relationships, its views and its styles.</summary>
@@ -67,12 +69,12 @@ public static class C4Parser
         ["deployment"] = C4ViewKind.Deployment,
     };
 
-    public static C4Workspace Parse(C4Document document)
+    public static C4Workspace Parse(LineDocument document)
     {
         ArgumentNullException.ThrowIfNull(document);
 
         var state = new C4ParseState();
-        var lines = document.CodeLines.ToArray();
+        var lines = document.CodeLines().ToArray();
         var index = 0;
         var inBlockComment = false;
 

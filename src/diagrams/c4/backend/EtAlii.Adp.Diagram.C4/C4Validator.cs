@@ -26,7 +26,7 @@ public sealed class C4Validator : IDiagramValidator
         ArgumentNullException.ThrowIfNull(request);
 
         cancellationToken.ThrowIfCancellationRequested();
-        var workspace = C4Parser.Parse(C4Document.Parse(request.Document));
+        var workspace = C4Parser.Parse(LineDocument.Parse(request.Document));
         return ValueTask.FromResult(C4RuleSet.Validate(workspace));
     }
 }

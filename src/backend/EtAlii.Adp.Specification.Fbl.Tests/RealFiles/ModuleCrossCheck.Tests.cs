@@ -4,6 +4,7 @@ using EtAlii.Adp.Diagram.C4;
 using EtAlii.Adp.Diagram.CausalLoopDiagram;
 using EtAlii.Adp.Diagram.Mindmap;
 using EtAlii.Adp.Diagram.Timeline;
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.Specification.Fbl.History;
 using Xunit;
 
@@ -145,7 +146,7 @@ internal static partial class ModuleIds
                 foreach (var cycle in loop.Loops) Add(ids, "Loop", cycle.Id);
                 break;
             case "structurizr":
-                var workspace = C4Parser.Parse(C4Document.Parse(text));
+                var workspace = C4Parser.Parse(LineDocument.Parse(text));
                 foreach (var element in workspace.Elements)
                 {
                     if (_c4Types.TryGetValue(element.Kind, out var type) && !GeneratedC4Id().IsMatch(element.Id)) Add(ids, type, element.Id);

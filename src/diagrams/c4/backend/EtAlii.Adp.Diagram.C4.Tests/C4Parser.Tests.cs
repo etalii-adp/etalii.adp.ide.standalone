@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
@@ -11,9 +12,9 @@ namespace EtAlii.Adp.Diagram.C4.Tests;
 public class C4ParserTests
 {
     private static C4Workspace ParseFixture(string name) =>
-        C4Parser.Parse(C4Document.Parse(File.ReadAllText(IoPath.Combine("Fixtures", name))));
+        C4Parser.Parse(LineDocument.Parse(File.ReadAllText(IoPath.Combine("Fixtures", name))));
 
-    private static C4Workspace ParseText(string text) => C4Parser.Parse(C4Document.Parse(text));
+    private static C4Workspace ParseText(string text) => C4Parser.Parse(LineDocument.Parse(text));
 
     // ---- the static model ---------------------------------------------------------------
 

@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
@@ -16,7 +17,7 @@ namespace EtAlii.Adp.Diagram.C4.Tests;
 public class BigBankPlcTests
 {
     private static readonly C4Workspace Workspace =
-        C4Parser.Parse(C4Document.Parse(File.ReadAllText(IoPath.Combine("Fixtures", "big-bank-plc.dsl"))));
+        C4Parser.Parse(LineDocument.Parse(File.ReadAllText(IoPath.Combine("Fixtures", "big-bank-plc.dsl"))));
 
     [Fact]
     public void TheFourStaticLevels_AllParse()

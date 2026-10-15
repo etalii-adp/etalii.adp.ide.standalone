@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
@@ -44,7 +45,7 @@ public class C4LayoutSidecarTests : IDisposable
 
     private (C4Workspace Workspace, C4View View) Load(string dsl = Model)
     {
-        var workspace = C4Parser.Parse(C4Document.Parse(dsl));
+        var workspace = C4Parser.Parse(LineDocument.Parse(dsl));
         return (workspace, workspace.Views[0]);
     }
 

@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.C4;
@@ -24,18 +25,18 @@ public sealed record SetRelationshipTechnologyCommand(string BodyPath, string Re
 /// itself - load, edit a copy, save, undo - is <see cref="DocumentEditRun"/>'s.
 /// </summary>
 public abstract class C4EditHandler<TCommand>(IC4DocumentStore documents)
-    : DocumentEditHandler<TCommand, IC4DocumentStore, C4Document, C4Workspace>(documents)
+    : DocumentEditHandler<TCommand, IC4DocumentStore, LineDocument, C4Workspace>(documents)
     where TCommand : IDocumentEditCommand
 {
     /// <inheritdoc />
-    protected sealed override C4Workspace Parse(C4Document body) => C4Parser.Parse(body);
+    protected sealed override C4Workspace Parse(LineDocument body) => C4Parser.Parse(body);
 
     /// <summary>
     /// Rewrites one argument of the line an element was declared on. Everything else on that
     /// line, and every other line, keeps the bytes it arrived as (Requirement 3.2).
     /// </summary>
     protected static EditOutcome EditElement(
-        C4Document document,
+        LineDocument document,
         C4Workspace workspace,
         string elementId,
         int argumentIndex,
@@ -49,7 +50,7 @@ public abstract class C4EditHandler<TCommand>(IC4DocumentStore documents)
             return EditOutcome.Refused($"'{elementId}' is not in this model any more.");
         }
 
-        var line = document.Lines[(int)element.Line - 1];
+        var line = document.Lines[(int)element.Line - 1].Text;
         var keyword = KeywordIndexOf(line);
         if (keyword < 0)
         {
@@ -63,7 +64,7 @@ public abstract class C4EditHandler<TCommand>(IC4DocumentStore documents)
 
     /// <summary>The same, for a relationship, whose arguments follow the destination.</summary>
     protected static EditOutcome EditRelationship(
-        C4Document document,
+        LineDocument document,
         C4Workspace workspace,
         string relationshipId,
         int argumentIndex,
@@ -77,7 +78,7 @@ public abstract class C4EditHandler<TCommand>(IC4DocumentStore documents)
             return EditOutcome.Refused("That relationship is not in this model any more.");
         }
 
-        var line = document.Lines[(int)relationship.Line - 1];
+        var line = document.Lines[(int)relationship.Line - 1].Text;
         var tokens = C4Tokens.SplitWithSpans(line);
         // `source -> destination "description" "technology"`, or `-> destination ...` inside an
         // element block. Either way the arguments follow the destination.
@@ -120,21 +121,21 @@ public abstract class C4EditHandler<TCommand>(IC4DocumentStore documents)
 internal sealed class SetElementNameCommandHandler(IC4DocumentStore documents) : C4EditHandler<SetElementNameCommand>(documents)
 {
     /// <inheritdoc />
-    protected override EditOutcome Apply(C4Document body, C4Workspace model, SetElementNameCommand command) =>
+    protected override EditOutcome Apply(LineDocument body, C4Workspace model, SetElementNameCommand command) =>
         EditElement(body, model, command.ElementId, 0, command.Name, element => element.Name, was => command with { Name = was });
 }
 
 internal sealed class SetElementDescriptionCommandHandler(IC4DocumentStore documents) : C4EditHandler<SetElementDescriptionCommand>(documents)
 {
     /// <inheritdoc />
-    protected override EditOutcome Apply(C4Document body, C4Workspace model, SetElementDescriptionCommand command) =>
+    protected override EditOutcome Apply(LineDocument body, C4Workspace model, SetElementDescriptionCommand command) =>
         EditElement(body, model, command.ElementId, 1, command.Description, element => element.Description, was => command with { Description = was });
 }
 
 internal sealed class SetElementTechnologyCommandHandler(IC4DocumentStore documents) : C4EditHandler<SetElementTechnologyCommand>(documents)
 {
     /// <inheritdoc />
-    protected override EditOutcome Apply(C4Document body, C4Workspace model, SetElementTechnologyCommand command)
+    protected override EditOutcome Apply(LineDocument body, C4Workspace model, SetElementTechnologyCommand command)
     {
         var element = model.Find(command.ElementId);
         if (element is not null && element.Kind is not (C4ElementKind.Container or C4ElementKind.Component
@@ -153,13 +154,13 @@ internal sealed class SetElementTechnologyCommandHandler(IC4DocumentStore docume
 internal sealed class SetRelationshipDescriptionCommandHandler(IC4DocumentStore documents) : C4EditHandler<SetRelationshipDescriptionCommand>(documents)
 {
     /// <inheritdoc />
-    protected override EditOutcome Apply(C4Document body, C4Workspace model, SetRelationshipDescriptionCommand command) =>
+    protected override EditOutcome Apply(LineDocument body, C4Workspace model, SetRelationshipDescriptionCommand command) =>
         EditRelationship(body, model, command.RelationshipId, 0, command.Description, relationship => relationship.Description, was => command with { Description = was });
 }
 
 internal sealed class SetRelationshipTechnologyCommandHandler(IC4DocumentStore documents) : C4EditHandler<SetRelationshipTechnologyCommand>(documents)
 {
     /// <inheritdoc />
-    protected override EditOutcome Apply(C4Document body, C4Workspace model, SetRelationshipTechnologyCommand command) =>
+    protected override EditOutcome Apply(LineDocument body, C4Workspace model, SetRelationshipTechnologyCommand command) =>
         EditRelationship(body, model, command.RelationshipId, 1, command.Technology, relationship => relationship.Technology, was => command with { Technology = was });
 }

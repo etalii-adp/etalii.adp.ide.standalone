@@ -63,7 +63,7 @@ public class C4DocumentStoreSharingTests : IDisposable
         var document = _store.GetOrLoad(IoPath.Combine(_root, "not-written-yet.dsl")).Document;
 
         // Assert.
-        Assert.DoesNotContain(document.Lines, line => line.Length > 0);
+        Assert.DoesNotContain(document.Lines, line => line.Text.Length > 0);
         Assert.Empty(_store.GetOrLoad(IoPath.Combine(_root, "not-written-yet.dsl")).Model.Elements);
     }
 
@@ -87,7 +87,7 @@ public class C4DocumentStoreSharingTests : IDisposable
         // Arrange.
         var path = Write("model.dsl", Sample);
         var document = _store.GetOrLoad(path).Document;
-        var line = document.CodeLines.First(l => l.Code.Contains("softwareSystem", StringComparison.Ordinal));
+        var line = document.CodeLines().First(l => l.Code.Contains("softwareSystem", StringComparison.Ordinal));
         document.ReplaceLine(line.Number, line.Text.Replace("\"System\"", "\"Renamed\"", StringComparison.Ordinal));
 
         _store.Save(path, document);
@@ -104,7 +104,7 @@ public class C4DocumentStoreSharingTests : IDisposable
         // Arrange.
         var path = Write("model.dsl", Sample);
         var document = _store.GetOrLoad(path).Document;
-        var line = document.CodeLines.First(l => l.Code.Contains("softwareSystem", StringComparison.Ordinal));
+        var line = document.CodeLines().First(l => l.Code.Contains("softwareSystem", StringComparison.Ordinal));
         document.ReplaceLine(line.Number, line.Text.Replace("\"System\"", "\"Renamed\"", StringComparison.Ordinal));
 
         // Act.
@@ -122,7 +122,7 @@ public class C4DocumentStoreSharingTests : IDisposable
         // Arrange and act.
         var path = Write("model.dsl", Sample);
         var document = _store.GetOrLoad(path).Document;
-        var line = document.CodeLines.First(l => l.Code.Contains("softwareSystem", StringComparison.Ordinal));
+        var line = document.CodeLines().First(l => l.Code.Contains("softwareSystem", StringComparison.Ordinal));
         document.ReplaceLine(line.Number, line.Text.Replace("\"System\"", "\"Renamed\"", StringComparison.Ordinal));
         _store.Save(path, document);
 
