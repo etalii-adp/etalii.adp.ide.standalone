@@ -454,11 +454,7 @@ public sealed class AnsibleProjectReader
     }
 
     private static string? Scalar(YamlMappingNode? mapping, string key) =>
-        mapping is not null &&
-        mapping.Children.TryGetValue(new YamlScalarNode(key), out var value) &&
-        value is YamlScalarNode { Value: { } scalar }
-            ? scalar
-            : null;
+        mapping is null ? null : YamlAccess.Scalar(mapping, key);
 
     /// <summary>A <c>when:</c> as written. A list of conditions is joined the way a reader would read it.</summary>
     private static string Condition(YamlMappingNode? mapping)

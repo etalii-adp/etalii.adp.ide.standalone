@@ -37,6 +37,10 @@ public static class YamlAccess
             : null;
     }
 
+    /// <summary>The node under <paramref name="key"/>, of whatever kind, or null where there is none.</summary>
+    public static YamlNode? Node(YamlMappingNode mapping, string key) =>
+        mapping.Children.TryGetValue(new YamlScalarNode(key), out var node) ? node : null;
+
     /// <summary>The mapping under <paramref name="key"/>, or null where there is none.</summary>
     public static YamlMappingNode? Mapping(YamlMappingNode mapping, string key) =>
         mapping.Children.TryGetValue(new YamlScalarNode(key), out var node) ? node as YamlMappingNode : null;

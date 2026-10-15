@@ -108,7 +108,7 @@ public static class FdgParser
     /// </summary>
     private static int? ReadVersion(YamlMappingNode root, LineDocument document, List<FdgProblem> problems)
     {
-        var node = Node(root, HeaderKey);
+        var node = YamlAccess.Node(root, HeaderKey);
         if (node is not YamlScalarNode scalar)
         {
             problems.Add(new FdgProblem(0, $"The document does not begin with `{HeaderKey}: {FdgModel.CurrentVersion}`."));
@@ -117,13 +117,13 @@ public static class FdgParser
 
         if (!int.TryParse(scalar.Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var version))
         {
-            problems.Add(new FdgProblem(LineOf(scalar, document), $"The version `{scalar.Value}` is not a number."));
+            problems.Add(new FdgProblem(YamlAccess.LineOf(scalar, document), $"The version `{scalar.Value}` is not a number."));
             return null;
         }
 
         if (version != FdgModel.CurrentVersion)
         {
-            problems.Add(new FdgProblem(LineOf(scalar, document), $"This document states version {version}; this module reads version {FdgModel.CurrentVersion}."));
+            problems.Add(new FdgProblem(YamlAccess.LineOf(scalar, document), $"This document states version {version}; this module reads version {FdgModel.CurrentVersion}."));
         }
 
         return version;
@@ -132,36 +132,36 @@ public static class FdgParser
     private static List<FdgElement> ReadElements(YamlMappingNode root, LineDocument document, List<FdgProblem> problems)
     {
         List<FdgElement> elements = [];
-        foreach (var node in Sequence(root, ElementsKey))
+        foreach (var node in YamlAccess.Sequence(root, ElementsKey))
         {
             if (node is not YamlMappingNode mapping)
             {
-                problems.Add(new FdgProblem(LineOf(node, document), "An element entry is not a mapping and was passed over."));
+                problems.Add(new FdgProblem(YamlAccess.LineOf(node, document), "An element entry is not a mapping and was passed over."));
                 continue;
             }
 
-            var type = Scalar(mapping, "type") ?? "";
+            var type = YamlAccess.Scalar(mapping, "type") ?? "";
             var isComment = string.Equals(type, FdgElementTypes.Comment, StringComparison.Ordinal);
             ReportUnknownKeys(mapping, ElementKeys, document, problems, "element");
 
             if (!FdgElementTypes.IsKnown(type))
             {
-                problems.Add(new FdgProblem(LineOf(mapping, document), $"`{type}` is not an element type this module knows."));
+                problems.Add(new FdgProblem(YamlAccess.LineOf(mapping, document), $"`{type}` is not an element type this module knows."));
             }
 
-            if (isComment && Scalar(mapping, "name") is not null)
+            if (isComment && YamlAccess.Scalar(mapping, "name") is not null)
             {
                 // Named rather than dropped: the line survives the round trip, and the author is
                 // told the name means nothing on a Comment.
-                problems.Add(new FdgProblem(LineOf(mapping, document), "A Comment has no name; the `name` here is kept and ignored."));
+                problems.Add(new FdgProblem(YamlAccess.LineOf(mapping, document), "A Comment has no name; the `name` here is kept and ignored."));
             }
 
             elements.Add(new FdgElement(
-                Scalar(mapping, "id") ?? "",
+                YamlAccess.Scalar(mapping, "id") ?? "",
                 type,
-                Scalar(mapping, "name") ?? "",
-                Scalar(mapping, "description") ?? "",
-                Scalar(mapping, "text") ?? "",
+                YamlAccess.Scalar(mapping, "name") ?? "",
+                YamlAccess.Scalar(mapping, "description") ?? "",
+                YamlAccess.Scalar(mapping, "text") ?? "",
                 Number(mapping, "x", document, problems),
                 Number(mapping, "y", document, problems),
                 Number(mapping, "width", document, problems),
@@ -175,29 +175,29 @@ public static class FdgParser
     private static List<FdgConnection> ReadConnections(YamlMappingNode root, LineDocument document, List<FdgProblem> problems)
     {
         List<FdgConnection> connections = [];
-        foreach (var node in Sequence(root, ConnectionsKey))
+        foreach (var node in YamlAccess.Sequence(root, ConnectionsKey))
         {
             if (node is not YamlMappingNode mapping)
             {
-                problems.Add(new FdgProblem(LineOf(node, document), "A connection entry is not a mapping and was passed over."));
+                problems.Add(new FdgProblem(YamlAccess.LineOf(node, document), "A connection entry is not a mapping and was passed over."));
                 continue;
             }
 
             ReportUnknownKeys(mapping, ConnectionKeys, document, problems, "connection");
 
-            var type = Scalar(mapping, "type") ?? "";
+            var type = YamlAccess.Scalar(mapping, "type") ?? "";
             if (!FdgConnectionTypes.IsKnown(type))
             {
-                problems.Add(new FdgProblem(LineOf(mapping, document), $"`{type}` is not a relation this module knows."));
+                problems.Add(new FdgProblem(YamlAccess.LineOf(mapping, document), $"`{type}` is not a relation this module knows."));
             }
 
             connections.Add(new FdgConnection(
-                Scalar(mapping, "id") ?? "",
+                YamlAccess.Scalar(mapping, "id") ?? "",
                 type,
-                Scalar(mapping, "from") ?? "",
-                Scalar(mapping, "to") ?? "",
-                Scalar(mapping, "name") ?? "",
-                Scalar(mapping, "description") ?? "",
+                YamlAccess.Scalar(mapping, "from") ?? "",
+                YamlAccess.Scalar(mapping, "to") ?? "",
+                YamlAccess.Scalar(mapping, "name") ?? "",
+                YamlAccess.Scalar(mapping, "description") ?? "",
                 Range(mapping, document)));
         }
 
@@ -215,19 +215,10 @@ public static class FdgParser
         {
             if (key is YamlScalarNode { Value: { } name } scalar && !known.Contains(name, StringComparer.Ordinal))
             {
-                problems.Add(new FdgProblem(LineOf(scalar, document), $"`{name}` is not a key this module reads on a {what}; the line is kept."));
+                problems.Add(new FdgProblem(YamlAccess.LineOf(scalar, document), $"`{name}` is not a key this module reads on a {what}; the line is kept."));
             }
         }
     }
-
-    private static IEnumerable<YamlNode> Sequence(YamlMappingNode root, string key) =>
-        Node(root, key) is YamlSequenceNode sequence ? sequence.Children : [];
-
-    private static YamlNode? Node(YamlMappingNode mapping, string key) =>
-        mapping.Children.TryGetValue(new YamlScalarNode(key), out var node) ? node : null;
-
-    private static string? Scalar(YamlMappingNode mapping, string key) =>
-        Node(mapping, key) is YamlScalarNode scalar ? scalar.Value ?? "" : null;
 
     /// <summary>
     /// A number from the entry, or zero. <b>Invariant culture</b>, so a document written where the
@@ -240,7 +231,7 @@ public static class FdgParser
     /// </remarks>
     private static double Number(YamlMappingNode mapping, string key, LineDocument document, List<FdgProblem> problems)
     {
-        if (Node(mapping, key) is not YamlScalarNode scalar)
+        if (YamlAccess.Node(mapping, key) is not YamlScalarNode scalar)
         {
             return 0;
         }
@@ -250,12 +241,9 @@ public static class FdgParser
             return value;
         }
 
-        problems.Add(new FdgProblem(LineOf(scalar, document), $"`{key}: {scalar.Value}` is not a number; zero was used."));
+        problems.Add(new FdgProblem(YamlAccess.LineOf(scalar, document), $"`{key}: {scalar.Value}` is not a number; zero was used."));
         return 0;
     }
-
-    private static int LineOf(YamlNode node, LineDocument document) =>
-        Math.Clamp((int)node.Start.Line - 1, 0, Math.Max(0, document.Lines.Count - 1));
 
     /// <summary>
     /// The lines an entry occupies - what an edit rewrites, and nothing else.

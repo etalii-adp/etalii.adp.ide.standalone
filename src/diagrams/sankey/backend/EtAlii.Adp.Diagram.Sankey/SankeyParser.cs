@@ -85,7 +85,7 @@ public static class SankeyParser
 
     private static int? ReadVersion(YamlMappingNode root, LineDocument document, List<SankeyProblem> problems)
     {
-        if (Node(root, HeaderKey) is not YamlScalarNode scalar)
+        if (YamlAccess.Node(root, HeaderKey) is not YamlScalarNode scalar)
         {
             problems.Add(new SankeyProblem(0, $"The document does not begin with `{HeaderKey}: {SankeyModel.CurrentVersion}`."));
             return null;
@@ -93,13 +93,13 @@ public static class SankeyParser
 
         if (!int.TryParse(scalar.Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var version))
         {
-            problems.Add(new SankeyProblem(LineOf(scalar, document), $"The version `{scalar.Value}` is not a number."));
+            problems.Add(new SankeyProblem(YamlAccess.LineOf(scalar, document), $"The version `{scalar.Value}` is not a number."));
             return null;
         }
 
         if (version != SankeyModel.CurrentVersion)
         {
-            problems.Add(new SankeyProblem(LineOf(scalar, document), $"This document states version {version}; this module reads version {SankeyModel.CurrentVersion}."));
+            problems.Add(new SankeyProblem(YamlAccess.LineOf(scalar, document), $"This document states version {version}; this module reads version {SankeyModel.CurrentVersion}."));
         }
 
         return version;
@@ -109,12 +109,12 @@ public static class SankeyParser
     {
         var settings = SankeySettings.Default;
 
-        if (Node(root, FormatKey) is YamlScalarNode format)
+        if (YamlAccess.Node(root, FormatKey) is YamlScalarNode format)
         {
-            settings = settings with { Format = format.Value ?? "", FormatLine = LineOf(format, document) };
+            settings = settings with { Format = format.Value ?? "", FormatLine = YamlAccess.LineOf(format, document) };
         }
 
-        if (Node(root, FlowColorKey) is YamlScalarNode flowColor)
+        if (YamlAccess.Node(root, FlowColorKey) is YamlScalarNode flowColor)
         {
             var value = flowColor.Value ?? "";
             if (value is SankeySettings.FromSource or SankeySettings.FromTarget)
@@ -123,13 +123,13 @@ public static class SankeyParser
             }
             else
             {
-                problems.Add(new SankeyProblem(LineOf(flowColor, document), $"`{FlowColorKey}: {value}` is neither `{SankeySettings.FromSource}` nor `{SankeySettings.FromTarget}`; flows take their target's colour."));
+                problems.Add(new SankeyProblem(YamlAccess.LineOf(flowColor, document), $"`{FlowColorKey}: {value}` is neither `{SankeySettings.FromSource}` nor `{SankeySettings.FromTarget}`; flows take their target's colour."));
             }
 
-            settings = settings with { FlowColorLine = LineOf(flowColor, document) };
+            settings = settings with { FlowColorLine = YamlAccess.LineOf(flowColor, document) };
         }
 
-        if (Node(root, ThicknessKey) is YamlScalarNode thickness)
+        if (YamlAccess.Node(root, ThicknessKey) is YamlScalarNode thickness)
         {
             if (double.TryParse(thickness.Value, NumberStyles.Float, CultureInfo.InvariantCulture, out var value) && double.IsFinite(value) && value > 0)
             {
@@ -137,10 +137,10 @@ public static class SankeyParser
             }
             else
             {
-                problems.Add(new SankeyProblem(LineOf(thickness, document), $"`{ThicknessKey}: {thickness.Value}` is not a number above zero and was ignored."));
+                problems.Add(new SankeyProblem(YamlAccess.LineOf(thickness, document), $"`{ThicknessKey}: {thickness.Value}` is not a number above zero and was ignored."));
             }
 
-            settings = settings with { ThicknessLine = LineOf(thickness, document) };
+            settings = settings with { ThicknessLine = YamlAccess.LineOf(thickness, document) };
         }
 
         return settings;
@@ -162,18 +162,18 @@ public static class SankeyParser
                 }
                 else
                 {
-                    problems.Add(new SankeyProblem(LineOf(mapping, document), $"`column: {stated.ToString(CultureInfo.InvariantCulture)}` is not a whole number from 1; the flows place this node."));
+                    problems.Add(new SankeyProblem(YamlAccess.LineOf(mapping, document), $"`column: {stated.ToString(CultureInfo.InvariantCulture)}` is not a whole number from 1; the flows place this node."));
                 }
             }
 
             nodes.Add(new SankeyNode(
-                Scalar(mapping, "id") ?? "",
-                Scalar(mapping, "name") ?? "",
-                Scalar(mapping, "color") ?? "",
-                Scalar(mapping, "note") ?? "",
-                Scalar(mapping, "format") ?? "",
+                YamlAccess.Scalar(mapping, "id") ?? "",
+                YamlAccess.Scalar(mapping, "name") ?? "",
+                YamlAccess.Scalar(mapping, "color") ?? "",
+                YamlAccess.Scalar(mapping, "note") ?? "",
+                YamlAccess.Scalar(mapping, "format") ?? "",
                 column,
-                Scalar(mapping, "description") ?? "",
+                YamlAccess.Scalar(mapping, "description") ?? "",
                 Range(mapping, document)));
         }
 
@@ -187,13 +187,13 @@ public static class SankeyParser
         {
             ReportUnknownKeys(mapping, FlowKeys, document, problems, "flow");
             flows.Add(new SankeyFlow(
-                Scalar(mapping, "id") ?? "",
-                Scalar(mapping, "from") ?? "",
-                Scalar(mapping, "to") ?? "",
+                YamlAccess.Scalar(mapping, "id") ?? "",
+                YamlAccess.Scalar(mapping, "from") ?? "",
+                YamlAccess.Scalar(mapping, "to") ?? "",
                 Number(mapping, "value", document, problems),
                 Number(mapping, "step", document, problems),
-                Scalar(mapping, "color") ?? "",
-                Scalar(mapping, "description") ?? "",
+                YamlAccess.Scalar(mapping, "color") ?? "",
+                YamlAccess.Scalar(mapping, "description") ?? "",
                 Range(mapping, document)));
         }
 
@@ -208,7 +208,7 @@ public static class SankeyParser
         LineDocument document,
         List<SankeyProblem> problems)
     {
-        if (Node(root, key) is not YamlSequenceNode sequence)
+        if (YamlAccess.Node(root, key) is not YamlSequenceNode sequence)
         {
             yield break;
         }
@@ -221,7 +221,7 @@ public static class SankeyParser
             }
             else
             {
-                problems.Add(new SankeyProblem(LineOf(node, document), $"A {what} entry is not a mapping and was passed over."));
+                problems.Add(new SankeyProblem(YamlAccess.LineOf(node, document), $"A {what} entry is not a mapping and was passed over."));
             }
         }
     }
@@ -237,16 +237,10 @@ public static class SankeyParser
         {
             if (key is YamlScalarNode { Value: { } name } scalar && !known.Contains(name, StringComparer.Ordinal))
             {
-                problems.Add(new SankeyProblem(LineOf(scalar, document), $"`{name}` is not a key this module reads on a {what}; the line is kept."));
+                problems.Add(new SankeyProblem(YamlAccess.LineOf(scalar, document), $"`{name}` is not a key this module reads on a {what}; the line is kept."));
             }
         }
     }
-
-    private static YamlNode? Node(YamlMappingNode mapping, string key) =>
-        mapping.Children.TryGetValue(new YamlScalarNode(key), out var node) ? node : null;
-
-    private static string? Scalar(YamlMappingNode mapping, string key) =>
-        Node(mapping, key) is YamlScalarNode scalar ? scalar.Value ?? "" : null;
 
     /// <summary>
     /// A number from the entry, or <c>null</c> when the key is absent or will not read - the second
@@ -254,7 +248,7 @@ public static class SankeyParser
     /// </summary>
     private static double? Number(YamlMappingNode mapping, string key, LineDocument document, List<SankeyProblem> problems)
     {
-        if (Node(mapping, key) is not YamlScalarNode scalar)
+        if (YamlAccess.Node(mapping, key) is not YamlScalarNode scalar)
         {
             return null;
         }
@@ -264,12 +258,9 @@ public static class SankeyParser
             return value;
         }
 
-        problems.Add(new SankeyProblem(LineOf(scalar, document), $"`{key}: {scalar.Value}` is not a number and was ignored."));
+        problems.Add(new SankeyProblem(YamlAccess.LineOf(scalar, document), $"`{key}: {scalar.Value}` is not a number and was ignored."));
         return null;
     }
-
-    private static int LineOf(YamlNode node, LineDocument document) =>
-        Math.Clamp((int)node.Start.Line - 1, 0, Math.Max(0, document.Lines.Count - 1));
 
     private static LineRange Range(YamlNode node, LineDocument document) => YamlNodeRange.Of(node, document.Lines);
 }
