@@ -1,6 +1,4 @@
 using EtAlii.Adp.Documents;
-using Serilog;
-using YamlDotNet.Core;
 
 namespace EtAlii.Adp.Diagram.Databricks;
 
@@ -20,8 +18,6 @@ namespace EtAlii.Adp.Diagram.Databricks;
 /// </remarks>
 public sealed class DatabricksDocumentStore : LifecycleDocumentStore<LineDocument, DatabricksModel>, IDatabricksDocumentStore
 {
-    private static readonly ILogger _logger = Log.ForContext<DatabricksDocumentStore>();
-
     /// <inheritdoc />
     protected override LineDocument Read(string text) => LineDocument.Parse(text);
 
@@ -29,31 +25,8 @@ public sealed class DatabricksDocumentStore : LifecycleDocumentStore<LineDocumen
     protected override string TextOf(LineDocument body) => body.Text;
 
     /// <inheritdoc />
-    /// <remarks>Empty for a body that does not parse: what it says is unknown, and <see cref="UnreadableOf"/> says why.</remarks>
-    protected override DatabricksModel Rebuild(LineDocument body)
-    {
-        try
-        {
-            return DatabricksModel.Read(body);
-        }
-        catch (YamlException)
-        {
-            return DatabricksModel.Empty;
-        }
-    }
+    protected override DatabricksModel Rebuild(LineDocument body) => DatabricksModel.Outcome(body).Model;
 
     /// <inheritdoc />
-    protected override string UnreadableOf(LineDocument body)
-    {
-        try
-        {
-            _ = DatabricksModel.Read(body);
-            return "";
-        }
-        catch (YamlException exception)
-        {
-            _logger.Debug(exception, "A Databricks file does not parse at line {Line}", exception.Start.Line);
-            return exception.Message;
-        }
-    }
+    protected override ParseOutcome<DatabricksModel> Parse(LineDocument body) => DatabricksModel.Outcome(body);
 }
