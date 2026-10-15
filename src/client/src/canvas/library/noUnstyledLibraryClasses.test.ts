@@ -108,6 +108,10 @@ describe("no unstyled library classes", () => {
     "library-connection",
     "library-connection-label",
     "library-connection-line",
+    // A relation without a target, drawn as its stub: the NAME of that state, for tests and modules.
+    // Its line is a `canvas-connection-line` and its paint the relation's own classes and inline
+    // style, as any connection's is.
+    "library-connection-stub",
     "library-span",
     "library-span-label",
     "library-span-moment",
