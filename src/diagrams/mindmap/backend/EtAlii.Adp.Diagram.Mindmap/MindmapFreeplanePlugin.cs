@@ -51,19 +51,15 @@ public sealed class MindmapFreeplanePlugin : IPersistencePlugin
         var body = request.Files.FirstOrDefault(file => file.RelativePath.Length == 0)
             ?? throw new ArgumentException("The request holds no body.", nameof(request));
 
-        MindmapDocument document;
-        try
+        // Read-only, as the validator always judged it: no id is assigned, so the model is the file
+        // exactly as written.
+        var outcome = MindmapDocument.Outcome(Encoding.UTF8.GetString(body.Bytes), assignMissingIds: false);
+        if (!outcome.IsUsable)
         {
-            // Read-only, as the validator always judged it: no id is assigned, so the model is the
-            // file exactly as written.
-            document = MindmapDocument.Parse(Encoding.UTF8.GetString(body.Bytes), assignMissingIds: false);
-        }
-        catch (MindmapFormatException exception)
-        {
-            return new PluginReadResult([], [new Finding(FindingCodes.Unparseable, FindingSeverity.Error, exception.Message, null)], true);
+            return new PluginReadResult([], [new Finding(FindingCodes.Unparseable, FindingSeverity.Error, outcome.Unreadable, null)], true);
         }
 
-        return new PluginReadResult(Elements(document), [], false);
+        return new PluginReadResult(Elements(outcome.Model), [], false);
     }
 
     /// <summary>
