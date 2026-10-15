@@ -1,4 +1,5 @@
 using EtAlii.Adp.Hierarchy;
+using EtAlii.Adp.Layout;
 
 namespace EtAlii.Adp.Diagram.Rdf.Shacl;
 
@@ -21,21 +22,17 @@ internal static class ShaclLayout
     {
         ArgumentNullException.ThrowIfNull(projection);
 
+        var cards = projection.Cards;
+        var grid = GridPacker.Pack(
+            [.. cards.Select(card => (ColumnWidth, HeaderHeight + (card.Targets.Count + card.Rows.Count) * LineHeight))],
+            Columns,
+            0,
+            RowGap);
+
         var positions = new Dictionary<string, RegistrationPosition>(StringComparer.Ordinal);
-        var y = 0d;
-        var column = 0;
-        var tallest = 0d;
-        foreach (var card in projection.Cards)
+        for (var index = 0; index < cards.Count; index++)
         {
-            positions[card.Id] = new RegistrationPosition(column * ColumnWidth, y);
-            tallest = Math.Max(tallest, HeaderHeight + (card.Targets.Count + card.Rows.Count) * LineHeight);
-            column++;
-            if (column == Columns)
-            {
-                column = 0;
-                y += tallest + RowGap;
-                tallest = 0;
-            }
+            positions[cards[index].Id] = new RegistrationPosition(grid.Cells[index].X, grid.Cells[index].Y);
         }
 
         return positions;
