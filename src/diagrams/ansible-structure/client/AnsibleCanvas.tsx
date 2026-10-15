@@ -1,29 +1,22 @@
 import { useMemo, useState } from "react";
 
-import { forwardBezierPath } from "@client/canvas/connectors";
 import { DiagramCanvas } from "@client/canvas/library/DiagramCanvas";
 import { assertValidDiagramDefinition } from "@client/canvas/library/definition/validateDiagramDefinition";
-import type {
-  CustomRouteRef,
-  DiagramDefinition,
-  ShapeBounds,
-  ShapePoint,
-} from "@client/canvas/library/definition/diagramDefinition";
+import type { DiagramDefinition, ShapeBounds } from "@client/canvas/library/definition/diagramDefinition";
 import type { DiagramEventHandlers } from "@client/canvas/library/api/diagramEvents";
-import type { DiagramModel, DiagramModelElement } from "@client/canvas/library/api/diagramModel";
+import type { DiagramModel, DiagramModelConnection, DiagramModelElement } from "@client/canvas/library/api/diagramModel";
+import { compileNotation } from "@client/canvas/library/disl/compileNotation";
+import { parseDisl } from "@client/canvas/library/disl/disTypes";
+import { EmptyCanvas } from "@client/canvas/library/surface/EmptyCanvas";
 import { useContextConnection } from "@client/shell/context/ContextConnectionProvider";
 import { useRegisterDiagramToolbox } from "@client/shell/panels/DiagramToolboxContext";
 import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
 import { useViewReport } from "@client/diagrams/useViewReport";
 import { AnsibleEdgeKind, AnsibleElementKind } from "@client/generated/ansible-structure_pb";
-import { anchorsOf, edgesOf, nodesOf, paletteSlotOf, type AnsibleElement } from "./ansibleModel";
+import disText from "../definition/ansible-structure.dis?raw";
+import { ANSIBLE_BINDINGS } from "./ansibleBindings";
+import { anchorsOf, edgesOf, nodesOf, type AnsibleElement } from "./ansibleModel";
 import { useAnsibleStream } from "./useAnsibleStream";
-
-/** How many play colours the stylesheet defines. The palette itself is CSS's; this is its size. */
-const PALETTE_SLOTS = 6;
-
-/** How far an unresolved edge's stub reaches out of its source, in canvas units. */
-const STUB_LENGTH = 48;
 
 export interface AnsibleCanvasProps {
   projectId: Uint8Array;
@@ -37,133 +30,17 @@ type NodeElement = DiagramModelElement & {
   activate: () => void;
 };
 
-/** An unresolved edge, drawn as a stub element: a line to nothing and the name that failed. */
-type StubElement = DiagramModelElement & {
-  from: ShapePoint;
-  text: string;
-  stubClass: string;
-};
-
-
-
-
 /**
- * One relationship, exactly as before: out of the source's right side, into the target's left
- * side, curving horizontally through the corridor between the columns. The forward bezier
- * loops around for the rare backward edge.
+ * What this diagram allows, compiled from the bundled specification the backend runs: nodes that
+ * drag into the layout block and select, relations that only render, and an unresolved target drawn
+ * as its relation's stub. No relation declares a source anchor and no type is deletable, because this
+ * diagram edits nothing - its one edit is the drag, and its value is the jump from a node to its file.
+ * What the library cannot read from the specification is `ansibleBindings.ts`.
  */
-const ansibleRoute: CustomRouteRef = {
-  customRoute: "ansible-forward-bezier",
-  path: (from, to, _waypoints, ends) => {
-    const a = ends ? { x: ends.source.x + ends.source.width, y: ends.source.y + ends.source.height / 2 } : from;
-    const b = ends ? { x: ends.target.x, y: ends.target.y + ends.target.height / 2 } : to;
-    return forwardBezierPath(a, b);
-  },
-};
+export const ANSIBLE_DEFINITION: DiagramDefinition = assertValidDiagramDefinition(compileNotation(parseDisl(disText), ANSIBLE_BINDINGS));
 
-/**
- * What this diagram allows, stated once: nodes that drag into the layout block and select,
- * stubs and edges that only render. No relation declares a source anchor and no type is
- * deletable, because this diagram edits nothing - its one edit is the drag, and its value is
- * the jump from a node to its file.
- */
-const ANSIBLE_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
-  elementTypes: [
-    {
-      id: "node",
-      shape: "box",
-      classNames: [
-        // The whole element, labels and all: the group the library makes focusable and hovers, which
-        // the hover and focus rules anchor on. Every other class here lands on the box itself.
-        { className: "ansible-node", on: "element" },
-        { className: { template: "ansible-node-{payload.kindClass}" } },
-        { className: { template: "ansible-play-{payload.playSlot}" }, when: { path: "payload.playSlot", is: "present" } },
-        { className: "ansible-play-none", when: { path: "payload.playSlot", is: "absent" } },
-        { className: "ansible-node-hollow", when: { path: "payload.hollow", is: "true" } },
-        { className: "ansible-node-box", on: "shape" },
-      ],
-      labels: [
-        {
-          text: { path: "payload.name" },
-          truncate: true,
-          className: "ansible-node-label",
-        },
-      ],
-      tooltip: { template: "{payload.title}" },
-      data: { kind: { path: "payload.kindClass" } },
-      accessibility: { role: "button", focusable: true, label: { path: "payload.title" } },
-      actions: [
-        // The jump from a node to its file: a double-click, or Enter or Space on the SELECTED
-        // node. The keys used to read a private `focusedId` the canvas kept beside the backend's
-        // selection; declared here, they act on the library's selection, which is the only one
-        // (centralized-selection Requirement 4.1). The right-click that sat beside them pushed a
-        // context-menu selection by hand - selection glue, now the library's shared menu.
-        {
-          id: "ansible.activate",
-          invokedBy: [
-            { kind: "gesture", gesture: "activate" },
-            { kind: "shortcut", key: "Enter" },
-            { kind: "shortcut", key: " " },
-          ],
-          appliesTo: [{ kind: "element" }],
-        },
-      ],
-      anchors: { kind: "edge" },
-      sizing: "model",
-      deletable: false,
-    },
-    {
-      id: "stub",
-      // AN ELEMENT THAT IS ONLY AN ORNAMENT: a short rule out of the source with the
-      // target's own words beside it, for a dependency this document names and does not
-      // resolve. `none` is the shape that made this declarable at all.
-      shape: "none",
-      classNames: [{ className: { path: "payload.stubClass" }, on: "element" }],
-      decorations: [
-        {
-          glyph: "line",
-          // Canvas units: these read `bounds`, which resolves to a position rather than an offset.
-          anchor: "canvas",
-          from: { x: { path: "bounds.left" }, y: { path: "bounds.centreY" } },
-          to: { x: { path: "bounds.right" }, y: { path: "bounds.centreY" } },
-          className: "ansible-edge-line",
-        },
-      ],
-      labels: [
-        {
-          text: { path: "payload.text" },
-          anchorTo: "top",
-          offset: { x: 0, y: 0 },
-          align: "start",
-          insetX: 8,
-          className: "ansible-edge-label",
-        },
-      ],
-      data: { "edge-id": { path: "element.id" } },
-      anchors: { kind: "edge" },
-      sizing: "model",
-      draggable: false,
-      deletable: false,
-    },
-  ],
-  relationTypes: [
-    {
-      id: "edge",
-      route: ansibleRoute,
-      style: { endMarker: "arrow" },
-      label: { placement: "midpoint", offset: -6 },
-      className: "ansible-edge",
-      lineClassName: "ansible-edge-line",
-      endpoints: {
-        source: { elementTypes: ["node"], anchors: [] },
-        target: { elementTypes: ["node"], anchors: "edge" },
-        allowSelf: false,
-      },
-    },
-  ],
-  layout: { modes: ["manual"] },
-  dragging: "enabled",
-});
+/** The operation a double-click, Enter and Space run on a node (`behavior.operations` of the specification). */
+const REVEAL = "revealFile";
 
 /**
  * Renders an Ansible project's structure and reports what the user selects - drawn through
@@ -172,7 +49,8 @@ const ANSIBLE_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
  * It holds no document state and offers no edit: there is no toolbox drop, no context menu of
  * commands and no keyboard mutation, because this diagram type has none of those to offer.
  * What it does have is the jump from a node to its file, which is most of the value
- * (Requirement 8.1), bound to the double-click and the keyboard alike.
+ * (Requirement 8.1), bound to the double-click and the keyboard alike. The handler that makes
+ * the jump stays here, standing in for gap 9 of `ansible-structure.md`.
  */
 export function AnsibleCanvas({ projectId, entryId, path }: AnsibleCanvasProps) {
   const { model, loading, failed, reportView, moveElementTo } = useAnsibleStream(projectId, path);
@@ -198,76 +76,53 @@ export function AnsibleCanvas({ projectId, entryId, path }: AnsibleCanvasProps) 
   };
 
   const diagramModel = useMemo<DiagramModel>(() => {
-    const elements: DiagramModelElement[] = [];
-    const connections = [];
-
-    // Stubs first, so a node its label happens to cross still draws over it.
+    const connections: DiagramModelConnection[] = [];
     for (const edge of edges) {
       const wire = edge.payload.edge;
-      if (!wire) {
+      if (!wire || !model.elements.has(wire.sourceId)) {
         continue;
       }
 
       const anchors = anchorsOf(model, edge);
-      if (!anchors) {
-        const source = model.elements.get(wire.sourceId);
-        if (!source) {
-          continue;
-        }
-
-        const from = { x: source.x + source.payload.width, y: source.y + source.payload.height / 2 };
-        elements.push({
-          id: edge.id,
-          type: "stub",
-          x: from.x + STUB_LENGTH / 2,
-          y: from.y,
-          width: STUB_LENGTH,
-          height: 12,
-          from,
-          text: `${wire.targetAsWritten}${edge.payload.unresolvable ? " (expression)" : " (missing)"}`,
-          stubClass: `ansible-edge ansible-edge-${edgeClass(wire.kind)} ansible-edge-unresolved`,
-          payload: {
-            text: `${wire.targetAsWritten}${edge.payload.unresolvable ? " (expression)" : " (missing)"}`,
-            stubClass: `ansible-edge ansible-edge-${edgeClass(wire.kind)} ansible-edge-unresolved`,
-          },
-        } as StubElement);
-        continue;
-      }
-
       connections.push({
         id: edge.id,
-        type: "edge",
-        sourceId: anchors.from.id,
-        targetId: anchors.to.id,
+        type: relationTypeOf(wire.kind),
+        sourceId: wire.sourceId,
+        // A target that is missing, an expression or not in view has no end: the library draws
+        // it as the relation's stub.
+        targetId: anchors ? anchors.to.id : "",
+        // The directive and its condition (the label's `cel`, composed here).
         label: wire.condition ? `${wire.directive} when ${wire.condition}` : wire.directive,
-        className: `ansible-edge-${edgeClass(wire.kind)} ${wire.dynamic ? "ansible-edge-dynamic" : "ansible-edge-static"}`,
+        // What the line's dash reads (`self.dynamic`), and the stub's words.
+        payload: {
+          dynamic: wire.dynamic,
+          text: `${wire.targetAsWritten}${edge.payload.unresolvable ? " (expression)" : " (missing)"}`,
+        },
       });
     }
 
-    for (const node of nodes) {
-      elements.push({
+    const elements = nodes.map((node): NodeElement => {
+      const kind = kindOf(node.payload.kind);
+      return {
         id: node.id,
-        type: "node",
+        type: kind.type,
         x: node.x + node.payload.width / 2,
         y: node.y + node.payload.height / 2,
         width: node.payload.width,
         height: node.payload.height,
         label: node.payload.name,
-        // What the declaration reads. The palette slot is `playIndex % PALETTE_SLOTS`, which a
-        // binding now computes; it is carried here as the index the module already holds.
+        // What the compiled declaration reads: the tooltip's `cel`, composed here, and the play
+        // index the colour is chosen by (`self.playIndex % 6`), which a play of no playbook lacks.
         payload: {
           name: node.payload.name,
-          kindClass: kindClass(node.payload.kind),
           hollow: node.payload.hollow,
-          title: node.payload.hosts
-            ? `${kindLabel(node.payload.kind)} ${node.payload.name} — hosts: ${node.payload.hosts}`
-            : `${kindLabel(node.payload.kind)} ${node.payload.name}`,
-          ...(paletteSlotOf(node, PALETTE_SLOTS) >= 0 ? { playSlot: paletteSlotOf(node, PALETTE_SLOTS) } : {}),
+          title: node.payload.hosts ? `${kind.label} ${node.payload.name} — hosts: ${node.payload.hosts}` : `${kind.label} ${node.payload.name}`,
+          ...(node.payload.playIndex >= 0 ? { playIndex: node.payload.playIndex } : {}),
         },
         node,
         activate: () => activate(node),
-      } as NodeElement);
-    }
+      };
+    });
 
     return { elements, connections };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- the closures read stable setters
@@ -276,10 +131,10 @@ export function AnsibleCanvas({ projectId, entryId, path }: AnsibleCanvasProps) 
 
   const events: DiagramEventHandlers = {
     // The jump, reached by action id from the double-click and the keyboard alike: this module
-    // still decides what "activate" means. Selection is the library's (centralized-selection).
+    // still decides what "reveal" means. Selection is the library's (centralized-selection).
     onActionInvoked: ({ actionId, targetId }) => {
       const node = targetId !== undefined ? model.elements.get(targetId) : undefined;
-      if (actionId === "ansible.activate" && node !== undefined) {
+      if (actionId === REVEAL && node !== undefined) {
         activate(node);
       }
     },
@@ -309,14 +164,9 @@ export function AnsibleCanvas({ projectId, entryId, path }: AnsibleCanvasProps) 
   });
 
   // Opening, reconnecting and unavailable are the library's to say, in the frame around this canvas;
-  // the empty explanation is this module's own, and only true once the folder has been read.
+  // the empty sentence is the specification's (`canvas.empty`), and only true once the folder has been read.
   if (!loading && !failed && nodes.length === 0) {
-    return (
-      <div className="ansible-canvas-message canvas-host canvas-host-message">
-        Nothing here is laid out the way Ansible expects, so there is nothing to draw. Playbooks at the folder root or
-        under <code>playbooks/</code>, roles under <code>roles/</code>, inventories under <code>inventories/</code>.
-      </div>
-    );
+    return <EmptyCanvas definition={ANSIBLE_DEFINITION} className="ansible-canvas-message" />;
   }
 
   return (
@@ -335,54 +185,37 @@ export function AnsibleCanvas({ projectId, entryId, path }: AnsibleCanvasProps) 
   );
 }
 
-function kindClass(kind: AnsibleElementKind): string {
+/** The node type an element of the wire is - the specification's type name in lower case - and how its tooltip names it. */
+function kindOf(kind: AnsibleElementKind): { type: string; label: string } {
   switch (kind) {
     case AnsibleElementKind.PLAYBOOK:
-      return "playbook";
+      return { type: "playbook", label: "Playbook" };
     case AnsibleElementKind.PLAY:
-      return "play";
+      return { type: "play", label: "Play" };
     case AnsibleElementKind.ROLE:
-      return "role";
+      return { type: "role", label: "Role" };
     case AnsibleElementKind.TASK_FILE:
-      return "taskfile";
+      return { type: "taskfile", label: "Task file" };
     case AnsibleElementKind.INVENTORY:
-      return "inventory";
+      return { type: "inventory", label: "Inventory" };
     case AnsibleElementKind.VARIABLE_FOLDER:
-      return "vars";
+      return { type: "variablefolder", label: "Variables" };
     default:
-      return "unknown";
+      return { type: "unknown", label: "Element" };
   }
 }
 
-function kindLabel(kind: AnsibleElementKind): string {
-  switch (kind) {
-    case AnsibleElementKind.PLAYBOOK:
-      return "Playbook";
-    case AnsibleElementKind.PLAY:
-      return "Play";
-    case AnsibleElementKind.ROLE:
-      return "Role";
-    case AnsibleElementKind.TASK_FILE:
-      return "Task file";
-    case AnsibleElementKind.INVENTORY:
-      return "Inventory";
-    case AnsibleElementKind.VARIABLE_FOLDER:
-      return "Variables";
-    default:
-      return "Element";
-  }
-}
-
-function edgeClass(kind: AnsibleEdgeKind): string {
+/** The relation type an edge of the wire is: the specification's relation name in lower case. */
+function relationTypeOf(kind: AnsibleEdgeKind): string {
   switch (kind) {
     case AnsibleEdgeKind.USES_ROLE:
-      return "uses-role";
+      return "usesrole";
     case AnsibleEdgeKind.IMPORTS_PLAYBOOK:
-      return "imports-playbook";
+      return "importsplaybook";
     case AnsibleEdgeKind.INCLUDES_TASKS:
-      return "includes-tasks";
+      return "includestasks";
     case AnsibleEdgeKind.DEPENDS_ON:
-      return "depends-on";
+      return "dependson";
     case AnsibleEdgeKind.TARGETS:
       return "targets";
     default:

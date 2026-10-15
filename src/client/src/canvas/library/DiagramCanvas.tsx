@@ -2874,7 +2874,7 @@ function LibraryConnection({
         <path
           className={`canvas-connection-line library-connection-line ${relation.lineClassName ?? ""}`.trim()}
           d={d}
-          style={highlighted({ stroke: tokenColour(stubStyle.stroke), strokeWidth: stubStyle.strokeWidth, strokeDasharray: stubStyle.dash?.join(" ") }, selected)}
+          style={highlighted({ stroke: tokenColour(stubStyle.stroke), strokeWidth: stubStyle.strokeWidth, strokeDasharray: (connection.style?.dash ?? relation.stub.dash ?? relation.style?.dash)?.join(" ") }, selected)}
         />
         {stubText !== null && stubText !== "" && (
           // The anchor inline, as an element's label has it: `.canvas-connection text` centres every
@@ -2937,7 +2937,7 @@ function LibraryConnection({
           {
             stroke: tokenColour(style.stroke),
             strokeWidth: style.strokeWidth,
-            strokeDasharray: style.dash?.join(" "),
+            strokeDasharray: dashOf(relation, connection)?.join(" "),
           },
           // The whole route, label and marker included: the marker in <defs> paints with
           // `context-stroke`, so recolouring the line recolours its arrowhead with it - which no
@@ -3854,6 +3854,18 @@ function fallbackBox(bounds: ConnectorBox, label: string): ReactNode {
 }
 
 /** A style colour resolves through a theme token; a `--token` name becomes `var(--token)`. */
+/**
+ * The dash a connection's line is drawn with: its own, else its relation's for a condition that holds
+ * of its payload (`dashWhen`), else its relation's.
+ */
+function dashOf(relation: RelationTypeDefinition, connection: DiagramModelConnection): readonly number[] | undefined {
+  if (connection.style?.dash !== undefined) {
+    return connection.style.dash;
+  }
+
+  return relation.dashWhen !== undefined && holds(relation.dashWhen.when, { payload: connection.payload }) ? relation.dashWhen.dash : relation.style?.dash;
+}
+
 function tokenColour(value: string | number | undefined): string | undefined {
   if (typeof value !== "string" || value === "") {
     return undefined;

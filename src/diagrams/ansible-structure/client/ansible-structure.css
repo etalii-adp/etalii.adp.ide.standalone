@@ -4,8 +4,8 @@
  * The chrome, the element and connection basics and the selection treatment moved to
  * `@client/canvas/canvas.css` (loaded from this module's register.ts), which the timeline,
  * dependency-graph and databricks canvases already share. What stays here is what no other
- * canvas has: the per-play palette, the per-kind outlines, and the static/dynamic/unresolved
- * edge vocabulary.
+ * canvas has: the per-play palette, the per-kind outlines, and the colours and weights of the
+ * edges. The edges' dashes are the specification's, which the library paints on each line.
  *
  * Everything visual still lives in CSS rather than in AnsibleCanvas.tsx - tech.md's
  * centralised-styling rule - and that includes the palette. The backend sends a play INDEX and
@@ -131,7 +131,8 @@
 /* ---- the per-play palette ------------------------------------------------------------------ */
 
 /*
- * Six slots, wrapped by the client - add a slot above, here, and in PALETTE_SLOTS in the canvas.
+ * Six slots, wrapped by the specification's `self.playIndex % 6`, which the library reads into the
+ * slot class - add a slot there first, then above and here.
  * The fill is the hue mixed into the real raised surface, so a play reads as a tint of the
  * canvas rather than as paint on top of it, in either theme.
  *
@@ -163,22 +164,15 @@
 }
 
 /*
- * Static versus dynamic, and the distinction the whole edge model exists for: import_* is
- * resolved before the run and include_* during it, so one is solid and the other dashed. This
- * is the convention ansible-playbook-grapher's users already read.
+ * Static versus dynamic, the distinction the whole edge model exists for - import_* is resolved
+ * before the run and include_* during it, so one is solid and the other dashed - is no rule here:
+ * the specification's dash (`self.dynamic ? [5.0, 4.0] : []`) is painted on the line itself, as
+ * are the dependency's and the unresolved stub's below.
  */
-.ansible-edge-static .ansible-edge-line {
-  stroke-dasharray: none;
-}
-
-.ansible-edge-dynamic .ansible-edge-line {
-  stroke-dasharray: 5 4;
-}
 
 /* A role depending on a role is not the same as a playbook listing one, so it is not drawn alike. */
 .ansible-edge-depends-on .ansible-edge-line {
   --ansible-edge-stroke: var(--color-primary);
-  stroke-dasharray: 1 4;
   stroke-linecap: round;
   stroke-width: 2;
 }
@@ -196,7 +190,6 @@
  */
 .ansible-edge-unresolved .ansible-edge-line {
   --ansible-edge-stroke: var(--color-warning);
-  stroke-dasharray: 3 3;
 }
 
 .ansible-edge-unresolved .ansible-edge-label {

@@ -114,8 +114,12 @@ beforeEach(() => {
     }),
     element("role:nginx", "ansible/structure+role", AnsibleElementKind.ROLE, {
       projectRelativePath: ["roles", "nginx"],
-      playIndex: 0,
     }, 300, 0),
+    // Only a play carries a play index; the backend sends -1 for every other kind.
+    element("play:site.yml#0", "ansible/structure+play", AnsibleElementKind.PLAY, {
+      projectRelativePath: ["site.yml"],
+      playIndex: 0,
+    }, 0, 100),
   );
 });
 
@@ -147,8 +151,8 @@ describe("AnsibleCanvas", () => {
     const { container } = renderCanvas();
 
     // Assert.
-    const role = container.querySelector('[data-element-id="role:nginx"] .ansible-node-box');
-    expect(role?.getAttribute("class")).toContain("ansible-play-0");
+    const play = container.querySelector('[data-element-id="play:site.yml#0"] .ansible-node-box');
+    expect(play?.getAttribute("class")).toContain("ansible-play-0");
     // Nothing inline on the drawing but geometry: the palette lives in the stylesheet so a theme
     // change is a CSS change. Scoped to the svg rather than the whole container, because the
     // shared scrollbars below it position their thumbs inline - a thumb's offset is geometry, not
@@ -182,7 +186,7 @@ describe("AnsibleCanvas", () => {
     const { container } = renderCanvas();
 
     // Assert: the positive control on the reader first, so an empty selector list cannot pass.
-    const box = container.querySelector('[data-element-id="role:nginx"] .ansible-node-box');
+    const box = container.querySelector('[data-element-id="play:site.yml#0"] .ansible-node-box');
     expect(box?.getAttribute("class")).toContain("ansible-play-0");
     const selectors = selectorsFor(0);
     expect(selectors.length, "the stylesheet has no per-play rule for slot 0").toBeGreaterThan(0);
@@ -196,7 +200,8 @@ describe("AnsibleCanvas", () => {
     // matched nothing. This asks each rule of the rendered drawing rather than of the markup's
     // intent. Hover and focus are states jsdom cannot enter, so their pseudo-class is dropped and
     // the rest of the selector must still find the box it would restyle.
-    // Arrange: every kind, each in its own play slot so all six are drawn, and a hollow role.
+    // Arrange: every kind, six plays so all six slots are drawn - only a play is coloured by its
+    // index, as the specification's `Play` style says - and a hollow role.
     const { readFileSync } = await import("node:fs");
     const { resolve } = await import("node:path");
     const css = readFileSync(resolve(process.cwd(), "../diagrams/ansible-structure/client/ansible-structure.css"), "utf8").replace(/\/\*[\s\S]*?\*\//g, " ");
@@ -205,12 +210,12 @@ describe("AnsibleCanvas", () => {
       .map((selector) => selector.trim())
       .filter((selector) => /\.ansible-node-box(?![\w-])/.test(selector));
     currentModel = modelOf(
-      element("playbook:a.yml", "ansible/structure+playbook", AnsibleElementKind.PLAYBOOK, { playIndex: 0 }),
-      element("play:a.yml#0", "ansible/structure+play", AnsibleElementKind.PLAY, { playIndex: 1 }, 200),
-      element("role:r", "ansible/structure+role", AnsibleElementKind.ROLE, { playIndex: 2 }, 400),
-      element("taskfile:roles/r/tasks/t.yml", "ansible/structure+taskfile", AnsibleElementKind.TASK_FILE, { playIndex: 3 }, 600),
-      element("inventory:inventories/p", "ansible/structure+inventory", AnsibleElementKind.INVENTORY, { playIndex: 4 }, 800),
-      element("vars:inventories/p/group_vars", "ansible/structure+vars", AnsibleElementKind.VARIABLE_FOLDER, { playIndex: 5 }, 1000),
+      element("playbook:a.yml", "ansible/structure+playbook", AnsibleElementKind.PLAYBOOK),
+      ...[0, 1, 2, 3, 4, 5].map((index) => element(`play:a.yml#${index}`, "ansible/structure+play", AnsibleElementKind.PLAY, { playIndex: index }, 200, index * 50)),
+      element("role:r", "ansible/structure+role", AnsibleElementKind.ROLE, {}, 400),
+      element("taskfile:roles/r/tasks/t.yml", "ansible/structure+taskfile", AnsibleElementKind.TASK_FILE, {}, 600),
+      element("inventory:inventories/p", "ansible/structure+inventory", AnsibleElementKind.INVENTORY, {}, 800),
+      element("vars:inventories/p/group_vars", "ansible/structure+vars", AnsibleElementKind.VARIABLE_FOLDER, {}, 1000),
       element("role:empty", "ansible/structure+role", AnsibleElementKind.ROLE, { hollow: true }, 1200),
     );
 
@@ -372,9 +377,11 @@ describe("AnsibleCanvas", () => {
 
     // Assert.
     // import_* is resolved before the run and include_* during it, and the two must not look
-    // the same or a reader learns they are the same thing.
-    expect(container.querySelector(".ansible-edge-static")).not.toBeNull();
-    expect(container.querySelector(".ansible-edge-dynamic")).not.toBeNull();
+    // the same or a reader learns they are the same thing. The dash is the specification's
+    // (`self.dynamic ? [5.0, 4.0] : []`), painted by the library on the line itself.
+    const dashOf = (id: string) => container.querySelector<SVGPathElement>(`[data-connection-id="${id}"] .ansible-edge-line`)!.style.strokeDasharray;
+    expect(dashOf("edge:static")).toBe("");
+    expect(dashOf("edge:dynamic")).toBe("5 4");
   });
 
   it("anchors an edge on the source's right side and the target's left side, arrow and all", () => {
@@ -400,7 +407,9 @@ describe("AnsibleCanvas", () => {
     expect(numbers[1]).toBe(16);
     expect(numbers[numbers.length - 2]).toBe(300);
     expect(numbers[numbers.length - 1]).toBe(16);
-    expect(line.getAttribute("marker-end")).toBe("url(#library-arrow)");
+    // The specification's `targetMarker` is `arrow`, DISL's open V (6.11); the hand-written
+    // definition drew a filled one (`ansibleCompiledDefinition.test.tsx` states the difference).
+    expect(line.getAttribute("marker-end")).toBe("url(#library-open-arrow)");
   });
 
   it("gives a dependsOn edge a style of its own", () => {
@@ -416,8 +425,9 @@ describe("AnsibleCanvas", () => {
     // Act.
     const { container } = renderCanvas();
 
-    // Assert.
+    // Assert: its class, for its colour, width and cap, and the specification's dotted line.
     expect(container.querySelector(".ansible-edge-depends-on")).not.toBeNull();
+    expect(container.querySelector<SVGPathElement>('[data-connection-id="edge:dep"] .ansible-edge-line')!.style.strokeDasharray).toBe("1 4");
   });
 
   it("labels an edge with its directive, and with its condition when it has one", () => {
@@ -460,6 +470,7 @@ describe("AnsibleCanvas", () => {
     // Assert.
     // A reader has to be able to see that a playbook names something that is not there.
     expect(container.querySelector(".ansible-edge-unresolved")).not.toBeNull();
+    expect(container.querySelector<SVGPathElement>(".ansible-edge-unresolved .ansible-edge-line")!.style.strokeDasharray).toBe("3 3");
     expect(container.textContent).toContain("absent-role (missing)");
   });
 
@@ -505,7 +516,10 @@ describe("AnsibleCanvas", () => {
     expect(revealPath).toHaveBeenCalledWith(["roles", "nginx"]);
   });
 
-  it("reveals a node's file from the keyboard too", () => {
+  it.each([
+    ["Enter", "Enter"],
+    ["Space", " "],
+  ])("reveals a node's file from the keyboard too, by %s", (_name, key) => {
     // Arrange. The node is the backend's selection. This used to be a click, answered by a
     // private `focusedId` the canvas set for itself; centralized-selection Requirement 4.1
     // deletes that state, so Enter now acts on the ONE selection there is - which in the running
@@ -514,7 +528,7 @@ describe("AnsibleCanvas", () => {
     const { container } = renderCanvas();
 
     // Act.
-    fireEvent.keyDown(container.querySelector("svg.library-canvas-surface")!, { key: "Enter" });
+    fireEvent.keyDown(container.querySelector("svg.library-canvas-surface")!, { key });
 
     // Assert.
     // A reader who navigates by keyboard should not have to reach for the mouse to use the one
@@ -568,6 +582,10 @@ describe("AnsibleCanvas", () => {
     // says where this type looks.
     expect(container.textContent).toContain("playbooks/");
     expect(container.textContent).toContain("roles/");
+    // The sentence is the specification's `canvas.empty`, drawn by the library in this module's frame.
+    expect(container.querySelector(".ansible-canvas-message.canvas-host-message")?.textContent).toBe(
+      "Nothing here is laid out the way Ansible expects, so there is nothing to draw. Playbooks at the folder root or under playbooks/, roles under roles/, inventories under inventories/.",
+    );
   });
 });
 

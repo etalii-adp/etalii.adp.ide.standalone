@@ -181,6 +181,13 @@ export interface NotationBindings {
   edgeLabelClassName?: (relation: string, label: string) => string | undefined;
   /** The class that paints each width a relation's computed stroke width gives. */
   strokeWidthClassName?: (relation: string, width: number) => string | undefined;
+  /**
+   * The class prefix that paints a colour chosen by index - `token('<family>' + string(self.<a> % n))`
+   * in a node's style, a palette slot's hue - keyed by the token's family. The library has no CEL, so
+   * it wraps the index into its slot and writes the prefix and the slot as one class, and the
+   * stylesheet paints the slot, mixed as the specification says.
+   */
+  indexedColourClassName?: (type: string, token: string) => string | undefined;
 }
 
 export interface CompileOptions {
@@ -441,6 +448,7 @@ class Compiler {
     const rulers = this.rulers(this.system);
     const filter = this.filter();
     const switches = this.switches();
+    const empty = this.emptyCanvas();
     const backgroundMenu = this.backgroundMenu(this.defaultViewpoint?.[0]);
     const dragging = this.dragging(elementTypes);
 
@@ -450,7 +458,9 @@ class Compiler {
       ...(acyclic.length > 0 ? { acyclic } : {}),
       ...(actions.length > 0 ? { actions } : {}),
       ...(snap !== undefined ? { snap } : {}),
-      ...(rulers.length > 0 || switches.length > 0 ? { chrome: { ...(rulers.length > 0 ? { rulers } : {}), ...(switches.length > 0 ? { switches } : {}) } } : {}),
+      ...(rulers.length > 0 || switches.length > 0 || empty !== undefined
+        ? { chrome: { ...(rulers.length > 0 ? { rulers } : {}), ...(switches.length > 0 ? { switches } : {}), ...(empty !== undefined ? { empty } : {}) } }
+        : {}),
       ...(filter !== undefined ? { filter } : {}),
       layout: this.layout(rulers, backgroundMenu, dragging),
       dragging,
@@ -459,6 +469,23 @@ class Compiler {
     };
 
     return { ...definition, ...this.bindings.extras?.(spec) };
+  }
+
+  /**
+   * The canvas's sentence for a document with nothing to draw (DISL §6.13 `canvas.empty`), as its
+   * chrome. Its `when` is CEL over the diagram, which the library cannot evaluate: the module draws
+   * the sentence once its document is read and holds nothing, which is that condition's ordinary case.
+   */
+  private emptyCanvas(): { text: { template: string } } | undefined {
+    const empty = this.spec.notation.canvas?.empty;
+    if (empty === undefined) {
+      return undefined;
+    }
+
+    if (/[{}]/.test(empty.text)) {
+      fail(`the canvas's empty sentence "${empty.text}" holds a brace, which the library would read as a {placeholder}.`);
+    }
+    return { text: { template: empty.text } };
   }
 
   /**
@@ -571,7 +598,7 @@ class Compiler {
     const where = `node "${name}"`;
     const { shape, segments } = this.shape(name, node);
     const bodyless = shape === "none";
-    const classNames = this.bindings.classNames(name, node);
+    const classNames = [...this.bindings.classNames(name, node), ...this.indexedColours(name, node)];
     const hint = this.showsDragValue() && this.movable(node) ? [this.dragHint()] : [];
     const labels = [...(node.labels ?? []).map((label) => this.label(name, label, bodyless)), ...hint];
     const compartments = this.compartments(name, node);
@@ -600,6 +627,57 @@ class Compiler {
       ...(segments !== undefined ? { segments } : {}),
       ...(centreOf !== undefined ? { centreOf } : {}),
     };
+  }
+
+  /**
+   * A node's colours chosen by index (DISL §6.6: a token named from an index wrapped by `%`), each as
+   * the class its family's slot is painted by: the module's prefix and the index modulo the count, as
+   * the binding's `number.modulo` wraps it. One class per family, however many of the style's colours
+   * read it - a hue and its tint are one slot.
+   */
+  private indexedColours(name: string, node: DislNodeNotation): ClassDeclaration[] {
+    const found = new Map<string, ClassDeclaration>();
+    for (const expression of celTextsIn(this.styleOf(node.style))) {
+      for (const match of expression.matchAll(/token\('([^']+)' \+ string\(self\.([A-Za-z_][A-Za-z0-9_]*) % (\d+)\)\)/g)) {
+        const [, token, attribute, count] = match as unknown as [string, string, string, string];
+        const key = `${token}|${attribute}|${count}`;
+        if (found.has(key)) {
+          continue;
+        }
+
+        const prefix = this.bindings.indexedColourClassName?.(name, token);
+        if (prefix === undefined) {
+          fail(`node "${name}" chooses its colour from "${token}" by an index; the library paints a colour chosen by index by the class the module names for the token's family in indexedColourClassName.`);
+        }
+        found.set(key, {
+          className: { parts: [{ template: prefix }, { path: `payload.${attribute}`, number: { modulo: Number(count) } }], join: "" },
+          on: "shape",
+          when: { path: `payload.${attribute}`, is: "present" },
+        });
+      }
+    }
+
+    return [...found.values()];
+  }
+
+  /** A style as it is drawn: a named style of the notation or one written in place, its `extends` merged beneath it. */
+  private styleOf(style: unknown, seen: readonly string[] = []): Readonly<Record<string, unknown>> | undefined {
+    if (typeof style === "string") {
+      if (seen.includes(style)) {
+        fail(`the style "${style}" extends itself.`);
+      }
+      return this.styleOf(this.spec.notation.styles?.[style], [...seen, style]);
+    }
+
+    if (!isObject(style)) {
+      return undefined;
+    }
+
+    const { extends: bases, ...own } = style;
+    const inherited = (Array.isArray(bases) ? bases : bases === undefined ? [] : [bases])
+      .map((base) => this.styleOf(base, seen))
+      .reduce<Readonly<Record<string, unknown>> | undefined>((merged, base) => (merged === undefined ? base : mergedPerKey(merged, base)), undefined);
+    return inherited === undefined ? own : mergedPerKey(inherited, own);
   }
 
   /**
@@ -835,17 +913,30 @@ class Compiler {
 
   /**
    * The node's accessibility: what it states, else - where the module asks for a role or a tab order -
-   * DISL's default name (§6.15), the type's label and its label attribute, which a type inherits.
+   * DISL's default name (§6.15), the type's label and its label attribute, which a type inherits. A node
+   * that states its role and no name is given that default name too, since the default is the name's.
    */
   private accessibilityOf(name: string, node: DislNodeNotation, where: string): Pick<ElementTypeDefinition, "accessibility"> {
     if (node.accessibility !== undefined) {
-      return { accessibility: this.accessibility(node, where) };
+      const stated = this.accessibility(node, where);
+      return { accessibility: node.accessibility.name !== undefined ? stated : { ...stated, label: this.defaultName(name, where) } };
     }
 
     if (this.bindings.accessibleRole === undefined && this.bindings.focusable !== true) {
       return {};
     }
 
+    return {
+      accessibility: {
+        ...(this.bindings.accessibleRole !== undefined ? { role: this.bindings.accessibleRole } : {}),
+        ...(this.bindings.focusable === true ? { focusable: true } : {}),
+        label: this.defaultName(name, where),
+      },
+    } as Pick<ElementTypeDefinition, "accessibility">;
+  }
+
+  /** DISL's default accessible name (§6.15): the type's label and its label attribute, which a type inherits. */
+  private defaultName(name: string, where: string): NonNullable<NonNullable<ElementTypeDefinition["accessibility"]>["label"]> {
     const label = this.spec.metamodel.types[name]?.label ?? name;
     let attribute: string | undefined;
     for (let current: string | undefined = name; current !== undefined && attribute === undefined; current = this.spec.metamodel.types[current]?.extends) {
@@ -855,13 +946,7 @@ class Compiler {
       fail(`${where}: the type label "${label}" cannot be written into an accessible name.`);
     }
 
-    return {
-      accessibility: {
-        ...(this.bindings.accessibleRole !== undefined ? { role: this.bindings.accessibleRole } : {}),
-        ...(this.bindings.focusable === true ? { focusable: true } : {}),
-        label: attribute === undefined ? { template: label } : this.celBinding(`'${label} ' + self.${attribute}`, `${where} accessible name`),
-      },
-    } as Pick<ElementTypeDefinition, "accessibility">;
+    return attribute === undefined ? { template: label } : this.celBinding(`'${label} ' + self.${attribute}`, `${where} accessible name`);
   }
 
   private accessibility(node: DislNodeNotation, where: string): NonNullable<ElementTypeDefinition["accessibility"]> {
@@ -1008,6 +1093,7 @@ class Compiler {
     const label = this.edgeLabel(name, edge);
     const strokeLadder = this.strokeLadder(name, edge);
     const stub = this.stub(name, edge);
+    const { dash, dashWhen } = this.dash(name, edge);
 
     // Only a type that may hold children can be the parent end of a relation derived from containment.
     const derivedFromParent = isObject(relation.derived) && relation.derived.source === "item.parent";
@@ -1027,7 +1113,8 @@ class Compiler {
     return {
       id: this.typeId(name),
       route: customRoute ?? (along !== undefined ? bowedArcRoute(along) : libraryRouteOf(routing)),
-      style: { ...(source !== "none" ? { startMarker: this.marker(source) } : {}), endMarker: this.marker(target) },
+      style: { ...(source !== "none" ? { startMarker: this.marker(source) } : {}), endMarker: this.marker(target), ...(dash !== undefined ? { dash } : {}) },
+      ...(dashWhen !== undefined ? { dashWhen } : {}),
       ...(along !== undefined && ((along.bars?.length ?? 0) > 0 || (along.marks?.length ?? 0) > 0) ? { adorn: bowedArcAdornment(along) } : {}),
       ...(strokeLadder !== undefined ? { strokeLadder } : {}),
       ...(stub !== undefined ? { stub } : {}),
@@ -1047,6 +1134,41 @@ class Compiler {
       },
       ...(this.createsOnEmptyRelease(name, edge) ? { emptyRelease: "complete" as const } : {}),
     };
+  }
+
+  /**
+   * A line's dash (DISL §6.6 `stroke.dash`): the list its type states, or a choice `cond ? [..] : [..]`
+   * by an attribute of the relation (`self.<attribute>`) or a condition the module names in
+   * celConditions, drawn per connection by its payload. An empty list is a solid line. Any other CEL
+   * is refused, naming it: the library has no CEL, and a guess would draw a dash nobody stated.
+   */
+  private dash(name: string, edge: DislEdgeNotation): { dash?: readonly number[]; dashWhen?: { when: Condition; dash: readonly number[] } } {
+    const stroke = edge.line?.stroke;
+    const value = isObject(stroke) ? stroke.dash : undefined;
+    if (value === undefined) {
+      return {};
+    }
+
+    const where = `edge "${name}": its line's dash`;
+    if (isObject(value) && typeof value.cel === "string") {
+      const choice = /^\s*(.+?)\s*\?\s*\[([^\]]*)\]\s*:\s*\[([^\]]*)\]\s*$/.exec(value.cel);
+      const test = choice?.[1];
+      const own = test === undefined ? null : /^self\.([A-Za-z_][A-Za-z0-9_]*)$/.exec(test);
+      const when: Condition | undefined = own !== null && own !== undefined ? { path: `payload.${own[1]}`, is: "true" } : test === undefined ? undefined : this.bindings.celConditions?.[test];
+      if (choice === null || when === undefined) {
+        return fail(`${where} "${value.cel}" is not a choice between two lists by an attribute of the relation or a condition the module's celConditions names.`);
+      }
+
+      const then = dashList(choice[2]!, where);
+      const otherwise = dashList(choice[3]!, where);
+      return { ...(otherwise.length > 0 ? { dash: otherwise } : {}), dashWhen: { when, dash: then } };
+    }
+
+    if (Array.isArray(value) && value.every((entry) => typeof entry === "number")) {
+      return value.length > 0 ? { dash: value as readonly number[] } : {};
+    }
+
+    return fail(`${where} is ${JSON.stringify(value)}; the library draws a dash from a list of numbers or a choice between two.`);
   }
 
   /**
@@ -1386,7 +1508,9 @@ class Compiler {
 
     const label = labels[0]!;
     // `self.<attribute>` as CEL is the attribute itself: the connection's own label either way.
-    const ownAttribute = isObject(label.text) && "cel" in label.text && typeof label.text.cel === "string" && /^self\.[A-Za-z_][A-Za-z0-9_]*$/.test(label.text.cel.trim());
+    // A CEL the module's celPaths names is one the module composes into the connection's own label.
+    const ownAttribute = isObject(label.text) && "cel" in label.text && typeof label.text.cel === "string"
+      && (/^self\.[A-Za-z_][A-Za-z0-9_]*$/.test(label.text.cel.trim()) || this.bindings.celPaths[label.text.cel] !== undefined);
     if (!ownAttribute && (!isObject(label.text) || !("attribute" in label.text) || typeof label.text.attribute !== "string")) {
       fail(`${where} "${label.id}" binds ${JSON.stringify(label.text)}; the library draws a line's label from the connection's own label, an attribute.`);
     }
@@ -1427,11 +1551,14 @@ class Compiler {
       fail(`${where}: its stub label "${label.id}" sits "${side}"; the library writes a stub's label above or below it.`);
     }
     const labelClass = label === undefined ? undefined : this.bindings.edgeLabelClassName?.(name, label.id);
+    const style = this.styleOf(stub.style);
+    const dash = isObject(style?.stroke) && Array.isArray(style.stroke.dash) && style.stroke.dash.length > 0 ? (style.stroke.dash as readonly number[]) : undefined;
 
     return {
       length: stub.length,
       side: stub.side,
       ...(className !== undefined ? { className } : {}),
+      ...(dash !== undefined ? { dash } : {}),
       ...(label !== undefined
         ? {
           label: {
@@ -1530,6 +1657,16 @@ class Compiler {
         action.gestures.push("activate");
       }
       action.types.add(type);
+      // The key the operation itself states (DISL §9.3 `shortcut`), which no menu entry carries here.
+      const declared = this.spec.behavior?.operations?.[operation];
+      const shortcut = isObject(declared) && typeof declared.shortcut === "string" ? declared.shortcut : undefined;
+      if (shortcut !== undefined) {
+        const press = shortcutOf(shortcut);
+        if (!action.keys.some((known) => samePress(known, press))) {
+          action.keys.push(press);
+        }
+        action.shortcut ??= press.key;
+      }
     }
 
     const allNodes = new Set(this.nodeNames);
@@ -1859,7 +1996,88 @@ class Compiler {
   }
 }
 
+/** The numbers of a dash list as CEL writes it (`5.0, 4.0`). */
+function dashList(text: string, where: string): readonly number[] {
+  const entries = text.split(",").map((entry) => entry.trim()).filter((entry) => entry !== "");
+  const numbers = entries.map(Number);
+  if (numbers.some((entry) => !Number.isFinite(entry))) {
+    fail(`${where} lists "${text}", which is not a list of numbers.`);
+  }
+  return numbers;
+}
+
+/** Every CEL text in a style, wherever a colour or a number is bound. */
+function celTextsIn(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value.flatMap(celTextsIn);
+  }
+  if (!isObject(value)) {
+    return [];
+  }
+  return Object.entries(value).flatMap(([key, entry]) => (key === "cel" && typeof entry === "string" ? [entry] : celTextsIn(entry)));
+}
+
+/** A value DISL binds rather than writes (`{cel}`, `{token}`, `{attribute}`): replaced whole by a subtype's, never merged into. */
+function isBound(value: Readonly<Record<string, unknown>>): boolean {
+  return "cel" in value || "token" in value || "attribute" in value;
+}
+
+/**
+ * A subtype's notation over its supertype's, merged per key as DISL resolves a visual property
+ * (6.6, *Resolution of a visual property*): an object the subtype states is merged into the one it
+ * inherits, and anything else it states - a list, a scalar, a bound value - replaces it.
+ */
+function mergedPerKey<T>(inherited: T, own: T): T {
+  if (!isObject(inherited) || !isObject(own) || isBound(own) || isBound(inherited)) {
+    return own;
+  }
+
+  const merged: Record<string, unknown> = { ...inherited };
+  for (const [key, value] of Object.entries(own)) {
+    merged[key] = key in merged ? mergedPerKey(merged[key], value) : value;
+  }
+  return merged as T;
+}
+
+/**
+ * Notation looked up along the supertype chain (DISL 4.7): an abstract type is not drawn; a type with
+ * notation of its own draws it merged per key over its supertypes'; and a concrete type with none draws
+ * its nearest supertype's, in that supertype's place, in the metamodel's order.
+ */
+function inherited<T>(notation: Readonly<Record<string, T>>, types: Readonly<Record<string, { abstract?: boolean; extends?: string }>>): Record<string, T> {
+  const chain = (type: string): string[] => {
+    const supertypes: string[] = [];
+    for (let current: string | undefined = type; current !== undefined && !supertypes.includes(current); current = types[current]?.extends) {
+      supertypes.push(current);
+    }
+    return supertypes;
+  };
+  const resolved = (type: string): T =>
+    chain(type).reverse().filter((name) => notation[name] !== undefined).reduce<T | undefined>((merged, name) => (merged === undefined ? notation[name]! : mergedPerKey(merged, notation[name]!)), undefined)!;
+  const nearest = (type: string): string | undefined => chain(type).find((name) => notation[name] !== undefined);
+
+  const result: Record<string, T> = {};
+  for (const name of Object.keys(notation)) {
+    if (types[name]?.abstract !== true) {
+      result[name] = resolved(name);
+    }
+    for (const [other, declared] of Object.entries(types)) {
+      if (declared.abstract !== true && notation[other] === undefined && nearest(other) === name) {
+        result[other] = resolved(other);
+      }
+    }
+  }
+  return result;
+}
+
+/** The specification with its node and edge notation resolved along the supertype chain. See {@link inherited}. */
+function inheritedNotation(spec: DislDocument): DislDocument {
+  const nodes = inherited(spec.notation.nodes, spec.metamodel.types);
+  const edges = spec.notation.edges === undefined ? undefined : inherited(spec.notation.edges, spec.metamodel.relations ?? {});
+  return { ...spec, notation: { ...spec.notation, nodes, ...(edges !== undefined ? { edges } : {}) } };
+}
+
 /** A DISL notation as the library's diagram definition. See this file's opening comment. */
 export function compileNotation(spec: DislDocument, bindings: NotationBindings, options: CompileOptions = {}): DiagramDefinition {
-  return new Compiler(spec, bindings, options).compile();
+  return new Compiler(inheritedNotation(spec), bindings, options).compile();
 }
