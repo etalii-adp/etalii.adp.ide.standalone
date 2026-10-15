@@ -33,7 +33,7 @@ public sealed class ProblemStore : IProblemStore, IDisposable
     private readonly string _appDataRoot;
     private readonly DiagramFileRouter _router;
     private readonly DiagramValidators _validators;
-    private readonly TimeSpan _writeDelay;
+    private readonly Debouncer<CachedProjectProblems>? _writes;
     private readonly int _maxReported;
     private readonly ConcurrentDictionary<string, CachedProjectProblems> _entries = new(StringComparer.OrdinalIgnoreCase);
 
@@ -50,16 +50,19 @@ public sealed class ProblemStore : IProblemStore, IDisposable
         string appDataRoot,
         DiagramFileRouter router,
         DiagramValidators validators,
+        TimeProvider time,
         TimeSpan? writeDelay = null,
         int maxReported = DefaultMaxReported)
     {
         ArgumentNullException.ThrowIfNull(appDataRoot);
         ArgumentNullException.ThrowIfNull(router);
         ArgumentNullException.ThrowIfNull(validators);
+        ArgumentNullException.ThrowIfNull(time);
         _appDataRoot = appDataRoot;
         _router = router;
         _validators = validators;
-        _writeDelay = writeDelay ?? DefaultWriteDelay;
+        var delay = writeDelay ?? DefaultWriteDelay;
+        _writes = delay > TimeSpan.Zero ? new Debouncer<CachedProjectProblems>(delay, OnDebounceElapsed, time) : null;
         _maxReported = maxReported;
     }
 
@@ -180,13 +183,11 @@ public sealed class ProblemStore : IProblemStore, IDisposable
         BetweenClosingAndFlushing?.Invoke();
 
         // A pending debounced write is a promise; keep it on the way out.
+        _writes?.Dispose();
         foreach (var entry in _entries.Values)
         {
             lock (entry.Gate)
             {
-                entry.WriteTimer?.Dispose();
-                entry.WriteTimer = null;
-
                 // By the debt rather than by the timer: a debounce callback that woke a moment
                 // before this loop has already cleared the timer, and reading that as "nothing
                 // owed" is how the last write went missing.
@@ -315,7 +316,7 @@ public sealed class ProblemStore : IProblemStore, IDisposable
             return;
         }
 
-        if (_writeDelay <= TimeSpan.Zero)
+        if (_writes is null)
         {
             entry.WritePending = true;
             Persist(entry);
@@ -326,13 +327,12 @@ public sealed class ProblemStore : IProblemStore, IDisposable
         // entry rather than implied by the timer, because the timer is cleared by whoever wakes up
         // first and the debt has to outlive that.
         entry.WritePending = true;
-        entry.WriteTimer?.Dispose();
-        entry.WriteTimer = new Timer(_ => OnDebounceElapsed(entry), null, _writeDelay, Timeout.InfiniteTimeSpan);
+        _writes.Schedule(entry);
     }
 
     /// <summary>
     /// The debounced write, waking up. <b>A callback already in flight is not cancelled by
-    /// <see cref="Timer.Dispose()"/></b>, so this can run after <see cref="Dispose"/> has
+    /// disposing the debouncer</b>, so this can run after <see cref="Dispose"/> has
     /// returned - and it did: measured in a full run as <c>PERSIST disposed=True</c> landing
     /// between a test's <c>Directory.Delete</c> beginning and finishing, which leaves the folder
     /// behind. Dispose has already kept the promise for anything pending, so a callback that
@@ -348,8 +348,6 @@ public sealed class ProblemStore : IProblemStore, IDisposable
     {
         lock (entry.Gate)
         {
-            entry.WriteTimer?.Dispose();
-            entry.WriteTimer = null;
             if (_disposed && !entry.WritePending)
             {
                 // SAYS WHAT WAS CHECKED, NOT WHAT IS HOPED. This line used to claim "the flush

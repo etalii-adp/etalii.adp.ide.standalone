@@ -3,6 +3,7 @@ using EtAlii.Adp.Diagram;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Hierarchy;
+using Microsoft.Extensions.Time.Testing;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -25,7 +26,7 @@ public class ValidateContextActionProviderTests : IDisposable
         Directory.CreateDirectory(_root);
         var router = new DiagramFileRouter(new TestDiagramDefinitionCatalog(MindmapDefinition));
         var validators = new DiagramValidators([]);
-        _store = new ProblemStore(IoPath.Combine(scratch, "appdata"), router, validators, writeDelay: TimeSpan.FromMinutes(5));
+        _store = new ProblemStore(IoPath.Combine(scratch, "appdata"), router, validators, new FakeTimeProvider(), writeDelay: TimeSpan.FromMinutes(5));
         var projectValidator = new ProjectValidator(router, validators);
         _provider = new ValidateContextActionProvider(_store, projectValidator, router);
         _validateAll = new ValidateAllContextActionProvider(_store, projectValidator);

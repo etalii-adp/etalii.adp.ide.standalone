@@ -1,5 +1,6 @@
 using EtAlii.Adp.History;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace EtAlii.Adp.Context;
 
@@ -19,6 +20,8 @@ public static class ServiceCollectionAddContextExtension
     {
         ArgumentNullException.ThrowIfNull(services);
 
+        // The clock the broadcaster coalesces on; the host registers it, a test host may not.
+        services.TryAddSingleton(TimeProvider.System);
         services.AddSingleton<IContextInteractionStore, ContextInteractionStore>();
         services.AddSingleton<IContextActionResolver, ContextActionResolver>();
         services.AddSingleton<IContextPropertyResolver, ContextPropertyResolver>();

@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.History;
 using Serilog;
@@ -13,53 +12,37 @@ namespace EtAlii.Adp.Context;
 /// </summary>
 public sealed class HistoryActionsBroadcaster : IDisposable
 {
-    private static readonly TimeSpan CoalesceWindow = TimeSpan.FromMilliseconds(50);
+    internal static readonly TimeSpan CoalesceWindow = TimeSpan.FromMilliseconds(50);
     private static readonly ILogger _logger = Log.ForContext<HistoryActionsBroadcaster>();
 
     private readonly IHistoryStackStore _historyStacks;
     private readonly IContextActionResolver _actionResolver;
     private readonly IContextSelectionStore _selectionStore;
-    private readonly ConcurrentDictionary<string, Timer> _pending = new(StringComparer.OrdinalIgnoreCase);
-    private bool _disposed;
+    private readonly Debouncer<string> _pending;
 
     public HistoryActionsBroadcaster(
         IHistoryStackStore historyStacks,
         IContextActionResolver actionResolver,
-        IContextSelectionStore selectionStore)
+        IContextSelectionStore selectionStore,
+        TimeProvider time)
     {
         ArgumentNullException.ThrowIfNull(historyStacks);
         ArgumentNullException.ThrowIfNull(actionResolver);
         ArgumentNullException.ThrowIfNull(selectionStore);
+        ArgumentNullException.ThrowIfNull(time);
         _historyStacks = historyStacks;
         _actionResolver = actionResolver;
         _selectionStore = selectionStore;
+        _pending = new Debouncer<string>(CoalesceWindow, Broadcast, time, StringComparer.OrdinalIgnoreCase);
         _historyStacks.Changed += OnHistoryChanged;
     }
 
-    private void OnHistoryChanged(object? sender, HistoryChangedEventArgs args)
-    {
-        // Coalesce: schedule one discovery-and-push for this project, replacing any already
-        // pending. A short window is enough to fold a handler that records several commands.
-        var timer = new Timer(_ => Broadcast(args.RootPath), null, CoalesceWindow, Timeout.InfiniteTimeSpan);
-        _pending.AddOrUpdate(
-            args.RootPath,
-            timer,
-            (_, existing) =>
-            {
-                existing.Dispose();
-                return timer;
-            });
-    }
+    // Coalesce: one discovery-and-push per project, the window starting over on every change.
+    // A short window is enough to fold a handler that records several commands.
+    private void OnHistoryChanged(object? sender, HistoryChangedEventArgs args) => _pending.Schedule(args.RootPath);
 
     private void Broadcast(string rootPath)
     {
-        _pending.TryRemove(rootPath, out var timer);
-        timer?.Dispose();
-        if (_disposed)
-        {
-            return;
-        }
-
         try
         {
             var target = ProjectTarget(rootPath);
@@ -80,13 +63,7 @@ public sealed class HistoryActionsBroadcaster : IDisposable
 
     public void Dispose()
     {
-        _disposed = true;
         _historyStacks.Changed -= OnHistoryChanged;
-        foreach (var timer in _pending.Values)
-        {
-            timer.Dispose();
-        }
-
-        _pending.Clear();
+        _pending.Dispose();
     }
 }

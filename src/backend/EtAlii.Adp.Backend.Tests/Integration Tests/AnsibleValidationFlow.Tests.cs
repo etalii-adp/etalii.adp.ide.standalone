@@ -4,6 +4,7 @@ using EtAlii.Adp.Documents;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.Problems;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Time.Testing;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
@@ -35,6 +36,10 @@ public class AnsibleValidationFlowTests : IDisposable
     private readonly string _infrastructure;
     private readonly ServiceProvider _provider;
 
+    // The settle window runs on this clock, and every look at the store advances it past the
+    // window: a change the watcher has delivered settles at the next look, never on a timer.
+    private readonly FakeTimeProvider _clock = new();
+
     public AnsibleValidationFlowTests()
     {
         _appDataRoot = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.IntegrationTests", Guid.NewGuid().ToString("N"));
@@ -46,16 +51,18 @@ public class AnsibleValidationFlowTests : IDisposable
         File.WriteAllText(IoPath.Combine(_infrastructure, "infrastructure.adp"), "ansible/structure\n");
 
         var services = new ServiceCollection();
+        services.AddSingleton<TimeProvider>(_clock);
         services.AddSingleton<IDiagramDefinitionCatalog>(new TestDiagramDefinitionCatalog(Diagram.AnsibleStructure.Diagram.AnsibleStructure));
         services.AddSingleton<DiagramFileRouter>();
         services.AddSingleton<DiagramValidators>();
         services.AddSingleton<ProjectValidator>();
         services.AddSingleton<IProblemStore>(provider => new ProblemStore(
-            _appDataRoot, provider.GetRequiredService<DiagramFileRouter>(), provider.GetRequiredService<DiagramValidators>()));
+            _appDataRoot, provider.GetRequiredService<DiagramFileRouter>(), provider.GetRequiredService<DiagramValidators>(), provider.GetRequiredService<TimeProvider>()));
         services.AddSingleton(provider => new ProblemMaintenance(
             provider.GetRequiredService<IProblemStore>(),
             provider.GetRequiredService<ProjectValidator>(),
             provider.GetRequiredService<DiagramFileRouter>(),
+            provider.GetRequiredService<TimeProvider>(),
             SettleDelay));
         services.AddAnsibleStructure();
 
@@ -125,7 +132,7 @@ public class AnsibleValidationFlowTests : IDisposable
         AnsibleFixture.RepairIn(_infrastructure);
 
         // Assert.
-        var cleared = await Eventually.TrueAsync(() => store.Get(_projectFolder).Problems.Count == 0, TestContext.Current.CancellationToken, WaitLimit);
+        var cleared = await Eventually.TrueAsync(Settled(() => store.Get(_projectFolder).Problems.Count == 0), TestContext.Current.CancellationToken, WaitLimit);
         Assert.True(cleared, "The problem was still there after the file that declared it was fixed.");
     }
 
@@ -154,8 +161,8 @@ public class AnsibleValidationFlowTests : IDisposable
             TestContext.Current.CancellationToken);
 
         // Assert.
-        var returned = await Eventually.TrueAsync(() =>
-            store.Get(_projectFolder).Problems.Any(problem => problem.Problem.RuleId == "ansible.role-missing"), TestContext.Current.CancellationToken, WaitLimit);
+        var returned = await Eventually.TrueAsync(Settled(() =>
+            store.Get(_projectFolder).Problems.Any(problem => problem.Problem.RuleId == "ansible.role-missing")), TestContext.Current.CancellationToken, WaitLimit);
         Assert.True(returned, "The problem never came back after the file was broken again.");
     }
 
@@ -177,4 +184,10 @@ public class AnsibleValidationFlowTests : IDisposable
             Assert.True(bytes.SequenceEqual(bytesToCheck), $"{path} changed during validation.");
         }
     }
+
+    private Func<bool> Settled(Func<bool> condition) => () =>
+    {
+        _clock.Advance(SettleDelay);
+        return condition();
+    };
 }

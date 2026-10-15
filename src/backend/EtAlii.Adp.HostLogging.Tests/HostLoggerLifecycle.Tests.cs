@@ -180,7 +180,8 @@ public class HostLoggerLifecycleTests : IDisposable
                 services.AddSingleton<Problems.IProblemStore>(provider => new Problems.ProblemStore(
                     _root,
                     provider.GetRequiredService<Hierarchy.DiagramFileRouter>(),
-                    provider.GetRequiredService<DiagramValidators>()));
+                    provider.GetRequiredService<DiagramValidators>(),
+                    provider.GetRequiredService<TimeProvider>()));
             });
         });
         _hosts.Add(host);
