@@ -37,8 +37,8 @@ internal static class JobParser
         ArgumentNullException.ThrowIfNull(document);
 
         var jobs = new List<JobModel>();
-        if (root is null || DatabricksYaml.Mapping(root, "resources") is not { } resources
-            || DatabricksYaml.Mapping(resources, "jobs") is not { } keyed)
+        if (root is null || YamlAccess.Mapping(root, "resources") is not { } resources
+            || YamlAccess.Mapping(resources, "jobs") is not { } keyed)
         {
             return jobs;
         }
@@ -50,15 +50,15 @@ internal static class JobParser
                 continue;
             }
 
-            var schedule = DatabricksYaml.Mapping(job, "schedule");
+            var schedule = YamlAccess.Mapping(job, "schedule");
             jobs.Add(new JobModel(
                 key,
-                DatabricksYaml.Scalar(job, "name") ?? "",
+                YamlAccess.Scalar(job, "name") ?? "",
                 ReadTasks(job, document),
                 ReadClusters(job, document),
-                schedule is null ? "" : DatabricksYaml.Scalar(schedule, "quartz_cron_expression") ?? "",
+                schedule is null ? "" : YamlAccess.Scalar(schedule, "quartz_cron_expression") ?? "",
                 job.Children.ContainsKey(new YamlScalarNode("continuous")),
-                DatabricksYaml.Range(keyNode, body, document)));
+                YamlAccess.Range(keyNode, body, document)));
         }
 
         return jobs;
@@ -67,7 +67,7 @@ internal static class JobParser
     private static List<JobTask> ReadTasks(YamlMappingNode job, LineDocument document)
     {
         var tasks = new List<JobTask>();
-        foreach (var node in DatabricksYaml.Sequence(job, "tasks"))
+        foreach (var node in YamlAccess.Sequence(job, "tasks"))
         {
             if (node is not YamlMappingNode task)
             {
@@ -76,13 +76,13 @@ internal static class JobParser
 
             (string type, string source) = Kind(task);
             tasks.Add(new JobTask(
-                DatabricksYaml.Scalar(task, "task_key") ?? "",
+                YamlAccess.Scalar(task, "task_key") ?? "",
                 type,
                 source,
-                DatabricksYaml.Scalar(task, "job_cluster_key") ?? "",
-                DatabricksYaml.Scalar(task, "run_if") ?? "",
+                YamlAccess.Scalar(task, "job_cluster_key") ?? "",
+                YamlAccess.Scalar(task, "run_if") ?? "",
                 ReadDependencies(task, document),
-                DatabricksYaml.Range(task, document)));
+                YamlAccess.Range(task, document)));
         }
 
         return tasks;
@@ -96,12 +96,12 @@ internal static class JobParser
     {
         foreach ((string key, string type, string sourceField) in _taskKinds)
         {
-            if (DatabricksYaml.Mapping(task, key) is not { } declaration)
+            if (YamlAccess.Mapping(task, key) is not { } declaration)
             {
                 continue;
             }
 
-            var source = sourceField.Length > 0 ? DatabricksYaml.Scalar(declaration, sourceField) ?? "" : "";
+            var source = sourceField.Length > 0 ? YamlAccess.Scalar(declaration, sourceField) ?? "" : "";
             if (type == "sql")
             {
                 // The SQL task's source sits one level deeper, and which key is there depends on
@@ -119,10 +119,10 @@ internal static class JobParser
     {
         foreach (var kind in (string[])["query", "dashboard", "alert", "file"])
         {
-            if (DatabricksYaml.Mapping(declaration, kind) is { } inner)
+            if (YamlAccess.Mapping(declaration, kind) is { } inner)
             {
-                return DatabricksYaml.Scalar(inner, $"{kind}_id")
-                    ?? DatabricksYaml.Scalar(inner, "path")
+                return YamlAccess.Scalar(inner, $"{kind}_id")
+                    ?? YamlAccess.Scalar(inner, "path")
                     ?? "";
             }
         }
@@ -133,15 +133,15 @@ internal static class JobParser
     private static List<JobDependency> ReadDependencies(YamlMappingNode task, LineDocument document)
     {
         var dependencies = new List<JobDependency>();
-        foreach (var node in DatabricksYaml.Sequence(task, "depends_on"))
+        foreach (var node in YamlAccess.Sequence(task, "depends_on"))
         {
             if (node is YamlMappingNode dependency
-                && DatabricksYaml.Scalar(dependency, "task_key") is { Length: > 0 } upstream)
+                && YamlAccess.Scalar(dependency, "task_key") is { Length: > 0 } upstream)
             {
                 dependencies.Add(new JobDependency(
                     upstream,
-                    DatabricksYaml.Scalar(dependency, "outcome") ?? "",
-                    DatabricksYaml.Range(dependency, document)));
+                    YamlAccess.Scalar(dependency, "outcome") ?? "",
+                    YamlAccess.Range(dependency, document)));
             }
         }
 
@@ -151,23 +151,23 @@ internal static class JobParser
     private static List<JobCluster> ReadClusters(YamlMappingNode job, LineDocument document)
     {
         var clusters = new List<JobCluster>();
-        foreach (var node in DatabricksYaml.Sequence(job, "job_clusters"))
+        foreach (var node in YamlAccess.Sequence(job, "job_clusters"))
         {
             if (node is not YamlMappingNode cluster
-                || DatabricksYaml.Scalar(cluster, "job_cluster_key") is not { Length: > 0 } key)
+                || YamlAccess.Scalar(cluster, "job_cluster_key") is not { Length: > 0 } key)
             {
                 continue;
             }
 
-            var spec = DatabricksYaml.Mapping(cluster, "new_cluster");
+            var spec = YamlAccess.Mapping(cluster, "new_cluster");
             clusters.Add(new JobCluster(
                 key,
-                spec is null ? "" : DatabricksYaml.Scalar(spec, "spark_version") ?? "",
-                spec is null ? "" : DatabricksYaml.Scalar(spec, "node_type_id") ?? "",
-                spec is not null && int.TryParse(DatabricksYaml.Scalar(spec, "num_workers"), out var workers)
+                spec is null ? "" : YamlAccess.Scalar(spec, "spark_version") ?? "",
+                spec is null ? "" : YamlAccess.Scalar(spec, "node_type_id") ?? "",
+                spec is not null && int.TryParse(YamlAccess.Scalar(spec, "num_workers"), out var workers)
                     ? workers
                     : 0,
-                DatabricksYaml.Range(cluster, document)));
+                YamlAccess.Range(cluster, document)));
         }
 
         return clusters;

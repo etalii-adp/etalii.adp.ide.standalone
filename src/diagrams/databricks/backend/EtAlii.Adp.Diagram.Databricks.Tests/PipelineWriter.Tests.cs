@@ -25,7 +25,7 @@ public class PipelineWriterTests
             File.ReadAllText(IoPath.Combine(AppContext.BaseDirectory, "Fixtures", "pipeline.json")));
 
     private static PipelineModel Pipeline(LineDocument document) =>
-        Assert.Single(PipelineParser.Parse(DatabricksYaml.Root(document), document));
+        Assert.Single(PipelineParser.Parse(YamlAccess.Root(document), document));
 
     [Fact]
     public void InsertLibrary_InYaml_AppendsADashEntry()
