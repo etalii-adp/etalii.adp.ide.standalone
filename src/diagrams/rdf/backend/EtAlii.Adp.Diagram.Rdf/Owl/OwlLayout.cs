@@ -1,4 +1,5 @@
 using EtAlii.Adp.Hierarchy;
+using EtAlii.Adp.Layout;
 
 namespace EtAlii.Adp.Diagram.Rdf;
 
@@ -198,12 +199,8 @@ internal static class OwlLayout
             var bottom = top;
             for (var placed = 0; placed < banded.Count; placed++)
             {
-                // Integer division on purpose: it is what puts a band on rows rather than on a
-                // diagonal, and a diagonal is what a fractional count draws.
-                var position = new RegistrationPosition(
-                    placed % BandColumns * columnPitch,
-                    // ReSharper disable once PossibleLossOfFraction - Reason: On purpose: see above.
-                    y + (placed / BandColumns) * rowPitch);
+                (double x, double down) = GridPacker.Cell(placed, BandColumns, columnPitch, rowPitch);
+                var position = new RegistrationPosition(x, y + down);
                 positions[banded[placed].Id] = position;
                 bottom = Math.Max(bottom, position.Y + rowPitch);
             }

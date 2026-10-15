@@ -1,4 +1,5 @@
 using EtAlii.Adp.Hierarchy;
+using EtAlii.Adp.Layout;
 
 namespace EtAlii.Adp.Diagram.Rdf;
 
@@ -41,20 +42,14 @@ internal static class RdfLayout
         var y = 0d;
         foreach (var band in bands)
         {
-            var row = 0;
-            var column = 0;
-            foreach (var node in band)
+            var members = band.ToList();
+            for (var index = 0; index < members.Count; index++)
             {
-                positions[node.Id] = new RegistrationPosition(column * ColumnWidth, y + row * RowHeight);
-                column++;
-                if (column == Columns)
-                {
-                    column = 0;
-                    row++;
-                }
+                (double x, double down) = GridPacker.Cell(index, Columns, ColumnWidth, RowHeight);
+                positions[members[index].Id] = new RegistrationPosition(x, y + down);
             }
 
-            y += (row + (column > 0 ? 1 : 0)) * RowHeight + BandGap;
+            y += GridPacker.Rows(members.Count, Columns) * RowHeight + BandGap;
         }
 
         return positions;
