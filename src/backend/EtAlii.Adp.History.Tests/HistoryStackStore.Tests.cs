@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Time.Testing;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -6,11 +7,17 @@ namespace EtAlii.Adp.History.Tests;
 /// <summary>
 /// One history per project, keyed by resolved root path, with the same idle-grace eviction the
 /// selection store uses so a reconnect within the window keeps its undo history
-/// (diagram-undo-redo Requirements 1.1, 4.1, 4.2).
+/// (diagram-undo-redo Requirements 1.1, 4.1, 4.2). The grace runs on a fake clock, so a test
+/// says exactly when it passes (code-structure FR-051).
 /// </summary>
 public class HistoryStackStoreTests
 {
     private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(5);
+    private static readonly TimeSpan Grace = TimeSpan.FromSeconds(30);
+
+    private readonly FakeTimeProvider _clock = new();
+
+    private HistoryStackStore GracedStore() => new(new HistoryStackStoreStubDispatcher(), Grace, time: _clock);
 
     private static string TempPath() =>
         IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
@@ -49,10 +56,10 @@ public class HistoryStackStoreTests
     }
 
     [Fact]
-    public async Task Release_PastTheLastRetain_DropsTheStackAfterTheGrace()
+    public void Release_PastTheLastRetain_DropsTheStackAfterTheGrace()
     {
         // Arrange.
-        using var store = new HistoryStackStore(new HistoryStackStoreStubDispatcher(), TimeSpan.FromMilliseconds(100));
+        using var store = GracedStore();
         var path = TempPath();
         store.Retain(path);
         var first = store.Get(path);
@@ -60,26 +67,47 @@ public class HistoryStackStoreTests
         // Act.
         store.Release(path);
 
-        // Assert: past the grace, the stack is dropped and the next ask builds a fresh one.
-        await WaitUntilAsync(() => !ReferenceEquals(store.Get(path), first));
+        // Assert, step by step: kept through the grace, dropped once it passes, and the next ask
+        // builds a fresh one.
+        _clock.Advance(Grace - TimeSpan.FromMilliseconds(1));
+        Assert.Same(first, store.Get(path));
+
+        _clock.Advance(TimeSpan.FromMilliseconds(1));
+        Assert.NotSame(first, store.Get(path));
     }
 
     [Fact]
-    public async Task Retain_WithinTheGraceWindow_KeepsTheStack()
+    public void Retain_WithinTheGraceWindow_KeepsTheStack()
     {
         // Arrange.
-        using var store = new HistoryStackStore(new HistoryStackStoreStubDispatcher(), TimeSpan.FromMilliseconds(100));
+        using var store = GracedStore();
         var path = TempPath();
         store.Retain(path);
         var first = store.Get(path);
 
         store.Release(path); // starts the grace
+        _clock.Advance(Grace / 2);
         store.Retain(path);  // reconnect within it cancels the eviction
 
         // Act and assert, step by step.
-        await Task.Delay(300, TestContext.Current.CancellationToken);
+        _clock.Advance(Grace * 2);
         Assert.Same(first, store.Get(path));
         store.Release(path);
+    }
+
+    [Fact]
+    public void AStackOnlyRead_IsKept_BecauseNothingClaimedIt()
+    {
+        // Arrange: a provider reaches the stack without any connection retaining it.
+        using var store = GracedStore();
+        var path = TempPath();
+        var first = store.Get(path);
+
+        // Act.
+        _clock.Advance(Grace * 2);
+
+        // Assert.
+        Assert.Same(first, store.Get(path));
     }
 
     [Fact]
@@ -103,22 +131,18 @@ public class HistoryStackStoreTests
     public async Task Release_PastTheLastRetain_DisposesTheDroppedStack()
     {
         // Arrange and act.
-        using var store = new HistoryStackStore(new HistoryStackStoreStubDispatcher(), TimeSpan.FromMilliseconds(100));
+        using var store = GracedStore();
         var path = TempPath();
         store.Retain(path);
         var dropped = store.Get(path);
         store.Release(path);
+        Assert.False(IsDisposed(dropped), "The stack was disposed before its grace passed.");
 
         // Assert.
         // The dropped stack was disposed - which is what stops it leaking - so using it now
-        // is an error, and that error is how the test knows it was disposed.
-        //
-        // WAITS FOR THE DISPOSAL ITSELF, NOT FOR A PROXY OF IT. This used to wait until the store
-        // handed out a DIFFERENT stack and then assert disposal at once - but eviction removes the
-        // entry BEFORE it detaches and disposes the old stack, so the replacement is visible first
-        // and the window between them is real. It cost a gate red: "No exception was thrown", on a
-        // stack that was disposed a moment later.
-        await WaitUntilAsync(() => IsDisposed(dropped));
+        // is an error, and that error is how the test knows it was disposed. The eviction runs
+        // inside Advance, removal and disposal both, so there is no window left to wait out.
+        _clock.Advance(Grace);
         await Assert.ThrowsAsync<ObjectDisposedException>(async () =>
             await dropped.ExecuteAsync(new HistoryStackStoreNoop(), TestContext.Current.CancellationToken));
     }
