@@ -16,4 +16,7 @@ public sealed class GhgDocumentStore : LifecycleDocumentStore<GhgBody, GhgModel>
 
     /// <inheritdoc />
     protected override GhgModel Rebuild(GhgBody body) => GhgParser.Parse(body);
+
+    /// <inheritdoc />
+    protected override ParseOutcome<GhgModel> Parse(GhgBody body) => GhgParser.Outcome(body);
 }

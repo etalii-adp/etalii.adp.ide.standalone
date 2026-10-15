@@ -1,0 +1,3 @@
+- name: a role that is a folder
+  ansible.builtin.debug:
+    msg: real

@@ -1,0 +1,13 @@
+[web]
+web-01
+web-02
+
+[db]
+db-01
+
+[app:children]
+web
+db
+
+[web:vars]
+http_port=80

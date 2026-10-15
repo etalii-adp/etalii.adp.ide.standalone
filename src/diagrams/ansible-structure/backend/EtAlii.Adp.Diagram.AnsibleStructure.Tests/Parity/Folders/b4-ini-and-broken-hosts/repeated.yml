@@ -1,0 +1,4 @@
+- name: repeats a key
+  hosts: web
+  hosts: db
+  tasks: []

@@ -1,0 +1,4 @@
+- name: copy the blob
+  ansible.builtin.copy:
+    src: blob.bin
+    dest: /opt/blob.bin

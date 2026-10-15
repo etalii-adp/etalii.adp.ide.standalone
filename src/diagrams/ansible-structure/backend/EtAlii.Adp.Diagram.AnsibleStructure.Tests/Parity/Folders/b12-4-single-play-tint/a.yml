@@ -1,0 +1,3 @@
+- name: the only play of a
+  hosts: localhost
+  tasks: []

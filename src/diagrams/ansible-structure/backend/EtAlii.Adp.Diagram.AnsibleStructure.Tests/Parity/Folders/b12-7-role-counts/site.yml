@@ -1,0 +1,4 @@
+- name: uses the role
+  hosts: localhost
+  roles:
+    - r

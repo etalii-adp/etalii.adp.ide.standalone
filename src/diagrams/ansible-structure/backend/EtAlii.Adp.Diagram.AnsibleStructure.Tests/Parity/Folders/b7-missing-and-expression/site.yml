@@ -1,0 +1,6 @@
+- name: one missing and one expression
+  hosts: localhost
+  roles:
+    - absent
+    - "{{ chosen_role }}"
+    - r

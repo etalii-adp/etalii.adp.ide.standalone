@@ -1,0 +1,5 @@
+all:
+  children:
+    db:
+      hosts:
+        db-01:
