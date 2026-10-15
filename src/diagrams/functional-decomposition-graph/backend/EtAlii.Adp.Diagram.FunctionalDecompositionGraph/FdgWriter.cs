@@ -1,4 +1,3 @@
-using System.Globalization;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 
@@ -112,8 +111,8 @@ public static class FdgWriter
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(element);
 
-        LineSplice.SetKey(document, element.Range, "x", Number(x));
-        LineSplice.SetKey(document, element.Range, "y", Number(y));
+        LineSplice.SetKey(document, element.Range, "x", DslNumber.Format(x));
+        LineSplice.SetKey(document, element.Range, "y", DslNumber.Format(y));
         return EditOutcome.Applied;
     }
 
@@ -127,7 +126,7 @@ public static class FdgWriter
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(element);
 
-        LineSplice.SetKey(document, element.Range, "width", Number(Math.Max(width, FdgGeometry.MinimumWidth)));
+        LineSplice.SetKey(document, element.Range, "width", DslNumber.Format(Math.Max(width, FdgGeometry.MinimumWidth)));
 
         if (height is null)
         {
@@ -139,7 +138,7 @@ public static class FdgWriter
             return EditOutcome.Refused("Only a Comment has its own height; the others share one.");
         }
 
-        LineSplice.SetKey(document, element.Range, "height", Number(Math.Max(height.Value, FdgGeometry.MinimumCommentHeight)));
+        LineSplice.SetKey(document, element.Range, "height", DslNumber.Format(Math.Max(height.Value, FdgGeometry.MinimumCommentHeight)));
         return EditOutcome.Applied;
     }
 
@@ -223,12 +222,12 @@ public static class FdgWriter
             lines.Add($"{keyIndent}name: {LineSplice.Quote(element.Name)}");
         }
 
-        lines.Add($"{keyIndent}x: {Number(element.X)}");
-        lines.Add($"{keyIndent}y: {Number(element.Y)}");
-        lines.Add($"{keyIndent}width: {Number(Math.Max(element.Width, FdgGeometry.MinimumWidth))}");
+        lines.Add($"{keyIndent}x: {DslNumber.Format(element.X)}");
+        lines.Add($"{keyIndent}y: {DslNumber.Format(element.Y)}");
+        lines.Add($"{keyIndent}width: {DslNumber.Format(Math.Max(element.Width, FdgGeometry.MinimumWidth))}");
         if (element.IsComment)
         {
-            lines.Add($"{keyIndent}height: {Number(Math.Max(element.DrawnHeight, FdgGeometry.MinimumCommentHeight))}");
+            lines.Add($"{keyIndent}height: {DslNumber.Format(Math.Max(element.DrawnHeight, FdgGeometry.MinimumCommentHeight))}");
         }
 
         document.Insert(at, lines);
@@ -295,15 +294,4 @@ public static class FdgWriter
     }
 
     private static string Indent(string text) => text[..^text.TrimStart().Length];
-
-    /// <summary>
-    /// A canvas number, written the way the document reads it.
-    /// </summary>
-    /// <remarks>
-    /// Invariant culture and no trailing zeros: a coordinate written on a machine whose decimal
-    /// separator is a comma would otherwise be unreadable everywhere else, and <c>120</c> reads
-    /// as the author wrote it where <c>120.00</c> reads as a tool's.
-    /// </remarks>
-    private static string Number(double value) =>
-        value.ToString("0.####", CultureInfo.InvariantCulture);
 }

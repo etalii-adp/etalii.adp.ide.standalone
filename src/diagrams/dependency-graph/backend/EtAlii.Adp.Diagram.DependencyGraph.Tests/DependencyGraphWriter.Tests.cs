@@ -95,6 +95,21 @@ public class DependencyGraphWriterTests
     }
 
     [Fact]
+    public void ACoordinateWithSixDecimals_IsWrittenWithFour()
+    {
+        // Arrange.
+        // One number format for every module (behaviour-changes B-20): a dragged coordinate is
+        // written to four decimals, as every other module writes one, not at full precision.
+        (LineDocument document, DependencyGraphModel model) = Load("coordinates.dgr");
+
+        // Act.
+        DependencyGraphWriter.SetX(document, model.Elements[0], 123.456789);
+
+        // Assert.
+        Assert.Contains("x: 123.4568\r\n", document.Text, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void AFractionalCoordinate_IsWrittenInvariantly()
     {
         // Arrange.

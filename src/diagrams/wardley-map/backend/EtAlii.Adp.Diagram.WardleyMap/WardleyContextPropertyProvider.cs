@@ -257,8 +257,8 @@ public sealed class WardleyContextPropertyProvider(IHistoryStackStore historySta
             // (Requirement 15.2).
             new(KindPropertyId, "Kind", Spell(component.Kind), ReadOnlyReason: KindReason, Group: IdentityGroup),
 
-            new(VisibilityPropertyId, "Visibility", Number(component.Position.Visibility), Group: PositionGroup),
-            new(MaturityPropertyId, "Maturity", Number(component.Position.Maturity), Group: PositionGroup),
+            new(VisibilityPropertyId, "Visibility", DslNumber.Format(component.Position.Visibility), Group: PositionGroup),
+            new(MaturityPropertyId, "Maturity", DslNumber.Format(component.Position.Maturity), Group: PositionGroup),
             new(StagePropertyId, "Evolution stage", stage.Label, ReadOnlyReason: StageReason, Group: PositionGroup),
         };
 
@@ -269,14 +269,14 @@ public sealed class WardleyContextPropertyProvider(IHistoryStackStore historySta
             rows.Add(new ContextPropertyDefinition(
                 LabelOffsetPropertyId,
                 "Label offset",
-                $"{Number(offset.X)}, {Number(offset.Y)}",
+                $"{DslNumber.Format(offset.X)}, {DslNumber.Format(offset.Y)}",
                 ReadOnlyReason: LabelOffsetReason,
                 Group: PositionGroup));
         }
 
         if (evolve is not null)
         {
-            rows.Add(new ContextPropertyDefinition(EvolvePropertyId, "Evolves to", Number(evolve.Maturity), Group: StrategyGroup));
+            rows.Add(new ContextPropertyDefinition(EvolvePropertyId, "Evolves to", DslNumber.Format(evolve.Maturity), Group: StrategyGroup));
 
             if (evolve.Override.Length > 0)
             {
@@ -336,11 +336,11 @@ public sealed class WardleyContextPropertyProvider(IHistoryStackStore historySta
             new ContextPropertyDefinition(
                 VisibilityPropertyId,
                 "Visibility",
-                parent is null ? "" : Number(parent.Position.Visibility),
+                parent is null ? "" : DslNumber.Format(parent.Position.Visibility),
                 ReadOnlyReason: string.Format(CultureInfo.InvariantCulture, ChildVisibilityReason, pipeline.Parent),
                 Group: PositionGroup),
 
-            new ContextPropertyDefinition(MaturityPropertyId, "Maturity", Number(child.Maturity), Group: PositionGroup),
+            new ContextPropertyDefinition(MaturityPropertyId, "Maturity", DslNumber.Format(child.Maturity), Group: PositionGroup),
             new ContextPropertyDefinition(StagePropertyId, "Evolution stage", stage.Label, ReadOnlyReason: StageReason, Group: PositionGroup),
         ];
     }
@@ -394,7 +394,7 @@ public sealed class WardleyContextPropertyProvider(IHistoryStackStore historySta
             rows.Add(new ContextPropertyDefinition(
                 VisibilityPropertyId,
                 "Visibility",
-                Number(parent.Position.Visibility),
+                DslNumber.Format(parent.Position.Visibility),
                 ReadOnlyReason: string.Format(CultureInfo.InvariantCulture, ChildVisibilityReason, pipeline.Parent),
                 Group: PositionGroup));
         }
@@ -402,7 +402,7 @@ public sealed class WardleyContextPropertyProvider(IHistoryStackStore historySta
         rows.Add(new ContextPropertyDefinition(
             PipelineChildrenPropertyId,
             "Components",
-            string.Join(", ", pipeline.Children.Select(child => $"{child.Name} ({Number(child.Maturity)})")),
+            string.Join(", ", pipeline.Children.Select(child => $"{child.Name} ({DslNumber.Format(child.Maturity)})")),
             ContextPropertyEditor.Text,
             ChildrenReason,
             PositionGroup));
@@ -479,6 +479,4 @@ public sealed class WardleyContextPropertyProvider(IHistoryStackStore historySta
         WardleyElementKind.Submap => "submap",
         _ => "component",
     };
-
-    private static string Number(double value) => value.ToString("0.####", CultureInfo.InvariantCulture);
 }

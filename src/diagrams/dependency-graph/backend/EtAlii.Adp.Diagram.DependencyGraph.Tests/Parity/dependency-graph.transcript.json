@@ -3301,7 +3301,7 @@
           "target": "checkout-web",
           "rows": [
             "dependencies.label | Label | \"Checkout web\" | Line | editable | group Identity",
-            "dependencies.x | X | \"8.072929300833366\" | Line | editable | group Placement",
+            "dependencies.x | X | \"8.0729\" | Line | editable | group Placement",
             "dependencies.row | Row | \"4\" | Line | editable | group Placement"
           ],
           "rowsReadOnly": "same"
@@ -3310,7 +3310,7 @@
           "target": "api-gateway",
           "rows": [
             "dependencies.label | Label | \"API gateway\" | Line | editable | group Identity",
-            "dependencies.x | X | \"270.42873351852575\" | Line | editable | group Placement",
+            "dependencies.x | X | \"270.4287\" | Line | editable | group Placement",
             "dependencies.row | Row | \"4\" | Line | editable | group Placement"
           ],
           "rowsReadOnly": "same"
@@ -3319,7 +3319,7 @@
           "target": "identity-service",
           "rows": [
             "dependencies.label | Label | \"Identity service\" | Line | editable | group Identity",
-            "dependencies.x | X | \"797.5845690363473\" | Line | editable | group Placement",
+            "dependencies.x | X | \"797.5846\" | Line | editable | group Placement",
             "dependencies.row | Row | \"4\" | Line | editable | group Placement"
           ],
           "rowsReadOnly": "same"
@@ -3337,7 +3337,7 @@
           "target": "notification-service",
           "rows": [
             "dependencies.label | Label | \"Notification service\" | Line | editable | group Identity",
-            "dependencies.x | X | \"419.92197785733026\" | Line | editable | group Placement",
+            "dependencies.x | X | \"419.922\" | Line | editable | group Placement",
             "dependencies.row | Row | \"-4\" | Line | editable | group Placement"
           ],
           "rowsReadOnly": "same"
@@ -3346,7 +3346,7 @@
           "target": "payment-service",
           "rows": [
             "dependencies.label | Label | \"Payment service\" | Line | editable | group Identity",
-            "dependencies.x | X | \"811.1779021088461\" | Line | editable | group Placement",
+            "dependencies.x | X | \"811.1779\" | Line | editable | group Placement",
             "dependencies.row | Row | \"-2\" | Line | editable | group Placement"
           ],
           "rowsReadOnly": "same"
@@ -3355,7 +3355,7 @@
           "target": "inventory-service",
           "rows": [
             "dependencies.label | Label | \"Inventory service\" | Line | editable | group Identity",
-            "dependencies.x | X | \"811.1779021088463\" | Line | editable | group Placement",
+            "dependencies.x | X | \"811.1779\" | Line | editable | group Placement",
             "dependencies.row | Row | \"0\" | Line | editable | group Placement"
           ],
           "rowsReadOnly": "same"
@@ -3364,7 +3364,7 @@
           "target": "payments-db",
           "rows": [
             "dependencies.label | Label | \"Payments database\" | Line | editable | group Identity",
-            "dependencies.x | X | \"1091.848027445307\" | Line | editable | group Placement",
+            "dependencies.x | X | \"1091.848\" | Line | editable | group Placement",
             "dependencies.row | Row | \"-1\" | Line | editable | group Placement"
           ],
           "rowsReadOnly": "same"
@@ -3382,7 +3382,7 @@
           "target": "message-broker",
           "rows": [
             "dependencies.label | Label | \"RabbitMQ broker\" | Line | editable | group Identity",
-            "dependencies.x | X | \"807.8672330646216\" | Line | editable | group Placement",
+            "dependencies.x | X | \"807.8672\" | Line | editable | group Placement",
             "dependencies.row | Row | \"-4\" | Line | editable | group Placement"
           ],
           "rowsReadOnly": "same"
@@ -6474,7 +6474,7 @@
           "target": "fine",
           "rows": [
             "dependencies.label | Label | \"A hundred-thousandth across\" | Line | editable | group Identity",
-            "dependencies.x | X | \"1E-05\" | Line | editable | group Placement",
+            "dependencies.x | X | \"0\" | Line | editable | group Placement",
             "dependencies.row | Row | \"1\" | Line | editable | group Placement"
           ],
           "rowsReadOnly": "same"
@@ -6483,7 +6483,7 @@
           "target": "huge",
           "rows": [
             "dependencies.label | Label | \"Past every screen\" | Line | editable | group Identity",
-            "dependencies.x | X | \"1E+21\" | Line | editable | group Placement",
+            "dependencies.x | X | \"1000000000000000000000\" | Line | editable | group Placement",
             "dependencies.row | Row | \"2\" | Line | editable | group Placement"
           ],
           "rowsReadOnly": "same"

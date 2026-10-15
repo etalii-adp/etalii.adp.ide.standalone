@@ -1,4 +1,5 @@
 using System.Globalization;
+using EtAlii.Adp.Documents;
 
 namespace EtAlii.Adp.Diagram.WardleyMap;
 
@@ -199,7 +200,7 @@ public static class WardleyRuleSet
         {
             problems.Add(new DiagramProblem(
                 DiagramProblemSeverity.Error,
-                $"The {axis} of {what} is {value.ToString("0.####", CultureInfo.InvariantCulture)}, and a Wardley map's axes run from 0 to 1.",
+                $"The {axis} of {what} is {DslNumber.Format(value)}, and a Wardley map's axes run from 0 to 1.",
                 CoordinateOutOfRangeRuleId,
                 new DiagramProblemLineLocation(line)));
         }
