@@ -1,3 +1,5 @@
+using EtAlii.Adp.Documents;
+
 namespace EtAlii.Adp.Diagram.Rdf;
 
 /// <summary>The handful of well-known IRIs the parser and the readings speak of by name.</summary>
@@ -22,13 +24,10 @@ public static class RdfVocabulary
     public const string XsdString = "http://www.w3.org/2001/XMLSchema#string";
 
     /// <summary>The datatype of a bare whole number.</summary>
-    public const string XsdInteger = "http://www.w3.org/2001/XMLSchema#integer";
-
-    /// <summary>The datatype of a bare number with a decimal point.</summary>
-    public const string XsdDecimal = "http://www.w3.org/2001/XMLSchema#decimal";
+    public const string XsdInteger = NumericLiteral.Integer;
 
     /// <summary>The datatype of a bare number with an exponent.</summary>
-    public const string XsdDouble = "http://www.w3.org/2001/XMLSchema#double";
+    public const string XsdDouble = NumericLiteral.Double;
 
     /// <summary>The datatype of the bare keywords <c>true</c> and <c>false</c>.</summary>
     public const string XsdBoolean = "http://www.w3.org/2001/XMLSchema#boolean";
