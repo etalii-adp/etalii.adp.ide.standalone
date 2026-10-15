@@ -42,6 +42,13 @@ namespace EtAlii.Adp.Diagram.Mindmap;
 /// kept the last good document changed nothing a session shows.
 /// </para>
 /// <para>
+/// <b>A map that is not a Freeplane map is still thrown out of this store</b>, though the parser
+/// reports it as a <see cref="ParseOutcome{TModel}"/> (code-structure FR-049): the lifecycle keeps the
+/// last good map through a reload only when the parse throws, and a first open that throws is what
+/// refuses the diagram to the host. Holding the map as an unusable entry instead would change both,
+/// so the outcome is read here and its reason rethrown, naming the file.
+/// </para>
+/// <para>
 /// <b>Not on <see cref="LifecycleDocumentStore{TBody, TModel}"/></b> (code-structure FR-029): that base
 /// keeps a body and a model read from it and announces only a path, where a map is one tree and its
 /// event names the structural change, so the base would need a switch on this module to fit.
@@ -155,16 +162,15 @@ public sealed class MindmapDocumentStore : IMindmapDocumentStore
             return MindmapDocument.Parse(MindmapDocument.EmptyDocument(baseName));
         }
 
-        try
+        var outcome = MindmapDocument.Outcome(text);
+        if (outcome.IsUsable)
         {
-            return MindmapDocument.Parse(text);
+            return outcome.Model;
         }
-        catch (MindmapFormatException exception)
-        {
-            // Named, so the user knows which file is broken; rethrown, so only this diagram fails.
-            // On a reload the lifecycle parses before it replaces, so the last good map stays.
-            _logger.Warning(exception, "Could not read {BodyPath} as a Freeplane map", bodyPath);
-            throw new MindmapFormatException($"{IoPath.GetFileName(bodyPath)}: {exception.Message}", exception);
-        }
+
+        // Named, so the user knows which file is broken; thrown, so only this diagram fails. On a
+        // reload the lifecycle parses before it replaces, so the last good map stays.
+        _logger.Warning("Could not read {BodyPath} as a Freeplane map: {Reason}", bodyPath, outcome.Unreadable);
+        throw new MindmapFormatException($"{IoPath.GetFileName(bodyPath)}: {outcome.Unreadable}");
     }
 }
