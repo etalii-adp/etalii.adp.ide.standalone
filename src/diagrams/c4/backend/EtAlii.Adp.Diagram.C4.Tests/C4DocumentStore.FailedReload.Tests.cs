@@ -120,7 +120,8 @@ public class C4DocumentStoreFailedReloadTests : IDisposable
         await File.WriteAllTextAsync(body, Model, TestContext.Current.CancellationToken);
         var store = new C4DocumentStore();
         var origin = new DiagramOrigin("test", "c4");
-        using var bridge = new DiagramDocumentReloadBridge([new DiagramDocumentReloader<IC4DocumentStore>(origin, store)]);
+        using var events = new ProjectFileEvents();
+        using var bridge = new DiagramDocumentReloadBridge([new DiagramDocumentReloader<IC4DocumentStore>(origin, store)], events);
         Assert.NotEmpty(store.GetOrLoad(body).Model.Elements);
         bridge.Track(_root, body, registrationPath: null, origin);
 
@@ -145,7 +146,8 @@ public class C4DocumentStoreFailedReloadTests : IDisposable
         await File.WriteAllTextAsync(body, Model, TestContext.Current.CancellationToken);
         var store = new C4DocumentStore();
         var origin = new DiagramOrigin("test", "c4");
-        using var bridge = new DiagramDocumentReloadBridge([new DiagramDocumentReloader<IC4DocumentStore>(origin, store)]);
+        using var events = new ProjectFileEvents();
+        using var bridge = new DiagramDocumentReloadBridge([new DiagramDocumentReloader<IC4DocumentStore>(origin, store)], events);
         Assert.NotEmpty(store.GetOrLoad(body).Model.Elements);
         var changes = 0;
         var emptied = 0;

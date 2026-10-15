@@ -89,7 +89,8 @@ public class CausalLoopDocumentStoreFailedReloadTests : IDisposable
         await File.WriteAllTextAsync(path, Text, TestContext.Current.CancellationToken);
         var store = new CausalLoopDocumentStore();
         var origin = new DiagramOrigin("test", "causal-loop");
-        using var bridge = new DiagramDocumentReloadBridge([new DiagramDocumentReloader<ICausalLoopDocumentStore>(origin, store)]);
+        using var events = new ProjectFileEvents();
+        using var bridge = new DiagramDocumentReloadBridge([new DiagramDocumentReloader<ICausalLoopDocumentStore>(origin, store)], events);
         Assert.True(store.GetOrLoad(path).IsUsable);
         bridge.Track(_workspace, path, registrationPath: null, origin);
 

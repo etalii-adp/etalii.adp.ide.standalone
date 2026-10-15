@@ -1,8 +1,8 @@
-namespace EtAlii.Adp.Hierarchy;
+namespace EtAlii.Adp.Documents;
 
 /// <summary>
 /// Puts back together a move that the Linux file system watcher reported as a Deleted followed
-/// by a Created, so it reaches the hierarchy model as the one Renamed it was.
+/// by a Created, so it reaches whoever listens as the one Renamed it was.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -32,12 +32,12 @@ namespace EtAlii.Adp.Hierarchy;
 /// call within its own 2 ms.
 /// </para>
 /// </remarks>
-internal sealed class SplitMoveJoiner : IDisposable
+public sealed class SplitMoveJoiner : IDisposable
 {
     /// <summary>How long a Deleted waits for the Created that may complete its move.</summary>
     private static readonly TimeSpan DefaultGrace = TimeSpan.FromMilliseconds(250);
 
-    private readonly RootFolderWatcher.ChangeCallback _deliver;
+    private readonly Action<FileEvent> _deliver;
     private readonly TimeSpan _grace;
     private readonly TimeProvider _timeProvider;
     private readonly Lock _gate = new();
@@ -53,7 +53,7 @@ internal sealed class SplitMoveJoiner : IDisposable
     /// <param name="deliver">Receives the events, joined where a move was split.</param>
     /// <param name="grace">How long a Deleted waits; <see cref="DefaultGrace"/> when not given.</param>
     /// <param name="timeProvider">The clock the grace runs on; the system clock when not given.</param>
-    public SplitMoveJoiner(RootFolderWatcher.ChangeCallback deliver, TimeSpan? grace = null, TimeProvider? timeProvider = null)
+    public SplitMoveJoiner(Action<FileEvent> deliver, TimeSpan? grace = null, TimeProvider? timeProvider = null)
     {
         ArgumentNullException.ThrowIfNull(deliver);
         _deliver = deliver;
@@ -62,7 +62,7 @@ internal sealed class SplitMoveJoiner : IDisposable
     }
 
     /// <summary>Takes one event as the watcher raised it.</summary>
-    public void Post(WatcherChangeTypes changeType, string? oldPath, string? newPath)
+    public void Post(FileEvent heard)
     {
         lock (_gate)
         {
@@ -74,23 +74,23 @@ internal sealed class SplitMoveJoiner : IDisposable
             if (_pendingDeletion is { } deleted)
             {
                 ClearPending();
-                if (changeType == WatcherChangeTypes.Created && newPath is not null && Path.Exists(newPath) && !Path.Exists(deleted))
+                if (heard.Kind == FileEventKind.Created && Path.Exists(heard.Path) && !Path.Exists(deleted))
                 {
-                    _deliver(WatcherChangeTypes.Renamed, deleted, newPath);
+                    _deliver(new FileEvent(FileEventKind.Renamed, heard.Path, deleted));
                     return;
                 }
 
-                _deliver(WatcherChangeTypes.Deleted, deleted, null);
+                _deliver(new FileEvent(FileEventKind.Deleted, deleted));
             }
 
-            if (changeType == WatcherChangeTypes.Deleted && oldPath is not null && !Path.Exists(oldPath))
+            if (heard.Kind == FileEventKind.Deleted && !Path.Exists(heard.Path))
             {
-                _pendingDeletion = oldPath;
+                _pendingDeletion = heard.Path;
                 _pendingTimer = _timeProvider.CreateTimer(_ => Flush(), null, _grace, Timeout.InfiniteTimeSpan);
                 return;
             }
 
-            _deliver(changeType, oldPath, newPath);
+            _deliver(heard);
         }
     }
 
@@ -108,7 +108,7 @@ internal sealed class SplitMoveJoiner : IDisposable
             }
 
             ClearPending();
-            _deliver(WatcherChangeTypes.Deleted, deleted, null);
+            _deliver(new FileEvent(FileEventKind.Deleted, deleted));
         }
     }
 
