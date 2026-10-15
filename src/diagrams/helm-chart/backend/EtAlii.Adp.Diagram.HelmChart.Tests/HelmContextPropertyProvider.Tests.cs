@@ -8,6 +8,13 @@ namespace EtAlii.Adp.Diagram.HelmChart.Tests;
 /// The read-only grids (Requirement 9.3/9.4): every row read-only with a true reason naming
 /// its defining file, and the write path refusing unconditionally.
 /// </summary>
+/// <remarks>
+/// What each row says is the definition's, and is held by the parity transcript, which records every
+/// row of every element of the corpus, and by <c>Parity/HelmDerivedRowsTests</c>, which compares each
+/// with the hand-written oracle (helm-chart-disl-fbl, task 5). The cases that asserted the chart's
+/// summary, a dependency's wiring, an unvendored dependency and a partial's defines are the rows of
+/// the <c>well-formed</c> fixture there.
+/// </remarks>
 public class HelmContextPropertyProviderTests : IDisposable
 {
     private readonly string _root;
@@ -64,62 +71,6 @@ public class HelmContextPropertyProviderTests : IDisposable
                 Assert.Contains("edit it in a text editor", row.ReadOnlyReason, StringComparison.Ordinal);
             });
         }
-    }
-
-    [Fact]
-    public async Task TheChartNode_CarriesTheSummary()
-    {
-        // Act.
-        var rows = await _provider.DescribeAsync(Target("chart"), TestContext.Current.CancellationToken);
-
-        // Assert.
-        Assert.Equal("shop", Assert.Single(rows, row => row.Id == "helm.name").Value);
-        Assert.Equal("1.4.0", Assert.Single(rows, row => row.Id == "helm.version").Value);
-        // The five files under templates/: deployment, service, _helpers, NOTES, tests/.
-        Assert.Equal("5", Assert.Single(rows, row => row.Id == "helm.templates").Value);
-        Assert.Equal("2", Assert.Single(rows, row => row.Id == "helm.dependencies").Value);
-        Assert.Equal("2", Assert.Single(rows, row => row.Id == "helm.values-layers").Value);
-    }
-
-    [Fact]
-    public async Task ADependency_ShowsItsWiring()
-    {
-        // Act.
-        var rows = await _provider.DescribeAsync(Target("dep:cache"), TestContext.Current.CancellationToken);
-
-        // Assert.
-        Assert.Equal("redis", Assert.Single(rows, row => row.Id == "helm.name").Value);
-        Assert.Equal("cache", Assert.Single(rows, row => row.Id == "helm.alias").Value);
-        var condition = Assert.Single(rows, row => row.Id == "helm.condition");
-        Assert.Contains("cache.enabled", condition.Value, StringComparison.Ordinal);
-        Assert.Contains("currently on", condition.Value, StringComparison.Ordinal);
-        Assert.Equal("17.3.2", Assert.Single(rows, row => row.Id == "helm.pinned").Value);
-        Assert.Contains("resolved", Assert.Single(rows, row => row.Id == "helm.resolution").Value, StringComparison.Ordinal);
-        // The declaring file is the reason's named source: a dependency has no file of its own.
-        Assert.Contains("Chart.yaml", condition.ReadOnlyReason, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public async Task AnUnvendoredDependency_SaysWhereTheAnswerWouldComeFrom()
-    {
-        // Act.
-        var rows = await _provider.DescribeAsync(Target("dep:postgres"), TestContext.Current.CancellationToken);
-
-        // Assert.
-        var resolution = Assert.Single(rows, row => row.Id == "helm.resolution");
-        Assert.Contains("unvendored", resolution.Value, StringComparison.Ordinal);
-        Assert.Contains("helm dependency build", resolution.Value, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public async Task APartial_ListsWhatItDefines()
-    {
-        // Act.
-        var rows = await _provider.DescribeAsync(Target("tpl:templates/_helpers.tpl"), TestContext.Current.CancellationToken);
-
-        // Assert.
-        Assert.Contains("partial", Assert.Single(rows, row => row.Id == "helm.role").Value, StringComparison.Ordinal);
-        Assert.Equal("shop.fullname, shop.labels", Assert.Single(rows, row => row.Id == "helm.defines").Value);
     }
 
     [Fact]

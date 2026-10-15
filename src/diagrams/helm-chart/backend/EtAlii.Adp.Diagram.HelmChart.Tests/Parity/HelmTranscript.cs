@@ -72,7 +72,7 @@ internal static class HelmTranscript
     /// <c>crds/</c> with no file, a directory under <c>charts/</c> with no <c>Chart.yaml</c>, and a
     /// deeper entry that is a directory), and the fixture's readme lists them.
     /// </summary>
-    private static readonly IReadOnlyDictionary<string, string[]> EmptyDirectories = new Dictionary<string, string[]>(StringComparer.Ordinal)
+    internal static readonly IReadOnlyDictionary<string, string[]> EmptyDirectories = new Dictionary<string, string[]>(StringComparer.Ordinal)
     {
         ["empty-directories"] = ["crds", "charts/hollow", "charts/holder/charts/empty"],
     };
@@ -83,10 +83,10 @@ internal static class HelmTranscript
     /// <summary>The checked-in transcript.</summary>
     public static string CheckedInPath => Path.Combine(ModuleFolder, "backend", TestProject, "Parity", FileName);
 
-    private static string SourceFolder => Path.GetFullPath(Path.Combine(ModuleFolder, "..", ".."));
+    internal static string SourceFolder => Path.GetFullPath(Path.Combine(ModuleFolder, "..", ".."));
 
     /// <summary>The corpus, as folder paths relative to <c>src/</c> with forward slashes, in the order they are recorded.</summary>
-    private static IReadOnlyList<string> Corpus()
+    internal static IReadOnlyList<string> Corpus()
     {
         return
         [
