@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 using Serilog;
 
@@ -24,7 +25,7 @@ namespace EtAlii.Adp.Diagram.C4;
 /// position is view state and the <c>.dsl</c> is another ecosystem's file (Requirements 3.5, 8.3).
 /// </para>
 /// </remarks>
-public sealed class C4Session : DocumentDiagramSession<C4Document, C4Workspace>
+public sealed class C4Session : DocumentDiagramSession<LineDocument, C4Workspace>
 {
     private static readonly ILogger _logger = Log.ForContext<C4Session>();
 

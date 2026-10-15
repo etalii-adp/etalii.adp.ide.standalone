@@ -11,7 +11,7 @@ namespace EtAlii.Adp.Diagram.C4;
 /// Everything a store does is declared by <see cref="IDiagramDocumentStore{TBody, TModel}"/>; this
 /// names the C4 family's, and adds the one thing that is its own.
 /// </remarks>
-public interface IC4DocumentStore : IDiagramDocumentStore<C4Document, C4Workspace>
+public interface IC4DocumentStore : IDiagramDocumentStore<LineDocument, C4Workspace>
 {
     /// <summary>
     /// Tells every session on this document to re-deliver, without changing the document.

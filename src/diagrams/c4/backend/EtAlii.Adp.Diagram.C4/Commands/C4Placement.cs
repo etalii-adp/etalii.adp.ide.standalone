@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text;
+using EtAlii.Adp.Documents;
 
 namespace EtAlii.Adp.Diagram.C4;
 
@@ -52,7 +53,7 @@ internal static class C4Placement
     /// Writes the declaration, opening a block on the parent if it has none.
     /// </summary>
     public static bool TryInsert(
-        C4Document document,
+        LineDocument document,
         C4Workspace workspace,
         C4ElementKind kind,
         string name,
@@ -82,7 +83,7 @@ internal static class C4Placement
 
         // C4Line is a value type, so FirstOrDefault hands back a blank line rather than null.
         // Lifted to a nullable so "no such line" is distinguishable from "line zero".
-        var parentLine = document.CodeLines
+        var parentLine = document.CodeLines()
             .Where(line => line.Number == parent.Line)
             .Select(line => (C4Line?)line)
             .FirstOrDefault();
@@ -127,9 +128,9 @@ internal static class C4Placement
     /// Leaves the block as it is if anything at all is left inside, so a concurrent edit is never
     /// swallowed: an empty block parses and round-trips, so nobody has to be told it stayed.
     /// </remarks>
-    public static void CollapseEmptyBlock(C4Document document, C4Element parent)
+    public static void CollapseEmptyBlock(LineDocument document, C4Element parent)
     {
-        var open = document.CodeLines
+        var open = document.CodeLines()
             .Where(line => line.Number == parent.Line && line.Code.EndsWith('{'))
             .Select(line => (C4Line?)line)
             .FirstOrDefault();
@@ -149,7 +150,7 @@ internal static class C4Placement
         // exactly the thing Requirement 3.3 forbids and that line surgery exists to avoid.
         // Refusing to collapse is the safe answer: it leaves an empty block, which parses and
         // round-trips, where the alternative loses somebody's writing.
-        var hasContent = document.CodeLines
+        var hasContent = document.CodeLines()
             .Any(line => line.Number > declaration.Number && line.Number < close.Value && line.Text.Trim().Length > 0);
         if (hasContent)
         {
@@ -164,10 +165,10 @@ internal static class C4Placement
     /// Removes an element declared on one line. Undoing an add is the only caller, so an element
     /// with a block of its own is refused rather than taking its children with it.
     /// </summary>
-    public static bool TryRemove(C4Document document, C4Element element, out string error)
+    public static bool TryRemove(LineDocument document, C4Element element, out string error)
     {
         error = "";
-        var line = document.CodeLines
+        var line = document.CodeLines()
             .Where(candidate => candidate.Number == element.Line)
             .Select(candidate => (C4Line?)candidate)
             .FirstOrDefault();
@@ -244,11 +245,11 @@ internal static class C4Placement
     }
 
     /// <summary>The line the closing brace of a block sits on, given how to find the line that opens it.</summary>
-    private static uint? EndOfBlock(C4Document document, Func<C4Line, bool> opens)
+    private static uint? EndOfBlock(LineDocument document, Func<C4Line, bool> opens)
     {
         var depth = 0;
         var inside = false;
-        foreach (var line in document.CodeLines)
+        foreach (var line in document.CodeLines())
         {
             if (!inside)
             {

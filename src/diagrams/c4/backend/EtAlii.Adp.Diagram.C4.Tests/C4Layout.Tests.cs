@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
@@ -12,7 +13,7 @@ public class C4LayoutTests
 {
     private static (C4Workspace Workspace, C4View View) Load(string dsl, string? viewKey = null)
     {
-        var workspace = C4Parser.Parse(C4Document.Parse(dsl));
+        var workspace = C4Parser.Parse(LineDocument.Parse(dsl));
         var view = viewKey is null ? workspace.Views[0] : workspace.FindView(viewKey)!;
         return (workspace, view);
     }

@@ -153,7 +153,7 @@ public class C4SessionTests : IDisposable
         // Act.
         // Edit through the document the containers view holds, and save.
         var document = _documents.GetOrLoad(body).Document;
-        var line = document.CodeLines.First(l => l.Code.Contains("softwareSystem", StringComparison.Ordinal));
+        var line = document.CodeLines().First(l => l.Code.Contains("softwareSystem", StringComparison.Ordinal));
         document.ReplaceLine(line.Number, line.Text.Replace("\"Banking\"", "\"Renamed\"", StringComparison.Ordinal));
         _documents.Save(body, document);
 

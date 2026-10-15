@@ -63,7 +63,7 @@ public class C4SharedReadTests : IDisposable
         var document = _documents.GetOrLoad(path).Document;
 
         // Assert: the model itself, not the empty fallback.
-        Assert.Equal(Model, document.ToText());
+        Assert.Equal(Model, document.Text);
     }
 
     [Fact]

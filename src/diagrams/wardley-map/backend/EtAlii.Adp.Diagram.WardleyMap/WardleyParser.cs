@@ -1,10 +1,11 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
+using EtAlii.Adp.Documents;
 
 namespace EtAlii.Adp.Diagram.WardleyMap;
 
 /// <summary>
-/// Reads a <see cref="WardleyDocument"/> into a <see cref="WardleyMap"/> (Requirement 5).
+/// Reads a <see cref="LineDocument"/> into a <see cref="WardleyMap"/> (Requirement 5).
 /// </summary>
 /// <remarks>
 /// <para>
@@ -25,7 +26,7 @@ namespace EtAlii.Adp.Diagram.WardleyMap;
 /// </remarks>
 public static partial class WardleyParser
 {
-    public static WardleyMap Parse(WardleyDocument document)
+    public static WardleyMap Parse(LineDocument document)
     {
         ArgumentNullException.ThrowIfNull(document);
 
@@ -48,7 +49,7 @@ public static partial class WardleyParser
         WardleyPipeline? openPipeline = null;
         var openChildren = new List<WardleyPipelineChild>();
 
-        foreach (var line in document.CodeLines)
+        foreach (var line in CodeLines(document))
         {
             var text = WithoutComment(line.Text).Trim();
             if (text.Length == 0)
@@ -678,4 +679,8 @@ public static partial class WardleyParser
     /// <summary>`N [positions] text`, the positions being one pair or a bracketed list of pairs.</summary>
     [GeneratedRegex(@"^(?<number>\d+)\s*(?<positions>\[.*\])\s*(?<text>.*)$")]
     private static partial Regex AnnotationExpression();
+
+    /// <summary>The lines paired with their 1-based numbers, as a problem location numbers them.</summary>
+    internal static IEnumerable<WardleyLine> CodeLines(LineDocument document) =>
+        document.Lines.Select((line, index) => new WardleyLine(line.Text, (uint)(index + 1)));
 }

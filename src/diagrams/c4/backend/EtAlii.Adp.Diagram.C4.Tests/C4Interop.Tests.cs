@@ -183,7 +183,7 @@ public class C4InteropTests : IDisposable
     }
 
     [Theory]
-    [MemberData(nameof(C4DocumentTests.Corpus), MemberType = typeof(C4DocumentTests))]
+    [MemberData(nameof(C4LinesTests.Corpus), MemberType = typeof(C4LinesTests))]
     public void EveryFixture_IsValidStructurizrDsl(string name)
     {
         // The corpus is only worth what its documents are: a fixture that is not valid DSL
@@ -215,7 +215,7 @@ public class C4InteropTests : IDisposable
     /// </para>
     /// </remarks>
     [Theory]
-    [MemberData(nameof(C4DocumentTests.Corpus), MemberType = typeof(C4DocumentTests))]
+    [MemberData(nameof(C4LinesTests.Corpus), MemberType = typeof(C4LinesTests))]
     public void EveryVerdict_IsStillWhatStructurizrSays(string name)
     {
         SkipWithoutTheCli();
@@ -286,7 +286,7 @@ public class C4InteropTests : IDisposable
     /// </para>
     /// </remarks>
     [Theory]
-    [MemberData(nameof(C4DocumentTests.Corpus), MemberType = typeof(C4DocumentTests))]
+    [MemberData(nameof(C4LinesTests.Corpus), MemberType = typeof(C4LinesTests))]
     public void EveryExport_IsStillWhatStructurizrDraws(string name)
     {
         SkipWithoutTheCli();

@@ -1,9 +1,14 @@
+using EtAlii.Adp.Documents;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
 namespace EtAlii.Adp.Diagram.WardleyMap.Tests;
 
-public class WardleyDocumentTests
+/// <summary>
+/// An OnlineWardleyMaps document held as the core <see cref="LineDocument"/>, and the 1-based
+/// line edits the module makes on it.
+/// </summary>
+public class WardleyLinesTests
 {
     /// <summary>
     /// Every fixture in the corpus, by path. Task 2 assembled these and certified each one
@@ -45,10 +50,10 @@ public class WardleyDocumentTests
         var text = ReadFixture(name);
 
         // Act.
-        var document = WardleyDocument.Parse(text);
+        var document = LineDocument.Parse(text);
 
         // Assert. Requirement 3.1, and this module's headline correctness property.
-        Assert.Equal(text, document.ToText());
+        Assert.Equal(text, document.Text);
     }
 
     [Theory]
@@ -56,17 +61,17 @@ public class WardleyDocumentTests
     public void CodeLines_AreNumberedFromOne(string name)
     {
         // Arrange.
-        var document = WardleyDocument.Parse(ReadFixture(name));
+        var document = LineDocument.Parse(ReadFixture(name));
 
         // Act.
-        var lines = document.CodeLines.ToArray();
+        var lines = WardleyParser.CodeLines(document).ToArray();
 
         // Assert. 1-based, to match DiagramProblemLineLocation.
         Assert.Equal(document.Lines.Count, lines.Length);
         for (var index = 0; index < lines.Length; index++)
         {
             Assert.Equal((uint)(index + 1), lines[index].Number);
-            Assert.Equal(document.Lines[index], lines[index].Text);
+            Assert.Equal(document.Lines[index].Text, lines[index].Text);
         }
     }
 
@@ -79,14 +84,14 @@ public class WardleyDocumentTests
         var lf = ReadFixture("lf-line-endings.owm");
 
         // Act.
-        var fromCrlf = WardleyDocument.Parse(crlf);
-        var fromLf = WardleyDocument.Parse(lf);
+        var fromCrlf = LineDocument.Parse(crlf);
+        var fromLf = LineDocument.Parse(lf);
 
         // Assert.
-        Assert.Equal("\r\n", fromCrlf.Newline);
-        Assert.Equal("\n", fromLf.Newline);
+        Assert.Equal("\r\n", fromCrlf.DominantEnding);
+        Assert.Equal("\n", fromLf.DominantEnding);
         Assert.NotEqual(crlf, lf);
-        Assert.Equal(fromCrlf.Lines, fromLf.Lines);
+        Assert.Equal(fromCrlf.Lines.Select(line => line.Text), fromLf.Lines.Select(line => line.Text));
     }
 
     [Fact]
@@ -96,11 +101,11 @@ public class WardleyDocumentTests
         var text = ReadFixture("no-trailing-newline.owm");
 
         // Act.
-        var document = WardleyDocument.Parse(text);
+        var document = LineDocument.Parse(text);
 
         // Assert. The case a naive line-splitter silently "fixes".
-        Assert.False(document.EndsWithNewline);
-        Assert.Equal(text, document.ToText());
+        Assert.Equal("", document.Lines[^1].Ending);
+        Assert.Equal(text, document.Text);
     }
 
     [Fact]
@@ -110,11 +115,11 @@ public class WardleyDocumentTests
         var text = ReadFixture("blank-line-runs.owm");
 
         // Act.
-        var document = WardleyDocument.Parse(text);
+        var document = LineDocument.Parse(text);
 
         // Assert.
-        Assert.Contains("", document.Lines);
-        Assert.Equal(text, document.ToText());
+        Assert.Contains(document.Lines, line => line.Text.Length == 0);
+        Assert.Equal(text, document.Text);
     }
 
     [Fact]
@@ -123,12 +128,12 @@ public class WardleyDocumentTests
         // Arrange. A map full of comments and blank lines is where a regenerating writer does
         // its damage, so the assertion is against that file rather than a minimal one.
         var text = ReadFixture("comments-everywhere.owm");
-        var document = WardleyDocument.Parse(text);
+        var document = LineDocument.Parse(text);
         var before = document.Lines.ToArray();
         const uint target = 6;
 
         // Act.
-        document.ReplaceLine(target, "component Cup of Tea [0.79, 0.42] // a trailing comment on an element");
+        WardleyWriter.ReplaceLine(document, target, "component Cup of Tea [0.79, 0.42] // a trailing comment on an element");
 
         // Assert. Requirement 3.2 - the whole of it.
         var after = document.Lines.ToArray();
@@ -149,28 +154,28 @@ public class WardleyDocumentTests
     public void ReplaceLine_KeepsTheDocumentsOwnNewline_RatherThanThePlatformsOne()
     {
         // Arrange.
-        var document = WardleyDocument.Parse(ReadFixture("crlf-line-endings.owm"));
+        var document = LineDocument.Parse(ReadFixture("crlf-line-endings.owm"));
 
         // Act.
-        document.ReplaceLine(1, "title Edited");
+        WardleyWriter.ReplaceLine(document, 1, "title Edited");
 
         // Assert. An edit on a CRLF file must not smuggle LF into it.
-        Assert.Contains("title Edited\r\n", document.ToText(), StringComparison.Ordinal);
-        Assert.DoesNotContain("title Edited\n\n", document.ToText(), StringComparison.Ordinal);
+        Assert.Contains("title Edited\r\n", document.Text, StringComparison.Ordinal);
+        Assert.DoesNotContain("title Edited\n\n", document.Text, StringComparison.Ordinal);
     }
 
     [Fact]
     public void InsertLine_PlacesTheTextAtThatNumber_AndShiftsTheRestDown()
     {
         // Arrange.
-        var document = WardleyDocument.Parse(ReadFixture("minimal.owm"));
+        var document = LineDocument.Parse(ReadFixture("minimal.owm"));
         var second = document.Lines[1];
 
         // Act.
-        document.InsertLine(2, "// inserted");
+        WardleyWriter.InsertLine(document, 2, "// inserted");
 
         // Assert.
-        Assert.Equal("// inserted", document.Lines[1]);
+        Assert.Equal("// inserted", document.Lines[1].Text);
         Assert.Equal(second, document.Lines[2]);
     }
 
@@ -178,31 +183,31 @@ public class WardleyDocumentTests
     public void InsertLine_AcceptsOnePastTheEnd_SoAppendingIsNotASpecialCase()
     {
         // Arrange.
-        var document = WardleyDocument.Parse(ReadFixture("minimal.owm"));
+        var document = LineDocument.Parse(ReadFixture("minimal.owm"));
         var count = document.Lines.Count;
 
         // Act.
-        document.InsertLine((uint)count + 1, "// appended");
+        WardleyWriter.InsertLine(document, (uint)count + 1, "// appended");
 
         // Assert.
         Assert.Equal(count + 1, document.Lines.Count);
-        Assert.Equal("// appended", document.Lines[count]);
+        Assert.Equal("// appended", document.Lines[count].Text);
     }
 
     [Fact]
-    public void RemoveLines_RemovesTheInclusiveRange()
+    public void RemoveLine_RemovesThatLine_AndShiftsTheRestUp()
     {
         // Arrange.
-        var document = WardleyDocument.Parse(ReadFixture("tea-shop.owm"));
+        var document = LineDocument.Parse(ReadFixture("tea-shop.owm"));
         var count = document.Lines.Count;
-        var following = document.Lines[6];
+        var following = document.Lines[5];
 
         // Act.
-        document.RemoveLines(4, 6);
+        WardleyWriter.RemoveLine(document, 5);
 
         // Assert.
-        Assert.Equal(count - 3, document.Lines.Count);
-        Assert.Equal(following, document.Lines[3]);
+        Assert.Equal(count - 1, document.Lines.Count);
+        Assert.Equal(following, document.Lines[4]);
     }
 
     [Theory]
@@ -211,64 +216,9 @@ public class WardleyDocumentTests
     public void ReplaceLine_RefusesALineTheDocumentDoesNotHave(uint number)
     {
         // Arrange.
-        var document = WardleyDocument.Parse(ReadFixture("minimal.owm"));
+        var document = LineDocument.Parse(ReadFixture("minimal.owm"));
 
         // Act and assert.
-        Assert.Throws<ArgumentOutOfRangeException>(() => document.ReplaceLine(number, "x"));
-    }
-
-    [Fact]
-    public void RemoveLines_RefusesARangeThatRunsBackwards()
-    {
-        // Arrange.
-        var document = WardleyDocument.Parse(ReadFixture("tea-shop.owm"));
-
-        // Act and assert.
-        Assert.Throws<ArgumentOutOfRangeException>(() => document.RemoveLines(5, 3));
-    }
-
-    [Fact]
-    public void Parse_HandlesAnEmptyString()
-    {
-        // Act.
-        var document = WardleyDocument.Parse("");
-
-        // Assert. An empty body is not a valid map, but it must not crash the reader either -
-        // Requirement 2.4 opens a missing sibling as an empty map.
-        Assert.Equal("", document.ToText());
-        Assert.False(document.EndsWithNewline);
-    }
-
-    [Fact]
-    public void Parse_HandlesASingleNewline()
-    {
-        // Act.
-        var document = WardleyDocument.Parse("\n");
-
-        // Assert.
-        Assert.Equal("\n", document.ToText());
-        Assert.True(document.EndsWithNewline);
-    }
-
-    [Fact]
-    public void Parse_TreatsMixedTerminatorsAsTheDominantOne_RatherThanRefusing()
-    {
-        // Arrange. A document edited on two platforms is a normal thing to find in a repo.
-        const string text = "title Mixed\r\nanchor A [0.9, 0.5]\r\ncomponent B [0.5, 0.5]\n";
-
-        // Act.
-        var document = WardleyDocument.Parse(text);
-
-        // Assert. It round-trips regardless, because every line kept its own bytes; Newline
-        // only decides what a *new* line is terminated with.
-        Assert.Equal("\r\n", document.Newline);
-        Assert.Equal(text, document.ToText());
-    }
-
-    [Fact]
-    public void Parse_RejectsNull()
-    {
-        // Act and assert.
-        Assert.Throws<ArgumentNullException>(() => WardleyDocument.Parse(null!));
+        Assert.Throws<ArgumentOutOfRangeException>(() => WardleyWriter.ReplaceLine(document, number, "x"));
     }
 }

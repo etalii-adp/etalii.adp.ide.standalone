@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.C4;
@@ -36,7 +37,7 @@ internal sealed class AddC4ElementCommandHandler(IC4DocumentStore documents) : C
             : base.Execute(command);
 
     /// <inheritdoc />
-    protected override EditOutcome Apply(C4Document body, C4Workspace model, AddC4ElementCommand command)
+    protected override EditOutcome Apply(LineDocument body, C4Workspace model, AddC4ElementCommand command)
     {
         var name = command.Name.Trim();
         if (C4Placement.Refuse(model, command.Kind, command.ParentId) is { } refusal)
@@ -61,7 +62,7 @@ internal sealed class AddC4ElementCommandHandler(IC4DocumentStore documents) : C
 internal sealed class RemoveC4ElementCommandHandler(IC4DocumentStore documents) : C4EditHandler<RemoveC4ElementCommand>(documents)
 {
     /// <inheritdoc />
-    protected override EditOutcome Apply(C4Document body, C4Workspace model, RemoveC4ElementCommand command)
+    protected override EditOutcome Apply(LineDocument body, C4Workspace model, RemoveC4ElementCommand command)
     {
         if (model.Find(command.Identifier) is not { } element)
         {

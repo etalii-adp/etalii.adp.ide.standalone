@@ -1,4 +1,5 @@
 using System.Globalization;
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.WardleyMap;
@@ -24,7 +25,7 @@ namespace EtAlii.Adp.Diagram.WardleyMap;
 /// </remarks>
 /// <typeparam name="TCommand">The command handled.</typeparam>
 public abstract class WardleyEditHandler<TCommand>(IWardleyDocumentStore documents)
-    : DocumentEditHandler<TCommand, IWardleyDocumentStore, WardleyDocument, WardleyMap>(documents)
+    : DocumentEditHandler<TCommand, IWardleyDocumentStore, LineDocument, WardleyMap>(documents)
     where TCommand : IDocumentEditCommand
 {
     /// <summary>The refusal of an edit whose element the map no longer has.</summary>
@@ -34,7 +35,7 @@ public abstract class WardleyEditHandler<TCommand>(IWardleyDocumentStore documen
     protected IWardleyDocumentStore Documents { get; } = documents;
 
     /// <inheritdoc />
-    protected sealed override WardleyMap Parse(WardleyDocument body) => WardleyParser.Parse(body);
+    protected sealed override WardleyMap Parse(LineDocument body) => WardleyParser.Parse(body);
 
     /// <summary>The component <paramref name="elementId"/> names on the map at <paramref name="bodyPath"/>, or null.</summary>
     protected WardleyComponent? ComponentOf(WardleyMap map, string bodyPath, string elementId) =>
@@ -66,7 +67,7 @@ public sealed class AddWardleyElementCommandHandler(IWardleyDocumentStore docume
 {
     private static readonly string[] Kinds = ["component", "anchor", "submap"];
 
-    protected override EditOutcome Apply(WardleyDocument body, WardleyMap model, AddWardleyElementCommand command)
+    protected override EditOutcome Apply(LineDocument body, WardleyMap model, AddWardleyElementCommand command)
     {
         if (!Kinds.Contains(command.Kind, StringComparer.OrdinalIgnoreCase))
         {
@@ -97,7 +98,7 @@ public sealed class AddWardleyElementCommandHandler(IWardleyDocumentStore docume
 
 public sealed class RemoveWardleyElementCommandHandler(IWardleyDocumentStore documents) : WardleyEditHandler<RemoveWardleyElementCommand>(documents)
 {
-    protected override EditOutcome Apply(WardleyDocument body, WardleyMap model, RemoveWardleyElementCommand command)
+    protected override EditOutcome Apply(LineDocument body, WardleyMap model, RemoveWardleyElementCommand command)
     {
         if (ComponentOf(model, command.BodyPath, command.ElementId) is not { } component)
         {
@@ -123,7 +124,7 @@ public sealed class RemoveWardleyElementCommandHandler(IWardleyDocumentStore doc
 
 public sealed class RenameWardleyElementCommandHandler(IWardleyDocumentStore documents) : WardleyEditHandler<RenameWardleyElementCommand>(documents)
 {
-    protected override EditOutcome Apply(WardleyDocument body, WardleyMap model, RenameWardleyElementCommand command)
+    protected override EditOutcome Apply(LineDocument body, WardleyMap model, RenameWardleyElementCommand command)
     {
         if (string.IsNullOrWhiteSpace(command.NewName))
         {
@@ -158,14 +159,14 @@ public sealed class RenameWardleyElementCommandHandler(IWardleyDocumentStore doc
 
 public sealed class SetWardleyInertiaCommandHandler(IWardleyDocumentStore documents) : WardleyEditHandler<SetWardleyInertiaCommand>(documents)
 {
-    protected override EditOutcome Apply(WardleyDocument body, WardleyMap model, SetWardleyInertiaCommand command)
+    protected override EditOutcome Apply(LineDocument body, WardleyMap model, SetWardleyInertiaCommand command)
     {
         if (ComponentOf(model, command.BodyPath, command.ElementId) is not { } component)
         {
             return EditOutcome.Refused(Gone);
         }
 
-        var before = body.Lines[(int)component.Line - 1];
+        var before = body.Lines[(int)component.Line - 1].Text;
         return WardleyWriter.SetInertia(body, component, command.Inertia)
             ? EditOutcome.UndoneBy(new RestoreWardleyLineCommand(command.BodyPath, component.Line, before))
             : EditOutcome.Refused("That element's inertia could not be changed.");
@@ -174,7 +175,7 @@ public sealed class SetWardleyInertiaCommandHandler(IWardleyDocumentStore docume
 
 public sealed class SetWardleyDecoratorsCommandHandler(IWardleyDocumentStore documents) : WardleyEditHandler<SetWardleyDecoratorsCommand>(documents)
 {
-    protected override EditOutcome Apply(WardleyDocument body, WardleyMap model, SetWardleyDecoratorsCommand command)
+    protected override EditOutcome Apply(LineDocument body, WardleyMap model, SetWardleyDecoratorsCommand command)
     {
         if (ComponentOf(model, command.BodyPath, command.ElementId) is not { } component)
         {
@@ -183,7 +184,7 @@ public sealed class SetWardleyDecoratorsCommandHandler(IWardleyDocumentStore doc
 
         // One line, captured once: several writer calls follow, and the inverse has to put the
         // line back as it was rather than as the sum of their opposites.
-        var before = body.Lines[(int)component.Line - 1];
+        var before = body.Lines[(int)component.Line - 1].Text;
         var wanted = command.Decorators.Distinct().ToArray();
 
         foreach (var decorator in WardleyDecorators.All)
@@ -209,14 +210,14 @@ public sealed class SetWardleyDecoratorsCommandHandler(IWardleyDocumentStore doc
 
 public sealed class SetWardleyDecoratorCommandHandler(IWardleyDocumentStore documents) : WardleyEditHandler<SetWardleyDecoratorCommand>(documents)
 {
-    protected override EditOutcome Apply(WardleyDocument body, WardleyMap model, SetWardleyDecoratorCommand command)
+    protected override EditOutcome Apply(LineDocument body, WardleyMap model, SetWardleyDecoratorCommand command)
     {
         if (ComponentOf(model, command.BodyPath, command.ElementId) is not { } component)
         {
             return EditOutcome.Refused(Gone);
         }
 
-        var before = body.Lines[(int)component.Line - 1];
+        var before = body.Lines[(int)component.Line - 1].Text;
         var word = command.Decorator.ToString().ToLowerInvariant();
         return WardleyWriter.SetDecorator(body, component, word, command.Present)
             ? EditOutcome.UndoneBy(new RestoreWardleyLineCommand(command.BodyPath, component.Line, before))
@@ -226,7 +227,7 @@ public sealed class SetWardleyDecoratorCommandHandler(IWardleyDocumentStore docu
 
 public sealed class AddWardleyNoteCommandHandler(IWardleyDocumentStore documents) : WardleyEditHandler<AddWardleyNoteCommand>(documents)
 {
-    protected override EditOutcome Apply(WardleyDocument body, WardleyMap model, AddWardleyNoteCommand command)
+    protected override EditOutcome Apply(LineDocument body, WardleyMap model, AddWardleyNoteCommand command)
     {
         if (string.IsNullOrWhiteSpace(command.Text))
         {
@@ -245,7 +246,7 @@ public sealed class AddWardleyNoteCommandHandler(IWardleyDocumentStore documents
 
 public sealed class AddWardleyAnnotationCommandHandler(IWardleyDocumentStore documents) : WardleyEditHandler<AddWardleyAnnotationCommand>(documents)
 {
-    protected override EditOutcome Apply(WardleyDocument body, WardleyMap model, AddWardleyAnnotationCommand command)
+    protected override EditOutcome Apply(LineDocument body, WardleyMap model, AddWardleyAnnotationCommand command)
     {
         if (string.IsNullOrWhiteSpace(command.Text))
         {
@@ -267,7 +268,7 @@ public sealed class AddWardleyAnnotationCommandHandler(IWardleyDocumentStore doc
 
 public sealed class SetWardleyLinkCommandHandler(IWardleyDocumentStore documents) : WardleyEditHandler<SetWardleyLinkCommand>(documents)
 {
-    protected override EditOutcome Apply(WardleyDocument body, WardleyMap model, SetWardleyLinkCommand command)
+    protected override EditOutcome Apply(LineDocument body, WardleyMap model, SetWardleyLinkCommand command)
     {
         var source = ComponentOf(model, command.BodyPath, command.SourceElementId);
         var target = ComponentOf(model, command.BodyPath, command.TargetElementId);
@@ -311,7 +312,7 @@ public sealed class SetWardleyLinkCommandHandler(IWardleyDocumentStore documents
         }
         else
         {
-            body.ReplaceLine(existing.Line, statement);
+            WardleyWriter.ReplaceLine(body, existing.Line, statement);
         }
 
         return EditOutcome.Applied;
@@ -320,7 +321,7 @@ public sealed class SetWardleyLinkCommandHandler(IWardleyDocumentStore documents
 
 public sealed class SetWardleyEvolveCommandHandler(IWardleyDocumentStore documents) : WardleyEditHandler<SetWardleyEvolveCommand>(documents)
 {
-    protected override EditOutcome Apply(WardleyDocument body, WardleyMap model, SetWardleyEvolveCommand command)
+    protected override EditOutcome Apply(LineDocument body, WardleyMap model, SetWardleyEvolveCommand command)
     {
         if (ComponentOf(model, command.BodyPath, command.ElementId) is not { } component)
         {
@@ -353,7 +354,7 @@ public sealed class SetWardleyEvolveCommandHandler(IWardleyDocumentStore documen
         }
         else
         {
-            body.ReplaceLine(existing.Line, statement);
+            WardleyWriter.ReplaceLine(body, existing.Line, statement);
         }
 
         return EditOutcome.Applied;
@@ -367,7 +368,7 @@ public sealed class SetWardleyEvolveCommandHandler(IWardleyDocumentStore documen
 public sealed class SetWardleyPipelineMembershipCommandHandler(IWardleyDocumentStore documents)
     : WardleyEditHandler<SetWardleyPipelineMembershipCommand>(documents)
 {
-    protected override EditOutcome Apply(WardleyDocument body, WardleyMap model, SetWardleyPipelineMembershipCommand command)
+    protected override EditOutcome Apply(LineDocument body, WardleyMap model, SetWardleyPipelineMembershipCommand command)
     {
         if (string.IsNullOrWhiteSpace(command.ChildName))
         {
@@ -428,7 +429,7 @@ public sealed class SetWardleyPipelineMembershipCommandHandler(IWardleyDocumentS
             return EditOutcome.Refused($"'{parent.Name}' has a pipeline that is missing its closing brace.");
         }
 
-        body.InsertLine(closing, statement);
+        WardleyWriter.InsertLine(body, closing, statement);
         return EditOutcome.Applied;
     }
 
@@ -440,11 +441,11 @@ public sealed class SetWardleyPipelineMembershipCommandHandler(IWardleyDocumentS
     /// lines, comments and statements this module does not model - all of which Requirement 3.3
     /// says survive untouched, and any of which may sit after the last child.
     /// </remarks>
-    private static uint? ClosingBraceOf(WardleyDocument document, WardleyPipeline pipeline)
+    private static uint? ClosingBraceOf(LineDocument document, WardleyPipeline pipeline)
     {
         for (var number = pipeline.Line; number <= document.Lines.Count; number++)
         {
-            if (document.Lines[(int)number - 1].Trim() == "}")
+            if (document.Lines[(int)number - 1].Text.Trim() == "}")
             {
                 return number;
             }

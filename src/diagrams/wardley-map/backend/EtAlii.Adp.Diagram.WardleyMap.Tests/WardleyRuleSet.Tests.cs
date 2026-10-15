@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
@@ -10,7 +11,7 @@ namespace EtAlii.Adp.Diagram.WardleyMap.Tests;
 public sealed class WardleyRuleSetTests
 {
     private static IReadOnlyList<DiagramProblem> Validate(string text) =>
-        WardleyRuleSet.Validate(WardleyParser.Parse(WardleyDocument.Parse(text)));
+        WardleyRuleSet.Validate(WardleyParser.Parse(LineDocument.Parse(text)));
 
     private static DiagramProblem Single(IReadOnlyList<DiagramProblem> problems, string ruleId) =>
         problems.Single(problem => problem.RuleId == ruleId);
@@ -202,7 +203,7 @@ public sealed class WardleyRuleSetTests
             Kettle->Nothing
 
             """;
-        var map = WardleyParser.Parse(WardleyDocument.Parse(text));
+        var map = WardleyParser.Parse(LineDocument.Parse(text));
 
         // Assert.
         Assert.NotEmpty(WardleyRuleSet.Validate(map));
@@ -240,7 +241,7 @@ public sealed class WardleyRuleSetTests
                 .Concat(Enumerable.Range(0, 1000).Select(index => $"component C{index} [0.5, 0.5]"))
                 .Concat(Enumerable.Range(0, 999).Select(index => $"C{index}->C{index + 1}")));
 
-        var map = WardleyParser.Parse(WardleyDocument.Parse(text + "\n"));
+        var map = WardleyParser.Parse(LineDocument.Parse(text + "\n"));
 
         // Act.
         var started = DateTime.UtcNow;

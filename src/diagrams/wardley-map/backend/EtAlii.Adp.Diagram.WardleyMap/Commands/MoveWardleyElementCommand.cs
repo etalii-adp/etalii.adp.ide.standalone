@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 using Serilog;
 
@@ -30,7 +31,7 @@ public sealed class MoveWardleyElementCommandHandler(IWardleyDocumentStore docum
 {
     private static readonly ILogger _logger = Log.ForContext<MoveWardleyElementCommandHandler>();
 
-    protected override EditOutcome Apply(WardleyDocument body, WardleyMap model, MoveWardleyElementCommand command)
+    protected override EditOutcome Apply(LineDocument body, WardleyMap model, MoveWardleyElementCommand command)
     {
         // From the store, not reconciled here: an unmatched element gets a FRESH ShortGuid, so
         // reconciling separately would mint ids the session never handed out and this handler
@@ -50,7 +51,7 @@ public sealed class MoveWardleyElementCommandHandler(IWardleyDocumentStore docum
         // Recomputing from numbers would bring `[0.90, 0.10]` back as `[0.9, 0.1]` - the same
         // position, a different file - and an undo has to leave no trace at all.
         var line = target.Child?.Line ?? target.Component!.Line;
-        var before = body.Lines[(int)line - 1];
+        var before = body.Lines[(int)line - 1].Text;
 
         if (target.Child is { } child)
         {

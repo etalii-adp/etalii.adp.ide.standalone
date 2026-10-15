@@ -294,9 +294,9 @@ public class C4ContextActionProviderTests : IDisposable
             remove => inner.Changed -= value;
         }
 
-        public DocumentEntry<C4Document, C4Workspace> GetOrLoad(string path) => inner.GetOrLoad(path) with { Unreadable = "it is locked" };
+        public DocumentEntry<LineDocument, C4Workspace> GetOrLoad(string path) => inner.GetOrLoad(path) with { Unreadable = "it is locked" };
 
-        public DocumentSaveResult Save(string path, C4Document document) => inner.Save(path, document);
+        public DocumentSaveResult Save(string path, LineDocument document) => inner.Save(path, document);
 
         public void Reload(string path) => inner.Reload(path);
 
