@@ -299,4 +299,21 @@ public class DependencyGraphParserTests
         var exception = Assert.ThrowsAny<YamlException>(() => Parse("elements: [\n  - id: a\n"));
         Assert.True(exception.Start.Line >= 1, "a problem the user cannot locate is barely a problem");
     }
+
+    [Fact]
+    public void ADocumentThatIsNotYaml_IsAnOutcomeThatCouldNotBeRead_OnTheLineTheReaderNames()
+    {
+        // Arrange.
+        const string text = "elements: [\n  - id: a\n";
+        var thrown = Assert.ThrowsAny<YamlException>(() => Parse(text));
+
+        // Act.
+        var outcome = DependencyGraphParser.Outcome(LineDocument.Parse(text));
+
+        // Assert: the store and the validator read the same sentence and line the parser's exception carries.
+        Assert.False(outcome.IsUsable);
+        Assert.Equal(thrown.Message, outcome.Unreadable);
+        Assert.Equal(new ParseProblem((int)thrown.Start.Line - 1, thrown.Message), Assert.Single(outcome.Problems));
+        Assert.Same(DependencyGraphModel.Empty, outcome.Model);
+    }
 }

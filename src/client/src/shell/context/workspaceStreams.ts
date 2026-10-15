@@ -1,4 +1,5 @@
 import { base64Encode } from "@bufbuild/protobuf/wire";
+import { Code, ConnectError } from "@connectrpc/connect";
 import type { Delta } from "../../generated/deltas_pb";
 import type { TableBaseline, TableChange, TableStreamMessage } from "../../generated/designers_pb";
 import type { HierarchyMessage } from "../../generated/hierarchy_pb";
@@ -161,6 +162,10 @@ export class WorkspaceStreams {
       feed.push(message.event.value);
     } else if (message.event.case === "ended") {
       feed.end();
+    } else if (message.event.case === "refused") {
+      // Refused for good after the open was answered: the consumer reads the same ConnectError its
+      // own Open call would have ended with, and stops re-opening rather than retrying for ever.
+      feed.fail(new ConnectError(message.event.value.message, message.event.value.code as Code));
     }
   }
 
