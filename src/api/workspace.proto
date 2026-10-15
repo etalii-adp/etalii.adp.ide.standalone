@@ -70,10 +70,21 @@ message DiagramStreamMessage {
     // The backend ended the stream itself - a session that failed. The client treats it as a
     // dropped stream and re-opens, exactly as it treated an Open call ending.
     DiagramStreamEnded ended = 3;
+    // The backend refused the stream for good after it started - a session whose baseline could
+    // not be made, such as a file that does not parse. The client treats it as the refusal
+    // DiagramService.Open would have answered with, and stops re-opening.
+    DiagramStreamRefused refused = 4;
   }
 }
 
 message DiagramStreamEnded {}
+
+// A permanent refusal on a stream that had already started: a code from PermanentRefusal and
+// the sentence the client shows.
+message DiagramStreamRefused {
+  int32 code = 1;
+  string message = 2;
+}
 
 message OpenDiagramStreamRequest {
   ShortGuid stream_id = 1;          // client-generated, unique on the connection
