@@ -85,7 +85,7 @@ public static class SupplyChainParser
 
     private static int? ReadVersion(YamlMappingNode root, LineDocument document, List<SupplyChainProblem> problems)
     {
-        if (Node(root, HeaderKey) is not YamlScalarNode scalar)
+        if (YamlAccess.Node(root, HeaderKey) is not YamlScalarNode scalar)
         {
             problems.Add(new SupplyChainProblem(0, $"The document does not begin with `{HeaderKey}: {SupplyChainModel.CurrentVersion}`."));
             return null;
@@ -93,13 +93,13 @@ public static class SupplyChainParser
 
         if (!int.TryParse(scalar.Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var version))
         {
-            problems.Add(new SupplyChainProblem(LineOf(scalar, document), $"The version `{scalar.Value}` is not a number."));
+            problems.Add(new SupplyChainProblem(YamlAccess.LineOf(scalar, document), $"The version `{scalar.Value}` is not a number."));
             return null;
         }
 
         if (version != SupplyChainModel.CurrentVersion)
         {
-            problems.Add(new SupplyChainProblem(LineOf(scalar, document), $"This document states version {version}; this module reads version {SupplyChainModel.CurrentVersion}."));
+            problems.Add(new SupplyChainProblem(YamlAccess.LineOf(scalar, document), $"This document states version {version}; this module reads version {SupplyChainModel.CurrentVersion}."));
         }
 
         return version;
@@ -112,9 +112,9 @@ public static class SupplyChainParser
         {
             ReportUnknownKeys(mapping, GroupKeys, document, problems, "group");
             groups.Add(new SupplyChainGroup(
-                Scalar(mapping, "id") ?? "",
-                Scalar(mapping, "name") ?? "",
-                Scalar(mapping, "description") ?? "",
+                YamlAccess.Scalar(mapping, "id") ?? "",
+                YamlAccess.Scalar(mapping, "name") ?? "",
+                YamlAccess.Scalar(mapping, "description") ?? "",
                 Range(mapping, document),
                 Number(mapping, "x", document, problems),
                 Number(mapping, "y", document, problems)));
@@ -131,20 +131,20 @@ public static class SupplyChainParser
             ReportUnknownKeys(mapping, NodeKeys, document, problems, "node");
 
             // A legacy stage word reads as the stage it became; the line keeps its word until edited.
-            var type = SupplyChainNodeTypes.Normalize(Scalar(mapping, "type") ?? "");
+            var type = SupplyChainNodeTypes.Normalize(YamlAccess.Scalar(mapping, "type") ?? "");
             if (!SupplyChainNodeTypes.IsKnown(type))
             {
-                problems.Add(new SupplyChainProblem(LineOf(mapping, document), $"`{type}` is not a stage this module knows."));
+                problems.Add(new SupplyChainProblem(YamlAccess.LineOf(mapping, document), $"`{type}` is not a stage this module knows."));
             }
 
             nodes.Add(new SupplyChainNode(
-                Scalar(mapping, "id") ?? "",
+                YamlAccess.Scalar(mapping, "id") ?? "",
                 type,
-                Scalar(mapping, "name") ?? "",
-                Scalar(mapping, "description") ?? "",
-                Scalar(mapping, "group") ?? "",
+                YamlAccess.Scalar(mapping, "name") ?? "",
+                YamlAccess.Scalar(mapping, "description") ?? "",
+                YamlAccess.Scalar(mapping, "group") ?? "",
                 Number(mapping, "quantity", document, problems),
-                Scalar(mapping, "unit") ?? "",
+                YamlAccess.Scalar(mapping, "unit") ?? "",
                 Number(mapping, "step", document, problems),
                 Number(mapping, "x", document, problems),
                 Number(mapping, "y", document, problems),
@@ -161,13 +161,13 @@ public static class SupplyChainParser
         {
             ReportUnknownKeys(mapping, FlowKeys, document, problems, "flow");
             flows.Add(new SupplyChainFlow(
-                Scalar(mapping, "id") ?? "",
-                Scalar(mapping, "from") ?? "",
-                Scalar(mapping, "to") ?? "",
-                Scalar(mapping, "product") ?? "",
-                Scalar(mapping, "description") ?? "",
+                YamlAccess.Scalar(mapping, "id") ?? "",
+                YamlAccess.Scalar(mapping, "from") ?? "",
+                YamlAccess.Scalar(mapping, "to") ?? "",
+                YamlAccess.Scalar(mapping, "product") ?? "",
+                YamlAccess.Scalar(mapping, "description") ?? "",
                 Number(mapping, "volume", document, problems),
-                Scalar(mapping, "unit") ?? "",
+                YamlAccess.Scalar(mapping, "unit") ?? "",
                 Number(mapping, "step", document, problems),
                 Range(mapping, document)));
         }
@@ -183,7 +183,7 @@ public static class SupplyChainParser
         LineDocument document,
         List<SupplyChainProblem> problems)
     {
-        if (Node(root, key) is not YamlSequenceNode sequence)
+        if (YamlAccess.Node(root, key) is not YamlSequenceNode sequence)
         {
             yield break;
         }
@@ -196,7 +196,7 @@ public static class SupplyChainParser
             }
             else
             {
-                problems.Add(new SupplyChainProblem(LineOf(node, document), $"A {what} entry is not a mapping and was passed over."));
+                problems.Add(new SupplyChainProblem(YamlAccess.LineOf(node, document), $"A {what} entry is not a mapping and was passed over."));
             }
         }
     }
@@ -212,16 +212,10 @@ public static class SupplyChainParser
         {
             if (key is YamlScalarNode { Value: { } name } scalar && !known.Contains(name, StringComparer.Ordinal))
             {
-                problems.Add(new SupplyChainProblem(LineOf(scalar, document), $"`{name}` is not a key this module reads on a {what}; the line is kept."));
+                problems.Add(new SupplyChainProblem(YamlAccess.LineOf(scalar, document), $"`{name}` is not a key this module reads on a {what}; the line is kept."));
             }
         }
     }
-
-    private static YamlNode? Node(YamlMappingNode mapping, string key) =>
-        mapping.Children.TryGetValue(new YamlScalarNode(key), out var node) ? node : null;
-
-    private static string? Scalar(YamlMappingNode mapping, string key) =>
-        Node(mapping, key) is YamlScalarNode scalar ? scalar.Value ?? "" : null;
 
     /// <summary>
     /// A number from the entry, or <c>null</c> when the key is absent or will not read - the second
@@ -229,7 +223,7 @@ public static class SupplyChainParser
     /// </summary>
     private static double? Number(YamlMappingNode mapping, string key, LineDocument document, List<SupplyChainProblem> problems)
     {
-        if (Node(mapping, key) is not YamlScalarNode scalar)
+        if (YamlAccess.Node(mapping, key) is not YamlScalarNode scalar)
         {
             return null;
         }
@@ -239,12 +233,9 @@ public static class SupplyChainParser
             return value;
         }
 
-        problems.Add(new SupplyChainProblem(LineOf(scalar, document), $"`{key}: {scalar.Value}` is not a number and was ignored."));
+        problems.Add(new SupplyChainProblem(YamlAccess.LineOf(scalar, document), $"`{key}: {scalar.Value}` is not a number and was ignored."));
         return null;
     }
-
-    private static int LineOf(YamlNode node, LineDocument document) =>
-        Math.Clamp((int)node.Start.Line - 1, 0, Math.Max(0, document.Lines.Count - 1));
 
     private static LineRange Range(YamlNode node, LineDocument document) => YamlNodeRange.Of(node, document.Lines);
 }

@@ -60,7 +60,7 @@ public static class DependencyGraphParser
     private static List<DependencyGraphElement> ReadElements(YamlMappingNode root, LineDocument document)
     {
         var elements = new List<DependencyGraphElement>();
-        foreach (var node in Sequence(root, ElementsKey))
+        foreach (var node in YamlAccess.Sequence(root, ElementsKey))
         {
             if (node is not YamlMappingNode mapping)
             {
@@ -68,10 +68,10 @@ public static class DependencyGraphParser
             }
 
             elements.Add(new DependencyGraphElement(
-                Scalar(mapping, "id") ?? "",
-                Scalar(mapping, "label") ?? "",
-                X(Scalar(mapping, "x")),
-                Row(Scalar(mapping, "row")),
+                YamlAccess.Scalar(mapping, "id") ?? "",
+                YamlAccess.Scalar(mapping, "label") ?? "",
+                X(YamlAccess.Scalar(mapping, "x")),
+                Row(YamlAccess.Scalar(mapping, "row")),
                 YamlNodeRange.Of(mapping, document.Lines)));
         }
 
@@ -81,7 +81,7 @@ public static class DependencyGraphParser
     private static List<DependencyGraphRelation> ReadRelations(YamlMappingNode root, LineDocument document)
     {
         var relations = new List<DependencyGraphRelation>();
-        foreach (var node in Sequence(root, RelationsKey))
+        foreach (var node in YamlAccess.Sequence(root, RelationsKey))
         {
             if (node is not YamlMappingNode mapping)
             {
@@ -89,25 +89,15 @@ public static class DependencyGraphParser
             }
 
             relations.Add(new DependencyGraphRelation(
-                Scalar(mapping, "id") ?? "",
-                Scalar(mapping, "from") ?? "",
-                Scalar(mapping, "to") ?? "",
-                Scalar(mapping, "label") ?? "",
+                YamlAccess.Scalar(mapping, "id") ?? "",
+                YamlAccess.Scalar(mapping, "from") ?? "",
+                YamlAccess.Scalar(mapping, "to") ?? "",
+                YamlAccess.Scalar(mapping, "label") ?? "",
                 YamlNodeRange.Of(mapping, document.Lines)));
         }
 
         return relations;
     }
-
-    private static IEnumerable<YamlNode> Sequence(YamlMappingNode root, string key) =>
-        root.Children.TryGetValue(new YamlScalarNode(key), out var node) && node is YamlSequenceNode sequence
-            ? sequence.Children
-            : [];
-
-    private static string? Scalar(YamlMappingNode mapping, string key) =>
-        mapping.Children.TryGetValue(new YamlScalarNode(key), out var node) && node is YamlScalarNode scalar
-            ? scalar.Value ?? ""
-            : null;
 
     /// <summary>
     /// A horizontal coordinate that will not read is coordinate zero, and the rules say so.

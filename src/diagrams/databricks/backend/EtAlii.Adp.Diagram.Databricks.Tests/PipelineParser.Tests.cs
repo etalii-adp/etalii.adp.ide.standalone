@@ -14,7 +14,7 @@ public class PipelineParserTests
     {
         var document = LineDocument.Parse(
             File.ReadAllText(IoPath.Combine(AppContext.BaseDirectory, "Fixtures", name)));
-        return PipelineParser.Parse(DatabricksYaml.Root(document), document);
+        return PipelineParser.Parse(YamlAccess.Root(document), document);
     }
 
     [Fact]

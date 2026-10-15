@@ -179,6 +179,19 @@ public class RdfParserTests
     }
 
     [Fact]
+    public void ACarriageReturnInsideAShortString_IsRefusedNamingItsLine()
+    {
+        // Arrange & act.
+        // Turtle leaves a carriage return out of a short string, as SPARQL does; the shared
+        // terminal scanner refuses it in both (behaviour changes B-02).
+        var exception = Assert.Throws<RdfParseException>(() => Parse("@prefix ex: <http://example.org/> .\r\nex:s ex:p \"a\rb\" .\r\n"));
+
+        // Assert.
+        Assert.Equal(2, exception.Line);
+        Assert.Contains("end of its line", exception.Message);
+    }
+
+    [Fact]
     public void AnUndeclaredPrefix_IsRefusedNamingItsLine()
     {
         // Arrange & act.

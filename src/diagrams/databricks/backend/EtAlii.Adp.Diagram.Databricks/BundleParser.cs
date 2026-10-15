@@ -26,8 +26,8 @@ internal static class BundleParser
             return BundleModel.Empty;
         }
 
-        var bundle = DatabricksYaml.Mapping(root, "bundle");
-        var name = bundle is null ? "" : DatabricksYaml.Scalar(bundle, "name") ?? "";
+        var bundle = YamlAccess.Mapping(root, "bundle");
+        var name = bundle is null ? "" : YamlAccess.Scalar(bundle, "name") ?? "";
 
         return new BundleModel(
             name,
@@ -39,15 +39,15 @@ internal static class BundleParser
     }
 
     private static List<BundleInclude> ReadIncludes(YamlMappingNode root, LineDocument document) =>
-        DatabricksYaml.Sequence(root, "include")
+        YamlAccess.Sequence(root, "include")
             .OfType<YamlScalarNode>()
-            .Select(node => new BundleInclude(node.Value ?? "", DatabricksYaml.Range(node, document)))
+            .Select(node => new BundleInclude(node.Value ?? "", YamlAccess.Range(node, document)))
             .ToList();
 
     private static List<BundleVariable> ReadVariables(YamlMappingNode root, LineDocument document)
     {
         var variables = new List<BundleVariable>();
-        var mapping = DatabricksYaml.Mapping(root, "variables");
+        var mapping = YamlAccess.Mapping(root, "variables");
         if (mapping is null)
         {
             return variables;
@@ -65,9 +65,9 @@ internal static class BundleParser
             var declaration = value as YamlMappingNode;
             variables.Add(new BundleVariable(
                 variableName,
-                declaration is null ? "" : DatabricksYaml.Scalar(declaration, "default") ?? "",
-                declaration is null ? "" : DatabricksYaml.Scalar(declaration, "description") ?? "",
-                DatabricksYaml.Range(key, value, document)));
+                declaration is null ? "" : YamlAccess.Scalar(declaration, "default") ?? "",
+                declaration is null ? "" : YamlAccess.Scalar(declaration, "description") ?? "",
+                YamlAccess.Range(key, value, document)));
         }
 
         return variables;
@@ -78,7 +78,7 @@ internal static class BundleParser
     {
         var resources = new List<BundleResource>();
         unknownKinds = [];
-        var mapping = DatabricksYaml.Mapping(root, "resources");
+        var mapping = YamlAccess.Mapping(root, "resources");
         if (mapping is null)
         {
             return resources;
@@ -96,7 +96,7 @@ internal static class BundleParser
                 // An experiment, a model, a schema: real configuration this module does not model.
                 // It draws generically and is never written (Requirement 2.4).
                 unknownKinds.Add(new UnknownNode(
-                    $"resources.{kind}", kind, DatabricksYaml.Range(kindNode, entries, document)));
+                    $"resources.{kind}", kind, YamlAccess.Range(kindNode, entries, document)));
                 continue;
             }
 
@@ -109,7 +109,7 @@ internal static class BundleParser
             {
                 if (keyNode is YamlScalarNode { Value: { } key })
                 {
-                    resources.Add(new BundleResource(kind, key, DatabricksYaml.Range(keyNode, body, document)));
+                    resources.Add(new BundleResource(kind, key, YamlAccess.Range(keyNode, body, document)));
                 }
             }
         }
@@ -120,7 +120,7 @@ internal static class BundleParser
     private static List<BundleTarget> ReadTargets(YamlMappingNode root, LineDocument document)
     {
         var targets = new List<BundleTarget>();
-        var mapping = DatabricksYaml.Mapping(root, "targets");
+        var mapping = YamlAccess.Mapping(root, "targets");
         if (mapping is null)
         {
             return targets;
@@ -135,10 +135,10 @@ internal static class BundleParser
 
             targets.Add(new BundleTarget(
                 targetName,
-                DatabricksYaml.Scalar(target, "mode") ?? "",
-                DatabricksYaml.Flag(target, "default"),
+                YamlAccess.Scalar(target, "mode") ?? "",
+                YamlAccess.Flag(target, "default"),
                 ReadOverrides(target, document),
-                DatabricksYaml.Range(nameNode, body, document)));
+                YamlAccess.Range(nameNode, body, document)));
         }
 
         return targets;
@@ -151,7 +151,7 @@ internal static class BundleParser
     private static List<BundleResource> ReadOverrides(YamlMappingNode target, LineDocument document)
     {
         var overrides = new List<BundleResource>();
-        var mapping = DatabricksYaml.Mapping(target, "resources");
+        var mapping = YamlAccess.Mapping(target, "resources");
         if (mapping is null)
         {
             return overrides;
@@ -168,7 +168,7 @@ internal static class BundleParser
             {
                 if (keyNode is YamlScalarNode { Value: { } key })
                 {
-                    overrides.Add(new BundleResource(kind, key, DatabricksYaml.Range(keyNode, body, document)));
+                    overrides.Add(new BundleResource(kind, key, YamlAccess.Range(keyNode, body, document)));
                 }
             }
         }
@@ -183,7 +183,7 @@ internal static class BundleParser
             if (keyNode is YamlScalarNode { Value: { } key }
                 && !_modelledRootKeys.Contains(key, StringComparer.Ordinal))
             {
-                yield return new UnknownNode(key, key, DatabricksYaml.Range(keyNode, value, document));
+                yield return new UnknownNode(key, key, YamlAccess.Range(keyNode, value, document));
             }
         }
     }
