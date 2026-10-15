@@ -189,6 +189,21 @@ public class WardleyParserVocabularyTests
     }
 
     [Fact]
+    public void Parse_StartsACommentAtASlashPairInsideAQuotedName()
+    {
+        // Arrange. Behaviour-changes B-04: the DSL's comment rule is blind to quotes, so a quoted
+        // name holding `//` is cut there and the line reads as nothing. Kept as the rule when the
+        // lexer was shared (T137); it is to be fixed as a defect of its own, with this guard turned.
+        const string text = "component \"Cache // fast\" [0.40, 0.60]\r\ncomponent Plain [0.30, 0.20]\r\n";
+
+        // Act.
+        var map = ParseText(text);
+
+        // Assert.
+        Assert.Equal("Plain", Assert.Single(map.Components).Name);
+    }
+
+    [Fact]
     public void Parse_LinksASubmapToItsUrlByName()
     {
         // Act.
