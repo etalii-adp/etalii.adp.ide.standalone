@@ -42,7 +42,7 @@ public class DocumentLifecycle
 /// traced the EditorResolution 60-second flake to exactly that in c4's store: saved, read refused by
 /// another holder, last good kept, and no further event (2026-09-25). So a read that is refused, or
 /// that finds the body missing during a reload, is tried again a few times before anything is
-/// concluded, as <c>TextEditorSession.ReadWithRetry</c> already does. <b>Retrying narrows that window
+/// concluded, as <see cref="WatchedFile.ReadAsync{T}"/> does. <b>Retrying narrows that window
 /// and does not close it</b>: a hold longer than the retries still loses the change. The window is a
 /// choice rather than a measurement, because what held the file is not yet known, so a read that
 /// needed a retry logs how many it took. Those log lines are how the real hold gets measured.

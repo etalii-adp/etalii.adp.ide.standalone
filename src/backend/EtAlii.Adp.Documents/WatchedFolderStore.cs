@@ -37,7 +37,7 @@ public abstract class WatchedFolderStore<TSnapshot>(TimeSpan settleDelay) : IWat
 {
     private static readonly ILogger _logger = Log.ForContext<WatchedFolderStore<TSnapshot>>();
 
-    private readonly ConcurrentDictionary<string, WatchedFolder<TSnapshot>> _folders = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ConcurrentDictionary<string, WatchedFolderEntry<TSnapshot>> _folders = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>Raised after a folder has been re-read because something in it changed; <see cref="Watch"/> hears one folder of it.</summary>
     public event EventHandler<WatchedFolderChangedEventArgs<TSnapshot>>? Changed;
@@ -139,19 +139,19 @@ public abstract class WatchedFolderStore<TSnapshot>(TimeSpan settleDelay) : IWat
         GC.SuppressFinalize(this);
     }
 
-    private WatchedFolder<TSnapshot> Watched(string folder) =>
+    private WatchedFolderEntry<TSnapshot> Watched(string folder) =>
         _folders.GetOrAdd(Key(folder), path =>
         {
             _logger.Debug("Reading and watching {Folder}", path);
             var snapshot = Read(path);
-            return new WatchedFolder<TSnapshot>(path, snapshot, WatchedFiles(path, snapshot), settleDelay, OnSettled);
+            return new WatchedFolderEntry<TSnapshot>(path, snapshot, WatchedFiles(path, snapshot), settleDelay, OnSettled);
         });
 
     /// <summary>The watchers of <paramref name="folder"/>, or none when it is not loaded - for a test that has to make one overflow.</summary>
     internal IReadOnlyList<FileSystemWatcher> WatchersOf(string folder) =>
         _folders.TryGetValue(Key(folder), out var watched) ? watched.Watchers : [];
 
-    private void OnSettled(WatchedFolder<TSnapshot> watched)
+    private void OnSettled(WatchedFolderEntry<TSnapshot> watched)
     {
         // Re-read before announcing: a listener that asked the store during the event would
         // otherwise be handed the old snapshot.

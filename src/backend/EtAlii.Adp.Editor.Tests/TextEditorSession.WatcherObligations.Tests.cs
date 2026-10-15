@@ -1,4 +1,3 @@
-using System.Reflection;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -21,8 +20,8 @@ namespace EtAlii.Adp.Editor.Tests;
 /// that removes a file by some other means fails here rather than passing by habit. A lost-events
 /// window cannot be caused on demand, so the watcher is switched off while the file changes - no event
 /// can carry that change - and then its own <c>Error</c> is raised through
-/// <c>FileSystemWatcher.OnError</c>. That raises synchronously, so the case is deterministic rather
-/// than patient.
+/// <c>FileSystemWatcher.OnError</c>. That raises synchronously; the re-read it asks for runs on the
+/// pool, so the case waits for it, and nothing but the overflow can have asked.
 /// </para>
 /// </remarks>
 public class TextEditorSessionWatcherObligationsTests : IDisposable
@@ -57,7 +56,7 @@ public class TextEditorSessionWatcherObligationsTests : IDisposable
     {
         var path = Write("notes.txt", "before");
         await using var session = new TextEditorSession(path);
-        var watcher = WatcherOf(session);
+        var watcher = session.Watched!.Watcher();
         string? delivered = null;
         session.Changed += (_, args) => delivered = args.Content;
 
@@ -67,13 +66,11 @@ public class TextEditorSessionWatcherObligationsTests : IDisposable
 
         watcher.RaiseOverflow();
 
-        Assert.Equal("after", delivered);
+        // The re-read runs off the watcher's thread, one at a time, so the overflow is answered
+        // shortly after rather than during the raise.
+        Assert.True(await Eventually.TrueAsync(() => delivered == "after", TestContext.Current.CancellationToken, Patience), "The overflow never led to a re-read.");
         Assert.Equal("after", session.Content);
     }
-
-    private static FileSystemWatcher WatcherOf(TextEditorSession session) =>
-        typeof(TextEditorSession).GetField("_watcher", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(session) as FileSystemWatcher
-        ?? throw new InvalidOperationException("TextEditorSession no longer keeps its watcher in _watcher; this test must follow it.");
 
     // The one signal a watcher gives when it has dropped events, raised the way the watcher raises it.
 

@@ -15,7 +15,8 @@ namespace EtAlii.Adp.Designer.Knowledge.Tests;
 /// <b>How each watcher case is caused</b> is the editor family's way. A deletion is a real delete
 /// against the real watcher. A window of lost events cannot be caused on demand, so the watcher is
 /// switched off while the file changes - no event can carry that change - and then its own
-/// <c>Error</c> is raised through <c>FileSystemWatcher.OnError</c>, which raises synchronously.
+/// <c>Error</c> is raised through <c>FileSystemWatcher.OnError</c>; the re-read it asks for runs
+/// off the watcher's thread and is waited for.
 /// </remarks>
 public sealed class KnowledgeSessionTests : IDisposable
 {
@@ -165,7 +166,7 @@ public sealed class KnowledgeSessionTests : IDisposable
             session.Baseline();
             session.SetWindow(0, 100);
             session.SetActiveView(session.Baseline().Views[^1].Id);
-            session.OnExternalChange();
+            await session.OnExternalChangeAsync();
         }
 
         // Assert: the same bytes, not rewritten, and nothing beside the file but the table its relation names, which came with it.
@@ -209,7 +210,7 @@ public sealed class KnowledgeSessionTests : IDisposable
         var pushed = Collect(session);
 
         // Act: read again, as the watcher would ask after a save of the same bytes.
-        session.OnExternalChange();
+        await session.OnExternalChangeAsync();
 
         // Assert.
         Assert.Empty(pushed);
@@ -247,13 +248,16 @@ public sealed class KnowledgeSessionTests : IDisposable
         await File.WriteAllTextAsync(path, text.Replace("name: Cities", "name: Towns", StringComparison.Ordinal), TestContext.Current.CancellationToken);
         watcher.RaiseOverflow();
 
-        // Assert: synchronously, because the watcher's own Error is.
+        // Assert: the re-read the overflow asks for runs off the watcher's thread, so it is waited for.
+        Assert.True(
+            await Eventually.TrueAsync(() => pushed.OfType<TableStructureChanged>().Any(), TestContext.Current.CancellationToken, Patience),
+            "The overflow never led to a re-read.");
         Assert.Equal("Towns", pushed.OfType<TableStructureChanged>().Single().Title);
         Assert.Equal("Towns", session.Baseline().Title);
     }
 
     [Fact]
-    public async Task TheWatcher_IsSubscribedBeforeItIsEnabled_ToEveryEventAPublishRaises()
+    public async Task TheWatcher_IsEnabled_WithAHandlerForEveryEventAPublishRaises()
     {
         // Arrange.
         var path = KnowledgeFiles.CopyExample("cities.yaml", _root);
@@ -267,18 +271,7 @@ public sealed class KnowledgeSessionTests : IDisposable
             Assert.True(HasHandler(watcher, name), $"The session's watcher has no handler for {name}.");
         }
 
-        // And in that order. A handler attached after the watcher was enabled is attached by now
-        // too, so a running watcher cannot say which came first; the session's own source can. A
-        // watcher enabled first is live with nobody listening, and what it raises then is lost.
-        var source = await File.ReadAllTextAsync(KnowledgeFiles.SessionSource, TestContext.Current.CancellationToken);
-        var enabled = source.IndexOf("_watcher.EnableRaisingEvents = true", StringComparison.Ordinal);
-        Assert.True(enabled > 0, "The session no longer enables its watcher the way this test reads it.");
-        foreach (var name in new[] { "Changed", "Created", "Renamed", "Deleted", "Error" })
-        {
-            var subscribed = source.IndexOf($"_watcher.{name} +=", StringComparison.Ordinal);
-            Assert.True(subscribed > 0, $"The session no longer subscribes to {name} the way this test reads it.");
-            Assert.True(subscribed < enabled, $"The session subscribes to {name} after enabling its watcher.");
-        }
+        // The order, subscribed before enabled, is the watched folder's; WatchedFolderTests hold it.
     }
 
     // ---- the read that is refused -----------------------------------------------------------------
@@ -300,7 +293,7 @@ public sealed class KnowledgeSessionTests : IDisposable
 
         // Act.
         read.ToRefuse = refusals;
-        session.OnExternalChange();
+        await session.OnExternalChangeAsync();
 
         // Assert: read until it opened, and the change arrived.
         Assert.Equal(refusals + 1, read.Reads);
@@ -320,7 +313,7 @@ public sealed class KnowledgeSessionTests : IDisposable
 
         // Act.
         read.ToRefuse = int.MaxValue;
-        session.OnExternalChange();
+        await session.OnExternalChangeAsync();
 
         // Assert: three attempts, then the refusal is kept and nothing is pushed over the last good table.
         Assert.Equal(3, read.Reads);
@@ -475,9 +468,7 @@ public sealed class KnowledgeSessionTests : IDisposable
         return pushed;
     }
 
-    private static FileSystemWatcher WatcherOf(KnowledgeSession session) =>
-        typeof(KnowledgeSession).GetField("_watcher", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(session) as FileSystemWatcher
-        ?? throw new InvalidOperationException("KnowledgeSession no longer keeps its watcher in _watcher; this test must follow it.");
+    private static FileSystemWatcher WatcherOf(KnowledgeSession session) => session.Watched.Watcher();
 
     private static bool HasHandler(FileSystemWatcher watcher, string eventName)
     {

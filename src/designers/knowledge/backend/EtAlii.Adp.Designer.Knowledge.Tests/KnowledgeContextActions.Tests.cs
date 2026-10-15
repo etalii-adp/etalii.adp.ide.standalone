@@ -281,8 +281,12 @@ public sealed class KnowledgeContextActionsTests : IDisposable
         // Act.
         await Related(Target(registration), KnowledgeFiles.Related, KnowledgeContextActionProvider.Many, twoWay: false);
 
-        // Assert.
-        Assert.Contains(session.Baseline().Columns, column => column is { Name: "Provinces", Kind: "relation" });
+        // Assert: without reopening. The open table reads its file again through its watched file,
+        // one re-read at a time and off the writer's thread, so it is shown just after the write
+        // rather than during it.
+        Assert.True(
+            await Eventually.TrueAsync(() => session.Baseline().Columns.Any(column => column is { Name: "Provinces", Kind: "relation" }), TestContext.Current.CancellationToken, TimeSpan.FromSeconds(10)),
+            "The open table never showed the relation.");
     }
 
     /// <summary>The handlers by the type the dispatcher asks for them under.</summary>

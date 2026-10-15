@@ -1,4 +1,5 @@
 using EtAlii.Adp.Designer.TableModel;
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 using EtAlii.Adp.Specification.Fbl;
 using EtAlii.Adp.Specification.Fbl.Planning;
@@ -36,14 +37,6 @@ internal sealed class KnowledgeSession : IDesignerSession
 {
     private static readonly ILogger _logger = Log.ForContext<KnowledgeSession>();
 
-    /// <summary>
-    /// How many times a re-read is tried before the notification is given up on, and how long
-    /// between attempts - the editor sessions' figures, so that whether they need changing is one question.
-    /// </summary>
-    private const int ReadAttempts = 3;
-
-    private static readonly TimeSpan BetweenReadAttempts = TimeSpan.FromMilliseconds(20);
-
     /// <summary>What an edit is refused with where nothing can write it: a session opened without a way to.</summary>
     private const string NoWriter = "This table cannot be changed here.";
 
@@ -52,7 +45,6 @@ internal sealed class KnowledgeSession : IDesignerSession
     private readonly Func<string, KnowledgeRead> _read;
     private readonly Func<KnowledgeEditCommand, Task<CommandResult>>? _write;
     private readonly IKnowledgeDocumentStore? _documents;
-    private readonly FileSystemWatcher? _watcher;
     private readonly Lock _gate = new();
 
     /// <summary>The edits that are shown and not written yet, in the order they were made.</summary>
@@ -104,7 +96,8 @@ internal sealed class KnowledgeSession : IDesignerSession
     /// <param name="write">How an edit is written: through the project's history, so it can be undone. Null for a session that only shows.</param>
     /// <param name="documents">Where the module's commands say a file was written, or null.</param>
     /// <param name="rootPath">The project the file is in: how far is looked for rows that relate to a row of this file. Empty, nowhere.</param>
-    internal KnowledgeSession(string bodyPath, Func<string, KnowledgeRead> read, Func<KnowledgeEditCommand, Task<CommandResult>>? write = null, IKnowledgeDocumentStore? documents = null, string rootPath = "")
+    /// <param name="time">The clock a refused read waits on before it is tried again; the system's when null.</param>
+    internal KnowledgeSession(string bodyPath, Func<string, KnowledgeRead> read, Func<KnowledgeEditCommand, Task<CommandResult>>? write = null, IKnowledgeDocumentStore? documents = null, string rootPath = "", TimeProvider? time = null)
     {
         _rootPath = rootPath;
         ArgumentNullException.ThrowIfNull(bodyPath);
@@ -123,39 +116,20 @@ internal sealed class KnowledgeSession : IDesignerSession
         // in another view does not move this one.
         _viewId = _shown.ViewOrDefault("")?.Id ?? "";
 
+        // Every event a publish raises reaches OnExternalChangeAsync, an overflow included, one
+        // re-read at a time; a refused read is tried again, so a Deleted presented by a
+        // temp-then-replace is safe to hear.
+        Watched = new WatchedFile(bodyPath, OnExternalChangeAsync, time ?? TimeProvider.System);
+
+        // After the watched file exists: a reload goes through it.
         _documents?.Reloaded += OnReloaded;
-
-        var directory = Path.GetDirectoryName(bodyPath);
-        if (directory is not null && Directory.Exists(directory))
-        {
-            _watcher = new FileSystemWatcher(directory, Path.GetFileName(bodyPath));
-
-            // Every event a publish actually raises, not just Changed: a temp-then-replace publish
-            // raises Renamed as the scratch file takes the destination's name, Created where there
-            // was nothing, and may present the transition as a Deleted - which is only safe to
-            // subscribe because the refused re-read below retries.
-            _watcher.Changed += (_, _) => OnExternalChange();
-            _watcher.Created += (_, _) => OnExternalChange();
-            _watcher.Renamed += (_, _) => OnExternalChange();
-            _watcher.Deleted += (_, _) => OnExternalChange();
-
-            // The one signal a watcher gives when it has dropped events. Which were dropped is
-            // unknowable, so the file is read again; logging alone would leave the table showing
-            // what it held before.
-            _watcher.Error += (_, args) =>
-            {
-                _logger.Warning(args.GetException(), "The watcher for {Path} stumbled; reading it again", _bodyPath);
-                OnExternalChange();
-            };
-
-            // Subscribed BEFORE the watcher is enabled: enabling first leaves it live with no
-            // handlers attached, and anything raised in that window is received by nobody.
-            _watcher.EnableRaisingEvents = true;
-        }
     }
 
     /// <summary>Why the file could not be read from disk the last time it was tried, or empty.</summary>
     public string Refusal { get; private set; }
+
+    /// <summary>The watched file; for the guards, which reach its watcher.</summary>
+    internal WatchedFile Watched { get; }
 
     /// <summary>The table as it is shown now, edits not yet written included. Internal for the guards.</summary>
     internal KnowledgeTable Shown
@@ -358,7 +332,7 @@ internal sealed class KnowledgeSession : IDesignerSession
                     result = CommandResult.Failure($"{Path.GetFileName(_bodyPath)} could not be written: {exception.Message}");
                 }
 
-                Settle(editId, generation, result);
+                await SettleAsync(editId, generation, result).ConfigureAwait(false);
             },
             CancellationToken.None,
             TaskContinuationOptions.None,
@@ -366,10 +340,10 @@ internal sealed class KnowledgeSession : IDesignerSession
     }
 
     /// <summary>What became of one edit's write: the file is read again, and the connection is told.</summary>
-    private void Settle(ShortGuid editId, int generation, CommandResult result)
+    private async Task SettleAsync(ShortGuid editId, int generation, CommandResult result)
     {
         // Read outside the lock, as every re-read is: a refused read waits before it is tried again.
-        var read = ReadWithRetry(() => _read(_bodyPath), ReadAttempts, BetweenReadAttempts);
+        (KnowledgeRead read, _) = await Watched.ReadAsync(_read, reading => reading.Body is not null).ConfigureAwait(false);
 
         List<TableChange> changes = [];
         lock (_gate)
@@ -412,7 +386,8 @@ internal sealed class KnowledgeSession : IDesignerSession
     {
         if (string.Equals(Path.GetFullPath(path), Path.GetFullPath(_bodyPath), StringComparison.OrdinalIgnoreCase))
         {
-            OnExternalChange();
+            // Through the watched file, so it queues behind a re-read already running rather than racing it.
+            _ = Watched.Notify();
             return;
         }
 
@@ -467,7 +442,7 @@ internal sealed class KnowledgeSession : IDesignerSession
     private void Relate() => _view = KnowledgeRelations.WithComputed(_shown, TargetOf);
 
     /// <summary>Internal for the guards, which call it as the watcher would.</summary>
-    internal void OnExternalChange()
+    internal async Task OnExternalChangeAsync()
     {
         lock (_gate)
         {
@@ -478,19 +453,11 @@ internal sealed class KnowledgeSession : IDesignerSession
             }
         }
 
-        var reads = 0;
-        var read = ReadWithRetry(
-            () =>
-            {
-                reads++;
-                return _read(_bodyPath);
-            },
-            ReadAttempts,
-            BetweenReadAttempts);
+        (KnowledgeRead read, int reads) = await Watched.ReadAsync(_read, reading => reading.Body is not null).ConfigureAwait(false);
         if (read.Body is not null && reads > 1)
         {
             // Worded as the editor sessions and the diagram stores word theirs, so one search finds every retried read.
-            _logger.Information("Read {Path} on attempt {Attempt} of {Attempts}", _bodyPath, reads, ReadAttempts);
+            _logger.Information("Read {Path} on attempt {Attempt} of {Attempts}", _bodyPath, reads, WatchedFile.ReadAttempts);
         }
 
         List<TableChange> changes = [];
@@ -500,7 +467,7 @@ internal sealed class KnowledgeSession : IDesignerSession
             {
                 // Out of attempts: the file is genuinely unreadable rather than mid-replace. The
                 // last good reading stays, and the session stops claiming the file opens.
-                _logger.Warning("The externally changed {Path} no longer opens after {Attempts} attempts: {Refusal}", _bodyPath, ReadAttempts, read.Refusal);
+                _logger.Warning("The externally changed {Path} no longer opens after {Attempts} attempts: {Refusal}", _bodyPath, WatchedFile.ReadAttempts, read.Refusal);
                 Refusal = read.Refusal;
                 return;
             }
@@ -535,7 +502,7 @@ internal sealed class KnowledgeSession : IDesignerSession
 
         _documents?.Reloaded -= OnReloaded;
 
-        _watcher?.Dispose();
+        Watched.Dispose();
     }
 
     /// <summary>Takes a reading as what the table shows, with the edits still waiting made to it again. Called with the lock held, or before anything else can call.</summary>
@@ -623,21 +590,6 @@ internal sealed class KnowledgeSession : IDesignerSession
         if (real.Count > 0)
         {
             Changed?.Invoke(this, new TableChangedEventArgs(real));
-        }
-    }
-
-    /// <summary>Reads until it succeeds or runs out of attempts.</summary>
-    private static KnowledgeRead ReadWithRetry(Func<KnowledgeRead> read, int attempts, TimeSpan between)
-    {
-        for (var attempt = 1; ; attempt++)
-        {
-            var result = read();
-            if (result.Body is not null || attempt >= attempts)
-            {
-                return result;
-            }
-
-            Thread.Sleep(between);
         }
     }
 
