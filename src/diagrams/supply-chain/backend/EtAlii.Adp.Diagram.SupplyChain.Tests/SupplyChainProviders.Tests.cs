@@ -163,6 +163,24 @@ public sealed class SupplyChainProvidersTests : IDisposable
     }
 
     [Fact]
+    public async Task ABodyThatIsNotYaml_IsRefusedUpFront_AndWritesNothing()
+    {
+        // Arrange.
+        const string broken = "supply-chain: 1\nnodes: []\nflows: \"never closed\n";
+        await File.WriteAllTextAsync(_folder.Body, broken, TestContext.Current.CancellationToken);
+
+        // Act.
+        var added = await _actions.ExecuteAsync(Target(GestureIds.Placement(300, 700)), SupplyChainContextActionProvider.AddActionId(SupplyChainNodeTypes.Consumer), TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.Contains("could not be read", Assert.IsType<ContextExecutionFailed>(added).Message, StringComparison.Ordinal);
+        Assert.Equal(broken, await File.ReadAllTextAsync(_folder.Body, TestContext.Current.CancellationToken));
+        var entry = _store.GetOrLoad(_folder.Body);
+        Assert.StartsWith("The document could not be read as YAML: ", entry.Unreadable, StringComparison.Ordinal);
+        Assert.Equal(entry.Model.Problems, entry.Problems);
+    }
+
+    [Fact]
     public void ThePalette_OffersEveryStageAndAGroup_AddedByItsOwnAction()
     {
         // Act.
