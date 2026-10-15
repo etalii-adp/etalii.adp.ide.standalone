@@ -1,3 +1,5 @@
+using System.Globalization;
+
 namespace EtAlii.Adp.Documents;
 
 /// <summary>
@@ -263,6 +265,36 @@ public static class LineSplice
             .Replace("\n", "\\n", StringComparison.Ordinal);
         return $"\"{escaped}\"";
     }
+
+    /// <summary>
+    /// Quotes a text value so that YAML reads it back as that text: as <see cref="Quote"/> does, and
+    /// also where a plain scalar would resolve to a number, a boolean or null.
+    /// </summary>
+    /// <remarks>
+    /// A name like <c>yes</c>, <c>12</c> or <c>null</c> passes <see cref="Quote"/> unquoted, and a
+    /// reader that resolves plain scalars by YAML's core schema would read it back as something other
+    /// than text. Use this for a key whose value is always text; <see cref="Quote"/> for one that may
+    /// also hold a number.
+    /// </remarks>
+    public static string QuoteText(string value)
+    {
+        var quoted = Quote(value);
+        if (quoted.StartsWith('"') || !ReadsAsOtherThanText(value))
+        {
+            return quoted;
+        }
+
+        return $"\"{value.Replace("\\", "\\\\", StringComparison.Ordinal).Replace("\"", "\\\"", StringComparison.Ordinal)}\"";
+    }
+
+    private static bool ReadsAsOtherThanText(string value) =>
+        double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out _)
+        || value.Equals("true", StringComparison.OrdinalIgnoreCase)
+        || value.Equals("false", StringComparison.OrdinalIgnoreCase)
+        || value.Equals("yes", StringComparison.OrdinalIgnoreCase)
+        || value.Equals("no", StringComparison.OrdinalIgnoreCase)
+        || value.Equals("null", StringComparison.OrdinalIgnoreCase)
+        || value == "~";
 
     // A plain scalar may not begin with one of YAML's indicators: "[x] y" would be read as a flow
     // sequence, "&x" as an anchor and "*x" as an alias. A dash, a hash, a colon and the quotes are handled above.

@@ -34,7 +34,7 @@ public static class SankeyWriter
         }
         else
         {
-            LineSplice.SetKey(document, range, key, Text(value));
+            LineSplice.SetKey(document, range, key, LineSplice.QuoteText(value));
         }
 
         return EditOutcome.Applied;
@@ -143,10 +143,10 @@ public static class SankeyWriter
         ArgumentNullException.ThrowIfNull(model);
         ArgumentNullException.ThrowIfNull(node);
 
-        List<(string Key, string Value)> keys = [("name", Text(node.Name))];
+        List<(string Key, string Value)> keys = [("name", LineSplice.QuoteText(node.Name))];
         if (node.Color.Length > 0)
         {
-            keys.Add(("color", Text(node.Color)));
+            keys.Add(("color", LineSplice.QuoteText(node.Color)));
         }
 
         if (node.Column is { } column)
@@ -182,7 +182,7 @@ public static class SankeyWriter
         }
 
         (string itemIndent, string dashGap, string keyIndent) = LineSplice.IndentOf(document, ranges);
-        List<string> lines = [$"{itemIndent}-{dashGap}from: {Text(flow.From)}", $"{keyIndent}to: {Text(flow.To)}"];
+        List<string> lines = [$"{itemIndent}-{dashGap}from: {LineSplice.QuoteText(flow.From)}", $"{keyIndent}to: {LineSplice.QuoteText(flow.To)}"];
         if (flow.Value is { } value)
         {
             lines.Add($"{keyIndent}value: {DslNumber.Format(value)}");
@@ -214,7 +214,7 @@ public static class SankeyWriter
 
     private static List<string> Entry(string itemIndent, string dashGap, string keyIndent, string id, IReadOnlyList<(string Key, string Value)> keys)
     {
-        List<string> lines = [$"{itemIndent}-{dashGap}id: {Text(id)}", .. keys.Select(entry => $"{keyIndent}{entry.Key}: {entry.Value}")];
+        List<string> lines = [$"{itemIndent}-{dashGap}id: {LineSplice.QuoteText(id)}", .. keys.Select(entry => $"{keyIndent}{entry.Key}: {entry.Value}")];
         return lines;
     }
 
@@ -224,34 +224,5 @@ public static class SankeyWriter
         {
             document.Remove(range);
         }
-    }
-
-    /// <summary>
-    /// A text value as YAML reads it back: plain where it can be, double-quoted where a plain
-    /// scalar would mean something else.
-    /// </summary>
-    /// <remarks>
-    /// The shared <see cref="LineSplice.Quote"/> covers colons, hashes and leading dashes; a value
-    /// like <c>{value} TWh</c>, <c>[EU]</c>, <c>yes</c> or <c>12</c> would read back as a mapping,
-    /// a list, a boolean or a number, so those are quoted here as well.
-    /// </remarks>
-    private static string Text(string value)
-    {
-        var quoted = LineSplice.Quote(value);
-        if (quoted.StartsWith('"'))
-        {
-            return quoted;
-        }
-
-        var reads = value.Length > 0 && ("[]{}&*!|>%@`,?'\"".Contains(value[0], StringComparison.Ordinal)
-            || double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out _)
-            || value.Equals("true", StringComparison.OrdinalIgnoreCase)
-            || value.Equals("false", StringComparison.OrdinalIgnoreCase)
-            || value.Equals("yes", StringComparison.OrdinalIgnoreCase)
-            || value.Equals("no", StringComparison.OrdinalIgnoreCase)
-            || value.Equals("null", StringComparison.OrdinalIgnoreCase)
-            || value == "~");
-
-        return reads ? $"\"{value.Replace("\\", "\\\\", StringComparison.Ordinal).Replace("\"", "\\\"", StringComparison.Ordinal)}\"" : quoted;
     }
 }

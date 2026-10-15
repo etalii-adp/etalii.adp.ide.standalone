@@ -1,4 +1,3 @@
-using System.Globalization;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 
@@ -35,7 +34,7 @@ public static class SupplyChainWriter
         }
         else
         {
-            LineSplice.SetKey(document, range, key, Text(value));
+            LineSplice.SetKey(document, range, key, LineSplice.QuoteText(value));
         }
 
         return EditOutcome.Applied;
@@ -166,12 +165,12 @@ public static class SupplyChainWriter
         List<(string Key, string Value)> keys =
         [
             ("type", node.Type),
-            ("name", Text(node.Name)),
+            ("name", LineSplice.QuoteText(node.Name)),
         ];
 
         if (node.Group.Length > 0)
         {
-            keys.Add(("group", Text(node.Group)));
+            keys.Add(("group", LineSplice.QuoteText(node.Group)));
         }
 
         if (node.Quantity is { } quantity)
@@ -181,7 +180,7 @@ public static class SupplyChainWriter
 
         if (node.Unit.Length > 0)
         {
-            keys.Add(("unit", Text(node.Unit)));
+            keys.Add(("unit", LineSplice.QuoteText(node.Unit)));
         }
 
         if (node is { X: { } x, Y: { } y })
@@ -200,7 +199,7 @@ public static class SupplyChainWriter
         ArgumentNullException.ThrowIfNull(model);
         ArgumentNullException.ThrowIfNull(group);
 
-        List<(string Key, string Value)> keys = [("name", Text(group.Name))];
+        List<(string Key, string Value)> keys = [("name", LineSplice.QuoteText(group.Name))];
         if (group is { X: { } x, Y: { } y })
         {
             keys.Add(("x", DslNumber.Format(Math.Round(x))));
@@ -219,13 +218,13 @@ public static class SupplyChainWriter
 
         List<(string Key, string Value)> keys =
         [
-            ("from", Text(flow.From)),
-            ("to", Text(flow.To)),
+            ("from", LineSplice.QuoteText(flow.From)),
+            ("to", LineSplice.QuoteText(flow.To)),
         ];
 
         if (flow.Product.Length > 0)
         {
-            keys.Add(("product", Text(flow.Product)));
+            keys.Add(("product", LineSplice.QuoteText(flow.Product)));
         }
 
         if (flow.Volume is { } volume)
@@ -235,7 +234,7 @@ public static class SupplyChainWriter
 
         if (flow.Unit.Length > 0)
         {
-            keys.Add(("unit", Text(flow.Unit)));
+            keys.Add(("unit", LineSplice.QuoteText(flow.Unit)));
         }
 
         return Append(document, model.Flows.Select(existing => existing.Range), FlowsSection, flow.Id, keys);
@@ -258,7 +257,7 @@ public static class SupplyChainWriter
         }
 
         (string itemIndent, string dashGap, string keyIndent) = LineSplice.IndentOf(document, ranges);
-        List<string> lines = [$"{itemIndent}-{dashGap}id: {Text(id)}", .. keys.Select(entry => $"{keyIndent}{entry.Key}: {entry.Value}")];
+        List<string> lines = [$"{itemIndent}-{dashGap}id: {LineSplice.QuoteText(id)}", .. keys.Select(entry => $"{keyIndent}{entry.Key}: {entry.Value}")];
 
         document.Insert(at, lines);
         return EditOutcome.Applied;
@@ -273,33 +272,4 @@ public static class SupplyChainWriter
     }
 
     private static LineRange ExtendedBy(LineRange range, int lines) => new(range.Start, range.End + lines);
-
-    /// <summary>
-    /// A text value as YAML reads it back: plain where it can be, double-quoted where a plain
-    /// scalar would mean something else.
-    /// </summary>
-    /// <remarks>
-    /// The shared <see cref="LineSplice.Quote"/> covers colons, hashes and leading dashes; a name
-    /// like <c>[EU]</c>, <c>yes</c> or <c>12</c> would read back as a list, a boolean or a number,
-    /// so those are quoted here as well.
-    /// </remarks>
-    private static string Text(string value)
-    {
-        var quoted = LineSplice.Quote(value);
-        if (quoted.StartsWith('"'))
-        {
-            return quoted;
-        }
-
-        var reads = value.Length > 0 && ("[]{}&*!|>%@`,?".Contains(value[0], StringComparison.Ordinal)
-            || double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out _)
-            || value.Equals("true", StringComparison.OrdinalIgnoreCase)
-            || value.Equals("false", StringComparison.OrdinalIgnoreCase)
-            || value.Equals("yes", StringComparison.OrdinalIgnoreCase)
-            || value.Equals("no", StringComparison.OrdinalIgnoreCase)
-            || value.Equals("null", StringComparison.OrdinalIgnoreCase)
-            || value == "~");
-
-        return reads ? $"\"{value.Replace("\\", "\\\\", StringComparison.Ordinal).Replace("\"", "\\\"", StringComparison.Ordinal)}\"" : quoted;
-    }
 }

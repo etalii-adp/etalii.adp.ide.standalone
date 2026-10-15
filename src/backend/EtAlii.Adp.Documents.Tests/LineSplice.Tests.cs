@@ -458,4 +458,35 @@ public class LineSpliceTests
         // Act & assert.
         Assert.Equal(expected, LineSplice.Quote(value));
     }
+
+    /// <summary>
+    /// QuoteText replaced the private <c>Text</c> quoters of the sankey and supply-chain writers. Each
+    /// row is a case one of them guarded, with the output that quoter gave: a value YAML would read as
+    /// a number, a boolean or null is quoted, and every other value is written as <see cref="LineSplice.Quote"/> writes it.
+    /// </summary>
+    [Theory]
+    [InlineData("{value} TWh", "\"{value} TWh\"")]
+    [InlineData("[EU]", "\"[EU]\"")]
+    [InlineData("a: b", "\"a: b\"")]
+    [InlineData("Ore: crushed", "\"Ore: crushed\"")]
+    [InlineData("#hash", "\"#hash\"")]
+    [InlineData("# not a comment", "\"# not a comment\"")]
+    [InlineData("'quoted'", "\"'quoted'\"")]
+    [InlineData("\"x\"", "\"\\\"x\\\"\"")]
+    [InlineData("yes", "\"yes\"")]
+    [InlineData("No", "\"No\"")]
+    [InlineData("TRUE", "\"TRUE\"")]
+    [InlineData("false", "\"false\"")]
+    [InlineData("null", "\"null\"")]
+    [InlineData("~", "\"~\"")]
+    [InlineData("12", "\"12\"")]
+    [InlineData("1.5e3", "\"1.5e3\"")]
+    [InlineData("Iron ore", "Iron ore")]
+    [InlineData("a\\b", "a\\b")]
+    [InlineData("12 t", "12 t")]
+    public void QuoteText_QuotesWhatYamlWouldReadAsOtherThanText(string value, string expected)
+    {
+        // Act & assert.
+        Assert.Equal(expected, LineSplice.QuoteText(value));
+    }
 }
