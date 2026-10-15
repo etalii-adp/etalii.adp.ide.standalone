@@ -82,6 +82,9 @@ public sealed class WardleyDocumentStore : LifecycleDocumentStore<LineDocument, 
     protected override WardleyMap Rebuild(LineDocument body) => WardleyParser.Parse(body);
 
     /// <inheritdoc />
+    protected override ParseOutcome<WardleyMap> Parse(LineDocument body) => WardleyParser.Outcome(body);
+
+    /// <inheritdoc />
     /// <remarks>
     /// The edit may have added or removed elements, so identities are re-reconciled against what was
     /// already assigned - anything that survived keeps its id - and only now written. A map opened
