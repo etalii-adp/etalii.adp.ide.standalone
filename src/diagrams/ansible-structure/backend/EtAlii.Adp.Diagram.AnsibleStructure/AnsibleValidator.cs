@@ -1,4 +1,5 @@
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Specification.Fbl.Plugins;
 using Serilog;
 
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
@@ -11,8 +12,9 @@ namespace EtAlii.Adp.Diagram.AnsibleStructure;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>It holds no rule</b>: it reads the folder, and hands out <see cref="AnsibleDefinition.Findings"/>
-/// through <see cref="AnsibleFindings.For"/> (ansible-structure-disl-fbl, Requirements 3.2 and 3.3). The
+/// <b>It holds no rule</b>: it reads the folder once through the binding and the plugin
+/// (<see cref="FolderBody.ReadOnce"/>), builds the model of that reading (<see cref="AnsibleDefinition.Model"/>)
+/// and hands out its findings through <see cref="AnsibleFindings.For"/> (ansible-structure-disl-fbl, Requirements 3.2, 3.3 and 4.2). The
 /// hand-written rule set they replace is kept in the test project as the oracle they are compared with.
 /// </para>
 /// <para>
@@ -23,7 +25,7 @@ namespace EtAlii.Adp.Diagram.AnsibleStructure;
 /// for a <see cref="DiagramSubject.Folder"/> type.
 /// </para>
 /// <para>
-/// It reads the folder itself rather than going through <see cref="IAnsibleProjectStore"/>.
+/// It reads the folder once rather than going through <see cref="IAnsibleProjectStore"/>.
 /// Validation is a one-shot question, not a subscription: routing it through the store would
 /// make every "Validate all" leave a watcher behind on a folder nobody has open.
 /// </para>
@@ -31,19 +33,6 @@ namespace EtAlii.Adp.Diagram.AnsibleStructure;
 public sealed class AnsibleValidator : IDiagramValidator
 {
     private static readonly ILogger _logger = Log.ForContext<AnsibleValidator>();
-
-    private readonly AnsibleProjectReader _reader;
-
-    public AnsibleValidator(AnsibleProjectReader reader)
-    {
-        ArgumentNullException.ThrowIfNull(reader);
-        _reader = reader;
-    }
-
-    public AnsibleValidator()
-        : this(new AnsibleProjectReader())
-    {
-    }
 
     public DiagramOrigin Origin => Diagram.AnsibleStructure.Origin;
 
@@ -65,8 +54,9 @@ public sealed class AnsibleValidator : IDiagramValidator
             return ValueTask.FromResult<IReadOnlyList<DiagramProblem>>([]);
         }
 
-        var project = _reader.Read(folder);
-        var problems = AnsibleFindings.For(AnsibleDefinition.ModelOf(project), AnsibleDefinition.Findings(project));
+        var reading = FolderBody.ReadOnce(folder, AnsibleDefinition.Binding, new AnsibleFolderPlugin(new AnsibleFolderListing(folder)));
+        var model = AnsibleDefinition.Model(reading);
+        var problems = AnsibleFindings.For(model.Diagram, AnsibleDefinition.Findings(model));
         return ValueTask.FromResult(Rebased(problems, request.RootPath, folder));
     }
 

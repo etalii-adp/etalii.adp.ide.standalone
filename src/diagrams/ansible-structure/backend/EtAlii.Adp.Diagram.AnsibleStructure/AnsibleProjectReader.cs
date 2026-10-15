@@ -1,4 +1,7 @@
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Specification.Fbl;
+using EtAlii.Adp.Specification.Fbl.Plugins;
+using EtAlii.Adp.Specification.Fbl.Routing;
 using Serilog;
 
 using YamlDotNet.RepresentationModel;
@@ -13,6 +16,13 @@ namespace EtAlii.Adp.Diagram.AnsibleStructure;
 /// </summary>
 /// <remarks>
 /// <para>
+/// <b>It reads the files it is handed</b> (ansible-structure-disl-fbl, Requirement 4.2): the files the
+/// binding's file rules select (<c>ansible-structure.fbl</c>), by their relative paths and bytes, and what
+/// <see cref="AnsibleFolderListing"/> says of the folder that no file can: which folders are there, how
+/// many files they hold, and the files that are links. It opens no file itself.
+/// <see cref="AnsibleFolderPlugin"/> is FBL's <c>read</c> over it.
+/// </para>
+/// <para>
 /// <b>Nothing here opens a file for writing.</b> There is no code path that could, which is how
 /// Requirement 1.1 is satisfied by construction rather than by discipline.
 /// </para>
@@ -22,14 +32,16 @@ namespace EtAlii.Adp.Diagram.AnsibleStructure;
 /// data file living in the same folder exclude itself without anyone maintaining an exception.
 /// </para>
 /// <para>
-/// <b>Every enumeration is sorted before use.</b> <see cref="Directory.EnumerateFiles(string)"/>
-/// returns filesystem order, which is not a promise; determinism is a requirement, so the order
-/// is made ordinal here rather than hoped for.
+/// <b>Every enumeration is sorted before use</b>, ordinally, and in the reader's own order: the
+/// root's playbooks, then <c>playbooks/</c>, then roles, then inventories (finding B6), whatever order
+/// the files were handed in.
 /// </para>
 /// </remarks>
 public sealed class AnsibleProjectReader
 {
     private static readonly ILogger _logger = Log.ForContext<AnsibleProjectReader>();
+
+    private static readonly StringComparer Paths = Glob.PlatformIgnoresCase ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
 
     /// <summary>Files whose presence is recorded on the project rather than drawn as a box (Requirement 4.1).</summary>
     private static readonly string[] AnnotationNames = ["ansible.cfg", "requirements.yml", "requirements.yaml"];
@@ -37,44 +49,117 @@ public sealed class AnsibleProjectReader
     /// <summary>A root inventory, for a project that keeps one file rather than an inventories folder.</summary>
     private static readonly string[] RootInventoryNames = ["inventory", "inventory.yml", "inventory.yaml", "hosts", "hosts.yml", "hosts.yaml"];
 
-    /// <summary>Reads <paramref name="folder"/>. A folder that is not there reads as an empty project, not an error.</summary>
+    /// <summary>
+    /// Reads <paramref name="folder"/>: selects its files through the binding (<see cref="FolderSubject.Files"/>),
+    /// reads them shared and read-only as the folder body does, and reads what it selected. A folder that
+    /// is not there reads as an empty project, not an error.
+    /// </summary>
     public AnsibleProject Read(string folder)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(folder);
 
-        var root = IoPath.GetFullPath(folder);
-        if (!Directory.Exists(root))
+        var listing = new AnsibleFolderListing(folder);
+        try
         {
-            _logger.Debug("Nothing to read: {Folder} is not there", root);
-            return Empty(root);
+            if (listing.FolderExists(""))
+            {
+                return Read(Selected(listing.Root), listing);
+            }
+        }
+        catch (DirectoryNotFoundException)
+        {
+            // Removed while it was listed: what is not there reads as nothing.
         }
 
-        var failures = new List<TolerantYamlFailure>();
-        var playbooks = ReadPlaybooks(root, failures);
-        var roles = ReadRoles(root, failures);
-        var inventories = ReadInventories(root, failures);
-        var annotations = ReadAnnotations(root);
+        _logger.Debug("Nothing to read: {Folder} is not there", listing.Root);
+        return Empty(listing.Root);
+    }
 
-        return new AnsibleProject(root, playbooks, roles, inventories, annotations, failures);
+    /// <summary>
+    /// Reads the folder <paramref name="listing"/> lists from <paramref name="files"/>, the files the binding
+    /// selects with their bytes, and from the listing.
+    /// </summary>
+    public AnsibleProject Read(IReadOnlyList<PluginFile> files, AnsibleFolderListing listing)
+    {
+        ArgumentNullException.ThrowIfNull(files);
+        ArgumentNullException.ThrowIfNull(listing);
+
+        var handed = new Dictionary<string, PluginFile>(Paths);
+        foreach (var file in files.Concat(listing.LinkedFiles(AnsibleDefinition.Binding)))
+        {
+            handed.TryAdd(file.RelativePath, file);
+        }
+
+        var reading = new Reading(handed, listing);
+        var failures = new List<TolerantYamlFailure>();
+        var playbooks = ReadPlaybooks(reading, failures);
+        var roles = ReadRoles(reading, failures);
+        var inventories = ReadInventories(reading, failures);
+        var annotations = ReadAnnotations(reading);
+
+        return new AnsibleProject(listing.Root, playbooks, roles, inventories, annotations, failures);
+    }
+
+    /// <summary>The files the binding selects in <paramref name="root"/>, read as the folder body reads them, so a reading here is the plugin's.</summary>
+    private static List<PluginFile> Selected(string root)
+    {
+        var options = new FblOptions();
+        return [.. FolderSubject.Files(AnsibleDefinition.Binding, root).Select(file => Load(file, options))];
+    }
+
+    /// <summary>Read-only and shared, so a concurrent save is never refused; a file over the host's limit is handed with no bytes.</summary>
+    private static PluginFile Load(FolderFile file, FblOptions options)
+    {
+        using var stream = new FileStream(file.FullPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+        if (stream.Length > options.MaxBodyBytes) return new PluginFile(file.RelativePath, []) { IsOversized = true };
+        using var buffer = new MemoryStream();
+        stream.CopyTo(buffer);
+        return new PluginFile(file.RelativePath, buffer.ToArray());
     }
 
     private static AnsibleProject Empty(string root) => new(root, [], [], [], [], []);
 
+    /// <summary>The handed files and the listing of one reading: where the reader looks in place of the disk.</summary>
+    private sealed class Reading(Dictionary<string, PluginFile> handed, AnsibleFolderListing listing)
+    {
+        public AnsibleFolderListing Listing { get; } = listing;
+
+        /// <summary>
+        /// The handed files directly in the folder at <paramref name="folder"/>, in ordinal order, each named by
+        /// that folder as written here and its own name, as a listing of that folder names them.
+        /// </summary>
+        public IReadOnlyList<(string Relative, PluginFile File)> FilesIn(string folder) =>
+        [
+            .. handed.Values
+                .Where(file => Paths.Equals(Parent(file.RelativePath), folder))
+                .Select(file => (Relative: Join(folder, Name(file.RelativePath)), File: file))
+                .OrderBy(entry => entry.Relative, StringComparer.Ordinal),
+        ];
+
+        /// <summary>The handed file at <paramref name="relative"/>, or null.</summary>
+        public PluginFile? Find(string relative) => handed.GetValueOrDefault(relative);
+
+        private static string Parent(string relative) => relative.LastIndexOf('/') is var slash and >= 0 ? relative[..slash] : "";
+
+        private static string Name(string relative) => relative[(relative.LastIndexOf('/') + 1)..];
+    }
+
+    private static string Join(string folder, string name) => folder.Length == 0 ? name : folder + "/" + name;
+
     // ---- playbooks -----------------------------------------------------------------------
 
-    private static IReadOnlyList<AnsiblePlaybook> ReadPlaybooks(string root, List<TolerantYamlFailure> failures)
+    private static IReadOnlyList<AnsiblePlaybook> ReadPlaybooks(Reading reading, List<TolerantYamlFailure> failures)
     {
         // Root level and playbooks/ - the two places the recommended layout puts them. A team
         // that keeps theirs in plays/ gets an undrawn folder, not a problem (Requirement 9.4).
-        var candidates = YamlFilesIn(root)
-            .Concat(YamlFilesIn(IoPath.Combine(root, "playbooks")))
+        var candidates = YamlFilesIn(reading, "")
+            .Concat(YamlFilesIn(reading, "playbooks"))
             .ToArray();
 
         var playbooks = new List<AnsiblePlaybook>();
-        foreach (var path in candidates)
+        foreach ((string relative, PluginFile file) in candidates)
         {
-            var relative = Relative(root, path);
-            var result = TolerantYaml.Read(path, relative);
+            var result = AnsibleYaml.Read(file, relative);
             if (result is not TolerantYamlDocument document)
             {
                 Record(result, failures);
@@ -107,7 +192,7 @@ public sealed class AnsibleProjectReader
                 plays.Add(ReadPlay(entry, index++, relative));
             }
 
-            playbooks.Add(new AnsiblePlaybook(relative, IoPath.GetFileName(path), plays, imports));
+            playbooks.Add(new AnsiblePlaybook(relative, IoPath.GetFileName(relative), plays, imports));
         }
 
         return playbooks;
@@ -149,54 +234,57 @@ public sealed class AnsibleProjectReader
 
     // ---- roles ---------------------------------------------------------------------------
 
-    private static IReadOnlyList<AnsibleRole> ReadRoles(string root, List<TolerantYamlFailure> failures)
+    private static IReadOnlyList<AnsibleRole> ReadRoles(Reading reading, List<TolerantYamlFailure> failures)
     {
-        var rolesFolder = IoPath.Combine(root, "roles");
-        if (!Directory.Exists(rolesFolder))
+        var listing = reading.Listing;
+        if (!listing.FolderExists("roles"))
         {
             return [];
         }
 
         var roles = new List<AnsibleRole>();
-        foreach (var folder in SortedDirectories(rolesFolder))
+        foreach (var name in listing.Folders("roles"))
         {
-            var name = IoPath.GetFileName(folder);
-            var taskFiles = YamlFilesIn(IoPath.Combine(folder, "tasks"))
-                .Select(path => new AnsibleTaskFile(IoPath.GetFileName(path), Relative(root, path)))
+            var folder = "roles/" + name;
+            var taskFiles = YamlFilesIn(reading, folder + "/tasks")
+                .Select(entry => new AnsibleTaskFile(IoPath.GetFileName(entry.Relative), entry.Relative))
                 .ToArray();
 
             var contents = new AnsibleRoleContents(
                 TaskFiles: taskFiles.Length,
-                Handlers: CountIn(IoPath.Combine(folder, "handlers")),
-                Templates: CountIn(IoPath.Combine(folder, "templates")),
-                Files: CountIn(IoPath.Combine(folder, "files")),
-                Defaults: CountIn(IoPath.Combine(folder, "defaults")),
-                Vars: CountIn(IoPath.Combine(folder, "vars")),
-                HasMeta: Directory.Exists(IoPath.Combine(folder, "meta")),
-                HasLibrary: Directory.Exists(IoPath.Combine(folder, "library")));
+                Handlers: listing.FileCount(folder + "/handlers"),
+                Templates: listing.FileCount(folder + "/templates"),
+                Files: listing.FileCount(folder + "/files"),
+                Defaults: listing.FileCount(folder + "/defaults"),
+                Vars: listing.FileCount(folder + "/vars"),
+                HasMeta: listing.FolderExists(folder + "/meta"),
+                HasLibrary: listing.FolderExists(folder + "/library"));
 
             roles.Add(new AnsibleRole(
                 name,
-                Relative(root, folder),
+                folder,
                 contents,
                 taskFiles,
-                ReadDependencies(root, folder, failures),
-                ReadTaskIncludes(root, folder, failures)));
+                ReadDependencies(reading, folder, failures),
+                ReadTaskIncludes(reading, folder, failures)));
         }
 
         return roles;
     }
 
-    private static IReadOnlyList<AnsibleDirective> ReadDependencies(string root, string roleFolder, List<TolerantYamlFailure> failures)
+    private static IReadOnlyList<AnsibleDirective> ReadDependencies(Reading reading, string roleFolder, List<TolerantYamlFailure> failures)
     {
-        var meta = FirstExisting(IoPath.Combine(roleFolder, "meta"), "main.yml", "main.yaml");
-        if (meta is null)
+        var meta = ((string[])["main.yml", "main.yaml"])
+            .Select(name => roleFolder + "/meta/" + name)
+            .Select(relative => (Relative: relative, File: reading.Find(relative)))
+            .FirstOrDefault(candidate => candidate.File is not null);
+        if (meta.File is null)
         {
             return [];
         }
 
-        var relative = Relative(root, meta);
-        var result = TolerantYaml.Read(meta, relative);
+        var relative = meta.Relative;
+        var result = AnsibleYaml.Read(meta.File, relative);
         if (result is not TolerantYamlDocument { Root: YamlMappingNode mapping })
         {
             Record(result, failures);
@@ -230,13 +318,12 @@ public sealed class AnsibleProjectReader
         return directives;
     }
 
-    private static IReadOnlyList<AnsibleDirective> ReadTaskIncludes(string root, string roleFolder, List<TolerantYamlFailure> failures)
+    private static IReadOnlyList<AnsibleDirective> ReadTaskIncludes(Reading reading, string roleFolder, List<TolerantYamlFailure> failures)
     {
         var directives = new List<AnsibleDirective>();
-        foreach (var path in YamlFilesIn(IoPath.Combine(roleFolder, "tasks")))
+        foreach ((string relative, PluginFile file) in YamlFilesIn(reading, roleFolder + "/tasks"))
         {
-            var relative = Relative(root, path);
-            var result = TolerantYaml.Read(path, relative);
+            var result = AnsibleYaml.Read(file, relative);
             if (result is not TolerantYamlDocument { Root: YamlSequenceNode tasks })
             {
                 Record(result, failures);
@@ -302,20 +389,20 @@ public sealed class AnsibleProjectReader
 
     // ---- inventories ---------------------------------------------------------------------
 
-    private static IReadOnlyList<AnsibleInventory> ReadInventories(string root, List<TolerantYamlFailure> failures)
+    private static IReadOnlyList<AnsibleInventory> ReadInventories(Reading reading, List<TolerantYamlFailure> failures)
     {
         var inventories = new List<AnsibleInventory>();
 
-        var folder = IoPath.Combine(root, "inventories");
-        if (Directory.Exists(folder))
+        if (reading.Listing.FolderExists("inventories"))
         {
-            foreach (var environment in SortedDirectories(folder))
+            foreach (var name in reading.Listing.Folders("inventories"))
             {
+                var environment = "inventories/" + name;
                 inventories.Add(new AnsibleInventory(
-                    IoPath.GetFileName(environment),
-                    Relative(root, environment),
-                    GroupsIn(root, environment, failures),
-                    VariableFoldersIn(root, environment)));
+                    name,
+                    environment,
+                    GroupsIn(reading, environment, failures),
+                    VariableFoldersIn(reading, environment)));
             }
         }
 
@@ -323,43 +410,41 @@ public sealed class AnsibleProjectReader
         // environment. Its group_vars and host_vars, if any, sit beside it at the root.
         foreach (var name in RootInventoryNames)
         {
-            var path = IoPath.Combine(root, name);
-            if (!File.Exists(path))
+            if (reading.Find(name) is not { } file)
             {
                 continue;
             }
 
             inventories.Add(new AnsibleInventory(
                 name,
-                Relative(root, path),
-                GroupsOf(root, path, failures),
-                VariableFoldersIn(root, root)));
+                name,
+                GroupsOf(name, file, failures),
+                VariableFoldersIn(reading, "")));
         }
 
         return inventories;
     }
 
-    private static IReadOnlyList<AnsibleInventoryGroup> GroupsIn(string root, string folder, List<TolerantYamlFailure> failures)
+    private static IReadOnlyList<AnsibleInventoryGroup> GroupsIn(Reading reading, string folder, List<TolerantYamlFailure> failures)
     {
         var groups = new List<AnsibleInventoryGroup>();
-        foreach (var path in SortedFiles(folder).Where(IsInventoryFile))
+        foreach ((string relative, PluginFile file) in reading.FilesIn(folder).Where(entry => IsInventoryFile(entry.Relative)))
         {
-            groups.AddRange(GroupsOf(root, path, failures));
+            groups.AddRange(GroupsOf(relative, file, failures));
         }
         return groups;
     }
 
-    private static IReadOnlyList<AnsibleInventoryGroup> GroupsOf(string root, string path, List<TolerantYamlFailure> failures)
+    private static IReadOnlyList<AnsibleInventoryGroup> GroupsOf(string relative, PluginFile file, List<TolerantYamlFailure> failures)
     {
-        var relative = Relative(root, path);
-        var result = TolerantYaml.Read(path, relative);
+        var result = AnsibleYaml.Read(file, relative);
         if (result is not TolerantYamlDocument { Root: YamlMappingNode mapping })
         {
             // An INI-format inventory is not YAML and will not parse. That is not the user's
             // mistake, so it is not recorded as a failure - it is read as the INI it is,
             // because a rule that answers "no inventory defines it" over groups the file
             // plainly defines is a well-formed wrong answer.
-            return IniGroupsOf(path);
+            return IniGroupsOf(file);
         }
 
         var groups = new List<AnsibleInventoryGroup>();
@@ -403,15 +488,15 @@ public sealed class AnsibleProjectReader
             ? named.Children.Count
             : 0;
 
-    private static IReadOnlyList<AnsibleVariableFolder> VariableFoldersIn(string root, string owner)
+    private static IReadOnlyList<AnsibleVariableFolder> VariableFoldersIn(Reading reading, string owner)
     {
         var folders = new List<AnsibleVariableFolder>();
         foreach (var name in (string[])["group_vars", "host_vars"])
         {
-            var path = IoPath.Combine(owner, name);
-            if (Directory.Exists(path))
+            var path = Join(owner, name);
+            if (reading.Listing.FolderExists(path))
             {
-                folders.Add(new AnsibleVariableFolder(name, Relative(root, path), CountIn(path)));
+                folders.Add(new AnsibleVariableFolder(name, path, reading.Listing.FileCount(path)));
             }
         }
         return folders;
@@ -419,25 +504,28 @@ public sealed class AnsibleProjectReader
 
     // ---- annotations and plumbing --------------------------------------------------------
 
-    private static IReadOnlyList<string> ReadAnnotations(string root)
+    /// <summary>
+    /// The files whose presence is all that is read of them. No file rule selects them, since their bytes
+    /// are never read, so the listing says whether each is there.
+    /// </summary>
+    private static IReadOnlyList<string> ReadAnnotations(Reading reading)
     {
         var annotations = new List<string>();
         foreach (var name in AnnotationNames)
         {
-            var path = IoPath.Combine(root, name);
-            if (File.Exists(path))
+            if (reading.Listing.FileExists(name))
             {
-                annotations.Add(Relative(root, path));
+                annotations.Add(name);
             }
         }
 
         // collections/requirements.yml, the Galaxy convention.
         foreach (var name in (string[])["requirements.yml", "requirements.yaml"])
         {
-            var path = IoPath.Combine(root, "collections", name);
-            if (File.Exists(path))
+            var path = "collections/" + name;
+            if (reading.Listing.FileExists(path))
             {
-                annotations.Add(Relative(root, path));
+                annotations.Add(path);
             }
         }
 
@@ -474,8 +562,6 @@ public sealed class AnsibleProjectReader
 
     private static uint Line(YamlNode node) => (uint)Math.Max(node.Start.Line, 0);
 
-    private static string Relative(string root, string path) => IoPath.GetRelativePath(root, path).Replace('\\', '/');
-
     /// <summary>
     /// The classic INI inventory: <c>[group]</c> sections holding one host per line,
     /// <c>[group:children]</c> gathering other groups, <c>[group:vars]</c> holding
@@ -483,7 +569,7 @@ public sealed class AnsibleProjectReader
     /// counts as one entry - the group's existence is what the rules need, the count is a
     /// summary.
     /// </summary>
-    private static IReadOnlyList<AnsibleInventoryGroup> IniGroupsOf(string path)
+    private static IReadOnlyList<AnsibleInventoryGroup> IniGroupsOf(PluginFile file)
     {
         var hostCounts = new Dictionary<string, int>(StringComparer.Ordinal);
         var childrenOf = new Dictionary<string, List<string>>(StringComparer.Ordinal);
@@ -491,7 +577,8 @@ public sealed class AnsibleProjectReader
         string? section = null;
         var sectionIsChildren = false;
 
-        foreach (var raw in File.ReadLines(path))
+        using var text = AnsibleYaml.Text(file);
+        while (text.ReadLine() is { } raw)
         {
             var line = raw.Trim();
             if (line.Length == 0 || line[0] is '#' or ';')
@@ -553,50 +640,7 @@ public sealed class AnsibleProjectReader
         IoPath.GetExtension(path) is ".yml" or ".yaml" or "" ||
         RootInventoryNames.Contains(IoPath.GetFileName(path), StringComparer.OrdinalIgnoreCase);
 
-    private static string? FirstExisting(string folder, params string[] names) =>
-        names.Select(name => IoPath.Combine(folder, name)).FirstOrDefault(File.Exists);
-
-    private static int CountIn(string folder) => Directory.Exists(folder) ? SortedFiles(folder).Length : 0;
-
-    private static string[] YamlFilesIn(string folder) =>
-        Directory.Exists(folder)
-            ? [.. SortedFiles(folder).Where(path => IoPath.GetExtension(path) is ".yml" or ".yaml")]
-            : [];
-
-    /// <summary>Ordinal, always: the filesystem's own order is not a promise and determinism is a requirement.</summary>
-    private static string[] SortedFiles(string folder)
-    {
-        try
-        {
-            return [.. Directory.EnumerateFiles(folder).Order(StringComparer.Ordinal)];
-        }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-        {
-            _logger.Debug(exception, "Skipping {Folder}: it could not be listed", folder);
-            return [];
-        }
-    }
-
-    /// <summary>
-    /// Subfolders, ordinally, with reparse points that leave their parent left alone - the
-    /// technique <c>ProblemCollector.MarkFolderVisited</c> uses, for the same reason: a symlink
-    /// loop must end the walk rather than the process.
-    /// </summary>
-    private static string[] SortedDirectories(string folder)
-    {
-        try
-        {
-            return
-            [
-                .. Directory.EnumerateDirectories(folder)
-                    .Where(child => (new DirectoryInfo(child).Attributes & FileAttributes.ReparsePoint) == 0)
-                    .Order(StringComparer.Ordinal),
-            ];
-        }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-        {
-            _logger.Debug(exception, "Skipping {Folder}: it could not be listed", folder);
-            return [];
-        }
-    }
+    /// <summary>The handed YAML files directly in <paramref name="folder"/>, by their exact extension, in ordinal order.</summary>
+    private static IEnumerable<(string Relative, PluginFile File)> YamlFilesIn(Reading reading, string folder) =>
+        reading.FilesIn(folder).Where(entry => IoPath.GetExtension(entry.Relative) is ".yml" or ".yaml");
 }

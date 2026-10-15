@@ -1,6 +1,7 @@
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Text.RegularExpressions;
+using EtAlii.Adp.Diagram.AnsibleStructure.Tests.Parity;
 using EtAlii.Adp.Specification.Disl;
 using Xunit;
 
@@ -23,6 +24,18 @@ public sealed partial class BundledDefinitionTests
 
     [GeneratedRegex("^[0-9a-f]{40}$")]
     private static partial Regex FullRevision();
+
+    /// <summary>The empty-canvas message the client draws today, from its opening tag to its closing one.</summary>
+    [GeneratedRegex("""<div className="ansible-canvas-message[^"]*">(?<text>.*?)</div>""", RegexOptions.Singleline)]
+    private static partial Regex EmptyCanvasMessage();
+
+    [GeneratedRegex("<[^>]+>")]
+    private static partial Regex Tag();
+
+    [GeneratedRegex(@"\s+")]
+    private static partial Regex WhiteSpace();
+
+    public static TheoryData<string> Folders() => [.. AnsibleTranscript.Corpus()];
 
     /// <summary>The sha256 in provenance.json is the sha256 of the embedded <c>.dis</c> bytes.</summary>
     [Fact]
@@ -74,6 +87,48 @@ public sealed partial class BundledDefinitionTests
         var loaded = BundledDefinition.Load(_module, "ansible-structure.dis");
 
         Assert.DoesNotContain(loaded.Diagnostics, d => d.Severity == DislSeverity.Error);
+    }
+
+    /// <summary>
+    /// Every id the definition's <c>derived</c> expressions compute is the id the plugin delivers, element for
+    /// element and in order, for every folder of the parity corpus: the model's ids are the definition's, so a
+    /// wrong expression fails here rather than in a stored position or a selection.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(Folders))]
+    public void EveryDerivedId_IsThePluginsId(string folder)
+    {
+        using var copy = TestFolder.Create("EtAlii.Adp.AnsibleBundledDefinition");
+
+        // Arrange.
+        var made = copy.Combine("folder");
+        AnsibleTranscript.MakeCopy(folder, made);
+        var project = new AnsibleProjectReader().Read(made);
+
+        // Act.
+        var delivered = AnsibleFolderPlugin.Result(project).Elements.Select(element => $"{element.Type} {element.Id}").ToList();
+        var derived = AnsibleDefinition.ModelOf(project).Elements.Select(element => $"{element.Type.Name} {element.Id}").ToList();
+
+        // Assert.
+        Assert.Equal(delivered, derived);
+    }
+
+    /// <summary>The definition's <c>canvas.empty</c> is the sentence the client shows today for a folder with nothing to draw, its markup aside.</summary>
+    [Fact]
+    public void TheEmptyCanvasSentence_IsTodays()
+    {
+        // Arrange.
+        var canvas = File.ReadAllText(RepositoryPaths.Under("src", "diagrams", "ansible-structure", "client", "AnsibleCanvas.tsx"));
+        var match = EmptyCanvasMessage().Match(canvas);
+        Assert.True(match.Success, "AnsibleCanvas.tsx draws no ansible-canvas-message.");
+        var today = WhiteSpace().Replace(Tag().Replace(match.Groups["text"].Value, ""), " ").Trim();
+
+        // Act.
+        var stated = _module.ResourceJson("ansible-structure.dis")
+            .GetProperty("notation").GetProperty("canvas").GetProperty("empty").GetProperty("text").GetString();
+
+        // Assert.
+        Assert.Equal(today, stated);
     }
 
     private static string DefinitionFolder()

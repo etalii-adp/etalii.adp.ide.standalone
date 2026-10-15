@@ -25,8 +25,8 @@ namespace EtAlii.Adp.Diagram.AnsibleStructure;
 /// write to a property its owner described as read-only, server-side, whatever the client
 /// claimed. <see cref="SetAsync"/> is therefore unreachable in practice - and is written to
 /// refuse anyway, because a provider that would silently accept a write if the resolver ever
-/// changed is a trap rather than a design. Its sentence stays here until the binding's
-/// <c>readOnly</c> states it (finding A6).
+/// changed is a trap rather than a design. Its sentence is the binding's <c>readOnly</c>
+/// (<see cref="AnsibleDefinition.WriteRefusal"/>), stated once there (finding A6).
 /// </para>
 /// <para>
 /// <b>It does not derive from <see cref="DiagramPropertyProvider{TBody, TModel}"/></b>, because
@@ -38,10 +38,6 @@ namespace EtAlii.Adp.Diagram.AnsibleStructure;
 /// </remarks>
 public sealed class AnsibleContextPropertyProvider : IContextPropertyProvider
 {
-    private const string Refusal =
-        "An Ansible structure diagram shows the folder as it is and changes nothing in it. " +
-        "Edit the file this value comes from in a text editor.";
-
     private readonly IAnsibleProjectStore _store;
 
     public AnsibleContextPropertyProvider(IAnsibleProjectStore store)
@@ -77,7 +73,7 @@ public sealed class AnsibleContextPropertyProvider : IContextPropertyProvider
     /// </remarks>
     public ValueTask<ContextPropertyResult> SetAsync(
         ContextTarget target, string propertyId, string value, CancellationToken cancellationToken) =>
-        ValueTask.FromResult(ContextPropertyResult.Failure(Refusal));
+        ValueTask.FromResult(ContextPropertyResult.Failure(AnsibleDefinition.WriteRefusal));
 
     private static readonly ValueTask<IReadOnlyList<ContextPropertyDefinition>> Empty =
         ValueTask.FromResult<IReadOnlyList<ContextPropertyDefinition>>([]);

@@ -1,3 +1,4 @@
+using EtAlii.Adp.Specification.Fbl.Routing;
 using Xunit;
 
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
@@ -282,6 +283,34 @@ public class AnsibleProjectReaderTests
         Assert.Equal(project.Inventories.Select(i => i.Name).Order(StringComparer.Ordinal), project.Inventories.Select(i => i.Name));
         var nginx = project.Roles.Single(r => r.Name == "nginx");
         Assert.Equal(nginx.TaskFiles.Select(t => t.Name).Order(StringComparer.Ordinal), nginx.TaskFiles.Select(t => t.Name));
+    }
+
+    // ---- what the binding selects and the reader passes over ----------------------------
+
+    /// <summary>
+    /// <c>inventories/*/*</c> selects every file of an environment, because a glob cannot say "no extension",
+    /// and the reader passes over what is not an inventory: a note beside one changes nothing, though it is
+    /// selected and would read as an INI group if it were read.
+    /// </summary>
+    [Fact]
+    public void ANoteBesideAnInventory_IsSelectedAndChangesNothing()
+    {
+        using var copy = TestFolder.Create("EtAlii.Adp.AnsibleProjectReader");
+
+        // Arrange.
+        var without = copy.Combine("without");
+        var with = copy.Combine("with");
+        TestFolder.CopyTree(IoPath.GetFullPath(IoPath.Combine("Fixtures", "infrastructure")), without);
+        TestFolder.CopyTree(IoPath.GetFullPath(IoPath.Combine("Fixtures", "infrastructure")), with);
+        File.WriteAllText(IoPath.Combine(with, "inventories", "production", "notes.txt"), "[notes]\r\nremember-to-rotate-certs\r\n");
+
+        // Act.
+        var selected = FolderSubject.Files(AnsibleDefinition.Binding, with).Select(file => file.RelativePath);
+        var read = Reader.Read(with);
+
+        // Assert.
+        Assert.Contains("inventories/production/notes.txt", selected);
+        Assert.Equal(Describe(Reader.Read(without)), Describe(read));
     }
 
     /// <summary>
