@@ -1,0 +1,6 @@
+- name: site first
+  hosts: localhost
+  tasks: []
+- name: site second
+  hosts: localhost
+  tasks: []

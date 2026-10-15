@@ -1,0 +1,4 @@
+- name: uses a role nobody wrote
+  hosts: nowhere
+  roles:
+    - absent-one

@@ -1,0 +1,2 @@
+- name: include a file that is not there
+  ansible.builtin.include_tasks: missing-tasks.yml

@@ -1,0 +1,6 @@
+- name: the IPv6 loopback
+  hosts: "::1"
+  tasks: []
+- name: the IPv4 loopback
+  hosts: 127.0.0.1
+  tasks: []

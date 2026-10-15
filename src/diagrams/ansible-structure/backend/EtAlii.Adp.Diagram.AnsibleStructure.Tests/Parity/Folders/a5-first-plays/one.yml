@@ -1,0 +1,6 @@
+- name: first of one
+  hosts: localhost
+  tasks: []
+- name: second of one
+  hosts: localhost
+  tasks: []

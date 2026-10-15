@@ -1,0 +1,5 @@
+- name: lists one role twice
+  hosts: localhost
+  roles:
+    - web
+    - web

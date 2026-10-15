@@ -1,0 +1,8 @@
+- name: names one role twice
+  hosts: localhost
+  roles:
+    - web
+  tasks:
+    - name: and again, as a task
+      ansible.builtin.import_role:
+        name: web

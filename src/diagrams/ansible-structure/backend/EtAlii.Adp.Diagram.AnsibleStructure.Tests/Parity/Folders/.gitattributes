@@ -1,0 +1,4 @@
+# These trees are read by the parity transcript, which hashes their bytes and records what the
+# module answers for them. With core.autocrlf on, git would rewrite the line endings on checkout
+# and the transcript would be measuring git rather than the module.
+* -text

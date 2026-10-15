@@ -1,0 +1,4 @@
+- name: ships a large file
+  hosts: localhost
+  roles:
+    - assets

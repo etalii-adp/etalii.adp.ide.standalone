@@ -1,0 +1,5 @@
+- name: includes from the play itself
+  hosts: localhost
+  tasks:
+    - ansible.builtin.include_tasks: not-here.yml
+    - ansible.builtin.import_tasks: nor-here.yml

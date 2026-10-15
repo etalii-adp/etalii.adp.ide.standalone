@@ -1,0 +1,5 @@
+- name: play the fool
+  hosts: cache
+  tasks: []
+- hosts: cache
+  tasks: []
