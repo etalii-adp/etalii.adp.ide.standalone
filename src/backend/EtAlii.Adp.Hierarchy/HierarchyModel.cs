@@ -265,71 +265,24 @@ public sealed class HierarchyModel
     }
 
     /// <summary>
-    /// Whether a path is a write transient rather than project content: one of
-    /// <see cref="AdpFileWriter"/>'s own temporary files, or one of Windows' ReplaceFile backup
-    /// temporaries. A reconcile filters on this too, so a scratch file left behind by an
-    /// interrupted write can never reappear as an entry.
-    /// </summary>
-    private static bool IsScratchFile(string? path)
-    {
-        if (path is null)
-        {
-            return false;
-        }
-
-        var name = IoPath.GetFileName(path);
-        return (name.StartsWith(AdpFileWriter.TempPrefix, StringComparison.Ordinal) &&
-                name.EndsWith(AdpFileWriter.TempExtension, StringComparison.OrdinalIgnoreCase))
-            || IsReplaceFileBackup(name);
-    }
-
-    /// <summary>
-    /// Whether a name is one of Windows' ReplaceFile backup temporaries - <c>name~RF&lt;hex&gt;.TMP</c>,
-    /// which <c>File.Replace</c> (and <see cref="AdpFileWriter.Save(string, string)"/> through it) conjures beside
-    /// a file it rewrites in place.
+    /// Whether a path is a write transient rather than project content
+    /// (<see cref="AdpFileWriter.IsTransient"/>). A reconcile filters on this too, so a scratch file
+    /// left behind by an interrupted write can never reappear as an entry.
     /// </summary>
     /// <remarks>
-    /// These must be scratch to this model, and the reason is subtle enough to spell out:
-    /// ReplaceFile announces itself as <i>Created(backup)</i>, <b>Renamed(file → backup)</b>,
-    /// <i>Created(file)</i>, <i>Deleted(backup)</i> - observed verbatim from a live watcher. Taken
-    /// at face value, the Renamed walks the file's entry off its path onto the backup name, the
-    /// Created then mints a NEW id for the same file, and the Deleted removes the old entry under
-    /// its backup name. Every open document holding the old id is orphaned - which is exactly what
-    /// left a causal-loop diagram unselectable after its first variable drag, since that module
-    /// stores positions in the <c>.adp</c>'s <c>layout:</c> block and so rewrites the registration
-    /// in place on every move. Treating the backup name as scratch makes the whole sequence a
-    /// no-op: the rename onto it is ignored, so the entry never leaves its path, and the create
-    /// finds the path already known.
+    /// The <c>File.Replace</c> backup must be transient to this model, and the reason is subtle
+    /// enough to spell out: ReplaceFile announces itself as <i>Created(backup)</i>,
+    /// <b>Renamed(file → backup)</b>, <i>Created(file)</i>, <i>Deleted(backup)</i> - observed verbatim
+    /// from a live watcher. Taken at face value, the Renamed walks the file's entry off its path onto
+    /// the backup name, the Created then mints a NEW id for the same file, and the Deleted removes the
+    /// old entry under its backup name. Every open document holding the old id is orphaned - which is
+    /// exactly what left a causal-loop diagram unselectable after its first variable drag, since that
+    /// module stores positions in the <c>.adp</c>'s <c>layout:</c> block and so rewrites the
+    /// registration in place on every move. Treating the backup name as transient makes the whole
+    /// sequence a no-op: the rename onto it is ignored, so the entry never leaves its path, and the
+    /// create finds the path already known.
     /// </remarks>
-    private static bool IsReplaceFileBackup(string name)
-    {
-        if (!name.EndsWith(".TMP", StringComparison.OrdinalIgnoreCase))
-        {
-            return false;
-        }
-
-        var marker = name.LastIndexOf("~RF", StringComparison.OrdinalIgnoreCase);
-        if (marker < 0)
-        {
-            return false;
-        }
-
-        var hex = name.AsSpan(marker + 3, name.Length - marker - 3 - ".TMP".Length);
-        if (hex.IsEmpty)
-        {
-            return false;
-        }
-
-        foreach (var character in hex)
-        {
-            if (!Uri.IsHexDigit(character))
-            {
-                return false;
-            }
-        }
-
-        return true;
-    }
+    private static bool IsScratchFile(string? path) => path is not null && AdpFileWriter.IsTransient(path);
 
     public void NotifyRootUnavailable(string message)
     {

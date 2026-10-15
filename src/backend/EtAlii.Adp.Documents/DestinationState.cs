@@ -24,9 +24,6 @@ namespace EtAlii.Adp.Documents;
 /// </remarks>
 public static class DestinationState
 {
-    /// <summary>The Restart Manager backup suffix a File.Replace gives the file it moves aside.</summary>
-    private const string ReplaceBackupMarker = "~RF";
-
     /// <summary>How many neighbouring scratch files are worth naming before the line stops helping.</summary>
     private const int MostSiblingsWorthNaming = 5;
 
@@ -86,8 +83,7 @@ public static class DestinationState
             .EnumerateFiles(folder)
             .Select(Path.GetFileName)
             .Where(candidate => candidate is { Length: > 0 } &&
-                (candidate.StartsWith(AdpFileWriter.TempPrefix, StringComparison.OrdinalIgnoreCase) ||
-                    candidate.StartsWith(name + ReplaceBackupMarker, StringComparison.OrdinalIgnoreCase)))
+                (AdpFileWriter.IsScratch(candidate) || AdpFileWriter.IsReplaceBackup(candidate, of: name)))
             .Take(MostSiblingsWorthNaming + 1)
             .ToArray();
 

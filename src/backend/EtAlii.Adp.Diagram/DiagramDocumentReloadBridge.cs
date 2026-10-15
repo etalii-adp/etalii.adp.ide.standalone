@@ -166,10 +166,8 @@ public sealed class DiagramDocumentReloadBridge : IDisposable
             return false;
         }
 
-        var name = Path.GetFileName(newPath);
         return string.Equals(Path.GetDirectoryName(oldPath), Path.GetDirectoryName(newPath), StringComparison.OrdinalIgnoreCase)
-            && name.StartsWith(Path.GetFileName(oldPath) + "~RF", StringComparison.OrdinalIgnoreCase)
-            && name.EndsWith(".TMP", StringComparison.OrdinalIgnoreCase);
+            && AdpFileWriter.IsReplaceBackup(newPath, of: oldPath);
     }
 
     private void ReloadIfTracked(string? path)
