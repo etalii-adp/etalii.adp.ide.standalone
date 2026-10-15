@@ -150,6 +150,25 @@ public class FolderBodySettleTests
     }
 
     [Fact]
+    public void ANewFileUnderAFolderThePluginWatchesCausesOneRead()
+    {
+        // Arrange: the plugin counts what extra/ holds, which no file rule selects.
+        using var folder = Notes();
+        Directory.CreateDirectory(Path.Combine(folder.Path, "extra"));
+        var time = new ManualTime();
+        var plugin = new RecordingFolderPlugin(PluginId) { Watched = ["extra"] };
+        using var body = FolderBody.Open(folder.Path, Binding(), plugin, time: time);
+
+        // Act.
+        body.Notify(folder.Write("extra/new.txt", "new"));
+        time.Advance(TimeSpan.FromMilliseconds(Settle));
+
+        // Assert: the folder is named for the host to watch, and a file added under it reads the folder again.
+        Assert.Contains(Path.Combine(folder.Path, "extra"), body.Dependencies);
+        Assert.Equal(2, plugin.Reads.Count);
+    }
+
+    [Fact]
     public void AChangeOfOnlyTheRegistrationRaisesTheChangeWithoutARead()
     {
         // Arrange: the registration sits in the folder, and is no file rule's file.
