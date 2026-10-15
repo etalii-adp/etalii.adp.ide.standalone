@@ -1,7 +1,6 @@
 using System.Collections.Concurrent;
 using EtAlii.Adp.Documents;
 using Serilog;
-using YamlDotNet.Core;
 using IoPath = System.IO.Path;
 
 namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline;
@@ -214,18 +213,6 @@ public sealed class PipelineDocumentStore : IPipelineDocumentStore
     /// carried as an entry with an error rather than thrown out of the store. The line comes from
     /// the parser and is what makes the message worth reading.
     /// </remarks>
-    private DocumentEntry<LineDocument, PipelineModel> Parse(string rootPath, string path, LineDocument document)
-    {
-        try
-        {
-            var model = PipelineParser.Parse(document, Resolver(rootPath), path);
-            return new DocumentEntry<LineDocument, PipelineModel>(document, model);
-        }
-        catch (YamlException exception)
-        {
-            var line = (int)exception.Start.Line;
-            _logger.Debug(exception, "{Path} does not parse at line {Line}", path, line);
-            return new DocumentEntry<LineDocument, PipelineModel>(document, PipelineModel.Empty, $"Line {line}: {exception.Message}");
-        }
-    }
+    private DocumentEntry<LineDocument, PipelineModel> Parse(string rootPath, string path, LineDocument document) =>
+        new(document, PipelineParser.Outcome(document, Resolver(rootPath), path));
 }
