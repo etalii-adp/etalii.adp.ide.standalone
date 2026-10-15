@@ -49,6 +49,8 @@ public static class DislCelLibrary
         environment.AddFunction(CelFunction.Receiver("avg", 0, arguments => Average(arguments[0]), arguments => arguments[0] is IReadOnlyList<object?> list ? list.Count : 1));
         environment.AddFunction(CelFunction.Receiver("center", 0, arguments => Center(arguments[0])));
         environment.AddFunction(CelFunction.Global("token", 1, arguments => throw new CelException($"The theme token '{Text(arguments[0])}' is resolved where the diagram is drawn; this runtime has no theme.")));
+        environment.AddFunction(CelFunction.Global("color", 1, arguments => DislColor.Of(arguments[0])));
+        environment.AddFunction(CelFunction.Receiver("mix", 2, arguments => DislColor.Mix(arguments[0], arguments[1], arguments[2])));
         environment.AddFunction(CelFunction.Global("clamp", 3, arguments => Clamp(arguments[0], arguments[1], arguments[2])));
         environment.AddFunction(new CelFunction("min", CelCallStyle.Global, 2, 4, call => Extreme(call.Arguments, -1)));
         environment.AddFunction(new CelFunction("max", CelCallStyle.Global, 2, 4, call => Extreme(call.Arguments, 1)));
