@@ -3,20 +3,24 @@ using System.Text.Json;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Specification.Disl;
+using EtAlii.Adp.Specification.Fbl;
+using EtAlii.Adp.Specification.Fbl.Documents;
 
 namespace EtAlii.Adp.Diagram.AnsibleStructure;
 
 /// <summary>
 /// The Ansible structure diagram's bundled DISL definition (<c>definition/ansible-structure.dis</c>, from
-/// etalii-adp/etalii.adp), loaded once, and what is derived from it: the property rows of every node and
-/// relation, the findings, and the sentence a reparenting move is refused with, mapped onto the host's
-/// ids by its <c>x-ansible</c> block.
+/// etalii-adp/etalii.adp) and its binding (<c>ansible-structure.fbl</c>, the module's own), each loaded once,
+/// and what is derived from them: the property rows of every node and relation, the findings, the
+/// sentence a reparenting move is refused with and the one a property write is refused with, mapped onto
+/// the host's ids by the definition's <c>x-ansible</c> block.
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>The model is built from today's reading</b> by <see cref="AnsibleGraphModel"/>, once per reading and
-/// kept for as long as the reading lives, so every selection of one reading reads one model. Reading the
-/// folder through the binding comes later (ansible-structure-disl-fbl, tasks 6 and 7).
+/// <b>The model is built by <see cref="DislModelBuilder"/> from what the plugin delivers</b>
+/// (<see cref="AnsibleFolderPlugin"/>), which computes every id again by the definition's <c>derived</c>
+/// expressions. A model of a project the store holds is built once and kept for as long as the reading
+/// lives, so every selection of one reading reads one model.
 /// </para>
 /// <para>
 /// <b>Everything is read-only</b> (<c>env.readOnly</c>): every row carries the reason its form item gives,
@@ -26,8 +30,8 @@ namespace EtAlii.Adp.Diagram.AnsibleStructure;
 /// </para>
 /// <para>
 /// <b>The reparenting sentence is the definition's</b>: the message of its one containment rule, which
-/// refuses every nesting. The sentence a property write is refused with is not stated here: the binding's
-/// <c>readOnly</c> will be it, and until then the property provider keeps it (finding A6).
+/// refuses every nesting. The sentence a property write is refused with is the binding's <c>readOnly</c>,
+/// stated once there (finding A6).
 /// </para>
 /// </remarks>
 internal static class AnsibleDefinition
@@ -38,13 +42,23 @@ internal static class AnsibleDefinition
 
     private static readonly Lazy<string> LoadedMoveRefusal = new(MoveRefusalOf);
 
-    private static readonly ConditionalWeakTable<AnsibleProject, DislDiagram> Models = [];
+    private static readonly Lazy<FblBinding> LoadedBinding = new(LoadBinding);
+
+    private static readonly ConditionalWeakTable<AnsibleProject, DislModel> Models = [];
 
     /// <summary>What <c>env</c> reads: nothing in this diagram can be edited.</summary>
     private static readonly DislEnv Env = new(ReadOnly: true);
 
     /// <summary>The definition.</summary>
     public static DislSpecification Specification => Loaded.Value.Specification;
+
+    /// <summary>The binding the folder is read through: <c>ansible-structure.fbl#ansible</c>.</summary>
+    public static FblBinding Binding => LoadedBinding.Value;
+
+    /// <summary>Why no property can be written: the binding's <c>readOnly</c>.</summary>
+    public static string WriteRefusal => Binding.ReadOnly is { Length: > 0 } reason
+        ? reason
+        : throw new InvalidOperationException("The binding words no reason to refuse a property write with.");
 
     /// <summary>The wire ids of <c>x-ansible</c>.</summary>
     public static WireIdMap Ids => LoadedIds.Value;
@@ -70,14 +84,65 @@ internal static class AnsibleDefinition
     public static IReadOnlyList<DislFinding> Findings(AnsibleProject project)
     {
         ArgumentNullException.ThrowIfNull(project);
-        return ConstraintEvaluator.Evaluate(Specification, ModelOf(project), new DislConstraintOptions(Env, AnsibleGraphModel.ReaderFindings(project)));
+        return Findings(Built(project));
+    }
+
+    /// <summary>The findings of <paramref name="model"/>: every finding of its reading as the reader's, then the definition's rules.</summary>
+    public static IReadOnlyList<DislFinding> Findings(DislModel model)
+    {
+        ArgumentNullException.ThrowIfNull(model);
+        return ConstraintEvaluator.Evaluate(Specification, model.Diagram, new DislConstraintOptions(Env, [.. model.Findings.Select(ReaderFinding)]));
     }
 
     /// <summary><paramref name="project"/> as the definition's model.</summary>
     public static DislDiagram ModelOf(AnsibleProject project)
     {
         ArgumentNullException.ThrowIfNull(project);
-        return Models.GetValue(project, read => AnsibleGraphModel.Build(Specification, read, AnsibleGraph.Derive(read)));
+        return Built(project).Diagram;
+    }
+
+    /// <summary>The model of a reading through the binding, as <see cref="DislModelBuilder"/> builds it under the definition.</summary>
+    public static DislModel Model(FblModel reading)
+    {
+        ArgumentNullException.ThrowIfNull(reading);
+        return DislModelBuilder.From(reading, Specification);
+    }
+
+    /// <summary>The model of a project already read, built from what the plugin delivers for it, once per reading.</summary>
+    private static DislModel Built(AnsibleProject project) =>
+        Models.GetValue(project, read =>
+        {
+            var result = AnsibleFolderPlugin.Result(read);
+            return Model(new FblModel(result.Elements, result.Findings, result.Unreadable));
+        });
+
+    /// <summary>
+    /// A finding of the reading as the reader's finding of its code: its message is the reason, and a line of
+    /// 0, which says the parser gave none, is no line.
+    /// </summary>
+    private static DislReaderFinding ReaderFinding(Finding finding)
+    {
+        var detail = new Dictionary<string, object?>(StringComparer.Ordinal);
+        foreach ((string key, string value) in finding.Detail ?? new Dictionary<string, string>())
+        {
+            detail[key] = value;
+        }
+        detail["reason"] = finding.Message;
+        var line = finding.Location is { Line: > 0 } located ? located.Line : (int?)null;
+        return new DislReaderFinding(finding.Code, detail, line, finding.Location?.File is { Length: > 0 } file ? file : null);
+    }
+
+    /// <summary>The module's own binding, embedded beside the code.</summary>
+    private static FblBinding LoadBinding()
+    {
+        var assembly = typeof(AnsibleDefinition).Assembly;
+        var name = assembly.GetManifestResourceNames().Single(resource => resource.EndsWith("ansible-structure.fbl", StringComparison.Ordinal));
+        using var stream = assembly.GetManifestResourceStream(name)!;
+        using var buffer = new MemoryStream();
+        stream.CopyTo(buffer);
+        var problems = FblDocumentLoader.Load(buffer.ToArray(), out var document);
+        return document?.Bindings.GetValueOrDefault("ansible")
+            ?? throw new InvalidOperationException($"The Ansible structure diagram's FBL binding does not load: {string.Join("; ", problems)}");
     }
 
     /// <summary>The message of the one rule of <c>constraints.rules</c> that refuses a containment, as the definition writes it.</summary>

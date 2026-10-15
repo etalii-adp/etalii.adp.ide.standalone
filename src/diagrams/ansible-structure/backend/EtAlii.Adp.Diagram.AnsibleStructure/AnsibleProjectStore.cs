@@ -6,7 +6,10 @@ namespace EtAlii.Adp.Diagram.AnsibleStructure;
 /// One <see cref="AnsibleProject"/> per registered folder, kept true as the tree changes
 /// (Requirement 3.5) - the module's only reader, so two people looking at one project cannot see
 /// different structures. The watching, the claims and the settling are the shared
-/// <see cref="WatchedFolderStore{TSnapshot}"/>'s; this says how a folder is read.
+/// <see cref="WatchedFolderStore{TSnapshot}"/>'s; this says how a folder is read: its files selected
+/// through the binding and read as <see cref="AnsibleFolderPlugin"/> reads them
+/// (<see cref="AnsibleProjectReader.Read(string)"/>). The library's folder body takes over the watching
+/// later (ansible-structure-disl-fbl, task 10).
 /// </summary>
 /// <remarks>
 /// A registered folder is one Ansible project, the burst timer collapses a multi-file save into a

@@ -50,7 +50,7 @@ public class AnsibleDerivedRowsTests
     public void AReparentingMove_IsRefusedWithTheHandWrittenSentence() =>
         Assert.Equal(HandWrittenAnsible.MoveRefusal, AnsibleDefinition.MoveRefusal);
 
-    /// <summary>The sentence a property write is refused with stays the provider's until the binding's <c>readOnly</c> states it (finding A6).</summary>
+    /// <summary>The sentence a property write is refused with is the binding's <c>readOnly</c>, and it is the hand-written one (finding A6).</summary>
     [Fact]
     public async Task AWrite_IsRefusedWithTheHandWrittenSentence()
     {
