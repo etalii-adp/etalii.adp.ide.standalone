@@ -14,7 +14,7 @@ namespace EtAlii.Adp.Diagram.AnsibleStructure;
 /// <para>
 /// <b>The steps every resolver repeats are the base's</b> (code-structure FR-032). This says where
 /// an Ansible diagram is read from and what its elements are called: the folder the registration
-/// sits in, through the shared watched-folder store, and a node by its path and name, an edge by the
+/// sits in, through the host's open folders (<see cref="AnsibleFolders"/>), and a node by its path and name, an edge by the
 /// side that declares it (Requirement 8.3).
 /// </para>
 /// <para>
@@ -28,7 +28,7 @@ namespace EtAlii.Adp.Diagram.AnsibleStructure;
 /// are in that file.
 /// </para>
 /// </remarks>
-public sealed class AnsibleContextSourceResolver(DiagramFileRouter router, IAnsibleProjectStore store, AnsibleElementMapper mapper)
+public sealed class AnsibleContextSourceResolver(DiagramFileRouter router, AnsibleFolders folders, AnsibleElementMapper mapper)
     : DiagramSnapshotSourceResolver<AnsibleContextSourceResolver.Selected>(router)
 {
     /// <summary>A selected diagram: the definition's model of its folder, and the registration it was selected in.</summary>
@@ -47,7 +47,7 @@ public sealed class AnsibleContextSourceResolver(DiagramFileRouter router, IAnsi
     /// <inheritdoc />
     protected override Selected Load(string bodyPath)
     {
-        return new Selected(AnsibleDefinition.ModelOf(store.GetOrLoad(FolderOf(bodyPath))), bodyPath);
+        return new Selected(folders.GetOrLoad(FolderOf(bodyPath), bodyPath).Disl.Diagram, bodyPath);
     }
 
     /// <inheritdoc />
@@ -83,7 +83,7 @@ public sealed class AnsibleContextSourceResolver(DiagramFileRouter router, IAnsi
     protected override IDisposable Follow(ShortGuid watchId, string bodyPath, string elementId, Action changed)
     {
         ArgumentNullException.ThrowIfNull(changed);
-        return store.Watch(FolderOf(bodyPath), _ => changed());
+        return folders.Watch(FolderOf(bodyPath), bodyPath, _ => changed());
     }
 
     /// <summary>

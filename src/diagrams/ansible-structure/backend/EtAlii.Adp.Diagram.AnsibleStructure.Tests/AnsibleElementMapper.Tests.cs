@@ -19,7 +19,7 @@ public partial class AnsibleElementMapperTests
     private static (DislDiagram Model, AnsibleGraph Graph) Read(string fixture)
     {
         var project = Reader.Read(IoPath.Combine("Fixtures", fixture));
-        return (AnsibleDefinition.ModelOf(project), AnsibleGraph.Derive(project));
+        return (AnsibleModels.ModelOf(project), AnsibleGraph.Derive(project));
     }
 
     private static IReadOnlyList<DiagramElement> Everything(string fixture)
@@ -280,7 +280,7 @@ public partial class AnsibleElementMapperTests
         {
             File.Delete(IoPath.Combine(scratch, "dbservers.yml"));
             var project = Reader.Read(scratch);
-            var after = Mapper.Visible(AnsibleDefinition.ModelOf(project), DiagramViewport.Unbounded);
+            var after = Mapper.Visible(AnsibleModels.ModelOf(project), DiagramViewport.Unbounded);
 
             // Act.
             var deltas = DiagramDiff.Between(before, after);
@@ -324,7 +324,7 @@ public partial class AnsibleElementMapperTests
     private static string[] Ids(string folder)
     {
         var project = Reader.Read(folder);
-        return [.. Mapper.Visible(AnsibleDefinition.ModelOf(project), DiagramViewport.Unbounded)
+        return [.. Mapper.Visible(AnsibleModels.ModelOf(project), DiagramViewport.Unbounded)
             .Select(element => element.Id)];
     }
 
@@ -448,19 +448,15 @@ public partial class AnsibleElementMapperTests
     // ---- what the payloads read (ansible-structure-disl-fbl, Requirement 3.5) ------------------
 
     /// <summary>
-    /// The files of the product that name the reading's own types: the plugin and the reader, YAML and graph
-    /// code it wraps, with their records, and the two that hand a reading on until the library's folder body
-    /// watches (task 10): the store, and the definition, which turns the store's reading into the model.
+    /// The files of the product that name the reading's own types: the plugin, and the reader and graph code
+    /// it wraps. Since the library's folder body reads the folder (task 10) nothing else hands a reading on:
+    /// the store is gone, and the definition turns the folder body's model into its own.
     /// </summary>
     private static readonly string[] ReadingFiles =
     [
-        "AnsibleDefinition.cs",
         "AnsibleFolderPlugin.cs",
         "AnsibleGraph.cs",
         "AnsibleProjectReader.cs",
-        "AnsibleProjectStore.cs",
-        "AnsibleYaml.cs",
-        "IAnsibleProjectStore.cs",
     ];
 
     [GeneratedRegex(@"\b(AnsibleProject|AnsibleGraph)\b")]

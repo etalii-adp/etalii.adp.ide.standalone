@@ -5,6 +5,7 @@ using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
+using EtAlii.Adp.Specification.Disl;
 using Google.Protobuf.Reflection;
 using Microsoft.Extensions.DependencyInjection;
 using Path = System.IO.Path;
@@ -165,28 +166,27 @@ internal static class AnsibleTranscript
             var registration = Path.Combine(folder, AnsibleFindingFolders.RegistrationName);
             await File.WriteAllTextAsync(registration, BareRegistration, cancellationToken);
 
-            var project = new AnsibleProjectReader().Read(folder);
-            var graph = AnsibleGraph.Derive(project);
-            var store = new FixedStore(project);
-            var node = graph.Nodes[0].Id;
-            var relation = graph.Edges[0].Id;
+            using var folders = new AnsibleFolders();
+            var model = folders.GetOrLoad(folder, registration).Disl.Diagram;
+            var node = model.Nodes[0].Id;
+            var relation = model.Relations[0].Id;
 
             var lines = new List<string>();
-            var write = await new AnsibleContextPropertyProvider(store).SetAsync(Target(registration, folder, node), "ansible.name", "Renamed", cancellationToken);
+            var write = await new AnsibleContextPropertyProvider(folders).SetAsync(Target(registration, folder, node), "ansible.name", "Renamed", cancellationToken);
             lines.Add($"write ansible.name of {node} => {(write.IsSuccess ? "accepted" : $"refused: {write.Error}")}");
 
-            await using (var session = new AnsibleSession(folder, store, new AnsibleElementMapper(), registration, histories.Get(folder)))
+            await using (var session = new AnsibleSession(folder, folders, new AnsibleElementMapper(), registration, histories.Get(folder)))
             {
                 lines.Add($"reparent {node} under {Unknown} => {Answer(await session.MoveElementAsync(node, Unknown, 0, cancellationToken))}");
                 lines.Add($"move relation {relation} => {Answer(await session.MoveElementToAsync(relation, 10.5, -20.25, cancellationToken))}");
             }
 
-            await using (var session = new AnsibleSession(folder, store, new AnsibleElementMapper(), registration, history: null))
+            await using (var session = new AnsibleSession(folder, folders, new AnsibleElementMapper(), registration, history: null))
             {
                 lines.Add($"move {node} without a history => {Answer(await session.MoveElementToAsync(node, 10.5, -20.25, cancellationToken))}");
             }
 
-            await using (var session = new AnsibleSession(folder, store, new AnsibleElementMapper(), registrationPath: null, histories.Get(folder)))
+            await using (var session = new AnsibleSession(folder, folders, new AnsibleElementMapper(), registrationPath: null, histories.Get(folder)))
             {
                 lines.Add($"move {node} without a registration => {Answer(await session.MoveElementToAsync(node, 10.5, -20.25, cancellationToken))}");
             }
@@ -293,14 +293,13 @@ internal static class AnsibleTranscript
     private static async Task WriteReadingAsync(
         Utf8JsonWriter json, string folder, string registration, IHistoryStackStore histories, CancellationToken cancellationToken)
     {
-        var project = new AnsibleProjectReader().Read(folder);
-        var graph = AnsibleGraph.Derive(project);
-        var store = new FixedStore(project);
+        using var folders = new AnsibleFolders();
+        var model = folders.GetOrLoad(folder, registration).Disl.Diagram;
         var mapper = new AnsibleElementMapper();
 
         // What a session delivers at baseline, in delivery order, with an unbounded viewport over the folder's own stored positions.
         List<DiagramElement> elements;
-        await using (var session = new AnsibleSession(folder, store, mapper, registration))
+        await using (var session = new AnsibleSession(folder, folders, mapper, registration))
         {
             elements = [.. session.Baseline().OfType<DiagramAddDelta>().SelectMany(delta => delta.Elements)];
         }
@@ -308,11 +307,11 @@ internal static class AnsibleTranscript
         json.WritePropertyName("payloads");
         json.WriteLines([.. elements.Select(element => Mask(TranscriptText.PayloadLine(element.Id, element.X, element.Y, element.Type, element.PayloadTypeUrl, element.Payload, _payloadTypes), folder))]);
 
-        var properties = new AnsibleContextPropertyProvider(store);
+        var properties = new AnsibleContextPropertyProvider(folders);
         List<string> targets =
         [
-            .. graph.Nodes.Select(node => node.Id),
-            .. graph.Edges.Select(edge => edge.Id),
+            .. model.Nodes.Select(node => node.Id),
+            .. model.Relations.Select(edge => edge.Id),
             Unknown,
         ];
 
@@ -336,22 +335,22 @@ internal static class AnsibleTranscript
         json.WriteLines([.. problems.Select(problem => Mask(FindingLine(problem), folder))]);
 
         json.WritePropertyName("selection");
-        json.WriteLines(await SelectionAsync(elements, folder, registration, store, mapper, cancellationToken));
+        json.WriteLines(await SelectionAsync(elements, folder, registration, folders, mapper, cancellationToken));
 
         json.WritePropertyName("move");
-        json.WriteLines(await MoveAsync(graph, folder, registration, store, histories, cancellationToken));
+        json.WriteLines(await MoveAsync(model, folder, registration, folders, histories, cancellationToken));
     }
 
     /// <summary>What selecting each delivered element resolves to: its path and its text, or why it is refused.</summary>
     private static async Task<List<string>> SelectionAsync(
-        List<DiagramElement> elements, string folder, string registration, IAnsibleProjectStore store, AnsibleElementMapper mapper, CancellationToken cancellationToken)
+        List<DiagramElement> elements, string folder, string registration, AnsibleFolders folders, AnsibleElementMapper mapper, CancellationToken cancellationToken)
     {
         if (!File.Exists(registration))
         {
             return [.. elements.Select(element => $"{element.Id} => not asked: there is no registration to select it in")];
         }
 
-        var resolver = new AnsibleContextSourceResolver(new DiagramFileRouter(new AnsibleTestDiagramDefinitionCatalog(Diagram.AnsibleStructure)), store, mapper);
+        var resolver = new AnsibleContextSourceResolver(new DiagramFileRouter(new AnsibleTestDiagramDefinitionCatalog(Diagram.AnsibleStructure)), folders, mapper);
         var parent = new ContextResolvedLevel(
             new ContextSource { EntryId = ShortGuid.NewShortGuid() },
             [],
@@ -378,9 +377,9 @@ internal static class AnsibleTranscript
 
     /// <summary>The first node moved with the project's history, and the registration's text after it: what a drag stores, and what it keeps.</summary>
     private static async Task<List<string>> MoveAsync(
-        AnsibleGraph graph, string folder, string registration, IAnsibleProjectStore store, IHistoryStackStore histories, CancellationToken cancellationToken)
+        DislDiagram model, string folder, string registration, AnsibleFolders folders, IHistoryStackStore histories, CancellationToken cancellationToken)
     {
-        if (graph.Nodes.Count == 0)
+        if (model.Nodes.Count == 0)
         {
             return ["no node to move"];
         }
@@ -390,9 +389,9 @@ internal static class AnsibleTranscript
             return ["not asked: there is no registration to store a position in"];
         }
 
-        var node = graph.Nodes[0].Id;
+        var node = model.Nodes[0].Id;
         var lines = new List<string>();
-        await using (var session = new AnsibleSession(folder, store, new AnsibleElementMapper(), registration, histories.Get(folder)))
+        await using (var session = new AnsibleSession(folder, folders, new AnsibleElementMapper(), registration, histories.Get(folder)))
         {
             lines.Add($"move {node} to (10.5, -20.25) => {Answer(await session.MoveElementToAsync(node, 10.5, -20.25, cancellationToken))}");
         }
@@ -437,26 +436,5 @@ internal static class AnsibleTranscript
         }
 
         return TranscriptText.Sha256(TranscriptText.Encode(manifest.ToString()));
-    }
-
-    /// <summary>A store that holds one reading, whatever it is asked for, and never watches: the session's, the provider's and the resolver's view of a store.</summary>
-    private sealed class FixedStore(AnsibleProject project) : IAnsibleProjectStore
-    {
-        public AnsibleProject GetOrLoad(string folder) => project;
-
-        public AnsibleProject Acquire(string folder) => project;
-
-        public void Release(string folder)
-        {
-        }
-
-        public IDisposable Watch(string folder, Action<AnsibleProject> onChanged) => new Nothing();
-
-        private sealed class Nothing : IDisposable
-        {
-            public void Dispose()
-            {
-            }
-        }
     }
 }

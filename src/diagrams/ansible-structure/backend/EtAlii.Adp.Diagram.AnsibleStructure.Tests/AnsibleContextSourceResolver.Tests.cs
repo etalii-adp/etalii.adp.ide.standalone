@@ -12,12 +12,13 @@ namespace EtAlii.Adp.Diagram.AnsibleStructure.Tests;
 /// </summary>
 public class AnsibleContextSourceResolverTests : IDisposable
 {
-    private static readonly TimeSpan SettleDelay = TimeSpan.FromMilliseconds(150);
+    /// <summary>The binding's settle delay, which the folder body waits for after a change.</summary>
+    private static readonly TimeSpan SettleDelay = TimeSpan.FromMilliseconds(AnsibleDefinition.Binding.Body.Settle);
     private static readonly TimeSpan WaitLimit = TimeSpan.FromSeconds(15);
 
     private readonly string _root;
     private readonly string _registration;
-    private readonly AnsibleProjectStore _store = new(new AnsibleProjectReader(), SettleDelay);
+    private readonly AnsibleFolders _folders = new();
     private readonly AnsibleContextSourceResolver _resolver;
 
     public AnsibleContextSourceResolverTests()
@@ -32,12 +33,12 @@ public class AnsibleContextSourceResolverTests : IDisposable
         var catalog = new AnsibleTestDiagramDefinitionCatalog(
             Diagram.AnsibleStructure,
             new DiagramDefinition(new DiagramOrigin("freeplane", "mindmap"), "Mind map", Extension: ".mm"));
-        _resolver = new AnsibleContextSourceResolver(new DiagramFileRouter(catalog), _store, new AnsibleElementMapper());
+        _resolver = new AnsibleContextSourceResolver(new DiagramFileRouter(catalog), _folders, new AnsibleElementMapper());
     }
 
     public void Dispose()
     {
-        _store.Dispose();
+        _folders.Dispose();
         TestFolder.TryDelete(_root);
     }
 
@@ -84,8 +85,7 @@ public class AnsibleContextSourceResolverTests : IDisposable
         // Arrange.
         // Requirement 8.3: an edge's selection names where it was written, because that is the
         // file a reader asking "why is this here" has to open.
-        var project = _store.GetOrLoad(_root);
-        var edge = AnsibleGraph.Derive(project).Edges.Single(e => e.Kind == AnsibleEdgeKind.IncludesTasks);
+        var edge = AnsibleGraph.Derive(new AnsibleProjectReader().Read(_root)).Edges.Single(e => e.Kind == AnsibleEdgeKind.IncludesTasks);
 
         // Act.
         var resolution = await Resolve(edge.Id);

@@ -38,12 +38,12 @@ namespace EtAlii.Adp.Diagram.AnsibleStructure;
 /// </remarks>
 public sealed class AnsibleContextPropertyProvider : IContextPropertyProvider
 {
-    private readonly IAnsibleProjectStore _store;
+    private readonly AnsibleFolders _folders;
 
-    public AnsibleContextPropertyProvider(IAnsibleProjectStore store)
+    public AnsibleContextPropertyProvider(AnsibleFolders folders)
     {
-        ArgumentNullException.ThrowIfNull(store);
-        _store = store;
+        ArgumentNullException.ThrowIfNull(folders);
+        _folders = folders;
     }
 
     public ContextScope Scope => ContextScope.DiagramElement;
@@ -60,7 +60,7 @@ public sealed class AnsibleContextPropertyProvider : IContextPropertyProvider
             return Empty;
         }
 
-        return ValueTask.FromResult(AnsibleDefinition.Rows(_store.GetOrLoad(folder), target.ElementId));
+        return ValueTask.FromResult(AnsibleDefinition.Rows(_folders.GetOrLoad(folder, target.ResolvedFullPath).Disl.Diagram, target.ElementId));
     }
 
     /// <summary>

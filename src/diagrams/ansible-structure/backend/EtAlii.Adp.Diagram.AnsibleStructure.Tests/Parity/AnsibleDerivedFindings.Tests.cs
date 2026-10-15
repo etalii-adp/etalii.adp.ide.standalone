@@ -30,7 +30,7 @@ public class AnsibleDerivedFindingsTests
 
         // Act.
         var expected = HandWrittenAnsible.Findings(project).Select(Line).ToList();
-        var actual = AnsibleFindings.For(AnsibleDefinition.ModelOf(project), AnsibleDefinition.Findings(project)).Select(Line).ToList();
+        var actual = AnsibleFindings.For(AnsibleModels.ModelOf(project), AnsibleModels.Findings(project)).Select(Line).ToList();
 
         // Assert.
         Assert.True(

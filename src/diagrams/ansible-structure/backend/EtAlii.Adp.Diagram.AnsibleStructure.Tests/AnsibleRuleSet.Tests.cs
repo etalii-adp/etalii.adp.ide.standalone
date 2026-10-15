@@ -23,7 +23,7 @@ public class AnsibleRuleSetTests
 
     /// <summary>The findings the product hands the host: derived from the definition, in today's order and words.</summary>
     private static IReadOnlyList<DiagramProblem> Derived(AnsibleProject project) =>
-        AnsibleFindings.For(AnsibleDefinition.ModelOf(project), AnsibleDefinition.Findings(project));
+        AnsibleFindings.For(AnsibleModels.ModelOf(project), AnsibleModels.Findings(project));
 
     private static DiagramProblem[] Of(string ruleId) =>
         [.. Judge("broken").Where(problem => problem.RuleId == ruleId)];

@@ -13,7 +13,7 @@ namespace EtAlii.Adp.Diagram.AnsibleStructure.Tests;
 public class AnsibleFindingsTests
 {
     private static readonly DislDiagram Model =
-        AnsibleDefinition.ModelOf(new AnsibleProjectReader().Read(IoPath.GetFullPath(IoPath.Combine("Fixtures", "broken"))));
+        AnsibleModels.ModelOf(new AnsibleProjectReader().Read(IoPath.GetFullPath(IoPath.Combine("Fixtures", "broken"))));
 
     private static DislFinding About(string code, string elementId) =>
         new(code, code, "error", code, [elementId], 3, "playbooks/deploy.yml");
