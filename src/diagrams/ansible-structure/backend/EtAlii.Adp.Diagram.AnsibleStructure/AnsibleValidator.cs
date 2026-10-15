@@ -6,10 +6,15 @@ using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would othe
 namespace EtAlii.Adp.Diagram.AnsibleStructure;
 
 /// <summary>
-/// Adapts <see cref="AnsibleRuleSet"/> to core's validator seam, so this type's rules reach the
-/// errors-and-warnings panel like any other type's.
+/// Hands the findings derived from the bundled definition to core's validator seam, so this type's
+/// rules reach the errors-and-warnings panel like any other type's.
 /// </summary>
 /// <remarks>
+/// <para>
+/// <b>It holds no rule</b>: it reads the folder, and hands out <see cref="AnsibleDefinition.Findings"/>
+/// through <see cref="AnsibleFindings.For"/> (ansible-structure-disl-fbl, Requirements 3.2 and 3.3). The
+/// hand-written rule set they replace is kept in the test project as the oracle they are compared with.
+/// </para>
 /// <para>
 /// This class is the reason the seam was widened. Every other validator reads
 /// <see cref="DiagramValidationRequest.Document"/>; this one cannot - for a folder-subject type
@@ -60,7 +65,8 @@ public sealed class AnsibleValidator : IDiagramValidator
             return ValueTask.FromResult<IReadOnlyList<DiagramProblem>>([]);
         }
 
-        var problems = AnsibleRuleSet.Judge(_reader.Read(folder));
+        var project = _reader.Read(folder);
+        var problems = AnsibleFindings.For(AnsibleDefinition.ModelOf(project), AnsibleDefinition.Findings(project));
         return ValueTask.FromResult(Rebased(problems, request.RootPath, folder));
     }
 
@@ -69,7 +75,7 @@ public sealed class AnsibleValidator : IDiagramValidator
     /// </summary>
     /// <remarks>
     /// <para>
-    /// <see cref="AnsibleRuleSet"/> works in the model's own terms, where a path is relative to
+    /// The definition works in the model's own terms, where a path is relative to
     /// the diagram's folder - <c>roles/nginx/meta/main.yml</c>. Core works in the project's,
     /// because that is what a client can be shown and what the problem store keys on. This is
     /// the one place both are known, so this is where the two meet.

@@ -9,8 +9,8 @@ namespace EtAlii.Adp.Diagram.AnsibleStructure;
 /// <summary>
 /// The Ansible structure diagram's bundled DISL definition (<c>definition/ansible-structure.dis</c>, from
 /// etalii-adp/etalii.adp), loaded once, and what is derived from it: the property rows of every node and
-/// relation and the sentence a reparenting move is refused with, mapped onto the host's ids by its
-/// <c>x-ansible</c> block.
+/// relation, the findings, and the sentence a reparenting move is refused with, mapped onto the host's
+/// ids by its <c>x-ansible</c> block.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -60,6 +60,17 @@ internal static class AnsibleDefinition
         if (ModelOf(project).ElementById(elementId) is not { } element) return [];
 
         return [.. FormDerivation.Derive(Specification, element, Env, Ids).Select(Row), .. AnsibleInventoryRows.Of(element)];
+    }
+
+    /// <summary>
+    /// The findings of <paramref name="project"/>: the reader's <c>std.unparseable</c> per file that did not
+    /// parse, then the definition's rules, as <see cref="ConstraintEvaluator"/> gives them. What the host is
+    /// handed is <see cref="AnsibleFindings.For"/> of these, in today's order and words.
+    /// </summary>
+    public static IReadOnlyList<DislFinding> Findings(AnsibleProject project)
+    {
+        ArgumentNullException.ThrowIfNull(project);
+        return ConstraintEvaluator.Evaluate(Specification, ModelOf(project), new DislConstraintOptions(Env, AnsibleGraphModel.ReaderFindings(project)));
     }
 
     /// <summary><paramref name="project"/> as the definition's model.</summary>

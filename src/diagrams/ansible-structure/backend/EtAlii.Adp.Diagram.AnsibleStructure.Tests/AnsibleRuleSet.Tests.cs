@@ -1,3 +1,4 @@
+using EtAlii.Adp.Diagram.AnsibleStructure.Tests.Parity;
 using Xunit;
 
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
@@ -8,12 +9,21 @@ namespace EtAlii.Adp.Diagram.AnsibleStructure.Tests;
 /// One test per rule of Requirement 9.2 - and, carrying at least as much weight, the tests that
 /// prove the rules stay quiet when nothing is wrong.
 /// </summary>
+/// <remarks>
+/// The rules were <c>AnsibleRuleSet</c>'s and are now the bundled definition's (ansible-structure-disl-fbl,
+/// task 6), so these judge the findings the product derives; the hand-written rule set is kept as the
+/// oracle in <c>Parity/HandWrittenAnsible.cs</c>.
+/// </remarks>
 public class AnsibleRuleSetTests
 {
     private static readonly AnsibleProjectReader Reader = new();
 
     private static IReadOnlyList<DiagramProblem> Judge(string fixture) =>
-        AnsibleRuleSet.Judge(Reader.Read(IoPath.Combine("Fixtures", fixture)));
+        Derived(Reader.Read(IoPath.Combine("Fixtures", fixture)));
+
+    /// <summary>The findings the product hands the host: derived from the definition, in today's order and words.</summary>
+    private static IReadOnlyList<DiagramProblem> Derived(AnsibleProject project) =>
+        AnsibleFindings.For(AnsibleDefinition.ModelOf(project), AnsibleDefinition.Findings(project));
 
     private static DiagramProblem[] Of(string ruleId) =>
         [.. Judge("broken").Where(problem => problem.RuleId == ruleId)];
@@ -208,7 +218,7 @@ public class AnsibleRuleSetTests
         try
         {
             // Act and assert.
-            Assert.DoesNotContain(AnsibleRuleSet.Judge(Reader.Read(scratch)), p => p.RuleId == AnsibleRules.UnmatchedHosts);
+            Assert.DoesNotContain(Derived(Reader.Read(scratch)), p => p.RuleId == AnsibleRules.UnmatchedHosts);
         }
         finally
         {
@@ -227,7 +237,7 @@ public class AnsibleRuleSetTests
         try
         {
             // Act and assert.
-            Assert.DoesNotContain(AnsibleRuleSet.Judge(Reader.Read(scratch)), p => p.RuleId == AnsibleRules.UnmatchedHosts);
+            Assert.DoesNotContain(Derived(Reader.Read(scratch)), p => p.RuleId == AnsibleRules.UnmatchedHosts);
         }
         finally
         {
@@ -246,7 +256,7 @@ public class AnsibleRuleSetTests
         try
         {
             // Act and assert.
-            Assert.DoesNotContain(AnsibleRuleSet.Judge(Reader.Read(scratch)), p => p.RuleId == AnsibleRules.UnmatchedHosts);
+            Assert.DoesNotContain(Derived(Reader.Read(scratch)), p => p.RuleId == AnsibleRules.UnmatchedHosts);
         }
         finally
         {
@@ -268,7 +278,7 @@ public class AnsibleRuleSetTests
         try
         {
             // Act and assert.
-            Assert.DoesNotContain(AnsibleRuleSet.Judge(Reader.Read(scratch)), p => p.RuleId == AnsibleRules.UnmatchedHosts);
+            Assert.DoesNotContain(Derived(Reader.Read(scratch)), p => p.RuleId == AnsibleRules.UnmatchedHosts);
         }
         finally
         {

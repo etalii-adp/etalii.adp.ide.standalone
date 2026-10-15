@@ -65,6 +65,17 @@ internal static class AnsibleGraphModel
         return diagram;
     }
 
+    /// <summary>
+    /// What the reader could not read, as the reader's findings the definition reports: one
+    /// <c>std.unparseable</c> per file that did not parse, at that file and the parser's line, its reason the
+    /// parser's own words.
+    /// </summary>
+    public static IReadOnlyList<DislReaderFinding> ReaderFindings(AnsibleProject project)
+    {
+        ArgumentNullException.ThrowIfNull(project);
+        return [.. project.Failures.Select(failure => DislReaderFinding.NotParsed(failure.Message, failure.Line == 0 ? null : (int)failure.Line, failure.RelativePath))];
+    }
+
     private static Dictionary<string, object?> Playbook(AnsibleProject project, AnsibleNode node)
     {
         var attributes = Identity(node);
