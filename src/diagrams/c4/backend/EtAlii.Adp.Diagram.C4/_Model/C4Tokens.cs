@@ -9,8 +9,8 @@ namespace EtAlii.Adp.Diagram.C4;
 /// makes <c>softwareSystem "Internet Banking System" "Lets customers view accounts"</c> three
 /// tokens rather than nine.
 /// </summary>
-public static class C4Tokens
-{
+public static class C4Tokens
+{
     /// <summary>
     /// The DSL's line lexer: <c>//</c> and <c>#</c> comments outside quoted strings, <c>\"</c> for a
     /// quote inside one, and braces as tokens of their own.
