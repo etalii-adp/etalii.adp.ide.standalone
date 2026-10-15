@@ -291,6 +291,12 @@ public sealed class RdfParser
         var stringToken = _current;
         Advance();
 
+        // An escape Turtle does not know is refused at its own line (behaviour changes B-18).
+        if (RdfEscapes.Refusal(stringToken.Value) is var (offset, message))
+        {
+            throw new RdfParseException(message, _tokenizer.LineOf(stringToken.Start + offset) + 1);
+        }
+
         var lexical = RdfEscapes.String(stringToken.Value);
 
         if (_current.Kind == RdfTokenKind.LanguageTag)

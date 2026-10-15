@@ -1,4 +1,3 @@
-using System.Text;
 using EtAlii.Adp.Documents;
 using Serilog;
 
@@ -920,7 +919,7 @@ public static class SparqlParser
 
                 case SparqlTokenKind.Number:
                     Advance();
-                    return new LiteralTerm(token.Value, NumericDatatype(token.Value), "", token.Value);
+                    return new LiteralTerm(token.Value, NumericLiteral.Datatype(token.Value), "", token.Value);
 
                 case SparqlTokenKind.Boolean:
                     Advance();
@@ -1246,64 +1245,20 @@ public static class SparqlParser
                 throw Error($"The prefix '{shown}' is used here but never declared - SPARQL requires every prefix to be declared with PREFIX.", token);
             }
 
-            return iri + local;
+            return iri + RdfEscapes.Local(local);
         }
 
         private static string Unbracket(string bracketed) => bracketed[1..^1];
 
         private string DecodeString(SparqlToken token)
         {
-            var value = token.Value;
-            var quote = value[0];
-            var longQuote = value.Length >= 6 && value[1] == quote && value[2] == quote;
-            var inner = longQuote ? value[3..^3] : value[1..^1];
-
-            var result = new StringBuilder(inner.Length);
-            for (var i = 0; i < inner.Length; i++)
+            // An escape SPARQL does not know is refused at its own line (behaviour changes B-18).
+            if (RdfEscapes.Refusal(token.Value) is var (offset, message))
             {
-                var character = inner[i];
-                if (character != '\\' || i + 1 >= inner.Length)
-                {
-                    result.Append(character);
-                    continue;
-                }
-
-                i++;
-                var escaped = inner[i];
-                switch (escaped)
-                {
-                    case 't': result.Append('\t'); break;
-                    case 'n': result.Append('\n'); break;
-                    case 'r': result.Append('\r'); break;
-                    case 'b': result.Append('\b'); break;
-                    case 'f': result.Append('\f'); break;
-                    case '"': result.Append('"'); break;
-                    case '\'': result.Append('\''); break;
-                    case '\\': result.Append('\\'); break;
-                    case 'u' when i + 4 < inner.Length:
-                        result.Append((char)Convert.ToInt32(inner.Substring(i + 1, 4), 16));
-                        i += 4;
-                        break;
-                    case 'U' when i + 8 < inner.Length:
-                        result.Append(char.ConvertFromUtf32(Convert.ToInt32(inner.Substring(i + 1, 8), 16)));
-                        i += 8;
-                        break;
-                    default:
-                        throw Error($"'\\{escaped}' is not a string escape SPARQL knows.", token);
-                }
+                throw new SparqlParseException(message, _tokenizer.LineOf(token.Start + offset) + 1);
             }
 
-            return result.ToString();
-        }
-
-        private static string NumericDatatype(string value)
-        {
-            if (value.Contains('e') || value.Contains('E'))
-            {
-                return SparqlVocabulary.XsdDouble;
-            }
-
-            return value.Contains('.') ? SparqlVocabulary.XsdDecimal : SparqlVocabulary.XsdInteger;
+            return RdfEscapes.String(token.Value);
         }
 
         // -- Token plumbing ----------------------------------------------------------------------

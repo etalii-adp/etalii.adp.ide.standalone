@@ -9,12 +9,64 @@ namespace EtAlii.Adp.Documents;
 /// <c>\uXXXX</c> and <c>\UXXXXXXXX</c>.
 /// </summary>
 /// <remarks>
-/// An escape this does not know stands for the character after its backslash, and a numeric
-/// escape without its hex digits stands for its letter, so a malformed escape is read rather than
-/// refused.
+/// Both grammars refuse a string escape they do not know and a numeric escape without its hex
+/// digits (behaviour changes B-18); <see cref="Refusal"/> names the first such escape, and a parser
+/// asks it before taking a string's value. The decoding itself stays forgiving - an unknown escape
+/// stands for the character after its backslash, and a numeric escape that is no character stands
+/// for its letter - so a caller that has not asked still gets a value rather than an exception.
 /// </remarks>
 public static class RdfEscapes
 {
+    private const string SingleLetterEscapes = "tbnrf\"'\\";
+
+    /// <summary>
+    /// The first escape in the string token <paramref name="raw"/> that Turtle and SPARQL refuse,
+    /// as its offset in <paramref name="raw"/> and a sentence saying why; <see langword="null"/>
+    /// when every escape is one the grammars know.
+    /// </summary>
+    public static (int Offset, string Message)? Refusal(string raw)
+    {
+        var quote = raw[0];
+        var isLong = raw.Length >= 6 && raw[1] == quote && raw[2] == quote;
+        var end = raw.Length - (isLong ? 3 : 1);
+        for (var i = isLong ? 3 : 1; i < end; i++)
+        {
+            if (raw[i] != '\\')
+            {
+                continue;
+            }
+
+            var letter = raw[i + 1];
+            if (SingleLetterEscapes.Contains(letter))
+            {
+                i++;
+                continue;
+            }
+
+            if (letter is not ('u' or 'U'))
+            {
+                return (i, $"'\\{letter}' is not a string escape; a backslash is written '\\\\'.");
+            }
+
+            var digits = letter == 'u' ? 4 : 8;
+            var written = raw[i..Math.Min(end, i + 2 + digits)];
+            if (i + 2 + digits > end
+                || !int.TryParse(raw.AsSpan(i + 2, digits), NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out var codePoint))
+            {
+                return (i, $"'{written}' is not an escape: '\\{letter}' takes {digits} hex digits.");
+            }
+
+            if (!IsCharacter(codePoint))
+            {
+                return (i, $"'{written}' does not name a character.");
+            }
+
+            i += 1 + digits;
+        }
+
+        return null;
+    }
+
     /// <summary>A string token's value: its quotes, one or three, stripped, and its escapes decoded.</summary>
     public static string String(string raw)
     {
@@ -108,7 +160,8 @@ public static class RdfEscapes
     private static void AppendCodePoint(StringBuilder builder, string source, ref int index, int digits)
     {
         if (index + digits < source.Length
-            && int.TryParse(source.AsSpan(index + 1, digits), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var codePoint))
+            && int.TryParse(source.AsSpan(index + 1, digits), NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out var codePoint)
+            && IsCharacter(codePoint))
         {
             builder.Append(char.ConvertFromUtf32(codePoint));
             index += digits;
@@ -118,4 +171,8 @@ public static class RdfEscapes
             builder.Append(source[index]);
         }
     }
+
+    /// <summary>Whether <paramref name="codePoint"/> is a Unicode scalar value: in range and not half of a surrogate pair.</summary>
+    private static bool IsCharacter(int codePoint) =>
+        codePoint is >= 0 and <= 0x10FFFF and not (>= 0xD800 and <= 0xDFFF);
 }
