@@ -15,7 +15,7 @@ public sealed record SankeyModel(
     SankeySettings Settings,
     IReadOnlyList<SankeyNode> Nodes,
     IReadOnlyList<SankeyFlow> Flows,
-    IReadOnlyList<SankeyProblem> Problems,
+    IReadOnlyList<ParseProblem> Problems,
     int? Version)
 {
     /// <summary>A document that declares nothing - the parser's answer to text it could not read at all.</summary>
@@ -36,9 +36,6 @@ public sealed record SankeyModel(
     /// <summary>The version this module writes, and the only one it reads.</summary>
     public const int CurrentVersion = 1;
 }
-
-/// <summary>Something the parser could not read, and the zero-based line it was found on.</summary>
-public sealed record SankeyProblem(int Line, string Message);
 
 /// <summary>The document-wide keys, each with the value it has when the document leaves it out.</summary>
 /// <param name="Format">How a value is written, <c>{value}</c> standing for the number: <c>€{value}M</c>.</param>
