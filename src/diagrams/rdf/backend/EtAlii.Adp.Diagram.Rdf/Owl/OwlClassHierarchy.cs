@@ -1,3 +1,5 @@
+using EtAlii.Adp.Layout;
+
 namespace EtAlii.Adp.Diagram.Rdf;
 
 /// <summary>
@@ -36,13 +38,9 @@ internal static class OwlClassHierarchy
             }
         }
 
-        // Component adjacency, then depth by memoized walk - acyclic by construction.
-        var componentSupers = new List<HashSet<int>>();
-        for (var i = 0; i < components.Count; i++)
-        {
-            componentSupers.Add([]);
-        }
-
+        // Each component layered as one node, named by its first member: the condensation is
+        // acyclic, so the cycle policy never applies.
+        var edges = new List<(string From, string To)>();
         foreach ((string child, List<string> parents) in supers)
         {
             foreach (var parent in parents)
@@ -50,38 +48,14 @@ internal static class OwlClassHierarchy
                 if (componentOf.TryGetValue(parent, out var parentComponent)
                     && parentComponent != componentOf[child])
                 {
-                    componentSupers[componentOf[child]].Add(parentComponent);
+                    edges.Add((components[parentComponent][0], components[componentOf[child]][0]));
                 }
             }
         }
 
-        var componentDepth = new int[components.Count];
-        Array.Fill(componentDepth, -1);
-        var depths = new Dictionary<string, int>(StringComparer.Ordinal);
-        foreach ((string member, int component) in componentOf)
-        {
-            depths[member] = DepthOf(component);
-        }
-
-        return depths;
-
-        int DepthOf(int component)
-        {
-            if (componentDepth[component] >= 0)
-            {
-                return componentDepth[component];
-            }
-
-            componentDepth[component] = 0; // settles self-references during the walk
-            var depth = 0;
-            foreach (var parent in componentSupers[component])
-            {
-                depth = Math.Max(depth, DepthOf(parent) + 1);
-            }
-
-            componentDepth[component] = depth;
-            return depth;
-        }
+        var componentDepth = Layering.LongestPath(components.Select(component => component[0]), edges, CyclePolicy.BackEdgeIsZero);
+        return componentOf.ToDictionary(
+            pair => pair.Key, pair => componentDepth[components[pair.Value][0]], StringComparer.Ordinal);
     }
 
     /// <summary>Tarjan's strongly connected components over the adjacency, deterministic in key order.</summary>

@@ -159,32 +159,12 @@ public static class SparqlLayout
             return (NodeWidth, NodeHeight / 2);
         }
 
-        double width = 0;
-        double height = 0;
-        double rowWidth = 0;
-        double rowHeight = 0;
-        var column = 0;
-
-        foreach (var item in items)
-        {
-            if (column == Columns)
-            {
-                width = Math.Max(width, rowWidth - GapX);
-                height += rowHeight + GapY;
-                rowWidth = 0;
-                rowHeight = 0;
-                column = 0;
-            }
-
-            rowWidth += item.Size.Width + GapX;
-            rowHeight = Math.Max(rowHeight, item.Size.Height);
-            column++;
-        }
-
-        width = Math.Max(width, rowWidth - GapX);
-        height += rowHeight;
-        return (width, height);
+        var grid = Grid(items);
+        return (grid.Width, grid.Height);
     }
+
+    private static GridPacking Grid(List<Item> items) =>
+        GridPacker.Pack([.. items.Select(item => (item.Size.Width, item.Size.Height))], Columns, GapX, GapY);
 
     /// <summary>Top-down: rows of up to three items, each row as tall as its tallest member.</summary>
     private static void PlaceItems(
@@ -197,21 +177,12 @@ public static class SparqlLayout
         Dictionary<string, RegistrationPosition> nodePositions,
         Dictionary<string, Rect> regionBounds)
     {
-        var x = originX;
-        var y = originY;
-        double rowHeight = 0;
-        var column = 0;
-
-        foreach (var item in items)
+        var grid = Grid(items);
+        for (var index = 0; index < items.Count; index++)
         {
-            if (column == Columns)
-            {
-                x = originX;
-                y += rowHeight + GapY;
-                rowHeight = 0;
-                column = 0;
-            }
-
+            var item = items[index];
+            var x = originX + grid.Cells[index].X;
+            var y = originY + grid.Cells[index].Y;
             if (item.Region is null)
             {
                 nodePositions[item.Id] = new RegistrationPosition(x, y);
@@ -230,10 +201,6 @@ public static class SparqlLayout
                     nodePositions,
                     regionBounds);
             }
-
-            x += item.Size.Width + GapX;
-            rowHeight = Math.Max(rowHeight, item.Size.Height);
-            column++;
         }
     }
 
