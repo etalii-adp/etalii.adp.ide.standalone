@@ -40,6 +40,66 @@ public class WardleyParserTests
     }
 
     [Fact]
+    public void Outcome_ReportsEachLineItPassedOver_AndNotTheStatementsItSkipsByDesign()
+    {
+        // Act.
+        var outcome = WardleyParser.Outcome(LineDocument.Parse(
+            "title A map\n" +
+            "component Kettle [0.5, 0.4]\n" +
+            "evolve\n" +
+            "y_axis Value chain->Invisible->Visible\n" +
+            "// a comment\n" +
+            "\n" +
+            "this is nothing\n"));
+
+        // Assert.
+        Assert.True(outcome.IsUsable);
+        Assert.Equal(
+        [
+            new ParseProblem(2, "This evolve statement could not be read, so it was passed over."),
+            new ParseProblem(6, "This line is not a statement of a Wardley map, so it was passed over."),
+        ], outcome.Problems);
+        Assert.Equal("Kettle", Assert.Single(outcome.Model.Components).Name);
+    }
+
+    [Theory]
+    [MemberData(nameof(Corpus))]
+    public void Outcome_OfTheCorpus_ReportsOnlyTheStatementNoParserKnows(string name)
+    {
+        // Act.
+        var outcome = WardleyParser.Outcome(LineDocument.Parse(File.ReadAllText(IoPath.Combine(FixturesPath, name))));
+
+        // Assert. The unmodelled-statements fixture holds one line no Wardley parser knows, on its
+        // 14th line; every statement elsewhere in the corpus is read or skipped by design.
+        if (name == "unmodelled-statements.owm")
+        {
+            Assert.Equal(13, Assert.Single(outcome.Problems).Line);
+        }
+        else
+        {
+            Assert.Empty(outcome.Problems);
+        }
+    }
+
+    [Fact]
+    public void Outcome_ReportsALineInsideAPipelineThatIsNotAChild()
+    {
+        // Act.
+        var outcome = WardleyParser.Outcome(LineDocument.Parse(
+            "component Kettle [0.5, 0.4]\n" +
+            "pipeline Kettle\n" +
+            "{\n" +
+            "  component Electric [0.6]\n" +
+            "  nothing at all\n" +
+            "}\n"));
+
+        // Assert.
+        Assert.Equal(
+            new ParseProblem(4, "This line inside a pipeline is not a component of it, so it was passed over."),
+            Assert.Single(outcome.Problems));
+    }
+
+    [Fact]
     public void Parse_ReadsTheThreeStatementKinds()
     {
         // Arrange.

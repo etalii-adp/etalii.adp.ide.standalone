@@ -14,10 +14,12 @@ namespace EtAlii.Adp.Diagram.WardleyMap;
 /// scope stack beyond "am I inside a pipeline block".
 /// </para>
 /// <para>
-/// <b>It never fails.</b> A line it does not recognise is skipped, not reported - the document
-/// keeps it (Requirement 3.3) and the validator judges what it can (Requirement 14). Parsing
-/// and judging are kept apart deliberately: it is what lets a map with a dangling link still
-/// open and render (Requirement 3.5).
+/// <b>It never fails.</b> A line it does not recognise is skipped - the document keeps it
+/// (Requirement 3.3) and the validator judges what it can (Requirement 14). Parsing and judging
+/// are kept apart deliberately: it is what lets a map with a dangling link still open and render
+/// (Requirement 3.5). <see cref="Outcome"/> reports each skipped line as a problem
+/// (code-structure FR-049); a statement the DSL knows and this module does not model, such as
+/// <c>y_axis</c>, is not one.
 /// </para>
 /// <para>
 /// Coordinates stay in the document's `[visibility, maturity]` order. The conversion to
@@ -26,9 +28,19 @@ namespace EtAlii.Adp.Diagram.WardleyMap;
 /// </remarks>
 public static partial class WardleyParser
 {
-    public static WardleyMap Parse(LineDocument document)
+    public static WardleyMap Parse(LineDocument document) => Outcome(document).Model;
+
+    /// <summary>
+    /// What <paramref name="document"/> states, with a problem for every line it passed over: a
+    /// statement whose shape it does not recognise, or a line that is no statement at all. The
+    /// outcome is always usable, because a map with a bad line still draws every good one.
+    /// </summary>
+    public static ParseOutcome<WardleyMap> Outcome(LineDocument document)
     {
         ArgumentNullException.ThrowIfNull(document);
+
+        var problems = new List<ParseProblem>();
+        void Skipped(WardleyLine line, string message) => problems.Add(new ParseProblem((int)line.Number - 1, message));
 
         var title = "";
         var style = "";
@@ -71,6 +83,10 @@ public static partial class WardleyParser
                 {
                     openChildren.Add(child);
                 }
+                else if (!text.StartsWith('{'))
+                {
+                    Skipped(line, "This line inside a pipeline is not a component of it, so it was passed over.");
+                }
 
                 continue;
             }
@@ -97,7 +113,15 @@ public static partial class WardleyParser
 
             if (TryKeyword(text, "size", out var sizeRest))
             {
-                size = ParseSize(sizeRest) ?? size;
+                if (ParseSize(sizeRest) is { } parsedSize)
+                {
+                    size = parsedSize;
+                }
+                else
+                {
+                    Skipped(line, Unread("size"));
+                }
+
                 continue;
             }
 
@@ -105,7 +129,15 @@ public static partial class WardleyParser
             // `annotations [0.6, 0.02]` would otherwise be tried as a numbered annotation.
             if (TryKeyword(text, "annotations", out var annotationsRest))
             {
-                annotationsPosition = ParseCoordinateIn(annotationsRest) ?? annotationsPosition;
+                if (ParseCoordinateIn(annotationsRest) is { } position)
+                {
+                    annotationsPosition = position;
+                }
+                else
+                {
+                    Skipped(line, Unread("annotations"));
+                }
+
                 continue;
             }
 
@@ -114,6 +146,10 @@ public static partial class WardleyParser
                 if (ParseAnnotation(annotationRest, line.Number) is { } annotation)
                 {
                     annotations.Add(annotation);
+                }
+                else
+                {
+                    Skipped(line, Unread("annotation"));
                 }
 
                 continue;
@@ -125,6 +161,10 @@ public static partial class WardleyParser
                 {
                     evolves.Add(evolve);
                 }
+                else
+                {
+                    Skipped(line, Unread("evolve"));
+                }
 
                 continue;
             }
@@ -134,6 +174,10 @@ public static partial class WardleyParser
                 if (ParseNote(noteRest, line.Number) is { } note)
                 {
                     notes.Add(note);
+                }
+                else
+                {
+                    Skipped(line, Unread("note"));
                 }
 
                 continue;
@@ -145,6 +189,10 @@ public static partial class WardleyParser
                 {
                     urls.Add(url);
                 }
+                else
+                {
+                    Skipped(line, Unread("url"));
+                }
 
                 continue;
             }
@@ -154,6 +202,10 @@ public static partial class WardleyParser
                 if (ParseAttitude(attitudeKind, attitudeRest, line.Number) is { } attitude)
                 {
                     attitudes.Add(attitude);
+                }
+                else
+                {
+                    Skipped(line, Unread(FirstToken(text)));
                 }
 
                 continue;
@@ -165,6 +217,10 @@ public static partial class WardleyParser
                 {
                     accelerators.Add(accelerator);
                 }
+                else
+                {
+                    Skipped(line, Unread("accelerator"));
+                }
 
                 continue;
             }
@@ -175,6 +231,10 @@ public static partial class WardleyParser
                 {
                     accelerators.Add(deaccelerator);
                 }
+                else
+                {
+                    Skipped(line, Unread("deaccelerator"));
+                }
 
                 continue;
             }
@@ -183,6 +243,10 @@ public static partial class WardleyParser
             {
                 openPipeline = ParsePipelineHeader(pipelineRest, line.Number);
                 openChildren = [];
+                if (openPipeline is null)
+                {
+                    Skipped(line, Unread("pipeline"));
+                }
 
                 // The legacy form is complete on its own line: no block follows, so close it now.
                 if (openPipeline is { Form: WardleyPipelineForm.Legacy })
@@ -203,6 +267,15 @@ public static partial class WardleyParser
             if (ParseLink(text, line.Number) is { } link)
             {
                 links.Add(link);
+                continue;
+            }
+
+            var keyword = FirstToken(text);
+            if (!UnmodelledKeywords.Contains(keyword))
+            {
+                Skipped(line, KnownKeywords.Contains(keyword)
+                    ? Unread(keyword)
+                    : "This line is not a statement of a Wardley map, so it was passed over.");
             }
         }
 
@@ -213,7 +286,7 @@ public static partial class WardleyParser
             pipelines.Add(openPipeline with { Children = openChildren.ToArray() });
         }
 
-        return new WardleyMap(
+        return new ParseOutcome<WardleyMap>(new WardleyMap(
             title,
             components.ToArray(),
             links.ToArray(),
@@ -226,8 +299,14 @@ public static partial class WardleyParser
             urls.ToArray(),
             size,
             style,
-            annotationsPosition);
+            annotationsPosition), problems);
     }
+
+    private static string Unread(string keyword) =>
+        $"This {keyword.ToLowerInvariant()} statement could not be read, so it was passed over.";
+
+    private static string FirstToken(string text) =>
+        text.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? "";
 
     /// <summary>
     /// `evolve Name x` or `evolve Name-&gt;NewName x`, where the trailing number is the target
@@ -486,12 +565,17 @@ public static partial class WardleyParser
         "y_axis", "x_axis", "evolution", "presentation",
     };
 
+    /// <summary>The keywords of <see cref="KnownKeywords"/> this module skips by design, so a skip of one is no problem.</summary>
+    private static readonly HashSet<string> UnmodelledKeywords = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "y_axis", "x_axis", "evolution", "presentation",
+    };
+
     private static WardleyLink? ParseLink(string text, uint number)
     {
         // A statement that opens with a keyword is that statement, never a link - even when it
         // happens to contain an arrow.
-        var firstToken = text.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? "";
-        if (KnownKeywords.Contains(firstToken))
+        if (KnownKeywords.Contains(FirstToken(text)))
         {
             return null;
         }

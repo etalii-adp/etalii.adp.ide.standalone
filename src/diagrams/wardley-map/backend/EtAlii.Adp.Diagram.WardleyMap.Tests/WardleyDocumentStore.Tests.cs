@@ -1,4 +1,5 @@
 using EtAlii.Adp.Documents;
+using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
 namespace EtAlii.Adp.Diagram.WardleyMap.Tests;
@@ -24,4 +25,15 @@ public sealed class WardleyDocumentStoreTests : DocumentStoreContract<IWardleyDo
     protected override string TextOf(LineDocument document) => document.Text;
 
     protected override bool IsEmpty(WardleyMap model) => model.Components.Count == 0;
+
+    [Fact]
+    public void AnEntry_CarriesTheLinesItsParserPassedOver()
+    {
+        // Act.
+        var entry = new WardleyDocumentStore().GetOrLoad(IoPath.Combine(AppContext.BaseDirectory, "Fixtures", "unmodelled-statements.owm"));
+
+        // Assert.
+        Assert.True(entry.IsUsable);
+        Assert.Equal(13, Assert.Single(entry.Problems).Line);
+    }
 }
