@@ -33,7 +33,7 @@ public sealed class WardleyValidator : IDiagramValidator
         ArgumentNullException.ThrowIfNull(request);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var map = WardleyParser.Parse(WardleyDocument.Parse(request.Document));
+        var map = WardleyParser.Parse(LineDocument.Parse(request.Document));
         var problems = new List<DiagramProblem>(WardleyRuleSet.Validate(map));
         problems.AddRange(UnresolvedReferences(map, request));
 

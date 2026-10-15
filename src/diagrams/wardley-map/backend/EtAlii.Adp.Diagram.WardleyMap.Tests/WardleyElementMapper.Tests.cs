@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
@@ -7,10 +8,10 @@ public class WardleyElementMapperTests
 {
     private readonly WardleyElementMapper _mapper = new(new WardleyIdentities());
 
-    private static WardleyMap ParseText(string text) => WardleyParser.Parse(WardleyDocument.Parse(text));
+    private static WardleyMap ParseText(string text) => WardleyParser.Parse(LineDocument.Parse(text));
 
     private static WardleyMap Fixture(string name) =>
-        WardleyParser.Parse(WardleyDocument.Parse(
+        WardleyParser.Parse(LineDocument.Parse(
             File.ReadAllText(IoPath.Combine(AppContext.BaseDirectory, "Fixtures", name))));
 
     /// <summary>Maps a map with freshly reconciled identities, which is what a first open does.</summary>
@@ -224,7 +225,7 @@ public class WardleyElementMapperTests
         // pipelines - may take the mapper down.
         foreach (var path in fixtures)
         {
-            var map = WardleyParser.Parse(WardleyDocument.Parse(File.ReadAllText(path)));
+            var map = WardleyParser.Parse(LineDocument.Parse(File.ReadAllText(path)));
             Assert.NotEmpty(Map(map));
         }
     }

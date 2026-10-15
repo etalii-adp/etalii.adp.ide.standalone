@@ -34,6 +34,6 @@ public sealed class WardleyDocumentStoreSharedReadTests : IDisposable
         var document = new WardleyDocumentStore().GetOrLoad(path).Document;
 
         // Assert: the map itself, not the empty fallback.
-        Assert.Equal(text, document.ToText());
+        Assert.Equal(text, document.Text);
     }
 }

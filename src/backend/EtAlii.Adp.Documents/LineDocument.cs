@@ -42,6 +42,12 @@ namespace EtAlii.Adp.Documents;
 /// before it started has a length of zero, so a replace spliced its lines in as an insertion
 /// rather than refusing (Requirements 1.2 and 1.4).
 /// </para>
+/// <para>
+/// Wardley-map held one more, and moved onto this one in code-structure T127. Its copy chose
+/// LF for a file with no line breaks, gave a terminated last line the dominant ending when a
+/// line was appended after it, and left a terminated line last when an unterminated one was
+/// removed; this class's behaviour won all three (behaviour changes B-05 and B-15).
+/// </para>
 /// </remarks>
 public sealed class LineDocument : ITextBody<LineDocument>
 {
