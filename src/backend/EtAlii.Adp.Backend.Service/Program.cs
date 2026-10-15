@@ -43,6 +43,10 @@ builder.Host
 // more line here and a ServiceCollection.Add<Area>.cs beside the code it registers.
 var appDataRoot = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
 
+// The one clock. What waits, coalesces or evicts takes it through its constructor, so a test
+// advances a fake one rather than sleeping (code-structure FR-051).
+builder.Services.AddSingleton(TimeProvider.System);
+
 // Who is calling: the authenticator, its options, and the store a login lands in.
 builder.Services.AddSessions(builder.Configuration);
 // Which folders a user has opened.

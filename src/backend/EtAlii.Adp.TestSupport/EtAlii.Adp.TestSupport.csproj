@@ -16,6 +16,8 @@
     <!-- The contracts every module's store and reloader tests derive from (code-structure FR-035). -->
     <PackageReference Include="xunit.v3.assert" />
     <PackageReference Include="xunit.v3.extensibility.core" />
+    <!-- FakeTimeProvider, for every test project: the one clock is advanced, never slept on (code-structure FR-051). -->
+    <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" />
     <ProjectReference Include="..\EtAlii.Adp\EtAlii.Adp.csproj" />
     <ProjectReference Include="..\EtAlii.Adp.Hierarchy\EtAlii.Adp.Hierarchy.csproj" />
     <ProjectReference Include="..\EtAlii.Adp.History\EtAlii.Adp.History.csproj" />
