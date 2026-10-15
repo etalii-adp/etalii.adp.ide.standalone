@@ -1,4 +1,5 @@
 using EtAlii.Adp.Documents;
+using Serilog;
 
 namespace EtAlii.Adp.Diagram.Rdf;
 
@@ -16,6 +17,8 @@ namespace EtAlii.Adp.Diagram.Rdf;
 /// </remarks>
 public sealed class RdfParser
 {
+    private static readonly ILogger _logger = Log.ForContext<RdfParser>();
+
     private readonly LineDocument _document;
     private readonly RdfTokenizer _tokenizer;
     private readonly List<RdfTriple> _triples = [];
@@ -42,6 +45,27 @@ public sealed class RdfParser
     {
         ArgumentNullException.ThrowIfNull(document);
         return new RdfParser(document).ParseDocument();
+    }
+
+    /// <summary>
+    /// What the store and the validators keep of <paramref name="document"/>: what it states, or, for
+    /// a text that is not Turtle, the empty model, the parser's sentence on the line it stopped at,
+    /// and that line and sentence as the reason nothing is written to it. <b>Never throws.</b>
+    /// </summary>
+    public static ParseOutcome<RdfModel> Outcome(LineDocument document)
+    {
+        try
+        {
+            return new ParseOutcome<RdfModel>(Parse(document), []);
+        }
+        catch (RdfParseException exception)
+        {
+            _logger.Debug(exception, "An RDF document does not parse at line {Line}", exception.Line);
+            return new ParseOutcome<RdfModel>(
+                RdfModel.Empty,
+                [new ParseProblem(Math.Max(exception.Line, 1) - 1, exception.Message)],
+                $"it does not parse at line {exception.Line}. {exception.Message}");
+        }
     }
 
     private RdfModel ParseDocument()

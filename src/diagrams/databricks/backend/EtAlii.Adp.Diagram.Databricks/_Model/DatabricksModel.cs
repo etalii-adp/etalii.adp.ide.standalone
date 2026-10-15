@@ -1,4 +1,6 @@
 using EtAlii.Adp.Documents;
+using Serilog;
+using YamlDotNet.Core;
 
 namespace EtAlii.Adp.Diagram.Databricks;
 
@@ -20,11 +22,13 @@ public sealed record DatabricksModel(
     IReadOnlyList<JobModel> Jobs,
     IReadOnlyList<PipelineModel> Pipelines)
 {
+    private static readonly ILogger _logger = Log.ForContext<DatabricksModel>();
+
     /// <summary>What a file that does not parse reads as: nothing under any reading.</summary>
-    public static DatabricksModel Empty { get; } = new(BundleModel.Empty, [], []);
+    private static DatabricksModel Empty { get; } = new(BundleModel.Empty, [], []);
 
     /// <summary>The three readings of <paramref name="document"/>.</summary>
-    /// <exception cref="YamlDotNet.Core.YamlException">The document is not YAML (or JSON, the same door).</exception>
+    /// <exception cref="YamlException">The document is not YAML (or JSON, the same door).</exception>
     public static DatabricksModel Read(LineDocument document)
     {
         var root = YamlAccess.Root(document);
@@ -32,5 +36,24 @@ public sealed record DatabricksModel(
             BundleParser.Parse(root, document),
             JobParser.Parse(root, document),
             PipelineParser.Parse(root, document));
+    }
+
+    /// <summary>
+    /// What the store and the validator keep of <paramref name="document"/>: its three readings, or,
+    /// for a text that is not YAML, the empty model, the reader's sentence on the line it names, and
+    /// that sentence as the reason nothing is written to it. <b>Never throws.</b>
+    /// </summary>
+    public static ParseOutcome<DatabricksModel> Outcome(LineDocument document)
+    {
+        try
+        {
+            return new ParseOutcome<DatabricksModel>(Read(document), []);
+        }
+        catch (YamlException exception)
+        {
+            _logger.Debug(exception, "A Databricks file does not parse at line {Line}", exception.Start.Line);
+            var line = (int)Math.Max(exception.Start.Line, 1) - 1;
+            return new ParseOutcome<DatabricksModel>(Empty, [new ParseProblem(line, exception.Message)], exception.Message);
+        }
     }
 }

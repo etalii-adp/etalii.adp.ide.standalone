@@ -1,6 +1,4 @@
 using EtAlii.Adp.Documents;
-using Serilog;
-using YamlDotNet.Core;
 
 namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline;
 
@@ -16,8 +14,6 @@ namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline;
 /// </remarks>
 public sealed class PipelineValidator : IDiagramValidator
 {
-    private static readonly ILogger _logger = Log.ForContext<PipelineValidator>();
-
     /// <summary>The rule reported when the file is not YAML this can read.</summary>
     public const string UnparseableRuleId = "azure-pipeline.unparseable";
 
@@ -31,26 +27,21 @@ public sealed class PipelineValidator : IDiagramValidator
         ArgumentNullException.ThrowIfNull(request);
         cancellationToken.ThrowIfCancellationRequested();
 
-        PipelineModel model;
-        try
+        // ReSharper disable once NullCoalescingConditionIsAlwaysNotNullAccordingToAPIContract - Reason: IDiagramValidator.ValidateAsync is a public module seam and the record's non-nullable Document is a compile-time annotation the runtime does not enforce, so a caller that passes null (null!, or code built without nullable checks) gets an empty document here rather than a NullReferenceException; ProjectValidator, the one caller in this repository, always passes the text it read, so an empty file arrives as "", not null.
+        var outcome = PipelineParser.Outcome(LineDocument.Parse(request.Document ?? ""));
+        if (!outcome.IsUsable)
         {
-            // ReSharper disable once NullCoalescingConditionIsAlwaysNotNullAccordingToAPIContract - Reason: IDiagramValidator.ValidateAsync is a public module seam and the record's non-nullable Document is a compile-time annotation the runtime does not enforce, so a caller that passes null (null!, or code built without nullable checks) gets an empty document here rather than a NullReferenceException; ProjectValidator, the one caller in this repository, always passes the text it read, so an empty file arrives as "", not null.
-            model = PipelineParser.Parse(LineDocument.Parse(request.Document ?? ""));
-        }
-        catch (YamlException exception)
-        {
-            var line = (uint)Math.Max(exception.Start.Line, 1);
-            _logger.Debug(exception, "{BaseName} does not parse at line {Line}", request.BaseName, line);
+            var problem = outcome.Problems[0];
             return ValueTask.FromResult<IReadOnlyList<DiagramProblem>>(
             [
                 new DiagramProblem(
                     DiagramProblemSeverity.Error,
-                    $"This is not YAML that can be read: {exception.Message}",
+                    $"This is not YAML that can be read: {problem.Message}",
                     UnparseableRuleId,
-                    new DiagramProblemLineLocation(line)),
+                    new DiagramProblemLineLocation((uint)problem.Line + 1)),
             ]);
         }
 
-        return ValueTask.FromResult(PipelineRuleSet.Judge(model));
+        return ValueTask.FromResult(PipelineRuleSet.Judge(outcome.Model));
     }
 }
