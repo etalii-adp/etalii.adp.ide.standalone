@@ -1,4 +1,6 @@
+using System.Text.RegularExpressions;
 using EtAlii.Adp.Hierarchy;
+using EtAlii.Adp.Specification.Disl;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
@@ -8,21 +10,22 @@ namespace EtAlii.Adp.Diagram.AnsibleStructure.Tests;
 /// Model and layout onto the core element and delta vocabulary (Requirement 7.1) - and, just as
 /// much, the two delta kinds this type must never emit.
 /// </summary>
-public class AnsibleElementMapperTests
+public partial class AnsibleElementMapperTests
 {
     private static readonly AnsibleProjectReader Reader = new();
     private static readonly AnsibleElementMapper Mapper = new();
 
-    private static (AnsibleProject Project, AnsibleGraph Graph) Read(string fixture)
+    /// <summary>The definition's model of a fixture, which the mapper reads, and the graph it was delivered from, which the assertions read.</summary>
+    private static (DislDiagram Model, AnsibleGraph Graph) Read(string fixture)
     {
         var project = Reader.Read(IoPath.Combine("Fixtures", fixture));
-        return (project, AnsibleGraph.Derive(project));
+        return (AnsibleDefinition.ModelOf(project), AnsibleGraph.Derive(project));
     }
 
     private static IReadOnlyList<DiagramElement> Everything(string fixture)
     {
-        (AnsibleProject project, AnsibleGraph graph) = Read(fixture);
-        return Mapper.Visible(project, graph, DiagramViewport.Unbounded);
+        var model = Read(fixture).Model;
+        return Mapper.Visible(model, DiagramViewport.Unbounded);
     }
 
     private static Wire.AnsibleElementPayload PayloadOf(DiagramElement element) =>
@@ -34,8 +37,8 @@ public class AnsibleElementMapperTests
     public void EveryNodeAndEdge_BecomesAnElement()
     {
         // Act.
-        (AnsibleProject project, AnsibleGraph graph) = Read("infrastructure");
-        var elements = Mapper.Visible(project, graph, DiagramViewport.Unbounded);
+        (DislDiagram model, AnsibleGraph graph) = Read("infrastructure");
+        var elements = Mapper.Visible(model, DiagramViewport.Unbounded);
 
         // Assert.
         Assert.Equal(graph.Nodes.Count + graph.Edges.Count, elements.Count);
@@ -209,9 +212,9 @@ public class AnsibleElementMapperTests
     public void AViewport_CullsWhatItDoesNotTouch()
     {
         // Act.
-        (AnsibleProject project, AnsibleGraph graph) = Read("infrastructure");
-        var everything = Mapper.Visible(project, graph, DiagramViewport.Unbounded);
-        var narrow = Mapper.Visible(project, graph, new DiagramViewport(-10, -10, 10, 10));
+        var model = Read("infrastructure").Model;
+        var everything = Mapper.Visible(model, DiagramViewport.Unbounded);
+        var narrow = Mapper.Visible(model, new DiagramViewport(-10, -10, 10, 10));
 
         // Assert.
         Assert.True(narrow.Count < everything.Count, "A narrow viewport should deliver less than everything.");
@@ -222,8 +225,8 @@ public class AnsibleElementMapperTests
     public void ACulledEdgeKeepsBothItsEnds()
     {
         // Act.
-        (AnsibleProject project, AnsibleGraph graph) = Read("infrastructure");
-        var delivered = Mapper.Visible(project, graph, new DiagramViewport(-10, -10, 10, 10));
+        var model = Read("infrastructure").Model;
+        var delivered = Mapper.Visible(model, new DiagramViewport(-10, -10, 10, 10));
 
         // Assert.
         // The canvas draws a connector from the boxes at its two ends, so an element whose
@@ -246,8 +249,8 @@ public class AnsibleElementMapperTests
     public void NoGroupOrUngroupDeltaIsEverProduced()
     {
         // Act.
-        (AnsibleProject project, AnsibleGraph graph) = Read("infrastructure");
-        var elements = Mapper.Visible(project, graph, DiagramViewport.Unbounded);
+        var model = Read("infrastructure").Model;
+        var elements = Mapper.Visible(model, DiagramViewport.Unbounded);
         var deltas = DiagramDiff.Between([], elements);
 
         // Assert.
@@ -277,7 +280,7 @@ public class AnsibleElementMapperTests
         {
             File.Delete(IoPath.Combine(scratch, "dbservers.yml"));
             var project = Reader.Read(scratch);
-            var after = Mapper.Visible(project, AnsibleGraph.Derive(project), DiagramViewport.Unbounded);
+            var after = Mapper.Visible(AnsibleDefinition.ModelOf(project), DiagramViewport.Unbounded);
 
             // Act.
             var deltas = DiagramDiff.Between(before, after);
@@ -321,7 +324,7 @@ public class AnsibleElementMapperTests
     private static string[] Ids(string folder)
     {
         var project = Reader.Read(folder);
-        return [.. Mapper.Visible(project, AnsibleGraph.Derive(project), DiagramViewport.Unbounded)
+        return [.. Mapper.Visible(AnsibleDefinition.ModelOf(project), DiagramViewport.Unbounded)
             .Select(element => element.Id)];
     }
 
@@ -347,7 +350,7 @@ public class AnsibleElementMapperTests
     public void AnAuthoredPosition_OverridesTheComputedOne()
     {
         // Arrange: one node moved somewhere the layout engine would never place it.
-        (AnsibleProject project, AnsibleGraph graph) = Read("infrastructure");
+        (DislDiagram model, AnsibleGraph graph) = Read("infrastructure");
         var moved = graph.Nodes[0].Id;
         var stored = new Dictionary<string, RegistrationPosition>(StringComparer.Ordinal)
         {
@@ -355,7 +358,7 @@ public class AnsibleElementMapperTests
         };
 
         // Act.
-        var elements = Mapper.Visible(project, graph, DiagramViewport.Unbounded, stored);
+        var elements = Mapper.Visible(model, DiagramViewport.Unbounded, stored);
 
         // Assert.
         var element = elements.Single(candidate => candidate.Id == moved);
@@ -367,16 +370,16 @@ public class AnsibleElementMapperTests
     public void UnauthoredElements_KeepTheirComputedPositions()
     {
         // Arrange.
-        (AnsibleProject project, AnsibleGraph graph) = Read("infrastructure");
+        (DislDiagram model, AnsibleGraph graph) = Read("infrastructure");
         var moved = graph.Nodes[0].Id;
-        var computed = Mapper.Visible(project, graph, DiagramViewport.Unbounded);
+        var computed = Mapper.Visible(model, DiagramViewport.Unbounded);
         var stored = new Dictionary<string, RegistrationPosition>(StringComparer.Ordinal)
         {
             [moved] = new(4321, 1234),
         };
 
         // Act.
-        var arranged = Mapper.Visible(project, graph, DiagramViewport.Unbounded, stored);
+        var arranged = Mapper.Visible(model, DiagramViewport.Unbounded, stored);
 
         // Assert: everything sits where it sat before, except the moved node itself and the
         // edges anchored on it - those follow their endpoint, which is the point of moving it.
@@ -401,15 +404,15 @@ public class AnsibleElementMapperTests
     public void AStoredIdTheGraphNoLongerProduces_ChangesNothing()
     {
         // Arrange: the stale-key case - a play removed, a file renamed (Requirement 3.1).
-        (AnsibleProject project, AnsibleGraph graph) = Read("infrastructure");
-        var computed = Mapper.Visible(project, graph, DiagramViewport.Unbounded);
+        var model = Read("infrastructure").Model;
+        var computed = Mapper.Visible(model, DiagramViewport.Unbounded);
         var stored = new Dictionary<string, RegistrationPosition>(StringComparer.Ordinal)
         {
             ["playbook:deleted-yesterday.yml"] = new(4321, 1234),
         };
 
         // Act.
-        var arranged = Mapper.Visible(project, graph, DiagramViewport.Unbounded, stored);
+        var arranged = Mapper.Visible(model, DiagramViewport.Unbounded, stored);
 
         // Assert: no phantom element, and nothing displaced. Pairwise, as above.
         Assert.Equal(computed.Count, arranged.Count);
@@ -426,7 +429,7 @@ public class AnsibleElementMapperTests
     public void AnEdge_FollowsAMovedEndpoint()
     {
         // Arrange: an edge anchors on its source, so moving that source moves the edge with it.
-        (AnsibleProject project, AnsibleGraph graph) = Read("infrastructure");
+        (DislDiagram model, AnsibleGraph graph) = Read("infrastructure");
         var edge = graph.Edges.First(candidate => candidate.TargetId.Length > 0);
         var stored = new Dictionary<string, RegistrationPosition>(StringComparer.Ordinal)
         {
@@ -434,11 +437,55 @@ public class AnsibleElementMapperTests
         };
 
         // Act.
-        var elements = Mapper.Visible(project, graph, DiagramViewport.Unbounded, stored);
+        var elements = Mapper.Visible(model, DiagramViewport.Unbounded, stored);
 
         // Assert.
         var drawn = elements.Single(candidate => candidate.Id == edge.Id);
         Assert.Equal(4321, drawn.X);
         Assert.Equal(1234, drawn.Y);
+    }
+
+    // ---- what the payloads read (ansible-structure-disl-fbl, Requirement 3.5) ------------------
+
+    /// <summary>
+    /// The files of the product that name the reading's own types: the plugin and the reader, YAML and graph
+    /// code it wraps, with their records, and the two that hand a reading on until the library's folder body
+    /// watches (task 10): the store, and the definition, which turns the store's reading into the model.
+    /// </summary>
+    private static readonly string[] ReadingFiles =
+    [
+        "AnsibleDefinition.cs",
+        "AnsibleFolderPlugin.cs",
+        "AnsibleGraph.cs",
+        "AnsibleProjectReader.cs",
+        "AnsibleProjectStore.cs",
+        "AnsibleYaml.cs",
+        "IAnsibleProjectStore.cs",
+    ];
+
+    [GeneratedRegex(@"\b(AnsibleProject|AnsibleGraph)\b")]
+    private static partial Regex ReadingType();
+
+    /// <summary>The payloads, the layout and the selection read the definition's model: no other file of the product names the project or the graph.</summary>
+    [Fact]
+    public void NoFileOutsideThePlugin_NamesTheProjectOrTheGraph()
+    {
+        // Arrange.
+        var product = RepositoryPaths.Under("src", "diagrams", "ansible-structure", "backend", "EtAlii.Adp.Diagram.AnsibleStructure");
+        var files = Directory.GetFiles(product, "*.cs", SearchOption.AllDirectories)
+            .Select(file => IoPath.GetRelativePath(product, file).Replace('\\', '/'))
+            .Where(file => !file.StartsWith("bin/", StringComparison.Ordinal) && !file.StartsWith("obj/", StringComparison.Ordinal) && !file.StartsWith("_Model/", StringComparison.Ordinal))
+            .Order(StringComparer.Ordinal)
+            .ToList();
+
+        // Act.
+        var naming = files
+            .Where(file => !ReadingFiles.Contains(file, StringComparer.Ordinal))
+            .Where(file => ReadingType().IsMatch(File.ReadAllText(IoPath.Combine(product, file))))
+            .ToList();
+
+        // Assert.
+        Assert.Contains("AnsibleElementMapper.cs", files);
+        Assert.Empty(naming);
     }
 }
