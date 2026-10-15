@@ -357,6 +357,29 @@ public sealed class WardleyValidatorTests : IDisposable
         Assert.Contains(problems, problem => problem.RuleId == WardleyRuleSet.AnchorMissingRuleId);
     }
 
+    [Fact]
+    public async Task ALineTheParserPassesOver_IsAWarningAtItsLine()
+    {
+        // Act.
+        var problems = await Validate("anchor Business [0.95, 0.63]\nevolve\n");
+
+        // Assert.
+        var problem = Assert.Single(problems, problem => problem.RuleId == WardleyValidator.LinePassedOverRuleId);
+        Assert.Equal(DiagramProblemSeverity.Warning, problem.Severity);
+        Assert.Equal("This evolve statement could not be read, so it was passed over.", problem.Message);
+        Assert.Equal(2u, Assert.IsType<DiagramProblemLineLocation>(problem.Location).Number);
+    }
+
+    [Fact]
+    public async Task AStatementThisModuleDoesNotModel_IsSilent()
+    {
+        // Act.
+        var problems = await Validate("anchor Business [0.95, 0.63]\ny_axis Value chain->Invisible->Visible\n");
+
+        // Assert.
+        Assert.DoesNotContain(problems, problem => problem.RuleId == WardleyValidator.LinePassedOverRuleId);
+    }
+
     private async Task<IReadOnlyList<DiagramProblem>> Validate(string text)
     {
         var body = IoPath.Combine(_root, "map.owm");
