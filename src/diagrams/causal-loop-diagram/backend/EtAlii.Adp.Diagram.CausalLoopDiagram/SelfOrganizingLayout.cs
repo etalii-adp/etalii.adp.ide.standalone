@@ -176,85 +176,24 @@ public static class SelfOrganizingLayout
     }
 
     /// <summary>
-    /// Pushes overlapping boxes apart in stable order, and reports how many pairs still overlap
-    /// when the rounds are spent.
+    /// Pushes overlapping variables apart through <see cref="OverlapResolver.Separate"/>, every box
+    /// one height, and reports how many pairs still overlap when the rounds are spent.
     /// </summary>
     /// <remarks>
-    /// <para>
     /// <b>The extent ratio is not the guard here, and this is the code that says so.</b> A
     /// hairball is roughly square: it scores near 1:1 and would pass a ratio bound comfortably
     /// while being exactly the unreadable arrangement the ruling names. What bites is whether any
-    /// two boxes intersect, so that is what is measured and that is what refuses.
-    /// </para>
-    /// <para>
-    /// Deterministic like the pass before it: pairs are visited in document order, each round
-    /// reads the positions the previous round left, and the displacement is a function of the
-    /// overlap alone. Nothing here consults a random source or a clock, so the arrangement stays
-    /// reproducible across processes and the two-process test still covers this half.
-    /// </para>
+    /// two boxes intersect, so that is what is measured and that is what refuses. Nothing here
+    /// consults a random source or a clock, so the arrangement stays reproducible across processes
+    /// and the two-process test still covers this half.
     /// </remarks>
     internal static int Separate(
         (double X, double Y)[] positions,
         double[] widths,
         double height,
         double separation,
-        int rounds = SeparationRounds)
-    {
-        var overlaps = 0;
-
-        for (var round = 0; round < rounds; round++)
-        {
-            overlaps = 0;
-
-            for (var first = 0; first < positions.Length; first++)
-            {
-                for (var second = first + 1; second < positions.Length; second++)
-                {
-                    // The half-extents two boxes need between their centres to clear each other,
-                    // plus the separation this module keeps between neighbours.
-                    var neededX = ((widths[first] + widths[second]) / 2) + separation;
-                    var neededY = height + separation;
-
-                    var dx = positions[second].X - positions[first].X;
-                    var dy = positions[second].Y - positions[first].Y;
-
-                    var overlapX = neededX - Math.Abs(dx);
-                    var overlapY = neededY - Math.Abs(dy);
-                    if (overlapX <= 0 || overlapY <= 0)
-                    {
-                        continue;
-                    }
-
-                    overlaps++;
-
-                    // Push along the axis that needs the least movement: separating two boxes
-                    // that are nearly side by side vertically would undo the arrangement the
-                    // first pass worked out.
-                    if (overlapX / neededX < overlapY / neededY)
-                    {
-                        var push = (overlapX / 2) + Nudge;
-                        var direction = dx < 0 ? -1 : 1;
-                        positions[first] = (positions[first].X - (push * direction), positions[first].Y);
-                        positions[second] = (positions[second].X + (push * direction), positions[second].Y);
-                    }
-                    else
-                    {
-                        var push = (overlapY / 2) + Nudge;
-                        var direction = dy < 0 ? -1 : 1;
-                        positions[first] = (positions[first].X, positions[first].Y - (push * direction));
-                        positions[second] = (positions[second].X, positions[second].Y + (push * direction));
-                    }
-                }
-            }
-
-            if (overlaps == 0)
-            {
-                return 0;
-            }
-        }
-
-        return overlaps;
-    }
+        int rounds = SeparationRounds) =>
+        OverlapResolver.Separate(positions, [.. widths.Select(width => (width, height))], separation, rounds, Nudge);
 
     /// <summary>
     /// Where each variable starts: a phyllotaxis spiral in the document's own order.
