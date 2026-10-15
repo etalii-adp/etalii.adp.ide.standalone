@@ -96,6 +96,18 @@ public sealed class DislSpecification
         return prefix is null ? rule : rule with { Prefix = prefix };
     }
 
+    /// <summary>The setting of the built-in <paramref name="id"/> in <c>constraints.builtIn</c> (§8.1); the default value when it has none.</summary>
+    internal JsonElement BuiltInSetting(string id)
+    {
+        if (!Root.TryGetProperty("constraints", out var constraints) || constraints.ValueKind != JsonValueKind.Object) return default;
+        if (!constraints.TryGetProperty("builtIn", out var all) || all.ValueKind != JsonValueKind.Object) return default;
+        return all.TryGetProperty(id, out var own) ? own : default;
+    }
+
+    /// <summary>Whether the built-in <paramref name="id"/> is reported (§8.1): unless its setting's <c>enabled</c> is <c>false</c>.</summary>
+    internal bool IsBuiltInEnabled(string id) =>
+        BuiltInSetting(id) is not { ValueKind: JsonValueKind.Object } setting || !setting.TryGetProperty("enabled", out var enabled) || enabled.ValueKind != JsonValueKind.False;
+
     /// <summary>A rule as declared; its prefix only when it is one string, which a map (top level only) is not.</summary>
     private static DislIdRule IdRuleOf(JsonElement json) =>
         new(DislJson.String(json, "strategy") ?? "uuid-v7", DislJson.String(json, "expression"), DislJson.String(json, "prefix"));

@@ -87,6 +87,8 @@ public sealed class DatabricksDocumentStoreTests : DocumentStoreContract<IDatabr
         // Assert: the broken file is never made worse - the save is refused with the reason.
         Assert.False(entry.IsUsable);
         Assert.NotEqual("", entry.Unreadable);
+        var problem = Assert.Single(entry.Problems);
+        Assert.Equal((1, entry.Unreadable), (problem.Line, problem.Message));
         Assert.True(saved.Failed);
         Assert.Contains("could not be read", saved.Error, StringComparison.Ordinal);
         Assert.Equal(before, File.ReadAllBytes(path));

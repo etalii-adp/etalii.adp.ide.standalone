@@ -346,7 +346,7 @@ public static class ConstraintEvaluator
         private static bool Flag(DislType type, string name, bool fallback) =>
             type.Json.TryGetProperty(name, out var value) && value.ValueKind is JsonValueKind.True or JsonValueKind.False ? value.GetBoolean() : fallback;
 
-        private BuiltIn Setting(string id) => new(specification, id, _constraints.ValueKind == JsonValueKind.Object && _constraints.TryGetProperty("builtIn", out var all) && all.TryGetProperty(id, out var own) ? own : default);
+        private BuiltIn Setting(string id) => new(specification, id, specification.BuiltInSetting(id));
     }
 
     /// <summary>One built-in's setting (§8.1), with the runtime's defaults.</summary>
@@ -354,7 +354,7 @@ public static class ConstraintEvaluator
     {
         private readonly string _pointer = DislJson.Pointer("/constraints/builtIn", id);
 
-        public bool Enabled => json.ValueKind != JsonValueKind.Object || !json.TryGetProperty("enabled", out var enabled) || enabled.ValueKind != JsonValueKind.False;
+        public bool Enabled => specification.IsBuiltInEnabled(id);
 
         public string Severity => (json.ValueKind == JsonValueKind.Object ? DislJson.String(json, "severity") : null) ?? id switch
         {

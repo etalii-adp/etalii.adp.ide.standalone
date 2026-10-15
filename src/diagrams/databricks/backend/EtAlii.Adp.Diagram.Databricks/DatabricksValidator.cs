@@ -1,6 +1,4 @@
 using EtAlii.Adp.Documents;
-using Serilog;
-using YamlDotNet.Core;
 
 namespace EtAlii.Adp.Diagram.Databricks;
 
@@ -18,8 +16,6 @@ namespace EtAlii.Adp.Diagram.Databricks;
 /// </remarks>
 public sealed class DatabricksValidator(DiagramOrigin origin) : IDiagramValidator
 {
-    private static readonly ILogger _logger = Log.ForContext<DatabricksValidator>();
-
     /// <summary>The rule reported when the file is not YAML (or JSON) this can read.</summary>
     public const string UnparseableRuleId = "databricks.unparseable";
 
@@ -35,25 +31,19 @@ public sealed class DatabricksValidator(DiagramOrigin origin) : IDiagramValidato
 
         // ReSharper disable once NullCoalescingConditionIsAlwaysNotNullAccordingToAPIContract - Reason: IDiagramValidator.ValidateAsync is a public module seam and the record's non-nullable Document is a compile-time annotation the runtime does not enforce, so a caller that passes null (null!, or code built without nullable checks) gets an empty document here rather than a NullReferenceException; ProjectValidator, the one caller in this repository, always passes the text it read, so an empty file arrives as "", not null.
         var document = LineDocument.Parse(request.Document ?? "");
-        DatabricksModel model;
-        try
+        var outcome = DatabricksModel.Outcome(document);
+        if (!outcome.IsUsable)
         {
-            model = DatabricksModel.Read(document);
-        }
-        catch (YamlException exception)
-        {
-            var line = (uint)Math.Max(exception.Start.Line, 1);
-            _logger.Debug(exception, "{BaseName} does not parse at line {Line}", request.BaseName, line);
             return ValueTask.FromResult<IReadOnlyList<DiagramProblem>>(
             [
                 new DiagramProblem(
                     DiagramProblemSeverity.Error,
-                    $"This is not configuration that can be read: {exception.Message}",
+                    $"This is not configuration that can be read: {outcome.Unreadable}",
                     UnparseableRuleId,
-                    new DiagramProblemLineLocation(line)),
+                    new DiagramProblemLineLocation((uint)outcome.Problems[0].Line + 1)),
             ]);
         }
 
-        return ValueTask.FromResult(DatabricksRuleSet.Judge(model));
+        return ValueTask.FromResult(DatabricksRuleSet.Judge(outcome.Model));
     }
 }

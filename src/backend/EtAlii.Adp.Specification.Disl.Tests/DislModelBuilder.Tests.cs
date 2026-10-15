@@ -212,6 +212,28 @@ public class DislModelBuilderTests
             findings.Take(2).Select(finding => finding.ToString()));
     }
 
+    private static readonly DislSpecification DerivedWithoutDuplicates = Specifications.Loaded(Specifications.With("""
+        "metamodel": { "types": { "Thing": { "attributes": { "name": { "type": "string" } } } } },
+        "persistence": { "ids": { "strategy": "derived", "expression": "self.name == 'fail' ? self.missing : self.name" } },
+        "constraints": { "builtIn": { "std.duplicateId": { "enabled": false } } }
+        """));
+
+    [Fact]
+    public void ADerivedIdComputedTwice_IsNotReported_WhenTheDefinitionSwitchesStdDuplicateIdOff()
+    {
+        var diagram = new DislDiagram(DerivedWithoutDuplicates);
+        diagram.AddNode("Thing", "", new Dictionary<string, object?> { ["name"] = "a" });
+        diagram.AddNode("Thing", "", new Dictionary<string, object?> { ["name"] = "a" });
+        diagram.AddNode("Thing", "stored", new Dictionary<string, object?> { ["name"] = "fail" });
+
+        var findings = DislModelBuilder.Complete(diagram);
+
+        Assert.Equal(["a", "a", "stored"], diagram.Nodes.Select(node => node.Id));
+        Assert.Equal(
+            ["std.missingId: The id of this Thing could not be computed: No such field: 'missing'."],
+            findings.Select(finding => finding.ToString()));
+    }
+
     [Fact]
     public void ADerivedRelation_HasItsDefaultIdWithRepeatsNumbered_AndDropsWhatItsEndsDoNotAllow()
     {
