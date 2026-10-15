@@ -222,6 +222,24 @@ public sealed class FdgProvidersTests : IDisposable
     }
 
     [Fact]
+    public async Task ABodyThatIsNotYaml_IsRefusedUpFront_AndWritesNothing()
+    {
+        // Arrange.
+        const string broken = "functional-decomposition-graph: 1\nelements: []\nconnections: \"never closed\n";
+        await File.WriteAllTextAsync(Body, broken, TestContext.Current.CancellationToken);
+
+        // Act.
+        var added = await _actions.ExecuteAsync(Target(GestureIds.Placement(300, 700)), "fdg.add.action", TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.Contains("could not be read", Assert.IsType<ContextExecutionFailed>(added).Message, StringComparison.Ordinal);
+        Assert.Equal(broken, await File.ReadAllTextAsync(Body, TestContext.Current.CancellationToken));
+        var entry = _store.GetOrLoad(Body);
+        Assert.StartsWith("The document could not be read as YAML: ", entry.Unreadable, StringComparison.Ordinal);
+        Assert.Equal(entry.Model.Problems, entry.Problems);
+    }
+
+    [Fact]
     public async Task AFinishedConnectGesture_Connects_AndARefusedOneSaysWhy()
     {
         // Act: Tick step shows nothing yet, so it may show the Step list; Open task already shows one.
