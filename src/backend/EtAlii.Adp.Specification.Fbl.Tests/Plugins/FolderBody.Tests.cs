@@ -247,6 +247,8 @@ internal sealed class RecordingFolderPlugin(string id) : IPersistencePlugin
 
     public IReadOnlyList<Finding> Findings { get; init; } = [];
 
+    public IReadOnlyList<string> Watched { get; init; } = [];
+
     public PluginReadResult Read(PluginReadRequest request)
     {
         Reads.Add(request);
@@ -266,5 +268,5 @@ internal sealed class RecordingFolderPlugin(string id) : IPersistencePlugin
 
     public byte[] Template(PluginTemplateRequest request) => throw new NotSupportedException("A folder is never created here.");
 
-    public IReadOnlyList<string> Watch(PluginReadResult last) => [];
+    public IReadOnlyList<string> Watch(PluginReadResult last) => Watched;
 }

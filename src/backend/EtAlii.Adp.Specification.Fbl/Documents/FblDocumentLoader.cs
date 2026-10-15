@@ -291,6 +291,12 @@ internal static class BindingReader
         var kind = Str(json, "kind");
         if (kind is not ("file" or "folder")) problems.Add(new LoadProblem(pointer + "/kind", ProblemSeverity.Error, "A body's kind is \"file\" or \"folder\"."));
         var recognise = json.TryGetProperty("recognise", out var r) ? r : default;
+        var settle = BodySettings.DefaultSettle;
+        if (json.TryGetProperty("settle", out var t) && !(t.ValueKind == JsonValueKind.Number && t.TryGetInt32(out settle) && settle >= 0))
+        {
+            problems.Add(new LoadProblem(pointer + "/settle", ProblemSeverity.Error, "A body's settle is a whole number of milliseconds, 0 or more."));
+            settle = BodySettings.DefaultSettle;
+        }
         return new BodySettings
         {
             IsFolder = kind == "folder",
@@ -301,6 +307,7 @@ internal static class BindingReader
             RecogniseNone = recognise.ValueKind == JsonValueKind.Object ? Strings(recognise, "none") : [],
             Files = Array(json, "files").Select(f => new FileRule(Str(f, "name"), Str(f, "glob") ?? "", ParseFamily(Str(f, "family")))).ToList(),
             Ignore = Strings(json, "ignore"),
+            Settle = settle,
         };
     }
 
