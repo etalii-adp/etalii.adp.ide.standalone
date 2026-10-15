@@ -27,7 +27,7 @@ public sealed record DatabricksModel(
     /// <exception cref="YamlDotNet.Core.YamlException">The document is not YAML (or JSON, the same door).</exception>
     public static DatabricksModel Read(LineDocument document)
     {
-        var root = DatabricksYaml.Root(document);
+        var root = YamlAccess.Root(document);
         return new DatabricksModel(
             BundleParser.Parse(root, document),
             JobParser.Parse(root, document),

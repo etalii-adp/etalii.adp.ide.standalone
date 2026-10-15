@@ -31,25 +31,25 @@ internal static class PipelineParser
             return pipelines;
         }
 
-        if (DatabricksYaml.Mapping(root, "resources") is { } resources
-            && DatabricksYaml.Mapping(resources, "pipelines") is { } keyed)
+        if (YamlAccess.Mapping(root, "resources") is { } resources
+            && YamlAccess.Mapping(resources, "pipelines") is { } keyed)
         {
             foreach ((YamlNode keyNode, YamlNode body) in keyed.Children)
             {
                 if (keyNode is YamlScalarNode { Value: { } key } && body is YamlMappingNode pipeline)
                 {
-                    pipelines.Add(Read(key, pipeline, DatabricksYaml.Range(keyNode, body, document), document));
+                    pipelines.Add(Read(key, pipeline, YamlAccess.Range(keyNode, body, document), document));
                 }
             }
 
             return pipelines;
         }
 
-        if (DatabricksYaml.Scalar(root, "name") is { Length: > 0 } || root.Children.ContainsKey(new YamlScalarNode("libraries")))
+        if (YamlAccess.Scalar(root, "name") is { Length: > 0 } || root.Children.ContainsKey(new YamlScalarNode("libraries")))
         {
             // A bare settings file: the root mapping IS the pipeline. Recognised by carrying a
             // pipeline's own keys rather than by extension, so a .yml settings file reads too.
-            pipelines.Add(Read("", root, DatabricksYaml.Range(root, document), document));
+            pipelines.Add(Read("", root, YamlAccess.Range(root, document), document));
         }
 
         return pipelines;
@@ -59,14 +59,14 @@ internal static class PipelineParser
         string key, YamlMappingNode pipeline, LineRange lines, LineDocument document) =>
         new(
             key,
-            DatabricksYaml.Scalar(pipeline, "name") ?? "",
-            DatabricksYaml.Scalar(pipeline, "catalog") ?? "",
+            YamlAccess.Scalar(pipeline, "name") ?? "",
+            YamlAccess.Scalar(pipeline, "catalog") ?? "",
             // `schema` succeeded `target` for the same idea; a file says one or the other.
-            DatabricksYaml.Scalar(pipeline, "schema") ?? DatabricksYaml.Scalar(pipeline, "target") ?? "",
-            DatabricksYaml.Flag(pipeline, "serverless"),
-            DatabricksYaml.Flag(pipeline, "continuous"),
-            DatabricksYaml.Flag(pipeline, "development"),
-            DatabricksYaml.Scalar(pipeline, "channel") ?? "",
+            YamlAccess.Scalar(pipeline, "schema") ?? YamlAccess.Scalar(pipeline, "target") ?? "",
+            YamlAccess.Flag(pipeline, "serverless"),
+            YamlAccess.Flag(pipeline, "continuous"),
+            YamlAccess.Flag(pipeline, "development"),
+            YamlAccess.Scalar(pipeline, "channel") ?? "",
             ReadLibraries(pipeline, document),
             ReadNotifications(pipeline, document),
             ReadUnknownKeys(pipeline, document),
@@ -75,7 +75,7 @@ internal static class PipelineParser
     private static List<PipelineLibrary> ReadLibraries(YamlMappingNode pipeline, LineDocument document)
     {
         var libraries = new List<PipelineLibrary>();
-        foreach (var node in DatabricksYaml.Sequence(pipeline, "libraries"))
+        foreach (var node in YamlAccess.Sequence(pipeline, "libraries"))
         {
             if (node is not YamlMappingNode entry)
             {
@@ -86,12 +86,12 @@ internal static class PipelineParser
             // depends on the kind (`path` for notebook and file, `include` for glob).
             (string kind, string path) = entry.Children.Count == 1
                                          && entry.Children.First() is { Key: YamlScalarNode { Value: { } kindName }, Value: YamlMappingNode inner }
-                    ? (kindName, DatabricksYaml.Scalar(inner, "path") ?? DatabricksYaml.Scalar(inner, "include") ?? "")
+                    ? (kindName, YamlAccess.Scalar(inner, "path") ?? YamlAccess.Scalar(inner, "include") ?? "")
                     : ("other", "");
 
             var modelled = kind is "notebook" or "file" or "glob";
             libraries.Add(new PipelineLibrary(
-                modelled ? kind : "other", path, DatabricksYaml.Range(entry, document)));
+                modelled ? kind : "other", path, YamlAccess.Range(entry, document)));
         }
 
         return libraries;
@@ -100,7 +100,7 @@ internal static class PipelineParser
     private static List<PipelineNotification> ReadNotifications(YamlMappingNode pipeline, LineDocument document)
     {
         var notifications = new List<PipelineNotification>();
-        foreach (var node in DatabricksYaml.Sequence(pipeline, "notifications"))
+        foreach (var node in YamlAccess.Sequence(pipeline, "notifications"))
         {
             if (node is not YamlMappingNode entry)
             {
@@ -110,14 +110,14 @@ internal static class PipelineParser
             notifications.Add(new PipelineNotification(
                 Strings(entry, "email_recipients"),
                 Strings(entry, "alerts"),
-                DatabricksYaml.Range(entry, document)));
+                YamlAccess.Range(entry, document)));
         }
 
         return notifications;
     }
 
     private static List<string> Strings(YamlMappingNode mapping, string key) =>
-        DatabricksYaml.Sequence(mapping, key)
+        YamlAccess.Sequence(mapping, key)
             .OfType<YamlScalarNode>()
             .Select(node => node.Value ?? "")
             .ToList();
@@ -130,7 +130,7 @@ internal static class PipelineParser
             if (keyNode is YamlScalarNode { Value: { } key }
                 && !_modelledKeys.Contains(key, StringComparer.Ordinal))
             {
-                unknown.Add(new UnknownNode(key, key, DatabricksYaml.Range(keyNode, value, document)));
+                unknown.Add(new UnknownNode(key, key, YamlAccess.Range(keyNode, value, document)));
             }
         }
 

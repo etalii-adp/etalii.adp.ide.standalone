@@ -1,20 +1,25 @@
-using EtAlii.Adp.Documents;
 using YamlDotNet.RepresentationModel;
 
-namespace EtAlii.Adp.Diagram.Databricks;
+namespace EtAlii.Adp.Documents;
 
 /// <summary>
-/// The reading helpers the three format parsers share: loading a document's root, walking
-/// mappings and sequences, and turning a node into the line range that declares it.
+/// The reading helpers every module that parses YAML shares: loading a document's root, walking
+/// mappings and sequences, and turning a node into the line, or the line range, that declares it.
 /// </summary>
 /// <remarks>
+/// <para>
 /// YamlDotNet is used here and <b>only</b> for reading. It handles quoting, anchors, aliases and
 /// block scalars correctly, gives a line number for every node, and - because JSON is a subset of
 /// YAML 1.2 - reads the pipeline settings <c>.json</c> through the same door as the two YAML
 /// formats. Nothing is ever serialised back through it: every write is a splice through
 /// <see cref="LineDocument"/>.
+/// </para>
+/// <para>
+/// Databricks held these as its own <c>DatabricksYaml</c> for its three formats, and they moved
+/// here in code-structure T133 so the other parsers can read through them too (FR-046).
+/// </para>
 /// </remarks>
-internal static class DatabricksYaml
+public static class YamlAccess
 {
     /// <summary>
     /// The document's root mapping, or null for an empty file or one whose root is not a mapping -
@@ -51,6 +56,13 @@ internal static class DatabricksYaml
     /// <summary>A boolean scalar read leniently: only a value that says so is true.</summary>
     public static bool Flag(YamlMappingNode mapping, string key) =>
         bool.TryParse(Scalar(mapping, key), out var value) && value;
+
+    /// <summary>
+    /// The zero-based line a node starts on, kept inside the document: where a problem found at the
+    /// node is reported.
+    /// </summary>
+    public static int LineOf(YamlNode node, LineDocument document) =>
+        Math.Clamp((int)node.Start.Line - 1, 0, Math.Max(0, document.Lines.Count - 1));
 
     /// <summary>
     /// The lines that declare a node: the shared rule (backend-centralization R7, <see cref="YamlNodeRange"/>).

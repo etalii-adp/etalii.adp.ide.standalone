@@ -14,7 +14,7 @@ public class BundleParserTests
     {
         var document = LineDocument.Parse(
             File.ReadAllText(IoPath.Combine(AppContext.BaseDirectory, "Fixtures", name)));
-        return BundleParser.Parse(DatabricksYaml.Root(document), document);
+        return BundleParser.Parse(YamlAccess.Root(document), document);
     }
 
     [Fact]
