@@ -1,4 +1,5 @@
 using System.Reflection;
+using EtAlii.Adp.Documents;
 
 namespace EtAlii.Adp.TestSupport;
 
@@ -13,4 +14,11 @@ public static class FileSystemWatchers
         (typeof(FileSystemWatcher).GetMethod("OnError", BindingFlags.Instance | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("FileSystemWatcher.OnError was not found."))
         .Invoke(watcher, [new ErrorEventArgs(new InternalBufferOverflowException())]);
+
+    /// <summary>The watcher behind <paramref name="folder"/>, for a test that has to make it overflow or stop it hearing.</summary>
+    public static FileSystemWatcher Watcher(this WatchedFolder folder) => folder.Watcher;
+
+    /// <summary>The watcher behind <paramref name="file"/>; the file's folder must have existed when it was made.</summary>
+    public static FileSystemWatcher Watcher(this WatchedFile file) =>
+        file.Folder?.Watcher ?? throw new InvalidOperationException($"{file.Path} is not watched: its folder did not exist.");
 }

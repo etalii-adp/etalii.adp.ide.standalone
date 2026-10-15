@@ -134,11 +134,10 @@ public class WatcherWiringTests
             .ToList();
 
         // Watchers known to be in the tree, by name: if the sweep stops seeing these it is no
-        // longer looking where the hole was found. SolutionWatcher was one until the shared
-        // WatchedFolder took over its watching (code-structure FR-037).
+        // longer looking where the hole was found. SolutionWatcher, TrackedProblemRoot and the
+        // editor sessions were among them until they came to watch through the shared
+        // WatchedFolder (code-structure FR-037, FR-050).
         Assert.Contains("RootFolderWatcher", withWatchers);
-        Assert.Contains("TrackedProblemRoot", withWatchers);
-        Assert.Contains("TextEditorSession", withWatchers);
         Assert.Contains("WatchedFolder", withWatchers);
     }
 

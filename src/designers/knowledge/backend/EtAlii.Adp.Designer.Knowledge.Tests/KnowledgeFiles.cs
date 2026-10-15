@@ -25,10 +25,6 @@ internal static class KnowledgeFiles
     /// <summary>The three formats a knowledge file comes in, by extension.</summary>
     public static TheoryData<string> Extensions => [".yaml", ".json", ".xml"];
 
-    /// <summary>The session's own source file, for the one guard that has to read an order out of it.</summary>
-    public static string SessionSource =>
-        IoPath.GetFullPath(IoPath.Combine(_examples.Value, "..", "backend", "EtAlii.Adp.Designer.Knowledge", "KnowledgeSession.cs"));
-
     /// <summary>
     /// A copy of a shipped example left in its second view, which filters, sorts and groups nothing: every
     /// row, in the file's order. The view the example itself is left in is whatever its file says.
