@@ -1,5 +1,4 @@
 using EtAlii.Adp.Documents;
-using Serilog;
 
 namespace EtAlii.Adp.Diagram.Rdf;
 
@@ -21,8 +20,6 @@ namespace EtAlii.Adp.Diagram.Rdf;
 /// </remarks>
 public sealed class RdfDocumentStore : LifecycleDocumentStore<LineDocument, RdfModel>, IRdfDocumentStore
 {
-    private static readonly ILogger _logger = Log.ForContext<RdfDocumentStore>();
-
     /// <inheritdoc />
     protected override LineDocument Read(string text) => LineDocument.Parse(text);
 
@@ -30,31 +27,8 @@ public sealed class RdfDocumentStore : LifecycleDocumentStore<LineDocument, RdfM
     protected override string TextOf(LineDocument body) => body.Text;
 
     /// <inheritdoc />
-    /// <remarks>Empty for a body that does not parse: what it states is unknown, and <see cref="UnreadableOf"/> says why.</remarks>
-    protected override RdfModel Rebuild(LineDocument body)
-    {
-        try
-        {
-            return RdfParser.Parse(body);
-        }
-        catch (RdfParseException)
-        {
-            return RdfModel.Empty;
-        }
-    }
+    protected override RdfModel Rebuild(LineDocument body) => RdfParser.Outcome(body).Model;
 
     /// <inheritdoc />
-    protected override string UnreadableOf(LineDocument body)
-    {
-        try
-        {
-            _ = RdfParser.Parse(body);
-            return "";
-        }
-        catch (RdfParseException exception)
-        {
-            _logger.Debug(exception, "An RDF document does not parse at line {Line}", exception.Line);
-            return $"it does not parse at line {exception.Line}. {exception.Message}";
-        }
-    }
+    protected override ParseOutcome<RdfModel> Parse(LineDocument body) => RdfParser.Outcome(body);
 }

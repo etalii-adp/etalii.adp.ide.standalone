@@ -82,6 +82,8 @@ public class RdfDocumentStoreTests : IDisposable
         // Assert.
         Assert.False(entry.IsUsable);
         Assert.Contains("at line", entry.Unreadable, StringComparison.Ordinal);
+        var problem = Assert.Single(entry.Problems);
+        Assert.Equal(entry.Unreadable, $"it does not parse at line {problem.Line + 1}. {problem.Message}");
         Assert.NotEqual("", refusal.Error);
         Assert.Contains("broken.ttl", refusal.Error);
         // Refusing to save left the broken file exactly as it was.
