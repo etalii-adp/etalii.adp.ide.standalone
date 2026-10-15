@@ -40,4 +40,40 @@ public class RdfEscapesTests
         // Act and assert.
         Assert.Equal(expected, RdfEscapes.Local(raw));
     }
+
+    [Theory]
+    [InlineData("\"plain\"")]
+    [InlineData("\"\\t\\b\\n\\r\\f\\\"\\'\\\\\"")]
+    [InlineData("\"caf\\u00e9 \\U0001F600\"")]
+    [InlineData("\"\"\"long \\\" quote\"\"\"")]
+    public void EveryEscapeTheGrammarsKnow_IsNotRefused(string raw)
+    {
+        // Act and assert.
+        Assert.Null(RdfEscapes.Refusal(raw));
+    }
+
+    [Theory]
+    [InlineData("\"a\\qb\"", 2, "'\\q' is not a string escape")]
+    [InlineData("\"\\u12zz\"", 1, "'\\u12zz' is not an escape")]
+    [InlineData("\"\\u12\"", 1, "'\\u12' is not an escape")]
+    [InlineData("\"\\UFFFFFFFF\"", 1, "'\\UFFFFFFFF' does not name a character")]
+    [InlineData("\"\\uD800\"", 1, "'\\uD800' does not name a character")]
+    [InlineData("\"\"\"one\ntwo \\q\"\"\"", 11, "'\\q' is not a string escape")]
+    public void AnEscapeTheGrammarsRefuse_IsNamedAtItsOffset(string raw, int offset, string message)
+    {
+        // Act. Behaviour changes B-18: both grammars refuse it, so both parsers ask before reading.
+        var refusal = RdfEscapes.Refusal(raw);
+
+        // Assert.
+        Assert.NotNull(refusal);
+        Assert.Equal(offset, refusal.Value.Offset);
+        Assert.StartsWith(message, refusal.Value.Message);
+    }
+
+    [Fact]
+    public void AnEscapeThatNamesNoCharacter_IsReadAsItsLetter_RatherThanThrown()
+    {
+        // Act and assert. A caller that has not asked for the refusal still gets a value.
+        Assert.Equal("UFFFFFFFF", RdfEscapes.String("\"\\UFFFFFFFF\""));
+    }
 }

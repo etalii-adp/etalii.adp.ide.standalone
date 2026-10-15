@@ -276,6 +276,69 @@ public class SparqlParserTests
         Assert.Contains("undeclared", exception.Message);
     }
 
+    // -- The terminals SPARQL shares with Turtle (code-structure T132) ------------------------------
+
+    [Fact]
+    public void ACarriageReturnInsideAShortString_IsRefusedNamingItsLine()
+    {
+        // Arrange & act. Behaviour changes B-02: the grammar leaves it out of a short string.
+        var exception = Assert.Throws<SparqlParseException>(() => SparqlParser.Parse("SELECT * WHERE {\r\n  ?s ?p \"a\rb\" .\r\n}\r\n"));
+
+        // Assert.
+        Assert.Equal(2, exception.Line);
+        Assert.Contains("not closed on its line", exception.Message);
+    }
+
+    [Fact]
+    public void ANumberWithAnExponentMarkerAndNoDigits_IsOneDouble()
+    {
+        // Arrange & act. Behaviour changes B-17: read as the Turtle tokenizer reads it.
+        var model = SparqlParser.Parse("SELECT * WHERE { ?s ?p 5e }");
+
+        // Assert.
+        var pattern = Assert.Single(model.Where.Patterns);
+        Assert.Equal(new LiteralTerm("5e", SparqlVocabulary.XsdDouble, "", "5e"), pattern.Object);
+    }
+
+    [Theory]
+    [InlineData("\"a\\qb\"", "'\\q' is not a string escape")]
+    [InlineData("\"\\u12zz\"", "'\\u12zz' is not an escape")]
+    public void AnEscapeSparqlDoesNotKnow_IsRefusedNamingItsLine(string literal, string message)
+    {
+        // Arrange & act. Behaviour changes B-18.
+        var exception = Assert.Throws<SparqlParseException>(() => SparqlParser.Parse($"SELECT * WHERE {{\n  ?s ?p {literal} .\n}}\n"));
+
+        // Assert.
+        Assert.Equal(2, exception.Line);
+        Assert.StartsWith(message, exception.Message);
+    }
+
+    [Theory]
+    [InlineData("ex:a.b", "http://example.org/a.b")]
+    [InlineData("ex:a\\.b", "http://example.org/a.b")]
+    [InlineData("ex:a%20b", "http://example.org/a%20b")]
+    [InlineData(":a.b", "http://example.org/default/a.b")]
+    public void APrefixedNameTheGrammarAllows_IsOneName(string name, string iri)
+    {
+        // Arrange & act. Behaviour changes B-19: the local part as SPARQL 1.1 writes it.
+        var model = SparqlParser.Parse($"PREFIX ex: <http://example.org/> PREFIX : <http://example.org/default/> SELECT * WHERE {{ ?s ?p {name} . }}");
+
+        // Assert.
+        var pattern = Assert.Single(model.Where.Patterns);
+        Assert.Equal(new IriTerm(iri, name), pattern.Object);
+    }
+
+    [Fact]
+    public void ABlankNodeLabelWithADotInside_IsOneLabel()
+    {
+        // Arrange & act. Behaviour changes B-19.
+        var model = SparqlParser.Parse("SELECT * WHERE { _:a.b ?p ?o . }");
+
+        // Assert.
+        var pattern = Assert.Single(model.Where.Patterns);
+        Assert.Equal("_:a.b", Assert.IsType<AnonymousTerm>(pattern.Subject).Label);
+    }
+
     [Fact]
     public void AnUnclosedGroup_NamesTheOpeningLine()
     {

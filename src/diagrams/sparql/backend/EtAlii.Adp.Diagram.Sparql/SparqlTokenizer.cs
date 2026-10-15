@@ -8,11 +8,21 @@ namespace EtAlii.Adp.Diagram.Sparql;
 /// nothing in this module ever writes the query back.
 /// </summary>
 /// <remarks>
+/// <para>
 /// Hand-rolled, deliberately: the second parser tier needs exact source slices for expressions
 /// and property paths, and a borrowed parser would hand back trees instead. Like its Turtle
 /// sibling, it accepts names a little more loosely than the grammar's character tables - it is
 /// not a validator, and a name the grammar would refuse still tokenizes so the parser can say
 /// something better than "unexpected character".
+/// </para>
+/// <para>
+/// The terminals SPARQL shares with Turtle - whitespace and comments, strings, numbers, blank node
+/// labels and the local part of a prefixed name - are read by core's <see cref="TerminalScanner"/>
+/// and <see cref="NumericLiteral"/>, so the two languages cannot drift apart on them again
+/// (code-structure T132, behaviour changes B-02, B-17 and B-19). An IRI is the one shared terminal
+/// read here: in a query '&lt;' is also less-than, so an IRI ends at the first whitespace or
+/// quote, where Turtle's runs to its line's end.
+/// </para>
 /// </remarks>
 internal sealed class SparqlTokenizer
 {
@@ -65,7 +75,7 @@ internal sealed class SparqlTokenizer
                 return TryReadIri(start, out var iri) ? iri : ReadOperator(start);
 
             case '"' or '\'':
-                return ReadString(start, character);
+                return ReadString(start);
             case '?' or '$':
                 if (_position + 1 < _text.Length && IsNameChar(_text[_position + 1]))
                 {
@@ -103,28 +113,7 @@ internal sealed class SparqlTokenizer
         return IsNameStartChar(character) ? ReadNameOrPrefixedName(start) : ReadOperator(start);
     }
 
-    private void SkipTrivia()
-    {
-        while (_position < _text.Length)
-        {
-            var character = _text[_position];
-            if (char.IsWhiteSpace(character))
-            {
-                _position++;
-            }
-            else if (character == '#')
-            {
-                while (_position < _text.Length && _text[_position] != '\n')
-                {
-                    _position++;
-                }
-            }
-            else
-            {
-                break;
-            }
-        }
-    }
+    private void SkipTrivia() => _position = TerminalScanner.SkipTrivia(_text, _position);
 
     private bool TryReadIri(int start, out SparqlToken token)
     {
@@ -152,44 +141,16 @@ internal sealed class SparqlTokenizer
         return false;
     }
 
-    private SparqlToken ReadString(int start, char quote)
+    private SparqlToken ReadString(int start)
     {
-        var longQuote = _position + 2 < _text.Length && _text[_position + 1] == quote && _text[_position + 2] == quote;
-        _position += longQuote ? 3 : 1;
-
-        while (_position < _text.Length)
+        var scan = TerminalScanner.String(_text, start);
+        _position = scan.End;
+        return scan.Problem switch
         {
-            var character = _text[_position];
-            if (character == '\\' && _position + 1 < _text.Length)
-            {
-                _position += 2;
-                continue;
-            }
-
-            if (character == quote)
-            {
-                if (!longQuote)
-                {
-                    _position++;
-                    return Slice(SparqlTokenKind.String, start);
-                }
-
-                if (_position + 2 < _text.Length && _text[_position + 1] == quote && _text[_position + 2] == quote)
-                {
-                    _position += 3;
-                    return Slice(SparqlTokenKind.String, start);
-                }
-            }
-
-            if (!longQuote && character == '\n')
-            {
-                throw Error("The string that starts here is not closed on its line.", start);
-            }
-
-            _position++;
-        }
-
-        throw Error("The string that starts here is never closed.", start);
+            TerminalProblem.None => Slice(SparqlTokenKind.String, start),
+            TerminalProblem.LineEnded => throw Error("The string that starts here is not closed on its line.", start),
+            _ => throw Error("The string that starts here is never closed.", start),
+        };
     }
 
     private SparqlToken ReadVariable(int start)
@@ -218,49 +179,15 @@ internal sealed class SparqlTokenizer
 
     private SparqlToken ReadBlankNodeLabel(int start)
     {
-        _position += 2;
-        while (_position < _text.Length && IsNameChar(_text[_position]))
-        {
-            _position++;
-        }
-
+        _position = TerminalScanner.LocalName(_text, start + 2); // _:
         return Slice(SparqlTokenKind.BlankNodeLabel, start);
     }
 
     private SparqlToken ReadNumber(int start)
     {
-        while (_position < _text.Length && char.IsAsciiDigit(_text[_position]))
-        {
-            _position++;
-        }
-
-        if (_position < _text.Length && _text[_position] == '.' && _position + 1 < _text.Length && char.IsAsciiDigit(_text[_position + 1]))
-        {
-            _position++;
-            while (_position < _text.Length && char.IsAsciiDigit(_text[_position]))
-            {
-                _position++;
-            }
-        }
-
-        if (_position < _text.Length && (_text[_position] is 'e' or 'E'))
-        {
-            var exponent = _position + 1;
-            if (exponent < _text.Length && (_text[exponent] is '+' or '-'))
-            {
-                exponent++;
-            }
-
-            if (exponent < _text.Length && char.IsAsciiDigit(_text[exponent]))
-            {
-                _position = exponent;
-                while (_position < _text.Length && char.IsAsciiDigit(_text[_position]))
-                {
-                    _position++;
-                }
-            }
-        }
-
+        // A sign is never read here: in a query '+' and '-' are operators first, and a signed
+        // number reaches the parser as the operator and then the number.
+        _position = NumericLiteral.Scan(_text, start);
         return Slice(SparqlTokenKind.Number, start);
     }
 
@@ -276,12 +203,7 @@ internal sealed class SparqlTokenizer
             // A prefixed name: what came before the colon is the prefix (possibly empty is
             // handled by the operator path, since ':' alone starts there), and the local part
             // follows directly.
-            _position++;
-            while (_position < _text.Length && IsNameChar(_text[_position]))
-            {
-                _position++;
-            }
-
+            _position = TerminalScanner.LocalName(_text, _position + 1);
             return Slice(SparqlTokenKind.PrefixedName, start);
         }
 
@@ -299,12 +221,7 @@ internal sealed class SparqlTokenizer
         {
             // The default prefix's bare form, ':thing' - or a lone ':' the parser will refuse
             // in context.
-            _position++;
-            while (_position < _text.Length && IsNameChar(_text[_position]))
-            {
-                _position++;
-            }
-
+            _position = TerminalScanner.LocalName(_text, _position + 1);
             return Slice(SparqlTokenKind.PrefixedName, start);
         }
 
@@ -339,6 +256,5 @@ internal sealed class SparqlTokenizer
     private static bool IsNameStartChar(char character) =>
         char.IsLetter(character) || character == '_';
 
-    private static bool IsNameChar(char character) =>
-        char.IsLetterOrDigit(character) || character is '_' or '-';
+    private static bool IsNameChar(char character) => TerminalScanner.IsNameChar(character);
 }

@@ -191,6 +191,19 @@ public class RdfParserTests
         Assert.Contains("end of its line", exception.Message);
     }
 
+    [Theory]
+    [InlineData("\"a\\qb\"", "'\\q' is not a string escape")]
+    [InlineData("\"\\u12zz\"", "'\\u12zz' is not an escape")]
+    public void AnEscapeTurtleDoesNotKnow_IsRefusedNamingItsLine(string literal, string message)
+    {
+        // Arrange & act. Behaviour changes B-18: Turtle refuses it, as SPARQL does.
+        var exception = Assert.Throws<RdfParseException>(() => Parse($"@prefix ex: <http://example.org/> .\nex:s ex:p {literal} .\n"));
+
+        // Assert.
+        Assert.Equal(2, exception.Line);
+        Assert.StartsWith(message, exception.Message);
+    }
+
     [Fact]
     public void AnUndeclaredPrefix_IsRefusedNamingItsLine()
     {
