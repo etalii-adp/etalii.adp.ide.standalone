@@ -57,6 +57,12 @@ public sealed class LineDocument : ITextBody<LineDocument>
     public IReadOnlyList<Line> Lines => _lines;
 
     /// <summary>
+    /// Where each line starts in <see cref="Text"/>, for turning an offset into it into a line. A
+    /// snapshot: an edit after this call is not reflected in it.
+    /// </summary>
+    public LineIndex Index() => new(_lines);
+
+    /// <summary>
     /// The terminator most of this document's lines use, which a newly inserted line adopts so an
     /// edit does not introduce a second convention into a consistent file.
     /// </summary>

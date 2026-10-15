@@ -70,10 +70,9 @@ public static class RdfWriter
         // The statement's '.' becomes a ';', and the new pair goes on its own line below,
         // indented the way the block's continuation lines are - or one step in from the
         // subject where the statement was a single line.
-        var text = document.Text;
-        var starts = LineStarts(text);
-        var terminatorLine = LineOf(starts, anchor.TerminatorOffset);
-        var terminatorColumn = anchor.TerminatorOffset - starts[terminatorLine];
+        var lineIndex = document.Index();
+        var terminatorLine = lineIndex.LineOf(anchor.TerminatorOffset);
+        var terminatorColumn = anchor.TerminatorOffset - lineIndex.StartOf(terminatorLine);
         var lineText = document.Lines[terminatorLine].Text;
 
         var indent = anchor.Statement.Length > 1
@@ -447,12 +446,12 @@ public static class RdfWriter
     /// </summary>
     private static void RemoveRegion(LineDocument document, int start, int end)
     {
-        var starts = LineStarts(document.Text);
-        var firstLine = LineOf(starts, start);
-        var lastLine = LineOf(starts, Math.Max(start, end - 1));
+        var lineIndex = document.Index();
+        var firstLine = lineIndex.LineOf(start);
+        var lastLine = lineIndex.LineOf(Math.Max(start, end - 1));
 
-        var before = document.Lines[firstLine].Text[..(start - starts[firstLine])];
-        var after = document.Lines[lastLine].Text[(end - starts[lastLine])..];
+        var before = document.Lines[firstLine].Text[..(start - lineIndex.StartOf(firstLine))];
+        var after = document.Lines[lastLine].Text[(end - lineIndex.StartOf(lastLine))..];
 
         if (before.TrimEnd().Length > 0 && after.Length > 0 && char.IsWhiteSpace(before[^1]) && char.IsWhiteSpace(after[0]))
         {
@@ -473,12 +472,12 @@ public static class RdfWriter
     /// <summary>Replaces the characters in <c>[start, end)</c> with <paramref name="replacement"/>, one line out.</summary>
     private static void ReplaceRegion(LineDocument document, int start, int end, string replacement)
     {
-        var starts = LineStarts(document.Text);
-        var firstLine = LineOf(starts, start);
-        var lastLine = LineOf(starts, Math.Max(start, end - 1));
+        var lineIndex = document.Index();
+        var firstLine = lineIndex.LineOf(start);
+        var lastLine = lineIndex.LineOf(Math.Max(start, end - 1));
 
-        var before = document.Lines[firstLine].Text[..(start - starts[firstLine])];
-        var after = document.Lines[lastLine].Text[(end - starts[lastLine])..];
+        var before = document.Lines[firstLine].Text[..(start - lineIndex.StartOf(firstLine))];
+        var after = document.Lines[lastLine].Text[(end - lineIndex.StartOf(lastLine))..];
         document.Replace(new LineRange(firstLine, lastLine), [before + replacement + after]);
     }
 
@@ -565,39 +564,5 @@ public static class RdfWriter
         }
 
         return line[..length];
-    }
-
-    private static List<int> LineStarts(string text)
-    {
-        var starts = new List<int> { 0 };
-        for (var i = 0; i < text.Length; i++)
-        {
-            if (text[i] == '\n')
-            {
-                starts.Add(i + 1);
-            }
-        }
-
-        return starts;
-    }
-
-    private static int LineOf(List<int> starts, int offset)
-    {
-        var low = 0;
-        var high = starts.Count - 1;
-        while (low < high)
-        {
-            var middle = (low + high + 1) / 2;
-            if (starts[middle] <= offset)
-            {
-                low = middle;
-            }
-            else
-            {
-                high = middle - 1;
-            }
-        }
-
-        return low;
     }
 }
