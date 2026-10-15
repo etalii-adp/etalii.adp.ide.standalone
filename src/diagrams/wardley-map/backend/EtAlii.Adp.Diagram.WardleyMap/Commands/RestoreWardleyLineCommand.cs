@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.WardleyMap;
@@ -27,7 +28,7 @@ public sealed record RestoreWardleyLineCommand(string BodyPath, uint Line, strin
 /// <summary>Restores one line verbatim, and names the command that puts back what it replaced.</summary>
 public sealed class RestoreWardleyLineCommandHandler(IWardleyDocumentStore documents) : WardleyEditHandler<RestoreWardleyLineCommand>(documents)
 {
-    protected override EditOutcome Apply(WardleyDocument body, WardleyMap model, RestoreWardleyLineCommand command)
+    protected override EditOutcome Apply(LineDocument body, WardleyMap model, RestoreWardleyLineCommand command)
     {
         if (command.Line < 1 || command.Line > body.Lines.Count)
         {
@@ -36,8 +37,8 @@ public sealed class RestoreWardleyLineCommandHandler(IWardleyDocumentStore docum
             return EditOutcome.Refused("That line is no longer in this map.");
         }
 
-        var replaced = body.Lines[(int)command.Line - 1];
-        body.ReplaceLine(command.Line, command.Text);
+        var replaced = body.Lines[(int)command.Line - 1].Text;
+        WardleyWriter.ReplaceLine(body, command.Line, command.Text);
         return EditOutcome.UndoneBy(command with { Text = replaced });
     }
 }

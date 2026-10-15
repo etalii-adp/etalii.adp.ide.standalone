@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 using Microsoft.Extensions.DependencyInjection;
@@ -6,7 +7,7 @@ using Xunit;
 namespace EtAlii.Adp.Diagram.WardleyMap.Tests;
 
 /// <summary>The Wardley command handlers, held to the contract every module's are, through the dispatcher the host builds.</summary>
-public sealed class WardleyCommandHandlersTests : EditHandlerContract<IWardleyDocumentStore, WardleyDocument, WardleyMap>
+public sealed class WardleyCommandHandlersTests : EditHandlerContract<IWardleyDocumentStore, LineDocument, WardleyMap>
 {
     protected override string Example => WardleyDocumentStoreTests.Minimal;
 
@@ -53,7 +54,7 @@ public sealed class WardleyCommandHandlersTests : EditHandlerContract<IWardleyDo
     }
 
     private sealed class WarningStore(IWardleyDocumentStore inner, string warning)
-        : WarningDocumentStore<WardleyDocument, WardleyMap>(inner, warning), IWardleyDocumentStore
+        : WarningDocumentStore<LineDocument, WardleyMap>(inner, warning), IWardleyDocumentStore
     {
         public IReadOnlyList<WardleyIdentityEntry> Identities(string path) => inner.Identities(path);
 

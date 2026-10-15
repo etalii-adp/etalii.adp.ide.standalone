@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.WardleyMap;
@@ -22,7 +23,7 @@ namespace EtAlii.Adp.Diagram.WardleyMap;
 /// what is drawn is read with the identities of this session's document.
 /// </para>
 /// </remarks>
-public sealed class WardleySession : DocumentDiagramSession<WardleyDocument, WardleyMap>
+public sealed class WardleySession : DocumentDiagramSession<LineDocument, WardleyMap>
 {
     private readonly IWardleyDocumentStore _documents;
     private readonly WardleyElementMapper _mapper;

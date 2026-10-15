@@ -21,7 +21,7 @@ namespace EtAlii.Adp.Diagram.WardleyMap;
 /// holding still match it.
 /// </para>
 /// </remarks>
-public sealed class WardleyDocumentStore : LifecycleDocumentStore<WardleyDocument, WardleyMap>, IWardleyDocumentStore
+public sealed class WardleyDocumentStore : LifecycleDocumentStore<LineDocument, WardleyMap>, IWardleyDocumentStore
 {
     private readonly ConcurrentDictionary<string, IReadOnlyList<WardleyIdentityEntry>> _identities =
         new(StringComparer.OrdinalIgnoreCase);
@@ -73,13 +73,13 @@ public sealed class WardleyDocumentStore : LifecycleDocumentStore<WardleyDocumen
     }
 
     /// <inheritdoc />
-    protected override WardleyDocument Read(string text) => WardleyDocument.Parse(text);
+    protected override LineDocument Read(string text) => LineDocument.Parse(text);
 
     /// <inheritdoc />
-    protected override string TextOf(WardleyDocument body) => body.ToText();
+    protected override string TextOf(LineDocument body) => body.Text;
 
     /// <inheritdoc />
-    protected override WardleyMap Rebuild(WardleyDocument body) => WardleyParser.Parse(body);
+    protected override WardleyMap Rebuild(LineDocument body) => WardleyParser.Parse(body);
 
     /// <inheritdoc />
     /// <remarks>
@@ -88,7 +88,7 @@ public sealed class WardleyDocumentStore : LifecycleDocumentStore<WardleyDocumen
     /// and never edited reaches none of this (Requirement 4.3). A sidecar that could not be written
     /// is the save's warning: the map landed, and the ids it hands out will not survive a restart.
     /// </remarks>
-    protected override string Saved(string path, DocumentEntry<WardleyDocument, WardleyMap> entry)
+    protected override string Saved(string path, DocumentEntry<LineDocument, WardleyMap> entry)
     {
         var reconciled = WardleyIdentities.Reconcile(entry.Model, Identities(path));
         _identities[path] = reconciled;

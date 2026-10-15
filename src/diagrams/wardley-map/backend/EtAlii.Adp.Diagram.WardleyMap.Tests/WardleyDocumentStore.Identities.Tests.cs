@@ -81,7 +81,7 @@ public sealed class WardleyDocumentStoreIdentityTests : IDisposable
         var store = new WardleyDocumentStore();
         Directory.CreateDirectory(WardleyIdentities.PathFor(Body));
         var document = store.GetOrLoad(Body).Document;
-        document.ReplaceLine(1, "title Kept anyway");
+        WardleyWriter.ReplaceLine(document, 1, "title Kept anyway");
 
         // Act.
         var saved = store.Save(Body, document);

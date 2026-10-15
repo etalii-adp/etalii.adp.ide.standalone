@@ -12,7 +12,7 @@ namespace EtAlii.Adp.Diagram.WardleyMap;
 /// names the Wardley map's, and adds the identities held beside each document. A missing file
 /// opens as an empty map (Requirement 2.4), and the sibling is created on the first save.
 /// </remarks>
-public interface IWardleyDocumentStore : IDiagramDocumentStore<WardleyDocument, WardleyMap>
+public interface IWardleyDocumentStore : IDiagramDocumentStore<LineDocument, WardleyMap>
 {
     /// <summary>
     /// The identities of the map at <paramref name="path"/>, reconciled once and held for as

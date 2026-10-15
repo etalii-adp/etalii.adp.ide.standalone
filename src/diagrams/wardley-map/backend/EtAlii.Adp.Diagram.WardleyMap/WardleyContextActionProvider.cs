@@ -23,7 +23,7 @@ namespace EtAlii.Adp.Diagram.WardleyMap;
 /// </para>
 /// </remarks>
 public sealed class WardleyContextActionProvider(IHistoryStackStore historyStacks, IWardleyDocumentStore documents)
-    : DiagramActionProvider<WardleyDocument, WardleyMap>(historyStacks, documents)
+    : DiagramActionProvider<LineDocument, WardleyMap>(historyStacks, documents)
 {
     public const string AddComponentActionId = "wardley.add-component";
     public const string AddAnchorActionId = "wardley.add-anchor";
@@ -61,7 +61,7 @@ public sealed class WardleyContextActionProvider(IHistoryStackStore historyStack
         base.Serves(target) && WardleyEditability.Editable(target.ResolvedFullPath);
 
     /// <inheritdoc />
-    protected override IReadOnlyList<ContextActionGroupDefinition> Discover(ContextTarget target, DocumentEntry<WardleyDocument, WardleyMap> entry)
+    protected override IReadOnlyList<ContextActionGroupDefinition> Discover(ContextTarget target, DocumentEntry<LineDocument, WardleyMap> entry)
     {
         ArgumentNullException.ThrowIfNull(target);
         ArgumentNullException.ThrowIfNull(entry);
@@ -73,7 +73,7 @@ public sealed class WardleyContextActionProvider(IHistoryStackStore historyStack
     /// <inheritdoc />
     protected override ValueTask<ContextExecutionResult> RunAsync(
         ContextTarget target,
-        DocumentEntry<WardleyDocument, WardleyMap> entry,
+        DocumentEntry<LineDocument, WardleyMap> entry,
         string actionId,
         CancellationToken cancellationToken)
     {

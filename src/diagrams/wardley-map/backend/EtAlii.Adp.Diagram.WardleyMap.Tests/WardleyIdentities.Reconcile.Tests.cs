@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
@@ -9,10 +10,10 @@ namespace EtAlii.Adp.Diagram.WardleyMap.Tests;
 /// </summary>
 public class WardleyIdentitiesReconcileTests
 {
-    private static WardleyMap ParseText(string text) => WardleyParser.Parse(WardleyDocument.Parse(text));
+    private static WardleyMap ParseText(string text) => WardleyParser.Parse(LineDocument.Parse(text));
 
     private static WardleyMap Fixture(string name) =>
-        WardleyParser.Parse(WardleyDocument.Parse(
+        WardleyParser.Parse(LineDocument.Parse(
             File.ReadAllText(IoPath.Combine(AppContext.BaseDirectory, "Fixtures", name))));
 
     [Fact]

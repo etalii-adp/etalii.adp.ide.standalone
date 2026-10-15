@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
+using EtAlii.Adp.Documents;
 
 namespace EtAlii.Adp.Diagram.WardleyMap;
 
@@ -28,7 +29,7 @@ public static partial class WardleyWriter
     /// document changed underneath - the caller then reports a rejection rather than writing
     /// something wrong (Requirement 9.4).
     /// </summary>
-    public static bool SetPosition(WardleyDocument document, WardleyComponent component, WardleyCoordinate position)
+    public static bool SetPosition(LineDocument document, WardleyComponent component, WardleyCoordinate position)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(component);
@@ -41,7 +42,7 @@ public static partial class WardleyWriter
     /// Moves a pipeline child, which carries an evolution position only - its visibility is the
     /// parent's, and there is nowhere in the format to write one of its own (Requirement 7.4).
     /// </summary>
-    public static bool SetPipelineChildMaturity(WardleyDocument document, WardleyPipelineChild child, double maturity)
+    public static bool SetPipelineChildMaturity(LineDocument document, WardleyPipelineChild child, double maturity)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(child);
@@ -59,7 +60,7 @@ public static partial class WardleyWriter
         }
 
         var value = match.Groups["value"];
-        document.ReplaceLine(child.Line, Splice(line, value.Index, value.Length, Number(maturity)));
+        ReplaceLine(document, child.Line, Splice(line, value.Index, value.Length, Number(maturity)));
         return true;
     }
 
@@ -67,7 +68,7 @@ public static partial class WardleyWriter
     /// Moves a legacy-form pipeline, whose two coordinates sit on the `pipeline` line itself
     /// (Requirement 5.4).
     /// </summary>
-    public static bool SetPipelineExtent(WardleyDocument document, WardleyPipeline pipeline, WardleyCoordinate extent)
+    public static bool SetPipelineExtent(LineDocument document, WardleyPipeline pipeline, WardleyCoordinate extent)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(pipeline);
@@ -85,7 +86,7 @@ public static partial class WardleyWriter
     /// One pass matters for undo: Requirement 9.6 says an undone rename restores every statement
     /// the rename touched, which only holds if they moved together in the first place.
     /// </remarks>
-    public static int Rename(WardleyDocument document, WardleyMap map, string oldName, string newName)
+    public static int Rename(LineDocument document, WardleyMap map, string oldName, string newName)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(map);
@@ -132,16 +133,16 @@ public static partial class WardleyWriter
     /// beside related ones: the DSL is order-independent, and inserting into the middle of
     /// someone's file rearranges a layout they chose.
     /// </summary>
-    public static void Append(WardleyDocument document, string statement)
+    public static void Append(LineDocument document, string statement)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentException.ThrowIfNullOrWhiteSpace(statement);
 
-        document.InsertLine((uint)document.Lines.Count + 1, statement);
+        document.Insert(document.Lines.Count, [statement]);
     }
 
     /// <summary>Removes one statement by line; a line the document does not have is left alone.</summary>
-    public static void RemoveLine(WardleyDocument document, uint number)
+    public static void RemoveLine(LineDocument document, uint number)
     {
         ArgumentNullException.ThrowIfNull(document);
 
@@ -150,14 +151,37 @@ public static partial class WardleyWriter
             return;
         }
 
-        document.RemoveLines(number, number);
+        var index = (int)number - 1;
+        document.Remove(new LineRange(index, index));
+    }
+
+    /// <summary>
+    /// Replaces line <paramref name="number"/> (1-based, as the map numbers its statements) with
+    /// <paramref name="text"/>, keeping that line's own ending.
+    /// </summary>
+    public static void ReplaceLine(LineDocument document, uint number, string text)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+        ArgumentNullException.ThrowIfNull(text);
+
+        var index = (int)number - 1;
+        document.Replace(new LineRange(index, index), [text]);
+    }
+
+    /// <summary>Inserts <paramref name="text"/> so that it becomes line <paramref name="number"/> (1-based).</summary>
+    public static void InsertLine(LineDocument document, uint number, string text)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+        ArgumentNullException.ThrowIfNull(text);
+
+        document.Insert((int)number - 1, [text]);
     }
 
     /// <summary>
     /// Adds or removes a parenthesised decorator on a component's line, leaving the rest of the
     /// line - coordinates, other decorators, label offset, comment - exactly as it was.
     /// </summary>
-    public static bool SetDecorator(WardleyDocument document, WardleyComponent component, string decorator, bool present)
+    public static bool SetDecorator(LineDocument document, WardleyComponent component, string decorator, bool present)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(component);
@@ -193,18 +217,18 @@ public static partial class WardleyWriter
                 ? decorators[^1].Index + decorators[^1].Length
                 : coordinates.Index + coordinates.Length;
 
-            document.ReplaceLine(component.Line, Splice(line, at, 0, $" ({decorator})"));
+            ReplaceLine(document, component.Line, Splice(line, at, 0, $" ({decorator})"));
             return true;
         }
 
         // Take the leading space with it, so removing the last decorator does not leave one.
         var start = existing.Index > 0 && line[existing.Index - 1] == ' ' ? existing.Index - 1 : existing.Index;
-        document.ReplaceLine(component.Line, Splice(line, start, existing.Index + existing.Length - start, ""));
+        ReplaceLine(document, component.Line, Splice(line, start, existing.Index + existing.Length - start, ""));
         return true;
     }
 
     /// <summary>Adds or removes the bare `inertia` word on a component's line (Requirement 6.2).</summary>
-    public static bool SetInertia(WardleyDocument document, WardleyComponent component, bool present)
+    public static bool SetInertia(LineDocument document, WardleyComponent component, bool present)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(component);
@@ -230,16 +254,16 @@ public static partial class WardleyWriter
             }
 
             var at = coordinates.Index + coordinates.Length;
-            document.ReplaceLine(component.Line, Splice(line, at, 0, " inertia"));
+            ReplaceLine(document, component.Line, Splice(line, at, 0, " inertia"));
             return true;
         }
 
         var start = existing.Index > 0 && line[existing.Index - 1] == ' ' ? existing.Index - 1 : existing.Index;
-        document.ReplaceLine(component.Line, Splice(line, start, existing.Index + existing.Length - start, ""));
+        ReplaceLine(document, component.Line, Splice(line, start, existing.Index + existing.Length - start, ""));
         return true;
     }
 
-    private static bool SetCoordinatePair(WardleyDocument document, uint number, WardleyCoordinate position)
+    private static bool SetCoordinatePair(LineDocument document, uint number, WardleyCoordinate position)
     {
         var line = LineAt(document, number);
         if (line is null)
@@ -260,11 +284,11 @@ public static partial class WardleyWriter
         var updated = Splice(line, second.Index, second.Length, Number(position.Maturity));
         updated = Splice(updated, first.Index, first.Length, Number(position.Visibility));
 
-        document.ReplaceLine(number, updated);
+        ReplaceLine(document, number, updated);
         return true;
     }
 
-    private static bool RenameLink(WardleyDocument document, WardleyLink link, string oldName, string newName)
+    private static bool RenameLink(LineDocument document, WardleyLink link, string oldName, string newName)
     {
         var line = LineAt(document, link.Line);
         if (line is null)
@@ -298,11 +322,11 @@ public static partial class WardleyWriter
             return false;
         }
 
-        document.ReplaceLine(link.Line, updated);
+        ReplaceLine(document, link.Line, updated);
         return true;
     }
 
-    private static bool RenameIn(WardleyDocument document, uint number, Regex expression, string group, string newName)
+    private static bool RenameIn(LineDocument document, uint number, Regex expression, string group, string newName)
     {
         var line = LineAt(document, number);
         if (line is null)
@@ -317,12 +341,12 @@ public static partial class WardleyWriter
         }
 
         var captured = match.Groups[group];
-        document.ReplaceLine(number, Splice(line, captured.Index, captured.Length, newName));
+        ReplaceLine(document, number, Splice(line, captured.Index, captured.Length, newName));
         return true;
     }
 
-    private static string? LineAt(WardleyDocument document, uint number) =>
-        number >= 1 && number <= document.Lines.Count ? document.Lines[(int)number - 1] : null;
+    private static string? LineAt(LineDocument document, uint number) =>
+        number >= 1 && number <= document.Lines.Count ? document.Lines[(int)number - 1].Text : null;
 
     private static string Splice(string line, int index, int length, string replacement) =>
         string.Concat(line.AsSpan(0, index), replacement, line.AsSpan(index + length));
