@@ -17,6 +17,19 @@ namespace EtAlii.Adp.Documents;
 /// </remarks>
 public sealed record DocumentEntry<TBody, TModel>(TBody Document, TModel Model, string Unreadable = "")
 {
+    /// <summary>An entry for <paramref name="document"/> holding what its parser read from it.</summary>
+    public DocumentEntry(TBody document, ParseOutcome<TModel> outcome)
+        : this(document, (outcome ?? throw new ArgumentNullException(nameof(outcome))).Model, outcome.Unreadable)
+    {
+        Problems = outcome.Problems;
+    }
+
+    /// <summary>What the parser passed over or could not read; empty for a module whose parser does not report through a <see cref="ParseOutcome{TModel}"/> yet.</summary>
+    public IReadOnlyList<ParseProblem> Problems { get; } = [];
+
+    /// <summary>What the parser read from <see cref="Document"/>: the model, its problems, and whether it is usable.</summary>
+    public ParseOutcome<TModel> Outcome => new(Model, Problems, Unreadable);
+
     /// <summary>Whether this entry holds the document's content, rather than a stand-in for one that could not be read.</summary>
     public bool IsUsable => Unreadable.Length == 0;
 }

@@ -223,6 +223,35 @@ public sealed class GhgProvidersTests : IDisposable
         Assert.Equal(_original, await File.ReadAllBytesAsync(Body, TestContext.Current.CancellationToken));
     }
 
+    /// <summary>
+    /// Behaviour change B-21: a body that is not well-formed YAML is a document that could not be read,
+    /// as one held by another program is, so it offers no edit and nothing is written to it. Before
+    /// the parser reported through a parse outcome, the store took such a body for an empty graph and
+    /// offered every edit on it.
+    /// </summary>
+    [Fact]
+    public async Task ABodyThatIsNotWellFormedYaml_OffersNoEdit_AndWritesNothing()
+    {
+        // Arrange.
+        const string broken = "gartner-hypecycle-graph: 1\ntrends: []\ninfluences: \"never closed\n";
+        await File.WriteAllTextAsync(Body, broken, TestContext.Current.CancellationToken);
+        var store = new GhgDocumentStore();
+        using var historyStacks = new HistoryStackStore(new GhgTestDispatcher(store));
+        var actions = new GhgContextActionProvider(historyStacks, store);
+
+        // Act.
+        var offered = await actions.DiscoverAsync(Target(GestureIds.Placement(1, 2)), TestContext.Current.CancellationToken);
+        var added = await actions.ExecuteAsync(Target(GestureIds.Placement(1, 2)), GhgContextActionProvider.AddTrendActionId, TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.Empty(offered);
+        Assert.IsType<ContextExecutionFailed>(added);
+        Assert.Equal(broken, await File.ReadAllTextAsync(Body, TestContext.Current.CancellationToken));
+        var entry = store.GetOrLoad(Body);
+        Assert.StartsWith("The document could not be read as YAML: ", entry.Unreadable, StringComparison.Ordinal);
+        Assert.Equal(entry.Model.Problems, entry.Problems);
+    }
+
     public static TheoryData<string, string, string> EverySet => new()
     {
         { "railways", GhgContextPropertyProvider.NameProperty, "Railroads" },

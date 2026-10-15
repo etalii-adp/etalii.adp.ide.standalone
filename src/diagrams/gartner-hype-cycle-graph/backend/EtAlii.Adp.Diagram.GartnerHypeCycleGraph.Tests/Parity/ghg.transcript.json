@@ -1306,22 +1306,13 @@
       "sha256": "543a7c4cf2e0d9f809d19d89201fccc4efed9eab4711b81b7eb3d7ccb6d3531d",
       "rowsSampled": false,
       "menus": [
-        [],
-        [
-          "g1 ghg.add.trend | Add trend here | mdi-plus | - | on",
-          "g1 ghg.add.trigger | Add trigger here | mdi-circle-slice-8 | - | on",
-          "g1 ghg.add.note | Add note here | mdi-note-text-outline | - | on",
-          "g2 ghg.arrange | Arrange diagram | mdi-sitemap-outline | - | off (There is nothing to arrange until this graph has a trend.)"
-        ],
-        [
-          "g1 ghg.connect.influence | Influence | mdi-ray-start-arrow | - | on"
-        ]
+        []
       ],
       "choices": [],
       "targets": [
         "\"\" => menu #0, read-only #0",
-        "\"new:240,160\" => menu #1, read-only #0",
-        "\"rel:a->b\" => menu #2, read-only #0",
+        "\"new:240,160\" => menu #0, read-only #0",
+        "\"rel:a->b\" => menu #0, read-only #0",
         "\"parity:unknown\" => menu #0, read-only #0"
       ],
       "rows": [
@@ -1343,37 +1334,37 @@
       "edits": [
         {
           "do": "execute ghg.add.trend on new:240,160",
-          "answer": "refused: The file could not be read, so it is never written.",
+          "answer": "refused: not-yaml.ghg could not be read, so it cannot be edited.",
           "unchanged": true
         },
         {
           "do": "execute ghg.add.trigger on new:480,40",
-          "answer": "refused: The file could not be read, so it is never written.",
+          "answer": "refused: not-yaml.ghg could not be read, so it cannot be edited.",
           "unchanged": true
         },
         {
           "do": "execute ghg.add.note on new:720,300",
-          "answer": "refused: The file could not be read, so it is never written.",
+          "answer": "refused: not-yaml.ghg could not be read, so it cannot be edited.",
           "unchanged": true
         },
         {
           "do": "execute ghg.add.trend on parity:unknown",
-          "answer": "refused: A trend is added by dropping it where it starts.",
+          "answer": "refused: not-yaml.ghg could not be read, so it cannot be edited.",
           "unchanged": true
         },
         {
           "do": "commit ghg.rename on parity:unknown = \"Nobody\"",
-          "answer": "refused: 'ghg.rename' does not apply to this selection.",
+          "answer": "refused: not-yaml.ghg could not be read, so it cannot be edited.",
           "unchanged": true
         },
         {
           "do": "execute ghg.remove on parity:unknown",
-          "answer": "refused: That is no longer in this graph.",
+          "answer": "refused: not-yaml.ghg could not be read, so it cannot be edited.",
           "unchanged": true
         },
         {
           "do": "execute ghg.arrange on ",
-          "answer": "refused: There is nothing to arrange until this graph has a trend.",
+          "answer": "refused: not-yaml.ghg could not be read, so it cannot be edited.",
           "unchanged": true
         }
       ],

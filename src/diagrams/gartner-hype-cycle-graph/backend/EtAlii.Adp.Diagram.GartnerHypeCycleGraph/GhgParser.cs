@@ -79,11 +79,11 @@ public static class GhgParser
             var finding = model.Findings.FirstOrDefault();
             return GhgModel.Empty with
             {
-                Problems = [new GhgProblem(LineOf(finding), $"The document could not be read as YAML: {YamlMessage(finding)}")],
+                Problems = [new ParseProblem(LineOf(finding), $"The document could not be read as YAML: {YamlMessage(finding)}")],
             };
         }
 
-        List<GhgProblem> problems = [];
+        List<ParseProblem> problems = [];
         var graph = model.Elements.FirstOrDefault(element => element.Type == "Graph");
         if (graph is null)
         {
@@ -101,13 +101,25 @@ public static class GhgParser
 
         problems.AddRange(model.Findings
             .Where(finding => !ReportedByRules.Contains(finding.Code))
-            .Select(finding => new GhgProblem(LineOf(finding), finding.Message)));
+            .Select(finding => new ParseProblem(LineOf(finding), finding.Message)));
 
         return new GhgModel(trends, influences, problems, version, unit)
         {
             Triggers = triggers,
             Notes = notes,
         };
+    }
+
+    /// <summary>
+    /// What the store keeps of <paramref name="body"/>: the model, its problems, and, for a body that
+    /// is not well-formed YAML, why, so that nothing is written to it until it is. <b>Never throws.</b>
+    /// </summary>
+    public static ParseOutcome<GhgModel> Outcome(GhgBody body)
+    {
+        ArgumentNullException.ThrowIfNull(body);
+
+        var model = Parse(body);
+        return new ParseOutcome<GhgModel>(model, model.Problems, body.Model.Unreadable ? model.Problems[0].Message : "");
     }
 
     /// <summary>
@@ -142,7 +154,7 @@ public static class GhgParser
     };
 
     /// <summary>The top-level <c>unit:</c>, or the month when there is none. An unknown unit is reported on its line and drawn in months.</summary>
-    private static GhgTimeUnit ReadUnit(GhgBody body, FblElement? unit, List<GhgProblem> problems)
+    private static GhgTimeUnit ReadUnit(GhgBody body, FblElement? unit, List<ParseProblem> problems)
     {
         if (unit is null)
         {
@@ -155,7 +167,7 @@ public static class GhgParser
         }
 
         var names = string.Join(", ", GhgTimeUnit.All.Select(known => known.Name));
-        problems.Add(new GhgProblem(body.LinesOf(unit.OwnSpan).Start, $"`{UnitKey}` is not one of {names}; the diagram is drawn in months."));
+        problems.Add(new ParseProblem(body.LinesOf(unit.OwnSpan).Start, $"`{UnitKey}` is not one of {names}; the diagram is drawn in months."));
         return GhgTimeUnit.Month;
     }
 
@@ -163,14 +175,14 @@ public static class GhgParser
     /// The entries of one list in document order. One that is not a mapping is reported and passed
     /// over; for every other one its unknown keys are reported before it is read.
     /// </summary>
-    private static IEnumerable<FblElement> Entries(GhgBody body, FblModel model, string list, List<GhgProblem> problems)
+    private static IEnumerable<FblElement> Entries(GhgBody body, FblModel model, string list, List<ParseProblem> problems)
     {
         var unreadable = list + "-not-a-mapping";
         foreach (var element in model.Elements.Where(element => element.Rule == list || element.Rule == unreadable).OrderBy(element => element.OwnSpan.Start))
         {
             if (element.Rule == unreadable)
             {
-                problems.Add(new GhgProblem(body.LinesOf(element.OwnSpan).Start, $"A{(list.StartsWith('i') ? "n" : "")} {list} entry is not a mapping and was passed over."));
+                problems.Add(new ParseProblem(body.LinesOf(element.OwnSpan).Start, $"A{(list.StartsWith('i') ? "n" : "")} {list} entry is not a mapping and was passed over."));
                 continue;
             }
 
@@ -183,7 +195,7 @@ public static class GhgParser
     /// The keys an entry carries that this module does not read: the binding's computed
     /// <c>unknownKeys</c>. They survive every edit, as all unbound content does (FBL §4.1.2), and are reported on their own lines.
     /// </summary>
-    private static void ReportUnknownKeys(GhgBody body, FblElement element, string what, List<GhgProblem> problems)
+    private static void ReportUnknownKeys(GhgBody body, FblElement element, string what, List<ParseProblem> problems)
     {
         if (element.Attributes.GetValueOrDefault("unknownKeys") is not IEnumerable<object?> keys)
         {
@@ -193,33 +205,33 @@ public static class GhgParser
         var range = body.LinesOf(element.OwnSpan);
         foreach (var key in keys.Select(Text).OfType<string>())
         {
-            problems.Add(new GhgProblem(body.KeyLine(range, key), $"`{key}` is not a key this module reads on a {what}; the line is kept."));
+            problems.Add(new ParseProblem(body.KeyLine(range, key), $"`{key}` is not a key this module reads on a {what}; the line is kept."));
         }
     }
 
-    private static int? ReadVersion(GhgBody body, FblElement graph, List<GhgProblem> problems)
+    private static int? ReadVersion(GhgBody body, FblElement graph, List<ParseProblem> problems)
     {
         if (!graph.Attributes.TryGetValue("version", out var value) || Text(value) is not { } text)
         {
-            problems.Add(new GhgProblem(0, $"The document does not begin with `{HeaderKey}: {GhgModel.CurrentVersion}`."));
+            problems.Add(new ParseProblem(0, $"The document does not begin with `{HeaderKey}: {GhgModel.CurrentVersion}`."));
             return null;
         }
 
         if (!int.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out var version))
         {
-            problems.Add(new GhgProblem(body.KeyLine(new LineRange(0, body.Lines.Count - 1), HeaderKey), $"The version `{text}` is not a number."));
+            problems.Add(new ParseProblem(body.KeyLine(new LineRange(0, body.Lines.Count - 1), HeaderKey), $"The version `{text}` is not a number."));
             return null;
         }
 
         if (version != GhgModel.CurrentVersion)
         {
-            problems.Add(new GhgProblem(body.KeyLine(new LineRange(0, body.Lines.Count - 1), HeaderKey), $"This document states version {version}; this module reads version {GhgModel.CurrentVersion}."));
+            problems.Add(new ParseProblem(body.KeyLine(new LineRange(0, body.Lines.Count - 1), HeaderKey), $"This document states version {version}; this module reads version {GhgModel.CurrentVersion}."));
         }
 
         return version;
     }
 
-    private static GhgTrend ReadTrend(GhgBody body, FblElement element, List<GhgProblem> problems)
+    private static GhgTrend ReadTrend(GhgBody body, FblElement element, List<ParseProblem> problems)
     {
         var range = body.LinesOf(element.OwnSpan);
         return new GhgTrend(
@@ -239,7 +251,7 @@ public static class GhgParser
     /// A trigger. A missing or malformed <c>date</c> is not reported here but by
     /// <c>ghg.trigger-date</c>, so one breach is reported once.
     /// </summary>
-    private static GhgTrigger ReadTrigger(GhgBody body, FblElement element, List<GhgProblem> problems)
+    private static GhgTrigger ReadTrigger(GhgBody body, FblElement element, List<ParseProblem> problems)
     {
         var range = body.LinesOf(element.OwnSpan);
         return new GhgTrigger(
@@ -256,7 +268,7 @@ public static class GhgParser
     /// A note. A missing or malformed <c>at</c>, <c>width</c> or <c>height</c> is not reported here but
     /// by <c>ghg.note-position</c>.
     /// </summary>
-    private static GhgNote ReadNote(GhgBody body, FblElement element, List<GhgProblem> problems)
+    private static GhgNote ReadNote(GhgBody body, FblElement element, List<ParseProblem> problems)
     {
         var range = body.LinesOf(element.OwnSpan);
         return new GhgNote(
@@ -278,7 +290,7 @@ public static class GhgParser
         IEnumerable<FblElement> entries,
         IReadOnlyList<GhgTrend> trends,
         IReadOnlyList<GhgTrigger> triggers,
-        List<GhgProblem> problems)
+        List<ParseProblem> problems)
     {
         var trendIds = trends.Select(trend => trend.Id).ToHashSet(StringComparer.Ordinal);
         var triggerIds = triggers.Select(trigger => trigger.Id).Where(id => !trendIds.Contains(id)).ToHashSet(StringComparer.Ordinal);
@@ -294,7 +306,7 @@ public static class GhgParser
                 {
                     if (element.Attributes.ContainsKey(attribute))
                     {
-                        problems.Add(new GhgProblem(body.KeyLine(range, key), $"`{key}` is ignored on an influence from a trigger, which has no phases; the line is kept."));
+                        problems.Add(new ParseProblem(body.KeyLine(range, key), $"`{key}` is ignored on an influence from a trigger, which has no phases; the line is kept."));
                     }
                 }
             }
@@ -329,7 +341,7 @@ public static class GhgParser
     private static string StoredId(FblElement element) => Scalar(element, "storedId") ?? "";
 
     /// <summary>A flow or block sequence of tags. A tags value that is not a sequence is reported.</summary>
-    private static List<string> Tags(GhgBody body, FblElement element, LineRange range, List<GhgProblem> problems)
+    private static List<string> Tags(GhgBody body, FblElement element, LineRange range, List<ParseProblem> problems)
     {
         switch (element.Attributes.GetValueOrDefault("tags"))
         {
@@ -339,19 +351,19 @@ public static class GhgParser
             case IEnumerable<object?> sequence:
                 return [.. sequence.Select(Text).OfType<string>().Where(tag => tag.Length > 0)];
             default:
-                problems.Add(new GhgProblem(body.KeyLine(range, "tags"), "`tags` is not a list of tags; the line is kept."));
+                problems.Add(new ParseProblem(body.KeyLine(range, "tags"), "`tags` is not a list of tags; the line is kept."));
                 return [];
         }
     }
 
     /// <summary>A <c>YYYY-MM</c> date, or null. A malformed or missing required date is reported.</summary>
-    private static int? Month(GhgBody body, FblElement element, string attribute, string key, LineRange range, List<GhgProblem> problems, bool required)
+    private static int? Month(GhgBody body, FblElement element, string attribute, string key, LineRange range, List<ParseProblem> problems, bool required)
     {
         if (Scalar(element, attribute) is not { } text)
         {
             if (required)
             {
-                problems.Add(new GhgProblem(range.Start, $"A trend has no `{key}` date; it cannot be drawn."));
+                problems.Add(new ParseProblem(range.Start, $"A trend has no `{key}` date; it cannot be drawn."));
             }
 
             return null;
@@ -360,20 +372,20 @@ public static class GhgParser
         var month = GhgScale.ParseMonth(text);
         if (month is null)
         {
-            problems.Add(new GhgProblem(body.KeyLine(range, key), $"`{key}: {text}` is not a date written as YYYY-MM."));
+            problems.Add(new ParseProblem(body.KeyLine(range, key), $"`{key}: {text}` is not a date written as YYYY-MM."));
         }
 
         return month;
     }
 
     /// <summary>A whole number, or <paramref name="fallback"/> and a problem.</summary>
-    private static int Integer(GhgBody body, FblElement element, string attribute, string key, int fallback, LineRange range, List<GhgProblem> problems, bool required = false)
+    private static int Integer(GhgBody body, FblElement element, string attribute, string key, int fallback, LineRange range, List<ParseProblem> problems, bool required = false)
     {
         if (Scalar(element, attribute) is not { } text)
         {
             if (required)
             {
-                problems.Add(new GhgProblem(range.Start, $"A trend has no `{key}`; {fallback} was used."));
+                problems.Add(new ParseProblem(range.Start, $"A trend has no `{key}`; {fallback} was used."));
             }
 
             return fallback;
@@ -384,7 +396,7 @@ public static class GhgParser
             return value;
         }
 
-        problems.Add(new GhgProblem(body.KeyLine(range, key), $"`{key}: {text}` is not a whole number; {fallback} was used."));
+        problems.Add(new ParseProblem(body.KeyLine(range, key), $"`{key}: {text}` is not a whole number; {fallback} was used."));
         return fallback;
     }
 
