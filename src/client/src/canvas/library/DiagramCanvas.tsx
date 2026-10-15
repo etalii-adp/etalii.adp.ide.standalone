@@ -97,7 +97,8 @@ import type {
   ShapeSelection,
 } from "./definition/diagramDefinition";
 import { placementId } from "../gestureIds";
-import { holds, resolveNumber, resolveOne, valueAtPath, type Binding, type BindingSource } from "./definition/binding";
+import { holds, resolveNumber, resolveOne, resolveOneAt, valueAtPath, type Binding, type BindingSource } from "./definition/binding";
+import { stubGeometry } from "./definition/stub";
 import { useContextPrompt } from "@client/shell/context/ContextConnectionProvider";
 import { inlineLabelElementIdOf } from "@client/shell/context/inlineLabelPrompt";
 
@@ -2849,6 +2850,47 @@ function LibraryConnection({
 
   if (relation === undefined) {
     return null; // an undeclared relation type has nothing to route; the validator rejects it upstream
+  }
+
+  if (relation.stub !== undefined && connection.targetId === "") {
+    // A relation without a target, drawn as its stub out of the source - which it follows
+    // through a drag, as a connection follows either of its ends.
+    const stubSource = draggedInto(elementsById.get(connection.sourceId), liveDrag);
+    if (stubSource === undefined) {
+      return null;
+    }
+    const stub = stubGeometry(elementBounds(stubSource, elementTypes.get(stubSource.type)), relation.stub);
+    const d = `M ${stub.from.x} ${stub.from.y} L ${stub.to.x} ${stub.to.y}`;
+    const stubText = relation.stub.label === undefined ? null : resolveOneAt(relation.stub.label.text, { payload: connection.payload });
+    const stubStyle = { ...relation.style, ...connection.style };
+    return (
+      <g
+        className={`canvas-connection library-connection library-connection-stub ${relation.className ?? ""} ${relation.stub.className ?? ""} ${connection.className ?? ""}${selected ? " canvas-selected" : ""}`.replace(/\s+/g, " ").trim()}
+        data-connection-id={connection.id}
+        {...press}
+        onContextMenu={onContextMenu}
+      >
+        <path className={`canvas-connection-hit ${relation.hitClassName ?? ""}`.trim()} d={d} />
+        <path
+          className={`canvas-connection-line library-connection-line ${relation.lineClassName ?? ""}`.trim()}
+          d={d}
+          style={highlighted({ stroke: tokenColour(stubStyle.stroke), strokeWidth: stubStyle.strokeWidth, strokeDasharray: stubStyle.dash?.join(" ") }, selected)}
+        />
+        {stubText !== null && stubText !== "" && (
+          // The anchor inline, as an element's label has it: `.canvas-connection text` centres every
+          // connection's text, and a presentation attribute loses to any class rule.
+          <text
+            className={["library-connection-label", relation.stub.label?.className].filter(Boolean).join(" ")}
+            style={{ ...highlightedText(selected), textAnchor: stub.label.anchor }}
+            x={stub.label.x}
+            y={stub.label.y}
+          >
+            {stubText}
+          </text>
+        )}
+        {connection.title !== undefined && connection.title !== "" && <title>{connection.title}</title>}
+      </g>
+    );
   }
 
   const drawn: DiagramModelConnection = liveEnd === null

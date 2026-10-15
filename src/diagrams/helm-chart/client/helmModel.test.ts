@@ -6,7 +6,7 @@ import {
   HelmElementKind,
   HelmElementPayloadSchema,
 } from "@client/generated/helm-charts_pb";
-import { anchorsOf, applyDelta, edgesOf, emptyModel, nodesOf } from "./helmModel";
+import { applyDelta, edgesOf, emptyModel, nodesOf } from "./helmModel";
 
 const TYPE_URL = "type.googleapis.com/etalii.adp.helm.HelmElementPayload";
 
@@ -96,40 +96,5 @@ describe("applyDelta", () => {
 
     // Act & assert.
     expect(applyDelta(model, group)).toBe(model);
-  });
-});
-
-describe("anchorsOf", () => {
-  it("answers with both boxes when both ends are delivered", () => {
-    // Arrange.
-    const model = applyDelta(
-      emptyModel,
-      addDelta(
-        node("chart", "helm/chart+chart", HelmElementKind.CHART),
-        node("dep:redis", "helm/chart+dependency", HelmElementKind.DEPENDENCY),
-        edge("e1", "chart", "dep:redis"),
-      ),
-    );
-
-    // Act.
-    const anchors = anchorsOf(model, edgesOf(model)[0]);
-
-    // Assert.
-    expect(anchors?.from.id).toBe("chart");
-    expect(anchors?.to.id).toBe("dep:redis");
-  });
-
-  it("answers null for an open end, whose stub the canvas draws from the source", () => {
-    // Arrange.
-    const model = applyDelta(
-      emptyModel,
-      addDelta(
-        node("dep:postgres", "helm/chart+dependency", HelmElementKind.DEPENDENCY),
-        edge("e2", "dep:postgres", "", true),
-      ),
-    );
-
-    // Act & assert.
-    expect(anchorsOf(model, edgesOf(model)[0])).toBeNull();
   });
 });

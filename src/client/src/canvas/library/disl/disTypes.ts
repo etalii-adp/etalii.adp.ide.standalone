@@ -293,6 +293,16 @@ export interface DislEdgeNotation extends Extensions {
   labels?: readonly DislEdgeLabel[];
   selfLoop?: { shape?: string; size?: number; side?: string };
   midMarkers?: readonly DislMidMarker[];
+  /** How a relation without a target is drawn (DISL 0.2 §6.10 *Stubs*): a line out of one side of its source. */
+  stub?: DislStub;
+}
+
+/** A relation without a target, drawn as a line of `length` out of the middle of the source's `side`, with its style and label (DISL §6.10). */
+export interface DislStub extends Extensions {
+  length: number;
+  side: "right" | "left" | "top" | "bottom" | "auto";
+  style?: string | Readonly<Record<string, unknown>>;
+  label?: DislEdgeLabel;
 }
 
 /** A label along an edge (DISL §6.10): where along it, on which side and how far off the line. */
