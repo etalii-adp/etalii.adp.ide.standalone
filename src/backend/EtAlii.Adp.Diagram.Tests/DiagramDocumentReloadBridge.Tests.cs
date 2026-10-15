@@ -16,6 +16,7 @@ public class DiagramDocumentReloadBridgeTests : IDisposable
     private static readonly TimeSpan _silence = TimeSpan.FromMilliseconds(300);
 
     private readonly string _root;
+    private readonly ProjectFileEvents _events = new();
 
     public DiagramDocumentReloadBridgeTests()
     {
@@ -25,6 +26,7 @@ public class DiagramDocumentReloadBridgeTests : IDisposable
 
     public void Dispose()
     {
+        _events.Dispose();
         if (Directory.Exists(_root))
         {
             Directory.Delete(_root, recursive: true);
@@ -69,7 +71,7 @@ public class DiagramDocumentReloadBridgeTests : IDisposable
         // through a read that fails, so "gone" has to arrive as its own signal, from the watcher's
         // Deleted event, or the deleted diagram is drawn forever.
         var reloader = new RecordingReloader();
-        using var bridge = new DiagramDocumentReloadBridge([reloader]);
+        using var bridge = new DiagramDocumentReloadBridge([reloader], _events);
         var bodyPath = IoPath.Combine(_root, "sample.dsl");
         await File.WriteAllTextAsync(bodyPath, "body", TestContext.Current.CancellationToken);
         bridge.Track(_root, bodyPath, registrationPath: null, reloader.Origin);
@@ -85,7 +87,7 @@ public class DiagramDocumentReloadBridgeTests : IDisposable
         // A user renaming or moving the body leaves no body at the tracked path, exactly as a
         // delete does - and raises Renamed, not Deleted.
         var reloader = new RecordingReloader();
-        using var bridge = new DiagramDocumentReloadBridge([reloader]);
+        using var bridge = new DiagramDocumentReloadBridge([reloader], _events);
         var bodyPath = IoPath.Combine(_root, "sample.dsl");
         await File.WriteAllTextAsync(bodyPath, "body", TestContext.Current.CancellationToken);
         bridge.Track(_root, bodyPath, registrationPath: null, reloader.Origin);
@@ -101,7 +103,7 @@ public class DiagramDocumentReloadBridgeTests : IDisposable
         // The must-not-catch half. File.Replace renames the body away to <body>~RF<hex>.TMP for the
         // instant of a save; read as a delete, every external save would blank the diagram.
         var reloader = new RecordingReloader();
-        using var bridge = new DiagramDocumentReloadBridge([reloader]);
+        using var bridge = new DiagramDocumentReloadBridge([reloader], _events);
         var bodyPath = IoPath.Combine(_root, "sample.dsl");
         await File.WriteAllTextAsync(bodyPath, "body", TestContext.Current.CancellationToken);
         bridge.Track(_root, bodyPath, registrationPath: null, reloader.Origin);
@@ -121,7 +123,7 @@ public class DiagramDocumentReloadBridgeTests : IDisposable
     {
         // Arrange.
         var reloader = new RecordingReloader();
-        using var bridge = new DiagramDocumentReloadBridge([reloader]);
+        using var bridge = new DiagramDocumentReloadBridge([reloader], _events);
         var bodyPath = IoPath.Combine(_root, "sample.dsl");
         await File.WriteAllTextAsync(bodyPath, "before", TestContext.Current.CancellationToken);
         bridge.Track(_root, bodyPath, registrationPath: null, reloader.Origin);
@@ -140,7 +142,7 @@ public class DiagramDocumentReloadBridgeTests : IDisposable
     {
         // Arrange.
         var reloader = new RecordingReloader();
-        using var bridge = new DiagramDocumentReloadBridge([reloader]);
+        using var bridge = new DiagramDocumentReloadBridge([reloader], _events);
         var bodyPath = IoPath.Combine(_root, "sample.dsl");
         var registrationPath = IoPath.Combine(_root, "sample.adp");
         await File.WriteAllTextAsync(bodyPath, "body", TestContext.Current.CancellationToken);
@@ -160,7 +162,7 @@ public class DiagramDocumentReloadBridgeTests : IDisposable
     {
         // Arrange.
         var reloader = new RecordingReloader();
-        using var bridge = new DiagramDocumentReloadBridge([reloader]);
+        using var bridge = new DiagramDocumentReloadBridge([reloader], _events);
         var bodyPath = IoPath.Combine(_root, "sample.dsl");
         await File.WriteAllTextAsync(bodyPath, "body", TestContext.Current.CancellationToken);
         bridge.Track(_root, bodyPath, registrationPath: null, reloader.Origin);
@@ -178,7 +180,7 @@ public class DiagramDocumentReloadBridgeTests : IDisposable
         // Arrange: the ansible shape - a diagram type that watches its own folder already and
         // registers no reloader. Tracking it must neither throw nor reach the wrong module.
         var reloader = new RecordingReloader();
-        using var bridge = new DiagramDocumentReloadBridge([reloader]);
+        using var bridge = new DiagramDocumentReloadBridge([reloader], _events);
         var bodyPath = IoPath.Combine(_root, "other.yml");
         await File.WriteAllTextAsync(bodyPath, "body", TestContext.Current.CancellationToken);
         bridge.Track(_root, bodyPath, registrationPath: null, new DiagramOrigin("test", "unregistered"));

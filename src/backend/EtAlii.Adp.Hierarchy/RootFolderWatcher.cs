@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using Serilog;
 
 namespace EtAlii.Adp.Hierarchy;
@@ -38,11 +39,11 @@ public sealed class RootFolderWatcher : IDisposable
         // back together. Windows reports every move as one Renamed, so there a Deleted followed
         // by a Created is exactly that, and is delivered as it came.
         _joiner = OperatingSystem.IsWindows() ? null : new SplitMoveJoiner(Deliver);
-        ChangeCallback receive = _joiner is null ? Deliver : _joiner.Post;
+        Action<FileEvent> receive = _joiner is null ? Deliver : _joiner.Post;
 
-        _watcher.Created += (_, e) => receive(WatcherChangeTypes.Created, null, e.FullPath);
-        _watcher.Deleted += (_, e) => receive(WatcherChangeTypes.Deleted, e.FullPath, null);
-        _watcher.Renamed += (_, e) => receive(WatcherChangeTypes.Renamed, e.OldFullPath, e.FullPath);
+        _watcher.Created += (_, e) => receive(new FileEvent(FileEventKind.Created, e.FullPath));
+        _watcher.Deleted += (_, e) => receive(new FileEvent(FileEventKind.Deleted, e.FullPath));
+        _watcher.Renamed += (_, e) => receive(new FileEvent(FileEventKind.Renamed, e.FullPath, e.OldFullPath));
         _watcher.Error += (_, e) =>
         {
             // A deletion still held for its move is older than whatever the error recovers.
@@ -51,14 +52,35 @@ public sealed class RootFolderWatcher : IDisposable
         };
         if (includeContentChanges)
         {
-            _watcher.Changed += (_, e) => receive(WatcherChangeTypes.Changed, null, e.FullPath);
+            _watcher.Changed += (_, e) => receive(new FileEvent(FileEventKind.Changed, e.FullPath));
         }
 
         _watcher.EnableRaisingEvents = true;
 
         return;
 
-        void Deliver(WatcherChangeTypes changeType, string? oldPath, string? newPath) => Dispatch(onChange, changeType, oldPath, newPath);
+        void Deliver(FileEvent heard) => Dispatch(onChange, heard);
+    }
+
+    /// <summary>Hands one event to the callback in the shape the hierarchy model takes it.</summary>
+    internal static void Dispatch(ChangeCallback onChange, FileEvent heard)
+    {
+        // Lost never comes this way: this watcher reports its stumbles through onError.
+        switch (heard.Kind)
+        {
+            case FileEventKind.Created:
+                Dispatch(onChange, WatcherChangeTypes.Created, null, heard.Path);
+                break;
+            case FileEventKind.Changed:
+                Dispatch(onChange, WatcherChangeTypes.Changed, null, heard.Path);
+                break;
+            case FileEventKind.Deleted:
+                Dispatch(onChange, WatcherChangeTypes.Deleted, heard.Path, null);
+                break;
+            case FileEventKind.Renamed:
+                Dispatch(onChange, WatcherChangeTypes.Renamed, heard.OldPath, heard.Path);
+                break;
+        }
     }
 
     private static void Dispatch(ChangeCallback onChange, WatcherChangeTypes changeType, string? oldPath, string? newPath)

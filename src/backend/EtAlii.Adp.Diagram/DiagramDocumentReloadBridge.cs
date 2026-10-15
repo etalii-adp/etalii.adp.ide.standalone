@@ -1,21 +1,20 @@
 using System.Collections.Concurrent;
 using EtAlii.Adp.Documents;
-using EtAlii.Adp.Hierarchy;
 using Serilog;
 
 namespace EtAlii.Adp.Diagram;
 
 /// <summary>
 /// The watcher-to-store bridge: the one place a disk change reaches a diagram document store's
-/// <c>Reload</c>. <c>DiagramService.Open</c> reports every diagram it opens; this keeps one
-/// content-watching <see cref="RootFolderWatcher"/> per project root and, when a tracked body
+/// <c>Reload</c>. <c>DiagramService.Open</c> reports every diagram it opens; this subscribes to
+/// <see cref="ProjectFileEvents"/> once per project root and, when a tracked body
 /// or registration file changes underneath, hands the owning module's
 /// <see cref="IDiagramDocumentReloader"/> the body to re-read. The stores push the result to
 /// their sessions themselves - the bridge only tells them the disk moved (modular-text-editors
 /// Requirements 5.3, 5.5).
 /// </summary>
 /// <remarks>
-/// Tracked paths and watchers live for the process, deliberately outliving the streams that
+/// Tracked paths and subscriptions live for the process, deliberately outliving the streams that
 /// opened them: the stores cache documents by path for the process too, so an external write
 /// landing while no session is open would otherwise leave a closed-and-reopened diagram on the
 /// stale pre-change model until a restart.
@@ -25,23 +24,26 @@ public sealed class DiagramDocumentReloadBridge : IDisposable
     private static readonly ILogger _logger = Log.ForContext<DiagramDocumentReloadBridge>();
 
     private readonly IReadOnlyDictionary<DiagramOrigin, IDiagramDocumentReloader> _reloaders;
+    private readonly ProjectFileEvents _events;
 
     // The three maps are concurrent dictionaries, so each single read or write of one is atomic
-    // without the lock, and the watcher callbacks read them from the watcher's thread without it.
-    // _watcherLock serializes only the compound steps on a watcher - check, create, replace,
-    // dispose - so that two Opens never build two FileSystemWatchers for one root.
+    // without the lock, and the event callbacks read them from the watcher's thread without it.
+    // _subscriptionLock serializes only the compound steps on a subscription - check, subscribe,
+    // dispose - so that two Opens never subscribe twice for one root.
     private readonly ConcurrentDictionary<string, TrackedDocument> _documents = new(StringComparer.OrdinalIgnoreCase);
     private readonly ConcurrentDictionary<string, string> _registrations = new(StringComparer.OrdinalIgnoreCase);
-    private readonly ConcurrentDictionary<string, RootFolderWatcher> _watchers = new(StringComparer.OrdinalIgnoreCase);
-    private readonly Lock _watcherLock = new();
+    private readonly ConcurrentDictionary<string, IDisposable> _subscriptions = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Lock _subscriptionLock = new();
     private bool _disposed;
 
     private sealed record TrackedDocument(string RootPath, string BodyPath, IDiagramDocumentReloader Reloader);
 
-    public DiagramDocumentReloadBridge(IEnumerable<IDiagramDocumentReloader> reloaders)
+    public DiagramDocumentReloadBridge(IEnumerable<IDiagramDocumentReloader> reloaders, ProjectFileEvents events)
     {
         ArgumentNullException.ThrowIfNull(reloaders);
+        ArgumentNullException.ThrowIfNull(events);
         _reloaders = reloaders.ToDictionary(reloader => reloader.Origin);
+        _events = events;
     }
 
     /// <summary>
@@ -60,11 +62,11 @@ public sealed class DiagramDocumentReloadBridge : IDisposable
             return;
         }
 
-        // ReSharper disable once InconsistentlySynchronizedField - Reason: one atomic ConcurrentDictionary write; _watcherLock serializes creating and disposing watchers, not the tracked set.
+        // ReSharper disable once InconsistentlySynchronizedField - Reason: one atomic ConcurrentDictionary write; _subscriptionLock serializes subscribing and unsubscribing, not the tracked set.
         _documents[bodyPath] = new TrackedDocument(rootPath, bodyPath, reloader);
         if (registrationPath is { Length: > 0 })
         {
-            // ReSharper disable once InconsistentlySynchronizedField - Reason: one atomic ConcurrentDictionary write; _watcherLock serializes creating and disposing watchers, not the tracked set.
+            // ReSharper disable once InconsistentlySynchronizedField - Reason: one atomic ConcurrentDictionary write; _subscriptionLock serializes subscribing and unsubscribing, not the tracked set.
             _registrations[registrationPath] = bodyPath;
         }
 
@@ -73,24 +75,24 @@ public sealed class DiagramDocumentReloadBridge : IDisposable
 
     private void EnsureWatching(string rootPath)
     {
-        // ReSharper disable once InconsistentlySynchronizedField - Reason: an atomic ConcurrentDictionary read as a fast path; a miss is decided again under _watcherLock below, and a hit orders before any concurrent replace or dispose exactly as a locked read would.
-        if (_watchers.ContainsKey(rootPath))
+        // ReSharper disable once InconsistentlySynchronizedField - Reason: an atomic ConcurrentDictionary read as a fast path; a miss is decided again under _subscriptionLock below, and a hit orders before any concurrent replace or dispose exactly as a locked read would.
+        if (_subscriptions.ContainsKey(rootPath))
         {
             return;
         }
 
-        // Under a lock rather than GetOrAdd: two Opens racing here would each construct a live
-        // FileSystemWatcher, and GetOrAdd disposes neither loser.
-        lock (_watcherLock)
+        // Under a lock rather than GetOrAdd: two Opens racing here would each subscribe, and
+        // GetOrAdd disposes neither loser.
+        lock (_subscriptionLock)
         {
-            if (_disposed || _watchers.ContainsKey(rootPath))
+            if (_disposed || _subscriptions.ContainsKey(rootPath))
             {
                 return;
             }
 
             try
             {
-                _watchers[rootPath] = CreateWatcher(rootPath);
+                _subscriptions[rootPath] = _events.Subscribe(rootPath, heard => OnChange(rootPath, heard));
             }
             catch (Exception exception) when (exception is ArgumentException or IOException)
             {
@@ -101,46 +103,41 @@ public sealed class DiagramDocumentReloadBridge : IDisposable
         }
     }
 
-    private RootFolderWatcher CreateWatcher(string rootPath)
-    {
-        return new RootFolderWatcher(
-            rootPath,
-            onChange: OnChange,
-            onError: exception => OnWatcherError(rootPath, exception),
-            includeContentChanges: true);
-    }
-
     /// <summary>
-    /// One filesystem event. A save-by-move raises Renamed with the temp name as the old path
-    /// and the body as the new one; an in-place write raises Changed. A body that is gone is an
-    /// empty diagram, not the last one kept alive - but a body MISSING is not yet a body gone, so
+    /// One file event, normalized: a save that replaced the body arrives as its Created or
+    /// Changed, never as a rename away (see <see cref="ProjectFileEvents"/>). A body that is gone is
+    /// an empty diagram, not the last one kept alive - but a body MISSING is not yet a body gone, so
     /// the store is told which it is by the event, not by a read.
     /// </summary>
     /// <remarks>
-    /// Measured with a watcher on a File.Replace save: the body is renamed away to
-    /// <c>&lt;body&gt;~RF&lt;hex&gt;.TMP</c>, the scratch file is renamed onto it, and the backup is
-    /// deleted - zero Deleted events for the body itself, where a real delete raises exactly one.
     /// So a store keeps its last good document through a read that fails (the body missing for an
     /// instant mid-publish) and empties it only on <see cref="IDiagramDocumentReloader.BodyDeleted"/>.
     /// <para>
     /// KNOWN LIMITS. An editor that saves by deleting the body and then creating it shows the
     /// diagram empty between its two events; the Created heals it. A rename-away to a name that is
-    /// not File.Replace's backup - another tool's own safe-write scheme - is read as a delete and
-    /// heals the same way when the new body arrives.
+    /// not a writer's own transient file - another tool's own safe-write scheme - is read as a
+    /// delete and heals the same way when the new body arrives.
     /// </para>
     /// </remarks>
-    private void OnChange(WatcherChangeTypes changeType, string? oldPath, string? newPath)
+    private void OnChange(string rootPath, FileEvent heard)
     {
-        var gone = changeType switch
+        if (heard.Kind == FileEventKind.Lost)
         {
-            WatcherChangeTypes.Deleted => true,
-            WatcherChangeTypes.Renamed => !IsReplaceBackup(oldPath, newPath),
-            _ => false,
-        };
+            ReadEverythingAgain(rootPath);
+            return;
+        }
 
-        if (gone && oldPath is not null && _documents.TryGetValue(oldPath, out var deleted))
+        var oldPath = heard.Kind switch
         {
-            _logger.Debug("{BodyPath} is gone after a {ChangeType}", deleted.BodyPath, changeType);
+            FileEventKind.Deleted => heard.Path,
+            FileEventKind.Renamed => heard.OldPath,
+            _ => null,
+        };
+        var newPath = heard.Kind == FileEventKind.Deleted ? null : heard.Path;
+
+        if (oldPath is not null && _documents.TryGetValue(oldPath, out var deleted))
+        {
+            _logger.Debug("{BodyPath} is gone after a {Kind}", deleted.BodyPath, heard.Kind);
             deleted.Reloader.BodyDeleted(deleted.RootPath, deleted.BodyPath);
         }
         else
@@ -152,22 +149,6 @@ public sealed class DiagramDocumentReloadBridge : IDisposable
         {
             ReloadIfTracked(newPath);
         }
-    }
-
-    /// <summary>
-    /// Whether a rename is File.Replace moving the body aside for the instant of a save -
-    /// <c>model.dsl</c> to <c>model.dsl~RF1a2b3c.TMP</c> in the same folder - rather than the body
-    /// being renamed or moved by somebody.
-    /// </summary>
-    private static bool IsReplaceBackup(string? oldPath, string? newPath)
-    {
-        if (oldPath is null || newPath is null)
-        {
-            return false;
-        }
-
-        return string.Equals(Path.GetDirectoryName(oldPath), Path.GetDirectoryName(newPath), StringComparison.OrdinalIgnoreCase)
-            && AdpFileWriter.IsReplaceBackup(newPath, of: oldPath);
     }
 
     private void ReloadIfTracked(string? path)
@@ -190,32 +171,13 @@ public sealed class DiagramDocumentReloadBridge : IDisposable
     }
 
     /// <summary>
-    /// A broken watcher lost events - a buffer overflow above all - so the stale answers it
-    /// allowed are corrected the blunt way: recreate it and re-read every tracked document
-    /// under its root. Reload tells the sessions, so nothing stays quietly behind the disk.
+    /// The watcher lost events - a buffer overflow above all - so the stale answers it allowed
+    /// are corrected the blunt way: re-read every tracked document under its root. Reload tells
+    /// the sessions, so nothing stays quietly behind the disk.
     /// </summary>
-    private void OnWatcherError(string rootPath, Exception exception)
+    private void ReadEverythingAgain(string rootPath)
     {
-        _logger.Warning(exception, "The watcher on {RootPath} failed; recreating it and re-reading every tracked diagram there", rootPath);
-
-        lock (_watcherLock)
-        {
-            if (_disposed || !_watchers.TryRemove(rootPath, out var broken))
-            {
-                return;
-            }
-
-            broken.Dispose();
-            try
-            {
-                _watchers[rootPath] = CreateWatcher(rootPath);
-            }
-            catch (Exception recreate) when (recreate is ArgumentException or IOException)
-            {
-                _logger.Warning(recreate, "Cannot re-watch {RootPath}; external edits there will not reach open diagrams", rootPath);
-                return;
-            }
-        }
+        _logger.Warning("The watcher on {RootPath} lost events; re-reading every tracked diagram there", rootPath);
 
         foreach (var document in _documents.Values.Where(candidate => string.Equals(candidate.RootPath, rootPath, StringComparison.OrdinalIgnoreCase)))
         {
@@ -247,15 +209,15 @@ public sealed class DiagramDocumentReloadBridge : IDisposable
 
     public void Dispose()
     {
-        lock (_watcherLock)
+        lock (_subscriptionLock)
         {
             _disposed = true;
-            foreach (var watcher in _watchers.Values)
+            foreach (var subscription in _subscriptions.Values)
             {
-                watcher.Dispose();
+                subscription.Dispose();
             }
 
-            _watchers.Clear();
+            _subscriptions.Clear();
         }
     }
 }

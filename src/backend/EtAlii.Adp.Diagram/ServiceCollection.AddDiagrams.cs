@@ -45,6 +45,8 @@ public static class ServiceCollectionAddDiagramsExtension
         // reaches the owning store's Reload, which is what carries it to every open session
         // as pushed deltas (modular-text-editors Requirements 5.3, 5.5). Modules opt in by
         // registering an IDiagramDocumentReloader per origin.
+        // One source of file events per project root, whoever listens there (code-structure FR-050).
+        services.TryAddSingleton<ProjectFileEvents>();
         services.AddSingleton<DiagramDocumentReloadBridge>();
 
         // The editor family rides the same stream: what nothing diagram-shaped claims falls
