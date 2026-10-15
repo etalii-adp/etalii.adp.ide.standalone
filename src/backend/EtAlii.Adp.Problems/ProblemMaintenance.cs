@@ -260,11 +260,10 @@ public sealed class ProblemMaintenance : IDisposable
     private bool HasProblemsFor(string rootPath, string relativePath) =>
         _store.Get(rootPath).Problems.Any(problem => string.Equals(problem.RelativePath, relativePath, StringComparison.OrdinalIgnoreCase));
 
-    private static bool IsScratch(string path)
-    {
-        var name = IoPath.GetFileName(path);
-        return name.StartsWith(AdpFileWriter.TempPrefix, StringComparison.Ordinal)
-               && name.EndsWith(AdpFileWriter.TempExtension, StringComparison.OrdinalIgnoreCase);
-    }
+    /// <summary>
+    /// A write in flight, ADP's own or <c>File.Replace</c>'s backup, rather than a file to validate:
+    /// a problem reported on another program's backup file is noise (behaviour change B-06).
+    /// </summary>
+    private static bool IsScratch(string path) => AdpFileWriter.IsTransient(path);
 
 }

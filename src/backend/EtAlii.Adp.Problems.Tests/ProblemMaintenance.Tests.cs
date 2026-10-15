@@ -185,6 +185,25 @@ public class ProblemMaintenanceTests : IDisposable
         Assert.Equal(0, _folderValidator.Calls);
     }
 
+    [Fact]
+    public void AFileReplaceBackup_IsNoFileToHoldProblems()
+    {
+        // Arrange (behaviour change B-06). File.Replace moves the file aside to <name>~RF<hex>.TMP
+        // for the instant of a save and deletes the backup after. Taken at face value the rename
+        // moved the file's problems onto the backup name and the delete then removed them.
+        CreatePair("saved");
+        using var root = new TrackedProblemRoot(_root, _maintenance);
+        var body = IoPath.Combine(_root, "saved.mm");
+        var backup = body + "~RF1a2b3c.TMP";
+
+        // Act: the two events of the swap that name the backup.
+        _maintenance.OnRenamed(root, body, backup);
+        _maintenance.OnDeleted(root, backup);
+
+        // Assert: the problems stayed with the file, and no problem was recorded for the backup.
+        Assert.DoesNotContain(_store.Mutations, mutation => mutation.Kind is "Move" or "Remove");
+    }
+
     // ---- plumbing ----------------------------------------------------------------------
 
     [Fact]
