@@ -1,3 +1,5 @@
+using EtAlii.Adp.Documents;
+
 namespace EtAlii.Adp.Diagram.Rdf;
 
 /// <summary>
@@ -14,44 +16,20 @@ namespace EtAlii.Adp.Diagram.Rdf;
 internal sealed class RdfTokenizer
 {
     private readonly string _text;
-    private readonly List<int> _lineStarts = [0];
+    private readonly LineIndex _lines;
     private int _position;
 
     public RdfTokenizer(string text)
     {
         _text = text;
-        for (var i = 0; i < text.Length; i++)
-        {
-            if (text[i] == '\n')
-            {
-                _lineStarts.Add(i + 1);
-            }
-        }
+        _lines = new LineIndex(text);
     }
 
     /// <summary>The zero-based line index holding <paramref name="offset"/>.</summary>
-    public int LineOf(int offset)
-    {
-        var low = 0;
-        var high = _lineStarts.Count - 1;
-        while (low < high)
-        {
-            var middle = (low + high + 1) / 2;
-            if (_lineStarts[middle] <= offset)
-            {
-                low = middle;
-            }
-            else
-            {
-                high = middle - 1;
-            }
-        }
-
-        return low;
-    }
+    public int LineOf(int offset) => _lines.LineOf(offset);
 
     /// <summary>The offset at which the zero-based <paramref name="line"/> starts.</summary>
-    public int StartOfLine(int line) => _lineStarts[line];
+    public int StartOfLine(int line) => _lines.StartOf(line);
 
     /// <summary>The next token, consuming it. Whitespace and comments are skipped, never returned.</summary>
     public RdfToken Next()
