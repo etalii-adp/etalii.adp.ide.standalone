@@ -1,6 +1,5 @@
 using System.Text.RegularExpressions;
 using EtAlii.Adp.Documents;
-using Serilog;
 
 namespace EtAlii.Adp.Diagram.Rdf;
 
@@ -15,8 +14,6 @@ namespace EtAlii.Adp.Diagram.Rdf;
 /// </remarks>
 public sealed partial class RdfValidator(DiagramOrigin origin) : IDiagramValidator
 {
-    private static readonly ILogger _logger = Log.ForContext<RdfValidator>();
-
     /// <summary>The rule reported when the file is not Turtle or N-Triples this can read.</summary>
     public const string UnparseableRuleId = "rdf.unparseable";
 
@@ -55,25 +52,21 @@ public sealed partial class RdfValidator(DiagramOrigin origin) : IDiagramValidat
 
         // ReSharper disable once NullCoalescingConditionIsAlwaysNotNullAccordingToAPIContract - Reason: IDiagramValidator.ValidateAsync is a public module seam and the record's non-nullable Document is a compile-time annotation the runtime does not enforce, so a caller that passes null (null!, or code built without nullable checks) gets an empty document here rather than a NullReferenceException; ProjectValidator, the one caller in this repository, always passes the text it read, so an empty file arrives as "", not null.
         var document = LineDocument.Parse(request.Document ?? "");
-        RdfModel model;
-        try
+        var outcome = RdfParser.Outcome(document);
+        if (!outcome.IsUsable)
         {
-            model = RdfParser.Parse(document);
-        }
-        catch (RdfParseException exception)
-        {
-            _logger.Debug(exception, "{BaseName} does not parse at line {Line}", request.BaseName, exception.Line);
+            var problem = outcome.Problems[0];
             return ValueTask.FromResult<IReadOnlyList<DiagramProblem>>(
             [
                 new DiagramProblem(
                     DiagramProblemSeverity.Error,
-                    $"This is not RDF that can be read: {exception.Message}",
+                    $"This is not RDF that can be read: {problem.Message}",
                     UnparseableRuleId,
-                    new DiagramProblemLineLocation((uint)Math.Max(exception.Line, 1))),
+                    new DiagramProblemLineLocation((uint)problem.Line + 1)),
             ]);
         }
 
-        return ValueTask.FromResult(Judge(model));
+        return ValueTask.FromResult(Judge(outcome.Model));
     }
 
     /// <summary>The Requirement 7 findings over a parsed model - a pure function, tested as one.</summary>

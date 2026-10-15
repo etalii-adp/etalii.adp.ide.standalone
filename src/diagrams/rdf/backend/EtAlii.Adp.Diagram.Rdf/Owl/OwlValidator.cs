@@ -1,5 +1,4 @@
 using EtAlii.Adp.Documents;
-using Serilog;
 
 namespace EtAlii.Adp.Diagram.Rdf;
 
@@ -13,8 +12,6 @@ namespace EtAlii.Adp.Diagram.Rdf;
 /// </summary>
 public sealed class OwlValidator(DiagramOrigin origin) : IDiagramValidator
 {
-    private static readonly ILogger _logger = Log.ForContext<OwlValidator>();
-
     /// <summary>The family's file-level rules, judged once here for this origin.</summary>
     private readonly RdfValidator _family = new(origin);
 
@@ -45,21 +42,12 @@ public sealed class OwlValidator(DiagramOrigin origin) : IDiagramValidator
 
         var familyProblems = await _family.ValidateAsync(request, cancellationToken);
 
-        RdfModel model;
-        try
-        {
-            // ReSharper disable once NullCoalescingConditionIsAlwaysNotNullAccordingToAPIContract - Reason: IDiagramValidator.ValidateAsync is a public module seam and the record's non-nullable Document is a compile-time annotation the runtime does not enforce, so a caller that passes null (null!, or code built without nullable checks) gets an empty document here rather than a NullReferenceException; ProjectValidator, the one caller in this repository, always passes the text it read, so an empty file arrives as "", not null.
-            model = RdfParser.Parse(LineDocument.Parse(request.Document ?? ""));
-        }
-        catch (RdfParseException exception)
-        {
-            // The family judgment already carries the parse failure; reporting it twice would
-            // say less, not more.
-            _logger.Debug(exception, "{BaseName} does not parse; the family finding stands alone", request.BaseName);
-            return familyProblems;
-        }
+        // ReSharper disable once NullCoalescingConditionIsAlwaysNotNullAccordingToAPIContract - Reason: IDiagramValidator.ValidateAsync is a public module seam and the record's non-nullable Document is a compile-time annotation the runtime does not enforce, so a caller that passes null (null!, or code built without nullable checks) gets an empty document here rather than a NullReferenceException; ProjectValidator, the one caller in this repository, always passes the text it read, so an empty file arrives as "", not null.
+        var outcome = RdfParser.Outcome(LineDocument.Parse(request.Document ?? ""));
 
-        return [.. familyProblems, .. Judge(model)];
+        // A body that does not parse: the family judgment already carries the failure, and
+        // reporting it twice would say less, not more.
+        return outcome.IsUsable ? [.. familyProblems, .. Judge(outcome.Model)] : familyProblems;
     }
 
     /// <summary>The Requirement 5 findings over a parsed model - a pure function, tested as one.</summary>
