@@ -51,16 +51,13 @@ const { HelmCanvas, HELM_DEFINITION } = await import("./HelmCanvas");
  * the corpus below, the oracle renders the same corpus through the model the canvas used to build,
  * and the markup must be the same, element for element and connection for connection.
  *
- * <b>What is compared apart, and the four differences it states.</b>
+ * <b>What is compared apart, and the three differences it states.</b>
  * - **An open end** is a connection now and was an element, so its markup cannot be the same: each
  *   is compared by what it draws instead - its line's two ends, its classes, its text, where the text
  *   stands and how it is anchored.
  * - **`data-kind`** was written on every node and is read by no stylesheet and no test.
  * - **A partial's accessible name** is DISL's default (6.15), its type's label "Partial", where the
  *   oracle said "Template"; its tooltip still says "Template", as the specification's does.
- * - **The arrowhead.** The specification's `targetMarker: "arrow"` is DISL's open V (Appendix B.3),
- *   where the oracle drew the library's solid triangle. That is a defect of the bundled definition,
- *   recorded rather than tuned away: the module draws what the specification says.
  */
 
 const TYPE_URL = "type.googleapis.com/etalii.adp.helm.HelmElementPayload";
@@ -215,8 +212,7 @@ describe("the helm chart diagram's compiled definition", () => {
     const compiled = compiledDrawing();
     const compiledOpen = compiledStubs(compiled.container);
     const actual = ids(compiled.container.innerHTML)
-      .replace('aria-label="Partial _helpers.tpl"', 'aria-label="Template _helpers.tpl"')
-      .replaceAll('marker-end="url(#library-open-arrow)"', 'marker-end="url(#library-arrow)"');
+      .replace('aria-label="Partial _helpers.tpl"', 'aria-label="Template _helpers.tpl"');
     compiled.unmount();
 
     // The cases the comparison would pass vacuously on: a canvas that drew nothing for either.
