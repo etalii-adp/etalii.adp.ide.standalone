@@ -53,7 +53,13 @@ public static class SupplyChainParser
         ["id", "from", "to", "product", "description", "volume", "unit", "step"];
 
     /// <summary>Reads the document. <b>Never throws.</b></summary>
-    public static SupplyChainModel Parse(LineDocument document)
+    public static SupplyChainModel Parse(LineDocument document) => Outcome(document).Model;
+
+    /// <summary>
+    /// What the store keeps of <paramref name="document"/>: the model, its problems, and, for a text
+    /// that is not YAML, why, so that nothing is edited or written until it is. <b>Never throws.</b>
+    /// </summary>
+    public static ParseOutcome<SupplyChainModel> Outcome(LineDocument document)
     {
         ArgumentNullException.ThrowIfNull(document);
 
@@ -66,46 +72,48 @@ public static class SupplyChainParser
         catch (YamlException exception)
         {
             var line = Math.Max(0, (int)exception.Start.Line - 1);
-            return SupplyChainModel.Empty with { Problems = [new SupplyChainProblem(line, $"The document could not be read as YAML: {exception.Message}")] };
+            var problem = new ParseProblem(line, $"The document could not be read as YAML: {exception.Message}");
+            return new ParseOutcome<SupplyChainModel>(SupplyChainModel.Empty with { Problems = [problem] }, [problem], problem.Message);
         }
 
         if (stream.Documents.Count == 0 || stream.Documents[0].RootNode is not YamlMappingNode root)
         {
-            return SupplyChainModel.Empty;
+            return new ParseOutcome<SupplyChainModel>(SupplyChainModel.Empty, []);
         }
 
-        List<SupplyChainProblem> problems = [];
-        return new SupplyChainModel(
+        List<ParseProblem> problems = [];
+        var model = new SupplyChainModel(
             ReadGroups(root, document, problems),
             ReadNodes(root, document, problems),
             ReadFlows(root, document, problems),
             problems,
             ReadVersion(root, document, problems));
+        return new ParseOutcome<SupplyChainModel>(model, model.Problems);
     }
 
-    private static int? ReadVersion(YamlMappingNode root, LineDocument document, List<SupplyChainProblem> problems)
+    private static int? ReadVersion(YamlMappingNode root, LineDocument document, List<ParseProblem> problems)
     {
         if (YamlAccess.Node(root, HeaderKey) is not YamlScalarNode scalar)
         {
-            problems.Add(new SupplyChainProblem(0, $"The document does not begin with `{HeaderKey}: {SupplyChainModel.CurrentVersion}`."));
+            problems.Add(new ParseProblem(0, $"The document does not begin with `{HeaderKey}: {SupplyChainModel.CurrentVersion}`."));
             return null;
         }
 
         if (!int.TryParse(scalar.Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var version))
         {
-            problems.Add(new SupplyChainProblem(YamlAccess.LineOf(scalar, document), $"The version `{scalar.Value}` is not a number."));
+            problems.Add(new ParseProblem(YamlAccess.LineOf(scalar, document), $"The version `{scalar.Value}` is not a number."));
             return null;
         }
 
         if (version != SupplyChainModel.CurrentVersion)
         {
-            problems.Add(new SupplyChainProblem(YamlAccess.LineOf(scalar, document), $"This document states version {version}; this module reads version {SupplyChainModel.CurrentVersion}."));
+            problems.Add(new ParseProblem(YamlAccess.LineOf(scalar, document), $"This document states version {version}; this module reads version {SupplyChainModel.CurrentVersion}."));
         }
 
         return version;
     }
 
-    private static List<SupplyChainGroup> ReadGroups(YamlMappingNode root, LineDocument document, List<SupplyChainProblem> problems)
+    private static List<SupplyChainGroup> ReadGroups(YamlMappingNode root, LineDocument document, List<ParseProblem> problems)
     {
         List<SupplyChainGroup> groups = [];
         foreach (var mapping in Entries(root, GroupsKey, "group", document, problems))
@@ -123,7 +131,7 @@ public static class SupplyChainParser
         return groups;
     }
 
-    private static List<SupplyChainNode> ReadNodes(YamlMappingNode root, LineDocument document, List<SupplyChainProblem> problems)
+    private static List<SupplyChainNode> ReadNodes(YamlMappingNode root, LineDocument document, List<ParseProblem> problems)
     {
         List<SupplyChainNode> nodes = [];
         foreach (var mapping in Entries(root, NodesKey, "node", document, problems))
@@ -134,7 +142,7 @@ public static class SupplyChainParser
             var type = SupplyChainNodeTypes.Normalize(YamlAccess.Scalar(mapping, "type") ?? "");
             if (!SupplyChainNodeTypes.IsKnown(type))
             {
-                problems.Add(new SupplyChainProblem(YamlAccess.LineOf(mapping, document), $"`{type}` is not a stage this module knows."));
+                problems.Add(new ParseProblem(YamlAccess.LineOf(mapping, document), $"`{type}` is not a stage this module knows."));
             }
 
             nodes.Add(new SupplyChainNode(
@@ -154,7 +162,7 @@ public static class SupplyChainParser
         return nodes;
     }
 
-    private static List<SupplyChainFlow> ReadFlows(YamlMappingNode root, LineDocument document, List<SupplyChainProblem> problems)
+    private static List<SupplyChainFlow> ReadFlows(YamlMappingNode root, LineDocument document, List<ParseProblem> problems)
     {
         List<SupplyChainFlow> flows = [];
         foreach (var mapping in Entries(root, FlowsKey, "flow", document, problems))
@@ -181,7 +189,7 @@ public static class SupplyChainParser
         string key,
         string what,
         LineDocument document,
-        List<SupplyChainProblem> problems)
+        List<ParseProblem> problems)
     {
         if (YamlAccess.Node(root, key) is not YamlSequenceNode sequence)
         {
@@ -196,7 +204,7 @@ public static class SupplyChainParser
             }
             else
             {
-                problems.Add(new SupplyChainProblem(YamlAccess.LineOf(node, document), $"A {what} entry is not a mapping and was passed over."));
+                problems.Add(new ParseProblem(YamlAccess.LineOf(node, document), $"A {what} entry is not a mapping and was passed over."));
             }
         }
     }
@@ -205,14 +213,14 @@ public static class SupplyChainParser
         YamlMappingNode mapping,
         string[] known,
         LineDocument document,
-        List<SupplyChainProblem> problems,
+        List<ParseProblem> problems,
         string what)
     {
         foreach ((YamlNode key, var _) in mapping.Children)
         {
             if (key is YamlScalarNode { Value: { } name } scalar && !known.Contains(name, StringComparer.Ordinal))
             {
-                problems.Add(new SupplyChainProblem(YamlAccess.LineOf(scalar, document), $"`{name}` is not a key this module reads on a {what}; the line is kept."));
+                problems.Add(new ParseProblem(YamlAccess.LineOf(scalar, document), $"`{name}` is not a key this module reads on a {what}; the line is kept."));
             }
         }
     }
@@ -221,7 +229,7 @@ public static class SupplyChainParser
     /// A number from the entry, or <c>null</c> when the key is absent or will not read - the second
     /// of which is reported, because a silently missing value reads as a lost edit.
     /// </summary>
-    private static double? Number(YamlMappingNode mapping, string key, LineDocument document, List<SupplyChainProblem> problems)
+    private static double? Number(YamlMappingNode mapping, string key, LineDocument document, List<ParseProblem> problems)
     {
         if (YamlAccess.Node(mapping, key) is not YamlScalarNode scalar)
         {
@@ -233,7 +241,7 @@ public static class SupplyChainParser
             return value;
         }
 
-        problems.Add(new SupplyChainProblem(YamlAccess.LineOf(scalar, document), $"`{key}: {scalar.Value}` is not a number and was ignored."));
+        problems.Add(new ParseProblem(YamlAccess.LineOf(scalar, document), $"`{key}: {scalar.Value}` is not a number and was ignored."));
         return null;
     }
 

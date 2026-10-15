@@ -14,7 +14,7 @@ public sealed record SupplyChainModel(
     IReadOnlyList<SupplyChainGroup> Groups,
     IReadOnlyList<SupplyChainNode> Nodes,
     IReadOnlyList<SupplyChainFlow> Flows,
-    IReadOnlyList<SupplyChainProblem> Problems,
+    IReadOnlyList<ParseProblem> Problems,
     int? Version)
 {
     /// <summary>A document that declares nothing - the parser's answer to text it could not read at all.</summary>
@@ -39,9 +39,6 @@ public sealed record SupplyChainModel(
     /// <summary>The version this module writes, and the only one it reads.</summary>
     public const int CurrentVersion = 1;
 }
-
-/// <summary>Something the parser could not read, and the zero-based line it was found on.</summary>
-public sealed record SupplyChainProblem(int Line, string Message);
 
 /// <summary>One group entry: a region, a company or a tier that nodes are drawn inside.</summary>
 /// <param name="Id">Its id. Empty when the entry states none, which the rules report.</param>
