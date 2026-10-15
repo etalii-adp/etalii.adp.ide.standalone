@@ -24,6 +24,9 @@ public sealed class WardleyValidator : IDiagramValidator
 {
     public const string SubmapMissingRuleId = "wardley.submap-missing";
 
+    /// <summary>The rule reported for a line the parser passed over, at that line (code-structure B-25).</summary>
+    public const string LinePassedOverRuleId = "wardley.line-passed-over";
+
     public DiagramOrigin Origin => Diagram.WardleyMap.Origin;
 
     public ValueTask<IReadOnlyList<DiagramProblem>> ValidateAsync(
@@ -33,9 +36,18 @@ public sealed class WardleyValidator : IDiagramValidator
         ArgumentNullException.ThrowIfNull(request);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var map = WardleyParser.Parse(LineDocument.Parse(request.Document));
+        var outcome = WardleyParser.Outcome(LineDocument.Parse(request.Document));
+        var map = outcome.Model;
         var problems = new List<DiagramProblem>(WardleyRuleSet.Validate(map));
         problems.AddRange(UnresolvedReferences(map, request));
+
+        // A line that does not draw says why (B-25): a warning, because the rest of the map still
+        // reads and draws without it.
+        problems.AddRange(outcome.Problems.Select(problem => new DiagramProblem(
+            DiagramProblemSeverity.Warning,
+            problem.Message,
+            LinePassedOverRuleId,
+            new DiagramProblemLineLocation((uint)problem.Line + 1))));
 
         return ValueTask.FromResult<IReadOnlyList<DiagramProblem>>(problems);
     }
