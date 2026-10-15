@@ -1,5 +1,4 @@
 using EtAlii.Adp.Documents;
-using Serilog;
 using IoPath = System.IO.Path;
 
 namespace EtAlii.Adp.Diagram.Sparql;
@@ -33,9 +32,7 @@ namespace EtAlii.Adp.Diagram.Sparql;
 /// </remarks>
 public sealed class SparqlDocumentStore : ISparqlDocumentStore
 {
-    private static readonly ILogger _logger = Log.ForContext<SparqlDocumentStore>();
-
-    private readonly DocumentLifecycle<DocumentEntry<string, SparqlQueryModel>> _lifecycle = new(Parse, Unavailable);
+    private readonly DocumentLifecycle<DocumentEntry<string, SparqlQueryModel>> _lifecycle = new(static (_, text) => Parse(text), Unavailable);
 
     /// <inheritdoc />
     public event EventHandler<DocumentChangedEventArgs>? Changed;
@@ -64,21 +61,12 @@ public sealed class SparqlDocumentStore : ISparqlDocumentStore
         }
     }
 
-    private static DocumentEntry<string, SparqlQueryModel> Parse(string path, string text)
-    {
-        try
-        {
-            return new DocumentEntry<string, SparqlQueryModel>(text, SparqlParser.Parse(text));
-        }
-        catch (SparqlParseException exception)
-        {
-            // A file that does not parse is an ordinary state for a file somebody is editing:
-            // it opens as unavailable naming the reason (Requirement 1.3). The line goes to the
-            // validator's finding, which is where a person reads it.
-            _logger.Debug(exception, "{Path} does not parse at line {Line}", path, exception.Line);
-            return new DocumentEntry<string, SparqlQueryModel>(text, SparqlQueryModel.Empty, exception.Message);
-        }
-    }
+    /// <summary>
+    /// A query that does not parse opens as unavailable naming the reason (Requirement 1.3), with the
+    /// line it stopped at among the entry's problems.
+    /// </summary>
+    private static DocumentEntry<string, SparqlQueryModel> Parse(string text) =>
+        new(text, SparqlParser.Outcome(text));
 
     /// <summary>
     /// A query that is missing or cannot be read opens as a state this module names rather than as an
