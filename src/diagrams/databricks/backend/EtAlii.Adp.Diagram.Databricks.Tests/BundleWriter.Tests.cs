@@ -15,7 +15,7 @@ public class BundleWriterTests
             File.ReadAllText(IoPath.Combine(AppContext.BaseDirectory, "Fixtures", "bundle.yml")));
 
     private static BundleModel Bundle(LineDocument document) =>
-        BundleParser.Parse(DatabricksYaml.Root(document), document);
+        BundleParser.Parse(YamlAccess.Root(document), document);
 
     [Fact]
     public void AddResourceSkeleton_LandsAfterItsKindsLastSibling()
@@ -35,7 +35,7 @@ public class BundleWriterTests
             new[] { ("jobs", "nightly_ingest"), ("jobs", "weekly_rollup"), ("pipelines", "bronze_to_gold") },
             reparsed.Resources.Select(resource => (resource.Kind, resource.Key)));
         // The skeleton is complete enough to open: the job arrives with a starter task.
-        var job = JobParser.Parse(DatabricksYaml.Root(document), document)
+        var job = JobParser.Parse(YamlAccess.Root(document), document)
             .Single(candidate => candidate.Key == "weekly_rollup");
         Assert.Single(job.Tasks);
     }
@@ -51,7 +51,7 @@ public class BundleWriterTests
 
         // Assert.
         Assert.Equal("", refusal);
-        var pipeline = Assert.Single(PipelineParser.Parse(DatabricksYaml.Root(document), document));
+        var pipeline = Assert.Single(PipelineParser.Parse(YamlAccess.Root(document), document));
         Assert.Equal("first", pipeline.Key);
         Assert.Single(pipeline.Libraries);
     }

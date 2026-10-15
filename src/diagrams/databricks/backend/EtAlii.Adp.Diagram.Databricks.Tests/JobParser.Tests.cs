@@ -14,7 +14,7 @@ public class JobParserTests
     {
         var document = LineDocument.Parse(
             File.ReadAllText(IoPath.Combine(AppContext.BaseDirectory, "Fixtures", name)));
-        return JobParser.Parse(DatabricksYaml.Root(document), document);
+        return JobParser.Parse(YamlAccess.Root(document), document);
     }
 
     [Fact]

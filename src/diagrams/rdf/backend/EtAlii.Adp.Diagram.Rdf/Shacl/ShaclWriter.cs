@@ -62,9 +62,9 @@ public static class ShaclWriter
         // The statement's terminating '.' becomes a ';' and the new pair goes on its own line
         // below, indented as the block's continuation lines are - the family AddTriple shape,
         // reproduced here because the object is a blank block no term writer will emit.
-        var starts = LineStarts(document);
-        var terminatorLine = LineOf(starts, anchor.TerminatorOffset);
-        var terminatorColumn = anchor.TerminatorOffset - starts[terminatorLine];
+        var lineIndex = document.Index();
+        var terminatorLine = lineIndex.LineOf(anchor.TerminatorOffset);
+        var terminatorColumn = anchor.TerminatorOffset - lineIndex.StartOf(terminatorLine);
         var lineText = document.Lines[terminatorLine].Text;
         if (terminatorColumn < 0 || terminatorColumn >= lineText.Length || lineText[terminatorColumn] != '.')
         {
@@ -420,36 +420,6 @@ public static class ShaclWriter
 
     private static string Escape(string value) =>
         value.Replace("\\", "\\\\", StringComparison.Ordinal).Replace("\"", "\\\"", StringComparison.Ordinal);
-
-    /// <summary>
-    /// The start offset of every line, for turning the parser's absolute offsets into a line and
-    /// column. Mirrors the family writer's own helper rather than reaching into it.
-    /// </summary>
-    private static List<int> LineStarts(LineDocument document)
-    {
-        var starts = new List<int>(document.Lines.Count) { 0 };
-        var offset = 0;
-        foreach (var line in document.Lines)
-        {
-            offset += line.Text.Length + line.Ending.Length;
-            starts.Add(offset);
-        }
-
-        return starts;
-    }
-
-    private static int LineOf(List<int> starts, int offset)
-    {
-        for (var index = 0; index < starts.Count - 1; index++)
-        {
-            if (offset < starts[index + 1])
-            {
-                return index;
-            }
-        }
-
-        return starts.Count - 2;
-    }
 
     private static string IndentOf(string line)
     {
