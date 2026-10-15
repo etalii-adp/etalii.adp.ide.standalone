@@ -13,8 +13,9 @@ namespace EtAlii.Adp.Diagram.AnsibleStructure.Tests;
 /// <remarks>
 /// <b>The hash is computed over the embedded resource</b>, the bytes the module will load, not over the
 /// file on disk - so a build that embedded a stale or rewritten copy fails here too. Re-bundle with
-/// <c>src/diagrams/tools/bundle-disl.sh ansible-structure &lt;etalii.adp checkout&gt;</c>, never by hand. Nothing
-/// derives from the definition yet; the parity transcript is what holds today's behaviour.
+/// <c>src/diagrams/tools/bundle-disl.sh ansible-structure &lt;etalii.adp checkout&gt;</c>, never by hand. The
+/// property rows and the reparenting refusal derive from it (<c>AnsibleDefinition</c>); the parity transcript
+/// is what holds today's behaviour.
 /// </remarks>
 public sealed partial class BundledDefinitionTests
 {

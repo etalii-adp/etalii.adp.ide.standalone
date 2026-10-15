@@ -92,11 +92,10 @@ internal sealed class AnsibleSession : IDiagramSession
     /// <remarks>
     /// Answered honestly rather than by throwing or by quietly succeeding: the seam returns a
     /// reason string precisely so a type that cannot do a thing can say so in the user's terms.
+    /// The sentence is the definition's (<see cref="AnsibleDefinition.MoveRefusal"/>).
     /// </remarks>
     public Task<string> MoveElementAsync(string elementId, string newParentId, int index, CancellationToken cancellationToken) =>
-        Task.FromResult(
-            "An Ansible structure diagram is drawn from the folder's own files, so nothing on it can be moved from here. " +
-            "Move a role by moving its folder.");
+        Task.FromResult(AnsibleDefinition.MoveRefusal);
 
     /// <summary>
     /// Stores an authored position in the registration's <c>layout:</c> block, as one undoable

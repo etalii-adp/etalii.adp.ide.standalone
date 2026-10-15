@@ -77,7 +77,7 @@ internal static class AnsibleTranscript
     private static string SourceFolder => Path.GetFullPath(Path.Combine(ModuleFolder, "..", ".."));
 
     /// <summary>The corpus, as folder paths relative to <c>src/</c> with forward slashes, in the order they are recorded.</summary>
-    private static IReadOnlyList<string> Corpus()
+    internal static IReadOnlyList<string> Corpus()
     {
         return
         [
@@ -235,19 +235,7 @@ internal static class AnsibleTranscript
         var folder = Path.Combine(Path.GetTempPath(), "EtAlii.Adp.AnsibleTranscript", Guid.NewGuid().ToString("N"));
         try
         {
-            if (sha is null)
-            {
-                Directory.CreateDirectory(folder);
-            }
-            else
-            {
-                TestFolder.CopyTree(source, folder);
-            }
-
-            foreach (var making in makings)
-            {
-                making.Make(folder);
-            }
+            Make(source, folder);
 
             var registration = Directory.Exists(folder)
                 ? Directory.GetFiles(folder, "*.adp").Order(StringComparer.Ordinal).FirstOrDefault()
@@ -276,6 +264,30 @@ internal static class AnsibleTranscript
         }
 
         json.WriteEndObject();
+    }
+
+    /// <summary>
+    /// The corpus folder <paramref name="relative"/> made in <paramref name="folder"/> as the transcript reads it:
+    /// a copy of its files, or an empty folder for one that is not there, and then what <see cref="AnsibleFindingFolders"/>
+    /// makes in it, which may take the folder away again.
+    /// </summary>
+    internal static void MakeCopy(string relative, string folder) => Make(Path.Combine(SourceFolder, relative), folder);
+
+    private static void Make(string source, string folder)
+    {
+        if (Directory.Exists(source))
+        {
+            TestFolder.CopyTree(source, folder);
+        }
+        else
+        {
+            Directory.CreateDirectory(folder);
+        }
+
+        foreach (var making in AnsibleFindingFolders.Makings.GetValueOrDefault(Path.GetFileName(source)) ?? [])
+        {
+            making.Make(folder);
+        }
     }
 
     private static async Task WriteReadingAsync(
