@@ -145,7 +145,7 @@ public sealed partial class DiagramService
 
         try
         {
-            var baseline = session.Baseline();
+            var baseline = BaselineOf(session, bodyPath, watchId);
             _logger.Debug(
                 "Sending the baseline of {BodyPath} on watch {WatchId}: {DeltaCount} deltas, {DeltaKinds}",
                 bodyPath,
@@ -206,6 +206,37 @@ public sealed partial class DiagramService
             {
                 channel.Writer.TryWrite(DiagramWire.ToProto(delta));
             }
+        }
+    }
+
+    /// <summary>
+    /// The session's baseline, or a permanent refusal when it cannot be made. A module's
+    /// <c>Baseline()</c> that throws - a mindmap with no root node, a body that does not parse -
+    /// will throw again on every re-open, so it is refused with <see cref="PermanentRefusal.CannotOpen"/>
+    /// and the module's own reason, and the client's tab says so instead of re-opening for ever.
+    /// Said here, once, for every module.
+    /// </summary>
+    private static IReadOnlyList<DiagramDelta> BaselineOf(IDiagramSession session, string bodyPath, ShortGuid watchId)
+    {
+        try
+        {
+            return session.Baseline();
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException and not RpcException)
+        {
+            _logger.Warning(exception, "Refusing {BodyPath} on watch {WatchId}: its baseline could not be made", bodyPath, watchId);
+            // The file's name only: no filesystem path crosses the wire, so the folder is taken
+            // out of the module's sentence too, where an I/O failure would otherwise carry it.
+            var folder = System.IO.Path.GetDirectoryName(bodyPath) + System.IO.Path.DirectorySeparatorChar;
+            var fileName = System.IO.Path.GetFileName(bodyPath);
+            var reason = exception.Message.Replace(folder, "", StringComparison.Ordinal);
+            // And a module that already named the file does not have it named twice.
+            if (reason.StartsWith(fileName + ": ", StringComparison.Ordinal))
+            {
+                reason = reason[(fileName.Length + 2)..];
+            }
+
+            throw new RpcException(new Status(PermanentRefusal.CannotOpen, $"'{fileName}' could not be read: {reason}"));
         }
     }
 

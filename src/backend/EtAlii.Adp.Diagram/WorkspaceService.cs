@@ -1,6 +1,7 @@
 using System.Threading.Channels;
 using EtAlii.Adp.Authentication;
 using EtAlii.Adp.Diagram.Wire;
+using EtAlii.Adp.Projects;
 using Grpc.Core;
 using Serilog;
 using ContextService = EtAlii.Adp.Context.ContextService;
@@ -149,6 +150,21 @@ public sealed class WorkspaceService : Wire.WorkspaceService.WorkspaceServiceBas
                     new WorkspaceMessage { Diagram = new DiagramStreamMessage { StreamId = wireStreamId, Delta = delta } },
                     token).AsTask(),
                 source.Token);
+        }
+        catch (RpcException refusal) when (PermanentRefusal.IsPermanent(refusal.StatusCode))
+        {
+            // Refused for good after the open was answered - a baseline that could not be made.
+            // Ending the stream would read as a drop the client re-opens every RECONNECT_DELAY_MS
+            // for ever; the refusal is what its own Open call would have ended with.
+            _logger.Debug("Diagram stream {StreamId} on watch {WatchId} refused: {Reason}", streamId, connection.WatchId, refusal.Status.Detail);
+            connection.Writer.TryWrite(new WorkspaceMessage
+            {
+                Diagram = new DiagramStreamMessage
+                {
+                    StreamId = wireStreamId,
+                    Refused = new DiagramStreamRefused { Code = (int)refusal.StatusCode, Message = refusal.Status.Detail },
+                },
+            });
         }
         catch (Exception exception) when (exception is not OperationCanceledException || !source.IsCancellationRequested)
         {

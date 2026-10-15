@@ -136,6 +136,39 @@ describe("the tab's one stream, fanned out", () => {
     expect(await next).toEqual({ done: true, value: undefined });
   });
 
+  it("fails a diagram stream the backend refused after it started, with the backend's code and sentence", async () => {
+    // Arrange: a stream whose open was answered, then whose baseline could not be made - a map with
+    // no root node. Ended, it read as a drop and was re-opened every 500 ms for ever.
+    const streams = new WorkspaceStreams();
+    streams.connect();
+    const stream = openOn(streams);
+    const next = stream.next();
+    const streamId = await stream.opened;
+
+    // Act.
+    streams.diagram(
+      create(DiagramStreamMessageSchema, {
+        streamId: { value: streamId },
+        event: { case: "refused", value: { code: Code.FailedPrecondition, message: "'map.mm' could not be read: no root node." } },
+      }),
+    );
+
+    // Assert: the ConnectError useDiagramStream reads as permanent. A race, so a refusal that is
+    // ignored fails here rather than hanging the test.
+    const outcome = await Promise.race([
+      next.then(
+        (result) => ({ kind: "yielded", result }),
+        (error: unknown) => ({ kind: "rejected", error }),
+      ),
+      new Promise((resolve) => setTimeout(() => resolve({ kind: "pending" }), 50)),
+    ]);
+    expect(outcome).toMatchObject({ kind: "rejected" });
+    const error = (outcome as { error: unknown }).error;
+    expect(error).toBeInstanceOf(ConnectError);
+    expect((error as ConnectError).code).toBe(Code.FailedPrecondition);
+    expect((error as ConnectError).rawMessage).toBe("'map.mm' could not be read: no root node.");
+  });
+
   it("closes the stream on the backend when its consumer stops", async () => {
     // Arrange.
     const streams = new WorkspaceStreams();
