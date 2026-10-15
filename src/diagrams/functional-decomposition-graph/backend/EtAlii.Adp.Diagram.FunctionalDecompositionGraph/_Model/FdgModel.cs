@@ -1,3 +1,5 @@
+using EtAlii.Adp.Documents;
+
 namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph;
 
 /// <summary>
@@ -24,7 +26,7 @@ namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph;
 public sealed record FdgModel(
     IReadOnlyList<FdgElement> Elements,
     IReadOnlyList<FdgConnection> Connections,
-    IReadOnlyList<FdgProblem> Problems,
+    IReadOnlyList<ParseProblem> Problems,
     int? Version)
 {
     /// <summary>A document that declares nothing - the parser's answer to text it could not read at all.</summary>
@@ -45,8 +47,3 @@ public sealed record FdgModel(
     /// <summary>The version this module writes, and the only one it understands.</summary>
     public const int CurrentVersion = 1;
 }
-
-/// <summary>Something the parser could not read, and where.</summary>
-/// <param name="Line">The zero-based line it was found on, for a diagnostic that can point at it.</param>
-/// <param name="Message">What could not be read, in a sentence meant for the panel.</param>
-public sealed record FdgProblem(int Line, string Message);
