@@ -9,7 +9,8 @@ namespace EtAlii.Adp.Specification.Fbl.Plugins;
 /// binding's <c>recognise</c>, its files are selected by the file rules and <c>ignore</c> in ordinal
 /// order of relative path and never through a reparse point (<see cref="FolderSubject"/>), and all of
 /// them are handed to the plugin in one <c>read</c>. A folder that fails <c>recognise</c> or is gone
-/// is an unreadable body (FBL §10.3); without the plugin the folder opens read-only with DISL's
+/// is an unreadable body (FBL §10.3); a selected file that cannot be opened is DISL's
+/// <c>std.unparseable</c> at that file, and the rest is read; without the plugin the folder opens read-only with DISL's
 /// <c>std.pluginMissing</c>, as <see cref="PluginBody"/> does (FBL §15.1).
 /// <para>
 /// While it is open, the host watches what <see cref="Dependencies"/> names and passes every changed
@@ -34,6 +35,7 @@ public sealed class FolderBody : IDisposable
     private readonly Lock _gate = new();
     private PluginReadResult _last;
     private IReadOnlyList<PluginFile> _files = [];
+    private IReadOnlyList<string> _unopened = [];
     private IReadOnlyList<string> _watched = [];
     private ITimer? _timer;
     private bool _folderChanged;
@@ -94,9 +96,9 @@ public sealed class FolderBody : IDisposable
     public void Reread() => _last = ReadNow();
 
     /// <summary>
-    /// The full paths the reading depends on, for the host to watch (FBL §10.3, §11.2): the files read,
-    /// the folders the file rules' globs could add files to, what the plugin's <c>watch</c> adds, and
-    /// the registration. In ordinal order, each once.
+    /// The full paths the reading depends on, for the host to watch (FBL §10.3, §11.2): the files read
+    /// and those selected that could not be opened, the folders the file rules' globs could add files to,
+    /// what the plugin's <c>watch</c> adds, and the registration. In ordinal order, each once.
     /// </summary>
     public IReadOnlyList<string> Dependencies
     {
@@ -104,6 +106,7 @@ public sealed class FolderBody : IDisposable
         {
             var paths = new List<string>();
             paths.AddRange(_files.Select(file => Full(file.RelativePath)));
+            paths.AddRange(_unopened.Select(Full));
             paths.AddRange(GlobFolders());
             paths.AddRange(_watched);
             if (_registration is not null) paths.Add(_registration);
@@ -250,35 +253,61 @@ public sealed class FolderBody : IDisposable
     private PluginReadResult ReadNow()
     {
         _files = [];
+        _unopened = [];
         _watched = [];
         var plugin = _plugin;
+        var files = new List<PluginFile>();
+        var unopened = new List<Finding>();
         try
         {
             if (!FolderSubject.Recognise(Binding, Folder)) return Unreadable(Directory.Exists(Folder) ? "The folder is not one this binding recognises, so it is not read." : "The folder no longer exists, so it is not read.");
             if (plugin is null) return new PluginReadResult([], [new Finding(FindingCodes.PluginMissing, FindingSeverity.Warning, MissingReason, null)], false);
-            _files = FolderSubject.Files(Binding, Folder).Select(Load).ToList();
+            foreach (var file in FolderSubject.Files(Binding, Folder))
+            {
+                if (Load(file) is { } loaded) files.Add(loaded);
+                else unopened.Add(Unopened(file.RelativePath));
+            }
         }
         catch (DirectoryNotFoundException)
         {
-            _files = [];
             return Unreadable("The folder no longer exists, so it is not read.");
         }
 
+        _files = files;
+        _unopened = [.. unopened.Select(finding => finding.Location!.File)];
         var entries = _options.SupplementaryEntries?.Invoke(Folder).Order(StringComparer.Ordinal).ToList() ?? [];
         var result = plugin.Read(new PluginReadRequest(_files) { SupplementaryEntries = entries });
         _watched = plugin.Watch(result).Select(path => Path.GetFullPath(path, Folder)).ToList();
-        return result with { Findings = Located(result) };
+        return result with { Findings = [.. unopened, .. Located(result)] };
     }
 
-    /// <summary>Reads at the sharing the repository's own reader uses, so a concurrent save is never refused; a file over the limit is not read at all.</summary>
-    private PluginFile Load(FolderFile file)
+    /// <summary>
+    /// Reads at the sharing the repository's own reader uses, so a concurrent save is never refused; a file over
+    /// the limit is not read at all. Null when the file cannot be opened or read: removed since it was
+    /// selected, held by a process that shares nothing, or not permitted (FBL §10.3).
+    /// </summary>
+    private PluginFile? Load(FolderFile file)
     {
-        using var stream = new FileStream(file.FullPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
-        if (stream.Length > _options.MaxBodyBytes) return new PluginFile(file.RelativePath, []) { IsOversized = true };
-        using var buffer = new MemoryStream();
-        stream.CopyTo(buffer);
-        return new PluginFile(file.RelativePath, buffer.ToArray());
+        try
+        {
+            using var stream = new FileStream(file.FullPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+            if (stream.Length > _options.MaxBodyBytes) return new PluginFile(file.RelativePath, []) { IsOversized = true };
+            using var buffer = new MemoryStream();
+            stream.CopyTo(buffer);
+            return new PluginFile(file.RelativePath, buffer.ToArray());
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            return null;
+        }
     }
+
+    /// <summary>
+    /// A selected file that could not be opened (FBL §10.3): DISL's <c>std.unparseable</c> at that file, at no
+    /// line, since none of it was read. The sentence names no path of the machine, as an exception's would.
+    /// </summary>
+    private static Finding Unopened(string relativePath) =>
+        new(FindingCodes.Unparseable, FindingSeverity.Error, "The file could not be opened, so it is not read.", new SourceLocation(relativePath, 0, 0, 0));
 
     private static PluginReadResult Unreadable(string reason) =>
         new([], [new Finding(FindingCodes.Unparseable, FindingSeverity.Error, reason, null)], true);
