@@ -143,7 +143,7 @@ public class ProblemsFlowTests(HostFixture host) : IClassFixture<HostFixture>
         File.Delete(IoPath.Combine(_projectFolder, "doomed.adp"));
 
         using var cts = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken);
-        var after = await ReadUntilAsync(session.Stream, cts.Token, problems => problems.Problems.Count == 0);
+        var after = await ReadProblemsAsync(session.Stream, cts.Token, problems => problems.Problems.Count == 0);
         Assert.Equal(0u, after.ErrorCount);
     }
 
@@ -163,7 +163,7 @@ public class ProblemsFlowTests(HostFixture host) : IClassFixture<HostFixture>
 
         // Act and assert, step by step.
         using var cts = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken);
-        var after = await ReadUntilAsync(session.Stream, cts.Token,
+        var after = await ReadProblemsAsync(session.Stream, cts.Token,
             problems => problems.Problems.Count == 1 && problems.Problems[0].Path.Segments.Single() == "new.adp");
         // Carried, not re-reported as unchecked: still the same verdict, at the new path.
         Assert.Equal("core.unknown-type", after.Problems[0].RuleId);
@@ -224,20 +224,12 @@ public class ProblemsFlowTests(HostFixture host) : IClassFixture<HostFixture>
 
     /// <summary>Reads past the VALIDATING push to the settled VALIDATED answer.</summary>
     private static Task<ProjectProblems> ReadValidatedProblemsAsync(IAsyncStreamReader<ContextMessage> stream, CancellationToken cancellationToken) =>
-        ReadUntilAsync(stream, cancellationToken, problems => problems.State == ProblemSetState.Validated);
+        ReadProblemsAsync(stream, cancellationToken, problems => problems.State == ProblemSetState.Validated);
 
-    private static async Task<ProjectProblems> ReadUntilAsync(
-        IAsyncStreamReader<ContextMessage> stream, CancellationToken cancellationToken, Func<ProjectProblems, bool> accept)
-    {
-        while (true)
-        {
-            var problems = await ReadProblemsAsync(stream, cancellationToken);
-            if (accept(problems))
-            {
-                return problems;
-            }
-        }
-    }
+    /// <summary>The first problems message <paramref name="accept"/> takes, passing over the ones before it.</summary>
+    private static async Task<ProjectProblems> ReadProblemsAsync(
+        IAsyncStreamReader<ContextMessage> stream, CancellationToken cancellationToken, Func<ProjectProblems, bool> accept) =>
+        (await stream.FirstAsync(message => message.MessageCase == ContextMessage.MessageOneofCase.Problems && accept(message.Problems), cancellationToken)).Problems;
 
     private void SeedPair(string baseName)
     {

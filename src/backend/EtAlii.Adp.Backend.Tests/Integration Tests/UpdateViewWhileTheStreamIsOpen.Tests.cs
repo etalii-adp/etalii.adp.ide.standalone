@@ -178,7 +178,7 @@ public sealed class UpdateViewWhileTheStreamIsOpenTests : IDisposable
             },
             TestContext.Current.CancellationToken);
 
-        var returned = await Task.WhenAny(update, Task.Delay(Patience, TestContext.Current.CancellationToken)) == update;
+        var returned = await Eventually.TrueAsync(() => update.IsCompleted, TestContext.Current.CancellationToken, Patience);
         clock.Stop();
 
         // Assert.
