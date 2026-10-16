@@ -1,5 +1,6 @@
 using EtAlii.Adp.Specification.Disl;
 using EtAlii.Adp.Specification.Fbl.Plugins;
+using Microsoft.Extensions.Time.Testing;
 using Xunit;
 
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
@@ -21,12 +22,17 @@ public sealed class AnsibleFolderTests : IDisposable
     private static readonly TimeSpan SettleDelay = TimeSpan.FromMilliseconds(AnsibleDefinition.Binding.Body.Settle);
     private static readonly TimeSpan WaitLimit = TimeSpan.FromSeconds(15);
 
+    /// <summary>How long a test listens, in real time, for something that must not be heard.</summary>
+    private static readonly TimeSpan Silence = TimeSpan.FromMilliseconds(400);
+
     private readonly TestFolder _folder = TestFolder.Create("EtAlii.Adp.AnsibleFolder");
-    private readonly AnsibleFolders _folders = new();
+    private readonly FakeTimeProvider _clock = new();
+    private readonly AnsibleFolders _folders;
     private readonly string _root;
 
     public AnsibleFolderTests()
     {
+        _folders = new AnsibleFolders(_clock);
         _root = Fill("root");
     }
 
@@ -81,13 +87,12 @@ public sealed class AnsibleFolderTests : IDisposable
             await TouchAsync(_root, i, TestContext.Current.CancellationToken);
         }
 
-        // Assert.
-        await WaitFor(reads, 1);
-        await Task.Delay(SettleDelay + SettleDelay, TestContext.Current.CancellationToken);
-        lock (reads)
-        {
-            Assert.InRange(reads.Count, 1, changeCount - 1);
-        }
+        // Assert: the clock moves a settle delay only every settle delay of real time, as it would run by
+        // itself, so events the file system is slow to report still fall into one window.
+        await WaitFor(reads, 1, SettleDelay);
+        Assert.False(
+            await Eventually.TrueAsync(() => Settled(() => Count(reads) >= changeCount), TestContext.Current.CancellationToken, Silence, SettleDelay),
+            "Every change of the burst cost a read of its own.");
     }
 
     // ---- claims ------------------------------------------------------------------------------
@@ -366,40 +371,39 @@ public sealed class AnsibleFolderTests : IDisposable
     /// write lands as a truncation and then its content, and a runner that stalls between the two for longer
     /// than the settle delay announces the empty file first, correctly.
     /// </summary>
-    private static async Task<DislModel> WaitFor(List<DislModel> heard, Func<DislModel, bool> shows)
+    private async Task<DislModel> WaitFor(List<DislModel> heard, Func<DislModel, bool> shows)
     {
-        var start = DateTime.UtcNow;
-        while (DateTime.UtcNow - start < WaitLimit)
-        {
-            lock (heard)
+        var model = await Eventually.ValueAsync(
+            () => Settled(() =>
             {
-                if (heard.FirstOrDefault(shows) is { } model)
+                lock (heard)
                 {
-                    return model;
+                    return heard.FirstOrDefault(shows);
                 }
-            }
-            await Task.Delay(25, TestContext.Current.CancellationToken);
-        }
-
-        Assert.Fail($"The change was not announced within {WaitLimit}.");
-        return null!;
+            }),
+            TestContext.Current.CancellationToken,
+            WaitLimit);
+        Assert.True(model is not null, $"The change was not announced within {WaitLimit}.");
+        return model;
     }
 
-    private static async Task WaitFor(List<FolderBodyChange> reads, int count)
-    {
-        var start = DateTime.UtcNow;
-        while (DateTime.UtcNow - start < WaitLimit)
-        {
-            lock (reads)
-            {
-                if (reads.Count >= count)
-                {
-                    return;
-                }
-            }
-            await Task.Delay(25, TestContext.Current.CancellationToken);
-        }
+    private async Task WaitFor(List<FolderBodyChange> reads, int count, TimeSpan? interval = null) =>
+        Assert.True(
+            await Eventually.TrueAsync(() => Settled(() => Count(reads) >= count), TestContext.Current.CancellationToken, WaitLimit, interval),
+            $"The folder was not read again within {WaitLimit}.");
 
-        Assert.Fail($"The folder was not read again within {WaitLimit}.");
+    private static int Count(List<FolderBodyChange> reads)
+    {
+        lock (reads)
+        {
+            return reads.Count;
+        }
+    }
+
+    /// <summary><paramref name="probe"/>, asked once the folders' clock has moved a settle delay.</summary>
+    private T Settled<T>(Func<T> probe)
+    {
+        _clock.Advance(SettleDelay);
+        return probe();
     }
 }

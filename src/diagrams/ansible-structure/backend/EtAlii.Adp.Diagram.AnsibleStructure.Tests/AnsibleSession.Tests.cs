@@ -1,6 +1,7 @@
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Time.Testing;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
@@ -15,14 +16,17 @@ public class AnsibleSessionTests : IDisposable
     /// <summary>The binding's settle delay, which the folder body waits for after a change.</summary>
     private static readonly TimeSpan SettleDelay = TimeSpan.FromMilliseconds(AnsibleDefinition.Binding.Body.Settle);
     private static readonly TimeSpan WaitLimit = TimeSpan.FromSeconds(15);
+    private static readonly TimeSpan Silence = TimeSpan.FromMilliseconds(400);
 
     private readonly string _root;
-    private readonly AnsibleFolders _folders = new();
+    private readonly FakeTimeProvider _clock = new();
+    private readonly AnsibleFolders _folders;
     private readonly AnsibleSessionFactory _factory;
     private readonly ServiceProvider _provider;
 
     public AnsibleSessionTests()
     {
+        _folders = new AnsibleFolders(_clock);
         _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
         TestFolder.CopyTree(IoPath.Combine("Fixtures", "infrastructure"), _root);
         // The registration a real Add would have written. Nothing else is added to the folder.
@@ -194,13 +198,11 @@ public class AnsibleSessionTests : IDisposable
         // Act.
         await session.DisposeAsync();
         File.Delete(IoPath.Combine(_root, "dbservers.yml"));
-        await Task.Delay(SettleDelay + SettleDelay + SettleDelay, TestContext.Current.CancellationToken);
 
         // Assert.
-        lock (pushes)
-        {
-            Assert.Empty(pushes);
-        }
+        Assert.False(
+            await Eventually.TrueAsync(() => Settled(() => Count(pushes) > 0), TestContext.Current.CancellationToken, Silence),
+            "A disposed session heard about the folder.");
     }
 
     [Fact]
@@ -286,23 +288,35 @@ public class AnsibleSessionTests : IDisposable
     private Dictionary<string, byte[]> Snapshot() =>
         Directory.GetFiles(_root, "*", SearchOption.AllDirectories).ToDictionary(path => path, File.ReadAllBytes);
 
-    private static async Task<IReadOnlyList<DiagramDelta>> WaitForPush(List<IReadOnlyList<DiagramDelta>> pushes)
+    private async Task<IReadOnlyList<DiagramDelta>> WaitForPush(List<IReadOnlyList<DiagramDelta>> pushes)
     {
-        var start = DateTime.UtcNow;
-        while (DateTime.UtcNow - start < WaitLimit)
-        {
-            lock (pushes)
+        var deltas = await Eventually.ValueAsync(
+            () => Settled(() =>
             {
-                if (pushes.Count > 0)
+                lock (pushes)
                 {
-                    return pushes[^1];
+                    return pushes.Count > 0 ? pushes[^1] : null;
                 }
-            }
-            await Task.Delay(25, TestContext.Current.CancellationToken);
-        }
+            }),
+            TestContext.Current.CancellationToken,
+            WaitLimit);
+        Assert.True(deltas is not null, $"No deltas arrived within {WaitLimit}.");
+        return deltas;
+    }
 
-        Assert.Fail($"No deltas arrived within {WaitLimit}.");
-        return null!;
+    private static int Count(List<IReadOnlyList<DiagramDelta>> pushes)
+    {
+        lock (pushes)
+        {
+            return pushes.Count;
+        }
+    }
+
+    /// <summary><paramref name="probe"/>, asked once the folders' clock has moved a settle delay.</summary>
+    private T Settled<T>(Func<T> probe)
+    {
+        _clock.Advance(SettleDelay);
+        return probe();
     }
 
 
@@ -465,24 +479,20 @@ public class AnsibleSessionTests : IDisposable
     }
 
     /// <summary>The element <paramref name="id"/> as the first push that adds it delivers it.</summary>
-    private static async Task<DiagramElement> WaitForElement(List<IReadOnlyList<DiagramDelta>> pushes, string id)
+    private async Task<DiagramElement> WaitForElement(List<IReadOnlyList<DiagramDelta>> pushes, string id)
     {
-        var start = DateTime.UtcNow;
-        while (DateTime.UtcNow - start < WaitLimit)
-        {
-            lock (pushes)
+        var added = await Eventually.ValueAsync(
+            () => Settled(() =>
             {
-                var added = pushes.SelectMany(deltas => deltas.OfType<DiagramAddDelta>()).SelectMany(delta => delta.Elements)
-                    .FirstOrDefault(element => element.Id == id);
-                if (added is not null)
+                lock (pushes)
                 {
-                    return added;
+                    return pushes.SelectMany(deltas => deltas.OfType<DiagramAddDelta>()).SelectMany(delta => delta.Elements)
+                        .FirstOrDefault(element => element.Id == id);
                 }
-            }
-            await Task.Delay(25, TestContext.Current.CancellationToken);
-        }
-
-        Assert.Fail($"{id} did not arrive within {WaitLimit}.");
-        return null!;
+            }),
+            TestContext.Current.CancellationToken,
+            WaitLimit);
+        Assert.True(added is not null, $"{id} did not arrive within {WaitLimit}.");
+        return added;
     }
 }

@@ -41,7 +41,7 @@
     <EmbeddedResource Include="..\..\definition\ansible-structure.dis" LogicalName="ansible-structure.dis" />
     <EmbeddedResource Include="..\..\definition\provenance.json" LogicalName="ansible-structure.provenance.json" />
     <!-- The module's own FBL binding: the folder is read through it by AnsibleFolderPlugin. -->
-    <EmbeddedResource Include="ansible-structure.fbl" />
+    <EmbeddedResource Include="ansible-structure.fbl" LogicalName="ansible-structure.fbl" />
   </ItemGroup>
 
   <ItemGroup>

@@ -25,7 +25,8 @@ namespace EtAlii.Adp.Diagram.AnsibleStructure;
 /// <c>SetRegistrationLayoutCommand</c>.
 /// </para>
 /// </remarks>
-public sealed class AnsibleFolders : IDisposable
+/// <param name="time">The clock a burst of changes settles on; the system's when none is given.</param>
+public sealed class AnsibleFolders(TimeProvider? time = null) : IDisposable
 {
     private static readonly ILogger _logger = Log.ForContext<AnsibleFolders>();
 
@@ -121,7 +122,7 @@ public sealed class AnsibleFolders : IDisposable
         if (_open.TryGetValue(key, out var entry)) return entry;
 
         _logger.Debug("Reading and watching {Folder}", key);
-        var opened = new AnsibleFolder(folder, registration);
+        var opened = new AnsibleFolder(folder, registration, time);
         opened.Changed += (_, _) => Changed?.Invoke(key, opened);
         entry = new Entry(opened);
         _open[key] = entry;

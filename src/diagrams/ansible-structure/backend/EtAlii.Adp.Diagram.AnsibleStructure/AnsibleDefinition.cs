@@ -41,7 +41,7 @@ internal static class AnsibleDefinition
 
     private static readonly Lazy<string> LoadedMoveRefusal = new(MoveRefusalOf);
 
-    private static readonly Lazy<FblBinding> LoadedBinding = new(LoadBinding);
+    private static readonly Lazy<FblBinding> LoadedBinding = new(() => BundledBinding.Load(typeof(AnsibleDefinition).Assembly, "ansible-structure.fbl", "ansible"));
 
     /// <summary>What <c>env</c> reads: nothing in this diagram can be edited.</summary>
     private static readonly DislEnv Env = new(ReadOnly: true);
@@ -121,19 +121,6 @@ internal static class AnsibleDefinition
         detail["reason"] = finding.Message;
         var line = finding.Location is { Line: > 0 } located ? located.Line : (int?)null;
         return new DislReaderFinding(finding.Code, detail, line, finding.Location?.File is { Length: > 0 } file ? file : null);
-    }
-
-    /// <summary>The module's own binding, embedded beside the code.</summary>
-    private static FblBinding LoadBinding()
-    {
-        var assembly = typeof(AnsibleDefinition).Assembly;
-        var name = assembly.GetManifestResourceNames().Single(resource => resource.EndsWith("ansible-structure.fbl", StringComparison.Ordinal));
-        using var stream = assembly.GetManifestResourceStream(name)!;
-        using var buffer = new MemoryStream();
-        stream.CopyTo(buffer);
-        var problems = FblDocumentLoader.Load(buffer.ToArray(), out var document);
-        return document?.Bindings.GetValueOrDefault("ansible")
-            ?? throw new InvalidOperationException($"The Ansible structure diagram's FBL binding does not load: {string.Join("; ", problems)}");
     }
 
     /// <summary>The message of the one rule of <c>constraints.rules</c> that refuses a containment, as the definition writes it.</summary>
