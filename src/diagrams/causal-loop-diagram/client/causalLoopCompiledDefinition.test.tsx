@@ -360,7 +360,8 @@ function handWrittenModelOf(model: CausalLoopModel): DiagramModel {
 
 interface TranscriptDocument {
   document: string;
-  payloads: string[];
+  /** Absent on a document recorded as `sameAs` an earlier one with the same bytes. */
+  payloads?: string[];
 }
 
 const TRANSCRIPT = JSON.parse(transcriptText) as { documents: TranscriptDocument[] };
@@ -414,7 +415,11 @@ const SUPPLEMENT: readonly string[] = [
 ];
 
 const CASES: readonly { name: string; payloads: readonly string[] }[] = [
-  ...TRANSCRIPT.documents.map((document) => ({ name: document.document.split("/").slice(-1)[0]!, payloads: document.payloads })),
+  // A document whose bytes repeat an earlier one is recorded as `sameAs` that one, with no payloads
+  // of its own, so it is drawn once, under the name it was first recorded by.
+  ...TRANSCRIPT.documents.flatMap((document) =>
+    document.payloads === undefined ? [] : [{ name: document.document.split("/").slice(-1)[0]!, payloads: document.payloads }],
+  ),
   { name: "a self-link and an unstated link", payloads: SUPPLEMENT },
 ];
 

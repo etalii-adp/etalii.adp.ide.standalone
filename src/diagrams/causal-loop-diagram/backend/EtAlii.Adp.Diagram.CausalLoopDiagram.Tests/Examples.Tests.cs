@@ -79,6 +79,7 @@ public class ExamplesTests
     [Theory]
     [InlineData("reference")]
     [InlineData("on-call")]
+    [InlineData("business-philosophy")]
     public void AnExample_SitsBesideItsOwnRegistration(string name)
     {
         // Act.
@@ -101,12 +102,13 @@ public class ExamplesTests
     {
         // Act & assert.
         // So that an example added without a test is a failure rather than a silent gap.
-        Assert.Equal(["on-call", "reference"], [.. Names().OrderBy(name => name, StringComparer.Ordinal)]);
+        Assert.Equal(["business-philosophy", "on-call", "reference"], [.. Names().OrderBy(name => name, StringComparer.Ordinal)]);
     }
 
     [Theory]
     [InlineData("reference")]
     [InlineData("on-call")]
+    [InlineData("business-philosophy")]
     public void AnExample_Parses_AndEveryLinkAndLoopNamesADeclaredVariable(string name)
     {
         // Act.
@@ -233,6 +235,28 @@ public class ExamplesTests
         });
     }
 
+    /// <summary>
+    /// The business philosophy example claims every cycle its links form, each with the label its
+    /// arithmetic gives, so it opens with no finding at all. In a model this dense one added link
+    /// quietly makes a cycle nobody named; the readme says this example has none, and this holds it.
+    /// </summary>
+    [Fact]
+    public async Task TheBusinessPhilosophyExample_NamesEveryCycle_AndOpensWithNoFinding()
+    {
+        // Arrange.
+        var model = Load("business-philosophy");
+
+        // Act.
+        var findings = await Judge("business-philosophy");
+
+        // Assert.
+        Assert.Empty(findings);
+        Assert.Equal(10, model.Loops.Count);
+        Assert.Equal(8, model.Loops.Count(loop => loop.Computed == LoopPolarityResult.Reinforcing));
+        Assert.Equal(2, model.Loops.Count(loop => loop.Computed == LoopPolarityResult.Balancing));
+        Assert.All(model.Loops, loop => Assert.False(loop.Disagrees, $"{loop.Identifier} disagrees with its arithmetic."));
+    }
+
     // ---- the layout the reader will actually see ------------------------------------------------
 
     /// <summary>
@@ -243,6 +267,7 @@ public class ExamplesTests
     [Theory]
     [InlineData("reference")]
     [InlineData("on-call")]
+    [InlineData("business-philosophy")]
     public void AnExample_ArrangesWithoutOverlap(string name)
     {
         // Act.
