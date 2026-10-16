@@ -10,17 +10,17 @@ namespace EtAlii.Adp.Diagram.Timeline.Tests;
 /// The palette carries data and names actions; what matters is the join - that every entry
 /// names an action that exists, and that a drop lands where it was dropped.
 /// </summary>
-public class TimelineToolboxProviderTests : IDisposable
+public class TimelineToolboxTests : IDisposable
 {
     private readonly string _workspace = IoPath.Combine(
         IoPath.GetTempPath(),
         "adp-timeline-toolbox-" + Guid.NewGuid().ToString("N"));
 
     private readonly TimelineDocumentStore _store = new();
-    private readonly TimelineToolboxProvider _toolbox = new();
+    private readonly DislToolboxProvider _toolbox = new(Diagram.Timeline.Origin, TimelineDefinition.Definition);
     private readonly TimelineContextActionProvider _actions;
 
-    public TimelineToolboxProviderTests()
+    public TimelineToolboxTests()
     {
         Directory.CreateDirectory(_workspace);
         _actions = new TimelineContextActionProvider(new HistoryStackStore(new TimelineTestDispatcher(_store)), _store);

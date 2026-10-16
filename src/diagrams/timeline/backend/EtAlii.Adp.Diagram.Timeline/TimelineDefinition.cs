@@ -1,8 +1,6 @@
 using System.Globalization;
-using System.Text.Json;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
-using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Specification.Disl;
 using EtAlii.Adp.Specification.Fbl;
 
@@ -10,8 +8,9 @@ namespace EtAlii.Adp.Diagram.Timeline;
 
 /// <summary>
 /// The timeline's bundled DISL definition (<c>definition/timeline.dis</c>, from etalii-adp/etalii.adp),
-/// loaded once with the module's plugin functions (<see cref="TimelineTimes"/>), and what the
-/// providers derive from it: the palette, the context menus, the property rows, the findings, the
+/// loaded once with the module's plugin functions (<see cref="TimelineTimes"/>) as a
+/// <see cref="DislDiagramDefinition"/>, and what the providers derive from it: the palette, the
+/// context menus, the property rows, the findings, the
 /// placement additions and the removal's confirmation, mapped onto the host's types with the wire
 /// ids of its <c>x-timeline</c> block; and the edits the DISL runtime runs from the definition's
 /// operations and tools - adding after and below (with their <c>connect</c>), a relation dragged onto
@@ -34,17 +33,11 @@ namespace EtAlii.Adp.Diagram.Timeline;
 /// </remarks>
 internal static class TimelineDefinition
 {
-    private static readonly Lazy<BundledDefinition> Loaded = new(() => BundledDefinition.Load(typeof(TimelineDefinition).Assembly, "timeline.dis", TimelineTimes.Plugins()));
-
-    private static readonly Lazy<WireIdMap> LoadedIds = new(() => WireIdMap.Of(Specification, "x-timeline"));
-
-    private static readonly Lazy<IReadOnlyList<ToolboxItemDefinition>> LoadedToolbox = new(() =>
-    [
-        .. ToolboxDerivation.Derive(Specification, Ids)
-            .Select(tool => new ToolboxItemDefinition(tool.Id, tool.Label, tool.Icon, tool.Description, tool.DropActionId ?? "")),
-    ]);
-
-    private static readonly Lazy<string> LoadedArrangeReason = new(ArrangeReasonOf);
+    /// <summary>
+    /// The definition, with its <c>x-timeline</c> wire ids. Arrange carries its sentence even while it is
+    /// available, as the hand-written menu did.
+    /// </summary>
+    public static DislDiagramDefinition Definition { get; } = new(typeof(TimelineDefinition).Assembly, "timeline.dis", "x-timeline", TimelineTimes.Plugins, ["arrange"]);
 
     /// <summary>The host attribute holding the id an element or relation is written with, absent for none.</summary>
     private const string StoredId = "storedId";
@@ -69,16 +62,10 @@ internal static class TimelineDefinition
     };
 
     /// <summary>The definition.</summary>
-    public static DislSpecification Specification => Loaded.Value.Specification;
+    public static DislSpecification Specification => Definition.Specification;
 
     /// <summary>What the runtime had to say about the definition as it loaded it.</summary>
-    public static IReadOnlyList<DislDiagnostic> Diagnostics => Loaded.Value.Diagnostics;
-
-    /// <summary>The wire ids of <c>x-timeline</c>.</summary>
-    private static WireIdMap Ids => LoadedIds.Value;
-
-    /// <summary>The palette.</summary>
-    public static IReadOnlyList<ToolboxItemDefinition> Toolbox => LoadedToolbox.Value;
+    public static IReadOnlyList<DislDiagnostic> Diagnostics => Definition.Diagnostics;
 
     /// <summary>What <c>env</c> reads: editable, in the one viewpoint a timeline has.</summary>
     private static DislEnv Env { get; } = new();
@@ -94,22 +81,15 @@ internal static class TimelineDefinition
                 : GestureIds.TryParseRelation(elementId, out var from, out var to)
                     ? DislMenuTarget.Connection(diagram, ElementOf(diagram, from), ElementOf(diagram, to), "Connection")
                     : null;
-        if (target is null) return [];
-
-        return
-        [
-            .. ContextMenuDerivation.Derive(Specification, target, Env, Ids)
-                .Select(group => new ContextActionGroupDefinition([.. group.Entries.Select(Action)])),
-        ];
+        return target is null ? [] : Definition.Menus(target, Env);
     }
 
     /// <summary>The property rows of <paramref name="elementId"/> in <paramref name="model"/>: an element's or a relation's form; none for anything else.</summary>
     public static IReadOnlyList<ContextPropertyDefinition> Rows(TimelineModel model, string elementId)
     {
-        if (ElementOf(DiagramOf(model), elementId) is not { } element) return [];
-
-        // Every row is a line: there is no date-aware editor (property-grid Requirement 9), and a row is typed as text too.
-        return [.. FormDerivation.Derive(Specification, element, Env, Ids).Select(row => new ContextPropertyDefinition(row.Id, row.Label, row.Value, ContextPropertyEditor.Line, row.ReadOnlyReason, row.Group))];
+        // Every row is a line: the definition's widgets are text and number, there is no date-aware
+        // editor (property-grid Requirement 9), and a row is typed as text too.
+        return ElementOf(DiagramOf(model), elementId) is { } element ? Definition.Rows(element, Env) : [];
     }
 
     /// <summary>
@@ -313,32 +293,14 @@ internal static class TimelineDefinition
 
     private static DiagramProblem Problem(DislFinding finding)
     {
-        var severity = finding.Severity == "error" ? DiagramProblemSeverity.Error : DiagramProblemSeverity.Warning;
-
         // The ids and the file are reported at the line, because an element without an id, or with one
         // another declaration holds, cannot be named by it; everything else names its element.
         DiagramProblemLocation location = finding.Code is TimelineRules.MissingId or TimelineRules.DuplicateId or TimelineValidator.UnparseableRuleId
             ? new DiagramProblemLineLocation((uint)(finding.Line ?? 1))
             : new DiagramProblemElementLocation(finding.ElementIds is [var id, ..] ? id : "");
-        return new DiagramProblem(severity, finding.Message, finding.Code, location);
+        return new DiagramProblem(DislDiagramDefinition.SeverityOf(finding), finding.Message, finding.Code, location);
     }
-
-    private static ContextActionDefinition Action(DerivedMenuEntry entry) => new(
-        entry.Id,
-        entry.Label,
-        entry.Icon,
-        entry.Shortcut is { } key ? new ContextShortcutDefinition(key.Key, key.Ctrl, key.Shift, key.Alt, key.Meta) : null,
-        entry.Available,
-        // Arrange carries its sentence even while it is available, as the hand-written menu did; the
-        // client shows a reason only for an unavailable action.
-        entry is { Available: true, Operation: "arrange" } ? LoadedArrangeReason.Value : entry.UnavailableReason);
 
     private static string? Text(IReadOnlyDictionary<string, object?> attributes, string name) =>
         attributes.TryGetValue(name, out var value) ? value as string ?? Convert.ToString(value, CultureInfo.InvariantCulture) : null;
-
-    /// <summary>The sentence of Arrange's one <c>unavailable</c> reason, as the definition writes it.</summary>
-    private static string ArrangeReasonOf() =>
-        Specification.Root.GetProperty("behavior").GetProperty("operations").GetProperty("arrange").GetProperty("unavailable")
-            .EnumerateArray().Select(reason => reason.TryGetProperty("message", out var message) && message.ValueKind == JsonValueKind.String ? message.GetString() : null)
-            .FirstOrDefault(message => message is not null) ?? "";
 }
