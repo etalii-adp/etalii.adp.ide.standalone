@@ -43,13 +43,13 @@ public class AdpFileWriterHolderRecordTests : IDisposable
     }
 
     [Fact]
-    public void AFailedPublish_NamesAnotherProcessHoldingTheFile()
+    public async Task AFailedPublish_NamesAnotherProcessHoldingTheFile()
     {
         Assert.SkipUnless(OperatingSystem.IsWindows(), "The holders of a file are asked only on Windows.");
         // The case the gate hit: the other party is not in this process, so nothing in this process
         // can name it. A real second process holds the file; the record must carry its pid.
         var path = IoPath.Combine(_folder, "tea.owm");
-        File.WriteAllText(path, "before");
+        await File.WriteAllTextAsync(path, "before", TestContext.Current.CancellationToken);
         var ready = IoPath.Combine(_folder, "holder.ready");
         // The real Restart Manager talks to a service, and this guard is about what the RECORD
         // SAYS rather than about how busy the machine is: at the production budget a loaded gate
@@ -61,7 +61,7 @@ public class AdpFileWriterHolderRecordTests : IDisposable
         using var holder = StartHolder(path, ready);
         try
         {
-            WaitForHolder(ready, holder);
+            await WaitForHolder(ready, holder);
             using var logs = LogCapture.Start();
 
             Assert.ThrowsAny<IOException>(() => AdpFileWriter.Save(path, "after"));
@@ -146,16 +146,27 @@ public class AdpFileWriterHolderRecordTests : IDisposable
         File.WriteAllText(path, "before");
         var wild = new IOException("Unable to remove the file to be replaced.") { HResult = unchecked((int)0x80070497) };
         FileHolders.Budget = TimeSpan.FromMilliseconds(200);
+
+        // Not disposed: the query may still be waiting on it when the test ends, and a slim event
+        // that was never asked for its wait handle holds nothing to release.
+        var released = new ManualResetEventSlim(false);
         FileHolders.Query = _ =>
         {
-            Thread.Sleep(TimeSpan.FromSeconds(30));
+            released.Wait(TimeSpan.FromSeconds(30));
             return "never gets here";
         };
         using var logs = LogCapture.Start();
 
         var clock = Stopwatch.StartNew();
-        Assert.Throws<IOException>(() => AdpFileWriter.Save(path, "after", replace: (_, _) => throw wild));
-        clock.Stop();
+        try
+        {
+            Assert.Throws<IOException>(() => AdpFileWriter.Save(path, "after", replace: (_, _) => throw wild));
+        }
+        finally
+        {
+            clock.Stop();
+            released.Set();
+        }
 
         Assert.True(clock.Elapsed < TimeSpan.FromSeconds(5), $"The save waited {clock.Elapsed.TotalSeconds:0.0}s on a holder query with a 200ms budget.");
         Assert.Contains(logs.Warnings, warning => warning.Contains("not yet known", StringComparison.Ordinal));
@@ -242,16 +253,12 @@ public class AdpFileWriterHolderRecordTests : IDisposable
         return Process.Start(start) ?? throw new InvalidOperationException("The holder process did not start.");
     }
 
-    private static void WaitForHolder(string ready, Process holder)
+    private static async Task WaitForHolder(string ready, Process holder)
     {
-        var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(30);
-        while (!File.Exists(ready) && DateTime.UtcNow < deadline)
-        {
-            Assert.False(holder.HasExited, "The arrangement failed: the holder process exited before it held the file.");
-            Thread.Sleep(50);
-        }
+        await Eventually.TrueAsync(() => File.Exists(ready) || holder.HasExited, TestContext.Current.CancellationToken, TimeSpan.FromSeconds(30), TimeSpan.FromMilliseconds(50));
 
         // Loud rather than silent: without a real holder this test would pass for the wrong reason.
+        Assert.False(holder.HasExited && !File.Exists(ready), "The arrangement failed: the holder process exited before it held the file.");
         Assert.True(File.Exists(ready), "The arrangement failed: the holder process never reported holding the file.");
     }
 

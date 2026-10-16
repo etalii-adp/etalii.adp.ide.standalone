@@ -247,11 +247,7 @@ public class ContextSelectionStoreTests : IDisposable
         resolver.Fire(["documents", "b.txt"]);
 
         // Act.
-        var deadline = DateTime.UtcNow + Timeout;
-        while (rediscoveredWith is null && DateTime.UtcNow < deadline)
-        {
-            await Task.Delay(10, TestContext.Current.CancellationToken);
-        }
+        await Eventually.TrueAsync(() => rediscoveredWith is not null, TestContext.Current.CancellationToken, Timeout);
 
         // Assert.
         Assert.Equal(System.IO.Path.Combine(Root, "documents", "b.txt"), rediscoveredWith!.Innermost.Target.ResolvedFullPath);
@@ -300,11 +296,7 @@ public class ContextSelectionStoreTests : IDisposable
         // Act: the element's label changed, so its track reports the new display path.
         elementResolver.Fire(["New label"]);
 
-        var deadline = DateTime.UtcNow + Timeout;
-        while (rediscoveredWith is null && DateTime.UtcNow < deadline)
-        {
-            await Task.Delay(10, TestContext.Current.CancellationToken);
-        }
+        await Eventually.TrueAsync(() => rediscoveredWith is not null, TestContext.Current.CancellationToken, Timeout);
 
         // Assert: the display path moved, the body file did not.
         Assert.NotNull(rediscoveredWith);

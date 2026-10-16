@@ -26,7 +26,8 @@ internal sealed class ProjectValidatorTestValidator(
         }
         if (hanging)
         {
-            await Task.Delay(Timeout.InfiniteTimeSpan, CancellationToken.None);
+            // Never answers, and does not hear the abandonment either: a validator that hangs.
+            await new TaskCompletionSource().Task;
         }
         return problems;
     }

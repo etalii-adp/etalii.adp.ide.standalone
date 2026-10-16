@@ -36,8 +36,7 @@ public sealed class WatchedFileTests : IDisposable
         // Assert: one attempt, then a wait on the clock rather than on a thread. Real time passing
         // changes nothing while the clock stands still; a wait that did not use the clock would have
         // run its attempts by now.
-        await Task.Delay(TimeSpan.FromMilliseconds(200), TestContext.Current.CancellationToken);
-        Assert.Equal(1, reads);
+        Assert.False(await Eventually.TrueAsync(() => Volatile.Read(ref reads) > 1, TestContext.Current.CancellationToken, TimeSpan.FromMilliseconds(200)), "A refused read was tried again in real time.");
         Assert.False(reading.IsCompleted);
 
         await _clock.DriveAsync(reading, WatchedFile.BetweenReadAttempts);

@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Hierarchy.Wire;
 using EtAlii.Adp.Projects;
+using Microsoft.Extensions.Time.Testing;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -63,7 +64,8 @@ public class HierarchyServiceLateRecoveryTests : IDisposable
         var foundMissing = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         using var events = new ProjectFileEvents();
-        var service = new HierarchyService(projectStore, modelStore, events)
+        var clock = new FakeTimeProvider();
+        var service = new HierarchyService(projectStore, modelStore, events, clock)
         {
             RootFoundMissing = async () =>
             {
@@ -89,7 +91,9 @@ public class HierarchyServiceLateRecoveryTests : IDisposable
             // Act: the poll finds the root gone and is held there while the watch closes and
             // disposes its recovery source; only then does the poll announce the outage.
             Directory.Delete(_projectFolder);
-            if (await Task.WhenAny(foundMissing.Task, watch).WaitAsync(StepTimeout, cancellationToken) == watch)
+            var polled = Task.WhenAny(foundMissing.Task, watch);
+            await clock.DriveAsync(polled, HierarchyService.RootRecoveryPollInterval, steps: 200);
+            if (await polled == watch)
             {
                 // The watch ended before the poll got there: surface why, rather than a timeout.
                 await watch;
@@ -101,13 +105,18 @@ public class HierarchyServiceLateRecoveryTests : IDisposable
             release.SetResult();
             await announced.Task.WaitAsync(StepTimeout, cancellationToken);
 
-            // Assert.
-            for (var attempt = 0; attempt < 20 && faults.IsEmpty; attempt++)
-            {
-                GC.Collect();
-                GC.WaitForPendingFinalizers();
-                await Task.Delay(TimeSpan.FromMilliseconds(50), cancellationToken);
-            }
+            // Assert: a fault is only reported once its task is finalized, so the collector is
+            // asked to run at every look.
+            await Eventually.TrueAsync(
+                () =>
+                {
+                    GC.Collect();
+                    GC.WaitForPendingFinalizers();
+                    return !faults.IsEmpty;
+                },
+                cancellationToken,
+                TimeSpan.FromSeconds(1),
+                TimeSpan.FromMilliseconds(50));
 
             Assert.True(
                 faults.IsEmpty,

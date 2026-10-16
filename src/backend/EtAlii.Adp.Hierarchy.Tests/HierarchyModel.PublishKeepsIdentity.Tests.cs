@@ -14,6 +14,8 @@ namespace EtAlii.Adp.Hierarchy.Tests;
 public class HierarchyModelPublishKeepsIdentityTests : IDisposable
 {
     private static readonly DiagramDefinition Mindmap = new(new DiagramOrigin("freeplane", "mindmap"), "Mind map", Extension: ".mm");
+    private static readonly TimeSpan Patience = TimeSpan.FromSeconds(10);
+    private static readonly TimeSpan Silence = TimeSpan.FromMilliseconds(500);
 
     private readonly string _root;
     private readonly IDiagramDefinitionCatalog _catalog = new TestDiagramDefinitionCatalog(Mindmap);
@@ -39,6 +41,7 @@ public class HierarchyModelPublishKeepsIdentityTests : IDisposable
         var model = new HierarchyModel(_root, _catalog);
         var subject = Assert.Single(model.ListChildren(null));
         var events = new List<string>();
+        var published = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
         using var fileEvents = new ProjectFileEvents();
         using var watcher = fileEvents.Subscribe(
@@ -51,21 +54,28 @@ public class HierarchyModelPublishKeepsIdentityTests : IDisposable
                 }
 
                 model.OnFileEvent(heard);
+                if (string.Equals(heard.Path, subjectPath, StringComparison.OrdinalIgnoreCase))
+                {
+                    published.TrySetResult();
+                }
             });
 
         // Act: the write every property-grid commit ends in.
         AdpFileWriter.Save(subjectPath, "<map>changed</map>");
-        await Task.Delay(1500, TestContext.Current.CancellationToken);
 
         // Assert: the id selected before the publish still resolves, to the same file - which
         // is precisely the question HierarchyContextSourceResolver.Track asks before deciding
-        // whether to clear the selection.
+        // whether to clear the selection - once the publish is heard, and for as long as any
+        // event the swap raised may still be landing.
+        await published.Task.WaitAsync(Patience, TestContext.Current.CancellationToken);
+        var lost = await Eventually.TrueAsync(() => !model.TryResolvePath(subject.Id, out _, out _), TestContext.Current.CancellationToken, Silence);
         string raw;
         lock (events)
         {
             raw = string.Join(" | ", events);
         }
 
+        Assert.False(lost, $"the subject's entry id stopped resolving after a publish - the selection tracking it is cleared. Watcher saw: {raw}");
         var resolves = model.TryResolvePath(subject.Id, out var fullPath, out _);
         Assert.True(resolves, $"the subject's entry id no longer resolves after a publish - the selection tracking it is cleared. Watcher saw: {raw}");
         Assert.True(

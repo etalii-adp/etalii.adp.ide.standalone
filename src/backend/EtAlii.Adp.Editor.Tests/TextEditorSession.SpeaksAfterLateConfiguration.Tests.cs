@@ -117,7 +117,7 @@ public class TextEditorSessionSpeaksAfterLateConfigurationTests : IDisposable
         await using (new TextEditorSession(warmUp))
         {
             File.Delete(warmUp);
-            await UntilRefusalOf(early, "warm-up.txt");
+            await Eventually.TrueAsync(() => early.Any(line => IsRefusalOf(line, "warm-up.txt")), TestContext.Current.CancellationToken, Patience);
         }
 
         Assert.True(
@@ -141,23 +141,14 @@ public class TextEditorSessionSpeaksAfterLateConfigurationTests : IDisposable
         // exactly how the absence of this line was read as the absence of the event. ONE line
         // saying both: the warm-up may still add a late refusal of its own, and a "no longer opens"
         // about another file is not this one.
-        await UntilRefusalOf(heard, "notes.txt");
-
-        Assert.Contains(heard, line => IsRefusalOf(line, "notes.txt"));
+        Assert.True(
+            await Eventually.TrueAsync(() => heard.Any(line => IsRefusalOf(line, "notes.txt")), TestContext.Current.CancellationToken, Patience),
+            "The refusal of notes.txt never reached the pipeline installed late.");
     }
 
     private static bool IsRefusalOf(string line, string fileName) =>
         line.Contains("no longer opens", StringComparison.Ordinal)
         && line.Contains(fileName, StringComparison.Ordinal);
-
-    private static async Task UntilRefusalOf(ConcurrentQueue<string> heard, string fileName)
-    {
-        var deadline = DateTime.UtcNow + Patience;
-        while (DateTime.UtcNow < deadline && !heard.Any(line => IsRefusalOf(line, fileName)))
-        {
-            await Task.Delay(25, TestContext.Current.CancellationToken);
-        }
-    }
 
     /// <summary>
     /// Installs a pipeline as a host would at startup, WITHOUT taking the substrate away from the

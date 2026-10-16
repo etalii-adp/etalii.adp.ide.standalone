@@ -2,6 +2,7 @@ using EtAlii.Adp.Designer;
 using EtAlii.Adp.Diagram;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Hierarchy;
+using Microsoft.Extensions.Time.Testing;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -298,8 +299,12 @@ public class ProjectValidatorTests : IDisposable
         // Arrange.
         CreatePair("slow", "the document");
         var validator = Validator(hanging: true);
+        var clock = new FakeTimeProvider();
+        var timeout = TimeSpan.FromSeconds(30);
 
-        var outcome = await Validate(validator, new ProjectValidationScope(_root), timeout: TimeSpan.FromMilliseconds(100));
+        var validating = Subject(validator, timeout: timeout, time: clock).ValidateAsync(new ProjectValidationScope(_root), TestContext.Current.CancellationToken).AsTask();
+        await clock.DriveAsync(validating, timeout);
+        var outcome = await validating;
 
         // Act and assert, step by step.
         var stored = Assert.Single(outcome.Problems);
@@ -565,18 +570,18 @@ public class ProjectValidatorTests : IDisposable
     private async Task<ValidationOutcome> Validate(
         ProjectValidatorTestValidator? validator,
         ValidationScope scope,
-        IReadOnlyList<DiagramDefinition>? extraDefinitions = null,
-        TimeSpan? timeout = null) =>
-        await Subject(validator, extraDefinitions, timeout).ValidateAsync(scope, TestContext.Current.CancellationToken);
+        IReadOnlyList<DiagramDefinition>? extraDefinitions = null) =>
+        await Subject(validator, extraDefinitions).ValidateAsync(scope, TestContext.Current.CancellationToken);
 
     private static ProjectValidator Subject(
         ProjectValidatorTestValidator? validator,
         IReadOnlyList<DiagramDefinition>? extraDefinitions = null,
-        TimeSpan? timeout = null)
+        TimeSpan? timeout = null,
+        TimeProvider? time = null)
     {
         var catalog = new TestDiagramDefinitionCatalog([MindmapDefinition, .. extraDefinitions ?? []]);
         var validators = new DiagramValidators(validator is null ? [] : [validator]);
-        return new ProjectValidator(new DiagramFileRouter(catalog), validators, timeout);
+        return new ProjectValidator(new DiagramFileRouter(catalog), validators, timeout, time: time);
     }
 
     // ---- designers, by the same validator registry (knowledge-designer Requirement 10.2) --------

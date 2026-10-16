@@ -272,19 +272,18 @@ public class ProblemMaintenanceTests : IDisposable
     /// </summary>
     private async Task<(string Kind, object Payload)> WaitForMutation(string kind)
     {
-        var start = DateTime.UtcNow;
-        while (DateTime.UtcNow - start < WaitLimit)
-        {
-            _clock.Advance(SettleDelay);
-            var found = _store.Mutations.FirstOrDefault(mutation => mutation.Kind == kind);
-            if (found.Kind is not null)
-            {
-                return found;
-            }
-            await Task.Delay(50, TestContext.Current.CancellationToken);
-        }
-        Assert.Fail($"No {kind} mutation arrived within {WaitLimit}.");
-        return default;
+        Assert.True(
+            await Eventually.TrueAsync(
+                () =>
+                {
+                    _clock.Advance(SettleDelay);
+                    return _store.Mutations.Any(mutation => mutation.Kind == kind);
+                },
+                TestContext.Current.CancellationToken,
+                WaitLimit,
+                TimeSpan.FromMilliseconds(50)),
+            $"No {kind} mutation arrived within {WaitLimit}.");
+        return _store.Mutations.First(mutation => mutation.Kind == kind);
     }
 
 }

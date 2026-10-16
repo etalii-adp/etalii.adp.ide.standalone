@@ -11,13 +11,15 @@ namespace EtAlii.Adp.Hierarchy;
 
 public sealed class HierarchyService : Wire.HierarchyService.HierarchyServiceBase
 {
-    private static readonly TimeSpan RootRecoveryPollInterval = TimeSpan.FromSeconds(2);
+    /// <summary>How often a watch looks whether its root is still there, and a lost root whether it is back.</summary>
+    internal static readonly TimeSpan RootRecoveryPollInterval = TimeSpan.FromSeconds(2);
 
     private static readonly ILogger _logger = Log.ForContext<HierarchyService>();
 
     private readonly IProjectStore _projectStore;
     private readonly IHierarchyModelStore _hierarchyModelStore;
     private readonly ProjectFileEvents _events;
+    private readonly TimeProvider _time;
 
     /// <summary>
     /// Awaited by the presence poll between finding the root gone and announcing it, so a guard
@@ -26,11 +28,16 @@ public sealed class HierarchyService : Wire.HierarchyService.HierarchyServiceBas
     /// </summary>
     internal Func<Task>? RootFoundMissing { get; init; }
 
-    public HierarchyService(IProjectStore projectStore, IHierarchyModelStore hierarchyModelStore, ProjectFileEvents events)
+    /// <param name="projectStore">The projects a watch is asked for by id.</param>
+    /// <param name="hierarchyModelStore">One model per watch.</param>
+    /// <param name="events">The file events of each project root.</param>
+    /// <param name="time">The clock the presence and recovery polls wait on; the system's when not given.</param>
+    public HierarchyService(IProjectStore projectStore, IHierarchyModelStore hierarchyModelStore, ProjectFileEvents events, TimeProvider? time = null)
     {
         _projectStore = projectStore;
         _hierarchyModelStore = hierarchyModelStore;
         _events = events;
+        _time = time ?? TimeProvider.System;
     }
 
     public override Task<ListEntriesResponse> ListEntries(ListEntriesRequest request, ServerCallContext context)
@@ -196,7 +203,7 @@ public sealed class HierarchyService : Wire.HierarchyService.HierarchyServiceBas
         {
             while (true)
             {
-                await Task.Delay(RootRecoveryPollInterval, cancellationToken);
+                await Task.Delay(RootRecoveryPollInterval, _time, cancellationToken);
                 if (!Directory.Exists(rootPath))
                 {
                     if (RootFoundMissing is { } rootFoundMissing)
@@ -220,7 +227,7 @@ public sealed class HierarchyService : Wire.HierarchyService.HierarchyServiceBas
         {
             while (!Directory.Exists(rootPath))
             {
-                await Task.Delay(RootRecoveryPollInterval, cancellationToken);
+                await Task.Delay(RootRecoveryPollInterval, _time, cancellationToken);
             }
 
             _logger.Information("{RootPath} is back; watching it anew and rebuilding the tree from disk", rootPath);

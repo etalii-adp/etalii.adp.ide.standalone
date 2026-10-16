@@ -3,6 +3,7 @@ using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Hierarchy;
+using Microsoft.Extensions.Time.Testing;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
@@ -16,16 +17,19 @@ public sealed class DotNetContextSourceResolverTests : IDisposable
 {
     private static readonly TimeSpan SettleDelay = TimeSpan.FromMilliseconds(100);
     private static readonly TimeSpan WaitLimit = TimeSpan.FromSeconds(15);
+    private static readonly TimeSpan Silence = TimeSpan.FromMilliseconds(400);
 
     private readonly string _root = Directory.CreateTempSubdirectory("ddg-resolver-").FullName;
-    private readonly DependencyGraphStore _store = new(
-        new SolutionReader(), new ProjectReader(), new PackageDescriptionReader(IoPath.Combine("no", "such", "cache")), SettleDelay);
+    private readonly FakeTimeProvider _clock = new();
+    private readonly DependencyGraphStore _store;
     private readonly DotNetContextSourceResolver _resolver;
     private readonly string _solution;
     private readonly string _registration;
 
     public DotNetContextSourceResolverTests()
     {
+        _store = new DependencyGraphStore(
+            new SolutionReader(), new ProjectReader(), new PackageDescriptionReader(IoPath.Combine("no", "such", "cache")), SettleDelay, time: _clock);
         Write("App/App.csproj", """
             <Project Sdk="Microsoft.NET.Sdk">
               <PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup>
@@ -150,14 +154,20 @@ public sealed class DotNetContextSourceResolverTests : IDisposable
 
         // Act: the solution stops naming the project.
         await File.WriteAllTextAsync(_solution, "<Solution>\n  <Project Path=\"App/App.csproj\" />\n</Solution>\n", cancellationToken);
-        await cleared.Task.WaitAsync(WaitLimit, cancellationToken);
+        Assert.True(await Eventually.TrueAsync(() => Settled(() => cleared.Task.IsCompleted), cancellationToken, WaitLimit), "The selection was not cleared.");
         tracking.Dispose();
         var heardBefore = heard.Count;
         await File.WriteAllTextAsync(_solution, "<Solution>\n</Solution>\n", cancellationToken);
-        await Task.Delay(SettleDelay * 5, cancellationToken);
 
         // Assert: nothing is heard once the selection is let go.
-        Assert.Equal(heardBefore, heard.Count);
+        Assert.False(await Eventually.TrueAsync(() => Settled(() => heard.Count != heardBefore), cancellationToken, Silence), "A selection was heard after it was let go.");
+    }
+
+    /// <summary><paramref name="probe"/>, asked once the store's clock has moved a settle delay.</summary>
+    private T Settled<T>(Func<T> probe)
+    {
+        _clock.Advance(SettleDelay);
+        return probe();
     }
 
     private string Write(string relativePath, string content)

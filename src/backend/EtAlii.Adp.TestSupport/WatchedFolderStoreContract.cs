@@ -1,4 +1,5 @@
 using EtAlii.Adp.Documents;
+using Microsoft.Extensions.Time.Testing;
 using Xunit;
 
 namespace EtAlii.Adp.TestSupport;
@@ -12,21 +13,30 @@ namespace EtAlii.Adp.TestSupport;
 /// change its snapshot shows.
 /// </summary>
 /// <remarks>
-/// Against a fresh folder per test, because these tests deliberately change files.
+/// Against a fresh folder per test, because these tests deliberately change files. The settle delay
+/// runs on <see cref="Clock"/>, which a test moves while it waits for the file system, so no test
+/// waits out a debounce in real time (code-structure FR-051, SC-004).
 /// </remarks>
 public abstract class WatchedFolderStoreContract<TSnapshot> : IDisposable
     where TSnapshot : class
 {
-    /// <summary>The settle delay the store is made with: short, so a test waits for little.</summary>
+    /// <summary>The settle delay the store is made with, on <see cref="Clock"/>.</summary>
     /// <remarks>Properties rather than fields: a static field of a generic type is one per closed type.</remarks>
-    protected static TimeSpan SettleDelay => TimeSpan.FromMilliseconds(150);
+    private static TimeSpan SettleDelay => TimeSpan.FromMilliseconds(150);
 
+    /// <summary>How long the file system is given to report a change.</summary>
     private static TimeSpan WaitLimit => TimeSpan.FromSeconds(15);
+
+    /// <summary>How long a test listens, in real time, for something that must not be heard.</summary>
+    protected static TimeSpan Silence => TimeSpan.FromMilliseconds(400);
+
+    /// <summary>The clock the store's settle delay runs on.</summary>
+    private FakeTimeProvider Clock { get; } = new();
 
     private readonly TestFolder _folder = TestFolder.Create("EtAlii.Adp.WatchedFolderStoreContract");
 
     /// <summary>The store under test, made on first use and disposed with the test.</summary>
-    protected WatchedFolderStore<TSnapshot> Store => field ??= CreateStore(SettleDelay);
+    protected WatchedFolderStore<TSnapshot> Store => field ??= CreateStore(SettleDelay, Clock);
 
     /// <summary>The folder the test works on, filled on first use.</summary>
     protected string Root => field ??= Fill("root");
@@ -40,8 +50,15 @@ public abstract class WatchedFolderStoreContract<TSnapshot> : IDisposable
     /// </summary>
     protected virtual string SubjectOf(string root) => root;
 
-    /// <summary>A new store, with nothing loaded, that settles after <paramref name="settleDelay"/>.</summary>
-    protected abstract WatchedFolderStore<TSnapshot> CreateStore(TimeSpan settleDelay);
+    /// <summary>A new store, with nothing loaded, that settles after <paramref name="settleDelay"/> on <paramref name="time"/>.</summary>
+    protected virtual WatchedFolderStore<TSnapshot> CreateStore(TimeSpan settleDelay, TimeProvider time) => CreateStore(settleDelay);
+
+    /// <summary>
+    /// A new store on the system clock, for the helm-chart and ansible-structure stores until their
+    /// conversion to DISL and FBL replaces them; every other store takes the test's clock.
+    /// </summary>
+    protected virtual WatchedFolderStore<TSnapshot> CreateStore(TimeSpan settleDelay) =>
+        throw new NotSupportedException("A store under this contract is made by CreateStore(TimeSpan, TimeProvider).");
 
     /// <summary>Fills the empty folder <paramref name="root"/> with something the store reads.</summary>
     protected abstract void Populate(string root);
@@ -116,20 +133,19 @@ public abstract class WatchedFolderStoreContract<TSnapshot> : IDisposable
         Store.GetOrLoad(Subject);
         var changes = Changes();
 
-        // Act: written back to back, as a multi-file save arrives. Any stall longer than the
-        // settle delay lets the timer fire mid-burst, so exactly one re-read would be a clock test.
+        // Act: written back to back, as a multi-file save arrives.
         for (var i = 0; i < changeCount; i++)
         {
             await TouchAsync(Root, i, TestContext.Current.CancellationToken);
         }
 
-        // Assert.
-        await WaitFor(changes, 1);
-        await Task.Delay(SettleDelay + SettleDelay, TestContext.Current.CancellationToken);
-        lock (changes)
-        {
-            Assert.InRange(changes.Count, 1, changeCount - 1);
-        }
+        // Assert: the clock moves a settle delay only every settle delay of real time, as it would
+        // run by itself, so events the file system is slow to report still fall into one window.
+        // Exactly one re-read would test the file system's timing rather than the store.
+        await WaitFor(changes, 1, SettleDelay);
+        Assert.False(
+            await Eventually.TrueAsync(() => Settled(() => Count(changes) >= changeCount), TestContext.Current.CancellationToken, Silence, SettleDelay),
+            "Every change of the burst cost a re-read of its own.");
     }
 
     [Fact]
@@ -284,46 +300,68 @@ public abstract class WatchedFolderStoreContract<TSnapshot> : IDisposable
         return changes;
     }
 
+    private static int Count(List<TSnapshot> changes)
+    {
+        lock (changes)
+        {
+            return changes.Count;
+        }
+    }
+
+    /// <summary>
+    /// <paramref name="probe"/>, asked once the store's clock has moved a settle delay: whatever the
+    /// file system reported by now has been read and announced.
+    /// </summary>
+    private T Settled<T>(Func<T> probe)
+    {
+        ArgumentNullException.ThrowIfNull(probe);
+        Clock.Advance(SettleDelay);
+        return probe();
+    }
+
+    /// <summary>Whether <paramref name="condition"/> came to hold of what the store announced, moving its clock while it waits.</summary>
+    protected async Task<bool> SettlesAsync(Func<bool> condition, CancellationToken cancellationToken) =>
+        await Eventually.TrueAsync(() => Settled(condition), cancellationToken, WaitLimit);
+
+    /// <summary>Whether <paramref name="condition"/> held of anything the store announced while the test listened for <see cref="Silence"/>.</summary>
+    protected async Task<bool> SettlesWithinTheSilenceAsync(Func<bool> condition, CancellationToken cancellationToken) =>
+        await Eventually.TrueAsync(() => Settled(condition), cancellationToken, Silence);
+
     /// <summary>
     /// The first announced snapshot that shows the change. Not merely the first announced: a write
-    /// lands as a truncation and then its content, and a runner that stalls between the two for
-    /// longer than the settle delay announces the empty file first, correctly.
+    /// lands as a truncation and then its content, and a file system that reports the two in
+    /// different settle windows announces the empty file first, correctly.
     /// </summary>
     private async Task<TSnapshot> WaitForTheChange(List<TSnapshot> changes)
     {
-        var start = DateTime.UtcNow;
-        while (DateTime.UtcNow - start < WaitLimit)
-        {
-            lock (changes)
+        var snapshot = await Eventually.ValueAsync(
+            () => Settled(() =>
             {
-                if (changes.FirstOrDefault(ShowsTheChange) is { } snapshot)
+                lock (changes)
                 {
-                    return snapshot;
+                    return changes.FirstOrDefault(ShowsTheChange);
                 }
-            }
-            await Task.Delay(25, TestContext.Current.CancellationToken);
-        }
-
-        Assert.Fail($"The change was not announced within {WaitLimit}.");
-        return null!;
+            }),
+            TestContext.Current.CancellationToken,
+            WaitLimit);
+        Assert.True(snapshot is not null, $"The change was not announced within {WaitLimit}.");
+        return snapshot;
     }
 
-    private static async Task<TSnapshot> WaitFor(List<TSnapshot> changes, int count)
+    private async Task<TSnapshot> WaitFor(List<TSnapshot> changes, int count, TimeSpan? interval = null)
     {
-        var start = DateTime.UtcNow;
-        while (DateTime.UtcNow - start < WaitLimit)
-        {
-            lock (changes)
+        var snapshot = await Eventually.ValueAsync(
+            () => Settled(() =>
             {
-                if (changes.Count >= count)
+                lock (changes)
                 {
-                    return changes[^1];
+                    return changes.Count >= count ? changes[^1] : null;
                 }
-            }
-            await Task.Delay(25, TestContext.Current.CancellationToken);
-        }
-
-        Assert.Fail($"The folder was not re-read within {WaitLimit}.");
-        return null!;
+            }),
+            TestContext.Current.CancellationToken,
+            WaitLimit,
+            interval);
+        Assert.True(snapshot is not null, $"The folder was not re-read within {WaitLimit}.");
+        return snapshot;
     }
 }

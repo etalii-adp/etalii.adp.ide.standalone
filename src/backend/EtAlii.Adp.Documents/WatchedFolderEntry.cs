@@ -20,8 +20,8 @@ namespace EtAlii.Adp.Documents;
 /// <see cref="WatchedFolder"/> of its own (code-structure FR-050).
 /// </para>
 /// <para>
-/// Content filters as well as name ones, a timer that restarts until a burst settles, and <b>every
-/// handler guarded</b>. These run on the watcher's own thread, where an unhandled exception is not
+/// Content filters as well as name ones, a timer on the store's clock that restarts until a burst
+/// settles, and <b>every handler guarded</b>. These run on the watcher's own thread, where an unhandled exception is not
 /// a failed request but the death of the process.
 /// </para>
 /// <para>
@@ -39,22 +39,24 @@ internal sealed class WatchedFolderEntry<TSnapshot> : IDisposable
     private readonly Lock _gate = new();
     private readonly TimeSpan _settleDelay;
     private readonly ProjectFileEvents? _events;
+    private readonly TimeProvider _time;
     private List<Listening> _watchers = [];
 
     /// <summary>The files an event must name to count, or null when anything under the folder does.</summary>
     private volatile HashSet<string>? _files;
 
-    private Timer? _settleTimer;
+    private ITimer? _settleTimer;
     private int _claims;
     private bool _disposed;
 
-    public WatchedFolderEntry(string path, TSnapshot snapshot, IReadOnlyCollection<string>? files, TimeSpan settleDelay, Action<WatchedFolderEntry<TSnapshot>> onSettled, ProjectFileEvents? events = null)
+    public WatchedFolderEntry(string path, TSnapshot snapshot, IReadOnlyCollection<string>? files, TimeSpan settleDelay, Action<WatchedFolderEntry<TSnapshot>> onSettled, ProjectFileEvents? events, TimeProvider time)
     {
         Path = path;
         Snapshot = snapshot;
         _settleDelay = settleDelay;
         _onSettled = onSettled;
         _events = events;
+        _time = time;
 
         Watch(files);
     }
@@ -208,7 +210,7 @@ internal sealed class WatchedFolderEntry<TSnapshot> : IDisposable
                 }
                 // Rapid changes coalesce: a multi-file save costs one re-read, not one each.
                 _settleTimer?.Dispose();
-                _settleTimer = new Timer(_ => Settle(), null, _settleDelay, Timeout.InfiniteTimeSpan);
+                _settleTimer = _time.CreateTimer(_ => Settle(), null, _settleDelay, Timeout.InfiniteTimeSpan);
             }
         }
         catch (Exception exception)

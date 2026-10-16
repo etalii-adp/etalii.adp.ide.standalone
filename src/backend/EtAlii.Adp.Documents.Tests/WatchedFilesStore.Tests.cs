@@ -9,9 +9,7 @@ namespace EtAlii.Adp.Documents.Tests;
 /// </summary>
 public sealed class WatchedFilesStoreTests : WatchedFolderStoreContract<WatchedFilesStoreTests.Reading>
 {
-    private static readonly TimeSpan Patience = TimeSpan.FromSeconds(15);
-
-    protected override WatchedFolderStore<Reading> CreateStore(TimeSpan settleDelay) => new ManifestStore(settleDelay);
+    protected override WatchedFolderStore<Reading> CreateStore(TimeSpan settleDelay, TimeProvider time) => new ManifestStore(settleDelay, time);
 
     protected override void Populate(string root)
     {
@@ -47,15 +45,11 @@ public sealed class WatchedFilesStoreTests : WatchedFolderStoreContract<WatchedF
         // Act: written into the same folder as the named files, which is the point - the filter is
         // per file, not per directory.
         await File.WriteAllTextAsync(Path.Combine(Root, "build.log"), "not read", cancellationToken);
-        await Task.Delay(SettleDelay * 4, cancellationToken);
 
         // Assert, with the liveness control: silence only means something if a named file is heard.
-        lock (heard)
-        {
-            Assert.Empty(heard);
-        }
+        Assert.False(await SettlesWithinTheSilenceAsync(() => Holds(heard, h => h.Count > 0), cancellationToken), "A file the snapshot never read was heard.");
         await ChangeAsync(Root, cancellationToken);
-        await Until(() => heard.Count > 0, heard, cancellationToken);
+        Assert.True(await SettlesAsync(() => Holds(heard, h => h.Count > 0), cancellationToken), "A named file's change was not heard.");
     }
 
     [Fact]
@@ -79,11 +73,11 @@ public sealed class WatchedFilesStoreTests : WatchedFolderStoreContract<WatchedF
         // Act: the manifest names a file in a folder nothing watched, as a project added to a solution
         // does; then that file changes.
         await File.WriteAllTextAsync(Subject, $"a.txt\n{added}", cancellationToken);
-        await Until(() => heard.Count > 0 && heard[^1].Files.ContainsKey(added), heard, cancellationToken);
+        Assert.True(await SettlesAsync(() => Holds(heard, h => h.Count > 0 && h[^1].Files.ContainsKey(added)), cancellationToken), "The manifest's new name was not read.");
         await File.WriteAllTextAsync(Path.Combine(Root, added), "changed below", cancellationToken);
 
         // Assert.
-        await Until(() => heard[^1].Files[added] == "changed below", heard, cancellationToken);
+        Assert.True(await SettlesAsync(() => Holds(heard, h => h[^1].Files[added] == "changed below"), cancellationToken), "The newly named file's change was not heard.");
     }
 
     [Fact]
@@ -105,32 +99,22 @@ public sealed class WatchedFilesStoreTests : WatchedFolderStoreContract<WatchedF
         File.Delete(Path.Combine(Root, "a.txt"));
 
         // Assert.
-        await Until(() => heard.Count > 0 && !heard[^1].Files.ContainsKey("a.txt"), heard, cancellationToken);
+        Assert.True(await SettlesAsync(() => Holds(heard, h => h.Count > 0 && !h[^1].Files.ContainsKey("a.txt")), cancellationToken), "The deletion was not heard.");
     }
 
-    private static async Task Until(Func<bool> condition, List<Reading> heard, CancellationToken cancellationToken)
+    private static bool Holds(List<Reading> heard, Func<List<Reading>, bool> condition)
     {
-        var start = DateTime.UtcNow;
-        while (DateTime.UtcNow - start < Patience)
+        lock (heard)
         {
-            lock (heard)
-            {
-                if (condition())
-                {
-                    return;
-                }
-            }
-            await Task.Delay(25, cancellationToken);
+            return condition(heard);
         }
-
-        Assert.Fail($"Nothing the test waited for was heard within {Patience}.");
     }
 
     /// <summary>The manifest's text and the files it names that exist, by the name it gives them.</summary>
     public sealed record Reading(string Manifest, IReadOnlyDictionary<string, string> Files);
 
     /// <summary>Reads a manifest and the files its lines name; watches exactly those.</summary>
-    private sealed class ManifestStore(TimeSpan settleDelay) : WatchedFolderStore<Reading>(settleDelay)
+    private sealed class ManifestStore(TimeSpan settleDelay, TimeProvider time) : WatchedFolderStore<Reading>(settleDelay, time: time)
     {
         protected override Reading Read(string folder)
         {

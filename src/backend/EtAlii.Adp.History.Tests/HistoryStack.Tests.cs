@@ -428,8 +428,9 @@ public class HistoryStackTests
                 overlapDetected = true;
             }
 
-            // Arrange, continued.
-            await Task.Delay(5, TestContext.Current.CancellationToken);
+            // A dispatch that is still running when it gives its thread back: an unserialized
+            // caller enters now.
+            await Task.Yield();
             Interlocked.Decrement(ref inFlight);
         };
 

@@ -13,6 +13,8 @@ namespace EtAlii.Adp.Hierarchy.Tests;
 public class HierarchyModelPublishSurvivesNestingTests : IDisposable
 {
     private static readonly DiagramDefinition Mindmap = new(new DiagramOrigin("freeplane", "mindmap"), "Mind map", Extension: ".mm");
+    private static readonly TimeSpan Patience = TimeSpan.FromSeconds(10);
+    private static readonly TimeSpan Silence = TimeSpan.FromMilliseconds(500);
 
     private readonly string _root;
     private readonly IDiagramDefinitionCatalog _catalog = new TestDiagramDefinitionCatalog(Mindmap);
@@ -82,6 +84,7 @@ public class HierarchyModelPublishSurvivesNestingTests : IDisposable
         };
 
         // The production pipeline, verbatim: the same file events, feeding the same model.
+        var published = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         using var fileEvents = new ProjectFileEvents();
         using var watcher = fileEvents.Subscribe(
             _root,
@@ -93,13 +96,19 @@ public class HierarchyModelPublishSurvivesNestingTests : IDisposable
                 }
 
                 model.OnFileEvent(heard);
+                if (string.Equals(heard.Path, subjectPath, StringComparison.OrdinalIgnoreCase))
+                {
+                    published.TrySetResult();
+                }
             });
 
         // Act: what every module's document store now does on save.
         AdpFileWriter.Save(subjectPath, "<map>renamed</map>");
 
-        // The watcher raises on its own thread; give the swap's events time to land.
-        await Task.Delay(1500, TestContext.Current.CancellationToken);
+        // The watcher raises on its own thread: the publish heard, then a while for whatever
+        // else the swap raised to land, with the registration watched for leaving its subject.
+        await published.Task.WaitAsync(Patience, TestContext.Current.CancellationToken);
+        await Eventually.TrueAsync(() => model.ListChildren(null).Any(entry => entry.Name == "plan.adp"), TestContext.Current.CancellationToken, Silence);
 
         // Assert: the registration is still under its subject, and not at the root.
         string raw;

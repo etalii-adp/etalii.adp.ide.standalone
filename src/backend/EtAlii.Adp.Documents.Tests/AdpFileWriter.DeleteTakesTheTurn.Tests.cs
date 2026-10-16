@@ -65,11 +65,12 @@ public class AdpFileWriterDeleteTakesTheTurnTests : IDisposable
         Assert.True(inside.Wait(Patience, TestContext.Current.CancellationToken), "The arrangement failed: the save never reached its replace.");
         var deleting = Task.Run(() => AdpFileWriter.Delete(path), TestContext.Current.CancellationToken);
 
-        // The delete cannot have run: the save is holding the turn, mid-replace. Asked by racing
-        // it against a delay rather than by blocking on it - the assertion is the same, and a
-        // guard that blocks a test thread to measure blocking is one deadlock from silence.
-        await Task.WhenAny(deleting, Task.Delay(TimeSpan.FromMilliseconds(500), TestContext.Current.CancellationToken));
-        Assert.False(deleting.IsCompleted, "The delete cut into a save of the same path.");
+        // The delete cannot have run: the save is holding the turn, mid-replace. Asked by watching
+        // it for a while rather than by blocking on it - the assertion is the same, and a guard
+        // that blocks a test thread to measure blocking is one deadlock from silence.
+        Assert.False(
+            await Eventually.TrueAsync(() => deleting.IsCompleted, TestContext.Current.CancellationToken, TimeSpan.FromMilliseconds(500)),
+            "The delete cut into a save of the same path.");
 
         release.Set();
         await saving.WaitAsync(Patience, TestContext.Current.CancellationToken);
