@@ -61,7 +61,7 @@ public static class ServiceCollectionAddDependencyGraphExtension
         services.AddSingleton<IContextSourceResolver, DependencyGraphContextSourceResolver>();
         services.AddSingleton<IContextActionProvider, DependencyGraphContextActionProvider>();
         services.AddSingleton<IContextPropertyProvider, DependencyGraphContextPropertyProvider>();
-        services.AddSingleton<IDiagramToolboxProvider, DependencyGraphToolboxProvider>();
+        services.AddSingleton<IDiagramToolboxProvider>(new DislToolboxProvider(Diagram.DependencyGraph.Origin, DependencyGraphDefinition.Definition));
 
         // The rules' join to the Errors and Warnings panel.
         services.AddSingleton<IDiagramValidator, DependencyGraphValidator>();

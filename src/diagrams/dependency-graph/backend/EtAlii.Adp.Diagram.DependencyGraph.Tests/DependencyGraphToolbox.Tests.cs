@@ -10,17 +10,17 @@ namespace EtAlii.Adp.Diagram.DependencyGraph.Tests;
 /// The palette carries data and names actions; what matters is the join - that every entry
 /// names an action that exists, and that a drop lands where it was dropped.
 /// </summary>
-public class DependencyGraphToolboxProviderTests : IDisposable
+public class DependencyGraphToolboxTests : IDisposable
 {
     private readonly string _workspace = IoPath.Combine(
         IoPath.GetTempPath(),
         "adp-dgr-toolbox-" + Guid.NewGuid().ToString("N"));
 
     private readonly DependencyGraphDocumentStore _store = new();
-    private readonly DependencyGraphToolboxProvider _toolbox = new();
+    private readonly DislToolboxProvider _toolbox = new(Diagram.DependencyGraph.Origin, DependencyGraphDefinition.Definition);
     private readonly DependencyGraphContextActionProvider _actions;
 
-    public DependencyGraphToolboxProviderTests()
+    public DependencyGraphToolboxTests()
     {
         Directory.CreateDirectory(_workspace);
         _actions = new DependencyGraphContextActionProvider(
