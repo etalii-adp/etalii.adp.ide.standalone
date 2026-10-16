@@ -64,11 +64,12 @@ public static class ServiceCollectionAddTimelineExtension
         // Requirement 3.6), the shared restore closed over this module's store.
         services.AddSingleton<ICommandHandler<RestoreDocumentCommand<ITimelineDocumentStore>>, RestoreDocumentCommandHandler<ITimelineDocumentStore>>();
 
-        // The context seams: selection, actions, properties and the palette.
+        // The context seams: selection, actions, properties and the palette, which is the definition's
+        // toolbox, each entry naming the add action its drop commits (Requirement 9.2).
         services.AddSingleton<IContextSourceResolver, TimelineContextSourceResolver>();
         services.AddSingleton<IContextActionProvider, TimelineContextActionProvider>();
         services.AddSingleton<IContextPropertyProvider, TimelineContextPropertyProvider>();
-        services.AddSingleton<IDiagramToolboxProvider, TimelineToolboxProvider>();
+        services.AddSingleton<IDiagramToolboxProvider>(new DislToolboxProvider(Diagram.Timeline.Origin, TimelineDefinition.Definition));
 
         // The rules' join to the Errors and Warnings panel.
         services.AddSingleton<IDiagramValidator, TimelineValidator>();

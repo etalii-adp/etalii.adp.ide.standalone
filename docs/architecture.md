@@ -85,7 +85,7 @@ One line each, with the project that owns it. Their internals are deliberately o
 | A connection's lifetime and its state | `EtAlii.Adp.Sessions` |
 | The workspace tree and file watching | `EtAlii.Adp.Hierarchy` |
 | Geometry: the rectangle, row packing, text width and graph layering | `EtAlii.Adp.Layout` |
-| Diagram-type abstractions | `EtAlii.Adp.Diagram` |
+| Diagram-type abstractions, and a bundled DISL definition as a module's palette, menus and rows | `EtAlii.Adp.Diagram` |
 | Editor-family abstractions | `EtAlii.Adp.Editor` |
 | Designer-family abstractions | `EtAlii.Adp.Designer` |
 | Reading and writing bodies through FBL bindings | `EtAlii.Adp.Specification.Fbl` |
