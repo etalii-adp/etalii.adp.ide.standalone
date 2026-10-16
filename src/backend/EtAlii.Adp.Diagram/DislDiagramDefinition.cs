@@ -70,7 +70,7 @@ public sealed class DislDiagramDefinition
     public IReadOnlyList<DislDiagnostic> Diagnostics => _loaded.Value.Diagnostics;
 
     /// <summary>The wire ids of the module's block.</summary>
-    private WireIdMap Ids => _ids.Value;
+    public WireIdMap Ids => _ids.Value;
 
     /// <summary>The palette.</summary>
     public IReadOnlyList<ToolboxItemDefinition> Toolbox => _toolbox.Value;
