@@ -70,6 +70,8 @@ export interface DislType extends Extensions {
 export type DislRelationEnd = string | readonly string[] | { types: string | readonly string[]; role?: string };
 
 export interface DislRelation extends Extensions {
+  abstract?: boolean;
+  extends?: string;
   label?: string;
   source: DislRelationEnd;
   target: DislRelationEnd;
@@ -373,6 +375,8 @@ export interface DislFilter {
 }
 
 export interface DislCanvas {
+  /** What the canvas says once its document is read and holds nothing to draw (DISL §6.13). */
+  empty?: { text: string; when?: string };
   filters?: Readonly<Record<string, DislFilter>>;
   legend?: { visible?: boolean; position?: string; entries: readonly string[] };
 }

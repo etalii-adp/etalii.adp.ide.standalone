@@ -26,14 +26,8 @@ public sealed partial class BundledDefinitionTests
     private static partial Regex FullRevision();
 
     /// <summary>The empty-canvas message the client draws today, from its opening tag to its closing one.</summary>
-    [GeneratedRegex("""<div className="ansible-canvas-message[^"]*">(?<text>.*?)</div>""", RegexOptions.Singleline)]
-    private static partial Regex EmptyCanvasMessage();
-
-    [GeneratedRegex("<[^>]+>")]
-    private static partial Regex Tag();
-
-    [GeneratedRegex(@"\s+")]
-    private static partial Regex WhiteSpace();
+    [GeneratedRegex("""<EmptyCanvas definition=\{ANSIBLE_DEFINITION\} className="ansible-canvas-message" />""")]
+    private static partial Regex EmptyCanvasOfTheDefinition();
 
     public static TheoryData<string> Folders() => [.. AnsibleTranscript.Corpus()];
 
@@ -113,22 +107,27 @@ public sealed partial class BundledDefinitionTests
         Assert.Equal(delivered, derived);
     }
 
-    /// <summary>The definition's <c>canvas.empty</c> is the sentence the client shows today for a folder with nothing to draw, its markup aside.</summary>
+    /// <summary>
+    /// The sentence the client shows for a folder with nothing to draw is the definition's <c>canvas.empty</c>:
+    /// the canvas compiles its definition from the bundled specification and draws that definition's empty
+    /// sentence, so the two cannot differ. Until the switch-over the client wrote the sentence itself and this
+    /// compared the two texts; the client's own test asserts the sentence it draws.
+    /// </summary>
     [Fact]
-    public void TheEmptyCanvasSentence_IsTodays()
+    public void TheEmptyCanvasSentence_IsTheOneTheClientDraws()
     {
         // Arrange.
         var canvas = File.ReadAllText(RepositoryPaths.Under("src", "diagrams", "ansible-structure", "client", "AnsibleCanvas.tsx"));
-        var match = EmptyCanvasMessage().Match(canvas);
-        Assert.True(match.Success, "AnsibleCanvas.tsx draws no ansible-canvas-message.");
-        var today = WhiteSpace().Replace(Tag().Replace(match.Groups["text"].Value, ""), " ").Trim();
 
         // Act.
         var stated = _module.ResourceJson("ansible-structure.dis")
             .GetProperty("notation").GetProperty("canvas").GetProperty("empty").GetProperty("text").GetString();
 
         // Assert.
-        Assert.Equal(today, stated);
+        Assert.False(string.IsNullOrWhiteSpace(stated));
+        Assert.Contains("""import disText from "../definition/ansible-structure.dis?raw";""", canvas, StringComparison.Ordinal);
+        Assert.Contains("compileNotation(parseDisl(disText), ANSIBLE_BINDINGS)", canvas, StringComparison.Ordinal);
+        Assert.Matches(EmptyCanvasOfTheDefinition(), canvas);
     }
 
     private static string DefinitionFolder()

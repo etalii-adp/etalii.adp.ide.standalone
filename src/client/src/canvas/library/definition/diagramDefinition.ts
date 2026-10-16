@@ -1074,10 +1074,24 @@ export interface RelationTypeDefinition {
   /** The line's width, chosen per connection by thresholds on one number. See {@link StrokeLadder}. */
   strokeLadder?: StrokeLadder;
   /**
+   * The line's dash, chosen per connection: {@link DashChoice.dash} while its condition holds of the
+   * connection's payload, and the style's own `dash` otherwise.
+   */
+  dashWhen?: DashChoice;
+  /**
    * How a connection of this type that has no target is drawn. See {@link StubDeclaration}.
    * Omitted, such a connection is not drawn at all, as a connection with a dangling end never is.
    */
   stub?: StubDeclaration;
+}
+
+/**
+ * A line's dash chosen by a condition on one connection's payload - one relation whose connections are
+ * drawn solid or dashed by what each of them is, as a static include is solid and a dynamic one dashed.
+ */
+export interface DashChoice {
+  when: Condition;
+  dash: readonly number[];
 }
 
 /** The side of its source a stub leaves from. */
@@ -1097,6 +1111,8 @@ export interface StubDeclaration {
   side: StubSide;
   /** Classes on the stub's group, after the relation's own: what a stylesheet paints an open end with. */
   className?: string;
+  /** The stub's own dash, in place of its relation's: an open end is drawn in a style of its own. */
+  dash?: readonly number[];
   label?: StubLabel;
 }
 
