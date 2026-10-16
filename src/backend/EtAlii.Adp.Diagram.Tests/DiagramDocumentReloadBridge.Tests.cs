@@ -51,17 +51,11 @@ public class DiagramDocumentReloadBridgeTests : IDisposable
         public async Task<string> NextDeletionAsync(CancellationToken cancellationToken) =>
             await _deletions.Reader.ReadAsync(cancellationToken).AsTask().WaitAsync(_arrival, cancellationToken);
 
-        public async Task<bool> StaysQuietAsync(CancellationToken cancellationToken)
-        {
-            await Task.Delay(_silence, cancellationToken);
-            return !_reloads.Reader.TryRead(out _);
-        }
+        public async Task<bool> StaysQuietAsync(CancellationToken cancellationToken) =>
+            !await Eventually.TrueAsync(() => _reloads.Reader.TryPeek(out _), cancellationToken, _silence);
 
-        public async Task<bool> NoDeletionAsync(CancellationToken cancellationToken)
-        {
-            await Task.Delay(_silence, cancellationToken);
-            return !_deletions.Reader.TryRead(out _);
-        }
+        public async Task<bool> NoDeletionAsync(CancellationToken cancellationToken) =>
+            !await Eventually.TrueAsync(() => _deletions.Reader.TryPeek(out _), cancellationToken, _silence);
     }
 
     [Fact]

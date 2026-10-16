@@ -67,10 +67,9 @@ public class HierarchyModelStoreTests : IDisposable
         // Act.
         store.Remove(watchId);
         await File.WriteAllTextAsync(IoPath.Combine(_root, "after-remove.txt"), "", TestContext.Current.CancellationToken);
-        await Task.Delay(TimeSpan.FromMilliseconds(300), TestContext.Current.CancellationToken);
 
         // Assert.
-        Assert.Equal(0, eventCount);
+        Assert.False(await Eventually.TrueAsync(() => Volatile.Read(ref eventCount) > 0, TestContext.Current.CancellationToken, TimeSpan.FromMilliseconds(300)), "A removed entry's subscription still heard a change.");
     }
 
     [Fact]

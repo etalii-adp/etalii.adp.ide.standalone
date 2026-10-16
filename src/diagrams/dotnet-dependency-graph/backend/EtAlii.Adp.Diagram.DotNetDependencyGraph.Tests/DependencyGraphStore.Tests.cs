@@ -10,10 +10,8 @@ namespace EtAlii.Adp.Diagram.DotNetDependencyGraph.Tests;
 /// </summary>
 public sealed class DependencyGraphStoreTests : WatchedFolderStoreContract<DependencyGraphModel>
 {
-    private static readonly TimeSpan Patience = TimeSpan.FromSeconds(15);
-
-    protected override WatchedFolderStore<DependencyGraphModel> CreateStore(TimeSpan settleDelay) =>
-        new DependencyGraphStore(new SolutionReader(), new ProjectReader(), new PackageDescriptionReader(Path.Combine("no", "such", "cache")), settleDelay);
+    protected override WatchedFolderStore<DependencyGraphModel> CreateStore(TimeSpan settleDelay, TimeProvider time) =>
+        new DependencyGraphStore(new SolutionReader(), new ProjectReader(), new PackageDescriptionReader(Path.Combine("no", "such", "cache")), settleDelay, time: time);
 
     /// <summary>A solution of one centrally managed project, its version in the props file at the root.</summary>
     protected override void Populate(string root)
@@ -57,7 +55,8 @@ public sealed class DependencyGraphStoreTests : WatchedFolderStoreContract<Depen
         await File.WriteAllTextAsync(Path.Combine(Root, "Directory.Packages.props"), Props("4.5.0"), cancellationToken);
 
         // Assert.
-        var graph = await heard.Task.WaitAsync(Patience, cancellationToken);
+        Assert.True(await SettlesAsync(() => heard.Task.IsCompleted, cancellationToken), "The version bump was not heard.");
+        var graph = await heard.Task;
         Assert.Equal(["4.5.0"], Assert.Single(graph.Packages, package => package.PackageId == "Serilog").Versions);
     }
 

@@ -123,7 +123,7 @@ public class HistoryStackStoreTests
         await store.Get(path).ExecuteAsync(new HistoryStackStoreNoop(), TestContext.Current.CancellationToken);
 
         // Act and assert, step by step.
-        await WaitUntilAsync(() => captured is not null);
+        Assert.True(await Eventually.TrueAsync(() => captured is not null, TestContext.Current.CancellationToken, Timeout), "The awaited condition did not hold within the timeout.");
         Assert.Equal(IoPath.GetFullPath(path), captured!.RootPath);
     }
 
@@ -159,17 +159,6 @@ public class HistoryStackStoreTests
         {
             return true;
         }
-    }
-
-    private static async Task WaitUntilAsync(Func<bool> condition)
-    {
-        var deadline = DateTime.UtcNow + Timeout;
-        while (!condition() && DateTime.UtcNow < deadline)
-        {
-            await Task.Delay(10, TestContext.Current.CancellationToken);
-        }
-
-        Assert.True(condition(), "The awaited condition did not hold within the timeout.");
     }
 
 }

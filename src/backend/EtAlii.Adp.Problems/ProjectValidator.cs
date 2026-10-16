@@ -29,6 +29,7 @@ public sealed class ProjectValidator
     private readonly DiagramValidators _validators;
     private readonly DesignerFileRouter? _designerRouter;
     private readonly TimeSpan _validatorTimeout;
+    private readonly TimeProvider _time;
     private readonly ConcurrentDictionary<string, Task<ValidationOutcome>> _running = new(StringComparer.OrdinalIgnoreCase);
 
     /// <param name="router">Says which diagram type a file is.</param>
@@ -38,11 +39,13 @@ public sealed class ProjectValidator
     /// Says which designer type a file is, for what the diagram router does not place
     /// (knowledge-designer Requirement 10.2). Null in a host without the designer family.
     /// </param>
+    /// <param name="time">The clock a validator's time runs out on; the system's when not given.</param>
     public ProjectValidator(
         DiagramFileRouter router,
         DiagramValidators validators,
         TimeSpan? validatorTimeout = null,
-        DesignerFileRouter? designerRouter = null)
+        DesignerFileRouter? designerRouter = null,
+        TimeProvider? time = null)
     {
         ArgumentNullException.ThrowIfNull(router);
         ArgumentNullException.ThrowIfNull(validators);
@@ -50,6 +53,7 @@ public sealed class ProjectValidator
         _validators = validators;
         _validatorTimeout = validatorTimeout ?? DefaultValidatorTimeout;
         _designerRouter = designerRouter;
+        _time = time ?? TimeProvider.System;
     }
 
     /// <summary>
@@ -363,7 +367,7 @@ public sealed class ProjectValidator
         try
         {
             var verdict = validator.ValidateAsync(request, abandon.Token).AsTask();
-            var expired = Task.Delay(_validatorTimeout, abandon.Token);
+            var expired = Task.Delay(_validatorTimeout, _time, abandon.Token);
             if (await Task.WhenAny(verdict, expired) != verdict)
             {
                 // Abandoned, not awaited further: a hanging module costs its own file's

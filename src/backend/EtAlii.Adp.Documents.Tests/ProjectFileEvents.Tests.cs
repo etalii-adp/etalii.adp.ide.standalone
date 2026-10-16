@@ -90,9 +90,9 @@ public sealed class ProjectFileEventsTests : IDisposable
 
         // Assert: both destinations heard; no transient name, no destination gone.
         Assert.True(await Eventually.TrueAsync(() => heard.Any(e => e.Path == replaced) && heard.Any(e => e.Path == created), TestContext.Current.CancellationToken, Patience), "A save was not heard as its destination.");
-        await Task.Delay(Silence, TestContext.Current.CancellationToken);
-        Assert.DoesNotContain(heard, e => AdpFileWriter.IsTransient(e.Path) || (e.OldPath is not null && AdpFileWriter.IsTransient(e.OldPath)));
-        Assert.DoesNotContain(heard, e => e.Kind == FileEventKind.Deleted);
+        Assert.False(
+            await Eventually.TrueAsync(() => heard.Any(e => AdpFileWriter.IsTransient(e.Path) || (e.OldPath is not null && AdpFileWriter.IsTransient(e.OldPath)) || e.Kind == FileEventKind.Deleted), TestContext.Current.CancellationToken, Silence),
+            "A writer's own file, or a destination gone, was heard.");
     }
 
     [Fact]

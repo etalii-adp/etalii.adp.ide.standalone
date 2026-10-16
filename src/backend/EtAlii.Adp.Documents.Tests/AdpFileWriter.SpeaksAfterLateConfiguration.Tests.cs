@@ -100,7 +100,7 @@ public class AdpFileWriterSpeaksAfterLateConfigurationTests : IDisposable
     }
 
     [Fact]
-    public void TheHolderQuery_AlsoSpeaksOnAPipelineInstalledLate()
+    public async Task TheHolderQuery_AlsoSpeaksOnAPipelineInstalledLate()
     {
         // FileHolders holds its own logger and had the same defect. Its late-answer line is what
         // distinguishes a slow query from one that never answered, so losing it would make those
@@ -127,13 +127,9 @@ public class AdpFileWriterSpeaksAfterLateConfigurationTests : IDisposable
         var heard = ConfigureSerilogLate();
         answer.Set();
 
-        var deadline = DateTime.UtcNow + Patience;
-        while (DateTime.UtcNow < deadline && !heard.Any(line => line.Contains("pid 4242 someone.exe", StringComparison.Ordinal)))
-        {
-            Thread.Sleep(25);
-        }
-
-        Assert.Contains(heard, line => line.Contains("pid 4242 someone.exe", StringComparison.Ordinal));
+        Assert.True(
+            await Eventually.TrueAsync(() => heard.Any(line => line.Contains("pid 4242 someone.exe", StringComparison.Ordinal)), TestContext.Current.CancellationToken, Patience),
+            "The late answer was not logged.");
     }
 
     [Fact]

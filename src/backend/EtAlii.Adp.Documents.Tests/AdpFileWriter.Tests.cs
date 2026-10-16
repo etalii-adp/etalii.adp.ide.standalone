@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Text;
 using EtAlii.Adp.Hierarchy;
 using Xunit;
@@ -225,25 +226,25 @@ public class AdpFileWriterTests : IDisposable
     }
 
     [Fact]
-    public void Save_UsesTheSameScratchPatternTheHierarchyIgnores()
+    public async Task Save_UsesTheSameScratchPatternTheHierarchyIgnores()
     {
         // Arrange.
         // The scratch name is not cosmetic: HierarchyModel ignores this pattern, so a save must
         // not make a file briefly appear in the user's explorer. Proven by watching the folder
         // during the write rather than by reading the constant back.
         var path = IoPath.Combine(_folder, "map.owm");
-        var seen = new List<string>();
+        var seen = new ConcurrentQueue<string>();
         using var watcher = new FileSystemWatcher(_folder);
         watcher.EnableRaisingEvents = true;
-        watcher.Created += (_, args) => seen.Add(IoPath.GetFileName(args.FullPath));
+        watcher.Created += (_, args) => seen.Enqueue(IoPath.GetFileName(args.FullPath));
 
         // Act.
         AdpFileWriter.Save(path, "content");
-        Thread.Sleep(120);
 
-        // Assert.
+        // Assert: the save's first file was caught, so what follows is about something seen.
         // Whatever the watcher caught, anything that was not the destination must carry the
         // ignored prefix.
+        Assert.True(await Eventually.TrueAsync(() => !seen.IsEmpty, TestContext.Current.CancellationToken), "The watcher caught no file of the save.");
         Assert.All(
             seen.Where(name => !string.Equals(name, "map.owm", StringComparison.Ordinal)),
             name => Assert.StartsWith(AdpFileWriter.TempPrefix, name, StringComparison.Ordinal));

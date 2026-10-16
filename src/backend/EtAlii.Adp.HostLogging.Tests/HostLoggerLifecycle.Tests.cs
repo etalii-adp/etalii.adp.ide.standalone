@@ -65,28 +65,28 @@ public class HostLoggerLifecycleTests : IDisposable
     }
 
     [Fact]
-    public void StoppingTheOlderHost_LeavesTheNewerOneLogging()
+    public async Task StoppingTheOlderHost_LeavesTheNewerOneLogging()
     {
         (WebApplicationFactory<Program> a, _) = Start();
         (_, RecordingSink sinkB) = Start();
         AssertArrives(sinkB, "control");
 
-        a.Dispose();
+        await a.DisposeAsync();
 
-        AssertStillLogging(sinkB);
+        await AssertStillLogging(sinkB);
     }
 
     [Fact]
-    public void StoppingTheNewerHost_HandsTheGlobalToTheOlderOne()
+    public async Task StoppingTheNewerHost_HandsTheGlobalToTheOlderOne()
     {
         // The order only a list of live hosts gets right: the global belonged to B, and B is gone.
         (_, RecordingSink sinkA) = Start();
         (WebApplicationFactory<Program> b, RecordingSink sinkB) = Start();
         AssertArrives(sinkB, "control");
 
-        b.Dispose();
+        await b.DisposeAsync();
 
-        AssertStillLogging(sinkA);
+        await AssertStillLogging(sinkA);
     }
 
     [Fact]
@@ -113,7 +113,7 @@ public class HostLoggerLifecycleTests : IDisposable
                 b.Dispose();
             }, TestContext.Current.CancellationToken));
 
-        AssertStillLogging(sinkC);
+        await AssertStillLogging(sinkC);
     }
 
     [Fact]
@@ -202,11 +202,11 @@ public class HostLoggerLifecycleTests : IDisposable
     private static void AssertNotSilent(ILogger logger) =>
         Assert.NotEqual("SilentLogger", logger.GetType().Name);
 
-    private static void AssertStillLogging(RecordingSink sink)
+    private static async Task AssertStillLogging(RecordingSink sink)
     {
         // The old code's closer ran on the stopping host's thread a little after Dispose returned,
-        // so the check is made once the global has had time to change.
-        Thread.Sleep(TimeSpan.FromMilliseconds(250));
+        // so the global is watched for as long as it took to change.
+        await Eventually.TrueAsync(() => Log.Logger.GetType().Name == "SilentLogger" || sink.Disposed, TestContext.Current.CancellationToken, TimeSpan.FromMilliseconds(250));
         AssertNotSilent(Log.Logger);
         Assert.False(sink.Disposed, "a live host's pipeline was disposed by another host stopping");
         AssertArrives(sink, "after");

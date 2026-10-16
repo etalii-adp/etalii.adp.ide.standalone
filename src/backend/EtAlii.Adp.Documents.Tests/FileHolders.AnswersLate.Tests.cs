@@ -72,7 +72,7 @@ public class FileHoldersAnswersLateTests : IDisposable
         using var answer = new ManualResetEventSlim(false);
         FileHolders.Query = _ =>
         {
-            // ReSharper disable once AccessToDisposedClosure - Reason: FileHolders runs this query on its own task, and EventuallyAsync waits for its late answer line - logged only after answer.Wait has returned - before the using disposes `answer`.
+            // ReSharper disable once AccessToDisposedClosure - Reason: FileHolders runs this query on its own task, and WarningAsync waits for its late answer line - logged only after answer.Wait has returned - before the using disposes `answer`.
             answer.Wait(Patience);
             return "pid 4242 someone.exe";
         };
@@ -87,7 +87,7 @@ public class FileHoldersAnswersLateTests : IDisposable
         answer.Set();
 
         // The late half arrives, naming the same path and this process, with its own elapsed time.
-        var line = await EventuallyAsync(logs, warning =>
+        var line = await WarningAsync(logs, warning =>
             warning.Contains(path, StringComparison.Ordinal) &&
             warning.Contains("pid 4242 someone.exe", StringComparison.Ordinal));
         Assert.Contains($"pid {Environment.ProcessId}", line, StringComparison.Ordinal);
@@ -141,9 +141,9 @@ public class FileHoldersAnswersLateTests : IDisposable
             entered.Wait(Patience, TestContext.Current.CancellationToken),
             "The holder query was never entered, so the silence asserted below says nothing about a query that never answers.");
 
-        await Task.Delay(TimeSpan.FromMilliseconds(600), TestContext.Current.CancellationToken);
-
-        Assert.DoesNotContain(logs.Warnings, warning => warning.Contains(path, StringComparison.Ordinal));
+        Assert.False(
+            await Eventually.TrueAsync(() => logs.Warnings.Any(warning => warning.Contains(path, StringComparison.Ordinal)), TestContext.Current.CancellationToken, TimeSpan.FromMilliseconds(600)),
+            "A query that never answered logged a second line.");
         stuck.Set();
     }
 
@@ -157,7 +157,7 @@ public class FileHoldersAnswersLateTests : IDisposable
         using var refuse = new ManualResetEventSlim(false);
         FileHolders.Query = _ =>
         {
-            // ReSharper disable once AccessToDisposedClosure - Reason: FileHolders runs this query on its own task, and EventuallyAsync waits for the late "could not be determined" line - logged only after the query has left refuse.Wait and thrown - before the using disposes `refuse`.
+            // ReSharper disable once AccessToDisposedClosure - Reason: FileHolders runs this query on its own task, and WarningAsync waits for the late "could not be determined" line - logged only after the query has left refuse.Wait and thrown - before the using disposes `refuse`.
             refuse.Wait(Patience);
             throw new InvalidOperationException("the Restart Manager refused");
         };
@@ -167,7 +167,7 @@ public class FileHoldersAnswersLateTests : IDisposable
         Assert.Contains("not yet known", described, StringComparison.Ordinal);
         refuse.Set();
 
-        var line = await EventuallyAsync(logs, warning =>
+        var line = await WarningAsync(logs, warning =>
             warning.Contains(path, StringComparison.Ordinal) &&
             warning.Contains("could not be determined", StringComparison.Ordinal));
         Assert.Contains("the Restart Manager refused", line, StringComparison.Ordinal);
@@ -196,7 +196,8 @@ public class FileHoldersAnswersLateTests : IDisposable
     }
 
     /// <summary>
-    /// Waits for a line, and <b>says what it saw instead</b> when none arrives.
+    /// The first warning that <paramref name="matches"/>, waited for by <see cref="Eventually"/>, and
+    /// <b>says what it saw instead</b> when none arrives.
     /// </summary>
     /// <remarks>
     /// "No matching line arrived" threw the capture away, and Architect 1 could not tell from the
@@ -205,7 +206,7 @@ public class FileHoldersAnswersLateTests : IDisposable
     /// hypotheses this whole instrument exists to separate, and its own guard could not report them.
     /// The captured lines and the elapsed time are now in the message.
     /// </remarks>
-    private static async Task<string> EventuallyAsync(LogCapture logs, Func<string, bool> matches)
+    private static async Task<string> WarningAsync(LogCapture logs, Func<string, bool> matches)
     {
         var clock = System.Diagnostics.Stopwatch.StartNew();
         var found = await Eventually.ValueAsync(() => logs.Warnings.FirstOrDefault(matches), TestContext.Current.CancellationToken, Patience);
