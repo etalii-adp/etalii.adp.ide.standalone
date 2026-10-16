@@ -5,6 +5,7 @@ using EtAlii.Adp.Context;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 using EtAlii.Adp.Layout;
+using EtAlii.Adp.Specification.Disl;
 using Google.Protobuf.Reflection;
 using Microsoft.Extensions.DependencyInjection;
 using Path = System.IO.Path;
@@ -41,6 +42,10 @@ namespace EtAlii.Adp.Diagram.HelmChart.Tests.Parity;
 /// dependencies of one effective name delivered a <c>Declares</c>, <c>Resolves</c> or <c>Configures</c> twice with one
 /// id and the same content, the repeat is no longer delivered, so it is neither an element nor a target of rows here.
 /// The relations are listed as the session delivers them (<see cref="HelmElementMapper.Relations"/>).
+/// </para>
+/// <para>
+/// <b>Every folder is read through the binding</b> (task 9): by the module's store, which opens it with the
+/// library's folder body and the module's plugin, as the host does. The store is closed before the copy is.
 /// </para>
 /// <para>
 /// <b>No edit sequence over chart files</b> (Requirement 1.5): nothing here writes a chart file,
@@ -198,11 +203,11 @@ internal static class HelmTranscript
     private static async Task WriteReadingAsync(
         Utf8JsonWriter json, string folder, string registration, IHistoryStackStore histories, bool full, CancellationToken cancellationToken)
     {
-        var chart = new HelmChartReader().Read(folder);
-        var graph = HelmGraph.Derive(chart);
-        var store = new FixedStore(chart);
+        using var store = new HelmChartStore();
+        var reading = store.GetOrLoad(folder, registration).Current;
+        var diagram = reading.Disl.Diagram;
 
-        json.WriteBoolean("isChart", chart.IsChart);
+        json.WriteBoolean("isChart", reading.IsChart);
 
         // What a session delivers at baseline, in delivery order, over the folder's own stored positions.
         List<DiagramElement> elements;
@@ -216,11 +221,11 @@ internal static class HelmTranscript
 
         if (full)
         {
-            await WriteAnswersAsync(json, folder, registration, chart, graph, store, cancellationToken);
+            await WriteAnswersAsync(json, folder, registration, diagram, store, cancellationToken);
         }
 
         json.WritePropertyName("moves");
-        json.WriteLines(await MovesAsync(folder, registration, store, chart, graph, histories, cancellationToken));
+        json.WriteLines(await MovesAsync(folder, registration, store, diagram, histories, cancellationToken));
 
         json.WritePropertyName("registrationAfterMoves");
         json.WriteLines([.. Lines(await File.ReadAllTextAsync(registration, cancellationToken))]);
@@ -228,16 +233,16 @@ internal static class HelmTranscript
 
     /// <summary>What does not depend on the registration: the computed boxes, the rows, the refused write and the findings.</summary>
     private static async Task WriteAnswersAsync(
-        Utf8JsonWriter json, string folder, string registration, HelmChart chart, HelmGraph graph, IHelmChartStore store, CancellationToken cancellationToken)
+        Utf8JsonWriter json, string folder, string registration, DislDiagram diagram, IHelmChartStore store, CancellationToken cancellationToken)
     {
         json.WritePropertyName("boxes");
-        json.WriteLines([.. HelmLayout.Compute(chart, graph).Select(pair => $"{pair.Key} | {Box(pair.Value)}")]);
+        json.WriteLines([.. HelmLayout.Compute(diagram).Select(pair => $"{pair.Key} | {Box(pair.Value)}")]);
 
         var properties = new HelmContextPropertyProvider(store);
         List<string> targets =
         [
-            .. graph.Nodes.Select(node => node.Id),
-            .. HelmElementMapper.Relations(chart).Select(relation => relation.Id),
+            .. diagram.Nodes.Select(node => node.Id),
+            .. HelmElementMapper.Relations(diagram).Select(relation => relation.Id),
             "",
             Unknown,
         ];
@@ -270,10 +275,10 @@ internal static class HelmTranscript
     /// id: first without a history, which makes the diagram read-only, then with the project's history.
     /// </summary>
     private static async Task<List<string>> MovesAsync(
-        string folder, string registration, IHelmChartStore store, HelmChart chart, HelmGraph graph, IHistoryStackStore histories, CancellationToken cancellationToken)
+        string folder, string registration, IHelmChartStore store, DislDiagram diagram, IHistoryStackStore histories, CancellationToken cancellationToken)
     {
-        var node = graph.Nodes.FirstOrDefault()?.Id;
-        var relation = HelmElementMapper.Relations(chart).FirstOrDefault()?.Id;
+        var node = diagram.Nodes.FirstOrDefault()?.Id;
+        var relation = HelmElementMapper.Relations(diagram).FirstOrDefault()?.Id;
         List<(string What, string? Id)> moves = [("node", node), ("relation", relation), ("unknown id", Unknown)];
 
         var lines = new List<string>();
@@ -346,26 +351,5 @@ internal static class HelmTranscript
         public Dictionary<string, string> Folders { get; } = new(StringComparer.Ordinal);
 
         public Dictionary<string, string> Charts { get; } = new(StringComparer.Ordinal);
-    }
-
-    /// <summary>A store that holds one reading, whatever it is asked for, and never watches: the session's and the provider's view of a store.</summary>
-    private sealed class FixedStore(HelmChart chart) : IHelmChartStore
-    {
-        public HelmChart GetOrLoad(string folder) => chart;
-
-        public HelmChart Acquire(string folder) => chart;
-
-        public void Release(string folder)
-        {
-        }
-
-        public IDisposable Watch(string folder, Action<HelmChart> onChanged) => new Nothing();
-
-        private sealed class Nothing : IDisposable
-        {
-            public void Dispose()
-            {
-            }
-        }
     }
 }

@@ -1,7 +1,7 @@
-namespace EtAlii.Adp.Diagram.HelmChart;
+namespace EtAlii.Adp.Diagram.HelmChart.Tests.Parity;
 
 /// <summary>Which kind of box a node is - one per element type the wire declares.</summary>
-public enum HelmNodeKind
+internal enum HelmNodeKind
 {
     /// <summary>The chart itself: Chart.yaml's facts.</summary>
     Chart,

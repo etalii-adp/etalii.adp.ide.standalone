@@ -336,6 +336,27 @@
       "file": "src/diagrams/timeline/backend/EtAlii.Adp.Diagram.Timeline.Tests/Fixtures/written-text.tml",
       "observed": "Connection: the binding lacks 1 (c2)",
       "reason": "The fixture is one of the timeline module's round-trip corpus, written for timeline-disl-fbl finding B1: values a YAML reader types otherwise, read as written. Its relation c2 is written from 7, which names no element, because the element is written 007 and a written id is never a number. The vendored example reads a connection as an FBL relation, and FBL section 5.4 reads no relation whose end names no element; the module reads every connection and reports the dangling end (finding B2). Candidate follow-up for etalii.adp: let a relation rule read an entry whose end does not resolve, so a host can report it."
+    },
+    {
+      "property": "cross-check",
+      "binding": "helm-chart",
+      "file": "src/diagrams/helm-chart/backend/EtAlii.Adp.Diagram.HelmChart.Tests/Fixtures/empty-directories",
+      "observed": "Subchart: the binding lacks 1 (sub:charts/nochart)",
+      "reason": "charts/nochart holds only readme.txt, which no file rule selects. helm-chart.fbl's file rules select files, and the folder body hands the plugin only what they select (FBL sections 10.2 and 11.2), so a directory under charts/ that holds no selected file is no entry the plugin can see: the reader drew it as a subchart. This is gap 3 of definitions/diagrams/helm-chart.md (findings B4 and B5), which the module answers with directory entries of its own (HelmFolderEntries, handed to the folder body beside the binding); this cross-check gives the folder body the binding alone, so the gap shows. Candidate follow-up for etalii.adp: entries: \"all\" on a file rule, so a binding can select a directory as an entry."
+    },
+    {
+      "property": "cross-check",
+      "binding": "helm-chart",
+      "file": "src/diagrams/helm-chart/backend/EtAlii.Adp.Diagram.HelmChart.Tests/Fixtures/empty-directories/charts/holder",
+      "observed": "Subchart: the binding lacks 1 (sub:charts/one)",
+      "reason": "Read as a chart of its own, holder's charts/one holds only marker.txt, which no file rule selects. helm-chart.fbl's file rules select files, and the folder body hands the plugin only what they select (FBL sections 10.2 and 11.2), so a directory under charts/ that holds no selected file is no entry the plugin can see: the reader drew it as a subchart. This is gap 3 of definitions/diagrams/helm-chart.md (findings B4 and B5), which the module answers with directory entries of its own (HelmFolderEntries, handed to the folder body beside the binding); this cross-check gives the folder body the binding alone, so the gap shows. Candidate follow-up for etalii.adp: entries: \"all\" on a file rule, so a binding can select a directory as an entry."
+    },
+    {
+      "property": "cross-check",
+      "binding": "helm-chart",
+      "file": "src/diagrams/helm-chart/backend/EtAlii.Adp.Diagram.HelmChart.Tests/Fixtures/unconventional/charts/deep",
+      "observed": "Subchart: the binding lacks 1 (sub:charts/deeper)",
+      "reason": "Read as a chart of its own, deep's charts/deeper holds only marker.txt, which no file rule selects. helm-chart.fbl's file rules select files, and the folder body hands the plugin only what they select (FBL sections 10.2 and 11.2), so a directory under charts/ that holds no selected file is no entry the plugin can see: the reader drew it as a subchart. This is gap 3 of definitions/diagrams/helm-chart.md (findings B4 and B5), which the module answers with directory entries of its own (HelmFolderEntries, handed to the folder body beside the binding); this cross-check gives the folder body the binding alone, so the gap shows. Candidate follow-up for etalii.adp: entries: \"all\" on a file rule, so a binding can select a directory as an entry."
     }
   ]
 }

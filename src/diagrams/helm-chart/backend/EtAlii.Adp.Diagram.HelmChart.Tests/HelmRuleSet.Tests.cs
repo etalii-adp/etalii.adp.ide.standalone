@@ -211,5 +211,5 @@ public class HelmRuleSetTests
 /// </remarks>
 internal static class HelmRuleSet
 {
-    public static IReadOnlyList<DiagramProblem> Judge(HelmChart chart) => HelmDefinition.Findings(chart);
+    public static IReadOnlyList<DiagramProblem> Judge(HelmChart chart) => HelmDefinition.Findings(HelmFolder.Reading(chart));
 }

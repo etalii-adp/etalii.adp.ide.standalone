@@ -1,5 +1,6 @@
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Hierarchy;
+using EtAlii.Adp.Specification.Disl;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
 namespace EtAlii.Adp.Diagram.HelmChart;
@@ -13,8 +14,8 @@ namespace EtAlii.Adp.Diagram.HelmChart;
 /// <para>
 /// <b>The steps every resolver repeats are the base's</b> (code-structure FR-032). This says where
 /// a chart is read from and what its elements are called: the folder the registration sits in,
-/// through the shared watched-folder store, and a node by its own artifact's path, an edge by the
-/// side that declares it.
+/// through the module's store of open folders, and a node by its own artifact's path, an edge by the
+/// side that declares it. Both are read from the definition's model of the folder's last reading.
 /// </para>
 /// <para>
 /// <b>The target is the registration</b>, as every diagram's is the file it was selected in; the
@@ -25,8 +26,8 @@ namespace EtAlii.Adp.Diagram.HelmChart;
 public sealed class HelmContextSourceResolver(DiagramFileRouter router, IHelmChartStore store, HelmElementMapper mapper)
     : DiagramSnapshotSourceResolver<HelmContextSourceResolver.Selected>(router)
 {
-    /// <summary>A selected diagram: its chart, the graph derived from it, and the registration it was selected in.</summary>
-    public sealed record Selected(HelmChart Chart, HelmGraph Graph, string Registration);
+    /// <summary>A selected diagram: the folder's last reading, and the registration it was selected in.</summary>
+    public sealed record Selected(HelmReading Reading, string Registration);
 
     /// <inheritdoc />
     protected override DiagramOrigin Origin => Diagram.HelmCharts.Origin;
@@ -39,11 +40,8 @@ public sealed class HelmContextSourceResolver(DiagramFileRouter router, IHelmCha
         "New relation");
 
     /// <inheritdoc />
-    protected override Selected Load(string bodyPath)
-    {
-        var chart = store.GetOrLoad(FolderOf(bodyPath));
-        return new Selected(chart, HelmGraph.Derive(chart), bodyPath);
-    }
+    protected override Selected Load(string bodyPath) =>
+        new(store.GetOrLoad(FolderOf(bodyPath), bodyPath).Current, bodyPath);
 
     /// <inheritdoc />
     /// <remarks>
@@ -54,24 +52,23 @@ public sealed class HelmContextSourceResolver(DiagramFileRouter router, IHelmCha
     protected override (IReadOnlyList<string> Path, string Text)? Describe(Selected snapshot, string elementId)
     {
         ArgumentNullException.ThrowIfNull(snapshot);
-        var chart = snapshot.Chart;
-        var graph = snapshot.Graph;
+        var diagram = snapshot.Reading.Disl.Diagram;
 
-        if (graph.Node(elementId) is { } node)
+        if (Node(diagram, elementId) is { } node)
         {
-            var path = node.RelativePath.Length > 0 ? node.RelativePath : DeclaringFile(chart);
-            return (Segments(path), node.Name);
+            var path = HelmElementMapper.PathOf(node);
+            return (Segments(path.Length > 0 ? path : DeclaringFile(diagram)), HelmElementMapper.NameOf(node));
         }
 
         // A relation is the definition's model's: two of its kinds are read, three are derived (task 6).
-        var relation = HelmDefinition.ModelOf(chart).Relations.FirstOrDefault(candidate => string.Equals(candidate.Id, elementId, StringComparison.Ordinal));
+        var relation = diagram.Relations.FirstOrDefault(candidate => string.Equals(candidate.Id, elementId, StringComparison.Ordinal));
         if (relation is null)
         {
             return null;
         }
 
-        var sourcePath = relation.Source is { } source ? graph.Node(source.Id)?.RelativePath : null;
-        var declaredIn = sourcePath is { Length: > 0 } ? sourcePath : DeclaringFile(chart);
+        var sourcePath = relation.Source is { } source && Node(diagram, source.Id) is { } from ? HelmElementMapper.PathOf(from) : null;
+        var declaredIn = sourcePath is { Length: > 0 } ? sourcePath : DeclaringFile(diagram);
         var verb = Verb(relation.Type.Name);
         var label = relation.ValueOf("label") is string { Length: > 0 } says ? $"{verb} {says}" : verb;
         return (Segments(declaredIn), label);
@@ -82,10 +79,9 @@ public sealed class HelmContextSourceResolver(DiagramFileRouter router, IHelmCha
     protected override DiagramElement? Drawn(Selected snapshot, string elementId)
     {
         ArgumentNullException.ThrowIfNull(snapshot);
-        var chart = snapshot.Chart;
-        var graph = snapshot.Graph;
-        var boxes = HelmLayout.Arranged(chart, graph, RegistrationLayout.Read(snapshot.Registration));
-        return mapper.Elements(chart, graph, boxes)
+        var diagram = snapshot.Reading.Disl.Diagram;
+        var boxes = HelmLayout.Arranged(diagram, RegistrationLayout.Read(snapshot.Registration));
+        return mapper.Elements(diagram, boxes)
             .FirstOrDefault(element => string.Equals(element.Id, elementId, StringComparison.Ordinal));
     }
 
@@ -98,11 +94,16 @@ public sealed class HelmContextSourceResolver(DiagramFileRouter router, IHelmCha
     protected override IDisposable Follow(ShortGuid watchId, string bodyPath, string elementId, Action changed)
     {
         ArgumentNullException.ThrowIfNull(changed);
-        return store.Watch(FolderOf(bodyPath), _ => changed());
+        return store.Watch(FolderOf(bodyPath), bodyPath, _ => changed());
     }
 
-    /// <summary>Where dependencies are declared: <c>Chart.yaml</c>, or <c>requirements.yaml</c> for a legacy chart.</summary>
-    private static string DeclaringFile(HelmChart chart) => chart.Legacy ? "requirements.yaml" : "Chart.yaml";
+    /// <summary>The first node with the id <paramref name="elementId"/>: two dependencies of one effective name share one.</summary>
+    private static DislElement? Node(DislDiagram diagram, string elementId) =>
+        diagram.Nodes.FirstOrDefault(node => string.Equals(node.Id, elementId, StringComparison.Ordinal));
+
+    /// <summary>Where dependencies are declared: <c>Chart.yaml</c>, or <c>requirements.yaml</c> for a legacy chart (the chart's derived <c>legacy</c>).</summary>
+    private static string DeclaringFile(DislDiagram diagram) =>
+        diagram.NodesOfType("Chart").FirstOrDefault()?.ValueOf("legacy") is true ? "requirements.yaml" : "Chart.yaml";
 
     /// <summary>What a relation of the definition's type does, as a reader says it.</summary>
     private static string Verb(string type) => type switch

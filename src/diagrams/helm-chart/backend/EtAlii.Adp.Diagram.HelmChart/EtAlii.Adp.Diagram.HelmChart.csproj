@@ -5,6 +5,8 @@
     <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Diagram\EtAlii.Adp.Diagram.csproj" />
     <!-- The bundled DISL definition is loaded through it. -->
     <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Specification.Disl\EtAlii.Adp.Specification.Disl.csproj" />
+    <!-- The module's binding, the folder body and the persistence plugin contract. -->
+    <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Specification.Fbl\EtAlii.Adp.Specification.Fbl.csproj" />
     <!--
       Core abstractions only: the context resolver and property provider seams, and the diagram
       session seam. The dependency runs this way and never back - core must compile and test
@@ -31,6 +33,8 @@
     <!-- The DISL definition bundled from etalii-adp/etalii.adp (src/diagrams/tools/bundle-disl.sh), and its provenance. -->
     <EmbeddedResource Include="..\..\definition\helm-chart.dis" LogicalName="helm-chart.dis" />
     <EmbeddedResource Include="..\..\definition\provenance.json" LogicalName="helm-chart.provenance.json" />
+    <!-- The module's own FBL binding: the chart folder is read through it by HelmChartFolderPlugin. -->
+    <EmbeddedResource Include="helm-chart.fbl" LogicalName="helm-chart.fbl" />
   </ItemGroup>
 
   <ItemGroup>

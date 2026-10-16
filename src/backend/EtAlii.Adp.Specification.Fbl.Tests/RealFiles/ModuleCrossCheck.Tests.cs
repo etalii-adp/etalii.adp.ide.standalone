@@ -2,10 +2,13 @@ using System.Text;
 using System.Text.RegularExpressions;
 using EtAlii.Adp.Diagram.C4;
 using EtAlii.Adp.Diagram.CausalLoopDiagram;
+using EtAlii.Adp.Diagram.HelmChart;
+using EtAlii.Adp.Diagram.HelmChart.Tests.Parity;
 using EtAlii.Adp.Diagram.Mindmap;
 using EtAlii.Adp.Diagram.Timeline;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Specification.Fbl.History;
+using EtAlii.Adp.Specification.Fbl.Plugins;
 using Xunit;
 
 namespace EtAlii.Adp.Specification.Fbl.Tests.RealFiles;
@@ -16,6 +19,13 @@ namespace EtAlii.Adp.Specification.Fbl.Tests.RealFiles;
 /// the causal loop diagram, the module's own binding), mapped from the
 /// module's kinds to the binding's types by <see cref="ModuleIds"/>. Every difference is a listed
 /// divergence. Only public API of the modules is used, and nothing in them is changed.
+/// <para>
+/// <b>The Helm chart folder</b> (helm-chart-disl-fbl, Requirement 8.5): every folder of this repository that holds a
+/// <c>Chart.yaml</c>, read through the vendored folder binding and the module's plugin by the library's folder body,
+/// against today's reader and graph, which the module's test project keeps as its oracle and this project compiles
+/// from there. The folder body is given nothing beside the binding, so a directory no file rule can select (gap 3 of
+/// the definition's companion, which the module answers with entries of its own) shows here as a divergence.
+/// </para>
 /// </summary>
 public class ModuleCrossCheckTests
 {
@@ -49,6 +59,31 @@ public class ModuleCrossCheckTests
 
         // Assert.
         Divergences.Check("cross-check", key, file, Difference(fbl, module));
+    }
+
+    public static TheoryData<string> ChartFolders()
+    {
+        var data = new TheoryData<string>();
+        foreach (var file in RealFileCorpus.All.Where(file => Path.GetFileName(file) == "Chart.yaml")) data.Add(file[..^"/Chart.yaml".Length]);
+        return data;
+    }
+
+    [Theory]
+    [MemberData(nameof(ChartFolders))]
+    public void TheHelmBindingAndItsPluginReadTheIdsTheModuleReads(string folder)
+    {
+        // Arrange.
+        var full = RealFileCorpus.FullPath(folder);
+        var binding = RealFileCorpus.Binding("helm-chart.fbl", "chart");
+
+        // Act.
+        var reading = FolderBody.ReadOnce(full, binding, new HelmChartFolderPlugin());
+        Assert.False(reading.Unreadable, $"{folder} holds a Chart.yaml and is not read as a chart.");
+        var fbl = ModuleIds.OfHelmBinding(reading);
+        var module = ModuleIds.OfHelmModule(full);
+
+        // Assert.
+        Divergences.Check("cross-check", "helm-chart", folder, Difference(fbl, module));
     }
 
     private static string? Difference(IReadOnlyDictionary<string, SortedSet<string>> fbl, IReadOnlyDictionary<string, SortedSet<string>> module)
@@ -164,6 +199,32 @@ internal static partial class ModuleIds
             default:
                 throw new ArgumentOutOfRangeException(nameof(key), key, "No module parser is cross-checked for this binding.");
         }
+        return ids;
+    }
+
+    /// <summary>The Helm binding's side: every element the plugin delivered, by its type, with the id it delivered it with.</summary>
+    public static IReadOnlyDictionary<string, SortedSet<string>> OfHelmBinding(FblModel model)
+    {
+        var ids = new Dictionary<string, SortedSet<string>>(StringComparer.Ordinal);
+        foreach (var element in model.Elements) Add(ids, element.Type, element.Id);
+        return ids;
+    }
+
+    /// <summary>
+    /// The Helm module's side: today's reader and graph, kept as the module's oracle (<see cref="HandWrittenHelmReader"/>,
+    /// <see cref="HelmGraph"/>), each node by the definition's type for its kind (a template whose file name begins with
+    /// an underscore is a <c>Partial</c>) and each of the two relations the graph makes by its id.
+    /// </summary>
+    public static IReadOnlyDictionary<string, SortedSet<string>> OfHelmModule(string folder)
+    {
+        var ids = new Dictionary<string, SortedSet<string>>(StringComparer.Ordinal);
+        var graph = HelmGraph.Derive(new HandWrittenHelmReader().Read(folder));
+        foreach (var node in graph.Nodes)
+        {
+            var type = node.Kind == HelmNodeKind.Template && node.Name.StartsWith('_') ? "Partial" : node.Kind.ToString();
+            Add(ids, type, node.Id);
+        }
+        foreach (var edge in graph.Edges) Add(ids, edge.Kind.ToString(), edge.Id);
         return ids;
     }
 

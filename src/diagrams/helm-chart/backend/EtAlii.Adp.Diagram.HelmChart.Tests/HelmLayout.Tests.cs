@@ -1,30 +1,25 @@
 using EtAlii.Adp.Layout;
+using EtAlii.Adp.Specification.Disl;
 using Xunit;
-
-using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
 namespace EtAlii.Adp.Diagram.HelmChart.Tests;
 
 /// <summary>The banded layout (Requirement 6.1): deterministic, ordered, complete.</summary>
 public class HelmLayoutTests
 {
-    private static (HelmChart Chart, HelmGraph Graph) WellFormed()
-    {
-        var chart = new HelmChartReader().Read(IoPath.Combine(AppContext.BaseDirectory, "Fixtures", "well-formed"));
-        return (chart, HelmGraph.Derive(chart));
-    }
+    private static DislDiagram WellFormed() => HelmFolder.Reading(HelmFolder.Fixture("well-formed")).Disl.Diagram;
 
     [Fact]
     public void EveryNode_GetsABox()
     {
         // Arrange.
-        (HelmChart chart, HelmGraph graph) = WellFormed();
+        var diagram = WellFormed();
 
         // Act.
-        var boxes = HelmLayout.Compute(chart, graph);
+        var boxes = HelmLayout.Compute(diagram);
 
         // Assert.
-        Assert.All(graph.Nodes, node => Assert.True(boxes.ContainsKey(node.Id), $"No box for {node.Id}"));
+        Assert.All(diagram.Nodes, node => Assert.True(boxes.ContainsKey(node.Id), $"No box for {node.Id}"));
         Assert.All(boxes.Values, box => Assert.True(box is { Width: > 0, Height: > 0 }));
     }
 
@@ -32,10 +27,10 @@ public class HelmLayoutTests
     public void TheBands_RunLeftToRight()
     {
         // Arrange.
-        (HelmChart chart, HelmGraph graph) = WellFormed();
+        var diagram = WellFormed();
 
         // Act.
-        var boxes = HelmLayout.Compute(chart, graph);
+        var boxes = HelmLayout.Compute(diagram);
 
         // Assert.
         // Metadata, values, templates, dependencies, vendored - so resolves edges run short
@@ -50,10 +45,10 @@ public class HelmLayoutTests
     public void TheDefaultLayer_TopsTheValuesStack()
     {
         // Arrange.
-        (HelmChart chart, HelmGraph graph) = WellFormed();
+        var diagram = WellFormed();
 
         // Act.
-        var boxes = HelmLayout.Compute(chart, graph);
+        var boxes = HelmLayout.Compute(diagram);
 
         // Assert.
         Assert.True(boxes["values:values.yaml"].Y < boxes["values:values-staging.yaml"].Y);
@@ -63,10 +58,10 @@ public class HelmLayoutTests
     public void Manifests_ComeBeforePartialsNotesAndTests()
     {
         // Arrange.
-        (HelmChart chart, HelmGraph graph) = WellFormed();
+        var diagram = WellFormed();
 
         // Act.
-        var boxes = HelmLayout.Compute(chart, graph);
+        var boxes = HelmLayout.Compute(diagram);
 
         // Assert.
         Assert.True(boxes["tpl:templates/deployment.yaml"].Y < boxes["tpl:templates/_helpers.tpl"].Y);
@@ -78,11 +73,11 @@ public class HelmLayoutTests
     public void TheLayout_IsDeterministic()
     {
         // Arrange.
-        (HelmChart chart, HelmGraph graph) = WellFormed();
+        var diagram = WellFormed();
 
         // Act.
-        var first = HelmLayout.Compute(chart, graph);
-        var second = HelmLayout.Compute(chart, graph);
+        var first = HelmLayout.Compute(diagram);
+        var second = HelmLayout.Compute(diagram);
 
         // Assert.
         Assert.Equal(first.Count, second.Count);
@@ -98,13 +93,12 @@ public class HelmLayoutTests
         // Arrange.
         // hello-world has no crds, no dependencies and nothing vendored: the values column
         // still starts right after the metadata one.
-        var chart = new HelmChartReader().Read(IoPath.Combine(AppContext.BaseDirectory, "Fixtures", "broken"));
-        var graph = HelmGraph.Derive(chart);
+        var diagram = HelmFolder.Reading(HelmFolder.Fixture("broken")).Disl.Diagram;
 
         // Act.
-        var boxes = HelmLayout.Compute(chart, graph);
+        var boxes = HelmLayout.Compute(diagram);
 
         // Assert.
-        Assert.All(graph.Nodes, node => Assert.True(boxes.ContainsKey(node.Id)));
+        Assert.All(diagram.Nodes, node => Assert.True(boxes.ContainsKey(node.Id)));
     }
 }

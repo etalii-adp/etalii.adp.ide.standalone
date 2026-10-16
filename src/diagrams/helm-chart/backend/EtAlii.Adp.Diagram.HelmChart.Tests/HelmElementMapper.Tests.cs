@@ -1,7 +1,6 @@
 using EtAlii.Adp.Layout;
+using EtAlii.Adp.Specification.Disl;
 using Xunit;
-
-using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
 namespace EtAlii.Adp.Diagram.HelmChart.Tests;
 
@@ -11,18 +10,14 @@ namespace EtAlii.Adp.Diagram.HelmChart.Tests;
 /// </summary>
 public class HelmElementMapperTests
 {
-    private static (HelmChart Chart, HelmGraph Graph) WellFormed()
-    {
-        var chart = new HelmChartReader().Read(IoPath.Combine(AppContext.BaseDirectory, "Fixtures", "well-formed"));
-        return (chart, HelmGraph.Derive(chart));
-    }
+    private static DislDiagram WellFormed() => HelmFolder.Reading(HelmFolder.Fixture("well-formed")).Disl.Diagram;
 
-    private static IReadOnlyDictionary<string, Rect> BoxesFor(HelmGraph graph)
+    private static IReadOnlyDictionary<string, Rect> BoxesFor(DislDiagram diagram)
     {
         // Hand-built boxes: layout is the next task's concern, and the mapper must not care.
         var boxes = new Dictionary<string, Rect>(StringComparer.Ordinal);
         var index = 0;
-        foreach (var node in graph.Nodes)
+        foreach (var node in diagram.Nodes)
         {
             boxes[node.Id] = new Rect(index * 100, index * 10, 90, 40);
             index++;
@@ -35,13 +30,13 @@ public class HelmElementMapperTests
     public void EveryNodeAndEveryEdge_BecomesOneElement()
     {
         // Arrange.
-        (HelmChart chart, HelmGraph graph) = WellFormed();
+        var diagram = WellFormed();
 
         // Act.
-        var elements = new HelmElementMapper().Elements(chart, graph, BoxesFor(graph));
+        var elements = new HelmElementMapper().Elements(diagram, BoxesFor(diagram));
 
         // Assert.
-        Assert.Equal(graph.Nodes.Count + HelmElementMapper.Relations(chart).Count, elements.Count);
+        Assert.Equal(diagram.Nodes.Count + HelmElementMapper.Relations(diagram).Count, elements.Count);
         Assert.All(elements, element => Assert.False(string.IsNullOrEmpty(element.Id)));
     }
 
@@ -49,11 +44,11 @@ public class HelmElementMapperTests
     public void NodesTakeTheirBoxes_AndTheirSizesTravel()
     {
         // Arrange.
-        (HelmChart chart, HelmGraph graph) = WellFormed();
-        var boxes = BoxesFor(graph);
+        var diagram = WellFormed();
+        var boxes = BoxesFor(diagram);
 
         // Act.
-        var elements = new HelmElementMapper().Elements(chart, graph, boxes);
+        var elements = new HelmElementMapper().Elements(diagram, boxes);
 
         // Assert.
         var chartElement = Assert.Single(elements, element => element.Id == "chart");
@@ -68,10 +63,10 @@ public class HelmElementMapperTests
     public void TypesFollowTheKind_AndPartialsGetTheirOwn()
     {
         // Arrange.
-        (HelmChart chart, HelmGraph graph) = WellFormed();
+        var diagram = WellFormed();
 
         // Act.
-        var elements = new HelmElementMapper().Elements(chart, graph, BoxesFor(graph));
+        var elements = new HelmElementMapper().Elements(diagram, BoxesFor(diagram));
         var byId = elements.ToDictionary(element => element.Id);
 
         // Assert.
@@ -90,10 +85,10 @@ public class HelmElementMapperTests
     public void ADependencyPayload_CarriesResolutionConditionAndTheLockPin()
     {
         // Arrange.
-        (HelmChart chart, HelmGraph graph) = WellFormed();
+        var diagram = WellFormed();
 
         // Act.
-        var elements = new HelmElementMapper().Elements(chart, graph, BoxesFor(graph));
+        var elements = new HelmElementMapper().Elements(diagram, BoxesFor(diagram));
         var cache = Payload(Assert.Single(elements, element => element.Id == "dep:cache"));
         var postgres = Payload(Assert.Single(elements, element => element.Id == "dep:postgres"));
 
@@ -112,11 +107,10 @@ public class HelmElementMapperTests
     public void AnUnreadableValuesFile_IsMarkedWithTheParsersWords()
     {
         // Arrange.
-        var chart = new HelmChartReader().Read(IoPath.Combine(AppContext.BaseDirectory, "Fixtures", "broken"));
-        var graph = HelmGraph.Derive(chart);
+        var diagram = HelmFolder.Reading(HelmFolder.Fixture("broken")).Disl.Diagram;
 
         // Act.
-        var elements = new HelmElementMapper().Elements(chart, graph, BoxesFor(graph));
+        var elements = new HelmElementMapper().Elements(diagram, BoxesFor(diagram));
         var values = Payload(Assert.Single(elements, element => element.Id == "values:values.yaml"));
 
         // Assert.
@@ -129,10 +123,10 @@ public class HelmElementMapperTests
     public void AnEdgeElement_CarriesItsWireEdge()
     {
         // Arrange.
-        (HelmChart chart, HelmGraph graph) = WellFormed();
+        var diagram = WellFormed();
 
         // Act.
-        var elements = new HelmElementMapper().Elements(chart, graph, BoxesFor(graph));
+        var elements = new HelmElementMapper().Elements(diagram, BoxesFor(diagram));
         var open = elements
             .Select(Payload)
             .Single(payload => payload.Kind == Wire.HelmElementKind.Edge
@@ -148,9 +142,9 @@ public class HelmElementMapperTests
     public void Diff_RemovesWhatVanished_AndResendsNothingThatStayed()
     {
         // Arrange.
-        (HelmChart chart, HelmGraph graph) = WellFormed();
+        var diagram = WellFormed();
         var mapper = new HelmElementMapper();
-        var before = mapper.Elements(chart, graph, BoxesFor(graph));
+        var before = mapper.Elements(diagram, BoxesFor(diagram));
         // The folder lost its override layer: two elements vanish (the node and its edge).
         var after = before
             .Where(element => element.Id != "values:values-staging.yaml"
@@ -181,14 +175,14 @@ public class HelmElementMapperTests
         // Arrange: computed boxes rather than the hand-built ones, because what makes the two
         // agree is a property of the layout - it places every node - and hand-built boxes would
         // assume the very thing worth checking.
-        (HelmChart chart, HelmGraph graph) = WellFormed();
-        var boxes = HelmLayout.Compute(chart, graph);
+        var diagram = WellFormed();
+        var boxes = HelmLayout.Compute(diagram);
         var mapper = new HelmElementMapper();
 
         // Act & assert: the same elements, in the same order.
         Assert.Equal(
-            mapper.Elements(chart, graph, boxes).Select(element => element.Id),
-            mapper.Visible(chart, graph, boxes, DiagramViewport.Unbounded).Select(element => element.Id));
+            mapper.Elements(diagram, boxes).Select(element => element.Id),
+            mapper.Visible(diagram, boxes, DiagramViewport.Unbounded).Select(element => element.Id));
     }
 
     /// <summary>
@@ -205,14 +199,14 @@ public class HelmElementMapperTests
     [Fact]
     public void TheTwoPartCompany_WhenTheLayoutPlacedNothing()
     {
-        // Arrange: the same graph, with every box withheld.
-        (HelmChart chart, HelmGraph graph) = WellFormed();
+        // Arrange: the same model, with every box withheld.
+        var diagram = WellFormed();
         var none = new Dictionary<string, Rect>(StringComparer.Ordinal);
         var mapper = new HelmElementMapper();
 
         // Act.
-        var unfiltered = mapper.Elements(chart, graph, none);
-        var unbounded = mapper.Visible(chart, graph, none, DiagramViewport.Unbounded);
+        var unfiltered = mapper.Elements(diagram, none);
+        var unbounded = mapper.Visible(diagram, none, DiagramViewport.Unbounded);
 
         // Assert: the unfiltered mapping still draws the chart; the viewport one has nothing it
         // can place.

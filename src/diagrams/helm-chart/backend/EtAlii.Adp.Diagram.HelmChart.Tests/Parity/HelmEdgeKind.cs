@@ -1,7 +1,7 @@
-namespace EtAlii.Adp.Diagram.HelmChart;
+namespace EtAlii.Adp.Diagram.HelmChart.Tests.Parity;
 
 /// <summary>The five edge families of Requirement 5.</summary>
-public enum HelmEdgeKind
+internal enum HelmEdgeKind
 {
     /// <summary>Chart to dependency, labeled with the version constraint (R5.1).</summary>
     Declares,

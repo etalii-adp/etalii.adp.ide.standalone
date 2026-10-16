@@ -1,4 +1,4 @@
-namespace EtAlii.Adp.Diagram.HelmChart;
+namespace EtAlii.Adp.Diagram.HelmChart.Tests.Parity;
 
 /// <summary>
 /// One box in the diagram, with the identity everything downstream agrees on.
@@ -15,7 +15,7 @@ namespace EtAlii.Adp.Diagram.HelmChart;
 /// The file or folder it stands for, chart-root-relative - what activation opens
 /// (Requirement 8.1); empty for a node with no backing artifact of its own.
 /// </param>
-public sealed record HelmNode(
+internal sealed record HelmNode(
     string Id,
     HelmNodeKind Kind,
     string Name,

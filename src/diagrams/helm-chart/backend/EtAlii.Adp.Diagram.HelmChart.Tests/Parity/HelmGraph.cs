@@ -1,13 +1,16 @@
-namespace EtAlii.Adp.Diagram.HelmChart;
+namespace EtAlii.Adp.Diagram.HelmChart.Tests.Parity;
 
 /// <summary>
 /// The nodes of one <see cref="HelmChart"/>, and the two relationships that may have an open end,
-/// <c>Resolves</c> and <c>Includes</c>, resolved against what is actually in the folder.
+/// <c>Resolves</c> and <c>Includes</c>, resolved against what is actually in the folder: today's graph, kept
+/// verbatim as the oracle (helm-chart-disl-fbl, Requirement 5.8) since it left the product with the reading
+/// through the binding (task 9), where <see cref="HelmChartFolderPlugin"/> and <c>HelmOpenEndRelations</c>
+/// deliver the same nodes and relations.
 /// </summary>
 /// <remarks>
 /// <para>
 /// Pure: a chart in, a graph out, no file access and no clock. Everything it needs was read
-/// once by <see cref="HelmChartReader"/>, which is why the diagram and the problems panel can
+/// once by <see cref="HandWrittenHelmReader"/>, which is why the diagram and the problems panel could
 /// never disagree about what is in the folder.
 /// </para>
 /// <para>
@@ -19,11 +22,11 @@ namespace EtAlii.Adp.Diagram.HelmChart;
 /// </para>
 /// <para>
 /// <b><c>Declares</c>, <c>Overrides</c> and <c>Configures</c> are not made here</b>: they always have
-/// both ends, and the bundled definition derives them (helm-chart-disl-fbl, task 6). What is left of
-/// this class leaves the product with the reading through the binding (task 9).
+/// both ends, and the bundled definition derives them (helm-chart-disl-fbl, task 6); the oracle's own
+/// <c>HandWrittenHelm.Edges</c> makes all five as the graph once did.
 /// </para>
 /// </remarks>
-public sealed class HelmGraph
+internal sealed class HelmGraph
 {
     private HelmGraph(IReadOnlyList<HelmNode> nodes, IReadOnlyList<HelmEdge> edges, DependencyResolutionResult resolution)
     {

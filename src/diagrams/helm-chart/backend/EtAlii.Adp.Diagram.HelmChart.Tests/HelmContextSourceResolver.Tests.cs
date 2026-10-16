@@ -14,7 +14,7 @@ namespace EtAlii.Adp.Diagram.HelmChart.Tests;
 /// </summary>
 public class HelmContextSourceResolverTests : IDisposable
 {
-    private static readonly TimeSpan SettleDelay = TimeSpan.FromMilliseconds(150);
+    private static readonly TimeSpan SettleDelay = TimeSpan.FromMilliseconds(HelmDefinition.Binding.Body.Settle);
     private static readonly TimeSpan WaitLimit = TimeSpan.FromSeconds(15);
     private static readonly TimeSpan Silence = TimeSpan.FromMilliseconds(400);
 
@@ -26,7 +26,7 @@ public class HelmContextSourceResolverTests : IDisposable
 
     public HelmContextSourceResolverTests()
     {
-        _store = new HelmChartStore(new HelmChartReader(), SettleDelay, _clock);
+        _store = new HelmChartStore(new HelmChartReader(), _clock);
         _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(IoPath.Combine(_root, "templates"));
         File.WriteAllText(IoPath.Combine(_root, "Chart.yaml"),
@@ -76,9 +76,8 @@ public class HelmContextSourceResolverTests : IDisposable
     public async Task ANode_CarriesThePayloadTheCanvasWasSent_AndIsTargetedAtItsRegistration()
     {
         // Arrange.
-        var chart = _store.GetOrLoad(_root);
-        var graph = HelmGraph.Derive(chart);
-        var sent = new HelmElementMapper().Elements(chart, graph, HelmLayout.Compute(chart, graph))
+        var diagram = _store.GetOrLoad(_root).Current.Disl.Diagram;
+        var sent = new HelmElementMapper().Elements(diagram, HelmLayout.Compute(diagram))
             .Single(element => element.Id == "tpl:templates/deployment.yaml");
 
         // Act.
@@ -108,7 +107,7 @@ public class HelmContextSourceResolverTests : IDisposable
     public async Task AnEdge_ResolvesAsItsDeclaringSide()
     {
         // Arrange.
-        var declares = HelmElementMapper.Relations(_store.GetOrLoad(_root)).Single(relation => relation.Type.Name == "Declares");
+        var declares = HelmElementMapper.Relations(_store.GetOrLoad(_root).Current.Disl.Diagram).Single(relation => relation.Type.Name == "Declares");
 
         // Act.
         var resolution = await Resolve(declares.Id);
