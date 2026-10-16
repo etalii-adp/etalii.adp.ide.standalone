@@ -14,7 +14,7 @@ public class GhgDerivedMenusTests
     public static TheoryData<string> Documents() => [.. GhgDisl.Texts().Select(document => document.Path)];
 
     [Fact]
-    public void ThePalette_IsTheHandWrittenOne() => Assert.Equal(HandWrittenGhg.Toolbox, new GhgToolboxProvider().Items);
+    public void ThePalette_IsTheHandWrittenOne() => Assert.Equal(HandWrittenGhg.Toolbox, GhgDefinition.Definition.Toolbox);
 
     [Theory]
     [MemberData(nameof(Documents))]
