@@ -59,7 +59,7 @@ public sealed class GhgProvidersTests : IDisposable
     [Fact]
     public void TheToolbox_OffersATrend_ThatDropsTheAddAction()
     {
-        var item = new GhgToolboxProvider().Items[0];
+        var item = GhgDefinition.Definition.Toolbox[0];
 
         Assert.Equal("Trend", item.Label);
         Assert.Equal(GhgContextActionProvider.AddTrendActionId, item.DropActionId);
