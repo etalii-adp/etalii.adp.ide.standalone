@@ -41,11 +41,11 @@ public sealed class AnsibleFolder : IDisposable
     private readonly FolderBody _body;
     private volatile DislModel _disl;
 
-    internal AnsibleFolder(string folder, string? registration)
+    internal AnsibleFolder(string folder, string? registration, TimeProvider? time = null)
     {
         _path = IoPath.GetFullPath(folder);
         Registration = registration is null ? null : IoPath.GetFullPath(registration);
-        _body = FolderBody.Open(_path, AnsibleDefinition.Binding, new AnsibleFolderPlugin(new AnsibleFolderListing(_path)), registration: Registration);
+        _body = FolderBody.Open(_path, AnsibleDefinition.Binding, new AnsibleFolderPlugin(new AnsibleFolderListing(_path)), registration: Registration, time: time);
         _disl = AnsibleDefinition.Model(_body.Model);
         _body.Changed += OnSettled;
         FolderWatcher = Directory.Exists(_path) ? Watcher(_path) : null;

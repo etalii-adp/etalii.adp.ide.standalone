@@ -2,6 +2,7 @@ using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Hierarchy;
+using Microsoft.Extensions.Time.Testing;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
@@ -15,14 +16,17 @@ public class AnsibleContextSourceResolverTests : IDisposable
     /// <summary>The binding's settle delay, which the folder body waits for after a change.</summary>
     private static readonly TimeSpan SettleDelay = TimeSpan.FromMilliseconds(AnsibleDefinition.Binding.Body.Settle);
     private static readonly TimeSpan WaitLimit = TimeSpan.FromSeconds(15);
+    private static readonly TimeSpan Silence = TimeSpan.FromMilliseconds(400);
 
     private readonly string _root;
     private readonly string _registration;
-    private readonly AnsibleFolders _folders = new();
+    private readonly FakeTimeProvider _clock = new();
+    private readonly AnsibleFolders _folders;
     private readonly AnsibleContextSourceResolver _resolver;
 
     public AnsibleContextSourceResolverTests()
     {
+        _folders = new AnsibleFolders(_clock);
         _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
         TestFolder.CopyTree(IoPath.Combine("Fixtures", "infrastructure"), _root);
         _registration = IoPath.Combine(_root, "infrastructure.adp");
@@ -180,7 +184,7 @@ public class AnsibleContextSourceResolverTests : IDisposable
         Directory.Delete(IoPath.Combine(_root, "roles", "postgres"), recursive: true);
 
         // Assert.
-        Assert.True(await cleared.Task.WaitAsync(WaitLimit, TestContext.Current.CancellationToken));
+        Assert.True(await Eventually.TrueAsync(() => Settled(() => cleared.Task.IsCompleted), TestContext.Current.CancellationToken, WaitLimit), "The selection was not cleared.");
     }
 
     [Fact]
@@ -194,13 +198,21 @@ public class AnsibleContextSourceResolverTests : IDisposable
         // Act.
         subscription.Dispose();
         Directory.Delete(IoPath.Combine(_root, "roles", "postgres"), recursive: true);
-        await Task.Delay(SettleDelay + SettleDelay + SettleDelay, TestContext.Current.CancellationToken);
 
         // Assert.
-        Assert.Equal(0, announcements);
+        Assert.False(
+            await Eventually.TrueAsync(() => Settled(() => Volatile.Read(ref announcements) > 0), TestContext.Current.CancellationToken, Silence),
+            "A disposed subscription announced the deletion.");
     }
 
     // ---- plumbing -----------------------------------------------------------------------------------
+
+    /// <summary><paramref name="probe"/>, asked once the folders' clock has moved a settle delay.</summary>
+    private T Settled<T>(Func<T> probe)
+    {
+        _clock.Advance(SettleDelay);
+        return probe();
+    }
 
     private async Task<ContextLevelResolution> Resolve(string elementId, IReadOnlyList<string>? clientPath = null, string? registration = null)
     {
