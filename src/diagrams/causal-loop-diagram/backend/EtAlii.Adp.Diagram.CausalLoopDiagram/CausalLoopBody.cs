@@ -37,7 +37,7 @@ namespace EtAlii.Adp.Diagram.CausalLoopDiagram;
 /// </remarks>
 public sealed class CausalLoopBody : ITextBody<CausalLoopBody>
 {
-    private static readonly Lazy<FblBinding> LoadedBinding = new(LoadBinding);
+    private static readonly Lazy<FblBinding> LoadedBinding = new(() => BundledBinding.Load(typeof(CausalLoopBody).Assembly, "causal-loop-diagram.fbl", "cld"));
 
     private static readonly Lazy<FblOptions> LoadedOptions = new(() => new FblOptions
     {
@@ -49,9 +49,8 @@ public sealed class CausalLoopBody : ITextBody<CausalLoopBody>
 
     private readonly OpenBody _body;
 
-    // Each read is cached with the bytes it was read from, so a change makes it stale by itself.
-    private (byte[] Bytes, FblModel Model)? _model;
-    private (byte[] Bytes, DislModel Model)? _disl;
+    private readonly TextMemo<FblModel> _model = new();
+    private readonly TextMemo<DislModel> _disl = new();
 
     private CausalLoopBody(OpenBody body)
     {
@@ -69,35 +68,13 @@ public sealed class CausalLoopBody : ITextBody<CausalLoopBody>
     public string Text => Encoding.UTF8.GetString(_body.Bytes);
 
     /// <summary>What the binding reads from the body now, with each link's note as the tool reads it (<see cref="CausalLoopNote"/>).</summary>
-    private FblModel Model
-    {
-        get
-        {
-            if (_model is not { } model || model.Bytes != _body.Bytes)
-            {
-                _model = model = (_body.Bytes, CausalLoopNote.Applied(_body.Model, _body.Bytes));
-            }
-
-            return model.Model;
-        }
-    }
+    private FblModel Model => _model.Of(_body.Bytes, () => CausalLoopNote.Applied(_body.Model, _body.Bytes));
 
     /// <summary>
     /// The DISL model of what the binding reads now: what the menus, the rows and the findings are
     /// derived from, and the working diagram an edit's operations and hooks run on.
     /// </summary>
-    public DislModel Disl
-    {
-        get
-        {
-            if (_disl is not { } model || model.Bytes != _body.Bytes)
-            {
-                _disl = model = (_body.Bytes, DislModelBuilder.From(Model, CausalLoopDefinition.Specification));
-            }
-
-            return model.Model;
-        }
-    }
+    public DislModel Disl => _disl.Of(_body.Bytes, () => DislModelBuilder.From(Model, CausalLoopDefinition.Specification));
 
     /// <summary>
     /// A DISL model of what the binding reads now that is the edit's own: the working diagram an
@@ -225,61 +202,4 @@ public sealed class CausalLoopBody : ITextBody<CausalLoopBody>
 
     private static string Unquoted(string text) =>
         text is ['"', .., '"'] ? text[1..^1] : text;
-
-    /// <summary>The open bodies of the last few texts read or written, by their bytes: forks no one edits, only forked again.</summary>
-    private sealed class RecentBodies
-    {
-        private const int Capacity = 8;
-
-        private readonly LinkedList<OpenBody> _bodies = [];
-        private readonly Lock _lock = new();
-
-        public OpenBody? Find(byte[] bytes)
-        {
-            lock (_lock)
-            {
-                for (var node = _bodies.First; node is not null; node = node.Next)
-                {
-                    if (!node.Value.Bytes.AsSpan().SequenceEqual(bytes)) continue;
-                    _bodies.Remove(node);
-                    _bodies.AddFirst(node);
-                    return node.Value;
-                }
-            }
-
-            return null;
-        }
-
-        public void Remember(OpenBody body)
-        {
-            lock (_lock)
-            {
-                for (var node = _bodies.First; node is not null; node = node.Next)
-                {
-                    if (!node.Value.Bytes.AsSpan().SequenceEqual(body.Bytes)) continue;
-                    _bodies.Remove(node);
-                    break;
-                }
-
-                _bodies.AddFirst(body);
-                while (_bodies.Count > Capacity)
-                {
-                    _bodies.RemoveLast();
-                }
-            }
-        }
-    }
-
-    private static FblBinding LoadBinding()
-    {
-        var assembly = typeof(CausalLoopBody).Assembly;
-        using var stream = assembly.GetManifestResourceStream("causal-loop-diagram.fbl")
-            ?? throw new InvalidOperationException("The causal loop diagram's FBL binding is not embedded in this module.");
-        using var buffer = new MemoryStream();
-        stream.CopyTo(buffer);
-        var problems = FblDocumentLoader.Load(buffer.ToArray(), out var document);
-        return document is null
-            ? throw new InvalidOperationException($"The causal loop diagram's FBL binding does not load: {string.Join("; ", problems)}")
-            : document.Bindings["cld"];
-    }
 }

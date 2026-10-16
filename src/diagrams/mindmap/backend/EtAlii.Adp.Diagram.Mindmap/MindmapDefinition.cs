@@ -35,7 +35,7 @@ namespace EtAlii.Adp.Diagram.Mindmap;
 /// </remarks>
 internal static class MindmapDefinition
 {
-    private static readonly Lazy<FblBinding> LoadedBinding = new(LoadBinding);
+    private static readonly Lazy<FblBinding> LoadedBinding = new(() => BundledBinding.Load(typeof(MindmapDefinition).Assembly, "mindmap.fbl", "mindmap"));
 
     /// <summary>The bundled definition, with the palette, the menus and the rows every module derives the same way.</summary>
     public static DislDiagramDefinition Definition { get; } = new(typeof(MindmapDefinition).Assembly, "mindmap.dis", "x-mindmap");
@@ -137,16 +137,4 @@ internal static class MindmapDefinition
     private static string WrittenId(DislElement element) =>
         element.HostAttributes.GetValueOrDefault(MindmapFreeplanePlugin.StoredIdAttribute) as string ?? "";
 
-    private static FblBinding LoadBinding()
-    {
-        var assembly = typeof(MindmapDefinition).Assembly;
-        var name = assembly.GetManifestResourceNames().Single(resource => resource.EndsWith("mindmap.fbl", StringComparison.Ordinal));
-        using var stream = assembly.GetManifestResourceStream(name)!;
-        using var buffer = new MemoryStream();
-        stream.CopyTo(buffer);
-        var problems = FblDocumentLoader.Load(buffer.ToArray(), out var document);
-        return document is null
-            ? throw new InvalidOperationException($"The mind map's FBL binding does not load: {string.Join("; ", problems)}")
-            : document.Bindings["mindmap"];
-    }
 }

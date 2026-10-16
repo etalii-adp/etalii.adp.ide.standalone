@@ -27,13 +27,12 @@ namespace EtAlii.Adp.Diagram.AgentBehaviorModelling;
 /// </remarks>
 public sealed class AbmBody : ITextBody<AbmBody>
 {
-    private static readonly Lazy<FblBinding> LoadedBinding = new(LoadBinding);
+    private static readonly Lazy<FblBinding> LoadedBinding = new(() => BundledBinding.Load(typeof(AbmBody).Assembly, "agent-behavior-modelling.fbl", "abm"));
 
     private readonly PluginBody _body;
 
-    // Each read is cached with the bytes it was read from, so a change makes it stale by itself.
-    private (byte[] Bytes, AbmModel Model)? _model;
-    private (byte[] Bytes, DislModel Model)? _disl;
+    private readonly TextMemo<AbmModel> _model = new();
+    private readonly TextMemo<DislModel> _disl = new();
 
     private AbmBody(PluginBody body)
     {
@@ -53,35 +52,13 @@ public sealed class AbmBody : ITextBody<AbmBody>
     public FblModel Reading => _body.Model;
 
     /// <summary>The tree as the module's parser reads it now: what the canvas, the layout and the commands address.</summary>
-    public AbmModel Model
-    {
-        get
-        {
-            if (_model is not { } model || model.Bytes != _body.Bytes)
-            {
-                _model = model = (_body.Bytes, AbmParser.Parse(LineDocument.Parse(Text)));
-            }
-
-            return model.Model;
-        }
-    }
+    public AbmModel Model => _model.Of(_body.Bytes, () => AbmParser.Parse(LineDocument.Parse(Text)));
 
     /// <summary>
     /// The DISL model of what the plugin reads now (<see cref="DislModelBuilder"/>, under the bundled
     /// definition), its ids derived by the definition's rule.
     /// </summary>
-    public DislModel Disl
-    {
-        get
-        {
-            if (_disl is not { } model || model.Bytes != _body.Bytes)
-            {
-                _disl = model = (_body.Bytes, DislModelBuilder.From(_body.Model, AbmDefinition.Specification));
-            }
-
-            return model.Model;
-        }
-    }
+    public DislModel Disl => _disl.Of(_body.Bytes, () => DislModelBuilder.From(_body.Model, AbmDefinition.Specification));
 
     /// <summary>A body for <paramref name="text"/>. Never throws on content.</summary>
     public static AbmBody Parse(string text)
@@ -104,14 +81,4 @@ public sealed class AbmBody : ITextBody<AbmBody>
         return _body.Change(change) is PlanResult.Refused refused ? EditOutcome.Refused(refused.Reason) : EditOutcome.Applied;
     }
 
-    private static FblBinding LoadBinding()
-    {
-        var assembly = typeof(AbmBody).Assembly;
-        var name = assembly.GetManifestResourceNames().Single(resource => resource.EndsWith("agent-behavior-modelling.fbl", StringComparison.Ordinal));
-        using var stream = assembly.GetManifestResourceStream(name)!;
-        using var buffer = new MemoryStream();
-        stream.CopyTo(buffer);
-        var problems = FblDocumentLoader.Load(buffer.ToArray(), out var document);
-        return document is null ? throw new InvalidOperationException($"The behavior model's FBL binding does not load: {string.Join("; ", problems)}") : document.Bindings["abm"];
-    }
 }

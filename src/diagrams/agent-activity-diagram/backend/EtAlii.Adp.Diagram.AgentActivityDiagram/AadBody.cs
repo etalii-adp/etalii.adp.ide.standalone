@@ -29,16 +29,15 @@ namespace EtAlii.Adp.Diagram.AgentActivityDiagram;
 /// </remarks>
 public sealed class AadBody : ITextBody<AadBody>
 {
-    private static readonly Lazy<FblBinding> LoadedBinding = new(LoadBinding);
+    private static readonly Lazy<FblBinding> LoadedBinding = new(() => BundledBinding.Load(typeof(AadBody).Assembly, "agent-activity-diagram.fbl", "aad"));
 
     /// <summary>The attributes the definition types as a date-time, as <c>rule.attribute</c>.</summary>
     private static readonly HashSet<string> TimeAttributes = new(StringComparer.Ordinal) { "task.updated", "pullRequest.updated" };
 
     private readonly OpenBody _body;
 
-    // Each read is cached with the bytes it was read from, so a change makes it stale by itself.
-    private (byte[] Bytes, FblModel Model)? _model;
-    private (byte[] Bytes, DislModel Model)? _disl;
+    private readonly TextMemo<FblModel> _model = new();
+    private readonly TextMemo<DislModel> _disl = new();
 
     private AadBody(OpenBody body)
     {
@@ -49,32 +48,10 @@ public sealed class AadBody : ITextBody<AadBody>
     public string Text => Encoding.UTF8.GetString(_body.Bytes);
 
     /// <summary>The entries the binding read, with the reader's own findings.</summary>
-    public FblModel Model
-    {
-        get
-        {
-            if (_model is not { } model || model.Bytes != _body.Bytes)
-            {
-                _model = model = (_body.Bytes, _body.Model);
-            }
-
-            return model.Model;
-        }
-    }
+    public FblModel Model => _model.Of(_body.Bytes, () => _body.Model);
 
     /// <summary>The same entries as the definition's model: typed elements, their children and the relations derived from their keys.</summary>
-    public DislModel Disl
-    {
-        get
-        {
-            if (_disl is not { } model || model.Bytes != _body.Bytes)
-            {
-                _disl = model = (_body.Bytes, DislModelBuilder.From(Model, AadDefinition.Specification));
-            }
-
-            return model.Model;
-        }
-    }
+    public DislModel Disl => _disl.Of(_body.Bytes, () => DislModelBuilder.From(Model, AadDefinition.Specification));
 
     /// <summary>
     /// Empty for a file the binding could read; otherwise the reader's own sentence for why it could
@@ -83,7 +60,6 @@ public sealed class AadBody : ITextBody<AadBody>
     public string Unreadable =>
         Disl.IsUnreadable ? Model.Findings.FirstOrDefault()?.Message ?? "the file could not be read as an activity file" : "";
 
-    /// <summary>Reads <paramref name="text"/> as an activity file. Never throws for what the file holds: what cannot be read is a finding.</summary>
     /// <summary>The schema version this host knows; a file of a newer one is shown and never written (Requirement 2.8).</summary>
     public const long KnownVersion = 1;
 
@@ -122,6 +98,7 @@ public sealed class AadBody : ITextBody<AadBody>
         }
     }
 
+    /// <summary>Reads <paramref name="text"/> as an activity file. Never throws for what the file holds: what cannot be read is a finding.</summary>
     public static AadBody Parse(string text)
     {
         ArgumentNullException.ThrowIfNull(text);
@@ -153,16 +130,4 @@ public sealed class AadBody : ITextBody<AadBody>
     private static string TextOf(IdRequest request, string attribute) =>
         request.Attributes.TryGetValue(attribute, out var value) ? Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture) ?? "" : "";
 
-    private static FblBinding LoadBinding()
-    {
-        var assembly = typeof(AadBody).Assembly;
-        using var stream = assembly.GetManifestResourceStream("agent-activity-diagram.fbl")
-            ?? throw new InvalidOperationException("The agent activity diagram's FBL binding is not bundled in this module.");
-        using var buffer = new MemoryStream();
-        stream.CopyTo(buffer);
-        var problems = FblDocumentLoader.Load(buffer.ToArray(), out var document);
-        return document is null
-            ? throw new InvalidOperationException($"The agent activity diagram's FBL binding does not load: {string.Join("; ", problems)}")
-            : document.Bindings["aad"];
-    }
 }

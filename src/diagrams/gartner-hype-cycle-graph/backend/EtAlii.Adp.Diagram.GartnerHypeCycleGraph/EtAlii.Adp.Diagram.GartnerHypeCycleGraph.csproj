@@ -28,7 +28,7 @@
 
   <ItemGroup>
     <!-- The FBL binding of the .ghg body, loaded once by GhgBody. -->
-    <EmbeddedResource Include="gartner-hype-cycle-graph.fbl" />
+    <EmbeddedResource Include="gartner-hype-cycle-graph.fbl" LogicalName="gartner-hype-cycle-graph.fbl" />
   </ItemGroup>
 
   <ItemGroup>
