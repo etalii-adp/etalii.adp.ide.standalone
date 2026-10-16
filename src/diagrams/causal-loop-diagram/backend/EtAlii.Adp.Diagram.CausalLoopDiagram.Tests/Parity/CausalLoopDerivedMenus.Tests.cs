@@ -15,7 +15,7 @@ public class CausalLoopDerivedMenusTests
     public static TheoryData<string> Documents() => [.. CausalLoopTranscript.Corpus()];
 
     [Fact]
-    public void ThePalette_IsTheHandWrittenOne() => Assert.Equal(HandWrittenCausalLoop.Toolbox, new CausalLoopToolboxProvider().Items);
+    public void ThePalette_IsTheHandWrittenOne() => Assert.Equal(HandWrittenCausalLoop.Toolbox, CausalLoopDefinition.Definition.Toolbox);
 
     [Theory]
     [MemberData(nameof(Documents))]

@@ -529,7 +529,7 @@ public class CausalLoopContextActionsTests : IDisposable
     public void TheToolbox_IsDataFromTheBackend_AndEveryEntryDropsIntoAnAction()
     {
         // Arrange.
-        var toolbox = new CausalLoopToolboxProvider();
+        var toolbox = new DislToolboxProvider(Diagram.CausalLoop.Origin, CausalLoopDefinition.Definition);
 
         // Act & assert.
         Assert.NotEmpty(toolbox.Items);

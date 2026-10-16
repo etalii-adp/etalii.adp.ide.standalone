@@ -75,7 +75,7 @@ internal static partial class MindmapTranscript
 
             // The toolbox is static: it does not read the document, so it is written once.
             json.WriteStartArray("toolbox");
-            foreach (var item in new MindmapToolboxProvider().Items)
+            foreach (var item in MindmapDefinition.Definition.Toolbox)
             {
                 json.WriteStringValue($"{item.Id} | {item.Label} | {item.Icon} | drops {item.DropActionId} | {item.Description}");
             }

@@ -220,7 +220,7 @@ public sealed class GhgTriggersAndNotesEditingTests : IDisposable
                 ("Trigger", GhgContextActionProvider.AddTriggerActionId),
                 ("Note", GhgContextActionProvider.AddNoteActionId),
             ],
-            new GhgToolboxProvider().Items.Select(item => (item.Label, item.DropActionId)));
+            GhgDefinition.Definition.Toolbox.Select(item => (item.Label, item.DropActionId)));
     }
 
     [Fact]

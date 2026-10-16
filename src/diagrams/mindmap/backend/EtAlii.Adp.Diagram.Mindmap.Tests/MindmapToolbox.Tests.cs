@@ -2,13 +2,13 @@ using Xunit;
 
 namespace EtAlii.Adp.Diagram.Mindmap.Tests;
 
-public class MindmapToolboxProviderTests
+public class MindmapToolboxTests
 {
     [Fact]
     public void TheToolboxOffersOneNodeEntry()
     {
         // Arrange.
-        var provider = new MindmapToolboxProvider();
+        var provider = new DislToolboxProvider(Diagram.Mindmap.Origin, MindmapDefinition.Definition);
 
         // Act.
         var items = provider.Items;
@@ -25,7 +25,7 @@ public class MindmapToolboxProviderTests
     {
         // Arrange: the drop must share the add-child action's implementation - command,
         // prompt, undo - rather than carry one of its own, so the id must be that action's.
-        var provider = new MindmapToolboxProvider();
+        var provider = new DislToolboxProvider(Diagram.Mindmap.Origin, MindmapDefinition.Definition);
 
         // Act.
         var item = Assert.Single(provider.Items);
@@ -38,7 +38,7 @@ public class MindmapToolboxProviderTests
     public void TheProviderSpeaksForTheMindmapOrigin()
     {
         // Arrange.
-        var provider = new MindmapToolboxProvider();
+        var provider = new DislToolboxProvider(Diagram.Mindmap.Origin, MindmapDefinition.Definition);
 
         // Act & Assert: the shared diagram service routes DescribeToolbox by origin.
         Assert.Equal(Diagram.Mindmap.Origin, provider.Origin);

@@ -1,7 +1,5 @@
-using System.Text.Json;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
-using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.History;
 using EtAlii.Adp.Specification.Disl;
 
@@ -9,9 +7,9 @@ namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
 
 /// <summary>
 /// The hype cycle graph's bundled DISL definition (<c>definition/gartner-hype-cycle-graph.dis</c>, from
-/// etalii-adp/etalii.adp), loaded once, and what the providers derive from it: the palette, the
-/// context menus and the property rows, mapped onto the host's types with the wire ids of its
-/// <c>x-ghg</c> block.
+/// etalii-adp/etalii.adp), loaded once as a <see cref="DislDiagramDefinition"/>, and what the providers
+/// derive from it: the palette, the context menus and the property rows, mapped onto the host's types
+/// with the wire ids of its <c>x-ghg</c> block.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -35,26 +33,17 @@ internal static class GhgDefinition
     /// <summary>The viewpoint the backend derives in.</summary>
     public const string Viewpoint = "trueTime";
 
-    private static readonly Lazy<BundledDefinition> Loaded = new(() => BundledDefinition.Load(typeof(GhgDefinition).Assembly, "gartner-hype-cycle-graph.dis"));
-
-    private static readonly Lazy<WireIdMap> LoadedIds = new(() => WireIdMap.Of(Specification, "x-ghg"));
-
-    private static readonly Lazy<IReadOnlyList<ToolboxItemDefinition>> LoadedToolbox = new(() =>
-    [
-        .. ToolboxDerivation.Derive(Specification, Ids)
-            .Select(tool => new ToolboxItemDefinition(tool.Id, tool.Label, tool.Icon, tool.Description, tool.DropActionId ?? "")),
-    ]);
-
-    private static readonly Lazy<string> LoadedArrangeReason = new(ArrangeReasonOf);
+    /// <summary>
+    /// The definition, with its <c>x-ghg</c> wire ids. Arrange carries its sentence even while it is
+    /// available, as the hand-written menu did.
+    /// </summary>
+    public static DislDiagramDefinition Definition { get; } = new(typeof(GhgDefinition).Assembly, "gartner-hype-cycle-graph.dis", "x-ghg", standingOperations: ["arrange"]);
 
     /// <summary>The definition.</summary>
-    public static DislSpecification Specification => Loaded.Value.Specification;
+    public static DislSpecification Specification => Definition.Specification;
 
     /// <summary>The wire ids of <c>x-ghg</c>.</summary>
-    private static WireIdMap Ids => LoadedIds.Value;
-
-    /// <summary>The palette.</summary>
-    public static IReadOnlyList<ToolboxItemDefinition> Toolbox => LoadedToolbox.Value;
+    private static WireIdMap Ids => Definition.Ids;
 
     /// <summary>The context menu of <paramref name="elementId"/> in <paramref name="entry"/>: an element, a placement, a connect gesture; none for anything else.</summary>
     public static IReadOnlyList<ContextActionGroupDefinition> Menus(DocumentEntry<GhgBody, GhgModel> entry, string elementId)
@@ -68,13 +57,7 @@ internal static class GhgDefinition
                 : GhgGestures.TryParseRelation(elementId, out var from, out _, out var to, out _)
                     ? DislMenuTarget.Connection(diagram, ElementOf(diagram, from), ElementOf(diagram, to), "Influence")
                     : null;
-        if (target is null) return [];
-
-        return
-        [
-            .. ContextMenuDerivation.Derive(Specification, target, Env(entry), Ids)
-                .Select(group => new ContextActionGroupDefinition([.. group.Entries.Select(Action)])),
-        ];
+        return target is null ? [] : Definition.Menus(target, Env(entry));
     }
 
     /// <summary>The property rows of <paramref name="elementId"/> in <paramref name="entry"/>: an element's form; none for anything else.</summary>
@@ -83,7 +66,7 @@ internal static class GhgDefinition
         ArgumentNullException.ThrowIfNull(entry);
         return ElementOf(entry.Document.Disl.Diagram, elementId) is not { } element
             ? []
-            : WithUnresolvedEnds(element, [.. FormDerivation.Derive(Specification, element, Env(entry), Ids).Select(Row)]);
+            : WithUnresolvedEnds(element, Definition.Rows(element, Env(entry)));
     }
 
     /// <summary>The element <paramref name="id"/> names, as <see cref="GhgModel"/> finds it; null for none.</summary>
@@ -140,33 +123,6 @@ internal static class GhgDefinition
 
     private static DislEnv Env(DocumentEntry<GhgBody, GhgModel> entry) => new(ReadOnly: !entry.IsUsable, Viewpoint: Viewpoint);
 
-    private static ContextActionDefinition Action(DerivedMenuEntry entry) => new(
-        entry.Id,
-        entry.Label,
-        entry.Icon,
-        entry.Shortcut is { } key ? new ContextShortcutDefinition(key.Key, key.Ctrl, key.Shift, key.Alt, key.Meta) : null,
-        entry.Available,
-        // Arrange carries its sentence even while it is available, as the hand-written menu did; the
-        // client shows a reason only for an unavailable action.
-        entry is { Available: true, Operation: "arrange" } ? LoadedArrangeReason.Value : entry.UnavailableReason);
-
-    /// <summary>
-    /// A row as the grid draws it: a <c>textarea</c> is the Text editor, <c>tags</c> and <c>slider</c> their
-    /// own, anything else a line. Only those two carry candidates, the tags the graph uses and the slider's marks.
-    /// </summary>
-    private static ContextPropertyDefinition Row(DerivedRow row)
-    {
-        var editor = row.Widget switch
-        {
-            "textarea" => ContextPropertyEditor.Text,
-            "tags" => ContextPropertyEditor.Tags,
-            "slider" => ContextPropertyEditor.Slider,
-            _ => ContextPropertyEditor.Line,
-        };
-        var candidates = editor is ContextPropertyEditor.Tags or ContextPropertyEditor.Slider ? row.Candidates ?? [] : null;
-        return new ContextPropertyDefinition(row.Id, row.Label, row.Value, editor, row.ReadOnlyReason, row.Group, candidates);
-    }
-
     /// <summary>
     /// The rows that list an influence end the document names but does not hold, with that end written
     /// as the code always wrote it: its id and phase, "x · Peak". DISL hands CEL a dangling end as null
@@ -218,10 +174,4 @@ internal static class GhgDefinition
 
     private static string Text(DislElement element, string attribute) =>
         element.Attributes.TryGetValue(attribute, out var value) ? value as string ?? value?.ToString() ?? "" : "";
-
-    /// <summary>The sentence of Arrange's one <c>unavailable</c> reason, as the definition writes it.</summary>
-    private static string ArrangeReasonOf() =>
-        Specification.Root.GetProperty("behavior").GetProperty("operations").GetProperty("arrange").GetProperty("unavailable")
-            .EnumerateArray().Select(reason => reason.TryGetProperty("message", out var message) && message.ValueKind == JsonValueKind.String ? message.GetString() : null)
-            .FirstOrDefault(message => message is not null) ?? "";
 }

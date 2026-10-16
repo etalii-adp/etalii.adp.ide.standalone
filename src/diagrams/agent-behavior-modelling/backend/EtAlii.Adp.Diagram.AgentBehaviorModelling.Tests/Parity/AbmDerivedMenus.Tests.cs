@@ -17,7 +17,7 @@ public class AbmDerivedMenusTests
     private static IEnumerable<(string Name, string Text)> Texts() => AbmDisl.Corpus().Append(("inline/forest", AbmDislModelTests.Forest));
 
     [Fact]
-    public void ThePalette_IsTheHandWrittenOne() => Assert.Equal(HandWrittenAbm.Toolbox, new AbmToolboxProvider().Items);
+    public void ThePalette_IsTheHandWrittenOne() => Assert.Equal(HandWrittenAbm.Toolbox, AbmDefinition.Definition.Toolbox);
 
     [Theory]
     [MemberData(nameof(Documents))]

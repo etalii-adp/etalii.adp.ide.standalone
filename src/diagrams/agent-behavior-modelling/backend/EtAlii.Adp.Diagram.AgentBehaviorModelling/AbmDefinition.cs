@@ -1,7 +1,5 @@
-using System.Text.Json;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
-using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.History;
 using EtAlii.Adp.Specification.Disl;
 using EtAlii.Adp.Specification.Fbl.Planning;
@@ -34,38 +32,30 @@ namespace EtAlii.Adp.Diagram.AgentBehaviorModelling;
 /// </remarks>
 internal static class AbmDefinition
 {
-    private static readonly Lazy<BundledDefinition> Loaded = new(() => BundledDefinition.Load(typeof(AbmDefinition).Assembly, "agent-behavior-modelling.dis"));
-
-    private static readonly Lazy<WireIdMap> LoadedIds = new(() => WireIdMap.Of(Specification, "x-abm"));
-
     private static readonly Lazy<IReadOnlyDictionary<string, string>> LoadedKindOfType = new(() =>
         Ids.Types.Where(pair => AbmNodeKinds.IsKnown(pair.Value)).ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.Ordinal));
 
     private static readonly Lazy<IReadOnlyDictionary<string, string>> LoadedTypeOfKind = new(() =>
         KindOfType.ToDictionary(pair => pair.Value, pair => pair.Key, StringComparer.Ordinal));
 
-    private static readonly Lazy<IReadOnlyList<ToolboxItemDefinition>> LoadedToolbox = new(() =>
-    [
-        .. ToolboxDerivation.Derive(Specification, Ids)
-            .Select(tool => new ToolboxItemDefinition(tool.Id, tool.Label, tool.Icon, tool.Description, tool.DropActionId ?? "")),
-    ]);
-
-    private static readonly Lazy<string> LoadedArrangeReason = new(ArrangeReasonOf);
+    /// <summary>
+    /// The bundled definition, with the palette, the menus and the rows every module derives the same way.
+    /// Arrange and Arrange from here carry their sentence even while they are available, as the
+    /// hand-written menu did.
+    /// </summary>
+    public static DislDiagramDefinition Definition { get; } = new(typeof(AbmDefinition).Assembly, "agent-behavior-modelling.dis", "x-abm", standingOperations: ["arrange", "arrangeFromNode"]);
 
     /// <summary>The definition.</summary>
-    public static DislSpecification Specification => Loaded.Value.Specification;
+    public static DislSpecification Specification => Definition.Specification;
 
     /// <summary>The wire ids of <c>x-abm</c>.</summary>
-    private static WireIdMap Ids => LoadedIds.Value;
+    private static WireIdMap Ids => Definition.Ids;
 
     /// <summary>The kind of each node type: <c>Do</c> is <c>action</c>.</summary>
     public static IReadOnlyDictionary<string, string> KindOfType => LoadedKindOfType.Value;
 
     /// <summary>The node type of each kind: <c>action</c> is <c>Do</c>.</summary>
     public static IReadOnlyDictionary<string, string> TypeOfKind => LoadedTypeOfKind.Value;
-
-    /// <summary>The palette.</summary>
-    public static IReadOnlyList<ToolboxItemDefinition> Toolbox => LoadedToolbox.Value;
 
     /// <summary>What <c>env</c> reads: editable, always, as the module's menus and rows have always been.</summary>
     public static DislEnv Env { get; } = new();
@@ -82,13 +72,7 @@ internal static class AbmDefinition
                 : GestureIds.TryParseRelation(elementId, out var from, out var to)
                     ? DislMenuTarget.Connection(diagram, ElementOf(diagram, from), ElementOf(diagram, to), "Child")
                     : null;
-        if (target is null) return [];
-
-        return
-        [
-            .. ContextMenuDerivation.Derive(Specification, target, Env, Ids)
-                .Select(group => new ContextActionGroupDefinition([.. group.Entries.Select(Action)])),
-        ];
+        return target is null ? [] : Definition.Menus(target, Env);
     }
 
     /// <summary>The property rows of <paramref name="elementId"/> in <paramref name="entry"/>: a node's form; none for anything else.</summary>
@@ -96,7 +80,7 @@ internal static class AbmDefinition
     {
         ArgumentNullException.ThrowIfNull(entry);
         return ElementOf(entry.Document.Disl.Diagram, elementId) is { } element
-            ? [.. FormDerivation.Derive(Specification, element, Env, Ids).Select(Row)]
+            ? Definition.Rows(element, Env)
             : [];
     }
 
@@ -135,35 +119,4 @@ internal static class AbmDefinition
         ArgumentNullException.ThrowIfNull(diagram);
         return diagram.Nodes.FirstOrDefault(node => node.Id == id);
     }
-
-    private static ContextActionDefinition Action(DerivedMenuEntry entry) => new(
-        entry.Id,
-        entry.Label,
-        entry.Icon,
-        entry.Shortcut is { } key ? new ContextShortcutDefinition(key.EventKey, key.Ctrl, key.Shift, key.Alt, key.Meta) : null,
-        entry.Available,
-        // Arrange carries its sentence even while it is available, as the hand-written menu did; the
-        // client shows a reason only for an unavailable action.
-        entry is { Available: true, Operation: "arrange" or "arrangeFromNode" } ? LoadedArrangeReason.Value : entry.UnavailableReason);
-
-    /// <summary>
-    /// A row as the grid draws it: a retype row is the Choice editor with the kinds it can become, a
-    /// <c>textarea</c> the Text editor, anything else a line.
-    /// </summary>
-    private static ContextPropertyDefinition Row(DerivedRow row)
-    {
-        var editor = row.Retypes
-            ? ContextPropertyEditor.Choice
-            : row.Widget == "textarea"
-                ? ContextPropertyEditor.Text
-                : ContextPropertyEditor.Line;
-        return new ContextPropertyDefinition(row.Id, row.Label, row.Value, editor, row.ReadOnlyReason, row.Group,
-            row.Retypes ? row.Candidates ?? [] : null);
-    }
-
-    /// <summary>The sentence of Arrange's one <c>unavailable</c> reason, as the definition writes it.</summary>
-    private static string ArrangeReasonOf() =>
-        Specification.Root.GetProperty("behavior").GetProperty("operations").GetProperty("arrange").GetProperty("unavailable")
-            .EnumerateArray().Select(reason => reason.TryGetProperty("message", out var message) && message.ValueKind == JsonValueKind.String ? message.GetString() : null)
-            .FirstOrDefault(message => message is not null) ?? "";
 }
