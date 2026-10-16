@@ -43,7 +43,7 @@ public static class ServiceCollectionAddGartnerHypeCycleGraphExtension
         services.AddSingleton<IContextSourceResolver, GhgContextSourceResolver>();
 
         // What can be done to it: the palette, the menus and shortcuts, and the property grid.
-        services.AddSingleton<IDiagramToolboxProvider, GhgToolboxProvider>();
+        services.AddSingleton<IDiagramToolboxProvider>(new DislToolboxProvider(Diagram.HypeCycleGraph.Origin, GhgDefinition.Definition));
         services.AddSingleton<IContextActionProvider, GhgContextActionProvider>();
         services.AddSingleton<IContextPropertyProvider, GhgContextPropertyProvider>();
 

@@ -54,7 +54,7 @@ public sealed class GhgValidator : IDiagramValidator
         IReadOnlyList<DiagramProblem> problems =
         [
             .. Findings(GhgBody.Parse(request.Document)).Select(finding => new DiagramProblem(
-                Severity(finding.Severity),
+                DislDiagramDefinition.SeverityOf(finding),
                 finding.Message,
                 finding.Code,
                 new DiagramProblemLineLocation((uint)Math.Max(1, finding.Line ?? 1)))),
@@ -62,11 +62,4 @@ public sealed class GhgValidator : IDiagramValidator
 
         return ValueTask.FromResult(problems);
     }
-
-    private static DiagramProblemSeverity Severity(string severity) => severity switch
-    {
-        "error" => DiagramProblemSeverity.Error,
-        "info" or "hint" => DiagramProblemSeverity.Info,
-        _ => DiagramProblemSeverity.Warning,
-    };
 }

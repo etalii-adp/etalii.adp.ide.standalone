@@ -11,7 +11,7 @@ namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph.Tests.Parity;
 /// </summary>
 internal static class HandWrittenGhg
 {
-    /// <summary>The palette, as <c>GhgToolboxProvider.Items</c> listed it.</summary>
+    /// <summary>The palette, as the hand-written <c>GhgToolboxProvider.Items</c> listed it.</summary>
     public static IReadOnlyList<ToolboxItemDefinition> Toolbox { get; } =
     [
         new(
