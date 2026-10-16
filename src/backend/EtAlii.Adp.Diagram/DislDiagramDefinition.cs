@@ -70,7 +70,7 @@ public sealed class DislDiagramDefinition
     public IReadOnlyList<DislDiagnostic> Diagnostics => _loaded.Value.Diagnostics;
 
     /// <summary>The wire ids of the module's block.</summary>
-    private WireIdMap Ids => _ids.Value;
+    public WireIdMap Ids => _ids.Value;
 
     /// <summary>The palette.</summary>
     public IReadOnlyList<ToolboxItemDefinition> Toolbox => _toolbox.Value;
@@ -97,11 +97,18 @@ public sealed class DislDiagramDefinition
             entry.Id,
             entry.Label,
             entry.Icon,
-            entry.Shortcut is { } key ? new ContextShortcutDefinition(key.EventKey, key.Ctrl, key.Shift, key.Alt, key.Meta) : null,
+            ShortcutOf(entry),
             entry.Available,
             entry is { Available: true, Operation: { } operation } && _standingReasons.Value.TryGetValue(operation, out var standing)
                 ? standing
                 : entry.UnavailableReason);
+    }
+
+    /// <summary>A menu entry's shortcut as a browser spells the key, with its modifiers; none when it has none.</summary>
+    public static ContextShortcutDefinition? ShortcutOf(DerivedMenuEntry entry)
+    {
+        ArgumentNullException.ThrowIfNull(entry);
+        return entry.Shortcut is { } key ? new ContextShortcutDefinition(key.EventKey, key.Ctrl, key.Shift, key.Alt, key.Meta) : null;
     }
 
     /// <summary>

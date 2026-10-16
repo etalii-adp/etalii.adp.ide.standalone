@@ -27,8 +27,8 @@ namespace EtAlii.Adp.Diagram.AgentActivityDiagram;
 public sealed class AadContextActionProvider(IHistoryStackStore historyStacks, IAadDocumentStore documents)
     : DiagramActionProvider<AadBody, AadModel>(historyStacks, documents)
 {
-    /// <summary>What precedes a toolbox tool's id in the action a drop of it executes.</summary>
-    public const string AddActionPrefix = "add-";
+    /// <summary>What precedes a toolbox tool's id in the action a drop of it executes, as the definition's <c>x-aad.tools</c> names it.</summary>
+    private const string AddActionPrefix = "add-";
 
     private const string ConnectActionId = "connect";
 
@@ -74,7 +74,7 @@ public sealed class AadContextActionProvider(IHistoryStackStore historyStacks, I
         {
             return
             [
-                new ContextActionGroupDefinition([.. AadDefinition.Toolbox.Select(tool => new ContextActionDefinition(tool.DropActionId, $"Add {tool.Label.ToLowerInvariant()}", tool.Icon))]),
+                new ContextActionGroupDefinition([.. AadDefinition.Definition.Toolbox.Select(tool => new ContextActionDefinition(tool.DropActionId, $"Add {tool.Label.ToLowerInvariant()}", tool.Icon))]),
                 new ContextActionGroupDefinition([new ContextActionDefinition(
                     UnpinAllActionId, "Unlock all positions", "mdi-lock-open-variant-outline", Available: entry.Model.Placements.Count > 0, UnavailableReason: "No position is locked.")]),
             ];
@@ -211,7 +211,7 @@ public sealed class AadContextActionProvider(IHistoryStackStore historyStacks, I
     /// <summary>A derived menu entry as this host offers it: none, itself, or a submenu of the values it can set.</summary>
     private static IEnumerable<ContextActionDefinition> Action(DerivedMenuEntry entry, bool pinned)
     {
-        ContextShortcutDefinition? shortcut = entry.Shortcut is { } key ? new ContextShortcutDefinition(key.Key, key.Ctrl, key.Shift, key.Alt, key.Meta) : null;
+        var shortcut = DislDiagramDefinition.ShortcutOf(entry);
         switch (entry)
         {
             case { Kind: "operation", Operation: "openLink" or "openBranchLink" or "openFolderLink" }:

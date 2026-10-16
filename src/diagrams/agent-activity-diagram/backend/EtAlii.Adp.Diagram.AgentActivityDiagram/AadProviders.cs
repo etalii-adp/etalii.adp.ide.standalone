@@ -6,16 +6,6 @@ using EtAlii.Adp.Specification.Fbl;
 
 namespace EtAlii.Adp.Diagram.AgentActivityDiagram;
 
-/// <summary>The palette: one tool per kind of element, as the definition's toolbox lists them (Requirement 9.1).</summary>
-public sealed class AadToolboxProvider : IDiagramToolboxProvider
-{
-    /// <inheritdoc />
-    public DiagramOrigin Origin => Diagram.AgentActivity.Origin;
-
-    /// <inheritdoc />
-    public IReadOnlyList<ToolboxItemDefinition> Items => AadDefinition.Toolbox;
-}
-
 /// <summary>
 /// The property grid of an element or a row: its type's attributes, each written through a command
 /// (Requirement 9.4). A relation shows nothing; it is its two ends.
@@ -75,7 +65,7 @@ public sealed class AadValidator : IDiagramValidator
         return
         [
             .. findings.Select(finding => new DiagramProblem(
-                finding.Severity switch { "error" => DiagramProblemSeverity.Error, "info" or "hint" => DiagramProblemSeverity.Info, _ => DiagramProblemSeverity.Warning },
+                DislDiagramDefinition.SeverityOf(finding),
                 finding.Message,
                 finding.Code,
                 new DiagramProblemLineLocation((uint)Math.Max(finding.Line ?? 1, 1)))),

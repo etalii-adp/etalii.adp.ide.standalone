@@ -17,13 +17,15 @@ namespace EtAlii.Adp.Diagram.AgentActivityDiagram;
 /// </remarks>
 internal static class AadDefinition
 {
-    private static readonly Lazy<BundledDefinition> Loaded = new(() => BundledDefinition.Load(typeof(AadDefinition).Assembly, "agent-activity-diagram.dis"));
     private static readonly Lazy<IReadOnlyDictionary<string, AadEnum>> LoadedEnums = new(ReadEnums);
 
     /// <summary>The key of a location's one group of rows, in the file and on the wire.</summary>
     public const string PullRequestsGroup = "pullRequests";
 
-    public static DislSpecification Specification => Loaded.Value.Specification;
+    /// <summary>The bundled definition, with the palette every module derives the same way and the <c>x-aad</c> wire ids.</summary>
+    public static DislDiagramDefinition Definition { get; } = new(typeof(AadDefinition).Assembly, "agent-activity-diagram.dis", "x-aad");
+
+    public static DislSpecification Specification => Definition.Specification;
 
     /// <summary>A task's statuses, in the order their groups are listed.</summary>
     public static AadEnum TaskStatus => LoadedEnums.Value["TaskStatus"];
@@ -39,15 +41,6 @@ internal static class AadDefinition
     public static IReadOnlySet<string> CollapsedByDefault { get; } = ReadCollapsedByDefault();
 
     private static readonly Lazy<IReadOnlyList<AadRelationType>> LoadedRelations = new(ReadRelations);
-
-    private static readonly Lazy<IReadOnlyList<ToolboxItemDefinition>> LoadedToolbox = new(() =>
-    [
-        .. ToolboxDerivation.Derive(Specification, WireIdMap.None)
-            .Select(tool => new ToolboxItemDefinition(tool.Id, tool.Label, tool.Icon, tool.Description, AadContextActionProvider.AddActionPrefix + tool.Id)),
-    ]);
-
-    /// <summary>The palette: one tool per element type, each dropping its own add action.</summary>
-    public static IReadOnlyList<ToolboxItemDefinition> Toolbox => LoadedToolbox.Value;
 
     /// <summary>New ids as the definition's persistence says: a version 4 GUID in base 36.</summary>
     public static IIdSource NewIds => DislIds.Of(Specification);
@@ -218,7 +211,7 @@ internal static class AadDefinition
     public static IReadOnlyList<DerivedMenuGroup> Menus(DislElement element)
     {
         ArgumentNullException.ThrowIfNull(element);
-        return ContextMenuDerivation.Derive(Specification, DislMenuTarget.Element(element), Env(), WireIdMap.None);
+        return ContextMenuDerivation.Derive(Specification, DislMenuTarget.Element(element), Env(), Definition.Ids);
     }
 
     /// <summary>
