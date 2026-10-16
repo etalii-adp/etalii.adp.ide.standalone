@@ -1,6 +1,6 @@
 # Causal loop examples
 
-Two ADP projects you can open and click around in. They are not fixtures — the fixtures under
+Three ADP projects you can open and click around in. They are not fixtures — the fixtures under
 `../backend/EtAlii.Adp.Diagram.CausalLoop.Tests/` exist to pin parser behaviour one construct at
 a time, and read like it. These read like systems.
 
@@ -8,6 +8,7 @@ a time, and read like it. These read like systems.
 |---|---|
 | [`reference/`](reference/) | Every construct ADP's causal loop support understands, in one diagram. Read it to find out what is supported and how to write it — and to see a loop whose label the arithmetic disagrees with. |
 | [`on-call/`](on-call/) | Why an on-call rotation gets worse on its own. Read it to see the notation carrying a problem you probably recognise. |
+| [`business-philosophy/`](business-philosophy/) | Whether a Business Philosophy study is applicable at a university of applied sciences: experts, philosophers, practical tools, core values, latent wisdom, stories, wicked problems, insight over solutions, and art as expression. Read it to see a larger model - eighteen variables, ten loops - where every cycle is named and the arrangement is authored. |
 
 ## Opening one
 
@@ -16,7 +17,7 @@ what appears in the explorer as a diagram. Nothing needs configuring first.
 
 ## Authored for this repository
 
-**Both examples were written for ADP.** Neither is derived from, nor attributed to, any external
+**All three examples were written for ADP.** None is derived from, nor attributed to, any external
 source. That is the honest-fallback path Requirement 11 leads with, and it is where this task
 landed after checking five candidate sources and rejecting every one on licence grounds:
 
@@ -55,3 +56,12 @@ Both examples carry a case, and they are different cases on purpose:
 
 The second case is the better advertisement, and it happened by accident while writing these
 files.
+
+## Every cycle named
+
+`business-philosophy/` is the larger case. Its twenty-eight links form exactly ten cycles, and
+each is claimed by a named loop whose label agrees with its arithmetic: eight reinforcing, two
+balancing. So it opens with no finding at all - not an unlabelled cycle, not a disagreement - and
+a test holds it there, because in a model this dense one added link quietly creates a cycle
+nobody named. Its one variable outside every loop, the weight of wicked problems, is outside on
+purpose: the study does not claim to solve them, only to understand them better.
