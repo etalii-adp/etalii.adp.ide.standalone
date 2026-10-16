@@ -1,8 +1,6 @@
 using System.Globalization;
-using System.Text.Json;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
-using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.History;
 using EtAlii.Adp.Specification.Disl;
 
@@ -10,7 +8,7 @@ namespace EtAlii.Adp.Diagram.CausalLoopDiagram;
 
 /// <summary>
 /// The causal loop diagram's bundled DISL definition (<c>definition/causal-loop-diagram.dis</c>, from
-/// etalii-adp/etalii.adp), loaded once, and what the providers derive from it: the palette, the context
+/// etalii-adp/etalii.adp), loaded once as a <see cref="DislDiagramDefinition"/>, and what the providers derive from it: the palette, the context
 /// menus, the property rows and the deletion confirmation, mapped onto the host's types with the wire
 /// ids of its <c>x-cld</c> block (causal-loop-disl-fbl Requirement 3.1).
 /// </summary>
@@ -27,29 +25,25 @@ namespace EtAlii.Adp.Diagram.CausalLoopDiagram;
 /// </remarks>
 internal static class CausalLoopDefinition
 {
-    private static readonly Lazy<BundledDefinition> Loaded = new(() => BundledDefinition.Load(typeof(CausalLoopDefinition).Assembly, "causal-loop-diagram.dis", CausalLoopCycles.Plugins()));
-
-    private static readonly Lazy<WireIdMap> LoadedIds = new(() => WireIdMap.Of(Specification, "x-cld"));
-
-    private static readonly Lazy<IReadOnlyList<ToolboxItemDefinition>> LoadedToolbox = new(() =>
-    [
-        .. ToolboxDerivation.Derive(Specification, Ids)
-            .Select(tool => new ToolboxItemDefinition(tool.Id, tool.Label, tool.Icon, tool.Description, tool.DropActionId ?? "")),
-    ]);
-
-    private static readonly Lazy<IReadOnlyDictionary<string, string>> LoadedStandingReasons = new(StandingReasonsOf);
+    /// <summary>
+    /// The definition, with its <c>x-cld</c> wire ids. Each operation that can be unavailable carries its
+    /// sentence even while it is available, as the hand-written menu did.
+    /// </summary>
+    public static DislDiagramDefinition Definition { get; } = new(
+        typeof(CausalLoopDefinition).Assembly,
+        "causal-loop-diagram.dis",
+        "x-cld",
+        CausalLoopCycles.Plugins,
+        ["makePositive", "makeNegative", "arrange"]);
 
     /// <summary>The definition.</summary>
-    public static DislSpecification Specification => Loaded.Value.Specification;
+    public static DislSpecification Specification => Definition.Specification;
 
     /// <summary>The wire ids of <c>x-cld</c>.</summary>
-    private static WireIdMap Ids => LoadedIds.Value;
+    private static WireIdMap Ids => Definition.Ids;
 
     /// <summary>What <c>env</c> reads for a readable document: editable, with no viewpoint.</summary>
     private static DislEnv Env { get; } = new();
-
-    /// <summary>The palette.</summary>
-    public static IReadOnlyList<ToolboxItemDefinition> Toolbox => LoadedToolbox.Value;
 
     /// <summary>What <c>env</c> reads for an edit: editable, with no viewpoint.</summary>
     public static DislEnv EditEnv => Env;
@@ -137,13 +131,7 @@ internal static class CausalLoopDefinition
                 : GestureIds.TryParseRelation(elementId, out var from, out var to)
                     ? DislMenuTarget.Connection(diagram, VariableOf(diagram, from), VariableOf(diagram, to), "CausalLink")
                     : null;
-        if (target is null) return [];
-
-        return
-        [
-            .. ContextMenuDerivation.Derive(Specification, target, Env, Ids)
-                .Select(group => new ContextActionGroupDefinition([.. group.Entries.Select(Action)])),
-        ];
+        return target is null ? [] : Definition.Menus(target, Env);
     }
 
     /// <summary>The property rows of <paramref name="elementId"/> in <paramref name="entry"/>: an element's form; none for anything else.</summary>
@@ -151,7 +139,7 @@ internal static class CausalLoopDefinition
     {
         ArgumentNullException.ThrowIfNull(entry);
         if (!entry.IsUsable || ElementOf(DiagramOf(entry), elementId) is not { } element) return [];
-        return [.. FormDerivation.Derive(Specification, element, Env, Ids).Select(row => Row(WithNumbersShownAsTheToolShowsThem(element, row)))];
+        return [.. Definition.Rows(element, Env).Select(row => WithNumbersShownAsTheToolShowsThem(element, row))];
     }
 
     /// <summary>The confirmation removing the element <paramref name="elementId"/> asks for; null when it names none, or asks nothing.</summary>
@@ -172,62 +160,19 @@ internal static class CausalLoopDefinition
     public static DislElement? VariableOf(DislDiagram diagram, string name) =>
         diagram.NodesOfType("Variable").FirstOrDefault(variable => variable.Attributes.TryGetValue("name", out var written) && written as string == name);
 
-    private static ContextActionDefinition Action(DerivedMenuEntry entry) => new(
-        entry.Id,
-        entry.Label,
-        entry.Icon,
-        entry.Shortcut is { } key ? new ContextShortcutDefinition(key.Key, key.Ctrl, key.Shift, key.Alt, key.Meta) : null,
-        entry.Available,
-        // An operation that can be unavailable carries its sentence even while it is available, as the
-        // hand-written menu did; the client shows a reason only for an unavailable action.
-        entry is { Available: true, Operation: { } operation } && LoadedStandingReasons.Value.TryGetValue(operation, out var standing) ? standing : entry.UnavailableReason);
-
-    /// <summary>
-    /// A row as the grid draws it: a <c>select</c> is a Choice among its candidates, a <c>switch</c> a
-    /// Toggle, anything else a line.
-    /// </summary>
-    private static ContextPropertyDefinition Row(DerivedRow row)
-    {
-        var editor = row.Widget switch
-        {
-            "select" => ContextPropertyEditor.Choice,
-            "switch" => ContextPropertyEditor.Toggle,
-            _ => ContextPropertyEditor.Line,
-        };
-        var candidates = editor is ContextPropertyEditor.Choice ? row.Candidates ?? [] : null;
-        return new ContextPropertyDefinition(row.Id, row.Label, row.Value, editor, row.ReadOnlyReason, row.Group, candidates);
-    }
-
     /// <summary>
     /// A row of a <c>number</c> attribute with its value in .NET's shortest round-trip form, <c>1E+21</c>,
     /// as the tool has always shown a weight. A row's text is CEL's <c>string(double)</c>, which is
     /// Go's <c>1e+21</c>; the two agree on ordinary values. The definition's companion records the
     /// difference (Other differences: numbers, finding B11); every other row is the definition's.
     /// </summary>
-    private static DerivedRow WithNumbersShownAsTheToolShowsThem(DislElement element, DerivedRow row)
+    private static ContextPropertyDefinition WithNumbersShownAsTheToolShowsThem(DislElement element, ContextPropertyDefinition row)
     {
         foreach ((string name, object? stored) in element.Attributes)
         {
             if (stored is double number && Ids.PropertyId(name) == row.Id) return row with { Value = number.ToString(CultureInfo.InvariantCulture) };
         }
         return row;
-    }
-
-    /// <summary>The sentence of each operation's first <c>unavailable</c> reason that is a plain message, by operation.</summary>
-    private static IReadOnlyDictionary<string, string> StandingReasonsOf()
-    {
-        var reasons = new Dictionary<string, string>(StringComparer.Ordinal);
-        foreach (var operation in Specification.Root.GetProperty("behavior").GetProperty("operations").EnumerateObject())
-        {
-            if (!operation.Value.TryGetProperty("unavailable", out var unavailable) || unavailable.ValueKind != JsonValueKind.Array) continue;
-            if (unavailable.EnumerateArray()
-                    .Select(reason => reason.TryGetProperty("message", out var message) && message.ValueKind == JsonValueKind.String ? message.GetString() : null)
-                    .FirstOrDefault(message => message is not null) is { } sentence)
-            {
-                reasons[operation.Name] = sentence;
-            }
-        }
-        return reasons;
     }
 
     /// <summary>

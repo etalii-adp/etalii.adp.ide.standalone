@@ -91,7 +91,7 @@ internal static class CausalLoopTranscript
 
             // The toolbox is static: it does not read the document, so it is written once.
             json.WriteStartArray("toolbox");
-            foreach (var item in new CausalLoopToolboxProvider().Items)
+            foreach (var item in CausalLoopDefinition.Definition.Toolbox)
             {
                 json.WriteStringValue($"{item.Id} | {item.Label} | {item.Icon} | drops {item.DropActionId} | {item.Description}");
             }
