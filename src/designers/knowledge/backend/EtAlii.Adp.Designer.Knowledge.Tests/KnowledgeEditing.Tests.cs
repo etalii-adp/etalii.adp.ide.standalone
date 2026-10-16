@@ -771,4 +771,43 @@ public sealed class KnowledgeEditingTests : IDisposable
             Assert.True(held == seen, $"After {gesture.Kind} the file and what was shown differ.{Environment.NewLine}File:{Environment.NewLine}{held}{Environment.NewLine}Shown:{Environment.NewLine}{seen}");
         }
     }
+
+    /// <summary>
+    /// A re-read the watcher started before an edit was written, and that ends after the edit's own
+    /// re-read, does not put back the table as it was (code-structure T282). The nightly Stability run
+    /// once saw what was shown lose the edit before last this way, in the test above.
+    /// </summary>
+    [Fact]
+    public async Task AnExternalReReadOlderThanAWrite_DoesNotPutTheOldTableBack()
+    {
+        // Arrange: a re-read that has read the file and is held before it shows what it read.
+        var hold = 0;
+        using var taken = new ManualResetEventSlim();
+        using var release = new ManualResetEventSlim();
+        await using var table = new EditingTable(KnowledgeFiles.CopyPlain("cities.json", _root), read: Read);
+        Volatile.Write(ref hold, 1);
+        var older = Task.Run(() => table.Session.OnExternalChangeAsync(), TestContext.Current.CancellationToken);
+        Assert.True(taken.Wait(TimeSpan.FromSeconds(20), TestContext.Current.CancellationToken), "The arrangement failed: no re-read began.");
+
+        // Act: an edit written and settled while the older re-read is held; then the older one ends.
+        await table.Edit(SetCell("r2", "p3", "529247"));
+        release.Set();
+        await older;
+
+        // Assert.
+        Assert.Equal(KnowledgeFiles.Describe(table.OnDisk()), KnowledgeFiles.Describe(table.Session.Shown));
+        return;
+
+        KnowledgeRead Read(string path)
+        {
+            var read = KnowledgeDocumentStore.Read(path);
+            if (Interlocked.Exchange(ref hold, 0) == 1)
+            {
+                taken.Set();
+                release.Wait(TimeSpan.FromSeconds(20), TestContext.Current.CancellationToken);
+            }
+
+            return read;
+        }
+    }
 }

@@ -22,7 +22,8 @@ internal sealed class EditingTable : IAsyncDisposable
     /// <param name="path">The knowledge file.</param>
     /// <param name="patience">How long a write is waited for; twenty seconds unless a test of a very large file says more.</param>
     /// <param name="documents">Where a written file is announced; shared between two tables that are open in one application.</param>
-    public EditingTable(string path, TimeSpan? patience = null, KnowledgeDocuments? documents = null, string? rootPath = null)
+    /// <param name="read">How the session reads the file; the module's own reading unless a test holds a read.</param>
+    public EditingTable(string path, TimeSpan? patience = null, KnowledgeDocuments? documents = null, string? rootPath = null, Func<string, KnowledgeRead>? read = null)
     {
         Path = path;
         _patience = patience ?? TimeSpan.FromSeconds(20);
@@ -34,7 +35,7 @@ internal sealed class EditingTable : IAsyncDisposable
             [typeof(ICommandHandler<RestoreDocumentCommand<IKnowledgeDocumentStore>>)] = new RestoreDocumentCommandHandler<IKnowledgeDocumentStore>(documents),
         };
         History = new HistoryStack(new CommandDispatcher(services));
-        Session = new KnowledgeSession(path, KnowledgeDocumentStore.Read, Write, documents, rootPath ?? "");
+        Session = new KnowledgeSession(path, read ?? KnowledgeDocumentStore.Read, Write, documents, rootPath ?? "");
         Session.Changed += (_, args) =>
         {
             lock (_gate)
