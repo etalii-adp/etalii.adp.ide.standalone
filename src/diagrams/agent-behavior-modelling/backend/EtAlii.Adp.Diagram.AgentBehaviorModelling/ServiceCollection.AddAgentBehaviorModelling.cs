@@ -43,7 +43,7 @@ public static class ServiceCollectionAddAgentBehaviorModellingExtension
 
         // Selection, and what can be done to it: the palette, the menus and shortcuts, and the property grid.
         services.AddSingleton<IContextSourceResolver, AbmContextSourceResolver>();
-        services.AddSingleton<IDiagramToolboxProvider, AbmToolboxProvider>();
+        services.AddSingleton<IDiagramToolboxProvider>(new DislToolboxProvider(Diagram.AgentBehaviorModelling.Origin, AbmDefinition.Definition));
         services.AddSingleton<IContextActionProvider, AbmContextActionProvider>();
         services.AddSingleton<IContextPropertyProvider, AbmContextPropertyProvider>();
 

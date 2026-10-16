@@ -12,7 +12,7 @@ namespace EtAlii.Adp.Diagram.AgentBehaviorModelling.Tests.Parity;
 /// </summary>
 internal static class HandWrittenAbm
 {
-    /// <summary>The palette, as <c>AbmToolboxProvider.Items</c> listed it.</summary>
+    /// <summary>The palette, as the hand-written <c>AbmToolboxProvider.Items</c> listed it.</summary>
     public static IReadOnlyList<ToolboxItemDefinition> Toolbox { get; } =
     [
         Item(AbmNodeKinds.Sequence, "Do in order", "mdi-arrow-right-bold-outline"),
