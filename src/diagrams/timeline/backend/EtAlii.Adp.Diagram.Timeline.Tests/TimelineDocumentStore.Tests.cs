@@ -42,4 +42,23 @@ public sealed class TimelineDocumentStoreTests : DocumentStoreContract<ITimeline
         Assert.True(saved.Failed);
         Assert.Equal(before, File.ReadAllText(body));
     }
+
+    [Fact]
+    public void ATimelineThatIsNotYaml_IsOneProblemAtTheLineTheReaderStopped()
+    {
+        // Arrange.
+        using var folder = TestFolder.Create("timeline-store");
+        var body = folder.Combine("broken.tml");
+        File.Copy(Path.Combine(AppContext.BaseDirectory, "Fixtures", "findings", "unparseable.tml"), body);
+        var store = new TimelineDocumentStore();
+
+        // Act.
+        var entry = store.GetOrLoad(body);
+
+        // Assert: the reader stops at the fourth line, `label: one: two`; a problem's line is zero-based.
+        var problem = Assert.Single(entry.Problems);
+        Assert.Equal(3, problem.Line);
+        Assert.StartsWith("it does not parse at line 4. ", entry.Unreadable, StringComparison.Ordinal);
+        Assert.EndsWith(problem.Message, entry.Unreadable, StringComparison.Ordinal);
+    }
 }
