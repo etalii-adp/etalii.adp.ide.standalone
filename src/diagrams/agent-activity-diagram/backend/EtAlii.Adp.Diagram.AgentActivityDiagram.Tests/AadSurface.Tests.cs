@@ -46,7 +46,7 @@ public sealed class AadSurfaceTests : IDisposable
     {
         Assert.Equal(
             ["project:add-project", "specification:add-specification", "agent:add-agent", "location:add-location", "environment:add-environment"],
-            new AadToolboxProvider().Items.Select(item => $"{item.Id}:{item.DropActionId}"));
+            new DislToolboxProvider(Diagram.AgentActivity.Origin, AadDefinition.Definition).Items.Select(item => $"{item.Id}:{item.DropActionId}"));
     }
 
     [Fact]

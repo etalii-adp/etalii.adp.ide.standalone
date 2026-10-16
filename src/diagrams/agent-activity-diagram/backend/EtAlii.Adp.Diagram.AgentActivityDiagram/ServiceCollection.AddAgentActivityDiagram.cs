@@ -40,7 +40,7 @@ public static class ServiceCollectionAddAgentActivityDiagramExtension
         services.AddSingleton<IDiagramValidator, AadValidator>();
 
         // What can be done to it: the palette, the menus and gestures, and the property grid.
-        services.AddSingleton<IDiagramToolboxProvider, AadToolboxProvider>();
+        services.AddSingleton<IDiagramToolboxProvider>(new DislToolboxProvider(Diagram.AgentActivity.Origin, AadDefinition.Definition));
         services.AddSingleton<IContextActionProvider, AadContextActionProvider>();
         services.AddSingleton<IContextPropertyProvider, AadContextPropertyProvider>();
 
