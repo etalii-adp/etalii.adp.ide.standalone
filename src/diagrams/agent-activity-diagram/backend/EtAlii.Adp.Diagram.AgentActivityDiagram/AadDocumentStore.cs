@@ -29,7 +29,7 @@ public sealed class AadDocumentStore : LifecycleDocumentStore<AadBody, AadModel>
     protected override string TextOf(AadBody body) => body.Text;
 
     /// <inheritdoc />
-    protected override AadModel Rebuild(AadBody body) => AadModel.Read(body);
+    protected override ParseOutcome<AadModel> Parse(AadBody body) => new(AadModel.Read(body), []);
 
     /// <inheritdoc />
     protected override string UnreadableOf(AadBody body) => body.Unreadable;

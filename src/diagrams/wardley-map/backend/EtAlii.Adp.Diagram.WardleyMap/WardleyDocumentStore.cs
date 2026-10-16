@@ -78,8 +78,6 @@ public sealed class WardleyDocumentStore : LifecycleDocumentStore<LineDocument, 
     /// <inheritdoc />
     protected override string TextOf(LineDocument body) => body.Text;
 
-    /// <inheritdoc />
-    protected override WardleyMap Rebuild(LineDocument body) => WardleyParser.Parse(body);
 
     /// <inheritdoc />
     protected override ParseOutcome<WardleyMap> Parse(LineDocument body) => WardleyParser.Outcome(body);

@@ -11,7 +11,7 @@ namespace EtAlii.Adp.Documents;
 /// <para>
 /// <b>A module supplies three things and decides nothing else.</b> How a body's text becomes a body
 /// (<see cref="Read"/>), how a body becomes text again (<see cref="TextOf"/>), and what its parser
-/// reads from a body (<see cref="Rebuild"/>). Everything the shared lifecycle decides - the retries,
+/// reads from a body (<see cref="Parse"/>). Everything the shared lifecycle decides - the retries,
 /// the self-write suppression, keep-last-good, the first open of a missing body - this store does
 /// not decide again, and neither does the module.
 /// </para>
@@ -157,18 +157,15 @@ public abstract class LifecycleDocumentStore<TBody, TModel> : IDiagramDocumentSt
     /// <summary>The text <paramref name="body"/> is saved as.</summary>
     protected abstract string TextOf(TBody body);
 
-    /// <summary>What the module's parser reads from <paramref name="body"/>.</summary>
-    protected abstract TModel Rebuild(TBody body);
-
     /// <summary>
     /// What the module's parser reads from <paramref name="body"/>, with what it passed over and whether
     /// the body could be read at all; a body that could not be is not written to until it can be.
     /// </summary>
     /// <remarks>
-    /// <see cref="Rebuild"/>'s model with no problems, unless the module says otherwise. A module whose
-    /// parser reports through a <see cref="ParseOutcome{TModel}"/> overrides this (code-structure FR-049).
+    /// The one hook a module answers with its reading (code-structure FR-049). A module whose reading
+    /// cannot fail answers its model with no problems.
     /// </remarks>
-    protected virtual ParseOutcome<TModel> Parse(TBody body) => new(Rebuild(body), []);
+    protected abstract ParseOutcome<TModel> Parse(TBody body);
 
     /// <summary>
     /// Empty for a body that was read; otherwise why its text, though it could be opened, cannot be

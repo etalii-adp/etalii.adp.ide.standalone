@@ -13,8 +13,6 @@ public sealed class SupplyChainDocumentStore : LifecycleDocumentStore<LineDocume
     /// <inheritdoc />
     protected override string TextOf(LineDocument body) => body.Text;
 
-    /// <inheritdoc />
-    protected override SupplyChainModel Rebuild(LineDocument body) => SupplyChainParser.Parse(body);
 
     /// <inheritdoc />
     protected override ParseOutcome<SupplyChainModel> Parse(LineDocument body) => SupplyChainParser.Outcome(body);

@@ -80,7 +80,6 @@ public sealed class LifecycleDocumentStoreOutcomeTests : IDisposable
 
         protected override string TextOf(LineDocument body) => body.Text;
 
-        protected override string Rebuild(LineDocument body) => body.Text;
 
         protected override ParseOutcome<string> Parse(LineDocument body)
         {

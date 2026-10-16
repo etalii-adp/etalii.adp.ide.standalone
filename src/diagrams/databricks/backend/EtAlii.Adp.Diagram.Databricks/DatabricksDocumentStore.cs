@@ -24,8 +24,6 @@ public sealed class DatabricksDocumentStore : LifecycleDocumentStore<LineDocumen
     /// <inheritdoc />
     protected override string TextOf(LineDocument body) => body.Text;
 
-    /// <inheritdoc />
-    protected override DatabricksModel Rebuild(LineDocument body) => DatabricksModel.Outcome(body).Model;
 
     /// <inheritdoc />
     protected override ParseOutcome<DatabricksModel> Parse(LineDocument body) => DatabricksModel.Outcome(body);

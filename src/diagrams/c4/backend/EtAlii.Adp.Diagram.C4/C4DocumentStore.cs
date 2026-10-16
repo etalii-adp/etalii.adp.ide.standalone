@@ -35,5 +35,5 @@ public sealed class C4DocumentStore : LifecycleDocumentStore<LineDocument, C4Wor
     protected override string TextOf(LineDocument body) => body.Text;
 
     /// <inheritdoc />
-    protected override C4Workspace Rebuild(LineDocument body) => C4Parser.Parse(body);
+    protected override ParseOutcome<C4Workspace> Parse(LineDocument body) => new(C4Parser.Parse(body), []);
 }

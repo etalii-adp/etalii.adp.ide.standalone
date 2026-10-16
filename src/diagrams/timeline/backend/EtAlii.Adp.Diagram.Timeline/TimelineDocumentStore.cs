@@ -30,8 +30,6 @@ public sealed class TimelineDocumentStore : LifecycleDocumentStore<LineDocument,
     /// <inheritdoc />
     protected override string TextOf(LineDocument body) => body.Text;
 
-    /// <inheritdoc />
-    protected override TimelineModel Rebuild(LineDocument body) => Parse(body).Model;
 
     /// <inheritdoc />
     /// <remarks>
