@@ -45,7 +45,7 @@ public sealed class MindmapValidator : IDiagramValidator
         IReadOnlyList<DiagramProblem> problems =
         [
             .. MindmapDefinition.Findings(request.Document, file).Select(finding => new DiagramProblem(
-                Severity(finding.Severity),
+                DislDiagramDefinition.SeverityOf(finding),
                 finding.Message,
                 finding.Code,
                 LocationOf(finding))),
@@ -56,11 +56,4 @@ public sealed class MindmapValidator : IDiagramValidator
 
     private static DiagramProblemLocation? LocationOf(DislFinding finding) =>
         finding.ElementIds.FirstOrDefault() is { Length: > 0 } id ? new DiagramProblemElementLocation(id) : null;
-
-    private static DiagramProblemSeverity Severity(string severity) => severity switch
-    {
-        "error" => DiagramProblemSeverity.Error,
-        "info" or "hint" => DiagramProblemSeverity.Info,
-        _ => DiagramProblemSeverity.Warning,
-    };
 }
