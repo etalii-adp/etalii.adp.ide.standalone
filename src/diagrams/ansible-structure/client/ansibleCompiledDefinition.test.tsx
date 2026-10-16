@@ -64,8 +64,6 @@ const { AnsibleCanvas, ANSIBLE_DEFINITION } = await import("./AnsibleCanvas");
  *   type puts the kind's and the relation's class in another order; and `ansible-play-none`, which the
  *   oracle wrote on every node of no play and no stylesheet rule reads, is gone.
  * - **`data-kind`** was written on every node and is read by no stylesheet and no test.
- * - **The arrowhead.** The specification's `targetMarker` is `arrow`, DISL's open V (6.11), where the
- *   oracle drew a filled one: a defect of the definition, stated here until it is corrected there.
  * - **A node's accessible name** is DISL's default (6.15), its type's label and its name, where the
  *   oracle used the tooltip: a playbook or play with hosts no longer says them in its name, though its
  *   tooltip still does, and a variable folder is named by its type's label "Variable folder" where the
@@ -263,7 +261,7 @@ describe("the Ansible structure diagram's compiled definition", () => {
     const compiled = compiledDrawing();
     const compiledUnresolved = compiledStubs(compiled.container);
     const compiledNames = names(compiled.container);
-    const actual = normalised(compiled.container).replaceAll("url(#library-open-arrow)", "url(#library-arrow)");
+    const actual = normalised(compiled.container);
     compiled.unmount();
 
     // The cases the comparison would pass vacuously on: a canvas that drew nothing for either.

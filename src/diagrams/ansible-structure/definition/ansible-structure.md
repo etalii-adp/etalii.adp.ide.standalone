@@ -25,7 +25,7 @@ Paths below are in [etalii.adp.ide.standalone](https://github.com/etalii-adp/eta
 
 - **The subject is a folder.** A registration (`.adp`) inside the folder makes it a diagram; its first line is the origin `ansible/structure`. There is no document extension and no body file (`Diagram.cs`: `Subject: DiagramSubject.Folder`). ADP never infers that a folder is an Ansible project, so the binding's `recognise` is empty and recognises every folder (R2.3).
 - **Nothing in the folder is written.** The binding is read-only with the tool's sentence, "An Ansible structure diagram shows the folder as it is and changes nothing in it. Edit the file this value comes from in a text editor.", which is also the refusal of a property write; the plugin is never asked to plan (FBL 11.4, `plans: []`). `ZeroWrites.Tests.cs` snapshots the fixture trees byte for byte and by modification time around open, render, select, validate and describe.
-- **Live update.** The module watches the folder and all subfolders and settles for 400 ms, restarting on each change, before one re-read of the whole folder (`AnsibleProjectStore`, `AnsibleWatchedFolder`), which is the binding's `settle`. The position a user drags is written into the registration and comes back through the same watcher.
+- **Live update.** The module watches the folder and all subfolders and settles for 400 ms, restarting on each change, before one re-read of the whole folder, which is the binding's `settle`: the library's folder body (`FolderBody`) reads the folder through the binding and the plugin and settles, and the module's `AnsibleFolder` holds the watcher that feeds it, with `AnsibleFolders` keeping one open folder per registration for the connections that view it. The position a user drags is written into the registration and comes back through the same watcher.
 - **What is delivered, and when.** The whole folder is read when it opens, and the session then narrows what it sends to the viewport: a view receives the nodes its viewport intersects, plus one hop of relation partners so that every drawn relation has both ends, plus every relation whose ends are both delivered; a relation without a target is delivered with its source. A change is diffed against what the connection holds and sent as removals and additions. Nothing folds and nothing is edited, so no group, ungroup or change delta is ever sent.
 - **What the plugin delivers.** Every node of the metamodel with the attributes `ansible-structure.dis` declares, among them a playbook's `plays` (one item per play, with `ordinal`, `name`, `hosts` and `line`) and an inventory's `groups` and `variableFolders`; every relation, resolved, with a relation whose target is missing or an expression delivered without a target (b7-missing-and-expression); and one finding per file that does not parse, with YamlDotNet's message less its position prefix as the reason. The ids, the derived attributes, every property row but an inventory's groups and variable folders, the other four codes' findings and the reparenting refusal come from the definition.
 
@@ -54,7 +54,7 @@ The plugin is the module's reader (`AnsibleProjectReader`, `AnsibleYaml`, `Ansib
 
 ## Language gaps
 
-These are the candidate changes for etalii-adp/etalii.adp that the conversion found, numbered as the standalone specification's section C. None is closed by the definition or the binding stating something the tool does not do; where the tool keeps a behaviour the languages cannot state, the class that keeps it is named. FBL has moved past 0.2 since the binding was drafted; its later drafts close none of the five FBL gaps below.
+These are the candidate changes for etalii-adp/etalii.adp that the conversion found, numbered as the standalone specification's section C, with gap 11, which the implementation found, after them. None is closed by the definition or the binding stating something the tool does not do; where the tool keeps a behaviour the languages cannot state, the class that keeps it is named. FBL has moved past 0.2 since the binding was drafted; its later drafts close none of the five FBL gaps below.
 
 | # | Gap | Construct | Shown by | What would resolve it | Until then |
 | --- | --- | --- | --- | --- | --- |
@@ -68,6 +68,7 @@ These are the candidate changes for etalii-adp/etalii.adp that the conversion fo
 | 8 | **The order of findings of a folder subject** (A12) | DISL 8.6 orders reader findings, then built-ins, then rules in declaration order; `constraints.order` orders by code and then by line. The tool reports unreadable files, then missing targets in the order the relations were derived, which interleaves `ansible.role-missing` and `ansible.dangling-import`, then unmatched hosts, then empty roles. Every finding names its own file, and a line orders nothing across files. | a8-a12-unreadable-and-order: two `ansible.unreadable-yaml`, then `ansible.role-missing` at `a.yml:4`, `ansible.dangling-import` at `b.yml:1`, `ansible.role-missing` at `roles/r/meta/main.yml:2`, `ansible.dangling-import` at `roles/r/tasks/main.yml:2`, then `ansible.unmatched-hosts` at `a.yml:1`, then `ansible.empty-role` | `constraints.order` by file in reading order before line, and a way to keep one declared list's order across two codes | The module's `AnsibleFindings` |
 | 9 | **Opening an element's source in the host, and a second shortcut** (A13) | DISL's `reveal` scrolls the canvas to an element; nothing opens an element's file or folder in the host's explorer, and an operation has one `shortcut`. Double-click, Enter and Space on the selected node reveal its file or folder. | `client/AnsibleCanvas.tsx`; the transcript's `selection` gives the path each element reveals (a play its playbook's, a `Targets` relation none) | An action that opens an element's source in the host, and more than one shortcut | The definition's `revealFile` operation names the plugin's `reveal` action with Enter; the handler in `client/AnsibleCanvas.tsx` does it, Space included |
 | 10 | **The ranked layout** (A14), DISL D.2's open question 9 | DISL 0.3's standard algorithms are not ranks by import depth with every node of a rank at the rank's width and inventories in a band beneath. | Every folder's `payloads` (b12-4-single-play-tint: `playbook:a.yml` at 0, 0 and `playbook:b.yml` at 0, 56, its plays at 168; b12-5-root-inventories: the band at y 96) | A ranked algorithm with a band among DISL's standard ones | `AnsibleLayout` with `AnsibleMetrics`, declared as the plugin's layout `ranks`, with `layered` as fallback |
+| 11 | **Formatted text in a message** (found by the canvas's switch to this definition) | DISL 2.3: a Message is a LocalizedText or a CEL string, plain text; `markup` belongs to a `text` attribute (DISL 4), not to a Message. The tool's empty canvas set `playbooks/`, `roles/` and `inventories/` in a monospace font. | `canvas.empty` of `ansible-structure.dis`; the standalone canvas test `client/ansibleCompiledDefinition.test.tsx`, which states the difference (the transcript does not record the empty sentence) | `markup: "plain" \| "markdown"` on a Message, as on a `text` attribute | The canvas draws the sentence as plain text; no class stands in for it |
 
 ### The eight file rules the binding cannot carry
 
@@ -88,11 +89,36 @@ The requirements' draft of the binding has fifteen file rules. Eight of them mar
 
 Each is named for the gap it stands in for, and goes when its gap is closed (standalone design, *What remains in the module, and why*):
 
-- **`AnsibleFolderListing`** (gaps 1 and 2): that a folder exists, the folders under one, how many files a folder holds without their bytes, and the bytes of a file that is a link, which FBL 10.2 never selects and the tool reads (B11, Q2).
+- **`AnsibleFolderListing`** (gaps 1 and 2): that a folder exists, whether a file is there, the folders under one, how many files a folder holds without their bytes, and the bytes of a file that is a link, which FBL 10.2 never selects and the tool reads (B11, Q2).
 - **`AnsibleFindings`** (gaps 6 and 8): composes the sentence of `ansible.unreadable-yaml` as "'&lt;file>' is not readable YAML: &lt;reason>"; puts the findings in today's order; and passes on a `std.unparseable` only when it names a file of the folder, so that a folder FBL 10.3 would make an unreadable body opens empty with no finding (B5, Q2).
 - **`AnsibleInventoryRows`** (gap 7): the rows `ansible.group.<name>` and `ansible.vars.<name>` of an inventory.
 - **The reveal handler in `client/AnsibleCanvas.tsx`** (gap 9): double-click, Enter and Space.
 - **`AnsibleLayout`, `AnsibleMetrics`** (gap 10): the plugin's layout.
+
+## What remains in the module, and why
+
+Every type of the product project `backend/EtAlii.Adp.Diagram.AnsibleStructure/`, checked against a listing of its files, beside the gap or the host concern that keeps it; a type with neither is not there. A stand-in goes when its gap is closed; a host concern is the host's and stays.
+
+| Type | Kept by |
+| --- | --- |
+| `AnsibleFolderPlugin` | The plugin reader of FBL 11.5 (finding B1): the reading the table above describes is no selector or slot. |
+| `AnsibleProjectReader`, `AnsibleYaml`, `AnsibleGraph` | The plugin's reading: the files the binding hands it, parsed with YamlDotNet (gap 3), and the relations resolved against what the folder holds. |
+| The records and enums of `_Model/` (`AnsibleProject`, `AnsiblePlaybook`, `AnsiblePlay`, `AnsibleRole`, `AnsibleRoleContents`, `AnsibleTaskFile`, `AnsibleInventory`, `AnsibleInventoryGroup`, `AnsibleVariableFolder`, `AnsibleDirective`, `AnsibleDirectiveKind`, `AnsibleNode`, `AnsibleNodeKind`, `AnsibleEdge`, `AnsibleEdgeKind`, `AnsibleTargetResolution`) | What the plugin reads into, before it hands the model its elements (B1). |
+| `AnsibleFolderListing` | Gaps 1 and 2, and the linked file of Q2. |
+| `AnsibleFindings` | Gaps 6 and 8. |
+| `AnsibleInventoryRows` | Gap 7. |
+| `AnsibleLayout`, and `AnsibleMetrics` in `_Model/` | Gap 10. |
+| `AnsibleElementMapper` | The host's wire: the model in the element and delta vocabulary of `api/ansible-structure.proto`, which does not change. |
+| `AnsibleContextSourceResolver` | The host's selection: an element id resolved against the folder its registration sits in. |
+| `AnsibleDefinition` | The definition: the bundled `ansible-structure.dis` and the binding, and what is derived from them. |
+| `AnsibleFolder`, `AnsibleFolders` | The opened subject: the library's folder body over the registered folder, the watcher it does not hold, and one open folder per registration. |
+| `AnsibleSession`, `AnsibleSessionFactory` | The host's session seam: one connection's viewport and what it has been sent, and the folder of the registration as the subject. |
+| `Diagram` | The host's catalog entry: the origin and a folder subject with no extension. |
+| `AnsibleValidator` | Core's validator seam: the findings handed over with project-relative locations. |
+| `AnsibleContextPropertyProvider` | Core's property seam: the rows, read-only, refusing a write with the property's own reason. |
+| `ServiceCollectionAddAnsibleStructureExtension` | The host's registration of the types above. |
+
+Beside them the client keeps two: the reveal handler of `client/AnsibleCanvas.tsx`, which opens a node's file or folder (gap 9), and `client/ansibleBindings.ts`, which says what the library cannot yet read from the definition, Space as a second reveal key among it (gap 9).
 
 ## Differences the definition cannot bring in line
 
@@ -132,9 +158,9 @@ The definition names the layout `ranks` of the plugin with `layered`, right, as 
 
 - The definition's tokens copy the light and dark values of `client/ansible-structure.css`. A play's fill is its hue mixed 18 % into the raised surface (`color().mix()` with 0.82 towards the surface), its hue chosen by the play's project-wide index modulo six. Only a drawn play is tinted; a single-play playbook carries no index and is never tinted, although its play takes one (b12-4-single-play-tint: the next playbook's plays start at 1).
 - Kind is never carried by colour alone: a playbook has a 2 px primary outline; a play a primary outline dashed 6 3; a role rounded corners; a task file a dashed 2 2 outline; an inventory and a variable folder the muted outline; a hollow role is dashed 4 4 at 60 % opacity.
-- A relation leaves the source's right side and enters the target's left side at mid-height on a horizontal forward bezier, which loops round for a backward relation, with an open arrow at the target. A dynamic relation (`include_*`) is dashed 5 4; `DependsOn` is primary, dotted 1 4 with round caps, 2 px; `Targets` is 1 px at 55 % opacity. Its label reads the directive, followed by " when " and the condition when there is one.
+- A relation leaves the source's right side and enters the target's left side at mid-height on a horizontal forward bezier, which loops round for a backward relation, with a filled arrow (`arrowFilled`) at the target. A dynamic relation (`include_*`) is dashed 5 4; `DependsOn` is primary, dotted 1 4 with round caps, 2 px; `Targets` is 1 px at 55 % opacity. Its label reads the directive, followed by " when " and the condition when there is one.
 - A relation without a target is the definition's `stub`: 48 px out of the source's right side, in the warning colour, dashed 3 3, labelled with the target as written and " (missing)" or " (expression)".
-- An empty folder shows the definition's `canvas.empty` sentence, "Nothing here is laid out the way Ansible expects, so there is nothing to draw. Playbooks at the folder root or under playbooks/, roles under roles/, inventories under inventories/.", which the client writes with the three folder names as code.
+- An empty folder shows the definition's `canvas.empty` sentence, "Nothing here is laid out the way Ansible expects, so there is nothing to draw. Playbooks at the folder root or under playbooks/, roles under roles/, inventories under inventories/.", drawn as plain text. The tool set the three folder names as code until its canvas drew this definition, which no Message can state (gap 11).
 
 ## Navigation
 
@@ -155,4 +181,4 @@ Kept byte for byte in this conversion, each in the transcript, and each to be fi
 
 ## Examples
 
-Under `src/examples/diagrams/ansible-structure/`, each project with its upstream `LICENSE.md` beside it; most hold a registration (`.adp`) with stored positions, which the real-file check of the standalone specification reads (B10: 34 stored keys, 6 of which hold a `/`). The fixture trees under `backend/EtAlii.Adp.Diagram.AnsibleStructure.Tests/Fixtures/` (`ansible-structure`, `broken`, `infrastructure`, `ini-inventory`, `unconventional`) and the finding folders under `Parity/Folders/` hold no registration in the tree, since ADP never infers one; the transcript writes one in its temporary copy of each folder when it records a move.
+Under `src/examples/diagrams/ansible-structure/`, each project with its upstream `LICENSE.md` beside it; most hold a registration (`.adp`) with stored positions, which the real-file check of the standalone specification reads (B10: 34 stored keys, 6 of which hold a `/`). The four fixture trees under `backend/EtAlii.Adp.Diagram.AnsibleStructure.Tests/Fixtures/` (`broken`, `infrastructure`, `ini-inventory`, `unconventional`) and the finding folders under `Parity/Folders/` hold no registration in the tree, since ADP never infers one; the transcript writes one in its temporary copy of each folder when it records a move.
