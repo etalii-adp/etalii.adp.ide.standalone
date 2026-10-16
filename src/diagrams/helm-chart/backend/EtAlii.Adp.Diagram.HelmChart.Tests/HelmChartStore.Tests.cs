@@ -11,8 +11,8 @@ namespace EtAlii.Adp.Diagram.HelmChart.Tests;
 /// </summary>
 public sealed class HelmChartStoreTests : WatchedFolderStoreContract<HelmChart>
 {
-    protected override WatchedFolderStore<HelmChart> CreateStore(TimeSpan settleDelay) =>
-        new HelmChartStore(new HelmChartReader(), settleDelay);
+    protected override WatchedFolderStore<HelmChart> CreateStore(TimeSpan settleDelay, TimeProvider time) =>
+        new HelmChartStore(new HelmChartReader(), settleDelay, time);
 
     protected override void Populate(string root) =>
         File.WriteAllText(IoPath.Combine(root, "Chart.yaml"), "apiVersion: v2\nname: watched\nversion: 1.0.0\n");

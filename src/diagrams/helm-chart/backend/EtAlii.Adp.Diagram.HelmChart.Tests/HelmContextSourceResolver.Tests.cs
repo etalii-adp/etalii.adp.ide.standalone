@@ -2,6 +2,7 @@ using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Hierarchy;
+using Microsoft.Extensions.Time.Testing;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
@@ -15,14 +16,17 @@ public class HelmContextSourceResolverTests : IDisposable
 {
     private static readonly TimeSpan SettleDelay = TimeSpan.FromMilliseconds(150);
     private static readonly TimeSpan WaitLimit = TimeSpan.FromSeconds(15);
+    private static readonly TimeSpan Silence = TimeSpan.FromMilliseconds(400);
 
     private readonly string _root;
     private readonly string _registration;
-    private readonly HelmChartStore _store = new(new HelmChartReader(), SettleDelay);
+    private readonly FakeTimeProvider _clock = new();
+    private readonly HelmChartStore _store;
     private readonly HelmContextSourceResolver _resolver;
 
     public HelmContextSourceResolverTests()
     {
+        _store = new HelmChartStore(new HelmChartReader(), SettleDelay, _clock);
         _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(IoPath.Combine(_root, "templates"));
         File.WriteAllText(IoPath.Combine(_root, "Chart.yaml"),
@@ -186,7 +190,7 @@ public class HelmContextSourceResolverTests : IDisposable
         File.Delete(IoPath.Combine(_root, "values.yaml"));
 
         // Assert.
-        Assert.True(await cleared.Task.WaitAsync(WaitLimit, TestContext.Current.CancellationToken));
+        Assert.True(await Eventually.TrueAsync(() => Settled(() => cleared.Task.IsCompleted), TestContext.Current.CancellationToken, WaitLimit), "The selection was not cleared.");
     }
 
     [Fact]
@@ -203,8 +207,15 @@ public class HelmContextSourceResolverTests : IDisposable
 
         // Assert.
         Assert.False(
-            await Eventually.TrueAsync(() => Volatile.Read(ref announcements) > 0, TestContext.Current.CancellationToken, SettleDelay + SettleDelay + SettleDelay),
+            await Eventually.TrueAsync(() => Settled(() => Volatile.Read(ref announcements) > 0), TestContext.Current.CancellationToken, Silence),
             "A disposed subscription announced the deletion.");
+    }
+
+    /// <summary><paramref name="probe"/>, asked once the store's clock has moved a settle delay.</summary>
+    private T Settled<T>(Func<T> probe)
+    {
+        _clock.Advance(SettleDelay);
+        return probe();
     }
 
     private async Task<ContextLevelResolution> Resolve(

@@ -2,6 +2,7 @@ using EtAlii.Adp.Context;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Time.Testing;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
@@ -22,10 +23,9 @@ namespace EtAlii.Adp.Diagram.HelmChart.Tests;
 /// </remarks>
 public class ZeroWritesTests : IDisposable
 {
-    private static readonly TimeSpan SettleDelay = TimeSpan.FromMilliseconds(150);
-
     private readonly string _root;
-    private readonly HelmChartStore _store = new(new HelmChartReader(), SettleDelay);
+    // On a clock nobody moves: the test reads and never waits for a re-read.
+    private readonly HelmChartStore _store = new(new HelmChartReader(), time: new FakeTimeProvider());
     private readonly ServiceProvider _provider = new ServiceCollection().AddCommands().AddHierarchyCommandHandlers().AddHelmCharts().BuildServiceProvider();
 
     public ZeroWritesTests()

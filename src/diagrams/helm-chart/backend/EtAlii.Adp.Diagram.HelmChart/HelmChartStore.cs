@@ -15,8 +15,8 @@ namespace EtAlii.Adp.Diagram.HelmChart;
 /// If a chart ever appears where that is not true, the place to fix it is
 /// <see cref="HelmChartReader"/>.
 /// </remarks>
-public sealed class HelmChartStore(HelmChartReader reader, TimeSpan? settleDelay = null)
-    : WatchedFolderStore<HelmChart>(settleDelay ?? DefaultSettleDelay), IHelmChartStore
+public sealed class HelmChartStore(HelmChartReader reader, TimeSpan? settleDelay = null, TimeProvider? time = null)
+    : WatchedFolderStore<HelmChart>(settleDelay ?? DefaultSettleDelay, time: time), IHelmChartStore
 {
     /// <summary>How long a burst of changes may keep growing before one re-read answers it all.</summary>
     private static readonly TimeSpan DefaultSettleDelay = TimeSpan.FromMilliseconds(400);
