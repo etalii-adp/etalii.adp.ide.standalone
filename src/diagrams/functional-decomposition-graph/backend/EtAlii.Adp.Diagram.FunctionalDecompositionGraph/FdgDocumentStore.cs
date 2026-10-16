@@ -17,8 +17,6 @@ public sealed class FdgDocumentStore : LifecycleDocumentStore<LineDocument, FdgM
     /// <inheritdoc />
     protected override string TextOf(LineDocument body) => body.Text;
 
-    /// <inheritdoc />
-    protected override FdgModel Rebuild(LineDocument body) => FdgParser.Parse(body);
 
     /// <inheritdoc />
     protected override ParseOutcome<FdgModel> Parse(LineDocument body) => FdgParser.Outcome(body);

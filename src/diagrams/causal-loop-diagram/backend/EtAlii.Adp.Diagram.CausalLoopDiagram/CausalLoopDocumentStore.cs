@@ -28,5 +28,5 @@ public sealed class CausalLoopDocumentStore : LifecycleDocumentStore<CausalLoopB
     protected override string TextOf(CausalLoopBody body) => body.Text;
 
     /// <inheritdoc />
-    protected override CausalLoopModel Rebuild(CausalLoopBody body) => body.Read();
+    protected override ParseOutcome<CausalLoopModel> Parse(CausalLoopBody body) => new(body.Read(), []);
 }

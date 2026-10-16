@@ -26,8 +26,6 @@ public sealed class RdfDocumentStore : LifecycleDocumentStore<LineDocument, RdfM
     /// <inheritdoc />
     protected override string TextOf(LineDocument body) => body.Text;
 
-    /// <inheritdoc />
-    protected override RdfModel Rebuild(LineDocument body) => RdfParser.Outcome(body).Model;
 
     /// <inheritdoc />
     protected override ParseOutcome<RdfModel> Parse(LineDocument body) => RdfParser.Outcome(body);

@@ -13,8 +13,6 @@ public sealed class SankeyDocumentStore : LifecycleDocumentStore<LineDocument, S
     /// <inheritdoc />
     protected override string TextOf(LineDocument body) => body.Text;
 
-    /// <inheritdoc />
-    protected override SankeyModel Rebuild(LineDocument body) => SankeyParser.Parse(body);
 
     /// <inheritdoc />
     protected override ParseOutcome<SankeyModel> Parse(LineDocument body) => SankeyParser.Outcome(body);

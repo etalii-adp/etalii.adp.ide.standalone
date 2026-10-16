@@ -113,7 +113,7 @@ public sealed class LifecycleDocumentStoreHooksTests : IDisposable
 
         protected override string TextOf(LineDocument body) => body.Text;
 
-        protected override string Rebuild(LineDocument body) => body.Text;
+        protected override ParseOutcome<string> Parse(LineDocument body) => new(body.Text, []);
 
         protected override string Saved(string path, DocumentEntry<LineDocument, string> entry)
         {

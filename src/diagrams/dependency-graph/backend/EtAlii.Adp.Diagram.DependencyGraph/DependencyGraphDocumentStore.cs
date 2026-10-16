@@ -26,8 +26,6 @@ public sealed class DependencyGraphDocumentStore : LifecycleDocumentStore<LineDo
     /// <inheritdoc />
     protected override string TextOf(LineDocument body) => body.Text;
 
-    /// <inheritdoc />
-    protected override DependencyGraphModel Rebuild(LineDocument body) => DependencyGraphParser.Outcome(body).Model;
 
     /// <inheritdoc />
     protected override ParseOutcome<DependencyGraphModel> Parse(LineDocument body) => DependencyGraphParser.Outcome(body);

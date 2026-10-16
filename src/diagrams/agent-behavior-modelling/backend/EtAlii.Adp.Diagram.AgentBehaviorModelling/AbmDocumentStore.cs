@@ -15,5 +15,5 @@ public sealed class AbmDocumentStore : LifecycleDocumentStore<AbmBody, AbmModel>
     protected override string TextOf(AbmBody body) => body.Text;
 
     /// <inheritdoc />
-    protected override AbmModel Rebuild(AbmBody body) => body.Model;
+    protected override ParseOutcome<AbmModel> Parse(AbmBody body) => new(body.Model, []);
 }
