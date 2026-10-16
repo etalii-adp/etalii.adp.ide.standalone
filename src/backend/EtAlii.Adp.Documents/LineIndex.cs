@@ -13,7 +13,8 @@ namespace EtAlii.Adp.Documents;
 /// </para>
 /// <para>
 /// The Turtle and SPARQL tokenizers and the RDF and SHACL writers each held this search, the
-/// SHACL writer as a linear scan; they moved here in code-structure T130 (FR-043).
+/// SHACL writer as a linear scan; they moved here in code-structure T130 (FR-043). The FBL bodies
+/// of gartner-hype-cycle-graph and timeline held a third, over UTF-8 bytes, until T279.
 /// </para>
 /// </remarks>
 public sealed class LineIndex
@@ -32,6 +33,28 @@ public sealed class LineIndex
                 _starts.Add(index + 1);
             }
         }
+    }
+
+    private LineIndex()
+    {
+    }
+
+    /// <summary>
+    /// The line starts of UTF-8 <paramref name="bytes"/>, as byte offsets: what an FBL span counts in,
+    /// where a character before a line break may take more than one byte.
+    /// </summary>
+    public static LineIndex OfUtf8(ReadOnlySpan<byte> bytes)
+    {
+        var index = new LineIndex();
+        for (var offset = 0; offset < bytes.Length; offset++)
+        {
+            if (bytes[offset] == (byte)'\n')
+            {
+                index._starts.Add(offset + 1);
+            }
+        }
+
+        return index;
     }
 
     /// <summary>The line starts of <paramref name="lines"/>, the same as those of the text they make.</summary>
