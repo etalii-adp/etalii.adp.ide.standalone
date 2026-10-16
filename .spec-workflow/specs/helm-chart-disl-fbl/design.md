@@ -238,7 +238,7 @@ This design is written against the first.
 
 6. **Two derived relations compute one id** (two same-named dependencies with one constraint).
    - **Handling:** `DislModelBuilder` does not draw the second. Whether today delivers two is shown by the A10 fixture at step 1. If it does, that is a difference no requirement names: it is reported and put to the user as a small amendment before step 4, never designed around.
-   - **User Impact:** to be ruled.
+   - **User Impact:** none visible: the canvas already keeps one per id. **Ruled in chat on 2026-10-16** (the recommended option of the 2026-10-14 card): one relation per id is delivered, and the transcript drops the repeated entries once at task 6, named in Requirement 1.4.
 
 7. **The transcript differs after a step.**
    - **Handling:** the step is not delivered. Every difference is a regression, since this conversion names no change.
