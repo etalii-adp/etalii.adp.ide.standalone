@@ -81,19 +81,19 @@ public class HierarchyModelPublishSurvivesNestingTests : IDisposable
             }
         };
 
-        // The production pipeline, verbatim: the same watcher wrapper, feeding the same model.
-        using var watcher = new RootFolderWatcher(
+        // The production pipeline, verbatim: the same file events, feeding the same model.
+        using var fileEvents = new ProjectFileEvents();
+        using var watcher = fileEvents.Subscribe(
             _root,
-            (changeType, oldPath, newPath) =>
+            heard =>
             {
                 lock (_events)
                 {
-                    _events.Add($"{changeType}: {IoPath.GetFileName(oldPath)} -> {IoPath.GetFileName(newPath)}");
+                    _events.Add($"{heard.Kind}: {IoPath.GetFileName(heard.OldPath)} -> {IoPath.GetFileName(heard.Path)}");
                 }
 
-                model.OnWatcherEvent(changeType, oldPath, newPath);
-            },
-            _ => { });
+                model.OnFileEvent(heard);
+            });
 
         // Act: what every module's document store now does on save.
         AdpFileWriter.Save(subjectPath, "<map>renamed</map>");

@@ -95,10 +95,10 @@ public sealed class SplitMoveJoiner : IDisposable
     }
 
     /// <summary>
-    /// Delivers a held Deleted now. The grace running out calls this; so does a watcher error,
-    /// whose recovery must not be overtaken by a deletion still waiting.
+    /// Delivers a held Deleted now, when the grace runs out. A watcher error needs no call of its
+    /// own: posted as a Lost, it delivers a deletion still waiting before it.
     /// </summary>
-    public void Flush()
+    private void Flush()
     {
         lock (_gate)
         {

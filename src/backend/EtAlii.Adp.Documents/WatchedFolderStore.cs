@@ -32,7 +32,11 @@ namespace EtAlii.Adp.Documents;
 /// </remarks>
 /// <typeparam name="TSnapshot">What one read of a folder makes; immutable, replaced wholesale.</typeparam>
 /// <param name="settleDelay">How long a burst of changes may keep growing before one re-read answers it all.</param>
-public abstract class WatchedFolderStore<TSnapshot>(TimeSpan settleDelay) : IWatchedFolderStore<TSnapshot>, IDisposable
+/// <param name="events">
+/// The project roots already watched: a folder inside one hears its changes from that root's
+/// watcher rather than from one of its own. Null for a store that always watches for itself.
+/// </param>
+public abstract class WatchedFolderStore<TSnapshot>(TimeSpan settleDelay, ProjectFileEvents? events = null) : IWatchedFolderStore<TSnapshot>, IDisposable
     where TSnapshot : class
 {
     private static readonly ILogger _logger = Log.ForContext<WatchedFolderStore<TSnapshot>>();
@@ -144,7 +148,7 @@ public abstract class WatchedFolderStore<TSnapshot>(TimeSpan settleDelay) : IWat
         {
             _logger.Debug("Reading and watching {Folder}", path);
             var snapshot = Read(path);
-            return new WatchedFolderEntry<TSnapshot>(path, snapshot, WatchedFiles(path, snapshot), settleDelay, OnSettled);
+            return new WatchedFolderEntry<TSnapshot>(path, snapshot, WatchedFiles(path, snapshot), settleDelay, OnSettled, events);
         });
 
     /// <summary>The watchers of <paramref name="folder"/>, or none when it is not loaded - for a test that has to make one overflow.</summary>

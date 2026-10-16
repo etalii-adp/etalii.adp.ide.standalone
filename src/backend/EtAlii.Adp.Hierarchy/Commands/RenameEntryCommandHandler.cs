@@ -35,7 +35,7 @@ public sealed record RenameEntryCommand(
 /// name was validated and the moment Rename was pressed, and undo/redo dispatch this handler
 /// again later, when the earlier check is long stale.
 /// <para>
-/// It deliberately does not notify anyone of the rename. <c>RootFolderWatcher</c> observes the
+/// It deliberately does not notify anyone of the rename. The connection's file events observe the
 /// move and the existing <c>EntryRenamed</c> change flows out over <c>WatchHierarchy</c>, so an
 /// undo reaches connected clients by exactly the same route as the original rename.
 /// </para>

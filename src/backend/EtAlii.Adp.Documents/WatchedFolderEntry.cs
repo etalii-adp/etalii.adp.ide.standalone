@@ -3,9 +3,8 @@ using Serilog;
 namespace EtAlii.Adp.Documents;
 
 /// <summary>
-/// One watched subject of a <see cref="WatchedFolderStore{TSnapshot}"/>: its
-/// <see cref="WatchedFolder"/>s, its settle timer, its claim count and the snapshot last read
-/// from it.
+/// One watched subject of a <see cref="WatchedFolderStore{TSnapshot}"/>: what it listens to, its
+/// settle timer, its claim count and the snapshot last read from it.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -13,6 +12,12 @@ namespace EtAlii.Adp.Documents;
 /// under it. With files named, there is one watcher per directory holding one of them, not
 /// recursive, and an event counts only when it names one of the files: a solution's projects sit in
 /// directories full of build output, and a graph rebuilt for that would rebuild for nothing.
+/// </para>
+/// <para>
+/// <b>A folder inside a watched project listens to the project.</b> Where a project root that holds
+/// the folder is watched already (<see cref="ProjectFileEvents"/>), the folder picks its own events
+/// out of that root's rather than making a second watcher over the same files; elsewhere it makes a
+/// <see cref="WatchedFolder"/> of its own (code-structure FR-050).
 /// </para>
 /// <para>
 /// Content filters as well as name ones, a timer that restarts until a burst settles, and <b>every
@@ -33,7 +38,8 @@ internal sealed class WatchedFolderEntry<TSnapshot> : IDisposable
     private readonly Action<WatchedFolderEntry<TSnapshot>> _onSettled;
     private readonly Lock _gate = new();
     private readonly TimeSpan _settleDelay;
-    private List<WatchedFolder> _watchers = [];
+    private readonly ProjectFileEvents? _events;
+    private List<Listening> _watchers = [];
 
     /// <summary>The files an event must name to count, or null when anything under the folder does.</summary>
     private volatile HashSet<string>? _files;
@@ -42,12 +48,13 @@ internal sealed class WatchedFolderEntry<TSnapshot> : IDisposable
     private int _claims;
     private bool _disposed;
 
-    public WatchedFolderEntry(string path, TSnapshot snapshot, IReadOnlyCollection<string>? files, TimeSpan settleDelay, Action<WatchedFolderEntry<TSnapshot>> onSettled)
+    public WatchedFolderEntry(string path, TSnapshot snapshot, IReadOnlyCollection<string>? files, TimeSpan settleDelay, Action<WatchedFolderEntry<TSnapshot>> onSettled, ProjectFileEvents? events = null)
     {
         Path = path;
         Snapshot = snapshot;
         _settleDelay = settleDelay;
         _onSettled = onSettled;
+        _events = events;
 
         Watch(files);
     }
@@ -64,7 +71,7 @@ internal sealed class WatchedFolderEntry<TSnapshot> : IDisposable
         {
             lock (_gate)
             {
-                return [.. _watchers.Select(watched => watched.Watcher)];
+                return [.. _watchers.Select(watched => watched.Watcher()).OfType<FileSystemWatcher>()];
             }
         }
     }
@@ -80,7 +87,7 @@ internal sealed class WatchedFolderEntry<TSnapshot> : IDisposable
             ? null
             : new HashSet<string>(files.Select(System.IO.Path.GetFullPath), StringComparer.OrdinalIgnoreCase);
 
-        List<WatchedFolder> previous;
+        List<Listening> previous;
         lock (_gate)
         {
             if (_disposed || (_watchers.Count > 0 && SameFiles(_files, wanted)))
@@ -90,12 +97,12 @@ internal sealed class WatchedFolderEntry<TSnapshot> : IDisposable
 
             _files = wanted;
             previous = _watchers;
-            _watchers = wanted is null ? [Watcher(Path, recursive: true)] : [.. Directories(wanted).Select(directory => Watcher(directory, recursive: false))];
+            _watchers = wanted is null ? [Listen(Path, recursive: true)] : [.. Directories(wanted).Select(directory => Listen(directory, recursive: false))];
         }
 
         foreach (var watcher in previous)
         {
-            watcher.Dispose();
+            watcher.Handle.Dispose();
         }
     }
 
@@ -119,7 +126,7 @@ internal sealed class WatchedFolderEntry<TSnapshot> : IDisposable
 
     public void Dispose()
     {
-        List<WatchedFolder> watchers;
+        List<Listening> watchers;
         lock (_gate)
         {
             _disposed = true;
@@ -131,12 +138,38 @@ internal sealed class WatchedFolderEntry<TSnapshot> : IDisposable
 
         foreach (var watcher in watchers)
         {
-            watcher.Dispose();
+            watcher.Handle.Dispose();
         }
     }
 
-    private WatchedFolder Watcher(string directory, bool recursive) =>
-        new(directory, Heard, recursive);
+    /// <summary>
+    /// Listens to <paramref name="directory"/> through the watched project root that holds it, or
+    /// through a watcher of its own where none does.
+    /// </summary>
+    private Listening Listen(string directory, bool recursive)
+    {
+        if (_events?.SubscribeWithin(directory, heard => HeardWithin(heard, directory, recursive)) is { } shared)
+        {
+            var events = _events;
+            return new Listening(shared.Subscription, () => events.WatcherOf(shared.Root));
+        }
+
+        var folder = new WatchedFolder(directory, Heard, recursive);
+        return new Listening(folder, () => folder.Watcher);
+    }
+
+    /// <summary>An event of the whole project root, heard only when it concerns <paramref name="directory"/>.</summary>
+    private void HeardWithin(FileEvent heard, string directory, bool recursive)
+    {
+        if (heard.Kind == FileEventKind.Lost || Holds(heard.Path) || (heard.OldPath is { } oldPath && Holds(oldPath)))
+        {
+            Heard(heard);
+        }
+
+        bool Holds(string path) => recursive
+            ? ProjectFileEvents.IsWithin(path, directory)
+            : string.Equals(System.IO.Path.GetDirectoryName(path), directory, StringComparison.OrdinalIgnoreCase);
+    }
 
     private void Heard(FileEvent heard)
     {
@@ -209,6 +242,9 @@ internal sealed class WatchedFolderEntry<TSnapshot> : IDisposable
 
     private static bool SameFiles(HashSet<string>? current, HashSet<string>? wanted) =>
         current is null ? wanted is null : wanted is not null && current.SetEquals(wanted);
+
+    /// <summary>What the entry listens to, and the watcher behind it for a test that has to make it overflow.</summary>
+    private sealed record Listening(IDisposable Handle, Func<FileSystemWatcher?> Watcher);
 
     /// <summary>One per directory holding a named file, rather than one per file: thirty projects in three directories are three handles.</summary>
     private static IEnumerable<string> Directories(HashSet<string> files) =>

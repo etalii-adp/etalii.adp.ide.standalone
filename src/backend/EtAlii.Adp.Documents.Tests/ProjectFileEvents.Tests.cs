@@ -139,6 +139,71 @@ public sealed class ProjectFileEventsTests : IDisposable
         Assert.Equal(0, _events.Roots);
     }
 
+    [Fact]
+    public void AFolderInsideAWatchedRoot_IsHeardThroughThatRootsWatcher()
+    {
+        // Arrange.
+        var folder = Directory.CreateDirectory(IoPath.Combine(_root, "charts", "web")).FullName;
+        var project = _events.Subscribe(_root, _ => { });
+        var watcher = _events.WatcherOf(_root);
+
+        // Act.
+        var within = _events.SubscribeWithin(folder, _ => { });
+        project.Dispose();
+
+        // Assert: the root's own watcher, kept by the folder now the project's subscriber left.
+        Assert.NotNull(within);
+        Assert.Equal(_root, within.Value.Root);
+        Assert.Equal(1, _events.Roots);
+        Assert.Same(watcher, _events.WatcherOf(_root));
+        within.Value.Subscription.Dispose();
+        Assert.Equal(0, _events.Roots);
+    }
+
+    [Fact]
+    public void AFolderInsideNoWatchedRoot_IsNotSubscribed()
+    {
+        using var other = _events.Subscribe(_root, _ => { });
+        var outside = Directory.CreateTempSubdirectory("adp-project-file-events-outside-").FullName;
+        try
+        {
+            Assert.Null(_events.SubscribeWithin(outside, _ => { }));
+            Assert.Null(_events.SubscribeWithin(_root + "-sibling", _ => { }));
+        }
+        finally
+        {
+            TestFolder.TryDelete(outside);
+        }
+    }
+
+    [Fact]
+    public async Task WatchingARootAgain_MakesANewWatcher_ThatHears()
+    {
+        // Arrange.
+        var heard = new ConcurrentQueue<FileEvent>();
+        using var subscription = _events.Subscribe(_root, heard.Enqueue);
+        var before = _events.WatcherOf(_root);
+
+        // Act.
+        _events.WatchAgain(_root);
+        var path = IoPath.Combine(_root, "after.txt");
+        await File.WriteAllTextAsync(path, "text", TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.NotSame(before, _events.WatcherOf(_root));
+        Assert.True(await Eventually.TrueAsync(() => heard.Any(e => e.Path == path), TestContext.Current.CancellationToken, Patience), "Nothing was heard through the new watcher.");
+    }
+
+    [Theory]
+    [InlineData("/p/a", "/p/a", true)]
+    [InlineData("/p/a/b.txt", "/p/a", true)]
+    [InlineData("/p/a/b/c.txt", "/p/a", true)]
+    [InlineData("/p/ab", "/p/a", false)]
+    [InlineData("/p", "/p/a", false)]
+    [InlineData("/P/A/b.txt", "/p/a", true)]
+    public void IsWithin_IsTheFolderOrBelowIt_NeverASiblingThatSharesItsName(string path, string folder, bool within) =>
+        Assert.Equal(within, ProjectFileEvents.IsWithin(path, folder));
+
     private const string Scratch = "/p/~adp-0123456789abcdef0123456789abcdef.tmp";
     private const string Backup = "/p/body.dsl~RF1a2b3c.TMP";
 

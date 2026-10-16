@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.Hierarchy.Wire;
 using EtAlii.Adp.Projects;
 using Xunit;
@@ -61,7 +62,8 @@ public class HierarchyServiceLateRecoveryTests : IDisposable
 
         var foundMissing = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var service = new HierarchyService(projectStore, modelStore)
+        using var events = new ProjectFileEvents();
+        var service = new HierarchyService(projectStore, modelStore, events)
         {
             RootFoundMissing = async () =>
             {

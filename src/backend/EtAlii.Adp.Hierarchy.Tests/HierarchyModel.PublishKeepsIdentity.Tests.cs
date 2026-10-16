@@ -40,18 +40,18 @@ public class HierarchyModelPublishKeepsIdentityTests : IDisposable
         var subject = Assert.Single(model.ListChildren(null));
         var events = new List<string>();
 
-        using var watcher = new RootFolderWatcher(
+        using var fileEvents = new ProjectFileEvents();
+        using var watcher = fileEvents.Subscribe(
             _root,
-            (changeType, oldPath, newPath) =>
+            heard =>
             {
                 lock (events)
                 {
-                    events.Add($"{changeType}: {IoPath.GetFileName(oldPath)} -> {IoPath.GetFileName(newPath)}");
+                    events.Add($"{heard.Kind}: {IoPath.GetFileName(heard.OldPath)} -> {IoPath.GetFileName(heard.Path)}");
                 }
 
-                model.OnWatcherEvent(changeType, oldPath, newPath);
-            },
-            _ => { });
+                model.OnFileEvent(heard);
+            });
 
         // Act: the write every property-grid commit ends in.
         AdpFileWriter.Save(subjectPath, "<map>changed</map>");

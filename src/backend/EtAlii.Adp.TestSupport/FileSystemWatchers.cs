@@ -18,6 +18,12 @@ public static class FileSystemWatchers
     /// <summary>The watcher behind <paramref name="folder"/>, for a test that has to make it overflow or stop it hearing.</summary>
     public static FileSystemWatcher Watcher(this WatchedFolder folder) => folder.Watcher;
 
+    /// <summary>The watcher of <paramref name="root"/>, or null while it has none - for a test that has to make it overflow.</summary>
+    public static FileSystemWatcher? Watcher(this ProjectFileEvents events, string root) => events.WatcherOf(root);
+
+    /// <summary>How many project roots <paramref name="events"/> watches now, for a test of the one watcher per root.</summary>
+    public static int WatchedRoots(this ProjectFileEvents events) => events.Roots;
+
     /// <summary>The watcher behind <paramref name="file"/>; the file's folder must have existed when it was made.</summary>
     public static FileSystemWatcher Watcher(this WatchedFile file) =>
         file.Folder?.Watcher ?? throw new InvalidOperationException($"{file.Path} is not watched: its folder did not exist.");

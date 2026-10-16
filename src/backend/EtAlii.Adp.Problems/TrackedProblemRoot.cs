@@ -5,13 +5,13 @@ using Serilog;
 
 namespace EtAlii.Adp.Problems;
 
-/// <summary>One tracked project: its watched folder, and the burst of paths waiting to settle.</summary>
+/// <summary>One tracked project: its subscription to the root's file events, and the burst of paths waiting to settle.</summary>
 internal sealed class TrackedProblemRoot : IDisposable
 {
     private static readonly ILogger _logger = Log.ForContext<TrackedProblemRoot>();
 
     private readonly ProblemMaintenance _owner;
-    private readonly WatchedFolder _watcher;
+    private readonly IDisposable _events;
     private readonly Lock _gate = new();
     private readonly HashSet<string> _pending = new(StringComparer.OrdinalIgnoreCase);
 
@@ -22,9 +22,10 @@ internal sealed class TrackedProblemRoot : IDisposable
         Path = rootPath;
         _owner = owner;
         // Recursive, and with content as well as names: an edit that renames nothing still
-        // invalidates a verdict. The folder guards the handlers; an exception here loses only the
-        // one change it was applying, and says so.
-        _watcher = new WatchedFolder(rootPath, Heard, recursive: true);
+        // invalidates a verdict. The root's one watcher is shared with the hierarchy and the
+        // reload bridge, and guards every subscriber; an exception here loses only the one change
+        // it was applying, and says so.
+        _events = owner.Events.Subscribe(rootPath, Heard);
     }
 
     public void Enqueue(string path)
@@ -40,7 +41,7 @@ internal sealed class TrackedProblemRoot : IDisposable
 
     public void Dispose()
     {
-        _watcher.Dispose();
+        _events.Dispose();
         _owner.Settling.Cancel(this);
         lock (_gate)
         {
@@ -88,7 +89,7 @@ internal sealed class TrackedProblemRoot : IDisposable
                 _owner.OnRenamed(this, heard.OldPath!, heard.Path);
                 break;
             case FileEventKind.Lost:
-                // Logged by the folder. What was lost cannot be named, and the problems keep the
+                // Logged by the watcher. What was lost cannot be named, and the problems keep the
                 // verdicts they have until the next change; the watcher did no more than this before.
                 break;
         }

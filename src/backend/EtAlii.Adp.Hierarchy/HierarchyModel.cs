@@ -186,6 +186,29 @@ public sealed class HierarchyModel
     }
 
     /// <summary>
+    /// Applies one event of the project's <see cref="ProjectFileEvents"/>. A Lost is not the
+    /// model's to answer: the service decides whether the tree is read again or the root is gone.
+    /// </summary>
+    public void OnFileEvent(FileEvent heard)
+    {
+        switch (heard.Kind)
+        {
+            case FileEventKind.Created:
+                OnWatcherEvent(WatcherChangeTypes.Created, null, heard.Path);
+                break;
+            case FileEventKind.Changed:
+                OnWatcherEvent(WatcherChangeTypes.Changed, null, heard.Path);
+                break;
+            case FileEventKind.Deleted:
+                OnWatcherEvent(WatcherChangeTypes.Deleted, heard.Path, null);
+                break;
+            case FileEventKind.Renamed:
+                OnWatcherEvent(WatcherChangeTypes.Renamed, heard.OldPath, heard.Path);
+                break;
+        }
+    }
+
+    /// <summary>
     /// Applies one filesystem-watcher event. An event under a folder this
     /// connection has never listed is silently discarded (Requirement 4.7) —
     /// there is nothing yet to reconcile it against.

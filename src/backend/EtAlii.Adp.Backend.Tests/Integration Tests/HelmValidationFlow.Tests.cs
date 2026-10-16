@@ -52,10 +52,12 @@ public class HelmValidationFlowTests : IDisposable
         services.AddSingleton<ProjectValidator>();
         services.AddSingleton<IProblemStore>(provider => new ProblemStore(
             _appDataRoot, provider.GetRequiredService<DiagramFileRouter>(), provider.GetRequiredService<DiagramValidators>(), provider.GetRequiredService<TimeProvider>()));
+        services.AddSingleton<ProjectFileEvents>();
         services.AddSingleton(provider => new ProblemMaintenance(
             provider.GetRequiredService<IProblemStore>(),
             provider.GetRequiredService<ProjectValidator>(),
             provider.GetRequiredService<DiagramFileRouter>(),
+            provider.GetRequiredService<ProjectFileEvents>(),
             provider.GetRequiredService<TimeProvider>(),
             SettleDelay));
         services.AddHelmCharts();

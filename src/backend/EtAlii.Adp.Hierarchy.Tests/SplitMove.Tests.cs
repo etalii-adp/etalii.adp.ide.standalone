@@ -8,7 +8,7 @@ using IoPath = System.IO.Path;
 namespace EtAlii.Adp.Hierarchy.Tests;
 
 /// <summary>
-/// The hierarchy model fed through the <see cref="SplitMoveJoiner"/>, as <see cref="RootFolderWatcher"/>
+/// The hierarchy model fed through the <see cref="SplitMoveJoiner"/>, as <see cref="ProjectFileEvents"/>
 /// feeds it on Linux: a file moved on disk keeps its entry, its id and a selection on it.
 /// </summary>
 public class SplitMoveTests : IDisposable
@@ -56,7 +56,7 @@ public class SplitMoveTests : IDisposable
         var level = Assert.IsType<ResolvedContextLevel>(resolution).Level;
         var reported = new List<IReadOnlyList<string>?>();
         using var track = resolver.Track(watchId, _root, level, reported.Add);
-        using var joiner = new SplitMoveJoiner(heard => RootFolderWatcher.Dispatch(model.OnWatcherEvent, heard), _grace, _time);
+        using var joiner = new SplitMoveJoiner(model.OnFileEvent, _grace, _time);
         var renamed = IoPath.Combine(_root, "renamed.txt");
         File.Move(original, renamed);
 

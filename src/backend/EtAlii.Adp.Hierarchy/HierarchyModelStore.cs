@@ -34,7 +34,7 @@ public sealed class HierarchyModelStore : IHierarchyModelStore, IDisposable
         _designerRouter = designerRouter;
         _entries = new RetainedRegistry<ShortGuid, HierarchyModelEntry>(
             idleTimeout ?? DefaultIdleTimeout,
-            (_, entry) => entry.Watcher?.Dispose(),
+            (_, entry) => entry.Events?.Dispose(),
             time ?? TimeProvider.System,
             dropUnclaimed: true);
     }
@@ -45,14 +45,14 @@ public sealed class HierarchyModelStore : IHierarchyModelStore, IDisposable
             Model = new HierarchyModel(rootPath, _catalog, _router, _editorResolver, _designerRouter),
         }).Model;
 
-    public void AttachWatcher(ShortGuid watchId, RootFolderWatcher watcher)
+    public void AttachEvents(ShortGuid watchId, IDisposable events)
     {
         if (!_entries.TryRetain(watchId) || !_entries.TryGet(watchId, out var entry))
         {
             return;
         }
 
-        entry.Watcher = watcher;
+        entry.Events = events;
     }
 
     public void NotifyRenamed(string oldPath, string newPath)

@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using Microsoft.Extensions.Time.Testing;
 using Xunit;
 using IoPath = System.IO.Path;
@@ -52,15 +53,16 @@ public class HierarchyModelStoreTests : IDisposable
     }
 
     [Fact]
-    public async Task Remove_StopsTheAttachedWatcherFromRaisingFurtherEvents()
+    public async Task Remove_StopsTheAttachedSubscriptionFromHearingFurtherEvents()
     {
         // Arrange.
         using var store = new HierarchyModelStore();
+        using var events = new ProjectFileEvents();
         var watchId = ShortGuid.NewShortGuid();
         store.GetOrCreate(watchId, _root);
         var eventCount = 0;
-        var watcher = new RootFolderWatcher(_root, (_, _, _) => Interlocked.Increment(ref eventCount), _ => { });
-        store.AttachWatcher(watchId, watcher);
+        var subscription = events.Subscribe(_root, _ => Interlocked.Increment(ref eventCount));
+        store.AttachEvents(watchId, subscription);
 
         // Act.
         store.Remove(watchId);
@@ -88,14 +90,15 @@ public class HierarchyModelStoreTests : IDisposable
     }
 
     [Fact]
-    public void AttachingAWatcher_CancelsTheIdleEviction()
+    public void AttachingASubscription_CancelsTheIdleEviction()
     {
         // Arrange.
         using var store = new HierarchyModelStore(idleTimeout: IdleTimeout, time: _clock);
         var watchId = ShortGuid.NewShortGuid();
         var first = store.GetOrCreate(watchId, _root);
-        using var watcher = new RootFolderWatcher(_root, (_, _, _) => { }, _ => { });
-        store.AttachWatcher(watchId, watcher);
+        using var events = new ProjectFileEvents();
+        using var subscription = events.Subscribe(_root, _ => { });
+        store.AttachEvents(watchId, subscription);
 
         _clock.Advance(IdleTimeout * 2);
 

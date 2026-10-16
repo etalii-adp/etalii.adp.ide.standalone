@@ -33,8 +33,9 @@ public sealed class DependencyGraphStore(
     SolutionReader solutions,
     ProjectReader projects,
     PackageDescriptionReader descriptions,
-    TimeSpan? settleDelay = null)
-    : WatchedFolderStore<DependencyGraphModel>(settleDelay ?? DefaultSettleDelay), IDependencyGraphStore
+    TimeSpan? settleDelay = null,
+    ProjectFileEvents? events = null)
+    : WatchedFolderStore<DependencyGraphModel>(settleDelay ?? DefaultSettleDelay, events), IDependencyGraphStore
 {
     private static readonly ILogger _logger = Log.ForContext<DependencyGraphStore>();
 

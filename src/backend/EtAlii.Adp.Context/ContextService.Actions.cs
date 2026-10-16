@@ -235,8 +235,8 @@ public sealed partial class ContextService
         // it collapsible - and, like the direct completion above, nothing else re-derives them.
         _selectionStore.Refresh(interaction.WatchId);
 
-        // No hierarchy change is pushed from here - the connection's own RootFolderWatcher
-        // observes what happened on disk and reports it through the existing change feed. What
+        // No hierarchy change is pushed from here - the connection's own file events
+        // observe what happened on disk and report it through the existing change feed. What
         // the response does carry is where the new thing lives, so the client that asked for it
         // can recognise its own EntryCreated among the ones flowing down that feed.
         var response = new SubmitInteractionResponse { Completed = true };

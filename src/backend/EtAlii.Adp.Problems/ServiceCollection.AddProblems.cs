@@ -1,5 +1,6 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Diagram;
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.Hierarchy;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -40,6 +41,7 @@ public static class ServiceCollectionAddProblemsExtension
             provider.GetRequiredService<DiagramValidators>(),
             provider.GetRequiredService<TimeProvider>()));
         services.AddSingleton<ProblemBroadcaster>();
+        services.TryAddSingleton<ProjectFileEvents>();
         services.AddSingleton<ProblemMaintenance>();
         services.AddSingleton<StartupRevalidation>();
         services.AddSingleton<IHostedService>(provider => provider.GetRequiredService<StartupRevalidation>());
