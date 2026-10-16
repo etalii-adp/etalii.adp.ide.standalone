@@ -51,14 +51,7 @@ public abstract class WatchedFolderStoreContract<TSnapshot> : IDisposable
     protected virtual string SubjectOf(string root) => root;
 
     /// <summary>A new store, with nothing loaded, that settles after <paramref name="settleDelay"/> on <paramref name="time"/>.</summary>
-    protected virtual WatchedFolderStore<TSnapshot> CreateStore(TimeSpan settleDelay, TimeProvider time) => CreateStore(settleDelay);
-
-    /// <summary>
-    /// A new store on the system clock, for the ansible-structure store until its conversion to DISL
-    /// and FBL replaces it; every other store takes the test's clock.
-    /// </summary>
-    protected virtual WatchedFolderStore<TSnapshot> CreateStore(TimeSpan settleDelay) =>
-        throw new NotSupportedException("A store under this contract is made by CreateStore(TimeSpan, TimeProvider).");
+    protected abstract WatchedFolderStore<TSnapshot> CreateStore(TimeSpan settleDelay, TimeProvider time);
 
     /// <summary>Fills the empty folder <paramref name="root"/> with something the store reads.</summary>
     protected abstract void Populate(string root);
