@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
+import { EditorView } from "@codemirror/view";
+import { forceParsing } from "@codemirror/language";
 import { tags, type Tag } from "@lezer/highlight";
 import type { EditorTextResult } from "@client/editors/useEditorText";
 import { editorHighlight } from "@client/editors/editorHighlight";
@@ -42,6 +44,11 @@ const documentPath = ["settings", "app.json"];
 function mount(text: string) {
   stream.set(documentPath.join("/"), loaded(text));
   const rendered = render(<JsonEditorPanel {...ids} path={documentPath} />);
+  // CodeMirror parses for a fixed time slice when the view is made and finishes later, when the
+  // browser is idle. On a cold, slow runner a test can look before the tree exists, as the YAML
+  // editor's did (spec 025, T276, T281), so the parse is completed before anything is asserted.
+  const view = EditorView.findFromDOM(rendered.getByTestId("base-text-editor"))!;
+  forceParsing(view, view.state.doc.length, 10_000);
   return { rendered, rerender: () => rendered.rerender(<JsonEditorPanel {...ids} path={documentPath} />) };
 }
 

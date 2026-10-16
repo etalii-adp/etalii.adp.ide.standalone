@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { act, render, waitFor } from "@testing-library/react";
 import { create } from "@bufbuild/protobuf";
 import { EditorView } from "@codemirror/view";
-import { foldEffect, foldable, syntaxTree } from "@codemirror/language";
+import { foldEffect, foldable, forceParsing, syntaxTree } from "@codemirror/language";
 import { forEachDiagnostic } from "@codemirror/lint";
 import { undo } from "@codemirror/commands";
 import { tags, type Tag } from "@lezer/highlight";
@@ -73,6 +73,17 @@ function mount(text: string, calls: XmlAnalysisCalls = quiet) {
   return { rendered, view };
 }
 
+/**
+ * Waits until the editor holds `text`, then completes its parse. CodeMirror parses for a fixed
+ * time slice when the view is made and finishes later, when the browser is idle. On a cold, slow
+ * runner a test can look before the tree exists, as the YAML editor's did (spec 025, T276, T281),
+ * so the parse is completed before anything is asserted.
+ */
+async function parsed(view: EditorView, text: string) {
+  await waitFor(() => expect(view.state.doc.toString()).toBe(text));
+  forceParsing(view, view.state.doc.length, 10_000);
+}
+
 function classed(container: HTMLElement, tag: Tag): string[] {
   const name = editorHighlight.style([tag]);
   expect(name).toBeTruthy();
@@ -112,7 +123,8 @@ const document = [
 describe("colour", () => {
   it("tells each kind of token apart through the shared scheme (Requirement 3.1)", async () => {
     // Arrange and act.
-    const { rendered } = mount(document);
+    const { rendered, view } = mount(document);
+    await parsed(view, document);
 
     // Assert: a class of the shared scheme on each kind.
     const container = rendered.container;
@@ -128,7 +140,8 @@ describe("colour", () => {
 
   it("tells a prefix apart from the local name (Requirement 3.2)", async () => {
     // Arrange and act.
-    const { rendered } = mount(document);
+    const { rendered, view } = mount(document);
+    await parsed(view, document);
 
     // Assert: the prefix of both tags and of the declaration carries the namespace class.
     await waitFor(() => expect(classed(rendered.container, tags.namespace)).toEqual(["xmlns", "p", "p"]));
@@ -136,7 +149,9 @@ describe("colour", () => {
 
   it("keeps colour on what can still be read in a document that is not well-formed (Requirement 3.4)", async () => {
     // Arrange and act.
-    const { rendered } = mount('<a x="1"><b>\n</a>\n<c y="2"/>\n');
+    const text = '<a x="1"><b>\n</a>\n<c y="2"/>\n';
+    const { rendered, view } = mount(text);
+    await parsed(view, text);
 
     // Assert.
     await waitFor(() => expect(classed(rendered.container, tags.attributeName)).toEqual(["x", "y"]));
@@ -275,7 +290,8 @@ describe("asking the backend", () => {
 
   it("keeps colour and says once that checking is unavailable when the backend cannot be reached (Requirement 9.5)", async () => {
     // Arrange and act.
-    const { rendered } = mount(document, { ...quiet, analyze: () => Promise.reject(new Error("unreachable")) });
+    const { rendered, view } = mount(document, { ...quiet, analyze: () => Promise.reject(new Error("unreachable")) });
+    await parsed(view, document);
 
     // Assert.
     await waitFor(() => expect(rendered.getByTestId("analysis-status").textContent).toBe(checkingUnavailable));
