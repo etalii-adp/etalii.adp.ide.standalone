@@ -17,7 +17,7 @@ namespace EtAlii.Adp.Designer.Knowledge;
 /// </remarks>
 internal static class KnowledgeDefinition
 {
-    private static readonly Lazy<IReadOnlyDictionary<string, FblBinding>> _bindings = new(LoadBindings);
+    private static readonly Lazy<IReadOnlyDictionary<string, FblBinding>> _bindings = new(() => BundledBinding.Load(typeof(KnowledgeDefinition).Assembly, "knowledge.fbl").Bindings);
 
     private static readonly Lazy<IReadOnlyDictionary<(string Type, string Attribute), string>> _attributeTypes = new(LoadAttributeTypes);
 
@@ -83,17 +83,6 @@ internal static class KnowledgeDefinition
     public static string Sha256Of(string name) => Convert.ToHexStringLower(SHA256.HashData(Resource(name)));
 
     private static string Text(IdRequest request, string name) => KnowledgeValues.Text(request.Attributes.GetValueOrDefault(name));
-
-    private static IReadOnlyDictionary<string, FblBinding> LoadBindings()
-    {
-        var problems = FblDocumentLoader.Load(Resource("knowledge.fbl"), out var document);
-        if (document is null || problems.Any(problem => problem.Severity == ProblemSeverity.Error))
-        {
-            throw new InvalidOperationException($"The bundled knowledge.fbl does not load: {string.Join("; ", problems)}");
-        }
-
-        return document.Bindings;
-    }
 
     private static Dictionary<string, string> LoadValueTypes()
     {

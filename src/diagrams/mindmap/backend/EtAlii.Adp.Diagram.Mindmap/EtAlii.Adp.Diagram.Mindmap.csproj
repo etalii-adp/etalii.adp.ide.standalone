@@ -32,7 +32,7 @@
 
   <ItemGroup>
     <!-- The FBL binding of the .mm body, loaded once by MindmapDefinition. -->
-    <EmbeddedResource Include="mindmap.fbl" />
+    <EmbeddedResource Include="mindmap.fbl" LogicalName="mindmap.fbl" />
   </ItemGroup>
 
   <ItemGroup>

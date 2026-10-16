@@ -43,7 +43,7 @@ namespace EtAlii.Adp.Diagram.Timeline;
 /// </remarks>
 public sealed class TimelineBody
 {
-    private static readonly Lazy<FblBinding> LoadedBinding = new(LoadBinding);
+    private static readonly Lazy<FblBinding> LoadedBinding = new(() => BundledBinding.Load(typeof(TimelineBody).Assembly, "timeline.fbl", "timeline"));
 
     private static readonly Lazy<FblOptions> LoadedOptions = new(() => new FblOptions
     {
@@ -57,9 +57,8 @@ public sealed class TimelineBody
     private readonly OpenBody _body;
     private int[]? _lineStarts;
 
-    // Each read is cached with the bytes it was read from, so a change makes it stale by itself.
-    private (byte[] Bytes, FblModel Model)? _model;
-    private (byte[] Bytes, DislModel Model)? _disl;
+    private readonly TextMemo<FblModel> _model = new();
+    private readonly TextMemo<DislModel> _disl = new();
 
     // While a batch is open, the changes asked for and their edits, planned against the body as it was.
     private List<(ModelChange Change, Edit Edit)>? _batch;
@@ -73,35 +72,13 @@ public sealed class TimelineBody
     public string Text => Encoding.UTF8.GetString(_body.Bytes);
 
     /// <summary>What the binding reads from the body.</summary>
-    public FblModel Model
-    {
-        get
-        {
-            if (_model is not { } model || model.Bytes != _body.Bytes)
-            {
-                _model = model = (_body.Bytes, _body.Model);
-            }
-
-            return model.Model;
-        }
-    }
+    public FblModel Model => _model.Of(_body.Bytes, () => _body.Model);
 
     /// <summary>
     /// The DISL model of what the binding reads (<see cref="DislModelBuilder"/>, under the bundled
     /// definition): what the menus, the rows and the findings are derived from. Read it, never change it.
     /// </summary>
-    public DislModel Disl
-    {
-        get
-        {
-            if (_disl is not { } model || model.Bytes != _body.Bytes)
-            {
-                _disl = model = (_body.Bytes, DislModelBuilder.From(Model, TimelineDefinition.Specification));
-            }
-
-            return model.Model;
-        }
-    }
+    public DislModel Disl => _disl.Of(_body.Bytes, () => DislModelBuilder.From(Model, TimelineDefinition.Specification));
 
     /// <summary>A DISL diagram of what the binding reads that is the caller's own: the working diagram an operation changes as it runs.</summary>
     public DislDiagram Working() => DislModelBuilder.From(Model, TimelineDefinition.Specification).Diagram;
@@ -239,73 +216,5 @@ public sealed class TimelineBody
     {
         var index = Array.BinarySearch(starts, offset);
         return index >= 0 ? index : ~index - 1;
-    }
-
-    /// <summary>The open bodies of the last few texts read or written, by their bytes: forks no one edits, only forked again.</summary>
-    private sealed class RecentBodies
-    {
-        private const int Capacity = 8;
-
-        private readonly LinkedList<(int Hash, OpenBody Body)> _bodies = [];
-        private readonly Lock _lock = new();
-
-        public OpenBody? Find(byte[] bytes)
-        {
-            var hash = Hash(bytes);
-            lock (_lock)
-            {
-                for (var node = _bodies.First; node is not null; node = node.Next)
-                {
-                    if (node.Value.Hash != hash || !node.Value.Body.Bytes.AsSpan().SequenceEqual(bytes)) continue;
-                    _bodies.Remove(node);
-                    _bodies.AddFirst(node);
-                    return node.Value.Body;
-                }
-            }
-
-            return null;
-        }
-
-        public void Remember(OpenBody body)
-        {
-            var hash = Hash(body.Bytes);
-            lock (_lock)
-            {
-                for (var node = _bodies.First; node is not null; node = node.Next)
-                {
-                    if (node.Value.Hash == hash && node.Value.Body.Bytes.AsSpan().SequenceEqual(body.Bytes))
-                    {
-                        _bodies.Remove(node);
-                        break;
-                    }
-                }
-
-                _bodies.AddFirst((hash, body));
-                while (_bodies.Count > Capacity)
-                {
-                    _bodies.RemoveLast();
-                }
-            }
-        }
-
-        private static int Hash(byte[] bytes)
-        {
-            var hash = new HashCode();
-            hash.AddBytes(bytes);
-            return hash.ToHashCode();
-        }
-    }
-
-    private static FblBinding LoadBinding()
-    {
-        var assembly = typeof(TimelineBody).Assembly;
-        using var stream = assembly.GetManifestResourceStream("timeline.fbl")
-            ?? throw new InvalidOperationException("The timeline's FBL binding is not embedded.");
-        using var buffer = new MemoryStream();
-        stream.CopyTo(buffer);
-        var problems = FblDocumentLoader.Load(buffer.ToArray(), out var document);
-        return document is null || problems.Any(problem => problem.Severity == ProblemSeverity.Error)
-            ? throw new InvalidOperationException($"The timeline's FBL binding does not load: {string.Join("; ", problems)}")
-            : document.Bindings["timeline"];
     }
 }

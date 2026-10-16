@@ -34,17 +34,16 @@ namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
 /// </remarks>
 public sealed class GhgBody : ITextBody<GhgBody>
 {
-    private static readonly Lazy<FblBinding> LoadedBinding = new(LoadBinding);
+    private static readonly Lazy<FblBinding> LoadedBinding = new(() => BundledBinding.Load(typeof(GhgBody).Assembly, "gartner-hype-cycle-graph.fbl", "ghg"));
 
     private static readonly RecentBodies Recent = new();
 
     private readonly OpenBody _body;
     private int[]? _lineStarts;
 
-    // Each read is cached with the bytes it was read from, so a change makes it stale by itself.
-    private (byte[] Bytes, FblModel Model)? _model;
-    private (byte[] Bytes, IReadOnlyList<Line> Lines)? _lines;
-    private (byte[] Bytes, DislModel Model)? _disl;
+    private readonly TextMemo<FblModel> _model = new();
+    private readonly TextMemo<IReadOnlyList<Line>> _lines = new();
+    private readonly TextMemo<DislModel> _disl = new();
 
     // While a batch is open, the changes asked for and their edits, planned against the body as it was.
     private List<(ModelChange Change, Edit Edit)>? _batch;
@@ -61,49 +60,16 @@ public sealed class GhgBody : ITextBody<GhgBody>
     public string Text => Encoding.UTF8.GetString(_body.Bytes);
 
     /// <summary>The body's lines as they are now, each with its own ending.</summary>
-    public IReadOnlyList<Line> Lines
-    {
-        get
-        {
-            if (_lines is not { } lines || lines.Bytes != _body.Bytes)
-            {
-                _lines = lines = (_body.Bytes, LineDocument.Parse(Text).Lines);
-            }
-
-            return lines.Lines;
-        }
-    }
+    public IReadOnlyList<Line> Lines => _lines.Of(_body.Bytes, () => LineDocument.Parse(Text).Lines);
 
     /// <summary>What the binding reads from the body now.</summary>
-    public FblModel Model
-    {
-        get
-        {
-            if (_model is not { } model || model.Bytes != _body.Bytes)
-            {
-                _model = model = (_body.Bytes, _body.Model);
-            }
-
-            return model.Model;
-        }
-    }
+    public FblModel Model => _model.Of(_body.Bytes, () => _body.Model);
 
     /// <summary>
     /// The DISL model of what the binding reads now (<see cref="DislModelBuilder"/>, under the bundled
     /// definition): what the context menus and the property rows are derived from.
     /// </summary>
-    public DislModel Disl
-    {
-        get
-        {
-            if (_disl is not { } model || model.Bytes != _body.Bytes)
-            {
-                _disl = model = (_body.Bytes, DislModelBuilder.From(Model, GhgDefinition.Specification));
-            }
-
-            return model.Model;
-        }
-    }
+    public DislModel Disl => _disl.Of(_body.Bytes, () => DislModelBuilder.From(Model, GhgDefinition.Specification));
 
     /// <summary>A body for <paramref name="text"/>. Never throws on content: an unreadable body reads as such.</summary>
     public static GhgBody Parse(string text)
@@ -275,73 +241,5 @@ public sealed class GhgBody : ITextBody<GhgBody>
     {
         var index = Array.BinarySearch(starts, offset);
         return index >= 0 ? index : ~index - 1;
-    }
-
-    /// <summary>The open bodies of the last few texts read or written, by their bytes: forks no one edits, only forked again.</summary>
-    private sealed class RecentBodies
-    {
-        private const int Capacity = 8;
-
-        private readonly LinkedList<(int Hash, OpenBody Body)> _bodies = [];
-        private readonly Lock _lock = new();
-
-        public OpenBody? Find(byte[] bytes)
-        {
-            var hash = Hash(bytes);
-            lock (_lock)
-            {
-                for (var node = _bodies.First; node is not null; node = node.Next)
-                {
-                    if (node.Value.Hash != hash || !node.Value.Body.Bytes.AsSpan().SequenceEqual(bytes)) continue;
-                    _bodies.Remove(node);
-                    _bodies.AddFirst(node);
-                    return node.Value.Body;
-                }
-            }
-
-            return null;
-        }
-
-        public void Remember(OpenBody body)
-        {
-            var hash = Hash(body.Bytes);
-            lock (_lock)
-            {
-                for (var node = _bodies.First; node is not null; node = node.Next)
-                {
-                    if (node.Value.Hash == hash && node.Value.Body.Bytes.AsSpan().SequenceEqual(body.Bytes))
-                    {
-                        _bodies.Remove(node);
-                        break;
-                    }
-                }
-
-                _bodies.AddFirst((hash, body));
-                while (_bodies.Count > Capacity)
-                {
-                    _bodies.RemoveLast();
-                }
-            }
-        }
-
-        private static int Hash(byte[] bytes)
-        {
-            var hash = new HashCode();
-            hash.AddBytes(bytes);
-            return hash.ToHashCode();
-        }
-    }
-
-    private static FblBinding LoadBinding()
-    {
-        var assembly = typeof(GhgBody).Assembly;
-        var name = assembly.GetManifestResourceNames().Single(resource => resource.EndsWith("gartner-hype-cycle-graph.fbl", StringComparison.Ordinal));
-        using var stream = assembly.GetManifestResourceStream(name)!;
-        using var buffer = new MemoryStream();
-        stream.CopyTo(buffer);
-        var problems = FblDocumentLoader.Load(buffer.ToArray(), out var document);
-        return document is null
-            ? throw new InvalidOperationException($"The hype cycle graph's FBL binding does not load: {string.Join("; ", problems)}")
-            : document.Bindings["ghg"];
     }
 }

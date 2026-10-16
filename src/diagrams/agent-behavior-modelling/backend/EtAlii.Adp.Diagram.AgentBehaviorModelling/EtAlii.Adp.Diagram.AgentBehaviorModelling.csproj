@@ -28,7 +28,7 @@
 
   <ItemGroup>
     <!-- The FBL binding of the Markdown body, loaded once by AbmBody. -->
-    <EmbeddedResource Include="agent-behavior-modelling.fbl" />
+    <EmbeddedResource Include="agent-behavior-modelling.fbl" LogicalName="agent-behavior-modelling.fbl" />
   </ItemGroup>
 
   <ItemGroup>
