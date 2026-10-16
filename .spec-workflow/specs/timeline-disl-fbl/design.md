@@ -153,7 +153,7 @@ The module's `timeline.fbl` is at FBL 0.5 and differs from the example in these 
 | --- | --- | --- | --- |
 | B13 | **A row.** The parser reads a row with .NET's integer parse of the scalar's text: `1.0`, `0x10` and `0o17` are row 0, and `"3"` is 3. FBL 0.5 converts a typed value to an int attribute: `1.0` is 1, `0x10` is 16. | Definition defect | The binding reads the row as text; `DislValues.TryFromRead` and `TimelineReading` parse it as the parser does. |
 | B14 | **A missing `begin`.** The parser reads it as the empty text, which the tool reports as an unreadable time. An absent slot leaves a `datetime` attribute unset, which reads as null in CEL, and a rule that fails on null raises nothing. | Definition defect | `default: ""` on the slot. |
-| B15 | **A relation entry that is not a mapping.** The relation rule has no `when`, so it would take a scalar item and read a relation without an id, reported as `timeline.missing-id`. The parser passes it over. | Definition defect | The `when` above. |
+| B15 | ~~**A relation entry that is not a mapping.** The relation rule has no `when`, so it would take a scalar item and read a relation without an id, reported as `timeline.missing-id`. The parser passes it over.~~ Struck by the chat ruling of 2026-10-16 (the recommended option of the 2026-10-14 card): `scalar-connection.tml` reads through the binding as the transcript records, and its test passes without a pin, so the finding does not occur. | Struck | The `when` above. |
 
 ### The transcript
 
