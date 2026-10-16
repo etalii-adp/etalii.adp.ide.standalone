@@ -11,7 +11,7 @@ namespace EtAlii.Adp.Diagram.CausalLoopDiagram.Tests.Parity;
 /// ones are compared with, record for record.
 /// </summary>
 /// <remarks>
-/// Copied from <c>CausalLoopToolboxProvider.Items</c>, <c>CausalLoopContextActionProvider.DiscoverAsync</c> and
+/// Copied from the hand-written <c>CausalLoopToolboxProvider.Items</c>, <c>CausalLoopContextActionProvider.DiscoverAsync</c> and
 /// <c>CausalLoopContextPropertyProvider.DescribeAsync</c> after their body checks, with the ids those classes
 /// kept private written out. It goes with the parser (task 6).
 /// </remarks>
@@ -34,7 +34,7 @@ internal static class HandWrittenCausalLoop
 
     private const string CycleSeparator = " → ";
 
-    /// <summary>The palette, as <c>CausalLoopToolboxProvider.Items</c> listed it.</summary>
+    /// <summary>The palette, as the hand-written <c>CausalLoopToolboxProvider.Items</c> listed it.</summary>
     public static IReadOnlyList<ToolboxItemDefinition> Toolbox { get; } =
     [
         new(

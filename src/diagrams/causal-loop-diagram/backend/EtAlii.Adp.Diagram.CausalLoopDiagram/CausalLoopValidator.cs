@@ -61,7 +61,7 @@ public sealed class CausalLoopValidator(DiagramOrigin origin) : IDiagramValidato
         IReadOnlyList<DiagramProblem> problems =
         [
             .. CausalLoopDefinition.Findings(CausalLoopBody.Parse(request.Document)).Select(finding => new DiagramProblem(
-                Severity(finding.Severity),
+                DislDiagramDefinition.SeverityOf(finding),
                 finding.Message,
                 finding.Code,
                 finding.Line is { } line ? new DiagramProblemLineLocation((uint)line) : null)),
@@ -69,11 +69,4 @@ public sealed class CausalLoopValidator(DiagramOrigin origin) : IDiagramValidato
 
         return ValueTask.FromResult(problems);
     }
-
-    private static DiagramProblemSeverity Severity(string severity) => severity switch
-    {
-        "error" => DiagramProblemSeverity.Error,
-        "info" or "hint" => DiagramProblemSeverity.Info,
-        _ => DiagramProblemSeverity.Warning,
-    };
 }

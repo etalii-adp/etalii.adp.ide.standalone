@@ -85,7 +85,7 @@ public static class ServiceCollectionAddCausalLoopExtension
             provider.GetRequiredService<ICausalLoopDocumentStore>(),
             provider.GetRequiredService<IHistoryStackStore>(),
             provider.GetRequiredService<IDiagramViewportRegistry>()));
-        services.AddSingleton<IDiagramToolboxProvider, CausalLoopToolboxProvider>();
+        services.AddSingleton<IDiagramToolboxProvider>(new DislToolboxProvider(Diagram.CausalLoop.Origin, CausalLoopDefinition.Definition));
 
         // What makes a canvas selection resolve into a target at all. Without it the element
         // level never resolves, so neither provider above is ever consulted and the whole
