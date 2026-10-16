@@ -33,7 +33,7 @@ public static class ServiceCollectionAddMindmapExtension
         services.AddSingleton<IContextSourceResolver, MindmapContextSourceResolver>();
         services.AddSingleton<IContextActionProvider, MindmapContextActionProvider>();
         services.AddSingleton<IContextPropertyProvider, MindmapContextPropertyProvider>();
-        services.AddSingleton<IDiagramToolboxProvider, MindmapToolboxProvider>();
+        services.AddSingleton<IDiagramToolboxProvider>(new DislToolboxProvider(Diagram.Mindmap.Origin, MindmapDefinition.Definition));
 
         // The module's layout numbers, with what appsettings.json's Mindmap section says
         // applied - the minimum gap between elements as a fraction of a node's width, above

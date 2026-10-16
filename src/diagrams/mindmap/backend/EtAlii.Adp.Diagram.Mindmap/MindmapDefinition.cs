@@ -1,6 +1,5 @@
 using System.Text;
 using EtAlii.Adp.Context;
-using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Specification.Cel;
 using EtAlii.Adp.Specification.Disl;
 using EtAlii.Adp.Specification.Fbl;
@@ -36,29 +35,19 @@ namespace EtAlii.Adp.Diagram.Mindmap;
 /// </remarks>
 internal static class MindmapDefinition
 {
-    private static readonly Lazy<BundledDefinition> Loaded = new(() => BundledDefinition.Load(typeof(MindmapDefinition).Assembly, "mindmap.dis"));
-
-    private static readonly Lazy<WireIdMap> LoadedIds = new(() => WireIdMap.Of(Specification, "x-mindmap"));
-
     private static readonly Lazy<FblBinding> LoadedBinding = new(LoadBinding);
 
-    private static readonly Lazy<IReadOnlyList<ToolboxItemDefinition>> LoadedToolbox = new(() =>
-    [
-        .. ToolboxDerivation.Derive(Specification, Ids)
-            .Select(tool => new ToolboxItemDefinition(tool.Id, tool.Label, tool.Icon, tool.Description, tool.DropActionId ?? "")),
-    ]);
+    /// <summary>The bundled definition, with the palette, the menus and the rows every module derives the same way.</summary>
+    public static DislDiagramDefinition Definition { get; } = new(typeof(MindmapDefinition).Assembly, "mindmap.dis", "x-mindmap");
 
     /// <summary>The definition.</summary>
-    private static DislSpecification Specification => Loaded.Value.Specification;
+    private static DislSpecification Specification => Definition.Specification;
 
     /// <summary>The wire ids of <c>x-mindmap</c>.</summary>
-    private static WireIdMap Ids => LoadedIds.Value;
+    private static WireIdMap Ids => Definition.Ids;
 
     /// <summary>The binding every mind map body is read with.</summary>
     public static FblBinding Binding => LoadedBinding.Value;
-
-    /// <summary>The palette.</summary>
-    public static IReadOnlyList<ToolboxItemDefinition> Toolbox => LoadedToolbox.Value;
 
     /// <summary>What <c>env</c> reads: editable, always, as the module's menus and rows have always been.</summary>
     private static DislEnv Env { get; } = new();
@@ -93,11 +82,7 @@ internal static class MindmapDefinition
     public static IReadOnlyList<ContextActionGroupDefinition> Menus(DislElement element)
     {
         ArgumentNullException.ThrowIfNull(element);
-        return
-        [
-            .. ContextMenuDerivation.Derive(Specification, DislMenuTarget.Element(element), Env, Ids)
-                .Select(group => new ContextActionGroupDefinition([.. group.Entries.Select(Action)])),
-        ];
+        return Definition.Menus(DislMenuTarget.Element(element), Env);
     }
 
     /// <summary>Whether <paramref name="element"/>'s menu offers <paramref name="actionId"/>: an action it does not offer does not apply to it.</summary>
@@ -109,7 +94,7 @@ internal static class MindmapDefinition
     public static IReadOnlyList<ContextPropertyDefinition> Rows(DislElement element)
     {
         ArgumentNullException.ThrowIfNull(element);
-        return [.. FormDerivation.Derive(Specification, element, Env, Ids).Select(Row)];
+        return Definition.Rows(element, Env);
     }
 
     /// <summary>
@@ -151,18 +136,6 @@ internal static class MindmapDefinition
     /// <summary>The <c>ID</c> the file writes for <paramref name="element"/>; empty for a node it gives none.</summary>
     private static string WrittenId(DislElement element) =>
         element.HostAttributes.GetValueOrDefault(MindmapFreeplanePlugin.StoredIdAttribute) as string ?? "";
-
-    private static ContextActionDefinition Action(DerivedMenuEntry entry) => new(
-        entry.Id,
-        entry.Label,
-        entry.Icon,
-        entry.Shortcut is { } key ? new ContextShortcutDefinition(key.EventKey, key.Ctrl, key.Shift, key.Alt, key.Meta) : null,
-        entry.Available,
-        entry.UnavailableReason);
-
-    /// <summary>A row as the grid draws it: a <c>textarea</c> is the Text editor, anything else a line.</summary>
-    private static ContextPropertyDefinition Row(DerivedRow row) =>
-        new(row.Id, row.Label, row.Value, row.Widget == "textarea" ? ContextPropertyEditor.Text : ContextPropertyEditor.Line, row.ReadOnlyReason, row.Group);
 
     private static FblBinding LoadBinding()
     {
