@@ -407,9 +407,9 @@ describe("AnsibleCanvas", () => {
     expect(numbers[1]).toBe(16);
     expect(numbers[numbers.length - 2]).toBe(300);
     expect(numbers[numbers.length - 1]).toBe(16);
-    // The specification's `targetMarker` is `arrow`, DISL's open V (6.11); the hand-written
-    // definition drew a filled one (`ansibleCompiledDefinition.test.tsx` states the difference).
-    expect(line.getAttribute("marker-end")).toBe("url(#library-open-arrow)");
+    // The specification's `targetMarker` is `arrowFilled`, DISL's solid triangle (6.11), as the
+    // hand-written definition drew it.
+    expect(line.getAttribute("marker-end")).toBe("url(#library-arrow)");
   });
 
   it("gives a dependsOn edge a style of its own", () => {

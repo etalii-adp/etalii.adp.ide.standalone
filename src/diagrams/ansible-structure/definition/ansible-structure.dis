@@ -387,7 +387,7 @@
           "source": { "mode": "fixed", "points": [ { "id": "right", "x": 1, "y": 0.5 } ] },
           "target": { "mode": "fixed", "points": [ { "id": "left", "x": 0, "y": 0.5 } ] }
         },
-        "targetMarker": "arrow",
+        "targetMarker": "arrowFilled",
         "labels": [
           { "id": "directive", "at": "middle", "side": "above", "distance": 6, "editable": false, "draggable": false, "style": "edgeLabel",
             "text": { "cel": "self.condition != '' ? enumLabel('Directive', self.directive) + ' when ' + self.condition : enumLabel('Directive', self.directive)" } }
@@ -422,7 +422,7 @@
     },
     "canvas": {
       "empty": { "text": "Nothing here is laid out the way Ansible expects, so there is nothing to draw. Playbooks at the folder root or under playbooks/, roles under roles/, inventories under inventories/.",
-                 "doc": "Shown once the folder has been read and holds nothing recognised, whether it exists or not. The tool sets the three folder names in a monospace font, which a Message cannot state." }
+                 "doc": "Shown once the folder has been read and holds nothing recognised, whether it exists or not. The tool set the three folder names in a monospace font until its canvas drew this definition, which a Message cannot state (ansible-structure.md, gap 11)." }
     }
   },
 

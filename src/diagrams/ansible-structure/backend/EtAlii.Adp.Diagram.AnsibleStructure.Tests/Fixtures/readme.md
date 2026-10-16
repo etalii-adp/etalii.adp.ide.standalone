@@ -1,7 +1,7 @@
 # Ansible structure test fixtures
 
-Three Ansible project trees the module's reader, graph, layout, rules and property provider are
-tested against. This module is **read-only**: no test here may write into these trees, and
+Four Ansible project trees the module's reader, graph, layout, rules and property provider are
+tested against, and which the parity transcript (`../Parity/ansible-structure.transcript.json`) reads. This module is **read-only**: no test here may write into these trees, and
 `ZeroWrites.Tests` (task 24) snapshots them byte-for-byte — contents and mtimes — to prove it.
 
 `.gitattributes` marks everything here `-text`, so these bytes survive checkout on every
@@ -79,6 +79,18 @@ Every rule of Requirement 9.2 has exactly one subject here, so a test can assert
 | `roles/web/meta/main.yml` | `ansible.role-missing` in its second form — a **dependency** naming a role with no folder. |
 | `roles/hollow/README.md` | `ansible.empty-role` — a folder under `roles/` with no canonical subfolder at all. The README is there only because git cannot store an empty directory; it is not canonical content, so the role is still hollow. |
 | `unparsable.yml` | `ansible.unreadable-yaml` — an unclosed quote and an unbalanced bracket. The problem must carry **the parser's own message and line**, not ADP's paraphrase, and the rest of the tree must still read (Requirement 1.2). |
+
+## `ini-inventory/` — a root inventory in INI
+
+The smallest tree with the inventory format most real projects and every old tutorial use: a
+classic INI `hosts` at the folder root, read as INI because it is not YAML, and reported by nothing.
+Added with the fix that stopped the unmatched-hosts rule claiming that no inventory defines groups
+this file plainly defines (`2b6a3f1da`).
+
+| File | What it guards |
+|---|---|
+| `hosts` | `[web]` with two hosts, `[db]` with one, `[app:children]` gathering both (three hosts, one level deep) and `[web:vars]`, which is configuration rather than membership and adds no group. |
+| `site.yml` | One play with `hosts: web`, which the INI groups resolve, so `ansible.unmatched-hosts` stays silent. |
 
 ## `unconventional/` — valid Ansible, and the diagram says nothing
 
