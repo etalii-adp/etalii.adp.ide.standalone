@@ -85,7 +85,7 @@ The product direction (2026-09-26) is one definition per tool, interpreted by a 
 
 1. WHEN the work starts THEN one fixture SHALL be added to the corpus for each finding of table B marked Read (B4 to B7, B9 to B12), the transcript regenerated from today's unchanged code, and the diff of the checked-in file reviewed as showing only the new documents.
 2. Each *read* finding SHALL then be shown by a test that reads or edits its fixture through the vendored binding and compares with the transcript, seen to fail for the reason the finding gives, or the finding SHALL be struck from this document with that test as the reason.
-3. WHEN a later step changes the transcript THEN the change SHALL be one this document names (Q1, Q2, and the `undoAll` lines that Requirement 3.6 makes record that the original text is back, a named change to the recorded behaviour ruled by the user in chat, 2026-10-11), regenerated on purpose. Any other difference is a regression.
+3. WHEN a later step changes the transcript THEN the change SHALL be one this document names (Q1, Q2, and the `undoAll` lines that Requirement 3.6 makes record that the original text is back, a named change to the recorded behaviour ruled by the user in chat, 2026-10-11; and the steps that today's writer leaves unreadable and that answer ok once written by splices, removing an end that holds a mapping in `end-shapes.tml` and setting a begin where none is written in `no-begin.tml`, with the later steps of those two scripts, a ruled change taken in chat on 2026-10-16), regenerated on purpose. Any other difference is a regression.
 
 ### Requirement 2: The body is read through the binding
 
