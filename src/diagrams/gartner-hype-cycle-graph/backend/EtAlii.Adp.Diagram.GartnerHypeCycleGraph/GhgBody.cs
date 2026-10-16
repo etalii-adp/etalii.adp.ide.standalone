@@ -39,18 +39,16 @@ public sealed class GhgBody : ITextBody<GhgBody>
     private static readonly RecentBodies Recent = new();
 
     private readonly OpenBody _body;
-    private int[]? _lineStarts;
+    private readonly FblBodyEdits _edits;
 
     private readonly TextMemo<FblModel> _model = new();
     private readonly TextMemo<IReadOnlyList<Line>> _lines = new();
     private readonly TextMemo<DislModel> _disl = new();
 
-    // While a batch is open, the changes asked for and their edits, planned against the body as it was.
-    private List<(ModelChange Change, Edit Edit)>? _batch;
-
     private GhgBody(OpenBody body)
     {
         _body = body;
+        _edits = new FblBodyEdits(body, Recent);
     }
 
     /// <summary>The binding every <c>.ghg</c> body is read and written with.</summary>
@@ -84,13 +82,7 @@ public sealed class GhgBody : ITextBody<GhgBody>
     }
 
     /// <summary>The 0-based lines <paramref name="span"/> covers.</summary>
-    internal LineRange LinesOf(Span span)
-    {
-        var starts = _lineStarts ??= LineStarts(_body.Bytes);
-        var first = LineIndex(starts, span.Start);
-        var last = LineIndex(starts, Math.Max(span.Start, span.End - 1));
-        return new LineRange(first, last);
-    }
+    internal LineRange LinesOf(Span span) => _edits.LinesOf(span);
 
     /// <summary>
     /// The 0-based line of <paramref name="key"/> in the entry on <paramref name="range"/>: the line
@@ -130,83 +122,11 @@ public sealed class GhgBody : ITextBody<GhgBody>
     }
 
     /// <summary>Plans and applies one change; the refusal's sentence when the library refuses it.</summary>
-    internal EditOutcome Change(ModelChange change)
-    {
-        if (_batch is not null)
-        {
-            var planned = _body.Plan(change);
-            if (planned is PlanResult.Planned { Edit: var edit }) _batch.Add((change, edit));
-            return planned is PlanResult.Refused declined ? EditOutcome.Refused(declined.Reason) : EditOutcome.Applied;
-        }
+    internal EditOutcome Change(ModelChange change) => _edits.Change(change);
 
-        var result = _body.Change(change);
-        _lineStarts = null;
-        if (result is not PlanResult.Refused) Recent.Remember(_body.Fork());
-        return result is PlanResult.Refused refused ? EditOutcome.Refused(refused.Reason) : EditOutcome.Applied;
-    }
-
-    /// <summary>
-    /// Runs <paramref name="writes"/>, each a change to a different entry that reads only that entry,
-    /// and applies them together: as one edit, read once, when their splices keep apart; else one by
-    /// one, in the order they were asked for, as <see cref="Change"/> would have.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <b>Every change is planned against the body as it was before any of them</b>, so an element is
-    /// found where it was read and a refusal is the one that body gives. That is what the writes would
-    /// meet one by one only when each touches its own entry alone, which is the caller's to promise:
-    /// Arrange, which rewrites rows bottom-up for exactly that reason.
-    /// </para>
-    /// <para>
-    /// <b>Why</b>: applying a change reads the whole body again, so N changes one by one cost N
-    /// readings, which made arranging a large graph take seconds.
-    /// </para>
-    /// </remarks>
-    internal void Batch(Action writes)
-    {
-        ArgumentNullException.ThrowIfNull(writes);
-        if (_batch is not null) throw new InvalidOperationException("A batch is already open on this body.");
-
-        _batch = [];
-        List<(ModelChange Change, Edit Edit)> batch;
-        try
-        {
-            writes();
-        }
-        finally
-        {
-            batch = _batch;
-            _batch = null;
-        }
-
-        if (Combined(batch) is { } combined)
-        {
-            _body.Apply(combined);
-            _lineStarts = null;
-            Recent.Remember(_body.Fork());
-            return;
-        }
-
-        foreach ((ModelChange change, _) in batch)
-        {
-            Change(change);
-        }
-    }
-
-    /// <summary>The edits of a batch as one, when no two of them touch and none needs a snapshot to undo; else null.</summary>
-    private static Edit? Combined(List<(ModelChange Change, Edit Edit)> batch)
-    {
-        var edits = batch.Select(planned => planned.Edit).Where(edit => edit.Splices.Count > 0).ToList();
-        if (edits.Count == 0 || edits.Any(edit => edit.Snapshot)) return null;
-
-        edits.Sort((left, right) => left.Splices.Min(splice => splice.Start).CompareTo(right.Splices.Min(splice => splice.Start)));
-        for (var index = 1; index < edits.Count; index++)
-        {
-            if (edits[index - 1].Splices.Max(splice => splice.End) >= edits[index].Splices.Min(splice => splice.Start)) return null;
-        }
-
-        return new Edit([.. edits.SelectMany(edit => edit.Splices)]);
-    }
+    /// <inheritdoc cref="FblBodyEdits.Batch"/>
+    /// <remarks>The caller that promises each write touches its own entry alone: Arrange, which rewrites rows bottom-up for exactly that reason.</remarks>
+    internal void Batch(Action writes) => _edits.Batch(writes);
 
     /// <summary>Sets attributes of the element the module knows by <paramref name="id"/> and <paramref name="range"/>.</summary>
     internal EditOutcome Set(string type, string id, LineRange range, IReadOnlyDictionary<string, object?> attributes)
@@ -222,24 +142,4 @@ public sealed class GhgBody : ITextBody<GhgBody>
     /// <summary>Removes the element the module knows by <paramref name="id"/> and <paramref name="range"/>, with what cascades from it.</summary>
     internal EditOutcome Remove(string type, string id, LineRange range) =>
         Find(type, id, range) is { } element ? Change(new ModelChange.Remove(element.Id)) : GhgRefusals.Gone;
-
-    private static int[] LineStarts(byte[] bytes)
-    {
-        List<int> starts = [0];
-        for (var index = 0; index < bytes.Length; index++)
-        {
-            if (bytes[index] == (byte)'\n')
-            {
-                starts.Add(index + 1);
-            }
-        }
-
-        return [.. starts];
-    }
-
-    private static int LineIndex(int[] starts, int offset)
-    {
-        var index = Array.BinarySearch(starts, offset);
-        return index >= 0 ? index : ~index - 1;
-    }
 }
