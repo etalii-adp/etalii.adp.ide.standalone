@@ -1,5 +1,6 @@
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Layout;
+using EtAlii.Adp.Specification.Disl;
 using Google.Protobuf;
 
 namespace EtAlii.Adp.Diagram.HelmChart;
@@ -14,6 +15,12 @@ namespace EtAlii.Adp.Diagram.HelmChart;
 /// dozens of nodes even for the prometheus example, so there is nothing to virtualize. (The
 /// Ansible module filters by viewport because an Ansible estate is unbounded; a chart is not -
 /// the design records the fork.)
+/// </para>
+/// <para>
+/// <b>The relations are the definition's model's</b> (helm-chart-disl-fbl, task 6): <c>Resolves</c> and
+/// <c>Includes</c> as the reading hands them over, <c>Declares</c>, <c>Overrides</c> and <c>Configures</c> as
+/// the definition derives them. They are delivered in today's order by <see cref="Relations"/>, because
+/// DISL appends the derived relations after the stored ones.
 /// </para>
 /// <para>
 /// <b>Two of the four delta kinds are never emitted, and that is the design.</b> Nothing here
@@ -52,19 +59,57 @@ public sealed class HelmElementMapper
         ArgumentNullException.ThrowIfNull(graph);
         ArgumentNullException.ThrowIfNull(boxes);
 
-        var elements = new List<DiagramElement>(graph.Nodes.Count + graph.Edges.Count);
+        var relations = Relations(chart);
+        var elements = new List<DiagramElement>(graph.Nodes.Count + relations.Count);
 
         foreach (var node in graph.Nodes)
         {
             elements.Add(NodeElement(chart, graph, node, boxes.GetValueOrDefault(node.Id)));
         }
 
-        foreach (var edge in graph.Edges)
+        foreach (var relation in relations)
         {
-            elements.Add(EdgeElement(edge, boxes.GetValueOrDefault(edge.SourceId)));
+            elements.Add(EdgeElement(relation, boxes.GetValueOrDefault(SourceOf(relation))));
         }
 
         return elements;
+    }
+
+    /// <summary>
+    /// The relations of <paramref name="chart"/>'s model in the order they are delivered, which is today's:
+    /// every <c>Overrides</c>, then every <c>Includes</c>, each in model order, then per dependency in model
+    /// order its <c>Declares</c>, its <c>Resolves</c> and its <c>Configures</c>.
+    /// </summary>
+    /// <remarks>
+    /// The key is stated because the model's order is not today's: DISL holds the stored relations first,
+    /// in reading order, and appends the derived ones in the order of <c>metamodel.relations</c> (DISL 12.5).
+    /// A relation of a dependency is placed by the dependency element it is about, its target or, for
+    /// <c>Resolves</c>, its source; the sort is stable, so what the key ties keeps the model's order.
+    /// </remarks>
+    public static IReadOnlyList<DislElement> Relations(HelmChart chart)
+    {
+        ArgumentNullException.ThrowIfNull(chart);
+        var model = HelmDefinition.ModelOf(chart);
+        var places = new Dictionary<DislElement, int>(ReferenceEqualityComparer.Instance);
+        for (var index = 0; index < model.Nodes.Count; index++)
+        {
+            places[model.Nodes[index]] = index;
+        }
+
+        return [.. model.Relations.OrderBy(relation => Key(relation, places))];
+
+        static (int Family, int Dependency, int Kind) Key(DislElement relation, Dictionary<DislElement, int> places) => relation.Type.Name switch
+        {
+            "Overrides" => (0, 0, 0),
+            "Includes" => (1, 0, 0),
+            "Declares" => (2, PlaceOf(relation.Target, places), 0),
+            "Resolves" => (2, PlaceOf(relation.Source, places), 1),
+            "Configures" => (2, PlaceOf(relation.Target, places), 2),
+            _ => (3, 0, 0),
+        };
+
+        static int PlaceOf(DislElement? node, Dictionary<DislElement, int> places) =>
+            node is not null && places.TryGetValue(node, out var place) ? place : int.MaxValue;
     }
 
     /// <summary>
@@ -92,15 +137,18 @@ public sealed class HelmElementMapper
         }
 
         // One hop, exactly.
-        foreach (var edge in graph.Edges)
+        var relations = Relations(chart);
+        foreach (var relation in relations)
         {
-            if (delivered.Contains(edge.SourceId) && edge.TargetId.Length > 0)
+            var source = SourceOf(relation);
+            var target = TargetOf(relation);
+            if (delivered.Contains(source) && target.Length > 0)
             {
-                delivered.Add(edge.TargetId);
+                delivered.Add(target);
             }
-            else if (edge.TargetId.Length > 0 && delivered.Contains(edge.TargetId))
+            else if (target.Length > 0 && delivered.Contains(target))
             {
-                delivered.Add(edge.SourceId);
+                delivered.Add(source);
             }
         }
 
@@ -110,13 +158,14 @@ public sealed class HelmElementMapper
             elements.Add(NodeElement(chart, graph, node, boxes.GetValueOrDefault(node.Id)));
         }
 
-        foreach (var edge in graph.Edges)
+        foreach (var relation in relations)
         {
-            var sourceDelivered = delivered.Contains(edge.SourceId);
-            var targetDelivered = edge.TargetId.Length == 0 || delivered.Contains(edge.TargetId);
+            var target = TargetOf(relation);
+            var sourceDelivered = delivered.Contains(SourceOf(relation));
+            var targetDelivered = target.Length == 0 || delivered.Contains(target);
             if (sourceDelivered && targetDelivered)
             {
-                elements.Add(EdgeElement(edge, boxes.GetValueOrDefault(edge.SourceId)));
+                elements.Add(EdgeElement(relation, boxes.GetValueOrDefault(SourceOf(relation))));
             }
         }
 
@@ -207,25 +256,32 @@ public sealed class HelmElementMapper
         return new DiagramElement(node.Id, box.X, box.Y, TypeOf(node), PayloadTypeUrl, payload.ToByteArray());
     }
 
-    private static DiagramElement EdgeElement(HelmEdge edge, Rect anchor)
+    private static DiagramElement EdgeElement(DislElement relation, Rect anchor)
     {
+        var label = relation.ValueOf("label") as string ?? string.Empty;
         var payload = new Wire.HelmElementPayload
         {
-            Name = edge.Label,
+            Name = label,
             Kind = Wire.HelmElementKind.Edge,
             Edge = new Wire.HelmEdge
             {
-                SourceId = edge.SourceId,
-                TargetId = edge.TargetId,
-                Kind = EdgeKindOf(edge.Kind),
-                Label = edge.Label,
-                OpenEnd = edge.OpenEnd,
+                SourceId = SourceOf(relation),
+                TargetId = TargetOf(relation),
+                Kind = EdgeKindOf(relation.Type.Name),
+                Label = label,
+                OpenEnd = relation.Target is null,
             },
         };
 
         // An edge is positioned at its source; the canvas routes it between the two boxes.
-        return new DiagramElement(edge.Id, anchor.X, anchor.Y, EdgeType, PayloadTypeUrl, payload.ToByteArray());
+        return new DiagramElement(relation.Id, anchor.X, anchor.Y, EdgeType, PayloadTypeUrl, payload.ToByteArray());
     }
+
+    /// <summary>The id of the node a relation runs from.</summary>
+    private static string SourceOf(DislElement relation) => relation.Source?.Id ?? relation.SourceId ?? string.Empty;
+
+    /// <summary>The id of the node a relation lands on; empty for an open end, which has none.</summary>
+    private static string TargetOf(DislElement relation) => relation.Target?.Id ?? string.Empty;
 
     private static Wire.HelmChartFacts ChartFacts(HelmChart chart) => new()
     {
@@ -332,13 +388,14 @@ public sealed class HelmElementMapper
         _ => Wire.HelmConditionState.Unspecified,
     };
 
-    private static Wire.HelmEdgeKind EdgeKindOf(HelmEdgeKind kind) => kind switch
+    /// <summary>A relation type of the definition as the wire's edge kind.</summary>
+    private static Wire.HelmEdgeKind EdgeKindOf(string type) => type switch
     {
-        HelmEdgeKind.Declares => Wire.HelmEdgeKind.Declares,
-        HelmEdgeKind.Resolves => Wire.HelmEdgeKind.Resolves,
-        HelmEdgeKind.Overrides => Wire.HelmEdgeKind.Overrides,
-        HelmEdgeKind.Configures => Wire.HelmEdgeKind.Configures,
-        HelmEdgeKind.Includes => Wire.HelmEdgeKind.Includes,
+        "Declares" => Wire.HelmEdgeKind.Declares,
+        "Resolves" => Wire.HelmEdgeKind.Resolves,
+        "Overrides" => Wire.HelmEdgeKind.Overrides,
+        "Configures" => Wire.HelmEdgeKind.Configures,
+        "Includes" => Wire.HelmEdgeKind.Includes,
         _ => Wire.HelmEdgeKind.Unspecified,
     };
 }

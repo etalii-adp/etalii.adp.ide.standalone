@@ -40,7 +40,7 @@ public class HelmContextPropertyProviderTests : IDisposable
         // Arrange.
         var chart = _store.GetOrLoad(_root);
         var graph = HelmGraph.Derive(chart);
-        var everything = graph.Nodes.Select(node => node.Id).Concat(graph.Edges.Select(edge => edge.Id)).ToArray();
+        var everything = graph.Nodes.Select(node => node.Id).Concat(HelmElementMapper.Relations(chart).Select(relation => relation.Id)).ToArray();
 
         // Assert, first, that the graph was derived at all. Without this the foreach below
         // skips silently on an empty graph and the test passes loudest exactly when it has

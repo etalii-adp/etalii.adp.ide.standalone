@@ -1,8 +1,8 @@
 namespace EtAlii.Adp.Diagram.HelmChart;
 
 /// <summary>
-/// The nodes and edges of one <see cref="HelmChart"/> - the relationships that are the diagram
-/// (Requirement 5), resolved against what is actually in the folder.
+/// The nodes of one <see cref="HelmChart"/>, and the two relationships that may have an open end,
+/// <c>Resolves</c> and <c>Includes</c>, resolved against what is actually in the folder.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -13,8 +13,14 @@ namespace EtAlii.Adp.Diagram.HelmChart;
 /// <para>
 /// An open end is a state, never an exception: an Unvendored dependency and an include no
 /// local partial defines are both drawn with their identity intact, so the edge stays the same
-/// edge when what it names finally appears (R5.2, R5.6). The <c>global:</c> key marks the
-/// values node rather than fanning out one configures edge per dependency (R5.4).
+/// edge when what it names finally appears (R5.2, R5.6). DISL cannot derive a relation without a
+/// target (gap 7 of <c>definition/helm-chart.md</c>), so these two are made here and handed to the
+/// definition as stored relations.
+/// </para>
+/// <para>
+/// <b><c>Declares</c>, <c>Overrides</c> and <c>Configures</c> are not made here</b>: they always have
+/// both ends, and the bundled definition derives them (helm-chart-disl-fbl, task 6). What is left of
+/// this class leaves the product with the reading through the binding (task 9).
 /// </para>
 /// </remarks>
 public sealed class HelmGraph
@@ -28,6 +34,7 @@ public sealed class HelmGraph
 
     public IReadOnlyList<HelmNode> Nodes { get; }
 
+    /// <summary>The <c>Includes</c> and <c>Resolves</c> relations, in reading order; the definition derives the other three.</summary>
     public IReadOnlyList<HelmEdge> Edges { get; }
 
     /// <summary>The matcher's account, kept beside the edges: validation reads Undeclared from here.</summary>
@@ -53,16 +60,10 @@ public sealed class HelmGraph
         const string chartId = "chart";
         nodes.Add(new HelmNode(chartId, HelmNodeKind.Chart, chart.Metadata?.Name ?? "(chart)", "Chart.yaml"));
 
-        // The values stack: the default layer, then each override stacked onto it (R5.3).
-        var defaultValues = chart.Values.FirstOrDefault(values => values.IsDefault);
+        // The values stack: the default layer and each override, which the definition stacks onto it (R5.3).
         foreach (var values in chart.Values)
         {
-            var id = ValuesId(values);
-            nodes.Add(new HelmNode(id, HelmNodeKind.Values, values.RelativePath, values.RelativePath));
-            if (!values.IsDefault && defaultValues is not null)
-            {
-                edges.Add(new HelmEdge(id, ValuesId(defaultValues), HelmEdgeKind.Overrides, string.Empty, OpenEnd: false));
-            }
+            nodes.Add(new HelmNode(ValuesId(values), HelmNodeKind.Values, values.RelativePath, values.RelativePath));
         }
 
         if (chart.Schema is { } schema)
@@ -106,24 +107,15 @@ public sealed class HelmGraph
                 entry.RelativePath));
         }
 
-        // Dependencies: declared (labeled with the constraint), then resolved or an open end.
+        // Dependencies, each resolved or an open end; the definition declares them from the chart (R5.1).
         foreach (var resolved in resolution.Dependencies)
         {
             var dependency = resolved.Dependency;
             var id = DependencyId(dependency);
             nodes.Add(new HelmNode(id, HelmNodeKind.Dependency, dependency.EffectiveName, string.Empty));
-            edges.Add(new HelmEdge(chartId, id, HelmEdgeKind.Declares, dependency.VersionConstraint ?? string.Empty, OpenEnd: false));
             edges.Add(resolved.Vendored is { } vendored
                 ? new HelmEdge(id, VendoredId(vendored), HelmEdgeKind.Resolves, string.Empty, OpenEnd: false)
                 : new HelmEdge(id, string.Empty, HelmEdgeKind.Resolves, dependency.EffectiveName, OpenEnd: true));
-
-            // The default layer's own top-level key configures the mounted subchart (R5.4).
-            if (defaultValues is not null
-                && defaultValues.TopLevelKeys.Contains(dependency.EffectiveName, StringComparer.Ordinal))
-            {
-                edges.Add(new HelmEdge(
-                    ValuesId(defaultValues), id, HelmEdgeKind.Configures, dependency.EffectiveName, OpenEnd: false));
-            }
         }
 
         if (chart.Lock is { } chartLock)

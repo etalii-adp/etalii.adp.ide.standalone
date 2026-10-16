@@ -24,6 +24,9 @@ public class HelmValidationFlowTests : IDisposable
     private static readonly TimeSpan SettleDelay = TimeSpan.FromMilliseconds(200);
     private static readonly TimeSpan WaitLimit = TimeSpan.FromSeconds(20);
 
+    // The code the bundled definition gives a Chart.yaml without a version (its missingVersion constraint).
+    private const string MissingVersion = "helm.missing-version";
+
     private readonly string _appDataRoot;
     private readonly string _projectFolder;
     private readonly string _chart;
@@ -85,7 +88,7 @@ public class HelmValidationFlowTests : IDisposable
         // project-relative (the nested-chart rebasing, exercised through core rather than the
         // module's own tests).
         var problem = Assert.Single(outcome.Problems);
-        Assert.Equal(HelmRules.MissingVersion, problem.Problem.RuleId);
+        Assert.Equal(MissingVersion, problem.Problem.RuleId);
         Assert.Equal(IoPath.Combine("web-shop", "Chart.yaml"), problem.RelativePath);
     }
 
@@ -134,7 +137,7 @@ public class HelmValidationFlowTests : IDisposable
 
         // Assert.
         var returned = await Eventually.TrueAsync(Settled(() =>
-            store.Get(_projectFolder).Problems.Any(problem => problem.Problem.RuleId == HelmRules.MissingVersion)), TestContext.Current.CancellationToken, WaitLimit);
+            store.Get(_projectFolder).Problems.Any(problem => problem.Problem.RuleId == MissingVersion)), TestContext.Current.CancellationToken, WaitLimit);
         Assert.True(returned, "The problem never came back after the file was broken again.");
     }
 

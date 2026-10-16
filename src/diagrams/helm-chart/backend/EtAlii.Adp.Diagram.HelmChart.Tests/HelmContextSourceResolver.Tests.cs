@@ -108,8 +108,7 @@ public class HelmContextSourceResolverTests : IDisposable
     public async Task AnEdge_ResolvesAsItsDeclaringSide()
     {
         // Arrange.
-        var graph = HelmGraph.Derive(_store.GetOrLoad(_root));
-        var declares = graph.Edges.Single(edge => edge.Kind == HelmEdgeKind.Declares);
+        var declares = HelmElementMapper.Relations(_store.GetOrLoad(_root)).Single(relation => relation.Type.Name == "Declares");
 
         // Act.
         var resolution = await Resolve(declares.Id);

@@ -1,3 +1,4 @@
+using EtAlii.Adp.Diagram.HelmChart.Tests.Parity;
 using Xunit;
 
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here

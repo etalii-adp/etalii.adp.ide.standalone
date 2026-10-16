@@ -222,6 +222,9 @@ internal static partial class DislExpressionWalker
                 };
             }
 
+            // Each member of a derived type's attributes is an Expression of the deriveItem context (§4.11.3).
+            if (path is [.., "derived", "attributes"]) return frame.In(DislContexts.DeriveItem).As(Mode.Expression);
+
             return frame.As(Mode.Literal);
         }
 

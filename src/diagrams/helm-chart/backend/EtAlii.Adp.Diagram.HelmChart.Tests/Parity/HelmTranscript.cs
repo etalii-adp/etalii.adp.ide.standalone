@@ -37,6 +37,12 @@ namespace EtAlii.Adp.Diagram.HelmChart.Tests.Parity;
 /// with the registration's text after those moves.
 /// </para>
 /// <para>
+/// <b>One change was regenerated on purpose</b> (task 6; the ruling of 2026-10-16, Requirement 1.4): where two
+/// dependencies of one effective name delivered a <c>Declares</c>, <c>Resolves</c> or <c>Configures</c> twice with one
+/// id and the same content, the repeat is no longer delivered, so it is neither an element nor a target of rows here.
+/// The relations are listed as the session delivers them (<see cref="HelmElementMapper.Relations"/>).
+/// </para>
+/// <para>
 /// <b>No edit sequence over chart files</b> (Requirement 1.5): nothing here writes a chart file,
 /// because nothing in the module can. The one write is a move, which core writes into the
 /// registration, and that is done in a copy.
@@ -214,7 +220,7 @@ internal static class HelmTranscript
         }
 
         json.WritePropertyName("moves");
-        json.WriteLines(await MovesAsync(folder, registration, store, graph, histories, cancellationToken));
+        json.WriteLines(await MovesAsync(folder, registration, store, chart, graph, histories, cancellationToken));
 
         json.WritePropertyName("registrationAfterMoves");
         json.WriteLines([.. Lines(await File.ReadAllTextAsync(registration, cancellationToken))]);
@@ -231,7 +237,7 @@ internal static class HelmTranscript
         List<string> targets =
         [
             .. graph.Nodes.Select(node => node.Id),
-            .. graph.Edges.Select(edge => edge.Id),
+            .. HelmElementMapper.Relations(chart).Select(relation => relation.Id),
             "",
             Unknown,
         ];
@@ -264,10 +270,10 @@ internal static class HelmTranscript
     /// id: first without a history, which makes the diagram read-only, then with the project's history.
     /// </summary>
     private static async Task<List<string>> MovesAsync(
-        string folder, string registration, IHelmChartStore store, HelmGraph graph, IHistoryStackStore histories, CancellationToken cancellationToken)
+        string folder, string registration, IHelmChartStore store, HelmChart chart, HelmGraph graph, IHistoryStackStore histories, CancellationToken cancellationToken)
     {
         var node = graph.Nodes.FirstOrDefault()?.Id;
-        var relation = graph.Edges.FirstOrDefault()?.Id;
+        var relation = HelmElementMapper.Relations(chart).FirstOrDefault()?.Id;
         List<(string What, string? Id)> moves = [("node", node), ("relation", relation), ("unknown id", Unknown)];
 
         var lines = new List<string>();
