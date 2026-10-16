@@ -11,8 +11,8 @@ namespace EtAlii.Adp.Diagram.Timeline;
 /// before a refused read is believed, keeping the last good document through a reload that cannot
 /// read (R2.4), clearing it only on the watcher's delete (R2.5), ignoring this store's own save
 /// (R2.3) and telling the sessions are all <see cref="LifecycleDocumentStore{TBody, TModel}"/>'s.
-/// What stays here is what is this module's: what a body's lines mean, and why a body that is not
-/// YAML cannot be read.
+/// What stays here is what is this module's: what a body's lines mean, read as a
+/// <see cref="ParseOutcome{TModel}"/> that says why a body that is not YAML cannot be read.
 /// </para>
 /// <para>
 /// <b>A file that is not YAML is an ordinary state for a file somebody is editing</b>, so it is held
@@ -31,23 +31,24 @@ public sealed class TimelineDocumentStore : LifecycleDocumentStore<LineDocument,
     protected override string TextOf(LineDocument body) => body.Text;
 
     /// <inheritdoc />
-    /// <remarks>
-    /// Empty for a body that is not YAML (<see cref="TimelineYamlSyntax"/>) or that the binding cannot
-    /// read: what it says is unknown, and <see cref="UnreadableOf"/> says why.
-    /// </remarks>
-    protected override TimelineModel Rebuild(LineDocument body) =>
-        TimelineYamlSyntax.Check(body.Text) is null ? TimelineReading.Of(body.Text) : TimelineModel.Empty;
+    protected override TimelineModel Rebuild(LineDocument body) => Parse(body).Model;
 
     /// <inheritdoc />
-    protected override string UnreadableOf(LineDocument body)
+    /// <remarks>
+    /// The model is empty for a body that is not YAML (<see cref="TimelineYamlSyntax"/>): what it says
+    /// is unknown. Such a body, and one the binding cannot read, is unreadable with the refusal's
+    /// sentence, which is also its one problem.
+    /// </remarks>
+    protected override ParseOutcome<TimelineModel> Parse(LineDocument body)
     {
+        var model = TimelineYamlSyntax.Check(body.Text) is null ? TimelineReading.Of(body.Text) : TimelineModel.Empty;
         if (Refusal(body.Text) is not { } refusal)
         {
-            return "";
+            return new(model, []);
         }
 
         _logger.Debug("A timeline does not parse at line {Line}: {Reason}", refusal.Line, refusal.Message);
-        return $"it does not parse at line {refusal.Line}. {refusal.Message}";
+        return new(model, [new ParseProblem(refusal.Line - 1, refusal.Message)], $"it does not parse at line {refusal.Line}. {refusal.Message}");
     }
 
     /// <summary>
