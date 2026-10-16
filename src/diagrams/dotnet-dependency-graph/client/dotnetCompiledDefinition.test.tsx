@@ -41,7 +41,15 @@ const { DOTNET_DEPENDENCY_DEFINITION } = await import("./DotNetDependencyGraphCa
  * joining to the same text, anchors that start no connection where every source end refused to, and
  * one reference per ordered pair, which the readers already guarantee. So the test is the drawing:
  * both definitions render the same model, and the markup must be the same, element for element.
+ *
+ * One difference is stated rather than equal: a package reference's dash. The oracle's was the
+ * stylesheet's, `.dotnet-dependency-edge-package .dotnet-dependency-edge-line`; the compiled definition
+ * paints the specification's `dash` on the line itself. So the oracle's drawing is given the dash its
+ * stylesheet gave those lines, `PACKAGE_DASH`, and a dash changed in the specification fails here.
  */
+
+/** The dash `dotnet-dependency-graph.css` gave a package reference's line at the switch-over. */
+const PACKAGE_DASH = "5 4";
 const HAND_WRITTEN: DiagramDefinition = assertValidDiagramDefinition({
   elementTypes: [
     {
@@ -195,7 +203,12 @@ describe("the .NET dependency graph's compiled definition", () => {
     expect(compiled).toContain("dotnet-dependency-element-package");
     expect(compiled).toContain("dotnet-dependency-conflict");
     expect(compiled).toContain("dotnet-dependency-edge-line");
-    expect(compiled).toBe(drawn(HAND_WRITTEN, HAND_WRITTEN_MODEL));
+    const oracle = drawn(HAND_WRITTEN, HAND_WRITTEN_MODEL).replace(
+      /(dotnet-dependency-edge-package"(?:(?!<\/g>).)*?marker-end="url\(#library-arrow\)")>/g,
+      `$1 style="stroke-dasharray: ${PACKAGE_DASH};">`,
+    );
+    expect(oracle.split(`stroke-dasharray: ${PACKAGE_DASH}`)).toHaveLength(4);
+    expect(compiled).toBe(oracle);
   });
 
   it("states per kind what the hand-written definition stated once", () => {

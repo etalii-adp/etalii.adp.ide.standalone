@@ -372,6 +372,13 @@ describe("compileNotation, for a relation that may have no target", () => {
     expect(() => compileNotation(openSpec(undefined, { cel: "self.label + '!'" }), OPEN_BINDINGS)).toThrow(/connection's own label/);
   });
 
+  it("draws a line's label the module composes into the connection's own label, where its celPaths names the CEL", () => {
+    const composed = "self.when != '' ? self.label + ' when ' + self.when : self.label";
+    const [uses] = compileNotation(openSpec(undefined, { cel: composed }), { ...OPEN_BINDINGS, celPaths: { [composed]: "label" } }).relationTypes;
+
+    expect(uses?.label).toEqual({ placement: "midpoint", offset: -6 });
+  });
+
   it("names a node that states no accessible name as DISL does: its type's label and its label attribute", () => {
     const announced: NotationBindings = { ...OPEN_BINDINGS, focusable: true, accessibleRole: "button" };
     const [file, part] = compileNotation(openSpec(undefined), announced).elementTypes;
@@ -381,5 +388,213 @@ describe("compileNotation, for a relation that may have no target", () => {
     expect(part?.accessibility).toEqual({ role: "button", focusable: true, label: { template: "Part {payload.path}" } });
     // A module that asks for neither a role nor a tab order is left as it was.
     expect(compileNotation(openSpec(undefined), OPEN_BINDINGS).elementTypes[0]?.accessibility).toBeUndefined();
+  });
+
+  it("names a node that states its role and no name as DISL does too, and keeps a name it states", () => {
+    // `accessibility.name`'s default is the type label plus `labelAttribute` (6.15), whatever else is stated.
+    const spec = openSpec(undefined);
+    const nodes = {
+      File: { ...spec.notation.nodes.File!, accessibility: { role: "button" } },
+      Part: { ...spec.notation.nodes.Part!, accessibility: { role: "link", name: { attribute: "path" } } },
+    };
+    const [file, part] = compileNotation({ ...spec, notation: { ...spec.notation, nodes } }, { ...OPEN_BINDINGS, focusable: true }).elementTypes;
+
+    expect(file?.accessibility).toEqual({ role: "button", focusable: true, label: { template: "File {payload.path}" } });
+    expect(part?.accessibility).toEqual({ role: "link", focusable: true, label: { path: "payload.path" } });
+  });
+});
+
+describe("compileNotation, for a specification whose notation is inherited", () => {
+  /**
+   * A node type and a relation type with notation of their own on an abstract supertype only, and two
+   * subtypes that state a part of theirs: DISL 4.7 looks notation up along the supertype chain, and the
+   * resolution of a visual property (6.x, step 6) merges it per key.
+   */
+  function inheritingSpec(): DislDocument {
+    return {
+      disl: "0.3",
+      language: { id: "test", version: "1.0.0" },
+      metamodel: {
+        types: {
+          Thing: { abstract: true, attributes: { name: { type: "string" } } },
+          Card: { extends: "Thing", label: "Card" },
+          Note: { extends: "Thing", label: "Note" },
+        },
+        relations: {
+          Link: { abstract: true, source: ["Thing"], target: { types: ["Thing"], optional: true } },
+          Uses: { extends: "Link", source: ["Card"], target: { types: ["Note"], optional: true } },
+          Owns: { extends: "Link", source: ["Card"], target: ["Card"] },
+        },
+      },
+      notation: {
+        nodes: {
+          Thing: { shape: "rect", labels: [{ id: "name", text: { attribute: "name" }, position: "center" }], size: { default: [72, 32] }, deletable: false },
+          Card: { tooltip: { attribute: "name" } },
+          Note: { shape: "ellipse" },
+        },
+        edges: {
+          Link: { line: { routing: "straight", stroke: { width: 1.5 } }, targetMarker: "arrowFilled" },
+          Owns: { line: { stroke: { width: 2 } }, targetMarker: "none" },
+        },
+      },
+    } as unknown as DislDocument;
+  }
+
+  const BINDINGS: NotationBindings = { celPaths: {}, classNames: (type) => [{ className: `t-${type.toLowerCase()}` }] };
+
+  it("draws no abstract type, and gives each subtype its supertype's notation under its own", () => {
+    const definition = compileNotation(inheritingSpec(), BINDINGS);
+
+    expect(definition.elementTypes.map((type) => type.id)).toEqual(["card", "note"]);
+    const [card, note] = definition.elementTypes;
+    expect(card).toMatchObject({ shape: "box", labels: [{ text: { path: "payload.name" } }], tooltip: { path: "payload.name" }, deletable: false });
+    expect(note).toMatchObject({ shape: "ellipse", labels: [{ text: { path: "payload.name" } }], deletable: false });
+    expect(note?.tooltip).toBeUndefined();
+  });
+
+  it("draws a relation with no notation of its own as its supertype's, and merges the one it states", () => {
+    const definition = compileNotation(inheritingSpec(), BINDINGS);
+
+    expect(definition.relationTypes.map((relation) => relation.id)).toEqual(["uses", "owns"]);
+    const [uses, owns] = definition.relationTypes;
+    expect(uses?.style).toEqual({ endMarker: "arrow" });
+    expect(uses?.endpoints).toMatchObject({ source: { elementTypes: ["card"] }, target: { elementTypes: ["note"] } });
+    expect(owns?.style).toEqual({ endMarker: "none" });
+    expect(owns?.route).toEqual(uses?.route);
+  });
+});
+
+describe("compileNotation, for the dash of a line", () => {
+  function dashedSpec(dash: unknown, stubStyle?: unknown): DislDocument {
+    return {
+      disl: "0.3",
+      language: { id: "test", version: "1.0.0" },
+      metamodel: {
+        types: { Card: { attributes: { name: { type: "string" } } } },
+        relations: { Link: { source: ["Card"], target: { types: ["Card"], optional: true }, attributes: { dynamic: { type: "bool" } } } },
+      },
+      notation: {
+        styles: {
+          missing: { stroke: { width: 1.5, dash: [3, 3] } },
+          missingDependency: { extends: "missing", stroke: { width: 2, dash: [2, 6] } },
+        },
+        nodes: { Card: { shape: "rect" } },
+        edges: {
+          Link: {
+            line: { routing: "straight", stroke: { width: 1.5, ...(dash !== undefined ? { dash } : {}) } },
+            targetMarker: "arrowFilled",
+            ...(stubStyle !== undefined ? { stub: { length: 48, side: "right", style: stubStyle } } : {}),
+          },
+        },
+      },
+    } as unknown as DislDocument;
+  }
+
+  const BINDINGS: NotationBindings = { celPaths: {}, classNames: () => [] };
+
+  it("draws a line with the dash its type states", () => {
+    const [link] = compileNotation(dashedSpec([1, 4]), BINDINGS).relationTypes;
+
+    expect(link?.style).toEqual({ endMarker: "arrow", dash: [1, 4] });
+    expect(compileNotation(dashedSpec([]), BINDINGS).relationTypes[0]?.style).toEqual({ endMarker: "arrow" });
+    expect(compileNotation(dashedSpec(undefined), BINDINGS).relationTypes[0]?.style).toEqual({ endMarker: "arrow" });
+  });
+
+  it("chooses a line's dash per connection by an attribute of its own, or a condition the module names", () => {
+    const [link] = compileNotation(dashedSpec({ cel: "self.dynamic ? [5.0, 4.0] : []" }), BINDINGS).relationTypes;
+    expect(link?.dashWhen).toEqual({ when: { path: "payload.dynamic", is: "true" }, dash: [5, 4] });
+    expect(link?.style).toEqual({ endMarker: "arrow" });
+
+    const [named] = compileNotation(dashedSpec({ cel: "self.mode == 'late' ? [2, 2] : [6, 2]" }), { ...BINDINGS, celConditions: { "self.mode == 'late'": { path: "payload.late", is: "true" } } }).relationTypes;
+    expect(named?.dashWhen).toEqual({ when: { path: "payload.late", is: "true" }, dash: [2, 2] });
+    expect(named?.style).toEqual({ endMarker: "arrow", dash: [6, 2] });
+
+    expect(() => compileNotation(dashedSpec({ cel: "self.weight > 2 ? [1, 1] : []" }), BINDINGS)).toThrow(/dash .*self\.weight > 2/);
+  });
+
+  it("draws a stub with the dash of its own style, its extends resolved", () => {
+    expect(compileNotation(dashedSpec([1, 4], "missing"), BINDINGS).relationTypes[0]?.stub?.dash).toEqual([3, 3]);
+    expect(compileNotation(dashedSpec([1, 4], "missingDependency"), BINDINGS).relationTypes[0]?.stub?.dash).toEqual([2, 6]);
+    expect(compileNotation(dashedSpec([1, 4], { stroke: { dash: [4, 1] } }), BINDINGS).relationTypes[0]?.stub?.dash).toEqual([4, 1]);
+    expect(compileNotation(dashedSpec([1, 4], { stroke: { width: 3 } }), BINDINGS).relationTypes[0]?.stub?.dash).toBeUndefined();
+  });
+});
+
+describe("compileNotation, for a colour chosen by index", () => {
+  function tintedSpec(fill: string): DislDocument {
+    return {
+      disl: "0.3",
+      language: { id: "test", version: "1.0.0" },
+      metamodel: { types: { Step: { attributes: { index: { type: "int" } } }, Gate: {} } },
+      notation: {
+        nodes: {
+          Step: { shape: "rect", style: { fill: { cel: fill }, stroke: { color: { cel: "token('color.hue' + string(self.index % 4))" } } } },
+          Gate: { shape: "rect", style: { fill: { token: "color.surface" } } },
+        },
+      },
+    } as unknown as DislDocument;
+  }
+
+  const BINDINGS: NotationBindings = {
+    celPaths: {},
+    classNames: (type) => [{ className: `t-${type.toLowerCase()}`, on: "shape" }],
+    indexedColourClassName: (_type, token) => (token === "color.hue" ? "t-hue-" : undefined),
+  };
+
+  it("paints the slot an index wraps into, by the class the module names for the token's family", () => {
+    const [step, gate] = compileNotation(tintedSpec("color(token('color.hue' + string(self.index % 4))).mix(token('color.surface'), 0.82)"), BINDINGS).elementTypes;
+
+    expect(step?.classNames).toEqual([
+      { className: "t-step", on: "shape" },
+      { className: { parts: [{ template: "t-hue-" }, { path: "payload.index", number: { modulo: 4 } }], join: "" }, on: "shape", when: { path: "payload.index", is: "present" } },
+    ]);
+    expect(gate?.classNames).toEqual([{ className: "t-gate", on: "shape" }]);
+  });
+
+  it("refuses a colour chosen by index the module names no class for", () => {
+    expect(() => compileNotation(tintedSpec("token('color.hue' + string(self.index % 4))"), { ...BINDINGS, indexedColourClassName: undefined })).toThrow(/color\.hue.*class/);
+  });
+});
+
+describe("compileNotation, for an operation a double-click runs", () => {
+  function revealingSpec(operation: Readonly<Record<string, unknown>>): DislDocument {
+    return {
+      disl: "0.3",
+      language: { id: "test", version: "1.0.0" },
+      metamodel: { types: { Card: {} } },
+      notation: { nodes: { Card: { shape: "rect", doubleClick: "reveal" } } },
+      behavior: { operations: { reveal: operation } },
+    } as unknown as DislDocument;
+  }
+
+  it("invokes it by the key the operation states as well as by the double-click", () => {
+    expect(compileNotation(revealingSpec({ label: "Reveal", shortcut: "Enter" }), { celPaths: {}, classNames: () => [] }).actions).toEqual([
+      { id: "reveal", invokedBy: [{ kind: "shortcut", key: "Enter" }, { kind: "gesture", gesture: "activate" }], appliesTo: [{ kind: "element" }] },
+    ]);
+    expect(compileNotation(revealingSpec({ label: "Reveal" }), { celPaths: {}, classNames: () => [] }).actions).toEqual([
+      { id: "reveal", invokedBy: [{ kind: "gesture", gesture: "activate" }], appliesTo: [{ kind: "element" }] },
+    ]);
+  });
+});
+
+describe("compileNotation, for a canvas with nothing to draw", () => {
+  function emptySpec(empty: unknown): DislDocument {
+    return {
+      disl: "0.3",
+      language: { id: "test", version: "1.0.0" },
+      metamodel: { types: { Card: {} } },
+      notation: { nodes: { Card: { shape: "rect" } }, ...(empty !== undefined ? { canvas: { empty } } : {}) },
+    } as unknown as DislDocument;
+  }
+
+  const BINDINGS: NotationBindings = { celPaths: {}, classNames: () => [] };
+
+  it("states the canvas's empty sentence as its chrome", () => {
+    expect(compileNotation(emptySpec({ text: "Nothing to draw here." }), BINDINGS).chrome).toEqual({ empty: { text: { template: "Nothing to draw here." } } });
+    expect(compileNotation(emptySpec(undefined), BINDINGS).chrome).toBeUndefined();
+  });
+
+  it("refuses a sentence a template would read a placeholder in", () => {
+    expect(() => compileNotation(emptySpec({ text: "Nothing in {folder}." }), BINDINGS)).toThrow(/empty.*\{folder\}/);
   });
 });

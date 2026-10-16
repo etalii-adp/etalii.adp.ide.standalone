@@ -149,9 +149,9 @@
 /*
  * The two reference kinds read apart at a glance: a project reference is solid because it is
  * a relationship inside the solution, a package reference dashed because it leaves it - the
- * same distinction the node styling makes, said once more where the eye follows it.
+ * same distinction the node styling makes, said once more where the eye follows it. The dash is
+ * the specification's, which the library paints on the line itself.
  */
 .dotnet-dependency-edge-package .dotnet-dependency-edge-line {
-  stroke-dasharray: 5 4;
   stroke: var(--color-border);
 }

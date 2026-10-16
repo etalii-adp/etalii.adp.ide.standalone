@@ -119,6 +119,12 @@ export interface ChromeDeclaration {
   /** Shown when the diagram cannot be opened at this path. */
   unavailable?: ChromeTextDeclaration;
   title?: ChromeTextDeclaration;
+  /**
+   * Shown in the canvas's place once the model has arrived and holds nothing to draw. When that is
+   * the module's to know - its stream says whether the model has arrived - so it draws
+   * `EmptyCanvas` then, and the sentence is this.
+   */
+  empty?: ChromeTextDeclaration;
   legend?: ChromeLegendDeclaration;
   rulers?: readonly RulerDeclaration[];
   /**
