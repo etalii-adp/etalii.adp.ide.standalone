@@ -356,10 +356,10 @@ Every class left in the standalone module, `src/diagrams/timeline/`, beside the 
 | `TimelineTimes`, `TimelineInstants` | The plugin `net.etalii.adp.generic.timelineTimes`: DISL's CEL has no timestamps, and the tool reads every form .NET reads. |
 | `TimelineScale` | Host: the only conversion between a time and x, and the precision a value written after a drag keeps. |
 | `TimelineArrangement`, `TimelineRows`, `Commands/ArrangeTimelineCommand`, `SetTimelineRowsCommand` | The layout plugin `net.etalii.adp.generic.timelineRowArrange`, and Arrange diagram as one undo step; `TimelineRows` is the row height and the nearest-row snap. |
-| `TimelineDefinition` | Host: the bundled specification loaded with its plugins, the derivations mapped onto the host's types and the `x-timeline` wire ids, the one named set of reader findings forwarded, and the grouping of findings, which `constraints.order` cannot state. |
+| `TimelineDefinition` | Host: the bundled specification loaded with its plugins through the shared `DislDiagramDefinition`, which maps the derivations onto the host's types and the `x-timeline` wire ids; the one named set of reader findings forwarded, and the grouping of findings, which `constraints.order` cannot state. |
 | `TimelineRules` | Host: the tool's finding codes as constants, which the grouping of findings and the choice between reporting at a line and at an element name. The codes themselves are the specification's. |
 | `TimelineValidator` | Host: the specification's findings as the host's problems, and today's one finding for a body that is not YAML. |
-| `TimelineToolboxProvider`, `TimelineContextActionProvider`, `TimelineContextPropertyProvider` | Host: handing out the derived toolbox, menus and rows, and dispatching a chosen entry, a gesture or an edited row as the module's command on the history stack. |
+| `TimelineContextActionProvider`, `TimelineContextPropertyProvider`, and the shared `DislToolboxProvider` | Host: handing out the derived toolbox, menus and rows, and dispatching a chosen entry, a gesture or an edited row as the module's command on the history stack. |
 | `TimelineContextSourceResolver` | Host: resolving a selection, a relation included whose end names nothing, to an element of the document. |
 | `TimelineElementMapper` | Host: the `.proto` payloads and the viewport filter; a relation is sent only when both its ends are. |
 | `TimelineSession`, `TimelineDocumentStore`, `ITimelineDocumentStore` | Host: the shared document lifecycle and its reload. |
