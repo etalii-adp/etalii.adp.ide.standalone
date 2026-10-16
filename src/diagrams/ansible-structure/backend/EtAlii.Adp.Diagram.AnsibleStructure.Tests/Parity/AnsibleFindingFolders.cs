@@ -99,21 +99,24 @@ internal static class AnsibleFindingFolders
     /// <summary>
     /// A symbolic link, relative so the copy can lie anywhere. A platform that refuses one (Windows
     /// without Developer Mode) fails loudly here, rather than letting the transcript differ silently.
+    /// The target is written with <c>/</c> in the transcript and made with the platform's separator:
+    /// Windows does not resolve a link whose relative target holds a <c>/</c>.
     /// </summary>
     private static Making Link(string relative, string target, bool directory) =>
         new($"{(directory ? "folder" : "file")} link {relative} -> {target}", root =>
         {
             var path = Path.Combine(root, relative);
+            var made = target.Replace('/', Path.DirectorySeparatorChar);
             Directory.CreateDirectory(Path.GetDirectoryName(path)!);
             try
             {
                 if (directory)
                 {
-                    Directory.CreateSymbolicLink(path, target);
+                    Directory.CreateSymbolicLink(path, made);
                 }
                 else
                 {
-                    File.CreateSymbolicLink(path, target);
+                    File.CreateSymbolicLink(path, made);
                 }
             }
             catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
