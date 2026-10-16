@@ -152,7 +152,7 @@ internal static class DependencyGraphFindings
 
     private static DiagramProblem Problem(DislFinding finding)
     {
-        var severity = finding.Severity == "error" ? DiagramProblemSeverity.Error : DiagramProblemSeverity.Warning;
+        var severity = DislDiagramDefinition.SeverityOf(finding);
 
         // The ids and the file are reported at the line, because an element without an id, or with one
         // another declaration holds, cannot be named by it; everything else names its dependency.

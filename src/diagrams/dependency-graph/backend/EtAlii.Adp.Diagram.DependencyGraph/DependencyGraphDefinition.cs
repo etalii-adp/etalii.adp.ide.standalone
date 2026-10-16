@@ -1,7 +1,6 @@
 using System.Runtime.CompilerServices;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
-using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Specification.Disl;
 
 namespace EtAlii.Adp.Diagram.DependencyGraph;
@@ -43,28 +42,18 @@ namespace EtAlii.Adp.Diagram.DependencyGraph;
 /// </remarks>
 internal static class DependencyGraphDefinition
 {
-    private static readonly Lazy<BundledDefinition> Loaded = new(() => BundledDefinition.Load(typeof(DependencyGraphDefinition).Assembly, "dependency-graph.dis", DependencyGraphFindings.Plugins()));
-
-    private static readonly Lazy<WireIdMap> LoadedIds = new(() => WireIdMap.Of(Specification, "x-dependencies"));
-
-    private static readonly Lazy<IReadOnlyList<ToolboxItemDefinition>> LoadedToolbox = new(() =>
-    [
-        .. ToolboxDerivation.Derive(Specification, Ids)
-            .Select(tool => new ToolboxItemDefinition(tool.Id, tool.Label, tool.Icon, tool.Description, tool.DropActionId ?? "")),
-    ]);
-
     private static readonly ConditionalWeakTable<DependencyGraphModel, DislDiagram> Built = [];
 
     private static readonly DislEnv Env = new();
 
+    /// <summary>The bundled definition, with the palette, the menus and the rows every module derives the same way.</summary>
+    public static DislDiagramDefinition Definition { get; } = new(typeof(DependencyGraphDefinition).Assembly, "dependency-graph.dis", "x-dependencies", DependencyGraphFindings.Plugins);
+
     /// <summary>The definition.</summary>
-    public static DislSpecification Specification => Loaded.Value.Specification;
+    public static DislSpecification Specification => Definition.Specification;
 
     /// <summary>The wire ids of <c>x-dependencies</c>.</summary>
-    private static WireIdMap Ids => LoadedIds.Value;
-
-    /// <summary>The palette.</summary>
-    public static IReadOnlyList<ToolboxItemDefinition> Toolbox => LoadedToolbox.Value;
+    private static WireIdMap Ids => Definition.Ids;
 
     /// <summary>The DISL model of <paramref name="model"/>, built once per reading.</summary>
     public static DislDiagram Disl(DependencyGraphModel model)
@@ -84,13 +73,7 @@ internal static class DependencyGraphDefinition
                 : GestureIds.TryParseRelation(elementId, out _, out _)
                     ? DislMenuTarget.Connection(diagram, null, null, "DependsOn")
                     : null;
-        if (target is null) return [];
-
-        return
-        [
-            .. ContextMenuDerivation.Derive(Specification, target, Env, Ids)
-                .Select(group => new ContextActionGroupDefinition([.. group.Entries.Select(Action)])),
-        ];
+        return target is null ? [] : Definition.Menus(target, Env);
     }
 
     /// <summary>The property rows of <paramref name="elementId"/> in <paramref name="model"/>: a node's or a dependency's form; none for anything else.</summary>
@@ -99,8 +82,7 @@ internal static class DependencyGraphDefinition
         var diagram = Disl(model);
         if (ElementOf(diagram, elementId) is not { } element) return [];
 
-        var rows = FormDerivation.Derive(Specification, element, Env, Ids).Select(Row).ToList();
-        return As(rows, AsWritten(model, element));
+        return As(Definition.Rows(element, Env), AsWritten(model, element));
     }
 
     /// <summary>
@@ -227,18 +209,6 @@ internal static class DependencyGraphDefinition
         DislElement? End(string id) => id.Length > 0 ? first.GetValueOrDefault(id) : null;
     }
 
-    private static ContextActionDefinition Action(DerivedMenuEntry entry) => new(
-        entry.Id,
-        entry.Label,
-        entry.Icon,
-        entry.Shortcut is { } key ? new ContextShortcutDefinition(key.Key, key.Ctrl, key.Shift, key.Alt, key.Meta) : null,
-        entry.Available,
-        entry.UnavailableReason);
-
-    /// <summary>A row as the grid draws it: every row of this type is a line.</summary>
-    private static ContextPropertyDefinition Row(DerivedRow row) =>
-        new(row.Id, row.Label, row.Value, ContextPropertyEditor.Line, row.ReadOnlyReason, row.Group);
-
     /// <summary>
     /// The values the code has always written itself, by row id. A node's X is the number as the file
     /// writes it (<see cref="DslNumber.Format(double)"/>, at most four decimals), which
@@ -263,6 +233,6 @@ internal static class DependencyGraphDefinition
         return values;
     }
 
-    private static List<ContextPropertyDefinition> As(List<ContextPropertyDefinition> rows, Dictionary<string, string> values) =>
+    private static IReadOnlyList<ContextPropertyDefinition> As(IReadOnlyList<ContextPropertyDefinition> rows, Dictionary<string, string> values) =>
         values.Count == 0 ? rows : [.. rows.Select(row => values.TryGetValue(row.Id, out var value) ? row with { Value = value } : row)];
 }
