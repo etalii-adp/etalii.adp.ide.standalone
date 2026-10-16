@@ -104,7 +104,7 @@ public class UndoRedoFlowTests(HostFixture host) : IClassFixture<HostFixture>
         var undone = await ExecuteProjectActionAsync(contextClient, projectA, watchA, headers, HistoryContextActionProvider.UndoActionId);
         Assert.True(undone.Accepted, undone.Error);
 
-        await WaitUntilAsync(() => File.Exists(IoPath.Combine(_projectFolder, "a.txt")));
+        Assert.True(await Eventually.TrueAsync(() => File.Exists(IoPath.Combine(_projectFolder, "a.txt")), TestContext.Current.CancellationToken, FlowConstants.MessageTimeout), "a.txt did not appear on disk within the timeout.");
         Assert.True(File.Exists(IoPath.Combine(_projectFolder, "a.txt")));
         Assert.True(File.Exists(IoPath.Combine(otherFolder, "b-renamed.txt")), "Undo in project A reversed a rename in project B.");
         Assert.False(File.Exists(IoPath.Combine(otherFolder, "b.txt")));
@@ -145,7 +145,7 @@ public class UndoRedoFlowTests(HostFixture host) : IClassFixture<HostFixture>
 
         var onA = await pendingUndoGoneOnA;
         Assert.False(UndoOf(onA).Available);
-        await WaitUntilAsync(() => File.Exists(IoPath.Combine(_projectFolder, "shared.txt")));
+        Assert.True(await Eventually.TrueAsync(() => File.Exists(IoPath.Combine(_projectFolder, "shared.txt")), TestContext.Current.CancellationToken, FlowConstants.MessageTimeout), "shared.txt did not appear on disk within the timeout.");
         Assert.False(File.Exists(IoPath.Combine(_projectFolder, "shared-renamed.txt")));
     }
 
@@ -177,7 +177,7 @@ public class UndoRedoFlowTests(HostFixture host) : IClassFixture<HostFixture>
         var undone = await ExecuteProjectActionAsync(contextClient, session.ProjectId, watchId, session.Headers, HistoryContextActionProvider.UndoActionId);
         Assert.True(undone.Accepted, undone.Error);
 
-        await WaitUntilAsync(() => File.Exists(IoPath.Combine(_projectFolder, "keep.txt")));
+        Assert.True(await Eventually.TrueAsync(() => File.Exists(IoPath.Combine(_projectFolder, "keep.txt")), TestContext.Current.CancellationToken, FlowConstants.MessageTimeout), "keep.txt did not appear on disk within the timeout.");
         Assert.False(File.Exists(IoPath.Combine(_projectFolder, "kept.txt")));
         Assert.False(File.Exists(IoPath.Combine(_projectFolder, "doomed.txt")), "Undo brought back a deleted file it never recorded.");
 
@@ -294,15 +294,4 @@ public class UndoRedoFlowTests(HostFixture host) : IClassFixture<HostFixture>
 
     private static ContextAction UndoOf(ContextProjectActions actions) =>
         actions.Actions.Actions().Single(action => action.Id == HistoryContextActionProvider.UndoActionId);
-
-    private static async Task WaitUntilAsync(Func<bool> condition)
-    {
-        var deadline = DateTime.UtcNow + FlowConstants.MessageTimeout;
-        while (!condition() && DateTime.UtcNow < deadline)
-        {
-            await Task.Delay(20, TestContext.Current.CancellationToken);
-        }
-
-        Assert.True(condition(), "The awaited condition did not hold within the timeout.");
-    }
 }

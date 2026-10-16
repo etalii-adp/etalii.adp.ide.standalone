@@ -96,13 +96,9 @@ public class CausalLoopDocumentStoreFailedReloadTests : IDisposable
 
         File.Delete(path);
 
-        var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(10);
-        while (store.GetOrLoad(path).Model.Variables.Count > 0 && DateTime.UtcNow < deadline)
-        {
-            await Task.Delay(25, TestContext.Current.CancellationToken);
-        }
-
-        Assert.Empty(store.GetOrLoad(path).Model.Variables);
+        Assert.True(
+            await Eventually.TrueAsync(() => store.GetOrLoad(path).Model.Variables.Count == 0, TestContext.Current.CancellationToken),
+            "The deletion did not empty the diagram within the timeout.");
     }
 
     [Fact]

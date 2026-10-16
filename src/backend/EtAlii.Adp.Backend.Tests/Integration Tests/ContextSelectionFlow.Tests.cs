@@ -179,8 +179,9 @@ public class ContextSelectionFlowTests(HostFixture host) : IClassFixture<HostFix
         // Assert.
         Assert.NotEqual("", response.Error);
         var pending = call.ResponseStream.MoveNext(cts.Token);
-        var arrived = await Task.WhenAny(pending, Task.Delay(TimeSpan.FromMilliseconds(500), TestContext.Current.CancellationToken)) == pending;
-        Assert.False(arrived, "A rejected Select must not push anything.");
+        Assert.False(
+            await Eventually.TrueAsync(() => pending.IsCompleted, TestContext.Current.CancellationToken, TimeSpan.FromMilliseconds(500)),
+            "A rejected Select must not push anything.");
     }
 
     [Fact]
@@ -329,8 +330,9 @@ public class ContextSelectionFlowTests(HostFixture host) : IClassFixture<HostFix
         // Act and assert, step by step.
         var pushedA = await ReadSelectionAsync(callA.ResponseStream, ctsA.Token);
         Assert.Equal(new[] { "shared.txt" }, pushedA.Selection.Path.Segments);
-        var arrivedOnB = await Task.WhenAny(pendingB, Task.Delay(TimeSpan.FromSeconds(1), TestContext.Current.CancellationToken)) == pendingB;
-        Assert.False(arrivedOnB, "Connection B observed a selection made on connection A.");
+        Assert.False(
+            await Eventually.TrueAsync(() => pendingB.IsCompleted, TestContext.Current.CancellationToken, TimeSpan.FromSeconds(1)),
+            "Connection B observed a selection made on connection A.");
     }
 
     [Fact]
