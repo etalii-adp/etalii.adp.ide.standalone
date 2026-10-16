@@ -1,21 +1,23 @@
 namespace EtAlii.Adp.Hierarchy;
 
 /// <summary>
-/// Owns the per-connection lifecycle of a <see cref="HierarchyModel"/> and its
-/// <see cref="RootFolderWatcher"/> — strictly one of each per <c>watch_id</c>,
-/// never shared, even across two connections to the same project.
+/// Owns the per-connection lifecycle of a <see cref="HierarchyModel"/> and its subscription to
+/// the project's file events — strictly one of each per <c>watch_id</c>, never shared, even across
+/// two connections to the same project. The watcher behind the subscriptions is shared: one per
+/// project root (<see cref="Documents.ProjectFileEvents"/>).
 /// </summary>
 public interface IHierarchyModelStore
 {
     HierarchyModel GetOrCreate(ShortGuid watchId, string rootPath);
 
     /// <summary>
-    /// Attaches the watcher a `WatchHierarchy` call started for this <paramref name="watchId"/>,
-    /// and cancels the idle-timeout eviction now that a stream has claimed the entry.
+    /// Attaches the subscription to file events a `WatchHierarchy` call started for this
+    /// <paramref name="watchId"/>, and cancels the idle-timeout eviction now that a stream has
+    /// claimed the entry.
     /// </summary>
-    void AttachWatcher(ShortGuid watchId, RootFolderWatcher watcher);
+    void AttachEvents(ShortGuid watchId, IDisposable events);
 
-    /// <summary>Disposes and removes a connection's model and watcher (if attached).</summary>
+    /// <summary>Disposes and removes a connection's model and its subscription (if attached).</summary>
     void Remove(ShortGuid watchId);
 
     /// <summary>

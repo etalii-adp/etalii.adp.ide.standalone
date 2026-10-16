@@ -33,15 +33,20 @@ public sealed class ProblemMaintenance : IDisposable
     /// <summary>Rapid changes coalesce per root: the window starts over until the burst settles.</summary>
     internal Debouncer<TrackedProblemRoot> Settling { get; }
 
-    public ProblemMaintenance(IProblemStore store, ProjectValidator validator, DiagramFileRouter router, TimeProvider time, TimeSpan? settleDelay = null)
+    /// <summary>Where a tracked root hears its changes: the one watcher of each project root.</summary>
+    internal ProjectFileEvents Events { get; }
+
+    public ProblemMaintenance(IProblemStore store, ProjectValidator validator, DiagramFileRouter router, ProjectFileEvents events, TimeProvider time, TimeSpan? settleDelay = null)
     {
         ArgumentNullException.ThrowIfNull(store);
         ArgumentNullException.ThrowIfNull(validator);
         ArgumentNullException.ThrowIfNull(router);
+        ArgumentNullException.ThrowIfNull(events);
         ArgumentNullException.ThrowIfNull(time);
         _store = store;
         _validator = validator;
         _router = router;
+        Events = events;
         Settling = new Debouncer<TrackedProblemRoot>(settleDelay ?? DefaultSettleDelay, root => root.Settle(), time);
     }
 

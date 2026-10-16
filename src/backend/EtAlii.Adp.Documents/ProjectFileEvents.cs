@@ -97,6 +97,63 @@ public sealed class ProjectFileEvents : IDisposable
     }
 
     /// <summary>
+    /// Starts hearing what happens under a root already watched that holds <paramref name="folder"/>,
+    /// if there is one; null when no watched root holds it, and nothing is subscribed then.
+    /// </summary>
+    /// <remarks>
+    /// For an owner of a folder inside a project - a module's store - that would otherwise make a
+    /// watcher of its own beside the project's. Everything under the root is heard; the owner picks
+    /// out its folder. The subscription keeps the root watched while it lasts.
+    /// </remarks>
+    /// <returns>The subscription and the root it is to, or null.</returns>
+    public (IDisposable Subscription, string Root)? SubscribeWithin(string folder, Action<FileEvent> heard)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(folder);
+        ArgumentNullException.ThrowIfNull(heard);
+
+        var path = Path.TrimEndingDirectorySeparator(Path.GetFullPath(folder));
+        lock (_gate)
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+
+            var source = _sources.Values.FirstOrDefault(candidate => IsWithin(path, candidate.Root));
+            if (source is null)
+            {
+                return null;
+            }
+
+            source.WatchAgainIfLost();
+            var subscription = new Subscription(this, source, heard);
+            source.Subscribers = [.. source.Subscribers, subscription];
+            return (subscription, source.Root);
+        }
+    }
+
+    /// <summary>
+    /// Makes the watcher of <paramref name="rootPath"/> anew, if it is watched: for a root that went
+    /// away and came back, whose old watcher - on Linux, without a word - hears nothing any more.
+    /// </summary>
+    public void WatchAgain(string rootPath)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(rootPath);
+
+        Source? source;
+        lock (_gate)
+        {
+            _sources.TryGetValue(Path.TrimEndingDirectorySeparator(Path.GetFullPath(rootPath)), out source);
+        }
+
+        source?.WatchAgain();
+    }
+
+    /// <summary>Whether <paramref name="path"/> is <paramref name="folder"/> or lies somewhere under it.</summary>
+    public static bool IsWithin(string path, string folder) =>
+        path.Equals(folder, StringComparison.OrdinalIgnoreCase)
+        || (path.Length > folder.Length
+            && path.StartsWith(folder, StringComparison.OrdinalIgnoreCase)
+            && (path[folder.Length] == Path.DirectorySeparatorChar || path[folder.Length] == Path.AltDirectorySeparatorChar));
+
+    /// <summary>
     /// What a subscriber hears of one event, or null for an event about a writer's own file.
     /// </summary>
     internal static FileEvent? Normalize(FileEvent heard)
@@ -191,6 +248,20 @@ public sealed class ProjectFileEvents : IDisposable
 
         /// <summary>Replaced whole under the owner's gate, so a publish reads one consistent set.</summary>
         public Subscription[] Subscribers { get; set; } = [];
+
+        public void WatchAgain()
+        {
+            lock (_watching)
+            {
+                if (_disposed)
+                {
+                    return;
+                }
+
+                _folder?.Dispose();
+                TryWatch();
+            }
+        }
 
         public void WatchAgainIfLost()
         {

@@ -23,6 +23,10 @@ public static class ServiceCollectionAddHierarchyExtension
         services.TryAddSingleton(TimeProvider.System);
         services.AddSingleton<IHierarchyModelStore, HierarchyModelStore>();
 
+        // One watcher per project root, whoever listens there: every connection's hierarchy, the
+        // problems and the reload bridge (code-structure FR-050).
+        services.TryAddSingleton<ProjectFileEvents>();
+
         // Which type a file on disk belongs to - by its .adp first line, or by a declared
         // extension for a body dropped in without one. The catalog it reads is registered
         // by AddCommands.

@@ -441,7 +441,7 @@ public class RenameEntryCommandHandlerTests : IDisposable
             return model;
         }
 
-        public void AttachWatcher(ShortGuid watchId, RootFolderWatcher watcher) => _inner.AttachWatcher(watchId, watcher);
+        public void AttachEvents(ShortGuid watchId, IDisposable events) => _inner.AttachEvents(watchId, events);
 
         public void Remove(ShortGuid watchId) => _inner.Remove(watchId);
 

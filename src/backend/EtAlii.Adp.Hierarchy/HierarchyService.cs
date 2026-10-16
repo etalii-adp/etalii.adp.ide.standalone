@@ -1,5 +1,6 @@
 using System.Threading.Channels;
 using EtAlii.Adp.Authentication;
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Hierarchy.Wire;
 using EtAlii.Adp.Projects;
@@ -16,6 +17,7 @@ public sealed class HierarchyService : Wire.HierarchyService.HierarchyServiceBas
 
     private readonly IProjectStore _projectStore;
     private readonly IHierarchyModelStore _hierarchyModelStore;
+    private readonly ProjectFileEvents _events;
 
     /// <summary>
     /// Awaited by the presence poll between finding the root gone and announcing it, so a guard
@@ -24,10 +26,11 @@ public sealed class HierarchyService : Wire.HierarchyService.HierarchyServiceBas
     /// </summary>
     internal Func<Task>? RootFoundMissing { get; init; }
 
-    public HierarchyService(IProjectStore projectStore, IHierarchyModelStore hierarchyModelStore)
+    public HierarchyService(IProjectStore projectStore, IHierarchyModelStore hierarchyModelStore, ProjectFileEvents events)
     {
         _projectStore = projectStore;
         _hierarchyModelStore = hierarchyModelStore;
+        _events = events;
     }
 
     public override Task<ListEntriesResponse> ListEntries(ListEntriesRequest request, ServerCallContext context)
@@ -94,7 +97,7 @@ public sealed class HierarchyService : Wire.HierarchyService.HierarchyServiceBas
         var recoveryToken = recoveryCts.Token;
 
         // One notification per outage, whichever detector saw it first. On Windows the
-        // watcher's own Error event reports the root's deletion almost instantly; on Linux,
+        // watcher's own Error event (heard as Lost, with the root gone) reports the root's deletion almost instantly; on Linux,
         // inotify never reports the watched directory's own deletion at all - the watch just
         // goes silent - so the presence poll below is the only detector there (found by the
         // first Linux CI run, where the RootUnavailable push never came). The latch keeps the
@@ -102,11 +105,12 @@ public sealed class HierarchyService : Wire.HierarchyService.HierarchyServiceBas
         // second outage announces again.
         var rootLost = 0;
 
-        var watcher = CreateWatcher(rootPath, model, HandleRootLost);
-        _hierarchyModelStore.AttachWatcher(watchId, watcher);
+        var events = Subscribe(rootPath, model, HandleRootLost);
+        _hierarchyModelStore.AttachEvents(watchId, events);
         _ = WatchRootPresenceAsync(rootPath, HandleRootLost, recoveryToken);
-        // Information: a watch is a long-lived resource with a file system watcher behind it,
-        // so its open and close are the pair to look for when one is suspected of leaking.
+        // Information: a watch is a long-lived resource with a subscription to the root's one
+        // watcher behind it, so its open and close are the pair to look for when one is suspected
+        // of leaking.
         _logger.Information(
             "Watching {RootPath} for project {ProjectId} on watch {WatchId}",
             rootPath,
@@ -156,28 +160,28 @@ public sealed class HierarchyService : Wire.HierarchyService.HierarchyServiceBas
         }
     }
 
-    private RootFolderWatcher CreateWatcher(string rootPath, HierarchyModel model, Action<string> onRootLost)
+    private IDisposable Subscribe(string rootPath, HierarchyModel model, Action<string> onRootLost)
     {
-        return new RootFolderWatcher(
-            rootPath,
-            onChange: model.OnWatcherEvent,
-            onError: ex =>
+        return _events.Subscribe(rootPath, heard =>
+        {
+            if (heard.Kind != FileEventKind.Lost)
             {
-                if (ex is InternalBufferOverflowException)
-                {
-                    // Changes arrived faster than the watcher's buffer could hold. Nothing is
-                    // lost - the tree is rebuilt - but it means changes were missed in between.
-                    _logger.Warning(
-                        ex,
-                        "The watcher for {RootPath} overflowed its buffer; rebuilding the tree from disk",
-                        rootPath);
-                    model.Reconcile();
-                    return;
-                }
+                model.OnFileEvent(heard);
+                return;
+            }
 
-                _logger.Error(ex, "The watcher for {RootPath} failed; waiting for the folder to come back", rootPath);
-                onRootLost(ex.Message);
-            });
+            if (Directory.Exists(rootPath))
+            {
+                // Changes arrived faster than the watcher's buffer could hold. Nothing is lost -
+                // the tree is rebuilt - but it means changes were missed in between.
+                _logger.Warning("The watcher for {RootPath} lost events; rebuilding the tree from disk", rootPath);
+                model.Reconcile();
+                return;
+            }
+
+            _logger.Error("The watcher for {RootPath} failed; waiting for the folder to come back", rootPath);
+            onRootLost("The project's root folder is no longer accessible.");
+        });
     }
 
     /// <summary>
@@ -219,7 +223,10 @@ public sealed class HierarchyService : Wire.HierarchyService.HierarchyServiceBas
                 await Task.Delay(RootRecoveryPollInterval, cancellationToken);
             }
 
-            _logger.Information("{RootPath} is back; rebuilding the tree from disk", rootPath);
+            _logger.Information("{RootPath} is back; watching it anew and rebuilding the tree from disk", rootPath);
+
+            // The watcher of a root that went away hears nothing any more - on Linux without a word.
+            _events.WatchAgain(rootPath);
             model.Reconcile();
         }
         catch (OperationCanceledException)

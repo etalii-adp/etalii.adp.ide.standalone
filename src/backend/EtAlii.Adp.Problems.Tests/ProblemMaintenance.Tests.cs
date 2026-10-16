@@ -30,6 +30,7 @@ public class ProblemMaintenanceTests : IDisposable
     private readonly ProblemMaintenanceFolderValidator _folderValidator =
         new(FolderType, IoPath.Combine("infrastructure", "roles", "web", "meta", "main.yml"));
     private readonly FakeTimeProvider _clock = new();
+    private readonly ProjectFileEvents _events = new();
     private readonly ProblemMaintenance _maintenance;
 
     public ProblemMaintenanceTests()
@@ -38,13 +39,30 @@ public class ProblemMaintenanceTests : IDisposable
         Directory.CreateDirectory(_root);
         var router = new DiagramFileRouter(new TestDiagramDefinitionCatalog(MindmapDefinition, FolderDefinition));
         var projectValidator = new ProjectValidator(router, new DiagramValidators([_validator, _folderValidator]));
-        _maintenance = new ProblemMaintenance(_store, projectValidator, router, _clock, SettleDelay);
+        _maintenance = new ProblemMaintenance(_store, projectValidator, router, _events, _clock, SettleDelay);
     }
 
     public void Dispose()
     {
         _maintenance.Dispose();
+        _events.Dispose();
         TestFolder.TryDelete(_root);
+    }
+
+    [Fact]
+    public void ATrackedRoot_ListensThroughTheRootsOneWatcher()
+    {
+        // Arrange: somebody else - a connection's hierarchy - watching the root already.
+        var other = _events.Subscribe(_root, _ => { });
+        var watcher = _events.Watcher(_root);
+
+        // Act.
+        _maintenance.Track(_root);
+        other.Dispose();
+
+        // Assert: still the one watcher, now kept by the problems alone.
+        Assert.Equal(1, _events.WatchedRoots());
+        Assert.Same(watcher, _events.Watcher(_root));
     }
 
     [Fact]
