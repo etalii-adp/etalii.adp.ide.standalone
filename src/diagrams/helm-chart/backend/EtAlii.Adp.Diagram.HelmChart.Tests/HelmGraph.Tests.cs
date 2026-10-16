@@ -5,28 +5,20 @@ using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would othe
 namespace EtAlii.Adp.Diagram.HelmChart.Tests;
 
 /// <summary>
-/// Every edge family's fire and non-fire cases (Requirement 5), over the well-formed fixture
-/// where the families interlock and over constructed models for the corners.
+/// The nodes, and the fire and non-fire cases of the two edge families the graph still makes, <c>Resolves</c>
+/// and <c>Includes</c> (Requirement 5), over the well-formed fixture where the families interlock and over
+/// constructed models for the corners.
 /// </summary>
+/// <remarks>
+/// <c>Declares</c>, <c>Overrides</c> and <c>Configures</c> are derived by the bundled definition
+/// (helm-chart-disl-fbl, task 6); their cases here were replaced by the parity transcript, which records every
+/// relation of every chart of the corpus with its ends and label.
+/// </remarks>
 public class HelmGraphTests
 {
     private static HelmGraph WellFormed() =>
         HelmGraph.Derive(new HelmChartReader().Read(
             IoPath.Combine(AppContext.BaseDirectory, "Fixtures", "well-formed")));
-
-    [Fact]
-    public void Declares_RunsFromChartToEachDependency_LabeledWithTheConstraint()
-    {
-        // Arrange & Act.
-        var graph = WellFormed();
-
-        // Assert.
-        var declares = graph.Edges.Where(edge => edge.Kind == HelmEdgeKind.Declares).ToArray();
-        Assert.Equal(2, declares.Length);
-        Assert.All(declares, edge => Assert.Equal("chart", edge.SourceId));
-        Assert.Contains(declares, edge => edge is { TargetId: "dep:cache", Label: ">=17.0.0" });
-        Assert.Contains(declares, edge => edge is { TargetId: "dep:postgres", Label: "12.1.0" });
-    }
 
     [Fact]
     public void Resolves_LandsOnTheVendoredEntry_OrStaysAnOpenEnd()
@@ -40,33 +32,6 @@ public class HelmGraphTests
         var resolves = graph.Edges.Where(edge => edge.Kind == HelmEdgeKind.Resolves).ToArray();
         Assert.Contains(resolves, edge => edge is { SourceId: "dep:cache", TargetId: "sub:charts/redis", OpenEnd: false });
         Assert.Contains(resolves, edge => edge is { SourceId: "dep:postgres", TargetId.Length: 0, OpenEnd: true });
-    }
-
-    [Fact]
-    public void Overrides_StacksEachOverrideOntoTheDefaultLayer()
-    {
-        // Arrange & Act.
-        var graph = WellFormed();
-
-        // Assert.
-        var overrides = Assert.Single(graph.Edges, edge => edge.Kind == HelmEdgeKind.Overrides);
-        Assert.Equal("values:values-staging.yaml", overrides.SourceId);
-        Assert.Equal("values:values.yaml", overrides.TargetId);
-    }
-
-    [Fact]
-    public void Configures_MatchesTheDefaultLayersTopLevelKeyToTheEffectiveName()
-    {
-        // Arrange & Act.
-        var graph = WellFormed();
-
-        // Assert.
-        // values.yaml carries "cache:" - the alias, not the chart name - so the edge lands on
-        // dep:cache and no edge claims postgres.
-        var configures = Assert.Single(graph.Edges, edge => edge.Kind == HelmEdgeKind.Configures);
-        Assert.Equal("values:values.yaml", configures.SourceId);
-        Assert.Equal("dep:cache", configures.TargetId);
-        Assert.Equal("cache", configures.Label);
     }
 
     [Fact]
@@ -168,24 +133,6 @@ public class HelmGraphTests
         // Assert.
         Assert.Empty(graph.Nodes);
         Assert.Empty(graph.Edges);
-    }
-
-    [Fact]
-    public void AGlobalKey_MarksTheValuesNodeInsteadOfFanningOut()
-    {
-        // Arrange.
-        // global: is visible to every subchart; an edge per dependency would say nothing. The
-        // mark travels on the model (ValuesFile.HasGlobal -> the payload); here the graph must
-        // simply not manufacture configures edges from it.
-        var values = new ValuesFile("values.yaml", true, true, ["global"], null);
-        var dependency = new DependencyDeclaration("redis", null, "1.0.0", null, null, ConditionState.None, 1);
-        var chart = Minimal() with { Values = [values], Dependencies = [dependency] };
-
-        // Act.
-        var graph = HelmGraph.Derive(chart);
-
-        // Assert.
-        Assert.DoesNotContain(graph.Edges, edge => edge.Kind == HelmEdgeKind.Configures);
     }
 
     [Fact]

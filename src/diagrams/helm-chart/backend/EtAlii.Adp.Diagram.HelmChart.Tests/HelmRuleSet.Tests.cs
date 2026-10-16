@@ -1,3 +1,4 @@
+using EtAlii.Adp.Diagram.HelmChart.Tests.Parity;
 using Xunit;
 
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
@@ -8,16 +9,28 @@ namespace EtAlii.Adp.Diagram.HelmChart.Tests;
 /// Every rule's fire AND non-fire case (Requirement 10) - the noise guards are as much the
 /// specification as the findings are.
 /// </summary>
+/// <remarks>
+/// The rules were <c>HelmRuleSet</c>'s and are now the bundled definition's (helm-chart-disl-fbl, task 6).
+/// Each case judges both: the hand-written rule set, kept as the oracle in <c>Parity/HandWrittenHelm.cs</c>,
+/// and the findings the product derives, which must equal it before the case asserts on them.
+/// </remarks>
 public class HelmRuleSetTests
 {
     private static HelmChart Read(string fixture) =>
         new HelmChartReader().Read(IoPath.Combine(AppContext.BaseDirectory, "Fixtures", fixture));
 
+    /// <summary>The derived findings of <paramref name="chart"/>, once they are seen to be the oracle's.</summary>
+    private static IReadOnlyList<DiagramProblem> Judge(HelmChart chart)
+    {
+        HelmDerivedFindingsTests.AssertSame("this case", chart);
+        return HelmRuleSet.Judge(chart);
+    }
+
     [Fact]
     public void TheWellFormedFixture_JudgesClean()
     {
         // Arrange & Act.
-        var problems = HelmRuleSet.Judge(Read("well-formed"));
+        var problems = Judge(Read("well-formed"));
 
         // Assert.
         // Including that its Unvendored postgres dependency is NOT a finding (R5.2).
@@ -28,7 +41,7 @@ public class HelmRuleSetTests
     public void NotAChart_IsExactlyOneFolderAttributedFinding()
     {
         // Arrange & Act.
-        var problems = HelmRuleSet.Judge(HelmChart.NotAChart);
+        var problems = Judge(HelmChart.NotAChart);
 
         // Assert.
         var problem = Assert.Single(problems);
@@ -42,7 +55,7 @@ public class HelmRuleSetTests
     public void TheBrokenFixture_ReportsTheMissingVersionAndTheUnreadableValues()
     {
         // Arrange & Act.
-        var problems = HelmRuleSet.Judge(Read("broken"));
+        var problems = Judge(Read("broken"));
 
         // Assert.
         Assert.Contains(problems, problem => problem is { RuleId: HelmRules.MissingVersion, Severity: DiagramProblemSeverity.Error });
@@ -58,7 +71,7 @@ public class HelmRuleSetTests
     public void TheUnconventionalFixture_ReportsLegacyNotSemVerAndTheUndeclaredArchive()
     {
         // Arrange & Act.
-        var problems = HelmRuleSet.Judge(Read("unconventional"));
+        var problems = Judge(Read("unconventional"));
 
         // Assert.
         Assert.Contains(problems, problem => problem.RuleId == HelmRules.LegacyChart);
@@ -79,8 +92,8 @@ public class HelmRuleSetTests
         var library = Minimal("library");
 
         // Act & Assert.
-        Assert.Contains(HelmRuleSet.Judge(application), problem => problem.RuleId == HelmRules.EmptyTemplates);
-        Assert.DoesNotContain(HelmRuleSet.Judge(library), problem => problem.RuleId == HelmRules.EmptyTemplates);
+        Assert.Contains(Judge(application), problem => problem.RuleId == HelmRules.EmptyTemplates);
+        Assert.DoesNotContain(Judge(library), problem => problem.RuleId == HelmRules.EmptyTemplates);
     }
 
     [Fact]
@@ -96,7 +109,7 @@ public class HelmRuleSetTests
         };
 
         // Act & Assert.
-        Assert.DoesNotContain(HelmRuleSet.Judge(chart), problem => problem.RuleId == HelmRules.LockDrift);
+        Assert.DoesNotContain(Judge(chart), problem => problem.RuleId == HelmRules.LockDrift);
     }
 
     [Fact]
@@ -111,7 +124,7 @@ public class HelmRuleSetTests
         };
 
         // Act.
-        var problems = HelmRuleSet.Judge(chart).Where(problem => problem.RuleId == HelmRules.LockDrift).ToArray();
+        var problems = Judge(chart).Where(problem => problem.RuleId == HelmRules.LockDrift).ToArray();
 
         // Assert.
         Assert.Equal(2, problems.Length);
@@ -134,7 +147,7 @@ public class HelmRuleSetTests
         };
 
         // Act.
-        var problems = HelmRuleSet.Judge(chart);
+        var problems = Judge(chart);
 
         // Assert.
         var warning = Assert.Single(problems, problem => problem.RuleId == HelmRules.ConditionMissing);
@@ -153,7 +166,7 @@ public class HelmRuleSetTests
         };
 
         // Act.
-        var problems = HelmRuleSet.Judge(chart);
+        var problems = Judge(chart);
 
         // Assert.
         var collision = Assert.Single(problems, problem => problem.RuleId == HelmRules.NameCollision);
@@ -164,7 +177,7 @@ public class HelmRuleSetTests
         {
             Dependencies = [Dependency("redis") with { Alias = "cache" }, Dependency("redis") with { Alias = "queue" }],
         };
-        Assert.DoesNotContain(HelmRuleSet.Judge(aliased), problem => problem.RuleId == HelmRules.NameCollision);
+        Assert.DoesNotContain(Judge(aliased), problem => problem.RuleId == HelmRules.NameCollision);
     }
 
     private static HelmChart Minimal(string chartType) => new(
@@ -185,4 +198,18 @@ public class HelmRuleSetTests
 
     private static TemplateFile SomeTemplate() =>
         new("templates/deployment.yaml", TemplateRole.Manifest, new TemplateFacts(["Deployment"], [], [], []));
+}
+
+/// <summary>
+/// The findings of a chart as the product derives them, under the name the rule set had.
+/// </summary>
+/// <remarks>
+/// <c>ZeroWrites.Tests.cs</c> asks <c>HelmRuleSet.Judge</c> for them and is never edited (helm-chart-disl-fbl,
+/// tasks.md, task 1), so the name stays in the test project for it and answers with what the product
+/// derives: the read paths it guards are the product's. The hand-written rule set is
+/// <see cref="HandWrittenHelm.Findings"/>.
+/// </remarks>
+internal static class HelmRuleSet
+{
+    public static IReadOnlyList<DiagramProblem> Judge(HelmChart chart) => HelmDefinition.Findings(chart);
 }

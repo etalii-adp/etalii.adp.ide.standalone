@@ -27,7 +27,7 @@ public class HelmDerivedRowsTests
         // Arrange.
         var read = new HelmChartReader().Read(copy.Path);
         var graph = HelmGraph.Derive(read);
-        List<string> targets = [.. graph.Nodes.Select(node => node.Id), .. graph.Edges.Select(edge => edge.Id), "", Unknown];
+        List<string> targets = [.. graph.Nodes.Select(node => node.Id), .. HandWrittenHelm.Edges(read).Select(edge => edge.Id), "", Unknown];
 
         // Act and assert.
         foreach (var target in targets)

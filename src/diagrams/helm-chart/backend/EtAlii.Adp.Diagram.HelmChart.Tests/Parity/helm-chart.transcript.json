@@ -582,9 +582,7 @@
         "edge:chart|Declares|dep:cache|1.0.0 | helm/chart+edge | 40, 40 | HelmElementPayload { \"name\": \"1.0.0\", \"kind\": \"EDGE\", \"edge\": { \"sourceId\": \"chart\", \"targetId\": \"dep:cache\", \"kind\": \"DECLARES\", \"label\": \"1.0.0\" } }",
         "edge:dep:cache|Resolves||cache | helm/chart+edge | 880, 280 | HelmElementPayload { \"name\": \"cache\", \"kind\": \"EDGE\", \"edge\": { \"sourceId\": \"dep:cache\", \"kind\": \"RESOLVES\", \"label\": \"cache\", \"openEnd\": true } }",
         "edge:chart|Declares|dep:cache|2.0.0 | helm/chart+edge | 40, 40 | HelmElementPayload { \"name\": \"2.0.0\", \"kind\": \"EDGE\", \"edge\": { \"sourceId\": \"chart\", \"targetId\": \"dep:cache\", \"kind\": \"DECLARES\", \"label\": \"2.0.0\" } }",
-        "edge:dep:cache|Resolves||cache | helm/chart+edge | 880, 280 | HelmElementPayload { \"name\": \"cache\", \"kind\": \"EDGE\", \"edge\": { \"sourceId\": \"dep:cache\", \"kind\": \"RESOLVES\", \"label\": \"cache\", \"openEnd\": true } }",
-        "edge:chart|Declares|dep:cache|3.0.0 | helm/chart+edge | 40, 40 | HelmElementPayload { \"name\": \"3.0.0\", \"kind\": \"EDGE\", \"edge\": { \"sourceId\": \"chart\", \"targetId\": \"dep:cache\", \"kind\": \"DECLARES\", \"label\": \"3.0.0\" } }",
-        "edge:dep:cache|Resolves||cache | helm/chart+edge | 880, 280 | HelmElementPayload { \"name\": \"cache\", \"kind\": \"EDGE\", \"edge\": { \"sourceId\": \"dep:cache\", \"kind\": \"RESOLVES\", \"label\": \"cache\", \"openEnd\": true } }"
+        "edge:chart|Declares|dep:cache|3.0.0 | helm/chart+edge | 40, 40 | HelmElementPayload { \"name\": \"3.0.0\", \"kind\": \"EDGE\", \"edge\": { \"sourceId\": \"chart\", \"targetId\": \"dep:cache\", \"kind\": \"DECLARES\", \"label\": \"3.0.0\" } }"
       ],
       "boxes": [
         "chart | 40, 40, 220 x 110",
@@ -692,26 +690,10 @@
           ]
         },
         {
-          "target": "edge:dep:cache|Resolves||cache",
-          "rows": [
-            "helm.kind | Relationship | \"resolves to\" | Line | read-only (Defined in Chart.yaml; edit it in a text editor.) | group Identity",
-            "helm.label | Says | \"cache\" | Line | read-only (Defined in Chart.yaml; edit it in a text editor.) | group Identity",
-            "helm.open-end | Open end | \"nothing vendored answers this dependency; there is nothing to open\" | Line | read-only (Defined in Chart.yaml; edit it in a text editor.) | group Identity"
-          ]
-        },
-        {
           "target": "edge:chart|Declares|dep:cache|3.0.0",
           "rows": [
             "helm.kind | Relationship | \"declares\" | Line | read-only (Defined in Chart.yaml; edit it in a text editor.) | group Identity",
             "helm.label | Says | \"3.0.0\" | Line | read-only (Defined in Chart.yaml; edit it in a text editor.) | group Identity"
-          ]
-        },
-        {
-          "target": "edge:dep:cache|Resolves||cache",
-          "rows": [
-            "helm.kind | Relationship | \"resolves to\" | Line | read-only (Defined in Chart.yaml; edit it in a text editor.) | group Identity",
-            "helm.label | Says | \"cache\" | Line | read-only (Defined in Chart.yaml; edit it in a text editor.) | group Identity",
-            "helm.open-end | Open end | \"nothing vendored answers this dependency; there is nothing to open\" | Line | read-only (Defined in Chart.yaml; edit it in a text editor.) | group Identity"
           ]
         },
         {
@@ -1078,11 +1060,6 @@
         "edge:dep:nats|Resolves||nats | helm/chart+edge | 880, 160 | HelmElementPayload { \"name\": \"nats\", \"kind\": \"EDGE\", \"edge\": { \"sourceId\": \"dep:nats\", \"kind\": \"RESOLVES\", \"label\": \"nats\", \"openEnd\": true } }",
         "edge:values:values.yaml|Configures|dep:nats|nats | helm/chart+edge | 320, 40 | HelmElementPayload { \"name\": \"nats\", \"kind\": \"EDGE\", \"edge\": { \"sourceId\": \"values:values.yaml\", \"targetId\": \"dep:nats\", \"kind\": \"CONFIGURES\", \"label\": \"nats\" } }",
         "edge:chart|Declares|dep:nats|2.0.0 | helm/chart+edge | 40, 40 | HelmElementPayload { \"name\": \"2.0.0\", \"kind\": \"EDGE\", \"edge\": { \"sourceId\": \"chart\", \"targetId\": \"dep:nats\", \"kind\": \"DECLARES\", \"label\": \"2.0.0\" } }",
-        "edge:dep:nats|Resolves||nats | helm/chart+edge | 880, 160 | HelmElementPayload { \"name\": \"nats\", \"kind\": \"EDGE\", \"edge\": { \"sourceId\": \"dep:nats\", \"kind\": \"RESOLVES\", \"label\": \"nats\", \"openEnd\": true } }",
-        "edge:values:values.yaml|Configures|dep:nats|nats | helm/chart+edge | 320, 40 | HelmElementPayload { \"name\": \"nats\", \"kind\": \"EDGE\", \"edge\": { \"sourceId\": \"values:values.yaml\", \"targetId\": \"dep:nats\", \"kind\": \"CONFIGURES\", \"label\": \"nats\" } }",
-        "edge:chart|Declares|dep:redis|17.0.0 | helm/chart+edge | 40, 40 | HelmElementPayload { \"name\": \"17.0.0\", \"kind\": \"EDGE\", \"edge\": { \"sourceId\": \"chart\", \"targetId\": \"dep:redis\", \"kind\": \"DECLARES\", \"label\": \"17.0.0\" } }",
-        "edge:dep:redis|Resolves|sub:charts/redis| | helm/chart+edge | 880, 400 | HelmElementPayload { \"kind\": \"EDGE\", \"edge\": { \"sourceId\": \"dep:redis\", \"targetId\": \"sub:charts/redis\", \"kind\": \"RESOLVES\" } }",
-        "edge:values:values.yaml|Configures|dep:redis|redis | helm/chart+edge | 320, 40 | HelmElementPayload { \"name\": \"redis\", \"kind\": \"EDGE\", \"edge\": { \"sourceId\": \"values:values.yaml\", \"targetId\": \"dep:redis\", \"kind\": \"CONFIGURES\", \"label\": \"redis\" } }",
         "edge:chart|Declares|dep:redis|17.0.0 | helm/chart+edge | 40, 40 | HelmElementPayload { \"name\": \"17.0.0\", \"kind\": \"EDGE\", \"edge\": { \"sourceId\": \"chart\", \"targetId\": \"dep:redis\", \"kind\": \"DECLARES\", \"label\": \"17.0.0\" } }",
         "edge:dep:redis|Resolves|sub:charts/redis| | helm/chart+edge | 880, 400 | HelmElementPayload { \"kind\": \"EDGE\", \"edge\": { \"sourceId\": \"dep:redis\", \"targetId\": \"sub:charts/redis\", \"kind\": \"RESOLVES\" } }",
         "edge:values:values.yaml|Configures|dep:redis|redis | helm/chart+edge | 320, 40 | HelmElementPayload { \"name\": \"redis\", \"kind\": \"EDGE\", \"edge\": { \"sourceId\": \"values:values.yaml\", \"targetId\": \"dep:redis\", \"kind\": \"CONFIGURES\", \"label\": \"redis\" } }"
@@ -1199,41 +1176,6 @@
           "rows": [
             "helm.kind | Relationship | \"declares\" | Line | read-only (Defined in Chart.yaml; edit it in a text editor.) | group Identity",
             "helm.label | Says | \"2.0.0\" | Line | read-only (Defined in Chart.yaml; edit it in a text editor.) | group Identity"
-          ]
-        },
-        {
-          "target": "edge:dep:nats|Resolves||nats",
-          "rows": [
-            "helm.kind | Relationship | \"resolves to\" | Line | read-only (Defined in Chart.yaml; edit it in a text editor.) | group Identity",
-            "helm.label | Says | \"nats\" | Line | read-only (Defined in Chart.yaml; edit it in a text editor.) | group Identity",
-            "helm.open-end | Open end | \"nothing vendored answers this dependency; there is nothing to open\" | Line | read-only (Defined in Chart.yaml; edit it in a text editor.) | group Identity"
-          ]
-        },
-        {
-          "target": "edge:values:values.yaml|Configures|dep:nats|nats",
-          "rows": [
-            "helm.kind | Relationship | \"configures\" | Line | read-only (Defined in Chart.yaml; edit it in a text editor.) | group Identity",
-            "helm.label | Says | \"nats\" | Line | read-only (Defined in Chart.yaml; edit it in a text editor.) | group Identity"
-          ]
-        },
-        {
-          "target": "edge:chart|Declares|dep:redis|17.0.0",
-          "rows": [
-            "helm.kind | Relationship | \"declares\" | Line | read-only (Defined in Chart.yaml; edit it in a text editor.) | group Identity",
-            "helm.label | Says | \"17.0.0\" | Line | read-only (Defined in Chart.yaml; edit it in a text editor.) | group Identity"
-          ]
-        },
-        {
-          "target": "edge:dep:redis|Resolves|sub:charts/redis|",
-          "rows": [
-            "helm.kind | Relationship | \"resolves to\" | Line | read-only (Defined in Chart.yaml; edit it in a text editor.) | group Identity"
-          ]
-        },
-        {
-          "target": "edge:values:values.yaml|Configures|dep:redis|redis",
-          "rows": [
-            "helm.kind | Relationship | \"configures\" | Line | read-only (Defined in Chart.yaml; edit it in a text editor.) | group Identity",
-            "helm.label | Says | \"redis\" | Line | read-only (Defined in Chart.yaml; edit it in a text editor.) | group Identity"
           ]
         },
         {

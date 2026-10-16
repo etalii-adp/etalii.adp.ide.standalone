@@ -275,6 +275,29 @@ public class DislModelBuilderTests
     }
 
     [Fact]
+    public void ADerivedRelation_TakesTheAttributesItsDeclarationComputes()
+    {
+        // DISL 4.11.3: each member of a DerivedRelation's attributes is an Expression in the deriveItem
+        // context, evaluated per item; a literal written as CEL is an Expression too.
+        var specification = Specifications.Loaded(Specifications.With("""
+            "metamodel": {
+              "types": { "Thing": { "attributes": { "name": { "type": "string" } } } },
+              "relations": { "Named": { "source": "Thing", "target": "Thing",
+                "attributes": { "label": { "type": "string" }, "fixed": { "type": "string" } },
+                "derived": { "from": "diagram.nodes", "source": "item", "target": "item",
+                             "attributes": { "label": "item.name + '!'", "fixed": "''" } } } } }
+            """));
+        var diagram = new DislDiagram(specification);
+        diagram.AddNode("Thing", "t", new Dictionary<string, object?> { ["name"] = "a" });
+
+        Assert.Empty(DislModelBuilder.Complete(diagram));
+
+        var relation = Assert.Single(diagram.Relations);
+        Assert.Equal("a!", relation.ValueOf("label"));
+        Assert.Equal("", relation.ValueOf("fixed"));
+    }
+
+    [Fact]
     public void AFailingFrom_DerivesNothing()
     {
         var specification = Specifications.Loaded(Specifications.With("""

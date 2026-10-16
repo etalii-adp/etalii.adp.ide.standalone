@@ -41,7 +41,7 @@ public class HelmElementMapperTests
         var elements = new HelmElementMapper().Elements(chart, graph, BoxesFor(graph));
 
         // Assert.
-        Assert.Equal(graph.Nodes.Count + graph.Edges.Count, elements.Count);
+        Assert.Equal(graph.Nodes.Count + HelmElementMapper.Relations(chart).Count, elements.Count);
         Assert.All(elements, element => Assert.False(string.IsNullOrEmpty(element.Id)));
     }
 

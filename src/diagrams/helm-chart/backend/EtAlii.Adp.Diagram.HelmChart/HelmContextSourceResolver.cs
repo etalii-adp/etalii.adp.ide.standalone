@@ -63,15 +63,17 @@ public sealed class HelmContextSourceResolver(DiagramFileRouter router, IHelmCha
             return (Segments(path), node.Name);
         }
 
-        var edge = graph.Edges.FirstOrDefault(candidate => string.Equals(candidate.Id, elementId, StringComparison.Ordinal));
-        if (edge is null)
+        // A relation is the definition's model's: two of its kinds are read, three are derived (task 6).
+        var relation = HelmDefinition.ModelOf(chart).Relations.FirstOrDefault(candidate => string.Equals(candidate.Id, elementId, StringComparison.Ordinal));
+        if (relation is null)
         {
             return null;
         }
 
-        var sourcePath = graph.Node(edge.SourceId)?.RelativePath;
+        var sourcePath = relation.Source is { } source ? graph.Node(source.Id)?.RelativePath : null;
         var declaredIn = sourcePath is { Length: > 0 } ? sourcePath : DeclaringFile(chart);
-        var label = edge.Label.Length > 0 ? $"{Verb(edge.Kind)} {edge.Label}" : Verb(edge.Kind);
+        var verb = Verb(relation.Type.Name);
+        var label = relation.ValueOf("label") is string { Length: > 0 } says ? $"{verb} {says}" : verb;
         return (Segments(declaredIn), label);
     }
 
@@ -102,13 +104,14 @@ public sealed class HelmContextSourceResolver(DiagramFileRouter router, IHelmCha
     /// <summary>Where dependencies are declared: <c>Chart.yaml</c>, or <c>requirements.yaml</c> for a legacy chart.</summary>
     private static string DeclaringFile(HelmChart chart) => chart.Legacy ? "requirements.yaml" : "Chart.yaml";
 
-    private static string Verb(HelmEdgeKind kind) => kind switch
+    /// <summary>What a relation of the definition's type does, as a reader says it.</summary>
+    private static string Verb(string type) => type switch
     {
-        HelmEdgeKind.Declares => "declares",
-        HelmEdgeKind.Resolves => "resolves to",
-        HelmEdgeKind.Overrides => "overrides",
-        HelmEdgeKind.Configures => "configures",
-        HelmEdgeKind.Includes => "includes",
+        "Declares" => "declares",
+        "Resolves" => "resolves to",
+        "Overrides" => "overrides",
+        "Configures" => "configures",
+        "Includes" => "includes",
         _ => "",
     };
 

@@ -6,8 +6,9 @@ using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would othe
 namespace EtAlii.Adp.Diagram.HelmChart;
 
 /// <summary>
-/// Adapts <see cref="HelmRuleSet"/> to core's validator seam, so this type's rules reach the
-/// errors-and-warnings panel like any other type's (Requirement 10.8).
+/// Hands the findings of <see cref="HelmDefinition.Findings"/> to core's validator seam, so this type's
+/// rules reach the errors-and-warnings panel like any other type's (Requirement 10.8). It holds no rule:
+/// the rules are the bundled definition's (helm-chart-disl-fbl, task 6).
 /// </summary>
 /// <remarks>
 /// <para>
@@ -58,7 +59,7 @@ public sealed class HelmValidator : IDiagramValidator
             return ValueTask.FromResult<IReadOnlyList<DiagramProblem>>([]);
         }
 
-        var problems = HelmRuleSet.Judge(_reader.Read(folder));
+        var problems = HelmDefinition.Findings(_reader.Read(folder));
         return ValueTask.FromResult(Rebased(problems, request.RootPath, folder));
     }
 
@@ -69,7 +70,7 @@ public sealed class HelmValidator : IDiagramValidator
     /// (its integration flow caught it); the tests here cover the nested chart directly.
     /// </summary>
     /// <remarks>
-    /// The <c>.</c> location - the rule set's way of blaming the chart folder itself
+    /// The <c>.</c> location - <see cref="HelmNotAChart"/>'s way of blaming the chart folder itself
     /// (Requirement 10.1) - rebases to the folder's own project-relative path, never to a
     /// literal <c>prefix/.</c>.
     /// </remarks>

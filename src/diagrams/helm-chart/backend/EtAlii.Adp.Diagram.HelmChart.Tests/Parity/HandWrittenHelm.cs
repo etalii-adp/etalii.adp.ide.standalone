@@ -1,12 +1,16 @@
+using System.Text.RegularExpressions;
 using EtAlii.Adp.Context;
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.Documents.Wire;
 
 namespace EtAlii.Adp.Diagram.HelmChart.Tests.Parity;
 
 /// <summary>
-/// The property rows and the refusal as <c>HelmContextPropertyProvider</c> wrote them by hand before they
-/// were derived from the DISL definition (helm-chart-disl-fbl, task 5), kept verbatim as the oracle the
-/// derived ones are compared with, chart for chart and element for element (Requirement 5.8).
+/// The module's hand-written logic, kept verbatim as the oracle the derived answers are compared with, chart
+/// for chart and element for element (helm-chart-disl-fbl, Requirement 5.8): the property rows and the
+/// refusal as <c>HelmContextPropertyProvider</c> wrote them before they were derived from the DISL definition
+/// (task 5), and the findings as <c>HelmRuleSet</c> judged them and the relations as <c>HelmGraph</c> made
+/// them before the definition derived them (task 6).
 /// </summary>
 internal static class HandWrittenHelm
 {
@@ -30,8 +34,72 @@ internal static class HandWrittenHelm
             return Describe(chart, graph, node);
         }
 
-        var edge = graph.Edges.FirstOrDefault(candidate => string.Equals(candidate.Id, elementId, StringComparison.Ordinal));
+        var edge = Edges(chart).FirstOrDefault(candidate => string.Equals(candidate.Id, elementId, StringComparison.Ordinal));
         return edge is null ? [] : Describe(chart, edge);
+    }
+
+    /// <summary>
+    /// The relations of <paramref name="chart"/> as <c>HelmGraph.Derive</c> made all five, in its order: each
+    /// override onto the default values layer, each include, then per dependency its <c>Declares</c>, its
+    /// <c>Resolves</c> and its <c>Configures</c>. Two dependencies of one effective name repeat the relations
+    /// whose ids do not tell them apart, as they did.
+    /// </summary>
+    public static IReadOnlyList<HelmEdge> Edges(HelmChart chart)
+    {
+        var edges = new List<HelmEdge>();
+        var resolution = DependencyResolution.Match(chart.Dependencies, chart.Vendored);
+        if (!chart.IsChart)
+        {
+            return edges;
+        }
+
+        const string chartId = "chart";
+        var defaultValues = chart.Values.FirstOrDefault(values => values.IsDefault);
+        foreach (var values in chart.Values)
+        {
+            if (!values.IsDefault && defaultValues is not null)
+            {
+                edges.Add(new HelmEdge(ValuesId(values), ValuesId(defaultValues), HelmEdgeKind.Overrides, string.Empty, OpenEnd: false));
+            }
+        }
+
+        var partials = chart.Templates.Where(template => template.Role == TemplateRole.Partial).ToArray();
+        foreach (var template in chart.Templates)
+        {
+            foreach (var reference in template.Facts.References)
+            {
+                var defining = partials.FirstOrDefault(partial =>
+                    partial.Facts.Defines.Contains(reference, StringComparer.Ordinal));
+                edges.Add(defining is not null
+                    ? new HelmEdge(TemplateId(template), TemplateId(defining), HelmEdgeKind.Includes, reference, OpenEnd: false)
+                    : new HelmEdge(TemplateId(template), string.Empty, HelmEdgeKind.Includes, reference, OpenEnd: true));
+            }
+        }
+
+        foreach (var resolved in resolution.Dependencies)
+        {
+            var dependency = resolved.Dependency;
+            var id = HelmGraph.DependencyId(dependency);
+            edges.Add(new HelmEdge(chartId, id, HelmEdgeKind.Declares, dependency.VersionConstraint ?? string.Empty, OpenEnd: false));
+            edges.Add(resolved.Vendored is { } vendored
+                ? new HelmEdge(id, VendoredId(vendored), HelmEdgeKind.Resolves, string.Empty, OpenEnd: false)
+                : new HelmEdge(id, string.Empty, HelmEdgeKind.Resolves, dependency.EffectiveName, OpenEnd: true));
+
+            if (defaultValues is not null
+                && defaultValues.TopLevelKeys.Contains(dependency.EffectiveName, StringComparer.Ordinal))
+            {
+                edges.Add(new HelmEdge(
+                    ValuesId(defaultValues), id, HelmEdgeKind.Configures, dependency.EffectiveName, OpenEnd: false));
+            }
+        }
+
+        return edges;
+
+        static string ValuesId(ValuesFile values) => $"values:{values.RelativePath}";
+
+        static string TemplateId(TemplateFile template) => $"tpl:{template.RelativePath}";
+
+        static string VendoredId(VendoredEntry entry) => $"{(entry.Sealed ? "tgz" : "sub")}:{entry.RelativePath}";
     }
 
     private static IReadOnlyList<ContextPropertyDefinition> Describe(HelmChart chart, HelmGraph graph, HelmNode node) =>
@@ -350,4 +418,255 @@ internal static class HandWrittenHelm
         HelmEdgeKind.Includes => "includes",
         _ => "",
     };
+
+    // ---- The findings, as HelmRuleSet.Judge gave them (task 6) ---------------------------------------
+    //
+    // The noise guards are part of the specification. An Unvendored dependency is never a finding, a
+    // missing lock is never a finding either, and library charts escape the empty-templates rule. The
+    // panel knew two severities, so the legacy finding is a Warning worded as information.
+
+    /// <summary>MAJOR.MINOR.PATCH with optional pre-release and build tails - SemVer's shape, not its algebra.</summary>
+    private static readonly Regex _semVer = new(
+        @"^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$",
+        RegexOptions.Compiled | RegexOptions.CultureInvariant);
+
+    public static IReadOnlyList<DiagramProblem> Findings(HelmChart chart)
+    {
+        ArgumentNullException.ThrowIfNull(chart);
+
+        if (!chart.IsChart)
+        {
+            // Exactly one finding, attributed to the folder itself: a registered non-chart is
+            // one fact, not a cascade (R10.1). Core's ProblemStamp keeps a folder-located
+            // problem fresh - the seam built for exactly this kind of rule.
+            return
+            [
+                new DiagramProblem(
+                    DiagramProblemSeverity.Warning,
+                    "This folder is not a Helm chart: it has no Chart.yaml.",
+                    HelmRules.NotAChart,
+                    new DiagramProblemFileLocation(".")),
+            ];
+        }
+
+        var problems = new List<DiagramProblem>();
+        problems.AddRange(UnreadableFiles(chart));
+        problems.AddRange(Metadata(chart));
+        problems.AddRange(Vendoring(chart));
+        problems.AddRange(LockDrift(chart));
+        problems.AddRange(Templates(chart));
+        problems.AddRange(Conditions(chart));
+        problems.AddRange(Collisions(chart));
+
+        return problems;
+    }
+
+    /// <summary>Chart-owned YAML that would not parse, in the parser's own words (R10.2, R10.3).</summary>
+    private static IEnumerable<DiagramProblem> UnreadableFiles(HelmChart chart)
+    {
+        if (chart.MetadataFailure is { } metadata)
+        {
+            yield return Unreadable(DiagramProblemSeverity.Error, metadata);
+        }
+
+        if (chart.DependenciesFailure is { } dependencies)
+        {
+            yield return Unreadable(DiagramProblemSeverity.Error, dependencies);
+        }
+
+        foreach (var values in chart.Values.Where(values => values.Failure is not null))
+        {
+            yield return Unreadable(DiagramProblemSeverity.Error, values.Failure!);
+        }
+
+        if (chart.Lock?.Failure is { } chartLock)
+        {
+            yield return Unreadable(DiagramProblemSeverity.Error, chartLock);
+        }
+
+        foreach (var crd in chart.Crds?.Failures ?? [])
+        {
+            yield return Unreadable(DiagramProblemSeverity.Error, crd);
+        }
+
+        static DiagramProblem Unreadable(DiagramProblemSeverity severity, TolerantYamlFailure failure) => new(
+            severity,
+            $"'{failure.RelativePath}' is not readable YAML: {failure.Message}",
+            HelmRules.UnreadableYaml,
+            new DiagramProblemFileLocation(failure.RelativePath, failure.Line));
+    }
+
+    /// <summary>The fields Helm itself requires, and the shape it requires of one of them (R10.2, R10.7).</summary>
+    private static IEnumerable<DiagramProblem> Metadata(HelmChart chart)
+    {
+        if (chart.MetadataFailure is not null)
+        {
+            // Unreadable is already reported; guessing at what an unparseable file lacks
+            // would stack noise on top of the real message.
+            yield break;
+        }
+
+        var line = chart.Metadata?.Line ?? 0;
+        if (chart.Metadata?.Name is not { Length: > 0 })
+        {
+            yield return new DiagramProblem(
+                DiagramProblemSeverity.Error,
+                "Chart.yaml declares no name; Helm requires one.",
+                HelmRules.MissingName,
+                new DiagramProblemFileLocation("Chart.yaml", line));
+        }
+
+        if (chart.Metadata?.Version is not { Length: > 0 })
+        {
+            yield return new DiagramProblem(
+                DiagramProblemSeverity.Error,
+                "Chart.yaml declares no version; Helm requires one.",
+                HelmRules.MissingVersion,
+                new DiagramProblemFileLocation("Chart.yaml", line));
+        }
+        else if (!_semVer.IsMatch(chart.Metadata.Version))
+        {
+            yield return new DiagramProblem(
+                DiagramProblemSeverity.Warning,
+                $"'{chart.Metadata.Version}' is not a SemVer version; Helm expects MAJOR.MINOR.PATCH.",
+                HelmRules.VersionNotSemVer,
+                new DiagramProblemFileLocation("Chart.yaml", chart.Metadata.VersionLine));
+        }
+
+        if (chart.Legacy)
+        {
+            yield return new DiagramProblem(
+                DiagramProblemSeverity.Warning,
+                "This is a legacy Helm 2 chart (apiVersion: v1); dependencies live in requirements.yaml.",
+                HelmRules.LegacyChart,
+                new DiagramProblemFileLocation("Chart.yaml", line));
+        }
+    }
+
+    /// <summary>
+    /// Undeclared vendored content (R10.4). The Unvendored state deliberately never fires:
+    /// the prometheus example would open red otherwise, and unvendored is the common case.
+    /// </summary>
+    private static IEnumerable<DiagramProblem> Vendoring(HelmChart chart) =>
+        DependencyResolution.Match(chart.Dependencies, chart.Vendored).Undeclared
+            .Select(entry => new DiagramProblem(
+                DiagramProblemSeverity.Warning,
+                $"'{entry.RelativePath}' sits in charts/ but no dependency declares it.",
+                HelmRules.UndeclaredVendored,
+                new DiagramProblemFileLocation(entry.RelativePath)));
+
+    /// <summary>Lock drift, both directions - only when a lock exists at all (R10.5).</summary>
+    private static IEnumerable<DiagramProblem> LockDrift(HelmChart chart)
+    {
+        if (chart.Lock is not { Failure: null } chartLock)
+        {
+            yield break;
+        }
+
+        var declared = chart.Dependencies.Select(dependency => dependency.Name)
+            .ToHashSet(StringComparer.Ordinal);
+        var locked = chartLock.Entries.Select(entry => entry.Name)
+            .ToHashSet(StringComparer.Ordinal);
+
+        foreach (var name in declared.Where(name => !locked.Contains(name)).Order(StringComparer.Ordinal))
+        {
+            yield return new DiagramProblem(
+                DiagramProblemSeverity.Warning,
+                $"The dependency '{name}' is declared but not in {chartLock.RelativePath}; run helm dependency update.",
+                HelmRules.LockDrift,
+                new DiagramProblemFileLocation(chartLock.RelativePath));
+        }
+
+        foreach (var entry in chartLock.Entries.Where(entry => !declared.Contains(entry.Name)))
+        {
+            yield return new DiagramProblem(
+                DiagramProblemSeverity.Warning,
+                $"{chartLock.RelativePath} pins '{entry.Name}', which no dependency declares; the lock is stale.",
+                HelmRules.LockDrift,
+                new DiagramProblemFileLocation(chartLock.RelativePath, entry.Line));
+        }
+    }
+
+    /// <summary>An application chart that renders nothing (R10.6); library charts are exempt (R1.2).</summary>
+    private static IEnumerable<DiagramProblem> Templates(HelmChart chart)
+    {
+        if (chart.Metadata is null || chart.Metadata.IsLibrary || chart.Templates.Count > 0)
+        {
+            yield break;
+        }
+
+        yield return new DiagramProblem(
+            DiagramProblemSeverity.Warning,
+            "This application chart has no templates; helm install would render nothing.",
+            HelmRules.EmptyTemplates,
+            new DiagramProblemFileLocation("Chart.yaml", chart.Metadata.Line));
+    }
+
+    /// <summary>A condition switching a subchart off a path the default values do not carry (R10.6).</summary>
+    private static IEnumerable<DiagramProblem> Conditions(HelmChart chart)
+    {
+        var declaringFile = chart.Legacy ? "requirements.yaml" : "Chart.yaml";
+        foreach (var dependency in chart.Dependencies.Where(dependency => dependency.State == ConditionState.Missing))
+        {
+            yield return new DiagramProblem(
+                DiagramProblemSeverity.Warning,
+                $"The condition '{dependency.Condition}' of dependency '{dependency.EffectiveName}' names a path that is not in values.yaml.",
+                HelmRules.ConditionMissing,
+                new DiagramProblemFileLocation(declaringFile, dependency.Line));
+        }
+    }
+
+    /// <summary>Two dependencies mounting under one effective name cannot coexist (R10.6).</summary>
+    private static IEnumerable<DiagramProblem> Collisions(HelmChart chart)
+    {
+        var declaringFile = chart.Legacy ? "requirements.yaml" : "Chart.yaml";
+        foreach (var group in chart.Dependencies
+                     .GroupBy(dependency => dependency.EffectiveName, StringComparer.Ordinal)
+                     .Where(group => group.Count() > 1))
+        {
+            var second = group.Skip(1).First();
+            yield return new DiagramProblem(
+                DiagramProblemSeverity.Error,
+                $"Two dependencies resolve to the effective name '{group.Key}'; give one an alias.",
+                HelmRules.NameCollision,
+                new DiagramProblemFileLocation(declaringFile, second.Line));
+        }
+    }
+}
+
+/// <summary>Every rule's stable id, prefixed with the module's short name as core expects.</summary>
+internal static class HelmRules
+{
+    /// <summary>The registered folder holds no <c>Chart.yaml</c> at all.</summary>
+    public const string NotAChart = "helm.not-a-chart";
+
+    /// <summary>A chart-owned YAML file does not parse, reported in the parser's own words.</summary>
+    public const string UnreadableYaml = "helm.unreadable-yaml";
+
+    /// <summary><c>Chart.yaml</c> lacks the <c>name</c> Helm requires.</summary>
+    public const string MissingName = "helm.missing-name";
+
+    /// <summary><c>Chart.yaml</c> lacks the <c>version</c> Helm requires.</summary>
+    public const string MissingVersion = "helm.missing-version";
+
+    /// <summary>The declared <c>version</c> is not SemVer-shaped.</summary>
+    public const string VersionNotSemVer = "helm.version-not-semver";
+
+    /// <summary>Something sits in <c>charts/</c> that no dependency declares.</summary>
+    public const string UndeclaredVendored = "helm.undeclared-vendored";
+
+    /// <summary>The lock and the declarations disagree - the lock is stale.</summary>
+    public const string LockDrift = "helm.lock-drift";
+
+    /// <summary>An application chart with no templates renders nothing.</summary>
+    public const string EmptyTemplates = "helm.empty-templates";
+
+    /// <summary>A dependency's <c>condition</c> path is not in the default values.</summary>
+    public const string ConditionMissing = "helm.condition-missing";
+
+    /// <summary>Two dependencies mount under the same effective name.</summary>
+    public const string NameCollision = "helm.name-collision";
+
+    /// <summary>An <c>apiVersion: v1</c> chart - legacy Helm 2 format.</summary>
+    public const string LegacyChart = "helm.legacy-chart";
 }
