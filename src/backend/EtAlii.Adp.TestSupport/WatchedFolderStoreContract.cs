@@ -54,8 +54,8 @@ public abstract class WatchedFolderStoreContract<TSnapshot> : IDisposable
     protected virtual WatchedFolderStore<TSnapshot> CreateStore(TimeSpan settleDelay, TimeProvider time) => CreateStore(settleDelay);
 
     /// <summary>
-    /// A new store on the system clock, for the helm-chart and ansible-structure stores until their
-    /// conversion to DISL and FBL replaces them; every other store takes the test's clock.
+    /// A new store on the system clock, for the ansible-structure store until its conversion to DISL
+    /// and FBL replaces it; every other store takes the test's clock.
     /// </summary>
     protected virtual WatchedFolderStore<TSnapshot> CreateStore(TimeSpan settleDelay) =>
         throw new NotSupportedException("A store under this contract is made by CreateStore(TimeSpan, TimeProvider).");

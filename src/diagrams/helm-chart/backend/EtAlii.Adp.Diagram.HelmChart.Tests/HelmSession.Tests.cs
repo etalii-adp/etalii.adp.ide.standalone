@@ -1,6 +1,7 @@
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Time.Testing;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
@@ -19,6 +20,7 @@ public class HelmSessionTests : IAsyncDisposable, IDisposable
     private readonly string _root;
     private readonly string _adpPath;
     private readonly ServiceProvider _provider;
+    private readonly FakeTimeProvider _clock = new();
     private readonly HelmChartStore _store;
 
     public HelmSessionTests()
@@ -34,7 +36,7 @@ public class HelmSessionTests : IAsyncDisposable, IDisposable
             .AddCommands().AddHierarchyCommandHandlers()
             .AddHelmCharts()
             .BuildServiceProvider();
-        _store = new HelmChartStore(new HelmChartReader(), SettleDelay);
+        _store = new HelmChartStore(new HelmChartReader(), SettleDelay, _clock);
     }
 
     public void Dispose()
@@ -48,6 +50,13 @@ public class HelmSessionTests : IAsyncDisposable, IDisposable
     {
         Dispose();
         return ValueTask.CompletedTask;
+    }
+
+    /// <summary><paramref name="probe"/>, asked once the store's clock has moved a settle delay.</summary>
+    private T Settled<T>(Func<T> probe)
+    {
+        _clock.Advance(SettleDelay);
+        return probe();
     }
 
     private HelmSession Session(bool withHistory = true) => new(
@@ -204,20 +213,19 @@ public class HelmSessionTests : IAsyncDisposable, IDisposable
         // Arrange.
         await using var session = Session();
         session.Baseline();
-        using var pushed = new ManualResetEventSlim();
+        var pushed = new TaskCompletionSource();
         IReadOnlyList<DiagramDelta>? deltas = null;
         session.Changed += (_, e) =>
         {
             deltas = e.Deltas;
-            // ReSharper disable once AccessToDisposedClosure - Reason: the test reads `pushed` with pushed.Wait(WaitLimit, ...) before the scope ends, and a change raised after that, in the moment between the usings disposing `pushed` and then `session`, only reaches this Set, and a Set on a disposed ManualResetEventSlim is a no-op rather than a throw (measured on .NET 10).
-            pushed.Set();
+            pushed.TrySetResult();
         };
 
         // Act.
         await File.WriteAllTextAsync(IoPath.Combine(_root, "values-prod.yaml"), "replicaCount: 3\n", TestContext.Current.CancellationToken);
 
         // Assert.
-        Assert.True(pushed.Wait(WaitLimit, TestContext.Current.CancellationToken), "The session never pushed the change.");
+        Assert.True(await Eventually.TrueAsync(() => Settled(() => pushed.Task.IsCompleted), TestContext.Current.CancellationToken, WaitLimit), "The session never pushed the change.");
         Assert.NotNull(deltas);
         var add = deltas.OfType<DiagramAddDelta>().Single();
         Assert.Contains(add.Elements, element => element.Id == "values:values-prod.yaml");
@@ -235,20 +243,19 @@ public class HelmSessionTests : IAsyncDisposable, IDisposable
         await using var session = Session();
         var delivered = session.BaselineElements()
             .ToDictionary(element => element.Id, StringComparer.Ordinal);
-        using var pushed = new ManualResetEventSlim();
+        var pushed = new TaskCompletionSource();
         IReadOnlyList<DiagramDelta>? deltas = null;
         session.Changed += (_, e) =>
         {
             deltas = e.Deltas;
-            // ReSharper disable once AccessToDisposedClosure - Reason: the test reads `pushed` with pushed.Wait(WaitLimit, ...) before the scope ends, and a change raised after that, in the moment between the usings disposing `pushed` and then `session`, only reaches this Set, and a Set on a disposed ManualResetEventSlim is a no-op rather than a throw (measured on .NET 10).
-            pushed.Set();
+            pushed.TrySetResult();
         };
 
         // Act.
         await File.WriteAllTextAsync(IoPath.Combine(_root, "values-prod.yaml"), "replicaCount: 3\n", TestContext.Current.CancellationToken);
 
         // Assert.
-        Assert.True(pushed.Wait(WaitLimit, TestContext.Current.CancellationToken), "The session never pushed the change.");
+        Assert.True(await Eventually.TrueAsync(() => Settled(() => pushed.Task.IsCompleted), TestContext.Current.CancellationToken, WaitLimit), "The session never pushed the change.");
         Assert.NotNull(deltas);
         var added = deltas.OfType<DiagramAddDelta>().SelectMany(delta => delta.Elements).ToArray();
         Assert.Contains(added, element => element.Id == "values:values-prod.yaml");
