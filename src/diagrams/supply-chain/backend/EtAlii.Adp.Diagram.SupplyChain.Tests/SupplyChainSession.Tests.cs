@@ -94,11 +94,12 @@ public sealed class SupplyChainSessionTests : IDisposable
         // Act.
         using (_selections.Select(ShortGuid.NewShortGuid(), _folder.Body, "pack-assembly"))
         {
-            await Task.Delay(200, TestContext.Current.CancellationToken);
+            // Assert: nothing - and then, beside that absence, a selection here that does arrive.
+            Assert.False(
+                await Eventually.TrueAsync(() => raised.Task.IsCompleted, TestContext.Current.CancellationToken, Silence),
+                "A selection on another connection lit an element here.");
         }
 
-        // Assert: nothing - and then, beside that absence, a selection here that does arrive.
-        Assert.False(raised.Task.IsCompleted);
         using var mine = _selections.Select(_watchId, _folder.Body, "pack-assembly");
         Assert.NotEmpty(Changed(await Next(raised)));
     }
@@ -140,9 +141,13 @@ public sealed class SupplyChainSessionTests : IDisposable
 
         // Assert: the open one hears it, and by then the closed one has had its chance.
         Assert.NotEmpty(Changed(await Next(heardOpen)));
-        await Task.Delay(200, TestContext.Current.CancellationToken);
-        Assert.False(heardClosed.Task.IsCompleted);
+        Assert.False(
+            await Eventually.TrueAsync(() => heardClosed.Task.IsCompleted, TestContext.Current.CancellationToken, Silence),
+            "The disposed session heard the selection.");
     }
+
+    /// <summary>How long a selection that should not arrive is given to arrive anyway.</summary>
+    private static readonly TimeSpan Silence = TimeSpan.FromMilliseconds(200);
 
     private SupplyChainSession Open() => new(_watchId, _folder.Body, _store, new SupplyChainElementMapper(), _selections);
 

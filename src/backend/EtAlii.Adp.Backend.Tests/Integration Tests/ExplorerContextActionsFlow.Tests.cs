@@ -245,8 +245,9 @@ public class ExplorerContextActionsFlowTests(HostFixture host) : IClassFixture<H
 
         // Nothing happened on disk, so B has nothing to receive at all - and certainly not
         // A's prompt. Anything arriving within this window is a leak.
-        var arrivedOnB = await Task.WhenAny(pendingB, Task.Delay(TimeSpan.FromSeconds(1), TestContext.Current.CancellationToken)) == pendingB;
-        Assert.False(arrivedOnB, "Connection B observed a message raised for connection A.");
+        Assert.False(
+            await Eventually.TrueAsync(() => pendingB.IsCompleted, TestContext.Current.CancellationToken, TimeSpan.FromSeconds(1)),
+            "Connection B observed a message raised for connection A.");
     }
 
     [Fact]

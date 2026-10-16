@@ -48,7 +48,7 @@ public sealed class WorkspaceStreamFlowTests(HostFixture host) : IClassFixture<H
             new OpenDiagramStreamRequest { StreamId = streamId, Request = OpenRequest(session, "notes.txt") },
             session.Headers,
             cancellationToken: TestContext.Current.CancellationToken);
-        var delta = await ReadUntilAsync(watch.ResponseStream, message => message.MessageCase == WorkspaceMessage.MessageOneofCase.Diagram, cts.Token);
+        var delta = await watch.ResponseStream.FirstAsync(message => message.MessageCase == WorkspaceMessage.MessageOneofCase.Diagram, cts.Token);
         Assert.Equal(streamId, delta.Diagram.StreamId);
         Assert.Equal(DiagramStreamMessage.EventOneofCase.Delta, delta.Diagram.EventCase);
         Assert.Equal(1, Connections().Find((ShortGuid)session.WatchId)?.DiagramStreamCount);
@@ -57,8 +57,7 @@ public sealed class WorkspaceStreamFlowTests(HostFixture host) : IClassFixture<H
         // change the disk underneath it.
         await session.Hierarchy.ListEntriesAsync(new ListEntriesRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         await File.WriteAllTextAsync(IoPath.Combine(_projectFolder, "later.txt"), "", TestContext.Current.CancellationToken);
-        var change = await ReadUntilAsync(
-            watch.ResponseStream,
+        var change = await watch.ResponseStream.FirstAsync(
             message => message.MessageCase == WorkspaceMessage.MessageOneofCase.Hierarchy && message.Hierarchy.Change.Created?.Entry.Name == "later.txt",
             cts.Token);
         Assert.Equal("later.txt", change.Hierarchy.Change.Created.Entry.Name);
@@ -146,18 +145,6 @@ public sealed class WorkspaceStreamFlowTests(HostFixture host) : IClassFixture<H
     {
         Assert.True(await stream.MoveNext(cancellationToken), "The workspace stream ended.");
         return stream.Current;
-    }
-
-    private static async Task<WorkspaceMessage> ReadUntilAsync(IAsyncStreamReader<WorkspaceMessage> stream, Func<WorkspaceMessage, bool> wanted, CancellationToken cancellationToken)
-    {
-        while (true)
-        {
-            var message = await ReadAsync(stream, cancellationToken);
-            if (wanted(message))
-            {
-                return message;
-            }
-        }
     }
 
     private async Task<Session> OpenSessionAsync()

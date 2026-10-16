@@ -50,6 +50,26 @@ public static class FlowExtensions
         return response.Added.Id;
     }
 
+    /// <summary>
+    /// The first message on <paramref name="stream"/> that <paramref name="wanted"/> accepts, passing
+    /// over whatever arrives before it; a stream that ends first is a failure. It waits on the stream
+    /// rather than on a clock, so it needs no patience of its own: the caller's token bounds it.
+    /// </summary>
+    public static async Task<TMessage> FirstAsync<TMessage>(this IAsyncStreamReader<TMessage> stream, Func<TMessage, bool> wanted, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(stream);
+        ArgumentNullException.ThrowIfNull(wanted);
+        while (await stream.MoveNext(cancellationToken))
+        {
+            if (wanted(stream.Current))
+            {
+                return stream.Current;
+            }
+        }
+
+        throw new InvalidOperationException("The stream ended before the message waited for arrived.");
+    }
+
     /// <summary>Reads <paramref name="stream"/> until a prompt arrives; a stream that ends first is a failure.</summary>
     public static async Task<ContextPrompt> ReadUntilPromptAsync(this IAsyncStreamReader<ContextMessage> stream, CancellationToken cancellationToken)
     {

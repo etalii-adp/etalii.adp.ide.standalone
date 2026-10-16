@@ -200,10 +200,11 @@ public class HelmContextSourceResolverTests : IDisposable
         // Act.
         subscription.Dispose();
         File.Delete(IoPath.Combine(_root, "values.yaml"));
-        await Task.Delay(SettleDelay + SettleDelay + SettleDelay, TestContext.Current.CancellationToken);
 
         // Assert.
-        Assert.Equal(0, announcements);
+        Assert.False(
+            await Eventually.TrueAsync(() => Volatile.Read(ref announcements) > 0, TestContext.Current.CancellationToken, SettleDelay + SettleDelay + SettleDelay),
+            "A disposed subscription announced the deletion.");
     }
 
     private async Task<ContextLevelResolution> Resolve(

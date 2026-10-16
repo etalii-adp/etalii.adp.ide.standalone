@@ -127,13 +127,9 @@ public class C4DocumentStoreFailedReloadTests : IDisposable
 
         File.Delete(body);
 
-        var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(10);
-        while (store.GetOrLoad(body).Model.Elements.Count > 0 && DateTime.UtcNow < deadline)
-        {
-            await Task.Delay(25, TestContext.Current.CancellationToken);
-        }
-
-        Assert.Empty(store.GetOrLoad(body).Model.Elements);
+        Assert.True(
+            await Eventually.TrueAsync(() => store.GetOrLoad(body).Model.Elements.Count == 0, TestContext.Current.CancellationToken),
+            "The deletion did not empty the model within the timeout.");
     }
 
     [Fact]
@@ -167,10 +163,12 @@ public class C4DocumentStoreFailedReloadTests : IDisposable
             await Task.Delay(5, TestContext.Current.CancellationToken);
         }
 
-        await Task.Delay(TimeSpan.FromSeconds(1), TestContext.Current.CancellationToken);
-
-        Assert.True(changes > 0, "The arrangement failed: no external save reached the store.");
-        Assert.True(emptied == 0, $"{emptied} of {changes} changes after 50 external saves emptied the model.");
+        Assert.True(
+            await Eventually.TrueAsync(() => Volatile.Read(ref changes) > 0, TestContext.Current.CancellationToken),
+            "The arrangement failed: no external save reached the store.");
+        Assert.False(
+            await Eventually.TrueAsync(() => Volatile.Read(ref emptied) > 0, TestContext.Current.CancellationToken, TimeSpan.FromSeconds(1)),
+            $"{emptied} of {changes} changes after 50 external saves emptied the model.");
         Assert.NotEmpty(store.GetOrLoad(body).Model.Elements);
     }
 

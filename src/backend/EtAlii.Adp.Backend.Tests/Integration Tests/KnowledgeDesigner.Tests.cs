@@ -74,7 +74,7 @@ public sealed class KnowledgeDesignerTests(HostFixture host) : IClassFixture<Hos
         await session.Designer.SetTableWindowAsync(new Proto.SetTableWindowRequest { WatchId = session.WatchId, StreamId = streamId, First = 0, Count = 50 }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert: every row and the line a row is added at; the related row by its title.
-        var rows = await UntilAsync(watch.ResponseStream, streamId, message => message.Change?.Rows is { } pushed && pushed.Rows.Select(row => row.Id).SequenceEqual(["r1", "r2", "45ako65f2m2wasyxq3mam8ikt", "a8q7ddqb6zyubcyf5vuky6iwb", "8heh3sdyy0a63fyq7gicize5a", "7pa30fmuw51bv1vyl5jnmf5jh", "8rj09k224141g98x6rguz7f5h", "e1v5f01oi4bx1syl7x6ty3zeo", "1dytemy0l8cen9xxkpcxzlgwq", "9jh7yjm443uvm99io0nc6ekpi", "9cwydn1h89znwl1wlxblxselj", ""]), cts.Token);
+        var rows = await ReadTableAsync(watch.ResponseStream, streamId, message => message.Change?.Rows is { } pushed && pushed.Rows.Select(row => row.Id).SequenceEqual(["r1", "r2", "45ako65f2m2wasyxq3mam8ikt", "a8q7ddqb6zyubcyf5vuky6iwb", "8heh3sdyy0a63fyq7gicize5a", "7pa30fmuw51bv1vyl5jnmf5jh", "8rj09k224141g98x6rguz7f5h", "e1v5f01oi4bx1syl7x6ty3zeo", "1dytemy0l8cen9xxkpcxzlgwq", "9jh7yjm443uvm99io0nc6ekpi", "9cwydn1h89znwl1wlxblxselj", ""]), cts.Token);
         var related = rows.Change.Rows.Rows[0].Cells.Single(cell => cell.ColumnId == province.Id);
         Assert.Equal(["nh"], related.Values);
         Assert.Equal(["Noord-Holland"], related.Labels);
@@ -87,7 +87,7 @@ public sealed class KnowledgeDesignerTests(HostFixture host) : IClassFixture<Hos
 
         // Assert: accepted at once, written behind, and in the file.
         Assert.Equal("", accepted.Error);
-        var outcome = await UntilAsync(watch.ResponseStream, streamId, message => message.Change?.Outcome is { } settled && settled.EditId.Equals(editId), cts.Token);
+        var outcome = await ReadTableAsync(watch.ResponseStream, streamId, message => message.Change?.Outcome is { } settled && settled.EditId.Equals(editId), cts.Token);
         Assert.True(outcome.Change.Outcome.Written, outcome.Change.Outcome.Error);
         Assert.Contains("Antwerpen", await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken), StringComparison.Ordinal);
 
@@ -105,7 +105,7 @@ public sealed class KnowledgeDesignerTests(HostFixture host) : IClassFixture<Hos
         await File.WriteAllTextAsync(body, text.Replace("Amsterdam", "Mokum", StringComparison.Ordinal), TestContext.Current.CancellationToken);
 
         // Assert: it appears on the stream, without reopening.
-        await UntilAsync(
+        await ReadTableAsync(
             watch.ResponseStream,
             streamId,
             message => message.Change?.Rows is { } pushed && pushed.Rows.FirstOrDefault(row => row.Id == "r1")?.Cells.FirstOrDefault(cell => cell.ColumnId == "p1")?.Values.FirstOrDefault() == "Mokum",
@@ -140,7 +140,7 @@ public sealed class KnowledgeDesignerTests(HostFixture host) : IClassFixture<Hos
 
         // Assert: the other table gets its side, computed, without being reopened.
         Assert.Equal("", made.Error);
-        var structure = await UntilAsync(watch.ResponseStream, provinces, message => message.Change?.Structure is { } pushed && pushed.Columns.Any(column => column.Name == "Cities nearby"), cts.Token);
+        var structure = await ReadTableAsync(watch.ResponseStream, provinces, message => message.Change?.Structure is { } pushed && pushed.Columns.Any(column => column.Name == "Cities nearby"), cts.Token);
         var nearby = structure.Change.Structure.Columns.Single(column => column.Name == "Cities nearby");
         Assert.Equal("true", nearby.Settings["computed"]);
 
@@ -152,7 +152,7 @@ public sealed class KnowledgeDesignerTests(HostFixture host) : IClassFixture<Hos
 
         // Assert: the province shows the city, by its title.
         Assert.Equal("", accepted.Error);
-        var shown = await UntilAsync(
+        var shown = await ReadTableAsync(
             watch.ResponseStream,
             provinces,
             message => message.Change?.Rows is { } pushed && pushed.Rows.FirstOrDefault(row => row.Id == "zh")?.Cells.Any(cell => cell.ColumnId == nearby.Id) == true,
@@ -278,17 +278,8 @@ public sealed class KnowledgeDesignerTests(HostFixture host) : IClassFixture<Hos
     }
 
     /// <summary>The first message of one table's stream that is what is waited for; whatever arrives before it is passed over.</summary>
-    private static async Task<Proto.TableStreamMessage> UntilAsync(IAsyncStreamReader<WorkspaceMessage> stream, Documents.Wire.ShortGuid streamId, Func<Proto.TableStreamMessage, bool> wanted, CancellationToken cancellationToken)
-    {
-        while (true)
-        {
-            var message = await ReadTableAsync(stream, streamId, cancellationToken);
-            if (wanted(message))
-            {
-                return message;
-            }
-        }
-    }
+    private static async Task<Proto.TableStreamMessage> ReadTableAsync(IAsyncStreamReader<WorkspaceMessage> stream, Documents.Wire.ShortGuid streamId, Func<Proto.TableStreamMessage, bool> wanted, CancellationToken cancellationToken) =>
+        (await stream.FirstAsync(message => message.MessageCase == WorkspaceMessage.MessageOneofCase.Table && message.Table.StreamId.Equals(streamId) && wanted(message.Table), cancellationToken)).Table;
 
     private async Task<Session> OpenSessionAsync()
     {
