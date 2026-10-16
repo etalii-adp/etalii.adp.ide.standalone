@@ -771,4 +771,61 @@ public sealed class KnowledgeEditingTests : IDisposable
             Assert.True(held == seen, $"After {gesture.Kind} the file and what was shown differ.{Environment.NewLine}File:{Environment.NewLine}{held}{Environment.NewLine}Shown:{Environment.NewLine}{seen}");
         }
     }
+
+    /// <summary>
+    /// A re-read the watcher started before an edit was written, and that ends after the edit's own
+    /// re-read, does not put back the table as it was (code-structure T282). The nightly Stability run
+    /// once saw what was shown lose the edit before last this way, in the test above.
+    /// </summary>
+    [Fact]
+    public async Task AnExternalReReadOlderThanAWrite_DoesNotPutTheOldTableBack()
+    {
+        // Arrange: a re-read that has read the file and is held before it shows what it read.
+        using var held = new HeldRead();
+        await using var table = new EditingTable(KnowledgeFiles.CopyPlain("cities.json", _root), read: held.Read);
+        held.HoldNext();
+        var older = Task.Run(table.Session.OnExternalChangeAsync, TestContext.Current.CancellationToken);
+        Assert.True(held.Taken(), "The arrangement failed: no re-read began.");
+
+        // Act: an edit written and settled while the older re-read is held; then the older one ends.
+        await table.Edit(SetCell("r2", "p3", "529247"));
+        held.Release();
+        await older;
+
+        // Assert.
+        Assert.Equal(KnowledgeFiles.Describe(table.OnDisk()), KnowledgeFiles.Describe(table.Session.Shown));
+    }
+
+    /// <summary>The module's reading of a file, of which the next one asked for is held after it has read, until released.</summary>
+    private sealed class HeldRead : IDisposable
+    {
+        private readonly ManualResetEventSlim _taken = new();
+        private readonly ManualResetEventSlim _release = new();
+        private int _hold;
+
+        public void HoldNext() => Volatile.Write(ref _hold, 1);
+
+        /// <summary>Whether the held read has read the file, waiting for it as long as a write is waited for.</summary>
+        public bool Taken() => _taken.Wait(TimeSpan.FromSeconds(20), TestContext.Current.CancellationToken);
+
+        public void Release() => _release.Set();
+
+        public KnowledgeRead Read(string path)
+        {
+            var read = KnowledgeDocumentStore.Read(path);
+            if (Interlocked.Exchange(ref _hold, 0) == 1)
+            {
+                _taken.Set();
+                _release.Wait(TimeSpan.FromSeconds(20), TestContext.Current.CancellationToken);
+            }
+
+            return read;
+        }
+
+        public void Dispose()
+        {
+            _taken.Dispose();
+            _release.Dispose();
+        }
+    }
 }

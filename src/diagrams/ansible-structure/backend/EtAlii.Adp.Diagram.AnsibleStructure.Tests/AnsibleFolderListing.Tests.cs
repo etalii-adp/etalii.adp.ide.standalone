@@ -52,7 +52,7 @@ public sealed class AnsibleFolderListingTests : IDisposable
         Write("elsewhere/plays/deploy.yml", "- hosts: all\r\n");
         Write("roles/real/tasks/main.yml", "- debug: msg=hi\r\n");
         Directory.CreateSymbolicLink(_folder.Combine("roles", "linked"), IoPath.Combine("..", "elsewhere", "role"));
-        Directory.CreateSymbolicLink(_folder.Combine("playbooks"), "elsewhere/plays");
+        Directory.CreateSymbolicLink(_folder.Combine("playbooks"), IoPath.Combine("elsewhere", "plays"));
         var listing = new AnsibleFolderListing(_folder.Path);
 
         // Act.

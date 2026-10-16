@@ -80,6 +80,9 @@ internal sealed class KnowledgeSession : IDesignerSession
     /// <summary>True while an edit of this session is being written: the file is then read when that write ends.</summary>
     private bool _writing;
 
+    /// <summary>How many of this session's writes have started: an external re-read that began before one is older than that write's own re-read.</summary>
+    private int _writesStarted;
+
     private readonly string _rootPath;
 
     public KnowledgeSession(string bodyPath)
@@ -320,6 +323,7 @@ internal sealed class KnowledgeSession : IDesignerSession
                     }
 
                     _writing = true;
+                    _writesStarted++;
                 }
 
                 CommandResult result;
@@ -444,6 +448,7 @@ internal sealed class KnowledgeSession : IDesignerSession
     /// <summary>Internal for the guards, which call it as the watcher would.</summary>
     internal async Task OnExternalChangeAsync()
     {
+        int writesStarted;
         lock (_gate)
         {
             if (_writing)
@@ -451,6 +456,8 @@ internal sealed class KnowledgeSession : IDesignerSession
                 // This session's own write is landing: the file is read when it has, once.
                 return;
             }
+
+            writesStarted = _writesStarted;
         }
 
         (KnowledgeRead read, int reads) = await Watched.ReadAsync(_read, reading => reading.Body is not null).ConfigureAwait(false);
@@ -463,6 +470,13 @@ internal sealed class KnowledgeSession : IDesignerSession
         List<TableChange> changes = [];
         lock (_gate)
         {
+            if (_writing || writesStarted != _writesStarted)
+            {
+                // A write of this session started while this was reading, so what was read may be the
+                // file from before it; the write's own re-read, made after it, is the newer (T282).
+                return;
+            }
+
             if (read.Body is null)
             {
                 // Out of attempts: the file is genuinely unreadable rather than mid-replace. The

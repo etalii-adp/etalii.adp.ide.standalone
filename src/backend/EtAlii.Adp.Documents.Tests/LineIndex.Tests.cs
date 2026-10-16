@@ -35,6 +35,23 @@ public class LineIndexTests
         }
     }
 
+    [Theory]
+    [MemberData(nameof(Texts))]
+    [InlineData("caf\u00e9\nna\u00efve\r\n\u2603 snow\n")]
+    public void OverUtf8Bytes_EveryByteOffset_IsOnTheLineThatHoldsIt(string text)
+    {
+        // Arrange: an FBL span counts bytes, and a character before a line break may take several.
+        var bytes = System.Text.Encoding.UTF8.GetBytes(text);
+        var index = LineIndex.OfUtf8(bytes);
+
+        // Act and assert, offset by offset against a count of the line breaks before it.
+        for (var offset = 0; offset <= bytes.Length; offset++)
+        {
+            var expected = bytes.AsSpan(0, offset).Count((byte)'\n');
+            Assert.Equal(expected, index.LineOf(offset));
+        }
+    }
+
     [Fact]
     public void ACrlfLinesCarriageReturn_BelongsToTheLineItEnds()
     {
