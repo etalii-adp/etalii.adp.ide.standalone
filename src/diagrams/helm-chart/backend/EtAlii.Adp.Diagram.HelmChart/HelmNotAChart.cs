@@ -21,10 +21,10 @@ namespace EtAlii.Adp.Diagram.HelmChart;
 internal static class HelmNotAChart
 {
     /// <summary>The tool's code for a registered folder that is not a chart.</summary>
-    public const string Code = "helm.not-a-chart";
+    private const string Code = "helm.not-a-chart";
 
     /// <summary>What the tool says of it.</summary>
-    public const string Sentence = "This folder is not a Helm chart: it has no Chart.yaml.";
+    private const string Sentence = "This folder is not a Helm chart: it has no Chart.yaml.";
 
     /// <summary>
     /// The one finding of a registered folder <paramref name="chart"/> is not a chart of, at the folder
