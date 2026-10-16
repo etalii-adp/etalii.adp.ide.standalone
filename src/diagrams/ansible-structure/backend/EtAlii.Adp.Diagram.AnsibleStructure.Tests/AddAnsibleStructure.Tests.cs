@@ -43,26 +43,24 @@ public class AddAnsibleStructureTests
     }
 
     [Fact]
-    public void TheStore_IsOnePerHost_SoOneFolderIsReadOnce()
+    public void TheOpenFolders_AreOnePerHost_SoOneFolderIsReadOnce()
     {
         // Act.
         using var provider = Build();
 
         // Assert.
         // Two connections to one project must not each hold their own reading of it.
-        Assert.Same(provider.GetRequiredService<IAnsibleProjectStore>(), provider.GetRequiredService<IAnsibleProjectStore>());
-        Assert.Same(provider.GetRequiredService<AnsibleProjectStore>(), provider.GetRequiredService<IAnsibleProjectStore>());
+        Assert.Same(provider.GetRequiredService<AnsibleFolders>(), provider.GetRequiredService<AnsibleFolders>());
     }
 
     [Fact]
-    public void TheMapperAndReader_AreResolvable()
+    public void TheMapper_IsResolvable()
     {
         // Act.
         using var provider = Build();
 
         // Assert.
         Assert.NotNull(provider.GetRequiredService<AnsibleElementMapper>());
-        Assert.NotNull(provider.GetRequiredService<AnsibleProjectReader>());
     }
 
     // ---- what is deliberately absent ---------------------------------------------------------

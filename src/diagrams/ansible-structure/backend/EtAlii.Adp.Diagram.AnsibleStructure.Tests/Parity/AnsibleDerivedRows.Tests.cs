@@ -39,7 +39,7 @@ public class AnsibleDerivedRowsTests
         foreach (var target in targets)
         {
             var expected = HandWrittenAnsible.Rows(project, target).Select(row => row.RowLine()).ToList();
-            var actual = AnsibleDefinition.Rows(project, target).Select(row => row.RowLine()).ToList();
+            var actual = AnsibleModels.Rows(project, target).Select(row => row.RowLine()).ToList();
             Assert.True(
                 expected.SequenceEqual(actual, StringComparer.Ordinal),
                 $"{folder} {target}:\nexpected {string.Join("\n         ", expected)}\nactual   {string.Join("\n         ", actual)}");
@@ -55,11 +55,11 @@ public class AnsibleDerivedRowsTests
     public async Task AWrite_IsRefusedWithTheHandWrittenSentence()
     {
         // Arrange.
-        using var store = new AnsibleProjectStore();
+        using var folders = new AnsibleFolders();
         var target = ContextTarget.ForElement(Path.Combine(Path.GetTempPath(), "parity.adp"), "role:nginx", Path.GetTempPath());
 
         // Act.
-        var result = await new AnsibleContextPropertyProvider(store).SetAsync(target, "ansible.name", "renamed", TestContext.Current.CancellationToken);
+        var result = await new AnsibleContextPropertyProvider(folders).SetAsync(target, "ansible.name", "renamed", TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Equal(HandWrittenAnsible.Refusal, result.Error);
@@ -87,7 +87,7 @@ public class AnsibleDerivedRowsTests
         using var copy = Copy(folder);
 
         // Arrange.
-        var model = AnsibleDefinition.ModelOf(new AnsibleProjectReader().Read(Made(copy)));
+        var model = AnsibleModels.ModelOf(new AnsibleProjectReader().Read(Made(copy)));
         using var provider = new ServiceCollection().AddAnsibleStructure().BuildServiceProvider();
 
         // Act.

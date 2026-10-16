@@ -11,16 +11,16 @@ namespace EtAlii.Adp.Diagram.AnsibleStructure.Tests;
 public class AnsibleContextPropertyProviderTests : IDisposable
 {
     private readonly string _root;
-    private readonly AnsibleProjectStore _store = new();
+    private readonly AnsibleFolders _folders = new();
     private readonly AnsibleContextPropertyProvider _provider;
 
     public AnsibleContextPropertyProviderTests()
     {
         _root = IoPath.GetFullPath(IoPath.Combine("Fixtures", "infrastructure"));
-        _provider = new AnsibleContextPropertyProvider(_store);
+        _provider = new AnsibleContextPropertyProvider(_folders);
     }
 
-    public void Dispose() => _store.Dispose();
+    public void Dispose() => _folders.Dispose();
 
     /// <summary>Describes an element as selected in the registration of <paramref name="folder"/>, the fixture's by default.</summary>
     private async Task<IReadOnlyList<ContextPropertyDefinition>> Describe(string elementId, string? folder = null) =>
@@ -159,7 +159,7 @@ public class AnsibleContextPropertyProviderTests : IDisposable
     public async Task AnEdge_SaysWhichFileAndDirectiveDeclaredIt()
     {
         // Arrange.
-        var edge = AnsibleGraph.Derive(_store.GetOrLoad(_root)).Edges.Single(e => e.Kind == AnsibleEdgeKind.IncludesTasks);
+        var edge = AnsibleGraph.Derive(new AnsibleProjectReader().Read(_root)).Edges.Single(e => e.Kind == AnsibleEdgeKind.IncludesTasks);
 
         // Act.
         var properties = await Describe(edge.Id);
@@ -197,7 +197,7 @@ public class AnsibleContextPropertyProviderTests : IDisposable
     public async Task AnEdgeWithNoCondition_HasNoConditionRow()
     {
         // Arrange.
-        var edge = AnsibleGraph.Derive(_store.GetOrLoad(_root)).Edges
+        var edge = AnsibleGraph.Derive(new AnsibleProjectReader().Read(_root)).Edges
             .First(e => e.Kind == AnsibleEdgeKind.ImportsPlaybook);
 
         // Act.
@@ -225,7 +225,7 @@ public class AnsibleContextPropertyProviderTests : IDisposable
     {
         // Arrange.
         var broken = IoPath.GetFullPath(IoPath.Combine("Fixtures", "broken"));
-        var edges = AnsibleGraph.Derive(_store.GetOrLoad(broken)).Edges;
+        var edges = AnsibleGraph.Derive(new AnsibleProjectReader().Read(broken)).Edges;
 
         // Act.
         var missing = await Describe(edges.Single(e => e.Directive.Target == "absent-role").Id, broken);

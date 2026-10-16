@@ -3,9 +3,7 @@
   "generator": "src/diagrams/ansible-structure/backend/EtAlii.Adp.Diagram.AnsibleStructure.Tests/Parity/AnsibleTranscript.cs",
   "regenerate": "ADP_WRITE_PARITY_TRANSCRIPTS=1 dotnet test --project <this test project> (then review the diff)",
   "registrations": [
-    "AnsibleProjectReader => AnsibleProjectReader (Singleton)",
-    "AnsibleProjectStore => AnsibleProjectStore (Singleton)",
-    "IAnsibleProjectStore => factory (Singleton)",
+    "AnsibleFolders => AnsibleFolders (Singleton)",
     "AnsibleElementMapper => factory (Singleton)",
     "IDiagramSessionFactory => AnsibleSessionFactory (Singleton)",
     "IDiagramValidator => AnsibleValidator (Singleton)",

@@ -25,8 +25,8 @@ namespace EtAlii.Adp.Diagram.AnsibleStructure;
 /// for a <see cref="DiagramSubject.Folder"/> type.
 /// </para>
 /// <para>
-/// It reads the folder once rather than going through <see cref="IAnsibleProjectStore"/>.
-/// Validation is a one-shot question, not a subscription: routing it through the store would
+/// It reads the folder once rather than going through <see cref="AnsibleFolders"/>.
+/// Validation is a one-shot question, not a subscription: routing it through the open folders would
 /// make every "Validate all" leave a watcher behind on a folder nobody has open.
 /// </para>
 /// </remarks>

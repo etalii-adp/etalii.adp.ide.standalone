@@ -97,6 +97,48 @@ public class AnsibleRealFoldersTests
         Assert.True(stored >= MinimumPositions, $"{stored} stored positions, fewer than {MinimumPositions}");
     }
 
+    /// <summary>The registrations among them that store positions in a <c>layout:</c> block.</summary>
+    private const int MinimumLayouts = 6;
+
+    /// <summary>
+    /// Every position a registration stores today is applied (ansible-structure-disl-fbl, task 10): a session
+    /// opened on each registration with a <c>layout:</c> block draws every stored element at its stored
+    /// position, and no registration is rewritten to make one apply.
+    /// </summary>
+    [Fact]
+    public async Task EveryStoredPosition_ReachesAPayload_AndNoRegistrationIsRewritten()
+    {
+        // Arrange.
+        var withLayout = Registrations().Where(registration => RegistrationLayout.Read(registration).Count > 0).ToList();
+        var applied = 0;
+        var misplaced = new List<string>();
+        using var folders = new AnsibleFolders();
+
+        // Act.
+        foreach (var registration in withLayout)
+        {
+            var before = await File.ReadAllBytesAsync(registration, TestContext.Current.CancellationToken);
+            var stored = RegistrationLayout.Read(registration);
+            await using (var session = new AnsibleSession(Path.GetDirectoryName(registration)!, folders, new AnsibleElementMapper(), registration))
+            {
+                var drawn = session.Baseline().OfType<DiagramAddDelta>().SelectMany(delta => delta.Elements)
+                    .ToDictionary(element => element.Id, StringComparer.Ordinal);
+                foreach ((string id, RegistrationPosition position) in stored)
+                {
+                    if (drawn.TryGetValue(id, out var element) && new RegistrationPosition(element.X, element.Y).Equals(position)) applied++;
+                    else misplaced.Add($"{Relative(registration)}: {id}");
+                }
+            }
+
+            Assert.Equal(before, await File.ReadAllBytesAsync(registration, TestContext.Current.CancellationToken));
+        }
+
+        // Assert.
+        Assert.Empty(misplaced);
+        Assert.True(withLayout.Count >= MinimumLayouts, $"{withLayout.Count} registrations with a layout block, fewer than {MinimumLayouts}");
+        Assert.True(applied >= MinimumPositions, $"{applied} applied positions, fewer than {MinimumPositions}");
+    }
+
     /// <summary>The folder read as the validator reads it: once, through the binding and the plugin.</summary>
     private static DislModel Read(string root) =>
         AnsibleDefinition.Model(FolderBody.ReadOnce(root, AnsibleDefinition.Binding, new AnsibleFolderPlugin(new AnsibleFolderListing(root))));

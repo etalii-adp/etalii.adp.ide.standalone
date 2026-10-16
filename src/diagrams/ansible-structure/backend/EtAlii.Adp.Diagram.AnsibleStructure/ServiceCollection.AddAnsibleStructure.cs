@@ -4,8 +4,8 @@ using Microsoft.Extensions.DependencyInjection;
 namespace EtAlii.Adp.Diagram.AnsibleStructure;
 
 /// <summary>
-/// Registers the whole Ansible structure module against core's seams: the store that reads and
-/// watches a folder, the session that streams it, and - as tasks 18 to 20 land - the validator
+/// Registers the whole Ansible structure module against core's seams: the open folders, each read
+/// through the library's folder body and watched, the session that streams it, and - as tasks 18 to 20 land - the validator
 /// that judges it and the property provider that describes a selection.
 /// </summary>
 /// <remarks>
@@ -42,19 +42,17 @@ public static class ServiceCollectionAddAnsibleStructureExtension
     {
         ArgumentNullException.ThrowIfNull(services);
 
-        // One store per host: it holds one project per registered folder and owns the watcher
-        // that keeps each of them true.
-        services.AddSingleton<AnsibleProjectReader>();
-        services.AddSingleton<AnsibleProjectStore>();
-        services.AddSingleton<IAnsibleProjectStore>(provider => provider.GetRequiredService<AnsibleProjectStore>());
+        // One set of open folders per host: one reading per registered folder, and the watcher
+        // that keeps each of them true, shared by every session on it.
+        services.AddSingleton<AnsibleFolders>();
 
         services.AddSingleton(_ => new AnsibleElementMapper());
         services.AddSingleton<IDiagramSessionFactory, AnsibleSessionFactory>();
 
         // Read-only does not mean silent: the structural mistakes this type can see are exactly
         // the ones that bite at deploy time (Requirement 9). The validator reads the folder
-        // directly rather than through the store - validation is a one-shot question, and
-        // routing it through the store would leave a watcher behind on every "Validate all".
+        // once, directly - validation is a one-shot question, and
+        // routing it through the open folders would leave a watcher behind on every "Validate all".
         services.AddSingleton<IDiagramValidator, AnsibleValidator>();
 
         // One resolver makes every node and edge selectable, so the property grid, the ribbon

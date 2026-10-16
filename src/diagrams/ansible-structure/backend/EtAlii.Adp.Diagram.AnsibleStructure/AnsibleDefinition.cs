@@ -1,4 +1,3 @@
-using System.Runtime.CompilerServices;
 using System.Text.Json;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents.Wire;
@@ -19,8 +18,8 @@ namespace EtAlii.Adp.Diagram.AnsibleStructure;
 /// <para>
 /// <b>The model is built by <see cref="DislModelBuilder"/> from what the plugin delivers</b>
 /// (<see cref="AnsibleFolderPlugin"/>), which computes every id again by the definition's <c>derived</c>
-/// expressions. A model of a project the store holds is built once and kept for as long as the reading
-/// lives, so every selection of one reading reads one model.
+/// expressions. An open folder builds it once per reading (<see cref="AnsibleFolder.Disl"/>), so every
+/// selection of one reading reads one model.
 /// </para>
 /// <para>
 /// <b>Everything is read-only</b> (<c>env.readOnly</c>): every row carries the reason its form item gives,
@@ -44,8 +43,6 @@ internal static class AnsibleDefinition
 
     private static readonly Lazy<FblBinding> LoadedBinding = new(LoadBinding);
 
-    private static readonly ConditionalWeakTable<AnsibleProject, DislModel> Models = [];
-
     /// <summary>What <c>env</c> reads: nothing in this diagram can be edited.</summary>
     private static readonly DislEnv Env = new(ReadOnly: true);
 
@@ -66,13 +63,6 @@ internal static class AnsibleDefinition
     /// <summary>Why nothing on the diagram can be moved under another element: the message of the definition's containment rule.</summary>
     public static string MoveRefusal => LoadedMoveRefusal.Value;
 
-    /// <summary>The property rows of the element <paramref name="elementId"/> names in <paramref name="project"/>: its form's, and an inventory's groups and variable folders; none for an id the project does not hold.</summary>
-    public static IReadOnlyList<ContextPropertyDefinition> Rows(AnsibleProject project, string elementId)
-    {
-        ArgumentNullException.ThrowIfNull(project);
-        return Rows(ModelOf(project), elementId);
-    }
-
     /// <summary>The property rows of the element <paramref name="elementId"/> names in <paramref name="diagram"/>: its form's, and an inventory's groups and variable folders; none for an id the model does not hold.</summary>
     public static IReadOnlyList<ContextPropertyDefinition> Rows(DislDiagram diagram, string elementId)
     {
@@ -84,32 +74,15 @@ internal static class AnsibleDefinition
     }
 
     /// <summary>
-    /// The findings of <paramref name="project"/>: the reader's <c>std.unparseable</c> per file that did not
-    /// parse, then the definition's rules, as <see cref="ConstraintEvaluator"/> gives them. What the host is
-    /// handed is <see cref="AnsibleFindings.For"/> of these, in today's order and words.
+    /// The findings of <paramref name="model"/>: every finding of its reading as the reader's (a file that did not
+    /// parse or could not be opened is <c>std.unparseable</c>), then the definition's rules, as
+    /// <see cref="ConstraintEvaluator"/> gives them. What the host is handed is <see cref="AnsibleFindings.For"/>
+    /// of these, in today's order and words.
     /// </summary>
-    public static IReadOnlyList<DislFinding> Findings(AnsibleProject project)
-    {
-        ArgumentNullException.ThrowIfNull(project);
-        return Findings(Built(project));
-    }
-
-    /// <summary>The findings of <paramref name="model"/>: every finding of its reading as the reader's, then the definition's rules.</summary>
     public static IReadOnlyList<DislFinding> Findings(DislModel model)
     {
         ArgumentNullException.ThrowIfNull(model);
         return ConstraintEvaluator.Evaluate(Specification, model.Diagram, new DislConstraintOptions(Env, [.. model.Findings.Select(ReaderFinding)]));
-    }
-
-    /// <summary>
-    /// <paramref name="project"/> as the definition's model, which is what the payloads, the layout and the
-    /// selection read: the store's reading leaves the plugin only through here, until the library's folder body
-    /// hands the model over itself (task 10).
-    /// </summary>
-    public static DislDiagram ModelOf(AnsibleProject project)
-    {
-        ArgumentNullException.ThrowIfNull(project);
-        return Built(project).Diagram;
     }
 
     /// <summary>
@@ -133,14 +106,6 @@ internal static class AnsibleDefinition
         ArgumentNullException.ThrowIfNull(reading);
         return DislModelBuilder.From(reading, Specification);
     }
-
-    /// <summary>The model of a project already read, built from what the plugin delivers for it, once per reading.</summary>
-    private static DislModel Built(AnsibleProject project) =>
-        Models.GetValue(project, read =>
-        {
-            var result = AnsibleFolderPlugin.Result(read);
-            return Model(new FblModel(result.Elements, result.Findings, result.Unreadable));
-        });
 
     /// <summary>
     /// A finding of the reading as the reader's finding of its code: its message is the reason, and a line of

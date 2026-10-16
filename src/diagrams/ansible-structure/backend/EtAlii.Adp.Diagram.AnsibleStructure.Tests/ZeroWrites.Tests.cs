@@ -38,7 +38,7 @@ namespace EtAlii.Adp.Diagram.AnsibleStructure.Tests;
 public class ZeroWritesTests : IDisposable
 {
     private readonly string _root;
-    private readonly AnsibleProjectStore _store = new();
+    private readonly AnsibleFolders _folders = new();
     private readonly ServiceProvider _provider;
     private readonly IHistoryStackStore _historyStacks;
 
@@ -54,7 +54,7 @@ public class ZeroWritesTests : IDisposable
     public void Dispose()
     {
         _provider.Dispose();
-        _store.Dispose();
+        _folders.Dispose();
         TestFolder.TryDelete(_root);
     }
 
@@ -67,7 +67,7 @@ public class ZeroWritesTests : IDisposable
         var before = Snapshot();
 
         var mapper = new AnsibleElementMapper();
-        var factory = new AnsibleSessionFactory(_store, mapper, _historyStacks);
+        var factory = new AnsibleSessionFactory(_folders, mapper, _historyStacks);
         var registration = IoPath.Combine(_root, "infrastructure.adp");
 
         // Act.
@@ -78,12 +78,11 @@ public class ZeroWritesTests : IDisposable
             session.UpdateView(new DiagramViewport(-50, -50, 200, 200));
             session.UpdateView(DiagramViewport.Unbounded);
 
-            var project = _store.GetOrLoad(_root);
-            var graph = AnsibleGraph.Derive(project);
+            var model = _folders.GetOrLoad(_root, registration).Disl.Diagram;
 
             // Select and describe every node and every edge there is.
-            var properties = new AnsibleContextPropertyProvider(_store);
-            var ids = graph.Nodes.Select(node => node.Id).Concat(graph.Edges.Select(edge => edge.Id)).ToArray();
+            var properties = new AnsibleContextPropertyProvider(_folders);
+            var ids = model.Nodes.Select(node => node.Id).Concat(model.Relations.Select(edge => edge.Id)).ToArray();
 
             // Assert, before walking them, that there are any. The promise this test makes is
             // that reading writes nothing - and a graph that derived nothing reads nothing, so
@@ -127,7 +126,7 @@ public class ZeroWritesTests : IDisposable
         var registration = IoPath.Combine(_root, "infrastructure.adp");
         var before = Snapshot();
 
-        var factory = new AnsibleSessionFactory(_store, new AnsibleElementMapper(), _historyStacks);
+        var factory = new AnsibleSessionFactory(_folders, new AnsibleElementMapper(), _historyStacks);
         await using var session = factory.Open(ShortGuid.NewShortGuid(), _root, registration, registration);
         session.Baseline();
 
@@ -213,7 +212,7 @@ public class ZeroWritesTests : IDisposable
         // No cache file, no index, no sidecar. Some tools leave one; this one may not - the
         // .adp is the only file ADP contributes to the folder, and it was already there.
         var project = new AnsibleProjectReader().Read(_root);
-        _ = AnsibleFindings.For(AnsibleDefinition.ModelOf(project), AnsibleDefinition.Findings(project));
+        _ = AnsibleFindings.For(AnsibleModels.ModelOf(project), AnsibleModels.Findings(project));
 
         // Assert.
         Assert.Equal(before, Directory.GetFileSystemEntries(_root, "*", SearchOption.AllDirectories).Order(StringComparer.Ordinal));
@@ -226,7 +225,7 @@ public class ZeroWritesTests : IDisposable
         // The only editor this diagram type ever expects a user to have open is a text editor on
         // these very files. Holding an exclusive handle would fight it.
         var registration = IoPath.Combine(_root, "infrastructure.adp");
-        var factory = new AnsibleSessionFactory(_store, new AnsibleElementMapper(), _historyStacks);
+        var factory = new AnsibleSessionFactory(_folders, new AnsibleElementMapper(), _historyStacks);
         await using var session = factory.Open(ShortGuid.NewShortGuid(), _root, registration, registration);
         session.Baseline();
 
@@ -246,7 +245,7 @@ public class ZeroWritesTests : IDisposable
         var writeVerbs = new[] { "Save", "Write", "Delete", "Create", "Rename", "Update" };
 
         // Act.
-        var named = typeof(AnsibleProjectStore).Assembly.GetExportedTypes()
+        var named = typeof(AnsibleFolders).Assembly.GetExportedTypes()
             // The generated wire types are excluded: protobuf gives every message a WriteTo,
             // which serializes to a stream and has nothing to do with a file. Their namespace
             // is what tells them apart, and it exists precisely because they are generated.

@@ -17,7 +17,7 @@ public class AnsibleLayoutTests
     private static AnsibleGraph Graph(string fixture) => AnsibleGraph.Derive(Reader.Read(IoPath.Combine("Fixtures", fixture)));
 
     /// <summary>The definition's model of a fixture, which the layout reads.</summary>
-    private static DislDiagram Model(string fixture) => AnsibleDefinition.ModelOf(Reader.Read(IoPath.Combine("Fixtures", fixture)));
+    private static DislDiagram Model(string fixture) => AnsibleModels.ModelOf(Reader.Read(IoPath.Combine("Fixtures", fixture)));
 
     private static IReadOnlyDictionary<string, Rect> Layout(string fixture) => AnsibleLayout.Compute(Model(fixture));
 
@@ -211,7 +211,7 @@ public class AnsibleLayoutTests
             File.WriteAllText(IoPath.Combine(scratch, "b.yml"), "---\n- import_playbook: a.yml\n");
 
             // Act.
-            var boxes = AnsibleLayout.Compute(AnsibleDefinition.ModelOf(Reader.Read(scratch)));
+            var boxes = AnsibleLayout.Compute(AnsibleModels.ModelOf(Reader.Read(scratch)));
 
             // Assert.
             // Each playbook is measured from itself, so neither sits right of the other merely for

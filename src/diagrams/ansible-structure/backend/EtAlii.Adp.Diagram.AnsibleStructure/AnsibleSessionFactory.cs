@@ -16,16 +16,16 @@ namespace EtAlii.Adp.Diagram.AnsibleStructure;
 /// </remarks>
 public sealed class AnsibleSessionFactory : IDiagramSessionFactory
 {
-    private readonly IAnsibleProjectStore _store;
+    private readonly AnsibleFolders _folders;
     private readonly AnsibleElementMapper _mapper;
     private readonly IHistoryStackStore _historyStacks;
 
-    public AnsibleSessionFactory(IAnsibleProjectStore store, AnsibleElementMapper mapper, IHistoryStackStore historyStacks)
+    public AnsibleSessionFactory(AnsibleFolders folders, AnsibleElementMapper mapper, IHistoryStackStore historyStacks)
     {
-        ArgumentNullException.ThrowIfNull(store);
+        ArgumentNullException.ThrowIfNull(folders);
         ArgumentNullException.ThrowIfNull(mapper);
         ArgumentNullException.ThrowIfNull(historyStacks);
-        _store = store;
+        _folders = folders;
         _mapper = mapper;
         _historyStacks = historyStacks;
     }
@@ -46,6 +46,6 @@ public sealed class AnsibleSessionFactory : IDiagramSessionFactory
 
         // The marker is the registration: the file that made this folder a diagram, and the
         // file a position is authored into. The project's history makes that write undoable.
-        return new AnsibleSession(folder, _store, _mapper, marker, _historyStacks.Get(rootPath));
+        return new AnsibleSession(folder, _folders, _mapper, marker, _historyStacks.Get(rootPath));
     }
 }

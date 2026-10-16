@@ -4,8 +4,8 @@ using EtAlii.Adp.History;
 namespace EtAlii.Adp.Diagram.AnsibleStructure;
 
 /// <summary>
-/// One connection's live view of one Ansible project. Holds nothing the store holds - it draws the
-/// definition's model of the store's reading (<see cref="AnsibleDefinition.ModelOf"/>), built once per
+/// One connection's live view of one Ansible project. Holds nothing the folder holds - it draws the
+/// definition's model of the open folder's reading (<see cref="AnsibleFolder.Disl"/>), built once per
 /// reading - and adds only what is this connection's: its viewport, and the set of elements it has
 /// already been sent.
 /// </summary>
@@ -37,13 +37,14 @@ internal sealed class AnsibleSession : IDiagramSession
 {
     private readonly string _folder;
     private readonly string? _registrationPath;
-    private readonly IAnsibleProjectStore _store;
+    private readonly AnsibleFolders _folders;
+    private readonly AnsibleFolder _opened;
     private readonly AnsibleElementMapper _mapper;
 
     /// <summary>The project's history, so a drag is one undo away. Null makes the diagram read-only.</summary>
     private readonly IHistoryStack? _history;
 
-    /// <summary>The store's word for this folder, until the session goes.</summary>
+    /// <summary>The open folder's word for this folder, until the session goes.</summary>
     private readonly IDisposable _watch;
 
     private readonly DiagramDocumentChangeHandler _changes;
@@ -51,24 +52,24 @@ internal sealed class AnsibleSession : IDiagramSession
 
     public AnsibleSession(
         string folder,
-        IAnsibleProjectStore store,
+        AnsibleFolders folders,
         AnsibleElementMapper mapper,
         string? registrationPath = null,
         IHistoryStack? history = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(folder);
-        ArgumentNullException.ThrowIfNull(store);
+        ArgumentNullException.ThrowIfNull(folders);
         ArgumentNullException.ThrowIfNull(mapper);
 
         _folder = folder;
-        _store = store;
+        _folders = folders;
         _mapper = mapper;
         _registrationPath = registrationPath;
         _history = history;
         _changes = new DiagramDocumentChangeHandler(_folder, Render, Raise);
 
-        _store.Acquire(_folder);
-        _watch = _store.Watch(_folder, _ => _changes.OnDocumentChanged(_folder));
+        _opened = _folders.Acquire(_folder, _registrationPath);
+        _watch = _folders.Watch(_folder, _registrationPath, _ => _changes.OnDocumentChanged(_folder));
     }
 
     public event EventHandler<DiagramDeltasEventArgs>? Changed;
@@ -104,9 +105,11 @@ internal sealed class AnsibleSession : IDiagramSession
     /// 2.3).
     /// </summary>
     /// <remarks>
-    /// The write comes back through the folder's own watcher, because the <c>.adp</c> lives
-    /// inside the folder being watched: dragged and computed positions therefore share one
-    /// render path, and this session needs no local echo of what it just asked for.
+    /// The write comes back through the folder body, which watches the registration as the
+    /// registration and raises a change without reading the folder: dragged and computed positions
+    /// therefore share one render path, and this session needs no local echo of what it just asked
+    /// for. A stored position whose node is absent is left in the registration, and is applied
+    /// again when the node returns (finding B9).
     /// </remarks>
     public async Task<string> MoveElementToAsync(string elementId, double x, double y, CancellationToken cancellationToken)
     {
@@ -149,13 +152,13 @@ internal sealed class AnsibleSession : IDiagramSession
     public ValueTask DisposeAsync()
     {
         _watch.Dispose();
-        _store.Release(_folder);
+        _folders.Release(_folder, _registrationPath);
         return ValueTask.CompletedTask;
     }
 
-    /// <summary>What this connection should hold: the model of the folder as the store has read it, through its viewport.</summary>
+    /// <summary>What this connection should hold: the model of the folder as it was last read, through its viewport.</summary>
     private IReadOnlyList<DiagramElement> Render() =>
-        _mapper.Visible(AnsibleDefinition.ModelOf(_store.GetOrLoad(_folder)), _viewport, Stored());
+        _mapper.Visible(_opened.Disl.Diagram, _viewport, Stored());
 
     private void Raise(IReadOnlyList<DiagramDelta> deltas) =>
         Changed?.Invoke(this, new DiagramDeltasEventArgs(deltas));

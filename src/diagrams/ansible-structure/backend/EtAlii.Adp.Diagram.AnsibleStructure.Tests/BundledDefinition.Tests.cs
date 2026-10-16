@@ -101,7 +101,7 @@ public sealed partial class BundledDefinitionTests
 
         // Act.
         var delivered = AnsibleFolderPlugin.Result(project).Elements.Select(element => $"{element.Type} {element.Id}").ToList();
-        var derived = AnsibleDefinition.ModelOf(project).Elements.Select(element => $"{element.Type.Name} {element.Id}").ToList();
+        var derived = AnsibleModels.ModelOf(project).Elements.Select(element => $"{element.Type.Name} {element.Id}").ToList();
 
         // Assert.
         Assert.Equal(delivered, derived);

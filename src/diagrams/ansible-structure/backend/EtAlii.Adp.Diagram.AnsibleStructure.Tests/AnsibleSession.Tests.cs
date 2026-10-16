@@ -12,11 +12,12 @@ namespace EtAlii.Adp.Diagram.AnsibleStructure.Tests;
 /// </summary>
 public class AnsibleSessionTests : IDisposable
 {
-    private static readonly TimeSpan SettleDelay = TimeSpan.FromMilliseconds(150);
+    /// <summary>The binding's settle delay, which the folder body waits for after a change.</summary>
+    private static readonly TimeSpan SettleDelay = TimeSpan.FromMilliseconds(AnsibleDefinition.Binding.Body.Settle);
     private static readonly TimeSpan WaitLimit = TimeSpan.FromSeconds(15);
 
     private readonly string _root;
-    private readonly AnsibleProjectStore _store = new(new AnsibleProjectReader(), SettleDelay);
+    private readonly AnsibleFolders _folders = new();
     private readonly AnsibleSessionFactory _factory;
     private readonly ServiceProvider _provider;
 
@@ -28,13 +29,13 @@ public class AnsibleSessionTests : IDisposable
         File.WriteAllText(IoPath.Combine(_root, "infrastructure.adp"), "ansible/structure\n");
         _provider = new ServiceCollection().AddCommands().AddHierarchyCommandHandlers().AddAnsibleStructure().BuildServiceProvider();
         _factory = new AnsibleSessionFactory(
-            _store, new AnsibleElementMapper(), _provider.GetRequiredService<IHistoryStackStore>());
+            _folders, new AnsibleElementMapper(), _provider.GetRequiredService<IHistoryStackStore>());
     }
 
     public void Dispose()
     {
         _provider.Dispose();
-        _store.Dispose();
+        _folders.Dispose();
         TestFolder.TryDelete(_root);
     }
 
@@ -363,7 +364,7 @@ public class AnsibleSessionTests : IDisposable
     {
         // Arrange: the null-stack case, which is how a read-only diagram presents itself.
         await using var session = new AnsibleSession(
-            _root, _store, new AnsibleElementMapper(), IoPath.Combine(_root, "infrastructure.adp"));
+            _root, _folders, new AnsibleElementMapper(), IoPath.Combine(_root, "infrastructure.adp"));
         session.Baseline();
 
         // Act.
@@ -379,7 +380,7 @@ public class AnsibleSessionTests : IDisposable
     {
         // Arrange.
         await using var session = new AnsibleSession(
-            _root, _store, new AnsibleElementMapper(), null, _provider.GetRequiredService<IHistoryStackStore>().Get(_root));
+            _root, _folders, new AnsibleElementMapper(), null, _provider.GetRequiredService<IHistoryStackStore>().Get(_root));
         session.Baseline();
 
         // Act.
@@ -408,5 +409,80 @@ public class AnsibleSessionTests : IDisposable
         var moved = elements.Single(element => element.Id == "role:common");
         Assert.Equal(321, moved.X);
         Assert.Equal(123, moved.Y);
+    }
+
+    /// <summary>
+    /// A stored position whose node is absent is not removed by a write, and is applied again when the node
+    /// returns (finding B9): the half-saved playbook of <c>Parity/Folders/b9-half-saved</c> draws nothing, a
+    /// drag of the other playbook writes the registration, and the repaired playbook comes back where it was.
+    /// </summary>
+    [Fact]
+    public async Task AStoredPositionOfAnAbsentNode_SurvivesAWrite_AndReturnsWithItsNode()
+    {
+        // Arrange.
+        var cancellationToken = TestContext.Current.CancellationToken;
+        var root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
+        TestFolder.CopyTree(RepositoryPaths.Under("src", "diagrams", "ansible-structure", "backend", "EtAlii.Adp.Diagram.AnsibleStructure.Tests", "Parity", "Folders", "b9-half-saved"), root);
+        var registration = IoPath.Combine(root, ".adp");
+        await File.WriteAllTextAsync(registration, "ansible/structure\nlayout:\n  playbook:half.yml: 100 200\n  playbook:other.yml: 300 400\n", cancellationToken);
+        try
+        {
+            await using var session = new AnsibleSession(
+                root, _folders, new AnsibleElementMapper(), registration, _provider.GetRequiredService<IHistoryStackStore>().Get(root));
+            var drawn = Assert.IsType<DiagramAddDelta>(Assert.Single(session.Baseline())).Elements;
+            Assert.DoesNotContain(drawn, element => element.Id == "playbook:half.yml");
+            var pushes = new List<IReadOnlyList<DiagramDelta>>();
+            session.Changed += (_, args) =>
+            {
+                lock (pushes)
+                {
+                    pushes.Add(args.Deltas);
+                }
+            };
+
+            // Act: a drag of the other node writes the registration.
+            var answer = await session.MoveElementToAsync("playbook:other.yml", 500, 600, cancellationToken);
+
+            // Assert: the write kept the absent node's position.
+            Assert.Equal(string.Empty, answer);
+            var stored = RegistrationLayout.Read(registration);
+            Assert.Equal(new RegistrationPosition(500, 600), stored["playbook:other.yml"]);
+            Assert.True(stored.TryGetValue("playbook:half.yml", out var kept), "The write dropped the stored position of the absent playbook.");
+            Assert.Equal(new RegistrationPosition(100, 200), kept);
+
+            // Act: the playbook is saved whole.
+            await File.WriteAllTextAsync(IoPath.Combine(root, "half.yml"), "- name: saved whole\n  hosts: localhost\n  tasks: []\n", cancellationToken);
+
+            // Assert: it returns where it was stored.
+            var returned = await WaitForElement(pushes, "playbook:half.yml");
+            Assert.Equal(100, returned.X);
+            Assert.Equal(200, returned.Y);
+        }
+        finally
+        {
+            TestFolder.TryDelete(root);
+        }
+    }
+
+    /// <summary>The element <paramref name="id"/> as the first push that adds it delivers it.</summary>
+    private static async Task<DiagramElement> WaitForElement(List<IReadOnlyList<DiagramDelta>> pushes, string id)
+    {
+        var start = DateTime.UtcNow;
+        while (DateTime.UtcNow - start < WaitLimit)
+        {
+            lock (pushes)
+            {
+                var added = pushes.SelectMany(deltas => deltas.OfType<DiagramAddDelta>()).SelectMany(delta => delta.Elements)
+                    .FirstOrDefault(element => element.Id == id);
+                if (added is not null)
+                {
+                    return added;
+                }
+            }
+            await Task.Delay(25, TestContext.Current.CancellationToken);
+        }
+
+        Assert.Fail($"{id} did not arrive within {WaitLimit}.");
+        return null!;
     }
 }
