@@ -1,0 +1,44 @@
+{
+  "fbl": "0.2",
+  "bindings": {
+    "dgr": {
+      "title": "Dependency graph",
+      "claims": { "extensions": [".dgr"], "origins": ["generic/dependencies"] },
+      "body": { "kind": "file", "family": "yaml" },
+      "reader": "declared",
+      "text": { "newline": "crlf", "indent": 2, "sequenceIndent": "indented", "finalNewline": true, "quote": "double" },
+      "elements": [
+        {
+          "name": "node", "type": "Node", "at": "/elements/*", "when": "entry.all(k, true)",
+          "id": { "from": { "key": "id" } },
+          "attributes": {
+            "storedId": { "key": "id", "readOnly": true },
+            "label": { "key": "label", "default": "", "empty": "keep" },
+            "x": { "key": "x", "default": 0, "number": "shortest" },
+            "row": { "key": "row", "default": 0 }
+          },
+          "insert": { "place": "after-last", "container": "/elements", "create": { "at": { "before": "relations" } }, "keys": ["id", "label", "x", "row"] },
+          "remove": { "cascade": ["dependency"] }
+        },
+        {
+          "name": "dependency", "type": "Dependency", "at": "/relations/*", "when": "entry.all(k, true)",
+          "id": { "from": { "key": "id" } },
+          "attributes": {
+            "storedId": { "key": "id", "readOnly": true },
+            "from": { "key": "from", "reference": { "to": ["node"], "by": "storedId" } },
+            "to": { "key": "to", "reference": { "to": ["node"], "by": "storedId" } },
+            "writtenFrom": { "key": "from", "default": "", "readOnly": true },
+            "writtenTo": { "key": "to", "default": "", "readOnly": true },
+            "label": { "key": "label", "default": "", "empty": "remove" }
+          },
+          "insert": { "place": "after-last", "container": "/relations", "create": { "at": "end-of-document" }, "keys": ["id", "from", "to", "label"] },
+          "remove": { "container": "keep" }
+        },
+        { "name": "node-not-a-mapping", "type": "Unreadable", "at": "/elements/*", "readOnly": "This entry is not a mapping, so it is kept as it is." },
+        { "name": "dependency-not-a-mapping", "type": "Unreadable", "at": "/relations/*", "readOnly": "This entry is not a mapping, so it is kept as it is." }
+      ],
+      "registration": { "createOnFirstPlacement": false },
+      "template": { "text": "dependencies: 1\r\nelements: []\r\n" }
+    }
+  }
+}

@@ -29,6 +29,17 @@ internal static class RealFileCorpus
         new("databricks-pipeline", "databricks-pipeline.fbl", "settings", 2, (path, bytes) => Extension(path, ".json") && Contains(bytes, "\"libraries\"")),
     ];
 
+    /// <summary>
+    /// The bindings a specification has drafted and not yet given its module, each a test resource of that module's test
+    /// project (named by its path from the repository root), and the files each claims. Only the module cross-check
+    /// reads them: they are drafts, so the declared-body properties are not asked of them.
+    /// </summary>
+    public static readonly IReadOnlyList<CorpusBinding> Drafted =
+    [
+        // dependency-graph-disl-fbl, task 2: the requirements' appendix, without its two keys that are not FBL.
+        new("dependency-graph", "src/diagrams/dependency-graph/backend/EtAlii.Adp.Diagram.DependencyGraph.Tests/Parity/Drafted/dependency-graph.fbl", "dgr", 13, (path, _) => Extension(path, ".dgr")),
+    ];
+
     /// <summary>Registrations: every <c>.adp</c> under <c>src/</c>.</summary>
     public const int MinimumRegistrations = 181;
 
@@ -47,7 +58,7 @@ internal static class RealFileCorpus
 
     public static string FullPath(string relative) => Path.Combine(Repository.Root, relative.Replace('/', Path.DirectorySeparatorChar));
 
-    public static CorpusBinding Find(string key) => Declared.Single(b => b.Key == key);
+    public static CorpusBinding Find(string key) => Declared.Concat(Drafted).Single(b => b.Key == key);
 
     /// <summary>The files a declared binding takes.</summary>
     public static IReadOnlyList<string> Files(CorpusBinding binding) =>
@@ -71,14 +82,18 @@ internal static class RealFileCorpus
         return data;
     }
 
-    /// <summary>A vendored binding by its document and name, loaded once and checked for load errors.</summary>
+    /// <summary>
+    /// A vendored binding by its document and name, loaded once and checked for load errors; a drafted one is named by its
+    /// path from the repository root.
+    /// </summary>
     public static FblBinding Binding(string document, string name)
     {
         lock (_bindings)
         {
             var key = document + "#" + name;
             if (_bindings.TryGetValue(key, out var binding)) return binding;
-            var problems = FblDocumentLoader.Load(Path.Combine(Repository.Conformance, document), out var loaded);
+            var path = document.Contains('/', StringComparison.Ordinal) ? FullPath(document) : Path.Combine(Repository.Conformance, document);
+            var problems = FblDocumentLoader.Load(path, out var loaded);
             Assert.DoesNotContain(problems, p => p.Severity == ProblemSeverity.Error);
             foreach ((string bindingName, FblBinding value) in loaded!.Bindings) _bindings[document + "#" + bindingName] = value;
             return _bindings[key];
