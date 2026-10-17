@@ -32,7 +32,7 @@ public sealed class AddConnectedDependencyGraphElementCommandHandler(IDependency
 
         // The insert moved lines, so the relation is spliced against a fresh parse rather than
         // the ranges the first model recorded.
-        var reparsed = DependencyGraphParser.Parse(body);
+        var reparsed = DependencyGraphBody.Ranges(body);
         // Which way the dependency runs is the type's whole meaning, so the gesture decides it
         // rather than the writer: dragged out of a node, that node depends on what was made;
         // dragged into one, what was made depends on it.

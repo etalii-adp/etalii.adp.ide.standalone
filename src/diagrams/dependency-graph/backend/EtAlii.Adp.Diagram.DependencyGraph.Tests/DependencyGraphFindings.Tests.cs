@@ -10,7 +10,7 @@ namespace EtAlii.Adp.Diagram.DependencyGraph.Tests;
 public class DependencyGraphFindingsTests
 {
     private static IReadOnlyList<DiagramProblem> Judge(string yaml) =>
-        DependencyGraphFindings.Judge(DependencyGraphParser.Parse(LineDocument.Parse(yaml)));
+        DependencyGraphFindings.Judge(DependencyGraphBody.Parse(yaml));
 
     private static IEnumerable<DiagramProblem> Of(string yaml, string ruleId) =>
         Judge(yaml).Where(problem => problem.RuleId == ruleId);

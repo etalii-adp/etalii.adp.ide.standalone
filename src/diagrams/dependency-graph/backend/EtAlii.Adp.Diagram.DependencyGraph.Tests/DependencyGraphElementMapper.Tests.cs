@@ -10,8 +10,7 @@ public class DependencyGraphElementMapperTests
 {
     private readonly DependencyGraphElementMapper _mapper = new();
 
-    private static DependencyGraphModel Parse(string yaml) =>
-        DependencyGraphParser.Parse(LineDocument.Parse(yaml));
+    private static DependencyGraphBody Parse(string yaml) => DependencyGraphBody.Parse(yaml);
 
     private const string TwoNodesAndARelation = """
         dependencies: 1

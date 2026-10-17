@@ -9348,186 +9348,253 @@
         },
         {
           "do": "set aaa dependencies.x = \"not a number\"",
-          "answer": "refused: b14-wide-dash-gap-and-nested-key.dgr could not be read, so it cannot be edited.",
+          "answer": "refused: 'not a number' is not a number this graph can place a node at.",
           "unchanged": true
         },
         {
           "do": "set aaa dependencies.x = \"1234.5\"",
-          "answer": "refused: b14-wide-dash-gap-and-nested-key.dgr could not be read, so it cannot be edited.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@6 -1 +\"      x: 1234.5\\n\""
+          ],
+          "sha256": "4e39141366ac17f8a8bd04ac2cc50221e9b93d0caf036975eb27cb17512d3edc"
         },
         {
           "do": "set aaa dependencies.row = \"1.5\"",
-          "answer": "refused: b14-wide-dash-gap-and-nested-key.dgr could not be read, so it cannot be edited.",
+          "answer": "refused: '1.5' is not a number this graph can place a node at.",
           "unchanged": true
         },
         {
           "do": "set aaa dependencies.row = \"-2\"",
-          "answer": "refused: b14-wide-dash-gap-and-nested-key.dgr could not be read, so it cannot be edited.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@7 -1 +\"      row: -2\\n\""
+          ],
+          "sha256": "26176f6a17baa254ed9747b371fc13996255204ee46b5c118a8ec21aec567cbd"
         },
         {
           "do": "set aaa dependencies.from = \"x\"",
-          "answer": "refused: b14-wide-dash-gap-and-nested-key.dgr could not be read, so it cannot be edited.",
+          "answer": "refused: 'dependencies.from' cannot be edited on this selection.",
           "unchanged": true
         },
         {
           "do": "execute dependencies.rename on aaa",
-          "answer": "refused: b14-wide-dash-gap-and-nested-key.dgr could not be read, so it cannot be edited.",
+          "answer": "asks: ContextInputRequest { Title = Rename, Icon = mdi-pencil-outline, FieldLabel = Label, InitialValue = A, ConfirmLabel = Rename, InlineLabelElementId = aaa, CommitActionId =  }",
           "unchanged": true
         },
         {
           "do": "commit dependencies.rename on aaa = \"Parity renamed\"",
-          "answer": "refused: b14-wide-dash-gap-and-nested-key.dgr could not be read, so it cannot be edited.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@4 -1 +\"      label: Parity renamed\\n\""
+          ],
+          "sha256": "ad0d696c305cc9c078d9be0b895c2770fa0fb61aa95cfb835556ab533139282a"
         },
         {
           "do": "execute dependencies.add-after on aaa",
-          "answer": "refused: b14-wide-dash-gap-and-nested-key.dgr could not be read, so it cannot be edited.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@12 -0 +\"  -   id: {minted-1}\\n      label: New node\\n      x: 1474.5\\n      row: -2\\n\"",
+            "@19 -0 +\"  - id: {minted-2}\\n    from: aaa\\n    to: {minted-1}\\n\""
+          ],
+          "sha256": "568b9944a099287b148d3d10d67a902e6a22b00beda3eb86a0f57867c1c5c97c"
         },
         {
           "do": "execute dependencies.add-below on aaa",
-          "answer": "refused: b14-wide-dash-gap-and-nested-key.dgr could not be read, so it cannot be edited.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@16 -0 +\"  -   id: {minted-3}\\n      label: New node\\n      x: 1234.5\\n      row: -1\\n\"",
+            "@26 -0 +\"  - id: {minted-4}\\n    from: aaa\\n    to: {minted-3}\\n\""
+          ],
+          "sha256": "99a2b9252bd72aa0426fad3afbb07533d53f7cf52611eac108a925199a84ac1f"
         },
         {
           "do": "execute dependencies.add-element on aaa",
-          "answer": "refused: b14-wide-dash-gap-and-nested-key.dgr could not be read, so it cannot be edited.",
+          "answer": "asks: ContextInputRequest { Title = Add node, Icon = mdi-plus, FieldLabel = Label, InitialValue = New node, ConfirmLabel = Add, InlineLabelElementId = , CommitActionId =  }",
           "unchanged": true
         },
         {
           "do": "commit dependencies.add-element on aaa = \"Committed from a node\"",
-          "answer": "refused: b14-wide-dash-gap-and-nested-key.dgr could not be read, so it cannot be edited.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@20 -0 +\"  -   id: {minted-5}\\n      label: Committed from a node\\n      x: 1474.5\\n      row: -2\\n\""
+          ],
+          "sha256": "af3c4719414b6910ba9a279e6555392f716adf9574949a474762d9b5cd9a9a9e"
         },
         {
           "do": "execute dependencies.relabel on aaa",
-          "answer": "refused: b14-wide-dash-gap-and-nested-key.dgr could not be read, so it cannot be edited.",
+          "answer": "refused: That is no longer in this graph.",
           "unchanged": true
         },
         {
           "do": "execute dependencies.connect on rel:aaa->aaa",
-          "answer": "refused: b14-wide-dash-gap-and-nested-key.dgr could not be read, so it cannot be edited.",
+          "answer": "refused: A node cannot depend on itself.",
           "unchanged": true
         },
         {
           "do": "execute dependencies.connect on rel:aaa->parity:unknown",
-          "answer": "refused: b14-wide-dash-gap-and-nested-key.dgr could not be read, so it cannot be edited.",
+          "answer": "refused: Both ends of a dependency must be nodes of this graph.",
           "unchanged": true
         },
         {
           "do": "execute dependencies.connect on rel:aaa->new:-120.5,3",
-          "answer": "refused: b14-wide-dash-gap-and-nested-key.dgr could not be read, so it cannot be edited.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@24 -0 +\"  -   id: {minted-6}\\n      label: New node\\n      x: -120.5\\n      row: 3\\n\"",
+            "@37 -0 +\"  - id: {minted-7}\\n    from: aaa\\n    to: {minted-6}\\n\""
+          ],
+          "sha256": "8e933396cdafde3e3311193eaa3e28158d1486fed6becbed5072996ec42a7b89"
         },
         {
           "do": "execute dependencies.connect on rel:new:-120.5,3->aaa",
-          "answer": "refused: b14-wide-dash-gap-and-nested-key.dgr could not be read, so it cannot be edited.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@28 -0 +\"  -   id: {minted-8}\\n      label: New node\\n      x: -120.5\\n      row: 3\\n\"",
+            "@44 -0 +\"  - id: {minted-9}\\n    from: {minted-8}\\n    to: aaa\\n\""
+          ],
+          "sha256": "478e84eab9b969940fa5f9f8f03268874406a9e2459a021025edb75681b08c7f"
         },
         {
           "do": "execute dependencies.connect on rel:aaa->bbb",
-          "answer": "refused: b14-wide-dash-gap-and-nested-key.dgr could not be read, so it cannot be edited.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@51 -0 +\"  - id: {minted-10}\\n    from: aaa\\n    to: bbb\\n\""
+          ],
+          "sha256": "9cb23800a0a1ff31d05d50b6e7acac35bbfa479031aee23a09b4efb80a80da7c"
         },
         {
           "do": "command move bbb to (300, 4)",
-          "answer": "refused: b14-wide-dash-gap-and-nested-key.dgr could not be read, so nothing can be edited until it can: Duplicate key label",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@10 -2 +\"    x: 300\\n    row: 4\\n\""
+          ],
+          "sha256": "903e468ccd20908dcfde828bea29040cbf0f78aadc8e9c7337a122fcbc38606e"
         },
         {
           "do": "set nested dependencies.label = \"Parity relabelled\"",
-          "answer": "refused: b14-wide-dash-gap-and-nested-key.dgr could not be read, so it cannot be edited.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@37 -1 +\"      label: Parity relabelled\\n\""
+          ],
+          "sha256": "6896395da9ad6bd63b76de102b9bd055e5c2caae73ace685ae74607c6f2c9bfa"
         },
         {
           "do": "set nested dependencies.x = \"1\"",
-          "answer": "refused: b14-wide-dash-gap-and-nested-key.dgr could not be read, so it cannot be edited.",
+          "answer": "refused: 'dependencies.x' cannot be edited on this selection.",
           "unchanged": true
         },
         {
           "do": "execute dependencies.relabel on nested",
-          "answer": "refused: b14-wide-dash-gap-and-nested-key.dgr could not be read, so it cannot be edited.",
+          "answer": "asks: ContextInputRequest { Title = Relabel, Icon = mdi-pencil-outline, FieldLabel = Label, InitialValue = outer, ConfirmLabel = Relabel, InlineLabelElementId = nested, CommitActionId =  }",
           "unchanged": true
         },
         {
           "do": "commit dependencies.relabel on nested = \"\"",
-          "answer": "refused: b14-wide-dash-gap-and-nested-key.dgr could not be read, so it cannot be edited.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@37 -1 +\"\""
+          ],
+          "sha256": "ccb7a628be48360d1c1a916394185a1f590621dd928857f93ffc24758286a22a"
         },
         {
           "do": "execute dependencies.remove on nested",
-          "answer": "refused: b14-wide-dash-gap-and-nested-key.dgr could not be read, so it cannot be edited.",
+          "answer": "ok",
           "unchanged": true
         },
         {
           "do": "commit dependencies.rename on nested = \"Not a node\"",
-          "answer": "refused: b14-wide-dash-gap-and-nested-key.dgr could not be read, so it cannot be edited.",
+          "answer": "refused: 'dependencies.rename' does not apply to this selection.",
           "unchanged": true
         },
         {
           "do": "execute dependencies.disconnect on nested",
-          "answer": "refused: b14-wide-dash-gap-and-nested-key.dgr could not be read, so it cannot be edited.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@33 -5 +\"\""
+          ],
+          "sha256": "160e744698d331dcf7b26af7f7cf9e522d83ba59850bc51dd6982b0b38763375"
         },
         {
           "do": "execute dependencies.add-element on new:480.25,-1",
-          "answer": "refused: b14-wide-dash-gap-and-nested-key.dgr could not be read, so it cannot be edited.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@32 -0 +\"  -   id: {minted-11}\\n      label: New node\\n      x: 480.25\\n      row: -1\\n\""
+          ],
+          "sha256": "98549bc1f90dd88ece3c00a122530e564acd7ba6acc6f12b3766cbc937f0307f"
         },
         {
           "do": "execute dependencies.add-element on ",
-          "answer": "refused: b14-wide-dash-gap-and-nested-key.dgr could not be read, so it cannot be edited.",
+          "answer": "asks: ContextInputRequest { Title = Add node, Icon = mdi-plus, FieldLabel = Label, InitialValue = New node, ConfirmLabel = Add, InlineLabelElementId = , CommitActionId =  }",
           "unchanged": true
         },
         {
           "do": "commit dependencies.add-element on  = \"\"",
-          "answer": "refused: b14-wide-dash-gap-and-nested-key.dgr could not be read, so it cannot be edited.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@36 -0 +\"  -   id: {minted-12}\\n      label: New node\\n      x: 0\\n      row: 0\\n\""
+          ],
+          "sha256": "fd168035d1654fc47e9aff66a899ce27296fd25eefa4a85e5e6139bdb83efc6a"
         },
         {
           "do": "execute dependencies.connect on rel:new:-120.5,3->parity:unknown",
-          "answer": "refused: b14-wide-dash-gap-and-nested-key.dgr could not be read, so it cannot be edited.",
+          "answer": "refused: The node this dependency reaches is no longer in this graph.",
           "unchanged": true
         },
         {
           "do": "execute dependencies.remove on parity:unknown",
-          "answer": "refused: b14-wide-dash-gap-and-nested-key.dgr could not be read, so it cannot be edited.",
+          "answer": "ok",
           "unchanged": true
         },
         {
           "do": "execute dependencies.disconnect on parity:unknown",
-          "answer": "refused: b14-wide-dash-gap-and-nested-key.dgr could not be read, so it cannot be edited.",
+          "answer": "ok",
           "unchanged": true
         },
         {
           "do": "execute dependencies.relabel on parity:unknown",
-          "answer": "refused: b14-wide-dash-gap-and-nested-key.dgr could not be read, so it cannot be edited.",
+          "answer": "refused: That is no longer in this graph.",
           "unchanged": true
         },
         {
           "do": "commit dependencies.rename on parity:unknown = \"Nobody\"",
-          "answer": "refused: b14-wide-dash-gap-and-nested-key.dgr could not be read, so it cannot be edited.",
+          "answer": "refused: 'dependencies.rename' does not apply to this selection.",
           "unchanged": true
         },
         {
           "do": "execute parity.no-such-action on parity:unknown",
-          "answer": "refused: b14-wide-dash-gap-and-nested-key.dgr could not be read, so it cannot be edited.",
+          "answer": "ok",
           "unchanged": true
         },
         {
           "do": "execute dependencies.remove on bbb",
-          "answer": "refused: b14-wide-dash-gap-and-nested-key.dgr could not be read, so it cannot be edited.",
+          "answer": "confirms: ContextConfirmationRequest { Title = Remove, Icon = mdi-delete-outline, Message = Removing this node also removes the 1 dependency attached to it., ConfirmLabel = Remove, Danger = True }",
           "unchanged": true
         },
         {
+          "do": "commit dependencies.remove on bbb = \"\"",
+          "answer": "ok",
+          "hunks": [
+            "@8 -4 +\"\"",
+            "@53 -3 +\"\""
+          ],
+          "sha256": "b4d77e394dd2f8ca4426b8c86c335b8bb31f1c543c3e12ea26adebd4240ec619"
+        },
+        {
           "do": "execute dependencies.remove on aaa",
-          "answer": "refused: b14-wide-dash-gap-and-nested-key.dgr could not be read, so it cannot be edited.",
+          "answer": "confirms: ContextConfirmationRequest { Title = Remove, Icon = mdi-delete-outline, Message = Removing this node also removes the 4 dependencies attached to it., ConfirmLabel = Remove, Danger = True }",
           "unchanged": true
+        },
+        {
+          "do": "commit dependencies.remove on aaa = \"\"",
+          "answer": "ok",
+          "hunks": [
+            "@3 -5 +\"\"",
+            "@37 -12 +\"\""
+          ],
+          "sha256": "f63927334b8aed1e57a10092e5ed72f3aca66bb9656c932a0d953849519b6a5b"
         }
       ],
-      "undoAll": "1 undone; the original text is back"
+      "undoAll": "18 undone; the original text is back"
     },
     {
       "document": "inline/b16-merge-key-and-flow-entry",
@@ -9540,10 +9607,6 @@
           "g2 dependencies.add-after | Add node to the right | mdi-arrow-expand-right | Tab | on",
           "g2 dependencies.add-below | Add node below | mdi-arrow-expand-down | Enter | on"
         ],
-        [
-          "g1 dependencies.relabel | Relabel… | mdi-pencil-outline | F2 | on",
-          "g1 dependencies.disconnect | Remove dependency | mdi-vector-polyline-remove | Delete | on"
-        ],
         [],
         [
           "g1 dependencies.add-element | Add node here | mdi-plus | - | on"
@@ -9555,14 +9618,14 @@
       "choices": [],
       "targets": [
         "\"aaa\" => menu #0, read-only #0",
-        "\"bbb\" => menu #0, read-only #0",
+        "\"bbb\" => menu #1, read-only #1",
         "\"flow-dependency\" => menu #1, read-only #1",
-        "\"\" => menu #2, read-only #2",
-        "\"new:240,2\" => menu #3, read-only #3",
-        "\"rel:aaa->bbb\" => menu #4, read-only #4",
-        "\"rel:aaa->new:240,2\" => menu #4, read-only #4",
-        "\"rel:new:240,2->aaa\" => menu #4, read-only #4",
-        "\"parity:unknown\" => menu #2, read-only #2"
+        "\"\" => menu #0, read-only #0",
+        "\"new:240,2\" => menu #2, read-only #2",
+        "\"rel:aaa->bbb\" => menu #3, read-only #3",
+        "\"rel:aaa->new:240,2\" => menu #3, read-only #3",
+        "\"rel:new:240,2->aaa\" => menu #3, read-only #3",
+        "\"parity:unknown\" => menu #1, read-only #1"
       ],
       "rows": [
         {
@@ -9570,34 +9633,28 @@
           "rows": [
             "dependencies.label | Label | \"Row by merge\" | Line | editable | group Identity",
             "dependencies.x | X | \"0\" | Line | editable | group Placement",
-            "dependencies.row | Row | \"0\" | Line | editable | group Placement"
+            "dependencies.row | Row | \"3\" | Line | editable | group Placement"
           ],
           "rowsReadOnly": "same"
         },
         {
-          "target": "bbb",
-          "rows": [
-            "dependencies.label | Label | \"Flow entry\" | Line | editable | group Identity",
-            "dependencies.x | X | \"240\" | Line | editable | group Placement",
-            "dependencies.row | Row | \"1\" | Line | editable | group Placement"
-          ],
-          "rowsReadOnly": "same"
-        },
-        {
-          "target": "flow-dependency",
+          "target": "",
           "rows": [
             "dependencies.label | Label | \"\" | Line | editable | group Identity",
-            "dependencies.from | Depends on (from) | \"aaa\" | Line | read-only (Reconnecting is done on the canvas, by dragging the dependency's end to another node.) | group Identity",
-            "dependencies.to | Depended on (to) | \"bbb\" | Line | read-only (Reconnecting is done on the canvas, by dragging the dependency's end to another node.) | group Identity"
+            "dependencies.x | X | \"0\" | Line | editable | group Placement",
+            "dependencies.row | Row | \"0\" | Line | editable | group Placement"
           ],
           "rowsReadOnly": "same"
         }
       ],
-      "findings": [],
+      "findings": [
+        "line 9 | Warning | dependencies.missing-id | '' has no id, so nothing can select, connect or edit it.",
+        "line 11 | Warning | dependencies.missing-id | A dependency has no id, so nothing can select, connect or edit it."
+      ],
       "payloads": [
-        "aaa | generic/dependencies+node | 0, 0 | DependencyGraphElementPayload { \"label\": \"Row by merge\" }",
-        "bbb | generic/dependencies+node | 240, 60 | DependencyGraphElementPayload { \"x\": 240, \"row\": 1, \"label\": \"Flow entry\" }",
-        "flow-dependency | generic/dependencies+relation | 0, 0 | DependencyGraphRelationPayload { \"fromElementId\": \"aaa\", \"toElementId\": \"bbb\" }"
+        "aaa | generic/dependencies+node | 0, 180 | DependencyGraphElementPayload { \"row\": 3, \"label\": \"Row by merge\" }",
+        " | generic/dependencies+node | 0, 0 | DependencyGraphElementPayload { }",
+        " | generic/dependencies+relation | 0, 0 | DependencyGraphRelationPayload { }"
       ],
       "edits": [
         {
@@ -10174,8 +10231,18 @@
     {
       "document": "inline/q2-repeated-key",
       "sha256": "0085ac21ae85a28f34a3219b48266bcffd91e9ae146ffdd27bc4a902c5df8587",
-      "readable": "no",
+      "readable": "yes",
       "menus": [
+        [
+          "g1 dependencies.rename | Rename… | mdi-pencil-outline | F2 | on",
+          "g1 dependencies.remove | Remove | mdi-delete-outline | Delete | on",
+          "g2 dependencies.add-after | Add node to the right | mdi-arrow-expand-right | Tab | on",
+          "g2 dependencies.add-below | Add node below | mdi-arrow-expand-down | Enter | on"
+        ],
+        [
+          "g1 dependencies.relabel | Relabel… | mdi-pencil-outline | F2 | on",
+          "g1 dependencies.disconnect | Remove dependency | mdi-vector-polyline-remove | Delete | on"
+        ],
         [],
         [
           "g1 dependencies.add-element | Add node here | mdi-plus | - | on"
@@ -10186,66 +10253,311 @@
       ],
       "choices": [],
       "targets": [
-        "\"\" => menu #0, read-only #0",
-        "\"new:240,2\" => menu #1, read-only #1",
-        "\"rel:a->b\" => menu #2, read-only #2",
-        "\"rel:a->new:240,2\" => menu #2, read-only #2",
-        "\"rel:new:240,2->a\" => menu #2, read-only #2",
-        "\"parity:unknown\" => menu #0, read-only #0"
+        "\"aaa\" => menu #0, read-only #0",
+        "\"bbb\" => menu #0, read-only #0",
+        "\"between\" => menu #1, read-only #1",
+        "\"\" => menu #2, read-only #2",
+        "\"new:240,2\" => menu #3, read-only #3",
+        "\"rel:aaa->bbb\" => menu #4, read-only #4",
+        "\"rel:aaa->new:240,2\" => menu #4, read-only #4",
+        "\"rel:new:240,2->aaa\" => menu #4, read-only #4",
+        "\"parity:unknown\" => menu #2, read-only #2"
       ],
-      "rows": [],
+      "rows": [
+        {
+          "target": "aaa",
+          "rows": [
+            "dependencies.label | Label | \"Said once\" | Line | editable | group Identity",
+            "dependencies.x | X | \"0\" | Line | editable | group Placement",
+            "dependencies.row | Row | \"0\" | Line | editable | group Placement"
+          ],
+          "rowsReadOnly": "same"
+        },
+        {
+          "target": "bbb",
+          "rows": [
+            "dependencies.label | Label | \"Other\" | Line | editable | group Identity",
+            "dependencies.x | X | \"240\" | Line | editable | group Placement",
+            "dependencies.row | Row | \"1\" | Line | editable | group Placement"
+          ],
+          "rowsReadOnly": "same"
+        },
+        {
+          "target": "between",
+          "rows": [
+            "dependencies.label | Label | \"\" | Line | editable | group Identity",
+            "dependencies.from | Depends on (from) | \"aaa\" | Line | read-only (Reconnecting is done on the canvas, by dragging the dependency's end to another node.) | group Identity",
+            "dependencies.to | Depended on (to) | \"bbb\" | Line | read-only (Reconnecting is done on the canvas, by dragging the dependency's end to another node.) | group Identity"
+          ],
+          "rowsReadOnly": "same"
+        }
+      ],
       "findings": [
-        "line 5 | Error | dependencies.unparseable | This is not YAML that can be read: Duplicate key label"
+        "line 5 | Warning | fbl.duplicate-key | The key 'label' appears again in this mapping; only the first is read."
       ],
-      "payloads": [],
+      "payloads": [
+        "aaa | generic/dependencies+node | 0, 0 | DependencyGraphElementPayload { \"label\": \"Said once\" }",
+        "bbb | generic/dependencies+node | 240, 60 | DependencyGraphElementPayload { \"x\": 240, \"row\": 1, \"label\": \"Other\" }",
+        "between | generic/dependencies+relation | 0, 0 | DependencyGraphRelationPayload { \"fromElementId\": \"aaa\", \"toElementId\": \"bbb\" }"
+      ],
       "edits": [
         {
-          "do": "execute dependencies.add-element on new:480.25,-1",
-          "answer": "refused: q2-repeated-key.dgr could not be read, so it cannot be edited.",
+          "do": "set aaa dependencies.label = \"Parity: renamed, with a colon\"",
+          "answer": "ok",
+          "hunks": [
+            "@4 -1 +\"    label: \\\"Parity: renamed, with a colon\\\"\\n\""
+          ],
+          "sha256": "9e7dad743c4bfc603367338e76bb47ac258972d8f97fbd093cabd30dedab8bc2"
+        },
+        {
+          "do": "set aaa dependencies.x = \"not a number\"",
+          "answer": "refused: 'not a number' is not a number this graph can place a node at.",
           "unchanged": true
         },
         {
+          "do": "set aaa dependencies.x = \"1234.5\"",
+          "answer": "ok",
+          "hunks": [
+            "@6 -1 +\"    x: 1234.5\\n\""
+          ],
+          "sha256": "575cedf10e715e4998c93dd0684048bdee50371b39e69b4ad2229947533d881f"
+        },
+        {
+          "do": "set aaa dependencies.row = \"1.5\"",
+          "answer": "refused: '1.5' is not a number this graph can place a node at.",
+          "unchanged": true
+        },
+        {
+          "do": "set aaa dependencies.row = \"-2\"",
+          "answer": "ok",
+          "hunks": [
+            "@7 -1 +\"    row: -2\\n\""
+          ],
+          "sha256": "4d0851ca4d7a295ec618f9773b63232663bf0c5063bb652c1832d9fa3289111b"
+        },
+        {
+          "do": "set aaa dependencies.from = \"x\"",
+          "answer": "refused: 'dependencies.from' cannot be edited on this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "execute dependencies.rename on aaa",
+          "answer": "asks: ContextInputRequest { Title = Rename, Icon = mdi-pencil-outline, FieldLabel = Label, InitialValue = Parity: renamed, with a colon, ConfirmLabel = Rename, InlineLabelElementId = aaa, CommitActionId =  }",
+          "unchanged": true
+        },
+        {
+          "do": "commit dependencies.rename on aaa = \"Parity renamed\"",
+          "answer": "ok",
+          "hunks": [
+            "@4 -1 +\"    label: Parity renamed\\n\""
+          ],
+          "sha256": "954964ec63e983499de39c4edbe9410f8cde0da0cf44430380385e7762b14114"
+        },
+        {
+          "do": "execute dependencies.add-after on aaa",
+          "answer": "ok",
+          "hunks": [
+            "@12 -0 +\"  - id: {minted-1}\\n    label: New node\\n    x: 1474.5\\n    row: -2\\n\"",
+            "@16 -0 +\"  - id: {minted-2}\\n    from: aaa\\n    to: {minted-1}\\n\""
+          ],
+          "sha256": "b59fa9c21b0294931a7e270304257f5283b04a7b2c2417c5bea10cf68c59b1ba"
+        },
+        {
+          "do": "execute dependencies.add-below on aaa",
+          "answer": "ok",
+          "hunks": [
+            "@16 -0 +\"  - id: {minted-3}\\n    label: New node\\n    x: 1234.5\\n    row: -1\\n\"",
+            "@23 -0 +\"  - id: {minted-4}\\n    from: aaa\\n    to: {minted-3}\\n\""
+          ],
+          "sha256": "482a6b2be7b5831666cf9e5f76bf4323352b6237fa1308e76c61f9674babf297"
+        },
+        {
+          "do": "execute dependencies.add-element on aaa",
+          "answer": "asks: ContextInputRequest { Title = Add node, Icon = mdi-plus, FieldLabel = Label, InitialValue = New node, ConfirmLabel = Add, InlineLabelElementId = , CommitActionId =  }",
+          "unchanged": true
+        },
+        {
+          "do": "commit dependencies.add-element on aaa = \"Committed from a node\"",
+          "answer": "ok",
+          "hunks": [
+            "@20 -0 +\"  - id: {minted-5}\\n    label: Committed from a node\\n    x: 1474.5\\n    row: -2\\n\""
+          ],
+          "sha256": "a3f4cde861e3eaf7cc2a6fe2a7b8627df76f199d274ea691d16ca91fa4e0bd18"
+        },
+        {
+          "do": "execute dependencies.relabel on aaa",
+          "answer": "refused: That is no longer in this graph.",
+          "unchanged": true
+        },
+        {
+          "do": "execute dependencies.connect on rel:aaa->aaa",
+          "answer": "refused: A node cannot depend on itself.",
+          "unchanged": true
+        },
+        {
+          "do": "execute dependencies.connect on rel:aaa->parity:unknown",
+          "answer": "refused: Both ends of a dependency must be nodes of this graph.",
+          "unchanged": true
+        },
+        {
+          "do": "execute dependencies.connect on rel:aaa->new:-120.5,3",
+          "answer": "ok",
+          "hunks": [
+            "@24 -0 +\"  - id: {minted-6}\\n    label: New node\\n    x: -120.5\\n    row: 3\\n\"",
+            "@34 -0 +\"  - id: {minted-7}\\n    from: aaa\\n    to: {minted-6}\\n\""
+          ],
+          "sha256": "87ab8781484925fba6e493ed81ffb243395ae9baec231ba75ca85e2a74c062b0"
+        },
+        {
+          "do": "execute dependencies.connect on rel:new:-120.5,3->aaa",
+          "answer": "ok",
+          "hunks": [
+            "@28 -0 +\"  - id: {minted-8}\\n    label: New node\\n    x: -120.5\\n    row: 3\\n\"",
+            "@41 -0 +\"  - id: {minted-9}\\n    from: {minted-8}\\n    to: aaa\\n\""
+          ],
+          "sha256": "6bbe90ed6eb30ba9da39568cb57eae27ca41d6176eb616bf4b0304a87df5b6b5"
+        },
+        {
+          "do": "execute dependencies.connect on rel:aaa->bbb",
+          "answer": "ok",
+          "hunks": [
+            "@48 -0 +\"  - id: {minted-10}\\n    from: aaa\\n    to: bbb\\n\""
+          ],
+          "sha256": "92be4f8abc3166e71b2edf30cce536f0cab7f07dd55e5df92308e7028f1ef203"
+        },
+        {
+          "do": "command move bbb to (300, 4)",
+          "answer": "ok",
+          "hunks": [
+            "@10 -2 +\"    x: 300\\n    row: 4\\n\""
+          ],
+          "sha256": "c06199339a4b64358e3019f923d46f3319540057f4307aa64c108b09a76105fa"
+        },
+        {
+          "do": "set between dependencies.label = \"Parity relabelled\"",
+          "answer": "ok",
+          "hunks": [
+            "@34 -0 +\"    label: Parity relabelled\\n\""
+          ],
+          "sha256": "f4101db67bcf1407b99c2e236b46301c2bf46b2e08db3d43b03389ea4260426e"
+        },
+        {
+          "do": "set between dependencies.x = \"1\"",
+          "answer": "refused: 'dependencies.x' cannot be edited on this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "execute dependencies.relabel on between",
+          "answer": "asks: ContextInputRequest { Title = Relabel, Icon = mdi-pencil-outline, FieldLabel = Label, InitialValue = Parity relabelled, ConfirmLabel = Relabel, InlineLabelElementId = between, CommitActionId =  }",
+          "unchanged": true
+        },
+        {
+          "do": "commit dependencies.relabel on between = \"\"",
+          "answer": "ok",
+          "hunks": [
+            "@34 -1 +\"\""
+          ],
+          "sha256": "c06199339a4b64358e3019f923d46f3319540057f4307aa64c108b09a76105fa"
+        },
+        {
+          "do": "execute dependencies.remove on between",
+          "answer": "ok",
+          "unchanged": true
+        },
+        {
+          "do": "commit dependencies.rename on between = \"Not a node\"",
+          "answer": "refused: 'dependencies.rename' does not apply to this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "execute dependencies.disconnect on between",
+          "answer": "ok",
+          "hunks": [
+            "@33 -3 +\"\""
+          ],
+          "sha256": "b5ffcc4d10420ad4506d75ac5e517ef27a55dff45ea668f3bcf1b3e8c358740a"
+        },
+        {
+          "do": "execute dependencies.add-element on new:480.25,-1",
+          "answer": "ok",
+          "hunks": [
+            "@32 -0 +\"  - id: {minted-11}\\n    label: New node\\n    x: 480.25\\n    row: -1\\n\""
+          ],
+          "sha256": "9a05437f51bb44f80eb1ed06d4be7be984fca221d323096ec3f40119e256b84b"
+        },
+        {
           "do": "execute dependencies.add-element on ",
-          "answer": "refused: q2-repeated-key.dgr could not be read, so it cannot be edited.",
+          "answer": "asks: ContextInputRequest { Title = Add node, Icon = mdi-plus, FieldLabel = Label, InitialValue = New node, ConfirmLabel = Add, InlineLabelElementId = , CommitActionId =  }",
           "unchanged": true
         },
         {
           "do": "commit dependencies.add-element on  = \"\"",
-          "answer": "refused: q2-repeated-key.dgr could not be read, so it cannot be edited.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@36 -0 +\"  - id: {minted-12}\\n    label: New node\\n    x: 0\\n    row: 0\\n\""
+          ],
+          "sha256": "7b773f766e12e37cd3250a446953ad9d327d16e9a31e13d5d7effaa047c348c5"
         },
         {
           "do": "execute dependencies.connect on rel:new:-120.5,3->parity:unknown",
-          "answer": "refused: q2-repeated-key.dgr could not be read, so it cannot be edited.",
+          "answer": "refused: The node this dependency reaches is no longer in this graph.",
           "unchanged": true
         },
         {
           "do": "execute dependencies.remove on parity:unknown",
-          "answer": "refused: q2-repeated-key.dgr could not be read, so it cannot be edited.",
+          "answer": "ok",
           "unchanged": true
         },
         {
           "do": "execute dependencies.disconnect on parity:unknown",
-          "answer": "refused: q2-repeated-key.dgr could not be read, so it cannot be edited.",
+          "answer": "ok",
           "unchanged": true
         },
         {
           "do": "execute dependencies.relabel on parity:unknown",
-          "answer": "refused: q2-repeated-key.dgr could not be read, so it cannot be edited.",
+          "answer": "refused: That is no longer in this graph.",
           "unchanged": true
         },
         {
           "do": "commit dependencies.rename on parity:unknown = \"Nobody\"",
-          "answer": "refused: q2-repeated-key.dgr could not be read, so it cannot be edited.",
+          "answer": "refused: 'dependencies.rename' does not apply to this selection.",
           "unchanged": true
         },
         {
           "do": "execute parity.no-such-action on parity:unknown",
-          "answer": "refused: q2-repeated-key.dgr could not be read, so it cannot be edited.",
+          "answer": "ok",
           "unchanged": true
+        },
+        {
+          "do": "execute dependencies.remove on bbb",
+          "answer": "confirms: ContextConfirmationRequest { Title = Remove, Icon = mdi-delete-outline, Message = Removing this node also removes the 1 dependency attached to it., ConfirmLabel = Remove, Danger = True }",
+          "unchanged": true
+        },
+        {
+          "do": "commit dependencies.remove on bbb = \"\"",
+          "answer": "ok",
+          "hunks": [
+            "@8 -4 +\"\"",
+            "@53 -3 +\"\""
+          ],
+          "sha256": "0985b84c8169b4dd7723b6a03c41317bbc176cc0df5921b527f5e2859b5bc985"
+        },
+        {
+          "do": "execute dependencies.remove on aaa",
+          "answer": "confirms: ContextConfirmationRequest { Title = Remove, Icon = mdi-delete-outline, Message = Removing this node also removes the 4 dependencies attached to it., ConfirmLabel = Remove, Danger = True }",
+          "unchanged": true
+        },
+        {
+          "do": "commit dependencies.remove on aaa = \"\"",
+          "answer": "ok",
+          "hunks": [
+            "@3 -5 +\"\"",
+            "@37 -12 +\"\""
+          ],
+          "sha256": "fe6e098b77a726dbed463994014b580101723c57199464be4a872657ed02265f"
         }
       ],
-      "undoAll": "0 undone; the original text is back"
+      "undoAll": "18 undone; the original text is back"
     }
   ]
 }

@@ -95,10 +95,10 @@ public class ExamplesTests
     {
         // Arrange.
         var text = File.ReadAllText(IoPath.Combine(ExamplesRoot, relativePath));
-        var model = DependencyGraphParser.Parse(LineDocument.Parse(text));
+        var body = DependencyGraphBody.Parse(text);
 
         // Act.
-        var problems = DependencyGraphFindings.Judge(model);
+        var problems = DependencyGraphFindings.Judge(body);
 
         // Assert.
         // Shipped material that lights up the problems panel teaches the first-time user to

@@ -1,5 +1,6 @@
 using System.Text;
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Specification.Disl;
 using EtAlii.Adp.Specification.Fbl.Documents;
 using EtAlii.Adp.Specification.Fbl.History;
 using EtAlii.Adp.Specification.Fbl.Planning;
@@ -10,45 +11,43 @@ using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would othe
 namespace EtAlii.Adp.Diagram.DependencyGraph.Tests.Parity;
 
 /// <summary>
-/// Every finding the requirements mark Read, shown on its document of the parity corpus through the binding the
-/// requirements draft (dependency-graph-disl-fbl, task 2, Requirements 1.2 and 1.4): what the module answers today,
-/// what FBL answers through the drafted binding, and, beside them, the answer the finding asks for.
+/// Every finding the requirements mark Read, shown on its document of the parity corpus through the module's own
+/// binding (dependency-graph-disl-fbl, tasks 2 and 7, Requirements 1.2 and 1.4): what the parser answers, what FBL
+/// answers through the binding, and, beside them, the answer the finding asks for.
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>The drafted binding is a test resource</b> (<c>Parity/Drafted/dependency-graph.fbl</c>), the requirements'
-/// appendix in FBL 0.5: its <c>"as": "text"</c> is FBL 0.5's <c>"read": "text"</c> (task 5), and its
-/// <c>"unreadable": "default"</c>, which is not FBL, is left out. The module does not read it.
+/// <b>The binding is the module's embedded <c>dependency-graph.fbl</c></b>, the requirements' appendix in FBL 0.5:
+/// its <c>"as": "text"</c> is FBL 0.5's <c>"read": "text"</c>, and <c>x</c> and <c>row</c> are read as their text,
+/// which <see cref="DependencyGraphReading"/> converts as the tool always has (Q4). Until task 7 it was a test
+/// resource, <c>Parity/Drafted/dependency-graph.fbl</c>.
 /// </para>
 /// <para>
-/// <b>Each test is a pinned difference.</b> It was first written as an equality of the two answers and seen to fail
-/// for the reason its finding gives (the failures are in the task's implementation log); it now pins both answers,
-/// so that a change to either shows, and the task that repairs the finding turns it.
+/// <b>Each test is a pinned difference</b>, or, once the module reads through the binding, an equality. It was first
+/// written as an equality of the two answers and seen to fail for the reason its finding gives (the failures are in
+/// task 2's implementation log); it pinned both answers, so that a change to either shows, and the task that repairs
+/// the finding turns it: task 7 for A4, B1 and B2, which now hold through the module's reading.
 /// </para>
 /// </remarks>
 public class DependencyGraphDraftedBindingTests
 {
-    private static readonly Lazy<FblBinding> Drafted = new(() =>
-    {
-        var problems = FblDocumentLoader.Load(IoPath.Combine(AppContext.BaseDirectory, "Parity", "Drafted", "dependency-graph.fbl"), out var document);
-        Assert.Empty(problems);
-        return document!.Bindings["dgr"];
-    });
-
     // ---- the findings -----------------------------------------------------------------------------
 
     [Fact]
-    public void A4_TheSecondHolderOfAnId_IsAddressedByItsPlace()
+    public void A4_TheSecondHolderOfAnId_IsAddressedByItsPlace_AndFoundByTheStoredId()
     {
         // Arrange and act.
         var today = Today("inline/a4-id-held-twice").Elements.Select(element => element.Id);
         var fbl = Fbl("inline/a4-id-held-twice").Model;
+        var diagram = DependencyGraphBody.Parse(Text("inline/a4-id-held-twice")).Disl.Diagram;
 
-        // Assert: today both holders answer to 'aaa', and a lookup by it finds the first; FBL gives the second its
-        // place and reports it. The right answer is FBL's, with every lookup through the stored id (finding A4).
+        // Assert: FBL gives the second holder its place and reports it, and the module finds an element through the
+        // stored id, so a lookup by 'aaa' finds the first holder, as it always has (finding A4).
         Assert.Equal(["aaa", "bbb", "aaa"], today);
         Assert.Equal(["aaa", "bbb", "node@11"], fbl.Elements.Where(element => element.Type == "Node").Select(element => element.Id));
         Assert.Contains(fbl.Findings, finding => finding.Code == "std.duplicateId");
+        Assert.Equal(today, diagram.NodesOfType("Node").Select(DependencyGraphDefinition.WrittenId));
+        Assert.Same(diagram.NodesOfType("Node")[0], DependencyGraphDefinition.ElementOf(diagram, "aaa"));
     }
 
     [Fact]
@@ -66,19 +65,23 @@ public class DependencyGraphDraftedBindingTests
         Assert.Equal(["007", "7"], fbl.Where(element => element.Type == "Node").Take(2).Select(element => element.Attributes["storedId"]));
         Assert.Equal(["1.0", "true", "~"], fbl.Where(element => element.Type == "Node").Select(element => element.Attributes["label"]));
         Assert.Equal("0x1F", fbl.Single(element => element.Id == "hex-end").Attributes["writtenFrom"]);
+        Assert.Equal(today.Elements.Select(element => element.Label), Module("inline/b1-scalars-as-written").NodesOfType("Node").Select(node => node.ValueOf("label")));
     }
 
     [Fact]
-    public void B2_ANumberThatWillNotRead_IsZeroToday_AndANumberOrTextToFbl()
+    public void B2_ANumberThatWillNotRead_IsZero_TodayAndThroughTheModulesReading()
     {
         // Arrange and act.
         var today = Today("inline/b2-numbers-read-otherwise").Elements.Select(element => element.X);
         var fbl = Fbl("inline/b2-numbers-read-otherwise").Model.Elements.Where(element => element.Type == "Node").Select(element => element.Attributes["x"]);
+        var module = Module("inline/b2-numbers-read-otherwise").NodesOfType("Node").Select(node => node.ValueOf("x"));
 
-        // Assert: today 0x10 and .inf read as 0 and .NET's Infinity and NaN as numbers; FBL reads 16 and infinity, and
-        // .NET's two spellings as text, with no finding either way. Which is right is Q4's (finding B2).
+        // Assert: the binding reads x as written, and the module converts it as it always has: 0x10 and .inf read as
+        // 0 and .NET's Infinity and NaN as numbers, as Q4 rules ("as today", finding B2). FBL's core-schema reading
+        // would make 0x10 16 and .inf infinity.
         Assert.Equal([0, 0, double.PositiveInfinity, double.NaN], today);
-        Assert.Equal([16L, double.PositiveInfinity, "Infinity", "NaN"], fbl);
+        Assert.Equal(["0x10", ".inf", "Infinity", "NaN"], fbl);
+        Assert.Equal(today.Cast<object?>(), module);
     }
 
     [Fact]
@@ -211,9 +214,10 @@ public class DependencyGraphDraftedBindingTests
         Assert.Equal([0, 1], today.Elements.Select(element => element.Row));
         Assert.Equal(["Row by merge", "Flow entry"], today.Elements.Select(element => element.Label));
         Assert.False(todayMove.Usable);
-        Assert.Equal(3L, fbl[0].Attributes["row"]);
+        Assert.Equal("3", fbl[0].Attributes["row"]);
         Assert.Equal("node@9", fbl[1].Id);
         Assert.Equal("", fbl[1].Attributes["label"]);
+        Assert.Equal([3L, 0L], Module("inline/b16-merge-key-and-flow-entry").NodesOfType("Node").Select(node => node.ValueOf("row")));
     }
 
     [Fact]
@@ -280,22 +284,6 @@ public class DependencyGraphDraftedBindingTests
         Assert.EndsWith("    row: 1\nrelations:\n", fbl, StringComparison.Ordinal);
     }
 
-    [Theory]
-    [InlineData("0.1")]
-    [InlineData("0.2")]
-    [InlineData("0.5")]
-    public async Task TheLoader_ReadsTheBindingAtEveryVersionItKnows(string version)
-    {
-        // Arrange.
-        var text = await File.ReadAllTextAsync(IoPath.Combine(AppContext.BaseDirectory, "Parity", "Drafted", "dependency-graph.fbl"), TestContext.Current.CancellationToken);
-
-        // Act.
-        var problems = FblDocumentLoader.Load(Encoding.UTF8.GetBytes(text.Replace("\"fbl\": \"0.2\"", $"\"fbl\": \"{version}\"", StringComparison.Ordinal)), out _);
-
-        // Assert: the draft declares 0.2; the loader accepts up to 0.5 without a word, and warns only above it.
-        Assert.Empty(problems);
-    }
-
     // ---- plumbing ---------------------------------------------------------------------------------
 
     private static string Text(string name) => DependencyGraphCorpus.Inline.Single(document => document.Name == name).Text;
@@ -309,7 +297,9 @@ public class DependencyGraphDraftedBindingTests
         return (document.Text, DependencyGraphParser.Outcome(LineDocument.Parse(document.Text)).IsUsable);
     }
 
-    private static OpenBody Fbl(string name) => OpenBody.Open(Encoding.UTF8.GetBytes(Text(name)), Drafted.Value);
+    private static OpenBody Fbl(string name) => OpenBody.Open(Encoding.UTF8.GetBytes(Text(name)), DependencyGraphBody.Binding);
+
+    private static DislDiagram Module(string name) => DependencyGraphBody.Parse(Text(name)).Disl.Diagram;
 
     private static string FblAfter(string name, ModelChange change)
     {

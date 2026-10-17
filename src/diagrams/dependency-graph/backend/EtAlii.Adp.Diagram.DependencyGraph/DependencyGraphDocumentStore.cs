@@ -28,5 +28,19 @@ public sealed class DependencyGraphDocumentStore : LifecycleDocumentStore<LineDo
 
 
     /// <inheritdoc />
-    protected override ParseOutcome<DependencyGraphModel> Parse(LineDocument body) => DependencyGraphParser.Outcome(body);
+    protected override ParseOutcome<DependencyGraphModel> Parse(LineDocument body)
+    {
+        ArgumentNullException.ThrowIfNull(body);
+
+        // The binding decides whether the document can be read; the parser's reading rides along
+        // for the writer, which splices at its line ranges (DependencyGraphBody.Ranges).
+        var reading = DependencyGraphBody.Parse(body.Text);
+        if (reading.IsUnreadable)
+        {
+            (string reason, int line) = DependencyGraphFindings.UnreadableReason(reading);
+            return new ParseOutcome<DependencyGraphModel>(DependencyGraphModel.Empty with { Body = reading }, [new ParseProblem(line - 1, reason)], reason);
+        }
+
+        return new ParseOutcome<DependencyGraphModel>(DependencyGraphBody.Ranges(body) with { Body = reading }, []);
+    }
 }

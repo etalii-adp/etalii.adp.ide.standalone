@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.Specification.Cel;
 using EtAlii.Adp.Specification.Disl;
 using EtAlii.Adp.Specification.Fbl;
@@ -6,30 +7,36 @@ namespace EtAlii.Adp.Diagram.DependencyGraph;
 
 /// <summary>
 /// The findings of a dependency graph, as its definition states them (<c>constraints</c> in
-/// <c>definition/dependency-graph.dis</c>), evaluated by the DISL runtime over a model of what
-/// <see cref="DependencyGraphParser"/> read, and the definition's <c>writtenEnd</c> function they read.
+/// <c>definition/dependency-graph.dis</c>), evaluated by the DISL runtime over the body's model
+/// (<see cref="DependencyGraphBody.Disl"/>), and the definition's <c>writtenEnd</c> function they read.
 /// </summary>
 /// <remarks>
 /// <para>
 /// <b>The rules, codes and messages are the definition's</b>: a missing id, a duplicate one, a dangling
-/// end and a self-dependency. Two things the model DISL hands CEL cannot hold are carried beside it:
-/// <b>the id an element is written with</b>, which need be neither present nor unique, so each element
-/// gets a model id of its own and findings name it by the written one (§11.5.4); and <b>the id a
-/// dependency's end is written with</b>, which is null in the model when it names no node (§4.9) and
-/// which the definition's <c>writtenEnd</c> reads. That is what lets the definition skip an end written
-/// empty and judge a self-dependency between two ids no node holds.
+/// end and a self-dependency. Two things the model DISL hands CEL cannot hold are carried beside it, as
+/// the binding's host attributes: <b>the id an element is written with</b> (<c>storedId</c>), which need
+/// be neither present nor unique, so findings name an element by it (§11.5.4); and <b>the id a
+/// dependency's end is written with</b> (<c>writtenFrom</c>, <c>writtenTo</c>), which is null in the model
+/// when it names no node (§4.9) and which the definition's <c>writtenEnd</c> reads. That is what lets the
+/// definition skip an end written empty and judge a self-dependency between two ids no node holds.
 /// </para>
 /// <para>
 /// <b>The order is the one thing that stays code</b>: first the ids, a missing and a duplicate id
 /// interleaved in declaration order, nodes before dependencies; then per dependency its dangling source,
 /// its dangling target and its self-dependency. <c>constraints.order</c> sorts by code, so it cannot
-/// interleave two, and it places a duplicate at the group's first member rather than at itself.
+/// interleave two, and it places a duplicate at the group's first member rather than at itself. Each
+/// element's line in the model is its place in the tool's reading (<see cref="DependencyGraphReading"/>),
+/// and the line it is reported at is looked up after.
+/// </para>
+/// <para>
+/// <b>A repeated key is the one finding of the binding's own that is passed on</b> (Q2): FBL reads such a
+/// body and cannot be told to refuse it, so it is a warning at its line, before the tool's own findings.
 /// </para>
 /// </remarks>
 internal static class DependencyGraphFindings
 {
     /// <summary>The host attribute holding the id an element or dependency is written with, empty for none.</summary>
-    private const string WrittenId = "writtenId";
+    private const string StoredId = "storedId";
 
     /// <summary>The host attribute holding a dependency's <c>from</c> as written.</summary>
     private const string WrittenFrom = "writtenFrom";
@@ -50,24 +57,32 @@ internal static class DependencyGraphFindings
     public static DislPluginFunctions Plugins() => new DislPluginFunctions()
         .Add("writtenEnd", arguments => WrittenEnd(arguments[0], arguments[1] as string));
 
-    /// <summary>The problems in <paramref name="model"/>, grouped as the tool reports them.</summary>
-    public static IReadOnlyList<DiagramProblem> Judge(DependencyGraphModel model)
+    /// <summary>The problems in <paramref name="body"/>, grouped as the tool reports them; the one finding of a body that is not YAML when it cannot be read.</summary>
+    public static IReadOnlyList<DiagramProblem> Judge(DependencyGraphBody body)
     {
-        ArgumentNullException.ThrowIfNull(model);
+        ArgumentNullException.ThrowIfNull(body);
+        if (body.IsUnreadable)
+        {
+            (string reason, int line) = UnreadableReason(body);
+            return Unparseable(reason, line);
+        }
 
-        (DislDiagram diagram, List<int> lines) = Build(model);
+        var reading = body.Reading;
         var findings = ConstraintEvaluator.Evaluate(
             DependencyGraphDefinition.Specification,
-            diagram,
-            new DislConstraintOptions(WrittenId: WrittenIdOf));
+            body.Disl.Diagram,
+            new DislConstraintOptions(WrittenId: element => DependencyGraphDefinition.HostText(element, StoredId)));
         return
         [
+            .. body.Model.Findings
+                .Where(finding => finding.Code == FindingCodes.DuplicateKey)
+                .Select(finding => new DiagramProblem(DiagramProblemSeverity.Warning, finding.Message, finding.Code, new DiagramProblemLineLocation((uint)Math.Max(finding.Location?.Line ?? 1, 1)))),
             .. findings
                 .Select((finding, arising) => (Finding: finding, Arising: arising))
                 .OrderBy(entry => Groups.GetValueOrDefault(entry.Finding.Code, int.MaxValue))
                 .ThenBy(entry => entry.Finding.Line ?? int.MaxValue)
                 .ThenBy(entry => entry.Arising)
-                .Select(entry => Problem(entry.Finding with { Line = entry.Finding.Line is { } at ? lines[at - 1] : null })),
+                .Select(entry => Problem(entry.Finding with { Line = entry.Finding.Line is { } at ? reading.LineOf(at) : null })),
         ];
     }
 
@@ -82,67 +97,20 @@ internal static class DependencyGraphFindings
     }
 
     /// <summary>
-    /// The model the rules judge: a node per element and a dependency per relation, each with the id it is
-    /// written with beside it; and each declaration's first line in the file.
+    /// Why a body cannot be read, and its 1-based line: YamlDotNet's sentence and line as the parser has
+    /// always reported them, while the parser is still the writer's reader; else the library's, less its lead-in.
     /// </summary>
-    /// <remarks>
-    /// The runtime reads "first" and "later" by line, and this format reads every node before any
-    /// dependency, also when the relations are written above the elements. So each declaration's line in the
-    /// model is its place in that reading, nodes first, and the line it is reported at is looked up after.
-    /// </remarks>
-    private static (DislDiagram Diagram, List<int> Lines) Build(DependencyGraphModel model)
+    internal static (string Reason, int Line) UnreadableReason(DependencyGraphBody body)
     {
-        var written = model.Elements.Select(element => element.Id).Concat(model.Relations.Select(relation => relation.Id)).ToHashSet(StringComparer.Ordinal);
-        var taken = new HashSet<string>(StringComparer.Ordinal);
-        var ephemeral = 0;
+        ArgumentNullException.ThrowIfNull(body);
+        var parsed = DependencyGraphParser.Outcome(LineDocument.Parse(body.Text));
+        if (!parsed.IsUsable) return (parsed.Unreadable, parsed.Problems[0].Line + 1);
 
-        var nodeIds = new Dictionary<string, string>(StringComparer.Ordinal);
-        var lines = new List<int>();
-        var read = new List<FblElement>();
-        foreach (var element in model.Elements)
-        {
-            var id = ModelId(element.Id);
-            nodeIds.TryAdd(element.Id, id);
-            var attributes = new Dictionary<string, object?>(StringComparer.Ordinal)
-            {
-                ["label"] = element.Label,
-                ["x"] = element.X,
-                ["row"] = (long)element.Row,
-                [WrittenId] = element.Id,
-            };
-            lines.Add(element.Range.Start + 1);
-            read.Add(new FblElement(id, true, "Node", "element", false, attributes, null, null, null, null, default, lines.Count));
-        }
-
-        foreach (var relation in model.Relations)
-        {
-            var attributes = new Dictionary<string, object?>(StringComparer.Ordinal)
-            {
-                ["label"] = relation.Label,
-                [WrittenId] = relation.Id,
-                [WrittenFrom] = relation.From,
-                [WrittenTo] = relation.To,
-            };
-            read.Add(new FblElement(
-                ModelId(relation.Id), true, "DependsOn", "relation", true, attributes, null, null,
-                nodeIds.GetValueOrDefault(relation.From), nodeIds.GetValueOrDefault(relation.To), default, lines.Count + 1));
-            lines.Add(relation.Range.Start + 1);
-        }
-
-        return (DislModelBuilder.From(new FblModel(read, [], false), DependencyGraphDefinition.Specification).Diagram, lines);
-
-        string ModelId(string id)
-        {
-            if (id.Length > 0 && taken.Add(id)) return id;
-            string unnamed;
-            do unnamed = $"dependencies:unnamed:{++ephemeral}";
-            while (written.Contains(unnamed) || !taken.Add(unnamed));
-            return unnamed;
-        }
+        const string leadIn = "The body is not well-formed YAML: ";
+        var finding = body.Model.Findings.FirstOrDefault(candidate => candidate.Code == FindingCodes.Unparseable) ?? body.Model.Findings.FirstOrDefault();
+        var message = finding?.Message ?? "it is not well-formed";
+        return (message.StartsWith(leadIn, StringComparison.Ordinal) ? message[leadIn.Length..] : message, Math.Max(finding?.Location?.Line ?? 1, 1));
     }
-
-    private static string WrittenIdOf(DislElement element) =>
-        element.HostAttributes.TryGetValue(WrittenId, out var id) ? id as string ?? "" : "";
 
     private static string WrittenEnd(object? relation, string? end) =>
         relation is DislElement element && end is "source" or "target"
