@@ -39,7 +39,7 @@ internal static class PipelineCorpus
 
         static IEnumerable<Document> In(string root) =>
             Directory.GetFiles(root, "*.yml", SearchOption.AllDirectories)
-                .Select(path => new Document(Relative(path), Relative(root), Path.GetRelativePath(root, path).Replace('\\', '/')))
+                .Select(path => new Document(UnderSource(path), UnderSource(root), Path.GetRelativePath(root, path).Replace('\\', '/')))
                 .OrderBy(document => document.Relative, StringComparer.Ordinal);
     }
 
@@ -71,7 +71,7 @@ internal static class PipelineCorpus
         }
     }
 
-    private static string Relative(string path) => Path.GetRelativePath(SourceFolder, path).Replace('\\', '/');
+    private static string UnderSource(string path) => Path.GetRelativePath(SourceFolder, path).Replace('\\', '/');
 
     /// <summary>One document of the corpus.</summary>
     /// <param name="Relative">Its path relative to <c>src/</c>, with forward slashes.</param>
