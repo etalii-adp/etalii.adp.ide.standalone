@@ -45,6 +45,23 @@ public class PipelineRuleSetTests
     }
 
     [Fact]
+    public void TwoStagesOfOneName_AreStillJudged()
+    {
+        // Arrange: finding A8. Judging builds the stage graph, which once threw on two stages of one
+        // name, so such a file had no findings at all. Adding one for the shared name is a separate
+        // ruling (Q3); this holds only that the file is judged.
+        var yaml = File.ReadAllText(IoPath.Combine("Fixtures", "findings", "two-stages-one-name.yml"));
+
+        // Act.
+        var exception = Record.Exception(() => Judge(yaml));
+
+        // Assert. The second stage waits for the first by the schema's default order; that the two share
+        // an id does not make either wait for itself, or leave the pipeline without a stage to start with.
+        Assert.Null(exception);
+        Assert.Empty(Judge(yaml));
+    }
+
+    [Fact]
     public void EveryFixtureThatIsMeantToBeValid_ReportsNothing()
     {
         // Arrange: the corpus is real pipelines. Only edge-broken-graph.yml is deliberately wrong.

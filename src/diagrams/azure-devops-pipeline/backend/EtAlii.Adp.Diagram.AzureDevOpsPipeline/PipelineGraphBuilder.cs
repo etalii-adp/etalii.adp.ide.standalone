@@ -93,6 +93,13 @@ public static partial class PipelineGraphBuilder
             }
 
             var previous = nodes[index - 1];
+            if (string.Equals(previous.Id, node.Id, StringComparison.Ordinal))
+            {
+                // Two stages of one name share an id (finding A8): an edge between them would read as
+                // the stage waiting for itself, which neither does.
+                continue;
+            }
+
             edges.Add(new PipelineEdge(
                 previous.Id,
                 node.Id,
@@ -158,7 +165,10 @@ public static partial class PipelineGraphBuilder
     /// </remarks>
     private static List<IReadOnlyList<string>> FindCycles(List<string> nodeIds, List<PipelineEdge> edges)
     {
-        var outgoing = nodeIds.ToDictionary(id => id, _ => new List<string>(), StringComparer.Ordinal);
+        // Two stages of one name share an id (finding A8 of azure-devops-pipeline-disl-fbl), and an
+        // edge names the id rather than the stage, so the id is one node here: walked once, with the
+        // edges of both.
+        var outgoing = nodeIds.Distinct(StringComparer.Ordinal).ToDictionary(id => id, _ => new List<string>(), StringComparer.Ordinal);
         foreach (var edge in edges.Where(edge => !edge.IsBroken))
         {
             if (outgoing.TryGetValue(edge.FromId, out var targets))
