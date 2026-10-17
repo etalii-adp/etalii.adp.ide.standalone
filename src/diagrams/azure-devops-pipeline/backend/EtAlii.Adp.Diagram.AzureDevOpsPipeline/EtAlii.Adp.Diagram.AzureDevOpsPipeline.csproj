@@ -29,6 +29,8 @@
     <!-- The DISL definition bundled from etalii-adp/etalii.adp (src/diagrams/tools/bundle-disl.sh), and its provenance. -->
     <EmbeddedResource Include="..\..\definition\azure-devops-pipeline.dis" LogicalName="azure-devops-pipeline.dis" />
     <EmbeddedResource Include="..\..\definition\provenance.json" LogicalName="azure-devops-pipeline.provenance.json" />
+    <!-- The module's own FBL binding, whose reader is the persistence plugin PipelineYamlPlugin (azure-devops-pipeline-disl-fbl task 8). -->
+    <EmbeddedResource Include="azure-devops-pipeline.fbl" LogicalName="azure-devops-pipeline.fbl" />
   </ItemGroup>
 
   <ItemGroup>

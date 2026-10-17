@@ -138,7 +138,20 @@ public sealed class PipelineParser
     private PipelineModel Read()
     {
         var stream = new YamlStream();
-        stream.Load(new StringReader(_document.Text));
+        var parser = new Parser(new StringReader(_document.Text));
+        try
+        {
+            stream.Load(parser);
+        }
+        catch (Exception error) when (error is InvalidOperationException or ArgumentException)
+        {
+            // YamlDotNet says of some text it cannot read that its own state is invalid (a plain scalar
+            // cut off inside a flow mapping) or that an event is not one it loads, rather than raising a
+            // YamlException. That is the text's problem all the same, on the line the reader had reached,
+            // and reading never throws on content (azure-devops-pipeline-disl-fbl Requirement 4.6).
+            var at = parser.Current?.Start ?? Mark.Empty;
+            throw new YamlException(at, at, error.Message, error);
+        }
         if (stream.Documents.Count == 0 || stream.Documents[0].RootNode is not YamlMappingNode root)
         {
             _logger.Debug("A pipeline document holds no mapping at its root, so it declares nothing to draw");

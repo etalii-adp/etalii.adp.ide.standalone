@@ -1,0 +1,20 @@
+{
+  "$schema": "https://etalii.net/adp/fbl/schema/0.1/fbl.schema.json#/$defs/Document",
+  "fbl": "0.2",
+  "doc": "The Azure DevOps pipeline's body (definitions/diagrams/azure-devops-pipeline.dis, azure-devops-pipeline.md): an Azure Pipelines YAML file, Azure DevOps' own, read through a binding whose reader is a persistence plugin (section 11), because no declared reader can follow a template (companion, gap 1; finding B2). The plugin net.etalii.adp.azure-devops.pipelineYaml wraps the module's PipelineParser: it reads the stages, jobs, steps and template references as the binding types of the draft declared binding (specifications/fbl/azure-devops-pipeline.fbl.draft in etalii-adp/etalii.adp), following templates inside the workspace only and never over the network, with every value the text it was written with. What it needs beside the contract, the body's path and the workspace's template resolver, the module hands it as PipelineReadContext, which stands in for that gap. A repository is full of YAML that is not a pipeline, so the claim is shared and registration-only: a file becomes one when it is registered, never on sight. The template is the jobs-only pipeline the tool has always created (finding B17). Undo is the host's.",
+  "bindings": {
+    "pipeline": {
+      "title": "Azure DevOps pipeline",
+      "claims": {
+        "extensions": [".yml"],
+        "shared": true,
+        "registrationOnly": true,
+        "origins": ["azure-devops/pipeline"]
+      },
+      "body": { "kind": "file", "family": "yaml" },
+      "reader": { "plugin": "net.etalii.adp.azure-devops.pipelineYaml", "version": "^0.1.0" },
+      "text": { "newline": "crlf", "finalNewline": true },
+      "template": { "text": "# {base}\r\n\r\ntrigger:\r\n  - main\r\n\r\npool:\r\n  vmImage: ubuntu-latest\r\n\r\njobs:\r\n  - job: Build\r\n    displayName: Build\r\n    steps:\r\n      - script: echo \"Replace this with your build\"\r\n        displayName: Build\r\n" }
+    }
+  }
+}
