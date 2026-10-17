@@ -117,7 +117,7 @@ public sealed class PipelineContextActionProvider : DiagramActionProvider<LineDo
             // because which stages this connection has open is not a fact about the pipeline. The
             // definition's view action says what it should be; it is toggled through the view
             // state's announcing method, which is what makes the session push the deltas.
-            var (toggle, refused) = PipelineDefinition.View(entry, _views.For(target.WatchId, target.ResolvedFullPath), target.ElementId, actionId);
+            (string? toggle, string? refused) = PipelineDefinition.View(entry, _views.For(target.WatchId, target.ResolvedFullPath), target.ElementId, actionId);
             if (refused is { } refusal)
             {
                 return new ContextExecutionFailed(refusal);
