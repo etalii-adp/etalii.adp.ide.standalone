@@ -17,8 +17,8 @@ namespace EtAlii.Adp.Diagram.DependencyGraph.Tests.Parity;
 /// <remarks>
 /// <para>
 /// <b>The drafted binding is a test resource</b> (<c>Parity/Drafted/dependency-graph.fbl</c>), the requirements'
-/// appendix without its two keys that are not FBL (<c>"as": "text"</c>, <c>"unreadable": "default"</c>), so that it is
-/// what FBL 0.2 can state today. The module does not read it.
+/// appendix in FBL 0.5: its <c>"as": "text"</c> is FBL 0.5's <c>"read": "text"</c> (task 5), and its
+/// <c>"unreadable": "default"</c>, which is not FBL, is left out. The module does not read it.
 /// </para>
 /// <para>
 /// <b>Each test is a pinned difference.</b> It was first written as an equality of the two answers and seen to fail
@@ -52,19 +52,20 @@ public class DependencyGraphDraftedBindingTests
     }
 
     [Fact]
-    public void B1_AnIdALabelAndAnEnd_AreTheTextTheyWereWrittenWith_OnlyToday()
+    public void B1_AnIdALabelAndAnEnd_AreTheTextTheyWereWrittenWith_TodayAndThroughFbl()
     {
         // Arrange and act.
         var today = Today("inline/b1-scalars-as-written");
         var fbl = Fbl("inline/b1-scalars-as-written").Model.Elements;
 
-        // Assert: today every scalar is its written text. FBL types it by the core schema: 007 and 7 are the one
-        // number 7, 1.0 a number, true a boolean, ~ null, 0x1F 31. The right answer is today's (finding B1).
+        // Assert: every scalar is its written text, today and through the binding, whose slots read it with FBL 0.5's
+        // "read": "text" (section 5.2): 007 and 7 are two ids, 1.0, true and ~ are labels, 0x1F is an end. This is the
+        // right answer (finding B1).
         Assert.Equal(["007", "7", "tilde"], today.Elements.Select(element => element.Id));
         Assert.Equal(["1.0", "true", "~"], today.Elements.Select(element => element.Label));
-        Assert.Equal([7L, 7L], fbl.Where(element => element.Type == "Node").Take(2).Select(element => element.Attributes["storedId"]));
-        Assert.Equal([1.0, true, null], fbl.Where(element => element.Type == "Node").Select(element => element.Attributes["label"]));
-        Assert.Equal(31L, fbl.Single(element => element.Id == "hex-end").Attributes["writtenFrom"]);
+        Assert.Equal(["007", "7"], fbl.Where(element => element.Type == "Node").Take(2).Select(element => element.Attributes["storedId"]));
+        Assert.Equal(["1.0", "true", "~"], fbl.Where(element => element.Type == "Node").Select(element => element.Attributes["label"]));
+        Assert.Equal("0x1F", fbl.Single(element => element.Id == "hex-end").Attributes["writtenFrom"]);
     }
 
     [Fact]

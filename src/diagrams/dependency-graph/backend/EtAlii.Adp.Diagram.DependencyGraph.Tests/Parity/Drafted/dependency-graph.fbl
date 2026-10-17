@@ -1,5 +1,5 @@
 {
-  "fbl": "0.2",
+  "fbl": "0.5",
   "bindings": {
     "dgr": {
       "title": "Dependency graph",
@@ -12,8 +12,8 @@
           "name": "node", "type": "Node", "at": "/elements/*", "when": "entry.all(k, true)",
           "id": { "from": { "key": "id" } },
           "attributes": {
-            "storedId": { "key": "id", "readOnly": true },
-            "label": { "key": "label", "default": "", "empty": "keep" },
+            "storedId": { "key": "id", "read": "text", "readOnly": true },
+            "label": { "key": "label", "read": "text", "default": "", "empty": "keep" },
             "x": { "key": "x", "default": 0, "number": "shortest" },
             "row": { "key": "row", "default": 0 }
           },
@@ -24,12 +24,12 @@
           "name": "dependency", "type": "Dependency", "at": "/relations/*", "when": "entry.all(k, true)",
           "id": { "from": { "key": "id" } },
           "attributes": {
-            "storedId": { "key": "id", "readOnly": true },
-            "from": { "key": "from", "reference": { "to": ["node"], "by": "storedId" } },
-            "to": { "key": "to", "reference": { "to": ["node"], "by": "storedId" } },
-            "writtenFrom": { "key": "from", "default": "", "readOnly": true },
-            "writtenTo": { "key": "to", "default": "", "readOnly": true },
-            "label": { "key": "label", "default": "", "empty": "remove" }
+            "storedId": { "key": "id", "read": "text", "readOnly": true },
+            "from": { "key": "from", "read": "text", "reference": { "to": ["node"], "by": "storedId" } },
+            "to": { "key": "to", "read": "text", "reference": { "to": ["node"], "by": "storedId" } },
+            "writtenFrom": { "key": "from", "read": "text", "default": "", "readOnly": true },
+            "writtenTo": { "key": "to", "read": "text", "default": "", "readOnly": true },
+            "label": { "key": "label", "read": "text", "default": "", "empty": "remove" }
           },
           "insert": { "place": "after-last", "container": "/relations", "create": { "at": "end-of-document" }, "keys": ["id", "from", "to", "label"] },
           "remove": { "container": "keep" }
