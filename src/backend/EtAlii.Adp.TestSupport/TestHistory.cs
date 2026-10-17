@@ -1,5 +1,6 @@
 using EtAlii.Adp.Designer;
 using EtAlii.Adp.Diagram;
+using EtAlii.Adp.Editor;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 using Microsoft.Extensions.DependencyInjection;
@@ -40,14 +41,17 @@ public static class TestHistory
 
     /// <summary>
     /// The stack for a single project in a host that has designer types: the handlers are
-    /// then told which files are a designer's, as the real host tells them.
+    /// then told which tool serves a file, as the real host tells them.
     /// </summary>
     public static IHistoryStack Create(string rootPath, out IHistoryStackStore store, IReadOnlyList<DesignerDefinition> designers)
     {
         store = new ServiceCollection()
             .AddSingleton<IDiagramDefinitionCatalog>(new TestDiagramDefinitionCatalog())
             .AddSingleton<IDesignerDefinitionCatalog>(new DesignerDefinitionCatalog { All = designers })
+            .AddSingleton<DiagramFileRouter>()
             .AddSingleton<DesignerFileRouter>()
+            .AddSingleton(new EditorResolver(new EditorDefinitionCatalog { All = [] }))
+            .AddSingleton<ToolRouter>()
             .AddCommands().AddHierarchyCommandHandlers()
             .BuildServiceProvider()
             .GetRequiredService<IHistoryStackStore>();
