@@ -1,5 +1,5 @@
-using Path = System.IO.Path;
 using Xunit;
+using Path = System.IO.Path;
 
 namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline.Tests.Parity;
 
