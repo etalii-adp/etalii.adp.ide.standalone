@@ -9,7 +9,7 @@ public static class ServiceCollectionAddDiagramSessionExtension
     /// Registers how a session on a diagram of the type at <paramref name="origin"/> is opened:
     /// <paramref name="open"/> is handed the provider and what the session is opened on.
     /// </summary>
-    public static void AddDiagramSession(this IServiceCollection services, DiagramOrigin origin, Func<IServiceProvider, DiagramSessionOpening, IDiagramSession> open)
+    public static void AddDiagramSession(this IServiceCollection services, ToolOrigin origin, Func<IServiceProvider, DiagramSessionOpening, IDiagramSession> open)
     {
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(origin);
@@ -23,7 +23,7 @@ public static class ServiceCollectionAddDiagramSessionExtension
     /// <paramref name="origin"/>, which the Add dialog writes and without which the host does not
     /// start for a type that declares an extension.
     /// </summary>
-    public static void AddEmptyDocument(this IServiceCollection services, DiagramOrigin origin, string text)
+    public static void AddEmptyDocument(this IServiceCollection services, ToolOrigin origin, string text)
     {
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(origin);
@@ -37,7 +37,7 @@ public static class ServiceCollectionAddDiagramSessionExtension
     /// type at <paramref name="origin"/> from the file's base name - a map titled after its file,
     /// a starter named after it - for a type whose new document is not one fixed text.
     /// </summary>
-    public static void AddEmptyDocument(this IServiceCollection services, DiagramOrigin origin, Func<string, string> textFromBaseName)
+    public static void AddEmptyDocument(this IServiceCollection services, ToolOrigin origin, Func<string, string> textFromBaseName)
     {
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(origin);

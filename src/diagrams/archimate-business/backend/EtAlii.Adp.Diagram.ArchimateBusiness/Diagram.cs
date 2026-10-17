@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using JetBrains.Annotations;
 namespace EtAlii.Adp.Diagram.ArchimateBusiness;
 
@@ -9,7 +8,7 @@ public static class Diagram
     public static DiagramDefinition[] Definitions { get; } =
     [
         new(
-            new DiagramOrigin("archimate", "business"),
+            new ToolOrigin("archimate", "business"),
             "ArchiMate — Business layer",
             "The business layer: actors, roles, processes and the services they offer each other.",
             Icon: "mdi-domain"),

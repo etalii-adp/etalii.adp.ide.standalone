@@ -137,7 +137,7 @@ public class C4EmptyDocumentTests
         var services = new ServiceCollection();
         services.AddC4();
         using var provider = services.BuildServiceProvider();
-        var factory = new DiagramDocumentFactories(provider.GetServices<IDiagramDocumentFactory>()).Find(new DiagramOrigin("c4", "code"));
+        var factory = new DiagramDocumentFactories(provider.GetServices<IDiagramDocumentFactory>()).Find(new ToolOrigin("c4", "code"));
 
         // Act and assert, step by step.
         Assert.NotNull(factory);

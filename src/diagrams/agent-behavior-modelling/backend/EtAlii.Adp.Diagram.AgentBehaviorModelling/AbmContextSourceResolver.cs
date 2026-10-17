@@ -1,5 +1,4 @@
 using EtAlii.Adp.Diagram.Modules;
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.Hierarchy;
 
 namespace EtAlii.Adp.Diagram.AgentBehaviorModelling;
@@ -30,7 +29,7 @@ public sealed class AbmContextSourceResolver : DiagramElementSourceResolver<AbmB
     }
 
     /// <inheritdoc />
-    protected override DiagramOrigin Origin => Diagram.AgentBehaviorModelling.Origin;
+    protected override ToolOrigin Origin => Diagram.AgentBehaviorModelling.Origin;
 
     /// <inheritdoc />
     protected override DiagramElementTexts Texts { get; } = new(

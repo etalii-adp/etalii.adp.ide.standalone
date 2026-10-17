@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using JetBrains.Annotations;
 namespace EtAlii.Adp.Diagram.Tests.Fixtures.Malformed.NullEntry;
 
@@ -11,7 +10,7 @@ public static class Diagram
 {
     public static DiagramDefinition[] Definitions { get; } =
     [
-        new(new DiagramOrigin("fixture", "survivor"), "Survivor"),
+        new(new ToolOrigin("fixture", "survivor"), "Survivor"),
         null!,
     ];
 }

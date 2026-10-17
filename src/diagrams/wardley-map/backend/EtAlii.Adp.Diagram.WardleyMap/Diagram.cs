@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using JetBrains.Annotations;
 namespace EtAlii.Adp.Diagram.WardleyMap;
 
@@ -42,7 +41,7 @@ public static class Diagram
     /// module reads this.
     /// </summary>
     public static DiagramDefinition WardleyMap { get; } = new(
-        new DiagramOrigin("wardley", "map"),
+        new ToolOrigin("wardley", "map"),
         "Wardley map",
         "A value chain positioned against evolution, so a strategy can be argued about rather than asserted.",
         Icon: "mdi-chart-line",

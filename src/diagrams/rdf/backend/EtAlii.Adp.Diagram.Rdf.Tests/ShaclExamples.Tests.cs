@@ -13,7 +13,7 @@ namespace EtAlii.Adp.Diagram.Rdf.Tests;
 /// </summary>
 public class ShaclExamplesTests
 {
-    private static readonly DiagramOrigin _origin = new("w3c", "shacl");
+    private static readonly ToolOrigin _origin = new("w3c", "shacl");
 
     /// <summary>The examples folder, found from the test binary rather than from a hard-coded depth.</summary>
     private static string ExamplesRoot()

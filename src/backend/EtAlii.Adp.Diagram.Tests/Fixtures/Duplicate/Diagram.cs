@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using JetBrains.Annotations;
 namespace EtAlii.Adp.Diagram.Tests.Fixtures.Duplicate;
 
@@ -12,7 +11,7 @@ public static class Diagram
     public static DiagramDefinition[] Definitions { get; } =
     [
         new(
-            new DiagramOrigin("fixture", "valid"),
+            new ToolOrigin("fixture", "valid"),
             "Duplicate Of Valid"),
     ];
 }

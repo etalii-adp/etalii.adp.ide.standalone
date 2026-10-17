@@ -127,7 +127,7 @@ public class OwlValidatorTests
     public async Task AnUnparseableFile_CarriesTheFamilyFindingExactlyOnce()
     {
         // Arrange: nothing the parser can read.
-        var validator = new OwlValidator(new DiagramOrigin("w3c", "owl"));
+        var validator = new OwlValidator(new ToolOrigin("w3c", "owl"));
 
         // Act.
         var problems = await validator.ValidateAsync(

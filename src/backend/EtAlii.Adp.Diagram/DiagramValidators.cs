@@ -1,7 +1,5 @@
 using System.Reflection;
 
-using EtAlii.Adp.Documents;
-
 namespace EtAlii.Adp.Diagram;
 
 /// <summary>
@@ -15,13 +13,13 @@ namespace EtAlii.Adp.Diagram;
 /// </remarks>
 public sealed class DiagramValidators
 {
-    private readonly IReadOnlyDictionary<DiagramOrigin, IDiagramValidator> _byOrigin;
+    private readonly IReadOnlyDictionary<ToolOrigin, IDiagramValidator> _byOrigin;
 
     public DiagramValidators(IEnumerable<IDiagramValidator> validators)
     {
         ArgumentNullException.ThrowIfNull(validators);
 
-        var byOrigin = new Dictionary<DiagramOrigin, IDiagramValidator>();
+        var byOrigin = new Dictionary<ToolOrigin, IDiagramValidator>();
         foreach (var validator in validators)
         {
             if (byOrigin.TryGetValue(validator.Origin, out var existing))
@@ -38,7 +36,7 @@ public sealed class DiagramValidators
     }
 
     /// <summary>The validator for <paramref name="origin"/>, when its type has rules at all.</summary>
-    public bool TryGet(DiagramOrigin origin, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out IDiagramValidator? validator) =>
+    public bool TryGet(ToolOrigin origin, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out IDiagramValidator? validator) =>
         _byOrigin.TryGetValue(origin, out validator);
 
     /// <summary>
@@ -47,7 +45,7 @@ public sealed class DiagramValidators
     /// only its own cached verdicts. Empty when the type has no validator: no rules, no
     /// version to go stale against.
     /// </summary>
-    public string RulesVersion(DiagramOrigin origin)
+    public string RulesVersion(ToolOrigin origin)
     {
         if (!_byOrigin.TryGetValue(origin, out var validator))
         {

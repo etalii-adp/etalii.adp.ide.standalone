@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using JetBrains.Annotations;
 namespace EtAlii.Adp.Diagram.UmlCommunication;
 
@@ -9,7 +8,7 @@ public static class Diagram
     public static DiagramDefinition[] Definitions { get; } =
     [
         new(
-            new DiagramOrigin("uml", "communication"),
+            new ToolOrigin("uml", "communication"),
             "Communication diagram",
             "The same collaboration as a sequence diagram, arranged by who talks to whom rather than by time.",
             Icon: "mdi-forum-outline"),

@@ -1,6 +1,5 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Diagram;
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Hierarchy;
 using Microsoft.Extensions.Time.Testing;
@@ -11,7 +10,7 @@ namespace EtAlii.Adp.Problems.Tests;
 
 public class ValidateContextActionProviderTests : IDisposable
 {
-    private static readonly DiagramOrigin Mindmap = new("freeplane", "mindmap");
+    private static readonly ToolOrigin Mindmap = new("freeplane", "mindmap");
     private static readonly DiagramDefinition MindmapDefinition = new(Mindmap, "Mind map", Extension: ".mm");
 
     private readonly string _root;

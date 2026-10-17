@@ -1,5 +1,3 @@
-using EtAlii.Adp.Documents;
-
 namespace EtAlii.Adp.Diagram;
 
 /// <summary>
@@ -14,7 +12,7 @@ namespace EtAlii.Adp.Diagram;
 public interface IDiagramDocumentReloader
 {
     /// <summary>The diagram type whose documents this reloads.</summary>
-    DiagramOrigin Origin { get; }
+    ToolOrigin Origin { get; }
 
     /// <summary>
     /// Re-reads the document whose body is at <paramref name="bodyPath"/>, within the project

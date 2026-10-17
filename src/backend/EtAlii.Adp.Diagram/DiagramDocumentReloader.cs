@@ -29,7 +29,7 @@ public sealed class DiagramDocumentReloader<TStore> : IDiagramDocumentReloader
 {
     private readonly TStore _documents;
 
-    public DiagramDocumentReloader(DiagramOrigin origin, TStore documents)
+    public DiagramDocumentReloader(ToolOrigin origin, TStore documents)
     {
         ArgumentNullException.ThrowIfNull(origin);
         ArgumentNullException.ThrowIfNull(documents);
@@ -38,7 +38,7 @@ public sealed class DiagramDocumentReloader<TStore> : IDiagramDocumentReloader
     }
 
     /// <inheritdoc />
-    public DiagramOrigin Origin { get; }
+    public ToolOrigin Origin { get; }
 
     /// <inheritdoc />
     public void Reload(string rootPath, string bodyPath)

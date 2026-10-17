@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using JetBrains.Annotations;
 namespace EtAlii.Adp.Diagram.UmlCompositeStructure;
 
@@ -9,7 +8,7 @@ public static class Diagram
     public static DiagramDefinition[] Definitions { get; } =
     [
         new(
-            new DiagramOrigin("uml", "composite-structure"),
+            new ToolOrigin("uml", "composite-structure"),
             "Composite structure diagram",
             "What one class is made of internally: its parts, ports and connectors.",
             Icon: "mdi-group"),

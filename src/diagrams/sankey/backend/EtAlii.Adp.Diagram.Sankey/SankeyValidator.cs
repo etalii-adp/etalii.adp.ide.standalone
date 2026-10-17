@@ -31,7 +31,7 @@ public static class SankeyRuleIds
 public sealed class SankeyValidator : IDiagramValidator
 {
     /// <inheritdoc />
-    public DiagramOrigin Origin => Diagram.Sankey.Origin;
+    public ToolOrigin Origin => Diagram.Sankey.Origin;
 
     /// <inheritdoc />
     public ValueTask<IReadOnlyList<DiagramProblem>> ValidateAsync(DiagramValidationRequest request, CancellationToken cancellationToken)

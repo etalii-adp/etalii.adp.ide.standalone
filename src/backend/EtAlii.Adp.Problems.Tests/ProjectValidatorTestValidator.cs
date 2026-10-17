@@ -1,14 +1,13 @@
 using EtAlii.Adp.Diagram;
-using EtAlii.Adp.Documents;
 
 namespace EtAlii.Adp.Problems.Tests;
 
 internal sealed class ProjectValidatorTestValidator(
-    DiagramOrigin origin, IReadOnlyList<DiagramProblem> problems, bool throwing, bool hanging) : IDiagramValidator
+    ToolOrigin origin, IReadOnlyList<DiagramProblem> problems, bool throwing, bool hanging) : IDiagramValidator
 {
     private int _calls;
 
-    public DiagramOrigin Origin { get; } = origin;
+    public ToolOrigin Origin { get; } = origin;
     public int Calls => _calls;
     public TaskCompletionSource? Hold { get; set; }
 

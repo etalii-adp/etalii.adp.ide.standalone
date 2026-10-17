@@ -40,7 +40,7 @@ public class DiagramDocumentReloadBridgeTests : IDisposable
         private readonly Channel<(string RootPath, string BodyPath)> _reloads = Channel.CreateUnbounded<(string, string)>();
         private readonly Channel<string> _deletions = Channel.CreateUnbounded<string>();
 
-        public DiagramOrigin Origin { get; } = new("test", "sample");
+        public ToolOrigin Origin { get; } = new("test", "sample");
 
         public void Reload(string rootPath, string bodyPath) => _reloads.Writer.TryWrite((rootPath, bodyPath));
 
@@ -178,7 +178,7 @@ public class DiagramDocumentReloadBridgeTests : IDisposable
         using var bridge = new DiagramDocumentReloadBridge([reloader], _events);
         var bodyPath = IoPath.Combine(_root, "other.yml");
         await File.WriteAllTextAsync(bodyPath, "body", TestContext.Current.CancellationToken);
-        bridge.Track(_root, bodyPath, registrationPath: null, new DiagramOrigin("test", "unregistered"));
+        bridge.Track(_root, bodyPath, registrationPath: null, new ToolOrigin("test", "unregistered"));
 
         // Act.
         await File.WriteAllTextAsync(bodyPath, "changed", TestContext.Current.CancellationToken);

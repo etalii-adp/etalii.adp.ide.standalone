@@ -1,5 +1,3 @@
-using EtAlii.Adp.Documents;
-
 namespace EtAlii.Adp.Diagram.Modules;
 
 /// <summary>
@@ -9,10 +7,10 @@ namespace EtAlii.Adp.Diagram.Modules;
 /// </summary>
 /// <param name="origin">The diagram type whose toolbox this describes.</param>
 /// <param name="definition">The type's bundled definition.</param>
-public sealed class DislToolboxProvider(DiagramOrigin origin, DislDiagramDefinition definition) : IDiagramToolboxProvider
+public sealed class DislToolboxProvider(ToolOrigin origin, DislDiagramDefinition definition) : IDiagramToolboxProvider
 {
     /// <inheritdoc />
-    public DiagramOrigin Origin { get; } = origin;
+    public ToolOrigin Origin { get; } = origin;
 
     /// <inheritdoc />
     public IReadOnlyList<ToolboxItemDefinition> Items => definition.Toolbox;

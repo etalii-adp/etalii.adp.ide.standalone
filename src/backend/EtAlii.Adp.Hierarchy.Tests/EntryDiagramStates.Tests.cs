@@ -1,5 +1,4 @@
 using EtAlii.Adp.Diagram;
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.Editor;
 using Xunit;
 
@@ -13,8 +12,8 @@ namespace EtAlii.Adp.Hierarchy.Tests;
 /// </summary>
 public class EntryDiagramStatesTests
 {
-    private static readonly DiagramDefinition Mindmap = new(new DiagramOrigin("freeplane", "mindmap"), "Mind map", Extension: ".mm");
-    private static readonly DiagramDefinition Pipeline = new(new DiagramOrigin("azure-devops", "pipeline"), "Azure DevOps pipeline", Extension: ".yml", SharedExtension: true);
+    private static readonly DiagramDefinition Mindmap = new(new ToolOrigin("freeplane", "mindmap"), "Mind map", Extension: ".mm");
+    private static readonly DiagramDefinition Pipeline = new(new ToolOrigin("azure-devops", "pipeline"), "Azure DevOps pipeline", Extension: ".yml", SharedExtension: true);
     private static readonly EditorDefinition Plain = new("plain", "Plain Text", IsFallback: true);
     private static readonly EditorDefinition Markdown = new("markdown", "Markdown", Extensions: [".md"]);
 

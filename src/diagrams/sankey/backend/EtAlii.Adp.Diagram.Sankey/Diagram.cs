@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using JetBrains.Annotations;
 
 namespace EtAlii.Adp.Diagram.Sankey;
@@ -17,7 +16,7 @@ public static class Diagram
 
     /// <summary>The Sankey diagram.</summary>
     public static DiagramDefinition Sankey { get; } = new(
-        new DiagramOrigin("etalii", "sankey"),
+        new ToolOrigin("etalii", "sankey"),
         "Sankey diagram",
         "How a quantity divides and combines on its way from where it comes from to where it ends up: nodes as bars as tall as what passes through them, and flows as bands as thick as their value.",
         Icon: "mdi-chart-sankey",

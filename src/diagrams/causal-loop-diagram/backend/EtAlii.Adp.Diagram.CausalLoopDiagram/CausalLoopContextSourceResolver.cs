@@ -1,5 +1,4 @@
 using EtAlii.Adp.Diagram.Modules;
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.Hierarchy;
 
 namespace EtAlii.Adp.Diagram.CausalLoopDiagram;
@@ -50,7 +49,7 @@ public sealed class CausalLoopContextSourceResolver : DiagramElementSourceResolv
     }
 
     /// <inheritdoc />
-    protected override DiagramOrigin Origin => Diagram.CausalLoop.Origin;
+    protected override ToolOrigin Origin => Diagram.CausalLoop.Origin;
 
     /// <summary>
     /// A placement makes the diagram itself the subject, which is what makes the diagram-wide actions

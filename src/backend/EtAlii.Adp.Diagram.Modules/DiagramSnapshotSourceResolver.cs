@@ -49,7 +49,7 @@ public abstract class DiagramSnapshotSourceResolver<TSnapshot> : IContextSourceR
     }
 
     /// <summary>The diagram type whose elements this resolves.</summary>
-    protected abstract DiagramOrigin Origin { get; }
+    protected abstract ToolOrigin Origin { get; }
 
     /// <summary>The sentences a selection is refused with, and the names of a proposed element and relation.</summary>
     protected abstract DiagramElementTexts Texts { get; }

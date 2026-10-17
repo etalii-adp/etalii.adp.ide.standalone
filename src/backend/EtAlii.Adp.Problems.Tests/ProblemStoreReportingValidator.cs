@@ -1,11 +1,10 @@
 using EtAlii.Adp.Diagram;
-using EtAlii.Adp.Documents;
 
 namespace EtAlii.Adp.Problems.Tests;
 
-internal sealed class ProblemStoreReportingValidator(DiagramOrigin origin) : IDiagramValidator
+internal sealed class ProblemStoreReportingValidator(ToolOrigin origin) : IDiagramValidator
 {
-    public DiagramOrigin Origin { get; } = origin;
+    public ToolOrigin Origin { get; } = origin;
 
     public ValueTask<IReadOnlyList<DiagramProblem>> ValidateAsync(
         DiagramValidationRequest request, CancellationToken cancellationToken) =>

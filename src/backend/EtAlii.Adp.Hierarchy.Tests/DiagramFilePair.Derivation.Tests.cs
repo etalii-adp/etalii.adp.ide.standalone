@@ -1,5 +1,4 @@
 using EtAlii.Adp.Diagram;
-using EtAlii.Adp.Documents;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
@@ -13,7 +12,7 @@ namespace EtAlii.Adp.Hierarchy.Tests;
 public class DiagramFilePairDerivationTests : IDisposable
 {
     private static readonly DiagramDefinition _definition =
-        new(new DiagramOrigin("c4", "context"), "C4 context", "A test type.", Extension: ".dsl");
+        new(new ToolOrigin("c4", "context"), "C4 context", "A test type.", Extension: ".dsl");
 
     private readonly string _root;
     private readonly IDiagramDefinitionCatalog _catalog = new DiagramDefinitionCatalog { All = [_definition] };

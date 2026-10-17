@@ -12,7 +12,7 @@ namespace EtAlii.Adp.Diagram.Rdf.Tests;
 /// </summary>
 public sealed class RdfDocumentReloaderTests : DocumentReloaderContract<IRdfDocumentStore>
 {
-    protected override DiagramOrigin Origin => ServiceCollectionAddRdfExtension.RdfOrigin;
+    protected override ToolOrigin Origin => ServiceCollectionAddRdfExtension.RdfOrigin;
 
     protected override string Example => IoPath.Combine(AppContext.BaseDirectory, "Fixtures", "constructs.ttl");
 
@@ -71,7 +71,7 @@ public sealed class RdfDocumentReloaderTests : DocumentReloaderContract<IRdfDocu
             var told = new List<string>();
             void Told(object? sender, DocumentChangedEventArgs args) => told.Add(args.Path);
             store.Changed += Told;
-            var reloader = Assert.Single(reloaders, r => r.Origin == new DiagramOrigin("w3c", reading));
+            var reloader = Assert.Single(reloaders, r => r.Origin == new ToolOrigin("w3c", reading));
             File.AppendAllText(body, $"<http://example.org/{reading}> <http://example.org/y> <http://example.org/z> .\r\n");
             reloader.Reload(folder.Path, body);
             store.Changed -= Told;

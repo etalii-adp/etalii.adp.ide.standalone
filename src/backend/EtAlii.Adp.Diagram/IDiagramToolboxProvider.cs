@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 namespace EtAlii.Adp.Diagram;
 
 /// <summary>
@@ -11,7 +10,7 @@ namespace EtAlii.Adp.Diagram;
 public interface IDiagramToolboxProvider
 {
     /// <summary>The diagram type whose toolbox this describes.</summary>
-    DiagramOrigin Origin { get; }
+    ToolOrigin Origin { get; }
 
     /// <summary>The entries, in the order the palette shows them. Static per type.</summary>
     IReadOnlyList<ToolboxItemDefinition> Items { get; }

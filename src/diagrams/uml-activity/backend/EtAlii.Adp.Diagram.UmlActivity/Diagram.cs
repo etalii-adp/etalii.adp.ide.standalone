@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using JetBrains.Annotations;
 namespace EtAlii.Adp.Diagram.UmlActivity;
 
@@ -9,7 +8,7 @@ public static class Diagram
     public static DiagramDefinition[] Definitions { get; } =
     [
         new(
-            new DiagramOrigin("uml", "activity"),
+            new ToolOrigin("uml", "activity"),
             "Activity diagram",
             "A workflow as actions, decisions and parallel branches - the UML take on a flowchart.",
             Icon: "mdi-arrow-decision-auto"),

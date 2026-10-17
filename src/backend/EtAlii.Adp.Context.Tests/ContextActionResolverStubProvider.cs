@@ -1,5 +1,4 @@
-﻿using EtAlii.Adp.Documents;
-using EtAlii.Adp.Documents.Wire;
+﻿using EtAlii.Adp.Documents.Wire;
 
 namespace EtAlii.Adp.Context.Tests;
 
@@ -8,14 +7,14 @@ internal sealed class ContextActionResolverStubProvider : IContextActionProvider
     private readonly string _actionId;
     private readonly ContextShortcutDefinition? _shortcut;
     private readonly bool _available;
-    private readonly DiagramOrigin? _answersFor;
+    private readonly ToolOrigin? _answersFor;
 
     public ContextActionResolverStubProvider(
         ContextScope scope,
         string actionId,
         ContextShortcutDefinition? shortcut = null,
         bool available = true,
-        DiagramOrigin? answersFor = null)
+        ToolOrigin? answersFor = null)
     {
         _answersFor = answersFor;
         Scope = scope;

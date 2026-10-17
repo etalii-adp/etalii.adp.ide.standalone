@@ -29,7 +29,7 @@ namespace EtAlii.Adp.Diagram.Databricks;
 public sealed class DatabricksSession : DocumentDiagramSession<LineDocument, DatabricksModel>
 {
     private readonly string? _registrationPath;
-    private readonly DiagramOrigin _origin;
+    private readonly ToolOrigin _origin;
     private readonly string? _resourceKey;
     private readonly DatabricksElementMapper _mapper;
 
@@ -37,7 +37,7 @@ public sealed class DatabricksSession : DocumentDiagramSession<LineDocument, Dat
     public DatabricksSession(
         string bodyPath,
         string? registrationPath,
-        DiagramOrigin origin,
+        ToolOrigin origin,
         string? resourceKey,
         IDatabricksDocumentStore documents,
         DatabricksElementMapper mapper,

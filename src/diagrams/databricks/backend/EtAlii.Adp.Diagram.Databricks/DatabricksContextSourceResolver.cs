@@ -18,7 +18,7 @@ public sealed class DatabricksContextSourceResolver : DiagramElementSourceResolv
 {
     private readonly DatabricksElementMapper _mapper;
 
-    public DatabricksContextSourceResolver(DiagramOrigin origin, DiagramFileRouter router, IDatabricksDocumentStore documents, DatabricksElementMapper mapper)
+    public DatabricksContextSourceResolver(ToolOrigin origin, DiagramFileRouter router, IDatabricksDocumentStore documents, DatabricksElementMapper mapper)
         : base(router, documents)
     {
         ArgumentNullException.ThrowIfNull(origin);
@@ -29,7 +29,7 @@ public sealed class DatabricksContextSourceResolver : DiagramElementSourceResolv
     }
 
     /// <inheritdoc />
-    protected override DiagramOrigin Origin { get; }
+    protected override ToolOrigin Origin { get; }
 
     /// <inheritdoc />
     /// <remarks>A drop and a drawn relation are both proposed as the element about to exist.</remarks>

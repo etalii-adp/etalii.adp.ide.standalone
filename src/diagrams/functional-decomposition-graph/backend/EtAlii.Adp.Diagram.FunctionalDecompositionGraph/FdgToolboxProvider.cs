@@ -1,5 +1,3 @@
-using EtAlii.Adp.Documents;
-
 namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph;
 
 /// <summary>
@@ -12,7 +10,7 @@ namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph;
 public sealed class FdgToolboxProvider : IDiagramToolboxProvider
 {
     /// <inheritdoc />
-    public DiagramOrigin Origin => Diagram.FunctionalDecompositionGraph.Origin;
+    public ToolOrigin Origin => Diagram.FunctionalDecompositionGraph.Origin;
 
     /// <inheritdoc />
     public IReadOnlyList<ToolboxItemDefinition> Items { get; } =

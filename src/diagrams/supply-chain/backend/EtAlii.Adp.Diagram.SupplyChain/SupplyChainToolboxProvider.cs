@@ -1,5 +1,3 @@
-using EtAlii.Adp.Documents;
-
 namespace EtAlii.Adp.Diagram.SupplyChain;
 
 /// <summary>
@@ -12,7 +10,7 @@ namespace EtAlii.Adp.Diagram.SupplyChain;
 public sealed class SupplyChainToolboxProvider : IDiagramToolboxProvider
 {
     /// <inheritdoc />
-    public DiagramOrigin Origin => Diagram.SupplyChain.Origin;
+    public ToolOrigin Origin => Diagram.SupplyChain.Origin;
 
     /// <inheritdoc />
     public IReadOnlyList<ToolboxItemDefinition> Items { get; } =

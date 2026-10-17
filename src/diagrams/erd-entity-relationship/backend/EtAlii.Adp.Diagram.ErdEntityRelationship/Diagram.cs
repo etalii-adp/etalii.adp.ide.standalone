@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using JetBrains.Annotations;
 namespace EtAlii.Adp.Diagram.ErdEntityRelationship;
 
@@ -9,7 +8,7 @@ public static class Diagram
     public static DiagramDefinition[] Definitions { get; } =
     [
         new(
-            new DiagramOrigin("erd", "entity-relationship"),
+            new ToolOrigin("erd", "entity-relationship"),
             "Entity-relationship diagram",
             "Entities, their attributes and the cardinality of every relationship between them.",
             Icon: "mdi-relation-many-to-many"),

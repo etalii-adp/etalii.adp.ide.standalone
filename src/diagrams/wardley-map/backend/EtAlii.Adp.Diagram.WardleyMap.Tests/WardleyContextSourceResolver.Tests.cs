@@ -1,5 +1,4 @@
 using EtAlii.Adp.Context;
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Hierarchy;
 using Xunit;
@@ -56,7 +55,7 @@ public sealed class WardleyContextSourceResolverTests : IDisposable
         // other type to be rejected in favour of rather than a hypothetical one.
         var catalog = new WardleyTestDiagramDefinitionCatalog(
             Diagram.WardleyMap,
-            new DiagramDefinition(new DiagramOrigin("freeplane", "mindmap"), "Mind map", Extension: ".mm"));
+            new DiagramDefinition(new ToolOrigin("freeplane", "mindmap"), "Mind map", Extension: ".mm"));
 
         _resolver = new WardleyContextSourceResolver(
             new DiagramFileRouter(catalog),

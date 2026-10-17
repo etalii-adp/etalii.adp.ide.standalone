@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using JetBrains.Annotations;
 namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline;
 
@@ -28,7 +27,7 @@ public static class Diagram
     /// module reads this.
     /// </summary>
     public static DiagramDefinition Pipeline { get; } = new(
-        new DiagramOrigin("azure-devops", "pipeline"),
+        new ToolOrigin("azure-devops", "pipeline"),
         "Azure DevOps pipeline",
         "A CI/CD pipeline's stages, jobs and steps, and which of them wait for which.",
         Icon: "mdi-rocket-launch-outline",

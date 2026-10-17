@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 namespace EtAlii.Adp.Diagram.Rdf.Shacl;
 
 /// <summary>
@@ -12,10 +11,10 @@ namespace EtAlii.Adp.Diagram.Rdf.Shacl;
 /// <see cref="ShaclActions"/> to gate on the target's origin because a selection id is shared
 /// across the family's readings.
 /// </remarks>
-public sealed class ShaclToolboxProvider(DiagramOrigin origin) : IDiagramToolboxProvider
+public sealed class ShaclToolboxProvider(ToolOrigin origin) : IDiagramToolboxProvider
 {
     /// <inheritdoc />
-    public DiagramOrigin Origin { get; } = origin;
+    public ToolOrigin Origin { get; } = origin;
 
     /// <inheritdoc />
     public IReadOnlyList<ToolboxItemDefinition> Items { get; } =

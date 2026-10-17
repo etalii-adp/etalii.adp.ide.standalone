@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using JetBrains.Annotations;
 namespace EtAlii.Adp.Diagram.Tests.Fixtures.Ordering.Alpha;
 
@@ -6,5 +5,5 @@ namespace EtAlii.Adp.Diagram.Tests.Fixtures.Ordering.Alpha;
 [UsedImplicitly(ImplicitUseTargetFlags.WithMembers)]
 public static class Diagram
 {
-    public static DiagramDefinition[] Definitions { get; } = [new(new DiagramOrigin("alpha", "z"), "Alpha Z")];
+    public static DiagramDefinition[] Definitions { get; } = [new(new ToolOrigin("alpha", "z"), "Alpha Z")];
 }

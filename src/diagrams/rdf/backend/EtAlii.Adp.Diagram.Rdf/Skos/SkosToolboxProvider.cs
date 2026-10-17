@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 namespace EtAlii.Adp.Diagram.Rdf;
 
 /// <summary>
@@ -6,10 +5,10 @@ namespace EtAlii.Adp.Diagram.Rdf;
 /// schemes and collections are modeled deliberately, not dropped, and the entry names the add
 /// action its drop commits so the drop and the menu are the same edit.
 /// </summary>
-public sealed class SkosToolboxProvider(DiagramOrigin origin) : IDiagramToolboxProvider
+public sealed class SkosToolboxProvider(ToolOrigin origin) : IDiagramToolboxProvider
 {
     /// <inheritdoc />
-    public DiagramOrigin Origin { get; } = origin;
+    public ToolOrigin Origin { get; } = origin;
 
     /// <inheritdoc />
     public IReadOnlyList<ToolboxItemDefinition> Items { get; } =

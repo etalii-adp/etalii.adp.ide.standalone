@@ -1,5 +1,3 @@
-using EtAlii.Adp.Documents;
-
 namespace EtAlii.Adp.Diagram.DependencyGraph;
 
 /// <summary>
@@ -19,7 +17,7 @@ public sealed class DependencyGraphValidator : IDiagramValidator
     public const string UnparseableRuleId = "dependencies.unparseable";
 
     /// <inheritdoc />
-    public DiagramOrigin Origin => Diagram.DependencyGraph.Origin;
+    public ToolOrigin Origin => Diagram.DependencyGraph.Origin;
 
     /// <inheritdoc />
     public ValueTask<IReadOnlyList<DiagramProblem>> ValidateAsync(

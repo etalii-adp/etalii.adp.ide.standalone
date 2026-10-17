@@ -1,13 +1,12 @@
 using System.Reflection;
-using EtAlii.Adp.Documents;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.Tests;
 
 public class DiagramValidatorsTests
 {
-    private static readonly DiagramOrigin Mindmap = new("freeplane", "mindmap");
-    private static readonly DiagramOrigin ClassDiagram = new("uml", "class");
+    private static readonly ToolOrigin Mindmap = new("freeplane", "mindmap");
+    private static readonly ToolOrigin ClassDiagram = new("uml", "class");
 
     [Fact]
     public void TryGet_ReturnsTheValidatorRegisteredForAnOrigin()

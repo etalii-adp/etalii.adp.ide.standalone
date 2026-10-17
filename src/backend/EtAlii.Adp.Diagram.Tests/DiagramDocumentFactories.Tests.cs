@@ -1,12 +1,11 @@
-using EtAlii.Adp.Documents;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.Tests;
 
 public class DiagramDocumentFactoriesTests
 {
-    private static readonly DiagramOrigin Mindmap = new("freeplane", "mindmap");
-    private static readonly DiagramOrigin ClassDiagram = new("uml", "class");
+    private static readonly ToolOrigin Mindmap = new("freeplane", "mindmap");
+    private static readonly ToolOrigin ClassDiagram = new("uml", "class");
 
     [Fact]
     public void Find_ReturnsTheFactoryRegisteredForAnOrigin()
@@ -54,7 +53,7 @@ public class DiagramDocumentFactoriesTests
         // Arrange.
         var factories = new DiagramDocumentFactories([]);
         var first = new DiagramDefinition(Mindmap, "Mind map", Extension: ".mm");
-        var second = new DiagramDefinition(new DiagramOrigin("d2", "diagram"), "D2", Extension: ".d2");
+        var second = new DiagramDefinition(new ToolOrigin("d2", "diagram"), "D2", Extension: ".d2");
 
         // Act.
         var missing = factories.Verify([first, second]);

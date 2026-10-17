@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using JetBrains.Annotations;
 
 namespace EtAlii.Adp.Diagram.AgentActivityDiagram;
@@ -19,7 +18,7 @@ public static class Diagram
         path.EndsWith(DocumentExtension, StringComparison.OrdinalIgnoreCase);
 
     public static DiagramDefinition AgentActivity { get; } = new(
-        new DiagramOrigin("etalii", "agent-activity-diagram"),
+        new ToolOrigin("etalii", "agent-activity-diagram"),
         "Agent activity diagram",
         "Which agents work on which specification of which project, where (a branch and a folder) and on what system, in one picture that agents keep current.",
         Icon: "mdi-account-hard-hat-outline",

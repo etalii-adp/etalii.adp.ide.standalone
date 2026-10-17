@@ -14,7 +14,7 @@ namespace EtAlii.Adp.Diagram.Rdf.Tests;
 /// </summary>
 public class SkosExamplesTests
 {
-    private static readonly DiagramOrigin _origin = new("w3c", "skos");
+    private static readonly ToolOrigin _origin = new("w3c", "skos");
 
     public static TheoryData<string> Documents() => new("business-economics", "geographic-names");
 

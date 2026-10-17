@@ -8,7 +8,7 @@ namespace EtAlii.Adp.Diagram;
 /// </summary>
 public sealed class DiagramDocumentFactories
 {
-    private readonly IReadOnlyDictionary<DiagramOrigin, IDiagramDocumentFactory> _byOrigin;
+    private readonly IReadOnlyDictionary<ToolOrigin, IDiagramDocumentFactory> _byOrigin;
 
     public DiagramDocumentFactories(IEnumerable<IDiagramDocumentFactory> factories)
     {
@@ -17,7 +17,7 @@ public sealed class DiagramDocumentFactories
     }
 
     /// <summary>The factory for <paramref name="origin"/>, or null when the type keeps no sibling.</summary>
-    public IDiagramDocumentFactory? Find(DiagramOrigin origin) => _byOrigin.TryGetValue(origin, out var factory) ? factory : null;
+    public IDiagramDocumentFactory? Find(ToolOrigin origin) => _byOrigin.TryGetValue(origin, out var factory) ? factory : null;
 
     /// <summary>
     /// Every definition in <paramref name="definitions"/> that declares an extension but has

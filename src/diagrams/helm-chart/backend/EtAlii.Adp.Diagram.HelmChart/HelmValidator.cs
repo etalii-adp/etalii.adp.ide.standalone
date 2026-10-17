@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using Serilog;
 
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
@@ -27,7 +26,7 @@ public sealed class HelmValidator : IDiagramValidator
 {
     private static readonly ILogger _logger = Log.ForContext<HelmValidator>();
 
-    public DiagramOrigin Origin => Diagram.HelmCharts.Origin;
+    public ToolOrigin Origin => Diagram.HelmCharts.Origin;
 
     public ValueTask<IReadOnlyList<DiagramProblem>> ValidateAsync(
         DiagramValidationRequest request, CancellationToken cancellationToken)

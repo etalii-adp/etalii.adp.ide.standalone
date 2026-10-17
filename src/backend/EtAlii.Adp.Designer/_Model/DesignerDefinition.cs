@@ -41,6 +41,12 @@ public sealed record DesignerDefinition(
     IReadOnlyList<DesignerFormat>? Formats = null,
     Action<IHostApplicationBuilder>? Build = null)
 {
+    /// <summary>
+    /// <see cref="Origin"/> read once into the origin every tool kind shares (code-structure FR-060);
+    /// null for a text that is not <c>vendor/type</c>.
+    /// </summary>
+    public ToolOrigin? ToolOrigin { get; } = ToolOrigin.TryParse(Origin);
+
     /// <summary>The formats a document can be created in, in the order they are offered.</summary>
     public IReadOnlyList<DesignerFormat> Formats { get; } = Formats ?? [];
 }

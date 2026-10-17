@@ -1,11 +1,9 @@
-using EtAlii.Adp.Documents;
-
 namespace EtAlii.Adp.Diagram.AgentActivityDiagram.Tests;
 
 /// <summary>The shared reload seam over the activity file store, held to the contract every module's is.</summary>
 public sealed class AadDocumentReloaderTests : DocumentReloaderContract<IAadDocumentStore>
 {
-    protected override DiagramOrigin Origin => Diagram.AgentActivity.Origin;
+    protected override ToolOrigin Origin => Diagram.AgentActivity.Origin;
 
     protected override string Example => AadDocumentStoreTests.OneDay;
 

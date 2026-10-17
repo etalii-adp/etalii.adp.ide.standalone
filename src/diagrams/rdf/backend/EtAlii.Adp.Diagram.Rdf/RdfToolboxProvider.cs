@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 namespace EtAlii.Adp.Diagram.Rdf;
 
 /// <summary>
@@ -6,10 +5,10 @@ namespace EtAlii.Adp.Diagram.Rdf;
 /// (rdf-diagram Requirement 6). There is no second implementation for a drop to disagree with -
 /// the drop and the menu run the same action, via placement ids.
 /// </summary>
-public sealed class RdfToolboxProvider(DiagramOrigin origin) : IDiagramToolboxProvider
+public sealed class RdfToolboxProvider(ToolOrigin origin) : IDiagramToolboxProvider
 {
     /// <inheritdoc />
-    public DiagramOrigin Origin { get; } = origin;
+    public ToolOrigin Origin { get; } = origin;
 
     /// <inheritdoc />
     public IReadOnlyList<ToolboxItemDefinition> Items { get; } =

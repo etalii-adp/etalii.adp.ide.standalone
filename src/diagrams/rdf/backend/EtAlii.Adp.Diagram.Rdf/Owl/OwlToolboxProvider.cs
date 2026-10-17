@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 namespace EtAlii.Adp.Diagram.Rdf;
 
 /// <summary>
@@ -7,10 +6,10 @@ namespace EtAlii.Adp.Diagram.Rdf;
 /// no restriction entry: a restriction needs a structure no drop can state - the same reasoning
 /// the wardley-map spec recorded for links, applied to expressions.
 /// </summary>
-public sealed class OwlToolboxProvider(DiagramOrigin origin) : IDiagramToolboxProvider
+public sealed class OwlToolboxProvider(ToolOrigin origin) : IDiagramToolboxProvider
 {
     /// <inheritdoc />
-    public DiagramOrigin Origin { get; } = origin;
+    public ToolOrigin Origin { get; } = origin;
 
     /// <inheritdoc />
     public IReadOnlyList<ToolboxItemDefinition> Items { get; } =

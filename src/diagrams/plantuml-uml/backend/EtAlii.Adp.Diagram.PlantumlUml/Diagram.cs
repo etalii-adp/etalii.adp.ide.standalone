@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using JetBrains.Annotations;
 namespace EtAlii.Adp.Diagram.PlantumlUml;
 
@@ -9,7 +8,7 @@ public static class Diagram
     public static DiagramDefinition[] Definitions { get; } =
     [
         new(
-            new DiagramOrigin("plantuml", "uml"),
+            new ToolOrigin("plantuml", "uml"),
             "UML diagram",
             "UML written as PlantUML text and rendered from it.",
             Icon: "mdi-drawing"),

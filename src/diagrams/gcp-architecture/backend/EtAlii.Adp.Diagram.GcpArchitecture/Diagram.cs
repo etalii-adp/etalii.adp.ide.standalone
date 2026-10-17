@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using JetBrains.Annotations;
 namespace EtAlii.Adp.Diagram.GcpArchitecture;
 
@@ -9,7 +8,7 @@ public static class Diagram
     public static DiagramDefinition[] Definitions { get; } =
     [
         new(
-            new DiagramOrigin("gcp", "architecture"),
+            new ToolOrigin("gcp", "architecture"),
             "GCP architecture diagram",
             "How a solution is built out of Google Cloud services, drawn with the vendor's own icon set.",
             Icon: "mdi-google-cloud"),

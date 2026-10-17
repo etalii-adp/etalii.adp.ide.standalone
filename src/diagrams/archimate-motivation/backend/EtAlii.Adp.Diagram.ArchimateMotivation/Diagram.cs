@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using JetBrains.Annotations;
 namespace EtAlii.Adp.Diagram.ArchimateMotivation;
 
@@ -9,7 +8,7 @@ public static class Diagram
     public static DiagramDefinition[] Definitions { get; } =
     [
         new(
-            new DiagramOrigin("archimate", "motivation"),
+            new ToolOrigin("archimate", "motivation"),
             "ArchiMate — Motivation layer",
             "Why a change is wanted: stakeholders, drivers, goals and the requirements they justify.",
             Icon: "mdi-target"),

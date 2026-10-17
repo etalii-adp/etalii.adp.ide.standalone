@@ -1,11 +1,9 @@
-using EtAlii.Adp.Documents;
-
 namespace EtAlii.Adp.Diagram.DependencyGraph.Tests;
 
 /// <summary>The shared reload seam over the dependency graph store, held to the contract every module's is.</summary>
 public sealed class DependencyGraphDocumentReloaderTests : DocumentReloaderContract<IDependencyGraphDocumentStore>
 {
-    protected override DiagramOrigin Origin => Diagram.DependencyGraph.Origin;
+    protected override ToolOrigin Origin => Diagram.DependencyGraph.Origin;
 
     protected override string Example => DependencyGraphDocumentStoreTests.Simple;
 

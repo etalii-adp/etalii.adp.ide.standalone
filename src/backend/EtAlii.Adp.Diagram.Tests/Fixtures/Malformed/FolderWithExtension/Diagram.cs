@@ -14,9 +14,9 @@ public static class Diagram
 {
     public static DiagramDefinition[] Definitions { get; } =
     [
-        new(new DiagramOrigin("fixture", "survivor"), "Survivor"),
+        new(new ToolOrigin("fixture", "survivor"), "Survivor"),
         new(
-            new DiagramOrigin("fixture", "contradiction"),
+            new ToolOrigin("fixture", "contradiction"),
             "Contradiction",
             Extension: ".yml",
             Subject: DiagramSubject.Folder),

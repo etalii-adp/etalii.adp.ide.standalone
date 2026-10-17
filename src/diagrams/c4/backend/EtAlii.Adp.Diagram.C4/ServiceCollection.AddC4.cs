@@ -1,6 +1,5 @@
 using System.Text;
 using EtAlii.Adp.Context;
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 using Microsoft.Extensions.DependencyInjection;
@@ -16,7 +15,7 @@ namespace EtAlii.Adp.Diagram.C4;
 /// <remarks>
 /// The host calls this beside the other modules' registrations; a test that needs the real
 /// factories calls it too. Core never names C4: everything resolves by
-/// <see cref="DiagramOrigin"/>.
+/// <see cref="ToolOrigin"/>.
 /// </remarks>
 public static class ServiceCollectionAddC4Extension
 {
@@ -62,7 +61,7 @@ public static class ServiceCollectionAddC4Extension
 
         foreach ((string type, C4ViewKind viewKind) in Types)
         {
-            var origin = new DiagramOrigin("c4", type);
+            var origin = new ToolOrigin("c4", type);
             services.AddEmptyDocument(origin, baseName => EmptyDocument(viewKind, baseName));
 
             // Makes a C4 element selectable, one per type, because the shared base answers for the
@@ -97,7 +96,7 @@ public static class ServiceCollectionAddC4Extension
 
         // The seventh type registers an empty document that refuses: it is registered so core's
         // startup check passes, and refuses so nobody gets a half-notation (Requirement 11.7).
-        services.AddEmptyDocument(new DiagramOrigin("c4", "code"), _ => throw new NotSupportedException(CodeUnavailable));
+        services.AddEmptyDocument(new ToolOrigin("c4", "code"), _ => throw new NotSupportedException(CodeUnavailable));
 
         return services;
     }

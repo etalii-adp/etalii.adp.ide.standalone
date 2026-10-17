@@ -1,5 +1,4 @@
 using EtAlii.Adp.Diagram.Rdf.Shacl;
-using EtAlii.Adp.Documents;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.Rdf.Tests;
@@ -17,7 +16,7 @@ public class ShaclValidatorTests
 
         """;
 
-    private static readonly DiagramOrigin _origin = new("w3c", "shacl");
+    private static readonly ToolOrigin _origin = new("w3c", "shacl");
 
     private static async Task<IReadOnlyList<DiagramProblem>> Validate(string body)
     {

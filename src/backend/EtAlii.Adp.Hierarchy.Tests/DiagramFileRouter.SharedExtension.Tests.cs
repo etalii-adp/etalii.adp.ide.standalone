@@ -1,5 +1,4 @@
 using EtAlii.Adp.Diagram;
-using EtAlii.Adp.Documents;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -14,10 +13,10 @@ namespace EtAlii.Adp.Hierarchy.Tests;
 public class DiagramFileRouterSharedExtensionTests : IDisposable
 {
     private static readonly DiagramDefinition Pipeline =
-        new(new DiagramOrigin("azure-devops", "pipeline"), "Azure DevOps pipeline", Extension: ".yml", SharedExtension: true);
+        new(new ToolOrigin("azure-devops", "pipeline"), "Azure DevOps pipeline", Extension: ".yml", SharedExtension: true);
 
     private static readonly DiagramDefinition Mindmap =
-        new(new DiagramOrigin("freeplane", "mindmap"), "Mind map", Extension: ".mm");
+        new(new ToolOrigin("freeplane", "mindmap"), "Mind map", Extension: ".mm");
 
     private readonly string _root;
 
@@ -100,7 +99,7 @@ public class DiagramFileRouterSharedExtensionTests : IDisposable
         // Arrange & act.
         var shared = Pipeline.RoutesBareBody;
         var distinctive = Mindmap.RoutesBareBody;
-        var noSibling = new DiagramDefinition(new DiagramOrigin("uml", "class"), "Class diagram").RoutesBareBody;
+        var noSibling = new DiagramDefinition(new ToolOrigin("uml", "class"), "Class diagram").RoutesBareBody;
 
         // Assert.
         Assert.False(shared);
@@ -115,9 +114,9 @@ public class DiagramFileRouterSharedExtensionTests : IDisposable
         // readings share it - the rdf/owl/skos shape. The catalog is ordered by origin, so a
         // reading whose type sorts before the anchor's would win on order alone; declaring the
         // extension shared is exactly the statement that it must not.
-        var anchor = new DiagramDefinition(new DiagramOrigin("w3c", "rdf"), "RDF Graph", Extension: ".ttl", AlternateExtension: ".nt");
+        var anchor = new DiagramDefinition(new ToolOrigin("w3c", "rdf"), "RDF Graph", Extension: ".ttl", AlternateExtension: ".nt");
         var reading = new DiagramDefinition(
-            new DiagramOrigin("w3c", "owl"), "OWL Ontology", Extension: ".ttl", AlternateExtension: ".nt", SharedExtension: true);
+            new ToolOrigin("w3c", "owl"), "OWL Ontology", Extension: ".ttl", AlternateExtension: ".nt", SharedExtension: true);
         var body = Write("graph.ttl", "@prefix ex: <http://example.org/> .\nex:a ex:knows ex:b .\n");
 
         // Act: the reading first in catalog order, as the real catalog sorts it.

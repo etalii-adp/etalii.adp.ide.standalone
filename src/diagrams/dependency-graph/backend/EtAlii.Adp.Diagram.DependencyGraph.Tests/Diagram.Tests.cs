@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.DependencyGraph.Tests;
@@ -15,7 +14,7 @@ public class DiagramTests
     {
         // Assert.
         var definition = Assert.Single(Diagram.Definitions);
-        Assert.Equal(new DiagramOrigin("generic", "dependencies"), definition.Origin);
+        Assert.Equal(new ToolOrigin("generic", "dependencies"), definition.Origin);
     }
 
     [Fact]

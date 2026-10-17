@@ -1,5 +1,4 @@
 using EtAlii.Adp.Diagram.Modules;
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.Specification.Disl;
 
@@ -27,7 +26,7 @@ public sealed class DependencyGraphContextSourceResolver : DiagramElementSourceR
     }
 
     /// <inheritdoc />
-    protected override DiagramOrigin Origin => Diagram.DependencyGraph.Origin;
+    protected override ToolOrigin Origin => Diagram.DependencyGraph.Origin;
 
     /// <inheritdoc />
     /// <remarks>A drop and a drawn relation are both proposed as the node about to exist.</remarks>

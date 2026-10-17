@@ -622,7 +622,7 @@ public class C4RuleSetTests
     public async Task TheValidator_ReachesCoresSeam()
     {
         // Arrange.
-        var validator = new C4Validator(new DiagramOrigin("c4", "context"));
+        var validator = new C4Validator(new ToolOrigin("c4", "context"));
 
         // Act.
         // C4's rules read the workspace the text parses to, so the request's paths are

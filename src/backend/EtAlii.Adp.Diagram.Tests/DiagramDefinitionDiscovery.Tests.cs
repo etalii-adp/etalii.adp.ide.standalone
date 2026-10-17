@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using Xunit;
 using Alpha = EtAlii.Adp.Diagram.Tests.Fixtures.Ordering.Alpha;
 using Duplicate = EtAlii.Adp.Diagram.Tests.Fixtures.Duplicate;
@@ -44,7 +43,7 @@ public class DiagramDefinitionDiscoveryTests : IDisposable
 
         // Act and assert, step by step.
         var definition = Assert.Single(result);
-        Assert.Equal(new DiagramOrigin("fixture", "valid"), definition.Origin);
+        Assert.Equal(new ToolOrigin("fixture", "valid"), definition.Origin);
         Assert.Equal("Valid Fixture", definition.Title);
     }
 
@@ -94,16 +93,16 @@ public class DiagramDefinitionDiscoveryTests : IDisposable
         var result = DiagramDefinitionDiscovery.Discover([typeof(DiagramDefinitionDiscoveryTests).Assembly]);
 
         // Assert.
-        Assert.Contains(result, d => d.Origin == new DiagramOrigin("fixture", "valid"));
-        Assert.Contains(result, d => d.Origin == new DiagramOrigin("alpha", "z"));
-        Assert.Contains(result, d => d.Origin == new DiagramOrigin("zulu", "a"));
-        Assert.DoesNotContain(result, d => d.Origin == new DiagramOrigin("fixture", "not-static"));
+        Assert.Contains(result, d => d.Origin == new ToolOrigin("fixture", "valid"));
+        Assert.Contains(result, d => d.Origin == new ToolOrigin("alpha", "z"));
+        Assert.Contains(result, d => d.Origin == new ToolOrigin("zulu", "a"));
+        Assert.DoesNotContain(result, d => d.Origin == new ToolOrigin("fixture", "not-static"));
         // The three types the Several fixture declares from one class - the shape that made the
         // property plural - and the survivor from the array with a null in it.
-        Assert.Contains(result, d => d.Origin == new DiagramOrigin("several", "first"));
-        Assert.Contains(result, d => d.Origin == new DiagramOrigin("several", "second"));
-        Assert.Contains(result, d => d.Origin == new DiagramOrigin("several", "third"));
-        Assert.Contains(result, d => d.Origin == new DiagramOrigin("fixture", "survivor"));
+        Assert.Contains(result, d => d.Origin == new ToolOrigin("several", "first"));
+        Assert.Contains(result, d => d.Origin == new ToolOrigin("several", "second"));
+        Assert.Contains(result, d => d.Origin == new ToolOrigin("several", "third"));
+        Assert.Contains(result, d => d.Origin == new ToolOrigin("fixture", "survivor"));
         Assert.Equal(7, result.Count);
     }
 

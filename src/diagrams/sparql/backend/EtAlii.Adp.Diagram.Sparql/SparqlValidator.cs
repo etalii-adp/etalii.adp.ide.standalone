@@ -1,5 +1,3 @@
-using EtAlii.Adp.Documents;
-
 namespace EtAlii.Adp.Diagram.Sparql;
 
 /// <summary>
@@ -8,7 +6,7 @@ namespace EtAlii.Adp.Diagram.Sparql;
 /// the query, never contacts an endpoint, and never resolves a <c>SERVICE</c> clause - not as a
 /// policy applied here, but because this module references no HTTP client at all.
 /// </summary>
-public sealed class SparqlValidator(DiagramOrigin origin) : IDiagramValidator
+public sealed class SparqlValidator(ToolOrigin origin) : IDiagramValidator
 {
     /// <summary>The rule reported when the file is not a SPARQL query this can read - SPARQL Update included.</summary>
     public const string UnparseableRuleId = "sparql.unparseable";
@@ -20,7 +18,7 @@ public sealed class SparqlValidator(DiagramOrigin origin) : IDiagramValidator
     public const string UnusedPrefixRuleId = "sparql.unused-prefix";
 
     /// <inheritdoc />
-    public DiagramOrigin Origin { get; } = origin;
+    public ToolOrigin Origin { get; } = origin;
 
     /// <inheritdoc />
     public ValueTask<IReadOnlyList<DiagramProblem>> ValidateAsync(

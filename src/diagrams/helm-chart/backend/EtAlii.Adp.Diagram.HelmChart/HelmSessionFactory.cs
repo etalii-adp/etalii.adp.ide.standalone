@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
@@ -33,7 +32,7 @@ public sealed class HelmSessionFactory : IDiagramSessionFactory
         _historyStacks = historyStacks;
     }
 
-    public DiagramOrigin Origin => Diagram.HelmCharts.Origin;
+    public ToolOrigin Origin => Diagram.HelmCharts.Origin;
 
     public IDiagramSession Open(ShortGuid watchId, string rootPath, string bodyPath, string? registrationPath)
     {

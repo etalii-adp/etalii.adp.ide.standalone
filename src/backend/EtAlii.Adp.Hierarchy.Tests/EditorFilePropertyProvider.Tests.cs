@@ -1,6 +1,5 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Diagram;
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.Documents.Wire;
 using Xunit;
 using IoPath = System.IO.Path;
@@ -30,7 +29,7 @@ public class EditorFilePropertyProviderTests : IDisposable
     }
 
     private static readonly DiagramDefinition Mindmap =
-        new(new DiagramOrigin("freeplane", "mindmap"), "Mind map", Extension: ".mm");
+        new(new ToolOrigin("freeplane", "mindmap"), "Mind map", Extension: ".mm");
 
     private ContextTarget TargetOf(string fileName, byte[] bytes)
     {

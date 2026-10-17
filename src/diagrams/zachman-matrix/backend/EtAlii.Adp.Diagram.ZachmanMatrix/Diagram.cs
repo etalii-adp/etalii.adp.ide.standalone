@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using JetBrains.Annotations;
 namespace EtAlii.Adp.Diagram.ZachmanMatrix;
 
@@ -9,7 +8,7 @@ public static class Diagram
     public static DiagramDefinition[] Definitions { get; } =
     [
         new(
-            new DiagramOrigin("zachman", "matrix"),
+            new ToolOrigin("zachman", "matrix"),
             "Zachman Framework matrix",
             "The Zachman grid: six questions against six perspectives, as a checklist of what is documented.",
             Icon: "mdi-matrix"),

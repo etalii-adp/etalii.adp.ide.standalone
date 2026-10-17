@@ -29,7 +29,7 @@ public sealed class C4ContextSourceResolver : DiagramElementSourceResolver<LineD
     private readonly C4ElementMapper _mapper;
 
     /// <summary>Creates the resolver of the C4 type at <paramref name="origin"/>, over the router and the one document store.</summary>
-    public C4ContextSourceResolver(DiagramOrigin origin, DiagramFileRouter router, IC4DocumentStore documents, C4ElementMapper mapper)
+    public C4ContextSourceResolver(ToolOrigin origin, DiagramFileRouter router, IC4DocumentStore documents, C4ElementMapper mapper)
         : base(router, documents)
     {
         ArgumentNullException.ThrowIfNull(origin);
@@ -39,7 +39,7 @@ public sealed class C4ContextSourceResolver : DiagramElementSourceResolver<LineD
     }
 
     /// <inheritdoc />
-    protected override DiagramOrigin Origin { get; }
+    protected override ToolOrigin Origin { get; }
 
     /// <inheritdoc />
     protected override DiagramElementTexts Texts { get; } = new(

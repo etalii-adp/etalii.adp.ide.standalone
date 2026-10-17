@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using JetBrains.Annotations;
 namespace EtAlii.Adp.Diagram.UmlUseCase;
 
@@ -9,7 +8,7 @@ public static class Diagram
     public static DiagramDefinition[] Definitions { get; } =
     [
         new(
-            new DiagramOrigin("uml", "use-case"),
+            new ToolOrigin("uml", "use-case"),
             "Use case diagram",
             "What actors want from a system, as use cases and the relationships between them.",
             Icon: "mdi-account-group-outline"),

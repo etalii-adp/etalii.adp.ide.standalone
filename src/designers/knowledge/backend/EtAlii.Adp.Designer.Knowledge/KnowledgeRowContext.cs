@@ -1,7 +1,6 @@
 using System.Text;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Designer.TableModel;
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.History;
 using Google.Protobuf;
@@ -17,7 +16,7 @@ namespace EtAlii.Adp.Designer.Knowledge;
 internal sealed class KnowledgeRowSourceResolver(IKnowledgeDocumentStore documents) : IContextSourceResolver
 {
     /// <summary>The origin a selected row is marked with, so that only this module's property provider answers for it.</summary>
-    public static readonly DiagramOrigin RowOrigin = new("etalii", "knowledge");
+    public static readonly ToolOrigin RowOrigin = new("etalii", "knowledge");
 
     /// <summary>What the row's values are carried under in its detail: a change of them is a change of the detail, which is what the grid watches.</summary>
     private const string PayloadType = "etalii/knowledge+row";

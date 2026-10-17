@@ -39,7 +39,7 @@ public sealed class FdgContextSourceResolver : DiagramElementSourceResolver<Line
     }
 
     /// <inheritdoc />
-    protected override DiagramOrigin Origin => Diagram.FunctionalDecompositionGraph.Origin;
+    protected override ToolOrigin Origin => Diagram.FunctionalDecompositionGraph.Origin;
 
     /// <inheritdoc />
     protected override DiagramElementTexts Texts { get; } = new(

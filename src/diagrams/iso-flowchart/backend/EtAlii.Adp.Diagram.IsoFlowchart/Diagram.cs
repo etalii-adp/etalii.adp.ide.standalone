@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using JetBrains.Annotations;
 namespace EtAlii.Adp.Diagram.IsoFlowchart;
 
@@ -9,7 +8,7 @@ public static class Diagram
     public static DiagramDefinition[] Definitions { get; } =
     [
         new(
-            new DiagramOrigin("iso", "flowchart"),
+            new ToolOrigin("iso", "flowchart"),
             "Flowchart",
             "A procedure as a flow of steps and decisions, in the ISO 5807 shapes everyone recognises.",
             Icon: "mdi-ray-start-arrow"),

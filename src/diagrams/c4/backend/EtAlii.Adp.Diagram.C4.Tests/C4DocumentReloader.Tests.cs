@@ -1,11 +1,9 @@
-﻿using EtAlii.Adp.Documents;
-
-namespace EtAlii.Adp.Diagram.C4.Tests;
+﻿namespace EtAlii.Adp.Diagram.C4.Tests;
 
 /// <summary>The shared reload seam over the C4 store, held to the contract every module's is.</summary>
 public sealed class C4DocumentReloaderTests : DocumentReloaderContract<IC4DocumentStore>
 {
-    protected override DiagramOrigin Origin => new("c4", "context");
+    protected override ToolOrigin Origin => new("c4", "context");
 
     protected override string Example => C4DocumentStoreTests.Courier;
 

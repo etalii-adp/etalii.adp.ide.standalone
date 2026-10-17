@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using JetBrains.Annotations;
 
 namespace EtAlii.Adp.Diagram.SupplyChain;
@@ -17,7 +16,7 @@ public static class Diagram
 
     /// <summary>The supply chain diagram.</summary>
     public static DiagramDefinition SupplyChain { get; } = new(
-        new DiagramOrigin("etalii", "supply-chain"),
+        new ToolOrigin("etalii", "supply-chain"),
         "Supply chain diagram",
         "Where goods come from and where they go: mines, suppliers, plants, distributors and consumers in their regions, the flows between them with their volumes, and the whole chain up and down from whatever is selected.",
         Icon: "mdi-truck-delivery-outline",

@@ -67,7 +67,7 @@ public class SkosSessionTests : IDisposable
         Assert.True(Diagram.Skos.DeclaresExtension(".ttl"));
         Assert.True(Diagram.Skos.DeclaresExtension(".nt"));
         Assert.False(Diagram.Rdf.SharedExtension);
-        Assert.Equal(new DiagramOrigin("w3c", "skos"), Diagram.Skos.Origin);
+        Assert.Equal(new ToolOrigin("w3c", "skos"), Diagram.Skos.Origin);
 
         // Add suggests this reading exactly where the marker triple is (Requirement 2.3), and
         // stays quiet on a file that is RDF but not a vocabulary.

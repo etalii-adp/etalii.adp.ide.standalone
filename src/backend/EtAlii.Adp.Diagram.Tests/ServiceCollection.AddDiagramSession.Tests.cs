@@ -6,7 +6,7 @@ namespace EtAlii.Adp.Diagram.Tests;
 
 public class ServiceCollectionAddDiagramSessionTests
 {
-    private static readonly DiagramOrigin Origin = new("etalii", "test");
+    private static readonly ToolOrigin Origin = new("etalii", "test");
 
     [Fact]
     public void ARegisteredSession_IsOpenedThroughItsDelegate_WithTheProviderAndWhatItIsOpenedOn()

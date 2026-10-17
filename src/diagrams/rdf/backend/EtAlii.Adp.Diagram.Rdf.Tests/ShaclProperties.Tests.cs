@@ -67,7 +67,7 @@ public class ShaclPropertiesTests : IDisposable
 
     private DocumentEntry<LineDocument, RdfModel> Entry() => _provider.GetRequiredService<IRdfDocumentStore>().GetOrLoad(_body);
 
-    private ContextTarget Target(string elementId, DiagramOrigin? origin) =>
+    private ContextTarget Target(string elementId, ToolOrigin? origin) =>
         new(ContextScope.DiagramElement, _body, false, ShortGuid.NewShortGuid(), _root, default, elementId) { Origin = origin };
 
     private const string CardId = "res:http://example.org/PersonShape";

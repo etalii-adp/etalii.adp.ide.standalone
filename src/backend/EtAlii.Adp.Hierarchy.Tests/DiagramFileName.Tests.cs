@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -25,14 +24,14 @@ public class DiagramFileNameTests : IDisposable
     public void Suggest_ForAnOriginWithoutASubtype_UsesItsTypeSegment()
     {
         // Arrange, act and assert.
-        Assert.Equal("mindmap", DiagramFileName.Suggest(new DiagramOrigin("freeplane", "mindmap"), _folder));
+        Assert.Equal("mindmap", DiagramFileName.Suggest(new ToolOrigin("freeplane", "mindmap"), _folder));
     }
 
     [Fact]
     public void Suggest_ForAnOriginWithASubtype_AppendsItWithAHyphen()
     {
         // Arrange, act and assert.
-        Assert.Equal("uml-sequence", DiagramFileName.Suggest(new DiagramOrigin("plantuml", "uml", "sequence"), _folder));
+        Assert.Equal("uml-sequence", DiagramFileName.Suggest(new ToolOrigin("plantuml", "uml", "sequence"), _folder));
     }
 
     [Fact]
@@ -42,7 +41,7 @@ public class DiagramFileNameTests : IDisposable
         Existing("mindmap.adp");
 
         // Assert.
-        Assert.Equal("mindmap-2", DiagramFileName.Suggest(new DiagramOrigin("freeplane", "mindmap"), _folder));
+        Assert.Equal("mindmap-2", DiagramFileName.Suggest(new ToolOrigin("freeplane", "mindmap"), _folder));
     }
 
     [Fact]
@@ -53,7 +52,7 @@ public class DiagramFileNameTests : IDisposable
         Existing("mindmap-2.adp");
 
         // Assert.
-        Assert.Equal("mindmap-3", DiagramFileName.Suggest(new DiagramOrigin("freeplane", "mindmap"), _folder));
+        Assert.Equal("mindmap-3", DiagramFileName.Suggest(new ToolOrigin("freeplane", "mindmap"), _folder));
     }
 
     [Fact]
@@ -63,7 +62,7 @@ public class DiagramFileNameTests : IDisposable
         Directory.CreateDirectory(IoPath.Combine(_folder, "mindmap.adp"));
 
         // Assert.
-        Assert.Equal("mindmap-2", DiagramFileName.Suggest(new DiagramOrigin("freeplane", "mindmap"), _folder));
+        Assert.Equal("mindmap-2", DiagramFileName.Suggest(new ToolOrigin("freeplane", "mindmap"), _folder));
     }
 
     [Theory]
@@ -76,7 +75,7 @@ public class DiagramFileNameTests : IDisposable
         // Act.
         // The vendor never reaches the name - only the type does - so that is where a segment
         // ADP does not control could otherwise smuggle a separator in.
-        var suggestion = DiagramFileName.Suggest(new DiagramOrigin("vendor", type), _folder);
+        var suggestion = DiagramFileName.Suggest(new ToolOrigin("vendor", type), _folder);
 
         // Assert.
         Assert.Equal(expected, suggestion);

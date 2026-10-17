@@ -1,11 +1,9 @@
-using EtAlii.Adp.Documents;
-
 namespace EtAlii.Adp.Diagram.SupplyChain.Tests;
 
 /// <summary>The shared reload seam over the <c>.supply</c> store, held to the contract every module's is.</summary>
 public sealed class SupplyChainDocumentReloaderTests : DocumentReloaderContract<ISupplyChainDocumentStore>
 {
-    protected override DiagramOrigin Origin => Diagram.SupplyChain.Origin;
+    protected override ToolOrigin Origin => Diagram.SupplyChain.Origin;
 
     protected override string Example => SupplyChainExamples.Automotive;
 

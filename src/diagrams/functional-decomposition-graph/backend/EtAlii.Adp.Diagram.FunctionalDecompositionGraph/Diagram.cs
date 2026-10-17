@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using JetBrains.Annotations;
 
 namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph;
@@ -23,7 +22,7 @@ public static class Diagram
 
     /// <summary>The functional decomposition graph.</summary>
     public static DiagramDefinition FunctionalDecompositionGraph { get; } = new(
-        new DiagramOrigin("etalii", "functional-decomposition-graph"),
+        new ToolOrigin("etalii", "functional-decomposition-graph"),
         "Functional decomposition graph",
         "What an application is made of - its screens, the actions on them, the data it keeps and the functions behind them - each owned by one parent, with Shows for where an action leads.",
         Icon: "mdi-file-tree-outline",

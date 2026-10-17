@@ -22,7 +22,7 @@ public sealed class SparqlContextSourceResolver(DiagramFileRouter router, ISparq
         new Dictionary<string, RegistrationPosition>(StringComparer.Ordinal);
 
     /// <inheritdoc />
-    protected override DiagramOrigin Origin => ServiceCollectionAddSparqlExtension.SparqlOrigin;
+    protected override ToolOrigin Origin => ServiceCollectionAddSparqlExtension.SparqlOrigin;
 
     /// <inheritdoc />
     /// <remarks>Nothing is created or connected on a query diagram; the two names are for gestures it never offers.</remarks>

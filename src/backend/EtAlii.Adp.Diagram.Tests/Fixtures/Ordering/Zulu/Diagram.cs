@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using JetBrains.Annotations;
 namespace EtAlii.Adp.Diagram.Tests.Fixtures.Ordering.Zulu;
 
@@ -6,5 +5,5 @@ namespace EtAlii.Adp.Diagram.Tests.Fixtures.Ordering.Zulu;
 [UsedImplicitly(ImplicitUseTargetFlags.WithMembers)]
 public static class Diagram
 {
-    public static DiagramDefinition[] Definitions { get; } = [new(new DiagramOrigin("zulu", "a"), "Zulu A")];
+    public static DiagramDefinition[] Definitions { get; } = [new(new ToolOrigin("zulu", "a"), "Zulu A")];
 }

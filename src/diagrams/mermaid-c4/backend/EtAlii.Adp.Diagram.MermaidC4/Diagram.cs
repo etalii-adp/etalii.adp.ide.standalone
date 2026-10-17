@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using JetBrains.Annotations;
 namespace EtAlii.Adp.Diagram.MermaidC4;
 
@@ -9,7 +8,7 @@ public static class Diagram
     public static DiagramDefinition[] Definitions { get; } =
     [
         new(
-            new DiagramOrigin("mermaid", "c4"),
+            new ToolOrigin("mermaid", "c4"),
             "C4 diagram",
             "A C4 model written in Mermaid's C4 syntax rather than a dedicated tool.",
             Icon: "mdi-earth-box"),

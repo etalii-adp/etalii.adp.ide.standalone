@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using JetBrains.Annotations;
 namespace EtAlii.Adp.Diagram.GenericSwimlane;
 
@@ -9,7 +8,7 @@ public static class Diagram
     public static DiagramDefinition[] Definitions { get; } =
     [
         new(
-            new DiagramOrigin("generic", "swimlane"),
+            new ToolOrigin("generic", "swimlane"),
             "Swimlane diagram",
             "A process split into lanes, so each step is visibly somebody's responsibility.",
             Icon: "mdi-view-column-outline"),

@@ -13,7 +13,7 @@ public class DiagramOptionTreeTests
         string title,
         string subtype = "",
         DiagramSubject subject = DiagramSubject.Document)
-        => new(new DiagramOrigin(vendor, type, subtype), title, Subject: subject);
+        => new(new ToolOrigin(vendor, type, subtype), title, Subject: subject);
 
     /// <summary>
     /// The shape the provider will use in task 3: one look at the definition decides all three

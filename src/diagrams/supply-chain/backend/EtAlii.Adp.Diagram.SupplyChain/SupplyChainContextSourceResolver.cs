@@ -33,7 +33,7 @@ public sealed class SupplyChainContextSourceResolver : DiagramElementSourceResol
     }
 
     /// <inheritdoc />
-    protected override DiagramOrigin Origin => Diagram.SupplyChain.Origin;
+    protected override ToolOrigin Origin => Diagram.SupplyChain.Origin;
 
     /// <inheritdoc />
     protected override DiagramElementTexts Texts { get; } = new(

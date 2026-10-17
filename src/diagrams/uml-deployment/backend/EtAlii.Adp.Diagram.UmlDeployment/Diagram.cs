@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using JetBrains.Annotations;
 namespace EtAlii.Adp.Diagram.UmlDeployment;
 
@@ -9,7 +8,7 @@ public static class Diagram
     public static DiagramDefinition[] Definitions { get; } =
     [
         new(
-            new DiagramOrigin("uml", "deployment"),
+            new ToolOrigin("uml", "deployment"),
             "Deployment diagram",
             "Artifacts placed on nodes: what is installed where, and over which links.",
             Icon: "mdi-server-network-outline"),

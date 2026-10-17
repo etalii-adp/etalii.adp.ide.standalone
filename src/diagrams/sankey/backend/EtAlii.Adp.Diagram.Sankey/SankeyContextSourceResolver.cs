@@ -17,7 +17,7 @@ public sealed class SankeyContextSourceResolver : DiagramElementSourceResolver<L
     }
 
     /// <inheritdoc />
-    protected override DiagramOrigin Origin => Diagram.Sankey.Origin;
+    protected override ToolOrigin Origin => Diagram.Sankey.Origin;
 
     /// <inheritdoc />
     protected override DiagramElementTexts Texts { get; } = new(

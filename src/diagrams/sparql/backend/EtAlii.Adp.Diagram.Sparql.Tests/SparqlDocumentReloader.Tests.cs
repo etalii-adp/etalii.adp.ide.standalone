@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -11,7 +10,7 @@ namespace EtAlii.Adp.Diagram.Sparql.Tests;
 /// </summary>
 public sealed class SparqlDocumentReloaderTests : DocumentReloaderContract<ISparqlDocumentStore>
 {
-    protected override DiagramOrigin Origin => ServiceCollectionAddSparqlExtension.SparqlOrigin;
+    protected override ToolOrigin Origin => ServiceCollectionAddSparqlExtension.SparqlOrigin;
 
     protected override string Example => IoPath.Combine(AppContext.BaseDirectory, "Fixtures", "lf-line-endings.rq");
 

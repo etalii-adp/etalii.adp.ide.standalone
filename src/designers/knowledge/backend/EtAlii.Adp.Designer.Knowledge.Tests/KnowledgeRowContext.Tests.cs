@@ -116,7 +116,7 @@ public sealed class KnowledgeRowContextTests : IDisposable
         Assert.Equal((false, KnowledgeRowPropertyProvider.RelationStays), (rows["p5"].IsEditable, rows["p5"].ReadOnlyReason));
 
         // A selection that is not this module's is not answered for.
-        var foreign = (await Row("r1")) with { Origin = new DiagramOrigin("generic", "timeline") };
+        var foreign = (await Row("r1")) with { Origin = new ToolOrigin("generic", "timeline") };
         Assert.Empty(await _provider.DescribeAsync(foreign, TestContext.Current.CancellationToken));
     }
 

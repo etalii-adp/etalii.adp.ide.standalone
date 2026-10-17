@@ -33,7 +33,7 @@ namespace EtAlii.Adp.Diagram.AnsibleStructure;
 /// <para>
 /// One call for the module, as <c>AddMindmap</c> and <c>AddC4</c> are for theirs, so the host
 /// names the module once rather than listing its seams - and core never names it back:
-/// everything resolves by <see cref="DiagramOrigin"/> or <c>ContextScope</c>.
+/// everything resolves by <see cref="ToolOrigin"/> or <c>ContextScope</c>.
 /// </para>
 /// </remarks>
 public static class ServiceCollectionAddAnsibleStructureExtension

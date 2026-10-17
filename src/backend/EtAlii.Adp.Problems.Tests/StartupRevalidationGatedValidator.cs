@@ -1,13 +1,12 @@
 using EtAlii.Adp.Diagram;
-using EtAlii.Adp.Documents;
 
 namespace EtAlii.Adp.Problems.Tests;
 
-internal sealed class StartupRevalidationGatedValidator(DiagramOrigin origin) : IDiagramValidator
+internal sealed class StartupRevalidationGatedValidator(ToolOrigin origin) : IDiagramValidator
 {
     private int _calls;
 
-    public DiagramOrigin Origin { get; } = origin;
+    public ToolOrigin Origin { get; } = origin;
     public int Calls => _calls;
     public TaskCompletionSource? HoldFirstCall { get; set; }
 

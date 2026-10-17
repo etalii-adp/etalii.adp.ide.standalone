@@ -1,5 +1,4 @@
 using EtAlii.Adp.Context;
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -10,7 +9,7 @@ namespace EtAlii.Adp.Diagram.WardleyMap;
 /// Registers the Wardley map module against core's seams. One call for the module, as
 /// <c>AddC4</c> and <c>AddMindmap</c> are for theirs - the host names the module once rather
 /// than listing its seams, and a test that needs the real module calls the same method. Core
-/// never names the module back: everything resolves by <see cref="DiagramOrigin"/>
+/// never names the module back: everything resolves by <see cref="ToolOrigin"/>
 /// (Requirement 12.3).
 /// </summary>
 /// <remarks>

@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using JetBrains.Annotations;
 namespace EtAlii.Adp.Diagram.MermaidClass;
 
@@ -9,7 +8,7 @@ public static class Diagram
     public static DiagramDefinition[] Definitions { get; } =
     [
         new(
-            new DiagramOrigin("mermaid", "class"),
+            new ToolOrigin("mermaid", "class"),
             "Class diagram",
             "Classes, attributes and relationships, in Mermaid's class syntax.",
             Icon: "mdi-cube-outline"),

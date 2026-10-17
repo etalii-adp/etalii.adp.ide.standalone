@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using JetBrains.Annotations;
 namespace EtAlii.Adp.Diagram.MermaidArchitecture;
 
@@ -9,7 +8,7 @@ public static class Diagram
     public static DiagramDefinition[] Definitions { get; } =
     [
         new(
-            new DiagramOrigin("mermaid", "architecture"),
+            new ToolOrigin("mermaid", "architecture"),
             "Architecture diagram",
             "Services and their connections, in Mermaid's architecture syntax.",
             Icon: "mdi-office-building-outline"),

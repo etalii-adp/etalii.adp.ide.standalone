@@ -1,5 +1,4 @@
 ﻿using EtAlii.Adp.Diagram.Modules;
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.Hierarchy;
 
 namespace EtAlii.Adp.Diagram.DotNetDependencyGraph;
@@ -26,7 +25,7 @@ public sealed class DotNetContextSourceResolver(DiagramFileRouter router, Depend
     : DiagramSnapshotSourceResolver<DependencyGraphModel>(router)
 {
     /// <inheritdoc />
-    protected override DiagramOrigin Origin => Diagram.DependencyGraph.Origin;
+    protected override ToolOrigin Origin => Diagram.DependencyGraph.Origin;
 
     /// <inheritdoc />
     protected override DiagramElementTexts Texts { get; } = new(

@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 namespace EtAlii.Adp.Diagram.Databricks;
 
 /// <summary>
@@ -6,10 +5,10 @@ namespace EtAlii.Adp.Diagram.Databricks;
 /// drop commits (databricks-diagrams Requirement 9). There is no second implementation for a
 /// drop to disagree with - the drop and the menu run the same command, via placement ids.
 /// </summary>
-public sealed class DatabricksToolboxProvider(DiagramOrigin origin) : IDiagramToolboxProvider
+public sealed class DatabricksToolboxProvider(ToolOrigin origin) : IDiagramToolboxProvider
 {
     /// <inheritdoc />
-    public DiagramOrigin Origin { get; } = origin;
+    public ToolOrigin Origin { get; } = origin;
 
     /// <inheritdoc />
     public IReadOnlyList<ToolboxItemDefinition> Items { get; } = origin.Type switch

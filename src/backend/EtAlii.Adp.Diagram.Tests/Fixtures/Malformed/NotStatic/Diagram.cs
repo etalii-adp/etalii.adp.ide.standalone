@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using JetBrains.Annotations;
 namespace EtAlii.Adp.Diagram.Tests.Fixtures.Malformed.NotStatic;
 
@@ -9,5 +8,5 @@ namespace EtAlii.Adp.Diagram.Tests.Fixtures.Malformed.NotStatic;
 [UsedImplicitly(ImplicitUseTargetFlags.WithMembers)]
 public sealed class Diagram
 {
-    public DiagramDefinition[] Definitions { get; } = [new(new DiagramOrigin("fixture", "not-static"), "Not Static")];
+    public DiagramDefinition[] Definitions { get; } = [new(new ToolOrigin("fixture", "not-static"), "Not Static")];
 }

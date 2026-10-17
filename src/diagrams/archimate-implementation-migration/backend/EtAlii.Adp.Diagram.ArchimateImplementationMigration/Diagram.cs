@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using JetBrains.Annotations;
 namespace EtAlii.Adp.Diagram.ArchimateImplementationMigration;
 
@@ -9,7 +8,7 @@ public static class Diagram
     public static DiagramDefinition[] Definitions { get; } =
     [
         new(
-            new DiagramOrigin("archimate", "implementation-migration"),
+            new ToolOrigin("archimate", "implementation-migration"),
             "ArchiMate — Implementation & Migration layer",
             "The work packages, deliverables and plateaus that carry an architecture from where it is to where it should be.",
             Icon: "mdi-transit-connection-variant"),

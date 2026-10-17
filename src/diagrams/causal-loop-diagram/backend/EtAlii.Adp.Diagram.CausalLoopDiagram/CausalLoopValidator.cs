@@ -1,5 +1,4 @@
 using EtAlii.Adp.Diagram.Modules;
-using EtAlii.Adp.Documents;
 
 namespace EtAlii.Adp.Diagram.CausalLoopDiagram;
 
@@ -29,7 +28,7 @@ namespace EtAlii.Adp.Diagram.CausalLoopDiagram;
 /// itself.
 /// </para>
 /// </remarks>
-public sealed class CausalLoopValidator(DiagramOrigin origin) : IDiagramValidator
+public sealed class CausalLoopValidator(ToolOrigin origin) : IDiagramValidator
 {
     /// <summary>A line the grammar could not read.</summary>
     public const string UnreadableRuleId = "causal-loop.unreadable-line";
@@ -50,7 +49,7 @@ public sealed class CausalLoopValidator(DiagramOrigin origin) : IDiagramValidato
     public const string LoopIsNotACycleRuleId = "causal-loop.loop-is-not-a-cycle";
 
     /// <inheritdoc />
-    public DiagramOrigin Origin { get; } = origin;
+    public ToolOrigin Origin { get; } = origin;
 
     /// <inheritdoc />
     public ValueTask<IReadOnlyList<DiagramProblem>> ValidateAsync(

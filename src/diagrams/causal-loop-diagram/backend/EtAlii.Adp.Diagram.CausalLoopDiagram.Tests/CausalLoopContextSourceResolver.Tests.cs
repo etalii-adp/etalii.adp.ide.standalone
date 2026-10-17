@@ -1,7 +1,6 @@
 using System.Text.RegularExpressions;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Diagram.Modules;
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
@@ -309,7 +308,7 @@ internal sealed class TwoTypeCatalog : IDiagramDefinitionCatalog
 {
     /// <summary>Another module's type, as far as the router is concerned.</summary>
     public static DiagramDefinition Other { get; } = new(
-        new DiagramOrigin("someone-else", "other-diagram"),
+        new ToolOrigin("someone-else", "other-diagram"),
         "Other diagram",
         "Another module's type, used to check that this module declines what is not its own.",
         Icon: "mdi-file",

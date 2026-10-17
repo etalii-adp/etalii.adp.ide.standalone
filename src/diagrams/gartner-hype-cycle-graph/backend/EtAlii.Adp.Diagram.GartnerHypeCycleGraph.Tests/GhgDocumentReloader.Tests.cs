@@ -1,11 +1,9 @@
-using EtAlii.Adp.Documents;
-
 namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph.Tests;
 
 /// <summary>The shared reload seam over the <c>.ghg</c> store, held to the contract every module's is.</summary>
 public sealed class GhgDocumentReloaderTests : DocumentReloaderContract<IGhgDocumentStore>
 {
-    protected override DiagramOrigin Origin => Diagram.HypeCycleGraph.Origin;
+    protected override ToolOrigin Origin => Diagram.HypeCycleGraph.Origin;
 
     protected override string Example => GhgModuleFiles.Example;
 

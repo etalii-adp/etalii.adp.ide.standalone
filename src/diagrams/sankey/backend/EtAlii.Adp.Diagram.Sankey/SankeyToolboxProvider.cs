@@ -1,5 +1,3 @@
-using EtAlii.Adp.Documents;
-
 namespace EtAlii.Adp.Diagram.Sankey;
 
 /// <summary>The palette: one node, as data, naming the add action its drop commits.</summary>
@@ -10,7 +8,7 @@ namespace EtAlii.Adp.Diagram.Sankey;
 public sealed class SankeyToolboxProvider : IDiagramToolboxProvider
 {
     /// <inheritdoc />
-    public DiagramOrigin Origin => Diagram.Sankey.Origin;
+    public ToolOrigin Origin => Diagram.Sankey.Origin;
 
     /// <inheritdoc />
     public IReadOnlyList<ToolboxItemDefinition> Items { get; } =

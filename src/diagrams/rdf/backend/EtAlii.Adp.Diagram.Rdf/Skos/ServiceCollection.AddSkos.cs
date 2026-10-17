@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -13,7 +12,7 @@ namespace EtAlii.Adp.Diagram.Rdf;
 public static class ServiceCollectionAddSkosExtension
 {
     /// <summary>The scheme reading's origin, as docs/tools.md writes it.</summary>
-    public static readonly DiagramOrigin SkosOrigin = new("w3c", "skos");
+    public static readonly ToolOrigin SkosOrigin = new("w3c", "skos");
 
     public static void AddSkos(this IServiceCollection services)
     {

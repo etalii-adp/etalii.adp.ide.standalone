@@ -1,5 +1,4 @@
 using EtAlii.Adp.Diagram.Modules;
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.Specification.Disl;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
@@ -31,7 +30,7 @@ public sealed class HelmContextSourceResolver(DiagramFileRouter router, IHelmCha
     public sealed record Selected(HelmReading Reading, string Registration);
 
     /// <inheritdoc />
-    protected override DiagramOrigin Origin => Diagram.HelmCharts.Origin;
+    protected override ToolOrigin Origin => Diagram.HelmCharts.Origin;
 
     /// <inheritdoc />
     protected override DiagramElementTexts Texts { get; } = new(

@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using JetBrains.Annotations;
 namespace EtAlii.Adp.Diagram.DependencyGraph;
 
@@ -34,7 +33,7 @@ public static class Diagram
     /// module reads this.
     /// </summary>
     public static DiagramDefinition DependencyGraph { get; } = new(
-        new DiagramOrigin("generic", "dependencies"),
+        new ToolOrigin("generic", "dependencies"),
         "Dependency graph",
         "What needs what - named nodes on rows, joined by directed depends-on edges, placed wherever the author puts them.",
         Icon: "mdi-graph-outline",

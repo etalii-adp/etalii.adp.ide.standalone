@@ -1,5 +1,4 @@
 using EtAlii.Adp.Diagram.Modules;
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.Hierarchy;
 
 namespace EtAlii.Adp.Diagram.AgentActivityDiagram;
@@ -37,7 +36,7 @@ public sealed class AadContextSourceResolver : DiagramElementSourceResolver<AadB
     }
 
     /// <inheritdoc />
-    protected override DiagramOrigin Origin => Diagram.AgentActivity.Origin;
+    protected override ToolOrigin Origin => Diagram.AgentActivity.Origin;
 
     /// <inheritdoc />
     protected override DiagramElementTexts Texts { get; } = new(

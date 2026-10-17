@@ -59,7 +59,7 @@ namespace EtAlii.Adp.Diagram;
 /// it module-side; core never learns what a marker means.
 /// </param>
 public sealed record DiagramDefinition(
-    DiagramOrigin Origin,
+    ToolOrigin Origin,
     string Title,
     string Description = "",
     string Icon = "",

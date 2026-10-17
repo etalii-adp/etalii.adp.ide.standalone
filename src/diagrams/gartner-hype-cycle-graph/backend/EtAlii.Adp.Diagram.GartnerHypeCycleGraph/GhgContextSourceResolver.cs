@@ -1,5 +1,4 @@
 using EtAlii.Adp.Diagram.Modules;
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.Hierarchy;
 
 namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
@@ -37,7 +36,7 @@ public sealed class GhgContextSourceResolver : DiagramElementSourceResolver<GhgB
     }
 
     /// <inheritdoc />
-    protected override DiagramOrigin Origin => Diagram.HypeCycleGraph.Origin;
+    protected override ToolOrigin Origin => Diagram.HypeCycleGraph.Origin;
 
     /// <inheritdoc />
     protected override DiagramElementTexts Texts { get; } = new(

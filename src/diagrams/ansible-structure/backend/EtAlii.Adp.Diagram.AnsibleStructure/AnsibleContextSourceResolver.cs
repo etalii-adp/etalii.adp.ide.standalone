@@ -1,5 +1,4 @@
 using EtAlii.Adp.Diagram.Modules;
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.Specification.Disl;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
@@ -36,7 +35,7 @@ public sealed class AnsibleContextSourceResolver(DiagramFileRouter router, Ansib
     public sealed record Selected(DislDiagram Diagram, string Registration);
 
     /// <inheritdoc />
-    protected override DiagramOrigin Origin => Diagram.AnsibleStructure.Origin;
+    protected override ToolOrigin Origin => Diagram.AnsibleStructure.Origin;
 
     /// <inheritdoc />
     protected override DiagramElementTexts Texts { get; } = new(
