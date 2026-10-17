@@ -487,6 +487,22 @@ public class ContextSelectionStoreTests : IDisposable
     }
 
     [Fact]
+    public async Task PushProblems_ToTheProjectSpelledWithATrailingSeparator_ReachesItsConnections()
+    {
+        // Arrange. One project, however its root is spelled (code-structure FR-059).
+        var channel = Channel.CreateUnbounded<ContextMessage>();
+        _store.Register(ShortGuid.NewShortGuid(), Root, channel.Writer, [], [], new ProjectProblems());
+        await TestBaselineAsync(channel.Reader);
+
+        // Act.
+        _store.PushProblems(Root + System.IO.Path.DirectorySeparatorChar, new ProjectProblems { State = ProblemSetState.Validated });
+
+        // Assert.
+        var message = await ReadAsync(channel.Reader);
+        Assert.Equal(ContextMessage.MessageOneofCase.Problems, message.MessageCase);
+    }
+
+    [Fact]
     public async Task PushProblems_ReachesNoConnectionInAnotherProject()
     {
         // Arrange.

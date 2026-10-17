@@ -7,23 +7,26 @@ namespace EtAlii.Adp.History;
 /// dropped at once but after a short window, so a client that reconnects within it keeps its
 /// undo history (Requirement 4.2). A stack only read through <see cref="Get"/> and never
 /// retained is kept: nothing claimed it, so nothing lets it go.
+/// <para>
+/// Keyed on the <see cref="ProjectRoot"/>, so two spellings of one folder share a stack and two
+/// folders the file system tells apart do not (code-structure FR-059).
+/// </para>
 /// </remarks>
 public sealed class HistoryStackStore : IHistoryStackStore, IDisposable
 {
     private static readonly TimeSpan DefaultGrace = TimeSpan.FromSeconds(30);
 
-    private readonly Func<string, RetainedHistoryStack> _create;
-    private readonly RetainedRegistry<string, RetainedHistoryStack> _stacks;
+    private readonly Func<ProjectRoot, RetainedHistoryStack> _create;
+    private readonly RetainedRegistry<ProjectRoot, RetainedHistoryStack> _stacks;
 
     public HistoryStackStore(ICommandDispatcher dispatcher, TimeSpan? grace = null, IContextNoticeSink? notices = null, TimeProvider? time = null)
     {
         ArgumentNullException.ThrowIfNull(dispatcher);
-        _create = rootPath => Attach(rootPath, new HistoryStack(dispatcher, HistoryStack.DefaultCapacity, rootPath, notices));
-        _stacks = new RetainedRegistry<string, RetainedHistoryStack>(
+        _create = root => Attach(root.FullPath, new HistoryStack(dispatcher, HistoryStack.DefaultCapacity, root.FullPath, notices));
+        _stacks = new RetainedRegistry<ProjectRoot, RetainedHistoryStack>(
             grace ?? DefaultGrace,
             (_, entry) => Detach(entry),
-            time ?? TimeProvider.System,
-            comparer: StringComparer.OrdinalIgnoreCase);
+            time ?? TimeProvider.System);
     }
 
     public event EventHandler<HistoryChangedEventArgs>? Changed;
@@ -31,16 +34,16 @@ public sealed class HistoryStackStore : IHistoryStackStore, IDisposable
     public IHistoryStack Get(string rootPath)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(rootPath);
-        return _stacks.GetOrAdd(Key(rootPath), _create).Stack;
+        return _stacks.GetOrAdd(ProjectRoot.From(rootPath), _create).Stack;
     }
 
-    public void Retain(string rootPath) => _stacks.Retain(Key(rootPath), _create);
+    public void Retain(string rootPath) => _stacks.Retain(ProjectRoot.From(rootPath), _create);
 
     public void Release(string rootPath)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(rootPath);
         // Not dropped now: a reconnect within the grace re-retains and keeps its history.
-        _stacks.Release(Key(rootPath));
+        _stacks.Release(ProjectRoot.From(rootPath));
     }
 
     public void Dispose() => _stacks.Dispose();
@@ -63,6 +66,4 @@ public sealed class HistoryStackStore : IHistoryStackStore, IDisposable
 
         (entry.Stack as IDisposable)?.Dispose();
     }
-
-    private static string Key(string rootPath) => Path.GetFullPath(rootPath);
 }

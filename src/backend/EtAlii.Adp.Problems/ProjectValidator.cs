@@ -32,7 +32,7 @@ public sealed class ProjectValidator
     private readonly ToolRouter _tools;
     private readonly TimeSpan _validatorTimeout;
     private readonly TimeProvider _time;
-    private readonly ConcurrentDictionary<string, Task<ValidationOutcome>> _running = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ConcurrentDictionary<ProjectRoot, Task<ValidationOutcome>> _running = new();
 
     /// <param name="router">Says which diagram type a file is.</param>
     /// <param name="validators">The rules, by origin - a diagram type's or a designer type's alike.</param>
@@ -64,13 +64,13 @@ public sealed class ProjectValidator
     /// Whether a validation is running for <paramref name="rootPath"/> right now - what a
     /// "Validate all" button reads to grey itself while one is in flight (Requirement 6.5).
     /// </summary>
-    public bool IsValidating(string rootPath) => _running.ContainsKey(IoPath.GetFullPath(rootPath));
+    public bool IsValidating(string rootPath) => _running.ContainsKey(ProjectRoot.From(rootPath));
 
     public async ValueTask<ValidationOutcome> ValidateAsync(ValidationScope scope, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(scope);
 
-        var key = IoPath.GetFullPath(scope.RootPath);
+        var key = ProjectRoot.From(scope.RootPath);
         while (true)
         {
             cancellationToken.ThrowIfCancellationRequested();

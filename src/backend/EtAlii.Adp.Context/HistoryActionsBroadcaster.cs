@@ -33,7 +33,9 @@ public sealed class HistoryActionsBroadcaster : IDisposable
         _historyStacks = historyStacks;
         _actionResolver = actionResolver;
         _selectionStore = selectionStore;
-        _pending = new Debouncer<string>(CoalesceWindow, Broadcast, time, StringComparer.OrdinalIgnoreCase);
+        // The history store reports each project by its normalized root, so its roots compare as
+        // the file system compares names, as a ProjectRoot does (code-structure FR-059).
+        _pending = new Debouncer<string>(CoalesceWindow, Broadcast, time, PathContainment.NameComparer);
         _historyStacks.Changed += OnHistoryChanged;
     }
 

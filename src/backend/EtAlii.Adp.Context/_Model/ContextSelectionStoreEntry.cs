@@ -18,5 +18,5 @@ internal sealed class ContextSelectionStoreEntry
     public IReadOnlyList<ContextActionGroupDefinition>? RootActions { get; set; }
 
     /// <summary>The project this connection belongs to; a project-actions push reaches only matching entries.</summary>
-    public string RootPath { get; set; } = "";
+    public ProjectRoot Root { get; set; }
 }
