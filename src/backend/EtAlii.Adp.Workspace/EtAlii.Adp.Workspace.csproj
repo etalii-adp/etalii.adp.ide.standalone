@@ -8,17 +8,38 @@
 
   <ItemGroup>
     <ProjectReference Include="..\EtAlii.Adp.Diagram\EtAlii.Adp.Diagram.csproj" />
+    <ProjectReference Include="..\EtAlii.Adp.Context\EtAlii.Adp.Context.csproj" />
+    <ProjectReference Include="..\EtAlii.Adp.History\EtAlii.Adp.History.csproj" />
+    <ProjectReference Include="..\EtAlii.Adp.Hierarchy\EtAlii.Adp.Hierarchy.csproj" />
+    <ProjectReference Include="..\EtAlii.Adp.Projects\EtAlii.Adp.Projects.csproj" />
+    <ProjectReference Include="..\EtAlii.Adp.Editor\EtAlii.Adp.Editor.csproj" />
+    <ProjectReference Include="..\EtAlii.Adp.Designer\EtAlii.Adp.Designer.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <PackageReference Include="Grpc.AspNetCore" />
+    <PackageReference Include="Grpc.Tools">
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
   </ItemGroup>
 
   <ItemGroup>
     <!-- The tests reach EditorSessionAdapter, and the analysis tests EditorService's internal constructor. -->
     <InternalsVisibleTo Include="EtAlii.Adp.Workspace.Tests" />
     <InternalsVisibleTo Include="EtAlii.Adp.Backend.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The wire these services serve (code-structure T158): the protos stay at the repository root
+         and generate into the namespaces the client knows - EtAlii.Adp.Diagram.Wire,
+         EtAlii.Adp.Editor.Wire and EtAlii.Adp.Designer.Wire. diagrams imports deltas, and workspace
+         imports diagrams and designers, so all five are generated here together. -->
+    <Protobuf Include="..\..\api\deltas.proto" ProtoRoot="..\..\api" GrpcServices="Both" Link="Wire\deltas.proto" />
+    <Protobuf Include="..\..\api\diagrams.proto" ProtoRoot="..\..\api" GrpcServices="Both" Link="Wire\diagrams.proto" />
+    <Protobuf Include="..\..\api\editors.proto" ProtoRoot="..\..\api" GrpcServices="Both" Link="Wire\editors.proto" />
+    <Protobuf Include="..\..\api\designers.proto" ProtoRoot="..\..\api" GrpcServices="Both" Link="Wire\designers.proto" />
+    <Protobuf Include="..\..\api\workspace.proto" ProtoRoot="..\..\api" GrpcServices="Both" Link="Wire\workspace.proto" />
   </ItemGroup>
 
 </Project>

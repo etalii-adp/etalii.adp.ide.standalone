@@ -1,6 +1,7 @@
+using EtAlii.Adp.Documents;
 using Microsoft.Extensions.Hosting;
 
-namespace EtAlii.Adp.Documents;
+namespace EtAlii.Adp.Diagram;
 
 /// <summary>
 /// What a diagram-type module is: its origin/notation and its display title - mirroring one row

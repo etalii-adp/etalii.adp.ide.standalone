@@ -95,7 +95,7 @@ public sealed class UpdateViewWhileTheStreamIsOpenTests : IDisposable
         // The host discovers these at startup and registers them before anything can serve a
         // request; the file router resolves an .adp to its module through them, so a container
         // without them cannot open a diagram at all.
-        IReadOnlyList<Documents.DiagramDefinition> definitions = DiagramDefinitionDiscovery.Discover();
+        IReadOnlyList<DiagramDefinition> definitions = DiagramDefinitionDiscovery.Discover();
         services.AddSingleton(definitions);
         services.AddSingleton<Service>();
 

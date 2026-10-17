@@ -1,4 +1,5 @@
 using EtAlii.Adp.Designer;
+using EtAlii.Adp.Diagram;
 using EtAlii.Adp.Documents;
 using Xunit;
 using IoPath = System.IO.Path;

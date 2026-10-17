@@ -1,6 +1,6 @@
 using System.Text;
 using EtAlii.Adp.Context.Wire;
-using EtAlii.Adp.Documents;
+using EtAlii.Adp.Diagram;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.Hierarchy.Wire;

@@ -1,12 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The diagram abstractions every module needs, and nothing a host needs (code-structure FR-054;
+    SC-012): the documents project and the shared primitives, no other core project, and no web or
+    gRPC hosting package. The bases that need more are EtAlii.Adp.Diagram.Modules'; the services a
+    connection calls, and the wire they serve, are EtAlii.Adp.Workspace's.
+  -->
+
   <ItemGroup>
-    <ProjectReference Include="..\EtAlii.Adp.History\EtAlii.Adp.History.csproj" />
     <ProjectReference Include="..\EtAlii.Adp\EtAlii.Adp.csproj" />
-    <ProjectReference Include="..\EtAlii.Adp.Context\EtAlii.Adp.Context.csproj" />
-    <ProjectReference Include="..\EtAlii.Adp.Hierarchy\EtAlii.Adp.Hierarchy.csproj" />
-    <ProjectReference Include="..\EtAlii.Adp.Projects\EtAlii.Adp.Projects.csproj" />
-    <ProjectReference Include="..\EtAlii.Adp.Editor\EtAlii.Adp.Editor.csproj" />
-    <ProjectReference Include="..\EtAlii.Adp.Designer\EtAlii.Adp.Designer.csproj" />
     <ProjectReference Include="..\EtAlii.Adp.Documents\EtAlii.Adp.Documents.csproj" />
   </ItemGroup>
 
@@ -17,30 +19,8 @@
       pipeline everywhere; DependencyModel to read the deployment manifest the assembly walk
       is seeded from.
     -->
-    <FrameworkReference Include="Microsoft.AspNetCore.App" />
-    <PackageReference Include="Grpc.AspNetCore" />
-    <PackageReference Include="Grpc.Tools">
-      <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
+    <PackageReference Include="Serilog" />
+    <PackageReference Include="Microsoft.Extensions.DependencyModel" />
   </ItemGroup>
 
-  <ItemGroup>
-    <!-- The diagram wire contract, owned here since the Backend.Diagrams merge: the protos
-         stay at the repository root and generate into EtAlii.Adp.Diagram.Wire. diagrams
-         imports deltas, so both are generated together. The services that serve these
-         contracts are EtAlii.Adp.Workspace's since code-structure T155; the generated code
-         stays here until T158 thins this project. -->
-    <Protobuf Include="..\..\api\deltas.proto" ProtoRoot="..\..\api" GrpcServices="Both" Link="Wire\deltas.proto" />
-    <Protobuf Include="..\..\api\diagrams.proto" ProtoRoot="..\..\api" GrpcServices="Both" Link="Wire\diagrams.proto" />
-    <!-- The editor family's own unary call, the text save, served beside the stream editors
-         ride, because saving resolves the project and dispatches on its history like the stream
-         does - and EtAlii.Adp.Hierarchy, which owns the save command, already references EtAlii.Adp.Editor. -->
-    <Protobuf Include="..\..\api\editors.proto" ProtoRoot="..\..\api" GrpcServices="Both" Link="Wire\editors.proto" />
-    <!-- The designer family's unary calls and its table messages, served beside the stream
-         a table rides, as the editor family's call is; workspace imports it for its table member. -->
-    <Protobuf Include="..\..\api\designers.proto" ProtoRoot="..\..\api" GrpcServices="Both" Link="Wire\designers.proto" />
-    <!-- A tab's one stream composes the hierarchy, context and diagram streams, generated with
-         the diagram contract it imports. -->
-    <Protobuf Include="..\..\api\workspace.proto" ProtoRoot="..\..\api" GrpcServices="Both" Link="Wire\workspace.proto" />
-  </ItemGroup>
 </Project>

@@ -22,7 +22,7 @@ public enum DiagramSubject
     /// <summary>
     /// The diagram is the folder the <c>.adp</c> sits in, and the files beneath it. The
     /// registration marks the folder and carries no body of its own, which is why a
-    /// <see cref="Folder"/> type may not declare a <see cref="DiagramDefinition.Extension"/>.
+    /// <see cref="Folder"/> type may not declare a <c>DiagramDefinition.Extension</c>.
     /// </summary>
     Folder,
 }

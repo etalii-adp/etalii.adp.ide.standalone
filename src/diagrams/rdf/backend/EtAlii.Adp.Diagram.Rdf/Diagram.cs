@@ -1,5 +1,4 @@
 using EtAlii.Adp.Diagram.Rdf.Shacl;
-using EtAlii.Adp.Documents;
 using JetBrains.Annotations;
 
 namespace EtAlii.Adp.Diagram.Rdf;

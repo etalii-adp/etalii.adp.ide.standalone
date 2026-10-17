@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -18,15 +17,6 @@ public static class ServiceCollectionAddCommandsExtension
     public static IServiceCollection AddCommands(this IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);
-
-        // The rename and delete handlers ask the catalog whether a file is a diagram's
-        // registration file with a body sibling to carry along. TryAdd, so a test that
-        // registered its own list first keeps it.
-        services.TryAddSingleton<IDiagramDefinitionCatalog>(svc =>
-        {
-            var definitions = svc.GetRequiredService<IReadOnlyList<DiagramDefinition>>();
-            return new DiagramDefinitionCatalog { All = definitions };
-        });
 
         services.AddSingleton<ICommandDispatcher, CommandDispatcher>();
 
