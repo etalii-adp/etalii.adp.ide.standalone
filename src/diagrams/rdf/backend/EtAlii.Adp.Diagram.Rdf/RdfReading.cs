@@ -1,5 +1,3 @@
-using EtAlii.Adp.Hierarchy;
-
 namespace EtAlii.Adp.Diagram.Rdf;
 
 /// <summary>The data-graph reading: every resource a card, every triple between them an edge (rdf-diagram Requirements 2-5).</summary>

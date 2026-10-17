@@ -3,7 +3,7 @@ using System.Text;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Files;
 
-namespace EtAlii.Adp.Hierarchy;
+namespace EtAlii.Adp.Diagram;
 
 /// <summary>An authored position stored in a registration's layout block.</summary>
 public readonly record struct RegistrationPosition(double X, double Y);
@@ -18,7 +18,7 @@ public readonly record struct RegistrationPosition(double X, double Y);
 /// kin): a <c>layout:</c> line followed by indented <c>&lt;element-id&gt;: &lt;x&gt; &lt;y&gt;</c>
 /// entries. The <c>.adp</c> is ADP's own file, so the block itself may be normalized freely
 /// on write - but everything above it is preserved byte for byte, because the headers belong
-/// to <see cref="DiagramFilePair"/>'s contract and a layout write must never disturb them.
+/// to the hierarchy's <c>DiagramFilePair</c> contract and a layout write must never disturb them.
 /// Defined once and offered to every module; no module-specific knowledge lives in this
 /// class.
 /// </remarks>

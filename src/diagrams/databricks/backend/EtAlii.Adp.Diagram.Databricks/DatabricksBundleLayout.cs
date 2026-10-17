@@ -1,5 +1,3 @@
-using EtAlii.Adp.Hierarchy;
-
 namespace EtAlii.Adp.Diagram.Databricks;
 
 /// <summary>

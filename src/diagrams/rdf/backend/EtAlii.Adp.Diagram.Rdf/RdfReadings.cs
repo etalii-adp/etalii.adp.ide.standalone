@@ -1,5 +1,3 @@
-using EtAlii.Adp.Hierarchy;
-
 namespace EtAlii.Adp.Diagram.Rdf;
 
 /// <summary>What every reading answers the same way, given what it draws.</summary>

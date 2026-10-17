@@ -1,5 +1,4 @@
 using EtAlii.Adp.Diagram.Modules;
-using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.Layout;
 using EtAlii.Adp.Specification.Cel;
 using EtAlii.Adp.Specification.Disl;
