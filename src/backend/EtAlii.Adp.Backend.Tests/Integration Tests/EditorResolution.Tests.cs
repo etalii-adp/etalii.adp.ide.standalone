@@ -2,6 +2,7 @@ using System.Text;
 using EtAlii.Adp.Diagram.Wire;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Editor.Wire;
+using EtAlii.Adp.Projects;
 using EtAlii.Adp.TestSupport.Host;
 using Grpc.Core;
 using Xunit;
@@ -31,6 +32,9 @@ public class EditorResolutionTests(HostFixture host) : IClassFixture<HostFixture
             IoPath.Combine(projectFolder, "design.dsl"),
             "workspace \"W\" {\n  model {\n    p = person \"P\"\n  }\n  views {\n    systemLandscape \"sl\" {\n      include *\n    }\n  }\n}\n");
         File.WriteAllText(IoPath.Combine(projectFolder, "notes.txt"), "just some notes\n");
+        // A mind map registration whose body: header leads out of the project: it names its
+        // diagram type, and cannot be served.
+        File.WriteAllText(IoPath.Combine(projectFolder, "escaping.adp"), "freeplane/mindmap\nbody: ../../elsewhere.mm\n");
         return projectFolder;
     }
 
@@ -65,6 +69,22 @@ public class EditorResolutionTests(HostFixture host) : IClassFixture<HostFixture
         Assert.Equal("content", element.Id?.Value);
         Assert.Equal("editor/plain", element.Type);
         Assert.Equal("just some notes\n", Encoding.UTF8.GetString(element.Payload!.Value.Span));
+    }
+
+    [Fact]
+    public async Task ARegistrationThatCannotBeServed_IsRefusedWithItsReason_NotOpenedAsText()
+    {
+        // Arrange (spec 025 B-25: ToolRouter refuses it rather than offering it to the editors).
+        using var session = await FlowSession.OpenAsync(host, _projectFolder, TestContext.Current.CancellationToken);
+        var diagramClient = new DiagramService.DiagramServiceClient(session.Channel);
+
+        // Act.
+        var refusal = await Assert.ThrowsAsync<RpcException>(() => FirstAddDeltaAsync(diagramClient, session.Headers, session.ProjectId, "escaping.adp"));
+
+        // Assert: refused for good, with the router's reason, rather than opened in the plain
+        // editor as a text file of its own.
+        Assert.Equal(PermanentRefusal.CannotOpen, refusal.StatusCode);
+        Assert.Contains("outside the project", refusal.Status.Detail, StringComparison.Ordinal);
     }
 
     // THIS TEST HAS A SIXTY-SECOND gRPC DEADLINE AND IT IS SET IN THE ARRANGE BLOCK BELOW:
