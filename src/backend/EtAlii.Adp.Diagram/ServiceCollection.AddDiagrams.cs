@@ -1,6 +1,4 @@
 using EtAlii.Adp.Documents;
-using EtAlii.Adp.Editor;
-using EtAlii.Adp.Hierarchy;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -29,12 +27,6 @@ public static class ServiceCollectionAddDiagramsExtension
 
         // One source of file events per project root, whoever listens there (code-structure FR-050).
         services.TryAddSingleton<ProjectFileEvents>();
-
-        // The editor catalog tolerates a host that never ran AddEditorDefinitions - an older test
-        // host - by answering empty rather than failing its container.
-        services.TryAddSingleton<IEditorDefinitionCatalog>(svc =>
-            new EditorDefinitionCatalog { All = svc.GetService<IReadOnlyList<EditorDefinition>>() ?? [] });
-        services.AddSingleton(svc => new EditorResolver(svc.GetRequiredService<IEditorDefinitionCatalog>()));
 
         return services;
     }
