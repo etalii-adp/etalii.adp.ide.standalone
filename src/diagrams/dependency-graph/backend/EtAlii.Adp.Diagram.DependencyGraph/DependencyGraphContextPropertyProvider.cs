@@ -2,6 +2,7 @@ using System.Globalization;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
+using EtAlii.Adp.Specification.Disl;
 
 namespace EtAlii.Adp.Diagram.DependencyGraph;
 
@@ -27,7 +28,7 @@ namespace EtAlii.Adp.Diagram.DependencyGraph;
 /// </para>
 /// </remarks>
 public sealed class DependencyGraphContextPropertyProvider(IHistoryStackStore historyStacks, IDependencyGraphDocumentStore documents)
-    : DiagramPropertyProvider<LineDocument, DependencyGraphModel>(historyStacks, documents)
+    : DiagramPropertyProvider<DependencyGraphBody, DislModel>(historyStacks, documents)
 {
     /// <summary>The node's or dependency's label row.</summary>
     public const string LabelProperty = "dependencies.label";
@@ -53,8 +54,8 @@ public sealed class DependencyGraphContextPropertyProvider(IHistoryStackStore hi
     /// which end is which is this type's whole content, and "From"/"To" alone leaves the reader to
     /// guess which way the arrow points. The rows are the definition's forms.
     /// </remarks>
-    protected override IReadOnlyList<ContextPropertyDefinition> Describe(DocumentEntry<LineDocument, DependencyGraphModel> entry, string elementId) =>
-        DependencyGraphDefinition.Rows(DependencyGraphBody.Of(entry), elementId);
+    protected override IReadOnlyList<ContextPropertyDefinition> Describe(DocumentEntry<DependencyGraphBody, DislModel> entry, string elementId) =>
+        DependencyGraphDefinition.Rows(entry.Document, elementId);
 
     /// <inheritdoc />
     /// <remarks>
@@ -62,9 +63,9 @@ public sealed class DependencyGraphContextPropertyProvider(IHistoryStackStore hi
     /// a command failure - and so an invalid value is never written. The command goes through the
     /// project's history and out through the delta stream - never written by the panel.
     /// </remarks>
-    protected override DiagramPropertyChange Change(ContextTarget target, DependencyGraphModel model, string propertyId, string value)
+    protected override DiagramPropertyChange Change(ContextTarget target, DislModel model, string propertyId, string value)
     {
-        var element = DependencyGraphEdits.ElementOf(model, target.ElementId);
+        var element = DependencyGraphEdits.NodeOf(model, target.ElementId);
 
         if (element is not null && propertyId is XProperty or RowProperty && ParseNumber(propertyId, value) is null)
         {
@@ -76,7 +77,7 @@ public sealed class DependencyGraphContextPropertyProvider(IHistoryStackStore hi
             : DiagramPropertyChange.Refused($"'{propertyId}' cannot be edited on this selection.");
     }
 
-    private static ICommand? CommandFor(ContextTarget target, DependencyGraphModel model, DependencyGraphElement? element, string propertyId, string value)
+    private static ICommand? CommandFor(ContextTarget target, DislModel model, DislElement? element, string propertyId, string value)
     {
         var body = target.ResolvedFullPath;
         var id = target.ElementId;
@@ -93,12 +94,18 @@ public sealed class DependencyGraphContextPropertyProvider(IHistoryStackStore hi
         {
             LabelProperty => new RenameDependencyGraphElementCommand(body, id, value),
             XProperty when ParseNumber(propertyId, value) is { } x =>
-                new SetDependencyGraphPlacementCommand(body, id, x, element.Row),
+                new SetDependencyGraphPlacementCommand(body, id, x, RowOf(element)),
             RowProperty when ParseNumber(propertyId, value) is { } row =>
-                new SetDependencyGraphPlacementCommand(body, id, element.X, (int)row),
+                new SetDependencyGraphPlacementCommand(body, id, XOf(element), (int)row),
             _ => null,
         };
     }
+
+    /// <summary>A node's x as the model reads it.</summary>
+    internal static double XOf(DislElement node) => node.ValueOf("x") is double x ? x : 0d;
+
+    /// <summary>A node's row as the model reads it.</summary>
+    internal static int RowOf(DislElement node) => node.ValueOf("row") is long row ? checked((int)row) : 0;
 
     /// <summary>
     /// The number a placement row was given, invariantly - or null when it is not one.

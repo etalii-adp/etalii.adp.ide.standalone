@@ -2,8 +2,10 @@ using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using EtAlii.Adp.Context;
+using EtAlii.Adp.Diagram.DependencyGraph.Tests.Parity.Oracle;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
+using EtAlii.Adp.Specification.Disl;
 using Google.Protobuf.Reflection;
 using Path = System.IO.Path;
 
@@ -56,7 +58,7 @@ internal static partial class DependencyGraphTranscript
     private static string SourceFolder => Path.GetFullPath(Path.Combine(ModuleFolder, "..", ".."));
 
     /// <summary>The corpus, as paths relative to <c>src/</c> with forward slashes, then the inline documents, in the order they are recorded.</summary>
-    private static IReadOnlyList<(string Name, Func<CancellationToken, Task<byte[]>> Read)> Corpus()
+    internal static IReadOnlyList<(string Name, Func<CancellationToken, Task<byte[]>> Read)> Corpus()
     {
         var fixtures = Directory.GetFiles(Path.Combine(ModuleFolder, "backend", TestProject, "Fixtures"), "*.dgr");
         var examples = Directory.GetDirectories(Path.Combine(ModuleFolder, "examples")).SelectMany(folder => Directory.GetFiles(folder, "*.dgr"));
@@ -151,7 +153,7 @@ internal static partial class DependencyGraphTranscript
 
     private static async Task WriteReadingsAsync(Utf8JsonWriter json, Session session, byte[] bytes, CancellationToken cancellationToken)
     {
-        var model = session.Model;
+        var model = Selection(TranscriptText.Decode(bytes));
         List<string> declared =
         [
             .. model.Elements.Select(element => element.Id)
@@ -248,7 +250,7 @@ internal static partial class DependencyGraphTranscript
         json.WriteLines([.. problems.Select(problem => $"{Location(problem.Location)} | {problem.Severity} | {problem.RuleId} | {problem.Message}")]);
 
         json.WritePropertyName("payloads");
-        json.WriteLines([.. new DependencyGraphElementMapper().Elements(model)
+        json.WriteLines([.. new DependencyGraphElementMapper().Elements(session.Model)
             .Select(element => TranscriptText.PayloadLine(element.Id, element.X, element.Y, element.Type, element.PayloadTypeUrl, element.Payload, _payloadTypes))]);
     }
 
@@ -270,7 +272,7 @@ internal static partial class DependencyGraphTranscript
         var script = new Script(json, session, cancellationToken);
         var original = await script.StartAsync();
 
-        var model = session.Model;
+        var model = Selection(original);
         var nodes = model.Elements.Select(element => element.Id).Where(id => id.Length > 0).Distinct(StringComparer.Ordinal).ToList();
         var node = nodes.FirstOrDefault();
         var other = nodes.Skip(1).FirstOrDefault();
@@ -386,12 +388,26 @@ internal static partial class DependencyGraphTranscript
 
         public DependencyGraphContextPropertyProvider ReadOnlyProperties { get; }
 
-        public DependencyGraphModel Model => Store.GetOrLoad(Body).Model;
+        public DislModel Model => Store.GetOrLoad(Body).Model;
 
         public ContextTarget Target(string elementId) =>
             ContextTarget.ForElement(Body, elementId, Folder, origin: Diagram.DependencyGraph.Origin);
 
         public void Dispose() => History.Dispose();
+    }
+
+    /// <summary>
+    /// The ids the transcript asks about and edits, as it has always chosen them: by the oracle's reading of the
+    /// text, or for a text only the binding reads (a repeated key), by the binding's entries. The choice is the
+    /// generator's own input, so it does not follow the module it exercises.
+    /// </summary>
+    private static DependencyGraphModel Selection(string text)
+    {
+        var parsed = DependencyGraphParser.Outcome(LineDocument.Parse(text));
+        if (parsed.IsUsable) return parsed.Model;
+
+        var body = DependencyGraphBody.Parse(text);
+        return body.IsUnreadable ? DependencyGraphModel.Empty : new DependencyGraphModel(body.Disl.Elements, body.Disl.Relations);
     }
 
     /// <summary>The store's own entries, each marked as not parsing: the backend's one read-only case.</summary>
@@ -403,9 +419,9 @@ internal static partial class DependencyGraphTranscript
             remove => inner.Changed -= value;
         }
 
-        public DocumentEntry<LineDocument, DependencyGraphModel> GetOrLoad(string path) => inner.GetOrLoad(path) with { Unreadable = "parity: read-only" };
+        public DocumentEntry<DependencyGraphBody, DislModel> GetOrLoad(string path) => inner.GetOrLoad(path) with { Unreadable = "parity: read-only" };
 
-        public DocumentSaveResult Save(string path, LineDocument document) => inner.Save(path, document);
+        public DocumentSaveResult Save(string path, DependencyGraphBody document) => inner.Save(path, document);
 
         public void Forget(string path) => inner.Forget(path);
 
@@ -501,7 +517,7 @@ internal static partial class DependencyGraphTranscript
             }
         }
 
-        private async Task RecordAsync(string step, string answer, DependencyGraphModel before)
+        private async Task RecordAsync(string step, string answer, DislModel before)
         {
             var after = await ReadAsync();
             var known = Ids(before);
@@ -534,11 +550,7 @@ internal static partial class DependencyGraphTranscript
         private string Mask(string text) =>
             _minted.Aggregate(text, (masked, entry) => masked.Replace(entry.Key, entry.Value, StringComparison.Ordinal));
 
-        private static HashSet<string> Ids(DependencyGraphModel model) =>
-        [
-            .. model.Elements.Select(element => element.Id)
-                .Concat(model.Relations.Select(relation => relation.Id)),
-        ];
+        private static HashSet<string> Ids(DislModel model) => [.. model.Diagram.Elements.Select(DependencyGraphDefinition.WrittenId)];
 
         private static string Describe(ContextExecutionResult result) => result switch
         {

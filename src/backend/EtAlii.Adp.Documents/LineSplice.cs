@@ -28,8 +28,14 @@ namespace EtAlii.Adp.Documents;
 /// </para>
 /// <para>
 /// The YAML shape these assume - a sequence of <c>- key: value</c> items under a section key -
-/// is what both consuming formats happen to be. It is not a general YAML editor and does not
+/// is what the consuming formats happen to be. It is not a general YAML editor and does not
 /// try to be; a module whose format does not fit is not asked to adopt it (Requirement 3.3).
+/// </para>
+/// <para>
+/// <b>Who uses it now.</b> The functional decomposition graph, the Sankey diagram and the supply
+/// chain write through it. The timeline and the dependency graph, the two writers it was taken
+/// from, now write through their FBL bindings; their old writers are kept only as their test
+/// projects' oracles (timeline-disl-fbl, dependency-graph-disl-fbl task 8).
 /// </para>
 /// </remarks>
 public static class LineSplice

@@ -2,7 +2,6 @@ using System.Text;
 using System.Text.RegularExpressions;
 using EtAlii.Adp.Diagram.C4;
 using EtAlii.Adp.Diagram.CausalLoopDiagram;
-using EtAlii.Adp.Diagram.DependencyGraph;
 using EtAlii.Adp.Diagram.HelmChart;
 using EtAlii.Adp.Diagram.HelmChart.Tests.Parity;
 using EtAlii.Adp.Diagram.Mindmap;
@@ -20,8 +19,7 @@ namespace EtAlii.Adp.Specification.Fbl.Tests.RealFiles;
 /// the causal loop diagram, the module's own binding), mapped from the
 /// module's kinds to the binding's types by <see cref="ModuleIds"/>. Every difference is a listed
 /// divergence. Only public API of the modules is used, and nothing in them is changed. The dependency
-/// graph's binding is the module's own, embedded (<see cref="RealFileCorpus.ModuleOwned"/>), checked
-/// against the module's parser over every <c>.dgr</c> file (dependency-graph-disl-fbl, tasks 2 and 7).
+/// graph's check moved to the module's own test project with its parser (dependency-graph-disl-fbl, task 8).
 /// <para>
 /// <b>The Helm chart folder</b> (helm-chart-disl-fbl, Requirement 8.5): every folder of this repository that holds a
 /// <c>Chart.yaml</c>, read through the vendored folder binding and the module's plugin by the library's folder body,
@@ -62,19 +60,6 @@ public class ModuleCrossCheckTests
 
         // Assert.
         Divergences.Check("cross-check", key, file, Difference(fbl, module));
-    }
-
-    [Fact]
-    public void TheDependencyGraphBinding_TakesEveryDgrFileOfTheRepository()
-    {
-        // Arrange.
-        var binding = RealFileCorpus.Find("dependency-graph");
-
-        // Act.
-        var files = RealFileCorpus.Files(binding);
-
-        // Assert: the cross-check above runs over all of them, so a broken enumeration fails here rather than passing on none.
-        Assert.True(files.Count >= binding.Minimum, $"{files.Count} .dgr files were found; at least {binding.Minimum} were there when this was written.");
     }
 
     public static TheoryData<string> ChartFolders()
@@ -130,7 +115,7 @@ public class ModuleCrossCheckTests
 /// </summary>
 internal static partial class ModuleIds
 {
-    public static readonly IReadOnlyList<string> Keys = ["timeline", "causal-loop", "structurizr", "mindmap", "dependency-graph"];
+    public static readonly IReadOnlyList<string> Keys = ["timeline", "causal-loop", "structurizr", "mindmap"];
 
     /// <summary>The C4 kinds the binding has rules for; the others (components, deployment) it does not read.</summary>
     private static readonly IReadOnlyDictionary<C4ElementKind, string> _c4Types = new Dictionary<C4ElementKind, string>
@@ -211,13 +196,6 @@ internal static partial class ModuleIds
                     Add(ids, "Node", node.Id);
                     if (node.Parent is { Id.Length: > 0 } parent) Add(ids, "Branch", $"branch:{parent.Id}->{node.Id}");
                 }
-                break;
-            case "dependency-graph":
-                // The binding is the one dependency-graph-disl-fbl drafts, a test resource of the module's test project; the
-                // module's side is its own parser, every node and dependency by the id it is written with.
-                var graph = DependencyGraphParser.Parse(LineDocument.Parse(text));
-                foreach (var node in graph.Elements.Where(node => node.Id.Length > 0)) Add(ids, "Node", node.Id);
-                foreach (var dependency in graph.Relations.Where(dependency => dependency.Id.Length > 0)) Add(ids, "Dependency", dependency.Id);
                 break;
             default:
                 throw new ArgumentOutOfRangeException(nameof(key), key, "No module parser is cross-checked for this binding.");

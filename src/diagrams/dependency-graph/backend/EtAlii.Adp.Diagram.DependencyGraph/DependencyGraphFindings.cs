@@ -1,7 +1,8 @@
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.Specification.Cel;
 using EtAlii.Adp.Specification.Disl;
 using EtAlii.Adp.Specification.Fbl;
+using YamlDotNet.Core;
+using YamlDotNet.RepresentationModel;
 
 namespace EtAlii.Adp.Diagram.DependencyGraph;
 
@@ -97,14 +98,22 @@ internal static class DependencyGraphFindings
     }
 
     /// <summary>
-    /// Why a body cannot be read, and its 1-based line: YamlDotNet's sentence and line as the parser has
-    /// always reported them, while the parser is still the writer's reader; else the library's, less its lead-in.
+    /// Why a body cannot be read, and its 1-based line: YAML's own sentence and line, as YamlDotNet - the
+    /// reader the library decides well-formedness with - states them, which is what the tool has always
+    /// reported; else the library's, less its lead-in.
     /// </summary>
     internal static (string Reason, int Line) UnreadableReason(DependencyGraphBody body)
     {
         ArgumentNullException.ThrowIfNull(body);
-        var parsed = DependencyGraphParser.Outcome(LineDocument.Parse(body.Text));
-        if (!parsed.IsUsable) return (parsed.Unreadable, parsed.Problems[0].Line + 1);
+        try
+        {
+            using var reader = new StringReader(body.Text);
+            new YamlStream().Load(reader);
+        }
+        catch (YamlException exception)
+        {
+            return (exception.Message, (int)Math.Max(exception.Start.Line, 1));
+        }
 
         const string leadIn = "The body is not well-formed YAML: ";
         var finding = body.Model.Findings.FirstOrDefault(candidate => candidate.Code == FindingCodes.Unparseable) ?? body.Model.Findings.FirstOrDefault();

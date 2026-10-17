@@ -3,7 +3,7 @@ using Xunit;
 using YamlDotNet.Core;
 using IoPath = System.IO.Path;
 
-namespace EtAlii.Adp.Diagram.DependencyGraph.Tests;
+namespace EtAlii.Adp.Diagram.DependencyGraph.Tests.Parity.Oracle;
 
 /// <summary>
 /// Reading a document into the model everything else is a function over.

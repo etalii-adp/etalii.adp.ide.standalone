@@ -1,9 +1,13 @@
 using System.Text;
+using EtAlii.Adp.Diagram.DependencyGraph.Tests.Parity.Oracle;
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.History;
 using EtAlii.Adp.Specification.Disl;
 using EtAlii.Adp.Specification.Fbl.History;
 using EtAlii.Adp.Specification.Fbl.Planning;
 using Xunit;
+
+using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
 namespace EtAlii.Adp.Diagram.DependencyGraph.Tests.Parity;
 
@@ -82,21 +86,24 @@ public class DependencyGraphDraftedBindingTests
     }
 
     [Fact]
-    public void B6_TheFirstNodeOfAGraph_KeepsTheCommentAfterTheEmptyList_OnlyThroughFbl()
+    public async Task B6_TheFirstNodeOfAGraph_KeepsTheCommentAfterTheEmptyList_ThroughFblAndTheModule()
     {
         // Arrange and act.
         var today = TodayAfter("inline/b6-empty-list-with-comment", (document, model) => DependencyGraphWriter.InsertElement(document, model, "newid", "New", 1, 2));
         var fbl = FblAfter("inline/b6-empty-list-with-comment", new ModelChange.Add("Node", "newid", Node("New", 1.0, 2L)));
+        var module = await ModuleAfter("inline/b6-empty-list-with-comment", path => new AddDependencyGraphElementCommand(path, "newid", "New", 1, 2));
 
-        // Assert: today the list stays a flow list with an entry below it, and the body no longer reads; FBL opens it
-        // into a block list and keeps the comment. The right answer is FBL's (finding B6).
+        // Assert: the old writer (the oracle) left the list a flow list with an entry below it, and the body no longer
+        // read; FBL opens it into a block list and keeps the comment, and since task 8 the module writes through it. The
+        // right answer is FBL's (finding B6).
         Assert.StartsWith("dependencies: 1\nelements: [] # nothing drawn yet\n  - id: newid\n", today.Text, StringComparison.Ordinal);
         Assert.False(today.Usable);
         Assert.StartsWith("dependencies: 1\nelements: # nothing drawn yet\n  - id: newid\n", fbl, StringComparison.Ordinal);
+        Assert.Equal(fbl, module);
     }
 
     [Fact]
-    public void B7_AChangedValue_KeepsItsQuotesItsCommentAndItsAnchor_OnlyThroughFbl()
+    public async Task B7_AChangedValue_KeepsItsQuotesItsCommentAndItsAnchor_ThroughFblAndTheModule()
     {
         // Arrange and act.
         var todayLabel = TodayAfter("inline/b7-value-styles", (document, model) => DependencyGraphWriter.SetLabel(document, model.Elements[0], "123"));
@@ -105,10 +112,14 @@ public class DependencyGraphDraftedBindingTests
         var fblX = FblAfter("inline/b7-value-styles", new ModelChange.Set("aaa", new Dictionary<string, object?> { ["x"] = 0.00001 }));
         var todayBlock = TodayAfter("inline/b7-value-styles", (document, model) => DependencyGraphWriter.SetRelationLabel(document, model.Relations[0], "relabelled"));
         var fblBlock = FblAfter("inline/b7-value-styles", new ModelChange.Set("block", new Dictionary<string, object?> { ["label"] = "relabelled" }));
+        var moduleLabel = await ModuleAfter("inline/b7-value-styles", path => new RenameDependencyGraphElementCommand(path, "aaa", "123"));
+        var moduleX = await ModuleAfter("inline/b7-value-styles", path => new SetDependencyGraphPlacementCommand(path, "aaa", 0.00001, 0));
+        var moduleBlock = await ModuleAfter("inline/b7-value-styles", path => new RelabelDependencyGraphRelationCommand(path, "block", "relabelled"));
 
-        // Assert: today the whole line is rewritten: the author's quotes and comment go, a label that reads as a
-        // number is written plain, the anchor goes and the alias to it then names nothing, and a block scalar's lines
-        // stay behind. FBL replaces the value in its own style. The right answer is FBL's, as Q1 rules (finding B7).
+        // Assert: the old writer (the oracle) rewrote the whole line: the author's quotes and comment went, a label that
+        // reads as a number was written plain, the anchor went and the alias to it then named nothing, and a block
+        // scalar's lines stayed behind. FBL replaces the value in its own style, and since task 8 the module writes
+        // through it. The right answer is FBL's, as Q1 rules (finding B7).
         Assert.Contains("    label: 123\n", todayLabel.Text, StringComparison.Ordinal);
         Assert.Contains("    label: '123' # kept by hand\n", fblLabel, StringComparison.Ordinal);
         Assert.Contains("    x: 0\n", todayX.Text, StringComparison.Ordinal);
@@ -116,40 +127,50 @@ public class DependencyGraphDraftedBindingTests
         Assert.Contains("    x: &across 0.00001\n", fblX, StringComparison.Ordinal);
         Assert.EndsWith("    label: relabelled\n      first line\n      second line\n", todayBlock.Text, StringComparison.Ordinal);
         Assert.EndsWith("    label: relabelled\n", fblBlock, StringComparison.Ordinal);
+        Assert.Contains("    label: '123' # kept by hand\n", moduleLabel, StringComparison.Ordinal);
+        Assert.Contains("    x: &across 0.00001\n", moduleX, StringComparison.Ordinal);
+        Assert.Equal(fblBlock, moduleBlock);
     }
 
     [Fact]
-    public void B9_ANewEntry_CopiesTheFirstEntryToday_AndThePreviousSiblingThroughFbl()
+    public async Task B9_ANewEntry_CopiedTheFirstEntryInTheOldWriter_AndCopiesThePreviousSiblingThroughFblAndTheModule()
     {
         // Arrange and act.
         var today = TodayAfter("inline/b9-entries-indented-apart", (document, model) => DependencyGraphWriter.InsertElement(document, model, "newid", "New", 1, 2));
         var fbl = FblAfter("inline/b9-entries-indented-apart", new ModelChange.Add("Node", "newid", Node("New", 1.0, 2L)));
+        var module = await ModuleAfter("inline/b9-entries-indented-apart", path => new AddDependencyGraphElementCommand(path, "newid", "New", 1, 2));
 
         // Assert: the dash gap of one, the first entry's, against the gap of three, the previous sibling's (finding B9).
         Assert.Contains("  - id: newid\n    label: New\n", today.Text, StringComparison.Ordinal);
         Assert.Contains("  -   id: newid\n      label: New\n", fbl, StringComparison.Ordinal);
+        Assert.Equal(fbl, module);
     }
 
     [Fact]
-    public void B10_ARemoval_TakesTheCommentsDirectlyAboveIt_OnlyThroughFbl()
+    public async Task B10_ARemoval_TakesTheCommentsDirectlyAboveIt_ThroughFblAndTheModule()
     {
         // Arrange and act.
         var today = TodayAfter("inline/b10-comments-above", (document, model) => DependencyGraphWriter.RemoveElement(document, model, model.Elements[1]));
         var fbl = FblAfter("inline/b10-comments-above", new ModelChange.Remove("bbb"));
         var todayLabel = TodayAfter("inline/b10-comments-above", (document, model) => DependencyGraphWriter.SetRelationLabel(document, model.Relations[0], ""));
         var fblLabel = FblAfter("inline/b10-comments-above", new ModelChange.Set("uses", new Dictionary<string, object?> { ["label"] = "" }));
+        var module = await ModuleAfter("inline/b10-comments-above", path => new RemoveDependencyGraphElementCommand(path, "bbb"));
+        var moduleLabel = await ModuleAfter("inline/b10-comments-above", path => new RelabelDependencyGraphRelationCommand(path, "uses", ""));
 
-        // Assert: today the comments above the removed node, its dependency and the cleared label stay behind; FBL
-        // takes them with what they are about (FBL 4.1.1). Which is right is Q1's (finding B10).
+        // Assert: the old writer (the oracle) left the comments above the removed node, its dependency and the cleared
+        // label behind; FBL takes them with what they are about (FBL 4.1.1), and since task 8 the module writes through
+        // it, as Q1 rules (finding B10).
         Assert.Contains("  # About bbb, directly above it.\n", today.Text, StringComparison.Ordinal);
         Assert.Contains("  # About the dependency.\n", today.Text, StringComparison.Ordinal);
         Assert.DoesNotContain("# About", fbl, StringComparison.Ordinal);
         Assert.EndsWith("    to: bbb\n    # About its label.\n", todayLabel.Text, StringComparison.Ordinal);
         Assert.EndsWith("    to: bbb\n", fblLabel, StringComparison.Ordinal);
+        Assert.Equal(fbl, module);
+        Assert.Equal(fblLabel, moduleLabel);
     }
 
     [Fact]
-    public void B11_RemovingTheSecondHolder_TakesTheFirstHoldersDependencies_OnlyToday()
+    public void B11_RemovingTheSecondHolder_TookTheFirstHoldersDependencies_OnlyInTheOldWriter()
     {
         // Arrange and act.
         var today = TodayAfter("inline/b11-holders-and-an-anonymous-node", (document, model) => DependencyGraphWriter.RemoveElement(document, model, model.Elements[2]));
@@ -165,7 +186,7 @@ public class DependencyGraphDraftedBindingTests
     }
 
     [Fact]
-    public void B11_RemovingANodeWithNoId_TakesTheDependenciesWithAnEndNotWritten_OnlyToday()
+    public void B11_RemovingANodeWithNoId_TookTheDependenciesWithAnEndNotWritten_OnlyInTheOldWriter()
     {
         // Arrange and act.
         var today = TodayAfter("inline/b11-holders-and-an-anonymous-node", (document, model) => DependencyGraphWriter.RemoveElement(document, model, model.Elements[3]));
@@ -179,7 +200,7 @@ public class DependencyGraphDraftedBindingTests
     }
 
     [Fact]
-    public void B14_AKeyOnTheDashLineWithAWideGap_IsFoundOnlyThroughFbl()
+    public void B14_AKeyOnTheDashLineWithAWideGap_WasNotFoundByTheOldWriter()
     {
         // Arrange and act.
         var today = TodayAfter("inline/b14-wide-dash-gap-and-nested-key", (document, model) => DependencyGraphWriter.SetLabel(document, model.Elements[0], "Parity: renamed"));
@@ -218,21 +239,25 @@ public class DependencyGraphDraftedBindingTests
     }
 
     [Fact]
-    public void B17_AnXIsWrittenInAnotherForm()
+    public async Task B17_AnXIsWrittenInFblsForm_ThroughFblAndTheModule()
     {
         // Arrange and act.
         var todaySmall = TodayAfter("inline/b17-x-written-small-and-large", (document, model) => DependencyGraphWriter.SetX(document, model.Elements[0], 0.00001));
         var fblSmall = FblAfter("inline/b17-x-written-small-and-large", new ModelChange.Set("aaa", new Dictionary<string, object?> { ["x"] = 0.00001 }));
         var todayLarge = TodayAfter("inline/b17-x-written-small-and-large", (document, model) => DependencyGraphWriter.SetX(document, model.Elements[0], 1e21));
         var fblLarge = FblAfter("inline/b17-x-written-small-and-large", new ModelChange.Set("aaa", new Dictionary<string, object?> { ["x"] = 1e21 }));
+        var moduleSmall = await ModuleAfter("inline/b17-x-written-small-and-large", path => new SetDependencyGraphPlacementCommand(path, "aaa", 0.00001, 0));
+        var moduleLarge = await ModuleAfter("inline/b17-x-written-small-and-large", path => new SetDependencyGraphPlacementCommand(path, "aaa", 1e21, 0));
 
-        // Assert: today the writer's form, which rounds 0.00001 to 0 and writes 1e21 in full, not .NET's 1E-05 and
-        // 1E+21 as the finding reads; FBL's ECMAScript form. Which is right is Q1's (finding B17, whose wording is with
-        // the owner).
+        // Assert: the old writer (the oracle) rounded to four decimals, so 0.00001 became 0, and wrote 1e21 in full; FBL
+        // writes ECMAScript's form, and since task 8 the module writes through it, as Q1 rules (finding B17, as the owner
+        // reworded it).
         Assert.Contains("    x: 0\n", todaySmall.Text, StringComparison.Ordinal);
         Assert.Contains("    x: 0.00001\n", fblSmall, StringComparison.Ordinal);
         Assert.Contains("    x: 1000000000000000000000\n", todayLarge.Text, StringComparison.Ordinal);
         Assert.Contains("    x: 1e+21\n", fblLarge, StringComparison.Ordinal);
+        Assert.Contains("    x: 0.00001\n", moduleSmall, StringComparison.Ordinal);
+        Assert.Contains("    x: 1e+21\n", moduleLarge, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -292,6 +317,25 @@ public class DependencyGraphDraftedBindingTests
         var document = LineDocument.Parse(Text(name));
         edit(document, DependencyGraphParser.Parse(document));
         return (document.Text, DependencyGraphParser.Outcome(LineDocument.Parse(document.Text)).IsUsable);
+    }
+
+    /// <summary>The text after the module's own command ran on <paramref name="name"/>, as a file, through the module's handler.</summary>
+    private static async Task<string> ModuleAfter(string name, Func<string, ICommand> command)
+    {
+        var folder = IoPath.Combine(IoPath.GetTempPath(), "adp-dgr-drafted-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(folder);
+        try
+        {
+            var path = IoPath.Combine(folder, "body.dgr");
+            await File.WriteAllTextAsync(path, Text(name), TestContext.Current.CancellationToken);
+            var result = await new DependencyGraphTestDispatcher(new DependencyGraphDocumentStore()).DispatchAsync(command(path), TestContext.Current.CancellationToken);
+            Assert.True(result.IsSuccess, result.Error);
+            return await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken);
+        }
+        finally
+        {
+            TestFolder.TryDelete(folder);
+        }
     }
 
     private static OpenBody Fbl(string name) => OpenBody.Open(Encoding.UTF8.GetBytes(Text(name)), DependencyGraphBody.Binding);

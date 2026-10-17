@@ -1,10 +1,10 @@
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
+using EtAlii.Adp.Specification.Disl;
 
 namespace EtAlii.Adp.Diagram.DependencyGraph.Tests;
 
 /// <summary>What every handler does with a save, through the shared contract (code-structure FR-022).</summary>
-public sealed class DependencyGraphCommandHandlersTests : EditHandlerContract<IDependencyGraphDocumentStore, LineDocument, DependencyGraphModel>
+public sealed class DependencyGraphCommandHandlersTests : EditHandlerContract<IDependencyGraphDocumentStore, DependencyGraphBody, DislModel>
 {
     protected override string Example => DependencyGraphDocumentStoreTests.Simple;
 
@@ -19,5 +19,5 @@ public sealed class DependencyGraphCommandHandlersTests : EditHandlerContract<ID
     protected override ICommand EditOfMissing(string bodyPath) => new RenameDependencyGraphElementCommand(bodyPath, "gone0000", "Edge proxy");
 
     private sealed class WarningStore(IDependencyGraphDocumentStore inner, string warning)
-        : WarningDocumentStore<LineDocument, DependencyGraphModel>(inner, warning), IDependencyGraphDocumentStore;
+        : WarningDocumentStore<DependencyGraphBody, DislModel>(inner, warning), IDependencyGraphDocumentStore;
 }

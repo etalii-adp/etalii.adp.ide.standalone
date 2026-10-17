@@ -1,3 +1,4 @@
+using EtAlii.Adp.Specification.Disl;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.DependencyGraph.Tests;
@@ -9,7 +10,7 @@ public class DependencyGraphElementMapperTests
 {
     private readonly DependencyGraphElementMapper _mapper = new();
 
-    private static DependencyGraphBody Parse(string yaml) => DependencyGraphBody.Parse(yaml);
+    private static DislModel Parse(string yaml) => DependencyGraphBody.Parse(yaml).Disl;
 
     private const string TwoNodesAndARelation = """
         dependencies: 1

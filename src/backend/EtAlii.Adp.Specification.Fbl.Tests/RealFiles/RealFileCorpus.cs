@@ -29,17 +29,6 @@ internal static class RealFileCorpus
         new("databricks-pipeline", "databricks-pipeline.fbl", "settings", 2, (path, bytes) => Extension(path, ".json") && Contains(bytes, "\"libraries\"")),
     ];
 
-    /// <summary>
-    /// The bindings a module owns and etalii.adp does not hold yet, each named by its path from the repository root, and
-    /// the files each claims. Only the module cross-check reads them; the declared-body properties are asked of the
-    /// vendored bindings above.
-    /// </summary>
-    public static readonly IReadOnlyList<CorpusBinding> ModuleOwned =
-    [
-        // dependency-graph-disl-fbl, task 7: the module's embedded binding, until task 9 offers it to etalii.adp.
-        new("dependency-graph", "src/diagrams/dependency-graph/backend/EtAlii.Adp.Diagram.DependencyGraph/dependency-graph.fbl", "dgr", 13, (path, _) => Extension(path, ".dgr")),
-    ];
-
     /// <summary>Registrations: every <c>.adp</c> under <c>src/</c>.</summary>
     public const int MinimumRegistrations = 181;
 
@@ -58,7 +47,7 @@ internal static class RealFileCorpus
 
     public static string FullPath(string relative) => Path.Combine(Repository.Root, relative.Replace('/', Path.DirectorySeparatorChar));
 
-    public static CorpusBinding Find(string key) => Declared.Concat(ModuleOwned).Single(b => b.Key == key);
+    public static CorpusBinding Find(string key) => Declared.Single(b => b.Key == key);
 
     /// <summary>The files a declared binding takes.</summary>
     public static IReadOnlyList<string> Files(CorpusBinding binding) =>

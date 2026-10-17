@@ -1,26 +1,17 @@
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
+using EtAlii.Adp.Specification.Disl;
 
 namespace EtAlii.Adp.Diagram.DependencyGraph;
 
 /// <summary>
-/// Carries out a removal. The inverse is a byte-exact restore of the removed lines, captured
-/// before anything is spliced - not a re-creation from the model, which would lose the comments
-/// and formatting the author had inside the removed block.
+/// Carries out a removal: the node, and with it every dependency whose end resolves to it, as the binding's
+/// cascade takes them (a dependency naming the node's id that resolves to an earlier holder stays). One undo
+/// step, the host's restore, puts them all back.
 /// </summary>
 public sealed class RemoveDependencyGraphElementCommandHandler(IDependencyGraphDocumentStore documents)
     : DependencyGraphEditHandler<RemoveDependencyGraphElementCommand>(documents)
 {
     /// <inheritdoc />
-    protected override EditOutcome Apply(LineDocument body, DependencyGraphModel model, RemoveDependencyGraphElementCommand command)
-    {
-        var element = DependencyGraphEdits.ElementOf(model, command.ElementId);
-        if (element is null)
-        {
-            return EditOutcome.Refused("That node is no longer in this graph.");
-        }
-
-        DependencyGraphWriter.RemoveElement(body, model, element);
-        return EditOutcome.Applied;
-    }
+    protected override EditOutcome Apply(DependencyGraphBody body, DislModel model, RemoveDependencyGraphElementCommand command) =>
+        DependencyGraphEdits.Remove(body, DependencyGraphEdits.Node, command.ElementId, "That node is no longer in this graph.");
 }

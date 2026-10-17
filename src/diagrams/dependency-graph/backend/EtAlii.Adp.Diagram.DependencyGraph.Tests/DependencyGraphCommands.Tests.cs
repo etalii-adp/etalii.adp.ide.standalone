@@ -325,7 +325,7 @@ public class DependencyGraphCommandsTests : IDisposable
         await History.ExecuteAsync(new DisconnectDependencyGraphRelationCommand(path, "ccc"), TestContext.Current.CancellationToken);
         var afterDisconnect = _store.GetOrLoad(path).Model.Relations.Count;
         await History.UndoAsync(TestContext.Current.CancellationToken);
-        var restored = DependencyGraphEdits.RelationOf(_store.GetOrLoad(path).Model, "ccc");
+        var restored = _store.GetOrLoad(path).Model.Relations.FirstOrDefault(relation => relation.Id == "ccc");
 
         // Assert.
         Assert.Equal(0, afterDisconnect);
