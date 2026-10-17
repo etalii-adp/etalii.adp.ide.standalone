@@ -34,7 +34,7 @@ public class DependencyGraphDraftedBindingTests
     public void A4_TheSecondHolderOfAnId_IsAddressedByItsPlace_AndFoundByTheStoredId()
     {
         // Arrange and act.
-        var today = Today("inline/a4-id-held-twice").Elements.Select(element => element.Id);
+        var today = Today("inline/a4-id-held-twice").Elements.Select(element => element.Id).ToList();
         var fbl = Fbl("inline/a4-id-held-twice").Model;
         var diagram = DependencyGraphBody.Parse(Text("inline/a4-id-held-twice")).Disl.Diagram;
 
