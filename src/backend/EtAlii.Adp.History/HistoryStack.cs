@@ -38,13 +38,13 @@ public sealed class HistoryStack : IHistoryStack, IDisposable
     private bool _isDisposed;
 
     private readonly string _rootPath;
-    private readonly IContextNoticeSink? _notices;
+    private readonly ICommandNoticeSink? _notices;
 
     public HistoryStack(
         ICommandDispatcher dispatcher,
         int capacity = DefaultCapacity,
         string rootPath = "",
-        IContextNoticeSink? notices = null)
+        ICommandNoticeSink? notices = null)
     {
         ArgumentNullException.ThrowIfNull(dispatcher);
         ArgumentOutOfRangeException.ThrowIfLessThan(capacity, 1);
