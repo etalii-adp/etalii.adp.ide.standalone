@@ -50,3 +50,26 @@ at which point these tests would be measuring git rather than the writer.
 
 That entry is a prerequisite for this corpus, not a detail. If a round-trip test starts failing
 in a way that makes no sense, check that the attribute is still there before suspecting the code.
+
+## The documents of the parity corpus, one per finding
+
+The parity transcript also records the inline documents of `Parity/DependencyGraphCorpus.cs`. Those
+added by dependency-graph-disl-fbl task 1 hold one finding each that the specification's requirements
+mark Read, and one for the change Q2 names; none of their bytes is about line endings or a final
+newline, so none is a file here. Each is recorded as today's code answers it, crash and broken body
+included.
+
+| Document | Finding | What it holds |
+| --- | --- | --- |
+| `inline/a4-id-held-twice` | A4 | Two holders of `aaa`, a menu and a row asked by that id. |
+| `inline/b1-scalars-as-written` | B1 | `id: 007` and `id: 7`, labels `1.0`, `true` and `~`, an end `0x1F`. |
+| `inline/b2-numbers-read-otherwise` | B2 | X written `0x10`, `.inf`, `Infinity` and `NaN`, beside the three of `inline/unreadable-values`. |
+| `inline/b6-empty-list-with-comment`, `inline/b6-empty-list-spaced` | B6 | `elements: []` with a comment after it, and `elements: [ ]`; the first node added to each. |
+| `inline/b7-value-styles` | B7 | A label in the author's quotes with a trailing comment, an X with an anchor and an alias to it, a block-scalar label, and labels written `123` and `true`. |
+| `inline/b9-entries-indented-apart` | B9 | Entries with dash gaps of one and three, and a list indented by nothing. |
+| `inline/b10-comments-above` | B10 | A comment directly above an entry and above a `label` line, for a node and a dependency. |
+| `inline/b11-holders-and-an-anonymous-node` | B11 | Two holders of one id, each with a dependency, and a node with no id. |
+| `inline/b14-wide-dash-gap-and-nested-key` | B14 | `-   label: A`, and a dependency with a nested key of the same name before its own. |
+| `inline/b16-merge-key-and-flow-entry` | B16 | A `row` given through a merge key, and a node and a dependency written as flow mappings. |
+| `inline/b17-x-written-small-and-large` | B17 | X written as `0.00001` and `1e21`. |
+| `inline/q2-repeated-key` | Q2 | A node that says `label:` twice. |

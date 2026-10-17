@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
@@ -36,7 +37,7 @@ namespace EtAlii.Adp.Diagram.DependencyGraph.Tests.Parity;
 /// <see cref="ShortGuid"/>, which the transcript writes as <c>{minted-N}</c> in order of minting.
 /// </para>
 /// </remarks>
-internal static class DependencyGraphTranscript
+internal static partial class DependencyGraphTranscript
 {
     /// <summary>The checked-in file's name, in this project's <c>Parity</c> folder.</summary>
     private const string FileName = "dependency-graph.transcript.json";
@@ -131,7 +132,7 @@ internal static class DependencyGraphTranscript
             await File.WriteAllBytesAsync(body, bytes, cancellationToken);
             using var session = new Session(folder, body);
             await WriteReadingsAsync(json, session, bytes, cancellationToken);
-            await WriteEditsAsync(json, session, cancellationToken);
+            await WriteEditsAsync(json, name, session, cancellationToken);
         }
         finally
         {
@@ -264,7 +265,7 @@ internal static class DependencyGraphTranscript
     /// move, each run through the real history on a copy of the document, in an order that reaches
     /// refusals too.
     /// </summary>
-    private static async Task WriteEditsAsync(Utf8JsonWriter json, Session session, CancellationToken cancellationToken)
+    private static async Task WriteEditsAsync(Utf8JsonWriter json, string name, Session session, CancellationToken cancellationToken)
     {
         var script = new Script(json, session, cancellationToken);
         var original = await script.StartAsync();
@@ -313,6 +314,15 @@ internal static class DependencyGraphTranscript
             await script.ExecuteAsync(relation, DependencyGraphContextActionProvider.DisconnectActionId);
         }
 
+        if (node is not null && Written.TryGetValue(name, out var written))
+        {
+            // The values a finding is about, written where the general script writes others.
+            foreach ((string property, string value) in written)
+            {
+                await script.SetAsync(node, property, value);
+            }
+        }
+
         await script.ExecuteAsync(GestureIds.RowPlacement(480.25, -1), DependencyGraphContextActionProvider.AddElementActionId);
         await script.ExecuteAsync("", DependencyGraphContextActionProvider.AddElementActionId);
         await script.CommitAsync("", DependencyGraphContextActionProvider.AddElementActionId, "");
@@ -333,6 +343,17 @@ internal static class DependencyGraphTranscript
 
         await script.EndAsync(original);
     }
+
+    /// <summary>
+    /// The values a document's first node is also given, by document: what the finding it was added for is about, where the
+    /// general script writes other values (dependency-graph-disl-fbl, task 1). B7: a label that would read as another type;
+    /// B17: an X written in .NET's form where FBL writes ECMAScript's.
+    /// </summary>
+    private static readonly IReadOnlyDictionary<string, (string Property, string Value)[]> Written = new Dictionary<string, (string, string)[]>(StringComparer.Ordinal)
+    {
+        ["inline/b7-value-styles"] = [(DependencyGraphContextPropertyProvider.LabelProperty, "123"), (DependencyGraphContextPropertyProvider.LabelProperty, "true")],
+        ["inline/b17-x-written-small-and-large"] = [(DependencyGraphContextPropertyProvider.XProperty, "0.00001"), (DependencyGraphContextPropertyProvider.XProperty, "1e21")],
+    };
 
     /// <summary>One document's store, history and providers, readable and read-only.</summary>
     private sealed class Session : IDisposable
@@ -394,7 +415,7 @@ internal static class DependencyGraphTranscript
     }
 
     /// <summary>Runs the steps of one document's edit sequence and writes each as it goes.</summary>
-    private sealed class Script(Utf8JsonWriter json, Session session, CancellationToken cancellationToken)
+    private sealed partial class Script(Utf8JsonWriter json, Session session, CancellationToken cancellationToken)
     {
         private readonly Dictionary<string, string> _minted = new(StringComparer.Ordinal);
         private string _text = "";
@@ -489,6 +510,12 @@ internal static class DependencyGraphTranscript
                 _minted[id] = $"{{minted-{_minted.Count + 1}}}";
             }
 
+            // An action that leaves a body the module cannot read still wrote the id it minted: found in the text instead.
+            foreach (var id in MintedId().Matches(after).Select(match => match.Value).Where(id => !_text.Contains(id, StringComparison.Ordinal) && !_minted.ContainsKey(id)))
+            {
+                _minted[id] = $"{{minted-{_minted.Count + 1}}}";
+            }
+
             json.WriteStartObject();
             json.WriteString("do", step);
             json.WriteString("answer", Mask(answer));
@@ -499,6 +526,10 @@ internal static class DependencyGraphTranscript
 
         private async Task<string> ReadAsync() =>
             File.Exists(session.Body) ? TranscriptText.Decode(await File.ReadAllBytesAsync(session.Body, cancellationToken)) : "";
+
+        /// <summary>A minted id as an action writes it: a <see cref="ShortGuid"/>, after <c>id:</c>.</summary>
+        [GeneratedRegex(@"(?<=\bid: )[0-9a-z]{25}\b", RegexOptions.CultureInvariant)]
+        private static partial Regex MintedId();
 
         private string Mask(string text) =>
             _minted.Aggregate(text, (masked, entry) => masked.Replace(entry.Key, entry.Value, StringComparison.Ordinal));
