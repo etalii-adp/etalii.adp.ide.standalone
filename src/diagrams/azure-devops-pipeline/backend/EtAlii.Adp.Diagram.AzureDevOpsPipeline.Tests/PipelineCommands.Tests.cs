@@ -94,6 +94,7 @@ public class PipelineCommandsTests : IDisposable
         RemovePipelineElementCommand remove => await new RemovePipelineElementCommandHandler(_store).ExecuteAsync(remove),
         RestorePipelineLinesCommand restore => await new RestorePipelineLinesCommandHandler(_store).ExecuteAsync(restore),
         MovePipelineStepCommand move => await new MovePipelineStepCommandHandler(_store).ExecuteAsync(move),
+        RestoreDocumentCommand<IPipelineDocumentStore> text => await new RestoreDocumentCommandHandler<IPipelineDocumentStore>(_store).ExecuteAsync(text),
         _ => throw new InvalidOperationException($"No handler for {inverse.GetType().Name} in this test."),
     };
 
@@ -463,6 +464,33 @@ public class PipelineCommandsTests : IDisposable
 
         // Assert.
         Assert.Equal(before, Text(path));
+    }
+
+    [Theory]
+    [InlineData("Test", "the stage")]
+    [InlineData("Build/Lint", "the job")]
+    [InlineData("Build/Compile/step-1", "the step")]
+    public async Task ARemovalFollowedByBlankLines_IsUndoneByteForByte_AndRedoneOnTheSameElement(string elementId, string what)
+    {
+        // Arrange: finding B9. Each element has a blank line before it and blank lines after it,
+        // which the removal takes with it; the undo must give them back, and the redo must find
+        // the element again by the id it had.
+        var path = Write(await File.ReadAllTextAsync(IoPath.Combine("Fixtures", "blank-lines-after.yml"), TestContext.Current.CancellationToken));
+        var original = Text(path);
+
+        // Act.
+        var removed = await Remove(path, elementId);
+        var withoutIt = Text(path);
+        var undone = await UndoAsync(removed.Inverse!);
+        var restored = Text(path);
+        var redone = undone.Inverse is { } redo ? await UndoAsync(redo) : null;
+
+        // Assert.
+        Assert.True(removed.IsSuccess, removed.Error);
+        Assert.True(undone.IsSuccess, undone.Error);
+        Assert.Equal(original, restored);
+        Assert.True(redone is { IsSuccess: true }, $"The redo of removing {what} was {(redone is null ? "lost" : redone.Error)}.");
+        Assert.Equal(withoutIt, Text(path));
     }
 
     [Fact]

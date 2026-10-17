@@ -47,6 +47,7 @@ because it would make the round-trip test a test of ADP's own idea of YAML.
 | `edge-tied-endings.yml` | As many LF endings as CRLF, so neither is the majority and the tie rule alone decides which ending a newly inserted line takes: CRLF, core's rule, where this module's own document once chose LF (backend-centralization Requirement 1.2). |
 | `edge-broken-graph.yml` | Deliberately wrong, so the validator has something real to catch: a dangling `dependsOn`, a two-stage cycle, and a stage nothing can reach (Requirements 10.2–10.4). It is **not** expected to be a valid pipeline; it is expected to round-trip byte-identically anyway, because a broken pipeline is exactly when a user needs ADP not to make it worse. |
 | `block-scalar-step.yml` | Two steps that open with a block scalar, a literal one with a blank line in it and a folded one followed by `condition`, and neither with a `displayName`: a key the writer adds goes after the whole script and before the next key, never between the bar and the script (finding B8 of `azure-devops-pipeline-disl-fbl`). |
+| `blank-lines-after.yml` | A stage, a job and a step, each with a blank line before it and blank lines after it, which removing it takes along: the undo gives them back byte for byte and the redo removes the same element (finding B9 of `azure-devops-pipeline-disl-fbl`, which does not occur on `develop`). |
 
 ## What a fixture is not for
 
