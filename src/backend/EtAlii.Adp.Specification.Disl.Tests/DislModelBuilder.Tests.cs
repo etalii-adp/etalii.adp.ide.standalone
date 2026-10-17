@@ -314,6 +314,84 @@ public class DislModelBuilderTests
         Assert.Equal(DislModelBuilder.DerivedFailed, finding.Code);
         Assert.Empty(diagram.Relations);
     }
+
+    // ---- the expression form of a derived relation (§4.9) -------------------------------------
+
+    private static readonly DislSpecification ExpressionForm = Specifications.Loaded(Specifications.With("""
+        "metamodel": {
+          "types": {
+            "Thing": { "attributes": { "name": { "type": "string" } } },
+            "Other": { "attributes": { "name": { "type": "string" } } } },
+          "relations": {
+            "Next": { "source": "Thing", "target": "Thing",
+              "attributes": { "isImplicit": { "type": "bool", "default": false } },
+              "derived": "cel.bind(t, diagram.nodes, lists.range(t.size()).filter(i, i > 0).map(i, {'source': t[i - 1], 'target': t[i], 'isImplicit': true, 'unknown': 1}))" },
+            "Named": { "source": "Thing", "target": "Thing",
+              "derived": "diagram.nodesOfType('Thing').map(n, {'source': n, 'target': n, 'id': 'named:' + n.name})" } } }
+        """));
+
+    [Fact]
+    public void ADerivedRelationInTheExpressionForm_YieldsOneRelationPerMap()
+    {
+        // DISL 4.9: an Expression returning a list of maps, each with source and target; a key naming
+        // an attribute gives its value, and the default id is <Type>:<source.id>-><target.id>, with #2,
+        // #3 for repeats. Before this was computed, a definition in this form derived nothing at all, and
+        // said nothing either.
+        var diagram = new DislDiagram(ExpressionForm);
+        diagram.AddNode("Thing", "a", new Dictionary<string, object?> { ["name"] = "a" });
+        diagram.AddNode("Thing", "b", new Dictionary<string, object?> { ["name"] = "b" });
+        diagram.AddNode("Thing", "a", new Dictionary<string, object?> { ["name"] = "c" });
+        diagram.AddNode("Other", "o", new Dictionary<string, object?> { ["name"] = "o" });
+
+        var findings = DislModelBuilder.Complete(diagram);
+
+        Assert.Equal(
+            ["Next:a->b", "Next:b->a", "named:a", "named:b", "named:c"],
+            diagram.Relations.Select(relation => relation.Id));
+        Assert.Equal(
+            ["std.derivedEnds: 1 item(s) of Next were dropped: their target is not one its declaration allows."],
+            findings.Select(finding => finding.ToString()));
+        Assert.All(diagram.Relations, relation => Assert.True(relation is { IsDerived: true, IdIsStored: false }));
+        Assert.All(diagram.Relations.Where(relation => relation.IsA("Next")), relation => Assert.Equal(true, relation.ValueOf("isImplicit")));
+        Assert.Same(diagram.Nodes[0], diagram.Relations[0].Source);
+        Assert.Same(diagram.Nodes[1], diagram.Relations[0].Target);
+    }
+
+    [Fact]
+    public void ADerivedRelationInTheExpressionForm_NumbersARepeatedDefaultId()
+    {
+        var specification = Specifications.Loaded(Specifications.With("""
+            "metamodel": {
+              "types": { "Thing": { "attributes": { "name": { "type": "string" } } } },
+              "relations": { "Twice": { "source": "Thing", "target": "Thing",
+                "derived": "diagram.nodes.map(n, {'source': n, 'target': n}) + diagram.nodes.map(n, {'source': n, 'target': n})" } } }
+            """));
+        var diagram = new DislDiagram(specification);
+        diagram.AddNode("Thing", "t");
+
+        Assert.Empty(DislModelBuilder.Complete(diagram));
+
+        Assert.Equal(["Twice:t->t", "Twice:t->t#2"], diagram.Relations.Select(relation => relation.Id));
+    }
+
+    [Fact]
+    public void ADerivedRelationInTheExpressionForm_ThatFailsOrGivesNoMaps_DerivesNothingAndSaysSo()
+    {
+        var specification = Specifications.Loaded(Specifications.With("""
+            "metamodel": {
+              "types": { "Thing": { "attributes": { "name": { "type": "string" } } } },
+              "relations": {
+                "Broken": { "source": "Thing", "target": "Thing", "derived": "diagram.nodes.map(n, 1 / 0)" },
+                "Plain": { "source": "Thing", "target": "Thing", "derived": "diagram.nodes.map(n, {'source': n})" } } }
+            """));
+        var diagram = new DislDiagram(specification);
+        diagram.AddNode("Thing", "t");
+
+        var findings = DislModelBuilder.Complete(diagram);
+
+        Assert.Empty(diagram.Relations);
+        Assert.Equal([DislModelBuilder.DerivedFailed, DislModelBuilder.DerivedFailed], findings.Select(finding => finding.Code));
+    }
 }
 
 /// <summary>A folder plugin that reads each file as one <c>Item</c> in that file, and links the first to every other from the other's file.</summary>

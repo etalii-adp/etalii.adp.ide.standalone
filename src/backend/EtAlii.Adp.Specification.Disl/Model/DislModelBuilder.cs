@@ -238,8 +238,14 @@ public static class DislModelBuilder
         var specification = diagram.Specification;
         foreach (var type in specification.Metamodel.Relations.Values)
         {
-            if (type.Derived is not { ValueKind: JsonValueKind.Object } derived) continue;
             var pointer = DislJson.Pointer(DislJson.Pointer("/metamodel/relations", type.Name), "derived");
+            if (type.Derived is { ValueKind: JsonValueKind.String })
+            {
+                ExpressionForm(diagram, type, pointer, findings);
+                continue;
+            }
+
+            if (type.Derived is not { ValueKind: JsonValueKind.Object } derived) continue;
             if (derived.TryGetProperty("key", out _))
             {
                 findings.Add(new Finding(DerivedFailed, FindingSeverity.Warning, $"{type.Name} groups its items by key, which this runtime does not compute yet.", null));
@@ -330,6 +336,97 @@ public static class DislModelBuilder
             {
                 findings.Add(new Finding(DerivedEnds, FindingSeverity.Warning, $"{count} item(s) of {type.Name} were dropped: their {end} is not one its declaration allows.", null));
             }
+        }
+    }
+
+    /// <summary>
+    /// A derived relation type in the expression form (§4.9): an Expression in the <c>derive</c> context
+    /// returning a list of maps, each with <c>source</c> and <c>target</c>, yielding one relation. A key
+    /// naming an attribute of the type gives that attribute's value, <c>id</c> and <c>sources</c> mean
+    /// what they mean in the object form, and any other key is ignored; without an <c>id</c> the id is
+    /// <c>&lt;Type&gt;:&lt;source.id&gt;-&gt;&lt;target.id&gt;</c>, with <c>#2</c>, <c>#3</c> for repeats.
+    /// </summary>
+    private static void ExpressionForm(DislDiagram diagram, DislType type, string pointer, List<Finding> findings)
+    {
+        var variables = new Dictionary<string, object?> { ["diagram"] = diagram, ["env"] = null };
+        if (Evaluate(diagram.Specification, pointer, variables) is not IReadOnlyList<object?> items)
+        {
+            findings.Add(new Finding(DerivedFailed, FindingSeverity.Warning, $"The items of {type.Name} could not be computed, so there are none.", null));
+            return;
+        }
+
+        var failures = new HashSet<string>(StringComparer.Ordinal);
+        var badEnds = new Dictionary<string, int>(StringComparer.Ordinal);
+        var repeats = new Dictionary<string, int>(StringComparer.Ordinal);
+        foreach (var item in items)
+        {
+            if (item is not IReadOnlyDictionary<string, object?> map || !map.ContainsKey("source") || !map.ContainsKey("target"))
+            {
+                failures.Add("an item is not a map with a source and a target");
+                continue;
+            }
+
+            if (!Allows(type.Source, map["source"])) { badEnds["source"] = badEnds.GetValueOrDefault("source") + 1; continue; }
+            if (!Allows(type.Target, map["target"])) { badEnds["target"] = badEnds.GetValueOrDefault("target") + 1; continue; }
+            var from = (DislElement)map["source"]!;
+            var to = (DislElement)map["target"]!;
+
+            string id;
+            if (map.TryGetValue("id", out var written))
+            {
+                if (written is not string text)
+                {
+                    failures.Add("the id of an item is not a string");
+                    continue;
+                }
+                id = text;
+            }
+            else
+            {
+                var plain = $"{type.Name}:{from.Id}->{to.Id}";
+                var seen = repeats[plain] = repeats.GetValueOrDefault(plain) + 1;
+                id = seen == 1 ? plain : $"{plain}#{seen}";
+            }
+
+            IReadOnlyList<DislElement> sources = [];
+            if (map.TryGetValue("sources", out var listed))
+            {
+                if (listed is not IReadOnlyList<object?> list)
+                {
+                    failures.Add("the sources of an item are not a list");
+                    continue;
+                }
+                sources = [.. list.OfType<DislElement>()];
+            }
+
+            var attributes = map
+                .Where(entry => type.Attributes.ContainsKey(entry.Key))
+                .ToDictionary(entry => entry.Key, entry => entry.Value, StringComparer.Ordinal);
+
+            if (diagram.ElementById(id) is { } taken)
+            {
+                findings.Add(new Finding(DerivedId, FindingSeverity.Warning, $"{type.Name} '{id}' has the id of {taken}; it is not drawn.", null));
+                continue;
+            }
+            diagram.Add(new DislElement(diagram, type, id, attributes)
+            {
+                Source = from,
+                Target = to,
+                SourceId = from.Id,
+                TargetId = to.Id,
+                IsDerived = true,
+                Sources = sources,
+                IdIsStored = false,
+            });
+        }
+
+        foreach (var failure in failures)
+        {
+            findings.Add(new Finding(DerivedFailed, FindingSeverity.Warning, $"Items of {type.Name} were dropped: {failure}", null));
+        }
+        foreach ((string end, int count) in badEnds)
+        {
+            findings.Add(new Finding(DerivedEnds, FindingSeverity.Warning, $"{count} item(s) of {type.Name} were dropped: their {end} is not one its declaration allows.", null));
         }
     }
 
