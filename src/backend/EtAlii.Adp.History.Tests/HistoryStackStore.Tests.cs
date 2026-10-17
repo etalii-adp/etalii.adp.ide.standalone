@@ -44,15 +44,29 @@ public class HistoryStackStoreTests
     }
 
     [Fact]
-    public void Get_IsCaseInsensitiveOnTheKey()
+    public void Get_ComparesTheKeyAsTheFileSystemComparesNames()
     {
         // Arrange and act.
-        // Two connections that opened the same folder differently-cased share one history.
+        // Two connections that opened one folder differently-cased share one history where the
+        // file system ignores case; on Linux the two spellings are two folders, with a history
+        // each (code-structure FR-059, behaviour change B-10).
+        using var store = new HistoryStackStore(new HistoryStackStoreStubDispatcher());
+        var path = TempPath();
+        var namesIgnoreCase = OperatingSystem.IsWindows() || OperatingSystem.IsMacOS();
+
+        // Assert.
+        Assert.Equal(namesIgnoreCase, ReferenceEquals(store.Get(path.ToUpperInvariant()), store.Get(path.ToLowerInvariant())));
+    }
+
+    [Fact]
+    public void Get_WithATrailingSeparator_IsTheSameProject()
+    {
+        // Arrange and act.
         using var store = new HistoryStackStore(new HistoryStackStoreStubDispatcher());
         var path = TempPath();
 
         // Assert.
-        Assert.Same(store.Get(path.ToUpperInvariant()), store.Get(path.ToLowerInvariant()));
+        Assert.Same(store.Get(path), store.Get(path + IoPath.DirectorySeparatorChar));
     }
 
     [Fact]

@@ -18,8 +18,8 @@ public sealed class StartupRevalidation : IHostedService
     private readonly IProblemStore _store;
     private readonly ProjectValidator _validator;
     private readonly Lock _gate = new();
-    private readonly List<string> _queue = [];
-    private readonly HashSet<string> _seen = new(StringComparer.OrdinalIgnoreCase);
+    private readonly List<ProjectRoot> _queue = [];
+    private readonly HashSet<ProjectRoot> _seen = [];
     private readonly CancellationTokenSource _stopping = new();
     private bool _started;
     private bool _running;
@@ -39,7 +39,7 @@ public sealed class StartupRevalidation : IHostedService
     {
         lock (_gate)
         {
-            foreach (var root in _store.KnownRoots())
+            foreach (var root in _store.KnownRoots().Select(ProjectRoot.From))
             {
                 if (_seen.Add(root))
                 {
@@ -73,7 +73,7 @@ public sealed class StartupRevalidation : IHostedService
     public void Prioritize(string rootPath)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(rootPath);
-        var root = Path.GetFullPath(rootPath);
+        var root = ProjectRoot.From(rootPath);
         lock (_gate)
         {
             if (_seen.Add(root))
@@ -88,7 +88,7 @@ public sealed class StartupRevalidation : IHostedService
                 }
                 return;
             }
-            var index = _queue.FindIndex(queued => string.Equals(queued, root, StringComparison.OrdinalIgnoreCase));
+            var index = _queue.IndexOf(root);
             if (index > 0)
             {
                 _queue.RemoveAt(index);
@@ -120,7 +120,7 @@ public sealed class StartupRevalidation : IHostedService
                     _running = false;
                     return;
                 }
-                root = _queue[0];
+                root = _queue[0].FullPath;
                 _queue.RemoveAt(0);
             }
 

@@ -33,11 +33,11 @@ public sealed class DiagramDocumentReloadBridge : IDisposable
     // dispose - so that two Opens never subscribe twice for one root.
     private readonly ConcurrentDictionary<string, TrackedDocument> _documents = new(StringComparer.OrdinalIgnoreCase);
     private readonly ConcurrentDictionary<string, string> _registrations = new(StringComparer.OrdinalIgnoreCase);
-    private readonly ConcurrentDictionary<string, IDisposable> _subscriptions = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ConcurrentDictionary<ProjectRoot, IDisposable> _subscriptions = new();
     private readonly Lock _subscriptionLock = new();
     private bool _disposed;
 
-    private sealed record TrackedDocument(string RootPath, string BodyPath, IDiagramDocumentReloader Reloader);
+    private sealed record TrackedDocument(ProjectRoot Root, string BodyPath, IDiagramDocumentReloader Reloader);
 
     public DiagramDocumentReloadBridge(IEnumerable<IDiagramDocumentReloader> reloaders, ProjectFileEvents events)
     {
@@ -64,20 +64,21 @@ public sealed class DiagramDocumentReloadBridge : IDisposable
         }
 
         // ReSharper disable once InconsistentlySynchronizedField - Reason: one atomic ConcurrentDictionary write; _subscriptionLock serializes subscribing and unsubscribing, not the tracked set.
-        _documents[bodyPath] = new TrackedDocument(rootPath, bodyPath, reloader);
+        var root = ProjectRoot.From(rootPath);
+        _documents[bodyPath] = new TrackedDocument(root, bodyPath, reloader);
         if (registrationPath is { Length: > 0 })
         {
             // ReSharper disable once InconsistentlySynchronizedField - Reason: one atomic ConcurrentDictionary write; _subscriptionLock serializes subscribing and unsubscribing, not the tracked set.
             _registrations[registrationPath] = bodyPath;
         }
 
-        EnsureWatching(rootPath);
+        EnsureWatching(root);
     }
 
-    private void EnsureWatching(string rootPath)
+    private void EnsureWatching(ProjectRoot root)
     {
         // ReSharper disable once InconsistentlySynchronizedField - Reason: an atomic ConcurrentDictionary read as a fast path; a miss is decided again under _subscriptionLock below, and a hit orders before any concurrent replace or dispose exactly as a locked read would.
-        if (_subscriptions.ContainsKey(rootPath))
+        if (_subscriptions.ContainsKey(root))
         {
             return;
         }
@@ -86,20 +87,20 @@ public sealed class DiagramDocumentReloadBridge : IDisposable
         // GetOrAdd disposes neither loser.
         lock (_subscriptionLock)
         {
-            if (_disposed || _subscriptions.ContainsKey(rootPath))
+            if (_disposed || _subscriptions.ContainsKey(root))
             {
                 return;
             }
 
             try
             {
-                _subscriptions[rootPath] = _events.Subscribe(rootPath, heard => OnChange(rootPath, heard));
+                _subscriptions[root] = _events.Subscribe(root.FullPath, heard => OnChange(root, heard));
             }
             catch (Exception exception) when (exception is ArgumentException or IOException)
             {
                 // A root that cannot be watched - deleted underneath, an inaccessible share -
                 // degrades to the old behavior for that project: reloads on restart only.
-                _logger.Warning(exception, "Cannot watch {RootPath}; external edits there will not reach open diagrams", rootPath);
+                _logger.Warning(exception, "Cannot watch {RootPath}; external edits there will not reach open diagrams", root.FullPath);
             }
         }
     }
@@ -120,11 +121,11 @@ public sealed class DiagramDocumentReloadBridge : IDisposable
     /// delete and heals the same way when the new body arrives.
     /// </para>
     /// </remarks>
-    private void OnChange(string rootPath, FileEvent heard)
+    private void OnChange(ProjectRoot root, FileEvent heard)
     {
         if (heard.Kind == FileEventKind.Lost)
         {
-            ReadEverythingAgain(rootPath);
+            ReadEverythingAgain(root);
             return;
         }
 
@@ -139,7 +140,7 @@ public sealed class DiagramDocumentReloadBridge : IDisposable
         if (oldPath is not null && _documents.TryGetValue(oldPath, out var deleted))
         {
             _logger.Debug("{BodyPath} is gone after a {Kind}", deleted.BodyPath, heard.Kind);
-            deleted.Reloader.BodyDeleted(deleted.RootPath, deleted.BodyPath);
+            deleted.Reloader.BodyDeleted(deleted.Root.FullPath, deleted.BodyPath);
         }
         else
         {
@@ -168,7 +169,7 @@ public sealed class DiagramDocumentReloadBridge : IDisposable
         }
 
         _logger.Debug("Reloading {BodyPath} after a disk change to {Path}", document.BodyPath, path);
-        document.Reloader.Reload(document.RootPath, document.BodyPath);
+        document.Reloader.Reload(document.Root.FullPath, document.BodyPath);
     }
 
     /// <summary>
@@ -176,11 +177,11 @@ public sealed class DiagramDocumentReloadBridge : IDisposable
     /// are corrected the blunt way: re-read every tracked document under its root. Reload tells
     /// the sessions, so nothing stays quietly behind the disk.
     /// </summary>
-    private void ReadEverythingAgain(string rootPath)
+    private void ReadEverythingAgain(ProjectRoot root)
     {
-        _logger.Warning("The watcher on {RootPath} lost events; re-reading every tracked diagram there", rootPath);
+        _logger.Warning("The watcher on {RootPath} lost events; re-reading every tracked diagram there", root.FullPath);
 
-        foreach (var document in _documents.Values.Where(candidate => string.Equals(candidate.RootPath, rootPath, StringComparison.OrdinalIgnoreCase)))
+        foreach (var document in _documents.Values.Where(candidate => candidate.Root == root))
         {
             // Guarded one by one: this runs on the watcher's thread, where a document that no
             // longer parses must cost its own reload and nothing else's - and certainly not
@@ -194,11 +195,11 @@ public sealed class DiagramDocumentReloadBridge : IDisposable
                 // it stays empty until the body next changes or the diagram is reopened.
                 if (File.Exists(document.BodyPath))
                 {
-                    document.Reloader.Reload(document.RootPath, document.BodyPath);
+                    document.Reloader.Reload(document.Root.FullPath, document.BodyPath);
                 }
                 else
                 {
-                    document.Reloader.BodyDeleted(document.RootPath, document.BodyPath);
+                    document.Reloader.BodyDeleted(document.Root.FullPath, document.BodyPath);
                 }
             }
             catch (Exception reload)

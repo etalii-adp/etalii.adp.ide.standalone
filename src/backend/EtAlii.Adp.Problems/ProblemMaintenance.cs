@@ -28,7 +28,7 @@ public sealed class ProblemMaintenance : IDisposable
     private readonly IProblemStore _store;
     private readonly ProjectValidator _validator;
     private readonly DiagramFileRouter _router;
-    private readonly ConcurrentDictionary<string, TrackedProblemRoot> _tracked = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ConcurrentDictionary<ProjectRoot, TrackedProblemRoot> _tracked = new();
 
     /// <summary>Rapid changes coalesce per root: the window starts over until the burst settles.</summary>
     internal Debouncer<TrackedProblemRoot> Settling { get; }
@@ -54,17 +54,17 @@ public sealed class ProblemMaintenance : IDisposable
     public void Track(string rootPath)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(rootPath);
-        var root = IoPath.GetFullPath(rootPath);
-        if (!Directory.Exists(root))
+        var root = ProjectRoot.From(rootPath);
+        if (!Directory.Exists(root.FullPath))
         {
-            _logger.Warning("Not tracking {RootPath}: the folder is not there", root);
+            _logger.Warning("Not tracking {RootPath}: the folder is not there", root.FullPath);
             return;
         }
 
         _tracked.GetOrAdd(root, key =>
         {
-            _logger.Information("Keeping the problems of {RootPath} current", key);
-            return new TrackedProblemRoot(key, this);
+            _logger.Information("Keeping the problems of {RootPath} current", key.FullPath);
+            return new TrackedProblemRoot(key.FullPath, this);
         });
     }
 
