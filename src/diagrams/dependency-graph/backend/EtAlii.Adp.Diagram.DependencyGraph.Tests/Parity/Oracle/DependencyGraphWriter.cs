@@ -167,14 +167,6 @@ public static class DependencyGraphWriter
         }
     }
 
-    /// <summary>Removes one relation.</summary>
-    public static void RemoveRelation(LineDocument document, DependencyGraphRelation relation)
-    {
-        ArgumentNullException.ThrowIfNull(document);
-        ArgumentNullException.ThrowIfNull(relation);
-        document.Remove(relation.Range);
-    }
-
     /// <summary>
     /// The relations that would go with an element, so an action can say how many before it runs.
     /// </summary>

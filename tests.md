@@ -1066,6 +1066,7 @@ clipping, and that is only visible on screen.
   moment appearing here a defect), and an absence in a running UI is what a test suite is least
   able to see.
 - **Result 2026-09-05 (developer build (Debug, `developer` env, bypass session))**: **passed.** Opened `services.adp`. There is no ruler strip along any edge, no date anywhere on the canvas, and no date or moment row in the property grid of a selected node (which shows Label and a Placement of X and Row). The Toolbox offers a single **Node** entry and nothing time-shaped. (A node click does fill the grid here — heading *Order service* — so the module reports element selection, unlike wardley.)
+- **Result 2026-10-17 (developer build (Debug, `developer` env, bypass session), dependency-graph-disl-fbl task 8, every edit written through the module's FBL binding; a scratch copy of `example-1` opened as a project)**: **passed.** `services.dgr` opens through the binding with its ten nodes and eleven dependencies and no problems. No ruler strip, no date, no moment marker; the Toolbox offers **Node** alone. A selected node's Properties are Label under Identity and X and Row under Placement, nothing time-shaped; a selected edge's are its Label and its two ends, read-only, each with the reconnecting reason.
 
 ## Every edge visibly points at its dependency (dependency-graph, task 4.1)
 
@@ -1079,6 +1080,7 @@ clipping, and that is only visible on screen.
 - **Why manual**: an arrowhead drawn at the wrong end still renders a plausible graph, so the
   failure is silent to anything that only checks that an edge exists.
 - **Result 2026-09-05 (developer build (Debug, `developer` env, bypass session))**: **passed.** Every one of the seven relation lines carries an arrowhead at its end via a shared `marker-end` (`#dependency-graph-arrowhead`), and each path runs from the dependent node to the one it depends on, so the arrowhead lands on the dependency — Order service → Payment, Inventory, Orders-database and RabbitMQ; Payment → Payments-database; Inventory → Orders-database; Notification → RabbitMQ.
+- **Result 2026-10-17 (developer build (Debug, `developer` env, bypass session), dependency-graph-disl-fbl task 8, every edit written through the module's FBL binding; a scratch copy of `example-1` opened as a project)**: **passed for the arrowheads.** All eleven relation paths carry the shared `marker-end` (now `url(#library-arrow)`, the diagram library's), one per dependency in the file. The left-anchor drag was not driven: the pane's atomic drag, as before.
 
 ## Edges follow a drag while it is in progress, and Escape abandons it (dependency-graph, task 4.1)
 
@@ -1090,6 +1092,7 @@ clipping, and that is only visible on screen.
   never a date. Escape returns the node and its curves to where they started, and the file on
   disk is byte-for-byte untouched.
 - **Result 2026-09-05 (developer build (Debug, `developer` env, bypass session))**: **not driven here — the in-app pane's atomic drag did not trigger the node drag** (the node did not move and nothing was written), and the continuous-during-drag redraw and mid-drag Escape are not observable through an atomic drag in any case. The bypass reaches the diagram; this gesture needs an ordinary browser, and the redraw/abandon behaviour is covered by the dependency-graph canvas unit tests. Not an app defect.
+- **Result 2026-10-17 (developer build (Debug, `developer` env, bypass session), dependency-graph-disl-fbl task 8, every edit written through the module's FBL binding; a scratch copy of `example-1` opened as a project)**: **not driven here**, for the reason recorded above: a continuous drag and a mid-drag Escape are not observable through the pane's atomic drag.
 
 ## A toolbox drop lands a Node where it was dropped (dependency-graph, task 4.1)
 
@@ -1100,6 +1103,7 @@ clipping, and that is only visible on screen.
   and one undo removes it. Dropping never answers "That action is not available for this item"
   (the placement target must discover the add action, or executing by id resolves nothing).
 - **Result 2026-09-05 (developer build (Debug, `developer` env, bypass session))**: **not driven here — the Toolbox add uses HTML5 drag-and-drop**, which the browser tool's mouse-based drag cannot generate (`dragstart`/`dragover`/`drop`). The drop-lands-at-the-dropped-coordinate mapping is unit-tested; the live gesture needs an ordinary browser. Not an app defect, and not a sign-in blocker.
+- **Result 2026-10-17 (developer build (Debug, `developer` env, bypass session), dependency-graph-disl-fbl task 8, every edit written through the module's FBL binding; a scratch copy of `example-1` opened as a project)**: **not driven here** - HTML5 drag-and-drop, as recorded above. The placement's write is the definition's `addNodeHere` written as one operation, pinned by the transcript.
 
 ## The context menu removes nodes and dependencies (dependency-graph, task 4.1)
 
@@ -1112,6 +1116,7 @@ clipping, and that is only visible on screen.
   the commit leg only runs after a dialog. The confirmation counts dependencies at **both** ends
   of the node, not only the ones leaving it.
 - **Result 2026-09-05 (developer build (Debug, `developer` env, bypass session))**: **not driven here — same atomic-drag limitation as the drag entry above**: the anchor-drag-to-empty-canvas gesture did not register through the in-app pane. Covered by unit tests; needs an ordinary browser. Not an app defect.
+- **Result 2026-10-17 (developer build (Debug, `developer` env, bypass session), dependency-graph-disl-fbl task 8, every edit written through the module's FBL binding; a scratch copy of `example-1` opened as a project)**: **passed, each removal one undo away and byte-for-byte.** Right-clicking the edge *calls* offered Relabel and Remove dependency; Remove dependency took its four lines out of the file and one Undo put the file back byte-identical (compared with `cmp`) - the re-serialisation at the end of the list and the `services.identities.json` sidecar of the 2026-09-05 note are gone. Removing *Order service* asked "Removing this node also removes the 6 dependencies attached to it." - both ends counted - and, confirmed, took the node and exactly those six dependencies; one Undo restored the file byte-identical. **One thing seen, not caused by this change and not investigated:** in the in-app pane the confirmation closes itself at once (the client sends `CancelInteraction` straight after `ExecuteAction`), from the toolbar's Remove and the context menu alike, so it was confirmed by a script pressing its Remove the moment it appeared. The client is unchanged by this task; whether this is the pane or the dialog is for an ordinary browser to settle.
 
 ## A dependency dragged onto empty space creates the node it reaches (dependency-graph, task 4.1)
 
@@ -1123,6 +1128,7 @@ clipping, and that is only visible on screen.
   new node; from the left anchor the new node depends on the source. Releasing back on the
   source cancels quietly.
 - **Result 2026-09-05 (developer build (Debug, `developer` env, bypass session))**: **not driven here — the browser tool has no right-button-drag primitive** (so the right-drag pan cannot be issued) and does not deliver **Tab**/**Enter** to the page (the same keyboard limit seen in the property-grid cadence entry). The bypass reaches the diagram; these need an ordinary browser. Not app defects.
+- **Result 2026-10-17 (developer build (Debug, `developer` env, bypass session), dependency-graph-disl-fbl task 8, every edit written through the module's FBL binding; a scratch copy of `example-1` opened as a project)**: **not driven here** - an anchor drag, as recorded above. The create-and-relate is the `dependsOn` tool's transaction written as one operation, one undo taking both, pinned by the transcript.
 
 ## Right-drag pans; Tab and Enter add; scrollbars pan (dependency-graph, task 4.1)
 
@@ -1134,6 +1140,7 @@ clipping, and that is only visible on screen.
   upon by the node they grew from and neither asking anything; the thumbs pan the view within
   the content's extent.
 - **Result 2026-09-05 (developer build (Debug, `developer` env, bypass session))**: **passed (removal is one undo away), with a byte-fidelity note.** Right-clicking an edge offered **Remove dependency**; choosing it dropped the graph from seven relations to six, and one **Undo** brought it back to seven. The removal happens and is reversible in one step. One thing to fix, not asserted by this check: remove-then-undo did not restore `services.dgr` byte-for-byte — the restored relation was re-serialized at the end of the `relations:` list rather than in its original position, and a `services.identities.json` sidecar was left beside the file. (Restored via git.)
+- **Result 2026-10-17 (developer build (Debug, `developer` env, bypass session), dependency-graph-disl-fbl task 8, every edit written through the module's FBL binding; a scratch copy of `example-1` opened as a project)**: **partly run.** *Add node to the right* on the selected *Checkout web* (Tab's action, from the toolbar, since the pane does not deliver Tab) wrote a *New node* a step to the right on the same row and a dependency of *Checkout web* on it, each where the binding places it and in the file's CRLF; its `x` is written in FBL's form (`248.07292930083338`, Q1 and finding B17). One Undo restored the file byte-identical. The right-drag pan, Enter and the scrollbars were not driven, for the reasons recorded above.
 
 ## The text editor is drawn in the application's colors, caret included (modular-text-editors, manual pass)
 
