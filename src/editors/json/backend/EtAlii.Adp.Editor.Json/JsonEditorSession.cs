@@ -1,3 +1,5 @@
+using EtAlii.Adp.Documents;
+
 namespace EtAlii.Adp.Editor.Json;
 
 /// <summary>
@@ -5,4 +7,4 @@ namespace EtAlii.Adp.Editor.Json;
 /// JSON-specific (json-editor Requirement 8). Colour, findings, the schema and completion are all
 /// client-side. A type of its own so its records name JSON.
 /// </summary>
-public sealed class JsonEditorSession(string path) : TextEditorSession(path);
+public sealed class JsonEditorSession(string path, ProjectFileEvents? events = null) : TextEditorSession(path, events);

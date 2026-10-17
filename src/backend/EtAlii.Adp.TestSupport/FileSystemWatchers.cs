@@ -24,7 +24,10 @@ public static class FileSystemWatchers
     /// <summary>How many project roots <paramref name="events"/> watches now, for a test of the one watcher per root.</summary>
     public static int WatchedRoots(this ProjectFileEvents events) => events.Roots;
 
-    /// <summary>The watcher behind <paramref name="file"/>; the file's folder must have existed when it was made.</summary>
+    /// <summary>The watcher behind <paramref name="file"/>; the file's folder must have existed when it was made, outside every watched project root.</summary>
     public static FileSystemWatcher Watcher(this WatchedFile file) =>
-        file.Folder?.Watcher ?? throw new InvalidOperationException($"{file.Path} is not watched: its folder did not exist.");
+        file.Folder?.Watcher ?? throw new InvalidOperationException($"{file.Path} has no watcher of its own: its folder did not exist, or it is heard through its project root.");
+
+    /// <summary>Whether <paramref name="file"/> made a watcher of its own rather than being heard through its project root's.</summary>
+    public static bool HasWatcherOfItsOwn(this WatchedFile file) => file.Folder is not null;
 }

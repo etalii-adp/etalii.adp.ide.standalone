@@ -1,5 +1,6 @@
 using System.Reflection;
 using EtAlii.Adp.Designer.TableModel;
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 using Xunit;
 using IoPath = System.IO.Path;
@@ -106,6 +107,22 @@ public sealed class KnowledgeSessionTests : IDisposable
         var part = Assert.IsType<TableRowsChanged>(pushed[1]);
         Assert.Equal((1, 2, total), (part.First, part.Rows.Count, part.RowCount));
         Assert.Equal(all.Rows.Skip(1).Take(2).Select(row => row.Id), part.Rows.Select(row => row.Id));
+    }
+
+    [Fact]
+    public async Task AFileInsideAWatchedProject_IsHeardThroughTheProjectsOneWatcher()
+    {
+        // Arrange: the project root is watched already, as the hierarchy watches an open project.
+        using var events = new ProjectFileEvents();
+        using var project = events.Subscribe(_root, _ => { });
+        var path = KnowledgeFiles.CopyPlain("cities.yaml", _root);
+
+        // Act.
+        await using var session = new KnowledgeSession(path, KnowledgeDocumentStore.Read, events: events);
+
+        // Assert: no watcher of its own beside the project's (code-structure T280).
+        Assert.False(session.Watched.HasWatcherOfItsOwn());
+        Assert.Equal(1, events.WatchedRoots());
     }
 
     [Fact]

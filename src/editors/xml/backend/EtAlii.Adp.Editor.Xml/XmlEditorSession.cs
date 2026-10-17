@@ -1,3 +1,5 @@
+using EtAlii.Adp.Documents;
+
 namespace EtAlii.Adp.Editor.Xml;
 
 /// <summary>
@@ -7,4 +9,4 @@ namespace EtAlii.Adp.Editor.Xml;
 /// file the reader would decode differently is still given back byte for byte (xml-editor
 /// Requirement 8.1). A type of its own so its records name XML.
 /// </summary>
-public sealed class XmlEditorSession(string path) : TextEditorSession(path);
+public sealed class XmlEditorSession(string path, ProjectFileEvents? events = null) : TextEditorSession(path, events);

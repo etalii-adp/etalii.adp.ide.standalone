@@ -100,7 +100,7 @@ internal sealed class KnowledgeSession : IDesignerSession
     /// <param name="documents">Where the module's commands say a file was written, or null.</param>
     /// <param name="rootPath">The project the file is in: how far is looked for rows that relate to a row of this file. Empty, nowhere.</param>
     /// <param name="time">The clock a refused read waits on before it is tried again; the system's when null.</param>
-    internal KnowledgeSession(string bodyPath, Func<string, KnowledgeRead> read, Func<KnowledgeEditCommand, Task<CommandResult>>? write = null, IKnowledgeDocumentStore? documents = null, string rootPath = "", TimeProvider? time = null)
+    internal KnowledgeSession(string bodyPath, Func<string, KnowledgeRead> read, Func<KnowledgeEditCommand, Task<CommandResult>>? write = null, IKnowledgeDocumentStore? documents = null, string rootPath = "", TimeProvider? time = null, ProjectFileEvents? events = null)
     {
         _rootPath = rootPath;
         ArgumentNullException.ThrowIfNull(bodyPath);
@@ -122,7 +122,7 @@ internal sealed class KnowledgeSession : IDesignerSession
         // Every event a publish raises reaches OnExternalChangeAsync, an overflow included, one
         // re-read at a time; a refused read is tried again, so a Deleted presented by a
         // temp-then-replace is safe to hear.
-        Watched = new WatchedFile(bodyPath, OnExternalChangeAsync, time ?? TimeProvider.System);
+        Watched = new WatchedFile(bodyPath, OnExternalChangeAsync, time ?? TimeProvider.System, events);
 
         // After the watched file exists: a reload goes through it.
         _documents?.Reloaded += OnReloaded;

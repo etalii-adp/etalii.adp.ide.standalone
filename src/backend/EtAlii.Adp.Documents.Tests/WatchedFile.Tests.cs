@@ -200,5 +200,46 @@ public sealed class WatchedFileTests : IDisposable
         Assert.Null(file.Folder);
     }
 
+    // ---- one watcher per project root (T280) -----------------------------------------------------
+
+    [Fact]
+    public async Task AFileInsideAWatchedRoot_IsHeardThroughTheRootsWatcher_AndMakesNoneOfItsOwn()
+    {
+        // Arrange: the root is watched already, as the hierarchy watches an open project.
+        using var events = new ProjectFileEvents();
+        using var project = events.Subscribe(_root, _ => { });
+        var path = Path("notes.txt");
+        await File.WriteAllTextAsync(path, "before", TestContext.Current.CancellationToken);
+        var runs = 0;
+        using var file = new WatchedFile(path, () =>
+        {
+            Interlocked.Increment(ref runs);
+            return Task.CompletedTask;
+        }, _clock, events);
+
+        // Act.
+        await File.WriteAllTextAsync(path, "after", TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.Null(file.Folder);
+        Assert.Equal(1, events.Roots);
+        Assert.True(await Eventually.TrueAsync(() => Volatile.Read(ref runs) > 0, TestContext.Current.CancellationToken, Patience), "The write was never heard through the root.");
+    }
+
+    [Fact]
+    public void AFileOutsideEveryWatchedRoot_IsWatchedOnItsOwn()
+    {
+        // Arrange: a root is watched, and the file is not under it.
+        using var events = new ProjectFileEvents();
+        var project = Directory.CreateDirectory(Path("project")).FullName;
+        using var watched = events.Subscribe(project, _ => { });
+
+        // Act.
+        using var file = new WatchedFile(Path("notes.txt"), () => Task.CompletedTask, _clock, events);
+
+        // Assert.
+        Assert.NotNull(file.Folder);
+    }
+
     private string Path(string name) => IoPath.Combine(_root, name);
 }

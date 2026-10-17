@@ -53,8 +53,10 @@ public class TextEditorSession : IEditorSession
     private readonly Func<string, TextFileBufferOpenResult> _open;
     private TextFileBuffer? _buffer;
 
-    public TextEditorSession(string path)
-        : this(path, TextFileBuffer.Open, TimeProvider.System)
+    /// <param name="path">The file.</param>
+    /// <param name="events">The project roots' event sources, through which a file inside a watched root is heard.</param>
+    public TextEditorSession(string path, ProjectFileEvents? events = null)
+        : this(path, TextFileBuffer.Open, TimeProvider.System, events)
     {
     }
 
@@ -63,7 +65,7 @@ public class TextEditorSession : IEditorSession
     /// window the retry exists for is too narrow to land in on purpose with a real file - and with
     /// the clock the retry waits on.
     /// </summary>
-    internal TextEditorSession(string path, Func<string, TextFileBufferOpenResult> open, TimeProvider time)
+    internal TextEditorSession(string path, Func<string, TextFileBufferOpenResult> open, TimeProvider time, ProjectFileEvents? events = null)
     {
         ArgumentNullException.ThrowIfNull(path);
         ArgumentNullException.ThrowIfNull(open);
@@ -79,7 +81,7 @@ public class TextEditorSession : IEditorSession
         // publish raises reaches OnExternalChangeAsync, an overflow included, one re-read at a time.
         if (_buffer is not null)
         {
-            Watched = new WatchedFile(path, OnExternalChangeAsync, time);
+            Watched = new WatchedFile(path, OnExternalChangeAsync, time, events);
         }
     }
 
