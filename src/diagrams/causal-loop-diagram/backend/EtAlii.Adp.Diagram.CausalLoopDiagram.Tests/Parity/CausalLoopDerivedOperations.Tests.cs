@@ -1,6 +1,7 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
+using EtAlii.Adp.Sessions;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.CausalLoopDiagram.Tests.Parity;

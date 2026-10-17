@@ -1,4 +1,5 @@
 using EtAlii.Adp.History;
+using EtAlii.Adp.Sessions;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
 namespace EtAlii.Adp.Diagram.AnsibleStructure;

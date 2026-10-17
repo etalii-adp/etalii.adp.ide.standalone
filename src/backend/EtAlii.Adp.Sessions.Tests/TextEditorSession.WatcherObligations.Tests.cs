@@ -1,8 +1,9 @@
+using EtAlii.Adp.Editor;
 using EtAlii.Adp.Files;
 using Xunit;
 using IoPath = System.IO.Path;
 
-namespace EtAlii.Adp.Editor.Tests;
+namespace EtAlii.Adp.Sessions.Tests;
 
 /// <summary>
 /// The session learns of every change the shared writer can make to its file - here a deletion and a

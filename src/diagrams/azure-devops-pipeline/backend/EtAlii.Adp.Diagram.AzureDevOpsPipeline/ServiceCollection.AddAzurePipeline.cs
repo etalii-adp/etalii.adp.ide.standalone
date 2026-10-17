@@ -1,5 +1,6 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.History;
+using EtAlii.Adp.Sessions;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline;

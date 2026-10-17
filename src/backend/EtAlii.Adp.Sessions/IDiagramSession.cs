@@ -1,4 +1,6 @@
-namespace EtAlii.Adp.Diagram;
+using EtAlii.Adp.Diagram;
+
+namespace EtAlii.Adp.Sessions;
 
 /// <summary>
 /// One open diagram for one connection, from the type module's side. The core

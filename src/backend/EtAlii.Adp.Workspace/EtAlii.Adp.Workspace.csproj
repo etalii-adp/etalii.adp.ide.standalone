@@ -14,6 +14,7 @@
     <ProjectReference Include="..\EtAlii.Adp.Projects\EtAlii.Adp.Projects.csproj" />
     <ProjectReference Include="..\EtAlii.Adp.Editor\EtAlii.Adp.Editor.csproj" />
     <ProjectReference Include="..\EtAlii.Adp.Designer\EtAlii.Adp.Designer.csproj" />
+    <ProjectReference Include="..\EtAlii.Adp.Sessions\EtAlii.Adp.Sessions.csproj" />
   </ItemGroup>
 
   <ItemGroup>

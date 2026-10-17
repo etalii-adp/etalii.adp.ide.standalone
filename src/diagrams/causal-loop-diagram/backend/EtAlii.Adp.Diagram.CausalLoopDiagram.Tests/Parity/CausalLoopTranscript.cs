@@ -3,6 +3,7 @@ using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
+using EtAlii.Adp.Sessions;
 using Google.Protobuf.Reflection;
 using Microsoft.Extensions.DependencyInjection;
 using Path = System.IO.Path;

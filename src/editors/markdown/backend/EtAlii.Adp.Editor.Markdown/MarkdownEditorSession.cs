@@ -1,4 +1,5 @@
 using EtAlii.Adp.Files;
+using EtAlii.Adp.Sessions;
 
 namespace EtAlii.Adp.Editor.Markdown;
 

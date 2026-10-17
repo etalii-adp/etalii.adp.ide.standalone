@@ -1,4 +1,5 @@
 using EtAlii.Adp.Diagram;
+using EtAlii.Adp.Sessions;
 
 namespace EtAlii.Adp.TestSupport;
 

@@ -2,6 +2,7 @@ using EtAlii.Adp.Context;
 using EtAlii.Adp.Diagram;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Hierarchy;
+using EtAlii.Adp.Sessions;
 using Microsoft.Extensions.DependencyInjection;
 using IoPath = System.IO.Path;
 

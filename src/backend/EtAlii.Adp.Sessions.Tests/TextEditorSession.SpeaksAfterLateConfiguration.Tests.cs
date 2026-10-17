@@ -1,11 +1,12 @@
 using System.Collections.Concurrent;
+using EtAlii.Adp.Editor;
 using Serilog;
 using Serilog.Core;
 using Serilog.Events;
 using Xunit;
 using IoPath = System.IO.Path;
 
-namespace EtAlii.Adp.Editor.Tests;
+namespace EtAlii.Adp.Sessions.Tests;
 
 /// <summary>
 /// The refusal record reaches a Serilog pipeline installed AFTER this class was first used, which is

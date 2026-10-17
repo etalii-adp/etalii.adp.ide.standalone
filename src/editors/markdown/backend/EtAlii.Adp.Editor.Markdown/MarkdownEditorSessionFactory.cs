@@ -1,4 +1,5 @@
 using EtAlii.Adp.Files;
+using EtAlii.Adp.Sessions;
 using JetBrains.Annotations;
 
 namespace EtAlii.Adp.Editor.Markdown;

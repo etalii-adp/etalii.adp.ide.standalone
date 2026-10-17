@@ -1,9 +1,10 @@
+using EtAlii.Adp.Editor;
 using EtAlii.Adp.Files;
 using Microsoft.Extensions.Time.Testing;
 using Xunit;
 using IoPath = System.IO.Path;
 
-namespace EtAlii.Adp.Editor.Tests;
+namespace EtAlii.Adp.Sessions.Tests;
 
 /// <summary>
 /// The re-read retry behind <c>OnExternalChangeAsync</c>: a refusal must not consume the notification.

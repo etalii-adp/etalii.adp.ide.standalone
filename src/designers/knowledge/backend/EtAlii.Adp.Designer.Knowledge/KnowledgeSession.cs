@@ -1,6 +1,7 @@
 using EtAlii.Adp.Designer.TableModel;
 using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
+using EtAlii.Adp.Sessions;
 using EtAlii.Adp.Specification.Fbl;
 using EtAlii.Adp.Specification.Fbl.Planning;
 using Serilog;

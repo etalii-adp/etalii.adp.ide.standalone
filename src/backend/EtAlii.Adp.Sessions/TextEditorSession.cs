@@ -1,7 +1,8 @@
+using EtAlii.Adp.Editor;
 using EtAlii.Adp.Files;
 using Serilog;
 
-namespace EtAlii.Adp.Editor;
+namespace EtAlii.Adp.Sessions;
 
 /// <summary>
 /// One open text file: <see cref="TextFileBuffer"/> for reading and every refusal rule

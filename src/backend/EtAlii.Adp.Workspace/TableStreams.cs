@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using EtAlii.Adp.Designer;
+using EtAlii.Adp.Sessions;
 
 namespace EtAlii.Adp.Workspace;
 

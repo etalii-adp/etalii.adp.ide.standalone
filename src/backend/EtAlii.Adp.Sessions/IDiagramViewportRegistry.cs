@@ -1,4 +1,6 @@
-﻿namespace EtAlii.Adp.Diagram;
+﻿using EtAlii.Adp.Diagram;
+
+namespace EtAlii.Adp.Sessions;
 
 /// <summary>
 /// Carries a <c>UpdateView</c> call, which arrives on its own unary request, to the

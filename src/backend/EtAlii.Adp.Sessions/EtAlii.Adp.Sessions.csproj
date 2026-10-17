@@ -5,6 +5,19 @@
     <PackageReference Include="Grpc.AspNetCore" />
     <PackageReference Include="Serilog" />
     <ProjectReference Include="..\EtAlii.Adp\EtAlii.Adp.csproj" />
+    <!-- The tool-session contracts speak in the types of the three tool kinds and dispatch through
+         the history, so this project references them and never the reverse (code-structure FR-065). -->
+    <ProjectReference Include="..\EtAlii.Adp.Diagram\EtAlii.Adp.Diagram.csproj" />
+    <ProjectReference Include="..\EtAlii.Adp.Designer\EtAlii.Adp.Designer.csproj" />
+    <ProjectReference Include="..\EtAlii.Adp.Editor\EtAlii.Adp.Editor.csproj" />
+    <ProjectReference Include="..\EtAlii.Adp.History\EtAlii.Adp.History.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- TextEditorSession's re-read is guarded with an open that refuses on demand, through an
+         internal constructor: the window the retry exists for is too narrow to land in with a
+         real file. -->
+    <InternalsVisibleTo Include="EtAlii.Adp.Sessions.Tests" />
   </ItemGroup>
 
 </Project>

@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Editor\EtAlii.Adp.Editor.csproj" />
+    <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Sessions\EtAlii.Adp.Sessions.csproj" />
   </ItemGroup>
 
   <ItemGroup>

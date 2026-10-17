@@ -1,6 +1,6 @@
 using JetBrains.Annotations;
 
-namespace EtAlii.Adp.Diagram;
+namespace EtAlii.Adp.Sessions;
 
 // Modules read the members their session needs: supply-chain the watch id, c4 the registration.
 /// <summary>What a session is opened on: the connection, the project, the body and the registration it was opened through.</summary>

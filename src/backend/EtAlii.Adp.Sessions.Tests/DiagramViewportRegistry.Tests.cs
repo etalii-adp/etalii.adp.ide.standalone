@@ -1,6 +1,7 @@
+using EtAlii.Adp.Diagram;
 using Xunit;
 
-namespace EtAlii.Adp.Diagram.Tests;
+namespace EtAlii.Adp.Sessions.Tests;
 
 /// <summary>
 /// The registry joining a MoveElement or UpdateView call to its open stream, when two streams for one
