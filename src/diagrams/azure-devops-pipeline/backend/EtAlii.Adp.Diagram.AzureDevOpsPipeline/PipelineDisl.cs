@@ -33,12 +33,21 @@ namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline;
 internal static class PipelineDisl
 {
     private static readonly ConditionalWeakTable<PipelineModel, DislDiagram> _built = [];
+    private static readonly ConditionalWeakTable<PipelineModel, DislDiagram> _builtFollowingNothing = [];
 
     /// <summary>The DISL model of <paramref name="model"/>, built the first time it is asked for.</summary>
-    public static DislDiagram ModelOf(PipelineModel model)
+    /// <param name="model">The reading.</param>
+    /// <param name="followedTemplates">
+    /// Whether the reading followed the templates it could: then the references not followed are the
+    /// ones it gives a reason for. A reading that follows nothing, as the validator's, follows none of
+    /// its references, and gives no reason because it tried none.
+    /// </param>
+    public static DislDiagram ModelOf(PipelineModel model, bool followedTemplates = true)
     {
         ArgumentNullException.ThrowIfNull(model);
-        return _built.GetValue(model, Build);
+        return followedTemplates
+            ? _built.GetValue(model, reading => Build(reading, followedTemplates: true))
+            : _builtFollowingNothing.GetValue(model, reading => Build(reading, followedTemplates: false));
     }
 
     /// <summary>
@@ -61,8 +70,8 @@ internal static class PipelineDisl
         }
     }
 
-    private static DislDiagram Build(PipelineModel model) =>
-        DislModelBuilder.From(new FblModel(Elements(model), [], false), PipelineDefinition.Specification).Diagram;
+    private static DislDiagram Build(PipelineModel model, bool followedTemplates) =>
+        DislModelBuilder.From(new FblModel(Elements(model, followedTemplates), [], false), PipelineDefinition.Specification).Diagram;
 
     /// <summary>
     /// The reading as the binding's types: the pipeline, each stage with its jobs and their steps in
@@ -70,7 +79,7 @@ internal static class PipelineDisl
     /// a job writes - its target the element that waits, its source the first of that name, without
     /// regard to case, among the stages or among the jobs of the same stage, or unset.
     /// </summary>
-    private static IReadOnlyList<FblElement> Elements(PipelineModel model)
+    private static IReadOnlyList<FblElement> Elements(PipelineModel model, bool followedTemplates)
     {
         ArgumentNullException.ThrowIfNull(model);
         var nodes = new List<FblElement> { Node("pipeline", "Pipeline", PipelineAttributes(model), null) };
@@ -96,9 +105,12 @@ internal static class PipelineDisl
             stages.Add((stage, stageRead, jobs));
         }
 
-        foreach (var unresolved in model.Unresolved)
+        IEnumerable<(PipelineTemplateReference Reference, PipelineTemplateUnresolvedReason Reason)> unfollowed = followedTemplates
+            ? model.Unresolved.Select(unresolved => (unresolved.Reference, unresolved.Reason))
+            : model.Templates.Select(reference => (reference, PipelineTemplateUnresolvedReason.None));
+        foreach ((PipelineTemplateReference reference, PipelineTemplateUnresolvedReason reason) in unfollowed)
         {
-            nodes.Add(Node(NextId(), "TemplateReference", TemplateAttributes(unresolved, firstReadId), null));
+            nodes.Add(Node(NextId(), "TemplateReference", TemplateAttributes(reference, reason, firstReadId), null));
         }
 
         var stageNames = stages.Select(stage => (stage.Stage.Name, stage.Read)).ToList();
@@ -193,16 +205,15 @@ internal static class PipelineDisl
         return attributes;
     }
 
-    /// <summary>A template reference that was not followed: what it names, where, and why it was not read.</summary>
-    private static Dictionary<string, object?> TemplateAttributes(PipelineTemplateUnresolved unresolved, Dictionary<string, string> firstReadId)
+    /// <summary>A template reference that was not followed: what it names, where, and why it was not read, where the reading says.</summary>
+    private static Dictionary<string, object?> TemplateAttributes(PipelineTemplateReference reference, PipelineTemplateUnresolvedReason reason, Dictionary<string, string> firstReadId)
     {
-        var reference = unresolved.Reference;
         var attributes = Attributes(
             ("path", reference.Path),
             ("slot", Key(reference.Slot.ToString())),
             ("parameterNames", reference.ParameterNames.Cast<object?>().ToList()),
-            ("reason", Key(unresolved.Reason.ToString())),
             ("ordinal", long.Parse(reference.Id["template-".Length..], System.Globalization.CultureInfo.InvariantCulture)));
+        if (reason != PipelineTemplateUnresolvedReason.None) attributes["reason"] = Key(reason.ToString());
         if (reference.Resource.Length > 0) attributes["resource"] = reference.Resource;
         if (reference.OwnerId.Length > 0 && firstReadId.TryGetValue(reference.OwnerId, out var owner)) attributes["referencedFrom"] = owner;
         return attributes;

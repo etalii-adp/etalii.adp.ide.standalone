@@ -65,6 +65,30 @@ internal static class HandWrittenPipeline
             AddStepActionId),
     ];
 
+    /// <summary>
+    /// The problems of <paramref name="text"/> as the validator judged them by hand
+    /// (<c>PipelineValidator.ValidateAsync</c>): the one problem naming the line when it does not parse,
+    /// else <see cref="PipelineRuleSet"/>'s over the model read without following a template.
+    /// </summary>
+    public static IReadOnlyList<DiagramProblem> Findings(string text)
+    {
+        var outcome = PipelineParser.Outcome(LineDocument.Parse(text));
+        if (!outcome.IsUsable)
+        {
+            var problem = outcome.Problems[0];
+            return
+            [
+                new DiagramProblem(
+                    DiagramProblemSeverity.Error,
+                    $"This is not YAML that can be read: {problem.Message}",
+                    PipelineValidator.UnparseableRuleId,
+                    new DiagramProblemLineLocation((uint)problem.Line + 1)),
+            ];
+        }
+
+        return PipelineRuleSet.Judge(outcome.Model);
+    }
+
     /// <summary>The context menu of <paramref name="elementId"/>, open as <paramref name="view"/> has it (<c>PipelineContextActionProvider.Discover</c>).</summary>
     public static IReadOnlyList<ContextActionGroupDefinition> Menus(DocumentEntry<LineDocument, PipelineModel> entry, PipelineConnectionView view, string elementId)
     {

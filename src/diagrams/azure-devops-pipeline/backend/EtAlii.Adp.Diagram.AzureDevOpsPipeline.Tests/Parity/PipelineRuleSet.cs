@@ -1,4 +1,4 @@
-namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline;
+namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline.Tests.Parity;
 
 /// <summary>
 /// What is wrong with a pipeline: a pure function from a parsed model to problems.

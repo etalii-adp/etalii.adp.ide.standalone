@@ -2,7 +2,7 @@ using EtAlii.Adp.Documents;
 using Xunit;
 using IoPath = System.IO.Path;
 
-namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline.Tests;
+namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline.Tests.Parity;
 
 /// <summary>
 /// The mistakes a YAML file hides, which is most of what anybody would draw this diagram for.
