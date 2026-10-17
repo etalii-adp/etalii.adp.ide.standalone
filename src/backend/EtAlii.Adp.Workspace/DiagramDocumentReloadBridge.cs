@@ -1,8 +1,9 @@
 using System.Collections.Concurrent;
+using EtAlii.Adp.Diagram;
 using EtAlii.Adp.Documents;
 using Serilog;
 
-namespace EtAlii.Adp.Diagram;
+namespace EtAlii.Adp.Workspace;
 
 /// <summary>
 /// The watcher-to-store bridge: the one place a disk change reaches a diagram document store's

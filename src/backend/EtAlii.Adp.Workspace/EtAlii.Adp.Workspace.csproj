@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The host side of a tool (code-structure FR-054, research R10): the gRPC services a connection
+    calls, the connections and their streams, the table wire and the reload bridge. It is what
+    made the diagram abstractions a host; a module references the diagram project, never this one.
+  -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\EtAlii.Adp.Diagram\EtAlii.Adp.Diagram.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Grpc.AspNetCore" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The tests reach EditorSessionAdapter, and the analysis tests EditorService's internal constructor. -->
+    <InternalsVisibleTo Include="EtAlii.Adp.Workspace.Tests" />
+    <InternalsVisibleTo Include="EtAlii.Adp.Backend.Tests" />
+  </ItemGroup>
+
+</Project>

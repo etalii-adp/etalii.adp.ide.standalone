@@ -38,10 +38,10 @@ public partial class PermanentRefusalTests
     {
         ["src/backend/EtAlii.Adp.Authentication/Sessions/SessionInterceptor.cs"] =
             "Unauthenticated: the session interceptor's answer to any call without a valid token, met by signing in again.",
-        ["src/backend/EtAlii.Adp.Diagram/WorkspaceService.cs"] =
+        ["src/backend/EtAlii.Adp.Workspace/WorkspaceService.cs"] =
             "Unavailable: OpenDiagram on a connection that is not open yet, which a reconnect racing a close produces and the client retries. " +
             "AlreadyExists: a stream id reused on one connection, a client defect rather than a refusal of what was asked.",
-        ["src/backend/EtAlii.Adp.Diagram/DesignerService.cs"] =
+        ["src/backend/EtAlii.Adp.Workspace/DesignerService.cs"] =
             "Unavailable: OpenTable on a connection that is not open yet, or a call for a table stream that is gone, both of which a " +
             "reconnect racing a close produces and the client retries. AlreadyExists: a stream id reused on one connection, as for a diagram stream.",
     };

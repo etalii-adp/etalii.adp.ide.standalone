@@ -9,13 +9,14 @@ using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 using EtAlii.Adp.Projects;
+using EtAlii.Adp.Workspace;
 using Grpc.Core;
 using Grpc.Core.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using IoPath = System.IO.Path;
 using Path = EtAlii.Adp.Documents.Wire.Path;
-using Service = EtAlii.Adp.Diagram.DiagramService;
+using Service = EtAlii.Adp.Workspace.DiagramService;
 
 namespace EtAlii.Adp.Backend.Tests;
 
@@ -87,7 +88,7 @@ public sealed class UpdateViewWhileTheStreamIsOpenTests : IDisposable
             .AddProjects(_appData)
             .AddContext()
             .AddHierarchy()
-            .AddDiagrams()
+            .AddWorkspace()
             .AddCommands()
             .AddHierarchyCommandHandlers()
             .AddC4();

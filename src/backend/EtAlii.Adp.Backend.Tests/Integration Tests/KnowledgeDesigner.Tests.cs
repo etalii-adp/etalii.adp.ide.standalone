@@ -1,9 +1,9 @@
 using EtAlii.Adp.Context.Wire;
-using EtAlii.Adp.Diagram;
 using EtAlii.Adp.Diagram.Wire;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 using EtAlii.Adp.TestSupport.Host;
+using EtAlii.Adp.Workspace;
 using Grpc.Core;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;

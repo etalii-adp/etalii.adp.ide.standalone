@@ -9,7 +9,7 @@ using HierarchyService = EtAlii.Adp.Hierarchy.HierarchyService;
 using WatchContextRequest = EtAlii.Adp.Context.Wire.WatchContextRequest;
 using WatchHierarchyRequest = EtAlii.Adp.Hierarchy.Wire.WatchHierarchyRequest;
 
-namespace EtAlii.Adp.Diagram;
+namespace EtAlii.Adp.Workspace;
 
 /// <summary>
 /// The one long-lived stream a browser tab holds (two-tab-connection-wedge Requirement 3.1). It
@@ -29,7 +29,7 @@ namespace EtAlii.Adp.Diagram;
 /// correlated one-way legs the rest of the API already uses.
 /// </para>
 /// </remarks>
-public sealed class WorkspaceService : Wire.WorkspaceService.WorkspaceServiceBase
+public sealed class WorkspaceService : Diagram.Wire.WorkspaceService.WorkspaceServiceBase
 {
     private static readonly ILogger _logger = Log.ForContext<WorkspaceService>();
 

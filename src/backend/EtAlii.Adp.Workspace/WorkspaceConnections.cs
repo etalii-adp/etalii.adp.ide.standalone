@@ -2,7 +2,7 @@ using System.Collections.Concurrent;
 using System.Threading.Channels;
 using EtAlii.Adp.Diagram.Wire;
 
-namespace EtAlii.Adp.Diagram;
+namespace EtAlii.Adp.Workspace;
 
 /// <summary>
 /// The tabs whose <see cref="WorkspaceService"/> stream is open, keyed by watch id, so a unary

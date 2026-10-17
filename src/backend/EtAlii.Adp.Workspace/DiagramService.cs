@@ -1,12 +1,13 @@
 ﻿using System.Threading.Channels;
 using EtAlii.Adp.Authentication;
+using EtAlii.Adp.Diagram;
 using EtAlii.Adp.Diagram.Wire;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.Projects;
 using Grpc.Core;
 using Serilog;
 using Path = EtAlii.Adp.Documents.Wire.Path;
-namespace EtAlii.Adp.Diagram;
+namespace EtAlii.Adp.Workspace;
 
 /// <summary>
 /// The one entry point for viewing and editing a diagram, whatever its type. It resolves the
@@ -14,7 +15,7 @@ namespace EtAlii.Adp.Diagram;
 /// <see cref="IDiagramSession"/>, and pumps that session's deltas onto the stream - mapping
 /// the module's backend delta records to the contract's proto through <see cref="DiagramWire"/>. It knows no diagram type (mindmap-diagram Requirement 13.4).
 /// </summary>
-public sealed partial class DiagramService : Wire.DiagramService.DiagramServiceBase
+public sealed partial class DiagramService : Diagram.Wire.DiagramService.DiagramServiceBase
 {
     private static readonly ILogger _logger = Log.ForContext<DiagramService>();
 
