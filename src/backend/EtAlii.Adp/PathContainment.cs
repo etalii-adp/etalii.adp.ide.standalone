@@ -32,6 +32,12 @@ public static class PathContainment
         OperatingSystem.IsWindows() || OperatingSystem.IsMacOS() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
 
     /// <summary>
+    /// How two path names compare on this operating system: without case on Windows and macOS, with
+    /// case on Linux. The rule <see cref="IsInside"/> compares by, for code that keys on a path.
+    /// </summary>
+    public static StringComparer NameComparer { get; } = StringComparer.FromComparison(NameComparison);
+
+    /// <summary>
     /// Whether <paramref name="path"/> lies under <paramref name="rootPath"/>, once both are made
     /// absolute and every link along them is followed. The root itself is not under itself. A
     /// path whose links cannot be followed - a loop, one too many, or an entry this process may
