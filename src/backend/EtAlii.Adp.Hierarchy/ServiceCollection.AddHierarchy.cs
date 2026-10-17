@@ -1,6 +1,7 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Designer;
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Editor;
 using EtAlii.Adp.History;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -38,6 +39,12 @@ public static class ServiceCollectionAddHierarchyExtension
         services.TryAddDesignerDefinitionCatalog();
         services.AddSingleton<DesignerFileRouter>();
 
+        // Which editor opens a file nothing diagram- or designer-shaped claims (modular-text-editors
+        // Requirement 5.1's order), from the editor catalog, which answers empty in a host that
+        // registered no editors.
+        services.TryAddEditorDefinitionCatalog();
+        services.AddSingleton(svc => new EditorResolver(svc.GetRequiredService<IEditorDefinitionCatalog>()));
+
         // What a new designer document starts as, from the modules that registered a template,
         // and the designer family's entries of the Add dialog built on it.
         services.TryAddSingleton<DesignerDocumentTemplates>();
@@ -69,6 +76,10 @@ public static class ServiceCollectionAddHierarchyExtension
         services.AddSingleton<IContextPropertyProvider, EditorFilePropertyProvider>();
 
         services.AddHierarchyCommandHandlers();
+
+        // The gRPC service, resolvable as an ordinary one too: a tab's one stream runs its watch
+        // in-process (two-tab-connection-wedge Requirement 3.1).
+        services.TryAddTransient<HierarchyService>();
 
         return services;
     }
