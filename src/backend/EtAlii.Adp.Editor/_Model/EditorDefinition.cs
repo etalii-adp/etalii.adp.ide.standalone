@@ -52,8 +52,11 @@ public sealed record EditorDefinition(
     IReadOnlyList<string>? FileNames = null,
     bool IsFallback = false,
     bool IsDefaultForSharedExtension = false,
-    Action<IHostApplicationBuilder>? Build = null)
+    Action<IHostApplicationBuilder>? Build = null) : IToolDefinition
 {
+    /// <summary>The id, which discovery keeps each editor once by.</summary>
+    string IToolDefinition.Key => Id;
+
     /// <summary>The claimed extensions, dot included, lower-cased by construction.</summary>
     public IReadOnlyList<string> Extensions { get; } =
         (Extensions ?? []).Select(extension => extension.ToLowerInvariant()).ToArray();

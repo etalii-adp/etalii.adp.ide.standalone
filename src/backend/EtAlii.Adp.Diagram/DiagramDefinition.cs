@@ -68,8 +68,11 @@ public sealed record DiagramDefinition(
     DiagramSubject Subject = DiagramSubject.Document,
     Action<IHostApplicationBuilder>? Build = null!,
     string AlternateExtension = "",
-    Func<string, bool>? SuggestsBody = null)
+    Func<string, bool>? SuggestsBody = null) : IToolDefinition
 {
+    /// <summary>The origin's key, which discovery keeps each type once by.</summary>
+    string IToolDefinition.Key => Origin.Key;
+
     /// <summary>
     /// Whether this type declares <paramref name="extension"/> - its own, or the alternate a
     /// second serialization of the same format uses (<c>.nt</c> beside <c>.ttl</c> for the RDF

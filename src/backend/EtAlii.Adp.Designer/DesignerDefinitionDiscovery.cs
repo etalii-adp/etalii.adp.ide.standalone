@@ -19,9 +19,10 @@ namespace EtAlii.Adp.Designer;
 public static class DesignerDefinitionDiscovery
 {
     private const string CandidateTypeName = "Designer";
-    private const string DefinitionsPropertyName = "Definitions";
 
     private static readonly ILogger _logger = Log.ForContext(typeof(DesignerDefinitionDiscovery));
+
+    private static readonly ToolDefinitionWords Words = new("designer", "Designer origin", "Origin", "designer types");
 
     /// <summary>Scans the application's own assemblies, found by the shared walk.</summary>
     public static IReadOnlyList<DesignerDefinition> Discover() => Discover(ApplicationAssemblies.Find());
@@ -30,59 +31,11 @@ public static class DesignerDefinitionDiscovery
     /// Scans exactly the given assemblies and returns the definitions found, one per origin,
     /// ordered by origin so the result is the same on every run.
     /// </summary>
-    public static IReadOnlyList<DesignerDefinition> Discover(IEnumerable<Assembly> assemblies)
-    {
-        ArgumentNullException.ThrowIfNull(assemblies);
-
-        var scan = ToolDefinitionScan.Scan<DesignerDefinition>(assemblies, CandidateTypeName, DefinitionsPropertyName, "designer", _logger);
-
-        // Keyed by origin so a duplicate is detected as it arrives; the value remembers which
-        // assembly won so a later collision can be reported against it.
-        var found = new Dictionary<string, (DesignerDefinition Definition, string AssemblyName)>(StringComparer.Ordinal);
-
-        foreach (var hit in scan.Found)
-        {
-            var definition = hit.Definition;
-            var assemblyName = hit.AssemblyName;
-
-            if (found.TryGetValue(definition.Origin, out var existing))
-            {
-                // Keep the ordinal-smaller assembly name so the winner does not depend on the
-                // order assemblies happened to be handed in - the other families' rule.
-                var keepExisting = string.CompareOrdinal(existing.AssemblyName, assemblyName) <= 0;
-                var kept = keepExisting ? existing.AssemblyName : assemblyName;
-                var dropped = keepExisting ? assemblyName : existing.AssemblyName;
-                _logger.Warning(
-                    "Designer origin {Origin} is declared more than once; dropping {DroppedAssembly} and keeping the one from {KeptAssembly}",
-                    definition.Origin,
-                    dropped,
-                    kept);
-
-                if (!keepExisting)
-                {
-                    found[definition.Origin] = (definition, assemblyName);
-                }
-
-                continue;
-            }
-
-            found[definition.Origin] = (definition, assemblyName);
-            _logger.Information(
-                "Discovered designer {Origin}: {Title} ({Assembly})",
-                definition.Origin,
-                definition.Title,
-                assemblyName);
-        }
-
-        var result = found.Values
-            .Select(entry => entry.Definition)
-            .OrderBy(definition => definition.Origin, StringComparer.Ordinal)
-            .ToArray();
-
-        _logger.Information(
-            "{Count} designer types discovered across {AssemblyCount} assemblies",
-            result.Length,
-            scan.AssembliesScanned);
-        return result;
-    }
+    public static IReadOnlyList<DesignerDefinition> Discover(IEnumerable<Assembly> assemblies) =>
+        ToolDefinitionDiscovery.Discover<DesignerDefinition>(
+            assemblies,
+            CandidateTypeName,
+            Words,
+            definitions => definitions.OrderBy(definition => definition.Origin, StringComparer.Ordinal),
+            _logger);
 }
