@@ -6,7 +6,7 @@ namespace EtAlii.Adp.Projects;
 /// Where a project-relative path lands on disk, for every call that names a file of a project:
 /// the project root, the containment check, and the file's existence - nothing about which tool.
 /// It belongs with the projects because it is the project's answer, read once per request
-/// (code-structure FR-062): the diagram, designer and editor services all ask it, and none
+/// (code-structure FR-062): the service of every kind of tool asks it, and none
 /// reads the project store a second time for the same request.
 /// </summary>
 public static class ProjectTextFile
