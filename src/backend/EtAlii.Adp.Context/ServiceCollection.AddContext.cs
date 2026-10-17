@@ -1,6 +1,7 @@
 using EtAlii.Adp.History;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
 
 namespace EtAlii.Adp.Context;
 
@@ -29,9 +30,11 @@ public static class ServiceCollectionAddContextExtension
         // History availability onto the context stream: registered here rather than in
         // AddHistoryActions because the broadcaster is Context's own machinery - it aggregates
         // through IContextActionResolver and IContextSelectionStore, registered just above, and
-        // it extracts with Context (backend-project-decomposition task 10). Program.cs resolves
-        // it eagerly at startup; that line is a resolution and stays where it is.
+        // it extracts with Context (backend-project-decomposition task 10). A hosted service, so
+        // the host constructs it as it starts and it is subscribed to the history store before
+        // the first request rather than on whichever first touches it (code-structure FR-064).
         services.AddSingleton<HistoryActionsBroadcaster>();
+        services.AddSingleton<IHostedService>(provider => provider.GetRequiredService<HistoryActionsBroadcaster>());
 
         // The seam the history stack uses to tell a project that a command succeeded with
         // something worth saying. Registered here because this is where the stream it writes to
