@@ -380,6 +380,10 @@
         "enabled": false,
         "doc": "Reported by danglingSource and danglingTarget instead, which leave an end written empty or not written at all unreported, as the tool does, and which read the id an end is written with."
       },
+      "std.unreadableEntry": {
+        "enabled": false,
+        "doc": "An entry of `elements` or `relations` that is not a mapping is kept as it is and not drawn, silently, as the tool has always skipped it (the binding's two `Unreadable` rules)."
+      },
       "std.endpoints": {
         "enabled": false,
         "doc": "A self-dependency is reported by selfDependency instead, which judges the ids as written, also when no node holds them; std.endpoints judges only a relation whose two ends both resolve. Nothing in the tool can create one; the command refuses it with \"A node cannot depend on itself.\""
@@ -481,22 +485,22 @@
   },
 
   "persistence": {
-    "doc": "Stored as a `.dgr` file: ADP's own YAML schema, owned outright by this type. The file is not a DID definition; the format plugin maps it to and from one (see dependency-graph.md).",
-    "format": "plugin:net.etalii.adp.generic.dgr",
-    "encoding": "utf-8",
-    "newline": "crlf",
-    "finalNewline": true,
-    "files": { "mode": "single", "model": "{name}.dgr" },
+    "doc": "Stored as a `.dgr` file: ADP's own YAML schema, owned outright by this type. The FBL binding `dgr` reads and writes it, and `typeMap` maps the binding's element types and attributes onto this metamodel (see dependency-graph.md, section 1). The binding reads a dependency as an element with reference attributes, so one whose end names nothing is kept and reported, and every entry and end a second time as written, for the rules that judge the ids as written.",
+    "format": "fbl",
+    "binding": "https://raw.githubusercontent.com/etalii-adp/etalii.adp.ide.standalone/develop/src/diagrams/dependency-graph/backend/EtAlii.Adp.Diagram.DependencyGraph/dependency-graph.fbl#dgr",
     "ids": {
       "strategy": "uuid-v4",
       "encoding": "base36",
       "stable": true,
       "doc": "New ids are ShortGuids: a version 4 GUID written as 25 characters of base 36. Hand-written ids such as `api-gateway` are kept as they are."
     },
-    "ordering": { "elements": "creation", "keys": "canonical" },
-    "omitDefaults": false,
     "view": { "store": [] },
-    "collaboration": { "mode": "none" }
+    "collaboration": { "mode": "none" },
+    "typeMap": {
+      "Node": { "as": "Node", "hostAttributes": ["storedId"] },
+      "Dependency": { "as": "DependsOn", "attributes": { "from": "source", "to": "target" }, "hostAttributes": ["storedId", "writtenFrom", "writtenTo"] },
+      "Unreadable": { "as": "unreadable" }
+    }
   },
 
   "plugins": {
@@ -515,12 +519,6 @@
           "doc": "The id a dependency's `source` or `target` end is written with in the file (`from` or `to`), also when it names no node and the end is null in the model; the empty text when the key is absent or empty."
         }
       ]
-    },
-    "net.etalii.adp.generic.dgr": {
-      "version": "^1.0.0",
-      "provides": ["persistenceFormat"],
-      "required": true,
-      "doc": "Reads and writes the `.dgr` YAML document: the version marker `dependencies: 1`, an `elements` list and a `relations` list. Writes are line splices, so an unchanged file round-trips byte-identically and an edit changes only the lines it affects."
     },
     "net.etalii.adp.generic.dependencyCurve": {
       "version": "^1.0.0",
