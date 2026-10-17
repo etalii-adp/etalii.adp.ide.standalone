@@ -92,7 +92,7 @@ public sealed class DependencyGraphContextActionProvider(IHistoryStackStore hist
     /// menu is the definition's, in its groups.
     /// </remarks>
     protected override IReadOnlyList<ContextActionGroupDefinition> Discover(DocumentEntry<LineDocument, DependencyGraphModel> entry, string elementId) =>
-        DependencyGraphDefinition.Menus(entry.Model, elementId);
+        DependencyGraphDefinition.Menus(DependencyGraphBody.Of(entry), elementId);
 
     /// <inheritdoc />
     protected override async ValueTask<ContextExecutionResult> RunAsync(
@@ -112,7 +112,7 @@ public sealed class DependencyGraphContextActionProvider(IHistoryStackStore hist
                 // The gesture already said everything an add needs - where it landed - so
                 // nothing is asked and the node appears where it was dropped, as the definition's
                 // addNodeHere places and labels it.
-                (AddDependencyGraphElementCommand? added, string refusal) = DependencyGraphDefinition.NodeHere(model, target.ResolvedFullPath, placedX, placedRow);
+                (AddDependencyGraphElementCommand? added, string refusal) = DependencyGraphDefinition.NodeHere(DependencyGraphBody.Of(entry), target.ResolvedFullPath, placedX, placedRow);
                 return added is null
                     ? new ContextExecutionFailed(refusal)
                     : await DispatchAsync(target, added, cancellationToken);
@@ -127,7 +127,7 @@ public sealed class DependencyGraphContextActionProvider(IHistoryStackStore hist
                 // called and the dependency are the definition's addRight and addBelow, run on the
                 // selected node, so nothing is asked.
                 (AddConnectedDependencyGraphElementCommand? grown, string refusal) = DependencyGraphDefinition.Grown(
-                    model, target.ResolvedFullPath, actionId == AddAfterActionId ? "addRight" : "addBelow", element.Id);
+                    DependencyGraphBody.Of(entry), target.ResolvedFullPath, actionId == AddAfterActionId ? "addRight" : "addBelow", element.Id);
                 return grown is null
                     ? new ContextExecutionFailed(refusal)
                     : await DispatchAsync(target, grown, cancellationToken);
@@ -150,7 +150,7 @@ public sealed class DependencyGraphContextActionProvider(IHistoryStackStore hist
 
                     // The new node is the relation's SOURCE: created at the drop, depending on
                     // the existing node, as the dependsOn tool's createSource makes it.
-                    return await RelateHereAsync(target, model, to, "source", fromX, fromRow, cancellationToken);
+                    return await RelateHereAsync(target, DependencyGraphBody.Of(entry), to, "source", fromX, fromRow, cancellationToken);
                 }
 
                 if (DependencyGraphEdits.ElementOf(model, from) is null)
@@ -163,7 +163,7 @@ public sealed class DependencyGraphContextActionProvider(IHistoryStackStore hist
                     // Released on empty canvas: what the node depends on does not exist yet, so
                     // it is created there and related in one command - one undo taking both - as
                     // the dependsOn tool's createTarget makes it.
-                    return await RelateHereAsync(target, model, from, "target", toX, toRow, cancellationToken);
+                    return await RelateHereAsync(target, DependencyGraphBody.Of(entry), from, "target", toX, toRow, cancellationToken);
                 }
 
                 return await DispatchAsync(target, new ConnectDependencyGraphElementsCommand(
@@ -204,7 +204,7 @@ public sealed class DependencyGraphContextActionProvider(IHistoryStackStore hist
                 // walked into three times in the module this was forked from; every action that
                 // needs no input dispatches in this method.
                 // What is asked, and when, is the definition's deletion confirmation.
-                if (DependencyGraphDefinition.ElementOf(DependencyGraphDefinition.Disl(model), element.Id) is not { } node
+                if (DependencyGraphDefinition.ElementOf(DependencyGraphBody.Of(entry).Disl.Diagram, element.Id) is not { } node
                     || DeletionPolicy.Confirmation(DependencyGraphDefinition.Specification, node) is not { } confirmation)
                 {
                     return await DispatchAsync(target,
@@ -241,9 +241,9 @@ public sealed class DependencyGraphContextActionProvider(IHistoryStackStore hist
     /// holds carries them, and a redo re-creates under the ids it had.
     /// </remarks>
     private async ValueTask<ContextExecutionResult> RelateHereAsync(
-        ContextTarget target, DependencyGraphModel model, string elementId, string newEnd, double x, int row, CancellationToken cancellationToken)
+        ContextTarget target, DependencyGraphBody body, string elementId, string newEnd, double x, int row, CancellationToken cancellationToken)
     {
-        (AddConnectedDependencyGraphElementCommand? related, string refusal) = DependencyGraphDefinition.RelatedHere(model, target.ResolvedFullPath, elementId, newEnd, x, row);
+        (AddConnectedDependencyGraphElementCommand? related, string refusal) = DependencyGraphDefinition.RelatedHere(body, target.ResolvedFullPath, elementId, newEnd, x, row);
         return related is null
             ? new ContextExecutionFailed(refusal)
             : await DispatchAsync(target, related, cancellationToken);

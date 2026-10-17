@@ -20,8 +20,8 @@ namespace EtAlii.Adp.Specification.Fbl.Tests.RealFiles;
 /// the causal loop diagram, the module's own binding), mapped from the
 /// module's kinds to the binding's types by <see cref="ModuleIds"/>. Every difference is a listed
 /// divergence. Only public API of the modules is used, and nothing in them is changed. The dependency
-/// graph's binding is the one its specification drafts (<see cref="RealFileCorpus.Drafted"/>), checked
-/// against the module's parser over every <c>.dgr</c> file (dependency-graph-disl-fbl, task 2).
+/// graph's binding is the module's own, embedded (<see cref="RealFileCorpus.ModuleOwned"/>), checked
+/// against the module's parser over every <c>.dgr</c> file (dependency-graph-disl-fbl, tasks 2 and 7).
 /// <para>
 /// <b>The Helm chart folder</b> (helm-chart-disl-fbl, Requirement 8.5): every folder of this repository that holds a
 /// <c>Chart.yaml</c>, read through the vendored folder binding and the module's plugin by the library's folder body,
@@ -65,7 +65,7 @@ public class ModuleCrossCheckTests
     }
 
     [Fact]
-    public void TheDraftedDependencyGraphBinding_TakesEveryDgrFileOfTheRepository()
+    public void TheDependencyGraphBinding_TakesEveryDgrFileOfTheRepository()
     {
         // Arrange.
         var binding = RealFileCorpus.Find("dependency-graph");

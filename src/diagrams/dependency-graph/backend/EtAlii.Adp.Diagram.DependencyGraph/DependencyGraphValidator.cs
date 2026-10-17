@@ -28,9 +28,6 @@ public sealed class DependencyGraphValidator : IDiagramValidator
         ArgumentNullException.ThrowIfNull(request);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var outcome = DependencyGraphParser.Outcome(LineDocument.Parse(request.Document));
-        return ValueTask.FromResult(outcome.IsUsable
-            ? DependencyGraphFindings.Judge(outcome.Model)
-            : DependencyGraphFindings.Unparseable(outcome.Unreadable, outcome.Problems[0].Line + 1));
+        return ValueTask.FromResult(DependencyGraphFindings.Judge(DependencyGraphBody.Parse(request.Document)));
     }
 }

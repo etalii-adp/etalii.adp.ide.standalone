@@ -15,4 +15,12 @@ public sealed record DependencyGraphModel(
 {
     /// <summary>An empty model, for a document that declares nothing.</summary>
     public static DependencyGraphModel Empty { get; } = new([], []);
+
+    /// <summary>
+    /// The same text read through the module's binding, which the menus, the rows, the findings and the
+    /// payloads come from; null for a model the parser read on its own. Until every edit is written
+    /// through the binding a document carries both readings (dependency-graph-disl-fbl, task 7): this
+    /// one, and the parser's, whose line ranges the writer splices at.
+    /// </summary>
+    public DependencyGraphBody? Body { get; init; }
 }

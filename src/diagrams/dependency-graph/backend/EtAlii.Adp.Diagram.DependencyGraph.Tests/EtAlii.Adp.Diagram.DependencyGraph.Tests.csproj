@@ -25,12 +25,6 @@
       compares against the file it copied, so the copy must not be rewritten under a running test.
     -->
     <Content Include="Fixtures\**" CopyToOutputDirectory="PreserveNewest" />
-    <!--
-      The binding as the requirements draft it (dependency-graph-disl-fbl, task 2): a test resource, which the
-      module does not read. The tests read each finding through it. The drafted persistence went in task 6, when
-      the bundled definition came to say the same.
-    -->
-    <Content Include="Parity\Drafted\**" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

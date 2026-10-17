@@ -1,4 +1,3 @@
-using System.Runtime.CompilerServices;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Specification.Disl;
@@ -19,21 +18,19 @@ namespace EtAlii.Adp.Diagram.DependencyGraph;
 /// <para>
 /// <b>What stays in code, and why.</b> The order the findings are reported in, which
 /// <c>constraints.order</c> cannot state (<c>definition/dependency-graph.md</c>, section 3), and the ids
-/// and ends as written, which the definition's <c>writtenEnd</c> function reads from the module's reading.
-/// Every write, which is a splice of the file's own lines that no DISL change says how to make, so a
-/// DISL transaction is mapped onto the command that makes that splice.
+/// and ends as written, which the definition's <c>writtenEnd</c> function reads from the binding's host
+/// attributes. Every write, which is still a splice of the file's own lines over the parser's ranges, so
+/// a DISL transaction is mapped onto the command that makes that splice.
 /// </para>
 /// <para>
-/// <b>The model is built from the module's own reading</b> (<see cref="DependencyGraphParser"/>), one
-/// DISL element per entry in the order the reader produced them, and kept with that reading so a
-/// menu and a row read the same snapshot. The reader stays because every write is a splice at the
-/// line ranges it records and every finding is placed at one; a second reader of the same bytes, an
-/// FBL binding, would be a copy to keep in agreement with nothing gained.
+/// <b>The model is the body's own</b>: <see cref="DependencyGraphBody.Disl"/>, built by
+/// <see cref="DislModelBuilder"/> from the binding's reading, so a menu and a row read the same snapshot.
+/// An operation runs on a model of its own (<see cref="DependencyGraphBody.Working"/>).
 /// </para>
 /// <para>
-/// <b>An element is found by its id as <see cref="DependencyGraphEdits"/> finds it</b>: the first node
-/// with it, else the first dependency. A dependency's end resolves to the first node with the id it
-/// names; an end that names nothing, or no node, is left unresolved.
+/// <b>An element is found by the id written in the document</b>, the binding's <c>storedId</c>: the
+/// first node with it, else the first dependency. A later entry reusing an id, or one without an id,
+/// is told apart by FBL by its place; the client knows it by what is written.
 /// </para>
 /// <para>
 /// <b>Nothing is gated on read-only</b>: the menus and rows of a graph that could not be read are the
@@ -42,8 +39,6 @@ namespace EtAlii.Adp.Diagram.DependencyGraph;
 /// </remarks>
 internal static class DependencyGraphDefinition
 {
-    private static readonly ConditionalWeakTable<DependencyGraphModel, DislDiagram> Built = [];
-
     private static readonly DislEnv Env = new();
 
     /// <summary>The bundled definition, with the palette, the menus and the rows every module derives the same way.</summary>
@@ -55,17 +50,11 @@ internal static class DependencyGraphDefinition
     /// <summary>The wire ids of <c>x-dependencies</c>.</summary>
     private static WireIdMap Ids => Definition.Ids;
 
-    /// <summary>The DISL model of <paramref name="model"/>, built once per reading.</summary>
-    public static DislDiagram Disl(DependencyGraphModel model)
+    /// <summary>The context menu of <paramref name="elementId"/> in <paramref name="body"/>: a node, a dependency, a placement, a connect gesture; none for anything else.</summary>
+    public static IReadOnlyList<ContextActionGroupDefinition> Menus(DependencyGraphBody body, string elementId)
     {
-        ArgumentNullException.ThrowIfNull(model);
-        return Built.GetValue(model, Build);
-    }
-
-    /// <summary>The context menu of <paramref name="elementId"/> in <paramref name="model"/>: a node, a dependency, a placement, a connect gesture; none for anything else.</summary>
-    public static IReadOnlyList<ContextActionGroupDefinition> Menus(DependencyGraphModel model, string elementId)
-    {
-        var diagram = Disl(model);
+        ArgumentNullException.ThrowIfNull(body);
+        var diagram = body.Disl.Diagram;
         DislMenuTarget? target = ElementOf(diagram, elementId) is { } element
             ? DislMenuTarget.Element(element)
             : GestureIds.TryParseRowPlacement(elementId, out _, out _)
@@ -76,13 +65,13 @@ internal static class DependencyGraphDefinition
         return target is null ? [] : Definition.Menus(target, Env);
     }
 
-    /// <summary>The property rows of <paramref name="elementId"/> in <paramref name="model"/>: a node's or a dependency's form; none for anything else.</summary>
-    public static IReadOnlyList<ContextPropertyDefinition> Rows(DependencyGraphModel model, string elementId)
+    /// <summary>The property rows of <paramref name="elementId"/> in <paramref name="body"/>: a node's or a dependency's form; none for anything else.</summary>
+    public static IReadOnlyList<ContextPropertyDefinition> Rows(DependencyGraphBody body, string elementId)
     {
-        var diagram = Disl(model);
-        if (ElementOf(diagram, elementId) is not { } element) return [];
+        ArgumentNullException.ThrowIfNull(body);
+        if (ElementOf(body.Disl.Diagram, elementId) is not { } element) return [];
 
-        return As(Definition.Rows(element, Env), AsWritten(model, element));
+        return As(Definition.Rows(element, Env), AsWritten(element));
     }
 
     /// <summary>
@@ -90,13 +79,13 @@ internal static class DependencyGraphDefinition
     /// <paramref name="row"/> - under a new ShortGuid: its label and its place as the operation computes
     /// them, as a command; or, when the operation refuses or adds anything else, why not.
     /// </summary>
-    public static (AddDependencyGraphElementCommand? Command, string Refusal) NodeHere(DependencyGraphModel model, string body, double x, int row)
+    public static (AddDependencyGraphElementCommand? Command, string Refusal) NodeHere(DependencyGraphBody body, string bodyPath, double x, int row)
     {
-        ArgumentNullException.ThrowIfNull(model);
+        ArgumentNullException.ThrowIfNull(body);
         var transaction = OperationInterpreter.Run(
             Specification,
             "addNodeHere",
-            Build(model),
+            body.Working(),
             null,
             DislIds.Fixed(ShortGuid.NewShortGuid().ToString()),
             new DislInvocation(Position: new Dictionary<string, object?>(StringComparer.Ordinal) { ["x"] = x, ["y"] = (double)row }),
@@ -110,7 +99,7 @@ internal static class DependencyGraphDefinition
             return (null, "The definition's addNodeHere does not add one node with a label, an x and a row.");
         }
 
-        return (new AddDependencyGraphElementCommand(body, create.Id, label, at, checked((int)on)), "");
+        return (new AddDependencyGraphElementCommand(bodyPath, create.Id, label, at, checked((int)on)), "");
     }
 
     /// <summary>
@@ -118,14 +107,14 @@ internal static class DependencyGraphDefinition
     /// <paramref name="elementId"/>, and the dependency on it, as the definition computes them: one command,
     /// under two new ids; or, when the operation refuses or makes anything else, why not.
     /// </summary>
-    public static (AddConnectedDependencyGraphElementCommand? Command, string Refusal) Grown(DependencyGraphModel model, string body, string operation, string elementId)
+    public static (AddConnectedDependencyGraphElementCommand? Command, string Refusal) Grown(DependencyGraphBody body, string bodyPath, string operation, string elementId)
     {
-        ArgumentNullException.ThrowIfNull(model);
-        var diagram = Build(model);
-        if (diagram.NodesOfType("Node").FirstOrDefault(node => node.Id == elementId) is not { } self) return (null, "That is no longer in this graph.");
+        ArgumentNullException.ThrowIfNull(body);
+        var diagram = body.Working();
+        if (NodeOf(diagram, elementId) is not { } self) return (null, "That is no longer in this graph.");
 
         var transaction = OperationInterpreter.Run(Specification, operation, diagram, self, NewIds(), null, Env);
-        return Related(transaction, body, elementId, operation, newElementIsSource: false, self);
+        return Related(transaction, bodyPath, elementId, operation, newElementIsSource: false, self);
     }
 
     /// <summary>
@@ -134,11 +123,11 @@ internal static class DependencyGraphDefinition
     /// (<c>source</c> from a left anchor, <c>target</c> from a right one), and the dependency between it and
     /// <paramref name="elementId"/>, as one command; or why not.
     /// </summary>
-    public static (AddConnectedDependencyGraphElementCommand? Command, string Refusal) RelatedHere(DependencyGraphModel model, string body, string elementId, string newEnd, double x, int row)
+    public static (AddConnectedDependencyGraphElementCommand? Command, string Refusal) RelatedHere(DependencyGraphBody body, string bodyPath, string elementId, string newEnd, double x, int row)
     {
-        ArgumentNullException.ThrowIfNull(model);
-        var diagram = Build(model);
-        if (diagram.NodesOfType("Node").FirstOrDefault(node => node.Id == elementId) is not { } existing) return (null, "That is no longer in this graph.");
+        ArgumentNullException.ThrowIfNull(body);
+        var diagram = body.Working();
+        if (NodeOf(diagram, elementId) is not { } existing) return (null, "That is no longer in this graph.");
 
         var transaction = OperationInterpreter.ConnectToNew(
             Specification,
@@ -149,14 +138,14 @@ internal static class DependencyGraphDefinition
             new Dictionary<string, object?>(StringComparer.Ordinal) { ["x"] = x, ["y"] = (double)row },
             NewIds(),
             Env);
-        return Related(transaction, body, elementId, "dependsOn tool", newElementIsSource: newEnd == "source", existing);
+        return Related(transaction, bodyPath, elementId, "dependsOn tool", newElementIsSource: newEnd == "source", existing);
     }
 
     /// <summary>Two ids for a node and its dependency, minted in that order as the hand-written commands did.</summary>
     private static IIdSource NewIds() => DislIds.Fixed(ShortGuid.NewShortGuid().ToString(), ShortGuid.NewShortGuid().ToString());
 
     /// <summary>A transaction that creates one node and relates it to <paramref name="existing"/>, as the command that writes both.</summary>
-    private static (AddConnectedDependencyGraphElementCommand? Command, string Refusal) Related(DislTransaction transaction, string body, string elementId, string what, bool newElementIsSource, DislElement existing)
+    private static (AddConnectedDependencyGraphElementCommand? Command, string Refusal) Related(DislTransaction transaction, string bodyPath, string elementId, string what, bool newElementIsSource, DislElement existing)
     {
         if (!transaction.WasApplied) return (null, transaction.Refusal!);
         if (transaction.Changes is not [DislChange.Create { Type: "Node" } created, DislChange.Connect { Type: "DependsOn" } relation]
@@ -168,45 +157,28 @@ internal static class DependencyGraphDefinition
             return (null, $"The definition's {what} does not add one node with a label, an x and a row, related to this one.");
         }
 
-        return (new AddConnectedDependencyGraphElementCommand(body, elementId, created.Id, relation.Id, x, checked((int)row), newElementIsSource, label), "");
+        return (new AddConnectedDependencyGraphElementCommand(bodyPath, elementId, created.Id, relation.Id, x, checked((int)row), newElementIsSource, label), "");
     }
 
-    /// <summary>The element <paramref name="id"/> names, as <see cref="DependencyGraphEdits"/> finds it; null for none.</summary>
-    public static DislElement? ElementOf(DislDiagram diagram, string id)
+    /// <summary>The element <paramref name="id"/> names, by the id written in the document: the first node with it, else the first dependency; null for none.</summary>
+    public static DislElement? ElementOf(DislDiagram diagram, string id) =>
+        NodeOf(diagram, id) ?? diagram.RelationsOfType("DependsOn").FirstOrDefault(relation => WrittenId(relation) == id);
+
+    /// <summary>The first node written with <paramref name="id"/>; null for none.</summary>
+    private static DislElement? NodeOf(DislDiagram diagram, string id)
     {
         ArgumentNullException.ThrowIfNull(diagram);
-        return diagram.NodesOfType("Node").FirstOrDefault(node => node.Id == id)
-            ?? diagram.RelationsOfType("DependsOn").FirstOrDefault(relation => relation.Id == id);
+        return diagram.NodesOfType("Node").FirstOrDefault(node => WrittenId(node) == id);
     }
 
-    private static DislDiagram Build(DependencyGraphModel model)
+    /// <summary>The id written in the document, the binding's <c>storedId</c>: empty for an entry without one.</summary>
+    public static string WrittenId(DislElement element) => HostText(element, "storedId");
+
+    /// <summary>A host attribute of <paramref name="element"/> as the text it was read as; empty when it was not written.</summary>
+    internal static string HostText(DislElement element, string name)
     {
-        var diagram = new DislDiagram(Specification);
-        var first = new Dictionary<string, DislElement>(StringComparer.Ordinal);
-        foreach (var element in model.Elements)
-        {
-            var node = diagram.AddNode("Node", element.Id, new Dictionary<string, object?>(StringComparer.Ordinal)
-            {
-                ["label"] = element.Label,
-                ["x"] = element.X,
-                ["row"] = (long)element.Row,
-            });
-            first.TryAdd(element.Id, node);
-        }
-
-        foreach (var relation in model.Relations)
-        {
-            diagram.AddRelation(
-                "DependsOn",
-                relation.Id,
-                End(relation.From),
-                End(relation.To),
-                new Dictionary<string, object?>(StringComparer.Ordinal) { ["label"] = relation.Label });
-        }
-
-        return diagram;
-
-        DislElement? End(string id) => id.Length > 0 ? first.GetValueOrDefault(id) : null;
+        ArgumentNullException.ThrowIfNull(element);
+        return element.HostAttributes.TryGetValue(name, out var value) ? value as string ?? "" : "";
     }
 
     /// <summary>
@@ -216,7 +188,7 @@ internal static class DependencyGraphDefinition
     /// to no node is the id the file names: DISL hands CEL such an end as null and gives it no way to read
     /// the id it was written with (§4.9). Every other value is the definition's.
     /// </summary>
-    private static Dictionary<string, string> AsWritten(DependencyGraphModel model, DislElement element)
+    private static Dictionary<string, string> AsWritten(DislElement element)
     {
         var values = new Dictionary<string, string>(StringComparer.Ordinal);
         if (element.IsA("Node"))
@@ -225,9 +197,8 @@ internal static class DependencyGraphDefinition
         }
         else if (element.Source is null || element.Target is null)
         {
-            var relation = model.Relations[element.Diagram.Relations.ToList().IndexOf(element)];
-            values[Ids.PropertyId("from")] = relation.From;
-            values[Ids.PropertyId("to")] = relation.To;
+            values[Ids.PropertyId("from")] = HostText(element, "writtenFrom");
+            values[Ids.PropertyId("to")] = HostText(element, "writtenTo");
         }
 
         return values;

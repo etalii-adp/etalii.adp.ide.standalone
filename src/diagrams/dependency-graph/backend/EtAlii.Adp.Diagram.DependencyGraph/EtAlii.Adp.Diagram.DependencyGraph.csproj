@@ -29,6 +29,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- The module's own FBL binding, which the bundled definition's persistence names. -->
+    <EmbeddedResource Include="dependency-graph.fbl" LogicalName="dependency-graph.fbl" />
+  </ItemGroup>
+
+  <ItemGroup>
     <!-- The DISL definition bundled from etalii-adp/etalii.adp (src/diagrams/tools/bundle-disl.sh), and its provenance. -->
     <EmbeddedResource Include="..\..\definition\dependency-graph.dis" LogicalName="dependency-graph.dis" />
     <EmbeddedResource Include="..\..\definition\provenance.json" LogicalName="dependency-graph.provenance.json" />
