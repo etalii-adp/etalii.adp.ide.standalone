@@ -57,7 +57,7 @@ public sealed class PipelineContextActionProvider : DiagramActionProvider<LineDo
     public const string ClearDependenciesActionId = "azure-pipeline.clear-dependencies";
 
     /// <summary>Shows a stage's jobs, or hides them again.</summary>
-    private const string ToggleStageActionId = "azure-pipeline.toggle-stage";
+    public const string ToggleStageActionId = "azure-pipeline.toggle-stage";
 
     /// <summary>Opens or closes a job, showing or hiding its steps (Requirement 8.2).</summary>
     public const string ToggleJobActionId = "azure-pipeline.toggle-job";
@@ -85,85 +85,15 @@ public sealed class PipelineContextActionProvider : DiagramActionProvider<LineDo
     protected override bool Serves(ContextTarget target) => base.Serves(target) && target.ElementId.Length > 0;
 
     /// <inheritdoc />
-    /// <remarks>What the element offers whatever is open; <see cref="Discover(ContextTarget, DocumentEntry{LineDocument, PipelineModel})"/> adds the opening.</remarks>
-    protected override IReadOnlyList<ContextActionGroupDefinition> Discover(DocumentEntry<LineDocument, PipelineModel> entry, string elementId)
-    {
-        ArgumentNullException.ThrowIfNull(entry);
-
-        if (Resolve(entry, elementId) is not { } location || !location.Target.IsEditable)
-        {
-            // Nothing may be edited in a file that does not parse, and an element whose text is
-            // somewhere else has nothing here to do to it.
-            return [];
-        }
-
-        var edits = new List<ContextActionDefinition>
-        {
-            new(RenameActionId, "Rename…", "mdi-pencil-outline", new ContextShortcutDefinition("F2")),
-            new(
-                ToggleEnabledActionId,
-                Execution(location).IsDisabled ? "Enable" : "Disable",
-                Execution(location).IsDisabled ? "mdi-play-circle-outline" : "mdi-pause-circle-outline"),
-        };
-
-        if (location.Kind != PipelineElementLocationKind.Step && DependsOnDeclared(location))
-        {
-            // Only worth offering when there is something to clear: a stage with no dependsOn is
-            // already on the default.
-            edits.Add(new ContextActionDefinition(
-                ClearDependenciesActionId,
-                "Use the default order",
-                "mdi-arrow-decision-outline"));
-        }
-
-        if (Removable(entry.Model, location))
-        {
-            edits.Add(new ContextActionDefinition(
-                RemoveActionId,
-                "Remove",
-                "mdi-delete-outline",
-                new ContextShortcutDefinition("Delete")));
-        }
-
-        var additions = AdditionsFor(location);
-        var ordering = OrderingFor(location);
-
-        // Three groups, so the menu separates changing this element from adding another and from
-        // moving it - an empty group would draw a separator with nothing under it.
-        return new[]
-            {
-                new ContextActionGroupDefinition(edits),
-                additions.Count > 0 ? new ContextActionGroupDefinition(additions) : null,
-                ordering.Count > 0 ? new ContextActionGroupDefinition(ordering) : null,
-            }
-            .OfType<ContextActionGroupDefinition>()
-            .ToArray();
-    }
-
-    /// <inheritdoc />
     /// <remarks>
-    /// Opening a stage or a job is how what is inside it is ever seen, so it leads what can be done
-    /// to one, and only where there is something inside to show (Requirement 8.2). Whether it is
-    /// open belongs to the connection, which is why it is added here rather than with the edits.
+    /// Derived from the bundled definition (<see cref="PipelineDefinition.Menus"/>), open as this
+    /// connection has the element: opening a stage or a job leads what can be done to one, and only
+    /// where there is something inside to show (Requirement 8.2).
     /// </remarks>
     protected override IReadOnlyList<ContextActionGroupDefinition> Discover(ContextTarget target, DocumentEntry<LineDocument, PipelineModel> entry)
     {
         ArgumentNullException.ThrowIfNull(target);
-
-        var groups = Discover(entry, target.ElementId);
-        if (groups.Count == 0 || Resolve(entry, target.ElementId) is not { } location || OpenerOf(location) is not { } inside)
-        {
-            return groups;
-        }
-
-        var open = _views.For(target.WatchId, target.ResolvedFullPath).IsExpanded(inside.Id);
-        var toggle = new ContextActionDefinition(
-            inside.ActionId,
-            open ? inside.Hide : inside.Show,
-            open ? "mdi-unfold-less-horizontal" : "mdi-unfold-more-horizontal",
-            new ContextShortcutDefinition(" "));
-
-        return [new ContextActionGroupDefinition([toggle, .. groups[0].Actions]), .. groups.Skip(1)];
+        return PipelineDefinition.Menus(entry, _views.For(target.WatchId, target.ResolvedFullPath), target.ElementId);
     }
 
     /// <inheritdoc />
@@ -181,16 +111,23 @@ public sealed class PipelineContextActionProvider : DiagramActionProvider<LineDo
             return new ContextExecutionFailed(Gone);
         }
 
-        if (actionId == ToggleStageActionId || actionId == ToggleJobActionId)
+        if (PipelineDefinition.IsView(actionId))
         {
             // View state, not a command: nothing is written and nothing lands on the history,
-            // because which stages this connection has open is not a fact about the pipeline.
-            // Toggled through the view state's announcing method, which is what makes the session
-            // push the deltas - toggling a view directly would change state no client hears of.
-            _views.Toggle(
-                target.WatchId,
-                target.ResolvedFullPath,
-                actionId == ToggleJobActionId ? location.Job!.Id : location.Stage.Id);
+            // because which stages this connection has open is not a fact about the pipeline. The
+            // definition's view action says what it should be; it is toggled through the view
+            // state's announcing method, which is what makes the session push the deltas.
+            var view = PipelineDefinition.View(entry, _views.For(target.WatchId, target.ResolvedFullPath), target.ElementId, actionId);
+            if (view.Refusal is { } refusal)
+            {
+                return new ContextExecutionFailed(refusal);
+            }
+
+            if (view.Toggle is { } toggled)
+            {
+                _views.Toggle(target.WatchId, target.ResolvedFullPath, toggled);
+            }
+
             return new ContextExecutionCompleted();
         }
 
@@ -247,73 +184,6 @@ public sealed class PipelineContextActionProvider : DiagramActionProvider<LineDo
         };
     }
 
-    /// <summary>What can be added here, which depends entirely on what "here" is.</summary>
-    /// <remarks>
-    /// A stage goes beside a stage, a job in a stage, a step in a job. Offering an add where it
-    /// does not belong would put the refusal in the command rather than in the menu, which is one
-    /// click too late.
-    /// </remarks>
-    private static List<ContextActionDefinition> AdditionsFor(PipelineElementLocation location) => location.Kind switch
-    {
-        PipelineElementLocationKind.Stage =>
-        [
-            new ContextActionDefinition(AddStageActionId, "Add stage", "mdi-layers-plus"),
-            new ContextActionDefinition(AddJobActionId, "Add job", "mdi-plus-box-outline"),
-            new ContextActionDefinition(AddDeploymentJobActionId, "Add deployment job", "mdi-rocket-launch-outline"),
-        ],
-        PipelineElementLocationKind.Job => [new ContextActionDefinition(AddStepActionId, "Add step", "mdi-plus-box-outline")],
-        _ => [],
-    };
-
-    /// <summary>
-    /// Moving a step within its job - the one thing in a pipeline whose order is its meaning.
-    /// </summary>
-    /// <remarks>
-    /// Withheld at the ends: a first step has nowhere to move up to. Withheld entirely where any
-    /// of the job's steps came from a template, because then the order on the canvas is not the
-    /// order in this file and moving by position would move the wrong lines.
-    ///
-    /// The shortcuts are Alt+Up and Alt+Down in the shape a <c>KeyboardEvent</c> reports the press:
-    /// the key <c>ArrowUp</c> with Alt held. The text <c>"Alt+Up"</c> as a key matched no keypress.
-    /// </remarks>
-    private static List<ContextActionDefinition> OrderingFor(PipelineElementLocation location)
-    {
-        if (location.Kind != PipelineElementLocationKind.Step || location.Job!.Steps.Any(step => step.IsFromTemplate))
-        {
-            return [];
-        }
-
-        var index = IndexOf(location);
-        var actions = new List<ContextActionDefinition>();
-        if (index > 0)
-        {
-            actions.Add(new ContextActionDefinition(
-                MoveStepUpActionId, "Move up", "mdi-arrow-up", new ContextShortcutDefinition("ArrowUp", Alt: true)));
-        }
-
-        if (index < location.Job.Steps.Count - 1)
-        {
-            actions.Add(new ContextActionDefinition(
-                MoveStepDownActionId, "Move down", "mdi-arrow-down", new ContextShortcutDefinition("ArrowDown", Alt: true)));
-        }
-
-        return actions;
-    }
-
-    /// <summary>
-    /// Whether removing this element would leave a pipeline that still runs.
-    /// </summary>
-    /// <remarks>
-    /// The same questions <see cref="RemovePipelineElementCommandHandler"/> asks, asked earlier so
-    /// the answer is a missing menu item rather than an error message.
-    /// </remarks>
-    private static bool Removable(PipelineModel model, PipelineElementLocation location) => location.Kind switch
-    {
-        PipelineElementLocationKind.Stage => model.Stages.Count(stage => !stage.IsImplicit) > 1,
-        PipelineElementLocationKind.Job => location.Stage.Jobs.Count > 1,
-        _ => location.Job!.Steps.Count > 1,
-    };
-
     private static PipelineExecution Execution(PipelineElementLocation location) => location.Kind switch
     {
         PipelineElementLocationKind.Stage => location.Stage.Execution,
@@ -328,28 +198,10 @@ public sealed class PipelineContextActionProvider : DiagramActionProvider<LineDo
         _ => location.Step!.DisplayName,
     };
 
-    private static bool DependsOnDeclared(PipelineElementLocation location) =>
-        location.Kind == PipelineElementLocationKind.Stage
-            ? location.Stage.DependsOnDeclared
-            : location.Job!.DependsOnDeclared;
-
     private static int IndexOf(PipelineElementLocation location) =>
         location.Job!.Steps.ToList().FindIndex(step => step.Id == location.Step!.Id);
 
     /// <summary>The element <paramref name="elementId"/> names in a document that was read, or null.</summary>
     private static PipelineElementLocation? Resolve(DocumentEntry<LineDocument, PipelineModel> entry, string elementId) =>
         entry.IsUsable && elementId.Length > 0 ? PipelineEdits.Locate(entry.Model, elementId) : null;
-
-    /// <summary>What a stage or a job opens to show, or null where there is nothing inside it to show.</summary>
-    private static PipelineOpener? OpenerOf(PipelineElementLocation location) => location switch
-    {
-        { Kind: PipelineElementLocationKind.Stage, Stage.Jobs.Count: > 0 } =>
-            new PipelineOpener(location.Stage.Id, ToggleStageActionId, "Show jobs", "Hide jobs"),
-        { Kind: PipelineElementLocationKind.Job } when location.Job!.Steps.Count > 0 =>
-            new PipelineOpener(location.Job.Id, ToggleJobActionId, "Show steps", "Hide steps"),
-        _ => null,
-    };
-
-    /// <summary>What opening an element shows it by: its id in the view state, the action, and its two labels.</summary>
-    private sealed record PipelineOpener(string Id, string ActionId, string Show, string Hide);
 }
