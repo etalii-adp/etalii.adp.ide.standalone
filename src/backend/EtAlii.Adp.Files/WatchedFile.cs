@@ -1,6 +1,6 @@
 using Serilog;
 
-namespace EtAlii.Adp.Documents;
+namespace EtAlii.Adp.Files;
 
 /// <summary>
 /// One file watched for what other programs do to it, with an asynchronous read-retry on a

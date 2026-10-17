@@ -1,6 +1,6 @@
 using Serilog;
 
-namespace EtAlii.Adp.Documents;
+namespace EtAlii.Adp.Files;
 
 /// <summary>
 /// A folder watched for what other programs do to it: one <see cref="FileSystemWatcher"/>,

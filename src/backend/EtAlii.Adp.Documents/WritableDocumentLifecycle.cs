@@ -1,3 +1,4 @@
+using EtAlii.Adp.Files;
 using Serilog;
 using IoPath = System.IO.Path; // EtAlii.Adp.Documents.Wire.Path (the proto message) would otherwise shadow System.IO.Path here
 

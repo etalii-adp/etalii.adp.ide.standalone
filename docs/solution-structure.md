@@ -22,20 +22,20 @@ flowchart LR
 
 ## The solution, with its counts
 
-`src/backend/EtAlii.Adp.slnx` holds **141** projects, as a flat list rather than a folder hierarchy, so the whole thing opens and builds as one solution in Rider:
+`src/backend/EtAlii.Adp.slnx` holds **142** projects, as a flat list rather than a folder hierarchy, so the whole thing opens and builds as one solution in Rider:
 
 | Split | Count |
 | --- | --- |
-| core | **43** |
+| core | **44** |
 | diagram | **86** |
 | editor | **10** |
 | designer | **2** |
-| production | **94** |
+| production | **95** |
 | test | **47** |
 
-Those are **two different splits of the same 141**, and a figure appearing in both tables is a coincidence rather than a correspondence, which is exactly what makes a wrong classification look right.
+Those are **two different splits of the same 142**, and a figure appearing in both tables is a coincidence rather than a correspondence, which is exactly what makes a wrong classification look right.
 
-There are **156** tracked `.csproj` files under `src/`, which is **15** more than the solution holds. Every one of the 15 is fixture or example data belonging to `src/diagrams/dotnet-dependency-graph` — a module whose subject matter *is* reading `.csproj` files, so its test fixtures and its showcase project are themselves `.csproj`. **A page claiming "147 projects" would be wrong in the confident direction.**
+There are **157** tracked `.csproj` files under `src/`, which is **15** more than the solution holds. Every one of the 15 is fixture or example data belonging to `src/diagrams/dotnet-dependency-graph` — a module whose subject matter *is* reading `.csproj` files, so its test fixtures and its showcase project are themselves `.csproj`. **A page claiming "147 projects" would be wrong in the confident direction.**
 
 ## The relative-path trap
 
@@ -45,7 +45,7 @@ Classifying by path segment — "count the ones containing `backend`" — yields
 
 ## The core projects
 
-**21** production:
+**22** production:
 
 | Concern | Project |
 | --- | --- |
@@ -53,12 +53,13 @@ Classifying by path segment — "count the ones containing `backend`" — yields
 | Host and composition, including serving the built client and proxying to the Vite dev server | `EtAlii.Adp.Backend.Service` |
 | Sign-in | `EtAlii.Adp.Authentication` |
 | Open documents and the shared wire vocabulary | `EtAlii.Adp.Documents` |
+| Writing a file whole, what holds a file open, whether two paths are one file, and watching a file, a folder and a project's files | `EtAlii.Adp.Files` |
 | Selection, actions, properties, prompts | `EtAlii.Adp.Context` |
 | Commands and undo/redo | `EtAlii.Adp.History` |
 | Errors and warnings | `EtAlii.Adp.Problems` |
 | Known projects and workspace roots | `EtAlii.Adp.Projects` |
 | Connection lifetime | `EtAlii.Adp.Sessions` |
-| Workspace tree and file watching | `EtAlii.Adp.Hierarchy` |
+| Workspace tree, kept current from the project's file events | `EtAlii.Adp.Hierarchy` |
 | Geometry with no dependency: the rectangle, the viewport test's operand, row packing, text width and graph layering | `EtAlii.Adp.Layout` |
 | Diagram-type abstractions, including the diagram definition and validation contracts; it references the documents project and the shared primitives only | `EtAlii.Adp.Diagram` |
 | The bases a module builds on: the provider frame, the element source resolvers, the document session, a bundled DISL definition as a module's palette, menus and rows, and the viewport test | `EtAlii.Adp.Diagram.Modules` |

@@ -1,5 +1,6 @@
 using EtAlii.Adp.Diagram;
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Files;
 using EtAlii.Adp.Hierarchy;
 using Microsoft.Extensions.Time.Testing;
 using Xunit;

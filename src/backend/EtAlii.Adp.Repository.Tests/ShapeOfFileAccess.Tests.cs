@@ -42,7 +42,7 @@ public partial class ShapeOfFileAccessTests
     private static readonly (string File, string Rule, string Reason)[] Permanent =
     [
         ("Documents/SharedDocumentReader.cs", AllRules, "it is the shared-read implementation"),
-        ("Documents/AdpFileWriter.cs", AllRules, "it is the temp-then-move implementation"),
+        ("Files/AdpFileWriter.cs", AllRules, "it is the temp-then-move implementation"),
         // TextFileBuffer.cs had an all-rules entry here until task 6.2, and it is deliberately
         // gone rather than narrowed. The reason it carried - a strict decode that must refuse a
         // torn read rather than save it back (Requirement 2.4) - never justified its SHARING,

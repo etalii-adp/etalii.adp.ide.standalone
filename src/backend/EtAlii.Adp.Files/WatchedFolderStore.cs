@@ -1,7 +1,7 @@
 using System.Collections.Concurrent;
 using Serilog;
 
-namespace EtAlii.Adp.Documents;
+namespace EtAlii.Adp.Files;
 
 /// <summary>
 /// One snapshot per registered folder, kept true as the tree changes, written once (code-structure

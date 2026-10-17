@@ -1,6 +1,6 @@
 using Serilog;
 
-namespace EtAlii.Adp.Documents;
+namespace EtAlii.Adp.Files;
 
 /// <summary>
 /// One watched subject of a <see cref="WatchedFolderStore{TSnapshot}"/>: what it listens to, its

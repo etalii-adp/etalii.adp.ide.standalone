@@ -1,4 +1,4 @@
-namespace EtAlii.Adp.Documents;
+namespace EtAlii.Adp.Files;
 
 /// <summary>What a <see cref="WatchedFolder"/> heard.</summary>
 public enum FileEventKind

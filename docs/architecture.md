@@ -78,12 +78,13 @@ One line each, with the project that owns it. Their internals are deliberately o
 | Concern | Project |
 | --- | --- |
 | Open documents and their contents | `EtAlii.Adp.Documents` |
+| Writing a file whole, what holds a file open, whether two paths are one file, and watching a file, a folder and a project's files | `EtAlii.Adp.Files` |
 | Selection, actions, properties, prompts | `EtAlii.Adp.Context` |
 | Commands and undo/redo | `EtAlii.Adp.History` |
 | Errors and warnings | `EtAlii.Adp.Problems` |
 | Known projects and workspace roots | `EtAlii.Adp.Projects` |
 | A connection's lifetime and its state | `EtAlii.Adp.Sessions` |
-| The workspace tree and file watching | `EtAlii.Adp.Hierarchy` |
+| The workspace tree, kept current from the project's file events | `EtAlii.Adp.Hierarchy` |
 | Geometry: the rectangle, row packing, text width and graph layering | `EtAlii.Adp.Layout` |
 | Diagram-type abstractions, including the diagram definition contract | `EtAlii.Adp.Diagram` |
 | The bases a module builds on: the provider frame, the element source resolvers, the document session, a bundled DISL definition as a module's palette, menus and rows, and the viewport test | `EtAlii.Adp.Diagram.Modules` |

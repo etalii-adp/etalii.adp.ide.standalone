@@ -1,4 +1,4 @@
-namespace EtAlii.Adp.Documents;
+namespace EtAlii.Adp.Files;
 
 /// <summary>One watched folder has been re-read because something in it changed.</summary>
 /// <remarks>

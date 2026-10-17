@@ -1,3 +1,4 @@
+using EtAlii.Adp.Files;
 using Xunit;
 
 namespace EtAlii.Adp.Documents.Tests;

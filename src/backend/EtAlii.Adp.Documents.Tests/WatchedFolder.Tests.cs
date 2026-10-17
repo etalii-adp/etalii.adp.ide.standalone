@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Reflection;
+using EtAlii.Adp.Files;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -37,7 +38,7 @@ public sealed class WatchedFolderTests : IDisposable
         // A handler attached after the watcher was enabled is attached by now too, so a running
         // watcher cannot say which came first; the source can. A watcher enabled first is live with
         // nobody listening, and what it raises then is lost.
-        var source = await File.ReadAllTextAsync(RepositoryPaths.Under("src", "backend", "EtAlii.Adp.Documents", "WatchedFolder.cs"), TestContext.Current.CancellationToken);
+        var source = await File.ReadAllTextAsync(RepositoryPaths.Under("src", "backend", "EtAlii.Adp.Files", "WatchedFolder.cs"), TestContext.Current.CancellationToken);
         var enabled = source.IndexOf("Watcher.EnableRaisingEvents = true", StringComparison.Ordinal);
         Assert.True(enabled > 0, "WatchedFolder no longer enables its watcher the way this test reads it.");
         foreach (var name in Events)

@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using EtAlii.Adp.Files;
 using Xunit;
 using IoPath = System.IO.Path;
 
