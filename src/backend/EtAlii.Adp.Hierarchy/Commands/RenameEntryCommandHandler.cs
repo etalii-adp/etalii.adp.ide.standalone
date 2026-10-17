@@ -105,15 +105,22 @@ public sealed class RenameEntryCommandHandler : ICommandHandler<RenameEntryComma
             return Task.FromResult(result);
         }
 
-        if (ValidateName(command.NewName) is { } nameError)
-        {
-            var result = CommandResult.Failure(nameError);
-            return Task.FromResult(result);
-        }
-
         // A trailing separator would make GetFileName return an empty name, which would leave
         // the inverse command unable to put the entry back.
         var sourcePath = IoPath.TrimEndingDirectorySeparator(command.FullPath);
+
+        // The rules and the sentences the dialog shows while the user types (behaviour change B-07,
+        // ruled 2026-10-16): a rename refuses exactly what the dialog refuses, in the same words,
+        // and renames to the name the rules judged, which is the one without surrounding space.
+        var folder = IoPath.GetDirectoryName(sourcePath);
+        if (!string.IsNullOrEmpty(folder) &&
+            EntryNameRules.Validate(command.NewName, folder, IoPath.GetFileName(sourcePath)) is { Valid: false } refused)
+        {
+            var result = CommandResult.Failure(refused.Reason);
+            return Task.FromResult(result);
+        }
+
+        var newName = command.NewName.Trim();
 
         var isDirectory = Directory.Exists(sourcePath);
         if (!isDirectory && !File.Exists(sourcePath))
@@ -130,22 +137,11 @@ public sealed class RenameEntryCommandHandler : ICommandHandler<RenameEntryComma
         }
 
         var originalName = IoPath.GetFileName(sourcePath);
-        var targetPath = IoPath.Combine(parentPath, command.NewName);
-
-        if (string.Equals(targetPath, sourcePath, StringComparison.Ordinal))
-        {
-            var result = CommandResult.Failure("The new name is the same as the current name.");
-            return Task.FromResult(result);
-        }
+        var targetPath = IoPath.Combine(parentPath, newName);
 
         // On a case-insensitive filesystem the target "already exists" because it *is* the source;
-        // changing only capitalisation is still a legitimate rename, so it is let through.
+        // changing only capitalisation is still a legitimate rename, which the rules let through.
         var isCaseOnlyRename = string.Equals(targetPath, sourcePath, StringComparison.OrdinalIgnoreCase);
-        if (!isCaseOnlyRename && (File.Exists(targetPath) || Directory.Exists(targetPath)))
-        {
-            var result = CommandResult.Failure($"'{command.NewName}' already exists in this folder.");
-            return Task.FromResult(result);
-        }
 
         // Announced before the move rather than after it: the watcher thread can see the move
         // before NotifyMoved runs, and on Linux an echo the models do not yet expect lands as a
@@ -157,7 +153,7 @@ public sealed class RenameEntryCommandHandler : ICommandHandler<RenameEntryComma
             _modelStore!.ExpectRename(sourcePath, targetPath);
         }
 
-        var moved = Move(sourcePath, targetPath, originalName, command.NewName, isDirectory, isCaseOnlyRename);
+        var moved = Move(sourcePath, targetPath, originalName, newName, isDirectory, isCaseOnlyRename);
         var notified = moved.IsSuccess && NotifyMoved(sourcePath, targetPath);
         if (announced && !notified)
         {
@@ -303,43 +299,6 @@ public sealed class RenameEntryCommandHandler : ICommandHandler<RenameEntryComma
         // The inverse re-derives the sibling from the renamed registration file, so it
         // restores both names without carrying either.
         return CommandResult.Success(new RenameEntryCommand(targetPath, originalName));
-    }
-
-    /// <returns>The reason the name is unusable, or <c>null</c> when it is fine.</returns>
-    private static string? ValidateName(string name)
-    {
-        if (string.IsNullOrWhiteSpace(name))
-        {
-            return "A name is required.";
-        }
-
-        if (name is "." or "..")
-        {
-            return $"'{name}' is not a usable name.";
-        }
-
-        // Checked explicitly rather than relying on GetInvalidFileNameChars, which on Unix
-        // covers only '/' and would let a Windows-style '\' through as a legal filename char.
-        if (name.Contains(IoPath.DirectorySeparatorChar) ||
-            name.Contains(IoPath.AltDirectorySeparatorChar) ||
-            name.Contains('\\') ||
-            name.Contains('/'))
-        {
-            return "A name cannot contain a path separator.";
-        }
-
-        // Kept as a guard clause to match the checks above. This trips IDE0046 at info level;
-        // collapsing it would only push the same suggestion onto the previous clause and turn a
-        // readable chain into nested ternaries (PathTruncator.cs carries the same info already).
-        // Judged against the portable set, not the platform's: on Linux the platform's own
-        // list would let 'report*.txt' through as a name Windows could never check out.
-        if (name.IndexOfAny(PortableFileNames.InvalidChars) >= 0)
-        {
-            return "A name cannot contain any of these characters: " +
-                   string.Join(' ', PortableFileNames.InvalidChars.Where(c => !char.IsControl(c)));
-        }
-
-        return null;
     }
 
     /// <summary>

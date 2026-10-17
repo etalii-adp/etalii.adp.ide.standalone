@@ -169,7 +169,7 @@ public class RenameEntryCommandHandlerTests : IDisposable
 
         // Assert.
         Assert.False(result.IsSuccess);
-        Assert.Equal("A name is required.", result.Error);
+        Assert.Equal("Enter a name.", result.Error);
         Assert.True(File.Exists(path));
     }
 
@@ -205,7 +205,7 @@ public class RenameEntryCommandHandlerTests : IDisposable
 
         // Assert.
         Assert.False(result.IsSuccess);
-        Assert.Equal("A name cannot contain a path separator.", result.Error);
+        Assert.Equal("A name cannot contain a path or any of \\ / : * ? \" < > |", result.Error);
         Assert.True(File.Exists(path));
     }
 
@@ -235,7 +235,7 @@ public class RenameEntryCommandHandlerTests : IDisposable
 
         // Assert.
         Assert.False(result.IsSuccess);
-        Assert.Equal("The new name is the same as the current name.", result.Error);
+        Assert.Equal("Enter a name that differs from the current one.", result.Error);
         Assert.True(File.Exists(path));
     }
 
@@ -255,7 +255,7 @@ public class RenameEntryCommandHandlerTests : IDisposable
         Assert.False(result.IsSuccess);
         // Matched exactly, not by substring: the OS raises its own "...already exists" IOException
         // if the guard is removed, so a loose match would pass either way and prove nothing.
-        Assert.Equal("'taken.txt' already exists in this folder.", result.Error);
+        Assert.Equal("An item named 'taken.txt' already exists in this folder.", result.Error);
         Assert.Equal("do not clobber", await File.ReadAllTextAsync(IoPath.Combine(_root, "taken.txt"), TestContext.Current.CancellationToken));
         Assert.True(File.Exists(path));
     }
@@ -272,7 +272,7 @@ public class RenameEntryCommandHandlerTests : IDisposable
 
         // Assert.
         Assert.False(result.IsSuccess);
-        Assert.Equal("'taken' already exists in this folder.", result.Error);
+        Assert.Equal("An item named 'taken' already exists in this folder.", result.Error);
         Assert.True(File.Exists(path));
     }
 
