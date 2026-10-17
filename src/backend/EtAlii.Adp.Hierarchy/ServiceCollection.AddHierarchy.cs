@@ -29,29 +29,20 @@ public static class ServiceCollectionAddHierarchyExtension
         // problems and the reload bridge (code-structure FR-050).
         services.TryAddSingleton<ProjectFileEvents>();
 
-        // The rename and delete handlers ask the catalog whether a file is a diagram's
-        // registration file with a body sibling to carry along, and the routers below read it.
-        // TryAdd, so a test that registered its own list first keeps it.
-        services.TryAddSingleton<IDiagramDefinitionCatalog>(svc =>
-        {
-            var definitions = svc.GetRequiredService<IReadOnlyList<DiagramDefinition>>();
-            return new DiagramDefinitionCatalog { All = definitions };
-        });
+        // The three catalogs the routers below read are registered by their kinds' own
+        // registrations - AddDiagramDefinitions, AddDesignerDefinitions, AddEditorDefinitions -
+        // and not here (code-structure FR-057).
 
         // Which type a file on disk belongs to - by its .adp first line, or by a declared
-        // extension for a body dropped in without one, from the catalog registered above.
+        // extension for a body dropped in without one.
         services.AddSingleton<DiagramFileRouter>();
 
         // Which designer type a registration names. Asked after the diagram router and before
-        // the editor family (knowledge-designer Requirement 10.2). The catalog tolerates a host
-        // that never ran AddDesignerDefinitions - a test host - by answering empty.
-        services.TryAddDesignerDefinitionCatalog();
+        // the editor family (knowledge-designer Requirement 10.2).
         services.AddSingleton<DesignerFileRouter>();
 
         // Which editor opens a file nothing diagram- or designer-shaped claims (modular-text-editors
-        // Requirement 5.1's order), from the editor catalog, which answers empty in a host that
-        // registered no editors.
-        services.TryAddEditorDefinitionCatalog();
+        // Requirement 5.1's order).
         services.AddSingleton(svc => new EditorResolver(svc.GetRequiredService<IEditorDefinitionCatalog>()));
 
         // What a new designer document starts as, from the modules that registered a template,

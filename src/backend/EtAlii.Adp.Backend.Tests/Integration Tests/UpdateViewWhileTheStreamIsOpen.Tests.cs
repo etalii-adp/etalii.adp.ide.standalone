@@ -2,10 +2,12 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using EtAlii.Adp.Authentication;
 using EtAlii.Adp.Context;
+using EtAlii.Adp.Designer;
 using EtAlii.Adp.Diagram;
 using EtAlii.Adp.Diagram.C4;
 using EtAlii.Adp.Diagram.Wire;
 using EtAlii.Adp.Documents.Wire;
+using EtAlii.Adp.Editor;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 using EtAlii.Adp.Projects;
@@ -94,9 +96,13 @@ public sealed class UpdateViewWhileTheStreamIsOpenTests : IDisposable
             .AddC4();
         // The host discovers these at startup and registers them before anything can serve a
         // request; the file router resolves an .adp to its module through them, so a container
-        // without them cannot open a diagram at all.
+        // without them cannot open a diagram at all. The three catalogs are what the host's
+        // Add...Definitions registers beside them; this host has no designer and no editor.
         IReadOnlyList<DiagramDefinition> definitions = DiagramDefinitionDiscovery.Discover();
         services.AddSingleton(definitions);
+        services.AddSingleton<IDiagramDefinitionCatalog>(new DiagramDefinitionCatalog { All = definitions });
+        services.AddSingleton<IDesignerDefinitionCatalog>(new DesignerDefinitionCatalog { All = [] });
+        services.AddSingleton<IEditorDefinitionCatalog>(new EditorDefinitionCatalog { All = [] });
         services.AddSingleton<Service>();
 
         _provider = services.BuildServiceProvider();

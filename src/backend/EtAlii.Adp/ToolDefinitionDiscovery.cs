@@ -1,4 +1,5 @@
 using System.Reflection;
+using Microsoft.Extensions.Hosting;
 using Serilog;
 
 namespace EtAlii.Adp;
@@ -14,6 +15,9 @@ public interface IToolDefinition
 
     /// <summary>The name a user reads.</summary>
     string Title { get; }
+
+    /// <summary>The module's own registrations, run once when the host registers its kind's definitions.</summary>
+    Action<IHostApplicationBuilder>? Build { get; }
 }
 
 /// <summary>How a tool kind's discovery speaks of what it finds, word for word as each kind always has.</summary>
