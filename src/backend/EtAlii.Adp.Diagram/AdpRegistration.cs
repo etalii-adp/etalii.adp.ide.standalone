@@ -6,9 +6,6 @@ using EtAlii.Adp.Files;
 
 namespace EtAlii.Adp.Diagram;
 
-/// <summary>An authored position in a registration's <c>layout:</c> block.</summary>
-public readonly record struct AdpPosition(double X, double Y);
-
 /// <summary>
 /// An <c>.adp</c> registration file, read once (code-structure FR-061): the MIME line naming the
 /// diagram type, the <c>body:</c> and <c>view:</c> headers below it, and the <c>layout:</c> block of
@@ -47,7 +44,7 @@ public sealed class AdpRegistration
 
     private readonly IReadOnlyList<RawLine> _lines;
 
-    private AdpRegistration(string text, IReadOnlyList<RawLine> lines, string? mimeType, string? body, string? view, IReadOnlyDictionary<string, AdpPosition> layout)
+    private AdpRegistration(string text, IReadOnlyList<RawLine> lines, string? mimeType, string? body, string? view, IReadOnlyDictionary<string, RegistrationPosition> layout)
     {
         Text = text;
         _lines = lines;
@@ -70,7 +67,7 @@ public sealed class AdpRegistration
     public string? View { get; }
 
     /// <summary>The authored positions of the <c>layout:</c> block, empty when there is none.</summary>
-    public IReadOnlyDictionary<string, AdpPosition> Layout { get; }
+    public IReadOnlyDictionary<string, RegistrationPosition> Layout { get; }
 
     /// <summary>The registration <paramref name="text"/> holds.</summary>
     public static AdpRegistration Parse(string text)
@@ -153,7 +150,7 @@ public sealed class AdpRegistration
     /// set removes the block. New lines take <see cref="AdpFileWriter.NewLine"/>; existing lines keep
     /// their own terminators.
     /// </summary>
-    public string WithLayout(IReadOnlyDictionary<string, AdpPosition> positions)
+    public string WithLayout(IReadOnlyDictionary<string, RegistrationPosition> positions)
     {
         ArgumentNullException.ThrowIfNull(positions);
 
@@ -287,9 +284,9 @@ public sealed class AdpRegistration
         }
     }
 
-    private static Dictionary<string, AdpPosition> ReadLayout(IReadOnlyList<RawLine> lines)
+    private static Dictionary<string, RegistrationPosition> ReadLayout(IReadOnlyList<RawLine> lines)
     {
-        var positions = new Dictionary<string, AdpPosition>(StringComparer.Ordinal);
+        var positions = new Dictionary<string, RegistrationPosition>(StringComparer.Ordinal);
         var inBlock = false;
         foreach (var line in lines)
         {
@@ -317,7 +314,7 @@ public sealed class AdpRegistration
         return positions;
     }
 
-    private static void AppendBlock(StringBuilder builder, IReadOnlyDictionary<string, AdpPosition> positions)
+    private static void AppendBlock(StringBuilder builder, IReadOnlyDictionary<string, RegistrationPosition> positions)
     {
         if (positions.Count == 0)
         {
@@ -325,7 +322,7 @@ public sealed class AdpRegistration
         }
 
         builder.Append(LayoutHeader).Append(AdpFileWriter.NewLine);
-        foreach ((string id, AdpPosition position) in positions.OrderBy(entry => entry.Key, StringComparer.Ordinal))
+        foreach ((string id, RegistrationPosition position) in positions.OrderBy(entry => entry.Key, StringComparer.Ordinal))
         {
             builder
                 .Append("  ").Append(id).Append(": ")
@@ -381,7 +378,7 @@ public sealed class AdpRegistration
         return colon > 0 && !trimmed.StartsWith(LayoutHeader, StringComparison.Ordinal) && trimmed[..colon].All(c => char.IsLetterOrDigit(c) || c == '-' || c == '_');
     }
 
-    private static bool TryParseEntry(string content, out string elementId, out AdpPosition position)
+    private static bool TryParseEntry(string content, out string elementId, out RegistrationPosition position)
     {
         elementId = "";
         position = default;
@@ -408,7 +405,7 @@ public sealed class AdpRegistration
         }
 
         elementId = trimmed[..colon];
-        position = new AdpPosition(x, y);
+        position = new RegistrationPosition(x, y);
         return elementId.Length > 0;
     }
 

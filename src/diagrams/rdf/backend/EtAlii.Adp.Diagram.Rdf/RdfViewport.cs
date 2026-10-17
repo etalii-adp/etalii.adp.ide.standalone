@@ -1,5 +1,4 @@
 using EtAlii.Adp.Diagram.Modules;
-using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.Layout;
 
 namespace EtAlii.Adp.Diagram.Rdf;
