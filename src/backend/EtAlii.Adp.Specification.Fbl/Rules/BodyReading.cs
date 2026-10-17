@@ -721,7 +721,7 @@ internal sealed class BodyReading
 
     /// <summary>The first element, in document order, that <paramref name="reference"/> can name and whose key is <paramref name="key"/>.</summary>
     /// <remarks>Read once the elements are final, so each reference's keys are indexed on first use rather than searched per key.</remarks>
-    private ReadElement? ReferencedBy(ReferenceBinding reference, string key)
+    internal ReadElement? ReferencedBy(ReferenceBinding reference, string key)
     {
         if (!_referenced.TryGetValue(reference, out var index))
         {
