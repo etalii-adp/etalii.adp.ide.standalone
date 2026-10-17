@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text.Json;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.Documents;
@@ -40,6 +41,9 @@ internal static class CausalLoopDefinition
     /// <summary>The definition.</summary>
     public static DislSpecification Specification => Definition.Specification;
 
+    /// <summary>The id of the variable's label, which its inline rename edits.</summary>
+    private const string VariableLabel = "display";
+
     /// <summary>The wire ids of <c>x-cld</c>.</summary>
     private static WireIdMap Ids => Definition.Ids;
 
@@ -77,31 +81,150 @@ internal static class CausalLoopDefinition
     }
 
     /// <summary>
-    /// Draws the link from the variable <paramref name="from"/> to <paramref name="to"/>, stating
-    /// <paramref name="polarity"/> (none for null), and writes it with every loop the definition's
-    /// <c>on: connect</c> hook claims for it, as one edit (causal-loop-disl-fbl Requirement 5.5). Both
-    /// variables are declared and the link is not yet stated; the caller checked.
+    /// Runs the definition's operation <paramref name="operation"/> on the element <paramref name="target"/> of
+    /// <paramref name="body"/> (none for one on the diagram) with <paramref name="parameters"/>, then its
+    /// <c>on: connect</c> hooks for every link it draws, and writes the result as one edit (causal-loop-disl-fbl
+    /// Requirements 5.5, 7.2). A parameter whose type is a variable is answered with the variable's name.
     /// </summary>
-    public static EditOutcome Draw(CausalLoopBody body, string from, string to, string? polarity)
+    /// <remarks>
+    /// An element or a variable the document does not hold is refused in the tool's sentence for that kind,
+    /// as the commands these operations replace refused it.
+    /// </remarks>
+    public static EditOutcome Run(CausalLoopBody body, string operation, string? target, IReadOnlyDictionary<string, string> parameters)
     {
         ArgumentNullException.ThrowIfNull(body);
+        ArgumentNullException.ThrowIfNull(parameters);
+
         var diagram = body.Working();
-        var cause = VariableOf(diagram, from) ?? throw new ArgumentException($"No variable is named '{from}'.", nameof(from));
-        var effect = VariableOf(diagram, to) ?? throw new ArgumentException($"No variable is named '{to}'.", nameof(to));
+        DislElement? self = null;
+        if (target is not null && (self = ElementOf(diagram, target)) is null) return EditOutcome.Refused(NotHeld(target));
 
-        // The cause and effect names are the binding's reading of the ends, which the hook's cycles are
-        // keyed by; only the polarity is written.
-        var written = new Dictionary<string, object?>(StringComparer.Ordinal);
-        if (polarity is not null) written["polarity"] = polarity;
-        var read = new Dictionary<string, object?>(written, StringComparer.Ordinal) { ["causeName"] = from, ["effectName"] = to };
-        var id = CausalLoopEdits.LinkId(from, to);
-        var link = diagram.AddRelation("CausalLink", id, cause, effect, read);
+        var answered = new Dictionary<string, object?>(StringComparer.Ordinal);
+        foreach ((string name, string value) in parameters)
+        {
+            if (ParameterType(operation, name) != "Variable")
+            {
+                answered[name] = value;
+            }
+            else if (VariableOf(diagram, value) is { } variable)
+            {
+                answered[name] = variable;
+            }
+            else
+            {
+                return EditOutcome.Refused(CausalLoopEdits.NoSuchVariable);
+            }
+        }
 
-        var claimed = HookRunner.AfterConnect(Specification, link, new ClaimedLoopIds(), Env);
-        return claimed.WasApplied
-            ? Apply(body, new DislTransaction([new DislChange.Connect("CausalLink", id, cause.Id, effect.Id, written), .. claimed.Changes], [], null))
-            : EditOutcome.Refused(claimed.Refusal!);
+        var ids = new ClaimedLoopIds();
+        var transaction = OperationInterpreter.Run(Specification, operation, diagram, self, ids, new DislInvocation(Parameters: answered), Env);
+        if (!transaction.WasApplied) return EditOutcome.Refused(transaction.Refusal!);
+
+        // The host runs the hooks of every relation an operation drew, in the same edit.
+        var changes = new List<DislChange>(transaction.Changes);
+        foreach (var connect in transaction.Changes.OfType<DislChange.Connect>())
+        {
+            var claimed = HookRunner.AfterConnect(Specification, diagram.ElementById(connect.Id)!, ids, Env);
+            if (!claimed.WasApplied) return EditOutcome.Refused(claimed.Refusal!);
+            changes.AddRange(claimed.Changes);
+        }
+
+        return Apply(body, new DislTransaction(changes, [], null));
     }
+
+    /// <summary>
+    /// The name and label of the variable the definition's <c>addVariableHere</c> declares next in
+    /// <paramref name="body"/>: the lowest free number. Minted once, where the gesture happens, so a redo and the
+    /// position stored for it name the same variable.
+    /// </summary>
+    public static (string Name, string Label) NewVariable(CausalLoopBody body)
+    {
+        ArgumentNullException.ThrowIfNull(body);
+        var created = OperationInterpreter.Run(Specification, "addVariableHere", body.Working(), null, new ClaimedLoopIds(), null, Env)
+            .Changes.OfType<DislChange.Create>().Single();
+        return ((string)created.Attributes["name"]!, (string)created.Attributes["label"]!);
+    }
+
+    /// <summary>
+    /// The dialog the definition's params form <paramref name="form"/> asks for on <paramref name="elementId"/>
+    /// in <paramref name="entry"/>: its title, icon, first field's label and initial value, and its confirming label.
+    /// </summary>
+    public static ContextInputRequest Request(DocumentEntry<CausalLoopBody, CausalLoopModel> entry, string form, string? elementId)
+    {
+        var diagram = DiagramOf(entry);
+        var asked = FormCommit.Request(Specification, form, ElementOf(diagram, elementId), Env, diagram)
+            ?? throw new InvalidOperationException($"The definition has no form '{form}'.");
+        var field = asked.Fields[0];
+        return new ContextInputRequest(asked.Label, asked.Icon ?? "", field.Label, field.Initial as string ?? "", asked.SubmitLabel ?? "");
+    }
+
+    /// <summary>Why the params form <paramref name="form"/> refuses <paramref name="value"/> for its item <paramref name="attribute"/> on <paramref name="elementId"/>; null when it takes it.</summary>
+    public static string? Refusal(DocumentEntry<CausalLoopBody, CausalLoopModel> entry, string form, string attribute, string value, string? elementId)
+    {
+        var diagram = DiagramOf(entry);
+        return FormCommit.Refusal(Specification, form, attribute, value, ElementOf(diagram, elementId), Env, diagram);
+    }
+
+    /// <summary>
+    /// What committing <paramref name="value"/> to the row <paramref name="propertyId"/> of <paramref name="elementId"/>
+    /// does: the definition's form item for that attribute at commit (DISL 0.3 7.5); null where the element has no
+    /// attribute row of that id, as a computed row has none.
+    /// </summary>
+    public static DislTransaction? Row(CausalLoopBody body, string? elementId, string propertyId, string value)
+    {
+        ArgumentNullException.ThrowIfNull(body);
+        if (ElementOf(body.Working(), elementId) is not { } element) return null;
+        var attribute = element.Type.Attributes.Keys.FirstOrDefault(name => Ids.PropertyId(name) == propertyId);
+        return attribute is null ? null : FormCommit.Row(Specification, element, attribute, value, Env);
+    }
+
+    /// <summary>Why the definition's change rule <paramref name="rule"/> refuses <paramref name="attribute"/> of <paramref name="elementId"/> becoming <paramref name="value"/>; null when it does not.</summary>
+    public static string? ChangeRefusal(DocumentEntry<CausalLoopBody, CausalLoopModel> entry, string? elementId, string attribute, object? value, string rule) =>
+        ElementOf(DiagramOf(entry), elementId) is { } element
+            ? GestureConstraintEvaluator.Change(Specification, element, attribute, value, Env).FirstOrDefault(finding => finding.ConstraintId == rule)?.Message
+            : null;
+
+    /// <summary>What an inline rename of the variable <paramref name="elementId"/> to <paramref name="text"/> does: its label's <c>parse</c> (DISL 0.3 6.12); null for no variable.</summary>
+    public static DislTransaction? Rename(CausalLoopBody body, string? elementId, string text)
+    {
+        ArgumentNullException.ThrowIfNull(body);
+        return ElementOf(body.Working(), elementId) is { } element ? FormCommit.Label(Specification, element, VariableLabel, text, Env) : null;
+    }
+
+    /// <summary>The text the inline rename of <paramref name="elementId"/> opens on: its label's <c>editText</c>; empty for no variable.</summary>
+    public static string RenameText(DocumentEntry<CausalLoopBody, CausalLoopModel> entry, string? elementId) =>
+        ElementOf(DiagramOf(entry), elementId) is { } element ? FormCommit.EditText(Specification, element, VariableLabel, Env) ?? "" : "";
+
+    /// <summary>The value <paramref name="transaction"/> sets on <paramref name="attribute"/>, and whether it sets one.</summary>
+    public static bool Writes(DislTransaction transaction, string attribute, out object? value)
+    {
+        ArgumentNullException.ThrowIfNull(transaction);
+        foreach (var set in transaction.Changes.OfType<DislChange.Set>())
+        {
+            if (set.Attributes.TryGetValue(attribute, out value)) return true;
+        }
+
+        value = null;
+        return false;
+    }
+
+    /// <summary>The declared type of the parameter <paramref name="name"/> of <paramref name="operation"/>; null for none.</summary>
+    private static string? ParameterType(string operation, string name) =>
+        Specification.Root.TryGetProperty("behavior", out var behavior)
+        && behavior.TryGetProperty("operations", out var operations)
+        && operations.TryGetProperty(operation, out var declared)
+        && declared.TryGetProperty("params", out var parameters)
+        && parameters.TryGetProperty(name, out var parameter)
+        && parameter.TryGetProperty("type", out var type)
+        && type.ValueKind == JsonValueKind.String
+            ? type.GetString()
+            : null;
+
+    /// <summary>The tool's sentence for an element <paramref name="id"/> the document does not hold.</summary>
+    private static string NotHeld(string id) =>
+        id.StartsWith("link:", StringComparison.Ordinal) ? CausalLoopEdits.NoSuchLink
+        : id.StartsWith("loop:", StringComparison.Ordinal) ? CausalLoopEdits.NoSuchLoop
+        : CausalLoopEdits.NoSuchVariable;
 
     /// <summary>
     /// The findings of <paramref name="body"/> (causal-loop-disl-fbl Requirement 3.3): the definition's

@@ -61,16 +61,14 @@ public static class ServiceCollectionAddCausalLoopExtension
         services.AddSingleton<ICommandHandler<RenameVariableCommand>, RenameVariableCommandHandler>();
         services.AddSingleton<ICommandHandler<RemoveVariableCommand>, RemoveVariableCommandHandler>();
         services.AddSingleton<ICommandHandler<SetVariableLabelCommand>, SetVariableLabelCommandHandler>();
-        services.AddSingleton<ICommandHandler<AddLinkCommand>, AddLinkCommandHandler>();
         services.AddSingleton<ICommandHandler<SetLinkPolarityCommand>, SetLinkPolarityCommandHandler>();
         services.AddSingleton<ICommandHandler<SetLinkDelayCommand>, SetLinkDelayCommandHandler>();
-        services.AddSingleton<ICommandHandler<SetLinkCurvatureCommand>, SetLinkCurvatureCommandHandler>();
         services.AddSingleton<ICommandHandler<AddVariableAtCommand>, AddVariableAtCommandHandler>();
         services.AddSingleton<ICommandHandler<RestoreVariableAdditionCommand>, RestoreVariableAdditionCommandHandler>();
         services.AddSingleton<ICommandHandler<SetLinkWeightCommand>, SetLinkWeightCommandHandler>();
         services.AddSingleton<ICommandHandler<SetLinkLabelCommand>, SetLinkLabelCommandHandler>();
         services.AddSingleton<ICommandHandler<RemoveLinkCommand>, RemoveLinkCommandHandler>();
-        services.AddSingleton<ICommandHandler<AddLoopCommand>, AddLoopCommandHandler>();
+        services.AddSingleton<ICommandHandler<RunCausalLoopOperationCommand>, RunCausalLoopOperationCommandHandler>();
         services.AddSingleton<ICommandHandler<SetLoopNameCommand>, SetLoopNameCommandHandler>();
         services.AddSingleton<ICommandHandler<SetLoopIdentifierCommand>, SetLoopIdentifierCommandHandler>();
         services.AddSingleton<ICommandHandler<SetLoopMembershipCommand>, SetLoopMembershipCommandHandler>();

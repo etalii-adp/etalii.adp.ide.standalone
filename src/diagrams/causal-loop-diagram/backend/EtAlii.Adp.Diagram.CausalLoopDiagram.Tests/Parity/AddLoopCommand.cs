@@ -1,6 +1,6 @@
 using EtAlii.Adp.History;
 
-namespace EtAlii.Adp.Diagram.CausalLoopDiagram;
+namespace EtAlii.Adp.Diagram.CausalLoopDiagram.Tests.Parity;
 
 /// <summary>Claims a feedback loop through the named variables.</summary>
 public sealed record AddLoopCommand(string BodyPath, string Identifier, string Name, IReadOnlyList<string> Variables) : IDocumentEditCommand;

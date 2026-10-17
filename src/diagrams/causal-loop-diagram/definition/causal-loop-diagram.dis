@@ -339,8 +339,10 @@
             "editable": "inline",
             "editText": { "cel": "self.display" },
             "parse": {
+              "accepts": "value != '' && !value.matches('[\"\\\\x00-\\\\x1F\\\\x7F-\\\\x9F]')",
               "write": [ { "set": { "label": "value" } } ],
-              "doc": "Rename edits the label in place and leaves the identifier alone; it starts from the text drawn."
+              "refusal": "A name needs at least one character, and cannot contain a quote or a line break.",
+              "doc": "Rename edits the label in place and leaves the identifier alone; it starts from the text drawn. It refuses an empty name, a quote and a control character, a line break among them, with the tool's sentence; the property grid's Label row refuses a quote with std.facets' and takes an empty label (companion, What the definition now states)."
             }
           }
         ],
@@ -512,7 +514,7 @@
             "options": { "cel": "[{'value': self.members, 'label': self.members.map(m, m.name).join(' → ')}] + feedbackCycles().filter(c, c.exists(v, self.members.exists(m, m.id == v.id)) && !claimed(c)).map(c, {'value': c, 'label': c.map(v, v.name).join(' → ')})" },
             "validate": [ { "timing": "commit",
               "rule": "signature(value) == signature(self.members) || (value.exists(v, self.members.exists(m, m.id == v.id)) && !claimed(value) && feedbackCycles().exists(c, signature(c) == signature(value)))",
-              "message": { "cel": "'\\'' + value.map(v, v.name).join(' → ') + '\\' is not a cycle this loop can run through: choose one the arrows form through its variables that no other loop claims.'" } } ],
+              "message": { "cel": "'\\'' + (type(value) == string ? value : value.map(v, v.name).join(' → ')) + '\\' is not a cycle this loop can run through: choose one the arrows form through its variables that no other loop claims.'" } } ],
             "doc": "The loop's own cycle, first and as written, then every other cycle the arrows form through at least one of its variables that no loop claims yet. Choosing one changes what the loop runs through, as one undo step." }
         ] }
       ]
