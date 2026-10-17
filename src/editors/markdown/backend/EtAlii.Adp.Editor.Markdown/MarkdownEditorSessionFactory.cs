@@ -1,9 +1,13 @@
+using EtAlii.Adp.Documents;
+using JetBrains.Annotations;
+
 namespace EtAlii.Adp.Editor.Markdown;
 
 /// <summary>Opens markdown sessions - the same contract every editor offers (Requirement 10.2).</summary>
-public sealed class MarkdownEditorSessionFactory : IEditorSessionFactory
+[UsedImplicitly] // Made by the container, which gives it the project roots' event sources.
+public sealed class MarkdownEditorSessionFactory(ProjectFileEvents? events = null) : IEditorSessionFactory
 {
     public string EditorId => Editor.Markdown.Id;
 
-    public IEditorSession Open(ShortGuid watchId, string rootPath, string filePath) => new MarkdownEditorSession(filePath);
+    public IEditorSession Open(ShortGuid watchId, string rootPath, string filePath) => new MarkdownEditorSession(filePath, events);
 }

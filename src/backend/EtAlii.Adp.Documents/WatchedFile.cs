@@ -46,10 +46,18 @@ public sealed class WatchedFile : IDisposable
 
     private bool _disposed;
 
+    /// <summary>The subscription to the watched project root that holds the file, when it is heard through that root.</summary>
+    private readonly IDisposable? _shared;
+
     /// <param name="path">The file.</param>
     /// <param name="changed">The owner's re-read: what runs, one at a time, after the file was changed by another program.</param>
     /// <param name="time">The clock a read's retry waits on.</param>
-    public WatchedFile(string path, Func<Task> changed, TimeProvider time)
+    /// <param name="events">
+    /// The project roots' event sources: a file inside a root already watched is heard through that root's
+    /// one watcher rather than a watcher of its own (code-structure T280). Without them, or outside every
+    /// watched root, the file's folder gets its own.
+    /// </param>
+    public WatchedFile(string path, Func<Task> changed, TimeProvider time, ProjectFileEvents? events = null)
     {
         ArgumentNullException.ThrowIfNull(path);
         ArgumentNullException.ThrowIfNull(changed);
@@ -60,16 +68,25 @@ public sealed class WatchedFile : IDisposable
 
         // A file in a folder that does not exist is read and not watched: there is nothing a watcher could be put on.
         var directory = System.IO.Path.GetDirectoryName(path);
-        if (!string.IsNullOrEmpty(directory) && Directory.Exists(directory))
+        if (string.IsNullOrEmpty(directory) || !Directory.Exists(directory))
         {
-            Folder = new WatchedFolder(directory, _ => Notify(), filter: System.IO.Path.GetFileName(path));
+            return;
         }
+
+        var file = System.IO.Path.GetFullPath(path);
+        if (events?.SubscribeWithin(directory, heard => HeardWithin(heard, file)) is { } shared)
+        {
+            _shared = shared.Subscription;
+            return;
+        }
+
+        Folder = new WatchedFolder(directory, _ => Notify(), filter: System.IO.Path.GetFileName(path));
     }
 
     /// <summary>The file.</summary>
     public string Path { get; }
 
-    /// <summary>The folder watcher, or null when the file's folder did not exist; for a test that has to reach the watcher.</summary>
+    /// <summary>The folder watcher, or null when the file's folder did not exist or the file is heard through its project root; for a test that has to reach the watcher.</summary>
     internal WatchedFolder? Folder { get; }
 
     /// <summary>
@@ -132,6 +149,18 @@ public sealed class WatchedFile : IDisposable
         }
 
         Folder?.Dispose();
+        _shared?.Dispose();
+    }
+
+    /// <summary>An event of the whole project root, heard only when it concerns this file; an overflow concerns every file.</summary>
+    private void HeardWithin(FileEvent heard, string file)
+    {
+        if (heard.Kind == FileEventKind.Lost || Names(heard.Path) || (heard.OldPath is { } oldPath && Names(oldPath)))
+        {
+            _ = Notify();
+        }
+
+        bool Names(string path) => string.Equals(path, file, StringComparison.OrdinalIgnoreCase);
     }
 
     private async Task RunAsync(TaskCompletionSource run)

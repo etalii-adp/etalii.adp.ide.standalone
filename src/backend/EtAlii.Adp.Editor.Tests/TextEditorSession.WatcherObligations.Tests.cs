@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -47,6 +48,26 @@ public class TextEditorSessionWatcherObligationsTests : IDisposable
 
         // Learned means the session stops claiming the file opens and says why, while keeping the last
         // good content. A real watcher, so this waits - passing the moment the session hears.
+        Assert.True(await Eventually.TrueAsync(() => session.Refusal.Length > 0, TestContext.Current.CancellationToken, Patience), "The session never learned its file was deleted.");
+        Assert.Equal("content", session.Content);
+    }
+
+    [Fact]
+    public async Task ADeletion_IsLearned_ThroughTheProjectsOneWatcher()
+    {
+        // Arrange: the project root is watched already, as the hierarchy watches an open project, so
+        // the session hears its file through that watcher and makes none of its own (code-structure T280).
+        using var events = new ProjectFileEvents();
+        using var project = events.Subscribe(_root, _ => { });
+        var path = Write("notes.txt", "content");
+        await using var session = new TextEditorSession(path, events);
+        Assert.False(session.Watched!.HasWatcherOfItsOwn());
+        Assert.Equal(1, events.WatchedRoots());
+
+        // Act.
+        File.Delete(path);
+
+        // Assert.
         Assert.True(await Eventually.TrueAsync(() => session.Refusal.Length > 0, TestContext.Current.CancellationToken, Patience), "The session never learned its file was deleted.");
         Assert.Equal("content", session.Content);
     }

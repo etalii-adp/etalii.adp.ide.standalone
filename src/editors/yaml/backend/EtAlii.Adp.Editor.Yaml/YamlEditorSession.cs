@@ -1,3 +1,5 @@
+using EtAlii.Adp.Documents;
+
 namespace EtAlii.Adp.Editor.Yaml;
 
 /// <summary>
@@ -5,4 +7,4 @@ namespace EtAlii.Adp.Editor.Yaml;
 /// as the plain editor's session is; nothing here knows YAML. A type of its own so its records
 /// name YAML.
 /// </summary>
-public sealed class YamlEditorSession(string path) : TextEditorSession(path);
+public sealed class YamlEditorSession(string path, ProjectFileEvents? events = null) : TextEditorSession(path, events);
