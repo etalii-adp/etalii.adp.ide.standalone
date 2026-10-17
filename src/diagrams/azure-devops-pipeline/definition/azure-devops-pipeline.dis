@@ -635,25 +635,25 @@
         { "kind": "section", "label": "Ordering", "items": [
           { "attribute": "dependsOn", "id": "dependsOn", "widget": "select",
             "label": { "cel": "has(self.dependsOn) ? 'Depends on' : 'Depends on (by default)'" },
-            "visible": "waitsFor(self).size() <= 1",
-            "display": { "cel": "waitsFor(self).size() == 1 ? waitsFor(self)[0].name : '(nothing)'" },
+            "visible": "!has(self.dependsOn) || self.dependsOn.size() <= 1",
+            "display": { "cel": "has(self.dependsOn) ? (self.dependsOn.size() == 1 ? self.dependsOn[0] : '(nothing)') : (waitsFor(self).size() == 1 ? waitsFor(self)[0].name : '(nothing)')" },
             "options": { "cel": "cel.bind(st, diagram.nodesOfType('Stage'), st.filter(s, st.indexOf(s) < st.indexOf(self) && has(s.name) && s.name != '').map(s, s.name)) + ['(nothing)', '(the default order)']" },
             "readOnlyReasons": [
               { "when": "!self.editable", "message": { "cel": "self.readOnlyReason" } },
               { "when": "!diagram.nodesOfType('Stage').exists(s, diagram.nodesOfType('Stage').indexOf(s) < diagram.nodesOfType('Stage').indexOf(self) && has(s.name) && s.name != '')", "message": "There is nothing before this for it to wait for." }
             ],
-            "doc": "One of the named stages written before this one, nothing, or the default order (the stage before it). It shows what the stage waits for, by default as well as as written." },
+            "doc": "One of the named stages written before this one, nothing, or the default order (the stage before it). It shows what the stage waits for: the name as written, which may name nothing or differ in case from the stage it finds, or by default the stage before it." },
           { "attribute": "dependsOn", "id": "dependsOn", "widget": "text",
             "label": { "cel": "has(self.dependsOn) ? 'Depends on' : 'Depends on (by default)'" },
-            "visible": "waitsFor(self).size() > 1",
-            "display": { "cel": "waitsFor(self).map(e, e.name).join(', ')" },
+            "visible": "has(self.dependsOn) && self.dependsOn.size() > 1",
+            "display": { "cel": "self.dependsOn.join(', ')" },
             "readOnlyReasons": [
               { "when": "!self.editable", "message": { "cel": "self.readOnlyReason" } },
               "This waits for several things, which is edited in the pipeline file."
             ] },
           { "attribute": "condition", "label": "Condition", "widget": "text", "visible": "has(self.condition)",
             "readOnlyReasons": [ { "when": "!self.editable", "message": { "cel": "self.readOnlyReason" } }, "This is edited in the pipeline file. A wrong value here would break the build." ] },
-          { "kind": "computed", "id": "trigger", "label": "Trigger", "widget": "text", "value": "'manual'", "visible": "self.manualTrigger",
+          { "kind": "computed", "id": "trigger", "label": "Trigger", "widget": "text", "value": { "cel": "'manual'" }, "visible": "self.manualTrigger",
             "readOnlyReasons": [ { "when": "!self.editable", "message": { "cel": "self.readOnlyReason" } }, "This is edited in the pipeline file. A wrong value here would break the build." ] },
           { "attribute": "isSkippable", "label": "Skippable", "widget": "text", "visible": "has(self.isSkippable) && self.isSkippable != ''",
             "readOnlyReasons": [ { "when": "!self.editable", "message": { "cel": "self.readOnlyReason" } }, "This is edited in the pipeline file. A wrong value here would break the build." ] }
@@ -664,6 +664,7 @@
             "readOnlyReasons": [
               { "when": "!self.editable", "message": { "cel": "self.readOnlyReason" } },
               { "when": "self.poolOrigin == 'pipeline'", "message": "Set for the whole pipeline, at the top of the file." },
+              { "when": "self.poolOrigin == 'stage'", "message": "Set on the stage, not here." },
               "This is edited in the pipeline file. A wrong value here would break the build."
             ] },
           { "attribute": "enabled", "label": "Enabled", "widget": "switch", "visible": "has(self.enabled)",
@@ -720,6 +721,7 @@
           { "attribute": "environment", "label": "Environment", "widget": "text", "visible": "self.isA('DeploymentJob') && has(self.environment) && self.environment != ''",
             "readOnlyReasons": [ { "when": "!self.editable", "message": { "cel": "self.readOnlyReason" } }, "This is edited in the pipeline file. A wrong value here would break the build." ] },
           { "attribute": "strategy", "label": "Strategy", "widget": "text", "visible": "self.strategy != 'none'",
+            "display": { "cel": "enumLabel('Strategy', self.strategy)" },
             "readOnlyReasons": [ { "when": "!self.editable", "message": { "cel": "self.readOnlyReason" } }, "This is edited in the pipeline file. A wrong value here would break the build." ] },
           { "kind": "computed", "id": "multiplicity", "label": "Runs", "widget": "text",
             "visible": "self.strategy != 'none' && (has(self.multiplicityExpression) || (has(self.multiplicity) && self.multiplicity > 1))",
@@ -743,11 +745,11 @@
       "usage": ["inspector"],
       "items": [
         { "kind": "section", "label": "Identity", "items": [
-          { "attribute": "stepKind", "label": "Kind", "widget": "text",
+          { "attribute": "stepKind", "label": "Kind", "widget": "text", "display": { "cel": "enumLabel('StepKind', self.stepKind)" },
             "readOnlyReasons": [ { "when": "!self.editable", "message": { "cel": "self.readOnlyReason" } }, "This is edited in the pipeline file. A wrong value here would break the build." ] },
           { "attribute": "displayName", "label": "Display name", "widget": "text",
             "readOnlyReasons": [ { "when": "!self.editable", "message": { "cel": "self.readOnlyReason" } } ] },
-          { "attribute": "identifier", "label": { "cel": "string(self.stepKind)" }, "widget": "textarea", "visible": "has(self.identifier) && self.identifier != ''",
+          { "attribute": "identifier", "label": { "cel": "enumLabel('StepKind', self.stepKind)" }, "widget": "textarea", "visible": "has(self.identifier) && self.identifier != ''",
             "readOnlyReasons": [ { "when": "!self.editable", "message": { "cel": "self.readOnlyReason" } }, "This is edited in the pipeline file. A wrong value here would break the build." ] },
           { "attribute": "hook", "label": "Lifecycle hook", "widget": "text", "visible": "has(self.hook) && self.hook != ''",
             "readOnlyReasons": [ { "when": "!self.editable", "message": { "cel": "self.readOnlyReason" } }, "This is edited in the pipeline file. A wrong value here would break the build." ] }
@@ -928,11 +930,11 @@
         "icon": "mdi-plus-box-outline",
         "for": ["Stage", "JobBase", "Step"],
         "unavailable": [
-          { "when": "!self.isA('Stage')", "message": "A job goes in a stage." },
-          { "when": "!self.childrenOfType('JobBase').exists(j, !j.fromTemplate)", "message": "This stage has no jobs of its own to add one beside." }
+          { "when": "!self.isA('Stage')", "message": "A job goes in a stage." }
         ],
-        "doc": "Adds a job after the stage's last job written in this file, named among every job of the pipeline.",
+        "doc": "Adds a job after the stage's last job written in this file, named among every job of the pipeline. A stage whose jobs all come from a template still offers it, and refuses.",
         "actions": [
+          { "abort": { "message": "'This stage has no jobs of its own to add one beside.'" }, "when": "!self.childrenOfType('JobBase').exists(j, !j.fromTemplate)" },
           { "let": { "jobName": "unusedName('NewJob', diagram.nodesOfType('JobBase').map(j, has(j.name) ? j.name : ''))" } },
           { "create": { "type": "'Job'", "parent": "self", "attributes": { "name": "jobName" } }, "as": "job" },
           { "create": { "type": "'Step'", "parent": "job", "attributes": { "stepKind": "'script'", "identifier": "'echo Add your build steps here'" } } }
@@ -943,11 +945,11 @@
         "icon": "mdi-rocket-launch-outline",
         "for": ["Stage", "JobBase", "Step"],
         "unavailable": [
-          { "when": "!self.isA('Stage')", "message": "A job goes in a stage." },
-          { "when": "!self.childrenOfType('JobBase').exists(j, !j.fromTemplate)", "message": "This stage has no jobs of its own to add one beside." }
+          { "when": "!self.isA('Stage')", "message": "A job goes in a stage." }
         ],
-        "doc": "Adds a deployment job with an environment of its name in lower case and a runOnce strategy whose deploy hook holds one script step.",
+        "doc": "Adds a deployment job with an environment of its name in lower case and a runOnce strategy whose deploy hook holds one script step. A stage whose jobs all come from a template still offers it, and refuses.",
         "actions": [
+          { "abort": { "message": "'This stage has no jobs of its own to add one beside.'" }, "when": "!self.childrenOfType('JobBase').exists(j, !j.fromTemplate)" },
           { "let": { "jobName": "unusedName('NewJob', diagram.nodesOfType('JobBase').map(j, has(j.name) ? j.name : ''))" } },
           { "create": { "type": "'DeploymentJob'", "parent": "self", "attributes": { "name": "jobName", "environment": "jobName.lowerAscii()", "strategy": "'runOnce'" } }, "as": "job" },
           { "create": { "type": "'Step'", "parent": "job", "attributes": { "stepKind": "'script'", "identifier": "'echo Add your build steps here'", "hook": "'deploy'" } } }
@@ -958,11 +960,11 @@
         "icon": "mdi-plus-box-outline",
         "for": ["Stage", "JobBase", "Step"],
         "unavailable": [
-          { "when": "!self.isA('JobBase')", "message": "A step goes in a job." },
-          { "when": "!self.children.exists(s, !s.fromTemplate)", "message": "This job has no steps of its own to add one beside." }
+          { "when": "!self.isA('JobBase')", "message": "A step goes in a job." }
         ],
-        "doc": "Adds a script step after the job's last step written in this file.",
+        "doc": "Adds a script step after the job's last step written in this file. A job whose steps all come from a template still offers it, and refuses.",
         "actions": [
+          { "abort": { "message": "'This job has no steps of its own to add one beside.'" }, "when": "!self.children.exists(s, !s.fromTemplate)" },
           { "create": { "type": "'Step'", "parent": "self", "attributes": { "stepKind": "'script'", "identifier": "'echo Add your build steps here'" } } }
         ]
       }
