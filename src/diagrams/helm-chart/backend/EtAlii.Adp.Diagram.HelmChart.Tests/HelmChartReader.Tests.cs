@@ -10,16 +10,20 @@ namespace EtAlii.Adp.Diagram.HelmChart.Tests;
 /// <c>unconventional/</c>. Assertions go list by list and field by field - never record
 /// equality over a record holding lists.
 /// </summary>
+/// <remarks>
+/// The reader is handed what the binding selects, as the folder body hands it to the plugin
+/// (<see cref="HelmFolder.Chart"/>; helm-chart-disl-fbl, task 9). Whether a folder is a chart at all is the
+/// folder body's answer since then, so those two cases ask it.
+/// </remarks>
 public class HelmChartReaderTests
 {
-    private static string Fixture(string name) =>
-        IoPath.Combine(AppContext.BaseDirectory, "Fixtures", name);
+    private static string Fixture(string name) => HelmFolder.Fixture(name);
 
     [Fact]
     public void TheWellFormedChart_ReadsItsMetadata()
     {
         // Arrange & Act.
-        var chart = new HelmChartReader().Read(Fixture("well-formed"));
+        var chart = HelmFolder.Chart(Fixture("well-formed"));
 
         // Assert.
         Assert.True(chart.IsChart);
@@ -36,7 +40,7 @@ public class HelmChartReaderTests
     public void TheValuesStack_LeadsWithTheDefaultLayer()
     {
         // Arrange & Act.
-        var chart = new HelmChartReader().Read(Fixture("well-formed"));
+        var chart = HelmFolder.Chart(Fixture("well-formed"));
 
         // Assert.
         Assert.Equal(2, chart.Values.Count);
@@ -53,7 +57,7 @@ public class HelmChartReaderTests
     public void Templates_GetTheirRolesAndTheirFacts()
     {
         // Arrange & Act.
-        var chart = new HelmChartReader().Read(Fixture("well-formed"));
+        var chart = HelmFolder.Chart(Fixture("well-formed"));
 
         // Assert.
         var byPath = chart.Templates.ToDictionary(template => template.RelativePath);
@@ -71,7 +75,7 @@ public class HelmChartReaderTests
     public void Dependencies_CarryAliasConditionAndItsResolvedState()
     {
         // Arrange & Act.
-        var chart = new HelmChartReader().Read(Fixture("well-formed"));
+        var chart = HelmFolder.Chart(Fixture("well-formed"));
 
         // Assert.
         Assert.Equal(2, chart.Dependencies.Count);
@@ -91,7 +95,7 @@ public class HelmChartReaderTests
     public void VendoredContent_IsReadOneLevelDeep()
     {
         // Arrange & Act.
-        var chart = new HelmChartReader().Read(Fixture("well-formed"));
+        var chart = HelmFolder.Chart(Fixture("well-formed"));
 
         // Assert.
         var redis = Assert.Single(chart.Vendored);
@@ -107,7 +111,7 @@ public class HelmChartReaderTests
     public void TheLockAndTheCrds_AreSummarized()
     {
         // Arrange & Act.
-        var chart = new HelmChartReader().Read(Fixture("well-formed"));
+        var chart = HelmFolder.Chart(Fixture("well-formed"));
 
         // Assert.
         Assert.NotNull(chart.Lock);
@@ -122,7 +126,7 @@ public class HelmChartReaderTests
     public void ABrokenValuesFile_CostsOnlyItself()
     {
         // Arrange & Act.
-        var chart = new HelmChartReader().Read(Fixture("broken"));
+        var chart = HelmFolder.Chart(Fixture("broken"));
 
         // Assert.
         // Chart.yaml parsed (name only), the values did not - and the rest still read.
@@ -143,7 +147,7 @@ public class HelmChartReaderTests
     public void TheLegacyChart_ReadsRequirementsAndItsLock()
     {
         // Arrange & Act.
-        var chart = new HelmChartReader().Read(Fixture("unconventional"));
+        var chart = HelmFolder.Chart(Fixture("unconventional"));
 
         // Assert.
         Assert.True(chart.Legacy);
@@ -161,7 +165,7 @@ public class HelmChartReaderTests
     public void ASealedArchive_IsNamedButNeverUnpacked()
     {
         // Arrange & Act.
-        var chart = new HelmChartReader().Read(Fixture("unconventional"));
+        var chart = HelmFolder.Chart(Fixture("unconventional"));
 
         // Assert.
         var sealedEntry = Assert.Single(chart.Vendored, entry => entry.Sealed);
@@ -174,7 +178,7 @@ public class HelmChartReaderTests
     public void DeeperVendoredNesting_IsACountNotARecursion()
     {
         // Arrange & Act.
-        var chart = new HelmChartReader().Read(Fixture("unconventional"));
+        var chart = HelmFolder.Chart(Fixture("unconventional"));
 
         // Assert.
         var deep = Assert.Single(chart.Vendored, entry => !entry.Sealed);
@@ -193,11 +197,11 @@ public class HelmChartReaderTests
         try
         {
             // Act.
-            var chart = new HelmChartReader().Read(scratch);
+            var reading = HelmFolder.Reading(scratch);
 
             // Assert.
-            Assert.False(chart.IsChart);
-            Assert.Empty(chart.Templates);
+            Assert.False(reading.IsChart);
+            Assert.Empty(reading.Disl.Diagram.Nodes);
         }
         finally
         {
@@ -209,11 +213,11 @@ public class HelmChartReaderTests
     public void ADeletedFolder_DegradesTheSameWay()
     {
         // Arrange & Act.
-        var chart = new HelmChartReader().Read(
+        var reading = HelmFolder.Reading(
             IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N")));
 
         // Assert.
-        Assert.False(chart.IsChart);
+        Assert.False(reading.IsChart);
     }
 
     [Fact]

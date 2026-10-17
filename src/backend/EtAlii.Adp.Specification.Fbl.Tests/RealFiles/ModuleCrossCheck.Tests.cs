@@ -2,10 +2,13 @@ using System.Text;
 using System.Text.RegularExpressions;
 using EtAlii.Adp.Diagram.C4;
 using EtAlii.Adp.Diagram.CausalLoopDiagram;
+using EtAlii.Adp.Diagram.HelmChart;
+using EtAlii.Adp.Diagram.HelmChart.Tests.Parity;
 using EtAlii.Adp.Diagram.Mindmap;
 using EtAlii.Adp.Diagram.Timeline;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Specification.Fbl.History;
+using EtAlii.Adp.Specification.Fbl.Plugins;
 using Xunit;
 
 namespace EtAlii.Adp.Specification.Fbl.Tests.RealFiles;
@@ -16,6 +19,13 @@ namespace EtAlii.Adp.Specification.Fbl.Tests.RealFiles;
 /// the causal loop diagram, the module's own binding), mapped from the
 /// module's kinds to the binding's types by <see cref="ModuleIds"/>. Every difference is a listed
 /// divergence. Only public API of the modules is used, and nothing in them is changed.
+/// <para>
+/// <b>The Helm chart folder</b> (helm-chart-disl-fbl, Requirement 8.5): every folder of this repository that holds a
+/// <c>Chart.yaml</c>, read through the vendored folder binding and the module's plugin by the library's folder body,
+/// against today's reader, which the module's test project keeps as its oracle and this project compiles from
+/// there, with the ids its graph gave each node and relation. The folder body is given nothing beside the binding, so a directory no file rule can select (gap 3 of
+/// the definition's companion, which the module answers with entries of its own) shows here as a divergence.
+/// </para>
 /// </summary>
 public class ModuleCrossCheckTests
 {
@@ -49,6 +59,31 @@ public class ModuleCrossCheckTests
 
         // Assert.
         Divergences.Check("cross-check", key, file, Difference(fbl, module));
+    }
+
+    public static TheoryData<string> ChartFolders()
+    {
+        var data = new TheoryData<string>();
+        foreach (var file in RealFileCorpus.All.Where(file => Path.GetFileName(file) == "Chart.yaml")) data.Add(file[..^"/Chart.yaml".Length]);
+        return data;
+    }
+
+    [Theory]
+    [MemberData(nameof(ChartFolders))]
+    public void TheHelmBindingAndItsPluginReadTheIdsTheModuleReads(string folder)
+    {
+        // Arrange.
+        var full = RealFileCorpus.FullPath(folder);
+        var binding = RealFileCorpus.Binding("helm-chart.fbl", "chart");
+
+        // Act.
+        var reading = FolderBody.ReadOnce(full, binding, new HelmChartFolderPlugin());
+        Assert.False(reading.Unreadable, $"{folder} holds a Chart.yaml and is not read as a chart.");
+        var fbl = ModuleIds.OfHelmBinding(reading);
+        var module = ModuleIds.OfHelmModule(full);
+
+        // Assert.
+        Divergences.Check("cross-check", "helm-chart", folder, Difference(fbl, module));
     }
 
     private static string? Difference(IReadOnlyDictionary<string, SortedSet<string>> fbl, IReadOnlyDictionary<string, SortedSet<string>> module)
@@ -165,6 +200,55 @@ internal static partial class ModuleIds
                 throw new ArgumentOutOfRangeException(nameof(key), key, "No module parser is cross-checked for this binding.");
         }
         return ids;
+    }
+
+    /// <summary>The Helm binding's side: every element the plugin delivered, by its type, with the id it delivered it with.</summary>
+    public static IReadOnlyDictionary<string, SortedSet<string>> OfHelmBinding(FblModel model)
+    {
+        var ids = new Dictionary<string, SortedSet<string>>(StringComparer.Ordinal);
+        foreach (var element in model.Elements) Add(ids, element.Type, element.Id);
+        return ids;
+    }
+
+    /// <summary>
+    /// The Helm module's side: what today's reader, kept as the module's oracle (<see cref="HandWrittenHelmReader"/>),
+    /// reads from the folder, each node by the definition's type for its kind with the id the module's graph gave it,
+    /// and each <c>Includes</c> and <c>Resolves</c> by its id: <c>edge:</c>, its source, its type, its target (empty for
+    /// an open end) and its label, <c>|</c> between each.
+    /// </summary>
+    public static IReadOnlyDictionary<string, SortedSet<string>> OfHelmModule(string folder)
+    {
+        var ids = new Dictionary<string, SortedSet<string>>(StringComparer.Ordinal);
+        var chart = new HandWrittenHelmReader().Read(folder);
+        if (!chart.IsChart) return ids;
+
+        Add(ids, "Chart", "chart");
+        foreach (var values in chart.Values) Add(ids, "Values", $"values:{values.RelativePath}");
+        if (chart.Schema is { } schema) Add(ids, "Schema", $"schema:{schema.RelativePath}");
+        var partials = chart.Templates.Where(template => template.Role == TemplateRole.Partial).ToList();
+        foreach (var template in chart.Templates)
+        {
+            Add(ids, template.Role == TemplateRole.Partial ? "Partial" : "Template", $"tpl:{template.RelativePath}");
+            foreach (var reference in template.Facts.References)
+            {
+                var defining = partials.FirstOrDefault(partial => partial.Facts.Defines.Contains(reference, StringComparer.Ordinal));
+                Add(ids, "Includes", $"edge:tpl:{template.RelativePath}|Includes|{(defining is null ? "" : $"tpl:{defining.RelativePath}")}|{reference}");
+            }
+        }
+        if (chart.Crds is not null) Add(ids, "Crds", "crds");
+        foreach (var entry in chart.Vendored) Add(ids, entry.Sealed ? "Archive" : "Subchart", Vendored(entry));
+        foreach (var resolved in DependencyResolution.Match(chart.Dependencies, chart.Vendored).Dependencies)
+        {
+            var dependency = $"dep:{resolved.Dependency.EffectiveName}";
+            Add(ids, "Dependency", dependency);
+            Add(ids, "Resolves", resolved.Vendored is { } vendored
+                ? $"edge:{dependency}|Resolves|{Vendored(vendored)}|"
+                : $"edge:{dependency}|Resolves||{resolved.Dependency.EffectiveName}");
+        }
+        if (chart.Lock is { } chartLock) Add(ids, "Lock", $"lock:{chartLock.RelativePath}");
+        return ids;
+
+        static string Vendored(VendoredEntry entry) => $"{(entry.Sealed ? "tgz" : "sub")}:{entry.RelativePath}";
     }
 
     private static void Add(Dictionary<string, SortedSet<string>> ids, string type, string id)

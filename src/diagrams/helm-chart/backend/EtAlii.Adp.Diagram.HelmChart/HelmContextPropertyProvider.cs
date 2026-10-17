@@ -59,7 +59,7 @@ public sealed class HelmContextPropertyProvider : IContextPropertyProvider
             return Empty;
         }
 
-        return ValueTask.FromResult(HelmDefinition.Rows(_store.GetOrLoad(folder), target.ElementId));
+        return ValueTask.FromResult(HelmDefinition.Rows(_store.GetOrLoad(folder, target.ResolvedFullPath).Current.Disl.Diagram, target.ElementId));
     }
 
     /// <summary>Refuses, always, with the definition's <c>std.readOnly</c> - a refusal, never an exception.</summary>

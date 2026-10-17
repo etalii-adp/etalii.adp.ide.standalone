@@ -19,6 +19,17 @@
     <ProjectReference Include="..\..\diagrams\causal-loop-diagram\backend\EtAlii.Adp.Diagram.CausalLoopDiagram\EtAlii.Adp.Diagram.CausalLoopDiagram.csproj" />
     <ProjectReference Include="..\..\diagrams\c4\backend\EtAlii.Adp.Diagram.C4\EtAlii.Adp.Diagram.C4.csproj" />
     <ProjectReference Include="..\..\diagrams\mindmap\backend\EtAlii.Adp.Diagram.Mindmap\EtAlii.Adp.Diagram.Mindmap.csproj" />
+    <!-- The Helm chart folder plugin, for the cross-check of the folder binding (helm-chart-disl-fbl, Requirement 8.5). -->
+    <ProjectReference Include="..\..\diagrams\helm-chart\backend\EtAlii.Adp.Diagram.HelmChart\EtAlii.Adp.Diagram.HelmChart.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      Today's Helm reader, the side the Helm cross-check compares the binding and its plugin with. It is the oracle the
+      module's test project keeps (Parity/), compiled here from there rather than copied, so there is one oracle and
+      it cannot drift.
+    -->
+    <Compile Include="..\..\diagrams\helm-chart\backend\EtAlii.Adp.Diagram.HelmChart.Tests\Parity\HandWrittenHelmReader.cs" Link="RealFiles\HelmOracle\HandWrittenHelmReader.cs" />
   </ItemGroup>
 
 </Project>

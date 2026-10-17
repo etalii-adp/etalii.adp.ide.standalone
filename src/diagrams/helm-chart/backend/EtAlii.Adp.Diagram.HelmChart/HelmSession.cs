@@ -19,9 +19,9 @@ namespace EtAlii.Adp.Diagram.HelmChart;
 /// <para>
 /// A drag never touches the chart: repositioning dispatches the core
 /// <see cref="SetRegistrationLayoutCommand"/>, which writes the <c>.adp</c>'s <c>layout:</c>
-/// block (Requirement 6.2). The registration sits inside the chart root, so the write comes
-/// back through the folder watcher like any other change, and the re-render overlays the
-/// authored position - one path for computed and dragged alike.
+/// block (Requirement 6.2). The write comes back through the folder body, which watches the
+/// registration as the registration and raises a change without reading the folder (helm-chart-disl-fbl,
+/// Requirement 4.5), and the re-render overlays the authored position - one path for computed and dragged alike.
 /// </para>
 /// <para>
 /// <b>What this connection holds is kept by <see cref="DiagramDocumentChangeHandler"/></b>, as
@@ -35,6 +35,9 @@ internal sealed class HelmSession : IDiagramSession
     private readonly string _registrationPath;
     private readonly IHelmChartStore _store;
     private readonly HelmElementMapper _mapper;
+
+    /// <summary>The open folder this session claims, until it goes.</summary>
+    private readonly HelmBody _opened;
 
     /// <summary>The project's history, so a drag is one undo away. Null makes the diagram fully read-only.</summary>
     private readonly IHistoryStack? _history;
@@ -69,8 +72,8 @@ internal sealed class HelmSession : IDiagramSession
         _history = history;
         _changes = new DiagramDocumentChangeHandler(_folder, Render, Raise);
 
-        _store.Acquire(_folder);
-        _watch = _store.Watch(_folder, _ => _changes.OnDocumentChanged(_folder));
+        _opened = _store.Acquire(_folder, _registrationPath);
+        _watch = _store.Watch(_folder, _registrationPath, _ => _changes.OnDocumentChanged(_folder));
     }
 
     /// <inheritdoc />
@@ -138,17 +141,15 @@ internal sealed class HelmSession : IDiagramSession
     public ValueTask DisposeAsync()
     {
         _watch.Dispose();
-        _store.Release(_folder);
+        _store.Release(_folder, _registrationPath);
         return ValueTask.CompletedTask;
     }
 
-    /// <summary>What this connection should hold: the chart as the store has it, arranged, through its viewport.</summary>
+    /// <summary>What this connection should hold: the model of the folder as it was last read, arranged, through its viewport.</summary>
     private IReadOnlyList<DiagramElement> Render()
     {
-        var chart = _store.GetOrLoad(_folder);
-        var graph = HelmGraph.Derive(chart);
-
-        return _mapper.Visible(chart, graph, HelmLayout.Arranged(chart, graph, RegistrationLayout.Read(_registrationPath)), _viewport);
+        var diagram = _opened.Current.Disl.Diagram;
+        return _mapper.Visible(diagram, HelmLayout.Arranged(diagram, RegistrationLayout.Read(_registrationPath)), _viewport);
     }
 
     private void Raise(IReadOnlyList<DiagramDelta> deltas) =>

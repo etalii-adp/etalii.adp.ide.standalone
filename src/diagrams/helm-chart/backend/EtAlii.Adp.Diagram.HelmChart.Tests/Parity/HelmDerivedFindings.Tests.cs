@@ -12,7 +12,9 @@ namespace EtAlii.Adp.Diagram.HelmChart.Tests.Parity;
 /// </summary>
 /// <remarks>
 /// The corpus and the empty directories made in each copy are the transcript's (<see cref="HelmTranscript"/>), so
-/// this compares what the transcript records with the hand-written rule set beside it.
+/// this compares what the transcript records with the hand-written rule set beside it. Since task 9 the two sides
+/// read a folder apart: the oracle with today's reader (<see cref="HandWrittenHelmReader"/>), the product through
+/// the binding and its plugin (<see cref="HelmFolder.Reading(string)"/>).
 /// </remarks>
 public class HelmDerivedFindingsTests
 {
@@ -24,11 +26,8 @@ public class HelmDerivedFindingsTests
     {
         using var copy = Copy(chart);
 
-        // Arrange.
-        var read = new HelmChartReader().Read(copy.Path);
-
         // Act and assert.
-        AssertSame(chart, read);
+        AssertSame(chart, copy.Path);
     }
 
     /// <summary>
@@ -52,11 +51,8 @@ public class HelmDerivedFindingsTests
         await File.WriteAllTextAsync(folder.Combine("Chart.yaml"), chartYaml, cancellationToken);
         await File.WriteAllTextAsync(folder.Combine("values.yaml"), "replicas: 1\n", cancellationToken);
 
-        // Arrange.
-        var read = new HelmChartReader().Read(folder.Path);
-
         // Act and assert.
-        AssertSame(what, read);
+        AssertSame(what, folder.Path);
     }
 
     /// <summary>A <c>Chart.yaml</c> the reader takes nothing from: empty, and a list.</summary>
@@ -83,12 +79,9 @@ public class HelmDerivedFindingsTests
         await File.WriteAllTextAsync(folder.Combine("Chart.yaml"), chartYaml, cancellationToken);
         await File.WriteAllTextAsync(folder.Combine("values.yaml"), "replicas: 1\n", cancellationToken);
 
-        // Arrange.
-        var read = new HelmChartReader().Read(folder.Path);
-
         // Act.
-        var expected = HandWrittenHelm.Findings(read).Select(Line).ToList();
-        var actual = HelmDefinition.Findings(read).Select(Line).ToList();
+        var expected = HandWrittenHelm.Findings(new HandWrittenHelmReader().Read(folder.Path)).Select(Line).ToList();
+        var actual = HelmDefinition.Findings(HelmFolder.Reading(folder.Path)).Select(Line).ToList();
 
         // Assert.
         List<string> withTheDefect = [.. expected, "helm.empty-templates | Warning | Chart.yaml:0 | This application chart has no templates; helm install would render nothing."];
@@ -99,13 +92,20 @@ public class HelmDerivedFindingsTests
 
     [Fact]
     public void ARegisteredFolderThatIsNotAChart_IsTheHandWrittenOne() =>
-        AssertSame("not a chart", HelmChart.NotAChart);
+        AssertSame("not a chart", HelmFolder.Fixture("not-a-chart"));
 
-    /// <summary>The derived findings of <paramref name="read"/> are the hand-written ones, in order.</summary>
-    internal static void AssertSame(string what, HelmChart read)
+    /// <summary>The findings derived from <paramref name="folder"/> read through the binding are the hand-written ones of today's reading of it, in order.</summary>
+    private static void AssertSame(string what, string folder) =>
+        AssertSame(what, HandWrittenHelm.Findings(new HandWrittenHelmReader().Read(folder)), HelmDefinition.Findings(HelmFolder.Reading(folder)));
+
+    /// <summary>The derived findings of <paramref name="read"/>, a chart made in memory, are the hand-written ones, in order.</summary>
+    internal static void AssertSame(string what, HelmChart read) =>
+        AssertSame(what, HandWrittenHelm.Findings(read), HelmDefinition.Findings(HelmFolder.Reading(read)));
+
+    private static void AssertSame(string what, IEnumerable<DiagramProblem> handWritten, IEnumerable<DiagramProblem> derived)
     {
-        var expected = HandWrittenHelm.Findings(read).Select(Line).ToList();
-        var actual = HelmDefinition.Findings(read).Select(Line).ToList();
+        var expected = handWritten.Select(Line).ToList();
+        var actual = derived.Select(Line).ToList();
         Assert.True(
             expected.SequenceEqual(actual, StringComparer.Ordinal),
             $"{what}:\nexpected {string.Join("\n         ", expected)}\nactual   {string.Join("\n         ", actual)}");

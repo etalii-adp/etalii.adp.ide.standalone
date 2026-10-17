@@ -1,5 +1,6 @@
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.Layout;
+using EtAlii.Adp.Specification.Disl;
 
 namespace EtAlii.Adp.Diagram.HelmChart;
 
@@ -8,12 +9,20 @@ namespace EtAlii.Adp.Diagram.HelmChart;
 /// given model, pure - no randomness, no clock, no filesystem.
 /// </summary>
 /// <remarks>
+/// <para>
 /// Five columns, left to right: the metadata band (chart, lock, schema, crds), the values
 /// stack (the default layer first, overrides beneath it - the stack as a reader thinks of
 /// it), the templates (manifests first, then partials, notes and test hooks), the declared
 /// dependencies, and what <c>charts/</c> actually holds - so resolves edges run short and to
 /// the right. Stored positions from the registration's <c>layout:</c> block win over all of
 /// this element by element; that overlay is the session's job, not the layout's.
+/// </para>
+/// <para>
+/// It reads the definition's model (helm-chart-disl-fbl, task 9): each node's type, its <c>path</c>, the
+/// values layer's <c>isDefault</c>, a template's derived <c>role</c> and the name it is drawn with, in the
+/// model's order, which is the plugin's. The definition names a layout as a plugin (finding A15), so the
+/// bands are code.
+/// </para>
 /// </remarks>
 public static class HelmLayout
 {
@@ -30,11 +39,11 @@ public static class HelmLayout
     /// than the canvas drew it.
     /// </summary>
     public static IReadOnlyDictionary<string, Rect> Arranged(
-        HelmChart chart, HelmGraph graph, IReadOnlyDictionary<string, RegistrationPosition> stored)
+        DislDiagram diagram, IReadOnlyDictionary<string, RegistrationPosition> stored)
     {
         ArgumentNullException.ThrowIfNull(stored);
 
-        var boxes = Compute(chart, graph);
+        var boxes = Compute(diagram);
         if (stored.Count == 0)
         {
             return boxes;
@@ -51,34 +60,34 @@ public static class HelmLayout
         return overlaid;
     }
 
-    public static IReadOnlyDictionary<string, Rect> Compute(HelmChart chart, HelmGraph graph)
+    public static IReadOnlyDictionary<string, Rect> Compute(DislDiagram diagram)
     {
-        ArgumentNullException.ThrowIfNull(chart);
-        ArgumentNullException.ThrowIfNull(graph);
+        ArgumentNullException.ThrowIfNull(diagram);
 
         var boxes = new Dictionary<string, Rect>(StringComparer.Ordinal);
+        var nodes = diagram.Nodes;
 
-        var metadata = graph.Nodes
-            .Where(node => node.Kind is HelmNodeKind.Chart or HelmNodeKind.Lock or HelmNodeKind.Schema or HelmNodeKind.Crds)
+        var metadata = nodes
+            .Where(node => node.Type.Name is "Chart" or "Lock" or "Schema" or "Crds")
             .OrderBy(Rank)
             .ToArray();
-        var values = graph.Nodes
-            .Where(node => node.Kind == HelmNodeKind.Values)
-            .OrderBy(node => IsDefaultValues(chart, node) ? 0 : 1)
-            .ThenBy(node => node.RelativePath, StringComparer.Ordinal)
+        var values = nodes
+            .Where(node => node.Type.Name == "Values")
+            .OrderBy(node => node.ValueOf("isDefault") is true ? 0 : 1)
+            .ThenBy(HelmElementMapper.PathOf, StringComparer.Ordinal)
             .ToArray();
-        var templates = graph.Nodes
-            .Where(node => node.Kind == HelmNodeKind.Template)
-            .OrderBy(node => RoleRank(chart, node))
-            .ThenBy(node => node.RelativePath, StringComparer.Ordinal)
+        var templates = nodes
+            .Where(node => node.IsA("Template"))
+            .OrderBy(RoleRank)
+            .ThenBy(HelmElementMapper.PathOf, StringComparer.Ordinal)
             .ToArray();
-        var dependencies = graph.Nodes
-            .Where(node => node.Kind == HelmNodeKind.Dependency)
-            .OrderBy(node => node.Name, StringComparer.Ordinal)
+        var dependencies = nodes
+            .Where(node => node.Type.Name == "Dependency")
+            .OrderBy(HelmElementMapper.NameOf, StringComparer.Ordinal)
             .ToArray();
-        var vendored = graph.Nodes
-            .Where(node => node.Kind is HelmNodeKind.Subchart or HelmNodeKind.Archive)
-            .OrderBy(node => node.RelativePath, StringComparer.Ordinal)
+        var vendored = nodes
+            .Where(node => node.IsA("Vendored"))
+            .OrderBy(HelmElementMapper.PathOf, StringComparer.Ordinal)
             .ToArray();
 
         var x = Left;
@@ -91,13 +100,13 @@ public static class HelmLayout
         return boxes;
     }
 
-    private static double Column(Dictionary<string, Rect> boxes, IReadOnlyList<HelmNode> nodes, double x)
+    private static double Column(Dictionary<string, Rect> boxes, IReadOnlyList<DislElement> nodes, double x)
     {
         var y = Top;
         double widest = 0;
         foreach (var node in nodes)
         {
-            (double width, double height) = SizeOf(node.Kind);
+            (double width, double height) = SizeOf(node);
             boxes[node.Id] = new Rect(x, y, width, height);
             y += height + RowGap;
             widest = Math.Max(widest, width);
@@ -108,41 +117,36 @@ public static class HelmLayout
         return widest > 0 ? x + widest + ColumnGap : x;
     }
 
-    private static (double Width, double Height) SizeOf(HelmNodeKind kind) => kind switch
+    private static (double Width, double Height) SizeOf(DislElement node) => node.Type.Name switch
     {
-        HelmNodeKind.Chart => (220, 110),
-        HelmNodeKind.Values => (200, 72),
-        HelmNodeKind.Schema => (200, 48),
-        HelmNodeKind.Template => (240, 60),
-        HelmNodeKind.Crds => (200, 48),
-        HelmNodeKind.Dependency => (210, 96),
-        HelmNodeKind.Subchart => (210, 84),
-        HelmNodeKind.Archive => (210, 52),
-        HelmNodeKind.Lock => (200, 56),
+        "Chart" => (220, 110),
+        "Values" => (200, 72),
+        "Schema" => (200, 48),
+        "Template" or "Partial" => (240, 60),
+        "Crds" => (200, 48),
+        "Dependency" => (210, 96),
+        "Subchart" => (210, 84),
+        "Archive" => (210, 52),
+        "Lock" => (200, 56),
         _ => (200, 60),
     };
 
-    private static int Rank(HelmNode node) => node.Kind switch
+    private static int Rank(DislElement node) => node.Type.Name switch
     {
-        HelmNodeKind.Chart => 0,
-        HelmNodeKind.Lock => 1,
-        HelmNodeKind.Schema => 2,
-        HelmNodeKind.Crds => 3,
+        "Chart" => 0,
+        "Lock" => 1,
+        "Schema" => 2,
+        "Crds" => 3,
         _ => 4,
     };
 
-    private static bool IsDefaultValues(HelmChart chart, HelmNode node) =>
-        chart.Values.FirstOrDefault(values =>
-            string.Equals(values.RelativePath, node.RelativePath, StringComparison.Ordinal))?.IsDefault ?? false;
-
-    private static int RoleRank(HelmChart chart, HelmNode node) =>
-        chart.Templates.FirstOrDefault(template =>
-            string.Equals(template.RelativePath, node.RelativePath, StringComparison.Ordinal))?.Role switch
-        {
-            TemplateRole.Manifest => 0,
-            TemplateRole.Partial => 1,
-            TemplateRole.Notes => 2,
-            TemplateRole.Test => 3,
-            _ => 4,
-        };
+    /// <summary>Manifests first, then partials, notes and test hooks, by the template's derived <c>role</c>.</summary>
+    private static int RoleRank(DislElement node) => node.ValueOf("role") switch
+    {
+        "manifest" => 0,
+        "partial" => 1,
+        "notes" => 2,
+        "test" => 3,
+        _ => 4,
+    };
 }

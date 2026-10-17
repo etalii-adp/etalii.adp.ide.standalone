@@ -1,13 +1,13 @@
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.Layout;
+using EtAlii.Adp.Specification.Cel;
 using EtAlii.Adp.Specification.Disl;
 using Google.Protobuf;
 
 namespace EtAlii.Adp.Diagram.HelmChart;
 
 /// <summary>
-/// Turns a chart, its graph and its boxes into the core element and delta vocabulary - without
-/// extending that vocabulary by a single field (Requirement 4.4).
+/// Turns the definition's model of a chart and its boxes into the core element and delta vocabulary -
+/// without extending that vocabulary by a single field (Requirement 4.4).
 /// </summary>
 /// <remarks>
 /// <para>
@@ -17,10 +17,17 @@ namespace EtAlii.Adp.Diagram.HelmChart;
 /// the design records the fork.)
 /// </para>
 /// <para>
-/// <b>The relations are the definition's model's</b> (helm-chart-disl-fbl, task 6): <c>Resolves</c> and
-/// <c>Includes</c> as the reading hands them over, <c>Declares</c>, <c>Overrides</c> and <c>Configures</c> as
-/// the definition derives them. They are delivered in today's order by <see cref="Relations"/>, because
-/// DISL appends the derived relations after the stored ones.
+/// <b>Everything is the definition's model's</b> (helm-chart-disl-fbl, tasks 6 and 9): every node and its
+/// payload are read from the model's attributes, derived ones included (a chart's <c>legacy</c>, a values
+/// layer's <c>hasGlobal</c>, a template's <c>role</c>, a dependency's <c>pinnedVersion</c> and
+/// <c>resolved</c>, what <c>charts/</c> holds being <c>declared</c>); <c>Resolves</c> and <c>Includes</c> as the
+/// plugin delivers them, <c>Declares</c>, <c>Overrides</c> and <c>Configures</c> as the definition derives them.
+/// The relations are delivered in today's order by <see cref="Relations"/>, because DISL appends the derived
+/// relations after the stored ones.
+/// </para>
+/// <para>
+/// <b>Two dependencies of one effective name share an id</b> (finding A10), and each is drawn, with the facts
+/// of the first of them, which is the element the id names (<see cref="DislDiagram.ElementById"/>).
 /// </para>
 /// <para>
 /// <b>Two of the four delta kinds are never emitted, and that is the design.</b> Nothing here
@@ -52,19 +59,17 @@ public sealed class HelmElementMapper
     /// source. Boxes arrive with authored positions already overlaid - the mapper cannot tell
     /// a dragged box from a computed one, which is the point.
     /// </summary>
-    public IReadOnlyList<DiagramElement> Elements(
-        HelmChart chart, HelmGraph graph, IReadOnlyDictionary<string, Rect> boxes)
+    public IReadOnlyList<DiagramElement> Elements(DislDiagram diagram, IReadOnlyDictionary<string, Rect> boxes)
     {
-        ArgumentNullException.ThrowIfNull(chart);
-        ArgumentNullException.ThrowIfNull(graph);
+        ArgumentNullException.ThrowIfNull(diagram);
         ArgumentNullException.ThrowIfNull(boxes);
 
-        var relations = Relations(chart);
-        var elements = new List<DiagramElement>(graph.Nodes.Count + relations.Count);
+        var relations = Relations(diagram);
+        var elements = new List<DiagramElement>(diagram.Nodes.Count + relations.Count);
 
-        foreach (var node in graph.Nodes)
+        foreach (var node in diagram.Nodes)
         {
-            elements.Add(NodeElement(chart, graph, node, boxes.GetValueOrDefault(node.Id)));
+            elements.Add(NodeElement(diagram, node, boxes.GetValueOrDefault(node.Id)));
         }
 
         foreach (var relation in relations)
@@ -76,7 +81,7 @@ public sealed class HelmElementMapper
     }
 
     /// <summary>
-    /// The relations of <paramref name="chart"/>'s model in the order they are delivered, which is today's:
+    /// The relations of <paramref name="diagram"/> in the order they are delivered, which is today's:
     /// every <c>Overrides</c>, then every <c>Includes</c>, each in model order, then per dependency in model
     /// order its <c>Declares</c>, its <c>Resolves</c> and its <c>Configures</c>.
     /// </summary>
@@ -86,10 +91,10 @@ public sealed class HelmElementMapper
     /// A relation of a dependency is placed by the dependency element it is about, its target or, for
     /// <c>Resolves</c>, its source; the sort is stable, so what the key ties keeps the model's order.
     /// </remarks>
-    public static IReadOnlyList<DislElement> Relations(HelmChart chart)
+    public static IReadOnlyList<DislElement> Relations(DislDiagram diagram)
     {
-        ArgumentNullException.ThrowIfNull(chart);
-        var model = HelmDefinition.ModelOf(chart);
+        ArgumentNullException.ThrowIfNull(diagram);
+        var model = diagram;
         var places = new Dictionary<DislElement, int>(ReferenceEqualityComparer.Instance);
         for (var index = 0; index < model.Nodes.Count; index++)
         {
@@ -124,20 +129,19 @@ public sealed class HelmElementMapper
     /// something is missing rather than seeing nothing at all.
     /// </remarks>
     public IReadOnlyList<DiagramElement> Visible(
-        HelmChart chart, HelmGraph graph, IReadOnlyDictionary<string, Rect> boxes, DiagramViewport viewport)
+        DislDiagram diagram, IReadOnlyDictionary<string, Rect> boxes, DiagramViewport viewport)
     {
-        ArgumentNullException.ThrowIfNull(chart);
-        ArgumentNullException.ThrowIfNull(graph);
+        ArgumentNullException.ThrowIfNull(diagram);
         ArgumentNullException.ThrowIfNull(boxes);
 
         var delivered = new HashSet<string>(StringComparer.Ordinal);
-        foreach (var node in graph.Nodes.Where(node => boxes.TryGetValue(node.Id, out var box) && viewport.Intersects(box)))
+        foreach (var node in diagram.Nodes.Where(node => boxes.TryGetValue(node.Id, out var box) && viewport.Intersects(box)))
         {
             delivered.Add(node.Id);
         }
 
         // One hop, exactly.
-        var relations = Relations(chart);
+        var relations = Relations(diagram);
         foreach (var relation in relations)
         {
             var source = SourceOf(relation);
@@ -153,9 +157,9 @@ public sealed class HelmElementMapper
         }
 
         var elements = new List<DiagramElement>();
-        foreach (var node in graph.Nodes.Where(node => delivered.Contains(node.Id)))
+        foreach (var node in diagram.Nodes.Where(node => delivered.Contains(node.Id)))
         {
-            elements.Add(NodeElement(chart, graph, node, boxes.GetValueOrDefault(node.Id)));
+            elements.Add(NodeElement(diagram, node, boxes.GetValueOrDefault(node.Id)));
         }
 
         foreach (var relation in relations)
@@ -172,88 +176,95 @@ public sealed class HelmElementMapper
         return elements;
     }
 
-    private static DiagramElement NodeElement(HelmChart chart, HelmGraph graph, HelmNode node, Rect box)
+    /// <summary>The name a node is drawn with: the chart's name, else <c>(chart)</c>; a template's file name; a dependency's effective name; an entry of <c>charts/</c> by its own name; every other node by its path.</summary>
+    internal static string NameOf(DislElement node)
     {
+        ArgumentNullException.ThrowIfNull(node);
+        return node.Type.Name switch
+        {
+            "Chart" => node.Attributes.GetValueOrDefault("name") as string ?? "(chart)",
+            "Template" or "Partial" => FileName(PathOf(node)),
+            "Dependency" => Text(node, "alias") is { Length: > 0 } alias ? alias : Text(node, "name"),
+            "Subchart" or "Archive" => Text(node, "entryName"),
+            _ => PathOf(node),
+        };
+    }
+
+    /// <summary>The path a node stands for, relative to the chart folder; empty for a dependency, which is a declaration and no file of its own.</summary>
+    internal static string PathOf(DislElement node)
+    {
+        ArgumentNullException.ThrowIfNull(node);
+        return node.IsA("ChartFile") ? Text(node, "path") : string.Empty;
+    }
+
+    private static DiagramElement NodeElement(DislDiagram diagram, DislElement node, Rect box)
+    {
+        // Two nodes may share an id (two dependencies of one effective name): both carry the facts of the one the id names.
+        var facts = diagram.ElementById(node.Id) ?? node;
         var payload = new Wire.HelmElementPayload
         {
-            Name = node.Name,
-            Kind = KindOf(node.Kind),
+            Name = NameOf(facts),
+            Kind = KindOf(node.Type.Name),
             Width = box.Width,
             Height = box.Height,
         };
-        payload.ChartRelativePath.AddRange(Segments(node.RelativePath));
+        payload.ChartRelativePath.AddRange(Segments(PathOf(node)));
 
-        switch (node.Kind)
+        switch (node.Type.Name)
         {
-            case HelmNodeKind.Chart:
-                payload.Chart = ChartFacts(chart);
-                if (chart.MetadataFailure is { } failure)
-                {
-                    Mark(payload, failure);
-                }
-
+            case "Chart":
+                payload.Chart = ChartFacts(facts);
+                Mark(payload, facts.Attributes.GetValueOrDefault("failure"));
                 break;
 
-            case HelmNodeKind.Values when ValuesOf(chart, node) is { } values:
+            case "Values":
                 payload.Values = new Wire.HelmValuesFacts
                 {
-                    IsDefault = values.IsDefault,
-                    HasGlobal = values.HasGlobal,
-                    KeyCount = values.TopLevelKeys.Count,
+                    IsDefault = facts.ValueOf("isDefault") is true,
+                    HasGlobal = facts.ValueOf("hasGlobal") is true,
+                    KeyCount = Items(facts, "keys").Count,
                 };
-                if (values.Failure is { } valuesFailure)
-                {
-                    Mark(payload, valuesFailure);
-                }
-
+                Mark(payload, facts.Attributes.GetValueOrDefault("failure"));
                 break;
 
-            case HelmNodeKind.Template when TemplateOf(chart, node) is { } template:
+            case "Template" or "Partial":
                 payload.Template = new Wire.HelmTemplateFacts
                 {
-                    Role = RoleOf(template.Role),
-                    KindsUndetermined = template is { Role: TemplateRole.Manifest, Facts.Kinds.Count: 0 },
+                    Role = RoleOf(facts.ValueOf("role") as string),
+                    KindsUndetermined = facts.ValueOf("undetermined") is true,
                 };
-                payload.Template.Kinds.AddRange(template.Facts.Kinds);
-                payload.Template.Defines.AddRange(template.Facts.Defines);
+                payload.Template.Kinds.AddRange(Items(facts, "kinds").OfType<string>());
+                payload.Template.Defines.AddRange(Items(facts, "defines").OfType<string>());
                 break;
 
-            case HelmNodeKind.Dependency when ResolvedOf(graph, node) is { } resolved:
-                payload.Dependency = DependencyFacts(chart, resolved);
+            case "Dependency":
+                payload.Dependency = DependencyFacts(facts);
                 break;
 
-            case HelmNodeKind.Subchart or HelmNodeKind.Archive when VendoredOf(chart, node) is { } vendored:
+            case "Subchart" or "Archive":
                 payload.Vendored = new Wire.HelmVendoredFacts
                 {
-                    Sealed = vendored.Sealed,
-                    Declared = graph.Resolution.Dependencies.Any(resolved => ReferenceEquals(resolved.Vendored, vendored)),
-                    ChartType = vendored.ChartType,
-                    ChartVersion = vendored.ChartVersion ?? string.Empty,
-                    TemplateCount = vendored.TemplateCount,
-                    DeeperCount = vendored.DeeperCount,
+                    Sealed = facts.Type.Name == "Archive",
+                    Declared = facts.ValueOf("declared") is true,
+                    ChartType = Text(facts, "chartType"),
+                    ChartVersion = Text(facts, "chartVersion"),
+                    TemplateCount = facts.Type.Name == "Subchart" ? Count(facts, "templates") : 0,
+                    DeeperCount = facts.Type.Name == "Subchart" ? Count(facts, "deeper") : 0,
                 };
-                if (vendored.Failure is { } vendoredFailure)
-                {
-                    Mark(payload, vendoredFailure);
-                }
-
+                Mark(payload, facts.Attributes.GetValueOrDefault("failure"));
                 break;
 
-            case HelmNodeKind.Crds when chart.Crds is { } crds:
-                payload.CrdCount = crds.FileCount;
+            case "Crds":
+                payload.CrdCount = Count(facts, "files");
                 break;
 
-            case HelmNodeKind.Lock when chart.Lock is { } chartLock:
-                payload.LockEntryCount = chartLock.Entries.Count;
-                if (chartLock.Failure is { } lockFailure)
-                {
-                    Mark(payload, lockFailure);
-                }
-
+            case "Lock":
+                payload.LockEntryCount = Items(facts, "entries").Count;
+                Mark(payload, facts.Attributes.GetValueOrDefault("failure"));
                 break;
         }
 
-        return new DiagramElement(node.Id, box.X, box.Y, TypeOf(node), PayloadTypeUrl, payload.ToByteArray());
+        return new DiagramElement(node.Id, box.X, box.Y, TypeOf(node.Type.Name), PayloadTypeUrl, payload.ToByteArray());
     }
 
     private static DiagramElement EdgeElement(DislElement relation, Rect anchor)
@@ -283,108 +294,113 @@ public sealed class HelmElementMapper
     /// <summary>The id of the node a relation lands on; empty for an open end, which has none.</summary>
     private static string TargetOf(DislElement relation) => relation.Target?.Id ?? string.Empty;
 
-    private static Wire.HelmChartFacts ChartFacts(HelmChart chart) => new()
+    private static Wire.HelmChartFacts ChartFacts(DislElement chart) => new()
     {
-        Version = chart.Metadata?.Version ?? string.Empty,
-        AppVersion = chart.Metadata?.AppVersion ?? string.Empty,
-        ApiVersion = chart.Metadata?.ApiVersion ?? string.Empty,
-        ChartType = chart.Metadata?.ChartType ?? "application",
-        Description = chart.Metadata?.Description ?? string.Empty,
-        Deprecated = chart.Metadata?.Deprecated ?? false,
-        Legacy = chart.Legacy,
+        Version = Text(chart, "version"),
+        AppVersion = Text(chart, "appVersion"),
+        ApiVersion = Text(chart, "apiVersion"),
+        ChartType = Text(chart, "chartType"),
+        Description = Text(chart, "description"),
+        Deprecated = chart.ValueOf("deprecated") is true,
+        Legacy = chart.ValueOf("legacy") is true,
     };
 
-    private static Wire.HelmDependencyFacts DependencyFacts(HelmChart chart, ResolvedDependency resolved)
+    /// <summary>A dependency's facts; the version the lock pins is the definition's <c>pinnedVersion</c>, by the chart name and not the alias, because it records what was fetched.</summary>
+    private static Wire.HelmDependencyFacts DependencyFacts(DislElement dependency) => new()
     {
-        var dependency = resolved.Dependency;
+        ChartName = Text(dependency, "name"),
+        Alias = Text(dependency, "alias"),
+        Constraint = Text(dependency, "constraint"),
+        Repository = Text(dependency, "repository"),
+        Condition = Text(dependency, "condition"),
+        ConditionState = ConditionOf(dependency.ValueOf("conditionState") as string),
+        PinnedVersion = Text(dependency, "pinnedVersion"),
+        Resolved = dependency.ValueOf("resolved") is true,
+    };
 
-        // The lock pins by the chart name, not the alias - it records what was fetched.
-        var pinned = chart.Lock?.Entries
-            .FirstOrDefault(entry => string.Equals(entry.Name, dependency.Name, StringComparison.Ordinal))
-            ?.Version;
-
-        return new Wire.HelmDependencyFacts
+    /// <summary>
+    /// Marks the payload unreadable with the parser's words and line, when <paramref name="failure"/> is the definition's
+    /// <c>YamlFailure</c> of a file that did not parse. It is read as stored: an unset one reads as its type's zero value.
+    /// </summary>
+    private static void Mark(Wire.HelmElementPayload payload, object? failure)
+    {
+        if (failure is not CelMap map)
         {
-            ChartName = dependency.Name,
-            Alias = dependency.Alias ?? string.Empty,
-            Constraint = dependency.VersionConstraint ?? string.Empty,
-            Repository = dependency.Repository ?? string.Empty,
-            Condition = dependency.Condition ?? string.Empty,
-            ConditionState = ConditionOf(dependency.State),
-            PinnedVersion = pinned ?? string.Empty,
-            Resolved = resolved.IsResolved,
-        };
-    }
+            return;
+        }
 
-    private static void Mark(Wire.HelmElementPayload payload, TolerantYamlFailure failure)
-    {
         payload.Unreadable = true;
-        payload.FailureMessage = failure.Message;
-        payload.FailureLine = failure.Line;
+        payload.FailureMessage = map.GetValueOrDefault("message") as string ?? string.Empty;
+        payload.FailureLine = map.GetValueOrDefault("line") is long line ? (uint)line : 0;
     }
 
-    private static ValuesFile? ValuesOf(HelmChart chart, HelmNode node) =>
-        chart.Values.FirstOrDefault(values => string.Equals(values.RelativePath, node.RelativePath, StringComparison.Ordinal));
+    /// <summary>A string attribute as the model reads it: stored, else its default.</summary>
+    private static string Text(DislElement element, string attribute) => element.ValueOf(attribute) as string ?? string.Empty;
 
-    private static TemplateFile? TemplateOf(HelmChart chart, HelmNode node) =>
-        chart.Templates.FirstOrDefault(template => string.Equals(template.RelativePath, node.RelativePath, StringComparison.Ordinal));
+    /// <summary>An int attribute as the model reads it.</summary>
+    private static int Count(DislElement element, string attribute) => element.ValueOf(attribute) is long value ? (int)value : 0;
 
-    private static VendoredEntry? VendoredOf(HelmChart chart, HelmNode node) =>
-        chart.Vendored.FirstOrDefault(entry => string.Equals(entry.RelativePath, node.RelativePath, StringComparison.Ordinal));
+    /// <summary>A list attribute as the model reads it.</summary>
+    private static IReadOnlyList<object?> Items(DislElement element, string attribute) => element.ValueOf(attribute) as IReadOnlyList<object?> ?? [];
 
-    private static ResolvedDependency? ResolvedOf(HelmGraph graph, HelmNode node) =>
-        graph.Resolution.Dependencies.FirstOrDefault(resolved =>
-            string.Equals(HelmGraph.DependencyId(resolved.Dependency), node.Id, StringComparison.Ordinal));
+    private static string FileName(string relativePath)
+    {
+        var slash = relativePath.LastIndexOf('/');
+        return slash >= 0 ? relativePath[(slash + 1)..] : relativePath;
+    }
 
     private static string[] Segments(string relativePath) =>
         relativePath.Split(['/', '\\'], StringSplitOptions.RemoveEmptyEntries);
 
     /// <summary>Partials get their own wire type so the client styles them apart without reading the payload.</summary>
-    private static string TypeOf(HelmNode node) => node.Kind switch
+    private static string TypeOf(string type) => type switch
     {
-        HelmNodeKind.Chart => ChartType,
-        HelmNodeKind.Values => ValuesType,
-        HelmNodeKind.Schema => SchemaType,
-        HelmNodeKind.Template when node.Name.StartsWith('_') => PartialType,
-        HelmNodeKind.Template => TemplateType,
-        HelmNodeKind.Crds => CrdsType,
-        HelmNodeKind.Dependency => DependencyType,
-        HelmNodeKind.Subchart => SubchartType,
-        HelmNodeKind.Archive => ArchiveType,
-        HelmNodeKind.Lock => LockType,
+        "Chart" => ChartType,
+        "Values" => ValuesType,
+        "Schema" => SchemaType,
+        "Partial" => PartialType,
+        "Template" => TemplateType,
+        "Crds" => CrdsType,
+        "Dependency" => DependencyType,
+        "Subchart" => SubchartType,
+        "Archive" => ArchiveType,
+        "Lock" => LockType,
         _ => EdgeType,
     };
 
-    private static Wire.HelmElementKind KindOf(HelmNodeKind kind) => kind switch
+    /// <summary>A node's type as the wire's element kind; a partial travels as a template, with its own wire type.</summary>
+    private static Wire.HelmElementKind KindOf(string type) => type switch
     {
-        HelmNodeKind.Chart => Wire.HelmElementKind.Chart,
-        HelmNodeKind.Values => Wire.HelmElementKind.Values,
-        HelmNodeKind.Schema => Wire.HelmElementKind.Schema,
-        HelmNodeKind.Template => Wire.HelmElementKind.Template,
-        HelmNodeKind.Crds => Wire.HelmElementKind.Crds,
-        HelmNodeKind.Dependency => Wire.HelmElementKind.Dependency,
-        HelmNodeKind.Subchart => Wire.HelmElementKind.Subchart,
-        HelmNodeKind.Archive => Wire.HelmElementKind.Archive,
-        HelmNodeKind.Lock => Wire.HelmElementKind.Lock,
+        "Chart" => Wire.HelmElementKind.Chart,
+        "Values" => Wire.HelmElementKind.Values,
+        "Schema" => Wire.HelmElementKind.Schema,
+        "Template" or "Partial" => Wire.HelmElementKind.Template,
+        "Crds" => Wire.HelmElementKind.Crds,
+        "Dependency" => Wire.HelmElementKind.Dependency,
+        "Subchart" => Wire.HelmElementKind.Subchart,
+        "Archive" => Wire.HelmElementKind.Archive,
+        "Lock" => Wire.HelmElementKind.Lock,
         _ => Wire.HelmElementKind.Unspecified,
     };
 
-    private static Wire.HelmTemplateRole RoleOf(TemplateRole role) => role switch
+    /// <summary>A template's derived <c>role</c> as the wire's.</summary>
+    private static Wire.HelmTemplateRole RoleOf(string? role) => role switch
     {
-        TemplateRole.Manifest => Wire.HelmTemplateRole.Manifest,
-        TemplateRole.Partial => Wire.HelmTemplateRole.Partial,
-        TemplateRole.Notes => Wire.HelmTemplateRole.Notes,
-        TemplateRole.Test => Wire.HelmTemplateRole.Test,
+        "manifest" => Wire.HelmTemplateRole.Manifest,
+        "partial" => Wire.HelmTemplateRole.Partial,
+        "notes" => Wire.HelmTemplateRole.Notes,
+        "test" => Wire.HelmTemplateRole.Test,
         _ => Wire.HelmTemplateRole.Unspecified,
     };
 
-    private static Wire.HelmConditionState ConditionOf(ConditionState state) => state switch
+    /// <summary>A dependency's <c>conditionState</c> as the wire's.</summary>
+    private static Wire.HelmConditionState ConditionOf(string? state) => state switch
     {
-        ConditionState.None => Wire.HelmConditionState.ConditionNone,
-        ConditionState.On => Wire.HelmConditionState.ConditionOn,
-        ConditionState.Off => Wire.HelmConditionState.ConditionOff,
-        ConditionState.Missing => Wire.HelmConditionState.ConditionMissing,
-        ConditionState.Unknown => Wire.HelmConditionState.ConditionUnknown,
+        "none" => Wire.HelmConditionState.ConditionNone,
+        "on" => Wire.HelmConditionState.ConditionOn,
+        "off" => Wire.HelmConditionState.ConditionOff,
+        "missing" => Wire.HelmConditionState.ConditionMissing,
+        "unknown" => Wire.HelmConditionState.ConditionUnknown,
         _ => Wire.HelmConditionState.Unspecified,
     };
 

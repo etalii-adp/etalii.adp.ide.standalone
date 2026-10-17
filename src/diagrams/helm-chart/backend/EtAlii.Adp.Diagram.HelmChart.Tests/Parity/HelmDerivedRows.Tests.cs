@@ -10,7 +10,9 @@ namespace EtAlii.Adp.Diagram.HelmChart.Tests.Parity;
 /// </summary>
 /// <remarks>
 /// The corpus and the empty directories made in each copy are the transcript's (<see cref="HelmTranscript"/>), so this
-/// compares what the transcript records, and names the element where the transcript would name only a line.
+/// compares what the transcript records, and names the element where the transcript would name only a line. Since
+/// task 9 the two sides read a folder apart: the oracle with today's reader (<see cref="HandWrittenHelmReader"/>), the
+/// product through the binding and its plugin (<see cref="HelmFolder.Reading(string)"/>).
 /// </remarks>
 public class HelmDerivedRowsTests
 {
@@ -25,7 +27,8 @@ public class HelmDerivedRowsTests
         using var copy = Copy(chart);
 
         // Arrange.
-        var read = new HelmChartReader().Read(copy.Path);
+        var read = new HandWrittenHelmReader().Read(copy.Path);
+        var diagram = HelmFolder.Reading(copy.Path).Disl.Diagram;
         var graph = HelmGraph.Derive(read);
         List<string> targets = [.. graph.Nodes.Select(node => node.Id), .. HandWrittenHelm.Edges(read).Select(edge => edge.Id), "", Unknown];
 
@@ -33,7 +36,7 @@ public class HelmDerivedRowsTests
         foreach (var target in targets)
         {
             var expected = HandWrittenHelm.Rows(read, target).Select(row => row.RowLine()).ToList();
-            var actual = HelmDefinition.Rows(read, target).Select(row => row.RowLine()).ToList();
+            var actual = HelmDefinition.Rows(diagram, target).Select(row => row.RowLine()).ToList();
             Assert.True(
                 expected.SequenceEqual(actual, StringComparer.Ordinal),
                 $"{chart} {target}:\nexpected {string.Join("\n         ", expected)}\nactual   {string.Join("\n         ", actual)}");
@@ -62,7 +65,8 @@ public class HelmDerivedRowsTests
         await File.WriteAllTextAsync(folder.Combine("values.yaml"), "replicas: 1\n", cancellationToken);
 
         // Arrange.
-        var read = new HelmChartReader().Read(folder.Path);
+        var read = new HandWrittenHelmReader().Read(folder.Path);
+        var diagram = HelmFolder.Reading(folder.Path).Disl.Diagram;
         var graph = HelmGraph.Derive(read);
         Assert.Equal(2, graph.Nodes.Count);
 
@@ -70,7 +74,7 @@ public class HelmDerivedRowsTests
         foreach (var target in graph.Nodes.Select(node => node.Id))
         {
             var expected = HandWrittenHelm.Rows(read, target).Select(row => row.RowLine()).ToList();
-            var actual = HelmDefinition.Rows(read, target).Select(row => row.RowLine()).ToList();
+            var actual = HelmDefinition.Rows(diagram, target).Select(row => row.RowLine()).ToList();
             Assert.True(
                 expected.SequenceEqual(actual, StringComparer.Ordinal),
                 $"{what} {target}:\nexpected {string.Join("\n         ", expected)}\nactual   {string.Join("\n         ", actual)}");
@@ -84,15 +88,14 @@ public class HelmDerivedRowsTests
         using var copy = Copy(chart);
 
         // Arrange.
-        var read = new HelmChartReader().Read(copy.Path);
-        var graph = HelmGraph.Derive(read);
+        var diagram = HelmFolder.Reading(copy.Path).Disl.Diagram;
 
         // Act.
-        var delivered = new HelmElementMapper().Elements(read, graph, HelmLayout.Compute(read, graph));
+        var delivered = new HelmElementMapper().Elements(diagram, HelmLayout.Compute(diagram));
 
         // Assert.
-        Assert.All(delivered, element => Assert.Equal(element.Type, HelmDefinition.WireTypeOf(read, element.Id)));
-        Assert.Null(HelmDefinition.WireTypeOf(read, Unknown));
+        Assert.All(delivered, element => Assert.Equal(element.Type, HelmDefinition.WireTypeOf(diagram, element.Id)));
+        Assert.Null(HelmDefinition.WireTypeOf(diagram, Unknown));
     }
 
     [Fact]

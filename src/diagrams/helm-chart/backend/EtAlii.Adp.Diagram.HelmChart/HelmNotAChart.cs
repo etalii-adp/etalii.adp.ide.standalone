@@ -14,8 +14,8 @@ namespace EtAlii.Adp.Diagram.HelmChart;
 /// folder. It goes when DISL lets a built-in's severity be computed.
 /// </para>
 /// <para>
-/// It reads the reader's answer, <see cref="HelmChart.IsChart"/>, until the folder is read through the
-/// binding (task 9), which moves it onto the folder body's unreadable answer.
+/// It answers from the folder body: a folder that fails the binding's <c>recognise</c>, or is gone, is an
+/// unreadable body (<see cref="HelmReading.IsChart"/>), whose own finding is replaced by this one (task 9).
 /// </para>
 /// </remarks>
 internal static class HelmNotAChart
@@ -27,13 +27,13 @@ internal static class HelmNotAChart
     private const string Sentence = "This folder is not a Helm chart: it has no Chart.yaml.";
 
     /// <summary>
-    /// The one finding of a registered folder <paramref name="chart"/> is not a chart of, at the folder
+    /// The one finding of a registered folder <paramref name="reading"/> found no chart in, at the folder
     /// (<c>.</c>, which core keeps fresh as a folder-located problem); null for a chart.
     /// </summary>
-    public static IReadOnlyList<DiagramProblem>? Findings(HelmChart chart)
+    public static IReadOnlyList<DiagramProblem>? Findings(HelmReading reading)
     {
-        ArgumentNullException.ThrowIfNull(chart);
-        return chart.IsChart
+        ArgumentNullException.ThrowIfNull(reading);
+        return reading.IsChart
             ? null
             : [new DiagramProblem(DiagramProblemSeverity.Warning, Sentence, Code, new DiagramProblemFileLocation("."))];
     }

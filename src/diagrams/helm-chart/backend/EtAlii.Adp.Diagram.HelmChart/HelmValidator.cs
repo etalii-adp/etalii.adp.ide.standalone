@@ -8,7 +8,8 @@ namespace EtAlii.Adp.Diagram.HelmChart;
 /// <summary>
 /// Hands the findings of <see cref="HelmDefinition.Findings"/> to core's validator seam, so this type's
 /// rules reach the errors-and-warnings panel like any other type's (Requirement 10.8). It holds no rule:
-/// the rules are the bundled definition's (helm-chart-disl-fbl, task 6).
+/// the rules are the bundled definition's (helm-chart-disl-fbl, task 6), and it reads the folder once through
+/// the binding and the plugin (<see cref="HelmBody.Read"/>, task 9).
 /// </summary>
 /// <remarks>
 /// <para>
@@ -17,7 +18,7 @@ namespace EtAlii.Adp.Diagram.HelmChart;
 /// <c>.adp</c>'s single MIME line, which says nothing about the chart.
 /// </para>
 /// <para>
-/// It reads the folder itself rather than going through <see cref="IHelmChartStore"/>.
+/// It reads the folder once rather than going through <see cref="IHelmChartStore"/>.
 /// Validation is a one-shot question, not a subscription: routing it through the store would
 /// make every "Validate all" leave a watcher behind on a folder nobody has open.
 /// </para>
@@ -25,19 +26,6 @@ namespace EtAlii.Adp.Diagram.HelmChart;
 public sealed class HelmValidator : IDiagramValidator
 {
     private static readonly ILogger _logger = Log.ForContext<HelmValidator>();
-
-    private readonly HelmChartReader _reader;
-
-    public HelmValidator(HelmChartReader reader)
-    {
-        ArgumentNullException.ThrowIfNull(reader);
-        _reader = reader;
-    }
-
-    public HelmValidator()
-        : this(new HelmChartReader())
-    {
-    }
 
     public DiagramOrigin Origin => Diagram.HelmCharts.Origin;
 
@@ -59,7 +47,7 @@ public sealed class HelmValidator : IDiagramValidator
             return ValueTask.FromResult<IReadOnlyList<DiagramProblem>>([]);
         }
 
-        var problems = HelmDefinition.Findings(_reader.Read(folder));
+        var problems = HelmDefinition.Findings(HelmBody.Read(folder));
         return ValueTask.FromResult(Rebased(problems, request.RootPath, folder));
     }
 

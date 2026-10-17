@@ -18,13 +18,13 @@ public class ExamplesTests
     public void EveryShippedExample_JudgesClean(string name)
     {
         // Arrange.
-        var chart = new HelmChartReader().Read(Example(name));
+        var reading = HelmFolder.Reading(Example(name));
 
         // Act.
-        var problems = HelmRuleSet.Judge(chart);
+        var problems = HelmDefinition.Findings(reading);
 
         // Assert.
-        Assert.True(chart.IsChart, $"{name} is not a chart at all.");
+        Assert.True(reading.IsChart, $"{name} is not a chart at all.");
         Assert.True(
             problems.Count == 0,
             $"{name} judges red: {string.Join("; ", problems.Select(problem => problem.Message))}");
@@ -34,26 +34,26 @@ public class ExamplesTests
     public void Prometheus_DemonstratesUnvendoredConditionalDependencies()
     {
         // Arrange & act.
-        var chart = new HelmChartReader().Read(Example("prometheus"));
-        var graph = HelmGraph.Derive(chart);
+        var chart = HelmFolder.Chart(Example("prometheus"));
+        var resolution = DependencyResolution.Match(chart.Dependencies, chart.Vendored);
 
         // Assert.
         // Four conditional dependencies, none vendored - all open ends, none a finding.
         Assert.Equal(4, chart.Dependencies.Count);
         Assert.All(chart.Dependencies, dependency => Assert.Equal(ConditionState.On, dependency.State));
-        Assert.All(graph.Resolution.Dependencies, resolved => Assert.False(resolved.IsResolved));
+        Assert.All(resolution.Dependencies, resolved => Assert.False(resolved.IsResolved));
     }
 
     [Fact]
     public void Nginx_DemonstratesTheResolvedLibrarySubchart_AndTheAuthoredLayering()
     {
         // Arrange & act.
-        var chart = new HelmChartReader().Read(Example("nginx"));
-        var graph = HelmGraph.Derive(chart);
+        var chart = HelmFolder.Chart(Example("nginx"));
+        var resolution = DependencyResolution.Match(chart.Dependencies, chart.Vendored);
 
         // Assert.
         // The common library chart is vendored at the exact version the lock pins.
-        var resolved = Assert.Single(graph.Resolution.Dependencies);
+        var resolved = Assert.Single(resolution.Dependencies);
         Assert.True(resolved.IsResolved);
         Assert.Equal("common", resolved.Vendored!.EntryName);
         Assert.Equal("library", resolved.Vendored.ChartType);

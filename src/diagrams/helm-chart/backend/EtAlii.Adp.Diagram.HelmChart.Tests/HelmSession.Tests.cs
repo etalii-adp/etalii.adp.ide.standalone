@@ -14,7 +14,7 @@ namespace EtAlii.Adp.Diagram.HelmChart.Tests;
 /// </summary>
 public class HelmSessionTests : IAsyncDisposable, IDisposable
 {
-    private static readonly TimeSpan SettleDelay = TimeSpan.FromMilliseconds(150);
+    private static readonly TimeSpan SettleDelay = TimeSpan.FromMilliseconds(HelmDefinition.Binding.Body.Settle);
     private static readonly TimeSpan WaitLimit = TimeSpan.FromSeconds(10);
 
     private readonly string _root;
@@ -36,7 +36,7 @@ public class HelmSessionTests : IAsyncDisposable, IDisposable
             .AddCommands().AddHierarchyCommandHandlers()
             .AddHelmCharts()
             .BuildServiceProvider();
-        _store = new HelmChartStore(new HelmChartReader(), SettleDelay, _clock);
+        _store = new HelmChartStore(new HelmChartReader(), _clock);
     }
 
     public void Dispose()

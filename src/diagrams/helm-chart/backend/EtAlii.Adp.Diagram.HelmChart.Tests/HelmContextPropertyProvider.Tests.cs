@@ -18,7 +18,7 @@ namespace EtAlii.Adp.Diagram.HelmChart.Tests;
 public class HelmContextPropertyProviderTests : IDisposable
 {
     private readonly string _root;
-    private readonly HelmChartStore _store = new(new HelmChartReader(), TimeSpan.FromMilliseconds(150));
+    private readonly HelmChartStore _store = new();
     private readonly HelmContextPropertyProvider _provider;
 
     public HelmContextPropertyProviderTests()
@@ -38,16 +38,15 @@ public class HelmContextPropertyProviderTests : IDisposable
     public async Task EveryRowOfEveryElement_IsReadOnlyWithATrueReason()
     {
         // Arrange.
-        var chart = _store.GetOrLoad(_root);
-        var graph = HelmGraph.Derive(chart);
-        var everything = graph.Nodes.Select(node => node.Id).Concat(HelmElementMapper.Relations(chart).Select(relation => relation.Id)).ToArray();
+        var diagram = _store.GetOrLoad(_root).Current.Disl.Diagram;
+        var everything = diagram.Nodes.Select(node => node.Id).Concat(HelmElementMapper.Relations(diagram).Select(relation => relation.Id)).ToArray();
 
-        // Assert, first, that the graph was derived at all. Without this the foreach below
-        // skips silently on an empty graph and the test passes loudest exactly when it has
+        // Assert, first, that the model was read at all. Without this the foreach below
+        // skips silently on an empty model and the test passes loudest exactly when it has
         // stopped looking at anything.
         Assert.True(
             everything.Length >= 6,
-            $"The derived graph produced {everything.Length} elements; this test cannot check rows for elements that do not exist.");
+            $"The model holds {everything.Length} elements; this test cannot check rows for elements that do not exist.");
 
         foreach (var elementId in everything)
         {

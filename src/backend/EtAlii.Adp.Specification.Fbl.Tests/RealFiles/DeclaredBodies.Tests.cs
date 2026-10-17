@@ -150,8 +150,10 @@ public class DeclaredBodiesTests
         foreach (var divergence in Divergences.All)
         {
             Assert.False(string.IsNullOrWhiteSpace(divergence.Reason), $"The divergence on {divergence.File} gives no reason.");
+            // The Helm binding's subject is a folder: its divergences name a folder that holds a Chart.yaml the suite reads.
             var known = RealFileCorpus.Declared.Any(b => b.Key == divergence.Binding && RealFileCorpus.Files(b).Contains(divergence.File))
-                || registrations.Contains(divergence.File);
+                || registrations.Contains(divergence.File)
+                || (divergence.Binding == "helm-chart" && RealFileCorpus.All.Contains(divergence.File + "/Chart.yaml"));
             Assert.True(known, $"divergences.json lists {divergence.File} for {divergence.Binding}, which the suite does not read.");
         }
     }

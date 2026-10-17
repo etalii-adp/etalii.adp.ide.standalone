@@ -1,24 +1,25 @@
-using System.Runtime.CompilerServices;
 using System.Text.Json;
 using EtAlii.Adp.Context;
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Specification.Disl;
+using EtAlii.Adp.Specification.Fbl;
+using EtAlii.Adp.Specification.Fbl.Documents;
 
 namespace EtAlii.Adp.Diagram.HelmChart;
 
 /// <summary>
 /// The Helm chart diagram's bundled DISL definition (<c>definition/helm-chart.dis</c>, from
-/// etalii-adp/etalii.adp), loaded once, and what is derived from it: the property rows of every node and
-/// relation, the findings, the relations <c>Declares</c>, <c>Overrides</c> and <c>Configures</c>, the
-/// sentence a write is refused with, and an element's wire type, mapped onto the host's ids by its
-/// <c>x-helm</c> block.
+/// etalii-adp/etalii.adp) and its binding (<c>helm-chart.fbl</c>, the module's own), each loaded once, and what
+/// is derived from them: the property rows of every node and relation, the findings, the relations
+/// <c>Declares</c>, <c>Overrides</c> and <c>Configures</c>, the sentence a write is refused with, and an
+/// element's wire type, mapped onto the host's ids by its <c>x-helm</c> block.
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>The model is built from today's reading</b> by <see cref="HelmDisl"/>, once per reading and kept for
-/// as long as the reading lives, so every selection, every finding and every delivered relation of one
-/// reading reads one model. Reading the folder through the binding comes later (helm-chart-disl-fbl, task 9).
+/// <b>The model is built by <see cref="DislModelBuilder"/> from what the plugin delivers</b>
+/// (<see cref="HelmChartFolderPlugin"/>), which computes every id again by the definition's id expressions. A
+/// reading builds it once (<see cref="HelmReading.Disl"/>), so every selection, every finding and every
+/// delivered relation of one reading reads one model (helm-chart-disl-fbl, task 9).
 /// </para>
 /// <para>
 /// <b>Everything is read-only</b> (<c>env.readOnly</c>): every row carries the reason its form item gives,
@@ -40,7 +41,7 @@ internal static class HelmDefinition
         ? prefix.GetString()!
         : throw new InvalidOperationException("The definition's x-helm block names no typePrefix."));
 
-    private static readonly ConditionalWeakTable<HelmChart, DislDiagram> Models = [];
+    private static readonly Lazy<FblBinding> LoadedBinding = new(() => BundledBinding.Load(typeof(HelmDefinition).Assembly, "helm-chart.fbl", "chart"));
 
     /// <summary>What <c>env</c> reads: nothing in this diagram can be edited.</summary>
     private static readonly DislEnv Env = new(ReadOnly: true);
@@ -51,76 +52,80 @@ internal static class HelmDefinition
     /// <summary>The wire ids of <c>x-helm</c>.</summary>
     private static WireIdMap Ids => LoadedIds.Value;
 
+    /// <summary>The binding the folder is read through: <c>helm-chart.fbl#chart</c>.</summary>
+    public static FblBinding Binding => LoadedBinding.Value;
+
     /// <summary>Why nothing here can be written: the definition's <c>std.readOnly</c>.</summary>
     public static string Refusal => LoadedRefusal.Value;
 
-    /// <summary>The property rows of the element <paramref name="elementId"/> names in <paramref name="chart"/>: its form's; none for the empty id and for an id the chart does not hold.</summary>
-    public static IReadOnlyList<ContextPropertyDefinition> Rows(HelmChart chart, string elementId)
+    /// <summary>The property rows of the element <paramref name="elementId"/> names in <paramref name="diagram"/>: its form's; none for the empty id and for an id the model does not hold.</summary>
+    public static IReadOnlyList<ContextPropertyDefinition> Rows(DislDiagram diagram, string elementId)
     {
-        ArgumentNullException.ThrowIfNull(chart);
+        ArgumentNullException.ThrowIfNull(diagram);
         ArgumentNullException.ThrowIfNull(elementId);
-        if (elementId.Length == 0 || ModelOf(chart).ElementById(elementId) is not { } element) return [];
+        if (elementId.Length == 0 || diagram.ElementById(elementId) is not { } element) return [];
 
         return [.. FormDerivation.Derive(Specification, element, Env, Ids).Select(Row)];
     }
 
     /// <summary>
-    /// The findings of <paramref name="chart"/>, located relative to the chart folder: for a registered folder
+    /// The findings of <paramref name="reading"/>, located relative to the chart folder: for a registered folder
     /// that is not a chart, <see cref="HelmNotAChart"/>'s one warning; otherwise the definition's, as
-    /// <see cref="ConstraintEvaluator"/> derives them with the reader's unreadable files as
-    /// <c>std.unparseable</c>, ten of the tool's eleven codes (helm-chart-disl-fbl, Requirements 5.2 to 5.4), in the
-    /// tool's order (<see cref="HelmFindingOrder"/>).
+    /// <see cref="ConstraintEvaluator"/> derives them with the reading's own findings (a file that did not parse
+    /// or could not be opened is <c>std.unparseable</c>) as the reader's, ten of the tool's eleven codes
+    /// (helm-chart-disl-fbl, Requirements 5.2 to 5.4), in the tool's order (<see cref="HelmFindingOrder"/>).
     /// </summary>
     /// <remarks>
-    /// Only the evaluator's findings are mapped. The model's own (<see cref="DislModelBuilder.Complete"/>'s
-    /// <c>std.duplicateId</c> for two dependencies of one name, and <c>std.derivedId</c> for the relations
-    /// such a pair repeats) are not, so no finding appears that the tool does not give today (Q4).
+    /// Only the reading's findings are handed to the evaluator, and only the evaluator's are mapped. The model's
+    /// own (<see cref="DislModelBuilder.Complete"/>'s <c>std.duplicateId</c> for two dependencies of one name, and
+    /// <c>std.derivedId</c> for the relations such a pair repeats) are not, so no finding appears that the tool
+    /// does not give today (Q4).
     /// </remarks>
-    public static IReadOnlyList<DiagramProblem> Findings(HelmChart chart)
+    public static IReadOnlyList<DiagramProblem> Findings(HelmReading reading)
     {
-        ArgumentNullException.ThrowIfNull(chart);
-        if (HelmNotAChart.Findings(chart) is { } notAChart) return notAChart;
+        ArgumentNullException.ThrowIfNull(reading);
+        if (HelmNotAChart.Findings(reading) is { } notAChart) return notAChart;
 
-        var model = ModelOf(chart);
-        var findings = ConstraintEvaluator.Evaluate(Specification, model, new DislConstraintOptions(Env, ReaderFindings(chart)));
+        var model = reading.Disl.Diagram;
+        var findings = ConstraintEvaluator.Evaluate(Specification, model, new DislConstraintOptions(Env, [.. reading.Folder.Findings.Select(ReaderFinding)]));
         return [.. HelmFindingOrder.Of(model, findings).Select(Problem)];
     }
 
-    /// <summary>The wire type of the element <paramref name="elementId"/> names in <paramref name="chart"/>, as <c>x-helm</c> maps its type; null for an id the chart does not hold.</summary>
-    public static string? WireTypeOf(HelmChart chart, string elementId)
+    /// <summary>The wire type of the element <paramref name="elementId"/> names in <paramref name="diagram"/>, as <c>x-helm</c> maps its type; null for an id the model does not hold.</summary>
+    public static string? WireTypeOf(DislDiagram diagram, string elementId)
     {
-        ArgumentNullException.ThrowIfNull(chart);
+        ArgumentNullException.ThrowIfNull(diagram);
         ArgumentNullException.ThrowIfNull(elementId);
-        return ModelOf(chart).ElementById(elementId) is { } element
+        return diagram.ElementById(elementId) is { } element
             ? LoadedTypePrefix.Value + Ids.Types.GetValueOrDefault(element.Type.Name, element.Type.Name)
             : null;
     }
 
-    /// <summary><paramref name="chart"/> as the definition's model, with the three relations that always have both ends derived.</summary>
-    internal static DislDiagram ModelOf(HelmChart chart) =>
-        Models.GetValue(chart, read => HelmDisl.Build(Specification, read, HelmGraph.Derive(read)));
+    /// <summary>The model of a reading through the binding, with the three relations that always have both ends derived.</summary>
+    public static DislModel Model(FblModel reading)
+    {
+        ArgumentNullException.ThrowIfNull(reading);
+        return DislModelBuilder.From(reading, Specification);
+    }
 
     private static JsonElement Block(string name) => Specification.Root.GetProperty(name);
 
     /// <summary>
-    /// The chart-owned YAML that did not parse, one <c>std.unparseable</c> per file at the parser's line, in
-    /// the order the tool reports them: <c>Chart.yaml</c>, <c>requirements.yaml</c>, the values files, the lock,
-    /// the CRDs. Its reason is the tool's whole sentence, which the built-in's message gives as it is.
+    /// A finding of the reading as the reader's finding of its code: its message is the reason, which is the
+    /// plugin's whole sentence and the built-in gives as it is, and a line of 0, which says the parser gave none,
+    /// is no line.
     /// </summary>
-    private static List<DislReaderFinding> ReaderFindings(HelmChart chart)
+    private static DislReaderFinding ReaderFinding(Finding finding)
     {
-        TolerantYamlFailure?[] failures =
-        [
-            chart.MetadataFailure,
-            chart.DependenciesFailure,
-            .. chart.Values.Select(values => values.Failure),
-            chart.Lock?.Failure,
-            .. chart.Crds?.Failures ?? [],
-        ];
-        return [.. failures.OfType<TolerantYamlFailure>().Select(failure => DislReaderFinding.NotParsed(
-            $"'{failure.RelativePath}' is not readable YAML: {failure.Message}",
-            failure.Line == 0 ? null : (int)failure.Line,
-            failure.RelativePath))];
+        var detail = new Dictionary<string, object?>(StringComparer.Ordinal);
+        foreach ((string key, string value) in finding.Detail ?? new Dictionary<string, string>())
+        {
+            detail[key] = value;
+        }
+
+        detail["reason"] = finding.Message;
+        var line = finding.Location is { Line: > 0 } located ? located.Line : (int?)null;
+        return new DislReaderFinding(finding.Code, detail, line, finding.Location?.File is { Length: > 0 } file ? file : null);
     }
 
     /// <summary>A finding as the host's problem, at its file and line; a finding without a line is at line 0, as the tool reports it.</summary>

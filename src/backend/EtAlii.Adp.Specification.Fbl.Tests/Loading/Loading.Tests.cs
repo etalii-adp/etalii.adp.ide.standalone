@@ -240,7 +240,7 @@ public class LoadingTests
         Assert.DoesNotContain(problems, p => p.Severity == ProblemSeverity.Error);
         var chart = document!.Bindings["chart"];
         Assert.Equal(
-            [Family.Yaml, Family.Yaml, Family.Json, Family.Lines, null, Family.Yaml, null, Family.Yaml, Family.Yaml],
+            [Family.Yaml, Family.Yaml, Family.Yaml, null, Family.Lines, Family.Yaml, Family.Yaml, null, null, null, Family.Yaml, Family.Yaml, Family.Yaml],
             chart.Body.Files.Select(f => f.Family));
         Assert.Equal("^0.1.0", chart.Plugin!.Version);
     }
@@ -255,12 +255,12 @@ public class LoadingTests
         var timeline = Vendored("timeline.fbl", out _)["timeline"];
 
         // Assert: each value as the vendored document declares it.
-        Assert.Equal("0.1", helmVersion);
+        Assert.Equal("0.2", helmVersion);
         Assert.Equal("Helm chart", helm.Title);
-        Assert.Equal(["apiVersion:"], helm.Claims.Suggest);
+        Assert.Empty(helm.Claims.Suggest);
         Assert.Equal(["person", "softwareSystem", "container"], structurizr.AllRules.Where(r => r.Opens).Select(r => r.Name));
         Assert.Equal(["language"], turtle.Registration.Headers);
-        Assert.True(helm.Registration.CreateOnFirstPlacement);
+        Assert.False(helm.Registration.CreateOnFirstPlacement);
         Assert.False(timeline.Registration.CreateOnFirstPlacement);
     }
 
