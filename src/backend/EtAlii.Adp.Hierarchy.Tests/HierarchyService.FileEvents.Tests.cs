@@ -42,8 +42,8 @@ public sealed class HierarchyServiceFileEventsTests : IDisposable
         using var stop = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         var first = ShortGuid.NewShortGuid();
         var second = ShortGuid.NewShortGuid();
-        modelStore.GetOrCreate(first, _projectFolder).ListChildren(null);
-        modelStore.GetOrCreate(second, _projectFolder).ListChildren(null);
+        modelStore.GetOrCreate(first, ProjectRoot.From(_projectFolder)).ListChildren(null);
+        modelStore.GetOrCreate(second, ProjectRoot.From(_projectFolder)).ListChildren(null);
         var created = new[] { 0, 0 };
 
         // Act.

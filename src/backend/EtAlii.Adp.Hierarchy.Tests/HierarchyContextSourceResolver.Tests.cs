@@ -40,7 +40,7 @@ public class HierarchyContextSourceResolverTests : IDisposable
         return path;
     }
 
-    private HierarchyModel Model() => _store.GetOrCreate(_watchId, _root);
+    private HierarchyModel Model() => _store.GetOrCreate(_watchId, ProjectRoot.From(_root));
 
     /// <summary>Lists folders from the root down so the model knows every entry along the way.</summary>
     private ShortGuid IdOf(params string[] segments)
@@ -123,7 +123,7 @@ public class HierarchyContextSourceResolverTests : IDisposable
     {
         // Arrange.
         CreateFile("a.txt");
-        var otherConnection = _store.GetOrCreate(ShortGuid.NewShortGuid(), _root);
+        var otherConnection = _store.GetOrCreate(ShortGuid.NewShortGuid(), ProjectRoot.From(_root));
         var foreignId = otherConnection.ListChildren(null).Single().Id;
 
         // Act.

@@ -33,7 +33,7 @@ public sealed class ContextSelectionResolver
     /// the service adds those once it knows the chain is good.
     /// </summary>
     public async ValueTask<ChainResolution> ResolveChainAsync(
-        ShortGuid watchId, string rootPath, ContextSelection selection, CancellationToken cancellationToken)
+        ShortGuid watchId, ProjectRoot root, ContextSelection selection, CancellationToken cancellationToken)
     {
         var levels = new List<ContextResolvedLevel>();
         var acceptedChain = new ContextSelection();
@@ -50,7 +50,7 @@ public sealed class ContextSelectionResolver
             }
 
             var resolution = await ResolveLevelAsync(
-                watchId, rootPath, current.Id, current.Path?.Segments ?? [], parent, cancellationToken);
+                watchId, root, current.Id, current.Path?.Segments ?? [], parent, cancellationToken);
             if (resolution is not ResolvedContextLevel resolved)
             {
                 return new RejectedChain(((RejectedContextLevel)resolution).Reason);
@@ -102,7 +102,7 @@ public sealed class ContextSelectionResolver
     /// </summary>
     public ValueTask<ContextLevelResolution> ResolveLevelAsync(
         ShortGuid watchId,
-        string rootPath,
+        ProjectRoot root,
         ContextSource? id,
         IReadOnlyList<string> clientPath,
         ContextResolvedLevel? parent,
@@ -118,7 +118,8 @@ public sealed class ContextSelectionResolver
             // No resolver means no way to verify anything about this level; recording
             // it on trust is exactly what the seam exists to prevent.
             ? ValueTask.FromResult<ContextLevelResolution>(new RejectedContextLevel(GenericRejection))
-            : ResolveThroughAnyAsync(claimants, watchId, rootPath, id, clientPath, parent, cancellationToken);
+            // The source resolvers belong to the modules, which take the root as a path.
+            : ResolveThroughAnyAsync(claimants, watchId, root.FullPath, id, clientPath, parent, cancellationToken);
     }
 
     /// <summary>

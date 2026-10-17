@@ -48,7 +48,7 @@ public class SplitMoveTests : IDisposable
         using var store = new HierarchyModelStore(idleTimeout: TimeSpan.FromMinutes(5));
         var resolver = new HierarchyContextSourceResolver(store, new DiagramFileRouter(new EmptyCatalog()), new EditorResolver(new Editor.EditorDefinitionCatalog { All = [] }));
         var watchId = ShortGuid.NewShortGuid();
-        var model = store.GetOrCreate(watchId, _root);
+        var model = store.GetOrCreate(watchId, ProjectRoot.From(_root));
         var original = CreateFile("original.txt");
         var entryId = model.ListChildren(null).Single(n => n.Name == "original.txt").Id;
         var resolution = await resolver.ResolveAsync(

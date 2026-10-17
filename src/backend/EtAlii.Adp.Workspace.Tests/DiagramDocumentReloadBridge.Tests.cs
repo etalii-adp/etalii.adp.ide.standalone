@@ -69,7 +69,7 @@ public class DiagramDocumentReloadBridgeTests : IDisposable
         using var bridge = new DiagramDocumentReloadBridge([reloader], _events);
         var bodyPath = IoPath.Combine(_root, "sample.dsl");
         await File.WriteAllTextAsync(bodyPath, "body", TestContext.Current.CancellationToken);
-        bridge.Track(_root, bodyPath, registrationPath: null, reloader.Origin);
+        bridge.Track(ProjectRoot.From(_root), bodyPath, registrationPath: null, reloader.Origin);
 
         File.Delete(bodyPath);
 
@@ -85,7 +85,7 @@ public class DiagramDocumentReloadBridgeTests : IDisposable
         using var bridge = new DiagramDocumentReloadBridge([reloader], _events);
         var bodyPath = IoPath.Combine(_root, "sample.dsl");
         await File.WriteAllTextAsync(bodyPath, "body", TestContext.Current.CancellationToken);
-        bridge.Track(_root, bodyPath, registrationPath: null, reloader.Origin);
+        bridge.Track(ProjectRoot.From(_root), bodyPath, registrationPath: null, reloader.Origin);
 
         File.Move(bodyPath, IoPath.Combine(_root, "renamed.dsl"));
 
@@ -101,7 +101,7 @@ public class DiagramDocumentReloadBridgeTests : IDisposable
         using var bridge = new DiagramDocumentReloadBridge([reloader], _events);
         var bodyPath = IoPath.Combine(_root, "sample.dsl");
         await File.WriteAllTextAsync(bodyPath, "body", TestContext.Current.CancellationToken);
-        bridge.Track(_root, bodyPath, registrationPath: null, reloader.Origin);
+        bridge.Track(ProjectRoot.From(_root), bodyPath, registrationPath: null, reloader.Origin);
 
         for (var i = 0; i < 20; i++)
         {
@@ -121,7 +121,7 @@ public class DiagramDocumentReloadBridgeTests : IDisposable
         using var bridge = new DiagramDocumentReloadBridge([reloader], _events);
         var bodyPath = IoPath.Combine(_root, "sample.dsl");
         await File.WriteAllTextAsync(bodyPath, "before", TestContext.Current.CancellationToken);
-        bridge.Track(_root, bodyPath, registrationPath: null, reloader.Origin);
+        bridge.Track(ProjectRoot.From(_root), bodyPath, registrationPath: null, reloader.Origin);
 
         // Act: the write an external tool makes - in place, no store involved.
         await File.WriteAllTextAsync(bodyPath, "after", TestContext.Current.CancellationToken);
@@ -142,7 +142,7 @@ public class DiagramDocumentReloadBridgeTests : IDisposable
         var registrationPath = IoPath.Combine(_root, "sample.adp");
         await File.WriteAllTextAsync(bodyPath, "body", TestContext.Current.CancellationToken);
         await File.WriteAllTextAsync(registrationPath, "test/sample", TestContext.Current.CancellationToken);
-        bridge.Track(_root, bodyPath, registrationPath, reloader.Origin);
+        bridge.Track(ProjectRoot.From(_root), bodyPath, registrationPath, reloader.Origin);
 
         // Act.
         await File.WriteAllTextAsync(registrationPath, "test/sample\nview: other", TestContext.Current.CancellationToken);
@@ -160,7 +160,7 @@ public class DiagramDocumentReloadBridgeTests : IDisposable
         using var bridge = new DiagramDocumentReloadBridge([reloader], _events);
         var bodyPath = IoPath.Combine(_root, "sample.dsl");
         await File.WriteAllTextAsync(bodyPath, "body", TestContext.Current.CancellationToken);
-        bridge.Track(_root, bodyPath, registrationPath: null, reloader.Origin);
+        bridge.Track(ProjectRoot.From(_root), bodyPath, registrationPath: null, reloader.Origin);
 
         // Act: a neighbour the bridge was never told about.
         await File.WriteAllTextAsync(IoPath.Combine(_root, "unrelated.txt"), "noise", TestContext.Current.CancellationToken);
@@ -178,7 +178,7 @@ public class DiagramDocumentReloadBridgeTests : IDisposable
         using var bridge = new DiagramDocumentReloadBridge([reloader], _events);
         var bodyPath = IoPath.Combine(_root, "other.yml");
         await File.WriteAllTextAsync(bodyPath, "body", TestContext.Current.CancellationToken);
-        bridge.Track(_root, bodyPath, registrationPath: null, new ToolOrigin("test", "unregistered"));
+        bridge.Track(ProjectRoot.From(_root), bodyPath, registrationPath: null, new ToolOrigin("test", "unregistered"));
 
         // Act.
         await File.WriteAllTextAsync(bodyPath, "changed", TestContext.Current.CancellationToken);

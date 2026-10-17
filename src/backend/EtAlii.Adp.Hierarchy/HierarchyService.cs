@@ -43,14 +43,14 @@ public sealed class HierarchyService : Wire.HierarchyService.HierarchyServiceBas
     public override Task<ListEntriesResponse> ListEntries(ListEntriesRequest request, ServerCallContext context)
     {
         var userId = SessionContext.GetUserId(context);
-        if (!ProjectRootResolver.TryResolve(_projectStore, userId, request.ProjectId, out var rootPath, out var error))
+        if (!ProjectRootResolver.TryResolve(_projectStore, userId, request.ProjectId, out var root, out var error))
         {
             // The refusal reason otherwise reaches only the one client that asked.
             _logger.Warning("Refused to list entries for {UserId} on project {ProjectId}: {Reason}", userId, request.ProjectId, error);
             return Task.FromResult(new ListEntriesResponse { Error = new ListEntriesError { Message = error } });
         }
 
-        var model = _hierarchyModelStore.GetOrCreate(request.WatchId, rootPath);
+        var model = _hierarchyModelStore.GetOrCreate(request.WatchId, root);
         ShortGuid? folderId = request.FolderId is null ? null : (ShortGuid)request.FolderId;
         var children = model.ListChildren(folderId);
 
@@ -82,14 +82,17 @@ public sealed class HierarchyService : Wire.HierarchyService.HierarchyServiceBas
         Func<HierarchyMessage, CancellationToken, Task> write,
         CancellationToken cancellationToken)
     {
-        if (!ProjectRootResolver.TryResolve(_projectStore, userId, request.ProjectId, out var rootPath, out var error))
+        if (!ProjectRootResolver.TryResolve(_projectStore, userId, request.ProjectId, out var root, out var error))
         {
             _logger.Warning("Refused a hierarchy watch for {UserId} on project {ProjectId}: {Reason}", userId, request.ProjectId, error);
             throw new RpcException(new Status(PermanentRefusal.CannotOpen, error));
         }
 
         var watchId = request.WatchId;
-        var model = _hierarchyModelStore.GetOrCreate(watchId, rootPath);
+        var model = _hierarchyModelStore.GetOrCreate(watchId, root);
+
+        // The watcher and the presence checks work on the folder itself.
+        var rootPath = root.FullPath;
         var channel = Channel.CreateUnbounded<HierarchyMessage>();
 
         model.EntryChanged += OnEntryChanged;

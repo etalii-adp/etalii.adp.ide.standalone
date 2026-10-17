@@ -13,5 +13,5 @@ internal sealed class ContextNoticeSink : IContextNoticeSink
         _selectionStore = selectionStore;
     }
 
-    public void Notify(string rootPath, string message) => _selectionStore.PushNotice(rootPath, message);
+    public void Notify(string rootPath, string message) => _selectionStore.PushNotice(ProjectRoot.From(rootPath), message);
 }

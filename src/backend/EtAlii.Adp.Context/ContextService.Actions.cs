@@ -50,9 +50,9 @@ public sealed partial class ContextService
     {
         // The project is resolved once for the whole request: the target is found under it, and
         // the interaction below keeps it (code-structure FR-062).
-        var rootPath = TryResolveRoot(request.ProjectId, context);
-        var target = rootPath is null ? null : await TryResolveTargetAsync(rootPath, request.WatchId, request.Source, context);
-        if (rootPath is null || target is null)
+        var root = TryResolveRoot(request.ProjectId, context);
+        var target = root is null ? null : await TryResolveTargetAsync(root.Value, request.WatchId, request.Source, context);
+        if (root is null || target is null)
         {
             _logger.Warning(
                 "Cannot run an action on watch {WatchId}: {Source} resolved to nothing",
@@ -102,6 +102,7 @@ public sealed partial class ContextService
         // The root is captured with the interaction because SubmitInteraction carries only an
         // interaction id: without it, a commit that creates something could not report where it
         // landed in the project-relative terms the contract allows.
+        var rootPath = root.Value.FullPath;
 
         // WHAT THE ANSWER WILL BE APPLIED TO, which is not always what the question was asked
         // about. An input request may name an element whose label it edits and an action to
@@ -322,23 +323,25 @@ public sealed partial class ContextService
         Documents.Wire.ShortGuid watchId,
         ContextSource? source,
         ServerCallContext context) =>
-        TryResolveRoot(projectId, context) is { } rootPath
-            ? await TryResolveTargetAsync(rootPath, watchId, source, context)
+        TryResolveRoot(projectId, context) is { } root
+            ? await TryResolveTargetAsync(root, watchId, source, context)
             : null;
 
     /// <summary>The root folder of the caller's project, or null when it is not theirs or is gone.</summary>
-    private string? TryResolveRoot(Documents.Wire.ShortGuid projectId, ServerCallContext context) =>
-        Projects.ProjectRootResolver.TryResolve(_projectStore, SessionContext.GetUserId(context), projectId, out var rootPath, out _)
-            ? rootPath
+    private ProjectRoot? TryResolveRoot(Documents.Wire.ShortGuid projectId, ServerCallContext context) =>
+        Projects.ProjectRootResolver.TryResolve(_projectStore, SessionContext.GetUserId(context), projectId, out var root, out _)
+            ? root
             : null;
 
     /// <summary>The target an action applies to, as above, within a project already resolved.</summary>
     private async ValueTask<ContextTarget?> TryResolveTargetAsync(
-        string rootPath,
+        ProjectRoot root,
         Documents.Wire.ShortGuid watchId,
         ContextSource? source,
         ServerCallContext context)
     {
+        // A target carries its root as a path, for the providers that act on it.
+        var rootPath = root.FullPath;
         if (source is null)
         {
             return _selectionStore.Get(watchId)?.Innermost.Target ?? RootTarget(rootPath, watchId);
@@ -372,14 +375,14 @@ public sealed partial class ContextService
             if (source.DiagramEntryId is { } diagramEntryId)
             {
                 var diagramResolution = await _selectionResolver.ResolveLevelAsync(
-                    watchId, rootPath, new ContextSource { EntryId = diagramEntryId }, [], null, context.CancellationToken);
+                    watchId, root, new ContextSource { EntryId = diagramEntryId }, [], null, context.CancellationToken);
                 if (diagramResolution is not ResolvedContextLevel diagram)
                 {
                     return null;
                 }
 
                 var inDiagram = await _selectionResolver.ResolveLevelAsync(
-                    watchId, rootPath, source, [], diagram.Level, context.CancellationToken);
+                    watchId, root, source, [], diagram.Level, context.CancellationToken);
                 return inDiagram is ResolvedContextLevel resolvedInDiagram ? resolvedInDiagram.Level.Target : null;
             }
 
@@ -404,12 +407,12 @@ public sealed partial class ContextService
             }
 
             var elementResolution = await _selectionResolver.ResolveLevelAsync(
-                watchId, rootPath, source, [], fileLevel, context.CancellationToken);
+                watchId, root, source, [], fileLevel, context.CancellationToken);
             return elementResolution is ResolvedContextLevel resolvedElement ? resolvedElement.Level.Target : null;
         }
 
         var resolution = await _selectionResolver.ResolveLevelAsync(
-            watchId, rootPath, source, [], null, context.CancellationToken);
+            watchId, root, source, [], null, context.CancellationToken);
 
         return resolution is ResolvedContextLevel resolved ? resolved.Level.Target : null;
     }

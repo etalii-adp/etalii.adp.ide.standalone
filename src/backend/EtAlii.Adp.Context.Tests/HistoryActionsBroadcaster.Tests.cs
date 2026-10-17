@@ -34,7 +34,7 @@ public class HistoryActionsBroadcasterTests
 
         _clock.Advance(TimeSpan.FromMilliseconds(1));
         Assert.Single(_selection.Pushes);
-        Assert.Equal(Root, _selection.Pushes[0].RootPath);
+        Assert.Equal(ProjectRoot.From(Root), _selection.Pushes[0].Root);
         Assert.Equal(1, _resolver.DiscoverCount);
     }
 
@@ -74,8 +74,8 @@ public class HistoryActionsBroadcasterTests
 
         // Assert.
         Assert.Equal(2, _selection.Pushes.Count);
-        Assert.Contains(_selection.Pushes, push => push.RootPath == Root);
-        Assert.Contains(_selection.Pushes, push => push.RootPath == other);
+        Assert.Contains(_selection.Pushes, push => push.Root == ProjectRoot.From(Root));
+        Assert.Contains(_selection.Pushes, push => push.Root == ProjectRoot.From(other));
     }
 
     [Fact]

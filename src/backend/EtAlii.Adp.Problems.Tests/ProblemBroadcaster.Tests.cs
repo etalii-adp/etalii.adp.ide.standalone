@@ -21,7 +21,7 @@ public class ProblemBroadcasterTests
 
         // Act and assert, step by step.
         var push = Assert.Single(selections.Pushes);
-        Assert.Equal(Root, push.RootPath);
+        Assert.Equal(ProjectRoot.From(Root), push.Root);
         Assert.Equal(ProblemSetState.Validated, push.Problems.State);
     }
 
