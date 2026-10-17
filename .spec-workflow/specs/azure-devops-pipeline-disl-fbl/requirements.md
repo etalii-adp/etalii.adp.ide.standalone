@@ -68,7 +68,7 @@ The three kinds are those of `causal-loop-disl-fbl`: a **definition defect** is 
 | B14 | **Findings FBL would add.** A sequence item that is not a mapping is passed over in silence; FBL reports an unreadable entry. A key written twice makes YamlDotNet refuse the file, so the tool reports `azure-pipeline.unparseable`; FBL reports `fbl.duplicate-key` and reads on. | Behaviour change to rule on (Q3) | Read |
 | B15 | **The sentence for a file that does not parse** is "This is not YAML that can be read: " followed by YamlDotNet's own message. The library's YAML parser is its own, so the second half changes with the reader. | Behaviour change to rule on (Q3) | Read |
 | B16 | **Step kind is the first recognised key in written order.** An entry reaches CEL as a map, which has no order. | Language gap, minor | Read |
-| B17 | **The template.** `PipelineDocumentFactory` writes a jobs-only pipeline with the base name as a comment and no final newline. FBL's `{base}` placeholder states it; the binding's template must be those bytes. | Definition defect, avoided by writing it down | Read |
+| B17 | **The template.** `PipelineDocumentFactory` writes a jobs-only pipeline with the base name as a comment, in CRLF and ending with a final newline (the transcript's `emptyDocument`; chat ruling, 2026-10-17). FBL's `{base}` placeholder states it; the binding's template must be those bytes. | Definition defect, avoided by writing it down | Read |
 
 ### C. Language gaps, as they would be reported to etalii-adp/etalii.adp
 
@@ -266,7 +266,7 @@ A draft in the `yaml` family, the declared half that FBL 17 expects. It is not v
       "body": { "kind": "file", "family": "yaml" },
       "reader": "declared",
       "expand": { "plugin": "net.etalii.adp.azure-devops.templates", "rules": ["stageTemplate", "jobTemplate", "stepTemplate", "extends"] },
-      "text": { "newline": "crlf", "indent": 2, "sequenceIndent": "indented", "finalNewline": false },
+      "text": { "newline": "crlf", "indent": 2, "sequenceIndent": "indented", "finalNewline": true },
       "elements": [
         {
           "name": "pipeline", "type": "Pipeline", "at": "/",
