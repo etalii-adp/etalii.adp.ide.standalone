@@ -83,7 +83,7 @@ One line each, with the project that owns it. Their internals are deliberately o
 | Commands and undo/redo | `EtAlii.Adp.History` |
 | Errors and warnings | `EtAlii.Adp.Problems` |
 | Known projects and workspace roots | `EtAlii.Adp.Projects` |
-| Every kind of session: sign-in sessions - the session store, the session context and the interceptor that checks every call - the tool-session contracts of the three kinds with their factory contracts and registries, the document session and the text editor session a module builds on, the viewport registry, and a connection's lifetime and its state | `EtAlii.Adp.Sessions` |
+| Every kind of session: sign-in sessions - the session store, the session context and the interceptor that checks every call - the tool-session contracts of the three kinds with their factory contracts and registries, the document session and the text editor session a module builds on, and the viewport registry | `EtAlii.Adp.Sessions` |
 | The workspace tree, kept current from the project's file events | `EtAlii.Adp.Hierarchy` |
 | Geometry: the rectangle, row packing, the row a drag snaps to, text width and graph layering | `EtAlii.Adp.Layout` |
 | Diagram-type abstractions, including the diagram definition contract | `EtAlii.Adp.Diagram` |
@@ -105,6 +105,6 @@ For how a subsystem behaves rather than which project holds it, read [`tech.md`]
 
 **Not covered here, deliberately** (a later pass, each its own specification): per-module internals, the wire contracts and generated code, the client component tree below the canvas library, deployment and hosting, the editor family's internals, per-diagram-type behaviour, and runtime sequence diagrams.
 
-**Its guard is `ArchitecturePages.Tests`** (`src/backend/EtAlii.Adp.Repository.Tests/ArchitecturePages.Tests.cs`), listed in [guards.md](guards.md). It checks that every path and project name here exists, that stated counts recompute, and that the page stays within its size limit.
+**Its guard is `ArchitecturePages.Tests`** (`src/backend/EtAlii.Adp.Repository.Tests/ArchitecturePages.Tests.cs`), listed in [guards.md](guards.md). It checks that every path and project name here exists, that every figure written in bold is a value the tree recomputes, and that the page stays within its size limit.
 
 **It cannot check whether a description is still accurate.** The Konva claim above would have passed every check the guard makes — `src/client/package.json` exists and the sentence states no count. **A wrong description on this page fails silently, and only a reader who knows better will catch it.**
