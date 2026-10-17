@@ -48,7 +48,7 @@ variable quickFixPressure "Pressure for quick solutions"
 link insight -> applicability + weight=1.2
 link applicability -> fieldEngagement + delayed "a reputation is built over cohorts"
 link fieldEngagement -> expertDiversity + "practitioners, guest lecturers, other disciplines"
-link expertDiversity -> insight +
+link expertDiversity -> insight + flipped
 
 loop R1 "Relevance draws the field" applicability fieldEngagement expertDiversity insight
 
@@ -63,7 +63,7 @@ loop R1 "Relevance draws the field" applicability fieldEngagement expertDiversit
 # more the field asks for tools, the more this loop holds the study back.
 
 link fieldEngagement -> practicalTools +
-link practicalTools -> practiceGap - "tools translate ideas into work"
+link practicalTools -> practiceGap - flipped "tools translate ideas into work"
 link practiceGap -> insight - flipped "insight stays in the classroom"
 
 loop R2 "Tools translate thinking" applicability fieldEngagement practicalTools practiceGap insight
@@ -97,7 +97,7 @@ loop B2 "Depth drifts from practice" insight coreValues philosophy practiceGap
 # safe to say it; latent wisdom surfaces as stories, and stories carry insight
 # that a report cannot.
 
-link coreValues -> trust +
+link coreValues -> trust + flipped
 link trust -> latentWisdom +
 link latentWisdom -> narratives + "wisdom travels as stories"
 link narratives -> insight +
@@ -121,9 +121,9 @@ loop R5 "Stories soften the divide" trust latentWisdom narratives polarization
 # things let people express what they cannot yet argue, and are heard across
 # lines where arguments are not.
 
-link trust -> creativeExpression + "safe enough to show, not only tell"
-link creativeExpression -> communicationRange +
-link communicationRange -> polarization - "heard across lines where arguments are not"
+link trust -> creativeExpression + flipped "safe enough to show, not only tell"
+link creativeExpression -> communicationRange + flipped
+link communicationRange -> polarization - flipped "heard across lines where arguments are not"
 
 loop R6 "Art speaks across divides" trust creativeExpression communicationRange polarization
 
@@ -137,13 +137,13 @@ loop R6 "Art speaks across divides" trust creativeExpression communicationRange 
 # again reinforcing: the hurry that recipes come from is fed by the shallow
 # insight they produce.
 
-link wickedProblems -> quickFixPressure +
+link wickedProblems -> quickFixPressure + flipped
 link quickFixPressure -> openInquiry - "no time for questions without answers"
 link openInquiry -> insight + weight=1.5
 link insight -> quickFixPressure - delayed "insight shows why the quick fix fails"
 
 loop R7 "Haste narrows the view" insight quickFixPressure openInquiry
 
-link quickFixPressure -> recipeUse +
+link quickFixPressure -> recipeUse + flipped
 
 loop R8 "Recipes for the impatient" insight quickFixPressure recipeUse
