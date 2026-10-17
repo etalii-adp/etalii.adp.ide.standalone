@@ -1,9 +1,9 @@
 using EtAlii.Adp.Designer;
 using EtAlii.Adp.Designer.TableModel;
-using EtAlii.Adp.Diagram;
 using EtAlii.Adp.Diagram.Wire;
 using EtAlii.Adp.Projects;
 using EtAlii.Adp.TestSupport.Host;
+using EtAlii.Adp.Workspace;
 using Grpc.Core;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;

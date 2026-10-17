@@ -1,7 +1,7 @@
 using EtAlii.Adp.Projects;
 using Path = EtAlii.Adp.Documents.Wire.Path;
 
-namespace EtAlii.Adp.Diagram;
+namespace EtAlii.Adp.Workspace;
 
 /// <summary>
 /// Where a project-relative path lands on disk, for the calls that work on a file's text: the

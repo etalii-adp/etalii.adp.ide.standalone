@@ -1,6 +1,6 @@
 using EtAlii.Adp.Designer;
 
-namespace EtAlii.Adp.Diagram;
+namespace EtAlii.Adp.Workspace;
 
 /// <summary>
 /// The registered designer session factories by designer type: what the table calls ask for the

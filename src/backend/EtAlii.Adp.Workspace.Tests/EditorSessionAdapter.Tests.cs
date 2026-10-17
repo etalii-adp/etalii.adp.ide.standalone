@@ -1,8 +1,9 @@
 using System.Text;
+using EtAlii.Adp.Diagram;
 using EtAlii.Adp.Editor;
 using Xunit;
 
-namespace EtAlii.Adp.Diagram.Tests;
+namespace EtAlii.Adp.Workspace.Tests;
 
 /// <summary>
 /// The bridge between the families (modular-text-editors, "no new stream"): a text file rides

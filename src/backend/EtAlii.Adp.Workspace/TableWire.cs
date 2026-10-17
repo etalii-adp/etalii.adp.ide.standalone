@@ -1,7 +1,7 @@
 using EtAlii.Adp.Designer.TableModel;
 using Proto = EtAlii.Adp.Designer.Wire;
 
-namespace EtAlii.Adp.Diagram;
+namespace EtAlii.Adp.Workspace;
 
 /// <summary>
 /// The table model to and from its wire form. One place, so the model a session speaks and the

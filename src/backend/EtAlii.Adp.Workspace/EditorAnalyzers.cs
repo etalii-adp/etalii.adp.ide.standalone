@@ -1,6 +1,6 @@
 using EtAlii.Adp.Editor;
 
-namespace EtAlii.Adp.Diagram;
+namespace EtAlii.Adp.Workspace;
 
 /// <summary>
 /// The registered editor analysers, keyed by the editor id they answer for - shaped as
