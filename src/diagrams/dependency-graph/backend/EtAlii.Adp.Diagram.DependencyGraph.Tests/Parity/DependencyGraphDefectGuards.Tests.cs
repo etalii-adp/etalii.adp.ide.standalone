@@ -9,8 +9,9 @@ namespace EtAlii.Adp.Diagram.DependencyGraph.Tests.Parity;
 /// <summary>
 /// Guards for the module's own defects B11 to B14 (dependency-graph-disl-fbl, task 2). Each was first written as the
 /// right behaviour and seen to fail against today's code for the defect's reason (the failures are in the task's
-/// implementation log); each now pins today's answer, with the right one written beside it, until the task that
-/// repairs it turns it: task 4 for B12, task 8 for B11, B13 and B14.
+/// implementation log); each pinned today's answer, with the right one written beside it, until the task that
+/// repairs it turns it: task 8 for B11, B13 and B14. Task 4 turned B12: every command now undoes through the host's
+/// restore command, which writes back the text as it was before the edit.
 /// </summary>
 public sealed class DependencyGraphDefectGuardsTests : IDisposable
 {
@@ -43,7 +44,7 @@ public sealed class DependencyGraphDefectGuardsTests : IDisposable
     }
 
     [Fact]
-    public async Task B12_UndoingARelabel_DoesNotRestoreTheCommentItTook_UntilTask4()
+    public async Task B12_UndoingARelabel_RestoresTheCommentItTook()
     {
         // Arrange.
         var path = IoPath.Combine(_workspace, "commented.dgr");
@@ -55,9 +56,33 @@ public sealed class DependencyGraphDefectGuardsTests : IDisposable
         await history.ExecuteAsync(new RelabelDependencyGraphRelationCommand(path, "uses", "calls"), TestContext.Current.CancellationToken);
         await history.UndoAsync(TestContext.Current.CancellationToken);
 
-        // Assert, today's answer: the undo writes the previous value through the same line rewrite, so the comment the
-        // relabel took stays lost. The right answer is the bytes as they were.
-        Assert.Equal(before.Replace("    label: uses # why it does\n", "    label: uses\n", StringComparison.Ordinal), await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
+        // Assert: the bytes as they were, the comment the relabel took included.
+        Assert.Equal(before, await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
+    }
+
+    public static TheoryData<string> EditsThatCreateTheRelationsKey => new("connect", "add connected");
+
+    [Theory]
+    [MemberData(nameof(EditsThatCreateTheRelationsKey))]
+    public async Task UndoingAnEditThatCreatedTheRelationsKey_TakesTheKeyOutAgain(string edit)
+    {
+        // Arrange.
+        var path = IoPath.Combine(_workspace, "unrelated.dgr");
+        const string before = "dependencies: 1\nelements:\n  - id: aaa\n    label: A\n    x: 0\n    row: 0\n  - id: bbb\n    label: B\n    x: 240\n    row: 1\n";
+        await File.WriteAllTextAsync(path, before, TestContext.Current.CancellationToken);
+        var history = _historyStacks.Get(_workspace);
+        IDocumentEditCommand command = edit == "connect"
+            ? new ConnectDependencyGraphElementsCommand(path, "uses", "aaa", "bbb", "")
+            : new AddConnectedDependencyGraphElementCommand(path, "aaa", "ccc", "uses", 480, 2);
+
+        // Act.
+        await history.ExecuteAsync(command, TestContext.Current.CancellationToken);
+        var edited = await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken);
+        await history.UndoAsync(TestContext.Current.CancellationToken);
+
+        // Assert: the edit wrote the key, and the undo took it out with the dependency, byte for byte.
+        Assert.Contains("\nrelations:\n", edited, StringComparison.Ordinal);
+        Assert.Equal(before, await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
     }
 
     [Fact]

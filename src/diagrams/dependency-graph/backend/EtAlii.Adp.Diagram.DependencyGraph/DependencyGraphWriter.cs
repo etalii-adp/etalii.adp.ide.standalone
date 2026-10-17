@@ -175,39 +175,6 @@ public static class DependencyGraphWriter
         document.Remove(relation.Range);
     }
 
-    /// <summary>Whether the document currently carries a <c>relations:</c> section key.</summary>
-    /// <remarks>
-    /// An insert creates the section on demand, so a command whose inverse must restore the file
-    /// byte for byte asks this first and has its undo remove what the insert created - a stray
-    /// <c>relations:</c> header after an undo is the one line that would break identity.
-    /// </remarks>
-    public static bool HasRelationsSection(LineDocument document)
-    {
-        ArgumentNullException.ThrowIfNull(document);
-        return LineSplice.FindSection(document, RelationsSection) >= 0;
-    }
-
-    /// <summary>
-    /// Removes a <c>relations:</c> section key left with no entries - the undo of the insert
-    /// that created it. A no-op while any relation remains.
-    /// </summary>
-    public static void RemoveRelationsSectionIfEmpty(LineDocument document, DependencyGraphModel model)
-    {
-        ArgumentNullException.ThrowIfNull(document);
-        ArgumentNullException.ThrowIfNull(model);
-
-        if (model.Relations.Count > 0)
-        {
-            return;
-        }
-
-        var index = LineSplice.FindSection(document, RelationsSection);
-        if (index >= 0)
-        {
-            document.Remove(new LineRange(index, index));
-        }
-    }
-
     /// <summary>
     /// The relations that would go with an element, so an action can say how many before it runs.
     /// </summary>

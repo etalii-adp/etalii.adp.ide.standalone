@@ -1990,7 +1990,7 @@
           "sha256": "236bcad565d4b1df8c63e2c299eb0cb5a852940d14751e9db119a801bb31b35b"
         }
       ],
-      "undoAll": "18 undone; the original text is NOT back"
+      "undoAll": "18 undone; the original text is back"
     },
     {
       "document": "diagrams/dependency-graph/backend/EtAlii.Adp.Diagram.DependencyGraph.Tests/Fixtures/scalars.dgr",
@@ -2912,7 +2912,7 @@
           "sha256": "1b0e9e6ccdda9f5a56aabe039a21f3875bdc35e46df8e04fe87590ff78d3a40c"
         }
       ],
-      "undoAll": "18 undone; the original text is NOT back"
+      "undoAll": "18 undone; the original text is back"
     },
     {
       "document": "diagrams/dependency-graph/backend/EtAlii.Adp.Diagram.DependencyGraph.Tests/Fixtures/unmodelled-keys.dgr",
@@ -3241,7 +3241,7 @@
           "sha256": "c874f7998bf0f1884b0f1bcb318c994b04f3a46f0d6132ce9c422899c5d6de44"
         }
       ],
-      "undoAll": "18 undone; the original text is NOT back"
+      "undoAll": "18 undone; the original text is back"
     },
     {
       "document": "diagrams/dependency-graph/examples/example-1/services.dgr",
@@ -3769,7 +3769,7 @@
           "sha256": "028b2d650b958b52b70c2e44796f2fd999a4b060d4a9b034b6eace116c30c61b"
         }
       ],
-      "undoAll": "18 undone; the original text is NOT back"
+      "undoAll": "18 undone; the original text is back"
     },
     {
       "document": "examples/diagrams/dependency-graph/example-1/services.dgr",
@@ -3854,7 +3854,7 @@
           "unchanged": true
         }
       ],
-      "undoAll": "2 undone; the original text is NOT back"
+      "undoAll": "2 undone; the original text is back"
     },
     {
       "document": "inline/empty",
@@ -4745,7 +4745,7 @@
           "sha256": "273fed914fd05946afae49c8e0e64fd8ecb5ad3b4dd654988401569f42b96955"
         }
       ],
-      "undoAll": "20 undone; the original text is NOT back"
+      "undoAll": "20 undone; the original text is back"
     },
     {
       "document": "inline/dangling-relation",
@@ -5083,7 +5083,7 @@
           "sha256": "d7dedb083fe2cfaad3a2b22574bc59b847019911adb3a4723aa209ae58444102"
         }
       ],
-      "undoAll": "3 undone; the original text is NOT back"
+      "undoAll": "15 undone; the original text is back"
     },
     {
       "document": "inline/self-dependency",
@@ -5373,7 +5373,7 @@
           "sha256": "c223955b27e0b8ea41f46aee3496275bed56e1dac7a7aacddb6e89a15a69a876"
         }
       ],
-      "undoAll": "3 undone; the original text is NOT back"
+      "undoAll": "15 undone; the original text is back"
     },
     {
       "document": "inline/every-rule-interleaved",
@@ -5750,7 +5750,7 @@
           "sha256": "f03da6db2f922cf713c175dea9664b732dcbdceb4e7b3784fb4dfc7c4abc1e09"
         }
       ],
-      "undoAll": "4 undone; the original text is NOT back"
+      "undoAll": "18 undone; the original text is back"
     },
     {
       "document": "inline/relations-before-elements",
@@ -6421,7 +6421,7 @@
           "sha256": "5a2a8d22a6dbe90221515da293cecb706142c7fe0fbda8ea031590f4e6a3c303"
         }
       ],
-      "undoAll": "18 undone; the original text is NOT back"
+      "undoAll": "18 undone; the original text is back"
     },
     {
       "document": "inline/far-and-fine-coordinates",
@@ -6772,7 +6772,7 @@
           "sha256": "aac76ae9734646aea40d20f35a6f2f0e961f72ded67d9a153356e553eda5ff68"
         }
       ],
-      "undoAll": "18 undone; the original text is NOT back"
+      "undoAll": "18 undone; the original text is back"
     },
     {
       "document": "inline/a4-id-held-twice",
@@ -7104,7 +7104,7 @@
           "sha256": "a2a22e6109eba9de69e0c59e41d0f4f794210be69e8f95e448c4fa9596e19da7"
         }
       ],
-      "undoAll": "18 undone; the original text is NOT back"
+      "undoAll": "18 undone; the original text is back"
     },
     {
       "document": "inline/b1-scalars-as-written",
@@ -7458,7 +7458,7 @@
           "sha256": "99ae3a8774c123330d0d06cccd39265bc67457d4b1c5298b2281558f96ddd62d"
         }
       ],
-      "undoAll": "4 undone; the original text is NOT back"
+      "undoAll": "18 undone; the original text is back"
     },
     {
       "document": "inline/b2-numbers-read-otherwise",
@@ -7809,7 +7809,7 @@
           "sha256": "51cca8a6689c6a71fa72f81fb091b1d2c4f778d5ad8d6f43c5addcb008bd6626"
         }
       ],
-      "undoAll": "18 undone; the original text is NOT back"
+      "undoAll": "18 undone; the original text is back"
     },
     {
       "document": "inline/b6-empty-list-with-comment",
@@ -7886,7 +7886,7 @@
           "unchanged": true
         }
       ],
-      "undoAll": "0 undone; the original text is NOT back"
+      "undoAll": "1 undone; the original text is back"
     },
     {
       "document": "inline/b6-empty-list-spaced",
@@ -7966,7 +7966,7 @@
           "unchanged": true
         }
       ],
-      "undoAll": "2 undone; the original text is NOT back"
+      "undoAll": "2 undone; the original text is back"
     },
     {
       "document": "inline/b7-value-styles",
@@ -8241,7 +8241,7 @@
           "unchanged": true
         }
       ],
-      "undoAll": "0 undone; the original text is NOT back"
+      "undoAll": "2 undone; the original text is back"
     },
     {
       "document": "inline/b9-entries-indented-apart",
@@ -8570,7 +8570,7 @@
           "sha256": "fe6e098b77a726dbed463994014b580101723c57199464be4a872657ed02265f"
         }
       ],
-      "undoAll": "18 undone; the original text is NOT back"
+      "undoAll": "18 undone; the original text is back"
     },
     {
       "document": "inline/b10-comments-above",
@@ -8899,7 +8899,7 @@
           "sha256": "b2c13b48902f1006295fd077fa6d025dd7d328a6a22c898b1a716cae163b0ec4"
         }
       ],
-      "undoAll": "18 undone; the original text is NOT back"
+      "undoAll": "18 undone; the original text is back"
     },
     {
       "document": "inline/b11-holders-and-an-anonymous-node",
@@ -9265,7 +9265,7 @@
           "sha256": "7649c95d0bb086939c018680bcd3da9e94ccbfe60315b651b2e70eef0323e34f"
         }
       ],
-      "undoAll": "18 undone; the original text is NOT back"
+      "undoAll": "18 undone; the original text is back"
     },
     {
       "document": "inline/b14-wide-dash-gap-and-nested-key",
@@ -9527,7 +9527,7 @@
           "unchanged": true
         }
       ],
-      "undoAll": "0 undone; the original text is NOT back"
+      "undoAll": "1 undone; the original text is back"
     },
     {
       "document": "inline/b16-merge-key-and-flow-entry",
@@ -9824,7 +9824,7 @@
           "unchanged": true
         }
       ],
-      "undoAll": "0 undone; the original text is NOT back"
+      "undoAll": "11 undone; the original text is back"
     },
     {
       "document": "inline/b17-x-written-small-and-large",

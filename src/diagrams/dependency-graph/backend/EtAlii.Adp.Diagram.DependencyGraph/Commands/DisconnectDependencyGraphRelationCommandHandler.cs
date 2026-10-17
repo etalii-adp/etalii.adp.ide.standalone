@@ -21,16 +21,6 @@ public sealed class DisconnectDependencyGraphRelationCommandHandler(IDependencyG
         }
 
         DependencyGraphWriter.RemoveRelation(body, relation);
-
-        if (command.RemoveEmptiedRelationsSection)
-        {
-            // The undo of a connect that created the relations: key on demand.
-            DependencyGraphWriter.RemoveRelationsSectionIfEmpty(body, DependencyGraphParser.Parse(body));
-        }
-
-        // The endpoints go into the inverse in the order they were written: putting a dependency
-        // back the other way round would silently reverse what the graph says.
-        return EditOutcome.UndoneBy(new ConnectDependencyGraphElementsCommand(
-            command.BodyPath, relation.Id, relation.From, relation.To, relation.Label));
+        return EditOutcome.Applied;
     }
 }

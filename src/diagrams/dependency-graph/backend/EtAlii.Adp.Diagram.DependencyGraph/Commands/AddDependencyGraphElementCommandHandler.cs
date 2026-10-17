@@ -28,6 +28,6 @@ public sealed class AddDependencyGraphElementCommandHandler(IDependencyGraphDocu
         }
 
         DependencyGraphWriter.InsertElement(body, model, command.Id, command.Label, command.X, command.Row);
-        return EditOutcome.UndoneBy(new RemoveDependencyGraphElementCommand(command.BodyPath, command.Id));
+        return EditOutcome.Applied;
     }
 }

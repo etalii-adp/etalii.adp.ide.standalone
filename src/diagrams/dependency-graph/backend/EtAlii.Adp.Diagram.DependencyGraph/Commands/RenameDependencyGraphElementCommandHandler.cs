@@ -17,6 +17,6 @@ public sealed class RenameDependencyGraphElementCommandHandler(IDependencyGraphD
         }
 
         DependencyGraphWriter.SetLabel(body, element, command.Label);
-        return EditOutcome.UndoneBy(command with { Label = element.Label });
+        return EditOutcome.Applied;
     }
 }
