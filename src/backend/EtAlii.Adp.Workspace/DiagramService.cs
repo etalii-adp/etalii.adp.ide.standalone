@@ -53,7 +53,7 @@ public sealed partial class DiagramService : Diagram.Wire.DiagramService.Diagram
     public override async Task<MoveElementResponse> MoveElement(MoveElementRequest request, ServerCallContext context)
     {
         var watchId = (ShortGuid)request.WatchId;
-        if (!TryResolveBody(request.ProjectId, request.Path, SessionContext.GetUserId(context), out _, out var bodyPath, out _, out _))
+        if (!TryResolveBody(request.ProjectId, request.Path, SessionContext.GetUserId(context), out var bodyPath, out _))
         {
             _logger.Warning("Refused to move {ElementId} on watch {WatchId}: {Path} does not resolve to an open diagram", request.ElementId, watchId, string.Join('/', request.Path.Segments));
             return new MoveElementResponse { Error = "The diagram is not open." };
@@ -95,7 +95,7 @@ public sealed partial class DiagramService : Diagram.Wire.DiagramService.Diagram
     public override Task<DescribeToolboxResponse> DescribeToolbox(DescribeToolboxRequest request, ServerCallContext context)
     {
         var response = new DescribeToolboxResponse();
-        if (!TryResolveBody(request.ProjectId, request.Path, SessionContext.GetUserId(context), out _, out _, out var origin, out _))
+        if (!TryResolveBody(request.ProjectId, request.Path, SessionContext.GetUserId(context), out _, out var origin))
         {
             // Unresolvable is answered with an empty toolbox, the same non-revealing shape an
             // unauthorized DiscoverActions gets: the palette simply has nothing to offer.

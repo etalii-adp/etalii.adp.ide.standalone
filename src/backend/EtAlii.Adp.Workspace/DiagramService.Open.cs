@@ -267,16 +267,13 @@ public sealed partial class DiagramService
         Documents.Wire.ShortGuid projectId,
         Path path,
         ShortGuid userId,
-        out string rootPath,
         out string bodyPath,
-        out ToolOrigin origin,
-        out string? registrationPath)
+        out ToolOrigin origin)
     {
         bodyPath = "";
         origin = null!;
-        registrationPath = null;
 
-        if (!ProjectRootResolver.TryResolve(_projectStore, userId, projectId, out rootPath, out _))
+        if (!ProjectRootResolver.TryResolve(_projectStore, userId, projectId, out var rootPath, out _))
         {
             return false;
         }
@@ -304,7 +301,6 @@ public sealed partial class DiagramService
 
         bodyPath = resolvedBody;
         origin = routed.Definition.Origin;
-        registrationPath = routed.RegistrationPath;
         return true;
     }
 }

@@ -12,7 +12,7 @@ public sealed partial class DiagramService
     public override Task<UpdateViewResponse> UpdateView(UpdateViewRequest request, ServerCallContext context)
     {
         var watchId = (ShortGuid)request.WatchId;
-        if (!TryResolveBody(request.ProjectId, request.Path, SessionContext.GetUserId(context), out _, out var bodyPath, out _, out _))
+        if (!TryResolveBody(request.ProjectId, request.Path, SessionContext.GetUserId(context), out var bodyPath, out _))
         {
             // Debug, not Warning: view reports arrive continuously, and a stale one racing a
             // closed diagram is ordinary. The path is what a reader needs to correlate.
