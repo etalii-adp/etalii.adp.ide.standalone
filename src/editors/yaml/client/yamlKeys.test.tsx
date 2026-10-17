@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { render } from "@testing-library/react";
 import { EditorSelection } from "@codemirror/state";
 import { EditorView, runScopeHandlers } from "@codemirror/view";
-import { foldAll, foldedRanges, unfoldAll } from "@codemirror/language";
+import { foldAll, foldedRanges, forceParsing, unfoldAll } from "@codemirror/language";
 import { parseDocument } from "yaml";
 import { BaseTextEditor } from "@client/editors/BaseTextEditor";
 import { indentationAfter, indentationWidthOf, yamlKeys } from "./yamlKeys";
@@ -18,6 +18,10 @@ function mount(text: string, caret: number) {
   const onChange = vi.fn();
   const rendered = render(<BaseTextEditor content={text} onChange={onChange} extensions={[yamlGrammar, yamlKeys]} />);
   const view = EditorView.findFromDOM(rendered.container.querySelector<HTMLElement>("[data-testid=base-text-editor]")!)!;
+  // CodeMirror parses for a fixed time slice when the view is made and finishes later, when the
+  // browser is idle; a fold or a tree query on a slow runner can come first (spec 025, T281, T286),
+  // so the parse is completed before anything is asked of the tree.
+  forceParsing(view, view.state.doc.length, 10_000);
   view.dispatch({ selection: EditorSelection.cursor(caret) });
   return { view, onChange };
 }

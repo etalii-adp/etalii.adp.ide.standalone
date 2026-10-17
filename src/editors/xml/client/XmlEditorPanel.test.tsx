@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { act, render, waitFor } from "@testing-library/react";
 import { create } from "@bufbuild/protobuf";
 import { EditorView } from "@codemirror/view";
-import { foldEffect, foldable, forceParsing, syntaxTree } from "@codemirror/language";
+import { foldEffect, foldable, forceParsing } from "@codemirror/language";
 import { forEachDiagnostic } from "@codemirror/lint";
 import { undo } from "@codemirror/commands";
 import { tags, type Tag } from "@lezer/highlight";
@@ -170,9 +170,11 @@ describe("tags", () => {
     await waitFor(() => expect([...rendered.container.querySelectorAll(".cm-matchingBracket")].map((element) => element.textContent)).toEqual(["notes", "notes"]));
   });
 
-  it("closes a start tag as its > is typed, one undo away (Requirement 3.6)", () => {
+  it("closes a start tag as its > is typed, one undo away (Requirement 3.6)", async () => {
     // Arrange.
-    const { view } = mount("<notes>\n  \n</notes>\n");
+    const text = "<notes>\n  \n</notes>\n";
+    const { view } = mount(text);
+    await parsed(view, text);
     act(() => view.dispatch({ selection: { anchor: "<notes>\n  ".length } }));
 
     // Act.
@@ -188,9 +190,11 @@ describe("tags", () => {
     expect(view.state.doc.toString()).not.toContain("</note>");
   });
 
-  it("completes the open element's name after </, one undo away (Requirement 3.6)", () => {
+  it("completes the open element's name after </, one undo away (Requirement 3.6)", async () => {
     // Arrange.
-    const { view } = mount("<notes>\n  <note>text\n</notes>\n");
+    const text = "<notes>\n  <note>text\n</notes>\n";
+    const { view } = mount(text);
+    await parsed(view, text);
     act(() => view.dispatch({ selection: { anchor: "<notes>\n  <note>text".length } }));
 
     // Act.
@@ -206,10 +210,10 @@ describe("tags", () => {
     expect(view.state.doc.toString()).not.toContain("</note>");
   });
 
-  it("folds an element, a comment and a CDATA section, and changes no text (Requirement 3.7)", () => {
+  it("folds an element, a comment and a CDATA section, and changes no text (Requirement 3.7)", async () => {
     // Arrange.
     const { view } = mount(document);
-    syntaxTree(view.state);
+    await parsed(view, document);
     const text = view.state.doc.toString();
     const lines = [3, 5, 7].map((number) => view.state.doc.line(number));
 

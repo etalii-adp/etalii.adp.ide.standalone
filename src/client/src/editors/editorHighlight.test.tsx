@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { render } from "@testing-library/react";
 import { EditorView } from "@codemirror/view";
-import { foldAll, unfoldAll, foldedRanges } from "@codemirror/language";
+import { foldAll, unfoldAll, foldedRanges, forceParsing } from "@codemirror/language";
 import { markdown } from "@codemirror/lang-markdown";
 import { tags } from "@lezer/highlight";
 import { BaseTextEditor } from "./BaseTextEditor";
@@ -11,6 +11,10 @@ function mount(content: string, extensions = [markdown()]) {
   const onChange = vi.fn();
   const rendered = render(<BaseTextEditor content={content} onChange={onChange} extensions={extensions} />);
   const view = EditorView.findFromDOM(rendered.getByTestId("base-text-editor"))!;
+  // CodeMirror parses for a fixed time slice when the view is made and finishes later, when the
+  // browser is idle; a fold or a tree query on a slow runner can come first (spec 025, T281, T286),
+  // so the parse is completed before anything is asked of the tree.
+  forceParsing(view, view.state.doc.length, 10_000);
   return { rendered, view, onChange };
 }
 
