@@ -1,5 +1,5 @@
-using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.History;
+using EtAlii.Adp.Sessions;
 using EtAlii.Adp.Specification.Disl;
 
 namespace EtAlii.Adp.Diagram.DependencyGraph;

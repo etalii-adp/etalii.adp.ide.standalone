@@ -3,6 +3,7 @@ using System.Text.Json.Serialization;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.History;
+using EtAlii.Adp.Sessions;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.CausalLoopDiagram.Tests.Parity;

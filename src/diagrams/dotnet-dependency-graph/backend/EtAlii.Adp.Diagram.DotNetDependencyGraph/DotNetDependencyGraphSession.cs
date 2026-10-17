@@ -1,5 +1,6 @@
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
+using EtAlii.Adp.Sessions;
 
 namespace EtAlii.Adp.Diagram.DotNetDependencyGraph;
 

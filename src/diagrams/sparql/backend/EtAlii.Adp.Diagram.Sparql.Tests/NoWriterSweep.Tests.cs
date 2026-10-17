@@ -2,6 +2,7 @@ using System.Reflection;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
+using EtAlii.Adp.Sessions;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using IoPath = System.IO.Path;

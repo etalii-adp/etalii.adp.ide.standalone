@@ -1,4 +1,4 @@
-namespace EtAlii.Adp;
+namespace EtAlii.Adp.Sessions;
 
 /// <summary>
 /// The registered session factories of one tool kind, looked up by the key each factory serves -

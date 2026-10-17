@@ -1,4 +1,4 @@
-namespace EtAlii.Adp.Diagram;
+namespace EtAlii.Adp.Sessions;
 
 /// <summary>The registered <see cref="IDiagramSessionFactory"/> instances, looked up by origin; null when the type cannot be streamed.</summary>
 public sealed class DiagramSessionFactories(IEnumerable<IDiagramSessionFactory> factories)

@@ -1,7 +1,7 @@
-using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 using EtAlii.Adp.Layout;
+using EtAlii.Adp.Sessions;
 
 namespace EtAlii.Adp.Diagram.CausalLoopDiagram;
 

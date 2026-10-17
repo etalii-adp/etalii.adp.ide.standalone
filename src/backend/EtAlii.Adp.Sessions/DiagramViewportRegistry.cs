@@ -1,4 +1,6 @@
-namespace EtAlii.Adp.Diagram;
+using EtAlii.Adp.Diagram;
+
+namespace EtAlii.Adp.Sessions;
 
 /// <inheritdoc />
 /// <remarks>

@@ -1,3 +1,4 @@
+using EtAlii.Adp.Sessions;
 using Xunit;
 using IoPath = System.IO.Path;
 

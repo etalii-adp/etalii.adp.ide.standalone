@@ -1,6 +1,4 @@
-using EtAlii.Adp.Editor;
-
-namespace EtAlii.Adp.Workspace;
+namespace EtAlii.Adp.Sessions;
 
 /// <summary>
 /// The registered editor session factories, keyed by the editor id they serve. A module registers

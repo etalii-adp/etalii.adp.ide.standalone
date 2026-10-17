@@ -18,11 +18,5 @@
     <PackageReference Include="Serilog" />
   </ItemGroup>
 
-  <ItemGroup>
-    <!-- TextEditorSession's re-read is guarded with an open that refuses on demand, through an
-         internal constructor: the window the retry exists for is too narrow to land in with a
-         real file. -->
-    <InternalsVisibleTo Include="EtAlii.Adp.Editor.Tests" />
-  </ItemGroup>
 
 </Project>

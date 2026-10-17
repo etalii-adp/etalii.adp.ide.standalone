@@ -1,5 +1,6 @@
 using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
+using EtAlii.Adp.Sessions;
 using EtAlii.Adp.Specification.Fbl.Routing;
 
 namespace EtAlii.Adp.Designer.Knowledge;

@@ -1,4 +1,3 @@
-using EtAlii.Adp.Diagram;
 using EtAlii.Adp.Diagram.AgentActivityDiagram;
 using EtAlii.Adp.Diagram.AgentBehaviorModelling;
 using EtAlii.Adp.Diagram.AnsibleStructure;
@@ -20,6 +19,7 @@ using EtAlii.Adp.Diagram.SupplyChain;
 using EtAlii.Adp.Diagram.Timeline;
 using EtAlii.Adp.Diagram.WardleyMap;
 using EtAlii.Adp.Hierarchy;
+using EtAlii.Adp.Sessions;
 using EtAlii.Adp.TestSupport.Host;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;

@@ -2,6 +2,7 @@ using EtAlii.Adp.Context;
 using EtAlii.Adp.Diagram.Rdf.Shacl;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
+using EtAlii.Adp.Sessions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 

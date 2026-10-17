@@ -1,6 +1,7 @@
+using EtAlii.Adp.Editor;
 using JetBrains.Annotations;
 
-namespace EtAlii.Adp.Editor;
+namespace EtAlii.Adp.Sessions;
 
 /// <summary>
 /// How a module opens its sessions, keyed by the editor's own id - never by a diagram

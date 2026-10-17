@@ -1,6 +1,6 @@
 using Xunit;
 
-namespace EtAlii.Adp.Tests;
+namespace EtAlii.Adp.Sessions.Tests;
 
 /// <summary>The one session-factory registry of the three tool kinds (code-structure FR-057, T166).</summary>
 public class ToolSessionFactoriesTests

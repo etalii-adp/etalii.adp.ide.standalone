@@ -58,11 +58,11 @@ Classifying by path segment — "count the ones containing `backend`" — yields
 | Commands and undo/redo | `EtAlii.Adp.History` |
 | Errors and warnings | `EtAlii.Adp.Problems` |
 | Known projects and workspace roots | `EtAlii.Adp.Projects` |
-| Sign-in sessions (the session store, the session context and the interceptor that checks every call) and connection lifetime | `EtAlii.Adp.Sessions` |
+| Every kind of session: sign-in sessions (the session store, the session context and the interceptor that checks every call), the tool-session contracts of the three kinds with their factory contracts and registries, the document session and the text editor session a module builds on, the viewport registry, and connection lifetime; it references the diagram, designer, editor and history projects, never the reverse | `EtAlii.Adp.Sessions` |
 | Workspace tree, kept current from the project's file events | `EtAlii.Adp.Hierarchy` |
 | Geometry with no dependency: the rectangle, the viewport test's operand, row packing, the row a drag snaps to, text width and graph layering | `EtAlii.Adp.Layout` |
 | Diagram-type abstractions, including the diagram definition and validation contracts; it references the documents project and the shared primitives only | `EtAlii.Adp.Diagram` |
-| The bases a module builds on: the provider frame, the element source resolvers, the document session, a bundled DISL definition as a module's palette, menus and rows, and the viewport test | `EtAlii.Adp.Diagram.Modules` |
+| The bases a module builds on: the provider frame, the element source resolvers, a bundled DISL definition as a module's palette, menus and rows, and the viewport test | `EtAlii.Adp.Diagram.Modules` |
 | The services a connection calls, its connections and their streams, the table wire, the editor plumbing and the reload bridge | `EtAlii.Adp.Workspace` |
 | Editor-family abstractions | `EtAlii.Adp.Editor` |
 | Designer-family abstractions: the definition, its discovery and its catalog | `EtAlii.Adp.Designer` |

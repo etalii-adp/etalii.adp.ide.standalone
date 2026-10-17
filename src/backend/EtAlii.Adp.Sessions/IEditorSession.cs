@@ -1,4 +1,6 @@
-namespace EtAlii.Adp.Editor;
+using EtAlii.Adp.Editor;
+
+namespace EtAlii.Adp.Sessions;
 
 /// <summary>
 /// One open text file, from an editor module's point of view: its current text, and word of

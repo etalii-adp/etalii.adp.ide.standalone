@@ -1,4 +1,6 @@
-namespace EtAlii.Adp.Designer;
+using EtAlii.Adp.Designer;
+
+namespace EtAlii.Adp.Sessions;
 
 /// <summary>
 /// How a designer module opens its sessions, keyed by the designer type's origin. The host

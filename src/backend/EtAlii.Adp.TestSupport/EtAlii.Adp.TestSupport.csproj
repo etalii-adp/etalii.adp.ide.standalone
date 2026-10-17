@@ -25,6 +25,7 @@
     <ProjectReference Include="..\EtAlii.Adp.Context\EtAlii.Adp.Context.csproj" />
     <ProjectReference Include="..\EtAlii.Adp.Diagram\EtAlii.Adp.Diagram.csproj" />
     <ProjectReference Include="..\EtAlii.Adp.Diagram.Modules\EtAlii.Adp.Diagram.Modules.csproj" />
+    <ProjectReference Include="..\EtAlii.Adp.Sessions\EtAlii.Adp.Sessions.csproj" />
   </ItemGroup>
 
   <ItemGroup>

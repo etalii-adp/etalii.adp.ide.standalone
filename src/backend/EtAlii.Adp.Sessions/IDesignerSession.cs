@@ -1,6 +1,6 @@
 using EtAlii.Adp.Designer.TableModel;
 
-namespace EtAlii.Adp.Designer;
+namespace EtAlii.Adp.Sessions;
 
 /// <summary>
 /// One open table on one connection, from a designer module's point of view: what the table

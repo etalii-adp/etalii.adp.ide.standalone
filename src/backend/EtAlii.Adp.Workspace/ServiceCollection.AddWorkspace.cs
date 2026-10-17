@@ -1,4 +1,5 @@
 using EtAlii.Adp.Diagram;
+using EtAlii.Adp.Sessions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -16,6 +17,8 @@ public static class ServiceCollectionAddWorkspaceExtension
         ArgumentNullException.ThrowIfNull(services);
 
         services.AddDiagrams();
+        // The session factories of every kind of tool, and the viewport registry.
+        services.AddToolSessions();
 
         // A tab's one stream (two-tab-connection-wedge Requirement 3.1) runs the hierarchy watch,
         // the context stream and the diagram pump in-process, so the three services it composes
@@ -23,10 +26,8 @@ public static class ServiceCollectionAddWorkspaceExtension
         // context projects register theirs, and the diagram service is this project's.
         services.AddSingleton<WorkspaceConnections>();
 
-        // The designer family rides the same stream as its table member: the session factories
-        // the modules registered, and the table streams that are running, which the calls after
-        // an open find their session through.
-        services.AddSingleton<DesignerSessionFactories>();
+        // The designer family rides the same stream as its table member: the table streams that
+        // are running, which the calls after an open find their session through.
         services.AddSingleton<TableStreams>();
         services.TryAddTransient<DiagramService>();
 
@@ -38,7 +39,6 @@ public static class ServiceCollectionAddWorkspaceExtension
 
         // The editor family rides the same stream: what nothing diagram-shaped claims falls
         // through to the resolved editor (modular-text-editors Requirement 5.1's order).
-        services.AddSingleton<EditorSessionFactories>();
         services.AddSingleton<EditorAnalyzers>();
 
         return services;

@@ -1,6 +1,7 @@
 using System.Text;
 using EtAlii.Adp.Diagram;
 using EtAlii.Adp.Editor;
+using EtAlii.Adp.Sessions;
 using Xunit;
 
 namespace EtAlii.Adp.Workspace.Tests;

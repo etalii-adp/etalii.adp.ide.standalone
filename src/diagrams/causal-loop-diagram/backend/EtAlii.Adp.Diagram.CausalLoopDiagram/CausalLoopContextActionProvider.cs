@@ -2,6 +2,7 @@ using EtAlii.Adp.Context;
 using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
+using EtAlii.Adp.Sessions;
 
 namespace EtAlii.Adp.Diagram.CausalLoopDiagram;
 
