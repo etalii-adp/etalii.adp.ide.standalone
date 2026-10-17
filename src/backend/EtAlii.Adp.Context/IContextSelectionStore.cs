@@ -22,7 +22,7 @@ public interface IContextSelectionStore
     /// Claims this connection's stream and writes the current state as its first message.
     /// A second registration for the same id supersedes the first.
     /// </summary>
-    /// <param name="rootPath">The project root's path.</param>
+    /// <param name="root">The project root.</param>
     /// <param name="writer">The connection's stream.</param>
     /// <param name="rootActions">
     /// The project root's actions, carried on every "nothing selected" message this
@@ -38,28 +38,28 @@ public interface IContextSelectionStore
     /// </param>
     void Register(
         ShortGuid watchId,
-        string rootPath,
+        ProjectRoot root,
         ChannelWriter<ContextMessage> writer,
         IReadOnlyList<ContextActionGroupDefinition> rootActions,
         IReadOnlyList<ContextActionGroupDefinition> projectActions,
         ProjectProblems problems);
 
     /// <summary>
-    /// Writes one project-actions message to every connection in <paramref name="rootPath"/>'s
+    /// Writes one project-actions message to every connection in <paramref name="root"/>'s
     /// project, and to none in another - so undo/redo availability follows the history without
     /// disturbing anyone's selection (diagram-undo-redo Requirement 5.3, Deviation 1).
     /// </summary>
-    void PushProjectActions(string rootPath, IReadOnlyList<ContextActionGroupDefinition> actions);
+    void PushProjectActions(ProjectRoot root, IReadOnlyList<ContextActionGroupDefinition> actions);
 
     /// <summary>
-    /// Writes one problems message to every connection in <paramref name="rootPath"/>'s
+    /// Writes one problems message to every connection in <paramref name="root"/>'s
     /// project, and to none in another - the reason two viewers of one project cannot
     /// disagree about what is wrong (errors-and-warnings-panel Requirements 1.1, 6.4).
     /// </summary>
-    void PushProblems(string rootPath, ProjectProblems problems);
+    void PushProblems(ProjectRoot root, ProjectProblems problems);
 
     /// <summary>
-    /// Writes one notice to every connection in <paramref name="rootPath"/>'s project: a
+    /// Writes one notice to every connection in <paramref name="root"/>'s project: a
     /// thing that happened alongside a command that SUCCEEDED and that the user would
     /// otherwise discover only later.
     /// </summary>
@@ -69,7 +69,7 @@ public interface IContextSelectionStore
     /// position that was not recorded is missing for whoever opens the diagram next, not
     /// only for whoever dragged it.
     /// </remarks>
-    void PushNotice(string rootPath, string message);
+    void PushNotice(ProjectRoot root, string message);
 
     /// <summary>Drops a connection's stream, selection and observations.</summary>
     void Remove(ShortGuid watchId);
@@ -78,7 +78,7 @@ public interface IContextSelectionStore
     ContextSelectionRecord? Get(ShortGuid watchId);
 
     /// <summary>Replaces the current selection, starts observing its levels, and pushes it.</summary>
-    void Set(ShortGuid watchId, string rootPath, ContextSelectionRecord record, ContextRediscovery rediscover);
+    void Set(ShortGuid watchId, ProjectRoot root, ContextSelectionRecord record, ContextRediscovery rediscover);
 
     /// <summary>Records "nothing selected" and pushes it.</summary>
     void Clear(ShortGuid watchId);

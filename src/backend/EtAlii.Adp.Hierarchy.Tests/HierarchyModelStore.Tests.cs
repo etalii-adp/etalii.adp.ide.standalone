@@ -31,8 +31,8 @@ public class HierarchyModelStoreTests : IDisposable
         var watchId = ShortGuid.NewShortGuid();
 
         // Act.
-        var first = store.GetOrCreate(watchId, _root);
-        var second = store.GetOrCreate(watchId, _root);
+        var first = store.GetOrCreate(watchId, ProjectRoot.From(_root));
+        var second = store.GetOrCreate(watchId, ProjectRoot.From(_root));
 
         // Assert.
         Assert.Same(first, second);
@@ -45,8 +45,8 @@ public class HierarchyModelStoreTests : IDisposable
         using var store = new HierarchyModelStore();
 
         // Act.
-        var first = store.GetOrCreate(ShortGuid.NewShortGuid(), _root);
-        var second = store.GetOrCreate(ShortGuid.NewShortGuid(), _root);
+        var first = store.GetOrCreate(ShortGuid.NewShortGuid(), ProjectRoot.From(_root));
+        var second = store.GetOrCreate(ShortGuid.NewShortGuid(), ProjectRoot.From(_root));
 
         // Assert.
         Assert.NotSame(first, second);
@@ -59,7 +59,7 @@ public class HierarchyModelStoreTests : IDisposable
         using var store = new HierarchyModelStore();
         using var events = new ProjectFileEvents();
         var watchId = ShortGuid.NewShortGuid();
-        store.GetOrCreate(watchId, _root);
+        store.GetOrCreate(watchId, ProjectRoot.From(_root));
         var eventCount = 0;
         var subscription = events.Subscribe(_root, _ => Interlocked.Increment(ref eventCount));
         store.AttachEvents(watchId, subscription);
@@ -78,14 +78,14 @@ public class HierarchyModelStoreTests : IDisposable
         // Arrange.
         using var store = new HierarchyModelStore(idleTimeout: IdleTimeout, time: _clock);
         var watchId = ShortGuid.NewShortGuid();
-        var first = store.GetOrCreate(watchId, _root);
+        var first = store.GetOrCreate(watchId, ProjectRoot.From(_root));
 
         // Act and assert, step by step: kept until the timeout, dropped once it passes.
         _clock.Advance(IdleTimeout - TimeSpan.FromMilliseconds(1));
-        Assert.Same(first, store.GetOrCreate(watchId, _root));
+        Assert.Same(first, store.GetOrCreate(watchId, ProjectRoot.From(_root)));
 
         _clock.Advance(TimeSpan.FromMilliseconds(1));
-        Assert.NotSame(first, store.GetOrCreate(watchId, _root));
+        Assert.NotSame(first, store.GetOrCreate(watchId, ProjectRoot.From(_root)));
     }
 
     [Fact]
@@ -94,7 +94,7 @@ public class HierarchyModelStoreTests : IDisposable
         // Arrange.
         using var store = new HierarchyModelStore(idleTimeout: IdleTimeout, time: _clock);
         var watchId = ShortGuid.NewShortGuid();
-        var first = store.GetOrCreate(watchId, _root);
+        var first = store.GetOrCreate(watchId, ProjectRoot.From(_root));
         using var events = new ProjectFileEvents();
         using var subscription = events.Subscribe(_root, _ => { });
         store.AttachEvents(watchId, subscription);
@@ -102,7 +102,7 @@ public class HierarchyModelStoreTests : IDisposable
         _clock.Advance(IdleTimeout * 2);
 
         // Act and assert, step by step.
-        var second = store.GetOrCreate(watchId, _root);
+        var second = store.GetOrCreate(watchId, ProjectRoot.From(_root));
         Assert.Same(first, second);
     }
 }

@@ -44,7 +44,7 @@ public sealed class HierarchyContextSourceResolver : IContextSourceResolver
         ContextResolvedLevel? parent,
         CancellationToken cancellationToken)
     {
-        var model = _hierarchyModelStore.GetOrCreate(watchId, rootPath);
+        var model = _hierarchyModelStore.GetOrCreate(watchId, ProjectRoot.From(rootPath));
         var entryId = (ShortGuid)id.EntryId;
         if (!model.TryResolvePath(entryId, out var fullPath, out var isFolder))
         {
@@ -111,7 +111,7 @@ public sealed class HierarchyContextSourceResolver : IContextSourceResolver
     /// </summary>
     public IDisposable Track(ShortGuid watchId, string rootPath, ContextResolvedLevel level, Action<IReadOnlyList<string>?> onChange)
     {
-        var model = _hierarchyModelStore.GetOrCreate(watchId, rootPath);
+        var model = _hierarchyModelStore.GetOrCreate(watchId, ProjectRoot.From(rootPath));
         var entryId = (ShortGuid)level.Id.EntryId;
         var basePath = BaseOf(level);
         var lastPath = level.RelativePath;

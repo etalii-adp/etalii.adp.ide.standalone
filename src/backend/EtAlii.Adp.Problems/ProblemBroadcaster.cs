@@ -52,7 +52,7 @@ public sealed class ProblemBroadcaster : IDisposable
 
         try
         {
-            _selectionStore.PushProblems(rootPath, ToProto(_problems.Get(rootPath)));
+            _selectionStore.PushProblems(ProjectRoot.From(rootPath), ToProto(_problems.Get(rootPath)));
         }
         catch (Exception exception)
         {

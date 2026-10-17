@@ -8,9 +8,9 @@ namespace EtAlii.Adp.Context.Tests;
 internal sealed class HistoryActionsBroadcasterRecordingSelectionStore : IContextSelectionStore
 {
     private readonly Lock _gate = new();
-    private readonly List<(string RootPath, IReadOnlyList<ContextActionGroupDefinition> Actions)> _pushes = [];
+    private readonly List<(ProjectRoot Root, IReadOnlyList<ContextActionGroupDefinition> Actions)> _pushes = [];
 
-    public IReadOnlyList<(string RootPath, IReadOnlyList<ContextActionGroupDefinition> Actions)> Pushes
+    public IReadOnlyList<(ProjectRoot Root, IReadOnlyList<ContextActionGroupDefinition> Actions)> Pushes
     {
         get
         {
@@ -21,25 +21,25 @@ internal sealed class HistoryActionsBroadcasterRecordingSelectionStore : IContex
         }
     }
 
-    public void PushProjectActions(string rootPath, IReadOnlyList<ContextActionGroupDefinition> actions)
+    public void PushProjectActions(ProjectRoot root, IReadOnlyList<ContextActionGroupDefinition> actions)
     {
         lock (_gate)
         {
-            _pushes.Add((rootPath, actions));
+            _pushes.Add((root, actions));
         }
     }
 
-    public void Register(ShortGuid watchId, string rootPath, ChannelWriter<ContextMessage> writer, IReadOnlyList<ContextActionGroupDefinition> rootActions, IReadOnlyList<ContextActionGroupDefinition> projectActions, ProjectProblems problems) => throw new NotSupportedException();
+    public void Register(ShortGuid watchId, ProjectRoot root, ChannelWriter<ContextMessage> writer, IReadOnlyList<ContextActionGroupDefinition> rootActions, IReadOnlyList<ContextActionGroupDefinition> projectActions, ProjectProblems problems) => throw new NotSupportedException();
 
-    public void PushProblems(string rootPath, ProjectProblems problems) => throw new NotSupportedException();
+    public void PushProblems(ProjectRoot root, ProjectProblems problems) => throw new NotSupportedException();
 
-    public void PushNotice(string rootPath, string message) => throw new NotSupportedException();
+    public void PushNotice(ProjectRoot root, string message) => throw new NotSupportedException();
 
     public void Remove(ShortGuid watchId) => throw new NotSupportedException();
 
     public ContextSelectionRecord Get(ShortGuid watchId) => throw new NotSupportedException();
 
-    public void Set(ShortGuid watchId, string rootPath, ContextSelectionRecord record, ContextRediscovery rediscover) => throw new NotSupportedException();
+    public void Set(ShortGuid watchId, ProjectRoot root, ContextSelectionRecord record, ContextRediscovery rediscover) => throw new NotSupportedException();
 
     public void Clear(ShortGuid watchId) => throw new NotSupportedException();
 

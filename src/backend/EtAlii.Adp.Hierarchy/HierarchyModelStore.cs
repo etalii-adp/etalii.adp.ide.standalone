@@ -39,10 +39,10 @@ public sealed class HierarchyModelStore : IHierarchyModelStore, IDisposable
             dropUnclaimed: true);
     }
 
-    public HierarchyModel GetOrCreate(ShortGuid watchId, string rootPath) =>
+    public HierarchyModel GetOrCreate(ShortGuid watchId, ProjectRoot root) =>
         _entries.GetOrAdd(watchId, _ => new HierarchyModelEntry
         {
-            Model = new HierarchyModel(rootPath, _catalog, _router, _editorResolver, _tools),
+            Model = new HierarchyModel(root.FullPath, _catalog, _router, _editorResolver, _tools),
         }).Model;
 
     public void AttachEvents(ShortGuid watchId, IDisposable events)

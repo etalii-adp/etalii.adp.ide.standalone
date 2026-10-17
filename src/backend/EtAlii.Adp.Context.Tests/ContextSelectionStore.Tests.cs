@@ -13,7 +13,7 @@ public class ContextSelectionStoreTests : IDisposable
     // Rooted on the current platform ("\root" here, "/root" there), not a Windows drive
     // literal: Relocate walks the path with the platform's own separators, and a "C:\..."
     // literal dissolved into nothing on the Linux CI runner.
-    private static readonly string Root = System.IO.Path.DirectorySeparatorChar + "root";
+    private static readonly ProjectRoot Root = ProjectRoot.From(System.IO.Path.DirectorySeparatorChar + "root");
 
     private readonly ContextSelectionStore _store = new(idleTimeout: TimeSpan.FromMinutes(5));
 
@@ -28,7 +28,7 @@ public class ContextSelectionStoreTests : IDisposable
         chain.Path.Segments.AddRange(path);
         var level = new ContextResolvedLevel(
             id, path, ContextScope.Hierarchy,
-            new ContextTarget(ContextScope.Hierarchy, System.IO.Path.Combine([Root, .. path]), false, (ShortGuid)id.EntryId),
+            new ContextTarget(ContextScope.Hierarchy, System.IO.Path.Combine([Root.FullPath, .. path]), false, (ShortGuid)id.EntryId),
             new ContextLevelDetail { Entry = new EntryDetail { Kind = EntryKind.File, Available = true } },
             resolver);
         return new ContextSelectionRecord(chain, [level], [], null, []);
@@ -250,7 +250,7 @@ public class ContextSelectionStoreTests : IDisposable
         await Eventually.TrueAsync(() => rediscoveredWith is not null, TestContext.Current.CancellationToken, Timeout);
 
         // Assert.
-        Assert.Equal(System.IO.Path.Combine(Root, "documents", "b.txt"), rediscoveredWith!.Innermost.Target.ResolvedFullPath);
+        Assert.Equal(System.IO.Path.Combine(Root.FullPath, "documents", "b.txt"), rediscoveredWith!.Innermost.Target.ResolvedFullPath);
     }
 
     [Fact]
@@ -265,7 +265,7 @@ public class ContextSelectionStoreTests : IDisposable
         var watchId = ShortGuid.NewShortGuid();
         var fileResolver = new ContextSelectionStoreStubResolver();
         var elementResolver = new ContextSelectionStoreStubResolver();
-        var bodyPath = System.IO.Path.Combine(Root, "plan.cld");
+        var bodyPath = System.IO.Path.Combine(Root.FullPath, "plan.cld");
 
         var fileId = new ContextSource { EntryId = ShortGuid.NewShortGuid() };
         var fileChain = new ContextSelection { Source = ContextSelectionSource.Explorer, Id = fileId, Path = new Path() };
@@ -282,7 +282,7 @@ public class ContextSelectionStoreTests : IDisposable
             fileResolver);
         var elementLevel = new ContextResolvedLevel(
             elementId, ["Incidents"], ContextScope.DiagramElement,
-            ContextTarget.ForElement(bodyPath, "variable:incidents", Root, watchId),
+            ContextTarget.ForElement(bodyPath, "variable:incidents", Root.FullPath, watchId),
             new ContextLevelDetail { Element = new ElementDetail { Text = "Incidents" } },
             elementResolver);
 
@@ -425,7 +425,7 @@ public class ContextSelectionStoreTests : IDisposable
     public async Task PushProjectActions_ReachesOnlyConnectionsInThatProject()
     {
         // Arrange.
-        const string other = @"C:\other";
+        var other = ProjectRoot.From(@"C:\other");
         var mine = Channel.CreateUnbounded<ContextMessage>();
         var theirs = Channel.CreateUnbounded<ContextMessage>();
         _store.Register(ShortGuid.NewShortGuid(), Root, mine.Writer, [], [ProjectGroup()], new ProjectProblems());
@@ -495,7 +495,7 @@ public class ContextSelectionStoreTests : IDisposable
         await TestBaselineAsync(channel.Reader);
 
         // Act.
-        _store.PushProblems(Root + System.IO.Path.DirectorySeparatorChar, new ProjectProblems { State = ProblemSetState.Validated });
+        _store.PushProblems(ProjectRoot.From(Root.FullPath + System.IO.Path.DirectorySeparatorChar), new ProjectProblems { State = ProblemSetState.Validated });
 
         // Assert.
         var message = await ReadAsync(channel.Reader);
@@ -506,7 +506,7 @@ public class ContextSelectionStoreTests : IDisposable
     public async Task PushProblems_ReachesNoConnectionInAnotherProject()
     {
         // Arrange.
-        const string other = @"C:\other";
+        var other = ProjectRoot.From(@"C:\other");
         var mine = Channel.CreateUnbounded<ContextMessage>();
         var theirs = Channel.CreateUnbounded<ContextMessage>();
         _store.Register(ShortGuid.NewShortGuid(), Root, mine.Writer, [], [], new ProjectProblems());

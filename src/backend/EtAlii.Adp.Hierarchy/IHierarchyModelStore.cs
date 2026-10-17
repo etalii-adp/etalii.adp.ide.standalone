@@ -8,7 +8,7 @@ namespace EtAlii.Adp.Hierarchy;
 /// </summary>
 public interface IHierarchyModelStore
 {
-    HierarchyModel GetOrCreate(ShortGuid watchId, string rootPath);
+    HierarchyModel GetOrCreate(ShortGuid watchId, ProjectRoot root);
 
     /// <summary>
     /// Attaches the subscription to file events a `WatchHierarchy` call started for this

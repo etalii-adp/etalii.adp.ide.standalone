@@ -93,7 +93,7 @@ public class CausalLoopDocumentStoreFailedReloadTests : IDisposable
         using var events = new ProjectFileEvents();
         using var bridge = new DiagramDocumentReloadBridge([new DiagramDocumentReloader<ICausalLoopDocumentStore>(origin, store)], events);
         Assert.True(store.GetOrLoad(path).IsUsable);
-        bridge.Track(_workspace, path, registrationPath: null, origin);
+        bridge.Track(ProjectRoot.From(_workspace), path, registrationPath: null, origin);
 
         File.Delete(path);
 

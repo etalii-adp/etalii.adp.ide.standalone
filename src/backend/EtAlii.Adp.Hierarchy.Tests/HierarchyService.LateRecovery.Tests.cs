@@ -51,7 +51,7 @@ public class HierarchyServiceLateRecoveryTests : IDisposable
 
         // The watch takes this same model from the store; listening on it shows when the late
         // announcement has run, because the recovery starts right after it on the same thread.
-        var model = modelStore.GetOrCreate(watchId, _projectFolder);
+        var model = modelStore.GetOrCreate(watchId, ProjectRoot.From(_projectFolder));
         var announced = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         model.EntryChanged += change =>
         {

@@ -52,9 +52,9 @@ public sealed class DiagramDocumentReloadBridge : IDisposable
     /// (when there is one), and the root to watch them under. A type that registered no
     /// reloader is left alone - the ansible module watches its own folder already.
     /// </summary>
-    public void Track(string rootPath, string bodyPath, string? registrationPath, ToolOrigin origin)
+    public void Track(ProjectRoot root, string bodyPath, string? registrationPath, ToolOrigin origin)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(rootPath);
+        ArgumentException.ThrowIfNullOrWhiteSpace(root.FullPath, nameof(root));
         ArgumentException.ThrowIfNullOrWhiteSpace(bodyPath);
         ArgumentNullException.ThrowIfNull(origin);
 
@@ -64,7 +64,6 @@ public sealed class DiagramDocumentReloadBridge : IDisposable
         }
 
         // ReSharper disable once InconsistentlySynchronizedField - Reason: one atomic ConcurrentDictionary write; _subscriptionLock serializes subscribing and unsubscribing, not the tracked set.
-        var root = ProjectRoot.From(rootPath);
         _documents[bodyPath] = new TrackedDocument(root, bodyPath, reloader);
         if (registrationPath is { Length: > 0 })
         {

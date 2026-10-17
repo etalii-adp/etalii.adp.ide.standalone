@@ -16,11 +16,11 @@ internal sealed class ContextWatchHooks(
     ProblemMaintenance maintenance,
     StartupRevalidation revalidation) : IContextWatchHooks
 {
-    public void ProjectWatched(string rootPath)
+    public void ProjectWatched(ProjectRoot root)
     {
-        maintenance.Track(rootPath);
-        revalidation.Prioritize(rootPath);
+        maintenance.Track(root.FullPath);
+        revalidation.Prioritize(root.FullPath);
     }
 
-    public ProjectProblems CurrentFor(string rootPath) => broadcaster.CurrentFor(rootPath);
+    public ProjectProblems CurrentFor(ProjectRoot root) => broadcaster.CurrentFor(root.FullPath);
 }

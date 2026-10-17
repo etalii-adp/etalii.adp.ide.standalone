@@ -138,8 +138,8 @@ public sealed class DesignerService : Proto.DesignerService.DesignerServiceBase
     {
         var asked = string.Join('/', request.Path?.Segments ?? []);
         if (request.Path is null ||
-            !ProjectTextFile.TryResolve(_projectStore, request.ProjectId, request.Path, userId, out var rootPath, out var fullPath) ||
-            _router.Route(fullPath, rootPath) is not DesignerRouted { BodyPath: { } bodyPath } routed ||
+            !ProjectTextFile.TryResolve(_projectStore, request.ProjectId, request.Path, userId, out var file) ||
+            _router.Route(file.FullPath, file.Root.FullPath) is not DesignerRouted { BodyPath: { } bodyPath } routed ||
             !File.Exists(bodyPath))
         {
             // The client is told only that it failed; the log keeps what it asked for.
@@ -155,7 +155,7 @@ public sealed class DesignerService : Proto.DesignerService.DesignerServiceBase
         }
 
         _logger.Debug("Routed {Path} to {Origin}, body {BodyPath}, on watch {WatchId}", asked, routed.Definition.Origin, bodyPath, watchId);
-        return factory.Open(watchId, rootPath, routed.RegistrationPath, bodyPath);
+        return factory.Open(watchId, file.Root.FullPath, routed.RegistrationPath, bodyPath);
     }
 
     /// <summary>

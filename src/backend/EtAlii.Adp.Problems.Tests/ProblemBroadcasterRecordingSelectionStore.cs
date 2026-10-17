@@ -8,23 +8,23 @@ namespace EtAlii.Adp.Problems.Tests;
 /// <summary>Records the problems pushes; every other member is unreached by the broadcaster.</summary>
 internal sealed class ProblemBroadcasterRecordingSelectionStore : IContextSelectionStore
 {
-    private readonly List<(string RootPath, ProjectProblems Problems)> _pushes = [];
+    private readonly List<(ProjectRoot Root, ProjectProblems Problems)> _pushes = [];
 
-    public IReadOnlyList<(string RootPath, ProjectProblems Problems)> Pushes => _pushes;
+    public IReadOnlyList<(ProjectRoot Root, ProjectProblems Problems)> Pushes => _pushes;
 
-    public void PushProblems(string rootPath, ProjectProblems problems) => _pushes.Add((rootPath, problems));
+    public void PushProblems(ProjectRoot root, ProjectProblems problems) => _pushes.Add((root, problems));
 
-    public void PushNotice(string rootPath, string message) => throw new NotSupportedException();
+    public void PushNotice(ProjectRoot root, string message) => throw new NotSupportedException();
 
-    public void Register(ShortGuid watchId, string rootPath, ChannelWriter<ContextMessage> writer, IReadOnlyList<ContextActionGroupDefinition> rootActions, IReadOnlyList<ContextActionGroupDefinition> projectActions, ProjectProblems problems) => throw new NotSupportedException();
+    public void Register(ShortGuid watchId, ProjectRoot root, ChannelWriter<ContextMessage> writer, IReadOnlyList<ContextActionGroupDefinition> rootActions, IReadOnlyList<ContextActionGroupDefinition> projectActions, ProjectProblems problems) => throw new NotSupportedException();
 
-    public void PushProjectActions(string rootPath, IReadOnlyList<ContextActionGroupDefinition> actions) => throw new NotSupportedException();
+    public void PushProjectActions(ProjectRoot root, IReadOnlyList<ContextActionGroupDefinition> actions) => throw new NotSupportedException();
 
     public void Remove(ShortGuid watchId) => throw new NotSupportedException();
 
     public ContextSelectionRecord Get(ShortGuid watchId) => throw new NotSupportedException();
 
-    public void Set(ShortGuid watchId, string rootPath, ContextSelectionRecord record, ContextRediscovery rediscover) => throw new NotSupportedException();
+    public void Set(ShortGuid watchId, ProjectRoot root, ContextSelectionRecord record, ContextRediscovery rediscover) => throw new NotSupportedException();
 
     public void Clear(ShortGuid watchId) => throw new NotSupportedException();
 

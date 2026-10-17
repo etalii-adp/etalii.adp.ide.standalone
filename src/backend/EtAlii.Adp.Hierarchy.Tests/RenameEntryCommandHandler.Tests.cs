@@ -338,7 +338,7 @@ public class RenameEntryCommandHandlerTests : IDisposable
         // sometimes wins on a loaded CI runner.
         var path = CreateFile("original.txt");
         var store = new WatcherWinsTheRaceStore();
-        var model = store.GetOrCreate(ShortGuid.NewShortGuid(), _root);
+        var model = store.GetOrCreate(ShortGuid.NewShortGuid(), ProjectRoot.From(_root));
         var originalId = model.ListChildren(null).Single().Id;
         var changes = new List<HierarchyEntryChange>();
         model.EntryChanged += changes.Add;
@@ -409,7 +409,7 @@ public class RenameEntryCommandHandlerTests : IDisposable
         // echo of a move.
         var path = CreateFile("test.first.adp");
         var store = new HierarchyModelStore();
-        var model = store.GetOrCreate(ShortGuid.NewShortGuid(), _root);
+        var model = store.GetOrCreate(ShortGuid.NewShortGuid(), ProjectRoot.From(_root));
         var originalId = model.ListChildren(null).Single().Id;
         var handler = new RenameEntryCommandHandler(new EmptyCatalog(), store);
         var refused = await handler.ExecuteAsync(new RenameEntryCommand(path, "prod.first.adp"), TestContext.Current.CancellationToken);
@@ -435,9 +435,9 @@ public class RenameEntryCommandHandlerTests : IDisposable
         private readonly HierarchyModelStore _inner = new();
         private readonly List<HierarchyModel> _models = [];
 
-        public HierarchyModel GetOrCreate(ShortGuid watchId, string rootPath)
+        public HierarchyModel GetOrCreate(ShortGuid watchId, ProjectRoot root)
         {
-            var model = _inner.GetOrCreate(watchId, rootPath);
+            var model = _inner.GetOrCreate(watchId, root);
             _models.Add(model);
             return model;
         }

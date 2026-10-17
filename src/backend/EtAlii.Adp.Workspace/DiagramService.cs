@@ -164,9 +164,8 @@ public sealed partial class DiagramService : Diagram.Wire.DiagramService.Diagram
         Documents.Wire.ShortGuid projectId,
         Path path,
         ShortGuid userId,
-        out string rootPath,
-        out string fullPath) =>
-        ProjectTextFile.TryResolve(_projectStore, projectId, path, userId, out rootPath, out fullPath);
+        out ProjectPath file) =>
+        ProjectTextFile.TryResolve(_projectStore, projectId, path, userId, out file);
 
     /// <summary>
     /// The definition id behind a forced <c>"*"</c>: whatever the resolver answers - the one

@@ -13,8 +13,8 @@ namespace EtAlii.Adp.Context;
 public interface IContextWatchHooks
 {
     /// <summary>A project has gained a watcher: start tracking its problems and move it up the revalidation queue.</summary>
-    void ProjectWatched(string rootPath);
+    void ProjectWatched(ProjectRoot root);
 
     /// <summary>The problems to seed a new watcher's stream with.</summary>
-    ProjectProblems CurrentFor(string rootPath);
+    ProjectProblems CurrentFor(ProjectRoot root);
 }

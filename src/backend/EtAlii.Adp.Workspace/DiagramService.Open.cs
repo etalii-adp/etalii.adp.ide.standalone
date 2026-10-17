@@ -44,13 +44,14 @@ public sealed partial class DiagramService
             // family is deliberately not consulted: this is the one way a diagram-routed file
             // opens as text at all, and the one way its diagram stream and its text stream can
             // coexist on one connection (modular-text-editors Requirements 5.2, 5.3).
-            if (!TryResolveTextFile(request.ProjectId, request.Path, userId, out var forcedRoot, out var forcedPath))
+            if (!TryResolveTextFile(request.ProjectId, request.Path, userId, out var forced))
             {
                 // The client is told only that it failed; the log keeps what it asked for.
                 _logger.Warning("Refusing to open {Path} as text on watch {WatchId}: it does not resolve inside the project", string.Join('/', request.Path.Segments), watchId);
                 throw new RpcException(new Status(PermanentRefusal.CannotOpen, "The file cannot be opened as text."));
             }
 
+            var forcedPath = forced.FullPath;
             var forcedId = request.EditorId == "*" ? ResolvedEditorIdOf(forcedPath) : request.EditorId;
             var forcedFactory = _editorSessionFactories.Find(forcedId);
             if (forcedFactory is null)
@@ -61,17 +62,21 @@ public sealed partial class DiagramService
 
             _logger.Debug("Opening {FullPath} as text in the {EditorId} editor (forced) on watch {WatchId}", forcedPath, forcedId, watchId);
             bodyPath = forcedPath;
-            openedSession = new EditorSessionAdapter(forcedFactory.Open(watchId, forcedRoot, forcedPath), forcedId);
+            openedSession = new EditorSessionAdapter(forcedFactory.Open(watchId, forced.Root.FullPath, forcedPath), forcedId);
         }
         else
         {
             // One open reads projects.json once: the root, the containment check and the file's
             // existence are resolved here and handed to the router (code-structure FR-062).
-            if (!TryResolveTextFile(request.ProjectId, request.Path, userId, out var rootPath, out var fullPath))
+            if (!TryResolveTextFile(request.ProjectId, request.Path, userId, out var file))
             {
                 _logger.Warning("Refusing to open {Path} on watch {WatchId}: it does not resolve inside the project", string.Join('/', request.Path.Segments), watchId);
                 throw new RpcException(new Status(PermanentRefusal.CannotOpen, "The diagram cannot be opened."));
             }
+
+            // The modules and the router take the root as a path; it is normalized already.
+            var rootPath = file.Root.FullPath;
+            var fullPath = file.FullPath;
 
             switch (_toolRouter.Route(fullPath, rootPath))
             {
@@ -91,7 +96,7 @@ public sealed partial class DiagramService
 
                     // From here on, an external write to this body or its .adp reaches the module's
                     // store as a Reload and every open session as pushed deltas (Requirement 5.3).
-                    _reloadBridge.Track(rootPath, bodyPath, routed.RegistrationPath, origin);
+                    _reloadBridge.Track(file.Root, bodyPath, routed.RegistrationPath, origin);
                     break;
                 }
 
@@ -277,7 +282,7 @@ public sealed partial class DiagramService
         // with the resolved root and refuses anything that escapes the root, so a path from
         // outside the project resolves to nothing (tech.md: no filesystem path crosses the
         // wire, and a client never reaches outside its workspace).
-        if (!TryResolveTextFile(projectId, path, userId, out var rootPath, out var full))
+        if (!TryResolveTextFile(projectId, path, userId, out var file))
         {
             return false;
         }
@@ -287,7 +292,7 @@ public sealed partial class DiagramService
         // BodyPath is null only when the router had no root to resolve a body: header against,
         // and one was passed above - so this refuses a document that genuinely does not resolve
         // rather than papering over a missing argument.
-        if (_router.Route(full, rootPath) is not DiagramRouted { BodyPath: { } resolvedBody } routed)
+        if (_router.Route(file.FullPath, file.Root.FullPath) is not DiagramRouted { BodyPath: { } resolvedBody } routed)
         {
             return false;
         }

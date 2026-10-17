@@ -28,7 +28,7 @@ public sealed class ContextSelectionStore : IContextSelectionStore, IDisposable
 
     public void Register(
         ShortGuid watchId,
-        string rootPath,
+        ProjectRoot root,
         ChannelWriter<ContextMessage> writer,
         IReadOnlyList<ContextActionGroupDefinition> rootActions,
         IReadOnlyList<ContextActionGroupDefinition> projectActions,
@@ -38,7 +38,7 @@ public sealed class ContextSelectionStore : IContextSelectionStore, IDisposable
         lock (entry.Gate)
         {
             entry.Writer = writer;
-            entry.Root = ProjectRoot.From(rootPath);
+            entry.Root = root;
             entry.RootActions = rootActions;
             // The baseline: the selection (or the root's actions when nothing is selected), the
             // project's own actions, and the project's problems, so a connection is fully
@@ -49,9 +49,8 @@ public sealed class ContextSelectionStore : IContextSelectionStore, IDisposable
         }
     }
 
-    public void PushProjectActions(string rootPath, IReadOnlyList<ContextActionGroupDefinition> actions)
+    public void PushProjectActions(ProjectRoot root, IReadOnlyList<ContextActionGroupDefinition> actions)
     {
-        var root = ProjectRoot.From(rootPath);
         var message = ContextActionGroups.ToProto(actions);
         foreach (var entry in _entries.Values())
         {
@@ -67,9 +66,8 @@ public sealed class ContextSelectionStore : IContextSelectionStore, IDisposable
         }
     }
 
-    public void PushProblems(string rootPath, ProjectProblems problems)
+    public void PushProblems(ProjectRoot root, ProjectProblems problems)
     {
-        var root = ProjectRoot.From(rootPath);
         var message = new ContextMessage { Problems = problems };
         foreach (var entry in _entries.Values())
         {
@@ -86,12 +84,10 @@ public sealed class ContextSelectionStore : IContextSelectionStore, IDisposable
         }
     }
 
-    public void PushNotice(string rootPath, string message)
+    public void PushNotice(ProjectRoot root, string message)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(rootPath);
         ArgumentException.ThrowIfNullOrWhiteSpace(message);
 
-        var root = ProjectRoot.From(rootPath);
         var notice = new ContextMessage { Notice = new ContextNotice { Message = message } };
         foreach (var entry in _entries.Values())
         {
@@ -112,7 +108,7 @@ public sealed class ContextSelectionStore : IContextSelectionStore, IDisposable
     public ContextSelectionRecord? Get(ShortGuid watchId) =>
         _entries.TryGet(watchId, out var entry) ? entry.Record : null;
 
-    public void Set(ShortGuid watchId, string rootPath, ContextSelectionRecord record, ContextRediscovery rediscover)
+    public void Set(ShortGuid watchId, ProjectRoot root, ContextSelectionRecord record, ContextRediscovery rediscover)
     {
         var entry = GetOrCreate(watchId);
         lock (entry.Gate)
@@ -124,7 +120,7 @@ public sealed class ContextSelectionStore : IContextSelectionStore, IDisposable
             {
                 var levelIndex = index;
                 var level = record.Levels[index];
-                tracks.Add(level.Resolver.Track(watchId, rootPath, level, path => UpdateFromTrack(watchId, levelIndex, path)));
+                tracks.Add(level.Resolver.Track(watchId, root.FullPath, level, path => UpdateFromTrack(watchId, levelIndex, path)));
             }
 
             entry.Record = record with { Tracks = tracks };

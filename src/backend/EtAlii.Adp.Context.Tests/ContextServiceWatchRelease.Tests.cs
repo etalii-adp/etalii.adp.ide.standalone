@@ -140,10 +140,10 @@ public sealed class ContextServiceWatchReleaseTests : IDisposable
 
     private sealed class NoProblems : IContextWatchHooks
     {
-        public void ProjectWatched(string rootPath)
+        public void ProjectWatched(ProjectRoot root)
         {
         }
 
-        public ProjectProblems CurrentFor(string rootPath) => new();
+        public ProjectProblems CurrentFor(ProjectRoot root) => new();
     }
 }
