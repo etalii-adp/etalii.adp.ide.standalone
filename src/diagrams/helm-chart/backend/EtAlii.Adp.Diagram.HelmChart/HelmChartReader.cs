@@ -4,6 +4,8 @@ using EtAlii.Adp.Specification.Fbl.Routing;
 using Serilog;
 using YamlDotNet.RepresentationModel;
 
+using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
+
 namespace EtAlii.Adp.Diagram.HelmChart;
 
 /// <summary>
@@ -111,7 +113,7 @@ public sealed class HelmChartReader
         foreach (var file in handed.FilesIn("", name => name.StartsWith("values", Handed.Names)))
         {
             var name = file.RelativePath;
-            var extension = System.IO.Path.GetExtension(name);
+            var extension = IoPath.GetExtension(name);
             if (!string.Equals(extension, ".yaml", StringComparison.OrdinalIgnoreCase)
                 && !string.Equals(extension, ".yml", StringComparison.OrdinalIgnoreCase))
             {
@@ -202,7 +204,7 @@ public sealed class HelmChartReader
         var failures = new List<TolerantYamlFailure>();
         foreach (var file in handed.FilesUnder("crds"))
         {
-            var extension = System.IO.Path.GetExtension(file.RelativePath);
+            var extension = IoPath.GetExtension(file.RelativePath);
             if (!string.Equals(extension, ".yaml", StringComparison.OrdinalIgnoreCase)
                 && !string.Equals(extension, ".yml", StringComparison.OrdinalIgnoreCase))
             {

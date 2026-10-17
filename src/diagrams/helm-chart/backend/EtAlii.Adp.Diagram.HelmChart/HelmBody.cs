@@ -1,4 +1,3 @@
-using EtAlii.Adp.Specification.Disl;
 using EtAlii.Adp.Specification.Fbl;
 using EtAlii.Adp.Specification.Fbl.Plugins;
 using Serilog;
@@ -42,7 +41,6 @@ public sealed class HelmBody : IDisposable
 
     private readonly string _path;
     private readonly FolderBody _body;
-    private readonly FileSystemWatcher? _watcher;
     private volatile HelmReading _current;
 
     private HelmBody(string folder, string? registration, bool watch, TimeProvider? time, HelmChartReader? reader)
@@ -54,7 +52,7 @@ public sealed class HelmBody : IDisposable
         if (!watch) return;
 
         _body.Changed += OnSettled;
-        _watcher = Directory.Exists(_path) ? Watcher(_path) : null;
+        FolderWatcher = Directory.Exists(_path) ? Watcher(_path) : null;
     }
 
     /// <summary>Raised once a burst of changes has settled: after the folder was read again, or after only the registration changed.</summary>
@@ -67,7 +65,7 @@ public sealed class HelmBody : IDisposable
     public HelmReading Current => _current;
 
     /// <summary>The watcher, for a test that has to make it overflow; null for a one-shot read and a folder that was not there.</summary>
-    internal FileSystemWatcher? FolderWatcher => _watcher;
+    internal FileSystemWatcher? FolderWatcher { get; }
 
     /// <summary>What the folder body is told beside the binding: the directories no file rule can select (gap 3).</summary>
     private static FblOptions Options { get; } = new() { SupplementaryEntries = HelmFolderEntries.Of };
@@ -94,7 +92,7 @@ public sealed class HelmBody : IDisposable
 
     public void Dispose()
     {
-        _watcher?.Dispose();
+        FolderWatcher?.Dispose();
         _body.Changed -= OnSettled;
         _body.Dispose();
     }

@@ -29,7 +29,7 @@ public static class ServiceCollectionAddHelmChartsExtension
         // One store per host: it holds one chart per registered root and owns the watcher
         // that keeps each of them true.
         services.AddSingleton<HelmChartReader>();
-        services.AddSingleton<HelmChartStore>(provider => new HelmChartStore(provider.GetRequiredService<HelmChartReader>()));
+        services.AddSingleton(provider => new HelmChartStore(provider.GetRequiredService<HelmChartReader>()));
         services.AddSingleton<IHelmChartStore>(provider => provider.GetRequiredService<HelmChartStore>());
 
         services.AddSingleton<HelmElementMapper>();

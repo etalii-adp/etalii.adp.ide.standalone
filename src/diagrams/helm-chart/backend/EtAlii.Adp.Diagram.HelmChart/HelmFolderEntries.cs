@@ -1,10 +1,12 @@
+using EtAlii.Adp.Specification.Fbl;
+
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
 namespace EtAlii.Adp.Diagram.HelmChart;
 
 /// <summary>
 /// The directories of a chart folder the plugin needs and no file rule can select, handed to the folder body
-/// as supplementary entries (<see cref="EtAlii.Adp.Specification.Fbl.FblOptions.SupplementaryEntries"/>): each a
+/// as supplementary entries (<see cref="FblOptions.SupplementaryEntries"/>): each a
 /// path relative to the folder ending in <c>/</c>, with no bytes.
 /// </summary>
 /// <remarks>
