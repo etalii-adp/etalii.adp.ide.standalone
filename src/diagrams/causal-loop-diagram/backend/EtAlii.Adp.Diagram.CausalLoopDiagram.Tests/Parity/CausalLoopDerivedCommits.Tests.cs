@@ -242,9 +242,8 @@ public class CausalLoopDerivedCommitsTests
         var history = new RecordingHistory();
         var properties = new CausalLoopContextPropertyProvider(history, new CausalLoopMemoryStore { [Path] = text });
         var result = await properties.SetAsync(Target(elementId), propertyId, value, TestContext.Current.CancellationToken);
-        return history.Take() is { } command
-            ? $"dispatches {Json(command)}"
-            : result.IsSuccess ? "unchanged" : $"refused: {result.Error}";
+        if (history.Take() is { } command) return $"dispatches {Json(command)}";
+        return result.IsSuccess ? "unchanged" : $"refused: {result.Error}";
     }
 
     private static async Task<ContextInputRequest?> DialogAsync(string text, string elementId, string actionId) =>

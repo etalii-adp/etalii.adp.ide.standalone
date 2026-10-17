@@ -495,7 +495,7 @@ internal static class HandWrittenCausalLoop
         model.Links.FirstOrDefault(candidate => candidate.From == link.From && candidate.To == link.To)?.Flipped == true;
 
     /// <summary>The shortest cycle through a variable, so a claimed loop starts from something real.</summary>
-    public static IReadOnlyList<string> LoopThrough(CausalLoopModel model, string variable) =>
+    private static IReadOnlyList<string> LoopThrough(CausalLoopModel model, string variable) =>
         CycleFinder.Find(model).Cycles
             .Where(cycle => cycle.Contains(variable, StringComparer.Ordinal))
             .OrderBy(cycle => cycle.Count)
