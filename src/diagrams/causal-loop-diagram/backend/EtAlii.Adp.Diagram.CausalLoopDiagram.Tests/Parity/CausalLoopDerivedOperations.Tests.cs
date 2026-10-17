@@ -1,30 +1,37 @@
-using System.Globalization;
+using EtAlii.Adp.Context;
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
-using EtAlii.Adp.Specification.Disl;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.CausalLoopDiagram.Tests.Parity;
 
 /// <summary>
-/// Each operation of the bundled definition, run by the DISL interpreter with its <c>on: connect</c> hooks
-/// and written through <see cref="CausalLoopDefinition.Apply"/>, writes the bytes the module's command for
-/// that menu entry writes, or is refused with its sentence (causal-loop-disl-fbl Requirements 5.1, 5.5 and
-/// 5.6): for every document of the parity corpus and every element an operation applies to.
+/// Each menu entry and gesture that now runs the definition's operation writes the bytes the hand-written command
+/// wrote, or is refused with its sentence (causal-loop-disl-fbl Requirements 3.5, 5.6 and 7.2): the providers are
+/// driven as the host drives them, the command they dispatch is run, and what it writes is held to what
+/// <see cref="HandWrittenCausalLoop.Commit"/>'s command writes, for every document of the parity corpus and every
+/// element an entry applies to.
 /// </summary>
 /// <remarks>
-/// The commands are what the menus dispatch today; this holds them to the definition they are derived from,
-/// so that what stays code - the checks before a write, the next free name - says what the definition says.
-/// An operation the menu offers as unavailable, such as making a positive link positive, is not run.
+/// <para>
+/// A document whose variables share a name made the hand-written claim throw before it dispatched (finding A7), so
+/// it has no claim to compare; the converted tool answers it, which the transcript records.
+/// </para>
+/// <para>
+/// Making a link positive or negative and renaming a loop dispatch the records they always did; the operations
+/// they are derived from are held to those records here as well, except where the menu offers one as unavailable.
+/// </para>
 /// </remarks>
 public class CausalLoopDerivedOperationsTests
 {
     private const string Path = "derived.cld";
+    private const string Nobody = "nobody";
 
     public static TheoryData<string> Documents() => [.. CausalLoopTranscript.Corpus()];
 
     [Theory]
     [MemberData(nameof(Documents))]
-    public async Task EveryOperation_WritesWhatItsCommandWrites(string relative)
+    public async Task EveryEntry_WritesWhatTheHandWrittenCommandWrote(string relative)
     {
         // Arrange.
         var text = await File.ReadAllTextAsync(System.IO.Path.Combine(CausalLoopTranscript.SourceFolder, relative), TestContext.Current.CancellationToken);
@@ -32,116 +39,112 @@ public class CausalLoopDerivedOperationsTests
         var compared = 0;
         var differences = new List<string>();
 
-        foreach ((string operation, string? target, DislInvocation? invocation, ICommand command) in Cases(model))
+        foreach ((string entry, Func<Task<ICommand?>> dispatch, ICommand? handWritten) in Cases(text, model))
         {
+            // The hand-written provider threw before it dispatched (finding A7): nothing to compare.
+            if (handWritten is null) continue;
+
             // Act.
-            var derived = Derived(text, operation, target, invocation);
-            var commanded = await Commanded(text, command);
+            var dispatched = await dispatch() ?? throw new InvalidOperationException($"{entry} dispatched nothing.");
+            var derived = await Written(text, dispatched);
+            var expected = await Written(text, handWritten);
 
             // Assert.
-            if (derived is null) continue;
             compared++;
-            if (derived != commanded) differences.Add($"{operation} on {target ?? "the diagram"}:\nthe definition {derived}\nthe command    {commanded}");
+            if (derived != expected) differences.Add($"{entry}:\nthe definition  {derived}\nthe hand-written {expected}");
         }
 
         Assert.True(differences.Count == 0, $"{relative}:\n{string.Join("\n\n", differences)}");
-        Assert.True(compared >= 5, $"{relative}: only {compared} operations were compared.");
+        Assert.True(compared >= 5, $"{relative}: only {compared} entries were compared.");
     }
 
-    /// <summary>Every operation, on every element it applies to, with the command its menu entry dispatches.</summary>
-    private static IEnumerable<(string Operation, string? Target, DislInvocation? Invocation, ICommand Command)> Cases(CausalLoopModel model)
+    /// <summary>Every entry, on every element it applies to: how the host reaches it, and the command the hand-written provider dispatched for it.</summary>
+    private static IEnumerable<(string Entry, Func<Task<ICommand?>> Dispatch, ICommand? HandWritten)> Cases(string text, CausalLoopModel model)
     {
-        (string variableId, string variableLabel) = CausalLoopEdits.NextVariableName(model);
-        yield return ("addVariableHere", null, null, new AddVariableCommand(Path, variableId, variableLabel));
+        (string variableId, string variableLabel) = CausalLoopWriter.NextVariableName(model);
+        yield return ("add variable", () => Executed(text, "", CausalLoopContextActionProvider.AddVariableActionId), new AddVariableCommand(Path, variableId, variableLabel));
 
         var names = model.Variables.Select(variable => variable.Id).Distinct(StringComparer.Ordinal).ToList();
-
         foreach (var from in names)
         {
-            // A document whose variables share a name throws before the menu dispatches (finding A7), so it has no claim to compare.
-            if (LoopThrough(model, from) is { } through) yield return ("claimLoop", $"variable:{from}", Parameters(("identifier", "R77")), new AddLoopCommand(Path, "R77", "R77", through));
-            foreach (var to in names.Append("nobody"))
+            var variable = $"variable:{from}";
+            yield return Committed(text, model, variable, CausalLoopContextActionProvider.AddLoopActionId, "R77");
+            foreach (var to in names.Append(Nobody))
             {
-                yield return ("addLink", $"variable:{from}", Parameters(("to", to)), new AddLinkCommand(Path, from, to, CausalLoopPolarity.Positive));
-                if (to != "nobody") yield return ("connectLink", null, Parameters(("from", from), ("to", to)), new AddLinkCommand(Path, from, to, CausalLoopPolarity.Positive));
+                yield return Committed(text, model, variable, CausalLoopContextActionProvider.AddLinkActionId, to);
+                yield return Committed(text, model, GestureIds.Relation(from, to), CausalLoopContextActionProvider.ConnectActionId, "");
             }
         }
 
-        foreach (var link in model.Links)
+        yield return Committed(text, model, $"variable:{Nobody}", CausalLoopContextActionProvider.AddLinkActionId, names.FirstOrDefault() ?? Nobody);
+
+        var links = model.Links.Select(link => (link.From, link.To, link.Polarity)).Append((Nobody, "nowhere", CausalLoopPolarity.Unstated));
+        foreach ((string from, string to, CausalLoopPolarity polarity) in links)
         {
-            yield return ("makePositive", link.Id, null, new SetLinkPolarityCommand(Path, link.From, link.To, CausalLoopPolarity.Positive));
-            yield return ("makeNegative", link.Id, null, new SetLinkPolarityCommand(Path, link.From, link.To, CausalLoopPolarity.Negative));
-            yield return ("toggleDelay", link.Id, null, new SetLinkDelayCommand(Path, link.From, link.To, !link.Delayed));
-            yield return ("flipCurve", link.Id, null, new SetLinkCurvatureCommand(Path, link.From, link.To, !link.Flipped));
+            var link = CausalLoopEdits.LinkId(from, to);
+            yield return Committed(text, model, link, CausalLoopContextActionProvider.ToggleDelayActionId, "");
+            yield return Committed(text, model, link, CausalLoopContextActionProvider.FlipCurvatureActionId, "");
+            if (polarity != CausalLoopPolarity.Positive) yield return Operated("makePositive", link, new SetLinkPolarityCommand(Path, from, to, CausalLoopPolarity.Positive));
+            if (polarity != CausalLoopPolarity.Negative) yield return Operated("makeNegative", link, new SetLinkPolarityCommand(Path, from, to, CausalLoopPolarity.Negative));
         }
 
         foreach (var loop in model.Loops)
         {
-            yield return ("renameLoop", loop.Id, Parameters(("title", "Derived title")), new SetLoopNameCommand(Path, loop.Identifier, "Derived title"));
+            yield return ($"renameLoop on {loop.Id}",
+                () => Task.FromResult<ICommand?>(new RunCausalLoopOperationCommand(Path, "renameLoop", loop.Id, Parameters(("title", "Derived title")))),
+                new SetLoopNameCommand(Path, loop.Identifier, "Derived title"));
         }
     }
 
-    private static DislInvocation Parameters(params (string Name, object? Value)[] values) =>
-        new(Parameters: values.ToDictionary(value => value.Name, value => value.Value, StringComparer.Ordinal));
-
-    /// <summary>
-    /// The text the operation leaves, or its refusal, or what it threw; null for an operation the menu
-    /// offers as unavailable, or for an element the document does not hold.
-    /// </summary>
-    private static string? Derived(string text, string operation, string? target, DislInvocation? invocation)
+    /// <summary>An entry committed with <paramref name="value"/> on <paramref name="elementId"/>, and the hand-written command for it; none where that threw (finding A7).</summary>
+    private static (string, Func<Task<ICommand?>>, ICommand?) Committed(string text, CausalLoopModel model, string elementId, string actionId, string value)
     {
-        var body = CausalLoopBody.Parse(text);
+        ICommand? handWritten;
         try
         {
-            var diagram = body.Working();
-            var self = target is null ? null : diagram.ElementById(target);
-            if (target is not null && self is null) return null;
-            if (invocation?.Parameters is { } parameters && operation == "connectLink")
-            {
-                // The gesture names its ends by the variables written with those names.
-                invocation = invocation with
-                {
-                    Parameters = parameters.ToDictionary(parameter => parameter.Key, parameter => (object?)CausalLoopDefinition.VariableOf(diagram, (string)parameter.Value!), StringComparer.Ordinal),
-                };
-            }
-
-            var ids = new Ids();
-            var transaction = OperationInterpreter.Run(CausalLoopDefinition.Specification, operation, diagram, self, ids, invocation, CausalLoopDefinition.EditEnv);
-            if (!transaction.WasApplied)
-            {
-                return OperationInterpreter.AppliesTo(CausalLoopDefinition.Specification, operation, self) && IsUnavailable(operation, self)
-                    ? null
-                    : $"refused: {transaction.Refusal}";
-            }
-
-            // The host runs the hooks of every relation an operation drew, in the same edit.
-            var changes = new List<DislChange>(transaction.Changes);
-            foreach (var connect in transaction.Changes.OfType<DislChange.Connect>())
-            {
-                var hooked = HookRunner.AfterConnect(CausalLoopDefinition.Specification, diagram.ElementById(connect.Id)!, ids, CausalLoopDefinition.EditEnv);
-                if (!hooked.WasApplied) return $"refused: {hooked.Refusal}";
-                changes.AddRange(hooked.Changes);
-            }
-
-            var outcome = CausalLoopDefinition.Apply(body, new DislTransaction(changes, [], null));
-            return outcome.WasApplied ? body.Text : $"refused: {outcome.Refusal}";
+            handWritten = HandWrittenCausalLoop.Commit(model, Path, elementId, actionId, value);
         }
-        catch (ArgumentException exception)
+        catch (ArgumentException)
         {
-            return $"throws {exception.GetType().Name}";
+            handWritten = null;
         }
+
+        return ($"{actionId} on {elementId} = '{value}'", () => CommittedAsync(text, elementId, actionId, value), handWritten);
     }
 
-    /// <summary>Whether the menu offers <paramref name="operation"/> on <paramref name="self"/> as unavailable: an <c>unavailable</c> reason holds.</summary>
-    private static bool IsUnavailable(string operation, DislElement? self) => operation switch
+    /// <summary>The definition's operation run on <paramref name="link"/>, and the record its menu entry dispatches.</summary>
+    private static (string, Func<Task<ICommand?>>, ICommand?) Operated(string operation, string link, ICommand dispatched) =>
+        ($"{operation} on {link}", () => Task.FromResult<ICommand?>(new RunCausalLoopOperationCommand(Path, operation, link, Parameters())), dispatched);
+
+    private static Dictionary<string, string> Parameters(params (string Name, string Value)[] values) =>
+        values.ToDictionary(value => value.Name, value => value.Value, StringComparer.Ordinal);
+
+    /// <summary>The command the action provider dispatches when <paramref name="actionId"/> is committed on <paramref name="elementId"/>.</summary>
+    private static async Task<ICommand?> CommittedAsync(string text, string elementId, string actionId, string value)
     {
-        "makePositive" => self?.Attributes.GetValueOrDefault("polarity") as string == "positive",
-        "makeNegative" => self?.Attributes.GetValueOrDefault("polarity") as string == "negative",
-        _ => false,
-    };
+        (CausalLoopContextActionProvider actions, RecordingHistory history) = Provider(text);
+        await actions.CommitAsync(Target(elementId), actionId, value, "", TestContext.Current.CancellationToken);
+        return history.Take();
+    }
+
+    /// <summary>The command the action provider dispatches when <paramref name="actionId"/> is run on <paramref name="elementId"/>.</summary>
+    private static async Task<ICommand?> Executed(string text, string elementId, string actionId)
+    {
+        (CausalLoopContextActionProvider actions, RecordingHistory history) = Provider(text);
+        await actions.ExecuteAsync(Target(elementId), actionId, TestContext.Current.CancellationToken);
+        return history.Take();
+    }
+
+    private static (CausalLoopContextActionProvider Actions, RecordingHistory History) Provider(string text)
+    {
+        var history = new RecordingHistory();
+        return (new CausalLoopContextActionProvider(new CausalLoopMemoryStore { [Path] = text }, history, new DiagramViewportRegistry()), history);
+    }
+
+    private static ContextTarget Target(string elementId) => ContextTarget.ForElement(Path, elementId, origin: Diagram.CausalLoop.Origin);
 
     /// <summary>The text the command leaves, or its refusal, or what it threw.</summary>
-    private static async Task<string> Commanded(string text, ICommand command)
+    private static async Task<string> Written(string text, ICommand command)
     {
         var store = new CausalLoopMemoryStore { [Path] = text };
         var token = TestContext.Current.CancellationToken;
@@ -149,6 +152,7 @@ public class CausalLoopDerivedOperationsTests
         {
             var result = command switch
             {
+                RunCausalLoopOperationCommand run => await new RunCausalLoopOperationCommandHandler(store).ExecuteAsync(run, token),
                 AddVariableCommand add => await new AddVariableCommandHandler(store).ExecuteAsync(add, token),
                 AddLoopCommand add => await new AddLoopCommandHandler(store).ExecuteAsync(add, token),
                 AddLinkCommand add => await new AddLinkCommandHandler(store).ExecuteAsync(add, token),
@@ -164,29 +168,5 @@ public class CausalLoopDerivedOperationsTests
         {
             return $"throws {exception.GetType().Name}";
         }
-    }
-
-    /// <summary>The shortest cycle through a variable, or the variable alone, as the provider proposes a claimed loop; null where the provider throws.</summary>
-    private static List<string>? LoopThrough(CausalLoopModel model, string variable)
-    {
-        try
-        {
-            return CycleFinder.Find(model).Cycles
-                .Where(cycle => cycle.Contains(variable, StringComparer.Ordinal))
-                .OrderBy(cycle => cycle.Count)
-                .FirstOrDefault()?.ToList() ?? [variable];
-        }
-        catch (ArgumentException)
-        {
-            return null;
-        }
-    }
-
-    /// <summary>Ids for what an operation creates: unique on the working diagram, and never written.</summary>
-    private sealed class Ids : IIdSource
-    {
-        private int _next;
-
-        public string Next(string type) => string.Create(CultureInfo.InvariantCulture, $"{type}:derived-{++_next}");
     }
 }

@@ -1,4 +1,3 @@
-using System.Globalization;
 using EtAlii.Adp.History;
 using EtAlii.Adp.Specification.Disl;
 
@@ -72,27 +71,6 @@ public static class CausalLoopEdits
 
     /// <summary>The definition's id of the loop <paramref name="identifier"/>.</summary>
     public static string LoopId(string identifier) => $"loop:{identifier}";
-
-    /// <summary>
-    /// A free (id, label) pair for a variable nobody named - what the toolbox drop and the canvas "Add
-    /// variable" reach for: the lowest number no variable is named for, as the definition's
-    /// <c>addVariableHere</c> names it.
-    /// </summary>
-    public static (string Id, string Label) NextVariableName(CausalLoopModel model)
-    {
-        ArgumentNullException.ThrowIfNull(model);
-
-        for (var number = 1; number < 100000; number++)
-        {
-            var id = string.Create(CultureInfo.InvariantCulture, $"variable{number}");
-            if (!model.Declares(id))
-            {
-                return (id, string.Create(CultureInfo.InvariantCulture, $"Variable {number}"));
-            }
-        }
-
-        return ("variable", "Variable");
-    }
 
     /// <summary>The stored form of <paramref name="polarity"/>: none for one nobody wrote.</summary>
     public static string? Stored(CausalLoopPolarity polarity) => polarity switch

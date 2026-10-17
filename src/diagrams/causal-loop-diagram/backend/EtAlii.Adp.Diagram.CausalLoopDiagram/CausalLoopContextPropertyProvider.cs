@@ -1,7 +1,7 @@
-using System.Globalization;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
+using EtAlii.Adp.Specification.Disl;
 
 namespace EtAlii.Adp.Diagram.CausalLoopDiagram;
 
@@ -17,14 +17,11 @@ namespace EtAlii.Adp.Diagram.CausalLoopDiagram;
 /// rule of its own about them.
 /// </para>
 /// <para>
-/// <b>A weight is recorded and never evaluated</b> (Requirement 8.3). It is parsed only far
-/// enough to refuse text the document could not carry back, and blank clears it.
-/// </para>
-/// <para>
-/// <b>An edit is still the module's command</b>, refused before it is made where the value could
-/// not be written, and dispatched through the history stack until the body is written through the binding.
-/// A loop's membership is accepted only as one of the cycles <see cref="CycleFinder"/> finds through its
-/// variables that no other loop claims, or its own.
+/// <b>So is what an edited row does</b> (causal-loop-disl-fbl Requirement 7.2): the row's form item at commit,
+/// through <see cref="FormCommit"/>, refuses the value or says what it writes - a weight's and a polarity's
+/// <c>parse</c>, a loop's members chosen among the item's <c>options</c> and judged by its <c>validate</c> - and
+/// an identifier is judged by the definition's change rules. What is written is then dispatched as the
+/// module's command for that row, through the history stack, as it always was.
 /// </para>
 /// <para>
 /// The scope, the could-not-be-read guard and the dispatch are the shared frame's (code-structure
@@ -71,9 +68,6 @@ public sealed class CausalLoopContextPropertyProvider(
     /// <summary>The cycle the loop runs through.</summary>
     public const string LoopVariablesProperty = "causal-loop.loop-variables";
 
-    /// <summary>How a cycle is written in the "Runs through" row: its variables, in order.</summary>
-    private const string CycleSeparator = " → ";
-
     /// <summary>The value shown where the arithmetic cannot be taken.</summary>
     internal const string Undecidable = "undecidable";
 
@@ -94,49 +88,38 @@ public sealed class CausalLoopContextPropertyProvider(
         ArgumentNullException.ThrowIfNull(target);
         ArgumentNullException.ThrowIfNull(model);
 
-        // Refused before any command is made, so the message names the value the user typed
-        // rather than reporting a command failure - and so nothing unreadable is ever written.
-        if (propertyId == LinkWeightProperty && ParseWeight(value) is null && value.Trim().Length > 0)
+        // The row's form item at commit: refused before any command is made, so the message names the value
+        // the user typed rather than reporting a command failure, and nothing unreadable is ever written.
+        var entry = documents.GetOrLoad(target.ResolvedFullPath);
+        var committed = CausalLoopDefinition.Row(entry.Document, target.ElementId, propertyId, value);
+        if (committed is { WasApplied: false })
         {
-            return DiagramPropertyChange.Refused(
-                $"'{value}' is not a number. A weight is an annotation this diagram records and never evaluates; leave it empty to remove it.");
+            return DiagramPropertyChange.Refused(committed.Refusal!);
         }
 
-        if (propertyId == LinkPolarityProperty && ParsePolarity(value) is null)
+        // The identifier is written as one word on the statement line: the definition's variableNameUsable says which.
+        // A name already taken is refused by the command, as it always was, so the record dispatched stays today's.
+        if (propertyId == VariableIdProperty && CausalLoopDefinition.ChangeRefusal(entry, target.ElementId, "name", value, "variableNameUsable") is { } unusable)
         {
-            return DiagramPropertyChange.Refused($"'{value}' is not a polarity a link can state.");
+            return DiagramPropertyChange.Refused(unusable);
         }
 
-        if (propertyId == LoopVariablesProperty && LoopOf(model, target.ElementId) is { } chosenFor)
+        // Choosing the members a loop already runs through changes nothing, so it lands nothing on the undo stack.
+        if (propertyId == LoopVariablesProperty && committed is not null && LoopOf(model, target.ElementId) is { } chosenFor
+            && Written(committed, "members") is IReadOnlyList<object?> chosen && chosen.SequenceEqual(chosenFor.Variables))
         {
-            if (CycleChosen(model, chosenFor, value) is null)
-            {
-                return DiagramPropertyChange.Refused(
-                    $"'{value}' is not a cycle this loop can run through: choose one the arrows form through its variables that no other loop claims.");
-            }
-
-            // Choosing what is already there changes nothing, so it lands nothing on the undo stack.
-            if (value == CycleText(chosenFor.Variables))
-            {
-                return DiagramPropertyChange.Unchanged;
-            }
-        }
-
-        // The identifier is written as one word on the statement line, so it cannot hold
-        // whitespace or a quote; the label may, because it is quoted. Refused before writing.
-        if (propertyId == VariableIdProperty && (value.Length == 0 || value.Any(char.IsWhiteSpace) || value.Contains('"', StringComparison.Ordinal)))
-        {
-            return DiagramPropertyChange.Refused(CausalLoopEdits.UnusableName);
+            return DiagramPropertyChange.Unchanged;
         }
 
         // Through the project's history and out through the delta stream - never written here.
-        return CommandFor(model, target, propertyId, value) is { } command
+        return committed is not null && CommandFor(model, target, propertyId, committed) is { } command
             ? DiagramPropertyChange.By(command)
             : DiagramPropertyChange.Refused($"'{propertyId}' cannot be edited on this selection.");
     }
 
+    /// <summary>The module's command that writes what <paramref name="committed"/> writes to the row <paramref name="propertyId"/>.</summary>
     private static ICommand? CommandFor(
-        CausalLoopModel model, ContextTarget target, string propertyId, string value)
+        CausalLoopModel model, ContextTarget target, string propertyId, DislTransaction committed)
     {
         var body = target.ResolvedFullPath;
 
@@ -144,9 +127,9 @@ public sealed class CausalLoopContextPropertyProvider(
         {
             return propertyId switch
             {
-                VariableLabelProperty => new SetVariableLabelCommand(body, variable.Id, value),
+                VariableLabelProperty => new SetVariableLabelCommand(body, variable.Id, Text(committed, "label")),
                 // The identifier is what links and loops refer to, so restating it carries them.
-                VariableIdProperty => new RenameVariableCommand(body, variable.Id, value),
+                VariableIdProperty => new RenameVariableCommand(body, variable.Id, Text(committed, "name")),
                 _ => null,
             };
         }
@@ -155,12 +138,15 @@ public sealed class CausalLoopContextPropertyProvider(
         {
             return propertyId switch
             {
-                LinkLabelProperty => new SetLinkLabelCommand(body, link.From, link.To, value),
-                LinkWeightProperty => new SetLinkWeightCommand(body, link.From, link.To, ParseWeight(value)),
-                LinkDelayedProperty => new SetLinkDelayCommand(
-                    body, link.From, link.To, string.Equals(value, "true", StringComparison.OrdinalIgnoreCase)),
-                LinkPolarityProperty when ParsePolarity(value) is { } polarity =>
-                    new SetLinkPolarityCommand(body, link.From, link.To, polarity),
+                LinkLabelProperty => new SetLinkLabelCommand(body, link.From, link.To, Text(committed, "note")),
+                LinkWeightProperty => new SetLinkWeightCommand(body, link.From, link.To, Written(committed, "weight") as double?),
+                LinkDelayedProperty => new SetLinkDelayCommand(body, link.From, link.To, Written(committed, "delayed") is true),
+                LinkPolarityProperty => new SetLinkPolarityCommand(body, link.From, link.To, Written(committed, "polarity") switch
+                {
+                    "positive" => CausalLoopPolarity.Positive,
+                    "negative" => CausalLoopPolarity.Negative,
+                    _ => CausalLoopPolarity.Unstated,
+                }),
                 _ => null,
             };
         }
@@ -169,19 +155,26 @@ public sealed class CausalLoopContextPropertyProvider(
         {
             return propertyId switch
             {
-                LoopNameProperty => new SetLoopNameCommand(body, loop.Identifier, value),
+                LoopNameProperty => new SetLoopNameCommand(body, loop.Identifier, Text(committed, "title")),
 
                 // The identifier is the claim, so setting it is how an author accepts the
                 // arithmetic - or insists on their own reading.
-                LoopIdentifierProperty => new SetLoopIdentifierCommand(body, loop.Identifier, value),
-                LoopVariablesProperty when CycleChosen(model, loop, value) is { } cycle =>
-                    new SetLoopMembershipCommand(body, loop.Identifier, cycle),
+                LoopIdentifierProperty => new SetLoopIdentifierCommand(body, loop.Identifier, Text(committed, "identifier")),
+                LoopVariablesProperty when Written(committed, "members") is IReadOnlyList<object?> members =>
+                    new SetLoopMembershipCommand(body, loop.Identifier, [.. members.Select(member => member as string ?? "")]),
                 _ => null,
             };
         }
 
         return null;
     }
+
+    /// <summary>The value <paramref name="committed"/> writes to <paramref name="attribute"/>; null for none.</summary>
+    private static object? Written(DislTransaction committed, string attribute) =>
+        CausalLoopDefinition.Writes(committed, attribute, out var value) ? value : null;
+
+    /// <summary>The text <paramref name="committed"/> writes to <paramref name="attribute"/>; empty for none.</summary>
+    private static string Text(DislTransaction committed, string attribute) => Written(committed, attribute) as string ?? "";
 
     private static CausalLoopVariable? VariableOf(CausalLoopModel model, string? elementId) =>
         CausalLoopSelection.VariableOf(elementId) is { } id
@@ -197,55 +190,4 @@ public sealed class CausalLoopContextPropertyProvider(
         CausalLoopSelection.LoopOf(elementId) is { } identifier
             ? model.Loops.FirstOrDefault(loop => loop.Identifier == identifier)
             : null;
-
-    /// <summary>The cycle a "Runs through" value names, or null where the row did not offer it.</summary>
-    private static IReadOnlyList<string>? CycleChosen(CausalLoopModel model, CausalLoopLoop loop, string value) =>
-        MembershipChoices(model, loop).FirstOrDefault(choice => choice.Text == value).Cycle;
-
-    /// <summary>
-    /// What a loop may run through, each with the text the row shows for it: the loop's own cycle
-    /// first, as the author wrote it, then each elementary cycle through any of its variables that
-    /// no loop claims yet, in the cycle finder's stable order.
-    /// </summary>
-    /// <remarks>
-    /// The current membership is offered even where the arrows no longer close it, so the row's
-    /// value is always one of its choices; the validator reports that case separately. A found
-    /// cycle that is the loop's own, entered at another variable, is the same loop and is not
-    /// offered twice.
-    /// </remarks>
-    private static List<(string Text, IReadOnlyList<string> Cycle)> MembershipChoices(CausalLoopModel model, CausalLoopLoop loop)
-    {
-        List<(string Text, IReadOnlyList<string> Cycle)> choices = [(CycleText(loop.Variables), loop.Variables)];
-
-        var claimed = model.Loops
-            .Select(other => CycleFinder.CanonicalSignature(other.Variables))
-            .ToHashSet(StringComparer.Ordinal);
-        var members = loop.Variables.ToHashSet(StringComparer.Ordinal);
-
-        foreach (var cycle in CycleFinder.Find(model).Cycles)
-        {
-            if (cycle.Any(members.Contains) && !claimed.Contains(CycleFinder.CanonicalSignature(cycle)))
-            {
-                choices.Add((CycleText(cycle), cycle));
-            }
-        }
-
-        return choices;
-    }
-
-    private static string CycleText(IReadOnlyList<string> variables) => string.Join(CycleSeparator, variables);
-
-    /// <summary>The weight a row was given, or null for none - which includes blank.</summary>
-    private static double? ParseWeight(string value) =>
-        double.TryParse(value.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out var weight)
-            ? weight
-            : null;
-
-    private static CausalLoopPolarity? ParsePolarity(string value) => value.Trim().ToUpperInvariant() switch
-    {
-        "POSITIVE" or "+" or "S" => CausalLoopPolarity.Positive,
-        "NEGATIVE" or "-" or "O" => CausalLoopPolarity.Negative,
-        "UNSTATED" or "" => CausalLoopPolarity.Unstated,
-        _ => null,
-    };
 }

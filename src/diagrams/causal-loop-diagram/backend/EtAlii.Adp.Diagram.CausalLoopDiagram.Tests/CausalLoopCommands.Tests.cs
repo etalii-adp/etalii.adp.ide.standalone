@@ -245,8 +245,8 @@ public class CausalLoopCommandsTests : IDisposable
     public async Task ALinkToAnUndeclaredVariable_IsRefusedRatherThanWritten()
     {
         // Act.
-        var result = await new AddLinkCommandHandler(_store).ExecuteAsync(
-            new AddLinkCommand(_path, "population", "nowhere", CausalLoopPolarity.Positive),
+        var result = await new RunCausalLoopOperationCommandHandler(_store).ExecuteAsync(
+            new RunCausalLoopOperationCommand(_path, "addLink", "variable:population", new Dictionary<string, string>(StringComparer.Ordinal) { ["to"] = "nowhere" }),
             TestContext.Current.CancellationToken);
 
         // Assert.
@@ -288,8 +288,8 @@ public class CausalLoopCommandsTests : IDisposable
         var path = WriteFresh("causal-loop 1\r\n\r\nvariable a\r\nvariable b\r\nlink a -> b +\r\n");
 
         // Act.
-        var result = await new AddLinkCommandHandler(_store).ExecuteAsync(
-            new AddLinkCommand(path, "b", "a", CausalLoopPolarity.Positive), TestContext.Current.CancellationToken);
+        var result = await new RunCausalLoopOperationCommandHandler(_store).ExecuteAsync(
+            new RunCausalLoopOperationCommand(path, "connectLink", null, Ends("b", "a")), TestContext.Current.CancellationToken);
 
         // Assert. A loop is claimed, named R for the reinforcing polarity two positive links give.
         Assert.True(result.IsSuccess, result.Error);
@@ -310,8 +310,8 @@ public class CausalLoopCommandsTests : IDisposable
         var path = WriteFresh("causal-loop 1\r\n\r\nvariable a\r\nvariable b\r\nvariable c\r\nlink a -> b +\r\n");
 
         // Act. b -> c extends the chain without closing a cycle.
-        var result = await new AddLinkCommandHandler(_store).ExecuteAsync(
-            new AddLinkCommand(path, "b", "c", CausalLoopPolarity.Positive), TestContext.Current.CancellationToken);
+        var result = await new RunCausalLoopOperationCommandHandler(_store).ExecuteAsync(
+            new RunCausalLoopOperationCommand(path, "connectLink", null, Ends("b", "c")), TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.True(result.IsSuccess, result.Error);
@@ -327,8 +327,8 @@ public class CausalLoopCommandsTests : IDisposable
             + "link a -> b +\r\nlink b -> a +\r\nlink b -> c +\r\nloop R1 \"\" a b\r\n");
 
         // Act.
-        var result = await new AddLinkCommandHandler(_store).ExecuteAsync(
-            new AddLinkCommand(path, "c", "a", CausalLoopPolarity.Positive), TestContext.Current.CancellationToken);
+        var result = await new RunCausalLoopOperationCommandHandler(_store).ExecuteAsync(
+            new RunCausalLoopOperationCommand(path, "connectLink", null, Ends("c", "a")), TestContext.Current.CancellationToken);
 
         // Assert. R1 untouched; exactly one new loop, over the three-variable cycle.
         Assert.True(result.IsSuccess, result.Error);
@@ -339,18 +339,22 @@ public class CausalLoopCommandsTests : IDisposable
     }
 
     [Fact]
-    public async Task ALoopThroughAnUndeclaredVariable_IsRefusedNamingIt()
+    public async Task ALoopClaimedFromAnUndeclaredVariable_IsRefused()
     {
         // Act.
-        var result = await new AddLoopCommandHandler(_store).ExecuteAsync(
-            new AddLoopCommand(_path, "B1", "wishful", ["population", "nowhere"]),
+        var result = await new RunCausalLoopOperationCommandHandler(_store).ExecuteAsync(
+            new RunCausalLoopOperationCommand(_path, "claimLoop", "variable:nowhere", new Dictionary<string, string>(StringComparer.Ordinal) { ["identifier"] = "B1" }),
             TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.False(result.IsSuccess);
-        Assert.Contains("'nowhere'", result.Error, StringComparison.Ordinal);
+        Assert.Equal(CausalLoopEdits.NoSuchVariable, result.Error);
         Assert.Equal(Corpus, await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken));
     }
+
+    /// <summary>The ends a drawn link names, as the connect gesture answers them.</summary>
+    private static Dictionary<string, string> Ends(string from, string to) =>
+        new(StringComparer.Ordinal) { ["from"] = from, ["to"] = to };
 
     // ---- a loop's membership, on the shipped on-call example --------------------------------
 

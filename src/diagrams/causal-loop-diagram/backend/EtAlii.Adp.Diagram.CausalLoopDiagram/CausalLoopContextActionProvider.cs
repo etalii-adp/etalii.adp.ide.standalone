@@ -1,4 +1,3 @@
-using System.Globalization;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
@@ -18,8 +17,17 @@ namespace EtAlii.Adp.Diagram.CausalLoopDiagram;
 /// rule of its own about them. An id that names no element is offered nothing, as an unknown id always was.
 /// </para>
 /// <para>
-/// <b>What an action does is still the module's command</b>, dispatched through the history stack, until
-/// the body is written through the binding.
+/// <b>So are its dialogs and what they refuse</b>: a dialog is the definition's params form, with its title,
+/// icon, field, initial value and confirming label, and a value is refused by that form's validation; the inline
+/// rename opens on the variable label's <c>editText</c> and is refused by its <c>parse</c> (causal-loop-disl-fbl
+/// Requirement 7.2).
+/// </para>
+/// <para>
+/// <b>What an entry does is the definition's operation</b>, dispatched through the history stack as a
+/// <see cref="RunCausalLoopOperationCommand"/> carrying the target and the answered parameters, except where
+/// the record a row dispatches already says it: a polarity, a rename, a removal. A new variable's name is
+/// the definition's <c>addVariableHere</c>'s, minted where the gesture happens so its position is stored
+/// under it.
 /// </para>
 /// <para>
 /// The scope, discovery on this module's documents, the could-not-be-read guard, the dispatch and the
@@ -114,15 +122,13 @@ public sealed class CausalLoopContextActionProvider(
         // The gestures that need a word from the user ask for one; the rest run.
         return actionId switch
         {
-            AddVariableActionId => AddVariableAsync(target, entry.Model, cancellationToken),
+            AddVariableActionId => AddVariableAsync(target, entry.Document, cancellationToken),
             RenameVariableActionId => AskInline(
                 "Rename variable", "mdi-rename-outline", "Name",
-                LabelOf(entry.Model, target.ElementId), target.ElementId),
-            AddLinkActionId => Ask("Add link", "mdi-arrow-right-thin", "To variable", ""),
-            AddLoopActionId => Ask("Claim a loop", "mdi-sync", "Identifier", NextLoopIdentifier(entry.Model)),
-            RenameLoopActionId => Ask(
-                "Rename loop", "mdi-rename-outline", "Name",
-                entry.Model.Loops.FirstOrDefault(loop => loop.Id == target.ElementId)?.Name ?? ""),
+                CausalLoopDefinition.RenameText(entry, target.ElementId), target.ElementId),
+            AddLinkActionId => Ask(CausalLoopDefinition.Request(entry, "addLink", target.ElementId)),
+            AddLoopActionId => Ask(CausalLoopDefinition.Request(entry, "claimLoop", target.ElementId)),
+            RenameLoopActionId => Ask(CausalLoopDefinition.Request(entry, "renameLoop", target.ElementId)),
             RemoveVariableActionId => Confirm(entry, target),
             ArrangeActionId => ArrangeAsync(target, cancellationToken),
             _ => CommitCommand(target, entry.Model, actionId, "") is { } command
@@ -142,19 +148,15 @@ public sealed class CausalLoopContextActionProvider(
         }
 
         var entry = Load(target);
-
-        return actionId switch
+        var refusal = actionId switch
         {
-            // The label is written quoted, so it may hold spaces but not a quote or a line break,
-            // and it must not be empty - an empty name leaves nothing to read on the variable.
-            RenameVariableActionId when value.Length == 0 || value.Contains('"', StringComparison.Ordinal) || value.Any(char.IsControl) =>
-                ContextValidationResult.Rejected("A name needs at least one character, and cannot contain a quote or a line break."),
-            AddLinkActionId when !entry.Model.Declares(value) =>
-                ContextValidationResult.Rejected($"'{value}' is not a variable in this diagram."),
-            AddLoopActionId when entry.Model.Loops.Any(loop => loop.Identifier == value) =>
-                ContextValidationResult.Rejected("A loop of that identifier is already stated in this diagram."),
-            _ => ContextValidationResult.Accepted,
+            RenameVariableActionId => CausalLoopDefinition.Rename(entry.Document, target.ElementId, value)?.Refusal,
+            AddLinkActionId => CausalLoopDefinition.Refusal(entry, "addLink", "to", value, target.ElementId),
+            AddLoopActionId => CausalLoopDefinition.Refusal(entry, "claimLoop", "identifier", value, target.ElementId),
+            _ => null,
         };
+
+        return refusal is null ? ContextValidationResult.Accepted : ContextValidationResult.Rejected(refusal);
     }
 
     /// <inheritdoc />
@@ -172,23 +174,20 @@ public sealed class CausalLoopContextActionProvider(
         {
             AddVariableActionId => new AddVariableCommand(body, value, value),
             // The visible name is the label, so renaming edits the label - the identifier a link
-            // refers to stays put. It is edited inline, over the variable, rather than in a dialog.
-            RenameVariableActionId when variable is not null => new SetVariableLabelCommand(body, variable, value),
+            // refers to stays put. It is edited inline, over the variable, rather than in a dialog,
+            // and what is written is what the label's parse writes.
+            RenameVariableActionId when variable is not null => new SetVariableLabelCommand(body, variable, RenamedTo(target, value)),
             RemoveVariableActionId when variable is not null => new RemoveVariableCommand(body, variable),
-            AddLinkActionId when variable is not null =>
-                new AddLinkCommand(body, variable, value, CausalLoopPolarity.Positive),
+            AddLinkActionId when variable is not null => Operation(body, "addLink", target.ElementId, ("to", value)),
             ConnectActionId when CausalLoopSelection.RelationOf(target.ElementId) is { } ends =>
-                new AddLinkCommand(body, ends.From, ends.To, CausalLoopPolarity.Positive),
-            AddLoopActionId when variable is not null =>
-                new AddLoopCommand(body, value, value, LoopThrough(model, variable)),
+                Operation(body, "connectLink", null, ("from", ends.From), ("to", ends.To)),
+            AddLoopActionId when variable is not null => Operation(body, "claimLoop", target.ElementId, ("identifier", value)),
             MakePositiveActionId when link is not null =>
                 new SetLinkPolarityCommand(body, link.Value.From, link.Value.To, CausalLoopPolarity.Positive),
             MakeNegativeActionId when link is not null =>
                 new SetLinkPolarityCommand(body, link.Value.From, link.Value.To, CausalLoopPolarity.Negative),
-            ToggleDelayActionId when link is not null =>
-                new SetLinkDelayCommand(body, link.Value.From, link.Value.To, !IsDelayed(model, link.Value)),
-            FlipCurvatureActionId when link is not null =>
-                new SetLinkCurvatureCommand(body, link.Value.From, link.Value.To, !IsFlipped(model, link.Value)),
+            ToggleDelayActionId when link is not null => Operation(body, "toggleDelay", target.ElementId),
+            FlipCurvatureActionId when link is not null => Operation(body, "flipCurve", target.ElementId),
             RemoveLinkActionId when link is not null =>
                 new RemoveLinkCommand(body, link.Value.From, link.Value.To),
             RenameLoopActionId when loop is not null => new SetLoopNameCommand(body, loop, value),
@@ -197,9 +196,18 @@ public sealed class CausalLoopContextActionProvider(
         };
     }
 
-    private static ValueTask<ContextExecutionResult> Ask(string title, string icon, string field, string initial) =>
-        ValueTask.FromResult<ContextExecutionResult>(
-            new ContextExecutionRequiresInput(new ContextInputRequest(title, icon, field, initial, "Apply")));
+    /// <summary>The definition's operation <paramref name="operation"/> on <paramref name="target"/>, with the answered <paramref name="parameters"/>.</summary>
+    private static RunCausalLoopOperationCommand Operation(string body, string operation, string? target, params (string Name, string Value)[] parameters) =>
+        new(body, operation, target, parameters.ToDictionary(parameter => parameter.Name, parameter => parameter.Value, StringComparer.Ordinal));
+
+    /// <summary>The label the variable label's <c>parse</c> writes for <paramref name="value"/>; the value itself where it writes none, for the command to judge.</summary>
+    private string RenamedTo(ContextTarget target, string value) =>
+        CausalLoopDefinition.Rename(Load(target).Document, target.ElementId, value) is { } renamed && CausalLoopDefinition.Writes(renamed, "label", out var label) && label is string text
+            ? text
+            : value;
+
+    private static ValueTask<ContextExecutionResult> Ask(ContextInputRequest request) =>
+        ValueTask.FromResult<ContextExecutionResult>(new ContextExecutionRequiresInput(request));
 
     /// <summary>
     /// An inline prompt: the same input, marked to open over the element whose visible text it is
@@ -209,21 +217,15 @@ public sealed class CausalLoopContextActionProvider(
         ValueTask.FromResult<ContextExecutionResult>(
             new ContextExecutionRequiresInput(new ContextInputRequest(title, icon, field, initial, "Apply", elementId)));
 
-    /// <summary>The visible name a variable id names, for seeding the inline rename with what is there.</summary>
-    private static string LabelOf(CausalLoopModel model, string? elementId) =>
-        CausalLoopSelection.VariableOf(elementId) is { } id
-            ? model.Variables.FirstOrDefault(variable => variable.Id == id)?.Display ?? ""
-            : "";
-
     /// <summary>
-    /// Adds a variable nobody named, at the point it was dropped or right-clicked. The name is the
-    /// module's own next free one, so no dialog interrupts the gesture; the position is authored
+    /// Adds a variable nobody named, at the point it was dropped or right-clicked. The name is the one the
+    /// definition's <c>addVariableHere</c> gives, so no dialog interrupts the gesture; the position is authored
     /// through the session where there is a registration to write it into, and left to the layout
     /// where there is not.
     /// </summary>
-    private async ValueTask<ContextExecutionResult> AddVariableAsync(ContextTarget target, CausalLoopModel model, CancellationToken cancellationToken)
+    private async ValueTask<ContextExecutionResult> AddVariableAsync(ContextTarget target, CausalLoopBody body, CancellationToken cancellationToken)
     {
-        (string id, string label) = CausalLoopEdits.NextVariableName(model);
+        (string id, string label) = CausalLoopDefinition.NewVariable(body);
 
         if (CausalLoopSelection.PlacementPoint(target.ElementId) is { } point &&
             sessions.Find(target.WatchId, target.ResolvedFullPath) is CausalLoopSession session)
@@ -273,33 +275,5 @@ public sealed class CausalLoopContextActionProvider(
 
         var refusal = await session.ArrangeAsync(cancellationToken);
         return refusal.Length == 0 ? new ContextExecutionCompleted() : new ContextExecutionFailed(refusal);
-    }
-
-    private static bool IsDelayed(CausalLoopModel model, (string From, string To) link) =>
-        model.Links.FirstOrDefault(candidate => candidate.From == link.From && candidate.To == link.To)?.Delayed == true;
-
-    private static bool IsFlipped(CausalLoopModel model, (string From, string To) link) =>
-        model.Links.FirstOrDefault(candidate => candidate.From == link.From && candidate.To == link.To)?.Flipped == true;
-
-    /// <summary>The shortest cycle through a variable, so a claimed loop starts from something real.</summary>
-    private static IReadOnlyList<string> LoopThrough(CausalLoopModel model, string variable) =>
-        CycleFinder.Find(model).Cycles
-            .Where(cycle => cycle.Contains(variable, StringComparer.Ordinal))
-            .OrderBy(cycle => cycle.Count)
-            .FirstOrDefault() ?? [variable];
-
-    /// <summary>The next free loop identifier, so a new claim does not collide with an existing one.</summary>
-    private static string NextLoopIdentifier(CausalLoopModel model)
-    {
-        for (var number = 1; number < 1000; number++)
-        {
-            var candidate = string.Create(CultureInfo.InvariantCulture, $"R{number}");
-            if (model.Loops.All(loop => loop.Identifier != candidate))
-            {
-                return candidate;
-            }
-        }
-
-        return "R";
     }
 }

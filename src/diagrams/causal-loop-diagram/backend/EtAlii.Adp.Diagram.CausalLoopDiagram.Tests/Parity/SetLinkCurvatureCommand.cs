@@ -1,6 +1,6 @@
 using EtAlii.Adp.History;
 
-namespace EtAlii.Adp.Diagram.CausalLoopDiagram;
+namespace EtAlii.Adp.Diagram.CausalLoopDiagram.Tests.Parity;
 
 /// <summary>Bows a link's arc to the other side of its chord, or puts it back.</summary>
 public sealed record SetLinkCurvatureCommand(string BodyPath, string From, string To, bool Flipped) : IDocumentEditCommand;

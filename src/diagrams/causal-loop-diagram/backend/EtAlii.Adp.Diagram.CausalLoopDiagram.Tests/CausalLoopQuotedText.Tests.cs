@@ -24,7 +24,7 @@ public class CausalLoopQuotedTextTests
 
     private const string Quoted = "The \"real\" births";
 
-    public static TheoryData<string> Writes => ["add variable", "variable label", "link label", "add loop", "loop name"];
+    public static TheoryData<string> Writes => ["add variable", "variable label", "link label", "loop name"];
 
     [Theory]
     [MemberData(nameof(Writes))]
@@ -46,7 +46,6 @@ public class CausalLoopQuotedTextTests
                 "add variable" => await new AddVariableCommandHandler(store).ExecuteAsync(new AddVariableCommand(path, "deaths", Quoted), cancellationToken),
                 "variable label" => await new SetVariableLabelCommandHandler(store).ExecuteAsync(new SetVariableLabelCommand(path, "births", Quoted), cancellationToken),
                 "link label" => await new SetLinkLabelCommandHandler(store).ExecuteAsync(new SetLinkLabelCommand(path, "population", "births", Quoted), cancellationToken),
-                "add loop" => await new AddLoopCommandHandler(store).ExecuteAsync(new AddLoopCommand(path, "R2", Quoted, ["population", "births"]), cancellationToken),
                 "loop name" => await new SetLoopNameCommandHandler(store).ExecuteAsync(new SetLoopNameCommand(path, "R1", Quoted), cancellationToken),
                 _ => throw new ArgumentOutOfRangeException(nameof(write)),
             };

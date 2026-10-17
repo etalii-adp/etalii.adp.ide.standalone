@@ -44,7 +44,7 @@ public class CausalLoopWriterParityTests
             if (before != after) differences.Add($"{name}:\nthe hand-written writer {before}\nthe command             {after}");
         }
 
-        Assert.Equal(CausalLoopWriter.NextVariableName(model), CausalLoopEdits.NextVariableName(model));
+        Assert.Equal(CausalLoopWriter.NextVariableName(model), CausalLoopDefinition.NewVariable(CausalLoopBody.Parse(text)));
         Assert.True(differences.Count == 0, $"{relative}:\n{string.Join("\n\n", differences)}");
         Assert.True(applied >= 5, $"{relative}: only {applied} edits applied.");
     }
