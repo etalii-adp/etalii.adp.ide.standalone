@@ -1,4 +1,3 @@
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
 namespace EtAlii.Adp.Designer;
@@ -8,20 +7,11 @@ public static class HostApplicationBuilderAddDesignerDefinitionsExtension
     extension(IHostApplicationBuilder builder)
     {
         /// <summary>
-        /// Adds the discovered designer definitions and their catalog, and runs each module's
-        /// own registrations - the designer family's mirror of <c>AddDiagramDefinitions</c>
-        /// and <c>AddEditorDefinitions</c>.
+        /// Registers the discovered designer definitions, the designer catalog over them and each module's own
+        /// registrations - the designer kind's call of <c>AddToolDefinitions</c>, and the one place its
+        /// catalog is registered (code-structure FR-057).
         /// </summary>
-        public void AddDesignerDefinitions(IReadOnlyList<DesignerDefinition> definitions)
-        {
-            ArgumentNullException.ThrowIfNull(definitions);
-
-            builder.Services.AddSingleton(definitions);
-            builder.Services.TryAddDesignerDefinitionCatalog();
-            foreach (var definition in definitions)
-            {
-                definition.Build?.Invoke(builder);
-            }
-        }
+        public void AddDesignerDefinitions(IReadOnlyList<DesignerDefinition> definitions) =>
+            builder.AddToolDefinitions<DesignerDefinition, IDesignerDefinitionCatalog>(definitions, all => new DesignerDefinitionCatalog { All = all });
     }
 }

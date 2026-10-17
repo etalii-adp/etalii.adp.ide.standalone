@@ -5,6 +5,9 @@
          same static Serilog pipeline everything else uses. -->
     <PackageReference Include="Microsoft.Extensions.DependencyModel" />
     <PackageReference Include="Serilog" />
+    <!-- Serves AddToolDefinitions only: the one registration of the three tool kinds takes the host
+         builder each module's Build hook is run with. -->
+    <PackageReference Include="Microsoft.AspNetCore.Hosting.Abstractions" />
   </ItemGroup>
 
   <ItemGroup>

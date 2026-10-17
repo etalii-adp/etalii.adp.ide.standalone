@@ -1,18 +1,10 @@
 namespace EtAlii.Adp.Diagram;
 
 /// <summary>
-/// The discovered diagram types, as a service rather than the static
-/// all diagram definitions used by the DI construction, so code that needs to look a type up - the create
-/// and rename commands, the file router - can be handed a test-controlled list instead of
-/// filling the process-wide cache.
+/// The diagram kind's catalog: the discovered diagram types, which the create and rename commands
+/// and the file router look a type up in (code-structure FR-057).
 /// </summary>
-public interface IDiagramDefinitionCatalog
-{
-    IReadOnlyList<DiagramDefinition> All { get; }
-}
+public interface IDiagramDefinitionCatalog : IToolDefinitionCatalog<DiagramDefinition>;
 
-/// <summary>The production catalog: all diagram definitions, read at call time because the host fills it after the container is built.</summary>
-public sealed class DiagramDefinitionCatalog : IDiagramDefinitionCatalog
-{
-    public required IReadOnlyList<DiagramDefinition> All { get; init; }
-}
+/// <summary>The production catalog: the diagram definitions the host discovered at startup.</summary>
+public sealed class DiagramDefinitionCatalog : ToolDefinitionCatalog<DiagramDefinition>, IDiagramDefinitionCatalog;
