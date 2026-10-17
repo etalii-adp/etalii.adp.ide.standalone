@@ -82,8 +82,7 @@ public class PipelineElementMapperTests
     public void EveryElementId_IsUnique()
     {
         // Arrange: an id addresses a delta, so a collision would move the wrong element.
-        var fixtures = Directory.GetFiles(
-            IoPath.Combine(AppContext.BaseDirectory, "Fixtures"), "*.yml", SearchOption.AllDirectories);
+        var fixtures = PipelineFixtures.Pipelines(IoPath.Combine(AppContext.BaseDirectory, "Fixtures"));
 
         // Assert, first, that the walk found the corpus at all: 14 fixtures ship today, so
         // ten is a floor with headroom. Without this the test passes loudest exactly when it
@@ -510,8 +509,7 @@ public class PipelineElementMapperTests
     public void EveryFixture_MapsWithoutThrowing()
     {
         // Arrange: including the deliberately broken one and the one that is mostly a template.
-        var fixtures = Directory.GetFiles(
-            IoPath.Combine(AppContext.BaseDirectory, "Fixtures"), "*.yml", SearchOption.AllDirectories);
+        var fixtures = PipelineFixtures.Pipelines(IoPath.Combine(AppContext.BaseDirectory, "Fixtures"));
 
         // Assert, first, that the walk found the corpus at all: 14 fixtures ship today, so
         // ten is a floor with headroom. Without this the test passes loudest exactly when it
