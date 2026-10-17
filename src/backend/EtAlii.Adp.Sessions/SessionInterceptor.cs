@@ -1,16 +1,13 @@
 using Grpc.Core;
 using Grpc.Core.Interceptors;
 using Serilog;
-#if DEBUG
-using Microsoft.Extensions.Options;
-#endif
 
-namespace EtAlii.Adp.Authentication;
+namespace EtAlii.Adp.Sessions;
 
 /// <summary>
 /// Single enforcement point for Requirement 1.6 / grpc-core-communication Requirement 5.1:
-/// rejects any call lacking a valid session token, except AuthenticationService.Login itself
-/// (which is how a token is first obtained).
+/// rejects any call lacking a valid session token, except the calls
+/// <see cref="ISessionExemptions"/> names (which are how a token is first obtained).
 /// </summary>
 public sealed class SessionInterceptor : Interceptor
 {
@@ -19,25 +16,12 @@ public sealed class SessionInterceptor : Interceptor
     private static readonly ILogger _logger = Log.ForContext<SessionInterceptor>();
 
     private readonly ISessionStore _sessionStore;
-#if DEBUG
-    private readonly LocalAuthenticatorOptions _localAuthenticator;
-#endif
+    private readonly ISessionExemptions _exemptions;
 
-    public SessionInterceptor(
-        ISessionStore sessionStore
-#if DEBUG
-        ,
-        // Optional so the existing tests that construct an interceptor with a store alone keep
-        // compiling and keep meaning what they meant; absent, the bypass is not disabled, which
-        // is its ordinary Debug state.
-        IOptions<LocalAuthenticatorOptions>? localAuthenticator = null
-#endif
-        )
+    public SessionInterceptor(ISessionStore sessionStore, ISessionExemptions exemptions)
     {
         _sessionStore = sessionStore;
-#if DEBUG
-        _localAuthenticator = localAuthenticator?.Value ?? new LocalAuthenticatorOptions();
-#endif
+        _exemptions = exemptions;
     }
 
     public override Task<TResponse> UnaryServerHandler<TRequest, TResponse>(
@@ -69,33 +53,9 @@ public sealed class SessionInterceptor : Interceptor
         return continuation(request, responseStream, context);
     }
 
-    /// <summary>Whether a call may proceed without a session token at all.</summary>
-    /// <remarks>
-    /// Internal rather than private so the tests can ask it directly: whether a route is
-    /// reachable without a credential is the single most consequential line in this file, and
-    /// it deserves to be asserted rather than inferred from a call that happened to succeed.
-    /// </remarks>
-    internal bool IsExempt(string method) =>
-        // Login is how a token is first obtained; DescribeProduct is how the login page names
-        // the product version before any session exists - a version is not a secret, and the
-        // page that shows it renders before anyone can log in (github-build-pipeline R3.2).
-        method.EndsWith("/Login", StringComparison.Ordinal)
-        || method.EndsWith("/DescribeProduct", StringComparison.Ordinal)
-#if DEBUG
-        // The developer sign-in bypass (developer-sign-in-bypass Requirement 2.1). This entry
-        // and the handler it exempts are the whole of the bypass, and each sits inside a
-        // #if DEBUG in its own file so that neither can survive into a release without the
-        // other. The configuration check is repeated here rather than left to the handler:
-        // turning the bypass off should close the route, not merely make the route answer
-        // nothing.
-        || (!_localAuthenticator.DeveloperSessionDisabled
-            && method.EndsWith("/DeveloperSession", StringComparison.Ordinal))
-#endif
-        ;
-
     private void EnsureAuthenticatedUnlessExempt(ServerCallContext context)
     {
-        if (IsExempt(context.Method))
+        if (_exemptions.IsExempt(context.Method))
         {
             return;
         }

@@ -8,6 +8,7 @@ using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 using EtAlii.Adp.Problems;
 using EtAlii.Adp.Projects;
+using EtAlii.Adp.Sessions;
 using EtAlii.Adp.Workspace;
 using JetBrains.Annotations;
 using Serilog;
@@ -47,8 +48,9 @@ var appDataRoot = Environment.GetFolderPath(Environment.SpecialFolder.Applicatio
 // advances a fake one rather than sleeping (code-structure FR-051).
 builder.Services.AddSingleton(TimeProvider.System);
 
-// Who is calling: the authenticator, its options, and the store a login lands in.
-builder.Services.AddSessions(builder.Configuration);
+// Who is calling: the authenticator, its options, the calls that need no session, and the
+// store a login lands in.
+builder.Services.AddSignIn(builder.Configuration);
 // Which folders a user has opened.
 builder.Services.AddProjects(appDataRoot);
 // The per-connection selection and interaction stores, and the resolvers over them.
@@ -71,8 +73,8 @@ builder.Services.AddProblems(appDataRoot);
 
 builder.Services.AddClientAppHosting(builder.Configuration);
 
-// Applied to every gRPC call; SessionInterceptor itself exempts
-// AuthenticationService.Login (Requirement 1.6).
+// Applied to every gRPC call; the calls SignInExemptions names, AuthenticationService.Login
+// among them, pass without a session (Requirement 1.6).
 builder.Services.AddGrpc(options => options.Interceptors.Add<SessionInterceptor>());
 
 // The diagram types, found by walking the application's own assemblies for each module's

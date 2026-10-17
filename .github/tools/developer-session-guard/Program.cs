@@ -29,8 +29,8 @@ using System.Text;
 //   1. An override of DeveloperSession declared on the concrete AuthenticationService. Without
 //      it nothing can mint a token, whatever else survives.
 //   2. The literal "/DeveloperSession" in the metadata's user-string heap, which is
-//      SessionInterceptor's exemption. Without it the call is refused for want of a session
-//      before reaching any handler.
+//      SignInExemptions' entry, the exemption the session interceptor asks for. Without it the
+//      call is refused for want of a session before reaching any handler.
 //
 // Either alone is harmless; the guard reports both so that a partial survival is still loud.
 //
@@ -108,7 +108,7 @@ using (var peReader = new PEReader(stream))
 if (IndexOf(bytes, Encoding.Unicode.GetBytes(ExemptionLiteral)) >= 0)
 {
     findings.Add(
-        $"The literal \"{ExemptionLiteral}\" is present. This is SessionInterceptor's exemption, which lets the " +
+        $"The literal \"{ExemptionLiteral}\" is present. This is SignInExemptions' entry, which lets the " +
         "call through without a session token; it is supposed to exist only inside #if DEBUG.");
 }
 

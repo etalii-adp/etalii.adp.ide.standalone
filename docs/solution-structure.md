@@ -51,14 +51,14 @@ Classifying by path segment — "count the ones containing `backend`" — yields
 | --- | --- |
 | Shared primitives | `EtAlii.Adp` |
 | Host and composition, including serving the built client and proxying to the Vite dev server | `EtAlii.Adp.Backend.Service` |
-| Sign-in | `EtAlii.Adp.Authentication` |
+| Sign-in: the authenticator, the login and which calls need no session | `EtAlii.Adp.Authentication` |
 | Open documents and the shared wire vocabulary | `EtAlii.Adp.Documents` |
 | Writing a file whole, what holds a file open, whether two paths are one file, and watching a file, a folder and a project's files | `EtAlii.Adp.Files` |
 | Selection, actions, properties, prompts | `EtAlii.Adp.Context` |
 | Commands and undo/redo | `EtAlii.Adp.History` |
 | Errors and warnings | `EtAlii.Adp.Problems` |
 | Known projects and workspace roots | `EtAlii.Adp.Projects` |
-| Connection lifetime | `EtAlii.Adp.Sessions` |
+| Sign-in sessions (the session store, the session context and the interceptor that checks every call) and connection lifetime | `EtAlii.Adp.Sessions` |
 | Workspace tree, kept current from the project's file events | `EtAlii.Adp.Hierarchy` |
 | Geometry with no dependency: the rectangle, the viewport test's operand, row packing, the row a drag snaps to, text width and graph layering | `EtAlii.Adp.Layout` |
 | Diagram-type abstractions, including the diagram definition and validation contracts; it references the documents project and the shared primitives only | `EtAlii.Adp.Diagram` |

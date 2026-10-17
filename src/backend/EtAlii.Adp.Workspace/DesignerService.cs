@@ -1,10 +1,10 @@
 using System.Threading.Channels;
-using EtAlii.Adp.Authentication;
 using EtAlii.Adp.Designer;
 using EtAlii.Adp.Designer.TableModel;
 using EtAlii.Adp.Diagram.Wire;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.Projects;
+using EtAlii.Adp.Sessions;
 using Grpc.Core;
 using Serilog;
 using Proto = EtAlii.Adp.Designer.Wire;

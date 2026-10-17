@@ -1,6 +1,6 @@
 using System.Collections.Concurrent;
 
-namespace EtAlii.Adp.Authentication;
+namespace EtAlii.Adp.Sessions;
 
 public sealed class InMemorySessionStore : ISessionStore
 {
