@@ -1,5 +1,4 @@
 using EtAlii.Adp.Documents;
-using EtAlii.Adp.Hierarchy;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.AgentBehaviorModelling.Tests;

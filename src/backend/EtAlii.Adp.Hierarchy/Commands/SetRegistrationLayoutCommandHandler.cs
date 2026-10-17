@@ -1,3 +1,4 @@
+using EtAlii.Adp.Diagram;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Hierarchy;

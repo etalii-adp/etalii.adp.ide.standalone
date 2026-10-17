@@ -15,8 +15,8 @@
   <ItemGroup>
     <ProjectReference Include="..\EtAlii.Adp.Documents\EtAlii.Adp.Documents.csproj" />
     <!-- AdpFileWriter.Tests proves the scratch-name pattern against RegistrationLayout,
-         the Hierarchy side of that contract - the one Hierarchy dependence here. -->
-    <ProjectReference Include="..\EtAlii.Adp.Hierarchy\EtAlii.Adp.Hierarchy.csproj" />
+         the diagram side of that contract - the one diagram dependence here. -->
+    <ProjectReference Include="..\EtAlii.Adp.Diagram\EtAlii.Adp.Diagram.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,9 +1,9 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Context.Wire;
+using EtAlii.Adp.Diagram;
 using EtAlii.Adp.Diagram.Rdf;
 using EtAlii.Adp.Diagram.Wire;
 using EtAlii.Adp.Documents.Wire;
-using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.TestSupport.Host;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
