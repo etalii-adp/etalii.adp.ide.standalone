@@ -39,8 +39,11 @@ public sealed record DesignerDefinition(
     string Description = "",
     string Icon = "",
     IReadOnlyList<DesignerFormat>? Formats = null,
-    Action<IHostApplicationBuilder>? Build = null)
+    Action<IHostApplicationBuilder>? Build = null) : IToolDefinition
 {
+    /// <summary>The origin, by which discovery keeps one definition per origin.</summary>
+    string IToolDefinition.Key => Origin;
+
     /// <summary>
     /// <see cref="Origin"/> read once into the origin every tool kind shares (code-structure FR-060);
     /// null for a text that is not <c>vendor/type</c>.
