@@ -7961,8 +7961,1254 @@
     },
     {
       "document": "examples/diagrams/causal-loop-diagram/business-philosophy/business-philosophy.cld",
-      "sha256": "57aa05b4c38291839c959a89f05348a16906bf10a14f1cc7437663b0a3166843",
-      "sameAs": "diagrams/causal-loop-diagram/examples/business-philosophy/business-philosophy.cld"
+      "sha256": "1a18451e1b893c40de31a9f85f6f7bf1f56b60ed276592996503156f57c221c6",
+      "registration": "business-philosophy.adp, sha256 088374ddca77ff61ce5c6174e22b4afbabff3b1e9420e8b769ae67494ef4d4bb",
+      "menus": [
+        [
+          "g1 causal-loop.add-link | Add link from here… | mdi-arrow-right-thin | - | on",
+          "g1 causal-loop.add-loop | Claim a loop from here… | mdi-sync | - | on",
+          "g1 causal-loop.rename-variable | Rename… | mdi-rename-outline | - | on",
+          "g1 causal-loop.remove-variable | Remove variable (with 5 references) | mdi-delete-outline | Delete | on"
+        ],
+        [],
+        [
+          "g1 causal-loop.add-link | Add link from here… | mdi-arrow-right-thin | - | on",
+          "g1 causal-loop.add-loop | Claim a loop from here… | mdi-sync | - | on",
+          "g1 causal-loop.rename-variable | Rename… | mdi-rename-outline | - | on",
+          "g1 causal-loop.remove-variable | Remove variable (with 6 references) | mdi-delete-outline | Delete | on"
+        ],
+        [
+          "g1 causal-loop.add-link | Add link from here… | mdi-arrow-right-thin | - | on",
+          "g1 causal-loop.add-loop | Claim a loop from here… | mdi-sync | - | on",
+          "g1 causal-loop.rename-variable | Rename… | mdi-rename-outline | - | on",
+          "g1 causal-loop.remove-variable | Remove variable (with 3 references) | mdi-delete-outline | Delete | on"
+        ],
+        [
+          "g1 causal-loop.add-link | Add link from here… | mdi-arrow-right-thin | - | on",
+          "g1 causal-loop.add-loop | Claim a loop from here… | mdi-sync | - | on",
+          "g1 causal-loop.rename-variable | Rename… | mdi-rename-outline | - | on",
+          "g1 causal-loop.remove-variable | Remove variable (with 17 references) | mdi-delete-outline | Delete | on"
+        ],
+        [
+          "g1 causal-loop.add-link | Add link from here… | mdi-arrow-right-thin | - | on",
+          "g1 causal-loop.add-loop | Claim a loop from here… | mdi-sync | - | on",
+          "g1 causal-loop.rename-variable | Rename… | mdi-rename-outline | - | on",
+          "g1 causal-loop.remove-variable | Remove variable (with 7 references) | mdi-delete-outline | Delete | on"
+        ],
+        [
+          "g1 causal-loop.add-link | Add link from here… | mdi-arrow-right-thin | - | on",
+          "g1 causal-loop.add-loop | Claim a loop from here… | mdi-sync | - | on",
+          "g1 causal-loop.rename-variable | Rename… | mdi-rename-outline | - | on",
+          "g1 causal-loop.remove-variable | Remove variable (with 4 references) | mdi-delete-outline | Delete | on"
+        ],
+        [
+          "g1 causal-loop.add-link | Add link from here… | mdi-arrow-right-thin | - | on",
+          "g1 causal-loop.add-loop | Claim a loop from here… | mdi-sync | - | on",
+          "g1 causal-loop.rename-variable | Rename… | mdi-rename-outline | - | on",
+          "g1 causal-loop.remove-variable | Remove variable (with 2 references) | mdi-delete-outline | Delete | on"
+        ],
+        [
+          "g1 causal-loop.make-positive | Same direction (+) | mdi-plus | - | off (This link already states +.)",
+          "g1 causal-loop.make-negative | Opposite direction (−) | mdi-minus | - | on (This link already states −.)",
+          "g1 causal-loop.toggle-delay | Delayed | mdi-timer-sand | - | on",
+          "g1 causal-loop.flip-curvature | Flip the curve | mdi-vector-curve | - | on",
+          "g1 causal-loop.remove-link | Remove link | mdi-delete-outline | Delete | on"
+        ],
+        [
+          "g1 causal-loop.make-positive | Same direction (+) | mdi-plus | - | off (This link already states +.)",
+          "g1 causal-loop.make-negative | Opposite direction (−) | mdi-minus | - | on (This link already states −.)",
+          "g1 causal-loop.toggle-delay | Not delayed | mdi-timer-sand | - | on",
+          "g1 causal-loop.flip-curvature | Flip the curve | mdi-vector-curve | - | on",
+          "g1 causal-loop.remove-link | Remove link | mdi-delete-outline | Delete | on"
+        ],
+        [
+          "g1 causal-loop.make-positive | Same direction (+) | mdi-plus | - | off (This link already states +.)",
+          "g1 causal-loop.make-negative | Opposite direction (−) | mdi-minus | - | on (This link already states −.)",
+          "g1 causal-loop.toggle-delay | Delayed | mdi-timer-sand | - | on",
+          "g1 causal-loop.flip-curvature | Curve back the other way | mdi-vector-curve | - | on",
+          "g1 causal-loop.remove-link | Remove link | mdi-delete-outline | Delete | on"
+        ],
+        [
+          "g1 causal-loop.make-positive | Same direction (+) | mdi-plus | - | on (This link already states +.)",
+          "g1 causal-loop.make-negative | Opposite direction (−) | mdi-minus | - | off (This link already states −.)",
+          "g1 causal-loop.toggle-delay | Delayed | mdi-timer-sand | - | on",
+          "g1 causal-loop.flip-curvature | Curve back the other way | mdi-vector-curve | - | on",
+          "g1 causal-loop.remove-link | Remove link | mdi-delete-outline | Delete | on"
+        ],
+        [
+          "g1 causal-loop.make-positive | Same direction (+) | mdi-plus | - | on (This link already states +.)",
+          "g1 causal-loop.make-negative | Opposite direction (−) | mdi-minus | - | off (This link already states −.)",
+          "g1 causal-loop.toggle-delay | Delayed | mdi-timer-sand | - | on",
+          "g1 causal-loop.flip-curvature | Flip the curve | mdi-vector-curve | - | on",
+          "g1 causal-loop.remove-link | Remove link | mdi-delete-outline | Delete | on"
+        ],
+        [
+          "g1 causal-loop.make-positive | Same direction (+) | mdi-plus | - | on (This link already states +.)",
+          "g1 causal-loop.make-negative | Opposite direction (−) | mdi-minus | - | off (This link already states −.)",
+          "g1 causal-loop.toggle-delay | Not delayed | mdi-timer-sand | - | on",
+          "g1 causal-loop.flip-curvature | Flip the curve | mdi-vector-curve | - | on",
+          "g1 causal-loop.remove-link | Remove link | mdi-delete-outline | Delete | on"
+        ],
+        [
+          "g1 causal-loop.rename-loop | Rename loop… | mdi-rename-outline | - | on",
+          "g1 causal-loop.remove-loop | Remove loop | mdi-delete-outline | Delete | on"
+        ],
+        [
+          "g1 causal-loop.add-variable | Add variable | mdi-plus-circle-outline | - | on",
+          "g1 causal-loop.arrange | Arrange diagram | mdi-graph-outline | - | on (There is nothing to arrange until this diagram has two variables.)"
+        ],
+        [
+          "g1 causal-loop.connect | Add link | mdi-arrow-right-thin | - | on"
+        ]
+      ],
+      "choices": [
+        [
+          "positive",
+          "negative",
+          "unstated"
+        ],
+        [
+          "applicability → fieldEngagement → expertDiversity → insight"
+        ],
+        [
+          "applicability → fieldEngagement → practicalTools → practiceGap → insight"
+        ],
+        [
+          "applicability → fieldEngagement → practicalTools → recipeUse → insight"
+        ],
+        [
+          "insight → coreValues → philosophy"
+        ],
+        [
+          "insight → coreValues → philosophy → practiceGap"
+        ],
+        [
+          "insight → coreValues → trust → latentWisdom → narratives"
+        ],
+        [
+          "trust → latentWisdom → narratives → polarization"
+        ],
+        [
+          "trust → creativeExpression → communicationRange → polarization"
+        ],
+        [
+          "insight → quickFixPressure → openInquiry"
+        ],
+        [
+          "insight → quickFixPressure → recipeUse"
+        ]
+      ],
+      "targets": [
+        "\"variable:applicability\" => menu #0, read-only #1",
+        "\"variable:fieldEngagement\" => menu #2, read-only #1",
+        "\"variable:expertDiversity\" => menu #3, read-only #1",
+        "\"variable:insight\" => menu #4, read-only #1",
+        "\"variable:practicalTools\" => menu #0, read-only #1",
+        "\"variable:practiceGap\" => menu #0, read-only #1",
+        "\"variable:openInquiry\" => menu #3, read-only #1",
+        "\"variable:recipeUse\" => menu #0, read-only #1",
+        "\"variable:coreValues\" => menu #2, read-only #1",
+        "\"variable:philosophy\" => menu #0, read-only #1",
+        "\"variable:trust\" => menu #5, read-only #1",
+        "\"variable:latentWisdom\" => menu #6, read-only #1",
+        "\"variable:narratives\" => menu #0, read-only #1",
+        "\"variable:polarization\" => menu #2, read-only #1",
+        "\"variable:creativeExpression\" => menu #3, read-only #1",
+        "\"variable:communicationRange\" => menu #3, read-only #1",
+        "\"variable:wickedProblems\" => menu #7, read-only #1",
+        "\"variable:quickFixPressure\" => menu #2, read-only #1",
+        "\"link:insight|applicability\" => menu #8, read-only #1",
+        "\"link:applicability|fieldEngagement\" => menu #9, read-only #1",
+        "\"link:fieldEngagement|expertDiversity\" => menu #8, read-only #1",
+        "\"link:expertDiversity|insight\" => menu #10, read-only #1",
+        "\"link:fieldEngagement|practicalTools\" => menu #8, read-only #1",
+        "\"link:practicalTools|practiceGap\" => menu #11, read-only #1",
+        "\"link:practiceGap|insight\" => menu #11, read-only #1",
+        "\"link:practicalTools|recipeUse\" => menu #8, read-only #1",
+        "\"link:recipeUse|insight\" => menu #11, read-only #1",
+        "\"link:insight|coreValues\" => menu #8, read-only #1",
+        "\"link:coreValues|philosophy\" => menu #8, read-only #1",
+        "\"link:philosophy|insight\" => menu #10, read-only #1",
+        "\"link:philosophy|practiceGap\" => menu #9, read-only #1",
+        "\"link:coreValues|trust\" => menu #10, read-only #1",
+        "\"link:trust|latentWisdom\" => menu #8, read-only #1",
+        "\"link:latentWisdom|narratives\" => menu #8, read-only #1",
+        "\"link:narratives|insight\" => menu #8, read-only #1",
+        "\"link:wickedProblems|polarization\" => menu #8, read-only #1",
+        "\"link:polarization|trust\" => menu #12, read-only #1",
+        "\"link:narratives|polarization\" => menu #12, read-only #1",
+        "\"link:trust|creativeExpression\" => menu #10, read-only #1",
+        "\"link:creativeExpression|communicationRange\" => menu #10, read-only #1",
+        "\"link:communicationRange|polarization\" => menu #11, read-only #1",
+        "\"link:wickedProblems|quickFixPressure\" => menu #10, read-only #1",
+        "\"link:quickFixPressure|openInquiry\" => menu #12, read-only #1",
+        "\"link:openInquiry|insight\" => menu #8, read-only #1",
+        "\"link:insight|quickFixPressure\" => menu #13, read-only #1",
+        "\"link:quickFixPressure|recipeUse\" => menu #10, read-only #1",
+        "\"loop:R1\" => menu #14, read-only #1",
+        "\"loop:R2\" => menu #14, read-only #1",
+        "\"loop:B1\" => menu #14, read-only #1",
+        "\"loop:R3\" => menu #14, read-only #1",
+        "\"loop:B2\" => menu #14, read-only #1",
+        "\"loop:R4\" => menu #14, read-only #1",
+        "\"loop:R5\" => menu #14, read-only #1",
+        "\"loop:R6\" => menu #14, read-only #1",
+        "\"loop:R7\" => menu #14, read-only #1",
+        "\"loop:R8\" => menu #14, read-only #1",
+        "\"\" => menu #1, read-only #1",
+        "\"new:240,160\" => menu #15, read-only #1",
+        "\"rel:fieldEngagement->applicability\" => menu #16, read-only #1",
+        "\"parity:unknown\" => menu #1, read-only #1"
+      ],
+      "rows": [
+        {
+          "target": "variable:applicability",
+          "rows": [
+            "causal-loop.variable-label | Label | \"Applicability in practice\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"applicability\" | Line | editable | group Identity"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "variable:fieldEngagement",
+          "rows": [
+            "causal-loop.variable-label | Label | \"Engagement of organizations\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"fieldEngagement\" | Line | editable | group Identity"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "variable:expertDiversity",
+          "rows": [
+            "causal-loop.variable-label | Label | \"Diversity of expertise\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"expertDiversity\" | Line | editable | group Identity"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "variable:insight",
+          "rows": [
+            "causal-loop.variable-label | Label | \"Depth of shared insight\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"insight\" | Line | editable | group Identity"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "variable:practicalTools",
+          "rows": [
+            "causal-loop.variable-label | Label | \"Practical tools in use\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"practicalTools\" | Line | editable | group Identity"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "variable:practiceGap",
+          "rows": [
+            "causal-loop.variable-label | Label | \"Distance from daily practice\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"practiceGap\" | Line | editable | group Identity"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "variable:openInquiry",
+          "rows": [
+            "causal-loop.variable-label | Label | \"Room for open inquiry\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"openInquiry\" | Line | editable | group Identity"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "variable:recipeUse",
+          "rows": [
+            "causal-loop.variable-label | Label | \"Tools used as recipes\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"recipeUse\" | Line | editable | group Identity"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "variable:coreValues",
+          "rows": [
+            "causal-loop.variable-label | Label | \"Curiosity, transparency, ethics\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"coreValues\" | Line | editable | group Identity"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "variable:philosophy",
+          "rows": [
+            "causal-loop.variable-label | Label | \"Philosophical depth\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"philosophy\" | Line | editable | group Identity"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "variable:trust",
+          "rows": [
+            "causal-loop.variable-label | Label | \"Trust and openness\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"trust\" | Line | editable | group Identity"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "variable:latentWisdom",
+          "rows": [
+            "causal-loop.variable-label | Label | \"Latent wisdom made explicit\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"latentWisdom\" | Line | editable | group Identity"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "variable:narratives",
+          "rows": [
+            "causal-loop.variable-label | Label | \"Stories and narratives\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"narratives\" | Line | editable | group Identity"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "variable:polarization",
+          "rows": [
+            "causal-loop.variable-label | Label | \"Polarization\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"polarization\" | Line | editable | group Identity"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "variable:creativeExpression",
+          "rows": [
+            "causal-loop.variable-label | Label | \"Art and creative expression\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"creativeExpression\" | Line | editable | group Identity"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "variable:communicationRange",
+          "rows": [
+            "causal-loop.variable-label | Label | \"Communication beyond words\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"communicationRange\" | Line | editable | group Identity"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "variable:wickedProblems",
+          "rows": [
+            "causal-loop.variable-label | Label | \"Weight of wicked problems\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"wickedProblems\" | Line | editable | group Identity"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "variable:quickFixPressure",
+          "rows": [
+            "causal-loop.variable-label | Label | \"Pressure for quick solutions\" | Line | editable | group Identity",
+            "causal-loop.variable-id | Identifier | \"quickFixPressure\" | Line | editable | group Identity"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:insight|applicability",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"insight\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"applicability\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"1.2\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:applicability|fieldEngagement",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"applicability\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"fieldEngagement\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"a reputation is built over cohorts\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"true\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:fieldEngagement|expertDiversity",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"fieldEngagement\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"expertDiversity\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"practitioners, guest lecturers, other disciplines\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:expertDiversity|insight",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"expertDiversity\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"insight\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:fieldEngagement|practicalTools",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"fieldEngagement\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"practicalTools\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:practicalTools|practiceGap",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"practicalTools\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"practiceGap\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"tools translate ideas into work\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"negative\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:practiceGap|insight",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"practiceGap\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"insight\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"insight stays in the classroom\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"negative\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:practicalTools|recipeUse",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"practicalTools\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"recipeUse\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:recipeUse|insight",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"recipeUse\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"insight\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"a recipe replaces the thinking\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"negative\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"0.8\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:insight|coreValues",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"insight\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"coreValues\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"every answer raises a better question\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:coreValues|philosophy",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"coreValues\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"philosophy\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:philosophy|insight",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"philosophy\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"insight\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"philosophers lend new lenses\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:philosophy|practiceGap",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"philosophy\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"practiceGap\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"true\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:coreValues|trust",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"coreValues\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"trust\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:trust|latentWisdom",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"trust\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"latentWisdom\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:latentWisdom|narratives",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"latentWisdom\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"narratives\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"wisdom travels as stories\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:narratives|insight",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"narratives\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"insight\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:wickedProblems|polarization",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"wickedProblems\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"polarization\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"climate, wellbeing, identity\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:polarization|trust",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"polarization\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"trust\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"negative\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:narratives|polarization",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"narratives\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"polarization\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"negative\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:trust|creativeExpression",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"trust\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"creativeExpression\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"safe enough to show, not only tell\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:creativeExpression|communicationRange",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"creativeExpression\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"communicationRange\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:communicationRange|polarization",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"communicationRange\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"polarization\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"heard across lines where arguments are not\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"negative\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:wickedProblems|quickFixPressure",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"wickedProblems\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"quickFixPressure\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:quickFixPressure|openInquiry",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"quickFixPressure\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"openInquiry\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"no time for questions without answers\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"negative\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:openInquiry|insight",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"openInquiry\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"insight\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"1.5\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:insight|quickFixPressure",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"insight\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"quickFixPressure\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"insight shows why the quick fix fails\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"negative\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"true\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "link:quickFixPressure|recipeUse",
+          "rows": [
+            "causal-loop.link-from | Cause (from) | \"quickFixPressure\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-to | Effect (to) | \"recipeUse\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity",
+            "causal-loop.link-label | Note | \"\" | Line | editable | group Identity",
+            "causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices #0",
+            "causal-loop.link-delayed | Delayed | \"false\" | Toggle | editable | group Causality",
+            "causal-loop.link-weight | Weight | \"\" | Line | editable | group Causality"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "loop:R1",
+          "rows": [
+            "causal-loop.loop-identifier | Identifier | \"R1\" | Line | editable | group Identity",
+            "causal-loop.loop-name | Name | \"Relevance draws the field\" | Line | editable | group Identity",
+            "causal-loop.loop-computed | Computed polarity | \"reinforcing\" | Line | read-only (Counted from the polarity of the links around the cycle. Change an arrow to change this.) | group Feedback",
+            "causal-loop.loop-variables | Runs through | \"applicability → fieldEngagement → expertDiversity → insight\" | Choice | editable | group Feedback | choices #1"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "loop:R2",
+          "rows": [
+            "causal-loop.loop-identifier | Identifier | \"R2\" | Line | editable | group Identity",
+            "causal-loop.loop-name | Name | \"Tools translate thinking\" | Line | editable | group Identity",
+            "causal-loop.loop-computed | Computed polarity | \"reinforcing\" | Line | read-only (Counted from the polarity of the links around the cycle. Change an arrow to change this.) | group Feedback",
+            "causal-loop.loop-variables | Runs through | \"applicability → fieldEngagement → practicalTools → practiceGap → insight\" | Choice | editable | group Feedback | choices #2"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "loop:B1",
+          "rows": [
+            "causal-loop.loop-identifier | Identifier | \"B1\" | Line | editable | group Identity",
+            "causal-loop.loop-name | Name | \"The toolkit trap\" | Line | editable | group Identity",
+            "causal-loop.loop-computed | Computed polarity | \"balancing\" | Line | read-only (Counted from the polarity of the links around the cycle. Change an arrow to change this.) | group Feedback",
+            "causal-loop.loop-variables | Runs through | \"applicability → fieldEngagement → practicalTools → recipeUse → insight\" | Choice | editable | group Feedback | choices #3"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "loop:R3",
+          "rows": [
+            "causal-loop.loop-identifier | Identifier | \"R3\" | Line | editable | group Identity",
+            "causal-loop.loop-name | Name | \"Questions deepen\" | Line | editable | group Identity",
+            "causal-loop.loop-computed | Computed polarity | \"reinforcing\" | Line | read-only (Counted from the polarity of the links around the cycle. Change an arrow to change this.) | group Feedback",
+            "causal-loop.loop-variables | Runs through | \"insight → coreValues → philosophy\" | Choice | editable | group Feedback | choices #4"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "loop:B2",
+          "rows": [
+            "causal-loop.loop-identifier | Identifier | \"B2\" | Line | editable | group Identity",
+            "causal-loop.loop-name | Name | \"Depth drifts from practice\" | Line | editable | group Identity",
+            "causal-loop.loop-computed | Computed polarity | \"balancing\" | Line | read-only (Counted from the polarity of the links around the cycle. Change an arrow to change this.) | group Feedback",
+            "causal-loop.loop-variables | Runs through | \"insight → coreValues → philosophy → practiceGap\" | Choice | editable | group Feedback | choices #5"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "loop:R4",
+          "rows": [
+            "causal-loop.loop-identifier | Identifier | \"R4\" | Line | editable | group Identity",
+            "causal-loop.loop-name | Name | \"Openness surfaces wisdom\" | Line | editable | group Identity",
+            "causal-loop.loop-computed | Computed polarity | \"reinforcing\" | Line | read-only (Counted from the polarity of the links around the cycle. Change an arrow to change this.) | group Feedback",
+            "causal-loop.loop-variables | Runs through | \"insight → coreValues → trust → latentWisdom → narratives\" | Choice | editable | group Feedback | choices #6"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "loop:R5",
+          "rows": [
+            "causal-loop.loop-identifier | Identifier | \"R5\" | Line | editable | group Identity",
+            "causal-loop.loop-name | Name | \"Stories soften the divide\" | Line | editable | group Identity",
+            "causal-loop.loop-computed | Computed polarity | \"reinforcing\" | Line | read-only (Counted from the polarity of the links around the cycle. Change an arrow to change this.) | group Feedback",
+            "causal-loop.loop-variables | Runs through | \"trust → latentWisdom → narratives → polarization\" | Choice | editable | group Feedback | choices #7"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "loop:R6",
+          "rows": [
+            "causal-loop.loop-identifier | Identifier | \"R6\" | Line | editable | group Identity",
+            "causal-loop.loop-name | Name | \"Art speaks across divides\" | Line | editable | group Identity",
+            "causal-loop.loop-computed | Computed polarity | \"reinforcing\" | Line | read-only (Counted from the polarity of the links around the cycle. Change an arrow to change this.) | group Feedback",
+            "causal-loop.loop-variables | Runs through | \"trust → creativeExpression → communicationRange → polarization\" | Choice | editable | group Feedback | choices #8"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "loop:R7",
+          "rows": [
+            "causal-loop.loop-identifier | Identifier | \"R7\" | Line | editable | group Identity",
+            "causal-loop.loop-name | Name | \"Haste narrows the view\" | Line | editable | group Identity",
+            "causal-loop.loop-computed | Computed polarity | \"reinforcing\" | Line | read-only (Counted from the polarity of the links around the cycle. Change an arrow to change this.) | group Feedback",
+            "causal-loop.loop-variables | Runs through | \"insight → quickFixPressure → openInquiry\" | Choice | editable | group Feedback | choices #9"
+          ],
+          "rowsReadOnly": []
+        },
+        {
+          "target": "loop:R8",
+          "rows": [
+            "causal-loop.loop-identifier | Identifier | \"R8\" | Line | editable | group Identity",
+            "causal-loop.loop-name | Name | \"Recipes for the impatient\" | Line | editable | group Identity",
+            "causal-loop.loop-computed | Computed polarity | \"reinforcing\" | Line | read-only (Counted from the polarity of the links around the cycle. Change an arrow to change this.) | group Feedback",
+            "causal-loop.loop-variables | Runs through | \"insight → quickFixPressure → recipeUse\" | Choice | editable | group Feedback | choices #10"
+          ],
+          "rowsReadOnly": []
+        }
+      ],
+      "readOnlySet": "set variable:applicability causal-loop.variable-label => refused: business-philosophy.cld could not be read, so it cannot be edited.",
+      "findings": [],
+      "payloads": [
+        "variable:applicability | systems/causal-loop+variable | 387.744, -60.855000000000004 | CausalLoopVariablePayload { \"display\": \"Applicability in practice\", \"id\": \"applicability\", \"width\": 220.50000000000003, \"height\": 39.599999999999994 }",
+        "variable:fieldEngagement | systems/causal-loop+variable | 736.173, -30.855000000000004 | CausalLoopVariablePayload { \"display\": \"Engagement of organizations\", \"id\": \"fieldEngagement\", \"width\": 235.9, \"height\": 39.599999999999994 }",
+        "variable:expertDiversity | systems/causal-loop+variable | 425.457, 143.748 | CausalLoopVariablePayload { \"display\": \"Diversity of expertise\", \"id\": \"expertDiversity\", \"width\": 197.4, \"height\": 39.599999999999994 }",
+        "variable:insight | systems/causal-loop+variable | 20, 120 | CausalLoopVariablePayload { \"display\": \"Depth of shared insight\", \"id\": \"insight\", \"width\": 205.10000000000002, \"height\": 39.599999999999994 }",
+        "variable:practicalTools | systems/causal-loop+variable | 1050, -280 | CausalLoopVariablePayload { \"display\": \"Practical tools in use\", \"id\": \"practicalTools\", \"width\": 197.4, \"height\": 39.599999999999994 }",
+        "variable:practiceGap | systems/causal-loop+variable | 756.8589999999999, -475.348 | CausalLoopVariablePayload { \"display\": \"Distance from daily practice\", \"id\": \"practiceGap\", \"width\": 243.60000000000002, \"height\": 39.599999999999994 }",
+        "variable:openInquiry | systems/causal-loop+variable | -260, 280 | CausalLoopVariablePayload { \"display\": \"Room for open inquiry\", \"id\": \"openInquiry\", \"width\": 189.70000000000002, \"height\": 39.599999999999994 }",
+        "variable:recipeUse | systems/causal-loop+variable | 560, 410 | CausalLoopVariablePayload { \"display\": \"Tools used as recipes\", \"id\": \"recipeUse\", \"width\": 189.70000000000002, \"height\": 39.599999999999994 }",
+        "variable:coreValues | systems/causal-loop+variable | -300, -230 | CausalLoopVariablePayload { \"display\": \"Curiosity, transparency, ethics\", \"id\": \"coreValues\", \"width\": 266.70000000000005, \"height\": 39.599999999999994 }",
+        "variable:philosophy | systems/causal-loop+variable | 250, -499.99999999999994 | CausalLoopVariablePayload { \"display\": \"Philosophical depth\", \"id\": \"philosophy\", \"width\": 174.3, \"height\": 39.599999999999994 }",
+        "variable:trust | systems/causal-loop+variable | -650, -170 | CausalLoopVariablePayload { \"display\": \"Trust and openness\", \"id\": \"trust\", \"width\": 166.60000000000002, \"height\": 39.599999999999994 }",
+        "variable:latentWisdom | systems/causal-loop+variable | -480.00000000000006, 40 | CausalLoopVariablePayload { \"display\": \"Latent wisdom made explicit\", \"id\": \"latentWisdom\", \"width\": 235.9, \"height\": 39.599999999999994 }",
+        "variable:narratives | systems/causal-loop+variable | -270, 120 | CausalLoopVariablePayload { \"display\": \"Stories and narratives\", \"id\": \"narratives\", \"width\": 197.4, \"height\": 39.599999999999994 }",
+        "variable:polarization | systems/causal-loop+variable | -650, 400 | CausalLoopVariablePayload { \"display\": \"Polarization\", \"id\": \"polarization\", \"width\": 120.4, \"height\": 39.599999999999994 }",
+        "variable:creativeExpression | systems/causal-loop+variable | -960, -20 | CausalLoopVariablePayload { \"display\": \"Art and creative expression\", \"id\": \"creativeExpression\", \"width\": 235.9, \"height\": 39.599999999999994 }",
+        "variable:communicationRange | systems/causal-loop+variable | -959.9999999999999, 260 | CausalLoopVariablePayload { \"display\": \"Communication beyond words\", \"id\": \"communicationRange\", \"width\": 228.20000000000002, \"height\": 39.599999999999994 }",
+        "variable:wickedProblems | systems/causal-loop+variable | -200, 530 | CausalLoopVariablePayload { \"display\": \"Weight of wicked problems\", \"id\": \"wickedProblems\", \"width\": 220.50000000000003, \"height\": 39.599999999999994 }",
+        "variable:quickFixPressure | systems/causal-loop+variable | 60, 380 | CausalLoopVariablePayload { \"display\": \"Pressure for quick solutions\", \"id\": \"quickFixPressure\", \"width\": 243.60000000000002, \"height\": 39.599999999999994 }",
+        "link:insight|applicability | systems/causal-loop+link | 203.872, 29.572499999999998 | CausalLoopLinkPayload { \"fromElementId\": \"variable:insight\", \"toElementId\": \"variable:applicability\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"weight\": 1.2, \"hasWeight\": true }",
+        "link:applicability|fieldEngagement | systems/causal-loop+link | 561.9585, -45.855000000000004 | CausalLoopLinkPayload { \"fromElementId\": \"variable:applicability\", \"toElementId\": \"variable:fieldEngagement\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"delayed\": true, \"label\": \"a reputation is built over cohorts\" }",
+        "link:fieldEngagement|expertDiversity | systems/causal-loop+link | 580.815, 56.44649999999999 | CausalLoopLinkPayload { \"fromElementId\": \"variable:fieldEngagement\", \"toElementId\": \"variable:expertDiversity\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"label\": \"practitioners, guest lecturers, other disciplines\" }",
+        "link:expertDiversity|insight | systems/causal-loop+link | 222.7285, 131.874 | CausalLoopLinkPayload { \"fromElementId\": \"variable:expertDiversity\", \"toElementId\": \"variable:insight\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"flipped\": true }",
+        "link:fieldEngagement|practicalTools | systems/causal-loop+link | 893.0865, -155.4275 | CausalLoopLinkPayload { \"fromElementId\": \"variable:fieldEngagement\", \"toElementId\": \"variable:practicalTools\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\" }",
+        "link:practicalTools|practiceGap | systems/causal-loop+link | 903.4295, -377.674 | CausalLoopLinkPayload { \"fromElementId\": \"variable:practicalTools\", \"toElementId\": \"variable:practiceGap\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_NEGATIVE\", \"label\": \"tools translate ideas into work\", \"flipped\": true }",
+        "link:practiceGap|insight | systems/causal-loop+link | 388.42949999999996, -177.674 | CausalLoopLinkPayload { \"fromElementId\": \"variable:practiceGap\", \"toElementId\": \"variable:insight\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_NEGATIVE\", \"label\": \"insight stays in the classroom\", \"flipped\": true }",
+        "link:practicalTools|recipeUse | systems/causal-loop+link | 805, 65 | CausalLoopLinkPayload { \"fromElementId\": \"variable:practicalTools\", \"toElementId\": \"variable:recipeUse\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\" }",
+        "link:recipeUse|insight | systems/causal-loop+link | 290, 265 | CausalLoopLinkPayload { \"fromElementId\": \"variable:recipeUse\", \"toElementId\": \"variable:insight\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_NEGATIVE\", \"weight\": 0.8, \"hasWeight\": true, \"label\": \"a recipe replaces the thinking\", \"flipped\": true }",
+        "link:insight|coreValues | systems/causal-loop+link | -140, -55 | CausalLoopLinkPayload { \"fromElementId\": \"variable:insight\", \"toElementId\": \"variable:coreValues\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"label\": \"every answer raises a better question\" }",
+        "link:coreValues|philosophy | systems/causal-loop+link | -25, -365 | CausalLoopLinkPayload { \"fromElementId\": \"variable:coreValues\", \"toElementId\": \"variable:philosophy\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\" }",
+        "link:philosophy|insight | systems/causal-loop+link | 135, -189.99999999999997 | CausalLoopLinkPayload { \"fromElementId\": \"variable:philosophy\", \"toElementId\": \"variable:insight\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"label\": \"philosophers lend new lenses\", \"flipped\": true }",
+        "link:philosophy|practiceGap | systems/causal-loop+link | 503.42949999999996, -487.674 | CausalLoopLinkPayload { \"fromElementId\": \"variable:philosophy\", \"toElementId\": \"variable:practiceGap\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"delayed\": true }",
+        "link:coreValues|trust | systems/causal-loop+link | -475, -200 | CausalLoopLinkPayload { \"fromElementId\": \"variable:coreValues\", \"toElementId\": \"variable:trust\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"flipped\": true }",
+        "link:trust|latentWisdom | systems/causal-loop+link | -565, -65 | CausalLoopLinkPayload { \"fromElementId\": \"variable:trust\", \"toElementId\": \"variable:latentWisdom\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\" }",
+        "link:latentWisdom|narratives | systems/causal-loop+link | -375, 80 | CausalLoopLinkPayload { \"fromElementId\": \"variable:latentWisdom\", \"toElementId\": \"variable:narratives\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"label\": \"wisdom travels as stories\" }",
+        "link:narratives|insight | systems/causal-loop+link | -125, 120 | CausalLoopLinkPayload { \"fromElementId\": \"variable:narratives\", \"toElementId\": \"variable:insight\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\" }",
+        "link:wickedProblems|polarization | systems/causal-loop+link | -425, 465 | CausalLoopLinkPayload { \"fromElementId\": \"variable:wickedProblems\", \"toElementId\": \"variable:polarization\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"label\": \"climate, wellbeing, identity\" }",
+        "link:polarization|trust | systems/causal-loop+link | -650, 115 | CausalLoopLinkPayload { \"fromElementId\": \"variable:polarization\", \"toElementId\": \"variable:trust\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_NEGATIVE\" }",
+        "link:narratives|polarization | systems/causal-loop+link | -460, 260 | CausalLoopLinkPayload { \"fromElementId\": \"variable:narratives\", \"toElementId\": \"variable:polarization\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_NEGATIVE\" }",
+        "link:trust|creativeExpression | systems/causal-loop+link | -805, -95 | CausalLoopLinkPayload { \"fromElementId\": \"variable:trust\", \"toElementId\": \"variable:creativeExpression\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"label\": \"safe enough to show, not only tell\", \"flipped\": true }",
+        "link:creativeExpression|communicationRange | systems/causal-loop+link | -960, 120 | CausalLoopLinkPayload { \"fromElementId\": \"variable:creativeExpression\", \"toElementId\": \"variable:communicationRange\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"flipped\": true }",
+        "link:communicationRange|polarization | systems/causal-loop+link | -805, 330 | CausalLoopLinkPayload { \"fromElementId\": \"variable:communicationRange\", \"toElementId\": \"variable:polarization\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_NEGATIVE\", \"label\": \"heard across lines where arguments are not\", \"flipped\": true }",
+        "link:wickedProblems|quickFixPressure | systems/causal-loop+link | -70, 455 | CausalLoopLinkPayload { \"fromElementId\": \"variable:wickedProblems\", \"toElementId\": \"variable:quickFixPressure\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"flipped\": true }",
+        "link:quickFixPressure|openInquiry | systems/causal-loop+link | -100, 330 | CausalLoopLinkPayload { \"fromElementId\": \"variable:quickFixPressure\", \"toElementId\": \"variable:openInquiry\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_NEGATIVE\", \"label\": \"no time for questions without answers\" }",
+        "link:openInquiry|insight | systems/causal-loop+link | -120, 200 | CausalLoopLinkPayload { \"fromElementId\": \"variable:openInquiry\", \"toElementId\": \"variable:insight\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"weight\": 1.5, \"hasWeight\": true }",
+        "link:insight|quickFixPressure | systems/causal-loop+link | 40, 250 | CausalLoopLinkPayload { \"fromElementId\": \"variable:insight\", \"toElementId\": \"variable:quickFixPressure\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_NEGATIVE\", \"delayed\": true, \"label\": \"insight shows why the quick fix fails\" }",
+        "link:quickFixPressure|recipeUse | systems/causal-loop+link | 310, 395 | CausalLoopLinkPayload { \"fromElementId\": \"variable:quickFixPressure\", \"toElementId\": \"variable:recipeUse\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"flipped\": true }",
+        "loop:R1 | systems/causal-loop+loop | 392.34349999999995, 43.009499999999996 | CausalLoopLoopPayload { \"identifier\": \"R1\", \"name\": \"Relevance draws the field\", \"computed\": \"LOOP_POLARITY_PROTO_REINFORCING\", \"memberElementIds\": [ \"variable:applicability\", \"variable:fieldEngagement\", \"variable:expertDiversity\", \"variable:insight\" ] }",
+        "loop:R2 | systems/causal-loop+loop | 590.1551999999999, -145.4116 | CausalLoopLoopPayload { \"identifier\": \"R2\", \"name\": \"Tools translate thinking\", \"computed\": \"LOOP_POLARITY_PROTO_REINFORCING\", \"memberElementIds\": [ \"variable:applicability\", \"variable:fieldEngagement\", \"variable:practicalTools\", \"variable:practiceGap\", \"variable:insight\" ] }",
+        "loop:B1 | systems/causal-loop+loop | 550.7834, 31.657999999999994 | CausalLoopLoopPayload { \"identifier\": \"B1\", \"name\": \"The toolkit trap\", \"computed\": \"LOOP_POLARITY_PROTO_BALANCING\", \"memberElementIds\": [ \"variable:applicability\", \"variable:fieldEngagement\", \"variable:practicalTools\", \"variable:recipeUse\", \"variable:insight\" ] }",
+        "loop:R3 | systems/causal-loop+loop | -10, -203.33333333333334 | CausalLoopLoopPayload { \"identifier\": \"R3\", \"name\": \"Questions deepen\", \"computed\": \"LOOP_POLARITY_PROTO_REINFORCING\", \"memberElementIds\": [ \"variable:insight\", \"variable:coreValues\", \"variable:philosophy\" ] }",
+        "loop:B2 | systems/causal-loop+loop | 181.71474999999998, -271.337 | CausalLoopLoopPayload { \"identifier\": \"B2\", \"name\": \"Depth drifts from practice\", \"computed\": \"LOOP_POLARITY_PROTO_BALANCING\", \"memberElementIds\": [ \"variable:insight\", \"variable:coreValues\", \"variable:philosophy\", \"variable:practiceGap\" ] }",
+        "loop:R4 | systems/causal-loop+loop | -336, -24 | CausalLoopLoopPayload { \"identifier\": \"R4\", \"name\": \"Openness surfaces wisdom\", \"computed\": \"LOOP_POLARITY_PROTO_REINFORCING\", \"memberElementIds\": [ \"variable:insight\", \"variable:coreValues\", \"variable:trust\", \"variable:latentWisdom\", \"variable:narratives\" ] }",
+        "loop:R5 | systems/causal-loop+loop | -512.5, 97.5 | CausalLoopLoopPayload { \"identifier\": \"R5\", \"name\": \"Stories soften the divide\", \"computed\": \"LOOP_POLARITY_PROTO_REINFORCING\", \"memberElementIds\": [ \"variable:trust\", \"variable:latentWisdom\", \"variable:narratives\", \"variable:polarization\" ] }",
+        "loop:R6 | systems/causal-loop+loop | -805, 117.5 | CausalLoopLoopPayload { \"identifier\": \"R6\", \"name\": \"Art speaks across divides\", \"computed\": \"LOOP_POLARITY_PROTO_REINFORCING\", \"memberElementIds\": [ \"variable:trust\", \"variable:creativeExpression\", \"variable:communicationRange\", \"variable:polarization\" ] }",
+        "loop:R7 | systems/causal-loop+loop | -60, 260 | CausalLoopLoopPayload { \"identifier\": \"R7\", \"name\": \"Haste narrows the view\", \"computed\": \"LOOP_POLARITY_PROTO_REINFORCING\", \"memberElementIds\": [ \"variable:insight\", \"variable:quickFixPressure\", \"variable:openInquiry\" ] }",
+        "loop:R8 | systems/causal-loop+loop | 213.33333333333334, 303.3333333333333 | CausalLoopLoopPayload { \"identifier\": \"R8\", \"name\": \"Recipes for the impatient\", \"computed\": \"LOOP_POLARITY_PROTO_REINFORCING\", \"memberElementIds\": [ \"variable:insight\", \"variable:quickFixPressure\", \"variable:recipeUse\" ] }"
+      ],
+      "edits": [
+        {
+          "do": "execute causal-loop.toggle-delay on link:insight|applicability",
+          "answer": "ok",
+          "hunks": [
+            "@48 -1 +\"link insight -> applicability + delayed weight=1.2\\r\\n\""
+          ],
+          "sha256": "9a24a2ca0c605a21cd18b3d1acad7694e55712baffb4a76ac4032ee031e13f3b"
+        },
+        {
+          "do": "execute causal-loop.flip-curvature on link:insight|applicability",
+          "answer": "ok",
+          "hunks": [
+            "@48 -1 +\"link insight -> applicability + delayed flipped weight=1.2\\r\\n\""
+          ],
+          "sha256": "8d41dd989324dbe97635f134403191e9f2d9e2d30f6ac140dff7e96ed0814038"
+        },
+        {
+          "do": "set link:insight|applicability causal-loop.link-label = \"Parity note\"",
+          "answer": "ok",
+          "hunks": [
+            "@48 -1 +\"link insight -> applicability + delayed flipped weight=1.2 \\\"Parity note\\\"\\r\\n\""
+          ],
+          "sha256": "652a1bdc2d222b12ea02e37a4f89df002ce38545354e4f2e4b11e23d98a75c0f"
+        },
+        {
+          "do": "set link:insight|applicability causal-loop.link-weight = \"heavy\"",
+          "answer": "refused: 'heavy' is not a number. A weight is an annotation this diagram records and never evaluates; leave it empty to remove it.",
+          "unchanged": true
+        },
+        {
+          "do": "set link:insight|applicability causal-loop.link-weight = \"1e21\"",
+          "answer": "ok",
+          "hunks": [
+            "@48 -1 +\"link insight -> applicability + delayed flipped weight=1e+21 \\\"Parity note\\\"\\r\\n\""
+          ],
+          "sha256": "c0ff7a3fd37ae48544b1de21f898aaafd88561ab8548b9bcdabf85e4f7d70601"
+        },
+        {
+          "do": "describe link:insight|applicability",
+          "answer": "causal-loop.link-from | Cause (from) | \"insight\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity || causal-loop.link-to | Effect (to) | \"applicability\" | Line | read-only (A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.) | group Identity || causal-loop.link-label | Note | \"Parity note\" | Line | editable | group Identity || causal-loop.link-polarity | Polarity | \"positive\" | Choice | editable | group Causality | choices [\"positive\", \"negative\", \"unstated\"] || causal-loop.link-delayed | Delayed | \"true\" | Toggle | editable | group Causality || causal-loop.link-weight | Weight | \"1E+21\" | Line | editable | group Causality",
+          "unchanged": true
+        },
+        {
+          "do": "set link:insight|applicability causal-loop.link-weight = \"0.000001\"",
+          "answer": "ok",
+          "hunks": [
+            "@48 -1 +\"link insight -> applicability + delayed flipped weight=0.000001 \\\"Parity note\\\"\\r\\n\""
+          ],
+          "sha256": "a2bf026f77fccddde8f62f584e38013363a295f575403010f77be4748ec0cae9"
+        },
+        {
+          "do": "set link:insight|applicability causal-loop.link-weight = \"\"",
+          "answer": "ok",
+          "hunks": [
+            "@48 -1 +\"link insight -> applicability + delayed flipped \\\"Parity note\\\"\\r\\n\""
+          ],
+          "sha256": "03379435ba93b4f146536e18dde3af9cb920bcfd0444f05c32501d3099edc8f4"
+        },
+        {
+          "do": "set link:insight|applicability causal-loop.link-polarity = \"sideways\"",
+          "answer": "refused: 'sideways' is not a polarity a link can state.",
+          "unchanged": true
+        },
+        {
+          "do": "set link:insight|applicability causal-loop.link-polarity = \"unstated\"",
+          "answer": "ok",
+          "hunks": [
+            "@48 -1 +\"link insight -> applicability delayed flipped \\\"Parity note\\\"\\r\\n\""
+          ],
+          "sha256": "6f10d2d021af8a8c8f3f8ecd4c182a7245277214729c8fc5c9e49ecb95e1607d"
+        },
+        {
+          "do": "set link:insight|applicability causal-loop.link-delayed = \"true\"",
+          "answer": "ok",
+          "unchanged": true
+        },
+        {
+          "do": "set link:insight|applicability causal-loop.link-from = \"nobody\"",
+          "answer": "refused: 'causal-loop.link-from' cannot be edited on this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "execute causal-loop.make-positive on link:insight|applicability",
+          "answer": "ok",
+          "hunks": [
+            "@48 -1 +\"link insight -> applicability + delayed flipped \\\"Parity note\\\"\\r\\n\""
+          ],
+          "sha256": "03379435ba93b4f146536e18dde3af9cb920bcfd0444f05c32501d3099edc8f4"
+        },
+        {
+          "do": "execute causal-loop.make-negative on link:insight|applicability",
+          "answer": "ok",
+          "hunks": [
+            "@48 -1 +\"link insight -> applicability - delayed flipped \\\"Parity note\\\"\\r\\n\""
+          ],
+          "sha256": "37ae873265656f125213a3008b4891ef0b3d83c77ca0aaf24f37a92921732314"
+        },
+        {
+          "do": "execute causal-loop.make-negative on link:insight|applicability",
+          "answer": "ok",
+          "unchanged": true
+        },
+        {
+          "do": "execute causal-loop.rename-loop on loop:R1",
+          "answer": "asks: ContextInputRequest { Title = Rename loop, Icon = mdi-rename-outline, FieldLabel = Name, InitialValue = Relevance draws the field, ConfirmLabel = Apply, InlineLabelElementId = , CommitActionId =  }",
+          "unchanged": true
+        },
+        {
+          "do": "commit causal-loop.rename-loop on loop:R1 = \"Parity loop\"",
+          "answer": "ok",
+          "hunks": [
+            "@53 -1 +\"loop R1 \\\"Parity loop\\\" applicability fieldEngagement expertDiversity insight\\r\\n\""
+          ],
+          "sha256": "0b8d63d648b2afa4aed4bb9c75e1c0135f654db33f3c7d964690406469b8f982"
+        },
+        {
+          "do": "set loop:R1 causal-loop.loop-name = \"Parity name\"",
+          "answer": "ok",
+          "hunks": [
+            "@53 -1 +\"loop R1 \\\"Parity name\\\" applicability fieldEngagement expertDiversity insight\\r\\n\""
+          ],
+          "sha256": "f335f77aa79c9b94ad8f9e8e938e310fc5e07183818240226b2da5e18297cb1c"
+        },
+        {
+          "do": "set loop:R1 causal-loop.loop-name = \"Has \\\"quote\\\"\"",
+          "answer": "refused: A label or loop name cannot hold a double quote, because it is written between double quotes.",
+          "unchanged": true
+        },
+        {
+          "do": "set loop:R1 causal-loop.loop-variables = \"applicability → fieldEngagement → expertDiversity → insight\"",
+          "answer": "ok",
+          "unchanged": true
+        },
+        {
+          "do": "set loop:R1 causal-loop.loop-variables = \"nobody → nowhere\"",
+          "answer": "refused: 'nobody → nowhere' is not a cycle this loop can run through: choose one the arrows form through its variables that no other loop claims.",
+          "unchanged": true
+        },
+        {
+          "do": "set loop:R1 causal-loop.loop-identifier = \"R2\"",
+          "answer": "refused: A loop of that identifier is already stated in this diagram.",
+          "unchanged": true
+        },
+        {
+          "do": "set loop:R1 causal-loop.loop-identifier = \"\"",
+          "answer": "refused: A name needs at least one character and no whitespace, because a statement is read as words on one line.",
+          "unchanged": true
+        },
+        {
+          "do": "set loop:R1 causal-loop.loop-identifier = \"B99\"",
+          "answer": "ok",
+          "hunks": [
+            "@53 -1 +\"loop B99 \\\"Parity name\\\" applicability fieldEngagement expertDiversity insight\\r\\n\""
+          ],
+          "sha256": "744b4d7f387a4dacfe06cd51e4173c4f1134c1f7d8851a9b7ddd7716f5d29ebf"
+        },
+        {
+          "do": "execute causal-loop.rename-variable on variable:applicability",
+          "answer": "asks: ContextInputRequest { Title = Rename variable, Icon = mdi-rename-outline, FieldLabel = Name, InitialValue = Applicability in practice, ConfirmLabel = Apply, InlineLabelElementId = variable:applicability, CommitActionId =  }",
+          "unchanged": true
+        },
+        {
+          "do": "validate causal-loop.rename-variable on variable:applicability = \"Say \\\"hi\\\"\"",
+          "answer": "rejected: A name needs at least one character, and cannot contain a quote or a line break.",
+          "unchanged": true
+        },
+        {
+          "do": "validate causal-loop.rename-variable on variable:applicability = \"\"",
+          "answer": "rejected: A name needs at least one character, and cannot contain a quote or a line break.",
+          "unchanged": true
+        },
+        {
+          "do": "commit causal-loop.rename-variable on variable:applicability = \"Parity renamed\"",
+          "answer": "ok",
+          "hunks": [
+            "@22 -1 +\"variable applicability \\\"Parity renamed\\\"\\r\\n\""
+          ],
+          "sha256": "829c164f4d877bd75ccb2905e0b4787c9704886bbe9d410a1706e36143a6fa71"
+        },
+        {
+          "do": "set variable:applicability causal-loop.variable-label = \"Say \\\"hi\\\"\"",
+          "answer": "refused: A label or loop name cannot hold a double quote, because it is written between double quotes.",
+          "unchanged": true
+        },
+        {
+          "do": "describe variable:applicability",
+          "answer": "causal-loop.variable-label | Label | \"Parity renamed\" | Line | editable | group Identity || causal-loop.variable-id | Identifier | \"applicability\" | Line | editable | group Identity",
+          "unchanged": true
+        },
+        {
+          "do": "set variable:applicability causal-loop.variable-label = \"Parity label\"",
+          "answer": "ok",
+          "hunks": [
+            "@22 -1 +\"variable applicability \\\"Parity label\\\"\\r\\n\""
+          ],
+          "sha256": "a09011b7ef1802190b560dbce11ae959fcbff981aa8339265900ff5cc90567ad"
+        },
+        {
+          "do": "validate causal-loop.add-link on variable:applicability = \"nobody\"",
+          "answer": "rejected: 'nobody' is not a variable in this diagram.",
+          "unchanged": true
+        },
+        {
+          "do": "validate causal-loop.add-link on variable:applicability = \"fieldEngagement\"",
+          "answer": "accepted",
+          "unchanged": true
+        },
+        {
+          "do": "execute causal-loop.add-link on variable:applicability",
+          "answer": "asks: ContextInputRequest { Title = Add link, Icon = mdi-arrow-right-thin, FieldLabel = To variable, InitialValue = , ConfirmLabel = Apply, InlineLabelElementId = , CommitActionId =  }",
+          "unchanged": true
+        },
+        {
+          "do": "commit causal-loop.add-link on variable:applicability = \"fieldEngagement\"",
+          "answer": "refused: That link is already stated in this diagram.",
+          "unchanged": true
+        },
+        {
+          "do": "commit causal-loop.add-link on variable:applicability = \"nobody\"",
+          "answer": "refused: No variable of that name is in this diagram, so there is nothing to change.",
+          "unchanged": true
+        },
+        {
+          "do": "execute causal-loop.add-loop on variable:applicability",
+          "answer": "asks: ContextInputRequest { Title = Claim a loop, Icon = mdi-sync, FieldLabel = Identifier, InitialValue = R1, ConfirmLabel = Apply, InlineLabelElementId = , CommitActionId =  }",
+          "unchanged": true
+        },
+        {
+          "do": "validate causal-loop.add-loop on variable:applicability = \"B99\"",
+          "answer": "rejected: A loop of that identifier is already stated in this diagram.",
+          "unchanged": true
+        },
+        {
+          "do": "commit causal-loop.add-loop on variable:applicability = \"R99\"",
+          "answer": "ok",
+          "hunks": [
+            "@150 -0 +\"loop R99 \\\"R99\\\" applicability fieldEngagement expertDiversity insight\\r\\n\""
+          ],
+          "sha256": "ba0e5e9dcba44cfb3b6db53c67a33ada753d96f04304a8cf3a8e3d5a358c384e"
+        },
+        {
+          "do": "set variable:applicability causal-loop.variable-id = \"fieldEngagement\"",
+          "answer": "refused: A variable of that name is already declared in this diagram.",
+          "unchanged": true
+        },
+        {
+          "do": "set variable:applicability causal-loop.variable-id = \"has space\"",
+          "answer": "refused: A name needs at least one character and no whitespace, because a statement is read as words on one line.",
+          "unchanged": true
+        },
+        {
+          "do": "set variable:applicability causal-loop.variable-id = \"\"",
+          "answer": "refused: A name needs at least one character and no whitespace, because a statement is read as words on one line.",
+          "unchanged": true
+        },
+        {
+          "do": "set variable:applicability causal-loop.variable-id = \"parityId\"",
+          "answer": "ok",
+          "hunks": [
+            "@22 -1 +\"variable parityId \\\"Parity label\\\"\\r\\n\"",
+            "@48 -2 +\"link insight -> parityId - delayed flipped \\\"Parity note\\\"\\r\\nlink parityId -> fieldEngagement + delayed \\\"a reputation is built over cohorts\\\"\\r\\n\"",
+            "@53 -1 +\"loop B99 \\\"Parity name\\\" parityId fieldEngagement expertDiversity insight\\r\\n\"",
+            "@69 -1 +\"loop R2 \\\"Tools translate thinking\\\" parityId fieldEngagement practicalTools practiceGap insight\\r\\n\"",
+            "@74 -1 +\"loop B1 \\\"The toolkit trap\\\" parityId fieldEngagement practicalTools recipeUse insight\\r\\n\"",
+            "@150 -1 +\"loop R99 \\\"R99\\\" parityId fieldEngagement expertDiversity insight\\r\\n\""
+          ],
+          "sha256": "367867fa3c3ac38957afb1c32799bbd056c7234ff2f26bb20b7332bbba9f15e1"
+        },
+        {
+          "do": "execute causal-loop.connect on rel:fieldEngagement->parityId",
+          "answer": "ok",
+          "hunks": [
+            "@148 -0 +\"link fieldEngagement -> parityId +\\r\\n\"",
+            "@151 -0 +\"loop R100 \\\"\\\" parityId fieldEngagement\\r\\n\""
+          ],
+          "sha256": "d5c8c1188128135cb087cab53bcc43906163d704c7fa4687b7e8190e820a2d09"
+        },
+        {
+          "do": "execute causal-loop.connect on rel:fieldEngagement->parityId",
+          "answer": "refused: That link is already stated in this diagram.",
+          "unchanged": true
+        },
+        {
+          "do": "execute causal-loop.connect on rel:parityId->parityId",
+          "answer": "ok",
+          "hunks": [
+            "@149 -0 +\"link parityId -> parityId +\\r\\n\"",
+            "@153 -0 +\"loop R101 \\\"\\\" parityId\\r\\n\""
+          ],
+          "sha256": "7874d2db383a229d9281332f5db21f4b50119edeed7b0d6dbebba39f8f1c8280"
+        },
+        {
+          "do": "execute causal-loop.connect on rel:parityId->nobody",
+          "answer": "refused: No variable of that name is in this diagram, so there is nothing to change.",
+          "unchanged": true
+        },
+        {
+          "do": "execute causal-loop.add-variable on new:240,160",
+          "answer": "ok",
+          "hunks": [
+            "@40 -0 +\"variable variable1 \\\"Variable 1\\\"\\r\\n\""
+          ],
+          "sha256": "c19967878bb6b6f63074637096a166e6c75cf046e67684c36b27ee2bbbfe1860",
+          "registration": {
+            "hunks": [
+              "@20 -0 +\"  variable:variable1: 240 160\\r\\n\""
+            ],
+            "sha256": "4b5af175ba14deca7235885a530bdeb0f49c935addc0286169f49b4fd61efd20"
+          }
+        },
+        {
+          "do": "execute causal-loop.add-variable on ",
+          "answer": "ok",
+          "hunks": [
+            "@41 -0 +\"variable variable2 \\\"Variable 2\\\"\\r\\n\""
+          ],
+          "sha256": "a2a1f5c14337c8fd8312b92314b791e00caa6070ac24e49fe635e68573e81ca1"
+        },
+        {
+          "do": "move variable:fieldEngagement to (100, 200)",
+          "answer": "ok",
+          "unchanged": true,
+          "registration": {
+            "hunks": [
+              "@8 -1 +\"  variable:fieldEngagement: 100 200\\r\\n\""
+            ],
+            "sha256": "a2236f7da3c516dcaa05fefdbe4e4c2e5d7941cb78670b60687021b3f42c2275"
+          }
+        },
+        {
+          "do": "move link:insight|parityId to (100, 200)",
+          "answer": "refused: Only a variable can be moved; a link is drawn between its ends and a loop label among its members.",
+          "unchanged": true
+        },
+        {
+          "do": "execute causal-loop.arrange on new:240,160",
+          "answer": "ok",
+          "unchanged": true,
+          "registration": {
+            "hunks": [
+              "@4 -18 +\"  variable:communicationRange: -720.507 -37.888\\r\\n  variable:coreValues: -141.56 710.146\\r\\n  variable:creativeExpression: -749.264 250.148\\r\\n  variable:expertDiversity: 445.878 587.617\\r\\n  variable:fieldEngagement: 637.753 695.292\\r\\n  variable:insight: 124.745 393.182\\r\\n  variable:latentWisdom: -656.981 764.224\\r\\n  variable:narratives: -387.48 462.103\\r\\n  variable:openInquiry: 83.299 200.978\\r\\n  variable:parityId: 393.378 758.679\\r\\n  variable:philosophy: 67.475 613.881\\r\\n  variable:polarization: -420.95 39.871\\r\\n  variable:practicalTools: 640.595 340.456\\r\\n  variable:practiceGap: 390.095 439.348\\r\\n  variable:quickFixPressure: 190.29 -29.003\\r\\n  variable:recipeUse: 514.554 52.766\\r\\n  variable:trust: -523.278 542.703\\r\\n  variable:variable1: -528.047 -659.385\\r\\n  variable:variable2: 451.522 -623.969\\r\\n  variable:wickedProblems: -121.562 -164.407\\r\\n\""
+            ],
+            "sha256": "be18c0deeec8d9e923875eae9be4573daa05a6fc9ec84cb3dd5e9657d9e4e896"
+          }
+        },
+        {
+          "do": "execute causal-loop.make-positive on parity:unknown",
+          "answer": "refused: That action does not apply to this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "execute causal-loop.remove-variable on parity:unknown",
+          "answer": "confirms: ContextConfirmationRequest { Title = Remove variable, Icon = mdi-delete-outline, Message = Remove ''?, ConfirmLabel = Remove, Danger = True }",
+          "unchanged": true
+        },
+        {
+          "do": "commit causal-loop.rename-variable on parity:unknown = \"Nobody\"",
+          "answer": "refused: 'causal-loop.rename-variable' does not apply to this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "set parity:unknown causal-loop.variable-label = \"Nobody\"",
+          "answer": "refused: 'causal-loop.variable-label' cannot be edited on this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "execute timeline.not-ours on parity:unknown",
+          "answer": "refused: That action is not this diagram's.",
+          "unchanged": true
+        },
+        {
+          "do": "execute causal-loop.remove-link on link:insight|parityId",
+          "answer": "ok",
+          "hunks": [
+            "@50 -1 +\"\""
+          ],
+          "sha256": "f9d258e286e80e858d369f16ddc2684adcde6947f8d6d6a48d0ca98593d540fd"
+        },
+        {
+          "do": "execute causal-loop.remove-loop on loop:B99",
+          "answer": "ok",
+          "hunks": [
+            "@54 -1 +\"\""
+          ],
+          "sha256": "9df93d9076c06ccd6e06fc477d0d4ec7e3af1d52d8757d56c7620f98f1e9e9b2"
+        },
+        {
+          "do": "execute causal-loop.remove-variable on variable:parityId",
+          "answer": "confirms: ContextConfirmationRequest { Title = Remove variable, Icon = mdi-delete-outline, Message = Removing 'parityId' also removes the 8 links and loops that name it., ConfirmLabel = Remove, Danger = True }",
+          "unchanged": true
+        },
+        {
+          "do": "commit causal-loop.remove-variable on variable:parityId = \"\"",
+          "answer": "ok",
+          "hunks": [
+            "@22 -1 +\"\"",
+            "@50 -1 +\"\"",
+            "@69 -1 +\"\"",
+            "@74 -1 +\"\"",
+            "@148 -2 +\"\"",
+            "@152 -3 +\"\""
+          ],
+          "sha256": "c00f58d7792ae065000126e574f1ef274b4b63641228888796cb5b09382ed6dd"
+        }
+      ],
+      "undoAll": "27 undone; the original text is back"
     },
     {
       "document": "examples/diagrams/causal-loop-diagram/on-call/on-call.cld",
