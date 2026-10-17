@@ -1,4 +1,4 @@
-namespace EtAlii.Adp.Documents;
+namespace EtAlii.Adp.Files;
 
 /// <summary>
 /// What the destination looked like at the instant a publish failed: whether it was there, and

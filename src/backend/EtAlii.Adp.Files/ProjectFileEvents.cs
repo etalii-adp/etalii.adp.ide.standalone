@@ -1,6 +1,6 @@
 using Serilog;
 
-namespace EtAlii.Adp.Documents;
+namespace EtAlii.Adp.Files;
 
 /// <summary>
 /// One source of file events per project root, shared by everyone who listens there

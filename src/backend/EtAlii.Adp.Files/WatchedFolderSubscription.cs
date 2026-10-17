@@ -1,4 +1,4 @@
-namespace EtAlii.Adp.Documents;
+namespace EtAlii.Adp.Files;
 
 /// <summary>
 /// What <see cref="WatchedFolderStore{TSnapshot}.Watch"/> hands back: unsubscribing is the whole

@@ -4,13 +4,15 @@
     The bottom of the backend's shared layer, directly above the universal core.
     Extracted from Common on the user's decision (post-decomposition backlog item 5)
     with the Line document family every diagram module parses with, AdpFileWriter and
-    its result model, and the shared reader - and it took the rest of Common when
+    its result model (since moved to EtAlii.Adp.Files with the watchers, code-structure
+    T160), and the shared reader - and it took the rest of Common when
     Common was dissolved (items 8 and 11): the diagram DEFINITION contract
     (DiagramDefinition, DiagramOrigin, DiagramSubject, the catalog and the document
     factories) and the generation of the five shared wire protos. The VALIDATION
     contract went to EtAlii.Adp.Diagram instead, because DiagramValidators references
     IDiagramValidator and Diagram already references this project. Nothing here may
-    reference any other project but the core: every area sits above it.
+    reference any other project but the core and the file project below it: every area
+    sits above it.
   -->
 
   <ItemGroup>
@@ -30,15 +32,14 @@
 
   <ItemGroup>
     <ProjectReference Include="..\EtAlii.Adp\EtAlii.Adp.csproj" />
+    <!-- The file writer the writable lifecycle saves through. -->
+    <ProjectReference Include="..\EtAlii.Adp.Files\EtAlii.Adp.Files.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <!-- AdpFileWriter.Save takes its replace through an internal overload, so a guard can stop a
-         save inside its replace and prove concurrent saves take turns without relying on timing. -->
+    <!-- The lifecycles take their read and their retry through internal constructors, so a guard can
+         drive a reload or a save without the file system's timing. -->
     <InternalsVisibleTo Include="EtAlii.Adp.Documents.Tests" />
-    <!-- The watched-folder contract makes a store's own watcher overflow, which only its internal
-         watchers allow; every module's store test inherits that one test. -->
-    <InternalsVisibleTo Include="EtAlii.Adp.TestSupport" />
   </ItemGroup>
 
   <ItemGroup>

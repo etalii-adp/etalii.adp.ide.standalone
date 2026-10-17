@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Text;
+using EtAlii.Adp.Files;
 using EtAlii.Adp.Hierarchy;
 using Xunit;
 using IoPath = System.IO.Path;

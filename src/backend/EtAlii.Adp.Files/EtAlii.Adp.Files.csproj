@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The file system as the backend meets it (code-structure FR-056, research R10): writing a file
+    so a reader never sees half of it, what holds a file open (the Restart Manager) and whether two
+    paths are one file (NTFS file identity), and watching a file, a folder and a project's files.
+    Out of the documents project, which keeps the wire vocabulary and the document types and
+    references this one. Nothing here references any project but the shared primitives.
+  -->
+
+  <ItemGroup>
+    <PackageReference Include="Serilog" />
+    <ProjectReference Include="..\EtAlii.Adp\EtAlii.Adp.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- AdpFileWriter.Save takes its replace through an internal overload, so a guard can stop a
+         save inside its replace and prove concurrent saves take turns without relying on timing. -->
+    <InternalsVisibleTo Include="EtAlii.Adp.Documents.Tests" />
+    <!-- The watched-folder contract makes a store's own watcher overflow, which only its internal
+         watchers allow; every module's store test inherits that one test. -->
+    <InternalsVisibleTo Include="EtAlii.Adp.TestSupport" />
+  </ItemGroup>
+
+</Project>
