@@ -1027,10 +1027,10 @@
         "Stage": { "strategy": "derived", "expression": "has(self.name) && self.name != '' ? self.name : 'stage-' + string(self.positionIn(diagram.nodesOfType('Stage')))", "ephemeral": "!has(self.name) || self.name == ''" },
         "JobBase": { "strategy": "derived", "expression": "self.parent.id + '/' + (has(self.name) && self.name != '' ? self.name : 'job-' + string(self.positionIn(self.parent.childrenOfType('JobBase'))))", "ephemeral": "!has(self.name) || self.name == ''" },
         "Step": { "strategy": "derived", "expression": "self.parent.id + '/step-' + string(self.positionIn(self.parent.childrenOfType('Step')))", "ephemeral": true },
-        "TemplateReference": { "strategy": "derived", "expression": "'template:template-' + string(self.ordinal)", "ephemeral": true },
+        "TemplateReference": { "strategy": "derived", "expression": "self.slot == 'extends' ? 'template:extends' : 'template:template-' + string(self.ordinal)", "ephemeral": true },
         "DependsOn": { "strategy": "derived", "expression": "'edge:' + (has(self.source) ? self.source.id : '?' + self.name) + '->' + self.target.id" }
       },
-      "doc": "Ids are paths through the file, never written (finding A8): a stage is its name, or `stage-<n>` when it has none; a job `<stage>/<name>`, or `<stage>/job-<n>`; a step `<job>/step-<n>`; a template reference `template:template-<n>`, numbered across followed templates in reading order; a dependency `edge:<from>-><to>`, with `?<name>` as the from of one that names nothing. The default order's edges take the derived relation's default id. Positional ids are ephemeral. Two stages of one name share an id, and the first is the one a gesture finds."
+      "doc": "Ids are paths through the file, never written (finding A8): a stage is its name, or `stage-<n>` when it has none; a job `<stage>/<name>`, or `<stage>/job-<n>`; a step `<job>/step-<n>`; a template reference `template:template-<n>`, numbered across followed templates in reading order, and an `extends` `template:extends`; a dependency `edge:<from>-><to>`, with `?<name>` as the from of one that names nothing. The default order's edges take the derived relation's default id. Positional ids are ephemeral. Two stages of one name share an id, and the first is the one a gesture finds."
     },
     "view": {
       "store": [],

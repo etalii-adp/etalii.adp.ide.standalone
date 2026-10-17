@@ -60,7 +60,7 @@ public sealed class EditorService : Editor.Wire.EditorService.EditorServiceBase
 
     public override async Task<SaveTextResponse> SaveText(SaveTextRequest request, ServerCallContext context)
     {
-        if (!ProjectTextFile.TryResolve(_projectStore, request.ProjectId, request.Path, SessionContext.GetUserId(context), out var rootPath, out var fullPath))
+        if (!ProjectTextFile.TryResolve(_projectStore, request.ProjectId, request.Path, SessionContext.GetUserId(context), out var file))
         {
             // The content is deliberately not logged - only which file the save asked for.
             _logger.Warning("Refused to save {Path}: it does not resolve inside the project any more", string.Join('/', request.Path.Segments));
@@ -72,23 +72,25 @@ public sealed class EditorService : Editor.Wire.EditorService.EditorServiceBase
         // the file as an ordinary pushed change - each text session through its own watcher,
         // each diagram through the reload bridge and its store - so the file on disk is the
         // tie-breaker by construction (Requirements 5.3, 5.5).
-        var result = await _historyStacks.Get(rootPath).ExecuteAsync(
-            new SaveTextFileCommand(fullPath, request.Content), context.CancellationToken);
+        var result = await _historyStacks.Get(file.Root.FullPath).ExecuteAsync(
+            new SaveTextFileCommand(file.FullPath, request.Content), context.CancellationToken);
 
-        _logger.Information("Saved {FullPath} through the history: {Outcome}", fullPath, result.IsSuccess ? "ok" : result.Error);
+        _logger.Information("Saved {FullPath} through the history: {Outcome}", file.FullPath, result.IsSuccess ? "ok" : result.Error);
         return new SaveTextResponse { Error = result.IsSuccess ? "" : result.Error };
     }
 
     public override async Task<AnalyzeTextResponse> Analyze(AnalyzeTextRequest request, ServerCallContext context)
     {
-        if (!TryAnalyzer(request.ProjectId, request.Path, request.EditorId, request.Content, context, out var rootPath, out var fullPath, out var analyzer, out var refusal))
+        if (!TryAnalyzer(request.ProjectId, request.Path, request.EditorId, request.Content, context, out var file, out var analyzer, out var refusal))
         {
             return new AnalyzeTextResponse { Error = refusal };
         }
 
+        var rootPath = file.Root.FullPath;
+
         try
         {
-            var analysis = await analyzer.AnalyzeAsync(rootPath, fullPath, request.Content, context.CancellationToken);
+            var analysis = await analyzer.AnalyzeAsync(rootPath, file.FullPath, request.Content, context.CancellationToken);
             var response = new AnalyzeTextResponse { Status = analysis.Status };
             response.Findings.AddRange(analysis.Findings.Select(ToWire));
             response.DependsOn.AddRange(analysis.DependsOn
@@ -104,7 +106,7 @@ public sealed class EditorService : Editor.Wire.EditorService.EditorServiceBase
 
     public override async Task<CompleteTextResponse> Complete(CompleteTextRequest request, ServerCallContext context)
     {
-        if (!TryAnalyzer(request.ProjectId, request.Path, request.EditorId, request.Content, context, out var rootPath, out var fullPath, out var analyzer, out var refusal))
+        if (!TryAnalyzer(request.ProjectId, request.Path, request.EditorId, request.Content, context, out var file, out var analyzer, out var refusal))
         {
             return new CompleteTextResponse { Error = refusal };
         }
@@ -116,7 +118,7 @@ public sealed class EditorService : Editor.Wire.EditorService.EditorServiceBase
 
         try
         {
-            var items = await analyzer.CompleteAsync(rootPath, fullPath, request.Content, (int)request.Offset, request.Explicit, context.CancellationToken);
+            var items = await analyzer.CompleteAsync(file.Root.FullPath, file.FullPath, request.Content, (int)request.Offset, request.Explicit, context.CancellationToken);
             var response = new CompleteTextResponse();
             response.Items.AddRange(items.Select(item => new WireCompletion
             {
@@ -146,15 +148,13 @@ public sealed class EditorService : Editor.Wire.EditorService.EditorServiceBase
         string editorId,
         string content,
         ServerCallContext context,
-        out string rootPath,
-        out string fullPath,
+        out ProjectPath file,
         [System.Diagnostics.CodeAnalysis.NotNullWhen(true)]
         out IEditorAnalyzer? analyzer,
         out string refusal)
     {
         analyzer = null;
-        rootPath = "";
-        fullPath = "";
+        file = default;
 
         if (content.Length > MaximumAnalyzedLength)
         {
@@ -162,7 +162,7 @@ public sealed class EditorService : Editor.Wire.EditorService.EditorServiceBase
             return false;
         }
 
-        if (!ProjectTextFile.TryResolve(_projectStore, projectId, path, SessionContext.GetUserId(context), out rootPath, out fullPath))
+        if (!ProjectTextFile.TryResolve(_projectStore, projectId, path, SessionContext.GetUserId(context), out file))
         {
             refusal = NoFile;
             return false;

@@ -1,0 +1,15 @@
+# The pipeline's shape is a template in another repository, which ADP never
+# reads: the extends is drawn as a template reference that was not followed.
+trigger:
+  - main
+
+resources:
+  repositories:
+    - repository: templates
+      type: git
+      name: Shared/pipeline-templates
+
+extends:
+  template: pipeline.yml@templates
+  parameters:
+    buildConfiguration: Release

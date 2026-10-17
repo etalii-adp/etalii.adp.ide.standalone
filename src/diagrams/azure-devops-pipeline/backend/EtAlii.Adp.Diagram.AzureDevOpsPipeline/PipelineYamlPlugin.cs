@@ -154,7 +154,7 @@ internal sealed class PipelineYamlPlugin(PipelineReadContext context) : IPersist
             : model.Templates.Select(reference => (reference, PipelineTemplateUnresolvedReason.None));
         foreach ((PipelineTemplateReference reference, PipelineTemplateUnresolvedReason reason) in unfollowed)
         {
-            nodes.Add(Node(NextId(), "TemplateReference", TemplateAttributes(reference, reason, firstReadId, model.Templates.Count), null));
+            nodes.Add(Node(NextId(), "TemplateReference", TemplateAttributes(reference, reason, firstReadId), null));
         }
 
         var stageNames = stages.Select(stage => (stage.Stage.Name, stage.Read)).ToList();
@@ -263,21 +263,17 @@ internal sealed class PipelineYamlPlugin(PipelineReadContext context) : IPersist
     /// <param name="reference">The reference.</param>
     /// <param name="reason">Why it was not followed, or none for a reading that follows nothing.</param>
     /// <param name="firstReadId">The id each parsed element is read under.</param>
-    /// <param name="unnumbered">
-    /// The ordinal of an <c>extends</c> that was not followed: the parser numbers only the references under
-    /// <c>stages</c>, <c>jobs</c> and <c>steps</c>, and calls this one <c>extends</c>, which the definition's id rule
-    /// cannot name, so it takes the number after the last of theirs.
-    /// </param>
-    private static Dictionary<string, object?> TemplateAttributes(PipelineTemplateReference reference, PipelineTemplateUnresolvedReason reason, Dictionary<string, string> firstReadId, int unnumbered)
+    /// <remarks>
+    /// The parser numbers only the references under <c>stages</c>, <c>jobs</c> and <c>steps</c>; an <c>extends</c> it
+    /// calls <c>extends</c>, and has no ordinal, because the definition's id rule names it <c>template:extends</c>.
+    /// </remarks>
+    private static Dictionary<string, object?> TemplateAttributes(PipelineTemplateReference reference, PipelineTemplateUnresolvedReason reason, Dictionary<string, string> firstReadId)
     {
-        var ordinal = reference.Id.StartsWith(TemplateIdPrefix, StringComparison.Ordinal)
-            ? long.Parse(reference.Id[TemplateIdPrefix.Length..], CultureInfo.InvariantCulture)
-            : unnumbered;
         var attributes = Attributes(
             ("path", reference.Path),
             ("slot", Key(reference.Slot.ToString())),
-            ("parameterNames", reference.ParameterNames.Cast<object?>().ToList()),
-            ("ordinal", ordinal));
+            ("parameterNames", reference.ParameterNames.Cast<object?>().ToList()));
+        if (reference.Slot != PipelineTemplateSlot.Extends) attributes["ordinal"] = long.Parse(reference.Id[TemplateIdPrefix.Length..], CultureInfo.InvariantCulture);
         if (reason != PipelineTemplateUnresolvedReason.None) attributes["reason"] = Key(reason.ToString());
         if (reference.Resource.Length > 0) attributes["resource"] = reference.Resource;
         if (reference.OwnerId.Length > 0 && firstReadId.TryGetValue(reference.OwnerId, out var owner)) attributes["referencedFrom"] = owner;

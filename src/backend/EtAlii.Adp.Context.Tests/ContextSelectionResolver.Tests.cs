@@ -12,7 +12,7 @@ namespace EtAlii.Adp.Context.Tests;
 public class ContextSelectionResolverTests
 {
     private static readonly ShortGuid WatchId = ShortGuid.NewShortGuid();
-    private const string Root = @"C:\root";
+    private static readonly ProjectRoot Root = ProjectRoot.From(@"C:\root");
 
     private static ContextSelection Level(ContextSource id, params string[] path)
     {

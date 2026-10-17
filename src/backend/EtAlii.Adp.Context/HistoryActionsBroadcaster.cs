@@ -49,7 +49,7 @@ public sealed class HistoryActionsBroadcaster : IDisposable
         {
             var target = ProjectTarget(rootPath);
             var actions = _actionResolver.DiscoverAsync(target, CancellationToken.None).AsTask().GetAwaiter().GetResult();
-            _selectionStore.PushProjectActions(rootPath, actions);
+            _selectionStore.PushProjectActions(ProjectRoot.From(rootPath), actions);
         }
         catch (Exception exception)
         {

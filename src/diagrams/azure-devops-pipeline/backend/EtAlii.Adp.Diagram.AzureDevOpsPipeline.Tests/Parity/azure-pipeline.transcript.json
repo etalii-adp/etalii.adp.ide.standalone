@@ -5581,6 +5581,47 @@
       "undoAll": "0 undone; the original text is back"
     },
     {
+      "document": "diagrams/azure-devops-pipeline/backend/EtAlii.Adp.Diagram.AzureDevOpsPipeline.Tests/Fixtures/extends-other-repository.yml",
+      "sha256": "4e71223f89d87447e798104741070e6b36dc3d71365b7aae825bc2d7a40a4257",
+      "menus": [
+        []
+      ],
+      "choices": [],
+      "targets": [
+        "\"template:extends\" => menu #0",
+        "\"\" => menu #0",
+        "\"parity:unknown\" => menu #0"
+      ],
+      "rows": [],
+      "findings": [],
+      "payloads": [
+        "template:extends | azure-devops/pipeline+template | 0, 32 | PipelineElementPayload { \"name\": \"pipeline.yml\", \"displayName\": \"pipeline.yml@templates\", \"kind\": \"PIPELINE_ELEMENT_KIND_TEMPLATE\", \"indeterminate\": true, \"enabled\": true, \"multiplicity\": 1, \"width\": 220, \"height\": 88, \"reference\": \"pipeline.yml@templates\", \"unresolvedReason\": \"It comes from the 'templates' repository resource, which is not checked out here.\", \"firstLine\": 13, \"lastLine\": 15 }"
+      ],
+      "edits": [
+        {
+          "do": "execute azure-pipeline.rename on parity:unknown",
+          "answer": "refused: That element is no longer in this pipeline.",
+          "unchanged": true
+        },
+        {
+          "do": "commit azure-pipeline.remove on parity:unknown = \"\"",
+          "answer": "refused: 'azure-pipeline.remove' does not apply to this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "set parity:unknown azure-pipeline.display-name = \"Nobody\"",
+          "answer": "refused: That element is no longer in this pipeline.",
+          "unchanged": true
+        },
+        {
+          "do": "execute azure-pipeline.add-stage on ",
+          "answer": "refused: That element is no longer in this pipeline.",
+          "unchanged": true
+        }
+      ],
+      "undoAll": "0 undone; the original text is back"
+    },
+    {
       "document": "diagrams/azure-devops-pipeline/backend/EtAlii.Adp.Diagram.AzureDevOpsPipeline.Tests/Fixtures/extends.yml",
       "sha256": "e073ce126542d869582433ea7b31cb0883ae41d33829313a0c89fa9bde79b172",
       "menus": [

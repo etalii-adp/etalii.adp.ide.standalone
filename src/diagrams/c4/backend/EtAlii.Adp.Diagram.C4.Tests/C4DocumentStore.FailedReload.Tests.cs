@@ -124,7 +124,7 @@ public class C4DocumentStoreFailedReloadTests : IDisposable
         using var events = new ProjectFileEvents();
         using var bridge = new DiagramDocumentReloadBridge([new DiagramDocumentReloader<IC4DocumentStore>(origin, store)], events);
         Assert.NotEmpty(store.GetOrLoad(body).Model.Elements);
-        bridge.Track(_root, body, registrationPath: null, origin);
+        bridge.Track(ProjectRoot.From(_root), body, registrationPath: null, origin);
 
         File.Delete(body);
 
@@ -156,7 +156,7 @@ public class C4DocumentStoreFailedReloadTests : IDisposable
                 Interlocked.Increment(ref emptied);
             }
         };
-        bridge.Track(_root, body, registrationPath: null, origin);
+        bridge.Track(ProjectRoot.From(_root), body, registrationPath: null, origin);
 
         for (var i = 0; i < 50; i++)
         {

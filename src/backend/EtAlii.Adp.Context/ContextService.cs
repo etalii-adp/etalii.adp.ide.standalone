@@ -55,7 +55,7 @@ public sealed partial class ContextService : Wire.ContextService.ContextServiceB
     public override async Task<SelectResponse> Select(SelectRequest request, ServerCallContext context)
     {
         var userId = SessionContext.GetUserId(context);
-        if (!ProjectRootResolver.TryResolve(_projectStore, userId, request.ProjectId, out var rootPath, out var error))
+        if (!ProjectRootResolver.TryResolve(_projectStore, userId, request.ProjectId, out var root, out var error))
         {
             // The refusal reason otherwise reaches only the one client that asked.
             _logger.Warning("Rejected a selection from {UserId} on project {ProjectId}: {Reason}", userId, request.ProjectId, error);
@@ -70,7 +70,7 @@ public sealed partial class ContextService : Wire.ContextService.ContextServiceB
             return new SelectResponse();
         }
 
-        var resolution = await _selectionResolver.ResolveChainAsync(watchId, rootPath, request.Selection, context.CancellationToken);
+        var resolution = await _selectionResolver.ResolveChainAsync(watchId, root, request.Selection, context.CancellationToken);
         if (resolution is not ResolvedChain resolved)
         {
             // Unauthorized, unknown, gone, or malformed: one answer for all of them, and
@@ -101,7 +101,7 @@ public sealed partial class ContextService : Wire.ContextService.ContextServiceB
         }
         else
         {
-            _selectionStore.Set(watchId, rootPath, record, WithActionsAsync);
+            _selectionStore.Set(watchId, root, record, WithActionsAsync);
         }
 
         return new SelectResponse();
@@ -122,7 +122,7 @@ public sealed partial class ContextService : Wire.ContextService.ContextServiceB
         Func<ContextMessage, CancellationToken, Task> write,
         CancellationToken cancellationToken)
     {
-        if (!ProjectRootResolver.TryResolve(_projectStore, userId, request.ProjectId, out var rootPath, out var error))
+        if (!ProjectRootResolver.TryResolve(_projectStore, userId, request.ProjectId, out var root, out var error))
         {
             _logger.Warning("Refused a context stream for {UserId} on project {ProjectId}: {Reason}", userId, request.ProjectId, error);
             throw new RpcException(new Status(PermanentRefusal.CannotOpen, error));
@@ -130,6 +130,9 @@ public sealed partial class ContextService : Wire.ContextService.ContextServiceB
 
         var watchId = (ShortGuid)request.WatchId;
         var channel = Channel.CreateUnbounded<ContextMessage>();
+
+        // The targets and the history belong to the modules' side, which takes the root as a path.
+        var rootPath = root.FullPath;
 
         // What applies when nothing is selected: the project root's actions, discovered once
         // here and carried on every "nothing selected" message for this connection.
@@ -152,7 +155,7 @@ public sealed partial class ContextService : Wire.ContextService.ContextServiceB
             // Registering writes the baseline first, so a late subscriber is consistent
             // before anything else can arrive. The problems ride along as data: only the
             // broadcaster knows both stores.
-            _selectionStore.Register(watchId, rootPath, channel.Writer, rootActions, projectActions, _watchHooks.CurrentFor(rootPath));
+            _selectionStore.Register(watchId, root, channel.Writer, rootActions, projectActions, _watchHooks.CurrentFor(root));
             _contextInteractionStore.Register(watchId, channel.Writer);
             registered = true;
 
@@ -162,7 +165,7 @@ public sealed partial class ContextService : Wire.ContextService.ContextServiceB
             // freshness is the one the user can see (errors-and-warnings-panel Requirements 4.2,
             // 5). After the registration, so the baseline is always what was known before and
             // that validation's answer always arrives as a push behind it.
-            _watchHooks.ProjectWatched(rootPath);
+            _watchHooks.ProjectWatched(root);
 
             _logger.Information(
                 "Context stream open on watch {WatchId} for project {ProjectId}, with {GroupCount} root action groups",
