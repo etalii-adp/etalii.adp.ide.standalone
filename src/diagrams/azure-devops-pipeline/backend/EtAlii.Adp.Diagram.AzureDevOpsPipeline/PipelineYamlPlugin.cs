@@ -42,8 +42,9 @@ namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline;
 /// written to it. Because YamlDotNet still reads, findings B14 and B15 do not arise.
 /// </para>
 /// <para>
-/// <b>It does not plan yet</b>: a pipeline is still written by <see cref="PipelineWriter"/>
-/// (azure-devops-pipeline-disl-fbl task 8), so <see cref="Plan"/> refuses every change.
+/// <b>It plans through <see cref="PipelinePlanner"/></b>, by byte spans of the bytes it is handed. No
+/// command plans through it yet: the commands still write through <see cref="PipelineWriter"/>
+/// (azure-devops-pipeline-disl-fbl task 9).
 /// </para>
 /// </remarks>
 internal sealed class PipelineYamlPlugin(PipelineReadContext context) : IPersistencePlugin
@@ -90,11 +91,14 @@ internal sealed class PipelineYamlPlugin(PipelineReadContext context) : IPersist
     }
 
     /// <inheritdoc />
-    /// <remarks>Refused: a pipeline is still written by <see cref="PipelineWriter"/>, not through its binding.</remarks>
+    /// <remarks>
+    /// Planned by <see cref="PipelinePlanner"/> against the bytes it is handed and the reading of them, so it
+    /// keeps nothing of its own between a reading and a plan (FBL 11.4).
+    /// </remarks>
     public PluginPlanResult Plan(PluginPlanRequest request)
     {
         ArgumentNullException.ThrowIfNull(request);
-        return new PluginPlanResult.Refused("A pipeline is written by the module's writer, not yet through its binding.");
+        return PipelinePlanner.PlanOne(Body(request.Files), request.Last.Elements, request.Change);
     }
 
     /// <inheritdoc />
