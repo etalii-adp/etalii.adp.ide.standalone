@@ -249,11 +249,40 @@ public sealed class PipelineWriter
             return false;
         }
 
-        // Nothing to replace, so the property is new: it goes on the line after the element's own
-        // declaration, which is where a hand-written one would have gone and needs no reflowing.
+        // Nothing to replace, so the property is new: it goes after the whole value of the element's
+        // own declaration, which is where a hand-written one would have gone and needs no reflowing.
+        // Not the line after it: a step that opens with a block scalar has its script there.
         _logger.Debug("Adding {Key} to {Element} at {Range}", key, element.Id, element.Lines);
-        _document.Insert(element.Lines.Start + 1, lines);
+        _document.Insert(EndOfFirstValue(element) + 1, lines);
         return true;
+    }
+
+    /// <summary>
+    /// The last line of the value of the element's first key: its declaration line, and every line
+    /// after it indented further than the element's properties, blank lines among them included
+    /// where more of the value follows - a literal block keeps its blank lines.
+    /// </summary>
+    private int EndOfFirstValue(PipelineEditTarget element)
+    {
+        var indent = PropertyIndent(element);
+        var end = element.Lines.Start;
+        for (var index = end + 1; index <= element.Lines.End; index++)
+        {
+            var line = _document.Lines[index];
+            if (line.IsBlank)
+            {
+                continue;
+            }
+
+            if (line.Indent() <= indent)
+            {
+                break;
+            }
+
+            end = index;
+        }
+
+        return end;
     }
 
     /// <summary>

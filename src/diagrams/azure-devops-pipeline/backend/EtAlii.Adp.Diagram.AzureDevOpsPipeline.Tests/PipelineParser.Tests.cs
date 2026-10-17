@@ -367,6 +367,24 @@ public class PipelineParserTests
     }
 
     [Fact]
+    public void ATemplateThatNamesATemplate_GivesEveryReferenceAnIdOfItsOwn()
+    {
+        // Arrange: finding A9. The followed template is read by a parser of its own, whose
+        // references are appended to the caller's; numbering them from zero again gave two
+        // template-0, and a finding or an unresolved node located by the id found the wrong one.
+        var fixtures = IoPath.GetFullPath("Fixtures");
+        var path = IoPath.Combine(fixtures, "template-in-template.yml");
+
+        // Act.
+        var model = PipelineParser.Parse(LineDocument.Parse(File.ReadAllText(path)), new PipelineTemplates(fixtures), path);
+
+        // Assert.
+        Assert.Equal(
+            ["template-0 templates/nested-jobs.yml", "template-1 test-steps.yml", "template-2 templates/test-steps.yml"],
+            model.Templates.Select(template => $"{template.Id} {template.Path}"));
+    }
+
+    [Fact]
     public void AJobLevelTemplate_RemembersTheStageItSitsIn()
     {
         // Arrange & act.

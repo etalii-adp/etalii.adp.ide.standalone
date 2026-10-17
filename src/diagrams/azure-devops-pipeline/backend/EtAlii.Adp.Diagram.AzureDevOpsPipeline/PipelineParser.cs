@@ -54,6 +54,14 @@ public sealed class PipelineParser
     private readonly string _documentPath;
     private readonly string _source;
     private readonly HashSet<string> _expanding;
+
+    /// <summary>
+    /// The number this parser's first template reference takes: zero for the file being read, and for a
+    /// followed template the count its caller had reached, so every reference in the reading has an id of
+    /// its own however deep the template that names it.
+    /// </summary>
+    private readonly int _firstTemplate;
+
     private readonly List<PipelineTemplateReference> _templates = [];
     private readonly List<PipelineTemplateUnresolved> _unresolved = [];
     private PipelinePool _pipelinePool = PipelinePool.None;
@@ -63,13 +71,15 @@ public sealed class PipelineParser
         PipelineTemplates? resolver,
         string documentPath,
         string source,
-        HashSet<string> expanding)
+        HashSet<string> expanding,
+        int firstTemplate = 0)
     {
         _document = document;
         _resolver = resolver;
         _documentPath = documentPath;
         _source = source;
         _expanding = expanding;
+        _firstTemplate = firstTemplate;
     }
 
     /// <summary>
@@ -258,7 +268,7 @@ public sealed class PipelineParser
             if (Scalar(mapping, "template") is { Length: > 0 } template)
             {
                 var reference = TemplateReference(
-                    $"template-{_templates.Count}", "", PipelineTemplateSlot.Stages, template, mapping, Range(mapping));
+                    NextTemplateId(), "", PipelineTemplateSlot.Stages, template, mapping, Range(mapping));
                 _templates.Add(reference);
                 if (Follow(reference) is { } expanded)
                 {
@@ -325,7 +335,7 @@ public sealed class PipelineParser
             if (Scalar(mapping, "template") is { Length: > 0 } template)
             {
                 var reference = TemplateReference(
-                    $"template-{_templates.Count}", stageId, PipelineTemplateSlot.Jobs, template, mapping, Range(mapping));
+                    NextTemplateId(), stageId, PipelineTemplateSlot.Jobs, template, mapping, Range(mapping));
                 _templates.Add(reference);
                 if (Follow(reference) is { } expanded)
                 {
@@ -429,7 +439,7 @@ public sealed class PipelineParser
             // The template stays as a step of its own - the seam is worth seeing - and the steps it
             // contributes follow it, in the place they would run (Requirements 5.1 and 5.2).
             var reference = TemplateReference(
-                $"template-{_templates.Count}", jobId, PipelineTemplateSlot.Steps, identifier, mapping, Range(mapping));
+                NextTemplateId(), jobId, PipelineTemplateSlot.Steps, identifier, mapping, Range(mapping));
             _templates.Add(reference);
             if (Follow(reference) is not { } expanded)
             {
@@ -648,7 +658,7 @@ public sealed class PipelineParser
                 return null;
             }
 
-            var parser = new PipelineParser(document, _resolver, path, Display(path), _expanding);
+            var parser = new PipelineParser(document, _resolver, path, Display(path), _expanding, _firstTemplate + _templates.Count);
             var model = parser.Read();
             // What the template could not follow is this file's problem too: a gap two files down
             // is still a gap in the diagram being looked at.
@@ -667,6 +677,9 @@ public sealed class PipelineParser
             _expanding.Remove(path);
         }
     }
+
+    /// <summary>The id of the next template reference this parser records: <c>template-</c> and its number in the whole reading.</summary>
+    private string NextTemplateId() => $"template-{_firstTemplate + _templates.Count}";
 
     /// <summary>A template's path as the reader should see it: relative to the workspace, with forward slashes.</summary>
     private string Display(string path) =>

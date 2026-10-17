@@ -38,6 +38,9 @@ public class PipelineWriterTests
     private static PipelineStage StageIn(LineDocument document, string name) =>
         PipelineParser.Parse(document).Stages.Single(stage => stage.Name == name);
 
+    private static IReadOnlyList<PipelineStep> StepsIn(LineDocument document) =>
+        PipelineParser.Parse(document).Stages.Single().Jobs.Single().Steps;
+
     [Fact]
     public void ARename_ChangesTheOneLineHoldingTheName()
     {
@@ -175,6 +178,47 @@ public class PipelineWriterTests
         Assert.True(changed);
         AssertOnlyTheseLinesChanged(before, after, staging.Lines.Start + 1, removed: 0, added: 1);
         Assert.Equal("    displayName: Deploy to staging\n", after[staging.Lines.Start + 1]);
+    }
+
+    [Fact]
+    public void ANewKey_OnAStepThatOpensWithALiteralBlock_GoesAfterTheWholeScript()
+    {
+        // Arrange: finding B8. The step's first key holds a block scalar, so the line after it is
+        // the script's, and a key written there would become part of the script.
+        var document = FixtureDocument("block-scalar-step.yml");
+        var step = StepsIn(document)[0];
+        var before = Snapshot(document);
+        var last = Array.FindIndex(before, text => text.Contains("dotnet test", StringComparison.Ordinal));
+
+        // Act.
+        var changed = new PipelineWriter(document).SetDisplayName(PipelineEditTarget.For(step), "Build and test");
+
+        // Assert.
+        var after = Snapshot(document);
+        Assert.True(changed);
+        AssertOnlyTheseLinesChanged(before, after, last + 1, removed: 0, added: 1);
+        Assert.Equal("            displayName: Build and test\n", after[last + 1]);
+        Assert.Equal("Build and test", StepsIn(document)[0].DisplayName);
+    }
+
+    [Fact]
+    public void ANewKey_OnAStepThatOpensWithAFoldedBlock_GoesAfterTheWholeScript_AndBeforeTheNextKey()
+    {
+        // Arrange: finding B8, with a key after the script that the new one must not pass.
+        var document = FixtureDocument("block-scalar-step.yml");
+        var step = StepsIn(document)[1];
+        var before = Snapshot(document);
+        var last = Array.FindIndex(before, text => text.Contains("onto one line", StringComparison.Ordinal));
+
+        // Act.
+        var changed = new PipelineWriter(document).SetEnabled(PipelineEditTarget.For(step), "false");
+
+        // Assert.
+        var after = Snapshot(document);
+        Assert.True(changed);
+        AssertOnlyTheseLinesChanged(before, after, last + 1, removed: 0, added: 1);
+        Assert.Equal("            enabled: false\n", after[last + 1]);
+        Assert.Equal("            condition: always()\n", after[last + 2]);
     }
 
     [Fact]
