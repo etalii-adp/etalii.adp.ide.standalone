@@ -21,11 +21,11 @@ public static class ServiceCollectionAddDependencyGraphExtension
     {
         ArgumentNullException.ThrowIfNull(services);
 
-        // The version marker and an empty element list, and nothing else: an empty graph is a valid
-        // one, and a placeholder node would be the first thing every user deletes. The base name is
+        // The binding's template: the version marker and an empty element list, and nothing else. An
+        // empty graph is a valid one, and a placeholder node would be the first thing every user deletes. The base name is
         // not written - a graph has no title line in its schema. CRLF, the house style, since a new
         // file has no style of its own to keep.
-        services.AddEmptyDocument(Diagram.DependencyGraph.Origin, "dependencies: 1\r\nelements: []\r\n");
+        services.AddEmptyDocument(Diagram.DependencyGraph.Origin, DependencyGraphBody.Binding.Template!.Text);
         services.AddSingleton<DependencyGraphElementMapper>();
 
         // One document per path, shared by every connection viewing it. TryAdd rather than Add

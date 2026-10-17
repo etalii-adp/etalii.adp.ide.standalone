@@ -5,8 +5,8 @@ using Google.Protobuf;
 namespace EtAlii.Adp.Diagram.DependencyGraph;
 
 /// <summary>
-/// Turns a parsed <see cref="DependencyGraphModel"/> into the core element and delta vocabulary,
-/// and a received position back into a placement.
+/// Turns the DISL model of a <see cref="DependencyGraphBody"/> into the core element and delta
+/// vocabulary, and a received position back into a placement.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -19,6 +19,11 @@ namespace EtAlii.Adp.Diagram.DependencyGraph;
 /// A relation naming a node that does not exist still goes out, carrying the ids as written, so
 /// the canvas can mark the dangling end and the validator can report it - a policy borrowed
 /// deliberately from the Wardley mapper.
+/// </para>
+/// <para>
+/// Every id sent is the id as written - the binding's <c>storedId</c>, and a dependency's ends its
+/// <c>writtenFrom</c> and <c>writtenTo</c> - so the client knows an element by what the file says,
+/// a dangling end and a repeated or missing id included.
 /// </para>
 /// <para>
 /// The relation's payload names its ends <em>in order</em>: <c>from</c> depends on <c>to</c>, and
@@ -35,25 +40,33 @@ public sealed class DependencyGraphElementMapper
     public const string RelationType = "generic/dependencies+relation";
 
     /// <summary>
-    /// Every node and relation of <paramref name="model"/>, positioned in the module's own
+    /// Every node and relation of <paramref name="body"/>, positioned in the module's own
     /// coordinate space - the baseline a connection opens with.
     /// </summary>
-    public IReadOnlyList<DiagramElement> Elements(DependencyGraphModel model)
+    public IReadOnlyList<DiagramElement> Elements(DependencyGraphBody body)
     {
-        ArgumentNullException.ThrowIfNull(model);
+        ArgumentNullException.ThrowIfNull(body);
+        (List<DependencyGraphElement> nodes, List<DependencyGraphRelation> relations) = Read(body);
 
         var elements = new List<DiagramElement>();
-        foreach (var element in model.Elements)
+        foreach (var element in nodes)
         {
             elements.Add(Element(element));
         }
 
-        foreach (var relation in model.Relations)
+        foreach (var relation in relations)
         {
             elements.Add(Relation(relation));
         }
 
         return elements;
+    }
+
+    /// <summary>Every node and relation of the body <paramref name="model"/> was read with; none for a model read without one.</summary>
+    public IReadOnlyList<DiagramElement> Elements(DependencyGraphModel model)
+    {
+        ArgumentNullException.ThrowIfNull(model);
+        return model.Body is { } body ? Elements(body) : [];
     }
 
     /// <summary>The drawn width of a node, in the module's own x units - what the canvas gives it.</summary>
@@ -79,12 +92,13 @@ public sealed class DependencyGraphElementMapper
     /// because the units are this module's business (Requirement 3.4).
     /// </para>
     /// </remarks>
-    public IReadOnlyList<DiagramElement> Visible(DependencyGraphModel model, DiagramViewport viewport)
+    public IReadOnlyList<DiagramElement> Visible(DependencyGraphBody body, DiagramViewport viewport)
     {
-        ArgumentNullException.ThrowIfNull(model);
+        ArgumentNullException.ThrowIfNull(body);
+        (List<DependencyGraphElement> nodes, List<DependencyGraphRelation> relations) = Read(body);
 
-        var byId = model.Elements.ToDictionary(element => element.Id, StringComparer.Ordinal);
-        var shownIds = model.Elements
+        var byId = nodes.ToDictionary(element => element.Id, StringComparer.Ordinal);
+        var shownIds = nodes
             .Where(element => Intersects(element, viewport))
             .Select(element => element.Id)
             .ToHashSet(StringComparer.Ordinal);
@@ -93,7 +107,7 @@ public sealed class DependencyGraphElementMapper
         // viewport. Requiring both ends in view instead hid, on zooming in, every line whose
         // far end left the window (found in the field). Its ends ride along as anchors, so
         // the canvas always has two boxes to draw the line between.
-        var drawnRelations = model.Relations
+        var drawnRelations = relations
             .Where(relation => byId.TryGetValue(relation.From, out var from)
                 && byId.TryGetValue(relation.To, out var to)
                 && SpanIntersects(from, to, viewport))
@@ -107,9 +121,44 @@ public sealed class DependencyGraphElementMapper
         // Document order is preserved on both passes, so one viewport always yields one sequence.
         return
         [
-            .. model.Elements.Where(element => shownIds.Contains(element.Id)).Select(Element),
+            .. nodes.Where(element => shownIds.Contains(element.Id)).Select(Element),
             .. drawnRelations.Select(Relation),
         ];
+    }
+
+    /// <summary>What of the body <paramref name="model"/> was read with touches <paramref name="viewport"/>; nothing for a model read without one.</summary>
+    public IReadOnlyList<DiagramElement> Visible(DependencyGraphModel model, DiagramViewport viewport)
+    {
+        ArgumentNullException.ThrowIfNull(model);
+        return model.Body is { } body ? Visible(body, viewport) : [];
+    }
+
+    /// <summary>
+    /// The nodes and dependencies of the body's DISL model, in its order, each by what is written: its
+    /// stored id, its label, its place, and a dependency's ends as written.
+    /// </summary>
+    private static (List<DependencyGraphElement> Nodes, List<DependencyGraphRelation> Relations) Read(DependencyGraphBody body)
+    {
+        var diagram = body.Disl.Diagram;
+        List<DependencyGraphElement> nodes =
+        [
+            .. diagram.NodesOfType("Node").Select(node => new DependencyGraphElement(
+                DependencyGraphDefinition.WrittenId(node),
+                node.ValueOf("label") as string ?? "",
+                node.ValueOf("x") is double x ? x : 0d,
+                node.ValueOf("row") is long row ? checked((int)row) : 0,
+                default)),
+        ];
+        List<DependencyGraphRelation> relations =
+        [
+            .. diagram.RelationsOfType("DependsOn").Select(relation => new DependencyGraphRelation(
+                DependencyGraphDefinition.WrittenId(relation),
+                DependencyGraphDefinition.HostText(relation, "writtenFrom"),
+                DependencyGraphDefinition.HostText(relation, "writtenTo"),
+                relation.ValueOf("label") as string ?? "",
+                default)),
+        ];
+        return (nodes, relations);
     }
 
     /// <summary>

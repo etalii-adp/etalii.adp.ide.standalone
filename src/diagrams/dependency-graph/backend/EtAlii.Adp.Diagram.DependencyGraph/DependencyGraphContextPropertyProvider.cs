@@ -55,7 +55,7 @@ public sealed class DependencyGraphContextPropertyProvider(IHistoryStackStore hi
     /// guess which way the arrow points. The rows are the definition's forms.
     /// </remarks>
     protected override IReadOnlyList<ContextPropertyDefinition> Describe(DocumentEntry<LineDocument, DependencyGraphModel> entry, string elementId) =>
-        DependencyGraphDefinition.Rows(entry.Model, elementId);
+        DependencyGraphDefinition.Rows(DependencyGraphBody.Of(entry), elementId);
 
     /// <inheritdoc />
     /// <remarks>

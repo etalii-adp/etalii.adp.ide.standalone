@@ -19,5 +19,5 @@ public abstract class DependencyGraphEditHandler<TCommand>(IDependencyGraphDocum
     where TCommand : IDocumentEditCommand
 {
     /// <inheritdoc />
-    protected sealed override DependencyGraphModel Parse(LineDocument body) => DependencyGraphParser.Parse(body);
+    protected sealed override DependencyGraphModel Parse(LineDocument body) => DependencyGraphBody.Ranges(body);
 }
