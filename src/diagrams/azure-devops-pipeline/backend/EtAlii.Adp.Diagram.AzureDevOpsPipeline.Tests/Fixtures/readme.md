@@ -34,6 +34,7 @@ because it would make the round-trip test a test of ADP's own idea of YAML.
 | `steps-only.yml` | Neither `stages` nor `jobs`: one implicit stage containing one implicit job. |
 | `templates.yml` + `templates/` | Templates at all three levels — `stages`, `jobs`, `steps`. Two resolve by relative path inside the workspace; `deploy-stages.yml@shared` names a repository resource and deliberately **cannot** be followed, which is what Requirement 5.3 has to report rather than hide. |
 | `extends.yml` + `templates/pipeline.yml` | `extends`, where the pipeline's real shape is the template's and what the file contributes is parameters (Requirement 5.5). |
+| `extends-other-repository.yml` | An `extends` naming a repository resource, the usual shape of a pipeline built on a shared templates repository, which is never followed: it is one template reference, `template:extends`, the id the canvas draws it under and the definition's `azure-pipeline.template-not-followed` finding names (`azure-devops-pipeline-disl-fbl`, etalii-adp/etalii.adp#292). |
 
 ### Edge cases
 

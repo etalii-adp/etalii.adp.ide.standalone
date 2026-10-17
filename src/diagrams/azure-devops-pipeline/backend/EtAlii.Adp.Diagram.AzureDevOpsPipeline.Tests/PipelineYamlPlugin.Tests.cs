@@ -200,19 +200,22 @@ public class PipelineYamlPluginTests : IDisposable
     }
 
     [Fact]
-    public void AnExtendsNotFollowed_IsATemplateReference_NumberedAfterTheOthers()
+    public void AnExtendsNotFollowed_IsTheTemplateReferenceTemplateExtends_AndItsFindingIsLocatedThere()
     {
-        // Arrange: the parser calls an extends "extends" and numbers only the references under stages, jobs and
-        // steps; reading one that cannot be followed used to throw, parsing that name as a number.
-        var path = Write("azure-pipelines.yml", "extends:\n  template: pipeline.yml@shared\n");
+        // Arrange: an extends naming a repository resource, which is never followed. The parser calls it
+        // "extends" rather than numbering it, and the hand-written mapper draws it as template:extends;
+        // reading it once threw, and then numbered it after the other references, template:template-0.
+        (PipelineBody body, _) = OpenInPlace(FixturePath("extends-other-repository.yml"));
 
         // Act.
-        var body = PipelineBody.Open(File.ReadAllBytes(path), new PipelineReadContext(path, new PipelineTemplates(_workspace)));
+        var findings = PipelineDefinition.Findings(body);
 
         // Assert.
         var reference = Assert.Single(body.Reading.Elements, element => element.Type == "TemplateReference");
-        Assert.Equal(("extends", "otherRepository", 0L), ((string)reference.Attributes["slot"]!, (string)reference.Attributes["reason"]!, (long)reference.Attributes["ordinal"]!));
-        Assert.Equal(["template:template-0"], body.Disl.Diagram.Nodes.Select(node => node.Id));
+        Assert.Equal(("extends", "otherRepository", "templates"), ((string)reference.Attributes["slot"]!, (string)reference.Attributes["reason"]!, (string)reference.Attributes["resource"]!));
+        Assert.Equal(["template:extends"], body.Disl.Diagram.Nodes.Select(node => node.Id));
+        var finding = Assert.Single(findings, each => each.Code == PipelineRules.TemplateNotFollowed);
+        Assert.Equal(["template:extends"], finding.ElementIds);
     }
 
     [Fact]
