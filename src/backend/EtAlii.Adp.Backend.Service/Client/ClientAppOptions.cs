@@ -1,6 +1,6 @@
 ﻿using JetBrains.Annotations;
 
-namespace EtAlii.Adp.Backend.Client;
+namespace EtAlii.Adp.Backend.Service.Client;
 
 public sealed class ClientAppOptions
 {

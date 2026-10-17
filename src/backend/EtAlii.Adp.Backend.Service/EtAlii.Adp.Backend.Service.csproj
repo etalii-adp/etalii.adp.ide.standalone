@@ -8,13 +8,14 @@
     <ProjectReference Include="..\EtAlii.Adp.History\EtAlii.Adp.History.csproj" />
     <ProjectReference Include="..\EtAlii.Adp.Hierarchy\EtAlii.Adp.Hierarchy.csproj" />
     <ProjectReference Include="..\EtAlii.Adp.Projects\EtAlii.Adp.Projects.csproj" />
-    <ProjectReference Include="..\EtAlii.Adp.Backend\EtAlii.Adp.Backend.csproj" />
     <!-- Explicit rather than transitive through the modules: Program.cs runs discovery itself. -->
     <ProjectReference Include="..\EtAlii.Adp.Diagram\EtAlii.Adp.Diagram.csproj" />
     <ProjectReference Include="..\EtAlii.Adp.Workspace\EtAlii.Adp.Workspace.csproj" />
     <ProjectReference Include="..\EtAlii.Adp.Designer\EtAlii.Adp.Designer.csproj" />
     <!-- The host owns the Serilog pipeline every EtAlii.Adp.* assembly logs into. -->
     <PackageReference Include="Serilog.AspNetCore" />
+    <!-- The browser speaks gRPC-Web; UseGrpcWeb translates it for the services the host maps. -->
+    <PackageReference Include="Grpc.AspNetCore.Web" />
     <ProjectReference Include="..\..\diagrams\*\backend\*\*.csproj" Exclude="..\..\diagrams\*\backend\*\*.Tests.csproj" />
     <ProjectReference Include="..\..\editors\*\backend\*\*.csproj" Exclude="..\..\editors\*\backend\*\*.Tests.csproj" />
     <ProjectReference Include="..\..\designers\*\backend\*\*.csproj" Exclude="..\..\designers\*\backend\*\*.Tests.csproj" />
