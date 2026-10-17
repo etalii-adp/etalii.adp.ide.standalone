@@ -1,4 +1,3 @@
-using EtAlii.Adp.Editor;
 using EtAlii.Adp.Files;
 using Xunit;
 using IoPath = System.IO.Path;

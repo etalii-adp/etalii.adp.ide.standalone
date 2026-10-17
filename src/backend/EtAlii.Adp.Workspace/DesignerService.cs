@@ -1,5 +1,4 @@
 using System.Threading.Channels;
-using EtAlii.Adp.Designer;
 using EtAlii.Adp.Designer.TableModel;
 using EtAlii.Adp.Diagram.Wire;
 using EtAlii.Adp.Hierarchy;
