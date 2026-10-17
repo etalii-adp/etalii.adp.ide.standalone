@@ -53,6 +53,13 @@ public abstract record HostAction
 
     /// <summary><c>editLabel</c>: open the inline editor on <paramref name="ElementId"/>'s label <paramref name="Label"/>, or its first.</summary>
     public sealed record EditLabel(string ElementId, string? Label) : HostAction;
+
+    /// <summary>
+    /// <c>view</c>: change the view data (§11.6) of <paramref name="ElementId"/> to <paramref name="Values"/>, by kind:
+    /// <c>collapsed</c>, <c>viewpoint</c> and <c>pinned</c> each to its value, <c>filters</c> and <c>groups</c> each to a map by
+    /// filter id or group key. Viewer state is the host's to hold: it is never written and never on the undo history (§9.4).
+    /// </summary>
+    public sealed record View(string ElementId, IReadOnlyDictionary<string, object?> Values) : HostAction;
 }
 
 /// <summary>

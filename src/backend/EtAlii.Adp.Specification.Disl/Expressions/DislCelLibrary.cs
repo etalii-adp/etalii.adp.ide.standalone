@@ -23,6 +23,8 @@ public static class DislCelLibrary
         ("childrenOfType", 1, 1),
         ("incomingOf", 1, 1),
         ("outgoingOf", 1, 1),
+        ("reachable", 1, 1),
+        ("inCycle", 1, 1),
         ("positionIn", 1, 1),
         ("nodesOfType", 1, 2),
         ("relationsOfType", 1, 1),

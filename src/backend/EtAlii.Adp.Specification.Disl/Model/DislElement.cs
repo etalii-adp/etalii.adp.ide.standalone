@@ -286,6 +286,8 @@ public sealed class DislElement : ICelObject
             ("childrenOfType", 1) when !Type.IsRelation => List(_children.Where(child => child.IsA(Text(arguments[0])))),
             ("incomingOf", 1) when !Type.IsRelation => List(Incoming.Where(relation => relation.IsA(Text(arguments[0])))),
             ("outgoingOf", 1) when !Type.IsRelation => List(Outgoing.Where(relation => relation.IsA(Text(arguments[0])))),
+            ("reachable", 1) when !Type.IsRelation => List(Reachable(Text(arguments[0]))),
+            ("inCycle", 1) when !Type.IsRelation => Reachable(Text(arguments[0])).Contains(this),
             ("other", 1) when Type.IsRelation => Other(arguments[0]),
             ("location", 0) => LocationMap(),
             _ => Missing,
@@ -329,6 +331,31 @@ public sealed class DislElement : ICelObject
         : throw new CelException($"other() was given an element that is not an end of {this}.");
 
     private static List<object?> List(IEnumerable<DislElement> elements) => [.. elements];
+
+    /// <summary>
+    /// The elements reached from this one over relations of <paramref name="relationType"/> and its subtypes (DISL §12.4), in the
+    /// order a breadth-first walk first meets them; this element is among them only when a walk comes back to it, on a cycle.
+    /// A relation whose target is unset leads nowhere.
+    /// </summary>
+    private List<DislElement> Reachable(string relationType)
+    {
+        var found = new List<DislElement>();
+        var seen = new HashSet<DislElement>(ReferenceEqualityComparer.Instance);
+        var pending = new Queue<DislElement>([this]);
+        while (pending.Count > 0)
+        {
+            foreach (var relation in pending.Dequeue().Outgoing.Where(relation => relation.IsA(relationType)))
+            {
+                if (relation.Target is { } next && seen.Add(next))
+                {
+                    found.Add(next);
+                    pending.Enqueue(next);
+                }
+            }
+        }
+
+        return found;
+    }
 
     internal static string Text(object? value) => value as string ?? throw new CelException("A type name was expected.");
 }

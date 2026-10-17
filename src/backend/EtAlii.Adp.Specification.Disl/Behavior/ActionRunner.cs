@@ -17,7 +17,7 @@ namespace EtAlii.Adp.Specification.Disl;
 /// <para>
 /// <b>Model actions become <see cref="DislChange"/>s</b>: <c>set</c>, <c>unset</c>, <c>create</c>,
 /// <c>connect</c>, <c>retype</c>, <c>delete</c> and <c>reparent</c>. <c>let</c>, <c>if</c> and <c>forEach</c> steer the run.
-/// <c>layout</c>, <c>plugin</c>, <c>select</c> and <c>editLabel</c> are handed back as
+/// <c>layout</c>, <c>plugin</c>, <c>select</c>, <c>editLabel</c> and <c>view</c> are handed back as
 /// <see cref="HostAction"/>s. <c>abort</c> refuses the transaction with its message. Any other action,
 /// and an expression that fails, refuses it too: a runtime that cannot do what a definition says does
 /// not do part of it.
@@ -182,6 +182,33 @@ internal sealed class ActionRunner(DislSpecification specification, DislDiagram 
             case "layout":
             {
                 _host.Add(new HostAction.Layout(DislJson.String(body, "algorithm") ?? ""));
+                return true;
+            }
+            case "view":
+            {
+                if (!Target(action, at, variables, out var target)) return false;
+                var values = new Dictionary<string, object?>(StringComparer.Ordinal);
+                foreach (var property in body.EnumerateObject())
+                {
+                    var propertyAt = DislJson.Pointer(bodyAt, property.Name);
+                    if (property.Name is "filters" or "groups" && property.Value.ValueKind == JsonValueKind.Object)
+                    {
+                        // A map of expressions by filter id or group key, not one expression.
+                        var map = new Dictionary<string, object?>(StringComparer.Ordinal);
+                        foreach (var entry in property.Value.EnumerateObject())
+                        {
+                            if (!Value(entry.Value, DislJson.Pointer(propertyAt, entry.Name), variables, out var entryValue)) return false;
+                            map[entry.Name] = entryValue;
+                        }
+                        values[property.Name] = map;
+                        continue;
+                    }
+
+                    if (!Value(property.Value, propertyAt, variables, out var value)) return false;
+                    values[property.Name] = value;
+                }
+
+                _host.Add(new HostAction.View(target.Id, values));
                 return true;
             }
             case "plugin":

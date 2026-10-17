@@ -1,3 +1,4 @@
+using EtAlii.Adp.Specification.Cel;
 using EtAlii.Adp.Specification.Fbl.Planning;
 using Xunit;
 
@@ -35,7 +36,10 @@ public class BehaviorInterpretationTests
               "actions": [ { "unset": ["count", "size"] }, { "if": "self.name == ''", "then": [ { "set": { "name": "'unnamed'" } } ], "else": [ { "layout": { "algorithm": "tidy" } } ] } ]
             },
             "refuse": { "label": "Refuse", "for": ["Box"], "actions": [ { "set": { "count": "1" } }, { "abort": { "message": "'No, ' + self.name + '.'" } } ] },
-            "unknown": { "label": "Unknown", "for": ["Box"], "actions": [ { "resize": { "width": "10" } } ] }
+            "unknown": { "label": "Unknown", "for": ["Box"], "actions": [ { "resize": { "width": "10" } } ] },
+            "fold": { "label": "Fold", "for": ["Box"], "actions": [
+              { "view": { "collapsed": "!self.view.collapsed", "groups": { "notes": "self.count > 3" } } },
+              { "view": { "pinned": "true" }, "target": "diagram.elementById('a')" } ] }
           },
           "hooks": [
             { "id": "copyCount", "on": "change", "for": "Box", "attribute": "count", "actions": [ { "set": { "copy": "self.count * 100 + (old == null ? 0 : old.count)" } } ] },
@@ -80,6 +84,36 @@ public class BehaviorInterpretationTests
 
         Assert.Equal("create Box b name=Box 2 made=24013\nset b count=20\nselect b\neditLabel b", Text(transaction));
         Assert.Equal(20L, diagram.ElementById("b")!.ValueOf("count"));
+    }
+
+    [Fact]
+    public void AViewAction_IsHandedBackToTheHost_AndChangesNothingInTheModel()
+    {
+        // Arrange: viewer state (DISL 9.4, 11.6), which a host holds and a provider reads from the transaction.
+        var diagram = new DislDiagram(Specification);
+        diagram.AddNode("Box", "a", new Dictionary<string, object?> { ["name"] = "A" });
+        var box = diagram.AddNode("Box", "b", new Dictionary<string, object?> { ["name"] = "B", ["count"] = 4L });
+        box.View = new CelMap { ["collapsed"] = true };
+
+        // Act.
+        var transaction = OperationInterpreter.Run(Specification, "fold", diagram, box, DislIds.Fixed());
+
+        // Assert.
+        Assert.Null(transaction.Refusal);
+        Assert.Empty(transaction.Changes);
+        Assert.Collection(
+            transaction.HostActions,
+            first =>
+            {
+                var view = Assert.IsType<HostAction.View>(first);
+                Assert.Equal(("b", (object?)false), (view.ElementId, view.Values["collapsed"]));
+                Assert.Equal(true, Assert.IsType<IReadOnlyDictionary<string, object?>>(view.Values["groups"], exactMatch: false)["notes"]);
+            },
+            second =>
+            {
+                var view = Assert.IsType<HostAction.View>(second);
+                Assert.Equal(("a", (object?)true), (view.ElementId, view.Values["pinned"]));
+            });
     }
 
     [Fact]

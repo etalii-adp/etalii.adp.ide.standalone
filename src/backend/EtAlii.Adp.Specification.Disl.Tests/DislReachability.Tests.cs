@@ -1,0 +1,86 @@
+using EtAlii.Adp.Specification.Cel;
+using Xunit;
+
+namespace EtAlii.Adp.Specification.Disl.Tests;
+
+/// <summary>
+/// <c>reachable(relType)</c> and <c>inCycle(relType)</c> on an element (DISL §12.2, §12.4): the transitive successors over
+/// relations of a type and its subtypes, <c>self</c> among them only when it is on a cycle, and whether it is.
+/// </summary>
+public class DislReachabilityTests
+{
+    private static readonly DislSpecification Specification = Specifications.Loaded(Specifications.With("""
+        "metamodel": {
+          "types": { "Node": {} },
+          "relations": {
+            "Edge": { "abstract": true, "source": "Node", "target": "Node", "allowSelfLoops": true },
+            "Flow": { "extends": "Edge" },
+            "Back": { "extends": "Edge" } } }
+        """));
+
+    private readonly DislDiagram _diagram = new(Specification);
+
+    public DislReachabilityTests()
+    {
+        // A self-loop: s waits for itself.
+        var s = Node("s");
+        _diagram.AddRelation("Flow", "s-s", s, s);
+
+        // A chain, closed into a cycle only by a relation of the sibling type: a, b, c.
+        var a = Node("a");
+        var b = Node("b");
+        var c = Node("c");
+        _diagram.AddRelation("Flow", "a-b", a, b);
+        _diagram.AddRelation("Flow", "b-c", b, c);
+        _diagram.AddRelation("Back", "c-a", c, a);
+
+        // Two cycles that share a member: x and y, and y and z.
+        var x = Node("x");
+        var y = Node("y");
+        var z = Node("z");
+        _diagram.AddRelation("Flow", "x-y", x, y);
+        _diagram.AddRelation("Flow", "y-x", y, x);
+        _diagram.AddRelation("Flow", "y-z", y, z);
+        _diagram.AddRelation("Flow", "z-y", z, y);
+
+        // Outside every relation.
+        Node("w");
+    }
+
+    private DislElement Node(string id) => _diagram.AddNode("Node", id);
+
+    private object? Evaluate(string id, string expression) =>
+        Specification.Environment(DislContexts.Element).Compile(expression)
+            .Evaluate(new Dictionary<string, object?> { ["self"] = _diagram.ElementById(id), ["diagram"] = _diagram, ["env"] = new CelMap() });
+
+    [Theory]
+    [InlineData("s", "['s']")]
+    [InlineData("a", "['b', 'c']")]
+    [InlineData("b", "['c']")]
+    [InlineData("c", "[]")]
+    [InlineData("x", "['x', 'y', 'z']")]
+    [InlineData("y", "['x', 'y', 'z']")]
+    [InlineData("z", "['x', 'y', 'z']")]
+    [InlineData("w", "[]")]
+    public void Reachable_IsTheTransitiveSuccessors_SelfOnlyOnACycle(string id, string expected) =>
+        Assert.Equal(true, Evaluate(id, $"self.reachable('Flow').map(e, e.id).sort() == {expected}"));
+
+    [Theory]
+    [InlineData("s", true)]
+    [InlineData("a", false)]
+    [InlineData("c", false)]
+    [InlineData("x", true)]
+    [InlineData("y", true)]
+    [InlineData("z", true)]
+    [InlineData("w", false)]
+    public void InCycle_HoldsForAnElementOnACycle(string id, bool expected) =>
+        Assert.Equal(expected, Evaluate(id, "self.inCycle('Flow')"));
+
+    [Theory]
+    [InlineData("a", "self.inCycle('Edge')", true)]
+    [InlineData("a", "self.reachable('Edge').map(e, e.id).sort() == ['a', 'b', 'c']", true)]
+    [InlineData("c", "self.reachable('Back').map(e, e.id) == ['a']", true)]
+    [InlineData("c", "self.inCycle('Back')", false)]
+    public void ARelationType_IncludesItsSubtypes(string id, string expression, bool expected) =>
+        Assert.Equal(expected, Evaluate(id, expression));
+}
