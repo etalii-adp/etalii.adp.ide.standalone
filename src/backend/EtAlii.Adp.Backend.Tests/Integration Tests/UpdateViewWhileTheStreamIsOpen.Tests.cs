@@ -18,7 +18,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using IoPath = System.IO.Path;
 using Path = EtAlii.Adp.Documents.Wire.Path;
-using Service = EtAlii.Adp.Workspace.DiagramService;
+using WorkspaceDiagramService = EtAlii.Adp.Workspace.DiagramService;
 
 namespace EtAlii.Adp.Backend.Tests;
 
@@ -77,7 +77,7 @@ public sealed class UpdateViewWhileTheStreamIsOpenTests : IDisposable
     private readonly string _appData = Directory.CreateTempSubdirectory("adp-rpc-appdata-").FullName;
     private readonly string _projectFolder = Directory.CreateTempSubdirectory("adp-rpc-project-").FullName;
     private readonly ServiceProvider _provider;
-    private readonly Service _service;
+    private readonly WorkspaceDiagramService _service;
     private readonly IDiagramViewportRegistry _viewports;
     private readonly IProjectStore _projects;
 
@@ -103,10 +103,10 @@ public sealed class UpdateViewWhileTheStreamIsOpenTests : IDisposable
         services.AddSingleton<IDiagramDefinitionCatalog>(new DiagramDefinitionCatalog { All = definitions });
         services.AddSingleton<IDesignerDefinitionCatalog>(new DesignerDefinitionCatalog { All = [] });
         services.AddSingleton<IEditorDefinitionCatalog>(new EditorDefinitionCatalog { All = [] });
-        services.AddSingleton<Service>();
+        services.AddSingleton<WorkspaceDiagramService>();
 
         _provider = services.BuildServiceProvider();
-        _service = _provider.GetRequiredService<Service>();
+        _service = _provider.GetRequiredService<WorkspaceDiagramService>();
         _viewports = _provider.GetRequiredService<IDiagramViewportRegistry>();
         _projects = _provider.GetRequiredService<IProjectStore>();
     }

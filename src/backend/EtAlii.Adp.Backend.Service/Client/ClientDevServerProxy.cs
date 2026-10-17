@@ -1,7 +1,6 @@
-﻿using Microsoft.AspNetCore.Http;
-using Serilog;
+﻿using Serilog;
 
-namespace EtAlii.Adp.Backend.Client;
+namespace EtAlii.Adp.Backend.Service.Client;
 
 /// <summary>
 /// Forwards requests that don't match a gRPC endpoint to the Vite dev server, so the browser
@@ -15,7 +14,7 @@ public static class ClientDevServerProxy
 
     private static readonly string[] ExcludedRequestHeaders = ["Host"];
     private static readonly string[] ExcludedResponseHeaders = ["Transfer-Encoding"];
-    private static readonly ILogger _logger = Log.ForContext(typeof(ClientDevServerProxy));
+    private static readonly Serilog.ILogger _logger = Log.ForContext(typeof(ClientDevServerProxy));
 
     public static async Task ProxyAsync(HttpContext context, HttpClient httpClient, Uri devServerBaseUri)
     {

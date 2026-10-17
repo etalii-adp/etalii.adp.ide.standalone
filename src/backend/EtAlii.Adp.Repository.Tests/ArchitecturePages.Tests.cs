@@ -86,7 +86,7 @@ public partial class ArchitecturePagesTests
     /// <summary>
     /// Segments that make a dotted <c>EtAlii.Adp.*</c> string a FILE NAME rather than a project
     /// name - <c>EtAlii.Adp.slnx</c>, <c>EtAlii.Adp.Context.csproj</c>,
-    /// <c>EtAlii.Adp.Backend.csproj.DotSettings</c>.
+    /// <c>EtAlii.Adp.Hierarchy.csproj.DotSettings</c>.
     /// </summary>
     /// <remarks>
     /// Found by running this guard before trusting it: all three documents "failed" on file names

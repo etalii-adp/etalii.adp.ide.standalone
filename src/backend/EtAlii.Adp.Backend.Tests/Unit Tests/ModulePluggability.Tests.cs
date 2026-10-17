@@ -17,7 +17,7 @@ public class ModulePluggabilityTests
     [Theory]
     [InlineData("EtAlii.Adp")]
     [InlineData("EtAlii.Adp.Diagram")]
-    [InlineData("EtAlii.Adp.Backend")]
+    [InlineData("EtAlii.Adp.Workspace")]
     public void ACoreAssembly_ReferencesNoDiagramModule(string coreAssemblyName)
     {
         // Arrange.

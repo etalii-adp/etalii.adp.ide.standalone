@@ -144,7 +144,7 @@ Run `dotnet format style --verify-no-changes --severity info` (from `src/backend
 
 That one line stops the `commands` folder being required to appear in the namespace, and clears every warning that followed from it.
 
-**The folder path in the key is escaped, and getting it wrong silently does nothing** - the entry parses, matches no folder, and the warnings stay. A path separator becomes `_005C` and an underscore becomes `_005F`, so `hierarchy\_model` is written `hierarchy_005C_005Fmodel`. Existing files show both shapes: `src/backend/EtAlii.Adp.Backend/EtAlii.Adp.Backend.csproj.DotSettings` has nine such entries, and every diagram module has its own.
+**The folder path in the key is escaped, and getting it wrong silently does nothing** - the entry parses, matches no folder, and the warnings stay. A path separator becomes `_005C` and an underscore becomes `_005F`, so `hierarchy\_model` is written `hierarchy_005C_005Fmodel`. Existing files show both shapes: `src/backend/EtAlii.Adp.Hierarchy/EtAlii.Adp.Hierarchy.csproj.DotSettings` has such entries, and every diagram module has its own.
 
 **Add the entry to the `.DotSettings` beside the `.csproj` that owns the folder**, keeping the file's existing shape - BOM, tab indentation, and the closing `</wpf:ResourceDictionary>` on the last entry's line.
 

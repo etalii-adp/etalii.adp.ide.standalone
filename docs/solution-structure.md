@@ -22,20 +22,20 @@ flowchart LR
 
 ## The solution, with its counts
 
-`src/backend/EtAlii.Adp.slnx` holds **142** projects, as a flat list rather than a folder hierarchy, so the whole thing opens and builds as one solution in Rider:
+`src/backend/EtAlii.Adp.slnx` holds **141** projects, as a flat list rather than a folder hierarchy, so the whole thing opens and builds as one solution in Rider:
 
 | Split | Count |
 | --- | --- |
-| core | **44** |
+| core | **43** |
 | diagram | **86** |
 | editor | **10** |
 | designer | **2** |
-| production | **95** |
+| production | **94** |
 | test | **47** |
 
-Those are **two different splits of the same 138**, and a figure appearing in both tables is a coincidence rather than a correspondence, which is exactly what makes a wrong classification look right.
+Those are **two different splits of the same 141**, and a figure appearing in both tables is a coincidence rather than a correspondence, which is exactly what makes a wrong classification look right.
 
-There are **157** tracked `.csproj` files under `src/`, which is **15** more than the solution holds. Every one of the 15 is fixture or example data belonging to `src/diagrams/dotnet-dependency-graph` — a module whose subject matter *is* reading `.csproj` files, so its test fixtures and its showcase project are themselves `.csproj`. **A page claiming "147 projects" would be wrong in the confident direction.**
+There are **156** tracked `.csproj` files under `src/`, which is **15** more than the solution holds. Every one of the 15 is fixture or example data belonging to `src/diagrams/dotnet-dependency-graph` — a module whose subject matter *is* reading `.csproj` files, so its test fixtures and its showcase project are themselves `.csproj`. **A page claiming "147 projects" would be wrong in the confident direction.**
 
 ## The relative-path trap
 
@@ -45,12 +45,12 @@ Classifying by path segment — "count the ones containing `backend`" — yields
 
 ## The core projects
 
-**22** production:
+**21** production:
 
 | Concern | Project |
 | --- | --- |
 | Shared primitives | `EtAlii.Adp` |
-| Host and composition | `EtAlii.Adp.Backend`, `EtAlii.Adp.Backend.Service` |
+| Host and composition, including serving the built client and proxying to the Vite dev server | `EtAlii.Adp.Backend.Service` |
 | Sign-in | `EtAlii.Adp.Authentication` |
 | Open documents and the shared wire vocabulary | `EtAlii.Adp.Documents` |
 | Selection, actions, properties, prompts | `EtAlii.Adp.Context` |
@@ -91,7 +91,7 @@ Editors are the same shape under `src/editors/<type>/`, with `EtAlii.Adp.Editor.
 
 ## Namespaces, and the folders that do not contribute
 
-Namespaces are `EtAlii.Adp.<Area>`, following the project rather than the folder tree — `EtAlii.Adp.Backend`, `EtAlii.Adp.Context`, `EtAlii.Adp.Diagram`. A test project appends `.Tests`. Outside .NET the same intent is spelled the language's own way, as `com.etalii.adp.<area>`. .NET types and their files are `PascalCase`; the client follows its own tooling's convention, kept consistent within the client.
+Namespaces are `EtAlii.Adp.<Area>`, following the project rather than the folder tree — `EtAlii.Adp.Backend.Service`, `EtAlii.Adp.Context`, `EtAlii.Adp.Diagram`. A test project appends `.Tests`. Outside .NET the same intent is spelled the language's own way, as `com.etalii.adp.<area>`. .NET types and their files are `PascalCase`; the client follows its own tooling's convention, kept consistent within the client.
 
 **`EtAlii.Adp.Diagram` is singular, and carries no `Backend` segment.** A plural form and a `Backend`-prefixed form have both been written down as though they existed — three times between them, one of which was the naming rule's own worked example, so the rule told a reader checking against it the wrong answer. **This page cannot spell either form**, even to deny it: the guard rejects any `EtAlii.Adp.*` name on it that is not a project in the solution, which is what found the third instance and then immediately caught this sentence's first draft.
 
