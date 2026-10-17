@@ -15,7 +15,7 @@ namespace EtAlii.Adp.History.Tests;
 /// </remarks>
 public class HistoryStackNoticesTests
 {
-    private sealed class RecordingSink : IContextNoticeSink
+    private sealed class RecordingSink : ICommandNoticeSink
     {
         public List<(string RootPath, string Message)> Notified { get; } = [];
 

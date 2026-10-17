@@ -33,7 +33,7 @@ public static class ServiceCollectionAddCommandsExtension
             new HistoryStackStore(
                 provider.GetRequiredService<ICommandDispatcher>(),
                 grace: null,
-                notices: provider.GetService<IContextNoticeSink>(),
+                notices: provider.GetService<ICommandNoticeSink>(),
                 time: provider.GetRequiredService<TimeProvider>()));
 
 

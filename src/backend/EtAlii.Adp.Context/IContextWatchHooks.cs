@@ -6,7 +6,7 @@ namespace EtAlii.Adp.Context;
 /// What the context stream needs from the problems machinery at the one seam where they
 /// meet: a project's Watch registration. Declared here rather than in Common because only
 /// Context consumes it and only the problems area implements it - the same
-/// interface-where-it-is-consumed split <c>IContextNoticeSink</c> uses, applied in the
+/// interface-where-it-is-consumed split <c>ICommandNoticeSink</c> uses in History, applied in the
 /// other direction (backend-project-decomposition task 10: ContextService held three
 /// Problems concretes, which would have made the two areas' projects mutually referencing).
 /// </summary>
