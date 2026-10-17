@@ -1,0 +1,14 @@
+{
+  "persistence": {
+    "format": "fbl",
+    "binding": "https://raw.githubusercontent.com/etalii-adp/etalii.adp.ide.standalone/develop/src/diagrams/dependency-graph/backend/EtAlii.Adp.Diagram.DependencyGraph/dependency-graph.fbl#dgr",
+    "ids": { "strategy": "uuid-v4", "encoding": "base36", "stable": true },
+    "view": { "store": [] },
+    "collaboration": { "mode": "none" },
+    "typeMap": {
+      "Node": { "as": "Node", "hostAttributes": ["storedId"] },
+      "Dependency": { "as": "DependsOn", "attributes": { "from": "source", "to": "target" }, "hostAttributes": ["storedId", "writtenFrom", "writtenTo"] },
+      "Unreadable": { "as": "unreadable" }
+    }
+  }
+}

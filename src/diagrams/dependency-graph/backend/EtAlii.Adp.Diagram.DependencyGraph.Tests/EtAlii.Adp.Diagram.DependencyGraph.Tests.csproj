@@ -25,6 +25,11 @@
       compares against the file it copied, so the copy must not be rewritten under a running test.
     -->
     <Content Include="Fixtures\**" CopyToOutputDirectory="PreserveNewest" />
+    <!--
+      The binding and the definition's persistence as the requirements draft them (dependency-graph-disl-fbl,
+      task 2): test resources, which the module does not read. The tests read each finding through them.
+    -->
+    <Content Include="Parity\Drafted\**" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>
