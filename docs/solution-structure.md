@@ -60,7 +60,7 @@ Classifying by path segment — "count the ones containing `backend`" — yields
 | Known projects and workspace roots | `EtAlii.Adp.Projects` |
 | Connection lifetime | `EtAlii.Adp.Sessions` |
 | Workspace tree, kept current from the project's file events | `EtAlii.Adp.Hierarchy` |
-| Geometry with no dependency: the rectangle, the viewport test's operand, row packing, text width and graph layering | `EtAlii.Adp.Layout` |
+| Geometry with no dependency: the rectangle, the viewport test's operand, row packing, the row a drag snaps to, text width and graph layering | `EtAlii.Adp.Layout` |
 | Diagram-type abstractions, including the diagram definition and validation contracts; it references the documents project and the shared primitives only | `EtAlii.Adp.Diagram` |
 | The bases a module builds on: the provider frame, the element source resolvers, the document session, a bundled DISL definition as a module's palette, menus and rows, and the viewport test | `EtAlii.Adp.Diagram.Modules` |
 | The services a connection calls, its connections and their streams, the table wire, the editor plumbing and the reload bridge | `EtAlii.Adp.Workspace` |

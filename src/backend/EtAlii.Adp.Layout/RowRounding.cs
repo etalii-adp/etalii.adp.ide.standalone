@@ -1,4 +1,4 @@
-namespace EtAlii.Adp.Documents;
+namespace EtAlii.Adp.Layout;
 
 /// <summary>
 /// The nearest row for a vertical position on a row canvas: the one rounding rule a drag snaps

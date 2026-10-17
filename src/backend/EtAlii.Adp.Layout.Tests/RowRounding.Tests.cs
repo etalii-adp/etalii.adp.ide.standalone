@@ -4,7 +4,7 @@ using JetBrains.Annotations;
 using Xunit;
 using IoPath = System.IO.Path;
 
-namespace EtAlii.Adp.Documents.Tests;
+namespace EtAlii.Adp.Layout.Tests;
 
 /// <summary>
 /// The row rounding rule, checked against the golden fixture both tiers read

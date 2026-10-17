@@ -12,7 +12,9 @@
     contract went to EtAlii.Adp.Diagram instead, because DiagramValidators references
     IDiagramValidator and Diagram already references this project. Nothing here may
     reference any other project but the core and the file project below it: every area
-    sits above it.
+    sits above it. Since code-structure T160 and T161 it holds the wire vocabulary and the
+    document types only: the file system is EtAlii.Adp.Files', the row rounding
+    EtAlii.Adp.Layout's, and no hosting package is referenced.
   -->
 
   <ItemGroup>
@@ -21,10 +23,8 @@
          needs the node and mark types it reads (backend-centralization R7). A package, not a project,
          so it adds no edge to the project graph; every module that reads YAML references it already. -->
     <PackageReference Include="YamlDotNet" />
-    <!-- Google.Protobuf is the runtime; Grpc.Tools compiles the linked protos at build.
-         Hosting.Abstractions is for DiagramDefinition.Build's IHostApplicationBuilder. -->
+    <!-- Google.Protobuf is the runtime; Grpc.Tools compiles the linked protos at build. -->
     <PackageReference Include="Google.Protobuf" />
-    <PackageReference Include="Microsoft.AspNetCore.Hosting.Abstractions" />
     <PackageReference Include="Grpc.Tools">
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
