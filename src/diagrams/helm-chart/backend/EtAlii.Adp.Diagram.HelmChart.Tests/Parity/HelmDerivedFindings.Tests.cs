@@ -31,12 +31,18 @@ public class HelmDerivedFindingsTests
     }
 
     /// <summary>
-    /// What the corpus does not hold: a <c>Chart.yaml</c> that does not parse, one whose name is written empty, a library
-    /// chart and a legacy one, each with no templates. The two the reader takes nothing from are <see cref="NotAMapping"/>.
+    /// What the corpus does not hold: a <c>Chart.yaml</c> that does not parse, one the reader takes nothing from (empty,
+    /// and a list), one whose name is written empty, a library chart and a legacy one, each with no templates.
     /// </summary>
+    /// <remarks>
+    /// The two the reader takes nothing from were held apart as a defect of the bundled definition from task 6 until the
+    /// definition's <c>helm.empty-templates</c> rule guarded on readable metadata (etalii.adp, task 11).
+    /// </remarks>
     public static TheoryData<string, string> Metadata() => new()
     {
         { "unparseable", "apiVersion: v2\nname: [unclosed\n" },
+        { "empty", "" },
+        { "a list", "- apiVersion: v2\n" },
         { "an empty name", "apiVersion: v2\nname:\nversion: 1.0.0\n" },
         { "a library", "apiVersion: v2\nname: lib\nversion: 1.0.0\ntype: library\n" },
         { "a legacy chart", "apiVersion: v1\nname: old\nversion: '1.0'\n" },
@@ -53,41 +59,6 @@ public class HelmDerivedFindingsTests
 
         // Act and assert.
         AssertSame(what, folder.Path);
-    }
-
-    /// <summary>A <c>Chart.yaml</c> the reader takes nothing from: empty, and a list.</summary>
-    public static TheoryData<string, string> NotAMapping() => new()
-    {
-        { "empty", "" },
-        { "a list", "- apiVersion: v2\n" },
-    };
-
-    /// <summary>
-    /// <b>A known difference, a defect of the bundled definition</b> (reported with task 6, to be repaired in
-    /// etalii-adp/etalii.adp and bundled again; the definition is never edited here). The hand-written rule set gave
-    /// no <c>helm.empty-templates</c> when <c>Chart.yaml</c> yields no mapping; the definition's rule guards on
-    /// <c>!has(self.failure)</c> alone, so it fires there. No chart of the corpus shows it, so the transcript does not.
-    /// This pins the difference, exactly one finding more, so that it is seen, and fails the day the repaired
-    /// definition is bundled, when these two shapes go back into <see cref="Metadata"/>.
-    /// </summary>
-    [Theory]
-    [MemberData(nameof(NotAMapping))]
-    public async Task AChartYamlTheReaderTakesNothingFrom_GivesOneEmptyTemplatesFindingMore_TheDefinitionsDefect(string what, string chartYaml)
-    {
-        var cancellationToken = TestContext.Current.CancellationToken;
-        using var folder = TestFolder.Create("EtAlii.Adp.HelmDerivedFindings");
-        await File.WriteAllTextAsync(folder.Combine("Chart.yaml"), chartYaml, cancellationToken);
-        await File.WriteAllTextAsync(folder.Combine("values.yaml"), "replicas: 1\n", cancellationToken);
-
-        // Act.
-        var expected = HandWrittenHelm.Findings(new HandWrittenHelmReader().Read(folder.Path)).Select(Line).ToList();
-        var actual = HelmDefinition.Findings(HelmFolder.Reading(folder.Path)).Select(Line).ToList();
-
-        // Assert.
-        List<string> withTheDefect = [.. expected, "helm.empty-templates | Warning | Chart.yaml:0 | This application chart has no templates; helm install would render nothing."];
-        Assert.True(
-            withTheDefect.SequenceEqual(actual, StringComparer.Ordinal),
-            $"{what}:\nexpected {string.Join("\n         ", withTheDefect)}\nactual   {string.Join("\n         ", actual)}");
     }
 
     [Fact]

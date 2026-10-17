@@ -904,7 +904,7 @@
                  "rationale": "Only when a readable lock exists: its absence before the first helm dependency update is a state, not a mistake." } },
 
       { "id": "emptyTemplates", "code": "helm.empty-templates", "group": "chart", "label": "No templates", "scope": "Chart",
-        "when": "!has(self.failure) && self.chartType.lowerAscii() != 'library'",
+        "when": "has(self.chartType) && self.chartType.lowerAscii() != 'library'",
         "rule": "diagram.nodesOfType('Template').size() > 0",
         "severity": "warning",
         "message": "This application chart has no templates; helm install would render nothing.",
