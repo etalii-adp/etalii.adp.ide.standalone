@@ -27,7 +27,14 @@ namespace EtAlii.Adp.Documents;
 /// that found it.
 /// </para>
 /// <para>
-/// There is no save method, and no code path in this file opens a file for writing.
+/// There is deliberately no save method, and no code path in this file opens a file for writing. A
+/// store for a read-only diagram type has one job: hold what the folder says, and say when that changed.
+/// </para>
+/// <para>
+/// Reading and lifetime are separate on purpose. <see cref="GetOrLoad"/> answers a question;
+/// <see cref="Acquire"/> and <see cref="Release"/> are the pair a session holds across its own
+/// lifetime. Without the split, a second connection closing would tear the watcher out from
+/// under the first, and that connection's diagram would go quietly stale.
 /// </para>
 /// </remarks>
 /// <typeparam name="TSnapshot">What one read of a folder makes; immutable, replaced wholesale.</typeparam>
@@ -37,7 +44,7 @@ namespace EtAlii.Adp.Documents;
 /// watcher rather than from one of its own. Null for a store that always watches for itself.
 /// </param>
 /// <param name="time">The clock the settle delay runs on; the system's when not given.</param>
-public abstract class WatchedFolderStore<TSnapshot>(TimeSpan settleDelay, ProjectFileEvents? events = null, TimeProvider? time = null) : IWatchedFolderStore<TSnapshot>, IDisposable
+public abstract class WatchedFolderStore<TSnapshot>(TimeSpan settleDelay, ProjectFileEvents? events = null, TimeProvider? time = null) : IDisposable
     where TSnapshot : class
 {
     private static readonly ILogger _logger = Log.ForContext<WatchedFolderStore<TSnapshot>>();
@@ -56,7 +63,7 @@ public abstract class WatchedFolderStore<TSnapshot>(TimeSpan settleDelay, Projec
     /// </summary>
     protected virtual IReadOnlyCollection<string>? WatchedFiles(string folder, TSnapshot snapshot) => null;
 
-    /// <inheritdoc />
+    /// <summary>The snapshot of <paramref name="folder"/>, reading and watching it if this is the first ask.</summary>
     public TSnapshot GetOrLoad(string folder)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(folder);
@@ -70,7 +77,10 @@ public abstract class WatchedFolderStore<TSnapshot>(TimeSpan settleDelay, Projec
         return _folders.TryGetValue(Key(folder), out var watched) ? watched.Snapshot : null;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// <see cref="GetOrLoad"/>, and a claim on the folder's lifetime. Every call must be matched
+    /// by a <see cref="Release"/>.
+    /// </summary>
     public TSnapshot Acquire(string folder)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(folder);
@@ -79,7 +89,10 @@ public abstract class WatchedFolderStore<TSnapshot>(TimeSpan settleDelay, Projec
         return watched.Snapshot;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// Gives up one claim. When the last one goes, the watcher is disposed and the snapshot
+    /// dropped; the next ask reads the folder afresh.
+    /// </summary>
     public void Release(string folder)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(folder);
@@ -97,7 +110,11 @@ public abstract class WatchedFolderStore<TSnapshot>(TimeSpan settleDelay, Projec
         }
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// Calls <paramref name="onChanged"/> with each new snapshot of <paramref name="folder"/>,
+    /// until the subscription it returns is disposed; disposing it twice is harmless, and once it
+    /// is disposed no call follows.
+    /// </summary>
     public IDisposable Watch(string folder, Action<TSnapshot> onChanged)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(folder);

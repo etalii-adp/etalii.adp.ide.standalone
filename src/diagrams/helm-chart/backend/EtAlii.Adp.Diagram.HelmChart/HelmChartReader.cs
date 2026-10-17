@@ -471,7 +471,7 @@ public sealed class HelmChartReader
         public bool FolderExists(string folder) =>
             _directories.Any(directory => string.Equals(directory, folder, Names)) || FilesUnder(folder).Any();
 
-        private static string? ParentOf(string relative)
+        private static string ParentOf(string relative)
         {
             var slash = relative.LastIndexOf('/');
             return slash >= 0 ? relative[..slash] : "";

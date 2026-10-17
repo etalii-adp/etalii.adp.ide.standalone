@@ -25,16 +25,11 @@
 
   <ItemGroup>
     <!--
-      Today's Helm reader and graph, the side the Helm cross-check compares the binding and its plugin with. They are
-      the oracle the module's test project keeps (Parity/), compiled here from there rather than copied, so there is
-      one oracle and it cannot drift.
+      Today's Helm reader, the side the Helm cross-check compares the binding and its plugin with. It is the oracle the
+      module's test project keeps (Parity/), compiled here from there rather than copied, so there is one oracle and
+      it cannot drift.
     -->
     <Compile Include="..\..\diagrams\helm-chart\backend\EtAlii.Adp.Diagram.HelmChart.Tests\Parity\HandWrittenHelmReader.cs" Link="RealFiles\HelmOracle\HandWrittenHelmReader.cs" />
-    <Compile Include="..\..\diagrams\helm-chart\backend\EtAlii.Adp.Diagram.HelmChart.Tests\Parity\HelmGraph.cs" Link="RealFiles\HelmOracle\HelmGraph.cs" />
-    <Compile Include="..\..\diagrams\helm-chart\backend\EtAlii.Adp.Diagram.HelmChart.Tests\Parity\HelmNode.cs" Link="RealFiles\HelmOracle\HelmNode.cs" />
-    <Compile Include="..\..\diagrams\helm-chart\backend\EtAlii.Adp.Diagram.HelmChart.Tests\Parity\HelmNodeKind.cs" Link="RealFiles\HelmOracle\HelmNodeKind.cs" />
-    <Compile Include="..\..\diagrams\helm-chart\backend\EtAlii.Adp.Diagram.HelmChart.Tests\Parity\HelmEdge.cs" Link="RealFiles\HelmOracle\HelmEdge.cs" />
-    <Compile Include="..\..\diagrams\helm-chart\backend\EtAlii.Adp.Diagram.HelmChart.Tests\Parity\HelmEdgeKind.cs" Link="RealFiles\HelmOracle\HelmEdgeKind.cs" />
   </ItemGroup>
 
 </Project>

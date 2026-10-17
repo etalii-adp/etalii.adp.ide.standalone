@@ -407,7 +407,7 @@ internal sealed class HandWrittenHelmReader
     }
 
     /// <summary>The archive name without its version-and-extension tail: <c>common-2.31.4.tgz</c> matches <c>common</c>.</summary>
-    internal static string StripVersionTail(string fileName)
+    private static string StripVersionTail(string fileName)
     {
         var stem = fileName[..^".tgz".Length];
         var dash = stem.LastIndexOf('-');

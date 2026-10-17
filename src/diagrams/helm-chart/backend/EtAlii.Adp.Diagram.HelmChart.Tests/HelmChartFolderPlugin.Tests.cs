@@ -1,8 +1,11 @@
 using System.Text;
+using EtAlii.Adp.Diagram.HelmChart.Tests.Parity;
 using EtAlii.Adp.Specification.Fbl;
 using EtAlii.Adp.Specification.Fbl.Planning;
 using EtAlii.Adp.Specification.Fbl.Plugins;
 using Xunit;
+
+using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
 namespace EtAlii.Adp.Diagram.HelmChart.Tests;
 
@@ -46,6 +49,25 @@ public class HelmChartFolderPluginTests
             read.Elements.Where(element => !element.IsRelation).Select(element => element.Id));
         Assert.Contains(read.Elements, element => element is { Type: "Resolves", Source: "dep:redis", Target: "sub:charts/redis" });
         Assert.Contains(read.Elements, element => element is { Type: "Includes", Source: "tpl:templates/deployment.yaml", Target: "tpl:templates/_helpers.tpl" });
+    }
+
+    public static TheoryData<string> Charts() => [.. HelmTranscript.Corpus()];
+
+    [Theory]
+    [MemberData(nameof(Charts))]
+    public void TheRelationsThatMayHaveAnOpenEnd_AreTheOnesTheGraphMade(string chart)
+    {
+        // Arrange: today's graph over today's reading, kept as the oracle, against what the plugin delivers through the binding.
+        var folder = IoPath.Combine(HelmTranscript.SourceFolder, chart);
+        var graph = Parity.HelmGraph.Derive(new HandWrittenHelmReader().Read(folder));
+
+        // Act.
+        var delivered = Read(HelmFolder.Request(folder)).Elements.Where(element => element.IsRelation);
+
+        // Assert: the same relations, by id, end and label, in the same order.
+        Assert.Equal(
+            graph.Edges.Select(edge => $"{edge.Id} | {edge.Kind} | {edge.SourceId} -> {(edge.OpenEnd ? "(none)" : edge.TargetId)} | {edge.Label}").Distinct(StringComparer.Ordinal),
+            delivered.Select(element => $"{element.Id} | {element.Type} | {element.Source} -> {element.Target ?? "(none)"} | {element.Attributes["label"]}"));
     }
 
     [Fact]
@@ -222,8 +244,9 @@ public class HelmChartFolderPluginTests
 
     private static IReadOnlyList<FblElement> WellFormed() => Read("well-formed").Elements;
 
-    private static PluginReadResult Read(string fixture) =>
-        new HelmChartFolderPlugin().Read(HelmFolder.Request(HelmFolder.Fixture(fixture)));
+    private static PluginReadResult Read(string fixture) => Read(HelmFolder.Request(HelmFolder.Fixture(fixture)));
+
+    private static PluginReadResult Read(PluginReadRequest request) => new HelmChartFolderPlugin().Read(request);
 
     private static PluginReadRequest Request(params (string Path, string Text)[] files) =>
         new([.. files.Select(file => new PluginFile(file.Path, Encoding.UTF8.GetBytes(file.Text)))]);

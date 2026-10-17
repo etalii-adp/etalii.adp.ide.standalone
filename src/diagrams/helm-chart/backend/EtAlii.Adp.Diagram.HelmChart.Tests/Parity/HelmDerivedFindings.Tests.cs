@@ -95,7 +95,7 @@ public class HelmDerivedFindingsTests
         AssertSame("not a chart", HelmFolder.Fixture("not-a-chart"));
 
     /// <summary>The findings derived from <paramref name="folder"/> read through the binding are the hand-written ones of today's reading of it, in order.</summary>
-    internal static void AssertSame(string what, string folder) =>
+    private static void AssertSame(string what, string folder) =>
         AssertSame(what, HandWrittenHelm.Findings(new HandWrittenHelmReader().Read(folder)), HelmDefinition.Findings(HelmFolder.Reading(folder)));
 
     /// <summary>The derived findings of <paramref name="read"/>, a chart made in memory, are the hand-written ones, in order.</summary>

@@ -22,8 +22,8 @@ namespace EtAlii.Adp.Specification.Fbl.Tests.RealFiles;
 /// <para>
 /// <b>The Helm chart folder</b> (helm-chart-disl-fbl, Requirement 8.5): every folder of this repository that holds a
 /// <c>Chart.yaml</c>, read through the vendored folder binding and the module's plugin by the library's folder body,
-/// against today's reader and graph, which the module's test project keeps as its oracle and this project compiles
-/// from there. The folder body is given nothing beside the binding, so a directory no file rule can select (gap 3 of
+/// against today's reader, which the module's test project keeps as its oracle and this project compiles from
+/// there, with the ids its graph gave each node and relation. The folder body is given nothing beside the binding, so a directory no file rule can select (gap 3 of
 /// the definition's companion, which the module answers with entries of its own) shows here as a divergence.
 /// </para>
 /// </summary>
@@ -211,21 +211,44 @@ internal static partial class ModuleIds
     }
 
     /// <summary>
-    /// The Helm module's side: today's reader and graph, kept as the module's oracle (<see cref="HandWrittenHelmReader"/>,
-    /// <see cref="HelmGraph"/>), each node by the definition's type for its kind (a template whose file name begins with
-    /// an underscore is a <c>Partial</c>) and each of the two relations the graph makes by its id.
+    /// The Helm module's side: what today's reader, kept as the module's oracle (<see cref="HandWrittenHelmReader"/>),
+    /// reads from the folder, each node by the definition's type for its kind with the id the module's graph gave it,
+    /// and each <c>Includes</c> and <c>Resolves</c> by its id: <c>edge:</c>, its source, its type, its target (empty for
+    /// an open end) and its label, <c>|</c> between each.
     /// </summary>
     public static IReadOnlyDictionary<string, SortedSet<string>> OfHelmModule(string folder)
     {
         var ids = new Dictionary<string, SortedSet<string>>(StringComparer.Ordinal);
-        var graph = HelmGraph.Derive(new HandWrittenHelmReader().Read(folder));
-        foreach (var node in graph.Nodes)
+        var chart = new HandWrittenHelmReader().Read(folder);
+        if (!chart.IsChart) return ids;
+
+        Add(ids, "Chart", "chart");
+        foreach (var values in chart.Values) Add(ids, "Values", $"values:{values.RelativePath}");
+        if (chart.Schema is { } schema) Add(ids, "Schema", $"schema:{schema.RelativePath}");
+        var partials = chart.Templates.Where(template => template.Role == TemplateRole.Partial).ToList();
+        foreach (var template in chart.Templates)
         {
-            var type = node.Kind == HelmNodeKind.Template && node.Name.StartsWith('_') ? "Partial" : node.Kind.ToString();
-            Add(ids, type, node.Id);
+            Add(ids, template.Role == TemplateRole.Partial ? "Partial" : "Template", $"tpl:{template.RelativePath}");
+            foreach (var reference in template.Facts.References)
+            {
+                var defining = partials.FirstOrDefault(partial => partial.Facts.Defines.Contains(reference, StringComparer.Ordinal));
+                Add(ids, "Includes", $"edge:tpl:{template.RelativePath}|Includes|{(defining is null ? "" : $"tpl:{defining.RelativePath}")}|{reference}");
+            }
         }
-        foreach (var edge in graph.Edges) Add(ids, edge.Kind.ToString(), edge.Id);
+        if (chart.Crds is not null) Add(ids, "Crds", "crds");
+        foreach (var entry in chart.Vendored) Add(ids, entry.Sealed ? "Archive" : "Subchart", Vendored(entry));
+        foreach (var resolved in DependencyResolution.Match(chart.Dependencies, chart.Vendored).Dependencies)
+        {
+            var dependency = $"dep:{resolved.Dependency.EffectiveName}";
+            Add(ids, "Dependency", dependency);
+            Add(ids, "Resolves", resolved.Vendored is { } vendored
+                ? $"edge:{dependency}|Resolves|{Vendored(vendored)}|"
+                : $"edge:{dependency}|Resolves||{resolved.Dependency.EffectiveName}");
+        }
+        if (chart.Lock is { } chartLock) Add(ids, "Lock", $"lock:{chartLock.RelativePath}");
         return ids;
+
+        static string Vendored(VendoredEntry entry) => $"{(entry.Sealed ? "tgz" : "sub")}:{entry.RelativePath}";
     }
 
     private static void Add(Dictionary<string, SortedSet<string>> ids, string type, string id)
