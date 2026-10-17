@@ -50,7 +50,7 @@ public static class ServiceCollectionAddDependencyGraphExtension
         services.AddSingleton<ICommandHandler<SetDependencyGraphPlacementCommand>, SetDependencyGraphPlacementCommandHandler>();
         services.AddSingleton<ICommandHandler<AddDependencyGraphElementCommand>, AddDependencyGraphElementCommandHandler>();
         services.AddSingleton<ICommandHandler<RemoveDependencyGraphElementCommand>, RemoveDependencyGraphElementCommandHandler>();
-        services.AddSingleton<ICommandHandler<RestoreLinesCommand<IDependencyGraphDocumentStore>>, RestoreLinesCommandHandler<IDependencyGraphDocumentStore>>();
+        services.AddSingleton<ICommandHandler<RestoreDocumentCommand<IDependencyGraphDocumentStore>>, RestoreDocumentCommandHandler<IDependencyGraphDocumentStore>>();
         services.AddSingleton<ICommandHandler<RenameDependencyGraphElementCommand>, RenameDependencyGraphElementCommandHandler>();
         services.AddSingleton<ICommandHandler<ConnectDependencyGraphElementsCommand>, ConnectDependencyGraphElementsCommandHandler>();
         services.AddSingleton<ICommandHandler<DisconnectDependencyGraphRelationCommand>, DisconnectDependencyGraphRelationCommandHandler>();

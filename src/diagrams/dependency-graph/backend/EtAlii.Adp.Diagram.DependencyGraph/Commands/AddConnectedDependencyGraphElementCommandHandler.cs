@@ -33,10 +33,6 @@ public sealed class AddConnectedDependencyGraphElementCommandHandler(IDependency
         // The insert moved lines, so the relation is spliced against a fresh parse rather than
         // the ranges the first model recorded.
         var reparsed = DependencyGraphParser.Parse(body);
-        // Whether the insert is about to create the relations: key, so the inverse can take
-        // the key back out and the undo return the file byte for byte.
-        var hadSection = DependencyGraphWriter.HasRelationsSection(body);
-
         // Which way the dependency runs is the type's whole meaning, so the gesture decides it
         // rather than the writer: dragged out of a node, that node depends on what was made;
         // dragged into one, what was made depends on it.
@@ -45,7 +41,6 @@ public sealed class AddConnectedDependencyGraphElementCommandHandler(IDependency
             : (command.FromElementId, command.NewElementId);
         DependencyGraphWriter.InsertRelation(body, reparsed, command.RelationId, source, target, "");
 
-        return EditOutcome.UndoneBy(new RemoveDependencyGraphElementCommand(
-            command.BodyPath, command.NewElementId, RemoveEmptiedRelationsSection: !hadSection));
+        return EditOutcome.Applied;
     }
 }

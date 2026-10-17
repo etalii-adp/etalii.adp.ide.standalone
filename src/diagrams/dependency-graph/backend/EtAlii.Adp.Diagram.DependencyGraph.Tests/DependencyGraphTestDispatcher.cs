@@ -20,8 +20,8 @@ internal sealed class DependencyGraphTestDispatcher(IDependencyGraphDocumentStor
             new AddDependencyGraphElementCommandHandler(documents).ExecuteAsync(add, cancellationToken),
         RemoveDependencyGraphElementCommand remove =>
             new RemoveDependencyGraphElementCommandHandler(documents).ExecuteAsync(remove, cancellationToken),
-        RestoreLinesCommand<IDependencyGraphDocumentStore> restore =>
-            new RestoreLinesCommandHandler<IDependencyGraphDocumentStore>(documents).ExecuteAsync(restore, cancellationToken),
+        RestoreDocumentCommand<IDependencyGraphDocumentStore> restore =>
+            new RestoreDocumentCommandHandler<IDependencyGraphDocumentStore>(documents).ExecuteAsync(restore, cancellationToken),
         RenameDependencyGraphElementCommand rename =>
             new RenameDependencyGraphElementCommandHandler(documents).ExecuteAsync(rename, cancellationToken),
         ConnectDependencyGraphElementsCommand connect =>

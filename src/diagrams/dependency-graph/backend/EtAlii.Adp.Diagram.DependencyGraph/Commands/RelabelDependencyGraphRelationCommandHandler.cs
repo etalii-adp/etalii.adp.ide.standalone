@@ -17,6 +17,6 @@ public sealed class RelabelDependencyGraphRelationCommandHandler(IDependencyGrap
         }
 
         DependencyGraphWriter.SetRelationLabel(body, relation, command.Label);
-        return EditOutcome.UndoneBy(command with { Label = relation.Label });
+        return EditOutcome.Applied;
     }
 }

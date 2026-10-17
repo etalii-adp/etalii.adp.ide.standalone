@@ -321,27 +321,7 @@ public class DependencyGraphWriterTests
         Assert.Equal("a", relation.From);
         Assert.Equal("b", relation.To);
         Assert.Equal("depends on", relation.Label);
-        Assert.True(DependencyGraphWriter.HasRelationsSection(document));
-    }
-
-    [Fact]
-    public void AddingARelationThenRemovingIt_TakesTheSectionItCreatedBackOut()
-    {
-        // Arrange.
-        // The stray `relations:` header is the one line that would break undo's byte identity.
-        const string original = "dependencies: 1\r\nelements:\r\n  - id: a\r\n    x: 0\r\n  - id: b\r\n    x: 200\r\n";
-        (LineDocument document, DependencyGraphModel model) = From(original);
-        Assert.False(DependencyGraphWriter.HasRelationsSection(document));
-
-        // Act.
-        DependencyGraphWriter.InsertRelation(document, model, "conn0001", "a", "b", "");
-        var reparsed = DependencyGraphParser.Parse(LineDocument.Parse(document.Text));
-        DependencyGraphWriter.RemoveRelation(document, reparsed.Relations[0]);
-        DependencyGraphWriter.RemoveRelationsSectionIfEmpty(
-            document, DependencyGraphParser.Parse(LineDocument.Parse(document.Text)));
-
-        // Assert.
-        Assert.Equal(original, document.Text);
+        Assert.Contains("\r\nrelations:\r\n", document.Text, StringComparison.Ordinal);
     }
 
     [Fact]

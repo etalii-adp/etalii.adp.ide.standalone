@@ -17,10 +17,4 @@ internal static class DependencyGraphEdits
     public static DependencyGraphRelation? RelationOf(DependencyGraphModel model, string relationId) =>
         model.Relations.FirstOrDefault(candidate =>
             string.Equals(candidate.Id, relationId, StringComparison.Ordinal));
-
-    /// <summary>The lines a range covers, captured for a byte-exact restore.</summary>
-    public static LineSegment Capture(LineDocument document, LineRange range) =>
-        new(
-            range.Start,
-            Enumerable.Range(range.Start, range.Length).Select(i => document.Lines[i].Text).ToList());
 }

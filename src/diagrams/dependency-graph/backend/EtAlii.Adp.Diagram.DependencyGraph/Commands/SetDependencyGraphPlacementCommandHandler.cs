@@ -30,11 +30,6 @@ public sealed class SetDependencyGraphPlacementCommandHandler(IDependencyGraphDo
         // parser recorded stay valid between them and no re-parse is needed mid-command.
         DependencyGraphWriter.SetX(body, element, command.X);
         DependencyGraphWriter.SetRow(body, element, command.Row);
-
-        return EditOutcome.UndoneBy(command with
-        {
-            X = element.X,
-            Row = element.Row,
-        });
+        return EditOutcome.Applied;
     }
 }

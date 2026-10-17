@@ -27,13 +27,7 @@ public sealed class ConnectDependencyGraphElementsCommandHandler(IDependencyGrap
             return EditOutcome.Refused("Both ends of a dependency must be nodes of this graph.");
         }
 
-        // Whether the insert is about to create the relations: key, so the inverse can take
-        // the key back out and the undo return the file byte for byte.
-        var hadSection = DependencyGraphWriter.HasRelationsSection(body);
-
         DependencyGraphWriter.InsertRelation(body, model, command.Id, command.From, command.To, command.Label);
-
-        return EditOutcome.UndoneBy(new DisconnectDependencyGraphRelationCommand(
-            command.BodyPath, command.Id, RemoveEmptiedRelationsSection: !hadSection));
+        return EditOutcome.Applied;
     }
 }
