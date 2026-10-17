@@ -9,7 +9,7 @@ namespace EtAlii.Adp.Sessions;
 /// </summary>
 public static class ServiceCollectionAddToolSessionsExtension
 {
-    public static IServiceCollection AddToolSessions(this IServiceCollection services)
+    public static void AddToolSessions(this IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);
 
@@ -17,7 +17,5 @@ public static class ServiceCollectionAddToolSessionsExtension
         services.AddSingleton<DesignerSessionFactories>();
         services.AddSingleton<EditorSessionFactories>();
         services.AddSingleton<IDiagramViewportRegistry, DiagramViewportRegistry>();
-
-        return services;
     }
 }
