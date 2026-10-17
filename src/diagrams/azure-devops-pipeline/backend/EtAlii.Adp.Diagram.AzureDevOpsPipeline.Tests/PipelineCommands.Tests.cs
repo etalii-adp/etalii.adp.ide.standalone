@@ -483,13 +483,15 @@ public class PipelineCommandsTests : IDisposable
         var withoutIt = Text(path);
         var undone = await UndoAsync(removed.Inverse!);
         var restored = Text(path);
-        var redone = undone.Inverse is { } redo ? await UndoAsync(redo) : null;
+        var redo = undone.Inverse;
+        var redone = redo is null ? null : await UndoAsync(redo);
 
         // Assert.
         Assert.True(removed.IsSuccess, removed.Error);
         Assert.True(undone.IsSuccess, undone.Error);
         Assert.Equal(original, restored);
-        Assert.True(redone is { IsSuccess: true }, $"The redo of removing {what} was {(redone is null ? "lost" : redone.Error)}.");
+        Assert.True(redo is not null, $"The redo of removing {what} was lost.");
+        Assert.True(redone!.IsSuccess, $"The redo of removing {what} was refused: {redone.Error}");
         Assert.Equal(withoutIt, Text(path));
     }
 
