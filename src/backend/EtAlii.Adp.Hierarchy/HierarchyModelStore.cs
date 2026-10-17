@@ -18,20 +18,20 @@ public sealed class HierarchyModelStore : IHierarchyModelStore, IDisposable
     private readonly IDiagramDefinitionCatalog? _catalog;
     private readonly DiagramFileRouter? _router;
     private readonly EditorResolver? _editorResolver;
-    private readonly DesignerFileRouter? _designerRouter;
+    private readonly ToolRouter? _tools;
 
     public HierarchyModelStore(
         IDiagramDefinitionCatalog? catalog = null,
         TimeSpan? idleTimeout = null,
         DiagramFileRouter? router = null,
         EditorResolver? editorResolver = null,
-        DesignerFileRouter? designerRouter = null,
+        ToolRouter? tools = null,
         TimeProvider? time = null)
     {
         _catalog = catalog;
         _router = router;
         _editorResolver = editorResolver;
-        _designerRouter = designerRouter;
+        _tools = tools;
         _entries = new RetainedRegistry<ShortGuid, HierarchyModelEntry>(
             idleTimeout ?? DefaultIdleTimeout,
             (_, entry) => entry.Events?.Dispose(),
@@ -42,7 +42,7 @@ public sealed class HierarchyModelStore : IHierarchyModelStore, IDisposable
     public HierarchyModel GetOrCreate(ShortGuid watchId, string rootPath) =>
         _entries.GetOrAdd(watchId, _ => new HierarchyModelEntry
         {
-            Model = new HierarchyModel(rootPath, _catalog, _router, _editorResolver, _designerRouter),
+            Model = new HierarchyModel(rootPath, _catalog, _router, _editorResolver, _tools),
         }).Model;
 
     public void AttachEvents(ShortGuid watchId, IDisposable events)

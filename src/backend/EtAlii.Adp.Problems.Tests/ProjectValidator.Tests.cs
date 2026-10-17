@@ -1,5 +1,6 @@
 using EtAlii.Adp.Designer;
 using EtAlii.Adp.Diagram;
+using EtAlii.Adp.Editor;
 using EtAlii.Adp.Hierarchy;
 using Microsoft.Extensions.Time.Testing;
 using Xunit;
@@ -592,10 +593,14 @@ public class ProjectValidatorTests : IDisposable
     private static ProjectValidator SubjectWithDesigner(ProjectValidatorTestValidator? validator)
     {
         var validators = new DiagramValidators(validator is null ? [] : [validator]);
+        var diagrams = new DiagramFileRouter(new TestDiagramDefinitionCatalog(MindmapDefinition));
         return new ProjectValidator(
-            new DiagramFileRouter(new TestDiagramDefinitionCatalog(MindmapDefinition)),
+            diagrams,
             validators,
-            designerRouter: new DesignerFileRouter(new DesignerDefinitionCatalog { All = [SheetDefinition] }));
+            tools: new ToolRouter(
+                diagrams,
+                new DesignerFileRouter(new DesignerDefinitionCatalog { All = [SheetDefinition] }),
+                new EditorResolver(new EditorDefinitionCatalog { All = [] })));
     }
 
     private void CreateSheet(string baseName, string body)

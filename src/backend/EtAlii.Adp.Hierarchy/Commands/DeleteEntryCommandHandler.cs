@@ -33,18 +33,19 @@ public sealed class DeleteEntryCommandHandler : ICommandHandler<DeleteEntryComma
     private static readonly ILogger _logger = Log.ForContext<DeleteEntryCommandHandler>();
 
     private readonly IDiagramDefinitionCatalog _catalog;
-    private readonly DesignerFileRouter? _designerRouter;
+    private readonly ToolRouter? _tools;
 
     /// <param name="catalog">The diagram types, for a registration's body file and a subject's registrations.</param>
-    /// <param name="designerRouter">
-    /// Which files are a designer's, or null in a host without the family. A designer's document
-    /// is two files as a diagram with a body file is, and neither is left behind by the other.
+    /// <param name="tools">
+    /// Which tool serves a file, or null in a host without the designer and editor families. A
+    /// designer's document is two files as a diagram with a body file is, and neither is left
+    /// behind by the other.
     /// </param>
-    public DeleteEntryCommandHandler(IDiagramDefinitionCatalog catalog, DesignerFileRouter? designerRouter = null)
+    public DeleteEntryCommandHandler(IDiagramDefinitionCatalog catalog, ToolRouter? tools = null)
     {
         ArgumentNullException.ThrowIfNull(catalog);
         _catalog = catalog;
-        _designerRouter = designerRouter;
+        _tools = tools;
     }
 
     public Task<CommandResult> ExecuteAsync(
@@ -67,10 +68,14 @@ public sealed class DeleteEntryCommandHandler : ICommandHandler<DeleteEntryComma
         }
 
         // Resolved before the registration file goes: its first line is what names the
-        // sibling, and once it is deleted there is nothing left to ask.
-        var designer = isDirectory ? null : _designerRouter?.Route(path) as DesignerRouted;
+        // sibling, and once it is deleted there is nothing left to ask. Whose document the file
+        // is, a designer's or otherwise a diagram's, is the tool router's answer.
+        var designer = isDirectory ? null : _tools?.Route(path) as DesignerRouted;
         var isRegistration = DiagramFilePair.IsRegistrationFile(path);
-        var sibling = isDirectory ? null : DiagramFilePair.SiblingOf(path, _catalog) ?? (isRegistration ? designer?.BodyPath : null);
+        var sibling = isDirectory ? null
+            : designer is null ? DiagramFilePair.SiblingOf(path, _catalog)
+            : isRegistration ? designer.BodyPath
+            : null;
 
         // A SUBJECT's delete cascades to its registrations (adp-file-nesting Requirement 6.1):
         // a registration pointing at nothing serves nobody, and the confirmation dialog said

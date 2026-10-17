@@ -1,5 +1,6 @@
 using EtAlii.Adp.Designer;
 using EtAlii.Adp.Diagram;
+using EtAlii.Adp.Editor;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -71,7 +72,10 @@ public class HierarchyModelNestingTests : IDisposable
         var sheet = new DesignerDefinition("fixture/sheet", "Fixture sheet", Formats: [new DesignerFormat("YAML", ".yaml")]);
         File.WriteAllText(IoPath.Combine(_root, "cities.yaml"), "name: Cities\n");
         File.WriteAllText(IoPath.Combine(_root, "cities.adp"), "fixture/sheet\n");
-        var model = new HierarchyModel(_root, _catalog, designerRouter: new DesignerFileRouter(new DesignerDefinitionCatalog { All = [sheet] }));
+        var model = new HierarchyModel(_root, _catalog, tools: new ToolRouter(
+            new DiagramFileRouter(_catalog),
+            new DesignerFileRouter(new DesignerDefinitionCatalog { All = [sheet] }),
+            new EditorResolver(new EditorDefinitionCatalog { All = [] })));
 
         // Act.
         var rootChildren = model.ListChildren(null);

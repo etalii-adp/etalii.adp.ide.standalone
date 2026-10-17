@@ -1,6 +1,8 @@
 using System.Collections.Concurrent;
+using EtAlii.Adp.Designer;
 using EtAlii.Adp.Diagram;
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Editor;
 using EtAlii.Adp.Hierarchy;
 using Serilog;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
@@ -27,7 +29,7 @@ public sealed class ProjectValidator
 
     private readonly DiagramFileRouter _router;
     private readonly DiagramValidators _validators;
-    private readonly DesignerFileRouter? _designerRouter;
+    private readonly ToolRouter _tools;
     private readonly TimeSpan _validatorTimeout;
     private readonly TimeProvider _time;
     private readonly ConcurrentDictionary<string, Task<ValidationOutcome>> _running = new(StringComparer.OrdinalIgnoreCase);
@@ -35,16 +37,18 @@ public sealed class ProjectValidator
     /// <param name="router">Says which diagram type a file is.</param>
     /// <param name="validators">The rules, by origin - a diagram type's or a designer type's alike.</param>
     /// <param name="validatorTimeout">How long one validator may take for one file.</param>
-    /// <param name="designerRouter">
-    /// Says which designer type a file is, for what the diagram router does not place
-    /// (knowledge-designer Requirement 10.2). Null in a host without the designer family.
+    /// <param name="tools">
+    /// Says which tool serves a file, so a designer's document is judged as the designer's
+    /// (knowledge-designer Requirement 10.2) by the one precedence every caller shares
+    /// (code-structure FR-058). Null in a host without the designer and editor families, where
+    /// only the diagram types are asked.
     /// </param>
     /// <param name="time">The clock a validator's time runs out on; the system's when not given.</param>
     public ProjectValidator(
         DiagramFileRouter router,
         DiagramValidators validators,
         TimeSpan? validatorTimeout = null,
-        DesignerFileRouter? designerRouter = null,
+        ToolRouter? tools = null,
         TimeProvider? time = null)
     {
         ArgumentNullException.ThrowIfNull(router);
@@ -52,7 +56,7 @@ public sealed class ProjectValidator
         _router = router;
         _validators = validators;
         _validatorTimeout = validatorTimeout ?? DefaultValidatorTimeout;
-        _designerRouter = designerRouter;
+        _tools = tools ?? new ToolRouter(router, new DesignerFileRouter(new DesignerDefinitionCatalog { All = [] }), new EditorResolver(new EditorDefinitionCatalog { All = [] }));
         _time = time ?? TimeProvider.System;
     }
 
@@ -192,19 +196,7 @@ public sealed class ProjectValidator
         // `body:` header resolves to that document. Without the root the router cannot follow
         // the header, and several diagrams over one model - the reason C4 projects are written
         // the way they are - would each arrive here with nowhere to read.
-        var routing = _router.Route(path, collector.Root);
-
-        // Designers second: what the diagram router does not place may be a designer's
-        // registration or body. Asked before the unknown-type verdict below, which would
-        // otherwise report a deployed designer's document as an unknown diagram type.
-        if (routing is DiagramUnknownType or NotADiagram &&
-            _designerRouter?.Route(path, collector.Root) is { } designer and not NotADesigner)
-        {
-            await ConsiderDesignerFileAsync(designer, collector, cancellationToken);
-            return;
-        }
-
-        switch (routing)
+        switch (_tools.Route(path, collector.Root))
         {
             case DiagramRouted { BodyPath: null }:
                 // The header names something outside the project, or names nothing resolvable.
@@ -231,6 +223,34 @@ public sealed class ProjectValidator
                     cancellationToken);
                 return;
 
+            case DesignerRouted designer:
+                await ConsiderDesignerFileAsync(designer, collector, cancellationToken);
+                return;
+
+            case ToolUnreadable unreadable:
+                if (!collector.MarkConsidered(unreadable.Path))
+                {
+                    return;
+                }
+                collector.FilesConsidered++;
+                collector.AddCore(unreadable.Path, unreadable.Reason);
+                return;
+
+            default:
+                // The editors': no diagram or designer type serves it. What the diagram types
+                // still have to say about it - a registration of a type nothing deployed knows,
+                // an extension two of them claim - is reported; anything else is not ours to
+                // judge (Requirement 2.3).
+                ConsiderUnservedFile(_router.Route(path, collector.Root), collector);
+                return;
+        }
+    }
+
+    /// <summary>What the diagram types say of a file only an editor serves.</summary>
+    private static void ConsiderUnservedFile(DiagramRouting routing, ProblemCollector collector)
+    {
+        switch (routing)
+        {
             case DiagramUnknownType unknown:
                 if (!collector.MarkConsidered(unknown.Path))
                 {
@@ -252,58 +272,35 @@ public sealed class ProjectValidator
                     $"{string.Join(", ", ambiguous.Claimants.Select(claimant => claimant.Origin.Key))}.",
                     CoreRuleIds.AmbiguousExtension);
                 return;
-
-            case DiagramUnreadable unreadable:
-                if (!collector.MarkConsidered(unreadable.Path))
-                {
-                    return;
-                }
-                collector.FilesConsidered++;
-                collector.AddCore(unreadable.Path, unreadable.Reason);
-                return;
-
-            case NotADiagram:
-                return; // Requirement 2.3: not ours to judge.
         }
     }
 
-    /// <summary>What the designer router made of a file the diagram router did not place.</summary>
-    private async ValueTask ConsiderDesignerFileAsync(DesignerRouting designer, ProblemCollector collector, CancellationToken cancellationToken)
+    /// <summary>A file a designer type serves: its document, judged by that type's rules.</summary>
+    private async ValueTask ConsiderDesignerFileAsync(DesignerRouted designer, ProblemCollector collector, CancellationToken cancellationToken)
     {
-        switch (designer)
+        if (designer.BodyPath is not { } bodyPath)
         {
-            case DesignerUnreadable unreadable:
-                if (collector.MarkConsidered(unreadable.Path))
-                {
-                    collector.FilesConsidered++;
-                    collector.AddCore(unreadable.Path, unreadable.Reason);
-                }
-                return;
-
-            case DesignerRouted { BodyPath: null } missing:
-                // A designer's document is two files, and this one's body is not there: said
-                // against the registration, which is the file that names it.
-                if (collector.MarkConsidered(missing.RegistrationPath))
-                {
-                    collector.FilesConsidered++;
-                    collector.AddCore(missing.RegistrationPath, "The file this registration names does not exist.");
-                }
-                return;
-
-            case DesignerRouted { BodyPath: { } bodyPath } routed:
-                // The pair routes identically through either of its files - judge it once.
-                if (!collector.MarkConsidered(bodyPath))
-                {
-                    return;
-                }
+            // A designer's document is two files, and this one's body is not there: said
+            // against the registration, which is the file that names it.
+            if (collector.MarkConsidered(designer.RegistrationPath))
+            {
                 collector.FilesConsidered++;
-                if (routed.Definition.ToolOrigin is not { } origin)
-                {
-                    return; // An origin that is not vendor/type can have registered no rules.
-                }
-                await ValidateDocumentAsync(origin, bodyPath, routed.RegistrationPath, hasFolderSubject: false, "document", collector, cancellationToken);
-                return;
+                collector.AddCore(designer.RegistrationPath, "The file this registration names does not exist.");
+            }
+            return;
         }
+
+        // The pair routes identically through either of its files - judge it once.
+        if (!collector.MarkConsidered(bodyPath))
+        {
+            return;
+        }
+        collector.FilesConsidered++;
+        if (designer.Definition.ToolOrigin is not { } origin)
+        {
+            return; // An origin that is not vendor/type can have registered no rules.
+        }
+        await ValidateDocumentAsync(origin, bodyPath, designer.RegistrationPath, hasFolderSubject: false, "document", collector, cancellationToken);
     }
 
     /// <param name="origin">The type whose rules judge the document.</param>
