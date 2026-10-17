@@ -1,0 +1,15 @@
+# A stage that depends on a stage nobody wrote (finding A6): the dependency is drawn as a broken
+# edge and the waiting stage is marked indeterminate.
+stages:
+  - stage: Build
+    jobs:
+      - job: Compile
+        steps:
+          - script: dotnet build
+
+  - stage: Deploy
+    dependsOn: Pacakge
+    jobs:
+      - job: Push
+        steps:
+          - script: dotnet nuget push

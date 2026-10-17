@@ -1,0 +1,14 @@
+# Lists written flush with their keys rather than indented under them (finding B11): what a new
+# stage, job and step are written as in a file of this shape.
+stages:
+- stage: Build
+  jobs:
+  - job: Compile
+    steps:
+    - script: dotnet build
+- stage: Test
+  dependsOn: Build
+  jobs:
+  - job: Unit
+    steps:
+    - script: dotnet test

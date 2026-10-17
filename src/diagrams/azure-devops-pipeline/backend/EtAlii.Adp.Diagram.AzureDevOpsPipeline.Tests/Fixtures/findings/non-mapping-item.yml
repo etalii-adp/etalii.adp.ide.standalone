@@ -1,0 +1,10 @@
+# Sequence items that are not mappings (finding B14): a step written as a bare word and a job
+# written as a bare word, which the tool passes over in silence.
+stages:
+  - stage: Build
+    jobs:
+      - just-a-word
+      - job: Compile
+        steps:
+          - checkout
+          - script: dotnet build

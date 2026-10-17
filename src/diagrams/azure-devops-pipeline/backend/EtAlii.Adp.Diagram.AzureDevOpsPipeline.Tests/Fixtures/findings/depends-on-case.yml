@@ -1,0 +1,23 @@
+# dependsOn matched without regard to case, and a job's names are those of its own stage
+# (finding B6): Test waits for build, Unit waits for compile, and Package names a job of another stage.
+stages:
+  - stage: Build
+    jobs:
+      - job: Compile
+        steps:
+          - script: dotnet build
+
+  - stage: Test
+    dependsOn: build
+    jobs:
+      - job: Lint
+        steps:
+          - script: dotnet format
+      - job: Unit
+        dependsOn: lint
+        steps:
+          - script: dotnet test
+      - job: Package
+        dependsOn: Compile
+        steps:
+          - script: dotnet pack

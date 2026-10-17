@@ -1,0 +1,5 @@
+# Not YAML that can be read (finding B15): the sentence is "This is not YAML that can be read: "
+# followed by the YAML reader's own message, and the file opens empty and read-only.
+stages:
+  - stage: Build
+    jobs: [unclosed

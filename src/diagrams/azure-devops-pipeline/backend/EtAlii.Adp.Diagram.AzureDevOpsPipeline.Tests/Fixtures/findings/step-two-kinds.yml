@@ -1,0 +1,11 @@
+# A step that carries two kind keys (finding B16): the step's kind is the first recognised key in
+# written order, here bash before script.
+stages:
+  - stage: Build
+    jobs:
+      - job: Compile
+        steps:
+          - bash: echo from bash
+            script: echo from script
+          - script: echo from script
+            bash: echo from bash

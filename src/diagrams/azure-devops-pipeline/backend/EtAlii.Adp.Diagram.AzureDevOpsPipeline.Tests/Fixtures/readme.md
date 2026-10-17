@@ -50,6 +50,32 @@ because it would make the round-trip test a test of ADP's own idea of YAML.
 | `blank-lines-after.yml` | A stage, a job and a step, each with a blank line before it and blank lines after it, which removing it takes along: the undo gives them back byte for byte and the redo removes the same element (finding B9 of `azure-devops-pipeline-disl-fbl`, which does not occur on `develop`). |
 | `template-in-template.yml` + `templates/nested-jobs.yml` | A followed template that itself names a template: every reference in the reading gets an id of its own, `template-0`, `template-1`, `template-2`, however deep the template that names it (finding A9 of `azure-devops-pipeline-disl-fbl`). |
 
+## `findings/`: documents that exist to show a finding
+
+Each document under `findings/` was written for `azure-devops-pipeline-disl-fbl` (Requirement 1.2) to show one
+finding of that specification in the parity transcript, `../Parity/azure-pipeline.transcript.json`, and is shaped
+so the finding shows rather than hidden. They are not real pipelines and several are deliberately wrong, so the
+module's sweeps over real pipelines pass over this folder (`PipelineFixtures.Pipelines`); the transcript judges
+them, a throw included.
+
+| File | Finding | What it shows |
+|---|---|---|
+| `dangling-dependency.yml` | A6 | A stage waiting for a stage nobody wrote: drawn as a broken edge, the waiting stage indeterminate. |
+| `deployment-on-hooks.yml` | A7 | A deployment job with `on.failure` and `on.success` hooks, whose steps are not read. |
+| `two-stages-one-name.yml` | A8 | Two stages of one name: one id, a gesture on the second finds the first, and drawing and validating throw. |
+| `scalars-as-text.yml` | B1 | `1.0`, `yes`, `null`, `0x10` and `True`, read as the text they were written with. |
+| `gates-nested.yml` | B4 | `${{ if }}` around a stage two levels deep, around a job, and around a step. |
+| `depends-on-forms.yml` | B5 | `dependsOn` as one name, a block list, a flow list, `[]`, and absent. |
+| `depends-on-case.yml` | B6 | `dependsOn` matched without case, and a job naming a job of another stage. |
+| `value-styles.yml` | B7 | Display names quoted twice over, spaced, folded, commented and bare-typed, each renamed. |
+| `gated-last-stage.yml` | B10 | The last stage inside a `${{ if }}` block, where a new stage lands. |
+| `flush-lists.yml` | B11 | Lists flush with their keys, where a new stage, job and step are written. |
+| `merge-key-written.yml` | B13 | A `displayName` and an `enabled` that arrive through a merge key. |
+| `non-mapping-item.yml` | B14 | A job and a step written as bare words. |
+| `duplicate-key.yml` | B14 | A key written twice in one mapping. |
+| `not-yaml.yml` | B15 | A file the YAML reader refuses, and the sentence it is refused with. |
+| `step-two-kinds.yml` | B16 | Steps carrying two kind keys, in both orders. |
+
 ## What a fixture is not for
 
 These files are not a schema conformance suite. The module models the constructs Requirement 4

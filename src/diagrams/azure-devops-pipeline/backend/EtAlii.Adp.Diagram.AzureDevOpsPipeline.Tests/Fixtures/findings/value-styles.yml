@@ -1,0 +1,39 @@
+# Display names written in every style a rename meets (finding B7): single and double quotes,
+# extra space after the colon, a folded value, a trailing comment, and a bare value YAML would type.
+stages:
+  - stage: Single
+    displayName: 'Built by quotes'
+    jobs:
+      - job: A
+        steps:
+          - script: echo a
+
+  - stage: Double
+    displayName: "Built by \"quotes\""
+    jobs:
+      - job: B
+        steps:
+          - script: echo b
+
+  - stage: Spaced
+    displayName:    Spaced out   # the reason for the spacing
+    jobs:
+      - job: C
+        steps:
+          - script: echo c
+
+  - stage: Folded
+    displayName: >-
+      A folded
+      display name
+    jobs:
+      - job: D
+        steps:
+          - script: echo d
+
+  - stage: Typed
+    displayName: true
+    jobs:
+      - job: E
+        steps:
+          - script: echo e
