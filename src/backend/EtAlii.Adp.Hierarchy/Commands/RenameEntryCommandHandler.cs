@@ -342,13 +342,12 @@ public sealed class RenameEntryCommandHandler : ICommandHandler<RenameEntryComma
                 moves.Add((registration, IoPath.Combine(parentPath, renamed)));
             }
 
-            var content = DiagramRegistrationSet.SafeRead(registration);
-            if (content is not null)
+            if (AdpRegistration.Read(registration) is { } read)
             {
-                var rewritten = DiagramRegistrationSet.RewriteBodyHeaderSegment(content, originalName, newName);
-                if (!string.Equals(rewritten, content, StringComparison.Ordinal))
+                var rewritten = read.WithBodyFileName(originalName, newName);
+                if (!string.Equals(rewritten, read.Text, StringComparison.Ordinal))
                 {
-                    rewrites.Add((registration, content, rewritten));
+                    rewrites.Add((registration, read.Text, rewritten));
                 }
             }
         }

@@ -117,6 +117,39 @@ public class AdpRegistrationTests
     }
 
     [Fact]
+    public void Compose_WritesTheMimeLine_AndABodyHeaderOnlyWhenOneIsNamed()
+    {
+        // Act and assert.
+        Assert.Equal("type/x\r\n", AdpRegistration.Compose("type/x"));
+        Assert.Equal("type/x\r\nbody: shared.ttl\r\n", AdpRegistration.Compose("type/x", "shared.ttl"));
+    }
+
+    [Fact]
+    public void WithBodyFileName_RenamesTheHeadersLastSegment_AndKeepsItsFolderAndTerminator()
+    {
+        // Arrange.
+        var registration = AdpRegistration.Parse("type/x\r\nview: classes\r\n  body: ../models/old.ttl\r\nlayout:\r\n");
+
+        // Act.
+        var renamed = registration.WithBodyFileName("OLD.ttl", "new.ttl");
+
+        // Assert: matched without regard to case, the folder part and the CR kept.
+        Assert.Equal("type/x\r\nview: classes\r\n  body: ../models/new.ttl\r\nlayout:\r\n", renamed);
+    }
+
+    [Fact]
+    public void WithBodyFileName_LeavesTheTextAsItWas_WhenTheHeaderNamesAnotherFile_OrStandsBelowProse()
+    {
+        // Arrange.
+        var other = AdpRegistration.Parse("type/x\nbody: kept.ttl\n");
+        var belowProse = AdpRegistration.Parse("type/x\nprose\nbody: old.ttl\n");
+
+        // Act and assert.
+        Assert.Equal(other.Text, other.WithBodyFileName("old.ttl", "new.ttl"));
+        Assert.Equal(belowProse.Text, belowProse.WithBodyFileName("old.ttl", "new.ttl"));
+    }
+
+    [Fact]
     public async Task Read_WhileTheFileIsUnchanged_AnswersFromTheCache_AndAfterAWrite_ReadsAgain()
     {
         // Arrange.

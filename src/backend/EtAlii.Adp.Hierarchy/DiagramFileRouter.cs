@@ -86,8 +86,9 @@ public sealed class DiagramFileRouter
 
     private DiagramRouting RouteRegistration(string adpPath, string? projectRoot)
     {
-        var mimeType = DiagramFilePair.ReadMimeType(adpPath);
-        if (mimeType is null)
+        // Read once: the type, the body header and the view all come from this one registration.
+        var registration = AdpRegistration.Read(adpPath);
+        if (registration?.MimeType is not { } mimeType)
         {
             return new DiagramUnreadable(adpPath, "The registration file could not be read.");
         }
@@ -104,7 +105,7 @@ public sealed class DiagramFileRouter
             return new DiagramRouted(definition, adpPath, adpPath);
         }
 
-        var body = DiagramFilePair.BodyOf(adpPath, _catalog, projectRoot);
+        var body = DiagramFilePair.BodyOf(adpPath, registration, definition, projectRoot);
         if (body is null)
         {
             // Only a body: header that escapes the project root gets here - the registration

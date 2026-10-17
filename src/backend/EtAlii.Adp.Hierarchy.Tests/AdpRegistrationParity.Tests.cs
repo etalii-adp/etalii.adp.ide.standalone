@@ -5,9 +5,10 @@ using IoPath = System.IO.Path;
 namespace EtAlii.Adp.Hierarchy.Tests;
 
 /// <summary>
-/// <see cref="AdpRegistration"/> answers as the hierarchy's own readers do, over every registration
-/// file the repository holds (code-structure FR-061, T173), so moving a caller onto it changes nothing
-/// that caller sees.
+/// <see cref="AdpRegistration"/>'s layout answers as <see cref="RegistrationLayout"/> does, over every
+/// registration file the repository holds (code-structure FR-061, T173), so moving the layout onto it
+/// (T175) changes nothing a module sees. The MIME line and the headers needed the same check until the
+/// hierarchy read them through the type itself (T174); it would now compare the type with itself.
 /// </summary>
 public class AdpRegistrationParityTests
 {
@@ -37,21 +38,17 @@ public class AdpRegistrationParityTests
 
     [Theory]
     [MemberData(nameof(Registrations))]
-    public void AdpRegistration_ReadsWhatTheHierarchyReads(string relativePath)
+    public void AdpRegistration_ReadsTheLayoutRegistrationLayoutReads(string relativePath)
     {
         // Arrange.
         var path = IoPath.Combine(RepositoryPaths.Root, relativePath);
 
         // Act.
         var registration = AdpRegistration.Read(path);
-        (string? body, string? view) = DiagramFilePair.ReadBodyAndViewHeaders(path);
         var layout = RegistrationLayout.Read(path);
 
         // Assert.
         Assert.NotNull(registration);
-        Assert.Equal(DiagramFilePair.ReadMimeType(path), registration.MimeType);
-        Assert.Equal(body, registration.Body);
-        Assert.Equal(view, registration.View);
         Assert.Equal(
             layout.OrderBy(entry => entry.Key, StringComparer.Ordinal).Select(entry => (entry.Key, entry.Value.X, entry.Value.Y)),
             registration.Layout.OrderBy(entry => entry.Key, StringComparer.Ordinal).Select(entry => (entry.Key, entry.Value.X, entry.Value.Y)));
