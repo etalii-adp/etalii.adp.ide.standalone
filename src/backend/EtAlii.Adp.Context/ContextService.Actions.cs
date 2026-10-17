@@ -48,8 +48,11 @@ public sealed partial class ContextService
 
     public override async Task<ExecuteActionResponse> ExecuteAction(ExecuteActionRequest request, ServerCallContext context)
     {
-        var target = await TryResolveTargetAsync(request.ProjectId, request.WatchId, request.Source, context);
-        if (target is null)
+        // The project is resolved once for the whole request: the target is found under it, and
+        // the interaction below keeps it (code-structure FR-062).
+        var rootPath = TryResolveRoot(request.ProjectId, context);
+        var target = rootPath is null ? null : await TryResolveTargetAsync(rootPath, request.WatchId, request.Source, context);
+        if (rootPath is null || target is null)
         {
             _logger.Warning(
                 "Cannot run an action on watch {WatchId}: {Source} resolved to nothing",
@@ -96,11 +99,9 @@ public sealed partial class ContextService
 
         var interactionId = (ShortGuid)request.InteractionId;
 
-        // Captured with the interaction because SubmitInteraction carries only an interaction
-        // id: without it, a commit that creates something could not report where it landed in
-        // the project-relative terms the contract allows.
-        Projects.ProjectRootResolver.TryResolve(
-            _projectStore, SessionContext.GetUserId(context), request.ProjectId, out var rootPath, out _);
+        // The root is captured with the interaction because SubmitInteraction carries only an
+        // interaction id: without it, a commit that creates something could not report where it
+        // landed in the project-relative terms the contract allows.
 
         // WHAT THE ANSWER WILL BE APPLIED TO, which is not always what the question was asked
         // about. An input request may name an element whose label it edits and an action to
@@ -320,14 +321,24 @@ public sealed partial class ContextService
         Documents.Wire.ShortGuid projectId,
         Documents.Wire.ShortGuid watchId,
         ContextSource? source,
+        ServerCallContext context) =>
+        TryResolveRoot(projectId, context) is { } rootPath
+            ? await TryResolveTargetAsync(rootPath, watchId, source, context)
+            : null;
+
+    /// <summary>The root folder of the caller's project, or null when it is not theirs or is gone.</summary>
+    private string? TryResolveRoot(Documents.Wire.ShortGuid projectId, ServerCallContext context) =>
+        Projects.ProjectRootResolver.TryResolve(_projectStore, SessionContext.GetUserId(context), projectId, out var rootPath, out _)
+            ? rootPath
+            : null;
+
+    /// <summary>The target an action applies to, as above, within a project already resolved.</summary>
+    private async ValueTask<ContextTarget?> TryResolveTargetAsync(
+        string rootPath,
+        Documents.Wire.ShortGuid watchId,
+        ContextSource? source,
         ServerCallContext context)
     {
-        var userId = SessionContext.GetUserId(context);
-        if (!Projects.ProjectRootResolver.TryResolve(_projectStore, userId, projectId, out var rootPath, out _))
-        {
-            return null;
-        }
-
         if (source is null)
         {
             return _selectionStore.Get(watchId)?.Innermost.Target ?? RootTarget(rootPath, watchId);

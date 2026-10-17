@@ -1,9 +1,11 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Context.Wire;
 using EtAlii.Adp.Documents.Wire;
+using EtAlii.Adp.Projects;
 using EtAlii.Adp.TestSupport.Host;
 using Grpc.Core;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Xunit;
 using ContextService = EtAlii.Adp.Context.Wire.ContextService;
 using IoPath = System.IO.Path;
@@ -73,6 +75,17 @@ public sealed class FilePromptFlowTests : IClassFixture<FilePromptFlowTests.Host
         Assert.True(submitted.Completed, submitted.Error);
         Assert.Equal(["data/deep/rivers.yaml"], _provider.Committed);
         Assert.Equal(["Seats"], _provider.Named);
+    }
+
+    [Fact]
+    public async Task AnActionThatAsks_ResolvesTheProjectOnce()
+    {
+        // Act.
+        var asked = await AskAsync();
+
+        // Assert: the target and the interaction it opens are found under one reading of the
+        // user's projects, not one each (code-structure FR-062, SC-016).
+        Assert.Equal(1, asked.ProjectReads);
     }
 
     [Fact]
@@ -171,24 +184,54 @@ public sealed class FilePromptFlowTests : IClassFixture<FilePromptFlowTests.Host
         var pendingPrompt = watch.ResponseStream.ReadUntilPromptAsync(cts.Token);
 
         // No source: the project root.
+        var readsBefore = _host.Projects.Reads;
         var executed = await context.ExecuteActionAsync(
             new ExecuteActionRequest { ProjectId = session.ProjectId, WatchId = watchId, InteractionId = interactionId, ActionId = PickFileProvider.ActionId },
             headers,
             cancellationToken: TestContext.Current.CancellationToken);
+        var projectReads = _host.Projects.Reads - readsBefore;
         Assert.True(executed.Accepted, executed.Error);
 
-        return new Asked(context, headers, interactionId, await pendingPrompt);
+        return new Asked(context, headers, interactionId, await pendingPrompt, projectReads);
     }
 
-    private sealed record Asked(ContextService.ContextServiceClient Context, Metadata Headers, Documents.Wire.ShortGuid InteractionId, ContextPrompt Prompt);
+    private sealed record Asked(ContextService.ContextServiceClient Context, Metadata Headers, Documents.Wire.ShortGuid InteractionId, ContextPrompt Prompt, int ProjectReads);
 
-    /// <summary>The shared host, with the fixture's file-asking action registered.</summary>
+    /// <summary>The shared host, with the fixture's file-asking action registered and its project list counted.</summary>
     public sealed class Host : HostFixture
     {
         internal PickFileProvider Provider { get; } = new();
 
-        protected override void ConfigureServices(IServiceCollection services) =>
+        internal CountingProjectStore Projects { get; private set; } = null!;
+
+        protected override void ConfigureServices(IServiceCollection services)
+        {
             services.AddSingleton<IContextActionProvider>(Provider);
+
+            // The host's own store, counted: how often a request asks for the user's projects.
+            var store = (IProjectStore)services.Single(descriptor => descriptor.ServiceType == typeof(IProjectStore)).ImplementationInstance!;
+            Projects = new CountingProjectStore(store);
+            services.RemoveAll<IProjectStore>();
+            services.AddSingleton<IProjectStore>(Projects);
+        }
+    }
+
+    /// <summary>A project store that counts the readings of the project list it passes on.</summary>
+    internal sealed class CountingProjectStore(IProjectStore inner) : IProjectStore
+    {
+        private int _reads;
+
+        public int Reads => Volatile.Read(ref _reads);
+
+        public IReadOnlyList<ProjectRecord> List(ShortGuid userId)
+        {
+            Interlocked.Increment(ref _reads);
+            return inner.List(userId);
+        }
+
+        public ProjectRecord Add(ShortGuid userId, string name, PathRecord path) => inner.Add(userId, name, path);
+
+        public void Remove(ShortGuid userId, ShortGuid projectId) => inner.Remove(userId, projectId);
     }
 
     /// <summary>Asks for a YAML file of the project, with one pinned file its own rule would refuse.</summary>

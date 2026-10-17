@@ -273,18 +273,11 @@ public sealed partial class DiagramService
         bodyPath = "";
         origin = null!;
 
-        if (!ProjectRootResolver.TryResolve(_projectStore, userId, projectId, out var rootPath, out _))
-        {
-            return false;
-        }
-
         // The client names the .adp file by project-relative path; the backend combines it
         // with the resolved root and refuses anything that escapes the root, so a path from
         // outside the project resolves to nothing (tech.md: no filesystem path crosses the
         // wire, and a client never reaches outside its workspace).
-        var adpPath = System.IO.Path.Combine([rootPath, .. path.Segments]);
-        var full = System.IO.Path.GetFullPath(adpPath);
-        if (!IsInside(rootPath, full) || !File.Exists(full))
+        if (!TryResolveTextFile(projectId, path, userId, out var rootPath, out var full))
         {
             return false;
         }

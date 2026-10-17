@@ -41,6 +41,4 @@ public sealed partial class DiagramService
 
         return Task.FromResult(new UpdateViewResponse());
     }
-
-    private static bool IsInside(string rootPath, string fullPath) => PathContainment.IsInside(rootPath, fullPath);
 }

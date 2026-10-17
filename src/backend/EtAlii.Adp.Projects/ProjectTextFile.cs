@@ -1,15 +1,15 @@
-using EtAlii.Adp.Projects;
 using Path = EtAlii.Adp.Documents.Wire.Path;
 
-namespace EtAlii.Adp.Workspace;
+namespace EtAlii.Adp.Projects;
 
 /// <summary>
-/// Where a project-relative path lands on disk, for the calls that work on a file's text: the
-/// project root, the containment check, and the file's existence - nothing about which editor.
-/// Shared by <see cref="DiagramService"/>, whose stream opens a text file through the editor
-/// family, and <see cref="EditorService"/>, which saves one.
+/// Where a project-relative path lands on disk, for every call that names a file of a project:
+/// the project root, the containment check, and the file's existence - nothing about which tool.
+/// It belongs with the projects because it is the project's answer, read once per request
+/// (code-structure FR-062): the diagram, designer and editor services all ask it, and none
+/// reads the project store a second time for the same request.
 /// </summary>
-internal static class ProjectTextFile
+public static class ProjectTextFile
 {
     /// <summary>
     /// Resolves <paramref name="path"/> inside the user's project, answering false - and empty
