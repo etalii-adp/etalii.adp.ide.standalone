@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.History;
@@ -28,6 +29,9 @@ public class CausalLoopDerivedCommitsTests
     private const string Nobody = "nobody";
     private const string Unknown = "parity:unknown";
 
+    /// <summary>A record's JSON, with a weight that is not finite written as its name rather than refused.</summary>
+    private static readonly JsonSerializerOptions JsonOptions = new() { NumberHandling = JsonNumberHandling.AllowNamedFloatingPointLiterals };
+
     public static TheoryData<string> Documents() => [.. CausalLoopTranscript.Corpus()];
 
     [Theory]
@@ -42,15 +46,18 @@ public class CausalLoopDerivedCommitsTests
 
         foreach ((string elementId, string propertyId, string value) in Rows(text, model))
         {
-            string expected;
+            // Only the hand-written provider's own throw (finding A7) is passed over; anything else fails the test.
+            DiagramPropertyChange handWritten;
             try
             {
-                expected = Describe(HandWrittenCausalLoop.Change(model, Path, elementId, propertyId, value));
+                handWritten = HandWrittenCausalLoop.Change(model, Path, elementId, propertyId, value);
             }
             catch (ArgumentException)
             {
                 continue;
             }
+
+            var expected = Describe(handWritten);
 
             // Act.
             var actual = await RowAsync(text, elementId, propertyId, value);
@@ -273,7 +280,7 @@ public class CausalLoopDerivedCommitsTests
         change.Command is { } command ? $"dispatches {Json(command)}" : change.Refusal.Length > 0 ? $"refused: {change.Refusal}" : "unchanged";
 
     private static string Json(ICommand? command) =>
-        command is null ? "nothing" : $"{command.GetType().Name} {JsonSerializer.Serialize(command, command.GetType())}";
+        command is null ? "nothing" : $"{command.GetType().Name} {JsonSerializer.Serialize(command, command.GetType(), JsonOptions)}";
 
     private static Task<string> Text(string relative) =>
         File.ReadAllTextAsync(System.IO.Path.Combine(CausalLoopTranscript.SourceFolder, relative), TestContext.Current.CancellationToken);
