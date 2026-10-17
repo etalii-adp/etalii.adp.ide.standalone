@@ -53,22 +53,20 @@ public sealed class ToolRouter
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
 
-        switch (_diagrams.Route(path, root))
+        return _diagrams.Route(path, root) switch
         {
-            case DiagramRouted diagram:
-                return diagram;
-            case DiagramUnreadable unreadable:
-                return new ToolUnreadable(unreadable.Path, unreadable.Reason);
-        }
-
-        switch (_designers.Route(path, root))
-        {
-            case DesignerRouted designer:
-                return designer;
-            case DesignerUnreadable unreadable:
-                return new ToolUnreadable(unreadable.Path, unreadable.Reason);
-        }
-
-        return _editors.Resolve(path) is EditorRouted editor ? editor : new NoTool();
+            DiagramRouted diagram => diagram,
+            DiagramUnreadable unreadable => new ToolUnreadable(unreadable.Path, unreadable.Reason),
+            _ => RouteBeyondDiagrams(path, root),
+        };
     }
+
+    /// <summary>What serves a path no diagram type routes: a designer, else an editor.</summary>
+    private ToolRouting RouteBeyondDiagrams(string path, string? root) =>
+        _designers.Route(path, root) switch
+        {
+            DesignerRouted designer => designer,
+            DesignerUnreadable unreadable => new ToolUnreadable(unreadable.Path, unreadable.Reason),
+            _ => _editors.Resolve(path) is EditorRouted editor ? editor : new NoTool(),
+        };
 }
