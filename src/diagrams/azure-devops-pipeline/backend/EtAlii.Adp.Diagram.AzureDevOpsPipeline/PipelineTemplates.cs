@@ -38,6 +38,12 @@ public sealed class PipelineTemplates
     public string WorkspaceRoot { get; }
 
     /// <summary>
+    /// How many times a template was read from disk rather than from what this remembers: what holds a
+    /// template to one read per reading (azure-devops-pipeline-disl-fbl, Performance).
+    /// </summary>
+    internal int FilesRead { get; private set; }
+
+    /// <summary>
     /// Where <paramref name="reference"/> points, as an absolute path - or why it was not followed.
     /// </summary>
     /// <param name="reference">The reference, as the file wrote it.</param>
@@ -109,6 +115,7 @@ public sealed class PipelineTemplates
         }
 
         LineDocument? document;
+        FilesRead++;
         try
         {
             document = LineDocument.Parse(SharedDocumentReader.ReadAllText(path));

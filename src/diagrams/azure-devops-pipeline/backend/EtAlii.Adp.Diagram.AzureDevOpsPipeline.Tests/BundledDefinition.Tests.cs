@@ -3,7 +3,11 @@ using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using EtAlii.Adp.Diagram.AzureDevOpsPipeline.Tests.Parity;
+using EtAlii.Adp.Documents;
+using EtAlii.Adp.History;
 using EtAlii.Adp.Specification.Disl;
+using EtAlii.Adp.Specification.Fbl.Documents;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -127,6 +131,42 @@ public sealed partial class BundledDefinitionTests
 
         Assert.True(held.Count >= 20, $"Only {held.Count} wire ids were read from the transcript; the reading has stopped finding them.");
         Assert.Empty(held.Where(id => !declared.Contains(id)).Order(StringComparer.Ordinal));
+    }
+
+    /// <summary>
+    /// The module's binding, <c>azure-devops-pipeline.fbl</c>, loads with no problem of severity error, and its reader is
+    /// the persistence plugin (Requirement 4.1, Q2).
+    /// </summary>
+    [Fact]
+    public void TheBinding_Loads_AndItsReaderIsThePlugin()
+    {
+        var problems = FblDocumentLoader.Load(_module.ResourceBytes("azure-devops-pipeline.fbl"), out var document);
+
+        Assert.DoesNotContain(problems, problem => problem.Severity == ProblemSeverity.Error);
+        var binding = Assert.Single(document!.Bindings).Value;
+        Assert.Equal(PipelineYamlPlugin.PluginId, binding.Plugin?.Plugin);
+        Assert.Equal(binding.Plugin?.Plugin, new PipelineYamlPlugin(PipelineReadContext.Unbound).Id);
+    }
+
+    /// <summary>
+    /// The binding's template is the bytes a new pipeline is created with (finding B17): the factory's, and the
+    /// transcript's <c>emptyDocument</c>, CRLF, blank lines and final newline included.
+    /// </summary>
+    [Fact]
+    public async Task TheBindingsTemplate_IsTheFactorysBytes()
+    {
+        var services = new ServiceCollection();
+        services.AddSingleton<IHistoryStackStore>(new HistoryStackStore(new PipelineTestDispatcher(new PipelineDocumentStore())));
+        services.AddAzurePipeline();
+        await using var provider = services.BuildServiceProvider();
+        var factory = provider.GetServices<IDiagramDocumentFactory>().Single(candidate => candidate.Origin == Diagram.Pipeline.Origin);
+        using var transcript = JsonDocument.Parse(await File.ReadAllBytesAsync(PipelineTranscript.CheckedInPath, TestContext.Current.CancellationToken));
+
+        Assert.Equal(transcript.RootElement.GetProperty("emptyDocument").GetString(), PipelineBody.NewDocument("parity"));
+        foreach (var name in new[] { "parity", "azure-pipelines", "build.ci", "" })
+        {
+            Assert.Equal(factory.CreateEmptyDocument(name), PipelineBody.NewDocument(name));
+        }
     }
 
     /// <summary>The wire ids the transcript holds: the toolbox's ids and drops, the menus' action ids and the rows' property ids.</summary>

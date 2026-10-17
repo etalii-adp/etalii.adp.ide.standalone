@@ -1,6 +1,7 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Specification.Cel;
 using EtAlii.Adp.Specification.Disl;
 
 namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline;
@@ -13,8 +14,9 @@ namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>The model is the reading's own</b>: <see cref="PipelineDisl.ModelOf"/>, built once from the
-/// parser's <see cref="PipelineModel"/>, so a menu and a row read the same snapshot.
+/// <b>The model is the reading's own</b>: <see cref="PipelineBody.Disl"/>, built once by
+/// <see cref="DislModelBuilder"/> from what the persistence plugin read, so a menu and a row read the
+/// same snapshot. An entry's body is the one that read its model (<see cref="PipelineBody.ReadingOf"/>).
 /// </para>
 /// <para>
 /// <b>An element is found by its id as the parser gives it</b>, a path through the file: the first
@@ -43,35 +45,33 @@ internal static class PipelineDefinition
     public static IReadOnlyList<ContextActionGroupDefinition> Menus(DocumentEntry<LineDocument, PipelineModel> entry, PipelineConnectionView? view, string elementId)
     {
         ArgumentNullException.ThrowIfNull(entry);
-        var diagram = PipelineDisl.ModelOf(entry.Model);
+        var diagram = DiagramOf(entry);
         return ElementOf(entry, diagram, elementId) is not { } element
             ? []
-            : PipelineDisl.Viewed(diagram, view, () => Definition.Menus(DislMenuTarget.Element(element), Env));
+            : Viewed(diagram, view, () => Definition.Menus(DislMenuTarget.Element(element), Env));
     }
 
     /// <summary>The property rows of <paramref name="elementId"/> in <paramref name="entry"/>: a stage's, a job's or a step's form; none for anything else.</summary>
     public static IReadOnlyList<ContextPropertyDefinition> Rows(DocumentEntry<LineDocument, PipelineModel> entry, string elementId)
     {
         ArgumentNullException.ThrowIfNull(entry);
-        var diagram = PipelineDisl.ModelOf(entry.Model);
+        var diagram = DiagramOf(entry);
         return ElementOf(entry, diagram, elementId) is not { } element
             ? []
-            : PipelineDisl.Viewed(diagram, null, () => Definition.Rows(element, Env));
+            : Viewed(diagram, null, () => Definition.Rows(element, Env));
     }
 
     /// <summary>
-    /// The definition's findings for <paramref name="model"/>, a reading that followed no template, after
-    /// <paramref name="reader"/>'s own: the six of the pipeline's rules in the order the definition
-    /// declares them, none of them for a pipeline without a stage. The finding
-    /// <see cref="DislModelBuilder"/> gives for an id computed twice stays with the model and is not one
-    /// of them (Q3).
+    /// The definition's findings for <paramref name="body"/>, after its reader's own: the six of the
+    /// pipeline's rules in the order the definition declares them, none of them for a pipeline without a
+    /// stage, or the one that the body is not YAML. The finding <see cref="DislModelBuilder"/> gives for an
+    /// id computed twice stays with the model and is not one of them (Q3).
     /// </summary>
-    public static IReadOnlyList<DislFinding> Findings(PipelineModel model, IReadOnlyList<DislReaderFinding> reader)
+    public static IReadOnlyList<DislFinding> Findings(PipelineBody body)
     {
-        ArgumentNullException.ThrowIfNull(model);
-        ArgumentNullException.ThrowIfNull(reader);
-        var diagram = PipelineDisl.ModelOf(model, followedTemplates: false);
-        return PipelineDisl.Viewed(diagram, null, () => ConstraintEvaluator.Evaluate(Specification, diagram, new DislConstraintOptions(Env, reader)));
+        ArgumentNullException.ThrowIfNull(body);
+        var diagram = body.Disl.Diagram;
+        return Viewed(diagram, null, () => ConstraintEvaluator.Evaluate(Specification, diagram, new DislConstraintOptions(Env, body.ReaderFindings)));
     }
 
     /// <summary>
@@ -84,13 +84,13 @@ internal static class PipelineDefinition
     {
         ArgumentNullException.ThrowIfNull(entry);
         ArgumentNullException.ThrowIfNull(view);
-        var diagram = PipelineDisl.ModelOf(entry.Model);
+        var diagram = DiagramOf(entry);
         if (ElementOf(entry, diagram, elementId) is not { } element || !ViewOperations.Value.TryGetValue(actionId, out var operation))
         {
             return (null, null);
         }
 
-        var transaction = PipelineDisl.Viewed(diagram, view, () => OperationInterpreter.Run(Specification, operation, diagram, element, DislIds.Fixed(), env: Env));
+        var transaction = Viewed(diagram, view, () => OperationInterpreter.Run(Specification, operation, diagram, element, DislIds.Fixed(), env: Env));
         if (!transaction.WasApplied) return (null, transaction.Refusal);
 
         var toggle = transaction.HostActions
@@ -115,6 +115,28 @@ internal static class PipelineDefinition
                 && actions.EnumerateArray().Any(each => each.TryGetProperty("view", out _)))
             .ToDictionary(action => action.Value.GetString()!, action => action.Name, StringComparer.Ordinal);
     });
+
+    /// <summary>The DISL diagram of what <paramref name="entry"/> holds, read by the body that read its model.</summary>
+    private static DislDiagram DiagramOf(DocumentEntry<LineDocument, PipelineModel> entry) => PipelineBody.ReadingOf(entry.Model).Disl.Diagram;
+
+    /// <summary>
+    /// Binds every stage's and job's <c>self.view.collapsed</c> to <paramref name="view"/>, closed where it
+    /// has nothing open (the definition's <c>view.initial</c>), and runs <paramref name="read"/> while the
+    /// binding holds: one reading is shared by every connection that has the pipeline open, so the binding
+    /// is per call and under a lock.
+    /// </summary>
+    private static T Viewed<T>(DislDiagram diagram, PipelineConnectionView? view, Func<T> read)
+    {
+        lock (diagram)
+        {
+            foreach (var node in diagram.Nodes.Where(node => node.IsA("Stage") || node.IsA("JobBase")))
+            {
+                node.View = new CelMap { ["collapsed"] = view is null || !view.IsExpanded(node.Id) };
+            }
+
+            return read();
+        }
+    }
 
     /// <summary>The stage, job or step <paramref name="id"/> names, the first in written order; null for none.</summary>
     private static DislElement? ElementOf(DislDiagram diagram, string id)

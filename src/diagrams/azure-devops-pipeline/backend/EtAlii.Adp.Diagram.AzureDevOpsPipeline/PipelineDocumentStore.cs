@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Text;
 using EtAlii.Adp.Documents;
 using Serilog;
 using IoPath = System.IO.Path;
@@ -209,10 +210,17 @@ public sealed class PipelineDocumentStore : IPipelineDocumentStore
     /// The model for a document, or the reason there is none.
     /// </summary>
     /// <remarks>
+    /// <para>
+    /// <b>Read through the module's binding</b>: the document's bytes opened as a <see cref="PipelineBody"/>,
+    /// whose plugin is handed the path and the workspace's resolver (<see cref="PipelineReadContext"/>).
+    /// The entry keeps the document, which the writer still edits, and the model the plugin read.
+    /// </para>
+    /// <para>
     /// A file that is not YAML is an ordinary state for a file somebody is editing, so it is
     /// carried as an entry with an error rather than thrown out of the store. The line comes from
-    /// the parser and is what makes the message worth reading.
+    /// the reader's finding and is what makes the message worth reading.
+    /// </para>
     /// </remarks>
     private DocumentEntry<LineDocument, PipelineModel> Parse(string rootPath, string path, LineDocument document) =>
-        new(document, PipelineParser.Outcome(document, Resolver(rootPath), path));
+        new(document, PipelineBody.Open(Encoding.UTF8.GetBytes(document.Text), new PipelineReadContext(path, Resolver(rootPath))).Outcome);
 }
