@@ -1,6 +1,9 @@
 using System.Text;
 using EtAlii.Adp.Diagram.AzureDevOpsPipeline.Tests.Parity;
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.History;
+using EtAlii.Adp.Specification.Fbl;
+using EtAlii.Adp.Specification.Fbl.Planning;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -8,7 +11,8 @@ namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline.Tests;
 
 /// <summary>
 /// One pipeline body opened through the module's binding (azure-devops-pipeline-disl-fbl task 8): its bytes as they
-/// are, the plugin's reading, the parser's model, the DISL model built from the reading, and what the store keeps.
+/// are, the plugin's reading, the parser's model, the DISL model built from the reading, and what the store keeps; and
+/// written through the binding (task 9), one change at a time or several as one edit.
 /// </summary>
 public class PipelineBodyTests
 {
@@ -108,5 +112,84 @@ public class PipelineBodyTests
         Assert.Same(first, PipelineBody.ReadingOf(first.Model));
         Assert.Same(second, PipelineBody.ReadingOf(second.Model));
         Assert.Throws<InvalidOperationException>(() => PipelineBody.ReadingOf(PipelineModel.Empty));
+    }
+
+    [Fact]
+    public void AChange_IsPlannedAndApplied_AndTheBodyReadsAgain()
+    {
+        // Arrange.
+        var body = PipelineBody.Parse("stages:\n  - stage: Build\n    jobs:\n      - job: Compile\n        steps:\n          - script: x\n");
+        var stage = body.Reading.Elements.Single(element => element.Type == "Stage").Id;
+        var disl = body.Disl;
+
+        // Act.
+        var outcome = body.Change(new ModelChange.Set(stage, new Dictionary<string, object?> { ["displayName"] = "Build it" }));
+
+        // Assert.
+        Assert.True(outcome.WasApplied);
+        Assert.Equal("stages:\n  - stage: Build\n    displayName: Build it\n    jobs:\n      - job: Compile\n        steps:\n          - script: x\n", body.Text);
+        Assert.Equal("Build it", body.Model.Stages.Single().DisplayName);
+        Assert.Same(body, PipelineBody.ReadingOf(body.Model));
+        Assert.NotSame(disl, body.Disl);
+        Assert.Equal("Build it", body.Disl.Diagram.Nodes.First().Attributes["displayName"]);
+    }
+
+    [Fact]
+    public void ARefusedChange_LeavesTheBytes()
+    {
+        // Arrange.
+        var body = PipelineBody.Parse("steps:\n  - script: x\n");
+        var bytes = body.Bytes;
+        var job = body.Reading.Elements.Single(element => element.Type == "ImplicitJob").Id;
+
+        // Act.
+        var outcome = body.Change(new ModelChange.Set(job, new Dictionary<string, object?> { ["displayName"] = "Build" }));
+
+        // Assert.
+        Assert.False(outcome.WasApplied);
+        Assert.Equal("This is implied by the pipeline's shape rather than written down, so there is nothing here to edit.", outcome.Refusal);
+        Assert.Same(bytes, body.Bytes);
+    }
+
+    [Fact]
+    public void ABatch_IsOneEdit_AndANewStageIsThreeAddsInIt()
+    {
+        // Arrange.
+        var body = PipelineBody.Parse("stages:\n  - stage: Build\n    jobs:\n      - job: Compile\n        steps:\n          - script: x\n");
+        var outcomes = new List<EditOutcome>();
+
+        // Act.
+        var edit = body.Batch(() =>
+        {
+            outcomes.Add(body.Change(new ModelChange.Add("Stage", "Ship", new Dictionary<string, object?> { ["name"] = "Ship" })));
+            outcomes.Add(body.Change(new ModelChange.Add("Job", "Ship/ShipJob", new Dictionary<string, object?> { ["name"] = "ShipJob" }, "Ship")));
+            outcomes.Add(body.Change(new ModelChange.Add("Step", null, new Dictionary<string, object?> { ["stepKind"] = "script", ["identifier"] = "echo y" }, "Ship/ShipJob")));
+        });
+
+        // Assert.
+        Assert.All(outcomes, outcome => Assert.True(outcome.WasApplied));
+        Assert.Equal(
+            [SpliceOperation.InsertEntry, SpliceOperation.EnsureContainer, SpliceOperation.InsertEntry, SpliceOperation.EnsureContainer, SpliceOperation.InsertEntry],
+            edit.Splices.Select(splice => splice.Operation));
+        Assert.EndsWith("  - stage: Ship\n    jobs:\n      - job: ShipJob\n        steps:\n          - script: echo y\n", body.Text, StringComparison.Ordinal);
+        Assert.Equal(["Build", "Ship"], body.Model.Stages.Select(stage => stage.Id));
+        Assert.Same(body, PipelineBody.ReadingOf(body.Model));
+    }
+
+    [Fact]
+    public void ABatch_OnABodyThatIsNotYaml_RefusesEveryChange()
+    {
+        // Arrange.
+        var body = PipelineBody.Parse("stages:\n  - stage: Build\n    jobs: [unclosed\n");
+        var bytes = body.Bytes;
+        EditOutcome? outcome = null;
+
+        // Act.
+        var edit = body.Batch(() => outcome = body.Change(new ModelChange.Add("Stage", "Ship", new Dictionary<string, object?> { ["name"] = "Ship" })));
+
+        // Assert.
+        Assert.Equal("The file could not be read, so it is never written.", outcome?.Refusal);
+        Assert.Empty(edit.Splices);
+        Assert.Same(bytes, body.Bytes);
     }
 }
