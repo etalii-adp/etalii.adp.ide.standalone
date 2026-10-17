@@ -1,12 +1,9 @@
 using System.Text;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Specification.Disl;
-using EtAlii.Adp.Specification.Fbl.Documents;
 using EtAlii.Adp.Specification.Fbl.History;
 using EtAlii.Adp.Specification.Fbl.Planning;
 using Xunit;
-
-using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
 namespace EtAlii.Adp.Diagram.DependencyGraph.Tests.Parity;
 
@@ -72,7 +69,7 @@ public class DependencyGraphDraftedBindingTests
     public void B2_ANumberThatWillNotRead_IsZero_TodayAndThroughTheModulesReading()
     {
         // Arrange and act.
-        var today = Today("inline/b2-numbers-read-otherwise").Elements.Select(element => element.X);
+        var today = Today("inline/b2-numbers-read-otherwise").Elements.Select(element => element.X).ToList();
         var fbl = Fbl("inline/b2-numbers-read-otherwise").Model.Elements.Where(element => element.Type == "Node").Select(element => element.Attributes["x"]);
         var module = Module("inline/b2-numbers-read-otherwise").NodesOfType("Node").Select(node => node.ValueOf("x"));
 

@@ -1,12 +1,10 @@
 using System.Globalization;
 using System.Text;
 using EtAlii.Adp.Documents;
-using EtAlii.Adp.History;
 using EtAlii.Adp.Specification.Disl;
 using EtAlii.Adp.Specification.Fbl;
 using EtAlii.Adp.Specification.Fbl.Documents;
 using EtAlii.Adp.Specification.Fbl.History;
-using EtAlii.Adp.Specification.Fbl.Planning;
 
 namespace EtAlii.Adp.Diagram.DependencyGraph;
 
@@ -27,7 +25,7 @@ namespace EtAlii.Adp.Diagram.DependencyGraph;
 /// </para>
 /// <para>
 /// Writing still goes through <see cref="DependencyGraphWriter"/> over the parser's line ranges
-/// (dependency-graph-disl-fbl, task 7); <see cref="Change"/> is what the commands will write through.
+/// (dependency-graph-disl-fbl, task 7); task 8 writes through the binding.
 /// </para>
 /// </remarks>
 public sealed class DependencyGraphBody
@@ -90,19 +88,7 @@ public sealed class DependencyGraphBody
     }
 
     /// <summary>The 0-based lines <paramref name="span"/> covers.</summary>
-    internal LineRange LinesOf(Span span) => _edits.LinesOf(span);
-
-    /// <summary>
-    /// The element of <paramref name="type"/> the module knows by <paramref name="id"/> and
-    /// <paramref name="line"/>, its 0-based first line: by its stored id when only one entry has it,
-    /// else by the line it starts on.
-    /// </summary>
-    internal FblElement? Find(string type, string id, int line)
-    {
-        var typed = Model.Elements.Where(element => element.Type == type).ToList();
-        var byId = typed.Where(element => DependencyGraphReading.TextOf(element, "storedId") == id).ToList();
-        return byId.Count == 1 ? byId[0] : typed.FirstOrDefault(element => element.Line - 1 == line);
-    }
+    private LineRange LinesOf(Span span) => _edits.LinesOf(span);
 
     /// <summary>
     /// The model the writer splices at, for <paramref name="document"/>: the parser's, with its line ranges;
@@ -137,7 +123,4 @@ public sealed class DependencyGraphBody
                     body.LinesOf(element.OwnSpan))),
             ]);
     }
-
-    /// <summary>Plans and applies one change; the refusal's sentence when the library refuses it.</summary>
-    internal EditOutcome Change(ModelChange change) => _edits.Change(change);
 }

@@ -87,7 +87,7 @@ internal static class DependencyGraphFindings
     }
 
     /// <summary>The one finding of a document that is not YAML: the reader's <c>std.unparseable</c>, at the parser's line.</summary>
-    public static IReadOnlyList<DiagramProblem> Unparseable(string reason, int line)
+    private static IReadOnlyList<DiagramProblem> Unparseable(string reason, int line)
     {
         var findings = ConstraintEvaluator.Evaluate(
             DependencyGraphDefinition.Specification,
