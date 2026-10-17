@@ -120,7 +120,7 @@ public class C4DocumentStoreFailedReloadTests : IDisposable
         var body = IoPath.Combine(_root, "model.dsl");
         await File.WriteAllTextAsync(body, Model, TestContext.Current.CancellationToken);
         var store = new C4DocumentStore();
-        var origin = new DiagramOrigin("test", "c4");
+        var origin = new ToolOrigin("test", "c4");
         using var events = new ProjectFileEvents();
         using var bridge = new DiagramDocumentReloadBridge([new DiagramDocumentReloader<IC4DocumentStore>(origin, store)], events);
         Assert.NotEmpty(store.GetOrLoad(body).Model.Elements);
@@ -142,7 +142,7 @@ public class C4DocumentStoreFailedReloadTests : IDisposable
         var body = IoPath.Combine(_root, "model.dsl");
         await File.WriteAllTextAsync(body, Model, TestContext.Current.CancellationToken);
         var store = new C4DocumentStore();
-        var origin = new DiagramOrigin("test", "c4");
+        var origin = new ToolOrigin("test", "c4");
         using var events = new ProjectFileEvents();
         using var bridge = new DiagramDocumentReloadBridge([new DiagramDocumentReloader<IC4DocumentStore>(origin, store)], events);
         Assert.NotEmpty(store.GetOrLoad(body).Model.Elements);

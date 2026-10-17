@@ -1,5 +1,4 @@
 using System.Reflection;
-using EtAlii.Adp.Documents;
 using Serilog;
 
 namespace EtAlii.Adp.Diagram;
@@ -54,7 +53,7 @@ public static class DiagramDefinitionDiscovery
 
         // Keyed by origin so a duplicate is detected as it arrives; the value remembers which
         // assembly won so a later collision can be reported against it.
-        var found = new Dictionary<DiagramOrigin, (DiagramDefinition Definition, string AssemblyName)>();
+        var found = new Dictionary<ToolOrigin, (DiagramDefinition Definition, string AssemblyName)>();
 
         foreach (var hit in scan.Found)
         {

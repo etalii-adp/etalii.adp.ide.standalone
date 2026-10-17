@@ -16,7 +16,7 @@ namespace EtAlii.Adp.Diagram;
 public interface IDiagramValidator
 {
     /// <summary>The diagram type whose documents this judges.</summary>
-    DiagramOrigin Origin { get; }
+    ToolOrigin Origin { get; }
 
     /// <summary>
     /// The problems in the diagram <paramref name="request"/> describes, or none.

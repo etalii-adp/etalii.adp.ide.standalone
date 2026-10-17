@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using JetBrains.Annotations;
 namespace EtAlii.Adp.Diagram.BpmnProcess;
 
@@ -9,7 +8,7 @@ public static class Diagram
     public static DiagramDefinition[] Definitions { get; } =
     [
         new(
-            new DiagramOrigin("bpmn", "process"),
+            new ToolOrigin("bpmn", "process"),
             "BPMN process diagram",
             "A business process as an executable flow: events, tasks, gateways and the lanes that own them.",
             Icon: "mdi-arrow-decision"),

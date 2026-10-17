@@ -1,7 +1,6 @@
 using System.Text.RegularExpressions;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Diagram.Modules;
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
@@ -100,7 +99,7 @@ public sealed class DatabricksContextSourceResolverTests : DiagramElementSourceR
         Assert.Single(resolutions.OfType<ResolvedContextLevel>());
     }
 
-    private DatabricksContextSourceResolver Resolver(DiagramOrigin origin) =>
+    private DatabricksContextSourceResolver Resolver(ToolOrigin origin) =>
         new(origin, new DiagramFileRouter(new DatabricksOnlyCatalog()), _store, new DatabricksElementMapper());
 
     private static string Registration(string body, string mime)

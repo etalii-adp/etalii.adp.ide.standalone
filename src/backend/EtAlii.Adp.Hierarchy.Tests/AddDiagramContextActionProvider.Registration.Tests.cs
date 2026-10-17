@@ -1,6 +1,5 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Diagram;
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.History;
 using Xunit;
@@ -17,13 +16,13 @@ namespace EtAlii.Adp.Hierarchy.Tests;
 public class AddDiagramContextActionProviderRegistrationTests : IDisposable
 {
     private static readonly DiagramDefinition Pipeline =
-        new(new DiagramOrigin("azure-devops", "pipeline"), "Azure DevOps pipeline", Extension: ".yml", SharedExtension: true);
+        new(new ToolOrigin("azure-devops", "pipeline"), "Azure DevOps pipeline", Extension: ".yml", SharedExtension: true);
 
     private static readonly DiagramDefinition Mindmap =
-        new(new DiagramOrigin("freeplane", "mindmap"), "Mind map", Extension: ".mm");
+        new(new ToolOrigin("freeplane", "mindmap"), "Mind map", Extension: ".mm");
 
     private static readonly DiagramDefinition ClassDiagram =
-        new(new DiagramOrigin("uml", "class"), "Class diagram");
+        new(new ToolOrigin("uml", "class"), "Class diagram");
 
     private static readonly DiagramDocumentFactories NoFactories = new([]);
 
@@ -172,7 +171,7 @@ public class AddDiagramContextActionProviderRegistrationTests : IDisposable
     // of a shared extension is suggested off its marker rather than on every family file.
 
     private static readonly DiagramDefinition MarkedReading = new(
-        new DiagramOrigin("azure-devops", "release"),
+        new ToolOrigin("azure-devops", "release"),
         "Release pipeline",
         Extension: ".yml",
         SharedExtension: true,

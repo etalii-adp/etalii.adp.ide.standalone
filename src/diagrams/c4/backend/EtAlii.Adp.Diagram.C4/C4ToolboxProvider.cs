@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 namespace EtAlii.Adp.Diagram.C4;
 
 /// <summary>
@@ -16,7 +15,7 @@ public sealed class C4ToolboxProvider : IDiagramToolboxProvider
 {
     //private readonly C4ViewKind _viewKind;
 
-    public C4ToolboxProvider(DiagramOrigin origin, C4ViewKind viewKind)
+    public C4ToolboxProvider(ToolOrigin origin, C4ViewKind viewKind)
     {
         ArgumentNullException.ThrowIfNull(origin);
         Origin = origin;
@@ -24,7 +23,7 @@ public sealed class C4ToolboxProvider : IDiagramToolboxProvider
         Items = ItemsFor(viewKind);
     }
 
-    public DiagramOrigin Origin { get; }
+    public ToolOrigin Origin { get; }
 
     public IReadOnlyList<ToolboxItemDefinition> Items { get; }
 

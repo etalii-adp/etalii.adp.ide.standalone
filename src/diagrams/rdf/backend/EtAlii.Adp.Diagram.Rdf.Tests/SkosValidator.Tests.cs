@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -11,7 +10,7 @@ namespace EtAlii.Adp.Diagram.Rdf.Tests;
 /// </summary>
 public class SkosValidatorTests : IDisposable
 {
-    private static readonly DiagramOrigin Origin = new("w3c", "skos");
+    private static readonly ToolOrigin Origin = new("w3c", "skos");
     private readonly string _root;
 
     public SkosValidatorTests()

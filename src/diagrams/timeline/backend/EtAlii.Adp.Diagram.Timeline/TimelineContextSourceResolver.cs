@@ -26,7 +26,7 @@ public sealed class TimelineContextSourceResolver : DiagramElementSourceResolver
     }
 
     /// <inheritdoc />
-    protected override DiagramOrigin Origin => Diagram.Timeline.Origin;
+    protected override ToolOrigin Origin => Diagram.Timeline.Origin;
 
     /// <inheritdoc />
     /// <remarks>A drop and a drawn relation are both proposed as the element about to exist.</remarks>

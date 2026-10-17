@@ -10,7 +10,7 @@ namespace EtAlii.Adp.Diagram.Rdf;
 /// appends its own findings, the shared rules still living in exactly one place
 /// (Requirement 5.5).
 /// </summary>
-public sealed class OwlValidator(DiagramOrigin origin) : IDiagramValidator
+public sealed class OwlValidator(ToolOrigin origin) : IDiagramValidator
 {
     /// <summary>The family's file-level rules, judged once here for this origin.</summary>
     private readonly RdfValidator _family = new(origin);
@@ -31,7 +31,7 @@ public sealed class OwlValidator(DiagramOrigin origin) : IDiagramValidator
     public const string ImportsNotFetchedRuleId = "owl.imports-not-fetched";
 
     /// <inheritdoc />
-    public DiagramOrigin Origin { get; } = origin;
+    public ToolOrigin Origin { get; } = origin;
 
     /// <inheritdoc />
     public async ValueTask<IReadOnlyList<DiagramProblem>> ValidateAsync(

@@ -1,6 +1,5 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Diagram.Rdf.Shacl;
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 using Microsoft.Extensions.DependencyInjection;
@@ -20,13 +19,13 @@ namespace EtAlii.Adp.Diagram.Rdf;
 public static class ServiceCollectionAddRdfExtension
 {
     /// <summary>The family's anchor origin, as docs/tools.md writes it.</summary>
-    public static readonly DiagramOrigin RdfOrigin = new("w3c", "rdf");
+    public static readonly ToolOrigin RdfOrigin = new("w3c", "rdf");
 
     /// <summary>The ontology reading's origin - the first sibling over the same engine.</summary>
-    public static readonly DiagramOrigin OwlOrigin = new("w3c", "owl");
+    public static readonly ToolOrigin OwlOrigin = new("w3c", "owl");
 
     /// <summary>Every reading of the family, each a diagram type of its own over the one store.</summary>
-    private static DiagramOrigin[] FamilyOrigins =>
+    private static ToolOrigin[] FamilyOrigins =>
         [RdfOrigin, OwlOrigin, ServiceCollectionAddSkosExtension.SkosOrigin, ServiceCollectionAddShaclExtension.ShaclOrigin];
 
     /// <summary>The idempotency marker: every family definition carries the same Build, and the first one registers.</summary>
@@ -46,7 +45,7 @@ public static class ServiceCollectionAddRdfExtension
     /// </param>
     internal static void AddRdfReading<TProjection>(
         this IServiceCollection services,
-        DiagramOrigin origin,
+        ToolOrigin origin,
         Func<IServiceProvider, string?, IRdfReading<TProjection>> reading)
     {
         services.AddDiagramSession(origin, (provider, opening) => new RdfFamilySession<TProjection>(

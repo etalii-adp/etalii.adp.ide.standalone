@@ -1,7 +1,6 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Designer;
 using EtAlii.Adp.Diagram;
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Editor;
 using Xunit;
@@ -30,7 +29,7 @@ public class OpenAsTextContextActionProviderTests : IDisposable
     }
 
     private static readonly DiagramDefinition Mindmap =
-        new(new DiagramOrigin("freeplane", "mindmap"), "Mind map", Extension: ".mm");
+        new(new ToolOrigin("freeplane", "mindmap"), "Mind map", Extension: ".mm");
 
     private static readonly DesignerDefinition Sheet = new(
         "fixture/sheet",

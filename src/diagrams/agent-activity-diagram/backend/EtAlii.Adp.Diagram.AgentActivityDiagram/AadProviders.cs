@@ -46,7 +46,7 @@ public sealed class AadContextPropertyProvider(IHistoryStackStore historyStacks,
 public sealed class AadValidator : IDiagramValidator
 {
     /// <inheritdoc />
-    public DiagramOrigin Origin => Diagram.AgentActivity.Origin;
+    public ToolOrigin Origin => Diagram.AgentActivity.Origin;
 
     /// <inheritdoc />
     public ValueTask<IReadOnlyList<DiagramProblem>> ValidateAsync(DiagramValidationRequest request, CancellationToken cancellationToken)

@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 using Microsoft.Extensions.DependencyInjection;
@@ -14,7 +13,7 @@ namespace EtAlii.Adp.Diagram.Databricks.Tests;
 /// </summary>
 public sealed class DatabricksDocumentReloaderTests : DocumentReloaderContract<IDatabricksDocumentStore>
 {
-    protected override DiagramOrigin Origin => ServiceCollectionAddDatabricksExtension.BundleOrigin;
+    protected override ToolOrigin Origin => ServiceCollectionAddDatabricksExtension.BundleOrigin;
 
     protected override string Example => IoPath.Combine(AppContext.BaseDirectory, "Fixtures", "bundle.yml");
 
@@ -43,7 +42,7 @@ public sealed class DatabricksDocumentReloaderTests : DocumentReloaderContract<I
         var store = provider.GetRequiredService<IDatabricksDocumentStore>();
         store.GetOrLoad(body);
         File.WriteAllText(body, "bundle:\r\n  name: replaced\r\n");
-        var reloader = provider.GetServices<IDiagramDocumentReloader>().Single(candidate => candidate.Origin == new DiagramOrigin("databricks", type));
+        var reloader = provider.GetServices<IDiagramDocumentReloader>().Single(candidate => candidate.Origin == new ToolOrigin("databricks", type));
 
         // Act.
         reloader.Reload(folder.Path, body);

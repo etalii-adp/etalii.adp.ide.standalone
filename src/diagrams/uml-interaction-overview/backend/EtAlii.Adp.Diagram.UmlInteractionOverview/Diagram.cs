@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using JetBrains.Annotations;
 namespace EtAlii.Adp.Diagram.UmlInteractionOverview;
 
@@ -9,7 +8,7 @@ public static class Diagram
     public static DiagramDefinition[] Definitions { get; } =
     [
         new(
-            new DiagramOrigin("uml", "interaction-overview"),
+            new ToolOrigin("uml", "interaction-overview"),
             "Interaction overview diagram",
             "Several interactions stitched into one flow, so an activity's branches lead into scenarios.",
             Icon: "mdi-map-marker-path"),

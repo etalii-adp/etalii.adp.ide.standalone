@@ -27,7 +27,7 @@ namespace EtAlii.Adp.Diagram.Rdf.Shacl;
 /// honest report is that the reference leaves the file.
 /// </para>
 /// </remarks>
-public sealed class ShaclValidator(DiagramOrigin origin) : IDiagramValidator
+public sealed class ShaclValidator(ToolOrigin origin) : IDiagramValidator
 {
     /// <summary>A property shape without exactly one <c>sh:path</c> - the recommendation requires one.</summary>
     public const string PathCardinalityRuleId = "shacl.path-cardinality";
@@ -47,7 +47,7 @@ public sealed class ShaclValidator(DiagramOrigin origin) : IDiagramValidator
     private readonly RdfValidator _family = new(origin);
 
     /// <inheritdoc />
-    public DiagramOrigin Origin { get; } = origin;
+    public ToolOrigin Origin { get; } = origin;
 
     /// <inheritdoc />
     public async ValueTask<IReadOnlyList<DiagramProblem>> ValidateAsync(

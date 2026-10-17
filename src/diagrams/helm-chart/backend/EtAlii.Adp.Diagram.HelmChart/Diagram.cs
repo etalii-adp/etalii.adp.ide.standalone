@@ -27,7 +27,7 @@ public static class Diagram
     /// module reads this.
     /// </summary>
     public static DiagramDefinition HelmCharts { get; } = new(
-        new DiagramOrigin("helm", "chart"),
+        new ToolOrigin("helm", "chart"),
         "Helm chart",
         "What a chart is made of and how it hangs together: metadata, the values layering, "
         + "templates and the kinds they render, declared dependencies and whether charts/ "

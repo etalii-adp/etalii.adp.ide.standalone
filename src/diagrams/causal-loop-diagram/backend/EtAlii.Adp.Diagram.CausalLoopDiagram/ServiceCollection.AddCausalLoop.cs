@@ -1,6 +1,5 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Diagram.Modules;
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -22,7 +21,7 @@ public static class ServiceCollectionAddCausalLoopExtension
     /// The origin, as docs/tools.md writes it: <c>causal</c>, and with the <c>-diagram</c>
     /// suffix, both deliberate and both confirmed. See <see cref="Diagram"/>.
     /// </summary>
-    public static readonly DiagramOrigin CausalLoopOrigin = new("systems", "causal-loop-diagram");
+    public static readonly ToolOrigin CausalLoopOrigin = new("systems", "causal-loop-diagram");
 
     public static IServiceCollection AddCausalLoop(this IServiceCollection services)
     {

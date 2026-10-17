@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 namespace EtAlii.Adp.Diagram.WardleyMap;
 
 /// <summary>
@@ -34,7 +33,7 @@ namespace EtAlii.Adp.Diagram.WardleyMap;
 /// </remarks>
 public sealed class WardleyToolboxProvider : IDiagramToolboxProvider
 {
-    public DiagramOrigin Origin => Diagram.WardleyMap.Origin;
+    public ToolOrigin Origin => Diagram.WardleyMap.Origin;
 
     /// <summary>
     /// The entries, in the order the palette shows them: the two that make a value chain first,

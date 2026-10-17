@@ -16,14 +16,14 @@ namespace EtAlii.Adp.Diagram.Rdf;
 /// <param name="documents">The family's one store.</param>
 /// <param name="drawn">What the reading draws for an id in a model, so a selection carries what the canvas was sent.</param>
 public sealed class RdfContextSourceResolver(
-    DiagramOrigin origin,
+    ToolOrigin origin,
     DiagramFileRouter router,
     IRdfDocumentStore documents,
     Func<RdfModel, string, DiagramElement?> drawn)
     : DiagramElementSourceResolver<LineDocument, RdfModel>(router, documents)
 {
     /// <inheritdoc />
-    protected override DiagramOrigin Origin { get; } = origin;
+    protected override ToolOrigin Origin { get; } = origin;
 
     /// <inheritdoc />
     protected override DiagramElementTexts Texts { get; } = new(

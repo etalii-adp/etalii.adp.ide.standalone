@@ -94,7 +94,7 @@ public class ShaclSessionTests : IDisposable
         Assert.True(Diagram.Shacl.DeclaresExtension(".ttl"));
         Assert.True(Diagram.Shacl.DeclaresExtension(".nt"));
         Assert.False(Diagram.Rdf.SharedExtension);
-        Assert.Equal(new DiagramOrigin("w3c", "shacl"), Diagram.Shacl.Origin);
+        Assert.Equal(new ToolOrigin("w3c", "shacl"), Diagram.Shacl.Origin);
     }
 
     [Fact]

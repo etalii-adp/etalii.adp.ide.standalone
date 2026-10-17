@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using JetBrains.Annotations;
 namespace EtAlii.Adp.Diagram.ArchimateTechnology;
 
@@ -9,7 +8,7 @@ public static class Diagram
     public static DiagramDefinition[] Definitions { get; } =
     [
         new(
-            new DiagramOrigin("archimate", "technology"),
+            new ToolOrigin("archimate", "technology"),
             "ArchiMate — Technology layer",
             "The nodes, devices and system software applications actually run on.",
             Icon: "mdi-server"),

@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.C4.Tests;
@@ -10,7 +9,7 @@ namespace EtAlii.Adp.Diagram.C4.Tests;
 public class C4ToolboxProviderTests
 {
     private static IReadOnlyList<ToolboxItemDefinition> Items(C4ViewKind kind) =>
-        new C4ToolboxProvider(new DiagramOrigin("c4", "test"), kind).Items;
+        new C4ToolboxProvider(new ToolOrigin("c4", "test"), kind).Items;
 
     [Fact]
     public void AContextView_OffersPeopleAndSoftwareSystemsOnly()

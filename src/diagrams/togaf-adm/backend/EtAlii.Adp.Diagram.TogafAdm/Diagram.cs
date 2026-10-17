@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using JetBrains.Annotations;
 namespace EtAlii.Adp.Diagram.TogafAdm;
 
@@ -9,7 +8,7 @@ public static class Diagram
     public static DiagramDefinition[] Definitions { get; } =
     [
         new(
-            new DiagramOrigin("togaf", "adm"),
+            new ToolOrigin("togaf", "adm"),
             "TOGAF ADM cycle diagram",
             "The TOGAF Architecture Development Method cycle and where a piece of work sits in it.",
             Icon: "mdi-sync-circle"),

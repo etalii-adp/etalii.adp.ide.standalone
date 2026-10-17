@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using JetBrains.Annotations;
 namespace EtAlii.Adp.Diagram.Timeline;
 
@@ -34,7 +33,7 @@ public static class Diagram
     /// module reads this.
     /// </summary>
     public static DiagramDefinition Timeline { get; } = new(
-        new DiagramOrigin("generic", "timeline"),
+        new ToolOrigin("generic", "timeline"),
         "Timeline diagram",
         "When things happen and for how long - periods and moments on rows along a time axis, connected however the author means it.",
         Icon: "mdi-chart-timeline",

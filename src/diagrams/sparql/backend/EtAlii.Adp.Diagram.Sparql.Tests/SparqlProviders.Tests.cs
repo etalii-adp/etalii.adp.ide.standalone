@@ -1,5 +1,4 @@
 using EtAlii.Adp.Context;
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Hierarchy;
 using Xunit;
@@ -208,7 +207,7 @@ internal sealed class SparqlOnlyCatalog : IDiagramDefinitionCatalog
 /// <summary>The validator's three findings, each on the fixture that provokes it (Requirement 7).</summary>
 public class SparqlValidatorTests
 {
-    private static readonly DiagramOrigin _origin = ServiceCollectionAddSparqlExtension.SparqlOrigin;
+    private static readonly ToolOrigin _origin = ServiceCollectionAddSparqlExtension.SparqlOrigin;
 
     private static async Task<IReadOnlyList<DiagramProblem>> Validate(string text) =>
         await new SparqlValidator(_origin).ValidateAsync(

@@ -1,11 +1,9 @@
-using EtAlii.Adp.Documents;
-
 namespace EtAlii.Adp.Diagram.CausalLoopDiagram.Tests;
 
 /// <summary>The shared reload seam over the causal loop store, held to the contract every module's is.</summary>
 public sealed class CausalLoopDocumentReloaderTests : DocumentReloaderContract<ICausalLoopDocumentStore>
 {
-    protected override DiagramOrigin Origin => ServiceCollectionAddCausalLoopExtension.CausalLoopOrigin;
+    protected override ToolOrigin Origin => ServiceCollectionAddCausalLoopExtension.CausalLoopOrigin;
 
     protected override string Example => CausalLoopDocumentStoreTests.OnCall;
 

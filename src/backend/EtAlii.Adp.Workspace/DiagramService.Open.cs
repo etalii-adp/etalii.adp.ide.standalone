@@ -2,7 +2,6 @@
 using EtAlii.Adp.Authentication;
 using EtAlii.Adp.Diagram;
 using EtAlii.Adp.Diagram.Wire;
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.Projects;
 using Grpc.Core;
@@ -247,7 +246,7 @@ public sealed partial class DiagramService
         ShortGuid userId,
         out string rootPath,
         out string bodyPath,
-        out DiagramOrigin origin,
+        out ToolOrigin origin,
         out string? registrationPath)
     {
         bodyPath = "";

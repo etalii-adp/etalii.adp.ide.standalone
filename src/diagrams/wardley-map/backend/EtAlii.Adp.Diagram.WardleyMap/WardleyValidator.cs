@@ -27,7 +27,7 @@ public sealed class WardleyValidator : IDiagramValidator
     /// <summary>The rule reported for a line the parser passed over, at that line (code-structure B-25).</summary>
     public const string LinePassedOverRuleId = "wardley.line-passed-over";
 
-    public DiagramOrigin Origin => Diagram.WardleyMap.Origin;
+    public ToolOrigin Origin => Diagram.WardleyMap.Origin;
 
     public ValueTask<IReadOnlyList<DiagramProblem>> ValidateAsync(
         DiagramValidationRequest request,

@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using JetBrains.Annotations;
 namespace EtAlii.Adp.Diagram.C4;
 
@@ -25,7 +24,7 @@ public static class Diagram
 
     /// <summary>The map to start with: the system in its world.</summary>
     public static DiagramDefinition SystemContext { get; } = new(
-        new DiagramOrigin("c4", "context"),
+        new ToolOrigin("c4", "context"),
         "C4 system context diagram",
         "The system in its world: who uses it, and what it depends on. The map to start with.",
         Icon: "mdi-earth",
@@ -36,7 +35,7 @@ public static class Diagram
 
     /// <summary>Inside the system: its applications and data stores.</summary>
     public static DiagramDefinition Container { get; } = new(
-        new DiagramOrigin("c4", "container"),
+        new ToolOrigin("c4", "container"),
         "C4 container diagram",
         "The applications and data stores that make up a system, and how they talk to each other.",
         Icon: "mdi-package-variant",
@@ -44,7 +43,7 @@ public static class Diagram
 
     /// <summary>Inside one container: its components.</summary>
     public static DiagramDefinition Component { get; } = new(
-        new DiagramOrigin("c4", "component"),
+        new ToolOrigin("c4", "component"),
         "C4 component diagram",
         "The components inside one container, and how each collaborates with the others.",
         Icon: "mdi-puzzle-outline",
@@ -56,14 +55,14 @@ public static class Diagram
     /// `.dsl` file the way the other six do (c4-diagrams Requirement 11).
     /// </summary>
     public static DiagramDefinition Code { get; } = new(
-        new DiagramOrigin("c4", "code"),
+        new ToolOrigin("c4", "code"),
         "C4 code diagram",
         "The classes and their relations inside one component, at the level source code is written.",
         Icon: "mdi-code-braces");
 
     /// <summary>Above any single system: the enterprise around them.</summary>
     public static DiagramDefinition SystemLandscape { get; } = new(
-        new DiagramOrigin("c4", "system-landscape"),
+        new ToolOrigin("c4", "system-landscape"),
         "C4 system landscape diagram",
         "Every system in an enterprise and how they relate, above any single one of them.",
         Icon: "mdi-terrain",
@@ -71,7 +70,7 @@ public static class Diagram
 
     /// <summary>One scenario, step by numbered step.</summary>
     public static DiagramDefinition Dynamic { get; } = new(
-        new DiagramOrigin("c4", "dynamic"),
+        new ToolOrigin("c4", "dynamic"),
         "C4 dynamic diagram",
         "How a handful of elements collaborate to serve one scenario, step by numbered step.",
         Icon: "mdi-motion-play-outline",
@@ -79,7 +78,7 @@ public static class Diagram
 
     /// <summary>The static model mapped onto the infrastructure it runs on.</summary>
     public static DiagramDefinition Deployment { get; } = new(
-        new DiagramOrigin("c4", "deployment"),
+        new ToolOrigin("c4", "deployment"),
         "C4 deployment diagram",
         "Which containers run on which infrastructure, in one environment.",
         Icon: "mdi-server-network",

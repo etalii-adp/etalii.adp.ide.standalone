@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.Documents.Wire;
 namespace EtAlii.Adp.Context;
 
@@ -51,7 +50,7 @@ public sealed record ContextTarget(
     string RootPath = "",
     ShortGuid WatchId = default,
     string ElementId = "",
-    DiagramOrigin? Origin = null)
+    ToolOrigin? Origin = null)
 {
     /// <summary>
     /// The element <paramref name="elementId"/> of the diagram file at <paramref name="bodyPath"/>,
@@ -59,6 +58,6 @@ public sealed record ContextTarget(
     /// every element target takes.
     /// </summary>
     public static ContextTarget ForElement(
-        string bodyPath, string elementId, string rootPath = "", ShortGuid watchId = default, DiagramOrigin? origin = null) =>
+        string bodyPath, string elementId, string rootPath = "", ShortGuid watchId = default, ToolOrigin? origin = null) =>
         new(ContextScope.DiagramElement, bodyPath, IsContainer: false, SourceId: default, rootPath, watchId, elementId, origin);
 }

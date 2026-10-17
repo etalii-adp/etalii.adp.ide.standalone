@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using JetBrains.Annotations;
 namespace EtAlii.Adp.Diagram.MermaidFlowchart;
 
@@ -9,7 +8,7 @@ public static class Diagram
     public static DiagramDefinition[] Definitions { get; } =
     [
         new(
-            new DiagramOrigin("mermaid", "flowchart"),
+            new ToolOrigin("mermaid", "flowchart"),
             "Flowchart",
             "A flow of steps and decisions, in Mermaid's flowchart syntax.",
             Icon: "mdi-arrow-decision-outline"),

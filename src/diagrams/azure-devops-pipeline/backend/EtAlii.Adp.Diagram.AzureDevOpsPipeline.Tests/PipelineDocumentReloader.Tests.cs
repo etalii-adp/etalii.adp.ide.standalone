@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -11,7 +10,7 @@ namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline.Tests;
 /// </remarks>
 public sealed class PipelineDocumentReloaderTests : DocumentReloaderContract<IPipelineDocumentStore>
 {
-    protected override DiagramOrigin Origin => Diagram.Pipeline.Origin;
+    protected override ToolOrigin Origin => Diagram.Pipeline.Origin;
 
     protected override string Example => IoPath.Combine(AppContext.BaseDirectory, "Fixtures", "jobs-only.yml");
 

@@ -24,7 +24,7 @@ public sealed class DiagramDocumentReloadBridge : IDisposable
 {
     private static readonly ILogger _logger = Log.ForContext<DiagramDocumentReloadBridge>();
 
-    private readonly IReadOnlyDictionary<DiagramOrigin, IDiagramDocumentReloader> _reloaders;
+    private readonly IReadOnlyDictionary<ToolOrigin, IDiagramDocumentReloader> _reloaders;
     private readonly ProjectFileEvents _events;
 
     // The three maps are concurrent dictionaries, so each single read or write of one is atomic
@@ -52,7 +52,7 @@ public sealed class DiagramDocumentReloadBridge : IDisposable
     /// (when there is one), and the root to watch them under. A type that registered no
     /// reloader is left alone - the ansible module watches its own folder already.
     /// </summary>
-    public void Track(string rootPath, string bodyPath, string? registrationPath, DiagramOrigin origin)
+    public void Track(string rootPath, string bodyPath, string? registrationPath, ToolOrigin origin)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(rootPath);
         ArgumentException.ThrowIfNullOrWhiteSpace(bodyPath);

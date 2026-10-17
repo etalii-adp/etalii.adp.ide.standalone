@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using JetBrains.Annotations;
 namespace EtAlii.Adp.Diagram.ArchimateApplication;
 
@@ -9,7 +8,7 @@ public static class Diagram
     public static DiagramDefinition[] Definitions { get; } =
     [
         new(
-            new DiagramOrigin("archimate", "application"),
+            new ToolOrigin("archimate", "application"),
             "ArchiMate — Application layer",
             "How application services, components and their interfaces support the business.",
             Icon: "mdi-apps"),

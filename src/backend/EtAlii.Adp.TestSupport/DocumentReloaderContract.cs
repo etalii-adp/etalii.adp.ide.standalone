@@ -29,7 +29,7 @@ public abstract class DocumentReloaderContract<TStore> : IDisposable
     private readonly TestFolder _folder = TestFolder.Create("EtAlii.Adp.DocumentReloaderContract");
 
     /// <summary>The module's diagram type.</summary>
-    protected abstract DiagramOrigin Origin { get; }
+    protected abstract ToolOrigin Origin { get; }
 
     /// <summary>A module example with at least one element, copied to a scratch folder for each test.</summary>
     protected abstract string Example { get; }

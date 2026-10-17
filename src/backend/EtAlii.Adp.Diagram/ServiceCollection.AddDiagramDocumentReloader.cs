@@ -9,7 +9,7 @@ public static class ServiceCollectionAddDiagramDocumentReloaderExtension
     /// Registers the reload seam of the diagram type at <paramref name="origin"/>, over the store a
     /// module registered as <typeparamref name="TStore"/>.
     /// </summary>
-    public static void AddDiagramDocumentReloader<TStore>(this IServiceCollection services, DiagramOrigin origin)
+    public static void AddDiagramDocumentReloader<TStore>(this IServiceCollection services, ToolOrigin origin)
         where TStore : IDiagramDocumentStore
     {
         ArgumentNullException.ThrowIfNull(services);

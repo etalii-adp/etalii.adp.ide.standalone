@@ -1,9 +1,8 @@
-using EtAlii.Adp.Documents;
 namespace EtAlii.Adp.Diagram.Tests;
 
-internal sealed class DiagramValidatorsStubValidator(DiagramOrigin origin) : IDiagramValidator
+internal sealed class DiagramValidatorsStubValidator(ToolOrigin origin) : IDiagramValidator
 {
-    public DiagramOrigin Origin { get; } = origin;
+    public ToolOrigin Origin { get; } = origin;
 
     public ValueTask<IReadOnlyList<DiagramProblem>> ValidateAsync(
         DiagramValidationRequest request, CancellationToken cancellationToken) =>

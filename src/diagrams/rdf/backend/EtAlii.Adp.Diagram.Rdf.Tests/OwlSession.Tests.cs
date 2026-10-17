@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 using Microsoft.Extensions.DependencyInjection;
@@ -51,7 +50,7 @@ public class OwlSessionTests : IDisposable
         return path;
     }
 
-    private IDiagramSession Open(DiagramOrigin origin, string bodyPath, string? registrationPath)
+    private IDiagramSession Open(ToolOrigin origin, string bodyPath, string? registrationPath)
     {
         var factory = _provider.GetServices<IDiagramSessionFactory>()
             .Single(candidate => candidate.Origin == origin);

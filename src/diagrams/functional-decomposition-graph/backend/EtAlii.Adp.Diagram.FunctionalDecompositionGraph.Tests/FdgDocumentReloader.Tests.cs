@@ -1,11 +1,9 @@
-using EtAlii.Adp.Documents;
-
 namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph.Tests;
 
 /// <summary>The shared reload seam over the <c>.fdg</c> store, held to the contract every module's is.</summary>
 public sealed class FdgDocumentReloaderTests : DocumentReloaderContract<IFdgDocumentStore>
 {
-    protected override DiagramOrigin Origin => Diagram.FunctionalDecompositionGraph.Origin;
+    protected override ToolOrigin Origin => Diagram.FunctionalDecompositionGraph.Origin;
 
     protected override string Example => FieldServiceExample.Path;
 

@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
 namespace EtAlii.Adp.Hierarchy;
@@ -18,7 +17,7 @@ public static class DiagramFileName
     /// type segment (plus its subtype), and a number when that is already taken. Only the
     /// base name is returned - <see cref="WithExtension"/> adds the extension.
     /// </summary>
-    public static string Suggest(DiagramOrigin origin, string folder) =>
+    public static string Suggest(ToolOrigin origin, string folder) =>
         Suggest(origin.Subtype.Length == 0 ? origin.Type : $"{origin.Type}-{origin.Subtype}", folder);
 
     /// <summary>

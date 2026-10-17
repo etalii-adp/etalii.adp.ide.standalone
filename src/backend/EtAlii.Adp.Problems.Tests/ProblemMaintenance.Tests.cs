@@ -17,10 +17,10 @@ public class ProblemMaintenanceTests : IDisposable
     private static readonly TimeSpan SettleDelay = TimeSpan.FromMilliseconds(750);
     private static readonly TimeSpan WaitLimit = TimeSpan.FromSeconds(15);
 
-    private static readonly DiagramOrigin Mindmap = new("freeplane", "mindmap");
+    private static readonly ToolOrigin Mindmap = new("freeplane", "mindmap");
     private static readonly DiagramDefinition MindmapDefinition = new(Mindmap, "Mind map", Extension: ".mm");
 
-    private static readonly DiagramOrigin FolderType = new("fixture", "folder");
+    private static readonly ToolOrigin FolderType = new("fixture", "folder");
     private static readonly DiagramDefinition FolderDefinition =
         new(FolderType, "A folder-subject type", Subject: DiagramSubject.Folder);
 

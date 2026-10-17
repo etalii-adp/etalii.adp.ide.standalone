@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using JetBrains.Annotations;
 namespace EtAlii.Adp.Diagram.PlantumlC4;
 
@@ -9,7 +8,7 @@ public static class Diagram
     public static DiagramDefinition[] Definitions { get; } =
     [
         new(
-            new DiagramOrigin("plantuml", "c4"),
+            new ToolOrigin("plantuml", "c4"),
             "C4-PlantUML diagram",
             "A C4 model written in PlantUML with the C4-PlantUML macros.",
             Icon: "mdi-earth-arrow-right"),

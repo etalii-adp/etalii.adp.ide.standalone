@@ -34,7 +34,7 @@ public sealed class AnsibleValidator : IDiagramValidator
 {
     private static readonly ILogger _logger = Log.ForContext<AnsibleValidator>();
 
-    public DiagramOrigin Origin => Diagram.AnsibleStructure.Origin;
+    public ToolOrigin Origin => Diagram.AnsibleStructure.Origin;
 
     public ValueTask<IReadOnlyList<DiagramProblem>> ValidateAsync(
         DiagramValidationRequest request, CancellationToken cancellationToken)

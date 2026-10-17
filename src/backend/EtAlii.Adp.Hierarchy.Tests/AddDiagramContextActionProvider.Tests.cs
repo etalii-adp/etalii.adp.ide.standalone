@@ -10,8 +10,8 @@ namespace EtAlii.Adp.Hierarchy.Tests;
 
 public class AddDiagramContextActionProviderTests : IDisposable
 {
-    private static readonly DiagramDefinition SystemContext = new(new DiagramOrigin("c4", "context"), "System Context");
-    private static readonly DiagramDefinition ClassDiagram = new(new DiagramOrigin("uml", "class"), "Class diagram");
+    private static readonly DiagramDefinition SystemContext = new(new ToolOrigin("c4", "context"), "System Context");
+    private static readonly DiagramDefinition ClassDiagram = new(new ToolOrigin("uml", "class"), "Class diagram");
 
     private readonly string _root;
     private static readonly DiagramDocumentFactories NoFactories = new([]);
@@ -428,7 +428,7 @@ public class AddDiagramContextActionProviderTests : IDisposable
     // that already holds one offers the type greyed rather than hiding it.
 
     private static readonly DiagramDefinition AnsibleStructure = new(
-        new DiagramOrigin("ansible", "structure"),
+        new ToolOrigin("ansible", "structure"),
         "Ansible structure",
         Subject: DiagramSubject.Folder);
 

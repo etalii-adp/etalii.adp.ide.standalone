@@ -1,5 +1,4 @@
 using EtAlii.Adp.Diagram;
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.Hierarchy;
 using Xunit;
 using IoPath = System.IO.Path;
@@ -8,7 +7,7 @@ namespace EtAlii.Adp.Problems.Tests;
 
 public class StartupRevalidationTests : IDisposable
 {
-    private static readonly DiagramOrigin Mindmap = new("freeplane", "mindmap");
+    private static readonly ToolOrigin Mindmap = new("freeplane", "mindmap");
     private static readonly DiagramDefinition MindmapDefinition = new(Mindmap, "Mind map", Extension: ".mm");
 
     private readonly string _scratch;

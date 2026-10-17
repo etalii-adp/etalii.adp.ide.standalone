@@ -12,13 +12,13 @@ public sealed class EmptyDocumentFactory : IDiagramDocumentFactory
     private readonly Func<string, string> _textFromBaseName;
 
     /// <summary>A factory whose new document is <paramref name="text"/>, whatever the file is called.</summary>
-    public EmptyDocumentFactory(DiagramOrigin origin, string text)
+    public EmptyDocumentFactory(ToolOrigin origin, string text)
         : this(origin, Fixed(text))
     {
     }
 
     /// <summary>A factory whose new document <paramref name="textFromBaseName"/> writes from the file's base name.</summary>
-    public EmptyDocumentFactory(DiagramOrigin origin, Func<string, string> textFromBaseName)
+    public EmptyDocumentFactory(ToolOrigin origin, Func<string, string> textFromBaseName)
     {
         ArgumentNullException.ThrowIfNull(origin);
         ArgumentNullException.ThrowIfNull(textFromBaseName);
@@ -27,7 +27,7 @@ public sealed class EmptyDocumentFactory : IDiagramDocumentFactory
     }
 
     /// <inheritdoc />
-    public DiagramOrigin Origin { get; }
+    public ToolOrigin Origin { get; }
 
     /// <inheritdoc />
     public string CreateEmptyDocument(string baseName)

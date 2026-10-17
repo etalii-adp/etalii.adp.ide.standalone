@@ -12,7 +12,7 @@ namespace EtAlii.Adp.Diagram.Rdf;
 /// A file that will not parse is reported as one problem naming the line, since running the rules
 /// over an empty model would bury that under a list of consequences (Requirement 7.1).
 /// </remarks>
-public sealed partial class RdfValidator(DiagramOrigin origin) : IDiagramValidator
+public sealed partial class RdfValidator(ToolOrigin origin) : IDiagramValidator
 {
     /// <summary>The rule reported when the file is not Turtle or N-Triples this can read.</summary>
     public const string UnparseableRuleId = "rdf.unparseable";
@@ -41,7 +41,7 @@ public sealed partial class RdfValidator(DiagramOrigin origin) : IDiagramValidat
     private const string XsdNamespace = "http://www.w3.org/2001/XMLSchema#";
 
     /// <inheritdoc />
-    public DiagramOrigin Origin { get; } = origin;
+    public ToolOrigin Origin { get; } = origin;
 
     /// <inheritdoc />
     public ValueTask<IReadOnlyList<DiagramProblem>> ValidateAsync(

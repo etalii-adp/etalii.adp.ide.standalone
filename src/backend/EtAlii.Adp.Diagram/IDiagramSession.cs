@@ -1,5 +1,3 @@
-using EtAlii.Adp.Documents;
-
 namespace EtAlii.Adp.Diagram;
 
 /// <summary>
@@ -61,7 +59,7 @@ public interface IDiagramSession : IAsyncDisposable
 public interface IDiagramSessionFactory
 {
     /// <summary>The diagram type this opens sessions for.</summary>
-    DiagramOrigin Origin { get; }
+    ToolOrigin Origin { get; }
 
     /// <summary>
     /// A session for the diagram whose body is at <paramref name="bodyPath"/>, seen by the

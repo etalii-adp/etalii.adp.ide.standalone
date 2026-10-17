@@ -13,13 +13,13 @@ namespace EtAlii.Adp.Diagram.C4;
 /// </remarks>
 public sealed class C4Validator : IDiagramValidator
 {
-    public C4Validator(DiagramOrigin origin)
+    public C4Validator(ToolOrigin origin)
     {
         ArgumentNullException.ThrowIfNull(origin);
         Origin = origin;
     }
 
-    public DiagramOrigin Origin { get; }
+    public ToolOrigin Origin { get; }
 
     public ValueTask<IReadOnlyList<DiagramProblem>> ValidateAsync(DiagramValidationRequest request, CancellationToken cancellationToken)
     {

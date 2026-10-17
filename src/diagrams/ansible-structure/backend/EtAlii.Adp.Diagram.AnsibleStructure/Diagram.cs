@@ -27,7 +27,7 @@ public static class Diagram
     /// module reads this.
     /// </summary>
     public static DiagramDefinition AnsibleStructure { get; } = new(
-        new DiagramOrigin("ansible", "structure"),
+        new ToolOrigin("ansible", "structure"),
         "Ansible project structure",
         "What runs what, and where a value comes from: playbooks, roles, inventories and the "
         + "include, import and dependency edges between them, drawn from the folder as it is.",

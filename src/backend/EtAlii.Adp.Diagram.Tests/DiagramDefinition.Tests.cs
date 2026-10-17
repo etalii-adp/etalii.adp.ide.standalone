@@ -9,7 +9,7 @@ public class DiagramDefinitionTests
     public void Constructor_KeepsTheOriginAndTitleItWasGiven()
     {
         // Arrange.
-        var origin = new DiagramOrigin("uml", "class");
+        var origin = new ToolOrigin("uml", "class");
 
         // Act.
         var definition = new DiagramDefinition(origin, "Class diagram");
@@ -24,7 +24,7 @@ public class DiagramDefinitionTests
     {
         // Act.
         // The default every existing module relies on: nothing about them changes.
-        var definition = new DiagramDefinition(new DiagramOrigin("uml", "class"), "Class diagram");
+        var definition = new DiagramDefinition(new ToolOrigin("uml", "class"), "Class diagram");
 
         // Assert.
         Assert.Equal("", definition.Extension);
@@ -35,7 +35,7 @@ public class DiagramDefinitionTests
     public void Constructor_WithAnExtension_DeclaresADocumentSibling()
     {
         // Act.
-        var definition = new DiagramDefinition(new DiagramOrigin("freeplane", "mindmap"), "Mind map", Extension: ".mm");
+        var definition = new DiagramDefinition(new ToolOrigin("freeplane", "mindmap"), "Mind map", Extension: ".mm");
 
         // Assert.
         Assert.Equal(".mm", definition.Extension);
@@ -47,7 +47,7 @@ public class DiagramDefinitionTests
     {
         // Act.
         // The default every existing module relies on: nothing about them changes.
-        var definition = new DiagramDefinition(new DiagramOrigin("uml", "class"), "Class diagram");
+        var definition = new DiagramDefinition(new ToolOrigin("uml", "class"), "Class diagram");
 
         // Assert.
         Assert.Equal(DiagramSubject.Document, definition.Subject);
@@ -59,7 +59,7 @@ public class DiagramDefinitionTests
     {
         // Act.
         var definition = new DiagramDefinition(
-            new DiagramOrigin("ansible", "structure"),
+            new ToolOrigin("ansible", "structure"),
             "Ansible project structure",
             Subject: DiagramSubject.Folder);
 

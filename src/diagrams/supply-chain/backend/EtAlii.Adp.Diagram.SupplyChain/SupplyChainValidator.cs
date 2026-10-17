@@ -29,7 +29,7 @@ public static class SupplyChainRuleIds
 public sealed class SupplyChainValidator : IDiagramValidator
 {
     /// <inheritdoc />
-    public DiagramOrigin Origin => Diagram.SupplyChain.Origin;
+    public ToolOrigin Origin => Diagram.SupplyChain.Origin;
 
     /// <inheritdoc />
     public ValueTask<IReadOnlyList<DiagramProblem>> ValidateAsync(DiagramValidationRequest request, CancellationToken cancellationToken)

@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.DotNetDependencyGraph;
@@ -38,7 +37,7 @@ public sealed class DotNetDependencyGraphSessionFactory : IDiagramSessionFactory
         _historyStacks = historyStacks;
     }
 
-    public DiagramOrigin Origin => Diagram.DependencyGraph.Origin;
+    public ToolOrigin Origin => Diagram.DependencyGraph.Origin;
 
     public IDiagramSession Open(ShortGuid watchId, string rootPath, string bodyPath, string? registrationPath)
     {

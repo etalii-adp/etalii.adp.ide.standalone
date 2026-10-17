@@ -15,7 +15,7 @@ public sealed class C4SessionFactory : IDiagramSessionFactory
     private readonly C4ElementMapper _mapper;
     private readonly IHistoryStackStore _historyStacks;
 
-    public C4SessionFactory(DiagramOrigin origin, IC4DocumentStore documents, C4ElementMapper mapper, IHistoryStackStore historyStacks)
+    public C4SessionFactory(ToolOrigin origin, IC4DocumentStore documents, C4ElementMapper mapper, IHistoryStackStore historyStacks)
     {
         ArgumentNullException.ThrowIfNull(origin);
         ArgumentNullException.ThrowIfNull(documents);
@@ -28,7 +28,7 @@ public sealed class C4SessionFactory : IDiagramSessionFactory
         _historyStacks = historyStacks;
     }
 
-    public DiagramOrigin Origin { get; }
+    public ToolOrigin Origin { get; }
 
     public IDiagramSession Open(ShortGuid watchId, string rootPath, string bodyPath, string? registrationPath)
     {

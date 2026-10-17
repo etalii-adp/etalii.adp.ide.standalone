@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using JetBrains.Annotations;
 namespace EtAlii.Adp.Diagram.Tests.Fixtures.Several;
 
@@ -12,8 +11,8 @@ public static class Diagram
 {
     public static DiagramDefinition[] Definitions { get; } =
     [
-        new(new DiagramOrigin("several", "first"), "Several First"),
-        new(new DiagramOrigin("several", "second"), "Several Second"),
-        new(new DiagramOrigin("several", "third"), "Several Third"),
+        new(new ToolOrigin("several", "first"), "Several First"),
+        new(new ToolOrigin("several", "second"), "Several Second"),
+        new(new ToolOrigin("several", "third"), "Several Third"),
     ];
 }

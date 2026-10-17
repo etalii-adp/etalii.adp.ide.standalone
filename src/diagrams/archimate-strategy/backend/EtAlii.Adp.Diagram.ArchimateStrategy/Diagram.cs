@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using JetBrains.Annotations;
 namespace EtAlii.Adp.Diagram.ArchimateStrategy;
 
@@ -9,7 +8,7 @@ public static class Diagram
     public static DiagramDefinition[] Definitions { get; } =
     [
         new(
-            new DiagramOrigin("archimate", "strategy"),
+            new ToolOrigin("archimate", "strategy"),
             "ArchiMate — Strategy layer",
             "Capabilities, resources and courses of action, above the level of any single system.",
             Icon: "mdi-chess-knight"),

@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -11,7 +10,7 @@ namespace EtAlii.Adp.Diagram.Mindmap.Tests;
 /// </summary>
 public sealed class MindmapDocumentReloaderTests : DocumentReloaderContract<IMindmapDocumentStore>
 {
-    protected override DiagramOrigin Origin => Diagram.Mindmap.Origin;
+    protected override ToolOrigin Origin => Diagram.Mindmap.Origin;
 
     protected override string Example => IoPath.Combine(AppContext.BaseDirectory, "Fixtures", "architecture.mm");
 

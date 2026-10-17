@@ -18,7 +18,7 @@ public sealed class PipelineValidator : IDiagramValidator
     public const string UnparseableRuleId = "azure-pipeline.unparseable";
 
     /// <inheritdoc />
-    public DiagramOrigin Origin { get; } = Diagram.Pipeline.Origin;
+    public ToolOrigin Origin { get; } = Diagram.Pipeline.Origin;
 
     /// <inheritdoc />
     public ValueTask<IReadOnlyList<DiagramProblem>> ValidateAsync(

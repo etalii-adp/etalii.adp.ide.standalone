@@ -1,6 +1,5 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Diagram;
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.Documents.Wire;
 using Xunit;
 using IoPath = System.IO.Path;
@@ -285,10 +284,10 @@ public class HierarchyContextSourceResolverTests : IDisposable
     // are diagrams - through the router, never a client-side file-type table.
 
     private static readonly DiagramDefinition Mindmap =
-        new(new DiagramOrigin("freeplane", "mindmap"), "Mind map", Extension: ".mm");
+        new(new ToolOrigin("freeplane", "mindmap"), "Mind map", Extension: ".mm");
 
     private static readonly DiagramDefinition RivalMindmap =
-        new(new DiagramOrigin("xmind", "mindmap"), "Rival map", Extension: ".mm");
+        new(new ToolOrigin("xmind", "mindmap"), "Rival map", Extension: ".mm");
 
     /// <summary>An editor resolver that knows no editors, so nothing falls through to the editor arm.</summary>
     private static readonly EditorResolver EmptyEditorResolver = new(new Editor.EditorDefinitionCatalog { All = [] });

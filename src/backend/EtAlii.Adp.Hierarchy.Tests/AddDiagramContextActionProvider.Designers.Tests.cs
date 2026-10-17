@@ -1,7 +1,6 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Designer;
 using EtAlii.Adp.Diagram;
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.History;
 using Xunit;
@@ -17,7 +16,7 @@ namespace EtAlii.Adp.Hierarchy.Tests;
 /// </summary>
 public class AddDiagramContextActionProviderDesignersTests : IDisposable
 {
-    private static readonly DiagramDefinition ClassDiagram = new(new DiagramOrigin("fixture", "class"), "Class diagram");
+    private static readonly DiagramDefinition ClassDiagram = new(new ToolOrigin("fixture", "class"), "Class diagram");
 
     private static readonly DesignerDefinition Sheet = new(
         "fixture/sheet",

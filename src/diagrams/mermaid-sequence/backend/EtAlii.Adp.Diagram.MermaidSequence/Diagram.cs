@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using JetBrains.Annotations;
 namespace EtAlii.Adp.Diagram.MermaidSequence;
 
@@ -9,7 +8,7 @@ public static class Diagram
     public static DiagramDefinition[] Definitions { get; } =
     [
         new(
-            new DiagramOrigin("mermaid", "sequence"),
+            new ToolOrigin("mermaid", "sequence"),
             "Sequence diagram",
             "Messages exchanged between participants over time, in Mermaid's sequence syntax.",
             Icon: "mdi-swap-horizontal"),

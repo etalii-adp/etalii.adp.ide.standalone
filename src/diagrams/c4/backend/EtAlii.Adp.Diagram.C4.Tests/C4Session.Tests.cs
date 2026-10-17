@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 using Microsoft.Extensions.DependencyInjection;
@@ -65,7 +64,7 @@ public class C4SessionTests : IDisposable
     }
 
     private C4Session Open(string bodyPath, string? registrationPath) =>
-        (C4Session)new C4SessionFactory(new DiagramOrigin("c4", "context"), _documents, _mapper, _historyStacks)
+        (C4Session)new C4SessionFactory(new ToolOrigin("c4", "context"), _documents, _mapper, _historyStacks)
             .Open(ShortGuid.NewShortGuid(), _root, bodyPath, registrationPath);
 
     private static IReadOnlyList<DiagramElement> Added(IReadOnlyList<DiagramDelta> deltas) =>

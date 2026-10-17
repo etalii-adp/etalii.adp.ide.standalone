@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using JetBrains.Annotations;
 namespace EtAlii.Adp.Diagram.Mindmap;
 
@@ -15,12 +14,12 @@ public static class Diagram
     /// module reads this.
     /// </summary>
     public static DiagramDefinition Mindmap { get; } = new(
-        new DiagramOrigin("freeplane", "mindmap"),
+        new ToolOrigin("freeplane", "mindmap"),
         "Mind map",
         "Ideas branching from one central topic, for thinking a subject through rather than specifying it.",
         Icon: "mdi-family-tree",
         Extension: DocumentExtension,
-        // everything resolves by DiagramOrigin (mindmap-diagram Requirement 13).
+        // everything resolves by ToolOrigin (mindmap-diagram Requirement 13).
         Build: builder => builder.Services.AddMindmap(builder.Configuration));
 
     /// <summary>What discovery reads. One entry: this module carries one notation.</summary>

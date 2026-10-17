@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using Serilog;
 
 namespace EtAlii.Adp.Diagram.Timeline;
@@ -23,7 +22,7 @@ public sealed class TimelineValidator : IDiagramValidator
     public const string UnparseableRuleId = "timeline.unparseable";
 
     /// <inheritdoc />
-    public DiagramOrigin Origin => Diagram.Timeline.Origin;
+    public ToolOrigin Origin => Diagram.Timeline.Origin;
 
     /// <inheritdoc />
     public ValueTask<IReadOnlyList<DiagramProblem>> ValidateAsync(

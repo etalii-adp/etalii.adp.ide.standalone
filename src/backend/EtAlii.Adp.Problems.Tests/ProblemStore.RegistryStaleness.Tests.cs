@@ -1,5 +1,4 @@
 using EtAlii.Adp.Diagram;
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.Hierarchy;
 using Microsoft.Extensions.Time.Testing;
 using Xunit;
@@ -24,9 +23,9 @@ namespace EtAlii.Adp.Problems.Tests;
 /// </remarks>
 public class ProblemStoreRegistryStalenessTests : IDisposable
 {
-    private static readonly DiagramOrigin Mindmap = new("freeplane", "mindmap");
+    private static readonly ToolOrigin Mindmap = new("freeplane", "mindmap");
     private static readonly DiagramDefinition MindmapDefinition = new(Mindmap, "Mind map", Extension: ".mm");
-    private static readonly DiagramOrigin DependencyGraph = new("dotnet", "dependency-graph");
+    private static readonly ToolOrigin DependencyGraph = new("dotnet", "dependency-graph");
     private static readonly DiagramDefinition DependencyGraphDefinition = new(DependencyGraph, "Dependency graph", Extension: ".dgr");
 
     private readonly string _appData;

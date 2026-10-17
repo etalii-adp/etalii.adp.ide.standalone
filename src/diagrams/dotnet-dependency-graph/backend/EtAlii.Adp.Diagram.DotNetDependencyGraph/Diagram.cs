@@ -1,5 +1,4 @@
-﻿using EtAlii.Adp.Documents;
-using JetBrains.Annotations;
+﻿using JetBrains.Annotations;
 namespace EtAlii.Adp.Diagram.DotNetDependencyGraph;
 
 /// <summary>
@@ -44,7 +43,7 @@ public static class Diagram
     /// module reads this.
     /// </summary>
     public static DiagramDefinition DependencyGraph { get; } = new(
-        new DiagramOrigin("dotnet", "dependency-graph"),
+        new ToolOrigin("dotnet", "dependency-graph"),
         ".NET dependency graph",
         "Which projects a solution builds, which NuGet packages they consume, and every "
         + "reference between them - read from the project files rather than drawn by hand.",

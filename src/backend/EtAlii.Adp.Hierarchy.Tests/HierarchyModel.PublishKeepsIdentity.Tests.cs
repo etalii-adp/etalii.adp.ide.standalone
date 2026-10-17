@@ -14,7 +14,7 @@ namespace EtAlii.Adp.Hierarchy.Tests;
 /// </summary>
 public class HierarchyModelPublishKeepsIdentityTests : IDisposable
 {
-    private static readonly DiagramDefinition Mindmap = new(new DiagramOrigin("freeplane", "mindmap"), "Mind map", Extension: ".mm");
+    private static readonly DiagramDefinition Mindmap = new(new ToolOrigin("freeplane", "mindmap"), "Mind map", Extension: ".mm");
     private static readonly TimeSpan Patience = TimeSpan.FromSeconds(10);
     private static readonly TimeSpan Silence = TimeSpan.FromMilliseconds(500);
 

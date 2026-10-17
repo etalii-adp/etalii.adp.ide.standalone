@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.Tests;
@@ -25,7 +24,7 @@ public class DiagramDefinitionDescriptionTests
     public void ADefinitionWithNoDescription_DefaultsToEmpty()
     {
         // Arrange & act.
-        var sample = new DiagramDefinition(new DiagramOrigin("fixture", "sample"), "Sample");
+        var sample = new DiagramDefinition(new ToolOrigin("fixture", "sample"), "Sample");
 
         // Assert.
         Assert.Equal("", sample.Description);

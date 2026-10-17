@@ -1,5 +1,4 @@
 using EtAlii.Adp.Diagram.Modules;
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.Specification.Disl;
 
 namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
@@ -44,7 +43,7 @@ public sealed class GhgValidator : IDiagramValidator
     }
 
     /// <inheritdoc />
-    public DiagramOrigin Origin => Diagram.HypeCycleGraph.Origin;
+    public ToolOrigin Origin => Diagram.HypeCycleGraph.Origin;
 
     /// <inheritdoc />
     public ValueTask<IReadOnlyList<DiagramProblem>> ValidateAsync(DiagramValidationRequest request, CancellationToken cancellationToken)

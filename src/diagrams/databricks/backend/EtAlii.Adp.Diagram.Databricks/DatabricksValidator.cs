@@ -14,13 +14,13 @@ namespace EtAlii.Adp.Diagram.Databricks;
 /// instance per MIME type, because the seam resolves by origin - the rules are the family's and
 /// do not care which of its three types asked.
 /// </remarks>
-public sealed class DatabricksValidator(DiagramOrigin origin) : IDiagramValidator
+public sealed class DatabricksValidator(ToolOrigin origin) : IDiagramValidator
 {
     /// <summary>The rule reported when the file is not YAML (or JSON) this can read.</summary>
     public const string UnparseableRuleId = "databricks.unparseable";
 
     /// <inheritdoc />
-    public DiagramOrigin Origin { get; } = origin;
+    public ToolOrigin Origin { get; } = origin;
 
     /// <inheritdoc />
     public ValueTask<IReadOnlyList<DiagramProblem>> ValidateAsync(

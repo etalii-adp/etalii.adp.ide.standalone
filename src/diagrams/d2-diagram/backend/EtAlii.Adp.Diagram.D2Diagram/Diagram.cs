@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using JetBrains.Annotations;
 namespace EtAlii.Adp.Diagram.D2Diagram;
 
@@ -9,7 +8,7 @@ public static class Diagram
     public static DiagramDefinition[] Definitions { get; } =
     [
         new(
-            new DiagramOrigin("d2", "diagram"),
+            new ToolOrigin("d2", "diagram"),
             "D2 diagram",
             "A general-purpose diagram written as text and laid out automatically by D2.",
             Icon: "mdi-drawing-box"),

@@ -1,5 +1,4 @@
 using EtAlii.Adp.Context;
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Hierarchy;
 using Microsoft.Extensions.Time.Testing;
@@ -36,7 +35,7 @@ public class AnsibleContextSourceResolverTests : IDisposable
         // other type to be rejected in favour of rather than a hypothetical one.
         var catalog = new AnsibleTestDiagramDefinitionCatalog(
             Diagram.AnsibleStructure,
-            new DiagramDefinition(new DiagramOrigin("freeplane", "mindmap"), "Mind map", Extension: ".mm"));
+            new DiagramDefinition(new ToolOrigin("freeplane", "mindmap"), "Mind map", Extension: ".mm"));
         _resolver = new AnsibleContextSourceResolver(new DiagramFileRouter(catalog), _folders, new AnsibleElementMapper());
     }
 

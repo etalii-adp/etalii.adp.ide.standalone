@@ -58,7 +58,7 @@ public sealed class C4ContextSourceResolverTests : DiagramElementSourceResolverC
     }
 
     private C4ContextSourceResolver Resolver() =>
-        new(new DiagramOrigin("c4", "context"), new DiagramFileRouter(new C4ExamplesStubCatalog()), _store, _mapper);
+        new(new ToolOrigin("c4", "context"), new DiagramFileRouter(new C4ExamplesStubCatalog()), _store, _mapper);
 
     [Fact]
     public async Task ALineOnlyAViewElevates_IsSelectable_AsTheCanvasDrewIt()

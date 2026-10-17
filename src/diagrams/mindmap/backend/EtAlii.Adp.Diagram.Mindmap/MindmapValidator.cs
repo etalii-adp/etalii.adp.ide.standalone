@@ -1,5 +1,4 @@
 using EtAlii.Adp.Diagram.Modules;
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.Specification.Disl;
 using IoPath = System.IO.Path;
 
@@ -34,7 +33,7 @@ namespace EtAlii.Adp.Diagram.Mindmap;
 /// </remarks>
 public sealed class MindmapValidator : IDiagramValidator
 {
-    public DiagramOrigin Origin => Diagram.Mindmap.Origin;
+    public ToolOrigin Origin => Diagram.Mindmap.Origin;
 
     public ValueTask<IReadOnlyList<DiagramProblem>> ValidateAsync(
         DiagramValidationRequest request, CancellationToken cancellationToken)

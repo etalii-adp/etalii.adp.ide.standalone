@@ -10,7 +10,7 @@ namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline.Tests;
 /// is the join - that a document really does reach those rules, that a file which will not parse
 /// is reported as the one problem naming its line rather than as the pile of consequences an
 /// empty model would produce, and that this answers for the right diagram type. Core resolves
-/// this by <see cref="DiagramOrigin"/> alone, so a wrong origin is a validator that silently
+/// this by <see cref="ToolOrigin"/> alone, so a wrong origin is a validator that silently
 /// never runs.
 /// </remarks>
 public class PipelineValidatorTests

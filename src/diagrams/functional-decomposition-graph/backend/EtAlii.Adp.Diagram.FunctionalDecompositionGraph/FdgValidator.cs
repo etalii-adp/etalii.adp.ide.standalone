@@ -29,7 +29,7 @@ namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph;
 public sealed class FdgValidator : IDiagramValidator
 {
     /// <inheritdoc />
-    public DiagramOrigin Origin => Diagram.FunctionalDecompositionGraph.Origin;
+    public ToolOrigin Origin => Diagram.FunctionalDecompositionGraph.Origin;
 
     /// <inheritdoc />
     public ValueTask<IReadOnlyList<DiagramProblem>> ValidateAsync(

@@ -1,5 +1,4 @@
 using EtAlii.Adp.Diagram;
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 using Xunit;
 using IoPath = System.IO.Path;
@@ -13,7 +12,7 @@ namespace EtAlii.Adp.Hierarchy.Tests;
 /// </summary>
 public class DeleteEntryNestingTests : IDisposable
 {
-    private static readonly DiagramDefinition Mindmap = new(new DiagramOrigin("freeplane", "mindmap"), "Mind map", Extension: ".mm");
+    private static readonly DiagramDefinition Mindmap = new(new ToolOrigin("freeplane", "mindmap"), "Mind map", Extension: ".mm");
 
     private readonly string _root;
     private readonly IHistoryStack _history;

@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using JetBrains.Annotations;
 
 namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
@@ -23,7 +22,7 @@ public static class Diagram
 
     /// <summary>The Gartner hype cycle graph.</summary>
     public static DiagramDefinition HypeCycleGraph { get; } = new(
-        new DiagramOrigin("gartner", "hypecycle-graph"),
+        new ToolOrigin("gartner", "hypecycle-graph"),
         "Gartner hype cycle graph",
         "Trends placed on a shared time axis, each showing how far it has travelled through the phases of the Gartner hype cycle, with the influences trends have had on one another.",
         Icon: "mdi-chart-bell-curve-cumulative",

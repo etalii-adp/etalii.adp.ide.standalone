@@ -19,7 +19,7 @@ namespace EtAlii.Adp.Diagram.Rdf;
 /// checked, and this sentence is where that boundary is recorded.
 /// </para>
 /// </remarks>
-public sealed class SkosValidator(DiagramOrigin origin) : IDiagramValidator
+public sealed class SkosValidator(ToolOrigin origin) : IDiagramValidator
 {
     /// <summary>An asserted broader/narrower cycle - drawn whole, layered by exclusion, reported here.</summary>
     public const string CycleRuleId = "skos.hierarchy-cycle";
@@ -48,7 +48,7 @@ public sealed class SkosValidator(DiagramOrigin origin) : IDiagramValidator
     private readonly RdfValidator _family = new(origin);
 
     /// <inheritdoc />
-    public DiagramOrigin Origin { get; } = origin;
+    public ToolOrigin Origin { get; } = origin;
 
     /// <inheritdoc />
     public async ValueTask<IReadOnlyList<DiagramProblem>> ValidateAsync(

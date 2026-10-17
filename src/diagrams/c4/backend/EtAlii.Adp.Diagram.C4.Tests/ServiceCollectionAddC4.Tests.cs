@@ -1,5 +1,4 @@
 ﻿using EtAlii.Adp.Context;
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
@@ -27,7 +26,7 @@ public class ServiceCollectionAddC4Tests
         var body = folder.Combine("courier.dsl");
         File.Copy(C4DocumentStoreTests.Courier, body);
         var store = provider.GetRequiredService<IC4DocumentStore>();
-        var reloader = Assert.Single(provider.GetServices<IDiagramDocumentReloader>(), candidate => candidate.Origin == new DiagramOrigin("c4", type));
+        var reloader = Assert.Single(provider.GetServices<IDiagramDocumentReloader>(), candidate => candidate.Origin == new ToolOrigin("c4", type));
         var changed = new List<string>();
         store.Changed += (_, args) => changed.Add(args.Path);
         Assert.NotEmpty(store.GetOrLoad(body).Model.Elements);
@@ -76,7 +75,7 @@ public class ServiceCollectionAddC4Tests
 
         // Assert: exactly one resolver answers, for this type, with the body the registration names.
         var only = Assert.Single(resolved);
-        Assert.Equal(new DiagramOrigin("c4", type), only.Target.Origin);
+        Assert.Equal(new ToolOrigin("c4", type), only.Target.Origin);
         Assert.Equal(body, only.Target.ResolvedFullPath);
     }
 }

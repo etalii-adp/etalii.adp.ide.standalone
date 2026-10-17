@@ -16,7 +16,7 @@ namespace EtAlii.Adp.Documents;
 public interface IDiagramDocumentFactory
 {
     /// <summary>The diagram type whose empty body this produces.</summary>
-    DiagramOrigin Origin { get; }
+    ToolOrigin Origin { get; }
 
     /// <summary>
     /// The complete text of a new, empty document for a diagram whose file base name is

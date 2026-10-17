@@ -16,7 +16,7 @@ public class DatabricksEmptyDocumentTests
     public async Task EachTypesMinimalDocument_ParsesAndValidatesClean(string vendor, string type)
     {
         // Arrange.
-        var origin = new DiagramOrigin(vendor, type);
+        var origin = new ToolOrigin(vendor, type);
 
         // Act.
         var text = ServiceCollectionAddDatabricksExtension.EmptyDocument(origin.Type, "Nightly Ingest");

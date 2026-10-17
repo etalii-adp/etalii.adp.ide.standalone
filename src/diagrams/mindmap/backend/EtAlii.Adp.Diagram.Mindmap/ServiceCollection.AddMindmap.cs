@@ -1,6 +1,5 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Diagram.Modules;
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -17,7 +16,7 @@ namespace EtAlii.Adp.Diagram.Mindmap;
 /// One call for the module, as <c>AddC4</c> is for the C4 family - the host names the module
 /// once rather than listing its seams, and a test that needs the real module calls the same
 /// method. Core never names the module back: everything resolves by
-/// <see cref="DiagramOrigin"/> (mindmap-diagram Requirement 13).
+/// <see cref="ToolOrigin"/> (mindmap-diagram Requirement 13).
 /// </remarks>
 public static class ServiceCollectionAddMindmapExtension
 {

@@ -1,5 +1,4 @@
 using EtAlii.Adp.Context;
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -20,7 +19,7 @@ namespace EtAlii.Adp.Diagram.Sparql;
 public static class ServiceCollectionAddSparqlExtension
 {
     /// <summary>The origin, as docs/tools.md writes it.</summary>
-    public static readonly DiagramOrigin SparqlOrigin = new("w3c", "sparql");
+    public static readonly ToolOrigin SparqlOrigin = new("w3c", "sparql");
 
     /// <summary>The query a new SPARQL diagram starts as.</summary>
     private const string EmptyQuery = "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\r\n"

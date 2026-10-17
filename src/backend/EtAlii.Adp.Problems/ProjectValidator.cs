@@ -297,23 +297,13 @@ public sealed class ProjectValidator
                     return;
                 }
                 collector.FilesConsidered++;
-                if (!TryOriginOf(routed.Definition.Origin, out var origin))
+                if (routed.Definition.ToolOrigin is not { } origin)
                 {
                     return; // An origin that is not vendor/type can have registered no rules.
                 }
                 await ValidateDocumentAsync(origin, bodyPath, routed.RegistrationPath, hasFolderSubject: false, "document", collector, cancellationToken);
                 return;
         }
-    }
-
-    /// <summary>
-    /// A designer's origin, <c>vendor/type</c>, as the key rules are registered under - the
-    /// same key a diagram type's rules use, so both families share one validator registry.
-    /// </summary>
-    private static bool TryOriginOf(string designerOrigin, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out DiagramOrigin? origin)
-    {
-        origin = designerOrigin.Split('/') is [{ Length: > 0 } vendor, { Length: > 0 } type] ? new DiagramOrigin(vendor, type) : null;
-        return origin is not null;
     }
 
     /// <param name="origin">The type whose rules judge the document.</param>
@@ -324,7 +314,7 @@ public sealed class ProjectValidator
     /// <param name="collector">The problem collector.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
     private async ValueTask ValidateDocumentAsync(
-        DiagramOrigin origin,
+        ToolOrigin origin,
         string bodyPath,
         string? registrationPath,
         bool hasFolderSubject,

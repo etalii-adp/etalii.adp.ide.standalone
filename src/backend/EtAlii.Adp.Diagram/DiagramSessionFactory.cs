@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using JetBrains.Annotations;
 
 namespace EtAlii.Adp.Diagram;
@@ -27,7 +26,7 @@ public sealed class DiagramSessionFactory : IDiagramSessionFactory
     private readonly IServiceProvider _services;
     private readonly Func<IServiceProvider, DiagramSessionOpening, IDiagramSession> _open;
 
-    public DiagramSessionFactory(DiagramOrigin origin, IServiceProvider services, Func<IServiceProvider, DiagramSessionOpening, IDiagramSession> open)
+    public DiagramSessionFactory(ToolOrigin origin, IServiceProvider services, Func<IServiceProvider, DiagramSessionOpening, IDiagramSession> open)
     {
         ArgumentNullException.ThrowIfNull(origin);
         ArgumentNullException.ThrowIfNull(services);
@@ -38,7 +37,7 @@ public sealed class DiagramSessionFactory : IDiagramSessionFactory
     }
 
     /// <inheritdoc />
-    public DiagramOrigin Origin { get; }
+    public ToolOrigin Origin { get; }
 
     /// <inheritdoc />
     public IDiagramSession Open(ShortGuid watchId, string rootPath, string bodyPath, string? registrationPath) =>

@@ -1,9 +1,9 @@
 using EtAlii.Adp.Documents;
 namespace EtAlii.Adp.Diagram.Tests;
 
-internal sealed class DiagramDocumentFactoriesStubFactory(DiagramOrigin origin) : IDiagramDocumentFactory
+internal sealed class DiagramDocumentFactoriesStubFactory(ToolOrigin origin) : IDiagramDocumentFactory
 {
-    public DiagramOrigin Origin { get; } = origin;
+    public ToolOrigin Origin { get; } = origin;
 
     public string CreateEmptyDocument(string baseName) => "";
 }

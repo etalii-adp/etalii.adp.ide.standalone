@@ -1,5 +1,4 @@
 using EtAlii.Adp.Context;
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 using Xunit;
 
@@ -23,7 +22,7 @@ public sealed class AbmProvidersTests : IDisposable
         return body;
     }
 
-    private ContextTarget Target(string body, DiagramOrigin? origin) =>
+    private ContextTarget Target(string body, ToolOrigin? origin) =>
         ContextTarget.ForElement(body, "1.1", _folder.Path, origin: origin);
 
     private AbmContextActionProvider Actions => new(new HistoryStackStore(new AbmTestDispatcher(_store)), _store);
@@ -50,7 +49,7 @@ public sealed class AbmProvidersTests : IDisposable
     public async Task TheSameMarkdownSelectedAsAnotherType_IsAnsweredWithNothing()
     {
         // Arrange: the same file and id, selected inside a diagram of another type.
-        var target = Target(Body(), new DiagramOrigin("etalii", "another-type"));
+        var target = Target(Body(), new ToolOrigin("etalii", "another-type"));
         var token = TestContext.Current.CancellationToken;
 
         // Act.

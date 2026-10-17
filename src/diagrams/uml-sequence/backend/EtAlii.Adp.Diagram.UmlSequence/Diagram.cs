@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using JetBrains.Annotations;
 namespace EtAlii.Adp.Diagram.UmlSequence;
 
@@ -9,7 +8,7 @@ public static class Diagram
     public static DiagramDefinition[] Definitions { get; } =
     [
         new(
-            new DiagramOrigin("uml", "sequence"),
+            new ToolOrigin("uml", "sequence"),
             "Sequence diagram",
             "Messages between lifelines in time order, for one scenario.",
             Icon: "mdi-swap-horizontal-bold"),

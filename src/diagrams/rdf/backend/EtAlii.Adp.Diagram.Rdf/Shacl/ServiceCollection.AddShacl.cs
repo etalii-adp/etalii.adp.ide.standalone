@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -13,7 +12,7 @@ namespace EtAlii.Adp.Diagram.Rdf.Shacl;
 public static class ServiceCollectionAddShaclExtension
 {
     /// <summary>The shapes reading's origin, as docs/tools.md writes it.</summary>
-    public static readonly DiagramOrigin ShaclOrigin = new("w3c", "shacl");
+    public static readonly ToolOrigin ShaclOrigin = new("w3c", "shacl");
 
     public static void AddShacl(this IServiceCollection services)
     {

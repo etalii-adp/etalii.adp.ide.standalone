@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using JetBrains.Annotations;
 namespace EtAlii.Adp.Diagram.UmlComponent;
 
@@ -9,7 +8,7 @@ public static class Diagram
     public static DiagramDefinition[] Definitions { get; } =
     [
         new(
-            new DiagramOrigin("uml", "component"),
+            new ToolOrigin("uml", "component"),
             "Component diagram",
             "Components, the interfaces they provide and require, and how they plug together.",
             Icon: "mdi-toy-brick-outline"),

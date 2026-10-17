@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using JetBrains.Annotations;
 namespace EtAlii.Adp.Diagram.UmlProfile;
 
@@ -9,7 +8,7 @@ public static class Diagram
     public static DiagramDefinition[] Definitions { get; } =
     [
         new(
-            new DiagramOrigin("uml", "profile"),
+            new ToolOrigin("uml", "profile"),
             "Profile diagram",
             "A UML extension: the stereotypes and tagged values that adapt UML to a domain.",
             Icon: "mdi-tag-outline"),

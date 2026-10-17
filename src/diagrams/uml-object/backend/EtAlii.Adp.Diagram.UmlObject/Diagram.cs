@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using JetBrains.Annotations;
 namespace EtAlii.Adp.Diagram.UmlObject;
 
@@ -9,7 +8,7 @@ public static class Diagram
     public static DiagramDefinition[] Definitions { get; } =
     [
         new(
-            new DiagramOrigin("uml", "object"),
+            new ToolOrigin("uml", "object"),
             "Object diagram",
             "A snapshot of instances and their links at one moment, to make a class diagram concrete.",
             Icon: "mdi-shape-outline"),

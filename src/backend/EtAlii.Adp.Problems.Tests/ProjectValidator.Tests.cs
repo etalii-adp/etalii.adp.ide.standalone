@@ -1,6 +1,5 @@
 using EtAlii.Adp.Designer;
 using EtAlii.Adp.Diagram;
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.Hierarchy;
 using Microsoft.Extensions.Time.Testing;
 using Xunit;
@@ -10,7 +9,7 @@ namespace EtAlii.Adp.Problems.Tests;
 
 public class ProjectValidatorTests : IDisposable
 {
-    private static readonly DiagramOrigin Mindmap = new("freeplane", "mindmap");
+    private static readonly ToolOrigin Mindmap = new("freeplane", "mindmap");
     private static readonly DiagramDefinition MindmapDefinition = new(Mindmap, "Mind map", Extension: ".mm");
 
     private readonly string _root;
@@ -189,7 +188,7 @@ public class ProjectValidatorTests : IDisposable
     {
         // Arrange.
         await File.WriteAllTextAsync(IoPath.Combine(_root, "either.mm"), "a body without a registration", TestContext.Current.CancellationToken);
-        var rival = new DiagramDefinition(new DiagramOrigin("rival", "mindmap"), "Rival map", Extension: ".mm");
+        var rival = new DiagramDefinition(new ToolOrigin("rival", "mindmap"), "Rival map", Extension: ".mm");
 
         var outcome = await Validate(validator: null, new ProjectValidationScope(_root), extraDefinitions: [rival]);
 
@@ -541,7 +540,7 @@ public class ProjectValidatorTests : IDisposable
         // Arrange.
         // A type with no extension - c4/code is the real one - is its own whole diagram, so its
         // registration is what gets judged.
-        var bodyless = new DiagramDefinition(new DiagramOrigin("fixture", "bodyless"), "Bodyless");
+        var bodyless = new DiagramDefinition(new ToolOrigin("fixture", "bodyless"), "Bodyless");
         await File.WriteAllTextAsync(IoPath.Combine(_root, "standalone.adp"), "fixture/bodyless\n", TestContext.Current.CancellationToken);
         // Act.
         var outcome = await Validate(Validator(), new ProjectValidationScope(_root), extraDefinitions: [bodyless]);
@@ -586,7 +585,7 @@ public class ProjectValidatorTests : IDisposable
 
     // ---- designers, by the same validator registry (knowledge-designer Requirement 10.2) --------
 
-    private static readonly DiagramOrigin Sheet = new("fixture", "sheet");
+    private static readonly ToolOrigin Sheet = new("fixture", "sheet");
 
     private static readonly DesignerDefinition SheetDefinition = new("fixture/sheet", "Fixture sheet", Formats: [new DesignerFormat("YAML", ".yaml")]);
 

@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using JetBrains.Annotations;
 namespace EtAlii.Adp.Diagram.StructurizrC4;
 
@@ -9,7 +8,7 @@ public static class Diagram
     public static DiagramDefinition[] Definitions { get; } =
     [
         new(
-            new DiagramOrigin("structurizr", "c4"),
+            new ToolOrigin("structurizr", "c4"),
             "C4 model",
             "One C4 model in the Structurizr DSL, with several views generated from it.",
             Icon: "mdi-city-variant-outline"),

@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.Specification.Disl;
 using EtAlii.Adp.Specification.Fbl;
 
@@ -27,7 +26,7 @@ namespace EtAlii.Adp.Diagram.AgentBehaviorModelling;
 public sealed class AbmValidator : IDiagramValidator
 {
     /// <inheritdoc />
-    public DiagramOrigin Origin => Diagram.AgentBehaviorModelling.Origin;
+    public ToolOrigin Origin => Diagram.AgentBehaviorModelling.Origin;
 
     /// <inheritdoc />
     public ValueTask<IReadOnlyList<DiagramProblem>> ValidateAsync(DiagramValidationRequest request, CancellationToken cancellationToken)

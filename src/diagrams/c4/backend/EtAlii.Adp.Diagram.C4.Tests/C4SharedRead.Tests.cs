@@ -1,5 +1,3 @@
-
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 using Microsoft.Extensions.DependencyInjection;
@@ -80,7 +78,7 @@ public class C4SharedReadTests : IDisposable
         await using var editor = new FileStream(adp, FileMode.Open, FileAccess.Write, FileShare.Read);
 
         // Act.
-        await using var session = (C4Session)new C4SessionFactory(new DiagramOrigin("c4", "container"), _documents, _mapper, _historyStacks)
+        await using var session = (C4Session)new C4SessionFactory(new ToolOrigin("c4", "container"), _documents, _mapper, _historyStacks)
             .Open(ShortGuid.NewShortGuid(), _root, body, adp);
 
         // Assert.

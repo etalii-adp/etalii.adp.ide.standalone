@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using JetBrains.Annotations;
 namespace EtAlii.Adp.Diagram.AwsArchitecture;
 
@@ -9,7 +8,7 @@ public static class Diagram
     public static DiagramDefinition[] Definitions { get; } =
     [
         new(
-            new DiagramOrigin("aws", "architecture"),
+            new ToolOrigin("aws", "architecture"),
             "AWS architecture diagram",
             "How a solution is built out of AWS services, drawn with the vendor's own icon set.",
             Icon: "mdi-aws"),

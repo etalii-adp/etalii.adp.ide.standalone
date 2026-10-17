@@ -1,5 +1,4 @@
 using System.Text.RegularExpressions;
-using EtAlii.Adp.Documents;
 using JetBrains.Annotations;
 
 namespace EtAlii.Adp.Diagram.AgentBehaviorModelling;
@@ -28,7 +27,7 @@ public static partial class Diagram
 
     /// <summary>The agent behavior model.</summary>
     public static DiagramDefinition AgentBehaviorModelling { get; } = new(
-        new DiagramOrigin("etalii", "agent-behavior-modelling"),
+        new ToolOrigin("etalii", "agent-behavior-modelling"),
         "Agent Behavior Modelling",
         "A chat agent's instructions drawn as a behavior tree - what it checks, does, tries, repeats and asks - stored as the Markdown the agent reads.",
         Icon: "mdi-robot-outline",

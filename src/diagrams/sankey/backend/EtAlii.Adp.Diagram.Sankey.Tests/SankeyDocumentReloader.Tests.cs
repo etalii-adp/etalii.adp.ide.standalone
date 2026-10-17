@@ -1,11 +1,9 @@
-using EtAlii.Adp.Documents;
-
 namespace EtAlii.Adp.Diagram.Sankey.Tests;
 
 /// <summary>The shared reload seam over the <c>.skv</c> store, held to the contract every module's is.</summary>
 public sealed class SankeyDocumentReloaderTests : DocumentReloaderContract<ISankeyDocumentStore>
 {
-    protected override DiagramOrigin Origin => Diagram.Sankey.Origin;
+    protected override ToolOrigin Origin => Diagram.Sankey.Origin;
 
     protected override string Example => SankeyExamples.BrightwaterCoffee;
 
