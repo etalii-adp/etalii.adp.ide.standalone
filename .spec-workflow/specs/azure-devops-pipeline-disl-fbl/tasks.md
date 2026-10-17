@@ -49,7 +49,7 @@ Criterion 3.6 compares menus, rows, findings and payloads with the transcript. T
 
 Paths that start with `backend/` or `client/` are under `src/diagrams/azure-devops-pipeline/`.
 
-- [ ] 1. Repair the three module defects, each with a test seen to fail first
+- [-] 1. Repair the three module defects, each with a test seen to fail first
   - Files: `backend/EtAlii.Adp.Diagram.AzureDevOpsPipeline/PipelineWriter.cs`, `PipelineParser.cs`, `Commands/RemovePipelineElementCommand.cs`, `backend/EtAlii.Adp.Diagram.AzureDevOpsPipeline.Tests/PipelineWriter.Tests.cs`, `PipelineCommands.Tests.cs`, `PipelineParser.Tests.cs`, `Fixtures/block-scalar-step.yml` (new), `Fixtures/blank-lines-after.yml` (new), `Fixtures/template-in-template.yml` (new) and the template it names under `Fixtures/templates/` (new)
   - Finding B8: Rename and Disable on a step that starts with a block scalar and has no `displayName` write the new key between the bar and the script. Write the test, see it fail against today's code, then insert the key after the whole value of the key before it.
   - Finding B9: removing a stage, a job and a step that is followed by blank lines, then undoing, must restore the file byte for byte, and the redo must remove the same element. Write the three tests, see the undo fail for all three and the redo fail for the job and the step, then repair the inverse and how the redo finds its element.
