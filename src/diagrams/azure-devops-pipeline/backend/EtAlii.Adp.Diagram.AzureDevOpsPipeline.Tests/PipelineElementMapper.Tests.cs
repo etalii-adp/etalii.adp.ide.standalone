@@ -90,7 +90,7 @@ public class PipelineElementMapperTests
 
         // Assert.
         Assert.Null(exception);
-        Assert.Contains(Map(model), element => element.Id == "Build" && element.Type == PipelineElementMapper.StageType);
+        Assert.Contains(Map(model), element => element is { Id: "Build", Type: PipelineElementMapper.StageType });
     }
 
     [Fact]
