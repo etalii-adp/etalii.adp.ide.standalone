@@ -41,7 +41,7 @@ public sealed record DesignerDefinition(
     IReadOnlyList<DesignerFormat>? Formats = null,
     Action<IHostApplicationBuilder>? Build = null) : IToolDefinition
 {
-    /// <summary>The origin, which discovery keeps each designer once by.</summary>
+    /// <summary>The origin, by which discovery keeps one definition per origin.</summary>
     string IToolDefinition.Key => Origin;
 
     /// <summary>
