@@ -74,6 +74,10 @@ public static partial class PipelineGraphBuilder
 
             if (node.DependsOn.Count > 0)
             {
+                // A name that names nothing is still an edge, drawn broken. This stands in for
+                // language gap 9 of azure-devops-pipeline-disl-fbl (Q4): the definition keeps such a
+                // DependsOn and reports it, but DISL has no way to draw a relation without a source,
+                // so the canvas reads it from here rather than from the definition.
                 edges.AddRange(node.DependsOn.Select(name => new PipelineEdge(
                     byName.TryGetValue(name, out var fromId) ? fromId : "",
                     node.Id,

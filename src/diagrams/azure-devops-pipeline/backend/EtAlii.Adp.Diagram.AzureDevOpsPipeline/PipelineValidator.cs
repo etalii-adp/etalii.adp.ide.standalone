@@ -1,4 +1,6 @@
+using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Specification.Disl;
 
 namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline;
 
@@ -7,10 +9,10 @@ namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline;
 /// Warnings panel by (Requirement 10.1).
 /// </summary>
 /// <remarks>
-/// Text in, problems out. The rules themselves are a pure function over a parsed model, so this is
-/// only the join: parse, and hand the model to <see cref="PipelineRuleSet"/>. A file that will not
-/// parse is reported as one problem naming the line, since running graph rules over a model that
-/// is empty only because the parse failed would bury that under a list of consequences.
+/// Text in, problems out: the findings of the bundled definition (<see cref="PipelineDefinition.Findings"/>)
+/// over the model the parser reads, without following a template, as this has always judged. A file
+/// that will not parse is the reader's one finding naming the line, since running graph rules over a
+/// model that is empty only because the parse failed would bury that under a list of consequences.
 /// </remarks>
 public sealed class PipelineValidator : IDiagramValidator
 {
@@ -29,19 +31,26 @@ public sealed class PipelineValidator : IDiagramValidator
 
         // ReSharper disable once NullCoalescingConditionIsAlwaysNotNullAccordingToAPIContract - Reason: IDiagramValidator.ValidateAsync is a public module seam and the record's non-nullable Document is a compile-time annotation the runtime does not enforce, so a caller that passes null (null!, or code built without nullable checks) gets an empty document here rather than a NullReferenceException; ProjectValidator, the one caller in this repository, always passes the text it read, so an empty file arrives as "", not null.
         var outcome = PipelineParser.Outcome(LineDocument.Parse(request.Document ?? ""));
-        if (!outcome.IsUsable)
-        {
-            var problem = outcome.Problems[0];
-            return ValueTask.FromResult<IReadOnlyList<DiagramProblem>>(
-            [
-                new DiagramProblem(
-                    DiagramProblemSeverity.Error,
-                    $"This is not YAML that can be read: {problem.Message}",
-                    UnparseableRuleId,
-                    new DiagramProblemLineLocation((uint)problem.Line + 1)),
-            ]);
-        }
+        IReadOnlyList<DislReaderFinding> reader = outcome.IsUsable
+            ? []
+            : [DislReaderFinding.NotParsed(outcome.Problems[0].Message, outcome.Problems[0].Line + 1)];
 
-        return ValueTask.FromResult(PipelineRuleSet.Judge(outcome.Model));
+        IReadOnlyList<DiagramProblem> problems =
+        [
+            .. PipelineDefinition.Findings(outcome.Model, reader).Select(finding => new DiagramProblem(
+                DislDiagramDefinition.SeverityOf(finding),
+                finding.Message,
+                finding.Code,
+                Location(finding))),
+        ];
+        return ValueTask.FromResult(problems);
     }
+
+    /// <summary>Where a finding is: the element it names first, else the line the reader names, else nowhere.</summary>
+    private static DiagramProblemLocation? Location(DislFinding finding) =>
+        finding.ElementIds.Count > 0
+            ? new DiagramProblemElementLocation(finding.ElementIds[0])
+            : finding.Line is { } line
+                ? new DiagramProblemLineLocation((uint)line)
+                : null;
 }

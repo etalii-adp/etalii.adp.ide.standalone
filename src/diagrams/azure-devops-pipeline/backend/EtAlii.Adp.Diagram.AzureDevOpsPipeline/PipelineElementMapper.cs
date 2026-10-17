@@ -160,7 +160,9 @@ public sealed class PipelineElementMapper
     private DiagramElement StageElement(PipelineStage stage, PipelinePlacement placement, PipelineGraph graph)
     {
         // A stage is uncertain either because a compile-time expression decides whether it exists
-        // at all, or because it waits on something that does not.
+        // at all, or because it waits on something that does not. The second half stands in for
+        // language gap 9 (Q4), with the broken edge PipelineGraphBuilder keeps: the definition's
+        // `indeterminate` says the same, but the canvas is still drawn from this module's graph.
         var indeterminate = stage.Gate.Length > 0 ||
             graph.Edges.Any(edge => edge.ToId == stage.Id && edge.IsBroken);
 

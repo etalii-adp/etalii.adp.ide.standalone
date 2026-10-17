@@ -3,7 +3,7 @@ using EtAlii.Adp.Designer;
 namespace EtAlii.Adp.Hierarchy;
 
 /// <summary>What <see cref="DesignerFileRouter"/> makes of a file on disk.</summary>
-public abstract record DesignerRouting;
+public abstract record DesignerRouting : ToolRouting;
 
 /// <summary>
 /// The file belongs to a document of <paramref name="Definition"/>'s designer type: it is the

@@ -69,6 +69,7 @@ The three kinds are those of `causal-loop-disl-fbl`: a **definition defect** is 
 | B15 | **The sentence for a file that does not parse** is "This is not YAML that can be read: " followed by YamlDotNet's own message. The library's YAML parser is its own, so the second half changes with the reader. | Behaviour change to rule on (Q3) | Read |
 | B16 | **Step kind is the first recognised key in written order.** An entry reaches CEL as a map, which has no order. | Language gap, minor | Read |
 | B17 | **The template.** `PipelineDocumentFactory` writes a jobs-only pipeline with the base name as a comment, in CRLF and ending with a final newline (the transcript's `emptyDocument`; chat ruling, 2026-10-17). FBL's `{base}` placeholder states it; the binding's template must be those bytes. | Definition defect, avoided by writing it down | Read |
+| B18 | **Undo does not give back the bytes.** Undoing every edit leaves 12 of the transcript's 48 recorded documents different from the original, in five ways: a rename's undo writes the old value in the writer's style rather than the author's; undoing a `dependsOn` change moves the key; disable then undo loses an `enabled: True`; moving a step up then down shifts it across a blank line; and undoing the fix of a dangling dependency is refused, which stops the undo chain. Each is in the transcript. The exact-inverse undo of Q2 repairs all five, and the transcript's diff in the change that brings it is reviewed against this list (chat ruling, 2026-10-17). | Behaviour change, repaired by the conversion | Measured (the transcript) |
 
 ### C. Language gaps, as they would be reported to etalii-adp/etalii.adp
 
@@ -136,7 +137,7 @@ The product direction (2026-09-26) is that every tool is a markup definition int
 
 1. The toolbox, the context menu and the property rows of every element SHALL be derived from the bundled definition through `ToolboxDerivation`, `ContextMenuDerivation` and `FormDerivation`, mapped to the wire ids of `x-azure-pipeline`, and the providers SHALL compute none themselves.
 2. Every sentence a user reads today SHALL be read unchanged: "Show jobs" and "Hide jobs", "Enable" and "Disable", "Use the default order", "Depends on (by default)", the two entries "(nothing)" and "(the default order)", and every read-only reason, "This comes from " followed by the template's path and ", so it has to be edited there." among them.
-3. The six findings of `PipelineRules` SHALL be derived by `ConstraintEvaluator` with today's codes, severities, sentences, locations and order, one finding per cycle naming its members in order, none of them when the pipeline has no stage; and no finding the tool does not give today SHALL appear (Q3).
+3. The six findings of `PipelineRules` SHALL be derived by `ConstraintEvaluator` with today's codes, severities, sentences, locations and order, except that job findings are grouped by kind, not by stage (chat ruling, 2026-10-17), one finding per cycle naming its members in order, none of them when the pipeline has no stage; and no finding the tool does not give today SHALL appear (Q3).
 4. A dependency that names nothing SHALL be drawn as today (Q4), and the stage that waits for it marked indeterminate.
 5. An element that is implicit or comes from a template SHALL offer no action and SHALL show every row read-only with today's reason.
 6. WHEN the derived answers are compared with the transcript THEN the menus, rows, findings and payloads SHALL be byte-identical.
@@ -165,7 +166,7 @@ The product direction (2026-09-26) is that every tool is a markup definition int
 2. WHEN a value changes THEN only its span SHALL change, in its own style (Q1); an expression SHALL be written back as written and never quoted.
 3. WHEN a key is added THEN it SHALL be written after the value of the key before it and never inside a block scalar (finding B8).
 4. `dependsOn` SHALL be written as one name, a block list, `[]`, or removed, as the gesture asks (finding B5); WHERE FBL cannot state one of the four THEN that splice SHALL be planned by module code named as standing in for the gap.
-5. A removal and its undo SHALL restore the file byte for byte, and its redo SHALL remove the same element, for a stage, a job and a step.
+5. A removal and its undo SHALL restore the file byte for byte, and its redo SHALL remove the same element, for a stage, a job and a step. The undo of every other edit SHALL restore the file byte for byte as well, which repairs the five mismatches of finding B18 (chat ruling, 2026-10-17).
 6. Moving a step SHALL be one `move` that keeps the step's bytes (finding B12).
 7. Every refusal SHALL keep today's sentence: the five of adding, the four of removing, the four of dependencies, the one of moving, and "That element is no longer in this pipeline."
 8. An edit that would close a cycle or leave no stage that waits for nothing SHALL be refused before anything is written, as today.
@@ -323,7 +324,7 @@ A draft in the `yaml` family, the declared half that FBL 17 expects. It is not v
         }
       ],
       "registration": { "createOnFirstPlacement": false },
-      "template": { "text": "# {base}\r\ntrigger:\r\n  - main\r\npool:\r\n  vmImage: ubuntu-latest\r\njobs:\r\n  - job: Build\r\n    displayName: Build\r\n    steps:\r\n      - script: echo \"Replace this with your build\"\r\n        displayName: Build" }
+      "template": { "text": "# {base}\r\n\r\ntrigger:\r\n  - main\r\n\r\npool:\r\n  vmImage: ubuntu-latest\r\n\r\njobs:\r\n  - job: Build\r\n    displayName: Build\r\n    steps:\r\n      - script: echo \"Replace this with your build\"\r\n        displayName: Build\r\n" }
     }
   }
 }

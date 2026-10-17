@@ -6,4 +6,4 @@ namespace EtAlii.Adp.Hierarchy;
 /// because the fallback editor answers when nothing else claims a file - the last resort by
 /// construction (modular-text-editors Requirement 3.2).
 /// </remarks>
-public abstract record EditorRouting;
+public abstract record EditorRouting : ToolRouting;
