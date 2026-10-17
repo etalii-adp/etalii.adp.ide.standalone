@@ -1,4 +1,5 @@
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Specification.Disl;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.DependencyGraph;
@@ -16,7 +17,7 @@ namespace EtAlii.Adp.Diagram.DependencyGraph;
 /// loop rather than eleven answers to the same question. A graph is bounded until someone points it
 /// at a dependency tree that is not.
 /// </remarks>
-public sealed class DependencyGraphSession : DocumentDiagramSession<LineDocument, DependencyGraphModel>
+public sealed class DependencyGraphSession : DocumentDiagramSession<DependencyGraphBody, DislModel>
 {
     private readonly DependencyGraphElementMapper _mapper;
 
@@ -40,20 +41,20 @@ public sealed class DependencyGraphSession : DocumentDiagramSession<LineDocument
     protected override string ReadOnlyRefusal => "This graph is read-only.";
 
     /// <inheritdoc />
-    protected override IReadOnlyList<DiagramElement> Render(DependencyGraphModel model, DiagramViewport viewport) =>
+    protected override IReadOnlyList<DiagramElement> Render(DislModel model, DiagramViewport viewport) =>
         _mapper.Visible(model, viewport);
 
     /// <summary>
     /// Moves a node to a position. The point arrives in the module's own coordinate space - canvas
     /// units and row-height units - and is dispatched as one command so the drag is one undo away.
     /// </summary>
-    protected override DiagramPlacement PlacementOf(DependencyGraphModel model, string elementId, double x, double y)
+    protected override DiagramPlacement PlacementOf(DislModel model, string elementId, double x, double y)
     {
         ArgumentNullException.ThrowIfNull(model);
 
         // Also the answer for a relation's id: a curve has no position of its own - it follows
         // its endpoints.
-        if (DependencyGraphEdits.ElementOf(model, elementId) is null)
+        if (DependencyGraphEdits.NodeOf(model, elementId) is null)
         {
             return DiagramPlacement.Refused("That element is not something this graph can move.");
         }

@@ -21,8 +21,6 @@
     <ProjectReference Include="..\..\diagrams\mindmap\backend\EtAlii.Adp.Diagram.Mindmap\EtAlii.Adp.Diagram.Mindmap.csproj" />
     <!-- The Helm chart folder plugin, for the cross-check of the folder binding (helm-chart-disl-fbl, Requirement 8.5). -->
     <ProjectReference Include="..\..\diagrams\helm-chart\backend\EtAlii.Adp.Diagram.HelmChart\EtAlii.Adp.Diagram.HelmChart.csproj" />
-    <!-- The dependency graph's parser, for the cross-check of the binding its specification drafts (dependency-graph-disl-fbl, task 2). -->
-    <ProjectReference Include="..\..\diagrams\dependency-graph\backend\EtAlii.Adp.Diagram.DependencyGraph\EtAlii.Adp.Diagram.DependencyGraph.csproj" />
   </ItemGroup>
 
   <ItemGroup>

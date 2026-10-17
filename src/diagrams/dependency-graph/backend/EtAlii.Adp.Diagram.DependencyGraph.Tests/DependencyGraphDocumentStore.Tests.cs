@@ -1,10 +1,12 @@
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Specification.Disl;
+using EtAlii.Adp.Specification.Fbl.Planning;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.DependencyGraph.Tests;
 
 /// <summary>The store over dependency graphs, held to the contract every module's is, and what is its own.</summary>
-public sealed class DependencyGraphDocumentStoreTests : DocumentStoreContract<IDependencyGraphDocumentStore, LineDocument, DependencyGraphModel>
+public sealed class DependencyGraphDocumentStoreTests : DocumentStoreContract<IDependencyGraphDocumentStore, DependencyGraphBody, DislModel>
 {
     internal static string Simple => Path.Combine(AppContext.BaseDirectory, "Fixtures", "simple.dgr");
 
@@ -14,12 +16,12 @@ public sealed class DependencyGraphDocumentStoreTests : DocumentStoreContract<ID
 
     protected override IDependencyGraphDocumentStore CreateStore() => new DependencyGraphDocumentStore();
 
-    protected override void Edit(LineDocument document) =>
-        DependencyGraphWriter.SetLabel(document, DependencyGraphParser.Parse(document).Elements[0], EditMarker);
+    protected override void Edit(DependencyGraphBody document) =>
+        document.Change(new ModelChange.Set(document.Model.Elements.First(element => element.Type == "Node").Id, new Dictionary<string, object?> { ["label"] = EditMarker }));
 
-    protected override string TextOf(LineDocument document) => document.Text;
+    protected override string TextOf(DependencyGraphBody document) => document.Text;
 
-    protected override bool IsEmpty(DependencyGraphModel model) => model.Elements.Count == 0;
+    protected override bool IsEmpty(DislModel model) => model.Diagram.Elements.Count == 0;
 
     [Fact]
     public void AGraphThatIsNotYaml_IsHeldUnreadable_AndASaveIsRefusedUnwritten()
@@ -37,7 +39,7 @@ public sealed class DependencyGraphDocumentStoreTests : DocumentStoreContract<ID
 
         // Assert: what the file holds is unknown, so the empty model is not written over it.
         Assert.False(entry.IsUsable);
-        Assert.Empty(entry.Model.Elements);
+        Assert.Empty(entry.Model.Diagram.Elements);
         Assert.True(saved.Failed);
         Assert.Equal(before, File.ReadAllText(body));
     }

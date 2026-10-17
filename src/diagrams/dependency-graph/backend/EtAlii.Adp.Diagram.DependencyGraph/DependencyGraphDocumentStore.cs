@@ -1,4 +1,5 @@
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Specification.Disl;
 
 namespace EtAlii.Adp.Diagram.DependencyGraph;
 
@@ -9,38 +10,30 @@ namespace EtAlii.Adp.Diagram.DependencyGraph;
 /// before a refused read is believed, keeping the last good document through a reload that cannot
 /// read (R2.4), clearing it only on the watcher's delete (R2.5), ignoring this store's own save
 /// (R2.3) and telling the sessions are all <see cref="LifecycleDocumentStore{TBody, TModel}"/>'s.
-/// What stays here is what is this module's: what a body's lines mean, read through the parser's
-/// <see cref="ParseOutcome{TModel}"/>, which says why a body that is not YAML cannot be read.
+/// What stays here is what is this module's: a body read through the module's binding, and its DISL
+/// model, with the sentence that says why a body that is not YAML cannot be read.
 /// </para>
 /// <para>
 /// <b>A file that is not YAML is an ordinary state for a file somebody is editing</b>, so it is held
-/// as unreadable with the parser's sentence, rather than thrown out of the store, and nothing is
-/// written to it until it parses.
+/// as unreadable with YAML's own sentence, rather than thrown out of the store, and nothing is
+/// written to it until it reads.
 /// </para>
 /// </remarks>
-public sealed class DependencyGraphDocumentStore : LifecycleDocumentStore<LineDocument, DependencyGraphModel>, IDependencyGraphDocumentStore
+public sealed class DependencyGraphDocumentStore : LifecycleDocumentStore<DependencyGraphBody, DislModel>, IDependencyGraphDocumentStore
 {
     /// <inheritdoc />
-    protected override LineDocument Read(string text) => LineDocument.Parse(text);
+    protected override DependencyGraphBody Read(string text) => DependencyGraphBody.Parse(text);
 
     /// <inheritdoc />
-    protected override string TextOf(LineDocument body) => body.Text;
-
+    protected override string TextOf(DependencyGraphBody body) => body.Text;
 
     /// <inheritdoc />
-    protected override ParseOutcome<DependencyGraphModel> Parse(LineDocument body)
+    protected override ParseOutcome<DislModel> Parse(DependencyGraphBody body)
     {
         ArgumentNullException.ThrowIfNull(body);
+        if (!body.IsUnreadable) return new ParseOutcome<DislModel>(body.Disl, []);
 
-        // The binding decides whether the document can be read; the parser's reading rides along
-        // for the writer, which splices at its line ranges (DependencyGraphBody.Ranges).
-        var reading = DependencyGraphBody.Parse(body.Text);
-        if (reading.IsUnreadable)
-        {
-            (string reason, int line) = DependencyGraphFindings.UnreadableReason(reading);
-            return new ParseOutcome<DependencyGraphModel>(DependencyGraphModel.Empty with { Body = reading }, [new ParseProblem(line - 1, reason)], reason);
-        }
-
-        return new ParseOutcome<DependencyGraphModel>(DependencyGraphBody.Ranges(body) with { Body = reading }, []);
+        (string reason, int line) = DependencyGraphFindings.UnreadableReason(body);
+        return new ParseOutcome<DislModel>(body.Disl, [new ParseProblem(line - 1, reason)], reason);
     }
 }

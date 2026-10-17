@@ -93,7 +93,7 @@ public class ServiceCollectionAddDependencyGraphTests
         var text = EmptyDocument(provider, "services");
 
         // Assert.
-        var model = DependencyGraphParser.Parse(LineDocument.Parse(text));
+        var model = DependencyGraphBody.Parse(text).Disl;
         Assert.Empty(model.Elements);
         Assert.Empty(model.Relations);
         Assert.Equal("dependencies: 1\r\nelements: []\r\n", text);
@@ -108,15 +108,16 @@ public class ServiceCollectionAddDependencyGraphTests
         // the file unparseable - a bug that would surface on the very first Add of every new
         // graph.
         using var provider = Build();
-        var document = LineDocument.Parse(EmptyDocument(provider, "services"));
-        var model = DependencyGraphParser.Parse(document);
+        var document = DependencyGraphBody.Parse(EmptyDocument(provider, "services"));
 
         // Act.
-        DependencyGraphWriter.InsertElement(document, model, "first001", "First", 120, 0);
+        var added = DependencyGraphDefinition.Apply(document, DependencyGraphEdits.Transaction(DependencyGraphEdits.Create("first001", "First", 120, 0)));
 
         // Assert.
-        var reparsed = DependencyGraphParser.Parse(LineDocument.Parse(document.Text));
-        var element = Assert.Single(reparsed.Elements);
+        Assert.True(added.WasApplied);
+        var reparsed = DependencyGraphBody.Parse(document.Text);
+        Assert.False(reparsed.IsUnreadable);
+        var element = Assert.Single(reparsed.Disl.Elements);
         Assert.Equal("First", element.Label);
         Assert.DoesNotContain("[]", document.Text, StringComparison.Ordinal);
     }

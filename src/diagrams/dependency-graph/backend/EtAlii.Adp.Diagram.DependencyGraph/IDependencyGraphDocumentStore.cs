@@ -1,4 +1,5 @@
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Specification.Disl;
 
 namespace EtAlii.Adp.Diagram.DependencyGraph;
 
@@ -17,4 +18,4 @@ namespace EtAlii.Adp.Diagram.DependencyGraph;
 /// root would be a parameter every caller supplies and nothing uses.
 /// </para>
 /// </remarks>
-public interface IDependencyGraphDocumentStore : IDiagramDocumentStore<LineDocument, DependencyGraphModel>;
+public interface IDependencyGraphDocumentStore : IDiagramDocumentStore<DependencyGraphBody, DislModel>;

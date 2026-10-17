@@ -56,6 +56,7 @@ public static class ServiceCollectionAddDependencyGraphExtension
         services.AddSingleton<ICommandHandler<DisconnectDependencyGraphRelationCommand>, DisconnectDependencyGraphRelationCommandHandler>();
         services.AddSingleton<ICommandHandler<RelabelDependencyGraphRelationCommand>, RelabelDependencyGraphRelationCommandHandler>();
         services.AddSingleton<ICommandHandler<AddConnectedDependencyGraphElementCommand>, AddConnectedDependencyGraphElementCommandHandler>();
+        services.AddSingleton<ICommandHandler<RunDependencyGraphOperationCommand>, RunDependencyGraphOperationCommandHandler>();
 
         // The context seams: selection, actions, properties and the palette.
         services.AddSingleton<IContextSourceResolver, DependencyGraphContextSourceResolver>();

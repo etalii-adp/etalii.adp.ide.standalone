@@ -4,7 +4,7 @@ using Serilog;
 using YamlDotNet.Core;
 using YamlDotNet.RepresentationModel;
 
-namespace EtAlii.Adp.Diagram.DependencyGraph;
+namespace EtAlii.Adp.Diagram.DependencyGraph.Tests.Parity.Oracle;
 
 /// <summary>
 /// Reads a <see cref="LineDocument"/> into a <see cref="DependencyGraphModel"/>,

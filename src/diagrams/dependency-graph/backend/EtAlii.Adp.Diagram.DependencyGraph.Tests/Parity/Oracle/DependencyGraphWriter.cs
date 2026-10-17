@@ -1,7 +1,7 @@
 using System.Globalization;
 using EtAlii.Adp.Documents;
 
-namespace EtAlii.Adp.Diagram.DependencyGraph;
+namespace EtAlii.Adp.Diagram.DependencyGraph.Tests.Parity.Oracle;
 
 /// <summary>
 /// Turns an edit into a splice of the lines that edit affects, and nothing else.
