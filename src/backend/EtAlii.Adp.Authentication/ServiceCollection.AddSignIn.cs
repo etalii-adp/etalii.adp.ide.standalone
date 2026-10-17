@@ -1,11 +1,12 @@
+using EtAlii.Adp.Sessions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace EtAlii.Adp.Authentication;
 
 /// <summary>
-/// Registers everything that answers "who is calling": the authenticator and its options,
-/// and the store that holds a session once a caller has logged in.
+/// Registers everything that answers "who is calling": the authenticator and its options, the
+/// calls that need no session, and the store that holds a session once a caller has logged in.
 /// </summary>
 /// <remarks>
 /// One method rather than a list of registrations in the host, so a test that needs a real
@@ -18,15 +19,16 @@ namespace EtAlii.Adp.Authentication;
 /// parameters is the kind of overload nobody should have to resolve by eye.
 /// </para>
 /// </remarks>
-public static class ServiceCollectionAddSessionsExtension
+public static class ServiceCollectionAddSignInExtension
 {
-    public static void AddSessions(this IServiceCollection services, IConfiguration configuration)
+    public static void AddSignIn(this IServiceCollection services, IConfiguration configuration)
     {
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(configuration);
 
         services.Configure<LocalAuthenticatorOptions>(configuration.GetSection(LocalAuthenticatorOptions.SectionName));
         services.AddSingleton<IAuthenticator, LocalAuthenticator>();
-        services.AddSingleton<ISessionStore, InMemorySessionStore>();
+        services.AddSingleton<ISessionExemptions, SignInExemptions>();
+        services.AddSessions();
     }
 }

@@ -1,5 +1,6 @@
 #if DEBUG
 using EtAlii.Adp.Authentication.Wire;
+using EtAlii.Adp.Sessions;
 using Grpc.Core;
 using Grpc.Core.Testing;
 using Microsoft.Extensions.FileProviders;
@@ -60,8 +61,11 @@ public class DeveloperSessionTests
             MsOptions.Create(options),
             new StubEnvironment(environmentName));
 
+    private static SignInExemptions Exemptions(LocalAuthenticatorOptions options) =>
+        new(MsOptions.Create(options));
+
     private static SessionInterceptor Interceptor(ISessionStore store, LocalAuthenticatorOptions options) =>
-        new(store, MsOptions.Create(options));
+        new(store, Exemptions(options));
 
     private static ServerCallContext CreateContext(string method, Metadata? requestHeaders = null) =>
         TestServerCallContext.Create(
@@ -87,25 +91,25 @@ public class DeveloperSessionTests
         // Turning the bypass off should close the route, not merely make the route answer
         // nothing - so the configuration condition is asserted at the door, rather than
         // inferred from a handler that happened to refuse.
-        var interceptor = Interceptor(new InMemorySessionStore(), Options(disabled: true));
+        var exemptions = Exemptions(Options(disabled: true));
 
         // Assert.
-        Assert.False(interceptor.IsExempt(DeveloperSessionMethod));
+        Assert.False(exemptions.IsExempt(DeveloperSessionMethod));
 
         // And the two exemptions that have nothing to do with this spec are untouched by it.
-        Assert.True(interceptor.IsExempt(LoginMethod));
-        Assert.True(interceptor.IsExempt("/etalii.adp.AuthenticationService/DescribeProduct"));
+        Assert.True(exemptions.IsExempt(LoginMethod));
+        Assert.True(exemptions.IsExempt("/etalii.adp.AuthenticationService/DescribeProduct"));
     }
 
     [Fact]
     public void IsExempt_ForDeveloperSession_IsTrueInAnOrdinaryDeveloperBuild()
     {
         // Arrange.
-        var interceptor = Interceptor(new InMemorySessionStore(), Options());
+        var exemptions = Exemptions(Options());
 
         // Assert: the companion of the test above. Without it that one would keep passing if
         // the exemption were deleted altogether, and would then be asserting nothing.
-        Assert.True(interceptor.IsExempt(DeveloperSessionMethod));
+        Assert.True(exemptions.IsExempt(DeveloperSessionMethod));
     }
 
     [Fact]

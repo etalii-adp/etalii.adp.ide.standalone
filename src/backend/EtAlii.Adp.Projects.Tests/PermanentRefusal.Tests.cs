@@ -36,7 +36,7 @@ public partial class PermanentRefusalTests
     /// </summary>
     private static readonly Dictionary<string, string> NotARefusal = new(StringComparer.Ordinal)
     {
-        ["src/backend/EtAlii.Adp.Authentication/Sessions/SessionInterceptor.cs"] =
+        ["src/backend/EtAlii.Adp.Sessions/SessionInterceptor.cs"] =
             "Unauthenticated: the session interceptor's answer to any call without a valid token, met by signing in again.",
         ["src/backend/EtAlii.Adp.Workspace/WorkspaceService.cs"] =
             "Unavailable: OpenDiagram on a connection that is not open yet, which a reconnect racing a close produces and the client retries. " +

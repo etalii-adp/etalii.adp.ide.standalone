@@ -1,6 +1,5 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
-using EtAlii.Adp.Authentication;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Designer;
 using EtAlii.Adp.Diagram;
@@ -11,6 +10,7 @@ using EtAlii.Adp.Editor;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 using EtAlii.Adp.Projects;
+using EtAlii.Adp.Sessions;
 using EtAlii.Adp.Workspace;
 using Grpc.Core;
 using Grpc.Core.Testing;

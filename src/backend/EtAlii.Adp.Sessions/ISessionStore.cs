@@ -1,4 +1,4 @@
-namespace EtAlii.Adp.Authentication;
+namespace EtAlii.Adp.Sessions;
 
 public interface ISessionStore
 {

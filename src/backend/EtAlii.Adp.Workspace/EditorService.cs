@@ -1,9 +1,9 @@
-using EtAlii.Adp.Authentication;
 using EtAlii.Adp.Editor;
 using EtAlii.Adp.Editor.Wire;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 using EtAlii.Adp.Projects;
+using EtAlii.Adp.Sessions;
 using Grpc.Core;
 using Serilog;
 using Path = EtAlii.Adp.Documents.Wire.Path;

@@ -1,6 +1,6 @@
-using EtAlii.Adp.Authentication;
 using EtAlii.Adp.Context.Wire;
 using EtAlii.Adp.Documents.Wire;
+using EtAlii.Adp.Sessions;
 using Grpc.Core;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 using Path = EtAlii.Adp.Documents.Wire.Path;
