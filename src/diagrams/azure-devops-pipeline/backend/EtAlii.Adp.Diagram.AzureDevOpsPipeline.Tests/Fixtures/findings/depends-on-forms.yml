@@ -1,0 +1,38 @@
+# dependsOn as one name, as a block list, as a flow list, as [] and absent (finding B5): absent is
+# the default order, [] is waiting for nothing, and the two are different pipelines.
+stages:
+  - stage: Build
+    jobs:
+      - job: Compile
+        steps:
+          - script: dotnet build
+
+  - stage: Test
+    dependsOn: Build
+    jobs:
+      - job: Unit
+        steps:
+          - script: dotnet test
+
+  - stage: Pack
+    dependsOn:
+      - Build
+      - Test
+    jobs:
+      - job: Nuget
+        steps:
+          - script: dotnet pack
+
+  - stage: Docs
+    dependsOn: [Build, Test]
+    jobs:
+      - job: Site
+        steps:
+          - script: docfx
+
+  - stage: Lint
+    dependsOn: []
+    jobs:
+      - job: Format
+        steps:
+          - script: dotnet format

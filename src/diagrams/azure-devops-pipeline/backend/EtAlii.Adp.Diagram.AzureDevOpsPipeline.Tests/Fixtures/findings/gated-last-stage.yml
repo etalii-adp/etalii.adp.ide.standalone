@@ -1,0 +1,21 @@
+# The last stage of the list sits inside a ${{ if }} block (finding B10): a stage added after it
+# lands in the block and becomes conditional too.
+parameters:
+  - name: release
+    type: boolean
+    default: false
+
+stages:
+  - stage: Build
+    jobs:
+      - job: Compile
+        steps:
+          - script: dotnet build
+
+  - ${{ if eq(parameters.release, true) }}:
+    - stage: Release
+      dependsOn: Build
+      jobs:
+        - job: Push
+          steps:
+            - script: dotnet nuget push

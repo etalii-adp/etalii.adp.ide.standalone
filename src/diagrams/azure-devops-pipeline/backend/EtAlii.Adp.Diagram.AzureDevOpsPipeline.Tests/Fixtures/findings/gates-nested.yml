@@ -1,0 +1,27 @@
+# Conditional insertion at every depth (finding B4): a stage under two nested ${{ if }} blocks,
+# a job under one, and a step under one, each keeping its gate.
+parameters:
+  - name: release
+    type: boolean
+    default: false
+
+stages:
+  - stage: Build
+    jobs:
+      - job: Compile
+        steps:
+          - script: dotnet build
+          - ${{ if eq(parameters.release, true) }}:
+            - script: dotnet pack
+      - ${{ if ne(variables['Build.Reason'], 'PullRequest') }}:
+        - job: Sign
+          steps:
+            - script: sign
+  - ${{ if eq(parameters.release, true) }}:
+    - ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/main') }}:
+      - stage: Release
+        dependsOn: Build
+        jobs:
+          - job: Push
+            steps:
+              - script: dotnet nuget push

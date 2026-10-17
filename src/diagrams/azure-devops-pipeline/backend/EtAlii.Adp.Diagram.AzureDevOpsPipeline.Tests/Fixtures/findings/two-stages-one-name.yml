@@ -1,0 +1,16 @@
+# Two stages of one name (finding A8): both take the id Build, and a gesture on the second finds
+# the first.
+stages:
+  - stage: Build
+    displayName: First build
+    jobs:
+      - job: Compile
+        steps:
+          - script: dotnet build
+
+  - stage: Build
+    displayName: Second build
+    jobs:
+      - job: Compile
+        steps:
+          - script: dotnet build --no-restore

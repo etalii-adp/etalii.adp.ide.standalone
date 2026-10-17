@@ -1,0 +1,11 @@
+# Values that YAML's core schema would type, which this tool reads as the text they were written
+# with (finding B1): a stage named 1.0, a display name yes, a job named null, enabled True.
+stages:
+  - stage: 1.0
+    displayName: yes
+    jobs:
+      - job: null
+        displayName: 0x10
+        steps:
+          - script: echo ${{ parameters.flag }}
+            enabled: True

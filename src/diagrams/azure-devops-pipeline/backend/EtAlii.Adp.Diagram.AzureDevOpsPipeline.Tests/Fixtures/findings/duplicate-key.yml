@@ -1,0 +1,10 @@
+# A key written twice in one mapping (finding B14): YamlDotNet refuses the file, where FBL would
+# report fbl.duplicate-key and read on.
+stages:
+  - stage: Build
+    displayName: First
+    displayName: Second
+    jobs:
+      - job: Compile
+        steps:
+          - script: dotnet build

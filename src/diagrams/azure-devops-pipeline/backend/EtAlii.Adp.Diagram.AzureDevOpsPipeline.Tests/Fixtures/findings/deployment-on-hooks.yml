@@ -1,0 +1,22 @@
+# A deployment job whose lifecycle hooks include on.failure and on.success (finding A7): the
+# companion says their steps are read, the parser reads a hook only where its own mapping holds steps.
+stages:
+  - stage: Release
+    jobs:
+      - deployment: Ship
+        environment: production
+        strategy:
+          runOnce:
+            preDeploy:
+              steps:
+                - script: echo before
+            deploy:
+              steps:
+                - script: echo deploy
+            on:
+              failure:
+                steps:
+                  - script: echo rollback
+              success:
+                steps:
+                  - script: echo celebrate

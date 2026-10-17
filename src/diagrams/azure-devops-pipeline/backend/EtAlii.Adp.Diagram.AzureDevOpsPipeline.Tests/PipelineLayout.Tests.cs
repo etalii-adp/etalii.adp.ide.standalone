@@ -91,7 +91,7 @@ public class PipelineLayoutTests
     public static TheoryData<string> GraphShapes()
     {
         var shapes = new TheoryData<string>();
-        foreach (var path in Directory.GetFiles("Fixtures", "*.yml", SearchOption.AllDirectories))
+        foreach (var path in PipelineFixtures.Pipelines("Fixtures"))
         {
             shapes.Add(File.ReadAllText(path));
         }

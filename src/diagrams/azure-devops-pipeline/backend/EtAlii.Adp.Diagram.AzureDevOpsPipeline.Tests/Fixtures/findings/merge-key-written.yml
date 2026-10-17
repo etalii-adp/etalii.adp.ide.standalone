@@ -1,0 +1,23 @@
+# A key that arrives through a merge (finding B13): the stage's displayName and enabled come from
+# the anchor, and a rename or a disable of it writes the stage's own key.
+definitions:
+  stageDefaults: &stageDefaults
+    displayName: Shared name
+    enabled: true
+
+stages:
+  - stage: Build
+    <<: *stageDefaults
+    jobs:
+      - job: Compile
+        steps:
+          - script: dotnet build
+
+  - stage: Test
+    <<: *stageDefaults
+    displayName: Own name
+    dependsOn: Build
+    jobs:
+      - job: Unit
+        steps:
+          - script: dotnet test

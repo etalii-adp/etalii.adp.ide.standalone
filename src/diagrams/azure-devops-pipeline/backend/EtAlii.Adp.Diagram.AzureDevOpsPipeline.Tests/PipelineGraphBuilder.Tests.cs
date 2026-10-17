@@ -351,8 +351,7 @@ public class PipelineGraphBuilderTests
     public void EveryFixture_BuildsAGraphWithoutThrowing()
     {
         // Arrange: including the deliberately broken one, which is the point.
-        var fixtures = Directory.GetFiles(
-            IoPath.Combine(AppContext.BaseDirectory, "Fixtures"), "*.yml", SearchOption.AllDirectories);
+        var fixtures = PipelineFixtures.Pipelines(IoPath.Combine(AppContext.BaseDirectory, "Fixtures"));
 
         // Assert, first, that the walk found the corpus at all: 14 fixtures ship today, so
         // ten is a floor with headroom. Without this the test passes loudest exactly when it

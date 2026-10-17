@@ -513,8 +513,7 @@ public class PipelineWriterTests
     {
         // Arrange: a rename that produced a file the parser can no longer read would be the worst
         // outcome available, so this runs one over every stage the corpus actually declares.
-        var fixtures = Directory.GetFiles(
-            IoPath.Combine(AppContext.BaseDirectory, "Fixtures"), "*.yml", SearchOption.AllDirectories);
+        var fixtures = PipelineFixtures.Pipelines(IoPath.Combine(AppContext.BaseDirectory, "Fixtures"));
 
         // Assert, first, that the walk found the corpus at all: 14 fixtures ship today, so
         // ten is a floor with headroom. Without this the test passes loudest exactly when it

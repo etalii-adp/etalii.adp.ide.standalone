@@ -21,7 +21,7 @@ public class PipelineParserTests
     public static TheoryData<string> AllFixtures()
     {
         var data = new TheoryData<string>();
-        foreach (var path in Directory.GetFiles("Fixtures", "*.yml", SearchOption.AllDirectories))
+        foreach (var path in PipelineFixtures.Pipelines("Fixtures"))
         {
             data.Add(IoPath.GetRelativePath("Fixtures", path));
         }
