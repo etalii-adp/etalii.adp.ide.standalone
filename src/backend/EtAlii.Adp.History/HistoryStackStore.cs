@@ -15,7 +15,7 @@ public sealed class HistoryStackStore : IHistoryStackStore, IDisposable
     private readonly Func<string, RetainedHistoryStack> _create;
     private readonly RetainedRegistry<string, RetainedHistoryStack> _stacks;
 
-    public HistoryStackStore(ICommandDispatcher dispatcher, TimeSpan? grace = null, IContextNoticeSink? notices = null, TimeProvider? time = null)
+    public HistoryStackStore(ICommandDispatcher dispatcher, TimeSpan? grace = null, ICommandNoticeSink? notices = null, TimeProvider? time = null)
     {
         ArgumentNullException.ThrowIfNull(dispatcher);
         _create = rootPath => Attach(rootPath, new HistoryStack(dispatcher, HistoryStack.DefaultCapacity, rootPath, notices));

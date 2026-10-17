@@ -11,13 +11,18 @@ namespace EtAlii.Adp.History;
 /// what would have been said without standing up a stream.
 /// </para>
 /// <para>
+/// History defines it and names it for what it carries, a command's notice; the context
+/// stream implements it. So the dependency runs one way, Context on History, and nothing in
+/// History is named after the project that depends on it (code-structure FR-064).
+/// </para>
+/// <para>
 /// It sits here, at the one place every command's result passes through, rather than in each
 /// module. A warning threaded back through <c>IDiagramSession</c> and every response message
 /// would have to be added to every module that exists and remembered by every module written
 /// afterwards; this is added once and covers all of them.
 /// </para>
 /// </remarks>
-public interface IContextNoticeSink
+public interface ICommandNoticeSink
 {
     /// <summary>Tells everyone watching <paramref name="rootPath"/>'s project.</summary>
     void Notify(string rootPath, string message);

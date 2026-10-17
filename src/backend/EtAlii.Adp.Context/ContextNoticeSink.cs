@@ -3,7 +3,7 @@ using EtAlii.Adp.History;
 namespace EtAlii.Adp.Context;
 
 /// <summary>Puts a command's warning on the context stream of every watcher of that project.</summary>
-internal sealed class ContextNoticeSink : IContextNoticeSink
+internal sealed class ContextNoticeSink : ICommandNoticeSink
 {
     private readonly IContextSelectionStore _selectionStore;
 
