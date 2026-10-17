@@ -21,41 +21,39 @@ public sealed partial class DiagramService : Diagram.Wire.DiagramService.Diagram
 
     private readonly IProjectStore _projectStore;
     private readonly DiagramFileRouter _router;
+    private readonly ToolRouter _toolRouter;
     private readonly DiagramSessionFactories _sessionFactories;
     private readonly EditorResolver _editorResolver;
     private readonly EditorSessionFactories _editorSessionFactories;
     private readonly DiagramDocumentReloadBridge _reloadBridge;
     private readonly IReadOnlyList<IDiagramToolboxProvider> _toolboxProviders;
 
-    /// <summary>Null in a host without the designer family, which then opens files as it always did.</summary>
-    private readonly DesignerFileRouter? _designerRouter;
-
     public DiagramService(
         IProjectStore projectStore,
         DiagramFileRouter router,
+        ToolRouter toolRouter,
         DiagramSessionFactories sessionFactories,
         EditorResolver editorResolver,
         EditorSessionFactories editorSessionFactories,
         IDiagramViewportRegistry viewports,
         DiagramDocumentReloadBridge reloadBridge,
-        IEnumerable<IDiagramToolboxProvider> toolboxProviders,
-        DesignerFileRouter? designerRouter = null)
+        IEnumerable<IDiagramToolboxProvider> toolboxProviders)
     {
         _projectStore = projectStore;
         _router = router;
+        _toolRouter = toolRouter;
         _sessionFactories = sessionFactories;
         _editorResolver = editorResolver;
         _editorSessionFactories = editorSessionFactories;
         _viewports = viewports;
         _reloadBridge = reloadBridge;
         _toolboxProviders = [.. toolboxProviders];
-        _designerRouter = designerRouter;
     }
 
     public override async Task<MoveElementResponse> MoveElement(MoveElementRequest request, ServerCallContext context)
     {
         var watchId = (ShortGuid)request.WatchId;
-        if (!TryResolveBody(request.ProjectId, request.Path, SessionContext.GetUserId(context), out _, out var bodyPath, out _, out _))
+        if (!TryResolveBody(request.ProjectId, request.Path, SessionContext.GetUserId(context), out var bodyPath, out _))
         {
             _logger.Warning("Refused to move {ElementId} on watch {WatchId}: {Path} does not resolve to an open diagram", request.ElementId, watchId, string.Join('/', request.Path.Segments));
             return new MoveElementResponse { Error = "The diagram is not open." };
@@ -97,7 +95,7 @@ public sealed partial class DiagramService : Diagram.Wire.DiagramService.Diagram
     public override Task<DescribeToolboxResponse> DescribeToolbox(DescribeToolboxRequest request, ServerCallContext context)
     {
         var response = new DescribeToolboxResponse();
-        if (!TryResolveBody(request.ProjectId, request.Path, SessionContext.GetUserId(context), out _, out _, out var origin, out _))
+        if (!TryResolveBody(request.ProjectId, request.Path, SessionContext.GetUserId(context), out _, out var origin))
         {
             // Unresolvable is answered with an empty toolbox, the same non-revealing shape an
             // unauthorized DiscoverActions gets: the palette simply has nothing to offer.
@@ -159,56 +157,8 @@ public sealed partial class DiagramService : Diagram.Wire.DiagramService.Diagram
             .Select(group => $"{group.Key}×{group.Count()}"));
 
     /// <summary>
-    /// The editor half of resolution, consulted only after the router said NotADiagram: the
-    /// same root/containment/existence checks, then <see cref="EditorResolver"/>. An
-    /// ambiguous claim refuses here - the conflict was already reported at startup, and this
-    /// file names it again rather than opening in an arbitrary rival.
-    /// </summary>
-    private bool TryResolveEditor(
-        Documents.Wire.ShortGuid projectId,
-        Path path,
-        ShortGuid userId,
-        out string rootPath,
-        out string fullPath,
-        out string editorId)
-    {
-        editorId = "";
-        if (!TryResolveTextFile(projectId, path, userId, out rootPath, out fullPath))
-        {
-            return false;
-        }
-
-        if (_editorResolver.Resolve(fullPath) is not EditorRouted routed)
-        {
-            fullPath = "";
-            return false;
-        }
-
-        editorId = routed.Definition.Id;
-        return true;
-    }
-
-    /// <summary>
-    /// Whether what the client names is a designer's document - its registration, or the body
-    /// that registration names - and of which designer type.
-    /// </summary>
-    private bool TryResolveDesigner(Documents.Wire.ShortGuid projectId, Path path, ShortGuid userId, out string origin)
-    {
-        origin = "";
-        if (_designerRouter is null ||
-            !TryResolveTextFile(projectId, path, userId, out var rootPath, out var fullPath) ||
-            _designerRouter.Route(fullPath, rootPath) is not DesignerRouted routed)
-        {
-            return false;
-        }
-
-        origin = routed.Definition.Origin;
-        return true;
-    }
-
-    /// <summary>
-    /// The shared first half of every editor-family resolution: the project root, the
-    /// containment check, and the file's existence - nothing about which editor.
+    /// The shared first half of every open: the project root, the containment check, and the
+    /// file's existence - nothing about which tool.
     /// </summary>
     private bool TryResolveTextFile(
         Documents.Wire.ShortGuid projectId,

@@ -21,8 +21,9 @@
 # (git-ignored), so a finding can be read in full after the summary has scrolled away.
 #
 # INSPECT_CACHES_HOME, when set, names the folder the inspector keeps its caches in, so a later run
-# can start from them; the Build workflow sets it and keeps the folder between runs. Unset, the
-# inspector uses its own default location, as it always has.
+# can start from them; the Build workflow sets it and keeps the folder for a re-run of the same
+# commit only, because caches from another commit's tree made the inspector report from that tree.
+# Unset, the inspector uses its own default location, as it always has.
 set -u
 
 REPORT_MODE=
