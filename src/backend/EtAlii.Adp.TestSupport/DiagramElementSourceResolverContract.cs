@@ -1,6 +1,6 @@
 using System.Text.RegularExpressions;
 using EtAlii.Adp.Context;
-using EtAlii.Adp.Diagram;
+using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.Documents.Wire;
 using Xunit;
 using IoPath = System.IO.Path;

@@ -1,7 +1,7 @@
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Hierarchy;
 
-namespace EtAlii.Adp.Diagram;
+namespace EtAlii.Adp.Diagram.Modules;
 
 /// <summary>
 /// Resolves an element of a diagram read from one document of a store: the

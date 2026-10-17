@@ -1,6 +1,6 @@
 using EtAlii.Adp.Specification.Fbl.History;
 
-namespace EtAlii.Adp.Diagram;
+namespace EtAlii.Adp.Diagram.Modules;
 
 /// <summary>
 /// The open bodies of the last few texts a module read or wrote, by their bytes: forks no one edits,

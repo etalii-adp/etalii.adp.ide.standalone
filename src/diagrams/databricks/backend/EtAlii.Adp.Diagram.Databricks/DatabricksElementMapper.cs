@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.Layout;
 using Google.Protobuf;

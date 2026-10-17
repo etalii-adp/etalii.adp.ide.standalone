@@ -1,7 +1,7 @@
 using EtAlii.Adp.Layout;
 using Xunit;
 
-namespace EtAlii.Adp.Diagram.Tests;
+namespace EtAlii.Adp.Diagram.Modules.Tests;
 
 public class DiagramViewportTests
 {
