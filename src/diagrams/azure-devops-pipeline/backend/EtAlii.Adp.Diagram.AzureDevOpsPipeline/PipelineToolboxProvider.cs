@@ -24,31 +24,6 @@ public sealed class PipelineToolboxProvider : IDiagramToolboxProvider
     public ToolOrigin Origin { get; } = Diagram.Pipeline.Origin;
 
     /// <inheritdoc />
-    public IReadOnlyList<ToolboxItemDefinition> Items { get; } =
-    [
-        new(
-            "azure-pipeline.toolbox.stage",
-            "Stage",
-            "mdi-layers-plus",
-            "Drop on a stage to add another after it. It arrives with a job and a step, so it runs.",
-            PipelineContextActionProvider.AddStageActionId),
-        new(
-            "azure-pipeline.toolbox.job",
-            "Job",
-            "mdi-plus-box-outline",
-            "Drop on a stage to add a job to it.",
-            PipelineContextActionProvider.AddJobActionId),
-        new(
-            "azure-pipeline.toolbox.deployment-job",
-            "Deployment job",
-            "mdi-rocket-launch-outline",
-            "Drop on a stage to add a deployment job, with the environment and strategy one needs.",
-            PipelineContextActionProvider.AddDeploymentJobActionId),
-        new(
-            "azure-pipeline.toolbox.step",
-            "Script step",
-            "mdi-console-line",
-            "Drop on a job to add a script step to it.",
-            PipelineContextActionProvider.AddStepActionId),
-    ];
+    /// <remarks>Derived from the bundled definition's toolbox, mapped onto today's ids by <c>x-azure-pipeline</c>.</remarks>
+    public IReadOnlyList<ToolboxItemDefinition> Items => PipelineDefinition.Toolbox;
 }

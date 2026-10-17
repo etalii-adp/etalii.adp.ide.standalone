@@ -16,8 +16,8 @@ namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline.Tests;
 /// <remarks>
 /// <b>The hash is computed over the embedded resource</b>, the bytes the module will load, not over the file on disk,
 /// so a build that embedded a stale or rewritten copy fails here too. Re-bundle with
-/// <c>src/diagrams/tools/bundle-disl.sh azure-devops-pipeline &lt;etalii.adp checkout&gt;</c>, never by hand. Nothing is
-/// derived from the definition yet.
+/// <c>src/diagrams/tools/bundle-disl.sh azure-devops-pipeline &lt;etalii.adp checkout&gt;</c>, never by hand. The toolbox,
+/// the context menus and the property rows are derived from it (<see cref="PipelineDefinition"/>).
 /// </remarks>
 public sealed partial class BundledDefinitionTests
 {
