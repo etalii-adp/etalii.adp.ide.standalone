@@ -1,3 +1,4 @@
+using EtAlii.Adp.Diagram;
 using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
 using IoPath = System.IO.Path;
@@ -62,11 +63,7 @@ public sealed class CreateDiagramFileCommandHandler : ICommandHandler<CreateDiag
             return Task.FromResult(CommandResult.Failure("The folder no longer exists."));
         }
 
-        var registration = command.FirstLine + AdpFileWriter.NewLine;
-        if (command is { NamesBody: true, HasSibling: true })
-        {
-            registration += $"body: {command.SiblingFileName}{AdpFileWriter.NewLine}";
-        }
+        var registration = AdpRegistration.Compose(command.FirstLine, command is { NamesBody: true, HasSibling: true } ? command.SiblingFileName : null);
 
         var files = new List<(string FileName, string Content)> { (command.FileName, registration) };
         if (command.HasSibling)

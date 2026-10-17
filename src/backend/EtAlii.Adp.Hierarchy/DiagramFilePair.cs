@@ -1,5 +1,4 @@
 using EtAlii.Adp.Diagram;
-using EtAlii.Adp.Documents;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
 namespace EtAlii.Adp.Hierarchy;
@@ -13,15 +12,6 @@ namespace EtAlii.Adp.Hierarchy;
 /// </summary>
 public static class DiagramFilePair
 {
-    /// <summary>The header naming a body document this registration does not own.</summary>
-    private const string BodyHeader = "body:";
-
-    /// <summary>The header naming which view within that document this registration opens.</summary>
-    private const string ViewHeader = "view:";
-
-    /// <summary>How many lines after the MIME line are scanned for headers before giving up.</summary>
-    private const int HeaderScanLimit = 8;
-
     /// <summary>
     /// The body <paramref name="adpPath"/> **owns** - the sibling derived from its own name -
     /// or null when the file is not a registration file, cannot be read, names an unknown type,
@@ -63,12 +53,24 @@ public static class DiagramFilePair
     {
         ArgumentNullException.ThrowIfNull(catalog);
 
-        if (!IsRegistrationFile(adpPath) || DefinitionOf(adpPath, catalog) is not { HasDocumentSibling: true } definition)
+        if (!IsRegistrationFile(adpPath)
+            || AdpRegistration.Read(adpPath) is not { } registration
+            || DefinitionOf(registration, catalog) is not { HasDocumentSibling: true } definition)
         {
             return null;
         }
 
-        (string? body, string? view) = ReadBodyAndViewHeaders(adpPath);
+        return BodyOf(adpPath, registration, definition, projectRoot);
+    }
+
+    /// <summary>
+    /// <see cref="BodyOf(string, IDiagramDefinitionCatalog, string?)"/> for a registration already read
+    /// and a type already known to keep a sibling, so a route reads the file once (code-structure T174).
+    /// </summary>
+    internal static DiagramBodyFile? BodyOf(string adpPath, AdpRegistration registration, DiagramDefinition definition, string? projectRoot)
+    {
+        var body = registration.Body;
+        var view = registration.View;
         if (body is null)
         {
             // No header: the body is the sibling of this file's own name, exactly as every
@@ -128,62 +130,6 @@ public static class DiagramFilePair
         }
 
         return PathContainment.IsInside(fullRoot, fullPath) ? fullPath : null;
-    }
-
-    /// <summary>
-    /// The <c>body:</c> and <c>view:</c> headers following the MIME line, or nulls. Scanning
-    /// stops at the first line that is neither a header nor blank, so a document that happens
-    /// to start with prose is not searched to its end.
-    /// </summary>
-    internal static (string? Body, string? View) ReadBodyAndViewHeaders(string adpPath)
-    {
-        try
-        {
-            using var reader = SharedDocumentReader.OpenText(adpPath);
-            reader.ReadLine(); // the MIME line, which DefinitionOf has already used
-
-            string? body = null;
-            string? view = null;
-            for (var scanned = 0; scanned < HeaderScanLimit; scanned++)
-            {
-                var line = reader.ReadLine();
-                if (line is null)
-                {
-                    break;
-                }
-
-                var trimmed = line.Trim();
-                if (trimmed.Length == 0)
-                {
-                    continue;
-                }
-
-                if (trimmed.StartsWith(BodyHeader, StringComparison.OrdinalIgnoreCase))
-                {
-                    body = Value(trimmed, BodyHeader);
-                }
-                else if (trimmed.StartsWith(ViewHeader, StringComparison.OrdinalIgnoreCase))
-                {
-                    view = Value(trimmed, ViewHeader);
-                }
-                else
-                {
-                    break;
-                }
-            }
-
-            return (body, view);
-        }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-        {
-            return (null, null);
-        }
-
-        static string? Value(string line, string header)
-        {
-            var value = line[header.Length..].Trim();
-            return value.Length == 0 ? null : value;
-        }
     }
 
     /// <summary>The sibling path a registration file at <paramref name="adpPath"/> would have for <paramref name="extension"/>.</summary>
@@ -251,25 +197,14 @@ public static class DiagramFilePair
     {
         ArgumentNullException.ThrowIfNull(catalog);
 
-        var mimeType = ReadMimeType(adpPath);
-        return mimeType is null
-            ? null
-            : catalog.All.FirstOrDefault(definition => string.Equals(definition.Origin.MimeType, mimeType, StringComparison.Ordinal));
+        return AdpRegistration.Read(adpPath) is { } registration ? DefinitionOf(registration, catalog) : null;
     }
 
-    /// <summary>The first line of a registration file, trimmed, or null when it cannot be read.</summary>
-    public static string? ReadMimeType(string adpPath)
-    {
-        try
-        {
-            using var reader = SharedDocumentReader.OpenText(adpPath);
-            return reader.ReadLine()?.Trim();
-        }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-        {
-            return null;
-        }
-    }
+    /// <summary>The type <paramref name="registration"/> declares, or null when its MIME type matches no discovered definition.</summary>
+    private static DiagramDefinition? DefinitionOf(AdpRegistration registration, IDiagramDefinitionCatalog catalog) =>
+        registration.MimeType is { } mimeType
+            ? catalog.All.FirstOrDefault(definition => string.Equals(definition.Origin.MimeType, mimeType, StringComparison.Ordinal))
+            : null;
 
     public static bool IsRegistrationFile(string path) =>
         path.EndsWith(DiagramFileName.Extension, StringComparison.OrdinalIgnoreCase);

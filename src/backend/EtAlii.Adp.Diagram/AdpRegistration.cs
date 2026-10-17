@@ -47,14 +47,18 @@ public sealed class AdpRegistration
 
     private readonly IReadOnlyList<RawLine> _lines;
 
-    private AdpRegistration(IReadOnlyList<RawLine> lines, string? mimeType, string? body, string? view, IReadOnlyDictionary<string, AdpPosition> layout)
+    private AdpRegistration(string text, IReadOnlyList<RawLine> lines, string? mimeType, string? body, string? view, IReadOnlyDictionary<string, AdpPosition> layout)
     {
+        Text = text;
         _lines = lines;
         MimeType = mimeType;
         Body = body;
         View = view;
         Layout = layout;
     }
+
+    /// <summary>The file's text, exactly as read.</summary>
+    public string Text { get; }
 
     /// <summary>The first line, trimmed, or null for an empty file: the MIME type naming the diagram type.</summary>
     public string? MimeType { get; }
@@ -75,7 +79,20 @@ public sealed class AdpRegistration
 
         (string? mimeType, string? body, string? view) = ReadHead(text);
         var lines = SplitLines(text);
-        return new AdpRegistration(lines, mimeType, body, view, ReadLayout(lines));
+        return new AdpRegistration(text, lines, mimeType, body, view, ReadLayout(lines));
+    }
+
+    /// <summary>
+    /// The text of a new registration: <paramref name="mimeType"/> on the first line and, when the
+    /// registration names a body it does not derive, a <c>body:</c> header naming
+    /// <paramref name="bodyFileName"/>, each ended by <see cref="AdpFileWriter.NewLine"/>.
+    /// </summary>
+    public static string Compose(string mimeType, string? bodyFileName = null)
+    {
+        ArgumentNullException.ThrowIfNull(mimeType);
+
+        var text = mimeType + AdpFileWriter.NewLine;
+        return bodyFileName is null ? text : text + BodyHeader + " " + bodyFileName + AdpFileWriter.NewLine;
     }
 
     /// <summary>
@@ -170,6 +187,60 @@ public sealed class AdpRegistration
         }
 
         return rebuilt.ToString();
+    }
+
+    /// <summary>
+    /// The text with a <c>body:</c> header whose final path segment is <paramref name="oldFileName"/>
+    /// renamed to <paramref name="newFileName"/>, the rest of the header's relative path and every
+    /// other byte left as they were; the text unchanged when no header in the header block names it.
+    /// </summary>
+    /// <remarks>
+    /// The header block is the nine lines after the MIME line: blanks and <c>view:</c> headers are
+    /// passed over, and the first <c>body:</c> header decides - renamed when it names the file, left
+    /// alone otherwise. Any other line ends the block.
+    /// </remarks>
+    public string WithBodyFileName(string oldFileName, string newFileName)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(oldFileName);
+        ArgumentException.ThrowIfNullOrEmpty(newFileName);
+
+        var lines = Text.Split('\n');
+        for (var index = 1; index < lines.Length && index <= 9; index++)
+        {
+            var line = lines[index];
+            var trimmed = line.TrimStart();
+            if (trimmed.Length == 0)
+            {
+                continue;
+            }
+
+            if (!trimmed.StartsWith(BodyHeader, StringComparison.OrdinalIgnoreCase))
+            {
+                if (!trimmed.StartsWith(ViewHeader, StringComparison.OrdinalIgnoreCase))
+                {
+                    break; // past the header block
+                }
+
+                continue;
+            }
+
+            var value = trimmed[BodyHeader.Length..].Trim();
+            var segment = value.Replace('\\', '/');
+            var lastSlash = segment.LastIndexOf('/');
+            var fileSegment = lastSlash < 0 ? value : value[(lastSlash + 1)..];
+            if (!string.Equals(fileSegment.TrimEnd('\r'), oldFileName, StringComparison.OrdinalIgnoreCase))
+            {
+                break;
+            }
+
+            var prefixLength = line.Length - line.TrimStart().Length;
+            var directoryPart = lastSlash < 0 ? "" : value[..(lastSlash + 1)];
+            var carriage = line.EndsWith('\r') ? "\r" : "";
+            lines[index] = line[..prefixLength] + BodyHeader + " " + directoryPart + newFileName + carriage;
+            break;
+        }
+
+        return string.Join('\n', lines);
     }
 
     private static (string? MimeType, string? Body, string? View) ReadHead(string text)

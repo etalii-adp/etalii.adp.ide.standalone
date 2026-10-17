@@ -1,4 +1,5 @@
 using EtAlii.Adp.Designer;
+using EtAlii.Adp.Diagram;
 using Serilog;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
@@ -66,16 +67,18 @@ public sealed class DesignerFileRouter
 
     private DesignerRouting RouteRegistration(string adpPath, string? projectRoot)
     {
-        var origin = DiagramFilePair.ReadMimeType(adpPath);
+        // Read once: the designer type and the body header come from this one registration.
+        var registration = AdpRegistration.Read(adpPath);
+        var origin = registration?.MimeType;
         var definition = origin is null
             ? null
             : _catalog.All.FirstOrDefault(candidate => string.Equals(candidate.Origin, origin, StringComparison.Ordinal));
-        if (definition is null)
+        if (registration is null || definition is null)
         {
             return new NotADesigner();
         }
 
-        (string? named, _) = DiagramFilePair.ReadBodyAndViewHeaders(adpPath);
+        var named = registration.Body;
         if (named is null)
         {
             return new DesignerRouted(definition, adpPath, SiblingOf(adpPath, definition));
