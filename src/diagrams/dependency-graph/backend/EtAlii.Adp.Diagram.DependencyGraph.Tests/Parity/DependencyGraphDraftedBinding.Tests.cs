@@ -148,34 +148,33 @@ public class DependencyGraphDraftedBindingTests
     }
 
     [Fact]
-    public void B11_RemovingTheSecondHolder_TakesTheFirstHoldersDependencies_TodayAndThroughFbl()
+    public void B11_RemovingTheSecondHolder_TakesTheFirstHoldersDependencies_OnlyToday()
     {
         // Arrange and act.
         var today = TodayAfter("inline/b11-holders-and-an-anonymous-node", (document, model) => DependencyGraphWriter.RemoveElement(document, model, model.Elements[2]));
         var fbl = FblAfter("inline/b11-holders-and-an-anonymous-node", new ModelChange.Remove("node@11"));
 
-        // Assert: both take every dependency that names 'aaa', although each resolves to the first holder: the module
-        // compares the written id, and FBL's planner compares the reference's text (library item L2). The right answer
-        // keeps both dependencies (finding B11).
+        // Assert: today every dependency that names 'aaa' goes, because the module compares the written id. Through the
+        // binding both stay, because 'aaa' resolves to the first holder: the right answer (finding B11), FBL's since its
+        // planner's cascade follows resolution (library item L2, task 3).
         Assert.DoesNotContain("of-the-first", today.Text, StringComparison.Ordinal);
         Assert.DoesNotContain("of-the-second", today.Text, StringComparison.Ordinal);
-        Assert.DoesNotContain("of-the-first", fbl, StringComparison.Ordinal);
-        Assert.DoesNotContain("of-the-second", fbl, StringComparison.Ordinal);
+        Assert.Contains("  - id: of-the-first\n", fbl, StringComparison.Ordinal);
+        Assert.Contains("  - id: of-the-second\n", fbl, StringComparison.Ordinal);
     }
 
     [Fact]
-    public void B11_RemovingANodeWithNoId_TakesTheDependenciesWithAnEndNotWritten_TodayAndThroughFbl()
+    public void B11_RemovingANodeWithNoId_TakesTheDependenciesWithAnEndNotWritten_OnlyToday()
     {
         // Arrange and act.
         var today = TodayAfter("inline/b11-holders-and-an-anonymous-node", (document, model) => DependencyGraphWriter.RemoveElement(document, model, model.Elements[3]));
         var fbl = FblAfter("inline/b11-holders-and-an-anonymous-node", new ModelChange.Remove("node@15"));
 
-        // Assert: both take the dependency with no 'from' with the node that has no id: the module because an end not
-        // written equals the node's missing id, FBL's planner because it compares the reference's text (library item
-        // L2). The right answer keeps it, because it names nothing (finding B11).
+        // Assert: today the dependency with no 'from' goes with the node that has no id, because an end not written
+        // equals the node's missing id. Through the binding it stays, because it names nothing: the right answer (finding
+        // B11), FBL's since its planner's cascade follows resolution (library item L2, task 3).
         Assert.DoesNotContain("no-from", today.Text, StringComparison.Ordinal);
-        Assert.DoesNotContain("no-from", fbl, StringComparison.Ordinal);
-        Assert.Contains("  - id: of-the-second\n", fbl, StringComparison.Ordinal);
+        Assert.Contains("  - id: no-from\n", fbl, StringComparison.Ordinal);
     }
 
     [Fact]

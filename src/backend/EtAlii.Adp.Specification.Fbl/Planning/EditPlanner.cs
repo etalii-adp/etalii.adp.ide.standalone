@@ -329,7 +329,7 @@ internal static class EditPlanner
         foreach (var other in reading.Elements)
         {
             if (other == element || !settings.Cascade.Contains(other.Rule.Name)) continue;
-            if (References(other, element)) removed.Add(other);
+            if (References(reading, other, element)) removed.Add(other);
         }
         var outermost = removed
             .Where(r => !removed.Any(o => o != r && Contains(o.Entry.RemovalSpan, r.Entry.RemovalSpan)))
@@ -341,16 +341,21 @@ internal static class EditPlanner
 
     private static bool Contains(Span outer, Span inner) => outer.Start <= inner.Start && inner.End <= outer.End && outer != inner;
 
-    private static bool References(ReadElement other, ReadElement element)
+    /// <summary>
+    /// Whether <paramref name="other"/> has a reference that names <paramref name="element"/> (FBL 6.2): one that resolves
+    /// to it, as the reading resolves references (FBL 5.4), and not merely one written like its key. A later holder of a
+    /// repeated key is addressed by its place (FBL 5.3), so what names the key names the first holder; and a reference that
+    /// is not written names nothing.
+    /// </summary>
+    private static bool References(BodyReading reading, ReadElement other, ReadElement element)
     {
         if (other.IsRelation && (other.SourceElement == element || other.TargetElement == element)) return true;
         foreach ((string name, AttributeBinding binding) in other.Rule.Attributes)
         {
             if (binding.Reference is not { } reference || !reference.To.Contains(element.Rule.Name) || other == element) continue;
-            var value = other.Attributes.GetValueOrDefault(name);
-            if (value is List<object?> list
-                ? list.Any(v => NewText.Plain(v, null) == element.Key)
-                : other.TextOf(name) == element.Key) return true;
+            if (!other.Attributes.TryGetValue(name, out var value)) continue;
+            var names = value is List<object?> list ? list.Select(v => NewText.Plain(v, null)) : [other.TextOf(name)];
+            if (names.Any(key => reading.ReferencedBy(reference, key) == element)) return true;
         }
         return false;
     }
