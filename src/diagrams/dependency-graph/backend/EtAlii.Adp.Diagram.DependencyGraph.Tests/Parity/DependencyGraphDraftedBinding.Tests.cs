@@ -1,6 +1,5 @@
 using System.Text;
 using EtAlii.Adp.Documents;
-using EtAlii.Adp.Specification.Fbl;
 using EtAlii.Adp.Specification.Fbl.Documents;
 using EtAlii.Adp.Specification.Fbl.History;
 using EtAlii.Adp.Specification.Fbl.Planning;
