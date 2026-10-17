@@ -1,5 +1,6 @@
 using System.Text.Json;
 using EtAlii.Adp.Context;
+using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.History;
 using Xunit;
 
