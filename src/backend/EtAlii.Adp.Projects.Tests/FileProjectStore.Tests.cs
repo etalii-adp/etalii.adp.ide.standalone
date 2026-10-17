@@ -135,4 +135,78 @@ public class FileProjectStoreTests : IDisposable
         Assert.Equal("Round Trip Name", reloaded.Name);
         Assert.Equal(path.Segments, reloaded.Path.Segments);
     }
+
+    [Fact]
+    public void TwoConcurrentAdds_BothAreKept()
+    {
+        // Arrange. Rounds of two adds released together: without the lock both read the same list
+        // and the second write drops the first one's project.
+        var store = new FileProjectStore(_appDataRoot);
+        const int rounds = 25;
+        var folders = Enumerable.Range(0, rounds * 2).Select(i => ToPathRecord(CreateRealFolder($"concurrent-{i}"))).ToArray();
+
+        // Act.
+        for (var round = 0; round < rounds; round++)
+        {
+            using var barrier = new Barrier(2);
+            var pair = new[] { folders[round * 2], folders[round * 2 + 1] };
+            var workers = pair.Select(folder => new Thread(() =>
+            {
+                // ReSharper disable once AccessToDisposedClosure - Reason: both worker threads that run this closure are Joined below before the using disposes `barrier`.
+                barrier.SignalAndWait();
+                store.Add(UserId, "", folder);
+            })).ToArray();
+            foreach (var worker in workers)
+            {
+                worker.Start();
+            }
+            foreach (var worker in workers)
+            {
+                worker.Join();
+            }
+        }
+
+        // Assert. Read back by a store that keeps nothing from the adds.
+        var kept = new FileProjectStore(_appDataRoot).List(UserId);
+        Assert.True(kept.Count == rounds * 2, $"{rounds * 2 - kept.Count} of {rounds * 2} concurrently added projects were lost.");
+    }
+
+    [Fact]
+    public void List_WhileTheFileIsUnchanged_DoesNotReadItAgain()
+    {
+        // Arrange. The list is read once; then the file is overwritten with unreadable bytes of
+        // the same size and given back its time, so only a read that skips the file succeeds.
+        var store = new FileProjectStore(_appDataRoot);
+        store.Add(UserId, "", ToPathRecord(CreateRealFolder("kept")));
+        Assert.Single(store.List(UserId));
+        var file = new FileInfo(StorePath());
+        var written = file.LastWriteTimeUtc;
+        File.WriteAllText(file.FullName, new string('x', (int)file.Length));
+        File.SetLastWriteTimeUtc(file.FullName, written);
+
+        // Act.
+        var listed = store.List(UserId);
+
+        // Assert.
+        Assert.Single(listed);
+    }
+
+    [Fact]
+    public void List_AfterTheFileIsChangedOutsideTheStore_ReadsItAgain()
+    {
+        // Arrange.
+        var store = new FileProjectStore(_appDataRoot);
+        store.Add(UserId, "", ToPathRecord(CreateRealFolder("first")));
+        Assert.Single(store.List(UserId));
+
+        // Act. Another process empties the list.
+        File.WriteAllText(StorePath(), "[]");
+        var listed = store.List(UserId);
+
+        // Assert.
+        Assert.Empty(listed);
+    }
+
+    private string StorePath() =>
+        IoPath.Combine(_appDataRoot, "EtAlii.Adp", "users", UserId.ToString(), "projects.json");
 }
