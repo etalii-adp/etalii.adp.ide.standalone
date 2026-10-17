@@ -1,4 +1,3 @@
-using EtAlii.Adp.Authentication;
 using Grpc.Core;
 using Grpc.Core.Testing;
 using Xunit;
@@ -7,6 +6,18 @@ namespace EtAlii.Adp.Sessions.Tests;
 
 public class SessionInterceptorTests
 {
+    private const string ExemptMethod = "/etalii.adp.AuthenticationService/Login";
+    private const string GuardedMethod = "/etalii.adp.ProjectService/ListProjects";
+
+    /// <summary>Exempts the one method it is given; which calls are exempt is the authentication's to say.</summary>
+    private sealed class OneExemption(string method) : ISessionExemptions
+    {
+        public bool IsExempt(string calledMethod) => calledMethod == method;
+    }
+
+    private static SessionInterceptor CreateInterceptor(ISessionStore sessionStore) =>
+        new(sessionStore, new OneExemption(ExemptMethod));
+
     private static ServerCallContext CreateContext(string method, Metadata? requestHeaders = null)
     {
         return TestServerCallContext.Create(
@@ -27,26 +38,11 @@ public class SessionInterceptorTests
         Task.FromResult(request);
 
     [Fact]
-    public async Task UnaryServerHandler_LoginMethod_IsExemptEvenWithoutToken()
+    public async Task UnaryServerHandler_ExemptMethod_PassesWithoutToken()
     {
         // Arrange.
-        var interceptor = new SessionInterceptor(new InMemorySessionStore());
-        var context = CreateContext("/etalii.adp.AuthenticationService/Login");
-
-        // Act.
-        var result = await interceptor.UnaryServerHandler("ping", context, Handler);
-
-        // Assert.
-        Assert.Equal("ping", result);
-    }
-
-    [Fact]
-    public async Task UnaryServerHandler_DescribeProductMethod_IsExemptEvenWithoutToken()
-    {
-        // Arrange: the login page names the product version before any session exists
-        // (github-build-pipeline R3.2) - the exemption is the wire that makes that possible.
-        var interceptor = new SessionInterceptor(new InMemorySessionStore());
-        var context = CreateContext("/etalii.adp.AuthenticationService/DescribeProduct");
+        var interceptor = CreateInterceptor(new InMemorySessionStore());
+        var context = CreateContext(ExemptMethod);
 
         // Act.
         var result = await interceptor.UnaryServerHandler("ping", context, Handler);
@@ -59,8 +55,8 @@ public class SessionInterceptorTests
     public async Task UnaryServerHandler_WithoutToken_ThrowsUnauthenticated()
     {
         // Arrange.
-        var interceptor = new SessionInterceptor(new InMemorySessionStore());
-        var context = CreateContext("/etalii.adp.ProjectService/ListProjects");
+        var interceptor = CreateInterceptor(new InMemorySessionStore());
+        var context = CreateContext(GuardedMethod);
 
         // Act.
         var exception = await Assert.ThrowsAsync<RpcException>(
@@ -74,9 +70,9 @@ public class SessionInterceptorTests
     public async Task UnaryServerHandler_WithInvalidToken_ThrowsUnauthenticated()
     {
         // Arrange and act.
-        var interceptor = new SessionInterceptor(new InMemorySessionStore());
+        var interceptor = CreateInterceptor(new InMemorySessionStore());
         var headers = new Metadata { { SessionInterceptor.SessionTokenMetadataKey, "not-a-real-token" } };
-        var context = CreateContext("/etalii.adp.ProjectService/ListProjects", headers);
+        var context = CreateContext(GuardedMethod, headers);
 
         // Assert.
         await Assert.ThrowsAsync<RpcException>(
@@ -90,9 +86,9 @@ public class SessionInterceptorTests
         var userId = ShortGuid.FromName("developer");
         var sessionStore = new InMemorySessionStore();
         var token = sessionStore.Issue(userId);
-        var interceptor = new SessionInterceptor(sessionStore);
+        var interceptor = CreateInterceptor(sessionStore);
         var headers = new Metadata { { SessionInterceptor.SessionTokenMetadataKey, token } };
-        var context = CreateContext("/etalii.adp.ProjectService/ListProjects", headers);
+        var context = CreateContext(GuardedMethod, headers);
 
         // Act.
         var result = await interceptor.UnaryServerHandler("ping", context, Handler);

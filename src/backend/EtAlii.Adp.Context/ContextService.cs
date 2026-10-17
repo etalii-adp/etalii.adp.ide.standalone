@@ -1,8 +1,8 @@
 using System.Threading.Channels;
-using EtAlii.Adp.Authentication;
 using EtAlii.Adp.Context.Wire;
 using EtAlii.Adp.History;
 using EtAlii.Adp.Projects;
+using EtAlii.Adp.Sessions;
 using Grpc.Core;
 using Serilog;
 

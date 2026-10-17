@@ -21,7 +21,7 @@ flowchart LR
     process <--> files
 ```
 
-**What each part is built with.** The server side is .NET, on the SDK pinned by `src/global.json`. The client is React with TypeScript, built by Vite. Between them is gRPC, reaching the browser over grpc-web on ASP.NET Core's gRPC-Web middleware. Authentication sits on the gRPC calls themselves - `SessionInterceptor` in `EtAlii.Adp.Authentication` - rather than in a gateway in front of them.
+**What each part is built with.** The server side is .NET, on the SDK pinned by `src/global.json`. The client is React with TypeScript, built by Vite. Between them is gRPC, reaching the browser over grpc-web on ASP.NET Core's gRPC-Web middleware. Authentication sits on the gRPC calls themselves - `SessionInterceptor` in `EtAlii.Adp.Sessions`, which asks `EtAlii.Adp.Authentication` which calls need no session - rather than in a gateway in front of them.
 
 **One process, not two.** ASP.NET Core serves the built client as static files *and* hosts the gRPC-Web endpoint. There is no separate frontend server in production: `EtAlii.Adp.Backend.Service` is the whole server side. In local development Vite runs as a dev server and ASP.NET Core proxies to it, purely so edits hot-reload — the browser still talks to the ASP.NET Core port, and in production Vite is not running at all.
 
@@ -83,7 +83,7 @@ One line each, with the project that owns it. Their internals are deliberately o
 | Commands and undo/redo | `EtAlii.Adp.History` |
 | Errors and warnings | `EtAlii.Adp.Problems` |
 | Known projects and workspace roots | `EtAlii.Adp.Projects` |
-| A connection's lifetime and its state | `EtAlii.Adp.Sessions` |
+| Sign-in sessions - the session store, the session context and the interceptor that checks every call - and a connection's lifetime and its state | `EtAlii.Adp.Sessions` |
 | The workspace tree, kept current from the project's file events | `EtAlii.Adp.Hierarchy` |
 | Geometry: the rectangle, row packing, the row a drag snaps to, text width and graph layering | `EtAlii.Adp.Layout` |
 | Diagram-type abstractions, including the diagram definition contract | `EtAlii.Adp.Diagram` |

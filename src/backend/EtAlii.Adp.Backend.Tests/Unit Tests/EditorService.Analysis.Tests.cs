@@ -1,10 +1,10 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
-using EtAlii.Adp.Authentication;
 using EtAlii.Adp.Editor;
 using EtAlii.Adp.Editor.Wire;
 using EtAlii.Adp.History;
 using EtAlii.Adp.Projects;
+using EtAlii.Adp.Sessions;
 using EtAlii.Adp.Workspace;
 using Grpc.Core;
 using Grpc.Core.Testing;

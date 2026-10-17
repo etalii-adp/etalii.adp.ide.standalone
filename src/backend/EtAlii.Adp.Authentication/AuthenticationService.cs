@@ -1,4 +1,5 @@
 using EtAlii.Adp.Authentication.Wire;
+using EtAlii.Adp.Sessions;
 using System.Reflection;
 using Grpc.Core;
 using Serilog;
@@ -102,7 +103,7 @@ public sealed class AuthenticationService : Wire.AuthenticationService.Authentic
     /// <remarks>
     /// <para>
     /// <b>This method exists only in a Debug build, together with its entry in
-    /// <c>SessionInterceptor.IsExempt</c>.</b> The two are what the bypass is, and they are in
+    /// <see cref="SignInExemptions.IsExempt" />.</b> The two are what the bypass is, and they are in
     /// the same shape of block in their two files so that neither can be left behind without
     /// the other: an exemption with no handler is inert, a handler with no exemption is
     /// unreachable, and a released build has neither.

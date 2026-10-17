@@ -1,7 +1,7 @@
 using System.Threading.Channels;
-using EtAlii.Adp.Authentication;
 using EtAlii.Adp.Diagram.Wire;
 using EtAlii.Adp.Projects;
+using EtAlii.Adp.Sessions;
 using Grpc.Core;
 using Serilog;
 using ContextService = EtAlii.Adp.Context.ContextService;
