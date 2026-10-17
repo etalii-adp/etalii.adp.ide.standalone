@@ -5207,8 +5207,8 @@
     },
     {
       "document": "diagrams/causal-loop-diagram/examples/business-philosophy/business-philosophy.cld",
-      "sha256": "57aa05b4c38291839c959a89f05348a16906bf10a14f1cc7437663b0a3166843",
-      "registration": "business-philosophy.adp, sha256 a9bd7f9e376a34932bad5e81480d4c88550d64a203a46c687af254cb29df3a5e",
+      "sha256": "1a18451e1b893c40de31a9f85f6f7bf1f56b60ed276592996503156f57c221c6",
+      "registration": "business-philosophy.adp, sha256 088374ddca77ff61ce5c6174e22b4afbabff3b1e9420e8b769ae67494ef4d4bb",
       "menus": [
         [
           "g1 causal-loop.add-link | Add link from here… | mdi-arrow-right-thin | - | on",
@@ -5268,24 +5268,24 @@
           "g1 causal-loop.remove-link | Remove link | mdi-delete-outline | Delete | on"
         ],
         [
-          "g1 causal-loop.make-positive | Same direction (+) | mdi-plus | - | on (This link already states +.)",
-          "g1 causal-loop.make-negative | Opposite direction (−) | mdi-minus | - | off (This link already states −.)",
-          "g1 causal-loop.toggle-delay | Delayed | mdi-timer-sand | - | on",
-          "g1 causal-loop.flip-curvature | Flip the curve | mdi-vector-curve | - | on",
-          "g1 causal-loop.remove-link | Remove link | mdi-delete-outline | Delete | on"
-        ],
-        [
-          "g1 causal-loop.make-positive | Same direction (+) | mdi-plus | - | on (This link already states +.)",
-          "g1 causal-loop.make-negative | Opposite direction (−) | mdi-minus | - | off (This link already states −.)",
-          "g1 causal-loop.toggle-delay | Delayed | mdi-timer-sand | - | on",
-          "g1 causal-loop.flip-curvature | Curve back the other way | mdi-vector-curve | - | on",
-          "g1 causal-loop.remove-link | Remove link | mdi-delete-outline | Delete | on"
-        ],
-        [
           "g1 causal-loop.make-positive | Same direction (+) | mdi-plus | - | off (This link already states +.)",
           "g1 causal-loop.make-negative | Opposite direction (−) | mdi-minus | - | on (This link already states −.)",
           "g1 causal-loop.toggle-delay | Delayed | mdi-timer-sand | - | on",
           "g1 causal-loop.flip-curvature | Curve back the other way | mdi-vector-curve | - | on",
+          "g1 causal-loop.remove-link | Remove link | mdi-delete-outline | Delete | on"
+        ],
+        [
+          "g1 causal-loop.make-positive | Same direction (+) | mdi-plus | - | on (This link already states +.)",
+          "g1 causal-loop.make-negative | Opposite direction (−) | mdi-minus | - | off (This link already states −.)",
+          "g1 causal-loop.toggle-delay | Delayed | mdi-timer-sand | - | on",
+          "g1 causal-loop.flip-curvature | Curve back the other way | mdi-vector-curve | - | on",
+          "g1 causal-loop.remove-link | Remove link | mdi-delete-outline | Delete | on"
+        ],
+        [
+          "g1 causal-loop.make-positive | Same direction (+) | mdi-plus | - | on (This link already states +.)",
+          "g1 causal-loop.make-negative | Opposite direction (−) | mdi-minus | - | off (This link already states −.)",
+          "g1 causal-loop.toggle-delay | Delayed | mdi-timer-sand | - | on",
+          "g1 causal-loop.flip-curvature | Flip the curve | mdi-vector-curve | - | on",
           "g1 causal-loop.remove-link | Remove link | mdi-delete-outline | Delete | on"
         ],
         [
@@ -5366,31 +5366,31 @@
         "\"link:insight|applicability\" => menu #8, read-only #1",
         "\"link:applicability|fieldEngagement\" => menu #9, read-only #1",
         "\"link:fieldEngagement|expertDiversity\" => menu #8, read-only #1",
-        "\"link:expertDiversity|insight\" => menu #8, read-only #1",
+        "\"link:expertDiversity|insight\" => menu #10, read-only #1",
         "\"link:fieldEngagement|practicalTools\" => menu #8, read-only #1",
-        "\"link:practicalTools|practiceGap\" => menu #10, read-only #1",
+        "\"link:practicalTools|practiceGap\" => menu #11, read-only #1",
         "\"link:practiceGap|insight\" => menu #11, read-only #1",
         "\"link:practicalTools|recipeUse\" => menu #8, read-only #1",
         "\"link:recipeUse|insight\" => menu #11, read-only #1",
         "\"link:insight|coreValues\" => menu #8, read-only #1",
         "\"link:coreValues|philosophy\" => menu #8, read-only #1",
-        "\"link:philosophy|insight\" => menu #12, read-only #1",
+        "\"link:philosophy|insight\" => menu #10, read-only #1",
         "\"link:philosophy|practiceGap\" => menu #9, read-only #1",
-        "\"link:coreValues|trust\" => menu #8, read-only #1",
+        "\"link:coreValues|trust\" => menu #10, read-only #1",
         "\"link:trust|latentWisdom\" => menu #8, read-only #1",
         "\"link:latentWisdom|narratives\" => menu #8, read-only #1",
         "\"link:narratives|insight\" => menu #8, read-only #1",
         "\"link:wickedProblems|polarization\" => menu #8, read-only #1",
-        "\"link:polarization|trust\" => menu #10, read-only #1",
-        "\"link:narratives|polarization\" => menu #10, read-only #1",
-        "\"link:trust|creativeExpression\" => menu #8, read-only #1",
-        "\"link:creativeExpression|communicationRange\" => menu #8, read-only #1",
-        "\"link:communicationRange|polarization\" => menu #10, read-only #1",
-        "\"link:wickedProblems|quickFixPressure\" => menu #8, read-only #1",
-        "\"link:quickFixPressure|openInquiry\" => menu #10, read-only #1",
+        "\"link:polarization|trust\" => menu #12, read-only #1",
+        "\"link:narratives|polarization\" => menu #12, read-only #1",
+        "\"link:trust|creativeExpression\" => menu #10, read-only #1",
+        "\"link:creativeExpression|communicationRange\" => menu #10, read-only #1",
+        "\"link:communicationRange|polarization\" => menu #11, read-only #1",
+        "\"link:wickedProblems|quickFixPressure\" => menu #10, read-only #1",
+        "\"link:quickFixPressure|openInquiry\" => menu #12, read-only #1",
         "\"link:openInquiry|insight\" => menu #8, read-only #1",
         "\"link:insight|quickFixPressure\" => menu #13, read-only #1",
-        "\"link:quickFixPressure|recipeUse\" => menu #8, read-only #1",
+        "\"link:quickFixPressure|recipeUse\" => menu #10, read-only #1",
         "\"loop:R1\" => menu #14, read-only #1",
         "\"loop:R2\" => menu #14, read-only #1",
         "\"loop:B1\" => menu #14, read-only #1",
@@ -5991,12 +5991,12 @@
       "readOnlySet": "set variable:applicability causal-loop.variable-label => refused: business-philosophy.cld could not be read, so it cannot be edited.",
       "findings": [],
       "payloads": [
-        "variable:applicability | systems/causal-loop+variable | 300, -30 | CausalLoopVariablePayload { \"display\": \"Applicability in practice\", \"id\": \"applicability\", \"width\": 220.50000000000003, \"height\": 39.599999999999994 }",
-        "variable:fieldEngagement | systems/causal-loop+variable | 660, 0 | CausalLoopVariablePayload { \"display\": \"Engagement of organizations\", \"id\": \"fieldEngagement\", \"width\": 235.9, \"height\": 39.599999999999994 }",
-        "variable:expertDiversity | systems/causal-loop+variable | 330, 110 | CausalLoopVariablePayload { \"display\": \"Diversity of expertise\", \"id\": \"expertDiversity\", \"width\": 197.4, \"height\": 39.599999999999994 }",
+        "variable:applicability | systems/causal-loop+variable | 387.744, -60.855000000000004 | CausalLoopVariablePayload { \"display\": \"Applicability in practice\", \"id\": \"applicability\", \"width\": 220.50000000000003, \"height\": 39.599999999999994 }",
+        "variable:fieldEngagement | systems/causal-loop+variable | 736.173, -30.855000000000004 | CausalLoopVariablePayload { \"display\": \"Engagement of organizations\", \"id\": \"fieldEngagement\", \"width\": 235.9, \"height\": 39.599999999999994 }",
+        "variable:expertDiversity | systems/causal-loop+variable | 425.457, 143.748 | CausalLoopVariablePayload { \"display\": \"Diversity of expertise\", \"id\": \"expertDiversity\", \"width\": 197.4, \"height\": 39.599999999999994 }",
         "variable:insight | systems/causal-loop+variable | 20, 120 | CausalLoopVariablePayload { \"display\": \"Depth of shared insight\", \"id\": \"insight\", \"width\": 205.10000000000002, \"height\": 39.599999999999994 }",
         "variable:practicalTools | systems/causal-loop+variable | 1050, -280 | CausalLoopVariablePayload { \"display\": \"Practical tools in use\", \"id\": \"practicalTools\", \"width\": 197.4, \"height\": 39.599999999999994 }",
-        "variable:practiceGap | systems/causal-loop+variable | 780, -350 | CausalLoopVariablePayload { \"display\": \"Distance from daily practice\", \"id\": \"practiceGap\", \"width\": 243.60000000000002, \"height\": 39.599999999999994 }",
+        "variable:practiceGap | systems/causal-loop+variable | 756.8589999999999, -475.348 | CausalLoopVariablePayload { \"display\": \"Distance from daily practice\", \"id\": \"practiceGap\", \"width\": 243.60000000000002, \"height\": 39.599999999999994 }",
         "variable:openInquiry | systems/causal-loop+variable | -260, 280 | CausalLoopVariablePayload { \"display\": \"Room for open inquiry\", \"id\": \"openInquiry\", \"width\": 189.70000000000002, \"height\": 39.599999999999994 }",
         "variable:recipeUse | systems/causal-loop+variable | 560, 410 | CausalLoopVariablePayload { \"display\": \"Tools used as recipes\", \"id\": \"recipeUse\", \"width\": 189.70000000000002, \"height\": 39.599999999999994 }",
         "variable:coreValues | systems/causal-loop+variable | -300, -230 | CausalLoopVariablePayload { \"display\": \"Curiosity, transparency, ethics\", \"id\": \"coreValues\", \"width\": 266.70000000000005, \"height\": 39.599999999999994 }",
@@ -6009,39 +6009,39 @@
         "variable:communicationRange | systems/causal-loop+variable | -959.9999999999999, 260 | CausalLoopVariablePayload { \"display\": \"Communication beyond words\", \"id\": \"communicationRange\", \"width\": 228.20000000000002, \"height\": 39.599999999999994 }",
         "variable:wickedProblems | systems/causal-loop+variable | -200, 530 | CausalLoopVariablePayload { \"display\": \"Weight of wicked problems\", \"id\": \"wickedProblems\", \"width\": 220.50000000000003, \"height\": 39.599999999999994 }",
         "variable:quickFixPressure | systems/causal-loop+variable | 60, 380 | CausalLoopVariablePayload { \"display\": \"Pressure for quick solutions\", \"id\": \"quickFixPressure\", \"width\": 243.60000000000002, \"height\": 39.599999999999994 }",
-        "link:insight|applicability | systems/causal-loop+link | 160, 45 | CausalLoopLinkPayload { \"fromElementId\": \"variable:insight\", \"toElementId\": \"variable:applicability\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"weight\": 1.2, \"hasWeight\": true }",
-        "link:applicability|fieldEngagement | systems/causal-loop+link | 480, -15 | CausalLoopLinkPayload { \"fromElementId\": \"variable:applicability\", \"toElementId\": \"variable:fieldEngagement\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"delayed\": true, \"label\": \"a reputation is built over cohorts\" }",
-        "link:fieldEngagement|expertDiversity | systems/causal-loop+link | 495, 55 | CausalLoopLinkPayload { \"fromElementId\": \"variable:fieldEngagement\", \"toElementId\": \"variable:expertDiversity\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"label\": \"practitioners, guest lecturers, other disciplines\" }",
-        "link:expertDiversity|insight | systems/causal-loop+link | 175, 115 | CausalLoopLinkPayload { \"fromElementId\": \"variable:expertDiversity\", \"toElementId\": \"variable:insight\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\" }",
-        "link:fieldEngagement|practicalTools | systems/causal-loop+link | 855, -140 | CausalLoopLinkPayload { \"fromElementId\": \"variable:fieldEngagement\", \"toElementId\": \"variable:practicalTools\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\" }",
-        "link:practicalTools|practiceGap | systems/causal-loop+link | 915, -315 | CausalLoopLinkPayload { \"fromElementId\": \"variable:practicalTools\", \"toElementId\": \"variable:practiceGap\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_NEGATIVE\", \"label\": \"tools translate ideas into work\" }",
-        "link:practiceGap|insight | systems/causal-loop+link | 400, -115 | CausalLoopLinkPayload { \"fromElementId\": \"variable:practiceGap\", \"toElementId\": \"variable:insight\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_NEGATIVE\", \"label\": \"insight stays in the classroom\", \"flipped\": true }",
+        "link:insight|applicability | systems/causal-loop+link | 203.872, 29.572499999999998 | CausalLoopLinkPayload { \"fromElementId\": \"variable:insight\", \"toElementId\": \"variable:applicability\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"weight\": 1.2, \"hasWeight\": true }",
+        "link:applicability|fieldEngagement | systems/causal-loop+link | 561.9585, -45.855000000000004 | CausalLoopLinkPayload { \"fromElementId\": \"variable:applicability\", \"toElementId\": \"variable:fieldEngagement\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"delayed\": true, \"label\": \"a reputation is built over cohorts\" }",
+        "link:fieldEngagement|expertDiversity | systems/causal-loop+link | 580.815, 56.44649999999999 | CausalLoopLinkPayload { \"fromElementId\": \"variable:fieldEngagement\", \"toElementId\": \"variable:expertDiversity\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"label\": \"practitioners, guest lecturers, other disciplines\" }",
+        "link:expertDiversity|insight | systems/causal-loop+link | 222.7285, 131.874 | CausalLoopLinkPayload { \"fromElementId\": \"variable:expertDiversity\", \"toElementId\": \"variable:insight\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"flipped\": true }",
+        "link:fieldEngagement|practicalTools | systems/causal-loop+link | 893.0865, -155.4275 | CausalLoopLinkPayload { \"fromElementId\": \"variable:fieldEngagement\", \"toElementId\": \"variable:practicalTools\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\" }",
+        "link:practicalTools|practiceGap | systems/causal-loop+link | 903.4295, -377.674 | CausalLoopLinkPayload { \"fromElementId\": \"variable:practicalTools\", \"toElementId\": \"variable:practiceGap\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_NEGATIVE\", \"label\": \"tools translate ideas into work\", \"flipped\": true }",
+        "link:practiceGap|insight | systems/causal-loop+link | 388.42949999999996, -177.674 | CausalLoopLinkPayload { \"fromElementId\": \"variable:practiceGap\", \"toElementId\": \"variable:insight\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_NEGATIVE\", \"label\": \"insight stays in the classroom\", \"flipped\": true }",
         "link:practicalTools|recipeUse | systems/causal-loop+link | 805, 65 | CausalLoopLinkPayload { \"fromElementId\": \"variable:practicalTools\", \"toElementId\": \"variable:recipeUse\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\" }",
         "link:recipeUse|insight | systems/causal-loop+link | 290, 265 | CausalLoopLinkPayload { \"fromElementId\": \"variable:recipeUse\", \"toElementId\": \"variable:insight\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_NEGATIVE\", \"weight\": 0.8, \"hasWeight\": true, \"label\": \"a recipe replaces the thinking\", \"flipped\": true }",
         "link:insight|coreValues | systems/causal-loop+link | -140, -55 | CausalLoopLinkPayload { \"fromElementId\": \"variable:insight\", \"toElementId\": \"variable:coreValues\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"label\": \"every answer raises a better question\" }",
         "link:coreValues|philosophy | systems/causal-loop+link | -25, -365 | CausalLoopLinkPayload { \"fromElementId\": \"variable:coreValues\", \"toElementId\": \"variable:philosophy\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\" }",
         "link:philosophy|insight | systems/causal-loop+link | 135, -189.99999999999997 | CausalLoopLinkPayload { \"fromElementId\": \"variable:philosophy\", \"toElementId\": \"variable:insight\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"label\": \"philosophers lend new lenses\", \"flipped\": true }",
-        "link:philosophy|practiceGap | systems/causal-loop+link | 515, -425 | CausalLoopLinkPayload { \"fromElementId\": \"variable:philosophy\", \"toElementId\": \"variable:practiceGap\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"delayed\": true }",
-        "link:coreValues|trust | systems/causal-loop+link | -475, -200 | CausalLoopLinkPayload { \"fromElementId\": \"variable:coreValues\", \"toElementId\": \"variable:trust\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\" }",
+        "link:philosophy|practiceGap | systems/causal-loop+link | 503.42949999999996, -487.674 | CausalLoopLinkPayload { \"fromElementId\": \"variable:philosophy\", \"toElementId\": \"variable:practiceGap\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"delayed\": true }",
+        "link:coreValues|trust | systems/causal-loop+link | -475, -200 | CausalLoopLinkPayload { \"fromElementId\": \"variable:coreValues\", \"toElementId\": \"variable:trust\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"flipped\": true }",
         "link:trust|latentWisdom | systems/causal-loop+link | -565, -65 | CausalLoopLinkPayload { \"fromElementId\": \"variable:trust\", \"toElementId\": \"variable:latentWisdom\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\" }",
         "link:latentWisdom|narratives | systems/causal-loop+link | -375, 80 | CausalLoopLinkPayload { \"fromElementId\": \"variable:latentWisdom\", \"toElementId\": \"variable:narratives\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"label\": \"wisdom travels as stories\" }",
         "link:narratives|insight | systems/causal-loop+link | -125, 120 | CausalLoopLinkPayload { \"fromElementId\": \"variable:narratives\", \"toElementId\": \"variable:insight\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\" }",
         "link:wickedProblems|polarization | systems/causal-loop+link | -425, 465 | CausalLoopLinkPayload { \"fromElementId\": \"variable:wickedProblems\", \"toElementId\": \"variable:polarization\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"label\": \"climate, wellbeing, identity\" }",
         "link:polarization|trust | systems/causal-loop+link | -650, 115 | CausalLoopLinkPayload { \"fromElementId\": \"variable:polarization\", \"toElementId\": \"variable:trust\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_NEGATIVE\" }",
         "link:narratives|polarization | systems/causal-loop+link | -460, 260 | CausalLoopLinkPayload { \"fromElementId\": \"variable:narratives\", \"toElementId\": \"variable:polarization\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_NEGATIVE\" }",
-        "link:trust|creativeExpression | systems/causal-loop+link | -805, -95 | CausalLoopLinkPayload { \"fromElementId\": \"variable:trust\", \"toElementId\": \"variable:creativeExpression\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"label\": \"safe enough to show, not only tell\" }",
-        "link:creativeExpression|communicationRange | systems/causal-loop+link | -960, 120 | CausalLoopLinkPayload { \"fromElementId\": \"variable:creativeExpression\", \"toElementId\": \"variable:communicationRange\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\" }",
-        "link:communicationRange|polarization | systems/causal-loop+link | -805, 330 | CausalLoopLinkPayload { \"fromElementId\": \"variable:communicationRange\", \"toElementId\": \"variable:polarization\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_NEGATIVE\", \"label\": \"heard across lines where arguments are not\" }",
-        "link:wickedProblems|quickFixPressure | systems/causal-loop+link | -70, 455 | CausalLoopLinkPayload { \"fromElementId\": \"variable:wickedProblems\", \"toElementId\": \"variable:quickFixPressure\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\" }",
+        "link:trust|creativeExpression | systems/causal-loop+link | -805, -95 | CausalLoopLinkPayload { \"fromElementId\": \"variable:trust\", \"toElementId\": \"variable:creativeExpression\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"label\": \"safe enough to show, not only tell\", \"flipped\": true }",
+        "link:creativeExpression|communicationRange | systems/causal-loop+link | -960, 120 | CausalLoopLinkPayload { \"fromElementId\": \"variable:creativeExpression\", \"toElementId\": \"variable:communicationRange\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"flipped\": true }",
+        "link:communicationRange|polarization | systems/causal-loop+link | -805, 330 | CausalLoopLinkPayload { \"fromElementId\": \"variable:communicationRange\", \"toElementId\": \"variable:polarization\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_NEGATIVE\", \"label\": \"heard across lines where arguments are not\", \"flipped\": true }",
+        "link:wickedProblems|quickFixPressure | systems/causal-loop+link | -70, 455 | CausalLoopLinkPayload { \"fromElementId\": \"variable:wickedProblems\", \"toElementId\": \"variable:quickFixPressure\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"flipped\": true }",
         "link:quickFixPressure|openInquiry | systems/causal-loop+link | -100, 330 | CausalLoopLinkPayload { \"fromElementId\": \"variable:quickFixPressure\", \"toElementId\": \"variable:openInquiry\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_NEGATIVE\", \"label\": \"no time for questions without answers\" }",
         "link:openInquiry|insight | systems/causal-loop+link | -120, 200 | CausalLoopLinkPayload { \"fromElementId\": \"variable:openInquiry\", \"toElementId\": \"variable:insight\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"weight\": 1.5, \"hasWeight\": true }",
         "link:insight|quickFixPressure | systems/causal-loop+link | 40, 250 | CausalLoopLinkPayload { \"fromElementId\": \"variable:insight\", \"toElementId\": \"variable:quickFixPressure\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_NEGATIVE\", \"delayed\": true, \"label\": \"insight shows why the quick fix fails\" }",
-        "link:quickFixPressure|recipeUse | systems/causal-loop+link | 310, 395 | CausalLoopLinkPayload { \"fromElementId\": \"variable:quickFixPressure\", \"toElementId\": \"variable:recipeUse\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\" }",
-        "loop:R1 | systems/causal-loop+loop | 327.5, 50 | CausalLoopLoopPayload { \"identifier\": \"R1\", \"name\": \"Relevance draws the field\", \"computed\": \"LOOP_POLARITY_PROTO_REINFORCING\", \"memberElementIds\": [ \"variable:applicability\", \"variable:fieldEngagement\", \"variable:expertDiversity\", \"variable:insight\" ] }",
-        "loop:R2 | systems/causal-loop+loop | 562, -108 | CausalLoopLoopPayload { \"identifier\": \"R2\", \"name\": \"Tools translate thinking\", \"computed\": \"LOOP_POLARITY_PROTO_REINFORCING\", \"memberElementIds\": [ \"variable:applicability\", \"variable:fieldEngagement\", \"variable:practicalTools\", \"variable:practiceGap\", \"variable:insight\" ] }",
-        "loop:B1 | systems/causal-loop+loop | 518, 44 | CausalLoopLoopPayload { \"identifier\": \"B1\", \"name\": \"The toolkit trap\", \"computed\": \"LOOP_POLARITY_PROTO_BALANCING\", \"memberElementIds\": [ \"variable:applicability\", \"variable:fieldEngagement\", \"variable:practicalTools\", \"variable:recipeUse\", \"variable:insight\" ] }",
+        "link:quickFixPressure|recipeUse | systems/causal-loop+link | 310, 395 | CausalLoopLinkPayload { \"fromElementId\": \"variable:quickFixPressure\", \"toElementId\": \"variable:recipeUse\", \"polarity\": \"CAUSAL_LOOP_POLARITY_PROTO_POSITIVE\", \"flipped\": true }",
+        "loop:R1 | systems/causal-loop+loop | 392.34349999999995, 43.009499999999996 | CausalLoopLoopPayload { \"identifier\": \"R1\", \"name\": \"Relevance draws the field\", \"computed\": \"LOOP_POLARITY_PROTO_REINFORCING\", \"memberElementIds\": [ \"variable:applicability\", \"variable:fieldEngagement\", \"variable:expertDiversity\", \"variable:insight\" ] }",
+        "loop:R2 | systems/causal-loop+loop | 590.1551999999999, -145.4116 | CausalLoopLoopPayload { \"identifier\": \"R2\", \"name\": \"Tools translate thinking\", \"computed\": \"LOOP_POLARITY_PROTO_REINFORCING\", \"memberElementIds\": [ \"variable:applicability\", \"variable:fieldEngagement\", \"variable:practicalTools\", \"variable:practiceGap\", \"variable:insight\" ] }",
+        "loop:B1 | systems/causal-loop+loop | 550.7834, 31.657999999999994 | CausalLoopLoopPayload { \"identifier\": \"B1\", \"name\": \"The toolkit trap\", \"computed\": \"LOOP_POLARITY_PROTO_BALANCING\", \"memberElementIds\": [ \"variable:applicability\", \"variable:fieldEngagement\", \"variable:practicalTools\", \"variable:recipeUse\", \"variable:insight\" ] }",
         "loop:R3 | systems/causal-loop+loop | -10, -203.33333333333334 | CausalLoopLoopPayload { \"identifier\": \"R3\", \"name\": \"Questions deepen\", \"computed\": \"LOOP_POLARITY_PROTO_REINFORCING\", \"memberElementIds\": [ \"variable:insight\", \"variable:coreValues\", \"variable:philosophy\" ] }",
-        "loop:B2 | systems/causal-loop+loop | 187.5, -240 | CausalLoopLoopPayload { \"identifier\": \"B2\", \"name\": \"Depth drifts from practice\", \"computed\": \"LOOP_POLARITY_PROTO_BALANCING\", \"memberElementIds\": [ \"variable:insight\", \"variable:coreValues\", \"variable:philosophy\", \"variable:practiceGap\" ] }",
+        "loop:B2 | systems/causal-loop+loop | 181.71474999999998, -271.337 | CausalLoopLoopPayload { \"identifier\": \"B2\", \"name\": \"Depth drifts from practice\", \"computed\": \"LOOP_POLARITY_PROTO_BALANCING\", \"memberElementIds\": [ \"variable:insight\", \"variable:coreValues\", \"variable:philosophy\", \"variable:practiceGap\" ] }",
         "loop:R4 | systems/causal-loop+loop | -336, -24 | CausalLoopLoopPayload { \"identifier\": \"R4\", \"name\": \"Openness surfaces wisdom\", \"computed\": \"LOOP_POLARITY_PROTO_REINFORCING\", \"memberElementIds\": [ \"variable:insight\", \"variable:coreValues\", \"variable:trust\", \"variable:latentWisdom\", \"variable:narratives\" ] }",
         "loop:R5 | systems/causal-loop+loop | -512.5, 97.5 | CausalLoopLoopPayload { \"identifier\": \"R5\", \"name\": \"Stories soften the divide\", \"computed\": \"LOOP_POLARITY_PROTO_REINFORCING\", \"memberElementIds\": [ \"variable:trust\", \"variable:latentWisdom\", \"variable:narratives\", \"variable:polarization\" ] }",
         "loop:R6 | systems/causal-loop+loop | -805, 117.5 | CausalLoopLoopPayload { \"identifier\": \"R6\", \"name\": \"Art speaks across divides\", \"computed\": \"LOOP_POLARITY_PROTO_REINFORCING\", \"memberElementIds\": [ \"variable:trust\", \"variable:creativeExpression\", \"variable:communicationRange\", \"variable:polarization\" ] }",
@@ -6055,7 +6055,7 @@
           "hunks": [
             "@48 -1 +\"link insight -> applicability + delayed weight=1.2\\r\\n\""
           ],
-          "sha256": "e50d2fdd5a4574dc58fb30808b6be4db30630c06cae71d776cefd8c1d0d96674"
+          "sha256": "9a24a2ca0c605a21cd18b3d1acad7694e55712baffb4a76ac4032ee031e13f3b"
         },
         {
           "do": "execute causal-loop.flip-curvature on link:insight|applicability",
@@ -6063,7 +6063,7 @@
           "hunks": [
             "@48 -1 +\"link insight -> applicability + delayed flipped weight=1.2\\r\\n\""
           ],
-          "sha256": "ce8daa8f9cf75cbfdfa3e3477992dec3ea11a27512e175764b146c26c7eab1e4"
+          "sha256": "8d41dd989324dbe97635f134403191e9f2d9e2d30f6ac140dff7e96ed0814038"
         },
         {
           "do": "set link:insight|applicability causal-loop.link-label = \"Parity note\"",
@@ -6071,7 +6071,7 @@
           "hunks": [
             "@48 -1 +\"link insight -> applicability + delayed flipped weight=1.2 \\\"Parity note\\\"\\r\\n\""
           ],
-          "sha256": "1fc5378986ce944566ad3ebcb385425759b76956c4d6c77737dfb0a358b68e7f"
+          "sha256": "652a1bdc2d222b12ea02e37a4f89df002ce38545354e4f2e4b11e23d98a75c0f"
         },
         {
           "do": "set link:insight|applicability causal-loop.link-weight = \"heavy\"",
@@ -6084,7 +6084,7 @@
           "hunks": [
             "@48 -1 +\"link insight -> applicability + delayed flipped weight=1e+21 \\\"Parity note\\\"\\r\\n\""
           ],
-          "sha256": "0597fe0209ef87d3f031d6f0daf8ab739741fecab63880e86e4c593911758b64"
+          "sha256": "c0ff7a3fd37ae48544b1de21f898aaafd88561ab8548b9bcdabf85e4f7d70601"
         },
         {
           "do": "describe link:insight|applicability",
@@ -6097,7 +6097,7 @@
           "hunks": [
             "@48 -1 +\"link insight -> applicability + delayed flipped weight=0.000001 \\\"Parity note\\\"\\r\\n\""
           ],
-          "sha256": "ad8fff433fcf2b9c1186ab7a556191071da4a9083483938338fecb6b36483b15"
+          "sha256": "a2bf026f77fccddde8f62f584e38013363a295f575403010f77be4748ec0cae9"
         },
         {
           "do": "set link:insight|applicability causal-loop.link-weight = \"\"",
@@ -6105,7 +6105,7 @@
           "hunks": [
             "@48 -1 +\"link insight -> applicability + delayed flipped \\\"Parity note\\\"\\r\\n\""
           ],
-          "sha256": "583c039cdf1e670fa4a38fff565ae7234172a2cea12a1ab662e66f9f54ac939f"
+          "sha256": "03379435ba93b4f146536e18dde3af9cb920bcfd0444f05c32501d3099edc8f4"
         },
         {
           "do": "set link:insight|applicability causal-loop.link-polarity = \"sideways\"",
@@ -6118,7 +6118,7 @@
           "hunks": [
             "@48 -1 +\"link insight -> applicability delayed flipped \\\"Parity note\\\"\\r\\n\""
           ],
-          "sha256": "61e72c6b9367bc905103cf8a7ae677ef9ec681d4a471a5e4b30eaf7f4a7d7580"
+          "sha256": "6f10d2d021af8a8c8f3f8ecd4c182a7245277214729c8fc5c9e49ecb95e1607d"
         },
         {
           "do": "set link:insight|applicability causal-loop.link-delayed = \"true\"",
@@ -6136,7 +6136,7 @@
           "hunks": [
             "@48 -1 +\"link insight -> applicability + delayed flipped \\\"Parity note\\\"\\r\\n\""
           ],
-          "sha256": "583c039cdf1e670fa4a38fff565ae7234172a2cea12a1ab662e66f9f54ac939f"
+          "sha256": "03379435ba93b4f146536e18dde3af9cb920bcfd0444f05c32501d3099edc8f4"
         },
         {
           "do": "execute causal-loop.make-negative on link:insight|applicability",
@@ -6144,7 +6144,7 @@
           "hunks": [
             "@48 -1 +\"link insight -> applicability - delayed flipped \\\"Parity note\\\"\\r\\n\""
           ],
-          "sha256": "89e9f3ef69a2129a00b9513ecd14efb95a32b4009fe8ae4c2e181179a8ab1187"
+          "sha256": "37ae873265656f125213a3008b4891ef0b3d83c77ca0aaf24f37a92921732314"
         },
         {
           "do": "execute causal-loop.make-negative on link:insight|applicability",
@@ -6162,7 +6162,7 @@
           "hunks": [
             "@53 -1 +\"loop R1 \\\"Parity loop\\\" applicability fieldEngagement expertDiversity insight\\r\\n\""
           ],
-          "sha256": "70d0da825895a58b49415bf8b1f3f2603515f13ef2fa2ff81c826df5ecbc7efa"
+          "sha256": "0b8d63d648b2afa4aed4bb9c75e1c0135f654db33f3c7d964690406469b8f982"
         },
         {
           "do": "set loop:R1 causal-loop.loop-name = \"Parity name\"",
@@ -6170,7 +6170,7 @@
           "hunks": [
             "@53 -1 +\"loop R1 \\\"Parity name\\\" applicability fieldEngagement expertDiversity insight\\r\\n\""
           ],
-          "sha256": "2383af9a83935d42fbff0d153519dbdf2e1af0f38a766bb61fd245376a846235"
+          "sha256": "f335f77aa79c9b94ad8f9e8e938e310fc5e07183818240226b2da5e18297cb1c"
         },
         {
           "do": "set loop:R1 causal-loop.loop-name = \"Has \\\"quote\\\"\"",
@@ -6203,7 +6203,7 @@
           "hunks": [
             "@53 -1 +\"loop B99 \\\"Parity name\\\" applicability fieldEngagement expertDiversity insight\\r\\n\""
           ],
-          "sha256": "197ae7eb1762cf711b103bae133fe7612a35ff3d784d6e9e01c4ba51dfdafe08"
+          "sha256": "744b4d7f387a4dacfe06cd51e4173c4f1134c1f7d8851a9b7ddd7716f5d29ebf"
         },
         {
           "do": "execute causal-loop.rename-variable on variable:applicability",
@@ -6226,7 +6226,7 @@
           "hunks": [
             "@22 -1 +\"variable applicability \\\"Parity renamed\\\"\\r\\n\""
           ],
-          "sha256": "01e77c0ccfa5b8278de82f19e505cfc72bd1fc362a5ef3dc833a85e9e5b03282"
+          "sha256": "829c164f4d877bd75ccb2905e0b4787c9704886bbe9d410a1706e36143a6fa71"
         },
         {
           "do": "set variable:applicability causal-loop.variable-label = \"Say \\\"hi\\\"\"",
@@ -6244,7 +6244,7 @@
           "hunks": [
             "@22 -1 +\"variable applicability \\\"Parity label\\\"\\r\\n\""
           ],
-          "sha256": "bf0bf8c351cdac91a9d5973288ed6e3264fcab86e56a7bf056f962cebecf0800"
+          "sha256": "a09011b7ef1802190b560dbce11ae959fcbff981aa8339265900ff5cc90567ad"
         },
         {
           "do": "validate causal-loop.add-link on variable:applicability = \"nobody\"",
@@ -6287,7 +6287,7 @@
           "hunks": [
             "@150 -0 +\"loop R99 \\\"R99\\\" applicability fieldEngagement expertDiversity insight\\r\\n\""
           ],
-          "sha256": "74f94b4822e427171296491d571e5e2182494e5ddf8d1bf45ec938765dbb1525"
+          "sha256": "ba0e5e9dcba44cfb3b6db53c67a33ada753d96f04304a8cf3a8e3d5a358c384e"
         },
         {
           "do": "set variable:applicability causal-loop.variable-id = \"fieldEngagement\"",
@@ -6315,7 +6315,7 @@
             "@74 -1 +\"loop B1 \\\"The toolkit trap\\\" parityId fieldEngagement practicalTools recipeUse insight\\r\\n\"",
             "@150 -1 +\"loop R99 \\\"R99\\\" parityId fieldEngagement expertDiversity insight\\r\\n\""
           ],
-          "sha256": "59e434b071654565e41f51d59346cb32fd0938324834804a58a26d6360530a99"
+          "sha256": "367867fa3c3ac38957afb1c32799bbd056c7234ff2f26bb20b7332bbba9f15e1"
         },
         {
           "do": "execute causal-loop.connect on rel:fieldEngagement->parityId",
@@ -6324,7 +6324,7 @@
             "@148 -0 +\"link fieldEngagement -> parityId +\\r\\n\"",
             "@151 -0 +\"loop R100 \\\"\\\" parityId fieldEngagement\\r\\n\""
           ],
-          "sha256": "1431ef95db53c9614094688cfbf32f8433d9745dc659ac8369de9bbc7b8e4490"
+          "sha256": "d5c8c1188128135cb087cab53bcc43906163d704c7fa4687b7e8190e820a2d09"
         },
         {
           "do": "execute causal-loop.connect on rel:fieldEngagement->parityId",
@@ -6338,7 +6338,7 @@
             "@149 -0 +\"link parityId -> parityId +\\r\\n\"",
             "@153 -0 +\"loop R101 \\\"\\\" parityId\\r\\n\""
           ],
-          "sha256": "b532dc542b8d310875b7b54f41bf182c7dcad54e6aaa4e13126e224d757f0fce"
+          "sha256": "7874d2db383a229d9281332f5db21f4b50119edeed7b0d6dbebba39f8f1c8280"
         },
         {
           "do": "execute causal-loop.connect on rel:parityId->nobody",
@@ -6351,12 +6351,12 @@
           "hunks": [
             "@40 -0 +\"variable variable1 \\\"Variable 1\\\"\\r\\n\""
           ],
-          "sha256": "a4242346bdca06c9b0e9a6f1fb65806eb6d71dd2a07a20dc5c4456c0a571da91",
+          "sha256": "c19967878bb6b6f63074637096a166e6c75cf046e67684c36b27ee2bbbfe1860",
           "registration": {
             "hunks": [
               "@20 -0 +\"  variable:variable1: 240 160\\r\\n\""
             ],
-            "sha256": "9e8c8d4a62c15ead71ba1b2fc589bfb61cf9e0dc5db8717196b0a17ac1ecd28c"
+            "sha256": "4b5af175ba14deca7235885a530bdeb0f49c935addc0286169f49b4fd61efd20"
           }
         },
         {
@@ -6365,7 +6365,7 @@
           "hunks": [
             "@41 -0 +\"variable variable2 \\\"Variable 2\\\"\\r\\n\""
           ],
-          "sha256": "016bf27c9ba16d761112712bda74f934920f230563a9e31d178955102c05bce1"
+          "sha256": "a2a1f5c14337c8fd8312b92314b791e00caa6070ac24e49fe635e68573e81ca1"
         },
         {
           "do": "move variable:fieldEngagement to (100, 200)",
@@ -6375,7 +6375,7 @@
             "hunks": [
               "@8 -1 +\"  variable:fieldEngagement: 100 200\\r\\n\""
             ],
-            "sha256": "aacb99ff90063337998780bf0f5a3b971759a3c383fb21e5c162b886d1c2817c"
+            "sha256": "a2236f7da3c516dcaa05fefdbe4e4c2e5d7941cb78670b60687021b3f42c2275"
           }
         },
         {
@@ -6391,7 +6391,7 @@
             "hunks": [
               "@4 -18 +\"  variable:communicationRange: -720.507 -37.888\\r\\n  variable:coreValues: -141.56 710.146\\r\\n  variable:creativeExpression: -749.264 250.148\\r\\n  variable:expertDiversity: 445.878 587.617\\r\\n  variable:fieldEngagement: 637.753 695.292\\r\\n  variable:insight: 124.745 393.182\\r\\n  variable:latentWisdom: -656.981 764.224\\r\\n  variable:narratives: -387.48 462.103\\r\\n  variable:openInquiry: 83.299 200.978\\r\\n  variable:parityId: 393.378 758.679\\r\\n  variable:philosophy: 67.475 613.881\\r\\n  variable:polarization: -420.95 39.871\\r\\n  variable:practicalTools: 640.595 340.456\\r\\n  variable:practiceGap: 390.095 439.348\\r\\n  variable:quickFixPressure: 190.29 -29.003\\r\\n  variable:recipeUse: 514.554 52.766\\r\\n  variable:trust: -523.278 542.703\\r\\n  variable:variable1: -528.047 -659.385\\r\\n  variable:variable2: 451.522 -623.969\\r\\n  variable:wickedProblems: -121.562 -164.407\\r\\n\""
             ],
-            "sha256": "a0036ce33cc5925e0be2b41aa6fc7c51d7819d2be2719366e9cd90cb4f0b2732"
+            "sha256": "be18c0deeec8d9e923875eae9be4573daa05a6fc9ec84cb3dd5e9657d9e4e896"
           }
         },
         {
@@ -6425,7 +6425,7 @@
           "hunks": [
             "@50 -1 +\"\""
           ],
-          "sha256": "aea39f48b350dbf8f16fce44e7d8afbb7a8264a8e10005ab494969e3e2c73825"
+          "sha256": "f9d258e286e80e858d369f16ddc2684adcde6947f8d6d6a48d0ca98593d540fd"
         },
         {
           "do": "execute causal-loop.remove-loop on loop:B99",
@@ -6433,7 +6433,7 @@
           "hunks": [
             "@54 -1 +\"\""
           ],
-          "sha256": "fa98904c7f3d23a80cb294d3b2de661d75f8f9d2cf75ea591a5f0ef498cff842"
+          "sha256": "9df93d9076c06ccd6e06fc477d0d4ec7e3af1d52d8757d56c7620f98f1e9e9b2"
         },
         {
           "do": "execute causal-loop.remove-variable on variable:parityId",
@@ -6451,7 +6451,7 @@
             "@148 -2 +\"\"",
             "@152 -3 +\"\""
           ],
-          "sha256": "5de5ce8aa7a57130135430ef8804e530147a6612bc62450aed300d44c6dadfab"
+          "sha256": "c00f58d7792ae065000126e574f1ef274b4b63641228888796cb5b09382ed6dd"
         }
       ],
       "undoAll": "27 undone; the original text is back"
@@ -7961,7 +7961,7 @@
     },
     {
       "document": "examples/diagrams/causal-loop-diagram/business-philosophy/business-philosophy.cld",
-      "sha256": "57aa05b4c38291839c959a89f05348a16906bf10a14f1cc7437663b0a3166843",
+      "sha256": "1a18451e1b893c40de31a9f85f6f7bf1f56b60ed276592996503156f57c221c6",
       "sameAs": "diagrams/causal-loop-diagram/examples/business-philosophy/business-philosophy.cld"
     },
     {
