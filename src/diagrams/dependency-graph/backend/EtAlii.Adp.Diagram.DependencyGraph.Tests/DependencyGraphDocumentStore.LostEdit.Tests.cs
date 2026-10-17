@@ -1,3 +1,4 @@
+using EtAlii.Adp.Specification.Fbl.Planning;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -61,7 +62,7 @@ public class DependencyGraphDocumentStoreLostEditTests : IDisposable
         File.Copy(IoPath.Combine(AppContext.BaseDirectory, "Fixtures", "coordinates.dgr"), path);
         var entry = _store.GetOrLoad(path);
         var document = entry.Document;
-        document.Insert(0, ["# lost-edit marker"]);
+        document.Change(new ModelChange.Set(document.Model.Elements.First(element => element.Type == "Node").Id, new Dictionary<string, object?> { ["label"] = "# lost-edit marker" }));
 
         // The edit is in memory and nowhere else yet, which is the precondition the store tests
         // beside this one never establish.

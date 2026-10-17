@@ -1,20 +1,28 @@
-using System.Globalization;
 using System.Text;
 using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.History;
 using EtAlii.Adp.Specification.Disl;
 using EtAlii.Adp.Specification.Fbl;
 using EtAlii.Adp.Specification.Fbl.Documents;
 using EtAlii.Adp.Specification.Fbl.History;
+using EtAlii.Adp.Specification.Fbl.Planning;
 
 namespace EtAlii.Adp.Diagram.DependencyGraph;
 
 /// <summary>
-/// One <c>.dgr</c> body, read through FBL: the module's binding (<c>dependency-graph.fbl</c>,
+/// One <c>.dgr</c> body, read and written through FBL: the module's binding (<c>dependency-graph.fbl</c>,
 /// embedded) applied by <c>EtAlii.Adp.Specification.Fbl</c>, and the one DISL model built from that
 /// reading, which the menus, the rows, the findings and the payloads are derived from.
 /// </summary>
 /// <remarks>
+/// <para>
+/// <b>Nothing in this module parses or splices YAML.</b> Reading is the library's reading of the binding's
+/// rules; every write is a <see cref="ModelChange"/> the library plans as splices in the body's own
+/// conventions (FBL §6), so an unchanged document stays byte-identical and unknown keys, comments and
+/// blank lines survive because no splice touches them. Undo stays the host's: the shared restore command
+/// puts the text back.
+/// </para>
 /// <para>
 /// <b>The reading is put in the tool's order before the model is built</b> (<see cref="DependencyGraphReading"/>),
 /// which no binding can state: nodes are read before dependencies whatever the file's order.
@@ -24,12 +32,8 @@ namespace EtAlii.Adp.Diagram.DependencyGraph;
 /// <see cref="Parse"/> forks the open body of a text it read or wrote lately (<see cref="OpenBody.Fork"/>)
 /// rather than reading it once more. Each fork is its own body, so an edit to one is never seen by another.
 /// </para>
-/// <para>
-/// Writing still goes through <see cref="DependencyGraphWriter"/> over the parser's line ranges
-/// (dependency-graph-disl-fbl, task 7); task 8 writes through the binding.
-/// </para>
 /// </remarks>
-public sealed class DependencyGraphBody
+public sealed class DependencyGraphBody : ITextBody<DependencyGraphBody>
 {
     private static readonly Lazy<FblBinding> LoadedBinding = new(() => BundledBinding.Load(typeof(DependencyGraphBody).Assembly, "dependency-graph.fbl", "dgr"));
 
@@ -48,7 +52,7 @@ public sealed class DependencyGraphBody
         _edits = new FblBodyEdits(body, Recent);
     }
 
-    /// <summary>The binding every <c>.dgr</c> body is read with.</summary>
+    /// <summary>The binding every <c>.dgr</c> body is read and written with.</summary>
     internal static FblBinding Binding => LoadedBinding.Value;
 
     /// <summary>The body's text after every change made to it.</summary>
@@ -81,47 +85,13 @@ public sealed class DependencyGraphBody
         return new DependencyGraphBody(body);
     }
 
-    /// <summary>The body <paramref name="entry"/> was read with, which the store reads beside the parser's model.</summary>
-    internal static DependencyGraphBody Of(DocumentEntry<LineDocument, DependencyGraphModel> entry)
-    {
-        ArgumentNullException.ThrowIfNull(entry);
-        return entry.Model.Body ?? Parse(entry.Document.Text);
-    }
-
-    /// <summary>The 0-based lines <paramref name="span"/> covers.</summary>
-    private LineRange LinesOf(Span span) => _edits.LinesOf(span);
-
     /// <summary>
-    /// The model the writer splices at, for <paramref name="document"/>: the parser's, with its line ranges;
-    /// or, for a body the binding reads and the parser does not (a repeated key, Q2), one with the ranges
-    /// of the binding's entries, so an edit lands where it would in any other body.
+    /// The entry of binding type <paramref name="type"/> (<c>Node</c> or <c>Dependency</c>) the module knows
+    /// by the id written in the document: the first with it, as the module has always found one.
     /// </summary>
-    internal static DependencyGraphModel Ranges(LineDocument document)
-    {
-        ArgumentNullException.ThrowIfNull(document);
-        var parsed = DependencyGraphParser.Outcome(document);
-        if (parsed.IsUsable) return parsed.Model;
+    internal FblElement? Find(string type, string writtenId) =>
+        Model.Elements.FirstOrDefault(element => element.Type == type && DependencyGraphReading.TextOf(element, "storedId") == writtenId);
 
-        var body = Parse(document.Text);
-        if (body.IsUnreadable) return DependencyGraphModel.Empty;
-
-        var elements = body.Model.Elements;
-        return new DependencyGraphModel(
-            [
-                .. elements.Where(element => element.Type == "Node").Select(element => new DependencyGraphElement(
-                    DependencyGraphReading.TextOf(element, "storedId"),
-                    DependencyGraphReading.TextOf(element, "label"),
-                    double.TryParse(DependencyGraphReading.TextOf(element, "x"), NumberStyles.Float, CultureInfo.InvariantCulture, out var x) ? x : 0d,
-                    int.TryParse(DependencyGraphReading.TextOf(element, "row"), NumberStyles.Integer, CultureInfo.InvariantCulture, out var row) ? row : 0,
-                    body.LinesOf(element.OwnSpan))),
-            ],
-            [
-                .. elements.Where(element => element.Type == "Dependency").Select(element => new DependencyGraphRelation(
-                    DependencyGraphReading.TextOf(element, "storedId"),
-                    DependencyGraphReading.TextOf(element, "writtenFrom"),
-                    DependencyGraphReading.TextOf(element, "writtenTo"),
-                    DependencyGraphReading.TextOf(element, "label"),
-                    body.LinesOf(element.OwnSpan))),
-            ]);
-    }
+    /// <summary>Plans and applies one change; the refusal's sentence when the library refuses it.</summary>
+    internal EditOutcome Change(ModelChange change) => _edits.Change(change);
 }

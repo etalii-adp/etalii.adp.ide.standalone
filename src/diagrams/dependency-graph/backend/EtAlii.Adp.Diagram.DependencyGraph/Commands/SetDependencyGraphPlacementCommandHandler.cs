@@ -1,11 +1,11 @@
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
+using EtAlii.Adp.Specification.Disl;
 
 namespace EtAlii.Adp.Diagram.DependencyGraph;
 
 /// <summary>
-/// Carries out a placement: locate against current state, refuse with a sentence when that
-/// fails, splice through <see cref="DependencyGraphWriter"/>, report the inverse.
+/// Carries out a placement: locate against current state, refuse with a sentence when that fails,
+/// and set the node's <c>x</c> and <c>row</c> as the binding writes them. The undo is the host's restore.
 /// </summary>
 /// <remarks>
 /// The timeline's handler also enforced end-before-begin here, because a guard only in the client
@@ -18,18 +18,11 @@ public sealed class SetDependencyGraphPlacementCommandHandler(IDependencyGraphDo
     : DependencyGraphEditHandler<SetDependencyGraphPlacementCommand>(documents)
 {
     /// <inheritdoc />
-    protected override EditOutcome Apply(LineDocument body, DependencyGraphModel model, SetDependencyGraphPlacementCommand command)
-    {
-        var element = DependencyGraphEdits.ElementOf(model, command.ElementId);
-        if (element is null)
-        {
-            return EditOutcome.Refused("That node is no longer in this graph.");
-        }
-
-        // Each edit is a one-for-one line replace within the node's range, so the ranges the
-        // parser recorded stay valid between them and no re-parse is needed mid-command.
-        DependencyGraphWriter.SetX(body, element, command.X);
-        DependencyGraphWriter.SetRow(body, element, command.Row);
-        return EditOutcome.Applied;
-    }
+    protected override EditOutcome Apply(DependencyGraphBody body, DislModel model, SetDependencyGraphPlacementCommand command) =>
+        DependencyGraphEdits.Set(
+            body,
+            DependencyGraphEdits.Node,
+            command.ElementId,
+            new Dictionary<string, object?>(StringComparer.Ordinal) { ["x"] = command.X, ["row"] = (long)command.Row },
+            "That node is no longer in this graph.");
 }

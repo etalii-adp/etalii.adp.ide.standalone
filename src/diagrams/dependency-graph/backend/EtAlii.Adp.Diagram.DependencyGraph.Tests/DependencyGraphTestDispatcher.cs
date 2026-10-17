@@ -32,6 +32,8 @@ internal sealed class DependencyGraphTestDispatcher(IDependencyGraphDocumentStor
             new RelabelDependencyGraphRelationCommandHandler(documents).ExecuteAsync(relabel, cancellationToken),
         AddConnectedDependencyGraphElementCommand addConnected =>
             new AddConnectedDependencyGraphElementCommandHandler(documents).ExecuteAsync(addConnected, cancellationToken),
+        RunDependencyGraphOperationCommand operation =>
+            new RunDependencyGraphOperationCommandHandler(documents).ExecuteAsync(operation, cancellationToken),
         _ => throw new InvalidOperationException($"No handler is registered for {command.GetType().Name}."),
     };
 }

@@ -1,6 +1,6 @@
 using EtAlii.Adp.Documents;
 
-namespace EtAlii.Adp.Diagram.DependencyGraph;
+namespace EtAlii.Adp.Diagram.DependencyGraph.Tests.Parity.Oracle;
 
 /// <summary>
 /// A directed edge: <see cref="From"/> <b>depends on</b> <see cref="To"/>.

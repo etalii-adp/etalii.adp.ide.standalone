@@ -1,6 +1,7 @@
 using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Hierarchy;
+using EtAlii.Adp.Specification.Disl;
 
 namespace EtAlii.Adp.Diagram.DependencyGraph;
 
@@ -14,7 +15,7 @@ namespace EtAlii.Adp.Diagram.DependencyGraph;
 /// file that is not a <c>.dgr</c> and the selection resolver moves on to the next resolver,
 /// which is what lets every module's element resolver coexist.
 /// </remarks>
-public sealed class DependencyGraphContextSourceResolver : DiagramElementSourceResolver<LineDocument, DependencyGraphModel>
+public sealed class DependencyGraphContextSourceResolver : DiagramElementSourceResolver<DependencyGraphBody, DislModel>
 {
     private readonly DependencyGraphElementMapper _mapper;
 
@@ -41,26 +42,28 @@ public sealed class DependencyGraphContextSourceResolver : DiagramElementSourceR
     /// The same payload the canvas already has, taken from the mapper rather than assembled here,
     /// so the selection and the stream can never describe one element two ways.
     /// </remarks>
-    protected override DiagramElement? Drawn(DependencyGraphModel model, string elementId) =>
+    protected override DiagramElement? Drawn(DislModel model, string elementId) =>
         _mapper.Elements(model).FirstOrDefault(candidate => candidate.Id == elementId);
 
     /// <inheritdoc />
     /// <remarks>A node's, or a dependency's, since both live on the same stream and are selected through the same channel.</remarks>
-    protected override (IReadOnlyList<string> Path, string Text)? Describe(DependencyGraphModel model, string elementId)
+    protected override (IReadOnlyList<string> Path, string Text)? Describe(DislModel model, string elementId)
     {
-        var element = DependencyGraphEdits.ElementOf(model, elementId);
+        var element = DependencyGraphEdits.NodeOf(model, elementId);
         if (element is not null)
         {
-            var text = element.Label.Length > 0 ? element.Label : element.Id;
+            var label = element.ValueOf("label") as string ?? "";
+            var text = label.Length > 0 ? label : elementId;
             return ([text], text);
         }
 
         var relation = DependencyGraphEdits.RelationOf(model, elementId);
         if (relation is not null)
         {
-            var text = relation.Label.Length > 0
-                ? relation.Label
-                : $"{relation.From} → {relation.To}";
+            var label = relation.ValueOf("label") as string ?? "";
+            var text = label.Length > 0
+                ? label
+                : $"{DependencyGraphDefinition.HostText(relation, "writtenFrom")} → {DependencyGraphDefinition.HostText(relation, "writtenTo")}";
             return ([text], text);
         }
 

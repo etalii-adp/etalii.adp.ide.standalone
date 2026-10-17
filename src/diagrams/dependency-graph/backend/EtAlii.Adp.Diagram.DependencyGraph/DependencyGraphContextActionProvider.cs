@@ -44,7 +44,7 @@ namespace EtAlii.Adp.Diagram.DependencyGraph;
 /// </para>
 /// </remarks>
 public sealed class DependencyGraphContextActionProvider(IHistoryStackStore historyStacks, IDependencyGraphDocumentStore documents)
-    : DiagramActionProvider<LineDocument, DependencyGraphModel>(historyStacks, documents)
+    : DiagramActionProvider<DependencyGraphBody, DislModel>(historyStacks, documents)
 {
     /// <summary>Rename, asking for the new label first.</summary>
     public const string RenameActionId = "dependencies.rename";
@@ -92,18 +92,18 @@ public sealed class DependencyGraphContextActionProvider(IHistoryStackStore hist
     /// this list - and a finished relation gesture, which the canvas executes by id likewise. Each
     /// menu is the definition's, in its groups.
     /// </remarks>
-    protected override IReadOnlyList<ContextActionGroupDefinition> Discover(DocumentEntry<LineDocument, DependencyGraphModel> entry, string elementId) =>
-        DependencyGraphDefinition.Menus(DependencyGraphBody.Of(entry), elementId);
+    protected override IReadOnlyList<ContextActionGroupDefinition> Discover(DocumentEntry<DependencyGraphBody, DislModel> entry, string elementId) =>
+        DependencyGraphDefinition.Menus(entry.Document, elementId);
 
     /// <inheritdoc />
     protected override async ValueTask<ContextExecutionResult> RunAsync(
         ContextTarget target,
-        DocumentEntry<LineDocument, DependencyGraphModel> entry,
+        DocumentEntry<DependencyGraphBody, DislModel> entry,
         string actionId,
         CancellationToken cancellationToken)
     {
         var model = entry.Model;
-        var element = DependencyGraphEdits.ElementOf(model, target.ElementId);
+        var element = DependencyGraphEdits.NodeOf(model, target.ElementId);
         var placed = GestureIds.TryParseRowPlacement(target.ElementId, out var placedX, out var placedRow);
 
         switch (actionId)
@@ -113,10 +113,7 @@ public sealed class DependencyGraphContextActionProvider(IHistoryStackStore hist
                 // The gesture already said everything an add needs - where it landed - so
                 // nothing is asked and the node appears where it was dropped, as the definition's
                 // addNodeHere places and labels it.
-                (AddDependencyGraphElementCommand? added, string refusal) = DependencyGraphDefinition.NodeHere(DependencyGraphBody.Of(entry), target.ResolvedFullPath, placedX, placedRow);
-                return added is null
-                    ? new ContextExecutionFailed(refusal)
-                    : await DispatchAsync(target, added, cancellationToken);
+                return await RunAsync(target, DependencyGraphDefinition.NodeHere(entry.Document, placedX, placedRow), cancellationToken);
             }
 
             case AddAfterActionId when element is not null:
@@ -127,11 +124,10 @@ public sealed class DependencyGraphContextActionProvider(IHistoryStackStore hist
                 // node added from another is a thing that node needs. Where it lands, what it is
                 // called and the dependency are the definition's addRight and addBelow, run on the
                 // selected node, so nothing is asked.
-                (AddConnectedDependencyGraphElementCommand? grown, string refusal) = DependencyGraphDefinition.Grown(
-                    DependencyGraphBody.Of(entry), target.ResolvedFullPath, actionId == AddAfterActionId ? "addRight" : "addBelow", element.Id);
-                return grown is null
-                    ? new ContextExecutionFailed(refusal)
-                    : await DispatchAsync(target, grown, cancellationToken);
+                return await RunAsync(
+                    target,
+                    DependencyGraphDefinition.Grown(entry.Document, actionId == AddAfterActionId ? "addRight" : "addBelow", target.ElementId),
+                    cancellationToken);
             }
 
             case ConnectActionId when GestureIds.TryParseRelation(target.ElementId, out var from, out var to):
@@ -144,17 +140,17 @@ public sealed class DependencyGraphContextActionProvider(IHistoryStackStore hist
                 // `from` - what depends on a node points into it.
                 if (GestureIds.TryParseRowPlacement(from, out var fromX, out var fromRow))
                 {
-                    if (DependencyGraphEdits.ElementOf(model, to) is null)
+                    if (DependencyGraphEdits.NodeOf(model, to) is null)
                     {
                         return new ContextExecutionFailed("The node this dependency reaches is no longer in this graph.");
                     }
 
                     // The new node is the relation's SOURCE: created at the drop, depending on
                     // the existing node, as the dependsOn tool's createSource makes it.
-                    return await RelateHereAsync(target, DependencyGraphBody.Of(entry), to, "source", fromX, fromRow, cancellationToken);
+                    return await RunAsync(target, DependencyGraphDefinition.RelatedHere(entry.Document, to, "source", fromX, fromRow), cancellationToken);
                 }
 
-                if (DependencyGraphEdits.ElementOf(model, from) is null)
+                if (DependencyGraphEdits.NodeOf(model, from) is null)
                 {
                     return new ContextExecutionFailed("The node this dependency starts from is no longer in this graph.");
                 }
@@ -164,7 +160,7 @@ public sealed class DependencyGraphContextActionProvider(IHistoryStackStore hist
                     // Released on empty canvas: what the node depends on does not exist yet, so
                     // it is created there and related in one command - one undo taking both - as
                     // the dependsOn tool's createTarget makes it.
-                    return await RelateHereAsync(target, DependencyGraphBody.Of(entry), from, "target", toX, toRow, cancellationToken);
+                    return await RunAsync(target, DependencyGraphDefinition.RelatedHere(entry.Document, from, "target", toX, toRow), cancellationToken);
                 }
 
                 return await DispatchAsync(target, new ConnectDependencyGraphElementsCommand(
@@ -185,7 +181,7 @@ public sealed class DependencyGraphContextActionProvider(IHistoryStackStore hist
 
             case RenameActionId when element is not null:
                 return new ContextExecutionRequiresInput(new ContextInputRequest(
-                    "Rename", "mdi-pencil-outline", "Label", element.Label, "Rename", target.ElementId));
+                    "Rename", "mdi-pencil-outline", "Label", element.ValueOf("label") as string ?? "", "Rename", target.ElementId));
 
             case RelabelActionId:
             {
@@ -193,7 +189,7 @@ public sealed class DependencyGraphContextActionProvider(IHistoryStackStore hist
                 return relation is null
                     ? new ContextExecutionFailed(Gone)
                     : new ContextExecutionRequiresInput(new ContextInputRequest(
-                        "Relabel", "mdi-pencil-outline", "Label", relation.Label, "Relabel", target.ElementId));
+                        "Relabel", "mdi-pencil-outline", "Label", relation.ValueOf("label") as string ?? "", "Relabel", target.ElementId));
             }
 
             case RemoveActionId when element is not null:
@@ -205,11 +201,10 @@ public sealed class DependencyGraphContextActionProvider(IHistoryStackStore hist
                 // walked into three times in the module this was forked from; every action that
                 // needs no input dispatches in this method.
                 // What is asked, and when, is the definition's deletion confirmation.
-                if (DependencyGraphDefinition.ElementOf(DependencyGraphBody.Of(entry).Disl.Diagram, element.Id) is not { } node
-                    || DeletionPolicy.Confirmation(DependencyGraphDefinition.Specification, node) is not { } confirmation)
+                if (DeletionPolicy.Confirmation(DependencyGraphDefinition.Specification, element) is not { } confirmation)
                 {
                     return await DispatchAsync(target,
-                        new RemoveDependencyGraphElementCommand(target.ResolvedFullPath, element.Id), cancellationToken);
+                        new RemoveDependencyGraphElementCommand(target.ResolvedFullPath, target.ElementId), cancellationToken);
                 }
 
                 return new ContextExecutionRequiresConfirmation(new ContextConfirmationRequest(
@@ -233,22 +228,16 @@ public sealed class DependencyGraphContextActionProvider(IHistoryStackStore hist
     private const string NewElementLabel = AddConnectedDependencyGraphElementCommandHandler.NewElementLabel;
 
     /// <summary>
-    /// A dependency gesture released on empty canvas at <paramref name="x"/> and <paramref name="row"/>: the
-    /// node the definition's dependsOn tool creates there, related to <paramref name="elementId"/> as the
-    /// gesture's <paramref name="newEnd"/>, in one command.
+    /// What one of the definition's operations made, dispatched as it made it; or why it made nothing.
     /// </summary>
     /// <remarks>
     /// The ids are generated once, where the gesture happens - so the command instance the history
     /// holds carries them, and a redo re-creates under the ids it had.
     /// </remarks>
-    private async ValueTask<ContextExecutionResult> RelateHereAsync(
-        ContextTarget target, DependencyGraphBody body, string elementId, string newEnd, double x, int row, CancellationToken cancellationToken)
-    {
-        (AddConnectedDependencyGraphElementCommand? related, string refusal) = DependencyGraphDefinition.RelatedHere(body, target.ResolvedFullPath, elementId, newEnd, x, row);
-        return related is null
-            ? new ContextExecutionFailed(refusal)
-            : await DispatchAsync(target, related, cancellationToken);
-    }
+    private async ValueTask<ContextExecutionResult> RunAsync(ContextTarget target, DislTransaction transaction, CancellationToken cancellationToken) =>
+        transaction.WasApplied
+            ? await DispatchAsync(target, new RunDependencyGraphOperationCommand(target.ResolvedFullPath, transaction), cancellationToken)
+            : new ContextExecutionFailed(transaction.Refusal!);
 
     private static AddDependencyGraphElementCommand NewElementAt(string body, double x, int row, string? label = null) =>
         new(
@@ -264,7 +253,7 @@ public sealed class DependencyGraphContextActionProvider(IHistoryStackStore hist
     /// would apply again, but every value this type asks for is a label, and a label has no wrong
     /// answer.
     /// </remarks>
-    protected override ICommand? CommitCommand(ContextTarget target, DependencyGraphModel model, string actionId, string value)
+    protected override ICommand? CommitCommand(ContextTarget target, DislModel model, string actionId, string value)
     {
         var body = target.ResolvedFullPath;
         var id = target.ElementId;
@@ -272,7 +261,7 @@ public sealed class DependencyGraphContextActionProvider(IHistoryStackStore hist
         // What kind of thing is selected decides which actions apply: a node-only action
         // committed against a dependency - or the other way round - answers "does not apply"
         // rather than a handler's guess at what went wrong.
-        var element = DependencyGraphEdits.ElementOf(model, id);
+        var element = DependencyGraphEdits.NodeOf(model, id);
         var isRelation = DependencyGraphEdits.RelationOf(model, id) is not null;
 
         return actionId switch
@@ -286,8 +275,8 @@ public sealed class DependencyGraphContextActionProvider(IHistoryStackStore hist
             // Placement gestures never reach here; they complete in ExecuteAsync.
             AddElementActionId => NewElementAt(
                 body,
-                element?.X + XStep ?? 0d,
-                element?.Row ?? 0,
+                element is null ? 0d : DependencyGraphContextPropertyProvider.XOf(element) + XStep,
+                element is null ? 0 : DependencyGraphContextPropertyProvider.RowOf(element),
                 value),
             _ => null,
         };

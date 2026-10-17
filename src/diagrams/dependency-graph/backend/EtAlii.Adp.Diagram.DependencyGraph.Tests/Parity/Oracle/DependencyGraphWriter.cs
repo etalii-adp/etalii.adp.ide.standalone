@@ -1,7 +1,7 @@
 using System.Globalization;
 using EtAlii.Adp.Documents;
 
-namespace EtAlii.Adp.Diagram.DependencyGraph;
+namespace EtAlii.Adp.Diagram.DependencyGraph.Tests.Parity.Oracle;
 
 /// <summary>
 /// Turns an edit into a splice of the lines that edit affects, and nothing else.
@@ -165,14 +165,6 @@ public static class DependencyGraphWriter
         {
             document.Remove(range);
         }
-    }
-
-    /// <summary>Removes one relation.</summary>
-    public static void RemoveRelation(LineDocument document, DependencyGraphRelation relation)
-    {
-        ArgumentNullException.ThrowIfNull(document);
-        ArgumentNullException.ThrowIfNull(relation);
-        document.Remove(relation.Range);
     }
 
     /// <summary>

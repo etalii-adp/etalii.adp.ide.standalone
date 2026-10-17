@@ -2,7 +2,7 @@ using EtAlii.Adp.Documents;
 using Xunit;
 using IoPath = System.IO.Path;
 
-namespace EtAlii.Adp.Diagram.DependencyGraph.Tests;
+namespace EtAlii.Adp.Diagram.DependencyGraph.Tests.Parity.Oracle;
 
 /// <summary>
 /// Edits as splices: the lines an edit touches, and the many more it must not.

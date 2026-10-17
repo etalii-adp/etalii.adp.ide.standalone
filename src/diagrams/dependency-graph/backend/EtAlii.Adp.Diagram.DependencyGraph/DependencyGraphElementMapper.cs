@@ -1,5 +1,6 @@
 using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.Layout;
+using EtAlii.Adp.Specification.Disl;
 using Google.Protobuf;
 
 namespace EtAlii.Adp.Diagram.DependencyGraph;
@@ -40,13 +41,13 @@ public sealed class DependencyGraphElementMapper
     public const string RelationType = "generic/dependencies+relation";
 
     /// <summary>
-    /// Every node and relation of <paramref name="body"/>, positioned in the module's own
+    /// Every node and relation of <paramref name="model"/>, positioned in the module's own
     /// coordinate space - the baseline a connection opens with.
     /// </summary>
-    public IReadOnlyList<DiagramElement> Elements(DependencyGraphBody body)
+    public IReadOnlyList<DiagramElement> Elements(DislModel model)
     {
-        ArgumentNullException.ThrowIfNull(body);
-        (List<DependencyGraphElement> nodes, List<DependencyGraphRelation> relations) = Read(body);
+        ArgumentNullException.ThrowIfNull(model);
+        (List<Node> nodes, List<Dependency> relations) = Read(model.Diagram);
 
         var elements = new List<DiagramElement>();
         foreach (var element in nodes)
@@ -60,13 +61,6 @@ public sealed class DependencyGraphElementMapper
         }
 
         return elements;
-    }
-
-    /// <summary>Every node and relation of the body <paramref name="model"/> was read with; none for a model read without one.</summary>
-    public IReadOnlyList<DiagramElement> Elements(DependencyGraphModel model)
-    {
-        ArgumentNullException.ThrowIfNull(model);
-        return model.Body is { } body ? Elements(body) : [];
     }
 
     /// <summary>The drawn width of a node, in the module's own x units - what the canvas gives it.</summary>
@@ -92,10 +86,10 @@ public sealed class DependencyGraphElementMapper
     /// because the units are this module's business (Requirement 3.4).
     /// </para>
     /// </remarks>
-    public IReadOnlyList<DiagramElement> Visible(DependencyGraphBody body, DiagramViewport viewport)
+    public IReadOnlyList<DiagramElement> Visible(DislModel model, DiagramViewport viewport)
     {
-        ArgumentNullException.ThrowIfNull(body);
-        (List<DependencyGraphElement> nodes, List<DependencyGraphRelation> relations) = Read(body);
+        ArgumentNullException.ThrowIfNull(model);
+        (List<Node> nodes, List<Dependency> relations) = Read(model.Diagram);
 
         var byId = nodes.ToDictionary(element => element.Id, StringComparer.Ordinal);
         var shownIds = nodes
@@ -126,37 +120,27 @@ public sealed class DependencyGraphElementMapper
         ];
     }
 
-    /// <summary>What of the body <paramref name="model"/> was read with touches <paramref name="viewport"/>; nothing for a model read without one.</summary>
-    public IReadOnlyList<DiagramElement> Visible(DependencyGraphModel model, DiagramViewport viewport)
-    {
-        ArgumentNullException.ThrowIfNull(model);
-        return model.Body is { } body ? Visible(body, viewport) : [];
-    }
-
     /// <summary>
-    /// The nodes and dependencies of the body's DISL model, in its order, each by what is written: its
+    /// The nodes and dependencies of a DISL model, in its order, each by what is written: its
     /// stored id, its label, its place, and a dependency's ends as written.
     /// </summary>
-    private static (List<DependencyGraphElement> Nodes, List<DependencyGraphRelation> Relations) Read(DependencyGraphBody body)
+    private static (List<Node> Nodes, List<Dependency> Relations) Read(DislDiagram diagram)
     {
-        var diagram = body.Disl.Diagram;
-        List<DependencyGraphElement> nodes =
+        List<Node> nodes =
         [
-            .. diagram.NodesOfType("Node").Select(node => new DependencyGraphElement(
+            .. diagram.NodesOfType("Node").Select(node => new Node(
                 DependencyGraphDefinition.WrittenId(node),
                 node.ValueOf("label") as string ?? "",
                 node.ValueOf("x") is double x ? x : 0d,
-                node.ValueOf("row") is long row ? checked((int)row) : 0,
-                default)),
+                node.ValueOf("row") is long row ? checked((int)row) : 0)),
         ];
-        List<DependencyGraphRelation> relations =
+        List<Dependency> relations =
         [
-            .. diagram.RelationsOfType("DependsOn").Select(relation => new DependencyGraphRelation(
+            .. diagram.RelationsOfType("DependsOn").Select(relation => new Dependency(
                 DependencyGraphDefinition.WrittenId(relation),
                 DependencyGraphDefinition.HostText(relation, "writtenFrom"),
                 DependencyGraphDefinition.HostText(relation, "writtenTo"),
-                relation.ValueOf("label") as string ?? "",
-                default)),
+                relation.ValueOf("label") as string ?? "")),
         ];
         return (nodes, relations);
     }
@@ -175,7 +159,7 @@ public sealed class DependencyGraphElementMapper
         (x, DependencyGraphRows.ToNearestRow(y));
 
     /// <summary>Whether a node's box overlaps the viewport at all - touching edges count as seen.</summary>
-    private static bool Intersects(DependencyGraphElement element, DiagramViewport viewport)
+    private static bool Intersects(Node element, DiagramViewport viewport)
     {
         var top = DependencyGraphRows.ToY(element.Row);
         return viewport.Intersects(new Rect(element.X, top, NodeWidth, NodeHeight));
@@ -186,7 +170,7 @@ public sealed class DependencyGraphElementMapper
     /// drawn line bows a little for the bezier; the criterion is the bounding box, not its
     /// every pixel.
     /// </summary>
-    private static bool SpanIntersects(DependencyGraphElement from, DependencyGraphElement to, DiagramViewport viewport)
+    private static bool SpanIntersects(Node from, Node to, DiagramViewport viewport)
     {
         var fromTop = DependencyGraphRows.ToY(from.Row);
         var toTop = DependencyGraphRows.ToY(to.Row);
@@ -195,7 +179,7 @@ public sealed class DependencyGraphElementMapper
         return viewport.Intersects(new Rect(left, top, Math.Abs(from.X - to.X) + NodeWidth, Math.Abs(fromTop - toTop) + NodeHeight));
     }
 
-    private static DiagramElement Element(DependencyGraphElement element)
+    private static DiagramElement Element(Node element)
     {
         var payload = new DependencyGraphElementPayload
         {
@@ -212,7 +196,7 @@ public sealed class DependencyGraphElementMapper
             payload);
     }
 
-    private static DiagramElement Relation(DependencyGraphRelation relation)
+    private static DiagramElement Relation(Dependency relation)
     {
         var payload = new DependencyGraphRelationPayload
         {
@@ -227,6 +211,12 @@ public sealed class DependencyGraphElementMapper
         // `to` end.
         return Pack(relation.Id, 0d, 0d, RelationType, payload);
     }
+
+    /// <summary>A node as it is drawn: the id it is written with, its label and its place.</summary>
+    private sealed record Node(string Id, string Label, double X, int Row);
+
+    /// <summary>A dependency as it is drawn: the id it is written with, its ends as written, and its label.</summary>
+    private sealed record Dependency(string Id, string From, string To, string Label);
 
     private static DiagramElement Pack(string id, double x, double y, string type, IMessage payload) =>
         new(id, x, y, type, $"type.googleapis.com/{payload.Descriptor.FullName}", payload.ToByteArray());
