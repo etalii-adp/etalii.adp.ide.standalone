@@ -31,7 +31,7 @@ namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline;
 internal static class PipelineDefinition
 {
     /// <summary>The definition, with its <c>x-azure-pipeline</c> wire ids.</summary>
-    public static DislDiagramDefinition Definition { get; } = new(typeof(PipelineDefinition).Assembly, "azure-devops-pipeline.dis", "x-azure-pipeline");
+    private static DislDiagramDefinition Definition { get; } = new(typeof(PipelineDefinition).Assembly, "azure-devops-pipeline.dis", "x-azure-pipeline");
 
     /// <summary>The definition.</summary>
     public static DislSpecification Specification => Definition.Specification;
@@ -102,7 +102,7 @@ internal static class PipelineDefinition
     });
 
     /// <summary>The stage, job or step <paramref name="id"/> names, the first in written order; null for none.</summary>
-    public static DislElement? ElementOf(DislDiagram diagram, string id)
+    private static DislElement? ElementOf(DislDiagram diagram, string id)
     {
         ArgumentNullException.ThrowIfNull(diagram);
         return id.Length == 0

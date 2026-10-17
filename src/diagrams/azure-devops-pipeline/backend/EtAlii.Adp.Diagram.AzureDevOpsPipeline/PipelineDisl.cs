@@ -70,7 +70,7 @@ internal static class PipelineDisl
     /// a job writes - its target the element that waits, its source the first of that name, without
     /// regard to case, among the stages or among the jobs of the same stage, or unset.
     /// </summary>
-    internal static IReadOnlyList<FblElement> Elements(PipelineModel model)
+    private static IReadOnlyList<FblElement> Elements(PipelineModel model)
     {
         ArgumentNullException.ThrowIfNull(model);
         var nodes = new List<FblElement> { Node("pipeline", "Pipeline", PipelineAttributes(model), null) };
@@ -180,7 +180,7 @@ internal static class PipelineDisl
         }
 
         if (job.Pool.Origin == PipelinePoolOrigin.Job) attributes["ownPool"] = Pool(job.Pool);
-        if (job.IsDeployment && job.Environment.Length > 0) attributes["environment"] = job.Environment;
+        if (job is { IsDeployment: true, Environment.Length: > 0 }) attributes["environment"] = job.Environment;
         return attributes;
     }
 

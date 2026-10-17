@@ -23,7 +23,7 @@ internal static class HandWrittenPipeline
     private const string MoveStepUpActionId = PipelineContextActionProvider.MoveStepUpActionId;
     private const string MoveStepDownActionId = PipelineContextActionProvider.MoveStepDownActionId;
     private const string ClearDependenciesActionId = PipelineContextActionProvider.ClearDependenciesActionId;
-    private const string ToggleStageActionId = "azure-pipeline.toggle-stage";
+    private const string ToggleStageActionId = PipelineContextActionProvider.ToggleStageActionId;
     private const string ToggleJobActionId = PipelineContextActionProvider.ToggleJobActionId;
 
     private const string DisplayNamePropertyId = PipelineContextPropertyProvider.DisplayNamePropertyId;
