@@ -13754,7 +13754,10 @@
         {
           "target": "Build",
           "rows": [
-            "throws ArgumentException: An item with the same key has already been added. Key: Build"
+            "azure-pipeline.name | Name | \"Build\" | Line | read-only (This is edited in the pipeline file. A wrong value here would break the build.) | group Identity",
+            "azure-pipeline.display-name | Display name | \"First build\" | Line | editable | group Identity",
+            "azure-pipeline.job-count | Jobs | \"1\" | Line | read-only (This is edited in the pipeline file. A wrong value here would break the build.) | group Identity",
+            "azure-pipeline.depends-on | Depends on (by default) | \"(nothing)\" | Choice | read-only (There is nothing before this for it to wait for.) | group Ordering | choices #0"
           ]
         },
         {
@@ -13775,11 +13778,14 @@
           ]
         }
       ],
-      "findings": [
-        "throws ArgumentException: An item with the same key has already been added. Key: Build"
-      ],
+      "findings": [],
       "payloads": [
-        "throws ArgumentException: An item with the same key has already been added. Key: Build"
+        "Build | azure-devops/pipeline+stage | 0, 0 | PipelineElementPayload { \"name\": \"Build\", \"displayName\": \"First build\", \"kind\": \"PIPELINE_ELEMENT_KIND_STAGE\", \"enabled\": true, \"multiplicity\": 1, \"width\": 276, \"height\": 232, \"firstLine\": 4, \"lastLine\": 9, \"jobCount\": 1 }",
+        "Build/Compile | azure-devops/pipeline+job | 24, 64 | PipelineElementPayload { \"name\": \"Compile\", \"displayName\": \"Compile\", \"kind\": \"PIPELINE_ELEMENT_KIND_JOB\", \"enabled\": true, \"multiplicity\": 1, \"width\": 228, \"height\": 144, \"parentId\": \"Build\", \"firstLine\": 7, \"lastLine\": 9 }",
+        "Build/Compile/step-0 | azure-devops/pipeline+step | 48, 128 | PipelineElementPayload { \"displayName\": \"dotnet build\", \"kind\": \"PIPELINE_ELEMENT_KIND_STEP\", \"enabled\": true, \"multiplicity\": 1, \"width\": 180, \"height\": 56, \"parentId\": \"Build/Compile\", \"firstLine\": 9, \"lastLine\": 9 }",
+        "Build | azure-devops/pipeline+stage | 0, 0 | PipelineElementPayload { \"name\": \"Build\", \"displayName\": \"Second build\", \"kind\": \"PIPELINE_ELEMENT_KIND_STAGE\", \"enabled\": true, \"multiplicity\": 1, \"width\": 276, \"height\": 232, \"firstLine\": 11, \"lastLine\": 16, \"jobCount\": 1 }",
+        "Build/Compile | azure-devops/pipeline+job | 24, 64 | PipelineElementPayload { \"name\": \"Compile\", \"displayName\": \"Compile\", \"kind\": \"PIPELINE_ELEMENT_KIND_JOB\", \"enabled\": true, \"multiplicity\": 1, \"width\": 228, \"height\": 144, \"parentId\": \"Build\", \"firstLine\": 14, \"lastLine\": 16 }",
+        "Build/Compile/step-0 | azure-devops/pipeline+step | 48, 128 | PipelineElementPayload { \"displayName\": \"dotnet build --no-restore\", \"kind\": \"PIPELINE_ELEMENT_KIND_STEP\", \"enabled\": true, \"multiplicity\": 1, \"width\": 180, \"height\": 56, \"parentId\": \"Build/Compile\", \"firstLine\": 16, \"lastLine\": 16 }"
       ],
       "edits": [
         {
@@ -14093,13 +14099,32 @@
         },
         {
           "do": "set Build azure-pipeline.depends-on = \"Build\"",
-          "answer": "throws ArgumentException: An item with the same key has already been added. Key: Build",
+          "answer": "refused: That would make Build wait for something that is already waiting for it.",
           "unchanged": true
         },
         {
           "do": "set Build azure-pipeline.depends-on = \"(nothing)\"",
-          "answer": "throws ArgumentException: An item with the same key has already been added. Key: Build",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@5 -0 +\"    dependsOn: []\\n\""
+          ],
+          "sha256": "004000e1404a4572cc4e2f78638eabd1411f17b65d4d3761e9e7bffc68d459ae"
+        },
+        {
+          "do": "undo set Build azure-pipeline.depends-on = \"(nothing)\"",
+          "answer": "ok",
+          "hunks": [
+            "@5 -1 +\"\""
+          ],
+          "sha256": "3b7251c7f367d44865c304412ac79664558cde0fc80cc942530b13f6ae55167d"
+        },
+        {
+          "do": "redo set Build azure-pipeline.depends-on = \"(nothing)\"",
+          "answer": "ok",
+          "hunks": [
+            "@5 -0 +\"    dependsOn: []\\n\""
+          ],
+          "sha256": "004000e1404a4572cc4e2f78638eabd1411f17b65d4d3761e9e7bffc68d459ae"
         },
         {
           "do": "set Build azure-pipeline.depends-on = \"nobody\"",
@@ -14108,13 +14133,32 @@
         },
         {
           "do": "set Build azure-pipeline.depends-on = \"Build\"",
-          "answer": "throws ArgumentException: An item with the same key has already been added. Key: Build",
+          "answer": "refused: That would make Build wait for something that is already waiting for it.",
           "unchanged": true
         },
         {
           "do": "execute azure-pipeline.clear-dependencies on Build",
-          "answer": "throws ArgumentException: An item with the same key has already been added. Key: Build",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@5 -1 +\"\""
+          ],
+          "sha256": "3b7251c7f367d44865c304412ac79664558cde0fc80cc942530b13f6ae55167d"
+        },
+        {
+          "do": "undo execute azure-pipeline.clear-dependencies on Build",
+          "answer": "ok",
+          "hunks": [
+            "@5 -0 +\"    dependsOn: []\\n\""
+          ],
+          "sha256": "004000e1404a4572cc4e2f78638eabd1411f17b65d4d3761e9e7bffc68d459ae"
+        },
+        {
+          "do": "redo execute azure-pipeline.clear-dependencies on Build",
+          "answer": "ok",
+          "hunks": [
+            "@5 -1 +\"\""
+          ],
+          "sha256": "3b7251c7f367d44865c304412ac79664558cde0fc80cc942530b13f6ae55167d"
         },
         {
           "do": "execute azure-pipeline.add-stage on Build",
@@ -14315,7 +14359,7 @@
           "sha256": "b5eb3e6dcad77f4195d26fe707132170a9117b21e2d370295e46059cf1b8c543"
         }
       ],
-      "undoAll": "18 undone; the original text is back"
+      "undoAll": "20 undone; the original text is back"
     },
     {
       "document": "diagrams/azure-devops-pipeline/backend/EtAlii.Adp.Diagram.AzureDevOpsPipeline.Tests/Fixtures/findings/value-styles.yml",

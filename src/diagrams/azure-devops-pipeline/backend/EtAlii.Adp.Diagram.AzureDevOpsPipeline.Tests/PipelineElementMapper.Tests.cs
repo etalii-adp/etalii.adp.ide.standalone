@@ -79,6 +79,21 @@ public class PipelineElementMapperTests
     }
 
     [Fact]
+    public void TwoStagesOfOneName_AreStillDrawn()
+    {
+        // Arrange: finding A8. The two stages share the id Build, and building the stage graph once
+        // threw on it, so such a file had no canvas at all.
+        var model = ParseFixture("findings/two-stages-one-name.yml");
+
+        // Act.
+        var exception = Record.Exception(() => Map(model));
+
+        // Assert.
+        Assert.Null(exception);
+        Assert.Contains(Map(model), element => element.Id == "Build" && element.Type == PipelineElementMapper.StageType);
+    }
+
+    [Fact]
     public void EveryElementId_IsUnique()
     {
         // Arrange: an id addresses a delta, so a collision would move the wrong element.
