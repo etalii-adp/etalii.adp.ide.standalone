@@ -45,6 +45,10 @@ public static class ServiceCollectionAddHierarchyExtension
         // Requirement 5.1's order).
         services.AddSingleton(svc => new EditorResolver(svc.GetRequiredService<IEditorDefinitionCatalog>()));
 
+        // Which of the three kinds serves a file, with the precedence between them decided in
+        // that one place (code-structure FR-058).
+        services.AddSingleton<ToolRouter>();
+
         // What a new designer document starts as, from the modules that registered a template,
         // and the designer family's entries of the Add dialog built on it.
         services.TryAddSingleton<DesignerDocumentTemplates>();
