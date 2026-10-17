@@ -15,8 +15,8 @@ public class AdpRegistrationTests
         Assert.Equal("application/vnd.vendor.type", registration.MimeType);
         Assert.Equal("../shared.ttl", registration.Body);
         Assert.Equal("classes", registration.View);
-        Assert.Equal(new AdpPosition(10, 20), registration.Layout["a"]);
-        Assert.Equal(new AdpPosition(-1.5, 3), registration.Layout["b"]);
+        Assert.Equal(new RegistrationPosition(10, 20), registration.Layout["a"]);
+        Assert.Equal(new RegistrationPosition(-1.5, 3), registration.Layout["b"]);
     }
 
     [Fact]
@@ -74,7 +74,7 @@ public class AdpRegistrationTests
         var registration = AdpRegistration.Parse(text);
 
         // Act.
-        var written = registration.WithLayout(new Dictionary<string, AdpPosition> { ["b"] = new(2, 3.25), ["a"] = new(0.5, 1) });
+        var written = registration.WithLayout(new Dictionary<string, RegistrationPosition> { ["b"] = new(2, 3.25), ["a"] = new(0.5, 1) });
 
         // Assert.
         Assert.Equal("type/x\r\nbody: a.txt\r\nlayout:\r\n  a: 0.5 1\r\n  b: 2 3.25\r\ntrailing: kept\nlast", written);
@@ -87,7 +87,7 @@ public class AdpRegistrationTests
         var registration = AdpRegistration.Parse("type/x\nbody: a.txt\n\nprose\n");
 
         // Act.
-        var written = registration.WithLayout(new Dictionary<string, AdpPosition> { ["a"] = new(1, 2) });
+        var written = registration.WithLayout(new Dictionary<string, RegistrationPosition> { ["a"] = new(1, 2) });
 
         // Assert.
         Assert.Equal("type/x\nbody: a.txt\n\nlayout:\r\n  a: 1 2\r\nprose\n", written);
@@ -100,14 +100,14 @@ public class AdpRegistrationTests
         var registration = AdpRegistration.Parse("type/x\nlayout:\n  a: 1 2\n");
 
         // Act and assert.
-        Assert.Equal("type/x\n", registration.WithLayout(new Dictionary<string, AdpPosition>()));
+        Assert.Equal("type/x\n", registration.WithLayout(new Dictionary<string, RegistrationPosition>()));
     }
 
     [Fact]
     public void WithLayout_ReadBack_GivesThePositionsWritten()
     {
         // Arrange.
-        var positions = new Dictionary<string, AdpPosition> { ["x"] = new(-4, 8.125), ["y"] = new(0, 0) };
+        var positions = new Dictionary<string, RegistrationPosition> { ["x"] = new(-4, 8.125), ["y"] = new(0, 0) };
 
         // Act.
         var reread = AdpRegistration.Parse(AdpRegistration.Parse("type/x\r\n").WithLayout(positions));

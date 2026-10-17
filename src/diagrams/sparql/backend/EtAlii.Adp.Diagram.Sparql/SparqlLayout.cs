@@ -1,4 +1,3 @@
-using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.Layout;
 
 namespace EtAlii.Adp.Diagram.Sparql;

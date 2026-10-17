@@ -1,4 +1,3 @@
-using EtAlii.Adp.Hierarchy;
 using Google.Protobuf;
 
 namespace EtAlii.Adp.Diagram.Rdf.Shacl;

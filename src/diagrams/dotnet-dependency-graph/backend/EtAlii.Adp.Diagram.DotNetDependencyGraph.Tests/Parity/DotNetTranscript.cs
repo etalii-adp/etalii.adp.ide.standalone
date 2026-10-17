@@ -2,7 +2,6 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Diagram.DotNetDependencyGraph.Wire;
-using EtAlii.Adp.Hierarchy;
 using Google.Protobuf.Reflection;
 using Microsoft.Extensions.DependencyInjection;
 using Path = System.IO.Path;
