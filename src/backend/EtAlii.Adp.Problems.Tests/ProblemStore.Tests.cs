@@ -49,6 +49,21 @@ public class ProblemStoreTests : IDisposable
         Assert.Equal(0, set.WarningCount);
     }
 
+    [Fact]
+    public void Get_WithATrailingSeparator_AnswersForTheSameProject()
+    {
+        // Arrange. One project, however its root is spelled (code-structure FR-059).
+        using var store = Store();
+        store.Replace(_root + IoPath.DirectorySeparatorChar, [Problem("a.adp")]);
+
+        // Act.
+        var set = store.Get(_root);
+
+        // Assert.
+        Assert.Equal(ProjectProblemSetState.Validated, set.State);
+        Assert.Single(set.Problems);
+    }
+
     // ---- mutations ---------------------------------------------------------------------
 
     [Fact]

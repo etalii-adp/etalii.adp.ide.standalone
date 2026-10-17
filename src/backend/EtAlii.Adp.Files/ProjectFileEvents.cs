@@ -37,7 +37,7 @@ public sealed class ProjectFileEvents : IDisposable
 {
     private static readonly ILogger _logger = Log.ForContext<ProjectFileEvents>();
 
-    private readonly Dictionary<string, Source> _sources = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<ProjectRoot, Source> _sources = [];
     private readonly Lock _gate = new();
     private bool _disposed;
 
@@ -58,7 +58,7 @@ public sealed class ProjectFileEvents : IDisposable
     {
         lock (_gate)
         {
-            return _sources.TryGetValue(Path.TrimEndingDirectorySeparator(Path.GetFullPath(rootPath)), out var source) ? source.Watcher : null;
+            return _sources.TryGetValue(ProjectRoot.From(rootPath), out var source) ? source.Watcher : null;
         }
     }
 
@@ -75,7 +75,7 @@ public sealed class ProjectFileEvents : IDisposable
         ArgumentException.ThrowIfNullOrWhiteSpace(rootPath);
         ArgumentNullException.ThrowIfNull(heard);
 
-        var root = Path.TrimEndingDirectorySeparator(Path.GetFullPath(rootPath));
+        var root = ProjectRoot.From(rootPath);
         lock (_gate)
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
@@ -86,7 +86,7 @@ public sealed class ProjectFileEvents : IDisposable
             }
             else
             {
-                source = new Source(root);
+                source = new Source(root.FullPath);
                 _sources[root] = source;
             }
 
@@ -140,7 +140,7 @@ public sealed class ProjectFileEvents : IDisposable
         Source? source;
         lock (_gate)
         {
-            _sources.TryGetValue(Path.TrimEndingDirectorySeparator(Path.GetFullPath(rootPath)), out source);
+            _sources.TryGetValue(ProjectRoot.From(rootPath), out source);
         }
 
         source?.WatchAgain();
@@ -193,7 +193,7 @@ public sealed class ProjectFileEvents : IDisposable
         {
             var source = subscription.Source;
             source.Subscribers = [.. source.Subscribers.Where(other => other != subscription)];
-            if (source.Subscribers.Length == 0 && _sources.Remove(source.Root))
+            if (source.Subscribers.Length == 0 && _sources.Remove(ProjectRoot.From(source.Root)))
             {
                 source.Dispose();
             }

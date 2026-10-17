@@ -35,7 +35,7 @@ public sealed class ProblemStore : IProblemStore, IDisposable
     private readonly DiagramValidators _validators;
     private readonly Debouncer<CachedProjectProblems>? _writes;
     private readonly int _maxReported;
-    private readonly ConcurrentDictionary<string, CachedProjectProblems> _entries = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ConcurrentDictionary<ProjectRoot, CachedProjectProblems> _entries = new();
 
     /// <summary>
     /// Set before <see cref="Dispose"/> flushes, so a mutation arriving during or after the
@@ -140,7 +140,7 @@ public sealed class ProblemStore : IProblemStore, IDisposable
 
     public IReadOnlyList<string> KnownRoots()
     {
-        var roots = new HashSet<string>(_entries.Keys, StringComparer.OrdinalIgnoreCase);
+        var roots = new HashSet<ProjectRoot>(_entries.Keys);
 
         var cacheFolder = IoPath.Combine(_appDataRoot, "EtAlii.Adp", "problems");
         if (Directory.Exists(cacheFolder))
@@ -152,7 +152,7 @@ public sealed class ProblemStore : IProblemStore, IDisposable
                     var cache = JsonSerializer.Deserialize<ProblemCacheFile>(File.ReadAllText(cachePath));
                     if (cache is { Version: CacheFormatVersion, RootPath.Length: > 0 })
                     {
-                        roots.Add(IoPath.GetFullPath(cache.RootPath));
+                        roots.Add(ProjectRoot.From(cache.RootPath));
                     }
                 }
                 catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or JsonException)
@@ -162,7 +162,7 @@ public sealed class ProblemStore : IProblemStore, IDisposable
             }
         }
 
-        return roots.Order(StringComparer.OrdinalIgnoreCase).ToArray();
+        return roots.Select(root => root.FullPath).Order(StringComparer.OrdinalIgnoreCase).ToArray();
     }
 
     /// <summary>
@@ -297,8 +297,7 @@ public sealed class ProblemStore : IProblemStore, IDisposable
     private CachedProjectProblems GetOrLoad(string rootPath)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(rootPath);
-        var key = IoPath.GetFullPath(rootPath);
-        return _entries.GetOrAdd(key, Load);
+        return _entries.GetOrAdd(ProjectRoot.From(rootPath), root => Load(root.FullPath));
     }
 
     private void ScheduleWrite(CachedProjectProblems entry)

@@ -38,7 +38,7 @@ public sealed class ContextSelectionStore : IContextSelectionStore, IDisposable
         lock (entry.Gate)
         {
             entry.Writer = writer;
-            entry.RootPath = rootPath;
+            entry.Root = ProjectRoot.From(rootPath);
             entry.RootActions = rootActions;
             // The baseline: the selection (or the root's actions when nothing is selected), the
             // project's own actions, and the project's problems, so a connection is fully
@@ -51,12 +51,13 @@ public sealed class ContextSelectionStore : IContextSelectionStore, IDisposable
 
     public void PushProjectActions(string rootPath, IReadOnlyList<ContextActionGroupDefinition> actions)
     {
+        var root = ProjectRoot.From(rootPath);
         var message = ContextActionGroups.ToProto(actions);
         foreach (var entry in _entries.Values())
         {
             lock (entry.Gate)
             {
-                if (entry.Writer is null || !string.Equals(entry.RootPath, rootPath, StringComparison.OrdinalIgnoreCase))
+                if (entry.Writer is null || entry.Root != root)
                 {
                     continue;
                 }
@@ -68,12 +69,13 @@ public sealed class ContextSelectionStore : IContextSelectionStore, IDisposable
 
     public void PushProblems(string rootPath, ProjectProblems problems)
     {
+        var root = ProjectRoot.From(rootPath);
         var message = new ContextMessage { Problems = problems };
         foreach (var entry in _entries.Values())
         {
             lock (entry.Gate)
             {
-                if (entry.Writer is null || !string.Equals(entry.RootPath, rootPath, StringComparison.OrdinalIgnoreCase))
+                if (entry.Writer is null || entry.Root != root)
                 {
                     continue;
                 }
@@ -89,12 +91,13 @@ public sealed class ContextSelectionStore : IContextSelectionStore, IDisposable
         ArgumentException.ThrowIfNullOrWhiteSpace(rootPath);
         ArgumentException.ThrowIfNullOrWhiteSpace(message);
 
+        var root = ProjectRoot.From(rootPath);
         var notice = new ContextMessage { Notice = new ContextNotice { Message = message } };
         foreach (var entry in _entries.Values())
         {
             lock (entry.Gate)
             {
-                if (entry.Writer is null || !string.Equals(entry.RootPath, rootPath, StringComparison.OrdinalIgnoreCase))
+                if (entry.Writer is null || entry.Root != root)
                 {
                     continue;
                 }
