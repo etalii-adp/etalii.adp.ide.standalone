@@ -697,12 +697,12 @@
         },
         {
           "do": "set loop:R1 causal-loop.loop-variables = \"a → b\"",
-          "answer": "throws System.ArgumentException: An item with the same key has already been added. Key: a",
+          "answer": "ok",
           "unchanged": true
         },
         {
           "do": "set loop:R1 causal-loop.loop-variables = \"nobody → nowhere\"",
-          "answer": "throws System.ArgumentException: An item with the same key has already been added. Key: a",
+          "answer": "refused: 'nobody → nowhere' is not a cycle this loop can run through: choose one the arrows form through its variables that no other loop claims.",
           "unchanged": true
         },
         {
@@ -796,8 +796,11 @@
         },
         {
           "do": "commit causal-loop.add-loop on variable:a = \"R99\"",
-          "answer": "throws System.ArgumentException: An item with the same key has already been added. Key: a",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@13 -0 +\"loop R99 \\\"R99\\\" a b\\r\\n\""
+          ],
+          "sha256": "080a21ff956b282e288d60fa7fe5dd98cb65c43f68145e143f676f5e33d3bd74"
         },
         {
           "do": "set variable:a causal-loop.variable-id = \"b\"",
@@ -820,9 +823,9 @@
           "hunks": [
             "@5 -1 +\"variable parityId \\\"Parity label\\\"\\r\\n\"",
             "@9 -2 +\"link parityId -> b - delayed flipped \\\"Parity note\\\"\\r\\nlink b -> parityId +\\r\\n\"",
-            "@12 -1 +\"loop B99 \\\"Parity name\\\" parityId b\\r\\n\""
+            "@12 -2 +\"loop B99 \\\"Parity name\\\" parityId b\\r\\nloop R99 \\\"R99\\\" parityId b\\r\\n\""
           ],
-          "sha256": "c18e5a737d18ef834f167fb557777917226c7fc29e49d522445bfa9f3d4e5749"
+          "sha256": "7b14938ded176b4550b8c7093c31ddfc5b0c032333f72fb5bd08019348aaeac5"
         },
         {
           "do": "execute causal-loop.connect on rel:b->parityId",
@@ -839,9 +842,9 @@
           "answer": "ok",
           "hunks": [
             "@11 -0 +\"link parityId -> parityId +\\r\\n\"",
-            "@13 -0 +\"loop R1 \\\"\\\" parityId\\r\\n\""
+            "@14 -0 +\"loop R100 \\\"\\\" parityId\\r\\n\""
           ],
-          "sha256": "bb1d77fbd21c1af2834a48084e16f1bdd24e171e59060cfd4c83b6a0f2b9c01d"
+          "sha256": "6449ac02786648fd62b02671f95fd8c868d3d8385d42f5ef0e4969d8dc50e462"
         },
         {
           "do": "execute causal-loop.connect on rel:parityId->nobody",
@@ -859,7 +862,7 @@
           "hunks": [
             "@8 -0 +\"variable variable1 \\\"Variable 1\\\"\\r\\n\""
           ],
-          "sha256": "3658e1e02b81627facc344ad399a356ec0197fc80d26a00c78e318ff1f6f9769"
+          "sha256": "05f447b0036f0f61d19c629881c88454da0fd1696bb0194570ceaf4e353e96d3"
         },
         {
           "do": "move variable:b to (100, 200)",
@@ -907,7 +910,7 @@
           "hunks": [
             "@10 -1 +\"\""
           ],
-          "sha256": "825d3f7706b15d694628d85f6df1710002ad897db52d2397751a7276e4514dc1"
+          "sha256": "14918206cdedcc5024fbe4490462af0e07400b88885a545d5f7608b67deda300"
         },
         {
           "do": "execute causal-loop.remove-loop on loop:B99",
@@ -915,11 +918,11 @@
           "hunks": [
             "@13 -1 +\"\""
           ],
-          "sha256": "d27ce837023dd7074ae64e6a22f6dc0fc4dc1aba358cb5658e72d4a616c82a55"
+          "sha256": "6ff454b9be68879415d79951393a747cc1024cf963605c26f4625a122e4ba376"
         },
         {
           "do": "execute causal-loop.remove-variable on variable:parityId",
-          "answer": "confirms: ContextConfirmationRequest { Title = Remove variable, Icon = mdi-delete-outline, Message = Removing 'parityId' also removes the 3 links and loops that name it., ConfirmLabel = Remove, Danger = True }",
+          "answer": "confirms: ContextConfirmationRequest { Title = Remove variable, Icon = mdi-delete-outline, Message = Removing 'parityId' also removes the 4 links and loops that name it., ConfirmLabel = Remove, Danger = True }",
           "unchanged": true
         },
         {
@@ -928,12 +931,12 @@
           "hunks": [
             "@5 -1 +\"\"",
             "@10 -2 +\"\"",
-            "@13 -1 +\"\""
+            "@13 -2 +\"\""
           ],
           "sha256": "9982e98bf572a525a40ba3bee1ddb99e2313f765dc387b8ed51ed134d9529aa2"
         }
       ],
-      "undoAll": "22 undone; the original text is back"
+      "undoAll": "23 undone; the original text is back"
     },
     {
       "document": "diagrams/causal-loop-diagram/backend/EtAlii.Adp.Diagram.CausalLoopDiagram.Tests/Fixtures/header-twice.cld",
