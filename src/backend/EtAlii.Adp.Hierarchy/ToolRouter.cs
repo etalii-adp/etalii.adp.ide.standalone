@@ -67,6 +67,6 @@ public sealed class ToolRouter
         {
             DesignerRouted designer => designer,
             DesignerUnreadable unreadable => new ToolUnreadable(unreadable.Path, unreadable.Reason),
-            _ => _editors.Resolve(path) is EditorRouted editor ? editor : new NoTool(),
+            _ => _editors.Resolve(path) as EditorRouted ?? (ToolRouting)new NoTool(),
         };
 }

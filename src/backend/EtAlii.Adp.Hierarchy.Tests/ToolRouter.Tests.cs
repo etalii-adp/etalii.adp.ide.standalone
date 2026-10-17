@@ -26,13 +26,14 @@ public class ToolRouterTests : IDisposable
     private static readonly EditorDefinition DupTwo = new("dup-two", "Two", Extensions: [".dup"]);
 
     private readonly TestFolder _folder = TestFolder.Create("tool-router");
+    private readonly DiagramFileRouter _diagrams = new(new TestDiagramDefinitionCatalog(Mindmap));
     private readonly ToolRouter _router;
 
     public ToolRouterTests()
     {
         Directory.CreateDirectory(_folder.Combine("project"));
         _router = new ToolRouter(
-            new DiagramFileRouter(new TestDiagramDefinitionCatalog(Mindmap)),
+            _diagrams,
             new DesignerFileRouter(new DesignerDefinitionCatalog { All = [Sheet] }),
             new EditorResolver(new EditorDefinitionCatalog { All = [Plain, Markdown, Yaml, FreeMind, DupOne, DupTwo] }));
     }
@@ -77,8 +78,10 @@ public class ToolRouterTests : IDisposable
         // Act.
         var routing = _router.Route(path, Root);
 
-        // Assert.
-        Assert.Equal(path, Assert.IsType<ToolUnreadable>(routing).Path);
+        // Assert: refused with the diagram router's own reason, not a sentence of the tool router's.
+        var refused = Assert.IsType<ToolUnreadable>(routing);
+        Assert.Equal(path, refused.Path);
+        Assert.Equal(Assert.IsType<DiagramUnreadable>(_diagrams.Route(path, Root)).Reason, refused.Reason);
     }
 
     [Fact]
