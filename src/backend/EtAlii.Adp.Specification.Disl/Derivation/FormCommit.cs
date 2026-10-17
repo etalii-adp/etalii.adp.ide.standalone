@@ -102,10 +102,10 @@ public static class FormCommit
 
     /// <summary>
     /// The dialog the params form <paramref name="form"/> asks a host to show for <paramref name="self"/> (null for a
-    /// form on the diagram): its label, icon and <c>submitLabel</c>, and each item's label, widget and <c>initial</c>
-    /// value, evaluated once; null when there is no such form.
+    /// form on the diagram, whose <paramref name="diagram"/> is then given): its label, icon and <c>submitLabel</c>, and
+    /// each item's label, widget and <c>initial</c> value, evaluated once; null when there is no such form.
     /// </summary>
-    public static FormRequest? Request(DislSpecification specification, string form, DislElement? self, DislEnv env)
+    public static FormRequest? Request(DislSpecification specification, string form, DislElement? self, DislEnv env, DislDiagram? diagram = null)
     {
         ArgumentNullException.ThrowIfNull(specification);
         ArgumentNullException.ThrowIfNull(form);
@@ -113,7 +113,7 @@ public static class FormCommit
 
         if (!specification.Root.TryGetProperty("forms", out var forms) || !forms.TryGetProperty(form, out var json)) return null;
         var pointer = DislJson.Pointer("/forms", form);
-        var variables = Variables(self, null, env.ToCel(), self?.Diagram);
+        var variables = Variables(self, null, env.ToCel(), diagram ?? self?.Diagram);
 
         var fields = new List<FormRequestField>();
         if (json.TryGetProperty("items", out var items) && items.ValueKind == JsonValueKind.Array)
@@ -139,9 +139,9 @@ public static class FormCommit
     /// <summary>
     /// Why the params form <paramref name="form"/> refuses <paramref name="value"/> for its item
     /// <paramref name="attribute"/>: the message of the first of its validations of severity <c>error</c> that fails;
-    /// null when the value is accepted.
+    /// null when the value is accepted. For a form on the diagram, <paramref name="diagram"/> is given.
     /// </summary>
-    public static string? Refusal(DislSpecification specification, string form, string attribute, object? value, DislElement? self, DislEnv env)
+    public static string? Refusal(DislSpecification specification, string form, string attribute, object? value, DislElement? self, DislEnv env, DislDiagram? diagram = null)
     {
         ArgumentNullException.ThrowIfNull(specification);
         ArgumentNullException.ThrowIfNull(form);
@@ -158,7 +158,7 @@ public static class FormCommit
         {
             var at = DislJson.Pointer(DislJson.Pointer(DislJson.Pointer("/forms", form), "items"), index++);
             if (DislJson.String(item, "attribute") != attribute) continue;
-            return Invalid(specification, item, at, Variables(self, value, env.ToCel(), self?.Diagram));
+            return Invalid(specification, item, at, Variables(self, value, env.ToCel(), diagram ?? self?.Diagram));
         }
         return null;
     }

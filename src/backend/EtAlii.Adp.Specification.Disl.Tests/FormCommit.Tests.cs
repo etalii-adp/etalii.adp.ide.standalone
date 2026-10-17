@@ -188,6 +188,21 @@ public class FormCommitTests
     }
 
     [Fact]
+    public void AParamsForm_WithoutAnElement_ReadsTheDiagramGiven()
+    {
+        // Arrange.
+        var diagram = Gauge().Diagram;
+
+        // Act.
+        var request = FormCommit.Request(Specification, "pick", null, Editable, diagram);
+        var refused = FormCommit.Refusal(Specification, "pick", "target", "nope", null, Editable, diagram);
+
+        // Assert.
+        Assert.Equal("G2", Assert.Single(request!.Fields).Initial);
+        Assert.Equal("'nope' is no gauge.", refused);
+    }
+
+    [Fact]
     public void ALabelsEdit_ThatItsParseDoesNotAccept_IsRefusedWithItsRefusal()
     {
         // Act.
