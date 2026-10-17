@@ -16,6 +16,8 @@
   <Project Path="EtAlii.Adp.Documents.Tests/EtAlii.Adp.Documents.Tests.csproj" />
   <Project Path="EtAlii.Adp.Layout/EtAlii.Adp.Layout.csproj" />
   <Project Path="EtAlii.Adp.Layout.Tests/EtAlii.Adp.Layout.Tests.csproj" />
+  <Project Path="EtAlii.Adp.Workspace/EtAlii.Adp.Workspace.csproj" />
+  <Project Path="EtAlii.Adp.Workspace.Tests/EtAlii.Adp.Workspace.Tests.csproj" />
   <Project Path="EtAlii.Adp.Editor/EtAlii.Adp.Editor.csproj" />
   <Project Path="EtAlii.Adp.Designer/EtAlii.Adp.Designer.csproj" />
   <Project Path="EtAlii.Adp.Designer.Tests/EtAlii.Adp.Designer.Tests.csproj" />

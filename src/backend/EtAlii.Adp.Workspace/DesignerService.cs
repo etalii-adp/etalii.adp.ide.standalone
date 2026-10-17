@@ -9,7 +9,7 @@ using Grpc.Core;
 using Serilog;
 using Proto = EtAlii.Adp.Designer.Wire;
 
-namespace EtAlii.Adp.Diagram;
+namespace EtAlii.Adp.Workspace;
 
 /// <summary>
 /// The designer family's calls (knowledge-designer Requirements 10.2 and 10.7): a table joins

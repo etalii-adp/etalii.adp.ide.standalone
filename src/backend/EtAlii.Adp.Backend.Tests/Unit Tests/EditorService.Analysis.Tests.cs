@@ -1,18 +1,18 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
 using EtAlii.Adp.Authentication;
-using EtAlii.Adp.Diagram;
 using EtAlii.Adp.Editor;
 using EtAlii.Adp.Editor.Wire;
 using EtAlii.Adp.History;
 using EtAlii.Adp.Projects;
+using EtAlii.Adp.Workspace;
 using Grpc.Core;
 using Grpc.Core.Testing;
 using Serilog;
 using Serilog.Core;
 using Serilog.Events;
 using Xunit;
-using EditorService = EtAlii.Adp.Diagram.EditorService;
+using EditorService = EtAlii.Adp.Workspace.EditorService;
 using Path = EtAlii.Adp.Documents.Wire.Path;
 using ProblemSeverity = EtAlii.Adp.Documents.Wire.ProblemSeverity;
 using TextCompletion = EtAlii.Adp.Editor.TextCompletion;
@@ -166,7 +166,7 @@ public sealed class EditorServiceAnalysisTests : IDisposable
             RepositoryPaths.Under("src", "backend", "EtAlii.Adp.Editor", "IEditorAnalyzer.cs"),
             RepositoryPaths.Under("src", "backend", "EtAlii.Adp.Editor", "_Model", "TextAnalysis.cs"),
             RepositoryPaths.Under("src", "backend", "EtAlii.Adp.Editor", "_Model", "TextCompletion.cs"),
-            RepositoryPaths.Under("src", "backend", "EtAlii.Adp.Diagram", "EditorAnalyzers.cs"),
+            RepositoryPaths.Under("src", "backend", "EtAlii.Adp.Workspace", "EditorAnalyzers.cs"),
         ];
 
         foreach (var file in seam)

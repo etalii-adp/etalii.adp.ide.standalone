@@ -1,8 +1,9 @@
+using EtAlii.Adp.Diagram;
 using EtAlii.Adp.Diagram.Wire;
 using EtAlii.Adp.Documents.Wire;
 using Google.Protobuf;
 
-namespace EtAlii.Adp.Diagram;
+namespace EtAlii.Adp.Workspace;
 
 /// <summary>
 /// Maps a module's backend delta records to the contract's proto - the one place that mapping

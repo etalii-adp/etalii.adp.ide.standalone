@@ -1,7 +1,7 @@
 using System.Collections.Concurrent;
 using EtAlii.Adp.Designer;
 
-namespace EtAlii.Adp.Diagram;
+namespace EtAlii.Adp.Workspace;
 
 /// <summary>
 /// The table streams that are running, by connection and stream id: where a table call that

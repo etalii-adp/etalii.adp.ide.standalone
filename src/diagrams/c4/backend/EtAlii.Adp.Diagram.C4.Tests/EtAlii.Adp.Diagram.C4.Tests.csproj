@@ -14,6 +14,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.History\EtAlii.Adp.History.csproj" />
+    <!-- The failed-reload tests drive the store through the host's reload bridge (code-structure T155). -->
+    <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Workspace\EtAlii.Adp.Workspace.csproj" />
     <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Problems\EtAlii.Adp.Problems.csproj" />
     <ProjectReference Include="..\EtAlii.Adp.Diagram.C4\EtAlii.Adp.Diagram.C4.csproj" />
   </ItemGroup>

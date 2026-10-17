@@ -11,7 +11,7 @@ using ProblemSeverity = EtAlii.Adp.Documents.Wire.ProblemSeverity;
 using WireCompletion = EtAlii.Adp.Editor.Wire.TextCompletion;
 using WireFinding = EtAlii.Adp.Editor.Wire.TextFinding;
 
-namespace EtAlii.Adp.Diagram;
+namespace EtAlii.Adp.Workspace;
 
 /// <summary>
 /// The editor family's own unary calls: the save, and asking an editor's module about the text

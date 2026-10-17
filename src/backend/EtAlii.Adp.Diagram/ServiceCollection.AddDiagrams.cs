@@ -1,4 +1,3 @@
-using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Editor;
 using EtAlii.Adp.Hierarchy;
@@ -10,7 +9,8 @@ namespace EtAlii.Adp.Diagram;
 /// <summary>
 /// Registers the type-agnostic half of diagramming: the factories a module registers to
 /// write an empty document body, the session factories that open one, and the registry that
-/// correlates a connection's viewport with the stream it opened.
+/// correlates a connection's viewport with the stream it opened. The services a connection calls
+/// are the host's, registered by <c>AddWorkspace</c> in <c>EtAlii.Adp.Workspace</c>.
 /// </summary>
 /// <remarks>
 /// Nothing here names a diagram type. A module becomes creatable by registering an
@@ -27,34 +27,11 @@ public static class ServiceCollectionAddDiagramsExtension
         services.AddSingleton<DiagramSessionFactories>();
         services.AddSingleton<IDiagramViewportRegistry, DiagramViewportRegistry>();
 
-        // A tab's one stream (two-tab-connection-wedge Requirement 3.1) runs the hierarchy watch,
-        // the context stream and the diagram pump in-process, so the three services it composes
-        // are resolvable as ordinary services as well as mapped as gRPC ones.
-        services.AddSingleton<WorkspaceConnections>();
-
-        // The designer family rides the same stream as its table member: the session factories
-        // the modules registered, and the table streams that are running, which the calls after
-        // an open find their session through.
-        services.AddSingleton<DesignerSessionFactories>();
-        services.AddSingleton<TableStreams>();
-        services.TryAddTransient<HierarchyService>();
-        services.TryAddTransient<ContextService>();
-        services.TryAddTransient<DiagramService>();
-
-        // The watcher-to-store bridge: an external write to an open diagram's body or .adp
-        // reaches the owning store's Reload, which is what carries it to every open session
-        // as pushed deltas (modular-text-editors Requirements 5.3, 5.5). Modules opt in by
-        // registering an IDiagramDocumentReloader per origin.
         // One source of file events per project root, whoever listens there (code-structure FR-050).
         services.TryAddSingleton<ProjectFileEvents>();
-        services.AddSingleton<DiagramDocumentReloadBridge>();
 
-        // The editor family rides the same stream: what nothing diagram-shaped claims falls
-        // through to the resolved editor (modular-text-editors Requirement 5.1's order). The
-        // catalog tolerates a host that never ran AddEditorDefinitions - an older test host -
-        // by answering empty rather than failing its container.
-        services.AddSingleton<EditorSessionFactories>();
-        services.AddSingleton<EditorAnalyzers>();
+        // The editor catalog tolerates a host that never ran AddEditorDefinitions - an older test
+        // host - by answering empty rather than failing its container.
         services.TryAddSingleton<IEditorDefinitionCatalog>(svc =>
             new EditorDefinitionCatalog { All = svc.GetService<IReadOnlyList<EditorDefinition>>() ?? [] });
         services.AddSingleton(svc => new EditorResolver(svc.GetRequiredService<IEditorDefinitionCatalog>()));

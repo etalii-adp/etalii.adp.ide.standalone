@@ -1,7 +1,8 @@
 using System.Text;
+using EtAlii.Adp.Diagram;
 using EtAlii.Adp.Editor;
 
-namespace EtAlii.Adp.Diagram;
+namespace EtAlii.Adp.Workspace;
 
 /// <summary>
 /// The one piece of literal interface-bridging the editor family needs: an

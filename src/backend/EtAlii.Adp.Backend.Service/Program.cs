@@ -9,6 +9,7 @@ using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 using EtAlii.Adp.Problems;
 using EtAlii.Adp.Projects;
+using EtAlii.Adp.Workspace;
 using JetBrains.Annotations;
 using Serilog;
 
@@ -57,7 +58,7 @@ builder.Services.AddContext();
 // context seams - including the Add action that creates a new diagram.
 builder.Services.AddHierarchy();
 // The type-agnostic half of diagramming: document factories, session factories, viewports.
-builder.Services.AddDiagrams();
+builder.Services.AddWorkspace();
 
 // The dispatcher, the history and every command handler. Every state change the context
 // actions above make travels through here, which is what makes it undoable.
