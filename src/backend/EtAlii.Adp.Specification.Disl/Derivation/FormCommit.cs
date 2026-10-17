@@ -163,6 +163,80 @@ public static class FormCommit
         return null;
     }
 
+    /// <summary>
+    /// What committing the inline edit <paramref name="text"/> of <paramref name="self"/>'s label
+    /// <paramref name="label"/> does (DISL 0.3 §6.12): on a read-only diagram <c>std.readOnly</c>; then the label's
+    /// <c>parse</c>, whose <c>accepts</c> refuses with its <c>refusal</c> and whose <c>write</c> makes the
+    /// transaction. A label without a <c>parse</c>, or with none of that id, cannot be edited.
+    /// </summary>
+    /// <remarks>
+    /// The refusal is the label's editor's alone: a form item on the same attribute keeps its own validation (§6.12).
+    /// </remarks>
+    public static DislTransaction Label(DislSpecification specification, DislElement self, string label, string text, DislEnv env)
+    {
+        ArgumentNullException.ThrowIfNull(specification);
+        ArgumentNullException.ThrowIfNull(self);
+        ArgumentNullException.ThrowIfNull(label);
+        ArgumentNullException.ThrowIfNull(text);
+        ArgumentNullException.ThrowIfNull(env);
+
+        var variables = Variables(self, text, env.ToCel());
+        if (env.ReadOnly) return DislTransaction.Refused(DislEvaluation.StandardMessage(specification, "std.readOnly", variables, "This diagram is read-only."));
+        if (LabelOf(specification, self, label) is not { } found || !found.Json.TryGetProperty("parse", out var parse))
+        {
+            return DislTransaction.Refused($"'{label}' cannot be edited here.");
+        }
+
+        var parsePointer = DislJson.Pointer(found.Pointer, "parse");
+        if (parse.TryGetProperty("accepts", out var accepts) && !DislEvaluation.Holds(specification, accepts, DislJson.Pointer(parsePointer, "accepts"), DislContexts.LabelParse, variables))
+        {
+            return DislTransaction.Refused(parse.TryGetProperty("refusal", out var refusal)
+                ? DislEvaluation.Message(specification, refusal, DislJson.Pointer(parsePointer, "refusal"), DislContexts.LabelParse, variables, $"'{text}' cannot be written here.")
+                : $"'{text}' cannot be written here.");
+        }
+
+        var runner = new ActionRunner(specification, self.Diagram, DislIds.Fixed(), DislContexts.LabelParse);
+        if (parse.TryGetProperty("write", out var write)) runner.Run(write, DislJson.Pointer(parsePointer, "write"), variables);
+        return runner.Transaction;
+    }
+
+    /// <summary>
+    /// The text the inline editor of <paramref name="self"/>'s label <paramref name="label"/> opens on (DISL §6.12): its
+    /// <c>editText</c>, else its <c>text</c>; null when there is no such label or it does not evaluate to text.
+    /// </summary>
+    public static string? EditText(DislSpecification specification, DislElement self, string label, DislEnv env)
+    {
+        ArgumentNullException.ThrowIfNull(specification);
+        ArgumentNullException.ThrowIfNull(self);
+        ArgumentNullException.ThrowIfNull(label);
+        ArgumentNullException.ThrowIfNull(env);
+
+        if (LabelOf(specification, self, label) is not { } found) return null;
+        var key = found.Json.TryGetProperty("editText", out _) ? "editText" : "text";
+        if (!found.Json.TryGetProperty(key, out var json)) return null;
+        return DislEvaluation.Expression(specification, json, DislJson.Pointer(found.Pointer, key), DislContexts.Element, Variables(self, null, env.ToCel())) as string;
+    }
+
+    /// <summary>The label <paramref name="id"/> of the notation of <paramref name="self"/>'s type: a node's, else a relation's.</summary>
+    private static (JsonElement Json, string Pointer)? LabelOf(DislSpecification specification, DislElement self, string id)
+    {
+        if (!specification.Root.TryGetProperty("notation", out var notation)) return null;
+        foreach (var kind in new[] { "nodes", "edges" })
+        {
+            foreach (var type in DislJson.Members(notation, kind))
+            {
+                if (type.Name != self.Type.Name || !type.Value.TryGetProperty("labels", out var labels) || labels.ValueKind != JsonValueKind.Array) continue;
+                var index = 0;
+                foreach (var label in labels.EnumerateArray())
+                {
+                    var at = DislJson.Pointer(DislJson.Pointer(DislJson.Pointer(DislJson.Pointer("/notation", kind), type.Name), "labels"), index++);
+                    if (DislJson.String(label, "id") == id) return (label, at);
+                }
+            }
+        }
+        return null;
+    }
+
     /// <summary>The message of the first validation of severity <c>error</c> of <paramref name="item"/> that fails, or null.</summary>
     private static string? Invalid(DislSpecification specification, JsonElement item, string pointer, Dictionary<string, object?> variables)
     {
