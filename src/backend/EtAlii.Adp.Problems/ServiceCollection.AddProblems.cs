@@ -40,7 +40,11 @@ public static class ServiceCollectionAddProblemsExtension
             provider.GetRequiredService<DiagramFileRouter>(),
             provider.GetRequiredService<DiagramValidators>(),
             provider.GetRequiredService<TimeProvider>()));
+        // The broadcaster is started before the startup pass, as hosted services start in the
+        // order they are registered: it must be subscribed to the problem store before the first
+        // validation writes into it (Requirement 1.1; code-structure FR-064).
         services.AddSingleton<ProblemBroadcaster>();
+        services.AddSingleton<IHostedService>(provider => provider.GetRequiredService<ProblemBroadcaster>());
         services.TryAddSingleton<ProjectFileEvents>();
         services.AddSingleton<ProblemMaintenance>();
         services.AddSingleton<StartupRevalidation>();

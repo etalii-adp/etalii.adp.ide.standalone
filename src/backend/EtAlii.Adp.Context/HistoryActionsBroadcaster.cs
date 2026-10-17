@@ -1,5 +1,6 @@
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.History;
+using Microsoft.Extensions.Hosting;
 using Serilog;
 
 namespace EtAlii.Adp.Context;
@@ -10,7 +11,7 @@ namespace EtAlii.Adp.Context;
 /// connections (diagram-undo-redo Requirement 5.3). A burst for one project collapses into a
 /// single discovery-and-push, so a redo of several entries is not a storm of pushes.
 /// </summary>
-public sealed class HistoryActionsBroadcaster : IDisposable
+public sealed class HistoryActionsBroadcaster : IHostedService, IDisposable
 {
     internal static readonly TimeSpan CoalesceWindow = TimeSpan.FromMilliseconds(50);
     private static readonly ILogger _logger = Log.ForContext<HistoryActionsBroadcaster>();
@@ -62,6 +63,15 @@ public sealed class HistoryActionsBroadcaster : IDisposable
     /// <summary>The project itself as an action target - what the project-scope providers resolve against.</summary>
     internal static ContextTarget ProjectTarget(string rootPath) =>
         new(ContextScope.Project, rootPath, IsContainer: true, SourceId: default, RootPath: rootPath);
+
+    /// <summary>
+    /// Nothing is left to start: the constructor subscribed. The broadcaster is a hosted service so
+    /// that the host constructs it as it starts, before the first request (code-structure FR-064).
+    /// </summary>
+    public Task StartAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+    /// <inheritdoc />
+    public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 
     public void Dispose()
     {

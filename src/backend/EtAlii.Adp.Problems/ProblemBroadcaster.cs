@@ -1,6 +1,7 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Diagram;
 using EtAlii.Adp.Documents.Wire;
+using Microsoft.Extensions.Hosting;
 using Serilog;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 using Path = EtAlii.Adp.Documents.Wire.Path;
@@ -14,7 +15,7 @@ namespace EtAlii.Adp.Problems;
 /// selection store never learns where problems come from and the problem store never learns
 /// about connections. <see cref="HistoryActionsBroadcaster"/> is the precedent.
 /// </summary>
-public sealed class ProblemBroadcaster : IDisposable
+public sealed class ProblemBroadcaster : IHostedService, IDisposable
 {
     private static readonly ILogger _logger = Log.ForContext<ProblemBroadcaster>();
 
@@ -36,6 +37,15 @@ public sealed class ProblemBroadcaster : IDisposable
     /// connection's baseline, so the panel is current the moment it connects.
     /// </summary>
     public ProjectProblems CurrentFor(string rootPath) => ToProto(_problems.Get(rootPath));
+
+    /// <summary>
+    /// Nothing is left to start: the constructor subscribed. The broadcaster is a hosted service so
+    /// that the host constructs it as it starts, before the first request (code-structure FR-064).
+    /// </summary>
+    public Task StartAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+    /// <inheritdoc />
+    public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 
     public void Dispose()
     {
