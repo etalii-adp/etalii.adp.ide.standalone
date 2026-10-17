@@ -5,7 +5,7 @@ using EtAlii.Adp.Hierarchy;
 using Google.Protobuf;
 using Google.Protobuf.WellKnownTypes;
 
-namespace EtAlii.Adp.Diagram;
+namespace EtAlii.Adp.Diagram.Modules;
 
 /// <summary>
 /// Resolves an element of one diagram type to a selection, whatever the diagram is read from: what

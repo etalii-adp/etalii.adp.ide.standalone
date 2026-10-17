@@ -24,6 +24,7 @@
     <!-- DrawnConnections: a module's sessions and resolvers, driven through core's own seams. -->
     <ProjectReference Include="..\EtAlii.Adp.Context\EtAlii.Adp.Context.csproj" />
     <ProjectReference Include="..\EtAlii.Adp.Diagram\EtAlii.Adp.Diagram.csproj" />
+    <ProjectReference Include="..\EtAlii.Adp.Diagram.Modules\EtAlii.Adp.Diagram.Modules.csproj" />
   </ItemGroup>
 
   <ItemGroup>

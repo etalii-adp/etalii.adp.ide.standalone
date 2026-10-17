@@ -8,8 +8,6 @@
     <ProjectReference Include="..\EtAlii.Adp.Editor\EtAlii.Adp.Editor.csproj" />
     <ProjectReference Include="..\EtAlii.Adp.Designer\EtAlii.Adp.Designer.csproj" />
     <ProjectReference Include="..\EtAlii.Adp.Documents\EtAlii.Adp.Documents.csproj" />
-    <ProjectReference Include="..\EtAlii.Adp.Layout\EtAlii.Adp.Layout.csproj" />
-    <ProjectReference Include="..\EtAlii.Adp.Specification.Disl\EtAlii.Adp.Specification.Disl.csproj" />
   </ItemGroup>
 
   <ItemGroup>

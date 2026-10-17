@@ -3,7 +3,7 @@ using EtAlii.Adp.Documents;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.History;
 
-namespace EtAlii.Adp.Diagram;
+namespace EtAlii.Adp.Diagram.Modules;
 
 /// <summary>
 /// The frame of a diagram module's property provider: the scope, the checks, the rows of the

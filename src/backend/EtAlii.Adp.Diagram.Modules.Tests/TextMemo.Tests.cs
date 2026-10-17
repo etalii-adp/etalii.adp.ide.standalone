@@ -1,6 +1,6 @@
 using Xunit;
 
-namespace EtAlii.Adp.Diagram.Tests;
+namespace EtAlii.Adp.Diagram.Modules.Tests;
 
 /// <summary>What a body reads from its text is read once per text, and read again after an edit.</summary>
 public class TextMemoTests
