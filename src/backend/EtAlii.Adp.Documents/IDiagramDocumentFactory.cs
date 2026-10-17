@@ -2,8 +2,8 @@ namespace EtAlii.Adp.Documents;
 
 /// <summary>
 /// Produces the empty document body for one diagram type - the one thing core cannot derive
-/// from a <see cref="DiagramDefinition"/> on its own. A type that declares an
-/// <see cref="DiagramDefinition.Extension"/> registers exactly one of these; the shared
+/// from a <c>DiagramDefinition</c> on its own. A type that declares an
+/// <c>DiagramDefinition.Extension</c> registers exactly one of these; the shared
 /// create-file command calls it and writes what it returns beside the <c>.adp</c> file,
 /// without ever learning what the type is.
 /// </summary>

@@ -52,7 +52,7 @@ Classifying by path segment — "count the ones containing `backend`" — yields
 | Shared primitives | `EtAlii.Adp` |
 | Host and composition | `EtAlii.Adp.Backend`, `EtAlii.Adp.Backend.Service` |
 | Sign-in | `EtAlii.Adp.Authentication` |
-| Open documents, the shared wire vocabulary, and the diagram definition contract | `EtAlii.Adp.Documents` |
+| Open documents and the shared wire vocabulary | `EtAlii.Adp.Documents` |
 | Selection, actions, properties, prompts | `EtAlii.Adp.Context` |
 | Commands and undo/redo | `EtAlii.Adp.History` |
 | Errors and warnings | `EtAlii.Adp.Problems` |
@@ -60,7 +60,7 @@ Classifying by path segment — "count the ones containing `backend`" — yields
 | Connection lifetime | `EtAlii.Adp.Sessions` |
 | Workspace tree and file watching | `EtAlii.Adp.Hierarchy` |
 | Geometry with no dependency: the rectangle, the viewport test's operand, row packing, text width and graph layering | `EtAlii.Adp.Layout` |
-| Diagram-type abstractions, including the validation contract | `EtAlii.Adp.Diagram` |
+| Diagram-type abstractions, including the diagram definition and validation contracts; it references the documents project and the shared primitives only | `EtAlii.Adp.Diagram` |
 | The bases a module builds on: the provider frame, the element source resolvers, the document session, a bundled DISL definition as a module's palette, menus and rows, and the viewport test | `EtAlii.Adp.Diagram.Modules` |
 | The services a connection calls, its connections and their streams, the table wire, the editor plumbing and the reload bridge | `EtAlii.Adp.Workspace` |
 | Editor-family abstractions | `EtAlii.Adp.Editor` |

@@ -1,7 +1,7 @@
 using System.Net;
 using System.Reflection;
 using System.Text.RegularExpressions;
-using EtAlii.Adp.Documents;
+using EtAlii.Adp.Diagram;
 using EtAlii.Adp.TestSupport.Host;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;

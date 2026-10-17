@@ -1,5 +1,6 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Designer;
+using EtAlii.Adp.Diagram;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Editor;
 using EtAlii.Adp.History;
@@ -28,9 +29,17 @@ public static class ServiceCollectionAddHierarchyExtension
         // problems and the reload bridge (code-structure FR-050).
         services.TryAddSingleton<ProjectFileEvents>();
 
+        // The rename and delete handlers ask the catalog whether a file is a diagram's
+        // registration file with a body sibling to carry along, and the routers below read it.
+        // TryAdd, so a test that registered its own list first keeps it.
+        services.TryAddSingleton<IDiagramDefinitionCatalog>(svc =>
+        {
+            var definitions = svc.GetRequiredService<IReadOnlyList<DiagramDefinition>>();
+            return new DiagramDefinitionCatalog { All = definitions };
+        });
+
         // Which type a file on disk belongs to - by its .adp first line, or by a declared
-        // extension for a body dropped in without one. The catalog it reads is registered
-        // by AddCommands.
+        // extension for a body dropped in without one, from the catalog registered above.
         services.AddSingleton<DiagramFileRouter>();
 
         // Which designer type a registration names. Asked after the diagram router and before

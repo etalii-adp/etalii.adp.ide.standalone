@@ -85,7 +85,7 @@ One line each, with the project that owns it. Their internals are deliberately o
 | A connection's lifetime and its state | `EtAlii.Adp.Sessions` |
 | The workspace tree and file watching | `EtAlii.Adp.Hierarchy` |
 | Geometry: the rectangle, row packing, text width and graph layering | `EtAlii.Adp.Layout` |
-| Diagram-type abstractions | `EtAlii.Adp.Diagram` |
+| Diagram-type abstractions, including the diagram definition contract | `EtAlii.Adp.Diagram` |
 | The bases a module builds on: the provider frame, the element source resolvers, the document session, a bundled DISL definition as a module's palette, menus and rows, and the viewport test | `EtAlii.Adp.Diagram.Modules` |
 | The services a connection calls, its connections and their streams, the table wire, the editor plumbing and the reload bridge | `EtAlii.Adp.Workspace` |
 | Editor-family abstractions | `EtAlii.Adp.Editor` |

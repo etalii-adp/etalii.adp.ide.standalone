@@ -1,4 +1,4 @@
-namespace EtAlii.Adp.Documents;
+namespace EtAlii.Adp.Diagram;
 
 /// <summary>
 /// The discovered diagram types, as a service rather than the static

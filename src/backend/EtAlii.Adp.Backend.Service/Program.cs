@@ -3,7 +3,6 @@ using EtAlii.Adp.Backend.Client;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Designer;
 using EtAlii.Adp.Diagram;
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.Editor;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
