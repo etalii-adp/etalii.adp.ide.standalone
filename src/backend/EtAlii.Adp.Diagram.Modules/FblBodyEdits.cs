@@ -4,7 +4,7 @@ using EtAlii.Adp.Specification.Fbl;
 using EtAlii.Adp.Specification.Fbl.History;
 using EtAlii.Adp.Specification.Fbl.Planning;
 
-namespace EtAlii.Adp.Diagram;
+namespace EtAlii.Adp.Diagram.Modules;
 
 /// <summary>
 /// The edit side of a body read and written through an FBL binding: where a span lies in lines, and

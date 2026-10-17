@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The bases a diagram module builds on that need more than the documents project (code-structure
+    FR-054, research R9): the provider frame and its actions, the element source resolvers, the
+    document session, the bundled DISL definition and toolbox, the FBL body helpers and the viewport
+    test. The diagram abstractions stay in EtAlii.Adp.Diagram; every module references this.
+  -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\EtAlii.Adp.Diagram\EtAlii.Adp.Diagram.csproj" />
+    <ProjectReference Include="..\EtAlii.Adp.Context\EtAlii.Adp.Context.csproj" />
+    <ProjectReference Include="..\EtAlii.Adp.History\EtAlii.Adp.History.csproj" />
+    <ProjectReference Include="..\EtAlii.Adp.Hierarchy\EtAlii.Adp.Hierarchy.csproj" />
+    <ProjectReference Include="..\EtAlii.Adp.Layout\EtAlii.Adp.Layout.csproj" />
+    <ProjectReference Include="..\EtAlii.Adp.Specification.Disl\EtAlii.Adp.Specification.Disl.csproj" />
+  </ItemGroup>
+
+</Project>

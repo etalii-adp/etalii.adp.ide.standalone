@@ -4,7 +4,7 @@ using EtAlii.Adp.Specification.Fbl.Documents;
 using EtAlii.Adp.Specification.Fbl.History;
 using Xunit;
 
-namespace EtAlii.Adp.Diagram.Tests;
+namespace EtAlii.Adp.Diagram.Modules.Tests;
 
 /// <summary>A text read lately is found by what it holds, and only the last few are kept.</summary>
 public class RecentBodiesTests

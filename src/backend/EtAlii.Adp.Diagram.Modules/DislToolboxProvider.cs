@@ -1,6 +1,6 @@
 using EtAlii.Adp.Documents;
 
-namespace EtAlii.Adp.Diagram;
+namespace EtAlii.Adp.Diagram.Modules;
 
 /// <summary>
 /// The palette of a diagram type with a bundled DISL definition: the definition's toolbox, each entry

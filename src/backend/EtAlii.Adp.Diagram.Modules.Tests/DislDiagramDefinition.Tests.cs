@@ -3,7 +3,7 @@ using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Specification.Disl;
 using Xunit;
 
-namespace EtAlii.Adp.Diagram.Tests;
+namespace EtAlii.Adp.Diagram.Modules.Tests;
 
 /// <summary>
 /// The mappings every module with a bundled definition shares: a menu entry, a row and a finding's

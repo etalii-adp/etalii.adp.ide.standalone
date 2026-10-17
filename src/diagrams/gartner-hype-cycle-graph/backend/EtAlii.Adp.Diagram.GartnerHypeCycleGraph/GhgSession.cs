@@ -1,3 +1,4 @@
+using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;

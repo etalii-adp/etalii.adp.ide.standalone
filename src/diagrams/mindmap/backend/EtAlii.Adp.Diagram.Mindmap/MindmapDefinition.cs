@@ -1,5 +1,6 @@
 using System.Text;
 using EtAlii.Adp.Context;
+using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.Specification.Cel;
 using EtAlii.Adp.Specification.Disl;
 using EtAlii.Adp.Specification.Fbl;

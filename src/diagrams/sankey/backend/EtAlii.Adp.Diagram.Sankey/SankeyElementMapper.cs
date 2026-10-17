@@ -1,3 +1,4 @@
+using EtAlii.Adp.Diagram.Modules;
 using Google.Protobuf;
 
 namespace EtAlii.Adp.Diagram.Sankey;

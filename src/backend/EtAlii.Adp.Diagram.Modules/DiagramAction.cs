@@ -1,7 +1,7 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.History;
 
-namespace EtAlii.Adp.Diagram;
+namespace EtAlii.Adp.Diagram.Modules;
 
 /// <summary>
 /// One action of a diagram, written once where a module used to map it in each place it is
