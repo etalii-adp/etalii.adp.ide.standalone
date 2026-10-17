@@ -60,6 +60,21 @@ internal static class PipelineDefinition
     }
 
     /// <summary>
+    /// The definition's findings for <paramref name="model"/>, a reading that followed no template, after
+    /// <paramref name="reader"/>'s own: the six of the pipeline's rules in the order the definition
+    /// declares them, none of them for a pipeline without a stage. The finding
+    /// <see cref="DislModelBuilder"/> gives for an id computed twice stays with the model and is not one
+    /// of them (Q3).
+    /// </summary>
+    public static IReadOnlyList<DislFinding> Findings(PipelineModel model, IReadOnlyList<DislReaderFinding> reader)
+    {
+        ArgumentNullException.ThrowIfNull(model);
+        ArgumentNullException.ThrowIfNull(reader);
+        var diagram = PipelineDisl.ModelOf(model, followedTemplates: false);
+        return PipelineDisl.Viewed(diagram, null, () => ConstraintEvaluator.Evaluate(Specification, diagram, new DislConstraintOptions(Env, reader)));
+    }
+
+    /// <summary>
     /// Whether the definition's <c>view</c> action for <paramref name="actionId"/> on
     /// <paramref name="elementId"/> asks for the element to be opened or closed differently from how
     /// <paramref name="view"/> has it: the open-or-close entries are viewer state, which the host keeps.
