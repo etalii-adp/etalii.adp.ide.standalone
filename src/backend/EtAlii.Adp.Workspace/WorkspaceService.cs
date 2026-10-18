@@ -4,8 +4,8 @@ using EtAlii.Adp.Projects;
 using EtAlii.Adp.Sessions;
 using Grpc.Core;
 using Serilog;
-using ContextService = EtAlii.Adp.Context.ContextService;
-using HierarchyService = EtAlii.Adp.Hierarchy.HierarchyService;
+using ContextWatch = EtAlii.Adp.Context.ContextWatch;
+using HierarchyWatch = EtAlii.Adp.Hierarchy.HierarchyWatch;
 
 namespace EtAlii.Adp.Workspace;
 
@@ -18,7 +18,9 @@ namespace EtAlii.Adp.Workspace;
 /// <remarks>
 /// <para>
 /// It adds no behaviour of its own. The hierarchy watch, the context stream and the diagram pump are
-/// the same code their own RPCs run, handed a writer onto this stream instead of their own call's.
+/// the domain services their own RPCs run too (<see cref="HierarchyWatch"/>, <see cref="ContextWatch"/>,
+/// <see cref="DiagramPump"/>), handed a writer onto this stream instead of their own call's; no gRPC
+/// service calls another (code-structure FR-067).
 /// </para>
 /// <para>
 /// A diagram stream cannot be opened by a second streaming call without defeating the purpose, and
@@ -33,17 +35,17 @@ public sealed class WorkspaceService : Diagram.Wire.WorkspaceService.WorkspaceSe
 
     private readonly IProjectStore _projectStore;
     private readonly ConnectionSessions _sessions;
-    private readonly HierarchyService _hierarchy;
-    private readonly ContextService _context;
-    private readonly DiagramService _diagrams;
+    private readonly HierarchyWatch _hierarchy;
+    private readonly ContextWatch _context;
+    private readonly DiagramPump _diagrams;
     private readonly WorkspaceConnections _connections;
 
     public WorkspaceService(
         IProjectStore projectStore,
         ConnectionSessions sessions,
-        HierarchyService hierarchy,
-        ContextService context,
-        DiagramService diagrams,
+        HierarchyWatch hierarchy,
+        ContextWatch context,
+        DiagramPump diagrams,
         WorkspaceConnections connections)
     {
         _projectStore = projectStore;
@@ -80,11 +82,11 @@ public sealed class WorkspaceService : Diagram.Wire.WorkspaceService.WorkspaceSe
 
         var sources = new[]
         {
-            _hierarchy.RunWatchAsync(
+            _hierarchy.RunAsync(
                 session,
                 (message, token) => channel.Writer.WriteAsync(new WorkspaceMessage { Hierarchy = message }, token).AsTask(),
                 lifetime.Token),
-            _context.RunWatchAsync(
+            _context.RunAsync(
                 session,
                 (message, token) => channel.Writer.WriteAsync(new WorkspaceMessage { Context = message }, token).AsTask(),
                 lifetime.Token),
@@ -131,7 +133,7 @@ public sealed class WorkspaceService : Diagram.Wire.WorkspaceService.WorkspaceSe
 
         // Resolution refuses with the same permanent codes DiagramService.Open answers, so the
         // client still tells a diagram that cannot open from a connection that dropped.
-        var opened = _diagrams.OpenSession(userId, request.Request);
+        var opened = _diagrams.Open(userId, request.Request);
 
         var source = connection.TryStart(streamId);
         if (source is null)
@@ -156,12 +158,12 @@ public sealed class WorkspaceService : Diagram.Wire.WorkspaceService.WorkspaceSe
         return Task.FromResult(new CloseDiagramStreamResponse());
     }
 
-    private async Task PumpAsync(WorkspaceConnection connection, ShortGuid streamId, DiagramService.OpenedDiagram opened, CancellationTokenSource source)
+    private async Task PumpAsync(WorkspaceConnection connection, ShortGuid streamId, OpenedDiagram opened, CancellationTokenSource source)
     {
         Documents.Wire.ShortGuid wireStreamId = streamId;
         try
         {
-            await _diagrams.PumpAsync(
+            await _diagrams.RunAsync(
                 opened,
                 (delta, token) => connection.Writer.WriteAsync(
                     new WorkspaceMessage { Diagram = new DiagramStreamMessage { StreamId = wireStreamId, Delta = delta } },

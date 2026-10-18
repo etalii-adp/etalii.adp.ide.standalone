@@ -344,7 +344,7 @@ public sealed partial class ContextService
         var rootPath = root.FullPath;
         if (source is null)
         {
-            return _selectionStore.Get(watchId)?.Innermost.Target ?? RootTarget(rootPath, watchId);
+            return _selectionStore.Get(watchId)?.Innermost.Target ?? ContextWatch.RootTarget(rootPath, watchId);
         }
 
         // An explicit project source names the project itself, for undo and redo, which apply
@@ -418,25 +418,18 @@ public sealed partial class ContextService
     }
 
     /// <summary>
-    /// The project root as an action target. It has no entry id - it is the folder the
-    /// entries live in, not an entry - so its source id is the empty guid.
-    /// </summary>
-    /// <summary>
     /// The project-relative form of an absolute path the backend produced - the one shape a
     /// path is ever allowed to take on the wire, and the same one a selection carries.
     /// </summary>
     private static Path ToRelativePath(string rootPath, string fullPath) =>
         Path.OfLocation(IoPath.GetRelativePath(rootPath, fullPath));
 
-    internal static ContextTarget RootTarget(string rootPath, ShortGuid watchId = default) =>
-        new(ContextScope.Hierarchy, rootPath, IsContainer: true, SourceId: default, RootPath: rootPath, WatchId: watchId);
-
     private static ContextShortcutDefinition FromProto(ContextShortcut shortcut) =>
         new(shortcut.Key, shortcut.Ctrl, shortcut.Shift, shortcut.Alt, shortcut.Meta);
 
     /// <summary>
     /// Internal rather than private so the marker's two cases can be pinned without booting a
-    /// host - the same reason <see cref="RootTarget"/> below is internal.
+    /// host - the same reason <see cref="ContextWatch.RootTarget"/> is internal.
     /// </summary>
     internal static InputDialogPrompt ToProto(ContextInputRequest request)
     {
