@@ -171,13 +171,21 @@ public sealed class DislDiagram : ICelObject
 
     /// <summary>
     /// The value CEL reads for diagram attribute <paramref name="name"/>: a derived attribute's
-    /// expression (§4.3), else stored, else its default, else its type's zero value.
+    /// expression (§4.3), else stored, else its default, else its type's zero value; a reference
+    /// resolved to its element, as an element's attribute is.
     /// </summary>
     public object? ValueOf(string name)
     {
         if (!Specification.Metamodel.DiagramAttributes.TryGetValue(name, out var attribute)) throw new ArgumentException($"'{name}' is not an attribute of the diagram.", nameof(name));
         if (attribute.Json.TryGetProperty("derived", out _)) return Derived(attribute);
-        return _attributes.TryGetValue(name, out var value) ? value : DislValues.Unset(attribute, Specification.Metamodel);
+        if (!_attributes.TryGetValue(name, out var value)) return DislValues.Unset(attribute, Specification.Metamodel);
+        if (Specification.Metamodel.TypeOf(attribute.Type) is null) return value;
+        return value switch
+        {
+            string id => ElementById(id),
+            IReadOnlyList<object?> ids => ids.Select(id => id is string text ? ElementById(text) : null).ToList(),
+            _ => value,
+        };
     }
 
     /// <summary>
