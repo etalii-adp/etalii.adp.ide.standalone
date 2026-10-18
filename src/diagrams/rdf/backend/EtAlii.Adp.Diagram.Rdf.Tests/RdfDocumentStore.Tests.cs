@@ -1,4 +1,5 @@
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Files;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -11,7 +12,7 @@ namespace EtAlii.Adp.Diagram.Rdf.Tests;
 public class RdfDocumentStoreTests : IDisposable
 {
     private readonly string _root;
-    private readonly RdfDocumentStore _store = new();
+    private readonly RdfDocumentStore _store = new(new FileWriter());
 
     public RdfDocumentStoreTests()
     {
@@ -38,21 +39,21 @@ public class RdfDocumentStoreTests : IDisposable
     [InlineData("no-trailing-newline.ttl")]
     [InlineData("tied-line-endings.ttl")]
     [InlineData("simple.nt")]
-    public void SavingAnUntouchedDocument_LeavesTheFileByteIdentical(string name)
+    public async Task SavingAnUntouchedDocument_LeavesTheFileByteIdentical(string name)
     {
         // Arrange.
         var path = CopyFixture(name);
-        var original = File.ReadAllBytes(path);
+        var original = await File.ReadAllBytesAsync(path, TestContext.Current.CancellationToken);
         var entry = _store.GetOrLoad(path);
 
         // Act. Nothing is edited between the load and the save, which is what makes this test about
         // byte identity rather than about edits surviving - see the LostEdit test beside it for the
         // case an untouched document cannot express.
-        var refusal = _store.Save(path, entry.Document);
+        var refusal = await _store.SaveAsync(path, entry.Document, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Equal("", refusal.Error);
-        Assert.Equal(original, File.ReadAllBytes(path));
+        Assert.Equal(original, await File.ReadAllBytesAsync(path, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -69,15 +70,15 @@ public class RdfDocumentStoreTests : IDisposable
     }
 
     [Fact]
-    public void AFileThatIsNotTurtle_CarriesTheErrorAndItsLine_AndSaveRefuses()
+    public async Task AFileThatIsNotTurtle_CarriesTheErrorAndItsLine_AndSaveRefuses()
     {
         // Arrange.
         var path = CopyFixture("broken.ttl");
-        var original = File.ReadAllBytes(path);
+        var original = await File.ReadAllBytesAsync(path, TestContext.Current.CancellationToken);
 
         // Act.
         var entry = _store.GetOrLoad(path);
-        var refusal = _store.Save(path, entry.Document);
+        var refusal = await _store.SaveAsync(path, entry.Document, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.False(entry.IsUsable);
@@ -87,7 +88,7 @@ public class RdfDocumentStoreTests : IDisposable
         Assert.NotEqual("", refusal.Error);
         Assert.Contains("broken.ttl", refusal.Error);
         // Refusing to save left the broken file exactly as it was.
-        Assert.Equal(original, File.ReadAllBytes(path));
+        Assert.Equal(original, await File.ReadAllBytesAsync(path, TestContext.Current.CancellationToken));
     }
 
     [Fact]

@@ -21,7 +21,7 @@ public class WritableDocumentLifecycleTests : IDisposable
     }
 
     [Fact]
-    public void ASaveAfterAReload_WritesTheEditRatherThanTheFileItJustReread()
+    public async Task ASaveAfterAReload_WritesTheEditRatherThanTheFileItJustReread()
     {
         // THE BACKSTOP to the save's signature. Every one of the nine writable stores once lost an
         // edit exactly this way: a command edited the cached document, a reload landed before its save
@@ -39,15 +39,15 @@ public class WritableDocumentLifecycleTests : IDisposable
         Assert.True(reloaded);
         Assert.NotSame(note, lifecycle.Get(path));
 
-        var saved = lifecycle.Save(path, note);
+        var saved = await lifecycle.SaveAsync(path, note, TestContext.Current.CancellationToken);
 
         Assert.False(saved.Failed);
-        Assert.Equal("edited", File.ReadAllText(path));
+        Assert.Equal("edited", await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
         Assert.Same(note, lifecycle.Get(path));
     }
 
     [Fact]
-    public void AReloadDuringItsOwnSave_IsIgnored()
+    public async Task AReloadDuringItsOwnSave_IsIgnored()
     {
         // R2.3. The write is stood inside, and the reload a watcher would raise for it arrives there.
         // The file still holds the OLD text at that moment, so an unguarded reload would read it and
@@ -55,16 +55,16 @@ public class WritableDocumentLifecycleTests : IDisposable
         var path = Write("plan.note", "before");
         bool? reloadedDuringSave = null;
         WritableDocumentLifecycle<Note>? lifecycle = null;
-        lifecycle = Lifecycle(write: (destination, text) =>
+        lifecycle = Lifecycle(write: (destination, text, cancellationToken) =>
         {
             // ReSharper disable once AccessToModifiedClosure - Reason: Used in a test case which is acceptable.
             reloadedDuringSave = lifecycle!.Reload(destination);
-            AdpFileWriter.Save(destination, text);
+            return new FileWriter().SaveAsync(destination, text, cancellationToken);
         });
         var note = lifecycle.GetOrLoad(path);
         note.Text = "edited";
 
-        var saved = lifecycle.Save(path, note);
+        var saved = await lifecycle.SaveAsync(path, note, TestContext.Current.CancellationToken);
 
         Assert.False(saved.Failed);
         Assert.False(reloadedDuringSave);
@@ -72,7 +72,7 @@ public class WritableDocumentLifecycleTests : IDisposable
     }
 
     [Fact]
-    public void AReloadForItsOwnSave_ArrivingAfterTheSaveReturned_IsIgnored()
+    public async Task AReloadForItsOwnSave_ArrivingAfterTheSaveReturned_IsIgnored()
     {
         // The ordering the watcher actually produces: it reports a write after it lands, on its own
         // thread, so the notification for a save nearly always arrives once the save has returned.
@@ -82,7 +82,7 @@ public class WritableDocumentLifecycleTests : IDisposable
         var lifecycle = Lifecycle();
         var note = lifecycle.GetOrLoad(path);
         note.Text = "edited";
-        lifecycle.Save(path, note);
+        await lifecycle.SaveAsync(path, note, TestContext.Current.CancellationToken);
 
         var reloaded = lifecycle.Reload(path);
 
@@ -91,7 +91,7 @@ public class WritableDocumentLifecycleTests : IDisposable
     }
 
     [Fact]
-    public void AnExternalEditAfterItsOwnSave_IsTaken()
+    public async Task AnExternalEditAfterItsOwnSave_IsTaken()
     {
         // The control for the test above: a guard that ignored every reload after a save would pass
         // that one and leave the store deaf to the next person who edits the file.
@@ -99,8 +99,8 @@ public class WritableDocumentLifecycleTests : IDisposable
         var lifecycle = Lifecycle();
         var note = lifecycle.GetOrLoad(path);
         note.Text = "edited";
-        lifecycle.Save(path, note);
-        File.WriteAllText(path, "changed elsewhere");
+        await lifecycle.SaveAsync(path, note, TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(path, "changed elsewhere", TestContext.Current.CancellationToken);
 
         var reloaded = lifecycle.Reload(path);
 
@@ -109,7 +109,7 @@ public class WritableDocumentLifecycleTests : IDisposable
     }
 
     [Fact]
-    public void AnExternalEditThatRestoresItsOwnSave_IsTaken()
+    public async Task AnExternalEditThatRestoresItsOwnSave_IsTaken()
     {
         // What the guard remembers is dropped the first time the file differs, so the text of an old
         // save cannot mask a later external change back to it while the cache holds something else.
@@ -117,10 +117,10 @@ public class WritableDocumentLifecycleTests : IDisposable
         var lifecycle = Lifecycle();
         var note = lifecycle.GetOrLoad(path);
         note.Text = "edited";
-        lifecycle.Save(path, note);
-        File.WriteAllText(path, "changed elsewhere");
+        await lifecycle.SaveAsync(path, note, TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(path, "changed elsewhere", TestContext.Current.CancellationToken);
         Assert.True(lifecycle.Reload(path));
-        File.WriteAllText(path, "edited");
+        await File.WriteAllTextAsync(path, "edited", TestContext.Current.CancellationToken);
 
         var reloaded = lifecycle.Reload(path);
 
@@ -144,32 +144,32 @@ public class WritableDocumentLifecycleTests : IDisposable
     }
 
     [Fact]
-    public void ARefusedWrite_IsReported_AndTheEditStaysInMemory()
+    public async Task ARefusedWrite_IsReported_AndTheEditStaysInMemory()
     {
         // R3.2 and R3.4: told rather than thrown at, and the edit kept so a retry saves it.
         var path = Write("plan.note", "before");
-        var lifecycle = Lifecycle(write: (_, _) => throw new IOException("The process cannot access the file."));
+        var lifecycle = Lifecycle(write: (_, _, _) => throw new IOException("The process cannot access the file."));
         var note = lifecycle.GetOrLoad(path);
         note.Text = "edited";
 
-        var saved = lifecycle.Save(path, note);
+        var saved = await lifecycle.SaveAsync(path, note, TestContext.Current.CancellationToken);
 
         Assert.True(saved.Failed);
         Assert.Contains("could not be written", saved.Error, StringComparison.Ordinal);
-        Assert.Equal("before", File.ReadAllText(path));
+        Assert.Equal("before", await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
         Assert.Same(note, lifecycle.Get(path));
     }
 
     [Fact]
-    public void ARefusedWrite_ReleasesTheSelfWriteMark()
+    public async Task ARefusedWrite_ReleasesTheSelfWriteMark()
     {
         // A failed save that left its mark behind would make the store deaf to every later external
         // change of that file - the reload would be taken for its own write forever.
         var path = Write("plan.note", "before");
-        var lifecycle = Lifecycle(write: (_, _) => throw new IOException("refused"));
+        var lifecycle = Lifecycle(write: (_, _, _) => throw new IOException("refused"));
         var note = lifecycle.GetOrLoad(path);
-        lifecycle.Save(path, note);
-        File.WriteAllText(path, "changed elsewhere");
+        await lifecycle.SaveAsync(path, note, TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(path, "changed elsewhere", TestContext.Current.CancellationToken);
 
         var reloaded = lifecycle.Reload(path);
 
@@ -178,7 +178,7 @@ public class WritableDocumentLifecycleTests : IDisposable
     }
 
     [Fact]
-    public void ASaveThatSucceeds_WritesTheFile_AndReportsOk()
+    public async Task ASaveThatSucceeds_WritesTheFile_AndReportsOk()
     {
         // The other direction: without it, a Save that always failed would pass the refusal tests.
         var path = Write("plan.note", "before");
@@ -186,15 +186,15 @@ public class WritableDocumentLifecycleTests : IDisposable
         var note = lifecycle.GetOrLoad(path);
         note.Text = "after";
 
-        var saved = lifecycle.Save(path, note);
+        var saved = await lifecycle.SaveAsync(path, note, TestContext.Current.CancellationToken);
 
         Assert.False(saved.Failed);
         Assert.Equal("", saved.Error);
-        Assert.Equal("after", File.ReadAllText(path));
+        Assert.Equal("after", await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
     }
 
     [Fact]
-    public void ASaveIntoAFolderNotThereYet_CreatesIt()
+    public async Task ASaveIntoAFolderNotThereYet_CreatesIt()
     {
         // A freshly registered diagram's body can sit in a folder nobody has made yet, and the first
         // save is what creates it. Seven stores each did this themselves before task 6 moved it here.
@@ -203,14 +203,14 @@ public class WritableDocumentLifecycleTests : IDisposable
         var note = lifecycle.GetOrLoad(path);
         note.Text = "first";
 
-        var saved = lifecycle.Save(path, note);
+        var saved = await lifecycle.SaveAsync(path, note, TestContext.Current.CancellationToken);
 
         Assert.False(saved.Failed, saved.Error);
-        Assert.Equal("first", File.ReadAllText(path));
+        Assert.Equal("first", await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
     }
 
     [Fact]
-    public void AnEditSavedAfterAnotherProgramWrote_KeepsBothChanges()
+    public async Task AnEditSavedAfterAnotherProgramWrote_KeepsBothChanges()
     {
         // agent-activity-diagram R8.6. The command read the document, another program wrote the file,
         // and the change notice has not arrived - so the cache still holds what the command read. The
@@ -218,16 +218,16 @@ public class WritableDocumentLifecycleTests : IDisposable
         var path = Write("plan.note", "one\n");
         var lifecycle = Lifecycle();
         var basis = lifecycle.GetOrLoad(path);
-        File.WriteAllText(path, "one\ntwo\n");
+        await File.WriteAllTextAsync(path, "one\ntwo\n", TestContext.Current.CancellationToken);
 
-        var saved = lifecycle.Save(path, basis, note => DocumentEdit<Note>.Applied(new Note(note.Text + "mine\n")));
+        var saved = await lifecycle.SaveAsync(path, basis, note => DocumentEdit<Note>.Applied(new Note(note.Text + "mine\n")), TestContext.Current.CancellationToken);
 
         Assert.False(saved.Failed, saved.Error);
-        Assert.Equal("one\ntwo\nmine\n", File.ReadAllText(path));
+        Assert.Equal("one\ntwo\nmine\n", await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
     }
 
     [Fact]
-    public void AnEditSavedWithNothingChangedOnDisk_IsAppliedToTheDocumentTheCallerRead()
+    public async Task AnEditSavedWithNothingChangedOnDisk_IsAppliedToTheDocumentTheCallerRead()
     {
         // The other half: an unchanged file is not parsed again, so the edit sees the caller's own
         // document - the same reference - and a store pays nothing for the comparison but one read.
@@ -236,39 +236,39 @@ public class WritableDocumentLifecycleTests : IDisposable
         var basis = lifecycle.GetOrLoad(path);
         Note? handed = null;
 
-        var saved = lifecycle.Save(path, basis, note =>
+        var saved = (await lifecycle.SaveAsync(path, basis, note =>
         {
             handed = note;
             return DocumentEdit<Note>.Applied(new Note(note.Text + "mine\n"));
-        });
+        }, TestContext.Current.CancellationToken));
 
         Assert.False(saved.Failed, saved.Error);
         Assert.Same(basis, handed);
-        Assert.Equal("one\nmine\n", File.ReadAllText(path));
+        Assert.Equal("one\nmine\n", await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
     }
 
     [Fact]
-    public void AnEditThatNoLongerApplies_IsRefused_AndNothingIsWritten()
+    public async Task AnEditThatNoLongerApplies_IsRefused_AndNothingIsWritten()
     {
         // The other program removed what the edit was for. The edit says so against the fresh
         // document, the user is told, and the file keeps the other program's text untouched.
         var path = Write("plan.note", "one\n");
         var lifecycle = Lifecycle();
         var basis = lifecycle.GetOrLoad(path);
-        File.WriteAllText(path, "two\n");
+        await File.WriteAllTextAsync(path, "two\n", TestContext.Current.CancellationToken);
 
-        var saved = lifecycle.Save(path, basis, note => note.Text.Contains("one", StringComparison.Ordinal)
+        var saved = (await lifecycle.SaveAsync(path, basis, note => note.Text.Contains("one", StringComparison.Ordinal)
             ? DocumentEdit<Note>.Applied(new Note(note.Text + "mine\n"))
-            : DocumentEdit<Note>.Refused("The entry this edit was for is no longer in the file."));
+            : DocumentEdit<Note>.Refused("The entry this edit was for is no longer in the file."), TestContext.Current.CancellationToken));
 
         Assert.True(saved.Failed);
         Assert.Equal("The entry this edit was for is no longer in the file.", saved.Error);
-        Assert.Equal("two\n", File.ReadAllText(path));
+        Assert.Equal("two\n", await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
         Assert.Same(basis, lifecycle.Get(path));
     }
 
-    private static WritableDocumentLifecycle<Note> Lifecycle(Action<string, string>? write = null) =>
-        new((_, text) => new Note(text), note => note.Text, unavailable: null, write ?? AdpFileWriter.Save);
+    private static WritableDocumentLifecycle<Note> Lifecycle(Func<string, string, CancellationToken, Task>? write = null) =>
+        new((_, text) => new Note(text), note => note.Text, unavailable: null, write ?? new FileWriter().SaveAsync);
 
     private string Write(string name, string text)
     {

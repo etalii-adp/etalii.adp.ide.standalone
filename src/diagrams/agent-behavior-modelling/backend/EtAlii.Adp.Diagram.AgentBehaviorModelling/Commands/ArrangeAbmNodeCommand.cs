@@ -116,7 +116,7 @@ public readonly record struct AbmArrangement(int From, int To, double Dy)
 public sealed class ArrangeAbmNodeCommandHandler(IAbmDocumentStore documents) : ICommandHandler<ArrangeAbmNodeCommand>
 {
     /// <inheritdoc />
-    public Task<CommandResult> ExecuteAsync(ArrangeAbmNodeCommand command, CancellationToken cancellationToken = default)
+    public async Task<CommandResult> ExecuteAsync(ArrangeAbmNodeCommand command, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(command);
         cancellationToken.ThrowIfCancellationRequested();
@@ -124,26 +124,26 @@ public sealed class ArrangeAbmNodeCommandHandler(IAbmDocumentStore documents) : 
         var entry = documents.GetOrLoad(command.BodyPath);
         if (!entry.IsUsable)
         {
-            return Task.FromResult(CommandResult.Failure(
-                $"{Path.GetFileName(command.BodyPath)} could not be read, so nothing can be moved until it can: {entry.Unreadable}"));
+            return CommandResult.Failure(
+                $"{Path.GetFileName(command.BodyPath)} could not be read, so nothing can be moved until it can: {entry.Unreadable}");
         }
 
         if (!File.Exists(command.RegistrationPath))
         {
-            return Task.FromResult(CommandResult.Failure("The registration file is no longer there."));
+            return CommandResult.Failure("The registration file is no longer there.");
         }
 
         var model = entry.Model;
         if (model.NodeOf(command.NodeId) is not { } node)
         {
-            return Task.FromResult(CommandResult.Failure("That node is no longer in this behavior model."));
+            return CommandResult.Failure("That node is no longer in this behavior model.");
         }
 
         var stored = RegistrationLayout.Read(command.RegistrationPath);
         var arrangement = AbmArrangement.Of(model, stored, node, command.X, command.Y);
         if (arrangement.IsNothing)
         {
-            return Task.FromResult(CommandResult.Failure("That node is already there."));
+            return CommandResult.Failure("That node is already there.");
         }
 
         var before = entry.Document.Text;
@@ -157,7 +157,7 @@ public sealed class ArrangeAbmNodeCommandHandler(IAbmDocumentStore documents) : 
             var edit = reordered.Change(new ModelChange.Move(node.Id, parent?.Id, arrangement.MoveIndex));
             if (!edit.WasApplied)
             {
-                return Task.FromResult(CommandResult.Failure(edit.Refusal!));
+                return CommandResult.Failure(edit.Refusal!);
             }
 
             model = reordered.Model;
@@ -183,25 +183,25 @@ public sealed class ArrangeAbmNodeCommandHandler(IAbmDocumentStore documents) : 
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
-            return Task.FromResult(CommandResult.Failure($"Could not store the positions: {exception.Message}"));
+            return CommandResult.Failure($"Could not store the positions: {exception.Message}");
         }
 
         var warning = "";
         if (reordered is not null)
         {
-            var saved = documents.Save(command.BodyPath, reordered);
+            var saved = await documents.SaveAsync(command.BodyPath, reordered, cancellationToken);
             if (saved.Failed)
             {
                 // Half a drop is worse than none: the positions would follow an order the Markdown does not have.
                 RegistrationLayout.Replace(command.RegistrationPath, stored);
-                return Task.FromResult(CommandResult.Failure(saved.Error));
+                return CommandResult.Failure(saved.Error);
             }
 
             warning = saved.Warning;
         }
 
         var undo = new RestoreAbmArrangementCommand(command.BodyPath, command.RegistrationPath, reordered is not null ? before : null, stored);
-        return Task.FromResult(warning.Length > 0 ? CommandResult.Success(undo, warning) : CommandResult.Success(undo));
+        return warning.Length > 0 ? CommandResult.Success(undo, warning) : CommandResult.Success(undo);
     }
 }
 

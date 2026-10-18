@@ -1,5 +1,6 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Files;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 using EtAlii.Adp.Sessions;
@@ -37,11 +38,12 @@ public class ServiceCollectionAddDependencyGraphTests
     private static ServiceProvider Build()
     {
         var services = new ServiceCollection();
+        services.AddSingleton<IFileWriter>(new FileWriter());
 
         // The few core services this module's own registrations depend on. A production host
         // has far more; what matters here is that AddDependencyGraph asks for nothing else.
         services.AddSingleton<ICommandDispatcher>(
-            new DependencyGraphTestDispatcher(new DependencyGraphDocumentStore()));
+            new DependencyGraphTestDispatcher(new DependencyGraphDocumentStore(new FileWriter())));
         services.AddSingleton<IHistoryStackStore>(provider =>
             new HistoryStackStore(provider.GetRequiredService<ICommandDispatcher>()));
         services.AddSingleton<IDiagramDefinitionCatalog, DependencyGraphOnlyCatalog>();

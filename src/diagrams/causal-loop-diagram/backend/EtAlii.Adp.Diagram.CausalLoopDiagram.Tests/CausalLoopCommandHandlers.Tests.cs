@@ -1,3 +1,4 @@
+using EtAlii.Adp.Files;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 using Microsoft.Extensions.DependencyInjection;
@@ -10,7 +11,7 @@ public sealed class CausalLoopCommandHandlersTests : EditHandlerContract<ICausal
 {
     protected override string Example => CausalLoopDocumentStoreTests.OnCall;
 
-    protected override ICausalLoopDocumentStore CreateStore() => new CausalLoopDocumentStore();
+    protected override ICausalLoopDocumentStore CreateStore() => new CausalLoopDocumentStore(new FileWriter());
 
     protected override ICausalLoopDocumentStore Warning(ICausalLoopDocumentStore store, string warning) => new WarningStore(store, warning);
 

@@ -1,3 +1,4 @@
+using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
 using Xunit;
 using IoPath = System.IO.Path;
@@ -14,7 +15,7 @@ public class DependencyGraphSessionTests : IDisposable
         IoPath.GetTempPath(),
         "adp-dgr-session-" + Guid.NewGuid().ToString("N"));
 
-    private readonly DependencyGraphDocumentStore _store = new();
+    private readonly DependencyGraphDocumentStore _store = new(new FileWriter());
     private readonly DependencyGraphElementMapper _mapper = new();
     private readonly HistoryStackStore _historyStacks;
 

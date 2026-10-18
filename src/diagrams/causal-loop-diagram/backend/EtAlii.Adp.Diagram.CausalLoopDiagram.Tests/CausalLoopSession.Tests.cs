@@ -1,4 +1,5 @@
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Files;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 using Microsoft.Extensions.DependencyInjection;
@@ -18,7 +19,7 @@ public class CausalLoopSessionTests : IDisposable
     private readonly string _bodyPath;
     private readonly string _registrationPath;
     private readonly ServiceProvider _provider;
-    private readonly CausalLoopDocumentStore _store = new();
+    private readonly CausalLoopDocumentStore _store = new(new FileWriter());
 
     private const string Corpus =
         "causal-loop 1\r\n"
@@ -371,7 +372,7 @@ public class CausalLoopSessionTests : IDisposable
 
         public DocumentEntry<CausalLoopBody, CausalLoopModel> GetOrLoad(string path) => Failure is null ? inner.GetOrLoad(path) : throw Failure;
 
-        public DocumentSaveResult Save(string path, CausalLoopBody document) => inner.Save(path, document);
+        public Task<DocumentSaveResult> SaveAsync(string path, CausalLoopBody document, CancellationToken cancellationToken) => inner.SaveAsync(path, document, cancellationToken);
 
         public void Reload(string path) => inner.Reload(path);
 

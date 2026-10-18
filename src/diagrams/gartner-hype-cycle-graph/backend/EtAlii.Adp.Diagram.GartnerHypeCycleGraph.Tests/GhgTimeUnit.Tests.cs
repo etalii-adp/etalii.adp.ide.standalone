@@ -1,3 +1,4 @@
+using EtAlii.Adp.Files;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph.Tests;
@@ -9,7 +10,7 @@ namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph.Tests;
 public sealed class GhgTimeUnitTests : IDisposable
 {
     private readonly string _folder = Path.Combine(Path.GetTempPath(), "EtAlii.Adp.GhgTimeUnitTests", Guid.NewGuid().ToString("N"));
-    private readonly GhgDocumentStore _store = new();
+    private readonly GhgDocumentStore _store = new(new FileWriter());
 
     public GhgTimeUnitTests()
     {

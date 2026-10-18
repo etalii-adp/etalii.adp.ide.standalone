@@ -1,6 +1,7 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Documents.Wire;
+using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
 using Xunit;
 using IoPath = System.IO.Path;
@@ -14,7 +15,7 @@ namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph.Tests;
 public sealed class GhgProvidersTests : IDisposable
 {
     private readonly string _folder = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.GhgProvidersTests", Guid.NewGuid().ToString("N"));
-    private readonly GhgDocumentStore _store = new();
+    private readonly GhgDocumentStore _store = new(new FileWriter());
     private readonly HistoryStackStore _historyStacks;
     private readonly GhgContextPropertyProvider _properties;
     private readonly GhgContextActionProvider _actions;
@@ -206,7 +207,7 @@ public sealed class GhgProvidersTests : IDisposable
     [Fact]
     public async Task ADocumentThatCouldNotBeRead_OffersNoActionAndNoWritableRow()
     {
-        var store = new GhgDocumentStore();
+        var store = new GhgDocumentStore(new FileWriter());
         await using (new FileStream(Body, FileMode.Open, FileAccess.Read, FileShare.None))
         {
             Assert.False(store.GetOrLoad(Body).IsUsable);
@@ -235,7 +236,7 @@ public sealed class GhgProvidersTests : IDisposable
         // Arrange.
         const string broken = "gartner-hypecycle-graph: 1\ntrends: []\ninfluences: \"never closed\n";
         await File.WriteAllTextAsync(Body, broken, TestContext.Current.CancellationToken);
-        var store = new GhgDocumentStore();
+        var store = new GhgDocumentStore(new FileWriter());
         using var historyStacks = new HistoryStackStore(new GhgTestDispatcher(store));
         var actions = new GhgContextActionProvider(historyStacks, store);
 

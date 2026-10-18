@@ -1,4 +1,5 @@
 using EtAlii.Adp.Context;
+using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
 using Xunit;
 
@@ -11,7 +12,7 @@ namespace EtAlii.Adp.Diagram.AgentBehaviorModelling.Tests;
 public sealed class AbmProvidersTests : IDisposable
 {
     private readonly TestFolder _folder = TestFolder.Create("abm-providers");
-    private readonly AbmDocumentStore _store = new();
+    private readonly AbmDocumentStore _store = new(new FileWriter());
 
     public void Dispose() => _folder.Dispose();
 

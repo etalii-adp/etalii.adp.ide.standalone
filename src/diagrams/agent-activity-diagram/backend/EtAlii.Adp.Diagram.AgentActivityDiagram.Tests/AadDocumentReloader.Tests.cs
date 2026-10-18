@@ -1,3 +1,5 @@
+using EtAlii.Adp.Files;
+
 namespace EtAlii.Adp.Diagram.AgentActivityDiagram.Tests;
 
 /// <summary>The shared reload seam over the activity file store, held to the contract every module's is.</summary>
@@ -7,7 +9,7 @@ public sealed class AadDocumentReloaderTests : DocumentReloaderContract<IAadDocu
 
     protected override string Example => AadDocumentStoreTests.OneDay;
 
-    protected override IAadDocumentStore CreateStore() => new AadDocumentStore();
+    protected override IAadDocumentStore CreateStore() => new AadDocumentStore(new FileWriter());
 
     protected override bool IsEmpty(IAadDocumentStore store, string path) => store.GetOrLoad(path).Model.Elements.Count == 0;
 

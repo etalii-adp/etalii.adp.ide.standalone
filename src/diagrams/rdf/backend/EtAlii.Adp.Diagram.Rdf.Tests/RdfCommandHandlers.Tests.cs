@@ -1,5 +1,6 @@
 using EtAlii.Adp.Diagram.Rdf.Shacl;
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Files;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 using Microsoft.Extensions.DependencyInjection;
@@ -39,7 +40,7 @@ public sealed class RdfCommandHandlersTests : EditHandlerContract<IRdfDocumentSt
 
     protected override string Example => IoPath.Combine(AppContext.BaseDirectory, "Fixtures", "constructs.ttl");
 
-    protected override IRdfDocumentStore CreateStore() => new RdfDocumentStore();
+    protected override IRdfDocumentStore CreateStore() => new RdfDocumentStore(new FileWriter());
 
     protected override IRdfDocumentStore Warning(IRdfDocumentStore store, string warning) => new WarningStore(store, warning);
 

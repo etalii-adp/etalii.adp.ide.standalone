@@ -93,8 +93,8 @@ public sealed class MindmapSessionDepartureTests : IDisposable
         var document = _documents.GetOrLoad(_bodyPath);
 
         // Act: the SAME unchanged document, announced first as one node's update, then as a reload.
-        _documents.Save(_bodyPath, document, new MindmapNodeUpdated(ContextService));
-        _documents.Save(_bodyPath, document, new MindmapReloaded());
+        await _documents.SaveAsync(_bodyPath, document, new MindmapNodeUpdated(ContextService), TestContext.Current.CancellationToken);
+        await _documents.SaveAsync(_bodyPath, document, new MindmapReloaded(), TestContext.Current.CancellationToken);
 
         // Assert: nothing differs from what the connection holds, so a diff would push nothing
         // either time. The session pushes what each kind names instead: that one node's state for
@@ -119,7 +119,7 @@ public sealed class MindmapSessionDepartureTests : IDisposable
 
         // Act: a command's edit of one node, saved with the kind it announces.
         document.SetText(document.Find(ContextService)!, "Context service, renamed");
-        _documents.Save(_bodyPath, document, new MindmapNodeUpdated(ContextService));
+        await _documents.SaveAsync(_bodyPath, document, new MindmapNodeUpdated(ContextService), TestContext.Current.CancellationToken);
 
         // Assert: one push, one add, one element - that node, carrying its new text - and no removes.
         var deltas = Assert.Single(pushes);
@@ -143,7 +143,7 @@ public sealed class MindmapSessionDepartureTests : IDisposable
 
         // Act: a command removes a node inside the folded branch and announces what it removed.
         document.Remove(document.Find(HiddenInAFoldedBranch)!);
-        _documents.Save(_bodyPath, document, new MindmapStructureChanged([HiddenInAFoldedBranch]));
+        await _documents.SaveAsync(_bodyPath, document, new MindmapStructureChanged([HiddenInAFoldedBranch]), TestContext.Current.CancellationToken);
 
         // Assert: the removal is the one the change names. A diff against what this connection was
         // given could not produce it - the node was never delivered - and would push nothing at all,

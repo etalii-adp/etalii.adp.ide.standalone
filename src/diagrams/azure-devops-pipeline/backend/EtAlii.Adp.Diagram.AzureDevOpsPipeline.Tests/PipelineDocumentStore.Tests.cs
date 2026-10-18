@@ -1,3 +1,4 @@
+using EtAlii.Adp.Files;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -39,7 +40,7 @@ public class PipelineDocumentStoreTests : IDisposable
         // Arrange: an edit through one diagram has to be visible in another on the same file,
         // which only holds if they are looking at the same instance.
         var path = Write("azure-pipelines.yml", Simple);
-        var store = new PipelineDocumentStore();
+        var store = new PipelineDocumentStore(new FileWriter());
 
         // Act.
         var first = store.GetOrLoad(_workspace, path);
@@ -54,7 +55,7 @@ public class PipelineDocumentStoreTests : IDisposable
     {
         // Arrange: the registration may have been written a moment ago. A diagram that cannot
         // open at all is a worse answer than an empty one.
-        var store = new PipelineDocumentStore();
+        var store = new PipelineDocumentStore(new FileWriter());
 
         // Act.
         var entry = store.GetOrLoad(_workspace, IoPath.Combine(_workspace, "not-written-yet.yml"));
@@ -71,7 +72,7 @@ public class PipelineDocumentStoreTests : IDisposable
         // Arrange: Requirement 3.6 - the diagram opens as unavailable naming file and line, which
         // is what tells the user where to go and look.
         var path = Write("broken.yml", "stages:\n  - stage: Build\n   jobs: [\n");
-        var store = new PipelineDocumentStore();
+        var store = new PipelineDocumentStore(new FileWriter());
 
         // Act.
         var entry = store.GetOrLoad(_workspace, path);
@@ -85,94 +86,94 @@ public class PipelineDocumentStoreTests : IDisposable
     }
 
     [Fact]
-    public void AFileThatDoesNotParse_IsNotWrittenBack()
+    public async Task AFileThatDoesNotParse_IsNotWrittenBack()
     {
         // Arrange: the model is empty because the file never parsed, so writing it out would
         // replace a file somebody can still fix with one this module invented.
         const string broken = "stages:\n  - stage: Build\n   jobs: [\n";
         var path = Write("broken.yml", broken);
-        var store = new PipelineDocumentStore();
+        var store = new PipelineDocumentStore(new FileWriter());
         var entry = store.GetOrLoad(_workspace, path);
 
         // Act.
-        var refusal = store.Save(_workspace, path, entry);
+        var refusal = await store.SaveAsync(_workspace, path, entry, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.NotEqual("", refusal.Error);
-        Assert.Equal(broken, File.ReadAllText(path));
+        Assert.Equal(broken, await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
     }
 
     [Fact]
-    public void TheStoreSeenFromARoot_ResolvesTemplatesThere_AndSavesAsTheStoreDoes()
+    public async Task TheStoreSeenFromARoot_ResolvesTemplatesThere_AndSavesAsTheStoreDoes()
     {
         // Arrange: a body below the root names its template from the root.
         Write("templates/shared.yml", "jobs:\n  - job: Shared\n    steps:\n      - script: x\n");
         var path = Write("pipelines/azure-pipelines.yml", "jobs:\n  - template: /templates/shared.yml\n");
         const string broken = "stages:\n  - stage: Build\n   jobs: [\n";
         var brokenPath = Write("broken.yml", broken);
-        var rooted = new PipelineDocumentStore().In(_workspace);
+        var rooted = new PipelineDocumentStore(new FileWriter()).In(_workspace);
 
         // Act.
         var entry = rooted.GetOrLoad(path);
-        var edited = new PipelineDocumentStore().Open(_workspace, path, [.. entry.Document.Bytes, .. "# edited\n"u8]);
-        var saved = rooted.Save(path, edited);
-        var refused = rooted.Save(brokenPath, rooted.GetOrLoad(brokenPath).Document);
+        var edited = new PipelineDocumentStore(new FileWriter()).Open(_workspace, path, [.. entry.Document.Bytes, .. "# edited\n"u8]);
+        var saved = await rooted.SaveAsync(path, edited, TestContext.Current.CancellationToken);
+        var refused = await rooted.SaveAsync(brokenPath, rooted.GetOrLoad(brokenPath).Document, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Equal("Shared", entry.Model.Jobs.Single().Name);
-        Assert.Equal(("", edited.Text), (saved.Error, File.ReadAllText(path)));
+        Assert.Equal(("", edited.Text), (saved.Error, await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken)));
         Assert.NotEqual("", refused.Error);
-        Assert.Equal(broken, File.ReadAllText(brokenPath));
+        Assert.Equal(broken, await File.ReadAllTextAsync(brokenPath, TestContext.Current.CancellationToken));
     }
 
     [Fact]
-    public void SavingAnEditedDocument_WritesItByteForByte()
+    public async Task SavingAnEditedDocument_WritesItByteForByte()
     {
         // Arrange.
         var path = Write("azure-pipelines.yml", Simple);
-        var store = new PipelineDocumentStore();
+        var store = new PipelineDocumentStore(new FileWriter());
         var entry = store.GetOrLoad(_workspace, path);
         var stage = entry.Model.Stages.Single();
 
         // Act.
         PipelineBodyEdits.Rename(entry.Document, stage.Id, "Build it");
-        var refusal = store.Save(_workspace, path, entry);
+        var refusal = await store.SaveAsync(_workspace, path, entry, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Equal("", refusal.Error);
-        Assert.Equal(entry.Document.Text, File.ReadAllText(path));
-        Assert.Contains("displayName: Build it", File.ReadAllText(path));
+        Assert.Equal(entry.Document.Text, await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
+        Assert.Contains("displayName: Build it", await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
     }
 
     [Fact]
-    public void SavingRebuildsTheModel_SoTheNextReaderSeesTheEdit()
+    public async Task SavingRebuildsTheModel_SoTheNextReaderSeesTheEdit()
     {
         // Arrange.
         var path = Write("azure-pipelines.yml", Simple);
-        var store = new PipelineDocumentStore();
+        var store = new PipelineDocumentStore(new FileWriter());
         var entry = store.GetOrLoad(_workspace, path);
         PipelineBodyEdits.Rename(entry.Document, entry.Model.Stages.Single().Id, "Build it");
 
         // Act.
-        store.Save(_workspace, path, entry);
+        await store.SaveAsync(_workspace, path, entry, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Equal("Build it", store.GetOrLoad(_workspace, path).Model.Stages.Single().DisplayName);
     }
 
     [Fact]
-    public void SavingTellsTheSessionsOnThatDocument()
+    public async Task SavingTellsTheSessionsOnThatDocument()
     {
         // Arrange.
         var path = Write("azure-pipelines.yml", Simple);
-        var store = new PipelineDocumentStore();
+        var store = new PipelineDocumentStore(new FileWriter());
         var entry = store.GetOrLoad(_workspace, path);
         PipelineBodyEdits.Rename(entry.Document, entry.Model.Stages.Single().Id, "Build it");
         var announced = new List<string>();
         store.Changed += (_, args) => announced.Add(args.Path);
 
         // Act.
-        store.Save(_workspace, path, entry);
+        await store.SaveAsync(_workspace, path, entry, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Equal([path], announced);
@@ -184,7 +185,7 @@ public class PipelineDocumentStoreTests : IDisposable
     {
         // Arrange: a change to how a pipeline is drawn rather than to what it says.
         var path = Write("azure-pipelines.yml", Simple);
-        var store = new PipelineDocumentStore();
+        var store = new PipelineDocumentStore(new FileWriter());
         store.GetOrLoad(_workspace, path);
         var announced = 0;
         store.Changed += (_, _) => announced++;
@@ -202,7 +203,7 @@ public class PipelineDocumentStoreTests : IDisposable
     {
         // Arrange: somebody edited the file in their editor while the diagram was open.
         var path = Write("azure-pipelines.yml", Simple);
-        var store = new PipelineDocumentStore();
+        var store = new PipelineDocumentStore(new FileWriter());
         store.GetOrLoad(_workspace, path);
         File.WriteAllText(path, Simple.Replace("stage: Build", "stage: Rebuilt", StringComparison.Ordinal));
         var announced = new List<string>();
@@ -223,7 +224,7 @@ public class PipelineDocumentStoreTests : IDisposable
         // serving what it read before would show the pipeline as it used to be.
         var path = Write("azure-pipelines.yml", "jobs:\n  - template: templates/shared.yml\n");
         var template = Write("templates/shared.yml", "jobs:\n  - job: Before\n    steps:\n      - script: x\n");
-        var store = new PipelineDocumentStore();
+        var store = new PipelineDocumentStore(new FileWriter());
         Assert.Equal("Before", store.GetOrLoad(_workspace, path).Model.Jobs.Single().Name);
 
         // Act.
@@ -239,7 +240,7 @@ public class PipelineDocumentStoreTests : IDisposable
     {
         // Arrange.
         var path = Write("azure-pipelines.yml", Simple);
-        var store = new PipelineDocumentStore();
+        var store = new PipelineDocumentStore(new FileWriter());
         var first = store.GetOrLoad(_workspace, path);
 
         // Act.
@@ -259,7 +260,7 @@ public class PipelineDocumentStoreTests : IDisposable
         var one = Write("one.yml", "jobs:\n  - template: templates/shared.yml\n");
         var two = Write("two.yml", "jobs:\n  - template: templates/shared.yml\n");
         var template = Write("templates/shared.yml", "jobs:\n  - job: Before\n    steps:\n      - script: x\n");
-        var store = new PipelineDocumentStore();
+        var store = new PipelineDocumentStore(new FileWriter());
 
         // Act.
         store.GetOrLoad(_workspace, one);
@@ -274,7 +275,7 @@ public class PipelineDocumentStoreTests : IDisposable
     {
         // Arrange: a gap in the diagram, not the end of it.
         var path = Write("azure-pipelines.yml", "stages:\n  - template: elsewhere.yml@other\n");
-        var store = new PipelineDocumentStore();
+        var store = new PipelineDocumentStore(new FileWriter());
 
         // Act.
         var entry = store.GetOrLoad(_workspace, path);

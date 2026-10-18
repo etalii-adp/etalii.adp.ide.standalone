@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Files;
 
 namespace EtAlii.Adp.Diagram.WardleyMap;
 
@@ -21,7 +22,7 @@ namespace EtAlii.Adp.Diagram.WardleyMap;
 /// holding still match it.
 /// </para>
 /// </remarks>
-public sealed class WardleyDocumentStore : LifecycleDocumentStore<LineDocument, WardleyMap>, IWardleyDocumentStore
+public sealed class WardleyDocumentStore(IFileWriter writer) : LifecycleDocumentStore<LineDocument, WardleyMap>(writer), IWardleyDocumentStore
 {
     private readonly ConcurrentDictionary<string, IReadOnlyList<WardleyIdentityEntry>> _identities =
         new(StringComparer.OrdinalIgnoreCase);

@@ -16,19 +16,19 @@ public sealed record RestoreSubtreeCommand(string BodyPath, string ParentId, int
 internal sealed class RemoveNodeCommandHandler(IMindmapDocumentStore documents)
     : MindmapCommandHandler(documents), ICommandHandler<RemoveNodeCommand>
 {
-    public Task<CommandResult> ExecuteAsync(RemoveNodeCommand command, CancellationToken cancellationToken = default)
+    public async Task<CommandResult> ExecuteAsync(RemoveNodeCommand command, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(command);
         cancellationToken.ThrowIfCancellationRequested();
 
         if (!TryResolve(command.BodyPath, command.NodeId, out var document, out var node, out var failure))
         {
-            return Task.FromResult(failure);
+            return failure;
         }
 
         if (node.IsRoot)
         {
-            return Task.FromResult(CommandResult.Failure("The root node cannot be removed."));
+            return CommandResult.Failure("The root node cannot be removed.");
         }
 
         var parent = node.Parent!;
@@ -38,24 +38,24 @@ internal sealed class RemoveNodeCommandHandler(IMindmapDocumentStore documents)
             .ToArray();
 
         var subtree = document.Remove(node);
-        var saved = Documents.Save(command.BodyPath, document, new MindmapStructureChanged(removedIds));
+        var saved = await Documents.SaveAsync(command.BodyPath, document, new MindmapStructureChanged(removedIds), cancellationToken);
 
-        return Task.FromResult(CommandResult.FromSave(
-            saved, new RestoreSubtreeCommand(command.BodyPath, parent.Id, index, FreeplaneXmlWriter.ToText(subtree))));
+        return CommandResult.FromSave(
+            saved, new RestoreSubtreeCommand(command.BodyPath, parent.Id, index, FreeplaneXmlWriter.ToText(subtree)));
     }
 }
 
 internal sealed class RestoreSubtreeCommandHandler(IMindmapDocumentStore documents)
     : MindmapCommandHandler(documents), ICommandHandler<RestoreSubtreeCommand>
 {
-    public Task<CommandResult> ExecuteAsync(RestoreSubtreeCommand command, CancellationToken cancellationToken = default)
+    public async Task<CommandResult> ExecuteAsync(RestoreSubtreeCommand command, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(command);
         cancellationToken.ThrowIfCancellationRequested();
 
         if (!TryResolve(command.BodyPath, command.ParentId, out var document, out var parent, out var failure))
         {
-            return Task.FromResult(failure);
+            return failure;
         }
 
         var subtree = MindmapDocument.ParseFragment(command.Subtree);
@@ -64,12 +64,12 @@ internal sealed class RestoreSubtreeCommandHandler(IMindmapDocumentStore documen
         {
             // A redo of the add that created this branch beat us to it, or the user recreated
             // the id by hand; either way putting a second copy in would corrupt the map.
-            return Task.FromResult(CommandResult.Failure("A node with that id already exists."));
+            return CommandResult.Failure("A node with that id already exists.");
         }
 
         document.Restore(subtree, parent, command.Index);
-        var saved = Documents.Save(command.BodyPath, document, MindmapStructureChanged.Nothing);
+        var saved = await Documents.SaveAsync(command.BodyPath, document, MindmapStructureChanged.Nothing, cancellationToken);
 
-        return Task.FromResult(CommandResult.FromSave(saved, new RemoveNodeCommand(command.BodyPath, restoredId)));
+        return CommandResult.FromSave(saved, new RemoveNodeCommand(command.BodyPath, restoredId));
     }
 }

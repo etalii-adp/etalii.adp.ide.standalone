@@ -1,4 +1,5 @@
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Files;
 using IoPath = System.IO.Path;
 
 namespace EtAlii.Adp.Diagram.Rdf.Tests;
@@ -10,7 +11,7 @@ public sealed class RdfDocumentStoreContractTests : DocumentStoreContract<IRdfDo
 
     protected override string EditMarker => "# store contract marker";
 
-    protected override IRdfDocumentStore CreateStore() => new RdfDocumentStore();
+    protected override IRdfDocumentStore CreateStore() => new RdfDocumentStore(new FileWriter());
 
     protected override void Edit(LineDocument document) => document.Insert(0, [EditMarker]);
 

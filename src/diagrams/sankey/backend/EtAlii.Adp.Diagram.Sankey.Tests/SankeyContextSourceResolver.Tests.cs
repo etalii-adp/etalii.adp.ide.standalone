@@ -1,5 +1,6 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Diagram.Modules;
+using EtAlii.Adp.Files;
 using EtAlii.Adp.Hierarchy;
 using Xunit;
 
@@ -11,7 +12,7 @@ namespace EtAlii.Adp.Diagram.Sankey.Tests;
 /// </summary>
 public sealed class SankeyContextSourceResolverTests : DiagramElementSourceResolverContract
 {
-    private readonly SankeyDocumentStore _store = new();
+    private readonly SankeyDocumentStore _store = new(new FileWriter());
 
     protected override string Example => SankeyExamples.BrightwaterCoffee;
 

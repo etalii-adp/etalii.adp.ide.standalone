@@ -10,9 +10,9 @@ namespace EtAlii.Adp.Diagram.Sankey;
 public sealed class StepSankeyValueCommandHandler(ISankeyDocumentStore documents) : SankeyEditHandler<StepSankeyValueCommand>(documents)
 {
     /// <inheritdoc />
-    protected override CommandResult Execute(StepSankeyValueCommand command)
+    protected override async Task<CommandResult> RunAsync(StepSankeyValueCommand command, CancellationToken cancellationToken)
     {
-        return command.Steps == 0 ? CommandResult.Failure("A step of nothing changes nothing.") : base.Execute(command);
+        return command.Steps == 0 ? CommandResult.Failure("A step of nothing changes nothing.") : await base.RunAsync(command, cancellationToken);
     }
 
     /// <inheritdoc />

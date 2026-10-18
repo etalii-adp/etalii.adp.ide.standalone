@@ -1,6 +1,7 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.Documents.Wire;
+using EtAlii.Adp.Files;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 using EtAlii.Adp.Sessions;
@@ -28,7 +29,7 @@ public class CausalLoopContextActionsTests : IDisposable
     private readonly string _root;
     private readonly string _path;
     private readonly ServiceProvider _provider;
-    private readonly CausalLoopDocumentStore _store = new();
+    private readonly CausalLoopDocumentStore _store = new(new FileWriter());
     private readonly IDiagramViewportRegistry _sessions = new DiagramViewportRegistry();
     private readonly CausalLoopContextActionProvider _actions;
 

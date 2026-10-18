@@ -1,3 +1,4 @@
+using EtAlii.Adp.Files;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -45,11 +46,11 @@ public class TimelineDocumentStoreSelfWriteTests : IDisposable
         // re-read the file it just wrote and tell them all again.
         var path = IoPath.Combine(_workspace, "plan.tml");
         await File.WriteAllTextAsync(path, Text, TestContext.Current.CancellationToken);
-        var store = new TimelineDocumentStore();
+        var store = new TimelineDocumentStore(new FileWriter());
         var entry = store.GetOrLoad(path);
         var changes = 0;
         store.Changed += (_, _) => changes++;
-        Assert.Equal("", store.Save(path, entry.Document).Error);
+        Assert.Equal("", (await store.SaveAsync(path, entry.Document, TestContext.Current.CancellationToken)).Error);
         Assert.Equal(1, changes);
 
         store.Reload(path);
@@ -70,7 +71,7 @@ public class TimelineDocumentStoreSelfWriteTests : IDisposable
         // Arrange.
         var path = IoPath.Combine(_workspace, "plan.tml");
         await File.WriteAllTextAsync(path, Text, TestContext.Current.CancellationToken);
-        var store = new TimelineDocumentStore();
+        var store = new TimelineDocumentStore(new FileWriter());
         _ = store.GetOrLoad(path);
 
         var saving = 1;
@@ -95,7 +96,7 @@ public class TimelineDocumentStoreSelfWriteTests : IDisposable
         var refused = 0;
         for (var i = 0; i < 2000; i++)
         {
-            if (store.Save(path, store.GetOrLoad(path).Document).Failed)
+            if ((await store.SaveAsync(path, store.GetOrLoad(path).Document, TestContext.Current.CancellationToken)).Failed)
             {
                 refused++;
             }

@@ -1,4 +1,5 @@
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Files;
 
 namespace EtAlii.Adp.Diagram.Rdf;
 
@@ -18,7 +19,7 @@ namespace EtAlii.Adp.Diagram.Rdf;
 /// of the store.
 /// </para>
 /// </remarks>
-public sealed class RdfDocumentStore : LifecycleDocumentStore<LineDocument, RdfModel>, IRdfDocumentStore
+public sealed class RdfDocumentStore(IFileWriter writer) : LifecycleDocumentStore<LineDocument, RdfModel>(writer), IRdfDocumentStore
 {
     /// <inheritdoc />
     protected override LineDocument Read(string text) => LineDocument.Parse(text);

@@ -8,12 +8,12 @@ public sealed class ConnectDependencyGraphElementsCommandHandler(IDependencyGrap
     : DependencyGraphEditHandler<ConnectDependencyGraphElementsCommand>(documents)
 {
     /// <inheritdoc />
-    protected override CommandResult Execute(ConnectDependencyGraphElementsCommand command) =>
+    protected override async Task<CommandResult> RunAsync(ConnectDependencyGraphElementsCommand command, CancellationToken cancellationToken) =>
         string.Equals(command.From, command.To, StringComparison.Ordinal)
             // A node depending on itself says nothing about what needs what. Refused with the
             // reason rather than silently dropped.
             ? CommandResult.Failure("A node cannot depend on itself.")
-            : base.Execute(command);
+            : await base.RunAsync(command, cancellationToken);
 
     /// <inheritdoc />
     protected override EditOutcome Apply(DependencyGraphBody body, DislModel model, ConnectDependencyGraphElementsCommand command)

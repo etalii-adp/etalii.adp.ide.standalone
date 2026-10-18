@@ -1,4 +1,5 @@
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.Sankey.Tests;
@@ -8,7 +9,7 @@ public sealed class SankeyCommandHandlersTests : EditHandlerContract<ISankeyDocu
 {
     protected override string Example => SankeyExamples.BrightwaterCoffee;
 
-    protected override ISankeyDocumentStore CreateStore() => new SankeyDocumentStore();
+    protected override ISankeyDocumentStore CreateStore() => new SankeyDocumentStore(new FileWriter());
 
     protected override ISankeyDocumentStore Warning(ISankeyDocumentStore store, string warning) => new WarningStore(store, warning);
 

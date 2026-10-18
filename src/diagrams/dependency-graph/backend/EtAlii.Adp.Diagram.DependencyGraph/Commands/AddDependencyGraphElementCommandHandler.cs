@@ -8,10 +8,10 @@ public sealed class AddDependencyGraphElementCommandHandler(IDependencyGraphDocu
     : DependencyGraphEditHandler<AddDependencyGraphElementCommand>(documents)
 {
     /// <inheritdoc />
-    protected override CommandResult Execute(AddDependencyGraphElementCommand command) =>
+    protected override async Task<CommandResult> RunAsync(AddDependencyGraphElementCommand command, CancellationToken cancellationToken) =>
         string.IsNullOrWhiteSpace(command.Id)
             ? CommandResult.Failure("A node needs an id.")
-            : base.Execute(command);
+            : await base.RunAsync(command, cancellationToken);
 
     /// <inheritdoc />
     protected override EditOutcome Apply(DependencyGraphBody body, DislModel model, AddDependencyGraphElementCommand command)

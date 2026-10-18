@@ -17,9 +17,9 @@ public sealed class AddGhgNoteCommandHandler(IGhgDocumentStore documents) : GhgE
     public const double DefaultHeight = 64;
 
     /// <inheritdoc />
-    protected override CommandResult Execute(AddGhgNoteCommand command)
+    protected override async Task<CommandResult> RunAsync(AddGhgNoteCommand command, CancellationToken cancellationToken)
     {
-        return base.Execute(command.NoteId.Length > 0 ? command : command with { NoteId = ShortGuid.NewShortGuid().ToString() });
+        return await base.RunAsync(command.NoteId.Length > 0 ? command : command with { NoteId = ShortGuid.NewShortGuid().ToString() }, cancellationToken);
     }
 
     /// <inheritdoc />

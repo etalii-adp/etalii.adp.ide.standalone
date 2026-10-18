@@ -46,13 +46,15 @@ public partial class SaveResultIsNeverDiscardedTests
     private const string Replacement = "inspect it - `if (result.Failed)` - or pass it on";
 
     /// <summary>
-    /// Receivers whose <c>Save</c> returns <c>void</c> BY DESIGN, so a statement-position call is
-    /// correct rather than a discard. Never extend this to silence a real finding: a site that ought
+    /// Receivers whose <c>Save</c> or <c>SaveAsync</c> returns no result BY DESIGN, so a statement-position
+    /// call is correct rather than a discard. Never extend this to silence a real finding: a site that ought
     /// to inspect a result belongs in <see cref="Tracked"/> with a task, not here.
     /// </summary>
     private static readonly (string Receiver, string Reason)[] VoidByDesign =
     [
         ("AdpFileWriter", "the central writer's Save returns void and reports by throwing; it is the implementation a store's Save calls, not a store's Save"),
+        ("writer", "an IFileWriter's SaveAsync completes or throws and carries no result; it is what a store's save calls, not a store's save"),
+        ("_writer", "an IFileWriter's SaveAsync completes or throws and carries no result; it is what a store's save calls, not a store's save"),
     ];
 
     /// <summary>
@@ -74,8 +76,12 @@ public partial class SaveResultIsNeverDiscardedTests
     /// </remarks>
     private static readonly (string File, string Reason)[] Tracked = [];
 
-    /// <summary>A statement that BEGINS with a save call: nothing precedes it, so nothing read it.</summary>
-    [GeneratedRegex(@"^(await\s+)?(?<receiver>[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)*)\.Save\(")]
+    /// <summary>
+    /// A statement that BEGINS with a save call, awaited or not: nothing precedes it, so nothing read
+    /// it. A store's save is <c>SaveAsync</c> since the stores were handed the file writer
+    /// (code-structure FR-068), and an awaited one dropped is as dropped as a synchronous one was.
+    /// </summary>
+    [GeneratedRegex(@"^(await\s+)?(?<receiver>[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)*)\.Save(Async)?\(")]
     private static partial Regex SaveStatement();
 
     /// <summary>A save whose result is used has something after the closing bracket, or before the call.</summary>
@@ -162,8 +168,8 @@ public partial class SaveResultIsNeverDiscardedTests
         Assert.Single(discarded);
         Assert.Contains("discarded", discarded[0], StringComparison.Ordinal);
 
-        var awaited = Offences("Fake/Async.cs", ["        await _documents.SaveAsync(path, entry);"]);
-        Assert.Empty(awaited); // SaveAsync is not Save; recorded so the narrowness is deliberate rather than assumed
+        var awaited = Offences("Fake/Async.cs", ["        await _documents.SaveAsync(path, entry, cancellationToken);"]);
+        Assert.Single(awaited);
 
         var multiline = Offences("Fake/Multi.cs",
         [
@@ -186,6 +192,9 @@ public partial class SaveResultIsNeverDiscardedTests
         Assert.Empty(Offences("Fake/Argument.cs", ["        Report(_documents.Save(path, entry));"]));
         Assert.Empty(Offences("Fake/Chained.cs", ["        _documents.Save(path, entry).Warning.Log();"]));
         Assert.Empty(Offences("Fake/Writer.cs", ["        AdpFileWriter.Save(path, text);"]));
+        Assert.Empty(Offences("Fake/InjectedWriter.cs", ["        await _writer.SaveAsync(path, text, cancellationToken);"]));
+        Assert.Empty(Offences("Fake/AwaitedAssigned.cs", ["        var result = await _documents.SaveAsync(path, entry, cancellationToken);"]));
+        Assert.Empty(Offences("Fake/AwaitedCondition.cs", ["        if ((await _documents.SaveAsync(path, entry, cancellationToken)).Failed)"]));
     }
 
     [Fact]

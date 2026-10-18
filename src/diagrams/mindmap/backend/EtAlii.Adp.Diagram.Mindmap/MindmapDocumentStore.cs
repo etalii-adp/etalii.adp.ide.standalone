@@ -1,4 +1,5 @@
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Files;
 using Serilog;
 using IoPath = System.IO.Path;
 
@@ -63,9 +64,10 @@ public sealed class MindmapDocumentStore : IMindmapDocumentStore
     // unavailable document is declared here.
     private readonly WritableDocumentLifecycle<MindmapDocument> _lifecycle;
 
-    public MindmapDocumentStore()
+    /// <param name="writer">What publishes a save, waiting for another save of the map without blocking a thread.</param>
+    public MindmapDocumentStore(IFileWriter writer)
     {
-        _lifecycle = new WritableDocumentLifecycle<MindmapDocument>(Parse, document => document.ToText());
+        _lifecycle = new WritableDocumentLifecycle<MindmapDocument>(Parse, document => document.ToText(), writer);
     }
 
     public event EventHandler<MindmapChangedEventArgs>? Changed;
@@ -74,7 +76,7 @@ public sealed class MindmapDocumentStore : IMindmapDocumentStore
 
     public MindmapDocument? Get(string bodyPath) => _lifecycle.Get(bodyPath);
 
-    public DocumentSaveResult Save(string bodyPath, MindmapDocument document, MindmapChange change)
+    public async Task<DocumentSaveResult> SaveAsync(string bodyPath, MindmapDocument document, MindmapChange change, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(change);
@@ -94,7 +96,7 @@ public sealed class MindmapDocumentStore : IMindmapDocumentStore
         // was never removed gets restored. The lifecycle writes the caller's document and caches
         // exactly that object, whether or not the write lands - so a refused write leaves the edit in
         // memory to be retried (R3.2, R3.4).
-        var result = _lifecycle.Save(bodyPath, document);
+        var result = await _lifecycle.SaveAsync(bodyPath, document, cancellationToken);
         if (result.Failed)
         {
             return result;

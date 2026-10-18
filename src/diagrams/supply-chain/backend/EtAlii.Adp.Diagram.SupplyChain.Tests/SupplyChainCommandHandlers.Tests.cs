@@ -1,4 +1,5 @@
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.SupplyChain.Tests;
@@ -8,7 +9,7 @@ public sealed class SupplyChainCommandHandlersTests : EditHandlerContract<ISuppl
 {
     protected override string Example => SupplyChainExamples.Automotive;
 
-    protected override ISupplyChainDocumentStore CreateStore() => new SupplyChainDocumentStore();
+    protected override ISupplyChainDocumentStore CreateStore() => new SupplyChainDocumentStore(new FileWriter());
 
     protected override ISupplyChainDocumentStore Warning(ISupplyChainDocumentStore store, string warning) => new WarningStore(store, warning);
 

@@ -10,9 +10,9 @@ namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
 public sealed class AddGhgInfluenceCommandHandler(IGhgDocumentStore documents) : GhgEditHandler<AddGhgInfluenceCommand>(documents)
 {
     /// <inheritdoc />
-    protected override CommandResult Execute(AddGhgInfluenceCommand command)
+    protected override async Task<CommandResult> RunAsync(AddGhgInfluenceCommand command, CancellationToken cancellationToken)
     {
-        return base.Execute(command.InfluenceId.Length > 0 ? command : command with { InfluenceId = ShortGuid.NewShortGuid().ToString() });
+        return await base.RunAsync(command.InfluenceId.Length > 0 ? command : command with { InfluenceId = ShortGuid.NewShortGuid().ToString() }, cancellationToken);
     }
 
     /// <inheritdoc />

@@ -8,30 +8,30 @@ public sealed record AddSiblingNodeCommand(string BodyPath, string SiblingId, st
 internal sealed class AddSiblingNodeCommandHandler(IMindmapDocumentStore documents)
     : MindmapCommandHandler(documents), ICommandHandler<AddSiblingNodeCommand>
 {
-    public Task<CommandResult> ExecuteAsync(AddSiblingNodeCommand command, CancellationToken cancellationToken = default)
+    public async Task<CommandResult> ExecuteAsync(AddSiblingNodeCommand command, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(command);
         cancellationToken.ThrowIfCancellationRequested();
 
         if (!TryResolve(command.BodyPath, command.SiblingId, out var document, out var sibling, out var failure))
         {
-            return Task.FromResult(failure);
+            return failure;
         }
 
         if (sibling.IsRoot)
         {
-            return Task.FromResult(CommandResult.Failure("The root node cannot have a sibling."));
+            return CommandResult.Failure("The root node cannot have a sibling.");
         }
 
         if (document.Find(command.NodeId) is not null)
         {
-            return Task.FromResult(CommandResult.Failure("A node with that id already exists."));
+            return CommandResult.Failure("A node with that id already exists.");
         }
 
         var added = document.AddSibling(sibling, command.Text);
         added.SetId(command.NodeId);
-        var saved = Documents.Save(command.BodyPath, document, MindmapStructureChanged.Nothing);
+        var saved = await Documents.SaveAsync(command.BodyPath, document, MindmapStructureChanged.Nothing, cancellationToken);
 
-        return Task.FromResult(CommandResult.FromSave(saved, new RemoveNodeCommand(command.BodyPath, command.NodeId)));
+        return CommandResult.FromSave(saved, new RemoveNodeCommand(command.BodyPath, command.NodeId));
     }
 }

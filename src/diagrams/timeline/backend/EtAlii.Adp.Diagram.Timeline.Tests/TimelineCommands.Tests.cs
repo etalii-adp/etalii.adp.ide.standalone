@@ -1,3 +1,4 @@
+using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
@@ -16,7 +17,7 @@ public class TimelineCommandsTests : IDisposable
         IoPath.GetTempPath(),
         "adp-timeline-commands-" + Guid.NewGuid().ToString("N"));
 
-    private readonly TimelineDocumentStore _store = new();
+    private readonly TimelineDocumentStore _store = new(new FileWriter());
     private readonly IHistoryStackStore _historyStacks;
 
     private IHistoryStack History => _historyStacks.Get(_workspace);

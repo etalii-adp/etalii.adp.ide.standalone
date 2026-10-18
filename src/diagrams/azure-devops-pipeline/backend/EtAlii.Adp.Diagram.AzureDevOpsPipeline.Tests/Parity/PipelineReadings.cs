@@ -1,4 +1,5 @@
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Files;
 using Path = System.IO.Path;
 
 namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline.Tests.Parity;
@@ -47,7 +48,7 @@ internal sealed class PipelineReadings : IDisposable
         var document = PipelineCorpus.Documents().Single(candidate => candidate.Relative == path);
         var folder = Path.Combine(Path.GetTempPath(), "EtAlii.Adp.PipelineReadings", Guid.NewGuid().ToString("N"));
         PipelineCorpus.CopyFolder(Path.Combine(PipelineCorpus.SourceFolder, document.Root), folder);
-        var entry = new PipelineDocumentStore().GetOrLoad(folder, Path.Combine(folder, document.InFolder));
+        var entry = new PipelineDocumentStore(new FileWriter()).GetOrLoad(folder, Path.Combine(folder, document.InFolder));
         return new PipelineReadings(folder, entry);
     }
 

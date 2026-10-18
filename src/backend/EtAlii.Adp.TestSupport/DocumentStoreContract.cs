@@ -74,7 +74,7 @@ public abstract class DocumentStoreContract<TStore, TBody, TModel> : IDisposable
 
         // Act: the notification for an earlier write of this file lands between the edit and the save.
         store.Reload(Body);
-        var saved = store.Save(Body, document);
+        var saved = await store.SaveAsync(Body, document, TestContext.Current.CancellationToken);
 
         // Assert: the save reported success, so the edit it reported success for is in the file.
         Assert.False(saved.Failed, saved.Error);
@@ -83,7 +83,7 @@ public abstract class DocumentStoreContract<TStore, TBody, TModel> : IDisposable
     }
 
     [Fact]
-    public void TheStoresOwnSave_DoesNotComeBackAsAReload()
+    public async Task TheStoresOwnSave_DoesNotComeBackAsAReload()
     {
         // Arrange: an edit saved, and the sessions told of it once.
         var store = CreateStore();
@@ -91,7 +91,7 @@ public abstract class DocumentStoreContract<TStore, TBody, TModel> : IDisposable
         Edit(document);
         var told = new List<string>();
         store.Changed += (_, args) => told.Add(args.Path);
-        Assert.False(store.Save(Body, document).Failed);
+        Assert.False((await store.SaveAsync(Body, document, TestContext.Current.CancellationToken)).Failed);
         var saved = store.GetOrLoad(Body);
 
         // Act: the watcher's notification for that same save.
@@ -103,7 +103,7 @@ public abstract class DocumentStoreContract<TStore, TBody, TModel> : IDisposable
     }
 
     [Fact]
-    public void AnExternalWrite_IsRead_AndTellsTheSessions()
+    public async Task AnExternalWrite_IsRead_AndTellsTheSessions()
     {
         // Arrange: this store has the document open; another writer edits the file.
         var store = CreateStore();
@@ -111,7 +111,7 @@ public abstract class DocumentStoreContract<TStore, TBody, TModel> : IDisposable
         var other = CreateStore();
         var document = other.GetOrLoad(Body).Document;
         Edit(document);
-        Assert.False(other.Save(Body, document).Failed);
+        Assert.False((await other.SaveAsync(Body, document, TestContext.Current.CancellationToken)).Failed);
         var told = new List<string>();
         store.Changed += (_, args) => told.Add(args.Path);
 

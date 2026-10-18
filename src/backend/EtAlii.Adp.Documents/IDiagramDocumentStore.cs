@@ -63,5 +63,6 @@ public interface IDiagramDocumentStore<TBody, TModel> : IReadableDiagramDocument
 {
     /// <summary>Writes <paramref name="document"/>, the one the caller edited, to <paramref name="path"/>.</summary>
     /// <remarks><b>A document that could not be read is refused, never written.</b></remarks>
-    DocumentSaveResult Save(string path, TBody document);
+    /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> gave up the wait for another save of the path; nothing was written.</exception>
+    Task<DocumentSaveResult> SaveAsync(string path, TBody document, CancellationToken cancellationToken);
 }

@@ -1,3 +1,4 @@
+using EtAlii.Adp.Files;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 using Microsoft.Extensions.DependencyInjection;
@@ -14,7 +15,7 @@ namespace EtAlii.Adp.Diagram.C4.Tests;
 public class C4SessionTests : IDisposable
 {
     private readonly string _root;
-    private readonly C4DocumentStore _documents = new();
+    private readonly C4DocumentStore _documents = new(new FileWriter());
     private readonly C4ElementMapper _mapper = new(C4Metrics.Default, new C4LayoutSidecar());
     private readonly IHistoryStackStore _historyStacks = new ServiceCollection().AddCommands().AddHierarchyCommandHandlers().AddC4().BuildServiceProvider().GetRequiredService<IHistoryStackStore>();
 
@@ -154,7 +155,7 @@ public class C4SessionTests : IDisposable
         var document = _documents.GetOrLoad(body).Document;
         var line = document.CodeLines().First(l => l.Code.Contains("softwareSystem", StringComparison.Ordinal));
         document.ReplaceLine(line.Number, line.Text.Replace("\"Banking\"", "\"Renamed\"", StringComparison.Ordinal));
-        _documents.Save(body, document);
+        await _documents.SaveAsync(body, document, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.NotNull(pushedToContext);
@@ -274,7 +275,7 @@ public class C4SessionTests : IDisposable
         await session.DisposeAsync();
 
         // Act.
-        _documents.Save(body, _documents.GetOrLoad(body).Document);
+        await _documents.SaveAsync(body, _documents.GetOrLoad(body).Document, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Equal(0, pushes);

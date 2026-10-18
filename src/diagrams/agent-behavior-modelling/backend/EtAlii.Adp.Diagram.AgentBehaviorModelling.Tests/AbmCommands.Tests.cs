@@ -1,3 +1,4 @@
+using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
 using Xunit;
 
@@ -10,7 +11,7 @@ namespace EtAlii.Adp.Diagram.AgentBehaviorModelling.Tests;
 public sealed class AbmCommandsTests : IDisposable
 {
     private readonly string _folder = Path.Combine(Path.GetTempPath(), "EtAlii.Adp.AbmCommandsTests", Guid.NewGuid().ToString("N"));
-    private readonly AbmDocumentStore _store = new();
+    private readonly AbmDocumentStore _store = new(new FileWriter());
     private readonly AbmTestDispatcher _dispatcher;
     private readonly byte[] _original;
 

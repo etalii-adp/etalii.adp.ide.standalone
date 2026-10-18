@@ -1,3 +1,4 @@
+using EtAlii.Adp.Files;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using IoPath = System.IO.Path;
@@ -124,6 +125,7 @@ public class DatabricksValidatorTests
     {
         // Arrange.
         var services = new ServiceCollection();
+        services.AddSingleton<IFileWriter>(new FileWriter());
 
         // Act.
         services.AddDatabricks();

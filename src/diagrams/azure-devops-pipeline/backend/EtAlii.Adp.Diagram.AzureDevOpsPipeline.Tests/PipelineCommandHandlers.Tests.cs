@@ -1,4 +1,5 @@
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
 using Xunit;
 using IoPath = System.IO.Path;
@@ -21,7 +22,7 @@ public sealed class PipelineCommandHandlersTests : EditHandlerContract<IDiagramD
     protected override string Example => Fixture("multi-stage.yml");
 
     protected override IDiagramDocumentStore<PipelineBody, PipelineModel> CreateStore() =>
-        new PipelineDocumentStore().In(IoPath.GetTempPath());
+        new PipelineDocumentStore(new FileWriter()).In(IoPath.GetTempPath());
 
     protected override IDiagramDocumentStore<PipelineBody, PipelineModel> Warning(IDiagramDocumentStore<PipelineBody, PipelineModel> store, string warning) =>
         new WarningDocumentStore<PipelineBody, PipelineModel>(store, warning);

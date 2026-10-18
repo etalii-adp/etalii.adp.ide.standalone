@@ -169,10 +169,10 @@ public class GhgDerivedOperationsTests
 
         public DocumentEntry<GhgBody, GhgModel> GetOrLoad(string path) => GhgEntries.Read(text);
 
-        public DocumentSaveResult Save(string path, GhgBody document)
+        public Task<DocumentSaveResult> SaveAsync(string path, GhgBody document, CancellationToken cancellationToken)
         {
             Saved = document.Text;
-            return DocumentSaveResult.Ok;
+            return Task.FromResult(DocumentSaveResult.Ok);
         }
 
         public void Forget(string path)

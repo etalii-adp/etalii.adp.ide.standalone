@@ -3,7 +3,7 @@ using EtAlii.Adp.History;
 namespace EtAlii.Adp.Diagram.Timeline;
 
 /// <summary>
-/// A handler of a command that edits a timeline: the run of <see cref="TimelineEdits.Run"/>, which opens
+/// A handler of a command that edits a timeline: the run of <see cref="TimelineEdits.RunAsync"/>, which opens
 /// the document's <see cref="TimelineBody"/>, stores the text the change left and answers with the
 /// shared restore command, so an undo puts back the bytes the edit started from (timeline-disl-fbl
 /// Requirement 3.6).
@@ -24,12 +24,12 @@ public abstract class TimelineEditHandler<TCommand>(ITimelineDocumentStore docum
         ArgumentNullException.ThrowIfNull(command);
         cancellationToken.ThrowIfCancellationRequested();
 
-        return Task.FromResult(Execute(command));
+        return RunAsync(command, cancellationToken);
     }
 
     /// <summary>Runs <paramref name="command"/> against its document.</summary>
-    protected virtual CommandResult Execute(TCommand command) =>
-        TimelineEdits.Run(_documents, command, (body, model) => Apply(body, model, command));
+    protected virtual Task<CommandResult> RunAsync(TCommand command, CancellationToken cancellationToken) =>
+        TimelineEdits.RunAsync(_documents, command, (body, model) => Apply(body, model, command), cancellationToken);
 
     /// <summary>
     /// Changes <paramref name="body"/>, whose model is <paramref name="model"/>, as <paramref name="command"/>

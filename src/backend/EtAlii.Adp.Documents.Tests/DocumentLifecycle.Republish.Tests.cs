@@ -1,3 +1,4 @@
+using EtAlii.Adp.Files;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -154,7 +155,7 @@ public class DocumentLifecycleRepublishTests : IDisposable
             var unavailable = declaresUnavailability ? Unavailable : null;
             if (writable)
             {
-                var lifecycle = new WritableDocumentLifecycle<Note>(Parse, note => note.Text, unavailable, read, Attempts, TimeSpan.Zero);
+                var lifecycle = new WritableDocumentLifecycle<Note>(Parse, note => note.Text, unavailable, read, Attempts, TimeSpan.Zero, new FileWriter());
                 return new Store(lifecycle.GetOrLoad, lifecycle.Get, lifecycle.Reload);
             }
 

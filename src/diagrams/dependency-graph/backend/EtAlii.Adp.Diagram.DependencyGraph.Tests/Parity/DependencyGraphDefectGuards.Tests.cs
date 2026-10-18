@@ -1,3 +1,4 @@
+using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
 using EtAlii.Adp.Specification.Fbl.Planning;
 using Xunit;
@@ -17,7 +18,7 @@ namespace EtAlii.Adp.Diagram.DependencyGraph.Tests.Parity;
 public sealed class DependencyGraphDefectGuardsTests : IDisposable
 {
     private readonly string _workspace = IoPath.Combine(IoPath.GetTempPath(), "adp-dgr-guards-" + Guid.NewGuid().ToString("N"));
-    private readonly DependencyGraphDocumentStore _store = new();
+    private readonly DependencyGraphDocumentStore _store = new(new FileWriter());
     private readonly HistoryStackStore _historyStacks;
 
     public DependencyGraphDefectGuardsTests()

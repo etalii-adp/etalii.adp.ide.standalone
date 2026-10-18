@@ -9,13 +9,13 @@ public sealed class DocumentEditRunTests
     private const string Path = "body.yml";
 
     [Fact]
-    public void AnEditThatChangesNothing_SavesNothing_AndRecordsNoUndo()
+    public async Task AnEditThatChangesNothing_SavesNothing_AndRecordsNoUndo()
     {
         // Arrange.
         var store = new CountingStore("name: kept\n");
 
         // Act.
-        var result = DocumentEditRun.Run<CountingStore, LineDocument, string>(store, Path, new SampleEdit(), body => body.Text, (_, _) => EditOutcome.Unchanged);
+        var result = await DocumentEditRun.RunAsync<CountingStore, LineDocument, string>(store, Path, new SampleEdit(), body => body.Text, (_, _) => EditOutcome.Unchanged, TestContext.Current.CancellationToken);
 
         // Assert: an undo step for an edit that did not happen appears to do nothing when reached.
         Assert.True(result.IsSuccess, result.Error);
@@ -24,13 +24,13 @@ public sealed class DocumentEditRunTests
     }
 
     [Fact]
-    public void AnAppliedEdit_IsSaved_AndUndoneByTheWholeText()
+    public async Task AnAppliedEdit_IsSaved_AndUndoneByTheWholeText()
     {
         // Arrange.
         var store = new CountingStore("name: kept\n");
 
         // Act.
-        var result = DocumentEditRun.Run<CountingStore, LineDocument, string>(store, Path, new SampleEdit(), body => body.Text, (_, _) => EditOutcome.Applied);
+        var result = await DocumentEditRun.RunAsync<CountingStore, LineDocument, string>(store, Path, new SampleEdit(), body => body.Text, (_, _) => EditOutcome.Applied, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.True(result.IsSuccess, result.Error);
@@ -52,10 +52,10 @@ public sealed class DocumentEditRunTests
 
         public DocumentEntry<LineDocument, string> GetOrLoad(string path) => new(LineDocument.Parse(text), text);
 
-        public DocumentSaveResult Save(string path, LineDocument document)
+        public Task<DocumentSaveResult> SaveAsync(string path, LineDocument document, CancellationToken cancellationToken)
         {
             Saves++;
-            return DocumentSaveResult.Ok;
+            return Task.FromResult(DocumentSaveResult.Ok);
         }
 
         public void Reload(string path)

@@ -1,4 +1,5 @@
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Files;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -352,7 +353,7 @@ public class PipelineTemplatesTests : IDisposable
         }
 
         // Act.
-        var entry = new PipelineDocumentStore().GetOrLoad(_workspace, body);
+        var entry = new PipelineDocumentStore(new FileWriter()).GetOrLoad(_workspace, body);
         var explained = entry.Document.Disl.Diagram.Nodes
             .Where(node => node.IsA("TemplateReference"))
             .Select(node => (Path: node.ValueOf("path") as string, Sentence: node.ValueOf("explanation") as string))

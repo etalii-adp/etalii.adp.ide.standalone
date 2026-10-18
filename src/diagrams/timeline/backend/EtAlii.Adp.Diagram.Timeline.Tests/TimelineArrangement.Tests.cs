@@ -1,3 +1,4 @@
+using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
 using Xunit;
 using IoPath = System.IO.Path;
@@ -8,7 +9,7 @@ namespace EtAlii.Adp.Diagram.Timeline.Tests;
 public class TimelineArrangementTests : IDisposable
 {
     private readonly string _workspace = IoPath.Combine(IoPath.GetTempPath(), "adp-timeline-arrange-" + Guid.NewGuid().ToString("N"));
-    private readonly TimelineDocumentStore _store = new();
+    private readonly TimelineDocumentStore _store = new(new FileWriter());
     private readonly HistoryStackStore _historyStacks;
 
     public TimelineArrangementTests()

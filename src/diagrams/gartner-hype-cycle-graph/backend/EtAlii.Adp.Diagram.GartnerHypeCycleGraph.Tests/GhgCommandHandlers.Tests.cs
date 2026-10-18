@@ -1,3 +1,4 @@
+using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph.Tests;
@@ -7,7 +8,7 @@ public sealed class GhgCommandHandlersTests : EditHandlerContract<IGhgDocumentSt
 {
     protected override string Example => GhgModuleFiles.Example;
 
-    protected override IGhgDocumentStore CreateStore() => new GhgDocumentStore();
+    protected override IGhgDocumentStore CreateStore() => new GhgDocumentStore(new FileWriter());
 
     protected override IGhgDocumentStore Warning(IGhgDocumentStore store, string warning) => new WarningStore(store, warning);
 

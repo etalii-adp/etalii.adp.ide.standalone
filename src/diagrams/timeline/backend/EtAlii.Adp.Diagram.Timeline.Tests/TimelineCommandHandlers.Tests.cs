@@ -1,4 +1,5 @@
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.Timeline.Tests;
@@ -8,7 +9,7 @@ public sealed class TimelineCommandHandlersTests : EditHandlerContract<ITimeline
 {
     protected override string Example => TimelineDocumentStoreTests.Simple;
 
-    protected override ITimelineDocumentStore CreateStore() => new TimelineDocumentStore();
+    protected override ITimelineDocumentStore CreateStore() => new TimelineDocumentStore(new FileWriter());
 
     protected override ITimelineDocumentStore Warning(ITimelineDocumentStore store, string warning) => new WarningStore(store, warning);
 

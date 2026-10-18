@@ -12,25 +12,25 @@ public sealed record AddChildNodeCommand(string BodyPath, string ParentId, strin
 internal sealed class AddChildNodeCommandHandler(IMindmapDocumentStore documents)
     : MindmapCommandHandler(documents), ICommandHandler<AddChildNodeCommand>
 {
-    public Task<CommandResult> ExecuteAsync(AddChildNodeCommand command, CancellationToken cancellationToken = default)
+    public async Task<CommandResult> ExecuteAsync(AddChildNodeCommand command, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(command);
         cancellationToken.ThrowIfCancellationRequested();
 
         if (!TryResolve(command.BodyPath, command.ParentId, out var document, out var parent, out var failure))
         {
-            return Task.FromResult(failure);
+            return failure;
         }
 
         if (document.Find(command.NodeId) is not null)
         {
-            return Task.FromResult(CommandResult.Failure("A node with that id already exists."));
+            return CommandResult.Failure("A node with that id already exists.");
         }
 
         var added = document.AddChild(parent, command.Text);
         added.SetId(command.NodeId);
-        var saved = Documents.Save(command.BodyPath, document, MindmapStructureChanged.Nothing);
+        var saved = await Documents.SaveAsync(command.BodyPath, document, MindmapStructureChanged.Nothing, cancellationToken);
 
-        return Task.FromResult(CommandResult.FromSave(saved, new RemoveNodeCommand(command.BodyPath, command.NodeId)));
+        return CommandResult.FromSave(saved, new RemoveNodeCommand(command.BodyPath, command.NodeId));
     }
 }

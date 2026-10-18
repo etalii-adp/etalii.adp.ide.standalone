@@ -1,3 +1,5 @@
+using EtAlii.Adp.Files;
+
 namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph.Tests;
 
 /// <summary>The store over <c>.ghg</c> bodies, held to the contract every module's is.</summary>
@@ -7,7 +9,7 @@ public sealed class GhgDocumentStoreTests : DocumentStoreContract<IGhgDocumentSt
 
     protected override string EditMarker => "Store contract marker";
 
-    protected override IGhgDocumentStore CreateStore() => new GhgDocumentStore();
+    protected override IGhgDocumentStore CreateStore() => new GhgDocumentStore(new FileWriter());
 
     protected override void Edit(GhgBody document) =>
         GhgWriter.SetName(document, GhgParser.Parse(document).Trends[0], EditMarker);

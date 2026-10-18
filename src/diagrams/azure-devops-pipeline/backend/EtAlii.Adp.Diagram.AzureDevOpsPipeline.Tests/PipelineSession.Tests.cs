@@ -1,3 +1,4 @@
+using EtAlii.Adp.Files;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -16,7 +17,7 @@ public class PipelineSessionTests : IDisposable
         IoPath.GetTempPath(),
         "adp-pipeline-session-" + Guid.NewGuid().ToString("N"));
 
-    private readonly PipelineDocumentStore _store = new();
+    private readonly PipelineDocumentStore _store = new(new FileWriter());
     private readonly PipelineElementMapper _mapper = new(PipelineMetrics.Default);
     private readonly PipelineViewState _views = new();
 
@@ -244,7 +245,7 @@ public class PipelineSessionTests : IDisposable
         var entry = _store.GetOrLoad(_workspace, path);
         var build = entry.Model.Stages.Single(stage => stage.Name == "Build");
         PipelineBodyEdits.Rename(entry.Document, build.Id, "Build it all");
-        _store.Save(_workspace, path, entry);
+        await _store.SaveAsync(_workspace, path, entry, TestContext.Current.CancellationToken);
 
         // Assert.
         var deltas = Assert.Single(pushed);
@@ -267,7 +268,7 @@ public class PipelineSessionTests : IDisposable
         var entry = _store.GetOrLoad(_workspace, path);
         var build = entry.Model.Stages.Single(stage => stage.Name == "Build");
         PipelineBodyEdits.Rename(entry.Document, build.Id, "Build it all");
-        _store.Save(_workspace, path, entry);
+        await _store.SaveAsync(_workspace, path, entry, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.NotNull(pushed);

@@ -1,4 +1,5 @@
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
 using Xunit;
 
@@ -31,7 +32,7 @@ public sealed class SankeyArrangementTests : IDisposable
         "    value: 4\n";
 
     private readonly SankeyTestFolder _folder = new(Path.Combine(AppContext.BaseDirectory, "Fixtures", "lf-line-endings.skv"), "crossing.skv");
-    private readonly SankeyDocumentStore _store = new();
+    private readonly SankeyDocumentStore _store = new(new FileWriter());
     private readonly SankeyTestDispatcher _dispatcher;
 
     public SankeyArrangementTests()

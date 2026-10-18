@@ -1,4 +1,5 @@
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Files;
 
 namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph;
 
@@ -9,7 +10,7 @@ namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph;
 /// <b>There is no parse error.</b> <see cref="FdgParser"/> never throws: a malformed entry is passed
 /// over and reported in <see cref="FdgModel.Problems"/>, so a document that reads always has a model.
 /// </remarks>
-public sealed class FdgDocumentStore : LifecycleDocumentStore<LineDocument, FdgModel>, IFdgDocumentStore
+public sealed class FdgDocumentStore(IFileWriter writer) : LifecycleDocumentStore<LineDocument, FdgModel>(writer), IFdgDocumentStore
 {
     /// <inheritdoc />
     protected override LineDocument Read(string text) => LineDocument.Parse(text);

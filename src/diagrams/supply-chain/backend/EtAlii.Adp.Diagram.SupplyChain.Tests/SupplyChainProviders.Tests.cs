@@ -1,5 +1,6 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
 using Xunit;
 
@@ -9,7 +10,7 @@ namespace EtAlii.Adp.Diagram.SupplyChain.Tests;
 public sealed class SupplyChainProvidersTests : IDisposable
 {
     private readonly SupplyChainTestFolder _folder = new(Path.Combine(AppContext.BaseDirectory, "Fixtures", "lf-line-endings.supply"), "small.supply");
-    private readonly SupplyChainDocumentStore _store = new();
+    private readonly SupplyChainDocumentStore _store = new(new FileWriter());
     private readonly HistoryStackStore _historyStacks;
     private readonly SupplyChainContextPropertyProvider _properties;
     private readonly SupplyChainContextActionProvider _actions;

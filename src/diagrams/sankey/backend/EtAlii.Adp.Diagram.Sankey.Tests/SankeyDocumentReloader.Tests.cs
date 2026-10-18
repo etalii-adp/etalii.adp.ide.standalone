@@ -1,3 +1,5 @@
+using EtAlii.Adp.Files;
+
 namespace EtAlii.Adp.Diagram.Sankey.Tests;
 
 /// <summary>The shared reload seam over the <c>.skv</c> store, held to the contract every module's is.</summary>
@@ -7,7 +9,7 @@ public sealed class SankeyDocumentReloaderTests : DocumentReloaderContract<ISank
 
     protected override string Example => SankeyExamples.BrightwaterCoffee;
 
-    protected override ISankeyDocumentStore CreateStore() => new SankeyDocumentStore();
+    protected override ISankeyDocumentStore CreateStore() => new SankeyDocumentStore(new FileWriter());
 
     protected override bool IsEmpty(ISankeyDocumentStore store, string path)
     {

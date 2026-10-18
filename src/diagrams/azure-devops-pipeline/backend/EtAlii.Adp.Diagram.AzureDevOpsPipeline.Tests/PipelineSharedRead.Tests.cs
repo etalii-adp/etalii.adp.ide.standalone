@@ -1,3 +1,4 @@
+using EtAlii.Adp.Files;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -41,7 +42,7 @@ public class PipelineSharedReadTests : IDisposable
         using var editor = new FileStream(full, FileMode.Open, FileAccess.Write, FileShare.Read);
 
         // Act.
-        var entry = new PipelineDocumentStore().GetOrLoad(_workspace, full);
+        var entry = new PipelineDocumentStore(new FileWriter()).GetOrLoad(_workspace, full);
 
         // Assert: the document itself, not the empty fallback.
         Assert.True(entry.IsUsable);

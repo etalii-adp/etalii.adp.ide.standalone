@@ -1,4 +1,5 @@
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Files;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
@@ -18,7 +19,7 @@ public sealed class WardleyDocumentStoreTests : DocumentStoreContract<IWardleyDo
 
     protected override string EditMarker => "Store contract marker";
 
-    protected override IWardleyDocumentStore CreateStore() => new WardleyDocumentStore();
+    protected override IWardleyDocumentStore CreateStore() => new WardleyDocumentStore(new FileWriter());
 
     protected override void Edit(LineDocument document) => WardleyWriter.ReplaceLine(document, 1, "title " + EditMarker);
 
@@ -30,7 +31,7 @@ public sealed class WardleyDocumentStoreTests : DocumentStoreContract<IWardleyDo
     public void AnEntry_CarriesTheLinesItsParserPassedOver()
     {
         // Act.
-        var entry = new WardleyDocumentStore().GetOrLoad(IoPath.Combine(AppContext.BaseDirectory, "Fixtures", "unmodelled-statements.owm"));
+        var entry = new WardleyDocumentStore(new FileWriter()).GetOrLoad(IoPath.Combine(AppContext.BaseDirectory, "Fixtures", "unmodelled-statements.owm"));
 
         // Assert.
         Assert.True(entry.IsUsable);

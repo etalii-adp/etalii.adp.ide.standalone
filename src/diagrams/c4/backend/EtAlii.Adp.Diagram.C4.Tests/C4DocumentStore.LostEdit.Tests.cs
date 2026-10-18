@@ -1,3 +1,4 @@
+using EtAlii.Adp.Files;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -63,7 +64,7 @@ public class C4DocumentStoreLostEditTests : IDisposable
         // GetOrLoad, ReplaceLine, then ask the store to save.
         var path = IoPath.Combine(_workspace, "sample.dsl");
         await File.WriteAllTextAsync(path, Sample, TestContext.Current.CancellationToken);
-        var store = new C4DocumentStore();
+        var store = new C4DocumentStore(new FileWriter());
         var document = store.GetOrLoad(path).Document;
         document.ReplaceLine(3, EditedLine);
 
@@ -73,7 +74,7 @@ public class C4DocumentStoreLostEditTests : IDisposable
         // Act: the notification for an EARLIER write of this same file lands now. The store's own
         // self-write guard is already cleared, so this is exactly what the reload bridge does.
         store.Reload(path);
-        var error = store.Save(path, document);
+        var error = await store.SaveAsync(path, document, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Equal("", error.Error);

@@ -1,5 +1,6 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents.Wire;
+using EtAlii.Adp.Files;
 using EtAlii.Adp.Hierarchy;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
@@ -38,7 +39,7 @@ public sealed class WardleyContextSourceResolverTests : IDisposable
     private const char Key = WardleyIdentityKeys.Separator;
 
     private readonly string _root = IoPath.Combine(IoPath.GetTempPath(), $"wardley-resolver-{Guid.NewGuid():N}");
-    private readonly WardleyDocumentStore _documents = new();
+    private readonly WardleyDocumentStore _documents = new(new FileWriter());
     private readonly WardleyContextSourceResolver _resolver;
     private readonly string _registration;
     private readonly string _body;
@@ -266,7 +267,7 @@ public sealed class WardleyContextSourceResolverTests : IDisposable
         // Act.
         var document = _documents.GetOrLoad(_body).Document;
         WardleyWriter.RemoveLine(document, WardleyParser.Parse(document).Components.Single(c => c.Name == "Power").Line);
-        _documents.Save(_body, document);
+        await _documents.SaveAsync(_body, document, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Null(announced);
@@ -285,7 +286,7 @@ public sealed class WardleyContextSourceResolverTests : IDisposable
         var document = _documents.GetOrLoad(_body).Document;
         WardleyWriter.Rename(document, WardleyParser.Parse(document), "Power", "Mains Power");
         _documents.Rekey(_body, WardleyIdentityKind.Component, "Power", "Mains Power");
-        _documents.Save(_body, document);
+        await _documents.SaveAsync(_body, document, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Equal(["Mains Power"], announced);

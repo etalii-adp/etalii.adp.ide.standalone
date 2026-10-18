@@ -1,3 +1,4 @@
+using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.AgentBehaviorModelling.Tests;
@@ -7,7 +8,7 @@ public sealed class AbmCommandHandlersTests : EditHandlerContract<IAbmDocumentSt
 {
     protected override string Example => AbmExamples.BodyOf("bug-fixer");
 
-    protected override IAbmDocumentStore CreateStore() => new AbmDocumentStore();
+    protected override IAbmDocumentStore CreateStore() => new AbmDocumentStore(new FileWriter());
 
     protected override IAbmDocumentStore Warning(IAbmDocumentStore store, string warning) => new WarningStore(store, warning);
 

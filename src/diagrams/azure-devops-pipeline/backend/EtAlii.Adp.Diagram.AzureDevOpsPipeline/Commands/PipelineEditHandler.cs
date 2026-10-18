@@ -31,7 +31,7 @@ internal abstract class PipelineEditHandler<TCommand>(IPipelineDocumentStore doc
         ArgumentNullException.ThrowIfNull(command);
         cancellationToken.ThrowIfCancellationRequested();
 
-        return Task.FromResult(Run(documents, command, body => Apply(body, command)));
+        return RunAsync(documents, command, body => Apply(body, command), cancellationToken);
     }
 
     /// <summary>Changes <paramref name="body"/> as <paramref name="command"/> asks, through the definition and the binding, or says why not.</summary>
@@ -41,7 +41,7 @@ internal abstract class PipelineEditHandler<TCommand>(IPipelineDocumentStore doc
     /// Edits a copy of the body <paramref name="command"/> names with <paramref name="edit"/> and saves it, with the
     /// undo that restores what the edit replaced; refused, with nothing written, where the edit is.
     /// </summary>
-    private static CommandResult Run(IPipelineDocumentStore documents, IPipelineEditCommand command, Func<PipelineBody, EditOutcome> edit)
+    private static async Task<CommandResult> RunAsync(IPipelineDocumentStore documents, IPipelineEditCommand command, Func<PipelineBody, EditOutcome> edit, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(documents);
         ArgumentNullException.ThrowIfNull(command);
@@ -69,7 +69,7 @@ internal abstract class PipelineEditHandler<TCommand>(IPipelineDocumentStore doc
         }
 
         var undo = RestorePipelineSpanCommand.Undoing(command, before, copy.Bytes, applied, isRedo: command is RestorePipelineSpanCommand { IsRedo: false });
-        var saved = documents.In(command.RootPath).Save(command.BodyPath, copy);
+        var saved = await documents.In(command.RootPath).SaveAsync(command.BodyPath, copy, cancellationToken);
         return CommandResult.FromSave(saved, undo);
     }
 }

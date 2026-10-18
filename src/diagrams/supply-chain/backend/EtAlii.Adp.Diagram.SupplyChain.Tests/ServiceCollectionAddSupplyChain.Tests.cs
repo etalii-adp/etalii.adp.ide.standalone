@@ -1,4 +1,5 @@
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Files;
 using EtAlii.Adp.Sessions;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
@@ -13,6 +14,7 @@ public sealed class ServiceCollectionAddSupplyChainTests
     {
         // Arrange.
         var services = new ServiceCollection();
+        services.AddSingleton<IFileWriter>(new FileWriter());
         services.AddSupplyChain();
         using var provider = services.BuildServiceProvider();
 
@@ -36,6 +38,7 @@ public sealed class ServiceCollectionAddSupplyChainTests
     {
         // Arrange.
         var services = new ServiceCollection();
+        services.AddSingleton<IFileWriter>(new FileWriter());
         services.AddSupplyChain();
         services.AddSingleton(TestHistory.For(_ => { }));
         await using var provider = services.BuildServiceProvider();

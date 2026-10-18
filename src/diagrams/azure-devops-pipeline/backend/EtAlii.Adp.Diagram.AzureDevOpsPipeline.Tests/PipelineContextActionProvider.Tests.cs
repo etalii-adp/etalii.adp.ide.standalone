@@ -1,5 +1,6 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents.Wire;
+using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
 using Xunit;
 using IoPath = System.IO.Path;
@@ -21,7 +22,7 @@ public class PipelineContextActionProviderTests : IDisposable
         IoPath.GetTempPath(),
         "adp-pipeline-actions-" + Guid.NewGuid().ToString("N"));
 
-    private readonly PipelineDocumentStore _store = new();
+    private readonly PipelineDocumentStore _store = new(new FileWriter());
     private readonly PipelineViewState _views = new();
     private readonly HistoryStackStore _historyStacks;
     private readonly PipelineContextActionProvider _provider;

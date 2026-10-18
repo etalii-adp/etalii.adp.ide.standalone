@@ -1,5 +1,6 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Diagram.Modules;
+using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
 using Xunit;
 using IoPath = System.IO.Path;
@@ -19,7 +20,7 @@ public class PipelineToolboxTests : IDisposable
         IoPath.GetTempPath(),
         "adp-pipeline-toolbox-" + Guid.NewGuid().ToString("N"));
 
-    private readonly PipelineDocumentStore _store = new();
+    private readonly PipelineDocumentStore _store = new(new FileWriter());
     private readonly PipelineViewState _views = new();
     private readonly DislToolboxProvider _toolbox = new(Diagram.Pipeline.Origin, PipelineDefinition.Definition);
     private readonly PipelineContextActionProvider _actions;

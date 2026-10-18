@@ -4,7 +4,7 @@ namespace EtAlii.Adp.History;
 
 /// <summary>
 /// A <see cref="DocumentEditHandler{TCommand, TStore, TBody, TModel}"/> whose edit is saved against
-/// the file as it is now, through <see cref="DocumentEditRun.RunOnCurrent"/>: for a body other
+/// the file as it is now, through <see cref="DocumentEditRun.RunOnCurrentAsync"/>: for a body other
 /// programs write while it is open.
 /// </summary>
 /// <typeparam name="TCommand">The command handled.</typeparam>
@@ -20,6 +20,6 @@ public abstract class CurrentDocumentEditHandler<TCommand, TStore, TBody, TModel
     private readonly TStore _documents = documents;
 
     /// <inheritdoc />
-    protected override CommandResult Execute(TCommand command) =>
-        DocumentEditRun.RunOnCurrent<TStore, TBody, TModel>(_documents, command.BodyPath, command, Parse, (body, model) => Apply(body, model, command));
+    protected override Task<CommandResult> RunAsync(TCommand command, CancellationToken cancellationToken) =>
+        DocumentEditRun.RunOnCurrentAsync<TStore, TBody, TModel>(_documents, command.BodyPath, command, Parse, (body, model) => Apply(body, model, command), cancellationToken);
 }

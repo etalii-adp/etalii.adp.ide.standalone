@@ -1,3 +1,4 @@
+using EtAlii.Adp.Files;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
@@ -11,7 +12,7 @@ namespace EtAlii.Adp.Diagram.WardleyMap.Tests;
 public sealed class WardleyDocumentStoreSharingTests : IDisposable
 {
     private readonly string _folder = IoPath.Combine(IoPath.GetTempPath(), $"wardley-store-{Guid.NewGuid():N}");
-    private readonly WardleyDocumentStore _store = new();
+    private readonly WardleyDocumentStore _store = new(new FileWriter());
 
     public WardleyDocumentStoreSharingTests() => Directory.CreateDirectory(_folder);
 
@@ -56,7 +57,7 @@ public sealed class WardleyDocumentStoreSharingTests : IDisposable
     }
 
     [Fact]
-    public void Save_LeavesNoTemporaryFileBehind()
+    public async Task Save_LeavesNoTemporaryFileBehind()
     {
         // Arrange.
         var path = Write("map.owm", "title Before\n");
@@ -64,7 +65,7 @@ public sealed class WardleyDocumentStoreSharingTests : IDisposable
         WardleyWriter.ReplaceLine(document, 1, "title After");
 
         // Act.
-        _store.Save(path, document);
+        await _store.SaveAsync(path, document, TestContext.Current.CancellationToken);
 
         // Assert. The temp-then-move discipline must not litter the project folder, and the
         // name it uses is one HierarchyModel already ignores.
@@ -72,7 +73,7 @@ public sealed class WardleyDocumentStoreSharingTests : IDisposable
     }
 
     [Fact]
-    public void Save_PreservesTheDocumentsBytes_IncludingCrlfAndAMissingFinalNewline()
+    public async Task Save_PreservesTheDocumentsBytes_IncludingCrlfAndAMissingFinalNewline()
     {
         // Arrange. Requirement 3.1 end to end: through the store, not just the document.
         const string text = "title Kept\r\nanchor A [0.9, 0.5]";
@@ -80,14 +81,14 @@ public sealed class WardleyDocumentStoreSharingTests : IDisposable
 
         // Act.
         var document = _store.GetOrLoad(path).Document;
-        _store.Save(path, document);
+        await _store.SaveAsync(path, document, TestContext.Current.CancellationToken);
 
         // Assert.
-        Assert.Equal(text, File.ReadAllText(path));
+        Assert.Equal(text, await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
     }
 
     [Fact]
-    public void Save_CreatesTheFile_WhenTheSiblingDidNotExistYet()
+    public async Task Save_CreatesTheFile_WhenTheSiblingDidNotExistYet()
     {
         // Arrange. Requirement 2.4 - the sibling is created on the first save.
         var path = IoPath.Combine(_folder, "new.owm");
@@ -95,14 +96,14 @@ public sealed class WardleyDocumentStoreSharingTests : IDisposable
         WardleyWriter.InsertLine(document, 1, "title Created");
 
         // Act.
-        _store.Save(path, document);
+        await _store.SaveAsync(path, document, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.True(File.Exists(path));
         // CRLF, and terminated: a document with no line breaks to learn from takes the core line
         // document's ending, the same on any machine. This module wrote LF here until it moved
         // onto the core line document (code-structure behaviour change B-05).
-        Assert.Equal("title Created\r\n", File.ReadAllText(path));
+        Assert.Equal("title Created\r\n", await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
     }
 
     [Fact]

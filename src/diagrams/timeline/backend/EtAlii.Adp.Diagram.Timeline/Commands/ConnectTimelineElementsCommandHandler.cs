@@ -7,11 +7,11 @@ public sealed class ConnectTimelineElementsCommandHandler(ITimelineDocumentStore
     : TimelineEditHandler<ConnectTimelineElementsCommand>(documents)
 {
     /// <inheritdoc />
-    protected override CommandResult Execute(ConnectTimelineElementsCommand command) =>
+    protected override async Task<CommandResult> RunAsync(ConnectTimelineElementsCommand command, CancellationToken cancellationToken) =>
         string.Equals(command.From, command.To, StringComparison.Ordinal)
             // Requirement 8.7. Refused with the reason rather than silently dropped.
             ? CommandResult.Failure("An element cannot be connected to itself.")
-            : base.Execute(command);
+            : await base.RunAsync(command, cancellationToken);
 
     /// <inheritdoc />
     protected override EditOutcome Apply(TimelineBody body, TimelineModel model, ConnectTimelineElementsCommand command)

@@ -10,8 +10,8 @@ namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph;
 public sealed class ConnectFdgElementsCommandHandler(IFdgDocumentStore documents) : FdgEditHandler<ConnectFdgElementsCommand>(documents)
 {
     /// <inheritdoc />
-    protected override CommandResult Execute(ConnectFdgElementsCommand command) =>
-        base.Execute(command.ConnectionId.Length > 0 ? command : command with { ConnectionId = ShortGuid.NewShortGuid().ToString() });
+    protected override async Task<CommandResult> RunAsync(ConnectFdgElementsCommand command, CancellationToken cancellationToken) =>
+        await base.RunAsync(command.ConnectionId.Length > 0 ? command : command with { ConnectionId = ShortGuid.NewShortGuid().ToString() }, cancellationToken);
 
     /// <inheritdoc />
     protected override EditOutcome Apply(LineDocument document, FdgModel model, ConnectFdgElementsCommand command)

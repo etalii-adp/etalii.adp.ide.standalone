@@ -7,7 +7,7 @@ public sealed class AddTimelineElementCommandHandler(ITimelineDocumentStore docu
     : TimelineEditHandler<AddTimelineElementCommand>(documents)
 {
     /// <inheritdoc />
-    protected override CommandResult Execute(AddTimelineElementCommand command)
+    protected override async Task<CommandResult> RunAsync(AddTimelineElementCommand command, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(command.Id))
         {
@@ -23,7 +23,7 @@ public sealed class AddTimelineElementCommandHandler(ITimelineDocumentStore docu
         // through the application as one edited into that state.
         return Inverted(command)
             ? CommandResult.Failure("An element cannot end before it begins.")
-            : base.Execute(command);
+            : await base.RunAsync(command, cancellationToken);
     }
 
     /// <inheritdoc />

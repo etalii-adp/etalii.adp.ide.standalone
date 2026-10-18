@@ -1,5 +1,6 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents.Wire;
+using EtAlii.Adp.Files;
 using EtAlii.Adp.Hierarchy;
 using Xunit;
 using IoPath = System.IO.Path;
@@ -18,7 +19,7 @@ public class PipelineContextSourceResolverTests : IDisposable
         IoPath.GetTempPath(),
         "adp-pipeline-context-" + Guid.NewGuid().ToString("N"));
 
-    private readonly PipelineDocumentStore _store = new();
+    private readonly PipelineDocumentStore _store = new(new FileWriter());
 
     public PipelineContextSourceResolverTests() => Directory.CreateDirectory(_workspace);
 
@@ -292,7 +293,7 @@ public class PipelineContextSourceResolverTests : IDisposable
         var entry = _store.GetOrLoad(_workspace, BodyOf(path));
         var stage = entry.Model.Stages.Single(candidate => candidate.Name == "Build");
         PipelineBodyEdits.Rename(entry.Document, stage.Id, "Built");
-        _store.Save(_workspace, BodyOf(path), entry);
+        await _store.SaveAsync(_workspace, BodyOf(path), entry, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Equal(["Built"], reported);

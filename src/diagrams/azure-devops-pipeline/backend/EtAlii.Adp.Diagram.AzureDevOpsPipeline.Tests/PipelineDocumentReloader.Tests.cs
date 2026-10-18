@@ -1,3 +1,4 @@
+using EtAlii.Adp.Files;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -14,7 +15,7 @@ public sealed class PipelineDocumentReloaderTests : DocumentReloaderContract<IPi
 
     protected override string Example => IoPath.Combine(AppContext.BaseDirectory, "Fixtures", "jobs-only.yml");
 
-    protected override IPipelineDocumentStore CreateStore() => new PipelineDocumentStore();
+    protected override IPipelineDocumentStore CreateStore() => new PipelineDocumentStore(new FileWriter());
 
     protected override bool IsEmpty(IPipelineDocumentStore store, string path) =>
         store.GetOrLoad(IoPath.GetDirectoryName(path)!, path).Model.Jobs.Any() is false;

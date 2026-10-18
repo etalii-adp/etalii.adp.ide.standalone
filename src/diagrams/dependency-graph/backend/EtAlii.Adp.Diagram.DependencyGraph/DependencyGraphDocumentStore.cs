@@ -1,4 +1,5 @@
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Files;
 using EtAlii.Adp.Specification.Disl;
 
 namespace EtAlii.Adp.Diagram.DependencyGraph;
@@ -19,7 +20,7 @@ namespace EtAlii.Adp.Diagram.DependencyGraph;
 /// written to it until it reads.
 /// </para>
 /// </remarks>
-public sealed class DependencyGraphDocumentStore : LifecycleDocumentStore<DependencyGraphBody, DislModel>, IDependencyGraphDocumentStore
+public sealed class DependencyGraphDocumentStore(IFileWriter writer) : LifecycleDocumentStore<DependencyGraphBody, DislModel>(writer), IDependencyGraphDocumentStore
 {
     /// <inheritdoc />
     protected override DependencyGraphBody Read(string text) => DependencyGraphBody.Parse(text);

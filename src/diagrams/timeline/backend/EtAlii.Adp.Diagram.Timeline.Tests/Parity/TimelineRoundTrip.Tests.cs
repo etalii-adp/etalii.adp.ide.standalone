@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
+using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
 using EtAlii.Adp.Specification.Fbl.Planning;
 using Xunit;
@@ -54,11 +55,11 @@ public sealed class TimelineRoundTripTests : IDisposable
         // Arrange.
         var bytes = await ReadAsync(relative);
         var path = await CopyAsync(bytes);
-        var store = new TimelineDocumentStore();
+        var store = new TimelineDocumentStore(new FileWriter());
 
         // Act.
         var entry = store.GetOrLoad(path);
-        var saved = store.Save(path, entry.Document);
+        var saved = await store.SaveAsync(path, entry.Document, TestContext.Current.CancellationToken);
 
         // Assert: written back as it was; a document that could not be read is not written at all.
         var after = await File.ReadAllBytesAsync(path, TestContext.Current.CancellationToken);
@@ -89,7 +90,7 @@ public sealed class TimelineRoundTripTests : IDisposable
         // Arrange.
         var bytes = await ReadAsync(relative);
         var token = TestContext.Current.CancellationToken;
-        var store = new TimelineDocumentStore();
+        var store = new TimelineDocumentStore(new FileWriter());
         var path = await CopyAsync(bytes);
         var model = store.GetOrLoad(path).Model;
         var lines = Encoding.UTF8.GetString(bytes).Split('\n');
@@ -133,10 +134,10 @@ public sealed class TimelineRoundTripTests : IDisposable
         var token = TestContext.Current.CancellationToken;
         var applied = 0;
 
-        foreach ((string name, Func<string, ICommand> edit) in Edits(new TimelineDocumentStore().GetOrLoad(await CopyAsync(bytes)).Model))
+        foreach ((string name, Func<string, ICommand> edit) in Edits(new TimelineDocumentStore(new FileWriter()).GetOrLoad(await CopyAsync(bytes)).Model))
         {
             var path = await CopyAsync(bytes);
-            var store = new TimelineDocumentStore();
+            var store = new TimelineDocumentStore(new FileWriter());
             using var history = new HistoryStackStore(new TimelineTestDispatcher(store));
             var stack = history.Get(_folder.Path);
 
@@ -155,7 +156,7 @@ public sealed class TimelineRoundTripTests : IDisposable
         }
 
         // A document that cannot be read takes no edit; every other takes at least the adds.
-        Assert.True(applied >= 2 || new TimelineDocumentStore().GetOrLoad(await CopyAsync(bytes)).Model.Elements.Count == 0, $"{relative}: only {applied} edits applied, so the round trips prove little.");
+        Assert.True(applied >= 2 || new TimelineDocumentStore(new FileWriter()).GetOrLoad(await CopyAsync(bytes)).Model.Elements.Count == 0, $"{relative}: only {applied} edits applied, so the round trips prove little.");
     }
 
     /// <summary>The text the row of <paramref name="element"/> is written with, without its quotes; null for no row key.</summary>

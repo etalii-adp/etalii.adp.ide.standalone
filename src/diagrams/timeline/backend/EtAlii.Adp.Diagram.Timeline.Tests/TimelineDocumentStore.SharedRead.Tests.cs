@@ -1,3 +1,4 @@
+using EtAlii.Adp.Files;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -35,7 +36,7 @@ public class TimelineDocumentStoreSharedReadTests : IDisposable
         using var editor = new FileStream(path, FileMode.Open, FileAccess.Write, FileShare.Read);
 
         // Act.
-        var entry = new TimelineDocumentStore().GetOrLoad(path);
+        var entry = new TimelineDocumentStore(new FileWriter()).GetOrLoad(path);
 
         // Assert: the document itself, not the empty fallback.
         Assert.True(entry.IsUsable);
@@ -50,7 +51,7 @@ public class TimelineDocumentStoreSharedReadTests : IDisposable
         File.Copy(IoPath.Combine(AppContext.BaseDirectory, "Fixtures", "findings", "unparseable.tml"), path);
 
         // Act.
-        var entry = new TimelineDocumentStore().GetOrLoad(path);
+        var entry = new TimelineDocumentStore(new FileWriter()).GetOrLoad(path);
 
         // Assert.
         Assert.False(entry.IsUsable);

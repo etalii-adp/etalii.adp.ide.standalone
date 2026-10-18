@@ -117,9 +117,9 @@ public class WarningDocumentStore<TBody, TModel>(IDiagramDocumentStore<TBody, TM
     public DocumentEntry<TBody, TModel> GetOrLoad(string path) => inner.GetOrLoad(path);
 
     /// <inheritdoc />
-    public DocumentSaveResult Save(string path, TBody document)
+    public async Task<DocumentSaveResult> SaveAsync(string path, TBody document, CancellationToken cancellationToken)
     {
-        var saved = inner.Save(path, document);
+        var saved = await inner.SaveAsync(path, document, cancellationToken);
         return saved.Failed ? saved : DocumentSaveResult.WithWarning(warning);
     }
 
@@ -150,9 +150,9 @@ public class WarningEditSavingDocumentStore<TBody, TModel> : WarningDocumentStor
     }
 
     /// <inheritdoc />
-    public DocumentEditSaved Save(string path, DocumentEntry<TBody, TModel> basis, Func<TBody, string> edit)
+    public async Task<DocumentEditSaved> SaveAsync(string path, DocumentEntry<TBody, TModel> basis, Func<TBody, string> edit, CancellationToken cancellationToken)
     {
-        var saved = _inner.Save(path, basis, edit);
+        var saved = await _inner.SaveAsync(path, basis, edit, cancellationToken);
         return saved.Result.Failed ? saved : saved with { Result = DocumentSaveResult.WithWarning(_warning) };
     }
 }

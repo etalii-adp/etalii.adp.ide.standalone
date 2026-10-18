@@ -1,3 +1,4 @@
+using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
 using EtAlii.Adp.Specification.Disl;
 
@@ -8,7 +9,7 @@ public sealed class DependencyGraphCommandHandlersTests : EditHandlerContract<ID
 {
     protected override string Example => DependencyGraphDocumentStoreTests.Simple;
 
-    protected override IDependencyGraphDocumentStore CreateStore() => new DependencyGraphDocumentStore();
+    protected override IDependencyGraphDocumentStore CreateStore() => new DependencyGraphDocumentStore(new FileWriter());
 
     protected override IDependencyGraphDocumentStore Warning(IDependencyGraphDocumentStore store, string warning) => new WarningStore(store, warning);
 

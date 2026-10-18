@@ -1,3 +1,4 @@
+using EtAlii.Adp.Files;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -38,7 +39,7 @@ namespace EtAlii.Adp.Diagram.Databricks.Tests;
 public class DatabricksDocumentStoreLostEditTests : IDisposable
 {
     private readonly string _root;
-    private readonly DatabricksDocumentStore _store = new();
+    private readonly DatabricksDocumentStore _store = new(new FileWriter());
 
     public DatabricksDocumentStoreLostEditTests()
     {
@@ -70,7 +71,7 @@ public class DatabricksDocumentStoreLostEditTests : IDisposable
         // Act: the notification for an EARLIER write of this same file lands now. The store's own
         // guard is already cleared, so this is exactly what the reload bridge does with it.
         _store.Reload(path);
-        var error = _store.Save(path, entry.Document);
+        var error = await _store.SaveAsync(path, entry.Document, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Equal("", error.Error);

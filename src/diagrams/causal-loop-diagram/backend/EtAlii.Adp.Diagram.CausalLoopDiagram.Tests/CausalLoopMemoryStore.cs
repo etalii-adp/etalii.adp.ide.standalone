@@ -29,11 +29,11 @@ internal sealed class CausalLoopMemoryStore : ICausalLoopDocumentStore
         return new DocumentEntry<CausalLoopBody, CausalLoopModel>(body, body.Read());
     }
 
-    public DocumentSaveResult Save(string path, CausalLoopBody document)
+    public Task<DocumentSaveResult> SaveAsync(string path, CausalLoopBody document, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(document);
         _texts[path] = document.Text;
-        return DocumentSaveResult.Ok;
+        return Task.FromResult(DocumentSaveResult.Ok);
     }
 
     public void Reload(string path)

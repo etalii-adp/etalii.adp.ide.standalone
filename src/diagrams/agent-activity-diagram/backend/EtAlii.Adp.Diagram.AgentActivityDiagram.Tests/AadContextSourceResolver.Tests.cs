@@ -1,5 +1,6 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Diagram.Modules;
+using EtAlii.Adp.Files;
 using EtAlii.Adp.Hierarchy;
 using Xunit;
 
@@ -8,7 +9,7 @@ namespace EtAlii.Adp.Diagram.AgentActivityDiagram.Tests;
 /// <summary>A selection on the one-day example, by the contract every element resolver keeps, and what is its own.</summary>
 public sealed class AadContextSourceResolverTests : DiagramElementSourceResolverContract
 {
-    private readonly AadDocumentStore _store = new();
+    private readonly AadDocumentStore _store = new(new FileWriter());
 
     protected override string Example => AadDocumentStoreTests.OneDay;
 

@@ -2,6 +2,7 @@ using System.Text.RegularExpressions;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Files;
 using EtAlii.Adp.Hierarchy;
 using Xunit;
 
@@ -10,7 +11,7 @@ namespace EtAlii.Adp.Diagram.Timeline.Tests;
 /// <summary>A selection on the simple timeline, by the contract every element resolver keeps, and what is its own.</summary>
 public sealed class TimelineContextSourceResolverTests : DiagramElementSourceResolverContract
 {
-    private readonly TimelineDocumentStore _store = new();
+    private readonly TimelineDocumentStore _store = new(new FileWriter());
 
     protected override string Example => TimelineDocumentStoreTests.Simple;
 

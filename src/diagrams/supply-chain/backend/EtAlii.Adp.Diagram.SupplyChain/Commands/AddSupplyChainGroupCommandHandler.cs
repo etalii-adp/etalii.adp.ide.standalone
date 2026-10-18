@@ -7,8 +7,8 @@ namespace EtAlii.Adp.Diagram.SupplyChain;
 public sealed class AddSupplyChainGroupCommandHandler(ISupplyChainDocumentStore documents) : SupplyChainEditHandler<AddSupplyChainGroupCommand>(documents)
 {
     /// <inheritdoc />
-    protected override CommandResult Execute(AddSupplyChainGroupCommand command) =>
-        base.Execute(command.GroupId.Length > 0 ? command : command with { GroupId = ShortGuid.NewShortGuid().ToString() });
+    protected override async Task<CommandResult> RunAsync(AddSupplyChainGroupCommand command, CancellationToken cancellationToken) =>
+        await base.RunAsync(command.GroupId.Length > 0 ? command : command with { GroupId = ShortGuid.NewShortGuid().ToString() }, cancellationToken);
 
     /// <inheritdoc />
     protected override EditOutcome Apply(LineDocument document, SupplyChainModel model, AddSupplyChainGroupCommand command)

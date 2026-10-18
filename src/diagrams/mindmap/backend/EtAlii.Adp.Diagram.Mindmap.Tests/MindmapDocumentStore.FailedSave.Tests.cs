@@ -1,3 +1,4 @@
+using EtAlii.Adp.Files;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -32,7 +33,7 @@ public class MindmapDocumentStoreFailedSaveTests : IDisposable
         """;
 
     private readonly string _root = IoPath.Combine(IoPath.GetTempPath(), "adp-mindmap-failed-save-" + Guid.NewGuid().ToString("N"));
-    private readonly MindmapDocumentStore _store = new();
+    private readonly MindmapDocumentStore _store = new(new FileWriter());
 
     public MindmapDocumentStoreFailedSaveTests() => Directory.CreateDirectory(_root);
 
@@ -44,20 +45,20 @@ public class MindmapDocumentStoreFailedSaveTests : IDisposable
     }
 
     [Fact]
-    public void ARefusedWrite_IsReported_AndTheEditIsStillThereToRetry()
+    public async Task ARefusedWrite_IsReported_AndTheEditIsStillThereToRetry()
     {
         Assert.SkipUnless(OperatingSystem.IsWindows(), "A handle's sharing mode denies a replace or delete only on Windows.");
         // Arrange: a loaded map, an edit made in memory, and the file held open so the write fails.
         var bodyPath = IoPath.Combine(_root, "design.mm");
-        File.WriteAllText(bodyPath, Map);
+        await File.WriteAllTextAsync(bodyPath, Map, TestContext.Current.CancellationToken);
         var document = _store.GetOrLoad(bodyPath);
         var node = document.Find("ID_1")!;
         document.SetText(node, "Design, renamed");
 
-        using var holder = new FileStream(bodyPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+        await using var holder = new FileStream(bodyPath, FileMode.Open, FileAccess.Read, FileShare.Read);
 
         // Act.
-        var saved = _store.Save(bodyPath, document, new MindmapNodeUpdated("ID_1"));
+        var saved = await _store.SaveAsync(bodyPath, document, new MindmapNodeUpdated("ID_1"), TestContext.Current.CancellationToken);
 
         // Assert: told, rather than thrown at. Reaching this line at all is the change - before it,
         // the writer's exception left the store and this test could not be written against a result.
@@ -69,33 +70,33 @@ public class MindmapDocumentStoreFailedSaveTests : IDisposable
         // half that matters to somebody using the app: the file on disk is untouched, and the
         // document ADP holds is the edited one.
         Assert.Equal("Design, renamed", _store.GetOrLoad(bodyPath).Find("ID_1")!.Text);
-        Assert.Contains("TEXT=\"Design\"", File.ReadAllText(bodyPath), StringComparison.Ordinal);
+        Assert.Contains("TEXT=\"Design\"", await File.ReadAllTextAsync(bodyPath, TestContext.Current.CancellationToken), StringComparison.Ordinal);
     }
 
     [Fact]
-    public void AWriteThatSucceeds_ReportsOk_AndLandsOnDisk()
+    public async Task AWriteThatSucceeds_ReportsOk_AndLandsOnDisk()
     {
         // The other direction: without this, a Save that always reported failure would pass the test
         // above and break every edit in the product.
         var bodyPath = IoPath.Combine(_root, "design.mm");
-        File.WriteAllText(bodyPath, Map);
+        await File.WriteAllTextAsync(bodyPath, Map, TestContext.Current.CancellationToken);
         var document = _store.GetOrLoad(bodyPath);
         document.SetText(document.Find("ID_1")!, "Design, renamed");
 
-        var saved = _store.Save(bodyPath, document, new MindmapNodeUpdated("ID_1"));
+        var saved = await _store.SaveAsync(bodyPath, document, new MindmapNodeUpdated("ID_1"), TestContext.Current.CancellationToken);
 
         Assert.False(saved.Failed);
         Assert.Equal("", saved.Error);
-        Assert.Contains("Design, renamed", File.ReadAllText(bodyPath), StringComparison.Ordinal);
+        Assert.Contains("Design, renamed", await File.ReadAllTextAsync(bodyPath, TestContext.Current.CancellationToken), StringComparison.Ordinal);
     }
 
     [Fact]
-    public void SavingAMapThatWasNeverLoaded_StillThrows()
+    public async Task SavingAMapThatWasNeverLoaded_StillThrows()
     {
         // Deliberately unchanged, and stated so nobody "finishes the job" by converting it. Saving a
         // document this store never loaded is a programming error rather than an outcome a user can
         // act on - there is no edit to keep and nothing to retry.
-        Assert.Throws<InvalidOperationException>(
-            () => _store.Save(IoPath.Combine(_root, "never-opened.mm"), MindmapDocument.Parse(Map), new MindmapNodeUpdated("ID_1")));
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => _store.SaveAsync(IoPath.Combine(_root, "never-opened.mm"), MindmapDocument.Parse(Map), new MindmapNodeUpdated("ID_1"), TestContext.Current.CancellationToken));
     }
 }

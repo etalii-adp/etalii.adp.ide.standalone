@@ -1,6 +1,7 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.Documents.Wire;
+using EtAlii.Adp.Files;
 using EtAlii.Adp.Hierarchy;
 using Xunit;
 
@@ -13,7 +14,7 @@ namespace EtAlii.Adp.Diagram.SupplyChain.Tests;
 public sealed class SupplyChainContextSourceResolverTests : IDisposable
 {
     private readonly SupplyChainTestFolder _folder = new(SupplyChainExamples.Automotive, "automotive.supply");
-    private readonly SupplyChainDocumentStore _store = new();
+    private readonly SupplyChainDocumentStore _store = new(new FileWriter());
     private readonly SupplyChainSelections _selections = new();
     private readonly ShortGuid _watchId = ShortGuid.NewShortGuid();
     private readonly SupplyChainContextSourceResolver _resolver;
@@ -79,7 +80,7 @@ public sealed class SupplyChainContextSourceResolverTests : IDisposable
 /// <summary>A selection on the automotive example, by the contract every element resolver keeps.</summary>
 public sealed class SupplyChainContextSourceResolverContractTests : DiagramElementSourceResolverContract
 {
-    private readonly SupplyChainDocumentStore _store = new();
+    private readonly SupplyChainDocumentStore _store = new(new FileWriter());
 
     protected override string Example => SupplyChainExamples.Automotive;
 

@@ -1,3 +1,4 @@
+using EtAlii.Adp.Files;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -49,7 +50,7 @@ public sealed class MindmapDocumentStoreDepartureTests : IDisposable
     public void PermittedDepartureR28_AReloadOrDeletionOfAMapNeverLoaded_IsSkipped()
     {
         // Arrange: a map on disk that nothing has opened.
-        var store = new MindmapDocumentStore();
+        var store = new MindmapDocumentStore(new FileWriter());
         IDiagramDocumentReloader reloader = new DiagramDocumentReloader<IMindmapDocumentStore>(Diagram.Mindmap.Origin, store);
         var told = 0;
         store.Changed += (_, _) => told++;
@@ -72,10 +73,10 @@ public sealed class MindmapDocumentStoreDepartureTests : IDisposable
     }
 
     [Fact]
-    public void PermittedDepartureR28_TheChangeEventNamesTheKindOfStructuralChange()
+    public async Task PermittedDepartureR28_TheChangeEventNamesTheKindOfStructuralChange()
     {
         // Arrange.
-        var store = new MindmapDocumentStore();
+        var store = new MindmapDocumentStore(new FileWriter());
         IDiagramDocumentReloader reloader = new DiagramDocumentReloader<IMindmapDocumentStore>(Diagram.Mindmap.Origin, store);
         var document = store.GetOrLoad(Body);
         var told = new List<MindmapChange>();
@@ -83,9 +84,9 @@ public sealed class MindmapDocumentStoreDepartureTests : IDisposable
 
         // Act: a command's edit and save, then an external edit picked up, then a deletion.
         document.SetText(document.Find("ID_2")!, "Layout, renamed");
-        var saved = store.Save(Body, document, new MindmapNodeUpdated("ID_2"));
+        var saved = await store.SaveAsync(Body, document, new MindmapNodeUpdated("ID_2"), TestContext.Current.CancellationToken);
         Assert.False(saved.Failed);
-        File.WriteAllText(Body, Map);
+        await File.WriteAllTextAsync(Body, Map, TestContext.Current.CancellationToken);
         reloader.Reload(_folder, Body);
         File.Delete(Body);
         reloader.BodyDeleted(_folder, Body);

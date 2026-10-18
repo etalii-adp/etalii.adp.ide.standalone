@@ -1,4 +1,5 @@
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
 using Xunit;
 
@@ -22,7 +23,7 @@ namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph.Tests;
 public sealed class FdgSessionTests : IDisposable
 {
     private readonly string _folder = Path.Combine(Path.GetTempPath(), "EtAlii.Adp.FdgSessionTests", Guid.NewGuid().ToString("N"));
-    private readonly FdgDocumentStore _store = new();
+    private readonly FdgDocumentStore _store = new(new FileWriter());
     private readonly List<DiagramDeltasEventArgs> _raised = [];
 
     public FdgSessionTests()

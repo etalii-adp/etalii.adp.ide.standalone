@@ -11,11 +11,11 @@ namespace EtAlii.Adp.Diagram.Sankey;
 public sealed class AddSankeyNodeCommandHandler(ISankeyDocumentStore documents) : SankeyEditHandler<AddSankeyNodeCommand>(documents)
 {
     /// <inheritdoc />
-    protected override CommandResult Execute(AddSankeyNodeCommand command)
+    protected override async Task<CommandResult> RunAsync(AddSankeyNodeCommand command, CancellationToken cancellationToken)
     {
         var minted = command.NodeId.Length > 0 ? command : command with { NodeId = ShortGuid.NewShortGuid().ToString() };
 
-        return base.Execute(minted);
+        return await base.RunAsync(minted, cancellationToken);
     }
 
     /// <inheritdoc />

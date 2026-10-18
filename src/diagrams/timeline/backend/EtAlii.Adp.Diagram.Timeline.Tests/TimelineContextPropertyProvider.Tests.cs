@@ -1,4 +1,5 @@
 using EtAlii.Adp.Context;
+using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
 using Xunit;
 using IoPath = System.IO.Path;
@@ -15,7 +16,7 @@ public class TimelineContextPropertyProviderTests : IDisposable
         IoPath.GetTempPath(),
         "adp-timeline-properties-" + Guid.NewGuid().ToString("N"));
 
-    private readonly TimelineDocumentStore _store = new();
+    private readonly TimelineDocumentStore _store = new(new FileWriter());
     private readonly TimelineContextPropertyProvider _properties;
     private readonly HistoryStackStore _historyStacks;
 

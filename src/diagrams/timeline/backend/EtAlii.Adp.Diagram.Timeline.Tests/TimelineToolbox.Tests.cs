@@ -1,6 +1,7 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
 using Xunit;
 using IoPath = System.IO.Path;
@@ -17,7 +18,7 @@ public class TimelineToolboxTests : IDisposable
         IoPath.GetTempPath(),
         "adp-timeline-toolbox-" + Guid.NewGuid().ToString("N"));
 
-    private readonly TimelineDocumentStore _store = new();
+    private readonly TimelineDocumentStore _store = new(new FileWriter());
     private readonly DislToolboxProvider _toolbox = new(Diagram.Timeline.Origin, TimelineDefinition.Definition);
     private readonly TimelineContextActionProvider _actions;
 

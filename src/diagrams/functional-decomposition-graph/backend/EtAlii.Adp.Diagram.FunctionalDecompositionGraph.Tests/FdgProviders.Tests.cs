@@ -1,5 +1,6 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
 using Xunit;
 using IoPath = System.IO.Path;
@@ -13,7 +14,7 @@ namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph.Tests;
 public sealed class FdgProvidersTests : IDisposable
 {
     private readonly string _folder = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.FdgProvidersTests", Guid.NewGuid().ToString("N"));
-    private readonly FdgDocumentStore _store = new();
+    private readonly FdgDocumentStore _store = new(new FileWriter());
     private readonly HistoryStackStore _historyStacks;
     private readonly FdgContextPropertyProvider _properties;
     private readonly FdgContextActionProvider _actions;

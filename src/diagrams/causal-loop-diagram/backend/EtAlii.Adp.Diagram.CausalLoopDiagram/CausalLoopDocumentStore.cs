@@ -1,4 +1,5 @@
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Files;
 
 namespace EtAlii.Adp.Diagram.CausalLoopDiagram;
 
@@ -19,7 +20,7 @@ namespace EtAlii.Adp.Diagram.CausalLoopDiagram;
 /// says - only for a read that failed.
 /// </para>
 /// </remarks>
-public sealed class CausalLoopDocumentStore : LifecycleDocumentStore<CausalLoopBody, CausalLoopModel>, ICausalLoopDocumentStore
+public sealed class CausalLoopDocumentStore(IFileWriter writer) : LifecycleDocumentStore<CausalLoopBody, CausalLoopModel>(writer), ICausalLoopDocumentStore
 {
     /// <inheritdoc />
     protected override CausalLoopBody Read(string text) => CausalLoopBody.Parse(text);

@@ -11,30 +11,30 @@ public sealed record MoveNodeCommand(string BodyPath, string NodeId, string NewP
 internal sealed class MoveNodeCommandHandler(IMindmapDocumentStore documents)
     : MindmapCommandHandler(documents), ICommandHandler<MoveNodeCommand>
 {
-    public Task<CommandResult> ExecuteAsync(MoveNodeCommand command, CancellationToken cancellationToken = default)
+    public async Task<CommandResult> ExecuteAsync(MoveNodeCommand command, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(command);
         cancellationToken.ThrowIfCancellationRequested();
 
         if (!TryResolve(command.BodyPath, command.NodeId, out var document, out var node, out var failure))
         {
-            return Task.FromResult(failure);
+            return failure;
         }
 
         if (node.IsRoot)
         {
-            return Task.FromResult(CommandResult.Failure("The root node cannot be moved."));
+            return CommandResult.Failure("The root node cannot be moved.");
         }
 
         var newParent = document.Find(command.NewParentId);
         if (newParent is null)
         {
-            return Task.FromResult(CommandResult.Failure("The destination node no longer exists."));
+            return CommandResult.Failure("The destination node no longer exists.");
         }
 
         if (MindmapDocument.IsWithin(newParent, node))
         {
-            return Task.FromResult(CommandResult.Failure("A node cannot be moved into its own branch."));
+            return CommandResult.Failure("A node cannot be moved into its own branch.");
         }
 
         // Captured before the move: the inverse restores the previous parent and the previous
@@ -43,8 +43,8 @@ internal sealed class MoveNodeCommandHandler(IMindmapDocumentStore documents)
         var previousIndex = node.IndexInParent;
 
         document.Move(node, newParent, command.Index);
-        var saved = Documents.Save(command.BodyPath, document, MindmapStructureChanged.Nothing);
+        var saved = await Documents.SaveAsync(command.BodyPath, document, MindmapStructureChanged.Nothing, cancellationToken);
 
-        return Task.FromResult(CommandResult.FromSave(saved, command with { NewParentId = previousParent.Id, Index = previousIndex }));
+        return CommandResult.FromSave(saved, command with { NewParentId = previousParent.Id, Index = previousIndex });
     }
 }

@@ -1,5 +1,6 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
 using Xunit;
 using IoPath = System.IO.Path;
@@ -16,7 +17,7 @@ public class TimelineContextActionProviderTests : IDisposable
         IoPath.GetTempPath(),
         "adp-timeline-actions-" + Guid.NewGuid().ToString("N"));
 
-    private readonly TimelineDocumentStore _store = new();
+    private readonly TimelineDocumentStore _store = new(new FileWriter());
     private readonly TimelineContextActionProvider _actions;
     private readonly HistoryStackStore _historyStacks;
 
@@ -341,7 +342,7 @@ public class TimelineActionRealityTests : IDisposable
         IoPath.GetTempPath(),
         "adp-timeline-reality-" + Guid.NewGuid().ToString("N"));
 
-    private readonly TimelineDocumentStore _store = new();
+    private readonly TimelineDocumentStore _store = new(new FileWriter());
     private readonly TimelineContextActionProvider _actions;
     private readonly ShortGuid _watchId = ShortGuid.NewShortGuid();
 
@@ -444,7 +445,7 @@ public class TimelineRelationGestureTests : IDisposable
         IoPath.GetTempPath(),
         "adp-timeline-relate-" + Guid.NewGuid().ToString("N"));
 
-    private readonly TimelineDocumentStore _store = new();
+    private readonly TimelineDocumentStore _store = new(new FileWriter());
     private readonly TimelineContextActionProvider _actions;
     private readonly HistoryStackStore _historyStacks;
     private readonly ShortGuid _watchId = ShortGuid.NewShortGuid();

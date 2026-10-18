@@ -1,3 +1,4 @@
+using EtAlii.Adp.Files;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -16,7 +17,7 @@ public sealed class CausalLoopDocumentStoreTests : DocumentStoreContract<ICausal
 
     protected override string EditMarker => "Store contract marker";
 
-    protected override ICausalLoopDocumentStore CreateStore() => new CausalLoopDocumentStore();
+    protected override ICausalLoopDocumentStore CreateStore() => new CausalLoopDocumentStore(new FileWriter());
 
     protected override void Edit(CausalLoopBody document) =>
         Assert.True(CausalLoopEdits.AddVariable(document, "contractmarker", EditMarker).WasApplied);

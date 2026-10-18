@@ -17,10 +17,10 @@ public sealed class AddGhgTrendCommandHandler(IGhgDocumentStore documents) : Ghg
     public const string DefaultName = "New trend";
 
     /// <inheritdoc />
-    protected override CommandResult Execute(AddGhgTrendCommand command)
+    protected override async Task<CommandResult> RunAsync(AddGhgTrendCommand command, CancellationToken cancellationToken)
     {
         // Minted once and carried as the redo, so a redone trend keeps its id.
-        return base.Execute(command.TrendId.Length > 0 ? command : command with { TrendId = ShortGuid.NewShortGuid().ToString() });
+        return await base.RunAsync(command.TrendId.Length > 0 ? command : command with { TrendId = ShortGuid.NewShortGuid().ToString() }, cancellationToken);
     }
 
     /// <inheritdoc />

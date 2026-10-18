@@ -7,10 +7,10 @@ namespace EtAlii.Adp.Documents;
 /// <remarks>
 /// <see cref="LifecycleDocumentStore{TBody, TModel}"/> offers the save; a module whose edits need it
 /// declares its store interface as this one, and its handlers run through
-/// <c>DocumentEditRun.RunOnCurrent</c>.
+/// <c>DocumentEditRun.RunOnCurrentAsync</c>.
 /// </remarks>
 public interface IEditSavingDocumentStore<TBody, TModel> : IDiagramDocumentStore<TBody, TModel>
 {
-    /// <inheritdoc cref="LifecycleDocumentStore{TBody, TModel}.Save(string, DocumentEntry{TBody, TModel}, Func{TBody, string})"/>
-    DocumentEditSaved Save(string path, DocumentEntry<TBody, TModel> basis, Func<TBody, string> edit);
+    /// <inheritdoc cref="LifecycleDocumentStore{TBody, TModel}.SaveAsync(string, DocumentEntry{TBody, TModel}, Func{TBody, string}, CancellationToken)"/>
+    Task<DocumentEditSaved> SaveAsync(string path, DocumentEntry<TBody, TModel> basis, Func<TBody, string> edit, CancellationToken cancellationToken);
 }

@@ -9,7 +9,7 @@ namespace EtAlii.Adp.History;
 /// </summary>
 /// <remarks>
 /// A command that is refused before any document is read - a value that is not a number, a step of
-/// nothing - overrides <see cref="Execute"/> and calls the base once it has checked.
+/// nothing - overrides <see cref="RunAsync"/> and calls the base once it has checked.
 /// </remarks>
 /// <typeparam name="TCommand">The command handled.</typeparam>
 /// <typeparam name="TStore">The module's store, which the undo restores through.</typeparam>
@@ -28,12 +28,12 @@ public abstract class DocumentEditHandler<TCommand, TStore, TBody, TModel>(TStor
         ArgumentNullException.ThrowIfNull(command);
         cancellationToken.ThrowIfCancellationRequested();
 
-        return Task.FromResult(Execute(command));
+        return RunAsync(command, cancellationToken);
     }
 
     /// <summary>Runs <paramref name="command"/> against its document.</summary>
-    protected virtual CommandResult Execute(TCommand command) =>
-        DocumentEditRun.Run<TStore, TBody, TModel>(_documents, command.BodyPath, command, Parse, (body, model) => Apply(body, model, command));
+    protected virtual Task<CommandResult> RunAsync(TCommand command, CancellationToken cancellationToken) =>
+        DocumentEditRun.RunAsync<TStore, TBody, TModel>(_documents, command.BodyPath, command, Parse, (body, model) => Apply(body, model, command), cancellationToken);
 
     /// <summary>The model of <paramref name="body"/>, as the module's parser reads it.</summary>
     protected abstract TModel Parse(TBody body);

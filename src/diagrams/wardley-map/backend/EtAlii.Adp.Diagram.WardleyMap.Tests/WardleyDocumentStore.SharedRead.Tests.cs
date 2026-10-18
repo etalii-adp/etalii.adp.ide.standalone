@@ -1,3 +1,4 @@
+using EtAlii.Adp.Files;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
@@ -31,7 +32,7 @@ public sealed class WardleyDocumentStoreSharedReadTests : IDisposable
         using var editor = new FileStream(path, FileMode.Open, FileAccess.Write, FileShare.Read);
 
         // Act.
-        var document = new WardleyDocumentStore().GetOrLoad(path).Document;
+        var document = new WardleyDocumentStore(new FileWriter()).GetOrLoad(path).Document;
 
         // Assert: the map itself, not the empty fallback.
         Assert.Equal(text, document.Text);

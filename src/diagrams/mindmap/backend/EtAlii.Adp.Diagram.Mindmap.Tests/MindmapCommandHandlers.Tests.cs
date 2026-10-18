@@ -1,4 +1,5 @@
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
@@ -23,7 +24,7 @@ public sealed class MindmapCommandHandlersTests : IDisposable
         Body = _folder.Combine("architecture.mm");
         File.Copy(IoPath.Combine(AppContext.BaseDirectory, "Fixtures", "architecture.mm"), Body);
         _services = new ServiceCollection()
-            .AddSingleton<IMindmapDocumentStore>(new WarningStore(new MindmapDocumentStore(), SaveWarning))
+            .AddSingleton<IMindmapDocumentStore>(new WarningStore(new MindmapDocumentStore(new FileWriter()), SaveWarning))
             .AddCommands()
             .AddMindmapCommands()
             .BuildServiceProvider();
@@ -94,9 +95,9 @@ public sealed class MindmapCommandHandlersTests : IDisposable
 
         public MindmapDocument? Get(string bodyPath) => inner.Get(bodyPath);
 
-        public DocumentSaveResult Save(string bodyPath, MindmapDocument document, MindmapChange change)
+        public async Task<DocumentSaveResult> SaveAsync(string bodyPath, MindmapDocument document, MindmapChange change, CancellationToken cancellationToken)
         {
-            var saved = inner.Save(bodyPath, document, change);
+            var saved = await inner.SaveAsync(bodyPath, document, change, cancellationToken);
             return saved.Failed ? saved : DocumentSaveResult.WithWarning(warning);
         }
 

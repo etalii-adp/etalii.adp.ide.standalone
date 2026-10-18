@@ -1,4 +1,5 @@
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Files;
 using EtAlii.Adp.Sessions;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
@@ -13,6 +14,7 @@ public sealed class ServiceCollectionAddAgentBehaviorModellingTests
     {
         // Arrange.
         var services = new ServiceCollection();
+        services.AddSingleton<IFileWriter>(new FileWriter());
         services.AddAgentBehaviorModelling();
         using var provider = services.BuildServiceProvider();
 
@@ -34,6 +36,7 @@ public sealed class ServiceCollectionAddAgentBehaviorModellingTests
     {
         // Arrange.
         var services = new ServiceCollection();
+        services.AddSingleton<IFileWriter>(new FileWriter());
         services.AddAgentBehaviorModelling();
         services.AddSingleton(TestHistory.For(_ => { }));
         await using var provider = services.BuildServiceProvider();

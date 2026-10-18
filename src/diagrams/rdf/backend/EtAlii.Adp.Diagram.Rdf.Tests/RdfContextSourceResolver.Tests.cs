@@ -1,6 +1,7 @@
 using System.Text.RegularExpressions;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Diagram.Modules;
+using EtAlii.Adp.Files;
 using EtAlii.Adp.Hierarchy;
 using Xunit;
 using IoPath = System.IO.Path;
@@ -14,7 +15,7 @@ namespace EtAlii.Adp.Diagram.Rdf.Tests;
 /// </summary>
 public sealed class RdfContextSourceResolverTests : DiagramElementSourceResolverContract
 {
-    private readonly RdfDocumentStore _store = new();
+    private readonly RdfDocumentStore _store = new(new FileWriter());
 
     /// <summary>The prefix the example's namespace is written with now.</summary>
     private string _prefix = "ex";
