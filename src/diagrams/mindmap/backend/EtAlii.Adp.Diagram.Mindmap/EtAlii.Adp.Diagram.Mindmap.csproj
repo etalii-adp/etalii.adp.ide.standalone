@@ -21,6 +21,8 @@
     <PackageReference Include="Grpc.Tools">
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
+    <!-- Binds the Mindmap section of appsettings.json onto MindmapOptions. -->
+    <PackageReference Include="Microsoft.Extensions.Configuration.Binder" />
   </ItemGroup>
 
   <ItemGroup>
