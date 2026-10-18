@@ -119,7 +119,7 @@ public class AnsibleValidationFlowTests : IDisposable
         // Arrange.
         var store = _provider.GetRequiredService<IProblemStore>();
         var validator = _provider.GetRequiredService<ProjectValidator>();
-        using var maintenance = _provider.GetRequiredService<ProblemMaintenance>();
+        await using var maintenance = _provider.GetRequiredService<ProblemMaintenance>();
 
         var outcome = await validator.ValidateAsync(new ProjectValidationScope(_projectFolder), TestContext.Current.CancellationToken);
         store.Replace(_projectFolder, outcome.Problems);
@@ -147,7 +147,7 @@ public class AnsibleValidationFlowTests : IDisposable
         // that is not itself a diagram.
         var store = _provider.GetRequiredService<IProblemStore>();
         var validator = _provider.GetRequiredService<ProjectValidator>();
-        using var maintenance = _provider.GetRequiredService<ProblemMaintenance>();
+        await using var maintenance = _provider.GetRequiredService<ProblemMaintenance>();
 
         AnsibleFixture.RepairIn(_infrastructure);
         var clean = await validator.ValidateAsync(new ProjectValidationScope(_projectFolder), TestContext.Current.CancellationToken);

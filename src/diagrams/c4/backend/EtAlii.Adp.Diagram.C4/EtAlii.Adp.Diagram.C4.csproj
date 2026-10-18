@@ -40,6 +40,15 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!--
+      The module's own FBL binding of a Structurizr DSL workspace, which the six definitions name as
+      their persistence.binding. Embedded and loaded by a test only: C4Parser still reads every body
+      (c4-disl-fbl Requirement 4.1, design Amendment 2).
+    -->
+    <EmbeddedResource Include="structurizr.fbl" LogicalName="structurizr.fbl" />
+  </ItemGroup>
+
+  <ItemGroup>
     <InternalsVisibleTo Include="EtAlii.Adp.Diagram.C4.Tests" />
   </ItemGroup>
 

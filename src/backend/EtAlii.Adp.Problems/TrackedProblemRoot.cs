@@ -62,17 +62,21 @@ internal sealed class TrackedProblemRoot : IDisposable
         {
             return;
         }
-        _ = Task.Run(async () =>
+        // Off the clock's timer, and recorded, so maintenance waits for it when it closes
+        // (code-structure FR-070).
+        _owner.Revalidations.Start(cancellationToken => Task.Run(() => RevalidateAsync(paths, cancellationToken), cancellationToken));
+    }
+
+    private async Task RevalidateAsync(string[] paths, CancellationToken cancellationToken)
+    {
+        try
         {
-            try
-            {
-                await _owner.RevalidateAsync(this, paths);
-            }
-            catch (Exception exception)
-            {
-                _logger.Error(exception, "Re-validating {Count} changed files under {RootPath} failed; the next change tries again", paths.Length, Path);
-            }
-        });
+            await _owner.RevalidateAsync(this, paths, cancellationToken);
+        }
+        catch (Exception exception) when (!cancellationToken.IsCancellationRequested)
+        {
+            _logger.Error(exception, "Re-validating {Count} changed files under {RootPath} failed; the next change tries again", paths.Length, Path);
+        }
     }
 
     private void Heard(FileEvent heard)
