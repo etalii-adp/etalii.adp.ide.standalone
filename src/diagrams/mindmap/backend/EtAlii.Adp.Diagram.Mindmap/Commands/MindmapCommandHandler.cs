@@ -25,36 +25,28 @@ internal abstract class MindmapCommandHandler
     protected IMindmapDocumentStore Documents { get; }
 
     /// <summary>The document and node a command names, or the failure to hand back when either is gone.</summary>
-    protected bool TryResolve(string bodyPath, string nodeId, out MindmapDocument document, out MindmapNode node, out CommandResult failure)
+    protected async ValueTask<Resolution> ResolveAsync(string bodyPath, string nodeId, CancellationToken cancellationToken)
     {
-        node = null!;
-        document = null!;
-
         if (string.IsNullOrWhiteSpace(bodyPath))
         {
-            failure = CommandResult.Failure("No map was given.");
-            return false;
+            return new Resolution(CommandResult.Failure("No map was given."));
         }
 
+        MindmapDocument document;
         try
         {
-            document = Documents.GetOrLoad(bodyPath);
+            document = await Documents.GetOrLoadAsync(bodyPath, cancellationToken);
         }
         catch (MindmapFormatException exception)
         {
-            failure = CommandResult.Failure(exception.Message);
-            return false;
+            return new Resolution(CommandResult.Failure(exception.Message));
         }
 
-        var found = document.Find(nodeId);
-        if (found is null)
-        {
-            failure = CommandResult.Failure("The node no longer exists.");
-            return false;
-        }
-
-        node = found;
-        failure = null!;
-        return true;
+        return document.Find(nodeId) is { } node
+            ? new Resolution(null, document, node)
+            : new Resolution(CommandResult.Failure("The node no longer exists."));
     }
+
+    /// <summary>What <see cref="ResolveAsync"/> found: the document and node, or the failure when either is gone.</summary>
+    protected sealed record Resolution(CommandResult? Failure, MindmapDocument Document = null!, MindmapNode Node = null!);
 }

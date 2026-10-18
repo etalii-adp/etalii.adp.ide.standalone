@@ -74,6 +74,9 @@ public sealed class MindmapDocumentStore : IMindmapDocumentStore
 
     public MindmapDocument GetOrLoad(string bodyPath) => _lifecycle.GetOrLoad(bodyPath);
 
+    public ValueTask<MindmapDocument> GetOrLoadAsync(string bodyPath, CancellationToken cancellationToken) =>
+        _lifecycle.GetOrLoadAsync(bodyPath, cancellationToken);
+
     public MindmapDocument? Get(string bodyPath) => _lifecycle.Get(bodyPath);
 
     public async Task<DocumentSaveResult> SaveAsync(string bodyPath, MindmapDocument document, MindmapChange change, CancellationToken cancellationToken)

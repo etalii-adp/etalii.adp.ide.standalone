@@ -17,10 +17,14 @@ internal sealed class AddChildNodeCommandHandler(IMindmapDocumentStore documents
         ArgumentNullException.ThrowIfNull(command);
         cancellationToken.ThrowIfCancellationRequested();
 
-        if (!TryResolve(command.BodyPath, command.ParentId, out var document, out var parent, out var failure))
+        var resolution = await ResolveAsync(command.BodyPath, command.ParentId, cancellationToken);
+        if (resolution.Failure is { } failure)
         {
             return failure;
         }
+
+        var document = resolution.Document;
+        var parent = resolution.Node;
 
         if (document.Find(command.NodeId) is not null)
         {

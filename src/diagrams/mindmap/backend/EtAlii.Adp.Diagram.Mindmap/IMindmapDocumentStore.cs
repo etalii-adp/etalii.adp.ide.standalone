@@ -23,6 +23,13 @@ public interface IMindmapDocumentStore : IDiagramDocumentStore
     /// <exception cref="MindmapFormatException">The file exists but is not a Freeplane map.</exception>
     MindmapDocument GetOrLoad(string bodyPath);
 
+    /// <summary>
+    /// The document at <paramref name="bodyPath"/>, loading it on first ask without blocking a thread
+    /// on the read. A missing body opens as an empty map named after the file (Requirement 2.5).
+    /// </summary>
+    /// <exception cref="MindmapFormatException">The file exists but is not a Freeplane map.</exception>
+    ValueTask<MindmapDocument> GetOrLoadAsync(string bodyPath, CancellationToken cancellationToken);
+
     /// <summary>The loaded document, or null when nothing has opened it; never loads.</summary>
     MindmapDocument? Get(string bodyPath);
 

@@ -68,25 +68,26 @@ public sealed class MindmapContextActionProvider : IContextActionProvider
 
     public ContextScope Scope => ContextScope.DiagramElement;
 
-    public ValueTask<IReadOnlyList<ContextActionGroupDefinition>> DiscoverAsync(ContextTarget target, CancellationToken cancellationToken)
+    public async ValueTask<IReadOnlyList<ContextActionGroupDefinition>> DiscoverAsync(ContextTarget target, CancellationToken cancellationToken)
     {
         // Not offered rather than greyed (Requirement 8.6): a sibling of the root and an unlink of
         // an unlinked node are not "unavailable right now", they do not apply - the definition's
         // entries say so with `visible`.
-        return ValueTask.FromResult(Resolve(target, out var element) is null ? [] : MindmapDefinition.Menus(element!));
+        return await ResolveAsync(target, cancellationToken) is { } resolved ? MindmapDefinition.Menus(resolved.Element) : [];
     }
 
-    public ValueTask<ContextExecutionResult> ExecuteAsync(ContextTarget target, string actionId, CancellationToken cancellationToken)
+    public async ValueTask<ContextExecutionResult> ExecuteAsync(ContextTarget target, string actionId, CancellationToken cancellationToken)
     {
-        var node = Resolve(target, out var element);
-        if (node is null)
+        if (await ResolveAsync(target, cancellationToken) is not { } resolved)
         {
-            return Result(new ContextExecutionFailed(NodeGone));
+            return new ContextExecutionFailed(NodeGone);
         }
 
-        if (!MindmapDefinition.Offers(element!, actionId))
+        var node = resolved.Node;
+        var element = resolved.Element;
+        if (!MindmapDefinition.Offers(element, actionId))
         {
-            return Result(new ContextExecutionFailed($"Unknown action '{actionId}'."));
+            return new ContextExecutionFailed($"Unknown action '{actionId}'.");
         }
 
         switch (actionId)
@@ -101,10 +102,10 @@ public sealed class MindmapContextActionProvider : IContextActionProvider
             // THIS action again and adds a second node. The service re-points the interaction
             // at the new node, so the rename lands on it rather than on its parent.
             case AddChildActionId:
-                return AddThenEditAsync(target, node.Children, isChild: true, cancellationToken);
+                return await AddThenEditAsync(target, node, node.Children, isChild: true, cancellationToken);
 
             case AddSiblingActionId:
-                return AddThenEditAsync(target, node.Parent?.Children ?? [], isChild: false, cancellationToken);
+                return await AddThenEditAsync(target, node, node.Parent?.Children ?? [], isChild: false, cancellationToken);
 
             case RenameActionId:
                 // The one prompt here whose value IS the text on screen, so it carries the
@@ -112,42 +113,42 @@ public sealed class MindmapContextActionProvider : IContextActionProvider
                 // three input prompts around it deliberately do not: a child's text does not
                 // exist yet, a sibling's neither, and notes are not the label
                 // (inline-rename Requirement 3.1).
-                return Result(new ContextExecutionRequiresInput(
-                    new ContextInputRequest("Rename node", "mdi-pencil-outline", "Text", node.Text, "Rename", node.Id)));
+                return new ContextExecutionRequiresInput(
+                    new ContextInputRequest("Rename node", "mdi-pencil-outline", "Text", node.Text, "Rename", node.Id));
 
             case DeleteActionId:
                 // A leaf goes without asking; a branch is confirmed, since it takes its
                 // subtree with it (Requirement 7.4). Both are undoable, and the message says so.
                 // Which, and the texts, are the definition's `deletion.confirm`.
-                return MindmapDefinition.Confirmation(element!) is { } confirmation
-                    ? Result(new ContextExecutionRequiresConfirmation(confirmation))
-                    : DispatchAsync(target, new RemoveNodeCommand(target.ResolvedFullPath, node.Id), cancellationToken);
+                return MindmapDefinition.Confirmation(element) is { } confirmation
+                    ? new ContextExecutionRequiresConfirmation(confirmation)
+                    : await DispatchAsync(target, new RemoveNodeCommand(target.ResolvedFullPath, node.Id), cancellationToken);
 
             case ToggleFoldActionId:
                 // View state, not a command: nothing is written and nothing lands on the history
                 // (Requirements 9.4, 9.6). Toggled through the view state's announcing method,
                 // which is what makes the session push the group/ungroup delta - toggling the
                 // view directly would change state no client ever hears of.
-                _views.Toggle(target.WatchId, target.ResolvedFullPath, _documents.GetOrLoad(target.ResolvedFullPath), node.Id);
-                return Result(new ContextExecutionCompleted());
+                _views.Toggle(target.WatchId, target.ResolvedFullPath, resolved.Document, node.Id);
+                return new ContextExecutionCompleted();
 
             case EditNotesActionId:
-                return Result(new ContextExecutionRequiresInput(
-                    new ContextInputRequest("Notes", "mdi-note-text-outline", "Notes", node.Notes, "Save")));
+                return new ContextExecutionRequiresInput(
+                    new ContextInputRequest("Notes", "mdi-note-text-outline", "Notes", node.Notes, "Save"));
 
             case LinkActionId:
-                return Result(new ContextExecutionRequiresChoice(new ContextChoiceRequest(
+                return new ContextExecutionRequiresChoice(new ContextChoiceRequest(
                     "Link to",
                     "mdi-link-variant",
                     "Link",
                     ProjectTree(target.RootPath),
-                    "The project has no files to link to.")));
+                    "The project has no files to link to."));
 
             case UnlinkActionId:
-                return DispatchAsync(target, new SetNodeLinkCommand(target.ResolvedFullPath, node.Id, null), cancellationToken);
+                return await DispatchAsync(target, new SetNodeLinkCommand(target.ResolvedFullPath, node.Id, null), cancellationToken);
 
             default:
-                return Result(new ContextExecutionFailed($"Unknown action '{actionId}'."));
+                return new ContextExecutionFailed($"Unknown action '{actionId}'.");
         }
     }
 
@@ -158,14 +159,14 @@ public sealed class MindmapContextActionProvider : IContextActionProvider
 
     public async ValueTask<ContextCommitResult> CommitAsync(ContextTarget target, string actionId, string value, string text, CancellationToken cancellationToken)
     {
-        var node = Resolve(target, out var element);
-        if (node is null)
+        if (await ResolveAsync(target, cancellationToken) is not { } resolved)
         {
             return ContextCommitResult.Failed(NodeGone);
         }
 
+        var node = resolved.Node;
         var bodyPath = target.ResolvedFullPath;
-        ICommand? command = !MindmapDefinition.Offers(element!, actionId)
+        ICommand? command = !MindmapDefinition.Offers(resolved.Element, actionId)
             ? null
             : actionId switch
             {
@@ -205,16 +206,11 @@ public sealed class MindmapContextActionProvider : IContextActionProvider
     /// </remarks>
     private async ValueTask<ContextExecutionResult> AddThenEditAsync(
         ContextTarget target,
+        MindmapNode node,
         IReadOnlyList<MindmapNode> siblings,
         bool isChild,
         CancellationToken cancellationToken)
     {
-        var node = Resolve(target, out _);
-        if (node is null)
-        {
-            return new ContextExecutionFailed(NodeGone);
-        }
-
         var newId = MindmapDocument.NewId();
         var name = SiblingNaming.NextName(siblings.Select(sibling => sibling.Text));
         var body = target.ResolvedFullPath;
@@ -238,10 +234,9 @@ public sealed class MindmapContextActionProvider : IContextActionProvider
         return result.IsSuccess ? new ContextExecutionCompleted() : new ContextExecutionFailed(result.Error);
     }
 
-    /// <summary>The node the target names, and its element in the DISL model as the asking viewer sees it.</summary>
-    private MindmapNode? Resolve(ContextTarget target, out DislElement? element)
+    /// <summary>The node the target names, its document, and its element in the DISL model as the asking viewer sees it.</summary>
+    private async ValueTask<ResolvedNode?> ResolveAsync(ContextTarget target, CancellationToken cancellationToken)
     {
-        element = null;
         if (target.Scope != ContextScope.DiagramElement || target.ElementId.Length == 0)
         {
             return null;
@@ -259,7 +254,7 @@ public sealed class MindmapContextActionProvider : IContextActionProvider
         MindmapDocument document;
         try
         {
-            document = _documents.GetOrLoad(target.ResolvedFullPath);
+            document = await _documents.GetOrLoadAsync(target.ResolvedFullPath, cancellationToken);
         }
         catch (MindmapFormatException exception)
         {
@@ -267,17 +262,16 @@ public sealed class MindmapContextActionProvider : IContextActionProvider
             return null;
         }
 
-        var node = document.Find(target.ElementId);
-        if (node is not null)
+        if (document.Find(target.ElementId) is not { } node)
         {
-            var model = MindmapDefinition.ModelOf(document, _views.For(target.WatchId, target.ResolvedFullPath, document));
-            element = MindmapDefinition.ElementOf(model, node.Id);
+            return null;
         }
 
-        return element is null ? null : node;
+        var model = MindmapDefinition.ModelOf(document, _views.For(target.WatchId, target.ResolvedFullPath, document));
+        return MindmapDefinition.ElementOf(model, node.Id) is { } element ? new ResolvedNode(document, node, element) : null;
     }
 
-    private static ValueTask<ContextExecutionResult> Result(ContextExecutionResult result) => ValueTask.FromResult(result);
+    private sealed record ResolvedNode(MindmapDocument Document, MindmapNode Node, DislElement Element);
 
     /// <summary>
     /// The project's files as a choice tree, folders unselectable and files selectable, each

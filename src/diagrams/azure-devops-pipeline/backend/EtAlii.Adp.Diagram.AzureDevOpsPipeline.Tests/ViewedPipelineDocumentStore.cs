@@ -24,6 +24,9 @@ internal sealed class ViewedPipelineDocumentStore(IDiagramDocumentStore<Pipeline
 
     public DocumentEntry<PipelineBody, PipelineModel> GetOrLoad(string rootPath, string path) => view.GetOrLoad(path);
 
+    public ValueTask<DocumentEntry<PipelineBody, PipelineModel>> GetOrLoadAsync(string rootPath, string path, CancellationToken cancellationToken) =>
+        view.GetOrLoadAsync(path, cancellationToken);
+
     public IDiagramDocumentStore<PipelineBody, PipelineModel> In(string rootPath) => view;
 
     public PipelineBody Open(string rootPath, string path, byte[] bytes) => _reader.Open(rootPath, path, bytes);

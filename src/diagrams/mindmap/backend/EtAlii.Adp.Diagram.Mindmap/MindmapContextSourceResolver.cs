@@ -34,7 +34,7 @@ public sealed class MindmapContextSourceResolver : IContextSourceResolver
 
     public bool CanResolve(ContextSource source) => source.SourceCase == ContextSource.SourceOneofCase.ElementId;
 
-    public ValueTask<ContextLevelResolution> ResolveAsync(
+    public async ValueTask<ContextLevelResolution> ResolveAsync(
         ShortGuid watchId,
         string rootPath,
         ContextSource id,
@@ -58,7 +58,7 @@ public sealed class MindmapContextSourceResolver : IContextSourceResolver
         MindmapDocument document;
         try
         {
-            document = _documents.GetOrLoad(bodyPath!);
+            document = await _documents.GetOrLoadAsync(bodyPath!, cancellationToken);
         }
         catch (MindmapFormatException)
         {
@@ -109,7 +109,7 @@ public sealed class MindmapContextSourceResolver : IContextSourceResolver
             detail,
             this);
 
-        return ValueTask.FromResult<ContextLevelResolution>(new ResolvedContextLevel(level));
+        return new ResolvedContextLevel(level);
     }
 
     /// <summary>Nothing nests inside a node for selection purposes; multi-level element chains are out of scope (Requirement 10.9).</summary>
@@ -167,7 +167,6 @@ public sealed class MindmapContextSourceResolver : IContextSourceResolver
         return [.. segments];
     }
 
-    private static ValueTask<ContextLevelResolution> Rejected(string reason) =>
-        ValueTask.FromResult<ContextLevelResolution>(new RejectedContextLevel(reason));
+    private static RejectedContextLevel Rejected(string reason) => new(reason);
 
 }
