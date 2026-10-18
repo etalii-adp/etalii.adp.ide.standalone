@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { create, toBinary } from "@bufbuild/protobuf";
 import { ElementSchema } from "@client/generated/elements_pb";
+import { ProblemSchema, ProblemSeverity } from "@client/generated/problems_pb";
 import {
   PipelineElementKindProto,
   PipelineElementPayloadSchema,
@@ -12,6 +13,8 @@ import {
   endpointsOf,
   jobCountLabel,
   jobsOf,
+  problemMarkOf,
+  problemsOn,
   EDGE_TYPE,
   JOB_TYPE,
   STAGE_TYPE,
@@ -320,5 +323,81 @@ describe("pipelineModel", () => {
 
     // Assert.
     expect(model.nodes.get("template:0")?.payload.unresolvedReason).toContain("repository resource");
+  });
+});
+
+function problem(elementId: string, segments: string[], extra: Record<string, unknown> = {}) {
+  return create(ProblemSchema, {
+    severity: ProblemSeverity.WARNING,
+    message: "Something is off.",
+    path: { segments },
+    location: { location: { case: "elementId", value: { value: elementId } } },
+    ...extra,
+  });
+}
+
+describe("problem marks", () => {
+  it("finds the problems naming an element in this file", () => {
+    // Arrange.
+    const problems = [problem("Build", ["azure-pipelines.yml"])];
+
+    // Act & assert.
+    expect(problemsOn(problems, ["azure-pipelines.yml"], "Build")).toHaveLength(1);
+  });
+
+  it("ignores a problem on the same element name in a different pipeline", () => {
+    // Arrange: two pipelines in one project may each have a stage called Build, and marking the
+    // wrong one is worse than marking neither.
+    const problems = [problem("Build", ["other", "azure-pipelines.yml"])];
+
+    // Act & assert.
+    expect(problemsOn(problems, ["azure-pipelines.yml"], "Build")).toHaveLength(0);
+  });
+
+  it("ignores a problem located on a line rather than an element", () => {
+    // Arrange: a rule that judged the text has nothing to mark on the canvas.
+    const onALine = create(ProblemSchema, {
+      severity: ProblemSeverity.ERROR,
+      message: "Bad indentation.",
+      path: { segments: ["azure-pipelines.yml"] },
+      location: { location: { case: "line", value: 12 } },
+    });
+
+    // Act & assert.
+    expect(problemsOn([onALine], ["azure-pipelines.yml"], "Build")).toHaveLength(0);
+  });
+
+  it("marks nothing when nothing is wrong", () => {
+    // Act & assert.
+    expect(problemMarkOf([])).toBeNull();
+  });
+
+  it("lets an error outrank a warning", () => {
+    // Arrange: a stage with both is a stage that will not run, and that is the thing to say.
+    const both = [
+      problem("Build", ["p.yml"]),
+      problem("Build", ["p.yml"], { severity: ProblemSeverity.ERROR, message: "Depends on nothing that exists." }),
+    ];
+
+    // Act.
+    const mark = problemMarkOf(both);
+
+    // Assert.
+    expect(mark?.severity).toBe("error");
+  });
+
+  it("says everything that is wrong, not only the first thing", () => {
+    // Arrange.
+    const both = [
+      problem("Build", ["p.yml"], { message: "First." }),
+      problem("Build", ["p.yml"], { message: "Second." }),
+    ];
+
+    // Act.
+    const mark = problemMarkOf(both);
+
+    // Assert.
+    expect(mark?.title).toContain("First.");
+    expect(mark?.title).toContain("Second.");
   });
 });

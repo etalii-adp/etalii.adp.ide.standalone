@@ -437,6 +437,12 @@ export interface DecorationDeclaration {
   accessibility?: { role?: string; label?: Binding };
   /** Drawn only when this holds - a badge that appears for one polarity and not the other. */
   when?: Condition;
+  /**
+   * A slot in a packed row rather than a place of its own: drawn at {@link from} moved by `step` once
+   * for every packed decoration before it on the element that is drawn. One that is not drawn takes no
+   * slot, so a row of badges closes up around the ones an element does not wear (DISL's packed badges).
+   */
+  pack?: { step: { x: number; y: number } };
 }
 
 /**
@@ -1165,6 +1171,32 @@ export interface ToolboxDefinition {
   suppress?: readonly string[];
   /** Items added beside the derived ones. */
   add?: readonly ToolboxItemDefinition[];
+  /**
+   * Toolbox entries that mean something only ON an element (DISL 7.2 `drop.targets`). A drop
+   * carrying one of these payloads is resolved here: released on an element a target names, it
+   * raises `element-dropped` with `onto` naming that element and the target's action; released
+   * anywhere else it is refused with `refusal`, and nothing is raised.
+   */
+  drops?: readonly ToolboxDropDeclaration[];
+}
+
+/** One toolbox entry that lands on elements, and what it does on each kind it lands on. */
+export interface ToolboxDropDeclaration {
+  /** What the entry's drag carries. */
+  payload: string;
+  /**
+   * Tried in order against the topmost element under the release point that any of them names:
+   * the first naming its type gives the action.
+   */
+  targets: readonly ToolboxDropTarget[];
+  /** The sentence a drop on nothing a target names is refused with; absent, it is ignored in silence. */
+  refusal?: string;
+}
+
+export interface ToolboxDropTarget {
+  elementTypes: readonly string[];
+  /** The action the drop runs on that element, which `element-dropped`'s `onto` names. */
+  actionId: string;
 }
 
 export interface ToolboxItemDefinition {

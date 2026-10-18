@@ -8,6 +8,7 @@ import type {
   ClassDeclaration,
   CompassPosition,
   CustomRouteRef,
+  DataAttributes,
   DecorationDeclaration,
   DiagramDefinition,
   ElementTypeDefinition,
@@ -28,6 +29,7 @@ import type {
   SnapDeclaration,
   StrokeLadder,
   StrokeRung,
+  ToolboxDropDeclaration,
 } from "../definition/diagramDefinition";
 import { ArcBow } from "./bowedArc";
 import { bowedArcAdornment, bowedArcRoute, type ArcBarsDeclaration, type ArcMarkDeclaration, type BowedArcDeclaration } from "./bowedArcLine";
@@ -37,6 +39,7 @@ import {
   type Bindable,
   type DislAxis,
   type DislBadge,
+  type DislBadgeLayout,
   type DislCompartment,
   type DislContextMenu,
   type DislCoordinateSystem,
@@ -106,6 +109,15 @@ export interface NotationBindings {
   rowPaths?: Readonly<Record<string, string>>;
   /** The class of a badge the library draws as a mark, where the stylesheet paints it. */
   badgeClassName?: (type: string, badge: DislBadge) => string | undefined;
+  /** The `data-*` attributes a badge carries, which the module's tests find it by. */
+  badgeData?: (type: string, badge: DislBadge) => DataAttributes | undefined;
+  /** The `data-*` attributes an element type's group carries, which the module's tests find it by. */
+  elementData?: (type: string, node: DislNodeNotation) => DataAttributes | undefined;
+  /**
+   * Ornaments drawn after the ones the specification states, for what is the host's rather than the
+   * specification's to say: where a finding of the problems service is marked on an element.
+   */
+  elementDecorations?: (type: string, node: DislNodeNotation) => readonly DecorationDeclaration[];
   /** A label's inline editor box, where it should not cover the label's own line. */
   labelEditorBox?: (type: string, label: DislLabel) => { top: number; height: number } | undefined;
   /** A relation's class. */
@@ -198,6 +210,8 @@ export interface CompileOptions {
 interface WireIds {
   types?: Readonly<Record<string, string>>;
   actions?: Readonly<Record<string, string>>;
+  /** A toolbox entry's ids, keyed by the tool's id: `drop` is what its drag carries. */
+  tools?: Readonly<Record<string, { id?: string; drop?: string }>>;
 }
 
 /** How many months each DISL time unit spans, for a month-indexed axis. */
@@ -276,6 +290,9 @@ const BADGE_INSET = 9;
 const BADGE_RADIUS = 3.5;
 const BADGE_TOP = 5;
 const LINK_SIZE = 11;
+
+/** What a relation takes from its supertype where it does not state it (DISL 4.7). */
+const INHERITED_RELATION_KEYS = ["source", "target", "directed", "allowSelfLoops", "allowParallel", "acyclic"] as const;
 
 /** Whether a filter is a switch whose value is kept with the diagram (DISL 0.4 §6.13.1). */
 function isKeptSwitch(filter: { control?: string; persist?: boolean }): boolean {
@@ -451,6 +468,7 @@ class Compiler {
     const empty = this.emptyCanvas();
     const backgroundMenu = this.backgroundMenu(this.defaultViewpoint?.[0]);
     const dragging = this.dragging(elementTypes);
+    const drops = this.toolboxDrops();
 
     const definition: DiagramDefinition = {
       elementTypes,
@@ -465,10 +483,48 @@ class Compiler {
       layout: this.layout(rulers, backgroundMenu, dragging),
       dragging,
       ...(backgroundMenu ? { backgroundMenu } : {}),
+      ...(drops.length > 0 ? { toolbox: { drops } } : {}),
       ...(this.connectsOnRightDrag() ? { connectOnRightDrag: true } : {}),
     };
 
     return { ...definition, ...this.bindings.extras?.(spec) };
+  }
+
+  /**
+   * The toolbox entries that mean something only on an element (DISL 0.3 §7.2 `drop.targets`): each
+   * operation target, its `on` read as the concrete types it stands for, and `elsewhere` as the
+   * refusal or the silence the library applies before anything is sent. What the library cannot run
+   * there - another kind of target, a drop on the canvas, a create or a menu elsewhere, a computed
+   * sentence - is refused rather than left to a module.
+   */
+  private toolboxDrops(): ToolboxDropDeclaration[] {
+    const tools = (this.spec.toolbox?.groups ?? []).flatMap((group) => group.tools).filter((tool) => (tool.drop?.targets ?? []).length > 0 && tool.drop?.place === undefined);
+    return tools.map((tool): ToolboxDropDeclaration => {
+      const drop = tool.drop!;
+      const targets = drop.targets!.map((target) => {
+        if (target.kind !== "operation" || target.operation === undefined) {
+          fail(`tool "${tool.id}" drops a "${target.kind}" target; the library runs only an operation on what a drop lands on.`);
+        }
+        if (target.on.includes("canvas")) {
+          fail(`tool "${tool.id}" drops on the canvas; the library runs a drop's target on an element only.`);
+        }
+        return { elementTypes: target.on.flatMap((name) => this.concreteTypes(name)).map((name) => this.typeId(name)), actionId: this.wireAction(target.operation, `the drop operation "${target.operation}" of tool "${tool.id}"`) };
+      });
+      const elsewhere = drop.elsewhere ?? "create";
+      if (elsewhere !== "refuse" && elsewhere !== "ignore") {
+        fail(`tool "${tool.id}" does "${elsewhere}" with a drop elsewhere; the library refuses or ignores one.`);
+      }
+      if (elsewhere === "refuse" && typeof drop.refusal !== "string") {
+        fail(`tool "${tool.id}" refuses a drop elsewhere with a sentence that is not text; the library shows a stated sentence only.`);
+      }
+      const payload = this.wire.tools?.[tool.id]?.drop ?? (this.bindings.wireIds === undefined ? tool.id : fail(`tool "${tool.id}" has no drop id in ${this.bindings.wireIds}.tools.`));
+      return { payload, targets, ...(elsewhere === "refuse" ? { refusal: drop.refusal as string } : {}) };
+    });
+  }
+
+  /** An operation's wire id: its entry in the wire block's actions, or its own name where the module states no block. */
+  private wireAction(operation: string, what: string): string {
+    return this.wire.actions?.[operation] ?? (this.bindings.wireIds === undefined ? operation : fail(`${what} has no wire id in ${this.bindings.wireIds}.actions.`));
   }
 
   /**
@@ -563,6 +619,12 @@ class Compiler {
       return { path: whole };
     }
 
+    // A count that declines its noun: `string(self.n) + (self.n == 1 ? ' one' : ' other')`.
+    const count = /^string\(self\.([A-Za-z_][A-Za-z0-9_]*)\)\s*\+\s*\(\s*self\.\1\s*==\s*1\s*\?\s*' ([^'{}\\]+)'\s*:\s*' ([^'{}\\]+)'\s*\)$/.exec(expression.trim());
+    if (count !== null) {
+      return { path: `payload.${count[1]}`, plural: { one: count[2]!, other: count[3]! } };
+    }
+
     const parts = concatenationTerms(expression).map((term): { text: string } | { path: string } => {
       const literal = /^'([^'{}]*)'$/.exec(term);
       if (literal !== null) {
@@ -596,14 +658,15 @@ class Compiler {
 
   private elementType(name: string, node: DislNodeNotation): ElementTypeDefinition {
     const where = `node "${name}"`;
-    const { shape, segments } = this.shape(name, node);
+    const { shape, segments, cornerRadius } = this.shape(name, node);
     const bodyless = shape === "none";
     const classNames = [...this.bindings.classNames(name, node), ...this.indexedColours(name, node)];
     const hint = this.showsDragValue() && this.movable(node) ? [this.dragHint()] : [];
     const labels = [...(node.labels ?? []).map((label) => this.label(name, label, bodyless)), ...hint];
     const compartments = this.compartments(name, node);
     const { links, decorations: badges } = this.badges(name, node);
-    const decorations = [...this.icon(name, node, bodyless), ...badges];
+    const decorations = [...this.icon(name, node, bodyless), ...badges, ...(this.bindings.elementDecorations?.(name, node) ?? [])];
+    const data = this.bindings.elementData?.(name, node);
     const centreOf = this.centreOf(name, node);
     const { sizing, resize } = this.sizing(node);
     const editOnDrop = (this.spec.toolbox?.groups ?? []).some((group) => group.tools.some((tool) => tool.creates === name && tool.after === "editLabel"));
@@ -611,7 +674,9 @@ class Compiler {
     return {
       id: this.typeId(name),
       shape,
+      ...(cornerRadius !== undefined ? { style: { cornerRadius } } : {}),
       ...(classNames.length > 0 ? { classNames } : {}),
+      ...(data !== undefined ? { data } : {}),
       ...(labels.length > 0 ? { labels } : {}),
       ...(decorations.length > 0 ? { decorations } : {}),
       ...(compartments.length > 0 ? { compartments } : {}),
@@ -623,6 +688,8 @@ class Compiler {
       ...(resize !== undefined ? { resize } : {}),
       ...(this.movable(node) ? {} : { draggable: false }),
       ...(node.deletable === false ? { deletable: false } : {}),
+      // The background layer (DISL 6.16) is beneath the connections, so a container's arrows stay over it.
+      ...(node.layer === "background" ? { beneathConnections: true } : {}),
       ...(editOnDrop ? { editOnDrop } : {}),
       ...(segments !== undefined ? { segments } : {}),
       ...(centreOf !== undefined ? { centreOf } : {}),
@@ -786,12 +853,14 @@ class Compiler {
     return expression === undefined ? fail(`${where} is never visible.`) : this.condition(expression.trim(), `${where} visible`);
   }
 
-  private shape(name: string, node: DislNodeNotation): { shape: BuiltInShape; segments?: SegmentDeclaration } {
+  private shape(name: string, node: DislNodeNotation): { shape: BuiltInShape; segments?: SegmentDeclaration; cornerRadius?: number } {
     const { name: shapeName, params } = shapeNameOf(node.shape);
     const custom: DislCustomShape | undefined = this.spec.notation.shapes?.[shapeName];
     const drawnAs = custom === undefined ? this.bindings.builtInShapes?.[shapeName] : undefined;
     if (drawnAs !== undefined) {
-      return { shape: drawnAs };
+      // A rounded rectangle is drawn with the corner the reference asks for (DISL Appendix B.2, `radius`).
+      const radius = params.radius;
+      return drawnAs === "rounded-rectangle" && typeof radius === "number" ? { shape: drawnAs, cornerRadius: radius } : { shape: drawnAs };
     }
 
     const builtIn = libraryShapeOf(node.shape);
@@ -1074,8 +1143,26 @@ class Compiler {
 
   // ---- relation types -----------------------------------------------------------------------
 
+  /**
+   * A relation with what it does not state itself taken from its supertypes (DISL 4.7): its ends and
+   * whether it is directed, loops, runs in parallel or is acyclic. Its own `derived`, `abstract` and
+   * label are its own.
+   */
   private relation(name: string): DislRelation {
-    return this.spec.metamodel.relations?.[name] ?? fail(`edge "${name}" has no relation in the metamodel.`);
+    const relations = this.spec.metamodel.relations ?? {};
+    const own = relations[name] ?? fail(`edge "${name}" has no relation in the metamodel.`);
+    const merged: Record<string, unknown> = { ...own };
+    const seen = [name];
+    for (let current = own.extends; current !== undefined && !seen.includes(current); current = relations[current]?.extends) {
+      seen.push(current);
+      const supertype = relations[current];
+      for (const key of INHERITED_RELATION_KEYS) {
+        if (merged[key] === undefined && supertype?.[key] !== undefined) {
+          merged[key] = supertype[key];
+        }
+      }
+    }
+    return merged as unknown as DislRelation;
   }
 
   private relationType(name: string): RelationTypeDefinition {
@@ -1421,6 +1508,11 @@ class Compiler {
     const decorations: DecorationDeclaration[] = [];
     for (const badge of node.badges ?? []) {
       const where = `node "${name}" badge "${badge.id}"`;
+      if (badge.pack === true) {
+        decorations.push(this.packedBadge(name, node.badgeLayout, badge, where));
+        continue;
+      }
+
       const right = badge.position === "top-right";
       if (!right && badge.position !== "top-left") {
         fail(`${where} sits "${String(badge.position)}"; the library places a badge at the top left or the top right.`);
@@ -1458,6 +1550,65 @@ class Compiler {
     }
 
     return { links, decorations };
+  }
+
+  /**
+   * A packed badge (DISL §6.9 *Packed badges*): its text in the next free slot of the node's badge
+   * layout - the layout's corner moved by its offset, and `spacing` further in its direction for each
+   * packed badge before it that is drawn - shown while its condition holds. The text is anchored on the
+   * side the row grows from, so a row running left ends at the corner and one running right starts there.
+   */
+  private packedBadge(name: string, layout: DislBadgeLayout | undefined, badge: DislBadge, where: string): DecorationDeclaration {
+    if (layout === undefined) {
+      return fail(`${where} is packed, and the node states no badgeLayout to pack it into.`);
+    }
+
+    const corner = /^(top|bottom)-(left|right)$/.exec(layout.start);
+    if (corner === null) {
+      return fail(`node "${name}" starts its badges at "${layout.start}"; the library starts a row of badges at a corner.`);
+    }
+    if (badge.text === undefined) {
+      return fail(`${where} is packed and shows no text; the library draws a packed badge's text.`);
+    }
+
+    const [dx, dy] = layout.offset ?? [0, 0];
+    const steps: Readonly<Record<DislBadgeLayout["direction"], { x: number; y: number }>> = {
+      left: { x: -layout.spacing, y: 0 },
+      right: { x: layout.spacing, y: 0 },
+      up: { x: 0, y: -layout.spacing },
+      down: { x: 0, y: layout.spacing },
+    };
+    const step = steps[layout.direction] ?? fail(`node "${name}" runs its badges "${String(layout.direction)}", which is no direction.`);
+    const textAnchor = layout.direction === "left" ? "end" : layout.direction === "right" ? "start" : "middle";
+    const text = typeof badge.text === "string" ? this.literal(badge.text, `${where} text`) : this.binding(badge.text, `${where} text`);
+    const tooltip = badge.tooltip === undefined ? undefined : typeof badge.tooltip === "string" ? this.literal(badge.tooltip, `${where} tooltip`) : this.binding(badge.tooltip, `${where} tooltip`);
+    const when = this.visibility(badge.visible, where);
+    const className = this.bindings.badgeClassName?.(name, badge);
+    const data = this.bindings.badgeData?.(name, badge);
+
+    return {
+      glyph: "marker",
+      anchor: "canvas",
+      from: {
+        x: { path: `bounds.${corner[2]}`, number: { plus: dx } },
+        y: { path: `bounds.${corner[1]}`, number: { plus: dy } },
+      },
+      pack: { step },
+      text,
+      textAnchor,
+      ...(className !== undefined ? { className } : {}),
+      ...(tooltip !== undefined ? { tooltip } : {}),
+      ...(data !== undefined ? { data } : {}),
+      ...(when !== undefined ? { when } : {}),
+    };
+  }
+
+  /** A text written as it is, refused where a brace would read as a {placeholder}. */
+  private literal(text: string, where: string): { template: string } {
+    if (/[{}]/.test(text)) {
+      fail(`${where} "${text}" holds a brace, which the library would read as a {placeholder}.`);
+    }
+    return { template: text };
   }
 
   /**
@@ -1887,7 +2038,7 @@ class Compiler {
 
   /**
    * The canvas's layout mode for a layout algorithm: the standard `rowPacked` (DISL 0.3 §10.1) packs rows;
-   * the host computes `rows` (§10.2), `tidyTree` (§10.3), `circular` and a plugin's layout and sends positions, and
+   * the host computes `rows` (§10.2), `tidyTree` (§10.3), `circular`, `layered` and a plugin's layout and sends positions, and
    * `none` leaves them where they are, so the canvas draws them by hand.
    */
   private layoutMode(algorithmName: string | undefined): LayoutMode {
@@ -1900,7 +2051,7 @@ class Compiler {
       return "row-packed";
     }
 
-    if (algorithm.algorithm.startsWith("plugin:") || ["none", "rows", "tidyTree", "circular"].includes(algorithm.algorithm)) {
+    if (algorithm.algorithm.startsWith("plugin:") || ["none", "rows", "tidyTree", "circular", "layered"].includes(algorithm.algorithm)) {
       return "manual";
     }
 

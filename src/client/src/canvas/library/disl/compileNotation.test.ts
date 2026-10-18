@@ -462,6 +462,17 @@ describe("compileNotation, for a specification whose notation is inherited", () 
     expect(owns?.style).toEqual({ endMarker: "none" });
     expect(owns?.route).toEqual(uses?.route);
   });
+
+  it("gives a relation that states no ends of its own its supertype's, and keeps the ones it states", () => {
+    const spec = inheritingSpec();
+    const relations = spec.metamodel.relations!;
+    const shared = { ...spec, metamodel: { ...spec.metamodel, relations: { ...relations, Owns: { extends: "Link" } } } } as unknown as DislDocument;
+    const definition = compileNotation(shared, BINDINGS);
+
+    const [uses, owns] = definition.relationTypes;
+    expect(owns?.endpoints).toMatchObject({ source: { elementTypes: ["card", "note"] }, target: { elementTypes: ["card", "note"] } });
+    expect(uses?.endpoints).toMatchObject({ source: { elementTypes: ["card"] }, target: { elementTypes: ["note"] } });
+  });
 });
 
 describe("compileNotation, for the dash of a line", () => {

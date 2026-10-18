@@ -242,6 +242,19 @@ export interface DislBadge extends Extensions {
   tooltip?: Bindable<string>;
   /** The operation a press runs. */
   onClick?: string;
+  /** Whether it takes the next free slot of its node's {@link DislBadgeLayout} rather than a position of its own. */
+  pack?: boolean;
+  /** The text it shows. */
+  text?: Bindable<string>;
+  style?: string | Readonly<Record<string, unknown>>;
+}
+
+/** The slots packed badges fill in order (DISL §6.9 *Packed badges*). */
+export interface DislBadgeLayout {
+  start: string;
+  offset?: readonly [number, number];
+  direction: "left" | "right" | "up" | "down";
+  spacing: number;
 }
 
 export interface DislNodeNotation extends Extensions {
@@ -260,7 +273,10 @@ export interface DislNodeNotation extends Extensions {
   conditions?: readonly { when: string; style: string }[];
   compartments?: readonly DislCompartment[];
   badges?: readonly DislBadge[];
+  badgeLayout?: DislBadgeLayout;
   icon?: DislIcon;
+  /** Where it is painted among the others (DISL 6.16). */
+  layer?: string | number;
 }
 
 export interface DislEndAnchoring {
@@ -352,11 +368,23 @@ export interface DislContextMenu {
 export interface DislTool {
   id: string;
   creates?: string;
+  kind?: string;
+  operation?: string;
   mode?: string;
   after?: string;
+  /** What a drop of the entry does on what it lands on, and elsewhere (DISL 0.3 §7.2). */
+  drop?: DislDrop;
   /** What a connect gesture released on empty canvas creates at its missing end (DISL 0.3 §7.2). */
   createTarget?: unknown;
   createSource?: unknown;
+}
+
+/** A toolbox entry's `drop` (DISL 0.3 §7.2). */
+export interface DislDrop {
+  targets?: readonly { on: readonly string[]; kind?: string; operation?: string }[];
+  elsewhere?: string;
+  refusal?: unknown;
+  place?: string;
 }
 
 export interface DislToolbox {
