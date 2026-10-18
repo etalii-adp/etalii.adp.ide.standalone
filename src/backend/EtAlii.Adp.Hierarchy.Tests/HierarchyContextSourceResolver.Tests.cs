@@ -17,8 +17,15 @@ public class HierarchyContextSourceResolverTests : IDisposable
     {
         _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(_root);
-        _resolver = new HierarchyContextSourceResolver(_store, new DiagramFileRouter(new EmptyCatalog()), EmptyEditorResolver);
+        _resolver = ResolverOver(_store, new DiagramFileRouter(new EmptyCatalog()), EmptyEditorResolver);
     }
+
+    /// <summary>
+    /// The resolver as the host composes it: the tool router over these diagram and editor
+    /// families and no designer type, and the diagram router that names an unserved type.
+    /// </summary>
+    internal static HierarchyContextSourceResolver ResolverOver(IHierarchyModelStore store, DiagramFileRouter diagrams, EditorResolver editors) =>
+        new(store, new ToolRouter(diagrams, new DesignerFileRouter(new Designer.DesignerDefinitionCatalog { All = [] }), editors), diagrams);
 
     public void Dispose()
     {
@@ -294,7 +301,7 @@ public class HierarchyContextSourceResolverTests : IDisposable
 
     /// <summary>The resolver over a catalog that knows the given definitions, unlike the class's empty default.</summary>
     private HierarchyContextSourceResolver ResolverKnowing(params DiagramDefinition[] definitions) =>
-        new(_store, new DiagramFileRouter(new TestDiagramDefinitionCatalog(definitions)), EmptyEditorResolver);
+        ResolverOver(_store, new DiagramFileRouter(new TestDiagramDefinitionCatalog(definitions)), EmptyEditorResolver);
 
     private async Task<string> DiagramMimeOfAsync(HierarchyContextSourceResolver resolver, params string[] segments)
     {
@@ -370,8 +377,7 @@ public class HierarchyContextSourceResolverTests : IDisposable
         {
             All = [new Editor.EditorDefinition("plain", "Plain Text", IsFallback: true)],
         });
-        var resolver = new HierarchyContextSourceResolver(
-            _store, new DiagramFileRouter(new TestDiagramDefinitionCatalog(Mindmap)), editors);
+        var resolver = ResolverOver(_store, new DiagramFileRouter(new TestDiagramDefinitionCatalog(Mindmap)), editors);
 
         // Act and assert: the diagram family answered NotADiagram, so the editor family names it.
         Assert.Equal("editor/plain", await DiagramMimeOfAsync(resolver, "notes.txt"));
@@ -381,18 +387,16 @@ public class HierarchyContextSourceResolverTests : IDisposable
 
     /// <summary>The resolver of a deployment with a diagram type and a fallback editor, which would take any file nobody else names.</summary>
     private HierarchyContextSourceResolver ResolverWithAFallbackEditor() =>
-        new(
+        ResolverOver(
             _store,
             new DiagramFileRouter(new TestDiagramDefinitionCatalog(Mindmap)),
             new EditorResolver(new Editor.EditorDefinitionCatalog { All = [new Editor.EditorDefinition("plain", "Plain Text", IsFallback: true)] }));
 
     // The two tests below pin what the tree says of a designer's document, and need no designer
-    // family to say it: a registration's first line is carried as the entry's type whether or
-    // not a diagram type answers to it, and a body is answered through the registration of its
-    // own name. That is what lets the client key a designer's panel on its origin, and it is
-    // why this resolver was NOT given the designer router - an arm asking it would have changed
-    // no answer. Both fail against a resolver that drops the unknown-type answer and lets the
-    // file fall to the editor family.
+    // type deployed to say it: a registration's first line is carried as the entry's type whether
+    // or not a tool answers to it, and a body is answered through the registration of its own
+    // name. That is what lets the client key a designer's panel on its origin. Both fail against
+    // a resolver that drops the unknown-type answer and lets the file fall to the editor family.
 
     [Fact]
     public async Task ResolveAsync_ADesignersRegistration_CarriesTheOriginItsFirstLineNames()
@@ -414,5 +418,17 @@ public class HierarchyContextSourceResolverTests : IDisposable
 
         // Act and assert.
         Assert.Equal("fixture/sheet", await DiagramMimeOfAsync(ResolverWithAFallbackEditor(), "cities.yaml"));
+    }
+
+    [Fact]
+    public async Task ResolveAsync_ARegistrationThatCannotBeServed_CarriesNoType_NotAnEditors()
+    {
+        // Arrange: an empty registration names no tool. The open refuses it with the router's
+        // reason (B-26), so the tree does not offer it as an editor's file either (B-27); "Open as
+        // text" still opens it for repair.
+        await File.WriteAllTextAsync(IoPath.Combine(_root, "empty.adp"), "", TestContext.Current.CancellationToken);
+
+        // Act and assert.
+        Assert.Equal("", await DiagramMimeOfAsync(ResolverWithAFallbackEditor(), "empty.adp"));
     }
 }

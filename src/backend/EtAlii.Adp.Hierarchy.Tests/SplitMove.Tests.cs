@@ -46,7 +46,7 @@ public class SplitMoveTests : IDisposable
         // to the model as it came, the Deleted removed the entry and the selection tracking it
         // reported it gone - an empty selection pushed where the renamed one belonged.
         using var store = new HierarchyModelStore(TestToolRouters.For(), TimeSpan.FromMinutes(5));
-        var resolver = new HierarchyContextSourceResolver(store, new DiagramFileRouter(new EmptyCatalog()), new EditorResolver(new Editor.EditorDefinitionCatalog { All = [] }));
+        var resolver = HierarchyContextSourceResolverTests.ResolverOver(store, new DiagramFileRouter(new EmptyCatalog()), new EditorResolver(new Editor.EditorDefinitionCatalog { All = [] }));
         var watchId = ShortGuid.NewShortGuid();
         var model = store.GetOrCreate(watchId, ProjectRoot.From(_root));
         var original = CreateFile("original.txt");
