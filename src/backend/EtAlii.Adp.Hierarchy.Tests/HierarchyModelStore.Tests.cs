@@ -27,7 +27,7 @@ public class HierarchyModelStoreTests : IDisposable
     public void GetOrCreate_CalledTwiceWithTheSameWatchId_ReturnsTheSameModelInstance()
     {
         // Arrange.
-        using var store = new HierarchyModelStore();
+        using var store = new HierarchyModelStore(TestToolRouters.For());
         var watchId = ShortGuid.NewShortGuid();
 
         // Act.
@@ -42,7 +42,7 @@ public class HierarchyModelStoreTests : IDisposable
     public void GetOrCreate_WithDifferentWatchIds_ForTheSameRoot_ReturnsIndependentModels()
     {
         // Arrange.
-        using var store = new HierarchyModelStore();
+        using var store = new HierarchyModelStore(TestToolRouters.For());
 
         // Act.
         var first = store.GetOrCreate(ShortGuid.NewShortGuid(), ProjectRoot.From(_root));
@@ -56,7 +56,7 @@ public class HierarchyModelStoreTests : IDisposable
     public async Task Remove_StopsTheAttachedSubscriptionFromHearingFurtherEvents()
     {
         // Arrange.
-        using var store = new HierarchyModelStore();
+        using var store = new HierarchyModelStore(TestToolRouters.For());
         using var events = new ProjectFileEvents();
         var watchId = ShortGuid.NewShortGuid();
         store.GetOrCreate(watchId, ProjectRoot.From(_root));
@@ -76,7 +76,7 @@ public class HierarchyModelStoreTests : IDisposable
     public void IdleEntry_WithNoWatcherAttached_IsEvictedAfterTheTimeout()
     {
         // Arrange.
-        using var store = new HierarchyModelStore(idleTimeout: IdleTimeout, time: _clock);
+        using var store = new HierarchyModelStore(TestToolRouters.For(), IdleTimeout, _clock);
         var watchId = ShortGuid.NewShortGuid();
         var first = store.GetOrCreate(watchId, ProjectRoot.From(_root));
 
@@ -92,7 +92,7 @@ public class HierarchyModelStoreTests : IDisposable
     public void AttachingASubscription_CancelsTheIdleEviction()
     {
         // Arrange.
-        using var store = new HierarchyModelStore(idleTimeout: IdleTimeout, time: _clock);
+        using var store = new HierarchyModelStore(TestToolRouters.For(), IdleTimeout, _clock);
         var watchId = ShortGuid.NewShortGuid();
         var first = store.GetOrCreate(watchId, ProjectRoot.From(_root));
         using var events = new ProjectFileEvents();

@@ -9,7 +9,7 @@ namespace EtAlii.Adp.Hierarchy.Tests;
 public class HierarchyContextSourceResolverTests : IDisposable
 {
     private readonly string _root;
-    private readonly HierarchyModelStore _store = new(idleTimeout: TimeSpan.FromMinutes(5));
+    private readonly HierarchyModelStore _store = new(TestToolRouters.For(), TimeSpan.FromMinutes(5));
     private readonly HierarchyContextSourceResolver _resolver;
     private readonly ShortGuid _watchId = ShortGuid.NewShortGuid();
 

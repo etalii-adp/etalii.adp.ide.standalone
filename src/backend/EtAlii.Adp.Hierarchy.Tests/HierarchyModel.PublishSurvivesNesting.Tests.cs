@@ -40,7 +40,7 @@ public class HierarchyModelPublishSurvivesNestingTests : IDisposable
         await File.WriteAllTextAsync(subjectPath, "<map/>", TestContext.Current.CancellationToken);
         await File.WriteAllTextAsync(IoPath.Combine(_root, "plan.adp"), Mindmap.Origin.MimeType + "\n", TestContext.Current.CancellationToken);
 
-        var model = new HierarchyModel(_root, _catalog);
+        var model = new HierarchyModel(_root, TestToolRouters.For(_catalog));
         var subject = Assert.Single(model.ListChildren(null));
         Assert.Equal("plan.mm", subject.Name);
         Assert.Equal("plan.adp", Assert.Single(model.ListChildren(subject.Id)).Name);

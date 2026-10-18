@@ -408,7 +408,7 @@ public class RenameEntryCommandHandlerTests : IDisposable
         // may not change - must not leave the old path's later, genuine delete looking like the
         // echo of a move.
         var path = CreateFile("test.first.adp");
-        var store = new HierarchyModelStore();
+        var store = new HierarchyModelStore(TestToolRouters.For());
         var model = store.GetOrCreate(ShortGuid.NewShortGuid(), ProjectRoot.From(_root));
         var originalId = model.ListChildren(null).Single().Id;
         var handler = new RenameEntryCommandHandler(new EmptyCatalog(), store);
@@ -432,7 +432,7 @@ public class RenameEntryCommandHandlerTests : IDisposable
     /// </summary>
     private sealed class WatcherWinsTheRaceStore : IHierarchyModelStore
     {
-        private readonly HierarchyModelStore _inner = new();
+        private readonly HierarchyModelStore _inner = new(TestToolRouters.For());
         private readonly List<HierarchyModel> _models = [];
 
         public HierarchyModel GetOrCreate(ShortGuid watchId, ProjectRoot root)

@@ -1,6 +1,5 @@
 using EtAlii.Adp.Designer;
 using EtAlii.Adp.Diagram;
-using EtAlii.Adp.Editor;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -48,7 +47,7 @@ public class HierarchyModelNestingTests : IDisposable
         // Arrange.
         CreateSubject("test.mm");
         CreateRegistration("test");
-        var model = new HierarchyModel(_root, _catalog);
+        var model = new HierarchyModel(_root, TestToolRouters.For(_catalog));
 
         // Act.
         var rootChildren = model.ListChildren(null);
@@ -72,10 +71,7 @@ public class HierarchyModelNestingTests : IDisposable
         var sheet = new DesignerDefinition("fixture/sheet", "Fixture sheet", Formats: [new DesignerFormat("YAML", ".yaml")]);
         File.WriteAllText(IoPath.Combine(_root, "cities.yaml"), "name: Cities\n");
         File.WriteAllText(IoPath.Combine(_root, "cities.adp"), "fixture/sheet\n");
-        var model = new HierarchyModel(_root, _catalog, tools: new ToolRouter(
-            new DiagramFileRouter(_catalog),
-            new DesignerFileRouter(new DesignerDefinitionCatalog { All = [sheet] }),
-            new EditorResolver(new EditorDefinitionCatalog { All = [] })));
+        var model = new HierarchyModel(_root, TestToolRouters.For(_catalog, designers: [sheet]));
 
         // Act.
         var rootChildren = model.ListChildren(null);
@@ -102,7 +98,7 @@ public class HierarchyModelNestingTests : IDisposable
             File.WriteAllText(IoPath.Combine(_root, qualified + ".adp"), Mindmap.Origin.MimeType + "\nbody: test.mm\n");
         }
 
-        var model = new HierarchyModel(_root, _catalog);
+        var model = new HierarchyModel(_root, TestToolRouters.For(_catalog));
         var subject = Assert.Single(model.ListChildren(null), c => c.Name == "test.mm");
 
         // Act.
@@ -117,7 +113,7 @@ public class HierarchyModelNestingTests : IDisposable
     {
         // Arrange.
         CreateSubject("test.mm");
-        var model = new HierarchyModel(_root, _catalog);
+        var model = new HierarchyModel(_root, TestToolRouters.For(_catalog));
         var subject = Assert.Single(model.ListChildren(null));
         var changes = new List<HierarchyEntryChange>();
         model.EntryChanged += changes.Add;
@@ -133,7 +129,8 @@ public class HierarchyModelNestingTests : IDisposable
         var reparent = changes.OfType<HierarchyEntryUpdated>().Single(u => u.ParentChanged);
         Assert.Equal(created.Entry.Id, reparent.EntryId);
         Assert.Equal(subject.Id, reparent.ParentId);
-        var expander = changes.OfType<HierarchyEntryUpdated>().Single(u => !u.ParentChanged && u.EntryId == subject.Id);
+        // The first update of the subject; its state follows in a second.
+        var expander = changes.OfType<HierarchyEntryUpdated>().First(u => !u.ParentChanged && u.EntryId == subject.Id);
         Assert.True(expander.HasChildren);
     }
 
@@ -143,7 +140,7 @@ public class HierarchyModelNestingTests : IDisposable
         // Arrange: the registration exists first, its subject does not (Requirement 8.1) -
         // it sits at the level it sits on disk.
         CreateRegistration("test");
-        var model = new HierarchyModel(_root, _catalog);
+        var model = new HierarchyModel(_root, TestToolRouters.For(_catalog));
         var orphan = Assert.Single(model.ListChildren(null));
         Assert.Equal("test.adp", orphan.Name);
         var changes = new List<HierarchyEntryChange>();
@@ -167,7 +164,7 @@ public class HierarchyModelNestingTests : IDisposable
         // Arrange.
         var subjectPath = CreateSubject("test.mm");
         CreateRegistration("test");
-        var model = new HierarchyModel(_root, _catalog);
+        var model = new HierarchyModel(_root, TestToolRouters.For(_catalog));
         var subject = Assert.Single(model.ListChildren(null));
         var nested = Assert.Single(model.ListChildren(subject.Id));
         var changes = new List<HierarchyEntryChange>();
@@ -195,7 +192,7 @@ public class HierarchyModelNestingTests : IDisposable
         Directory.CreateDirectory(IoPath.Combine(_root, "before"));
         CreateSubject(IoPath.Combine("before", "test.mm"));
         CreateRegistration(IoPath.Combine("before", "test"));
-        var model = new HierarchyModel(_root, _catalog);
+        var model = new HierarchyModel(_root, TestToolRouters.For(_catalog));
         var folder = Assert.Single(model.ListChildren(null));
         var subject = Assert.Single(model.ListChildren(folder.Id));
         var nested = Assert.Single(model.ListChildren(subject.Id));
@@ -221,7 +218,7 @@ public class HierarchyModelNestingTests : IDisposable
         // Arrange.
         CreateSubject("test.mm");
         var registrationPath = CreateRegistration("test");
-        var model = new HierarchyModel(_root, _catalog);
+        var model = new HierarchyModel(_root, TestToolRouters.For(_catalog));
         var subject = Assert.Single(model.ListChildren(null));
         model.ListChildren(subject.Id);
         var changes = new List<HierarchyEntryChange>();
@@ -232,17 +229,18 @@ public class HierarchyModelNestingTests : IDisposable
         model.OnWatcherEvent(WatcherChangeTypes.Deleted, registrationPath, null);
 
         // Assert: the subject's has_children is pushed as false (Requirement 10.2).
-        var collapsed = changes.OfType<HierarchyEntryUpdated>().Single(u => u.EntryId == subject.Id);
+        // The first update of the subject; its state follows in a second.
+        var collapsed = changes.OfType<HierarchyEntryUpdated>().First(u => u.EntryId == subject.Id);
         Assert.False(collapsed.HasChildren);
     }
 
     [Fact]
-    public void WithoutACatalog_NothingNests_AndTheOldShapeHolds()
+    public void WithoutItsType_ARegistrationNestsNowhere()
     {
-        // Arrange: the model without diagram knowledge is the pre-nesting model exactly.
+        // Arrange: a deployment that knows no mind maps reads the pair as two unrelated files.
         CreateSubject("test.mm");
         CreateRegistration("test");
-        var model = new HierarchyModel(_root);
+        var model = new HierarchyModel(_root, TestToolRouters.For());
 
         // Act.
         var children = model.ListChildren(null);

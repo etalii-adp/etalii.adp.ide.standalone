@@ -24,9 +24,7 @@ namespace EtAlii.Adp.Hierarchy;
 /// </remarks>
 public sealed class ToolRouter
 {
-    private readonly DiagramFileRouter _diagrams;
     private readonly DesignerFileRouter _designers;
-    private readonly EditorResolver _editors;
 
     public ToolRouter(DiagramFileRouter diagrams, DesignerFileRouter designers, EditorResolver editors)
     {
@@ -34,10 +32,16 @@ public sealed class ToolRouter
         ArgumentNullException.ThrowIfNull(designers);
         ArgumentNullException.ThrowIfNull(editors);
 
-        _diagrams = diagrams;
+        Diagrams = diagrams;
         _designers = designers;
-        _editors = editors;
+        Editors = editors;
     }
+
+    /// <summary>The diagram types' own router, for what only diagrams are asked: which extensions they claim, and which take a folder as their subject.</summary>
+    public DiagramFileRouter Diagrams { get; }
+
+    /// <summary>The editors' own resolver, for what only editors are asked: whether one claims an extension.</summary>
+    public EditorResolver Editors { get; }
 
     /// <summary>
     /// The tool that serves <paramref name="path"/>: <see cref="DiagramRouted"/>,
@@ -53,7 +57,7 @@ public sealed class ToolRouter
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
 
-        return _diagrams.Route(path, root) switch
+        return Diagrams.Route(path, root) switch
         {
             DiagramRouted diagram => diagram,
             DiagramUnreadable unreadable => new ToolUnreadable(unreadable.Path, unreadable.Reason),
@@ -67,6 +71,6 @@ public sealed class ToolRouter
         {
             DesignerRouted designer => designer,
             DesignerUnreadable unreadable => new ToolUnreadable(unreadable.Path, unreadable.Reason),
-            _ => _editors.Resolve(path) as EditorRouted ?? (ToolRouting)new NoTool(),
+            _ => Editors.Resolve(path) as EditorRouted ?? (ToolRouting)new NoTool(),
         };
 }

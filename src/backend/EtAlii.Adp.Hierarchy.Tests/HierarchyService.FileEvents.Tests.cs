@@ -36,7 +36,7 @@ public sealed class HierarchyServiceFileEventsTests : IDisposable
             userId,
             "project",
             new PathRecord(_projectFolder.Split(IoPath.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries)));
-        using var modelStore = new HierarchyModelStore();
+        using var modelStore = new HierarchyModelStore(TestToolRouters.For());
         using var events = new ProjectFileEvents();
         var service = new HierarchyService(projectStore, modelStore, events);
         using var stop = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);

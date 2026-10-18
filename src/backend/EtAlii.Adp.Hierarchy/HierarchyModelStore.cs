@@ -1,4 +1,3 @@
-using EtAlii.Adp.Diagram;
 using Serilog;
 
 namespace EtAlii.Adp.Hierarchy;
@@ -15,22 +14,12 @@ public sealed class HierarchyModelStore : IHierarchyModelStore, IDisposable
     // clients are not opening the watch they were expected to.
     private readonly RetainedRegistry<ShortGuid, HierarchyModelEntry> _entries;
 
-    private readonly IDiagramDefinitionCatalog? _catalog;
-    private readonly DiagramFileRouter? _router;
-    private readonly EditorResolver? _editorResolver;
-    private readonly ToolRouter? _tools;
+    private readonly ToolRouter _tools;
 
-    public HierarchyModelStore(
-        IDiagramDefinitionCatalog? catalog = null,
-        TimeSpan? idleTimeout = null,
-        DiagramFileRouter? router = null,
-        EditorResolver? editorResolver = null,
-        ToolRouter? tools = null,
-        TimeProvider? time = null)
+    public HierarchyModelStore(ToolRouter tools, TimeSpan? idleTimeout = null, TimeProvider? time = null)
     {
-        _catalog = catalog;
-        _router = router;
-        _editorResolver = editorResolver;
+        ArgumentNullException.ThrowIfNull(tools);
+
         _tools = tools;
         _entries = new RetainedRegistry<ShortGuid, HierarchyModelEntry>(
             idleTimeout ?? DefaultIdleTimeout,
@@ -42,7 +31,7 @@ public sealed class HierarchyModelStore : IHierarchyModelStore, IDisposable
     public HierarchyModel GetOrCreate(ShortGuid watchId, ProjectRoot root) =>
         _entries.GetOrAdd(watchId, _ => new HierarchyModelEntry
         {
-            Model = new HierarchyModel(root.FullPath, _catalog, _router, _editorResolver, _tools),
+            Model = new HierarchyModel(root.FullPath, _tools),
         }).Model;
 
     public void AttachEvents(ShortGuid watchId, IDisposable events)

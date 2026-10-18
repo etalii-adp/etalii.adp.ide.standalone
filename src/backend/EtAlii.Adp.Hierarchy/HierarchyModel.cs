@@ -1,4 +1,3 @@
-using EtAlii.Adp.Diagram;
 using EtAlii.Adp.Files;
 using Serilog;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
@@ -22,9 +21,8 @@ public sealed class HierarchyModel
     // under it (FR-066): a folder is read, and its registrations routed, before the lock is
     // taken to apply what was read, so a slow disk holds up no other caller.
     private readonly Lock _gate = new();
-    private readonly IDiagramDefinitionCatalog? _catalog;
-    private readonly ToolRouter? _tools;
-    private readonly DiagramStateDecorator? _states;
+    private readonly ToolRouter _tools;
+    private readonly DiagramStateDecorator _states;
     private readonly HierarchyIndex _index = new();
     private readonly HashSet<ShortGuid> _listedFolderIds = new();
     private bool _rootListed;
@@ -38,14 +36,13 @@ public sealed class HierarchyModel
     private readonly List<HierarchyEntryChange> _queued = new();
     private bool _raising;
 
-    public HierarchyModel(string rootPath, IDiagramDefinitionCatalog? catalog = null, DiagramFileRouter? router = null, EditorResolver? editorResolver = null, ToolRouter? tools = null)
+    public HierarchyModel(string rootPath, ToolRouter tools)
     {
+        ArgumentNullException.ThrowIfNull(tools);
+
         RootPath = IoPath.GetFullPath(rootPath);
-        _catalog = catalog;
         _tools = tools;
-        _states = router is null || editorResolver is null
-            ? null
-            : new DiagramStateDecorator(RootPath, router, editorResolver, ResolvedBodyNameOf);
+        _states = new DiagramStateDecorator(RootPath, tools.Diagrams, tools.Editors, ResolvedBodyNameOf);
     }
 
     /// <summary>The absolute project root this model views; what the store matches on to route a rename to it.</summary>
@@ -366,7 +363,7 @@ public sealed class HierarchyModel
     private readonly record struct DiskEntry(string Path, string Name, bool IsFolder, bool HasAnyChild);
 
     /// <summary>Where one folder's registrations nest, and the state of each entry in it.</summary>
-    private sealed record FolderView(IReadOnlyList<NestedEntry>? Placements, IReadOnlyList<DiagramStateDecorator.Decision> States);
+    private sealed record FolderView(IReadOnlyList<NestedEntry> Placements, IReadOnlyList<DiagramStateDecorator.Decision> States);
 
     private Refresh? OnCreated(string path, EventFacts facts)
     {
@@ -604,7 +601,7 @@ public sealed class HierarchyModel
         }
         catch (Exception ex) when (ex is UnauthorizedAccessException or DirectoryNotFoundException or IOException)
         {
-            return new FolderRead(null, ex, new FolderView(null, []));
+            return new FolderRead(null, ex, new FolderView([], []));
         }
 
         var entries = found
@@ -624,8 +621,8 @@ public sealed class HierarchyModel
     /// </summary>
     private FolderView ReadView(string folderPath, string? folderName, IReadOnlyList<(string Name, bool IsFolder)> names) =>
         new(
-            _catalog is null ? null : HierarchyNesting.Assign(names, name => ResolvedBodyNameOf(folderPath, name)),
-            _states?.Decide(folderName, folderPath, names) ?? []);
+            HierarchyNesting.Assign(names, name => ResolvedBodyNameOf(folderPath, name)),
+            _states.Decide(folderName, folderPath, names));
 
     /// <summary>
     /// Applies one folder's scan under the lock: new entries are added, known ones refreshed, and
@@ -720,13 +717,8 @@ public sealed class HierarchyModel
     /// re-parent under their subject files, subjects' <see cref="EntryNode.HasChildren"/> follow,
     /// and every change is pushed so a watching client converges without a reload.
     /// </summary>
-    private void ApplyNesting(string folderPath, IReadOnlyList<NestedEntry>? placements, bool raiseEvents)
+    private void ApplyNesting(string folderPath, IReadOnlyList<NestedEntry> placements, bool raiseEvents)
     {
-        if (placements is null)
-        {
-            return;
-        }
-
         var siblings = _index.In(folderPath).ToList();
 
         ShortGuid? folderParentId = null;
@@ -819,30 +811,28 @@ public sealed class HierarchyModel
     }
 
     /// <summary>
-    /// The body file name a registration resolves inside its own folder, or null: no catalog,
-    /// no resolution, or a body living elsewhere. Which tool's document the registration names is
+    /// The body file name a registration resolves inside its own folder, or null: no resolution,
+    /// or a body living elsewhere. Which tool's document the registration names is
     /// <see cref="ToolRouter"/>'s answer: a diagram's body, or a designer's, whose document is two
-    /// files just the same and is shown as one entry the same way. Without a tool router only the
-    /// diagram types are asked. Only same-folder bodies nest, since a header can point across
-    /// folders and relocating an entry into another folder's subtree is not this spec.
+    /// files just the same and is shown as one entry the same way. Only same-folder bodies nest,
+    /// since a header can point across folders and relocating an entry into another folder's
+    /// subtree is not this spec.
     /// </summary>
     private string? ResolvedBodyNameOf(string folderPath, string fileName)
     {
-        if (_catalog is null || !DiagramFilePair.IsRegistrationFile(fileName))
+        if (!DiagramFilePair.IsRegistrationFile(fileName))
         {
             return null;
         }
 
         var registration = IoPath.Combine(folderPath, fileName);
-        var bodyPath = _tools is null
-            ? DiagramFilePair.BodyOf(registration, _catalog, RootPath)?.Path
-            : _tools.Route(registration, RootPath) switch
-            {
-                // A type with no sibling routes to the registration itself, which is no body to nest.
-                DiagramRouted { Definition.HasDocumentSibling: true } diagram => diagram.BodyPath,
-                DesignerRouted designer => designer.BodyPath,
-                _ => null,
-            };
+        var bodyPath = _tools.Route(registration, RootPath) switch
+        {
+            // A type with no sibling routes to the registration itself, which is no body to nest.
+            DiagramRouted { Definition.HasDocumentSibling: true } diagram => diagram.BodyPath,
+            DesignerRouted designer => designer.BodyPath,
+            _ => null,
+        };
 
         if (string.IsNullOrEmpty(bodyPath))
         {
