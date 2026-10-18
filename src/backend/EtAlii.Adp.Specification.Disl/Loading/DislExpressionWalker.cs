@@ -163,6 +163,10 @@ internal static partial class DislExpressionWalker
                 return ActionNames.Contains(key) || (key == "label" && path[^1] == "editLabel") ? null : frame;
             }
 
+            // A type map (§11.2) holds names only: its attributes map a binding's attribute names to the
+            // metamodel's, so a binding attribute that happens to be called like an Expression property is still a name.
+            if (section == "persistence" && path.Contains("typeMap")) return null;
+
             if (frame.Mode == Mode.Geometry && GeometryKeys.Contains(key) && value.ValueKind == JsonValueKind.String)
             {
                 return Percentage().IsMatch(value.GetString()!) ? null : frame.As(Mode.Expression);

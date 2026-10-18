@@ -36,6 +36,7 @@ public sealed class DislSpecification
         IdPrefixes = ids.ValueKind == JsonValueKind.Object && ids.TryGetProperty("prefix", out var prefix) && prefix.ValueKind == JsonValueKind.Object
             ? prefix.EnumerateObject().Where(type => type.Value.ValueKind == JsonValueKind.String).ToDictionary(type => type.Name, type => type.Value.GetString()!, StringComparer.Ordinal)
             : new Dictionary<string, string>(StringComparer.Ordinal);
+        IdComparer = DislJson.String(ids, "compare") == "ignore-case" ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
     }
 
     /// <summary>The specification's JSON, as it was read.</summary>
@@ -68,6 +69,15 @@ public sealed class DislSpecification
 
     /// <summary>The top level's <c>prefix</c> when it is a map (§11.5), by type name.</summary>
     private IReadOnlyDictionary<string, string> IdPrefixes { get; }
+
+    /// <summary>
+    /// How the model's ids compare (§11.5.4, <c>persistence.ids.compare</c>) for lookups, references and
+    /// duplicate detection: as code-point sequences, or with <c>ignore-case</c> without regard to case.
+    /// .NET's ordinal case-insensitive comparison (simple, one-to-one case mapping) stands in for Unicode
+    /// default case folding: they agree on every letter whose folding is a single character, and differ
+    /// only where full folding expands one (<c>ß</c> folds to <c>ss</c>, which this does not equal).
+    /// </summary>
+    public StringComparer IdComparer { get; }
 
     /// <summary>The per-evaluation cost limit (§2.5): <c>language.limits.celCost</c>, one million by default.</summary>
     public long CostLimit => _functions.Budget;
