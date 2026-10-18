@@ -50,6 +50,11 @@ export interface ElementDropped {
    * than by measuring boxes of its own.
    */
   elementIds?: readonly string[];
+  /**
+   * For a payload the definition's `toolbox.drops` declares: the element it landed on and the
+   * action its target runs there. A drop on nothing a target names is refused and never raised.
+   */
+  onto?: { elementId: string; actionId: string };
 }
 
 /** A delete gesture reached an element the definition marks deletable. */

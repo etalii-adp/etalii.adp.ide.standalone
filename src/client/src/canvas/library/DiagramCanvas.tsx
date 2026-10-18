@@ -57,6 +57,7 @@ import {
 } from "./shapes/segments";
 import { CanvasScrollbars } from "../scroll/CanvasScrollbars";
 import { RulerStrip } from "./surface/RulerStrip";
+import { useCanvasRefusalReporter } from "./surface/canvasRefusals";
 import { TagInput } from "@client/components/TagInput";
 import { scrollExtentOf, thumbOf } from "../scroll/scrollGeometry";
 import { useElementContextMenu } from "../useElementContextMenu";
@@ -533,6 +534,8 @@ export function DiagramCanvasCore({
   const [ownSelection, setOwnSelection] = useState<DiagramSelection>([]);
   /** The last toolbox drop, awaiting the element it creates - see the edit-on-drop effect. */
   const dropMemoryRef = useRef<{ position: Point; at: number; known: ReadonlySet<string> } | null>(null);
+  /** The canvas's refusal line, which a toolbox drop landing on nothing its declaration names is refused on. */
+  const refusals = useCanvasRefusalReporter();
 
   // A gesture's per-frame values are NOT React state on the canvas: they flow through the
   // gesture-frame scheduler into these cells, and only the gesture's own participants
@@ -1612,7 +1615,8 @@ export function DiagramCanvasCore({
     // does not offer is the forbidden drop (Requirement 5.3).
     const declared = elementTypes.get(payload);
     const suppressed = definition.toolbox?.suppress?.includes(payload) ?? false;
-    if (declared === undefined || suppressed) {
+    const landsOn = definition.toolbox?.drops?.find((drop) => drop.payload === payload);
+    if ((declared === undefined || suppressed) && landsOn === undefined) {
       if (toolboxItems === undefined) {
         return;
       }
@@ -1623,8 +1627,30 @@ export function DiagramCanvasCore({
     // places by the model's own positions; the layout's inverse says what it stands for there.
     const pointer = toCanvasPoint(event.clientX, event.clientY);
     const position = layoutAlgorithm?.inverse?.(pointer, layoutInput, definition.layout) ?? pointer;
+    const under = elementsAt(pointer);
+
+    // AN ENTRY THAT MEANS SOMETHING ONLY ON AN ELEMENT: the topmost element under the point that a
+    // target names, and the first target naming it; on nothing a target names, the declaration's
+    // refusal - before anything is sent, so the module never sees a drop it could only refuse.
+    let onto: { elementId: string; actionId: string } | undefined;
+    if (landsOn !== undefined) {
+      for (const element of under) {
+        const target = landsOn.targets.find((each) => each.elementTypes.includes(element.type));
+        if (target !== undefined) {
+          onto = { elementId: element.id, actionId: target.actionId };
+          break;
+        }
+      }
+      if (onto === undefined) {
+        if (landsOn.refusal !== undefined) {
+          refusals?.refused(landsOn.refusal);
+        }
+        return;
+      }
+    }
+
     dropMemoryRef.current = { position, at: Date.now(), known: new Set(model.elements.map((element) => element.id)) };
-    raise({ kind: "element-dropped", elementType: payload, position, elementIds: elementsAt(pointer).map((element) => element.id) });
+    raise({ kind: "element-dropped", elementType: payload, position, elementIds: under.map((element) => element.id), ...(onto !== undefined ? { onto } : {}) });
   };
 
   // ---- keyboard: delete --------------------------------------------------------------------
