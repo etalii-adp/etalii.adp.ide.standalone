@@ -50,7 +50,51 @@ public sealed class WatchedFolderTests : IDisposable
     }
 
     [Fact]
-    public async Task ARename_NamesBothTheOldAndTheNewName()
+    public void ARename_NamesBothTheOldAndTheNewName()
+    {
+        // Arrange.
+        var before = IoPath.Combine(_root, "before.txt");
+        var after = IoPath.Combine(_root, "after.txt");
+        var heard = new ConcurrentQueue<FileEvent>();
+        using var folder = new WatchedFolder(_root, heard.Enqueue);
+
+        // Act: raised on the calling thread, so it has been heard by now.
+        folder.Watcher().RaiseRenamed(before, after);
+
+        // Assert.
+        Assert.Equal([new FileEvent(FileEventKind.Renamed, after, before)], heard);
+    }
+
+    [Fact]
+    public void AMoveSplitByTheWatcher_IsPassedOnAsItWasRaised()
+    {
+        // Arrange: on Linux a move whose halves arrive more than 2 ms apart is raised as a Deleted
+        // and a Created. Putting them back together is ProjectFileEvents' work (SplitMoveJoiner),
+        // not the folder's, which passes on what the watcher raised.
+        var before = IoPath.Combine(_root, "before.txt");
+        var after = IoPath.Combine(_root, "after.txt");
+        var heard = new ConcurrentQueue<FileEvent>();
+        using var folder = new WatchedFolder(_root, heard.Enqueue);
+
+        // Act.
+        folder.Watcher().RaiseSplitMove(before, after);
+
+        // Assert.
+        Assert.Equal([new FileEvent(FileEventKind.Deleted, before), new FileEvent(FileEventKind.Created, after)], heard);
+    }
+
+    /// <summary>
+    /// A real move, heard under both its names: as one Renamed when the watcher paired its halves,
+    /// or as a Deleted of the old name and a Created of the new one when it did not.
+    /// </summary>
+    /// <remarks>
+    /// This test once waited for a Renamed alone, and failed once in twenty nightly runs (Stability
+    /// run 13, 2026-10-17): "The rename was never heard". The watcher had split the move, which it
+    /// does on Linux when the second half arrives after its 2 ms poll, as on a loaded runner. Fed the
+    /// split through the watcher, that wait failed every time (code-structure T291).
+    /// </remarks>
+    [Fact]
+    public async Task AMoveOnDisk_IsHeardUnderBothNames()
     {
         // Arrange.
         var before = IoPath.Combine(_root, "before.txt");
@@ -64,11 +108,8 @@ public sealed class WatchedFolderTests : IDisposable
 
         // Assert.
         Assert.True(
-            await Eventually.TrueAsync(() => heard.Any(e => e.Kind == FileEventKind.Renamed), TestContext.Current.CancellationToken, Patience),
-            "The rename was never heard.");
-        var renamed = heard.First(e => e.Kind == FileEventKind.Renamed);
-        Assert.Equal(after, renamed.Path);
-        Assert.Equal(before, renamed.OldPath);
+            await Eventually.TrueAsync(() => IsHeardUnderBothNames(heard, before, after), TestContext.Current.CancellationToken, Patience),
+            "The move was not heard under both names; heard: " + string.Join(", ", heard));
     }
 
     [Fact]
@@ -105,6 +146,14 @@ public sealed class WatchedFolderTests : IDisposable
 
         // Assert: what came after was still heard.
         Assert.True(await Eventually.TrueAsync(() => !heard.IsEmpty, TestContext.Current.CancellationToken, Patience), "Nothing was heard after a handler threw.");
+    }
+
+    /// <summary>A Renamed from <paramref name="before"/> to <paramref name="after"/>, or a Deleted of the one and a Created of the other.</summary>
+    private static bool IsHeardUnderBothNames(IEnumerable<FileEvent> heard, string before, string after)
+    {
+        var events = heard.ToList();
+        return events.Contains(new FileEvent(FileEventKind.Renamed, after, before))
+            || (events.Contains(new FileEvent(FileEventKind.Deleted, before)) && events.Contains(new FileEvent(FileEventKind.Created, after)));
     }
 
     private static bool HasHandler(FileSystemWatcher watcher, string eventName)
