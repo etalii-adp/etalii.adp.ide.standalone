@@ -16,7 +16,7 @@ internal sealed class ProblemBroadcasterRecordingSelectionStore : IContextSelect
 
     public void PushNotice(ProjectRoot root, string message) => throw new NotSupportedException();
 
-    public void Register(ShortGuid watchId, ProjectRoot root, ChannelWriter<ContextMessage> writer, IReadOnlyList<ContextActionGroupDefinition> rootActions, IReadOnlyList<ContextActionGroupDefinition> projectActions, ProjectProblems problems) => throw new NotSupportedException();
+    public void Register(ShortGuid watchId, ProjectRoot root, ChannelWriter<ContextMessage> writer, IReadOnlyList<ContextActionGroupDefinition> rootActions, IReadOnlyList<ContextActionGroupDefinition> projectActions, Func<ProjectProblems> problems) => throw new NotSupportedException();
 
     public void PushProjectActions(ProjectRoot root, IReadOnlyList<ContextActionGroupDefinition> actions) => throw new NotSupportedException();
 
