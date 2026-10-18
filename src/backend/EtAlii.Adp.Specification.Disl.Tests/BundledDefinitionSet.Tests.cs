@@ -13,7 +13,7 @@ public class BundledDefinitionSetTests
 
     private const string Narrow = "example/narrow";
 
-    private static BundledDefinitionSet Set() => BundledDefinitionSet.Load(Resources.Assembly, Resources.WideReading, Resources.NarrowReading);
+    private static BundledDefinitionSet Set() => BundledDefinitionSet.Load(Resources.Assembly, DislPluginFunctions.None, Resources.WideReading, Resources.NarrowReading);
 
     /// <summary>One body as a reader gives it: a box and a note.</summary>
     private static FblModel Body() => new(

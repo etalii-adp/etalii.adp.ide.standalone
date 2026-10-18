@@ -37,14 +37,12 @@ public sealed class BundledDefinitionSet
     /// <summary>The origins of the definitions, in the order they were given.</summary>
     public IReadOnlyList<string> Origins => [.. Definitions.Select(definition => definition.Specification.Origin!)];
 
-    /// <summary>Loads the definitions <paramref name="assembly"/> embeds as <paramref name="logicalNames"/>, each with its provenance.</summary>
-    /// <exception cref="InvalidOperationException">A definition does not load, declares no origin, or declares the origin of another.</exception>
-    public static BundledDefinitionSet Load(Assembly assembly, params IEnumerable<string> logicalNames) => Load(assembly, DislPluginFunctions.None, logicalNames);
-
     /// <summary>
-    /// Loads the definitions as <see cref="Load(Assembly, IEnumerable{string})"/> does, with the host's
-    /// implementations of their plugins' CEL functions (DISL §13.1.1).
+    /// Loads the definitions <paramref name="assembly"/> embeds as <paramref name="logicalNames"/>, each with
+    /// its provenance, with the host's implementations of their plugins' CEL functions (DISL §13.1.1);
+    /// <see cref="DislPluginFunctions.None"/> where they declare none.
     /// </summary>
+    /// <exception cref="InvalidOperationException">A definition does not load, declares no origin, or declares the origin of another.</exception>
     public static BundledDefinitionSet Load(Assembly assembly, DislPluginFunctions plugins, params IEnumerable<string> logicalNames)
     {
         ArgumentNullException.ThrowIfNull(assembly);
