@@ -44,9 +44,42 @@ public class DiagramDocumentReloadBridgeTests : IDisposable
 
         public ToolOrigin Origin { get; } = new("test", "sample");
 
-        public void Reload(string rootPath, string bodyPath) => _reloads.Writer.TryWrite((rootPath, bodyPath));
+        /// <summary>Holds the next reload of this body until <see cref="Gate"/> completes; null holds none.</summary>
+        public string? Held { get; set; }
 
-        public void BodyDeleted(string rootPath, string bodyPath) => _deletions.Writer.TryWrite(bodyPath);
+        public TaskCompletionSource Gate { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public TaskCompletionSource Holding { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public async Task ReloadAsync(string rootPath, string bodyPath, CancellationToken cancellationToken)
+        {
+            if (string.Equals(bodyPath, Held, StringComparison.OrdinalIgnoreCase))
+            {
+                Held = null;
+                Holding.TrySetResult();
+                await Gate.Task.WaitAsync(cancellationToken);
+            }
+
+            _reloads.Writer.TryWrite((rootPath, bodyPath));
+        }
+
+        public Task BodyDeletedAsync(string rootPath, string bodyPath, CancellationToken cancellationToken)
+        {
+            _deletions.Writer.TryWrite(bodyPath);
+            return Task.CompletedTask;
+        }
+
+        /// <summary>Every reload recorded so far, without waiting for more.</summary>
+        public List<string> Recorded()
+        {
+            var recorded = new List<string>();
+            while (_reloads.Reader.TryRead(out var reload))
+            {
+                recorded.Add(reload.BodyPath);
+            }
+
+            return recorded;
+        }
 
         public async Task<(string RootPath, string BodyPath)> NextAsync(CancellationToken cancellationToken) =>
             await _reloads.Reader.ReadAsync(cancellationToken).AsTask().WaitAsync(_arrival, cancellationToken);
@@ -169,6 +202,128 @@ public class DiagramDocumentReloadBridgeTests : IDisposable
 
         // Assert.
         Assert.True(await reloader.StaysQuietAsync(TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task AReloadStillReading_HoldsNeitherTheWatcherNorTheOrder_OfWhatChangesNext()
+    {
+        // A body still being written is retried on the clock (code-structure FR-050). Before, the
+        // retries slept on the watcher's thread, so every other subscriber of the root heard nothing
+        // until they were spent; and a read is not to be overtaken by a later one either.
+        var reloader = new RecordingReloader();
+        using var bridge = new DiagramDocumentReloadBridge([reloader], _events);
+        var first = IoPath.Combine(_root, "first.dsl");
+        var second = IoPath.Combine(_root, "second.dsl");
+        var cancellationToken = TestContext.Current.CancellationToken;
+        await File.WriteAllTextAsync(first, "body", cancellationToken);
+        await File.WriteAllTextAsync(second, "body", cancellationToken);
+        bridge.Track(ProjectRoot.From(_root), first, registrationPath: null, reloader.Origin);
+        bridge.Track(ProjectRoot.From(_root), second, registrationPath: null, reloader.Origin);
+        var neighbour = IoPath.Combine(_root, "neighbour.txt");
+        var heard = Channel.CreateUnbounded<string>();
+        using var listening = _events.Subscribe(_root, change => heard.Writer.TryWrite(change.Path));
+        reloader.Held = first;
+
+        // Act: the first body's read is held; then the second body and a neighbour change.
+        await File.WriteAllTextAsync(first, "changed", cancellationToken);
+        await reloader.Holding.Task.WaitAsync(_arrival, cancellationToken);
+        await File.WriteAllTextAsync(second, "changed", cancellationToken);
+        await File.WriteAllTextAsync(neighbour, "noise", cancellationToken);
+
+        // Assert: the watcher still tells the root's other subscribers...
+        Assert.True(await Eventually.TrueAsync(() => heard.Reader.TryRead(out var path) && path == neighbour, cancellationToken, _arrival), "The held read kept the watcher's thread from telling the root's other subscribers.");
+
+        // ...while the second body waits for the first body's read to finish.
+        Assert.Empty(reloader.Recorded());
+        reloader.Gate.SetResult();
+        Assert.Equal(first, (await reloader.NextAsync(cancellationToken)).BodyPath);
+        while ((await reloader.NextAsync(cancellationToken)).BodyPath != second)
+        {
+            // The first body's own later change, heard while it was read.
+        }
+    }
+
+    [Fact]
+    public async Task ABurstOfChangesToABodyWhileItIsRead_IsAnsweredByOneMoreRead()
+    {
+        // What waits is bounded by the documents tracked, not by the events heard (code-structure
+        // FR-070): every change to a body heard while it is read is answered by one read of the disk
+        // after it, which is all any of those reads would have found.
+        var reloader = new RecordingReloader();
+        using var bridge = new DiagramDocumentReloadBridge([reloader], _events);
+        var bodyPath = IoPath.Combine(_root, "sample.dsl");
+        var cancellationToken = TestContext.Current.CancellationToken;
+        await File.WriteAllTextAsync(bodyPath, "body", cancellationToken);
+        bridge.Track(ProjectRoot.From(_root), bodyPath, registrationPath: null, reloader.Origin);
+        var marker = IoPath.Combine(_root, "marker.txt");
+        var heard = Channel.CreateUnbounded<string>();
+        using var listening = _events.Subscribe(_root, change => heard.Writer.TryWrite(change.Path));
+        reloader.Held = bodyPath;
+
+        // Act: the read is held; twenty more changes arrive, and the marker after them says the
+        // watcher has passed them all on.
+        await File.WriteAllTextAsync(bodyPath, "changed", cancellationToken);
+        await reloader.Holding.Task.WaitAsync(_arrival, cancellationToken);
+        for (var i = 0; i < 20; i++)
+        {
+            await File.WriteAllTextAsync(bodyPath, $"changed {i}", cancellationToken);
+        }
+
+        await File.WriteAllTextAsync(marker, "after", cancellationToken);
+        Assert.True(await Eventually.TrueAsync(() => heard.Reader.TryRead(out var path) && path == marker, cancellationToken, _arrival));
+        reloader.Gate.SetResult();
+
+        // Assert: the held read, then one for everything heard while it was held.
+        Assert.Equal(bodyPath, (await reloader.NextAsync(cancellationToken)).BodyPath);
+        Assert.Equal(bodyPath, (await reloader.NextAsync(cancellationToken)).BodyPath);
+        Assert.True(await reloader.StaysQuietAsync(cancellationToken), "A change heard while the body was read was answered by more than one read.");
+    }
+
+    [Fact]
+    public async Task ADeletionWaitingItsTurn_IsNotUndoneByALaterChangeToTheRegistration()
+    {
+        // A store keeps its last good document through a read that cannot find the body, so the
+        // later change folded into the waiting deletion must still end the document.
+        var reloader = new RecordingReloader();
+        using var bridge = new DiagramDocumentReloadBridge([reloader], _events);
+        var other = IoPath.Combine(_root, "other.dsl");
+        var bodyPath = IoPath.Combine(_root, "sample.dsl");
+        var registrationPath = IoPath.Combine(_root, "sample.adp");
+        var cancellationToken = TestContext.Current.CancellationToken;
+        await File.WriteAllTextAsync(other, "body", cancellationToken);
+        await File.WriteAllTextAsync(bodyPath, "body", cancellationToken);
+        await File.WriteAllTextAsync(registrationPath, "test/sample", cancellationToken);
+        bridge.Track(ProjectRoot.From(_root), other, registrationPath: null, reloader.Origin);
+        bridge.Track(ProjectRoot.From(_root), bodyPath, registrationPath, reloader.Origin);
+        var heard = Channel.CreateUnbounded<string>();
+        using var listening = _events.Subscribe(_root, change => heard.Writer.TryWrite(change.Path));
+        reloader.Held = other;
+
+        // Act: while another body is read, this one is deleted and its registration then changes.
+        await File.WriteAllTextAsync(other, "changed", cancellationToken);
+        await reloader.Holding.Task.WaitAsync(_arrival, cancellationToken);
+        File.Delete(bodyPath);
+        Assert.True(await Eventually.TrueAsync(() => heard.Reader.TryRead(out var path) && path == bodyPath, cancellationToken, _arrival));
+        await File.WriteAllTextAsync(registrationPath, "test/sample\nview: other", cancellationToken);
+        Assert.True(await Eventually.TrueAsync(() => heard.Reader.TryRead(out var path) && path == registrationPath, cancellationToken, _arrival));
+        reloader.Gate.SetResult();
+
+        // Assert.
+        Assert.Equal(bodyPath, await reloader.NextDeletionAsync(cancellationToken));
+    }
+
+    [Fact]
+    public async Task ADisposedBridge_StopsReading()
+    {
+        // Arrange.
+        var bridge = new DiagramDocumentReloadBridge([new RecordingReloader()], _events);
+
+        // Act.
+        bridge.Dispose();
+        bridge.Dispose();
+
+        // Assert: the loop ends, rather than being left running unobserved (code-structure FR-070).
+        await bridge.Completion.WaitAsync(_arrival, TestContext.Current.CancellationToken);
     }
 
     [Fact]

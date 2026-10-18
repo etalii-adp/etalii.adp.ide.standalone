@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Threading.Channels;
 using EtAlii.Adp.Diagram;
 using EtAlii.Adp.Files;
 using Serilog;
@@ -7,7 +8,7 @@ namespace EtAlii.Adp.Workspace;
 
 /// <summary>
 /// The watcher-to-store bridge: the one place a disk change reaches a diagram document store's
-/// <c>Reload</c>. <c>DiagramService.Open</c> reports every diagram it opens; this subscribes to
+/// <c>ReloadAsync</c>. <c>DiagramService.Open</c> reports every diagram it opens; this subscribes to
 /// <see cref="ProjectFileEvents"/> once per project root and, when a tracked body
 /// or registration file changes underneath, hands the owning module's
 /// <see cref="IDiagramDocumentReloader"/> the body to re-read. The stores push the result to
@@ -19,6 +20,15 @@ namespace EtAlii.Adp.Workspace;
 /// opened them: the stores cache documents by path for the process too, so an external write
 /// landing while no session is open would otherwise leave a closed-and-reopened diagram on the
 /// stale pre-change model until a restart.
+/// <para>
+/// <b>The watcher's thread only notes what changed; one loop reads it</b> (code-structure FR-050,
+/// FR-070). A read that meets a body still being written waits out its retries without holding the
+/// thread every subscriber of the root hears its events on. Each tracked body has at most one
+/// waiting step, the latest event's, so what waits is bounded by the documents tracked: a burst of
+/// changes to one body is answered by one read of what the disk then holds, which is all an earlier
+/// event's read would have found too. One loop rather than a task per event, so two reads of one
+/// body can never finish in the wrong order and leave the older one shown.
+/// </para>
 /// </remarks>
 public sealed class DiagramDocumentReloadBridge : IDisposable
 {
@@ -37,7 +47,23 @@ public sealed class DiagramDocumentReloadBridge : IDisposable
     private readonly Lock _subscriptionLock = new();
     private bool _disposed;
 
+    // What each tracked body waits for, the latest event's step only, and the one wake that tells the
+    // loop to look: a wake already waiting covers any number of later ones, so it drops them.
+    private readonly ConcurrentDictionary<string, Pending> _pending = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Channel<bool> _wake = Channel.CreateBounded<bool>(new BoundedChannelOptions(1) { FullMode = BoundedChannelFullMode.DropWrite, SingleReader = true });
+    private readonly CancellationTokenSource _stopping = new();
+
     private sealed record TrackedDocument(ProjectRoot Root, string BodyPath, IDiagramDocumentReloader Reloader);
+
+    /// <summary>What one body waits for: a re-read, its deletion, or - after lost events - whichever the disk says.</summary>
+    private enum Step
+    {
+        Reload,
+        Deleted,
+        AskTheDisk,
+    }
+
+    private sealed record Pending(TrackedDocument Document, Step Step);
 
     public DiagramDocumentReloadBridge(IEnumerable<IDiagramDocumentReloader> reloaders, ProjectFileEvents events)
     {
@@ -45,7 +71,11 @@ public sealed class DiagramDocumentReloadBridge : IDisposable
         ArgumentNullException.ThrowIfNull(events);
         _reloaders = reloaders.ToDictionary(reloader => reloader.Origin);
         _events = events;
+        Completion = Task.Run(() => RunAsync(_stopping.Token), CancellationToken.None);
     }
+
+    /// <summary>The loop that reads what the watcher noted; it ends once the bridge is disposed.</summary>
+    public Task Completion { get; }
 
     /// <summary>
     /// Starts caring about one opened diagram: its body, the <c>.adp</c> it was opened through
@@ -112,7 +142,7 @@ public sealed class DiagramDocumentReloadBridge : IDisposable
     /// </summary>
     /// <remarks>
     /// So a store keeps its last good document through a read that fails (the body missing for an
-    /// instant mid-publish) and empties it only on <see cref="IDiagramDocumentReloader.BodyDeleted"/>.
+    /// instant mid-publish) and empties it only on <see cref="IDiagramDocumentReloader.BodyDeletedAsync"/>.
     /// <para>
     /// KNOWN LIMITS. An editor that saves by deleting the body and then creating it shows the
     /// diagram empty between its two events; the Created heals it. A rename-away to a name that is
@@ -139,7 +169,7 @@ public sealed class DiagramDocumentReloadBridge : IDisposable
         if (oldPath is not null && _documents.TryGetValue(oldPath, out var deleted))
         {
             _logger.Debug("{BodyPath} is gone after a {Kind}", deleted.BodyPath, heard.Kind);
-            deleted.Reloader.BodyDeleted(deleted.Root.FullPath, deleted.BodyPath);
+            Note(deleted, Step.Deleted);
         }
         else
         {
@@ -168,7 +198,7 @@ public sealed class DiagramDocumentReloadBridge : IDisposable
         }
 
         _logger.Debug("Reloading {BodyPath} after a disk change to {Path}", document.BodyPath, path);
-        document.Reloader.Reload(document.Root.FullPath, document.BodyPath);
+        Note(document, Step.Reload);
     }
 
     /// <summary>
@@ -182,29 +212,76 @@ public sealed class DiagramDocumentReloadBridge : IDisposable
 
         foreach (var document in _documents.Values.Where(candidate => candidate.Root == root))
         {
-            // Guarded one by one: this runs on the watcher's thread, where a document that no
-            // longer parses must cost its own reload and nothing else's - and certainly not
-            // the process.
-            try
+            Note(document, Step.AskTheDisk);
+        }
+    }
+
+    /// <summary>Notes the step <paramref name="document"/> waits for, folding in one it waited for already, and wakes the loop.</summary>
+    private void Note(TrackedDocument document, Step step)
+    {
+        _pending.AddOrUpdate(document.BodyPath, new Pending(document, step), (_, waiting) => new Pending(document, Folded(waiting.Step, step)));
+        _wake.Writer.TryWrite(true);
+    }
+
+    /// <summary>
+    /// The latest event decides, except that a re-read does not undo a deletion still waiting: a
+    /// store keeps its last good document through a read that cannot find the body, so a delete
+    /// followed by a change to the registration would leave the deleted diagram drawn. The disk
+    /// says which it is by then, as it does after lost events.
+    /// </summary>
+    private static Step Folded(Step waiting, Step heard) =>
+        heard == Step.Reload && waiting != Step.Reload ? Step.AskTheDisk : heard;
+
+    private async Task RunAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            while (await _wake.Reader.WaitToReadAsync(cancellationToken))
             {
-                // The lost events may have included the body's delete, so absence is asked of the
-                // disk here, having no event to ask. KNOWN LIMIT: an overflow landing inside
-                // another program's File.Replace can find the body renamed away and empty the
-                // diagram. If the replace's rename onto the body was among the lost events too,
-                // it stays empty until the body next changes or the diagram is reopened.
-                if (File.Exists(document.BodyPath))
+                _wake.Reader.TryRead(out _);
+                foreach (var bodyPath in _pending.Keys)
                 {
-                    document.Reloader.Reload(document.Root.FullPath, document.BodyPath);
-                }
-                else
-                {
-                    document.Reloader.BodyDeleted(document.Root.FullPath, document.BodyPath);
+                    // Taken before it runs: an event heard while it runs notes a fresh step, and wakes
+                    // the loop for it.
+                    if (_pending.TryRemove(bodyPath, out var pending))
+                    {
+                        await TakeAsync(pending, cancellationToken);
+                    }
                 }
             }
-            catch (Exception reload)
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // Disposed: what still waited goes unread, as it would with no watcher.
+        }
+    }
+
+    private static async Task TakeAsync(Pending pending, CancellationToken cancellationToken)
+    {
+        var document = pending.Document;
+
+        // Guarded one by one: a document that no longer parses must cost its own reload and
+        // nothing else's - and certainly not the loop every other document waits on.
+        try
+        {
+            // After lost events the delete may have been among them, so absence is asked of the
+            // disk, having no event to ask. KNOWN LIMIT: an overflow landing inside another
+            // program's File.Replace can find the body renamed away and empty the diagram. If the
+            // replace's rename onto the body was among the lost events too, it stays empty until
+            // the body next changes or the diagram is reopened.
+            var deleted = pending.Step == Step.Deleted || (pending.Step == Step.AskTheDisk && !File.Exists(document.BodyPath));
+            if (deleted)
             {
-                _logger.Error(reload, "Re-reading {BodyPath} after the watcher failure did not succeed", document.BodyPath);
+                await document.Reloader.BodyDeletedAsync(document.Root.FullPath, document.BodyPath, cancellationToken);
             }
+            else
+            {
+                await document.Reloader.ReloadAsync(document.Root.FullPath, document.BodyPath, cancellationToken);
+            }
+        }
+        catch (Exception reload) when (reload is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
+        {
+            _logger.Error(reload, "Re-reading {BodyPath} after a disk change did not succeed", document.BodyPath);
         }
     }
 
@@ -212,7 +289,13 @@ public sealed class DiagramDocumentReloadBridge : IDisposable
     {
         lock (_subscriptionLock)
         {
+            if (_disposed)
+            {
+                return;
+            }
+
             _disposed = true;
+            _stopping.Cancel();
             foreach (var subscription in _subscriptions.Values)
             {
                 subscription.Dispose();

@@ -75,7 +75,7 @@ public class ServiceCollectionAddCausalLoopTests
         _ = store.GetOrLoad(CausalLoopDocumentStoreTests.OnCall);
 
         // Act.
-        reloader.BodyDeleted("root", CausalLoopDocumentStoreTests.OnCall);
+        await reloader.BodyDeletedAsync("root", CausalLoopDocumentStoreTests.OnCall, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Equal([CausalLoopDocumentStoreTests.OnCall], changed);

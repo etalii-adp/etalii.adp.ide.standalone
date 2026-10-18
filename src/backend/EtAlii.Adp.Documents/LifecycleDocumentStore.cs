@@ -167,7 +167,7 @@ public abstract class LifecycleDocumentStore<TBody, TModel> : IDiagramDocumentSt
         }
     }
 
-    /// <inheritdoc cref="BodyDeleted"/>
+    /// <inheritdoc />
     public async Task BodyDeletedAsync(string path, CancellationToken cancellationToken)
     {
         if (await _lifecycle.BodyDeletedAsync(path, cancellationToken))

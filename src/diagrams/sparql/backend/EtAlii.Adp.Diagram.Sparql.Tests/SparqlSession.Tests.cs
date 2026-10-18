@@ -121,9 +121,9 @@ public class SparqlSessionTests : IDisposable
             "  ?s ex:p ?x .",
             "  ?s ex:p ?x .\n  ?s ex:fresh ?fresh .",
             StringComparison.Ordinal), TestContext.Current.CancellationToken);
-        _provider.GetServices<IDiagramDocumentReloader>()
+        await _provider.GetServices<IDiagramDocumentReloader>()
             .Single(candidate => candidate.Origin == ServiceCollectionAddSparqlExtension.SparqlOrigin)
-            .Reload(_root, body);
+            .ReloadAsync(_root, body, TestContext.Current.CancellationToken);
 
         // Assert: the culled elements do not come back with the edit - the change path renders
         // through the same viewport the view path does.
@@ -277,9 +277,9 @@ public class SparqlSessionTests : IDisposable
 
         // Act: the text editor is where these files are edited, so this is the normal path.
         await File.WriteAllTextAsync(body, "PREFIX ex: <http://example.org/>\nSELECT ?s ?extra\nWHERE { ?s ex:p ?o . ?s ex:q ?extra }\n", TestContext.Current.CancellationToken);
-        _provider.GetServices<IDiagramDocumentReloader>()
+        await _provider.GetServices<IDiagramDocumentReloader>()
             .Single(candidate => candidate.Origin == ServiceCollectionAddSparqlExtension.SparqlOrigin)
-            .Reload(_root, body);
+            .ReloadAsync(_root, body, TestContext.Current.CancellationToken);
 
         // Assert.
         var add = Assert.IsType<DiagramAddDelta>(received[0]);

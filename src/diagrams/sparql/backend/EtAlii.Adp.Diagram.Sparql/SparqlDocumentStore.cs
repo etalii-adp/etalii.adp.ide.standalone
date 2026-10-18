@@ -60,9 +60,27 @@ public sealed class SparqlDocumentStore : ISparqlDocumentStore
     }
 
     /// <inheritdoc />
+    public async Task ReloadAsync(string path, CancellationToken cancellationToken)
+    {
+        if (await _lifecycle.ReloadAsync(path, cancellationToken))
+        {
+            Changed?.Invoke(this, new DocumentChangedEventArgs(path));
+        }
+    }
+
+    /// <inheritdoc />
     public void BodyDeleted(string path)
     {
         if (_lifecycle.BodyDeleted(path))
+        {
+            Changed?.Invoke(this, new DocumentChangedEventArgs(path));
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task BodyDeletedAsync(string path, CancellationToken cancellationToken)
+    {
+        if (await _lifecycle.BodyDeletedAsync(path, cancellationToken))
         {
             Changed?.Invoke(this, new DocumentChangedEventArgs(path));
         }

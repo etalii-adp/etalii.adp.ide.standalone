@@ -138,7 +138,7 @@ public class ServiceCollectionAddAzurePipelineTests
     }
 
     [Fact]
-    public void TheReloadSeam_ReachesTheModulesOneStore()
+    public async Task TheReloadSeam_ReachesTheModulesOneStore()
     {
         // Arrange.
         using var provider = Build();
@@ -153,7 +153,7 @@ public class ServiceCollectionAddAzurePipelineTests
         File.Delete(body);
 
         // Act.
-        reloader.BodyDeleted(folder.Path, body);
+        await reloader.BodyDeletedAsync(folder.Path, body, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Equal([body], changed);
