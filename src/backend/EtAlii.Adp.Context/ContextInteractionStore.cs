@@ -16,10 +16,13 @@ public sealed class ContextInteractionStore : IContextInteractionStore
     // connection entry remains the authority on what that connection currently holds.
     private readonly ConcurrentDictionary<ShortGuid, ContextInteraction> _interactions = new();
 
-    public void Register(ShortGuid watchId, ChannelWriter<ContextMessage> writer) =>
+    public IDisposable Register(ShortGuid watchId, ChannelWriter<ContextMessage> writer)
+    {
         _connections[watchId] = new ContextInteractionConnection(writer);
+        return Disposable.From(() => Remove(watchId));
+    }
 
-    public void Remove(ShortGuid watchId)
+    private void Remove(ShortGuid watchId)
     {
         if (!_connections.TryRemove(watchId, out var connection))
         {

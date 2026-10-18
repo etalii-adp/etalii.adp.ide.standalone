@@ -13,9 +13,10 @@ internal sealed class HeldParts : IDisposable
 {
     private static readonly ILogger _logger = Log.ForContext<HeldParts>();
 
-    private IReadOnlyList<IDisposable>? _held;
+    private readonly Lock _gate = new();
+    private List<IDisposable>? _held;
 
-    private HeldParts(IReadOnlyList<IDisposable> held) => _held = held;
+    private HeldParts(List<IDisposable> held) => _held = held;
 
     /// <summary>Runs each acquisition in turn; when one throws, releases those before it and rethrows.</summary>
     public static HeldParts Acquire(IEnumerable<Func<IDisposable>> acquisitions)
@@ -30,17 +31,37 @@ internal sealed class HeldParts : IDisposable
         }
         catch
         {
-            foreach (var failure in ReleaseAll(held))
-            {
-                // The acquisition's own exception is the one the caller needs; a release failing
-                // behind it is logged rather than allowed to hide it.
-                _logger.Warning(failure, "Releasing a part of a scope whose acquisition failed threw as well");
-            }
-
+            LogFailures(ReleaseAll(held));
             throw;
         }
 
         return new HeldParts(held);
+    }
+
+    /// <summary>
+    /// Acquires one more part, released with the rest and before them. Once the parts are released,
+    /// what is acquired is released at once and <see cref="ObjectDisposedException"/> is thrown, so a
+    /// part acquired by a connection that is already going is not held by nobody.
+    /// </summary>
+    public T Hold<T>(Func<T> acquire)
+        where T : IDisposable
+    {
+        ArgumentNullException.ThrowIfNull(acquire);
+
+        // Acquired outside the gate, so a slow acquisition holds up no release; added under it, so
+        // a release that ran meanwhile is seen.
+        var part = acquire();
+        lock (_gate)
+        {
+            if (_held is not null)
+            {
+                _held.Add(part);
+                return part;
+            }
+        }
+
+        LogFailures(ReleaseAll([part]));
+        throw new ObjectDisposedException(nameof(ConnectionSession), "The scope was released before this part could join it.");
     }
 
     /// <summary>
@@ -49,7 +70,13 @@ internal sealed class HeldParts : IDisposable
     /// </summary>
     public void Dispose()
     {
-        var held = Interlocked.Exchange(ref _held, null);
+        List<IDisposable>? held;
+        lock (_gate)
+        {
+            held = _held;
+            _held = null;
+        }
+
         if (held is null)
         {
             return;
@@ -83,5 +110,15 @@ internal sealed class HeldParts : IDisposable
         }
 
         return failures;
+    }
+
+    private static void LogFailures(List<Exception> failures)
+    {
+        foreach (var failure in failures)
+        {
+            // The exception the caller sees is the one that matters; a release failing behind it
+            // is logged rather than allowed to hide it.
+            _logger.Warning(failure, "Releasing a part of a scope that could not be held threw as well");
+        }
     }
 }

@@ -29,13 +29,11 @@ internal sealed class HistoryActionsBroadcasterRecordingSelectionStore : IContex
         }
     }
 
-    public void Register(ShortGuid watchId, ProjectRoot root, ChannelWriter<ContextMessage> writer, IReadOnlyList<ContextActionGroupDefinition> rootActions, IReadOnlyList<ContextActionGroupDefinition> projectActions, Func<ProjectProblems> problems) => throw new NotSupportedException();
+    public IDisposable Register(ShortGuid watchId, ProjectRoot root, ChannelWriter<ContextMessage> writer, IReadOnlyList<ContextActionGroupDefinition> rootActions, IReadOnlyList<ContextActionGroupDefinition> projectActions, Func<ProjectProblems> problems) => throw new NotSupportedException();
 
     public void PushProblems(ProjectRoot root, ProjectProblems problems) => throw new NotSupportedException();
 
     public void PushNotice(ProjectRoot root, string message) => throw new NotSupportedException();
-
-    public void Remove(ShortGuid watchId) => throw new NotSupportedException();
 
     public ContextSelectionRecord Get(ShortGuid watchId) => throw new NotSupportedException();
 

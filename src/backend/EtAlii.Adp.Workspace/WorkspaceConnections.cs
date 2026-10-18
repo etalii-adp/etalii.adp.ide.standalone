@@ -16,11 +16,12 @@ public sealed class WorkspaceConnections
 
     /// <summary>
     /// Registers a connection, replacing one a reconnect left behind under the same id - the older
-    /// one is ending anyway, and its own <see cref="Remove"/> will not touch its replacement.
+    /// one is ending anyway, and disposing it will not touch its replacement. Disposing the connection
+    /// removes it; the stream holds it in its connection's scope (code-structure FR-067).
     /// </summary>
     public WorkspaceConnection Register(ShortGuid watchId, ShortGuid userId, ChannelWriter<WorkspaceMessage> writer, CancellationToken lifetime)
     {
-        var connection = new WorkspaceConnection(watchId, userId, writer, lifetime);
+        var connection = new WorkspaceConnection(watchId, userId, writer, lifetime, Remove);
         _connections[watchId] = connection;
         return connection;
     }
@@ -28,7 +29,7 @@ public sealed class WorkspaceConnections
     public WorkspaceConnection? Find(ShortGuid watchId) => _connections.GetValueOrDefault(watchId);
 
     /// <summary>Removes exactly this connection, and stops every diagram stream it carried.</summary>
-    public void Remove(WorkspaceConnection connection)
+    private void Remove(WorkspaceConnection connection)
     {
         _connections.TryRemove(new KeyValuePair<ShortGuid, WorkspaceConnection>(connection.WatchId, connection));
         connection.StopAll();
@@ -38,7 +39,7 @@ public sealed class WorkspaceConnections
 /// <summary>
 /// One tab's stream: who opened it, where its messages go, and the diagram streams running on it.
 /// </summary>
-public sealed class WorkspaceConnection(ShortGuid watchId, ShortGuid userId, ChannelWriter<WorkspaceMessage> writer, CancellationToken lifetime)
+public sealed class WorkspaceConnection(ShortGuid watchId, ShortGuid userId, ChannelWriter<WorkspaceMessage> writer, CancellationToken lifetime, Action<WorkspaceConnection> remove) : IDisposable
 {
     private readonly ConcurrentDictionary<ShortGuid, CancellationTokenSource> _diagramStreams = new();
 
@@ -90,6 +91,9 @@ public sealed class WorkspaceConnection(ShortGuid watchId, ShortGuid userId, Cha
 
     /// <summary>The number of diagram streams running on this connection.</summary>
     public int DiagramStreamCount => _diagramStreams.Count;
+
+    /// <summary>Removes the connection from the open ones and stops every diagram stream it carried.</summary>
+    public void Dispose() => remove(this);
 
     internal void StopAll()
     {

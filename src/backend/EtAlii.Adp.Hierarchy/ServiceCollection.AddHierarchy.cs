@@ -4,6 +4,7 @@ using EtAlii.Adp.Diagram;
 using EtAlii.Adp.Editor;
 using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
+using EtAlii.Adp.Sessions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -83,6 +84,8 @@ public static class ServiceCollectionAddHierarchyExtension
 
         // The gRPC service, resolvable as an ordinary one too: a tab's one stream runs its watch
         // in-process (two-tab-connection-wedge Requirement 3.1).
+        // The scope a watch on a connection of its own holds its model and its subscription in.
+        services.AddConnectionSessions();
         services.TryAddTransient<HierarchyService>();
 
         return services;

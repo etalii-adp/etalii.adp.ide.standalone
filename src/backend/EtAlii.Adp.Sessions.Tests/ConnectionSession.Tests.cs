@@ -4,7 +4,8 @@ namespace EtAlii.Adp.Sessions.Tests;
 
 /// <summary>
 /// The scope a connection holds its project and its own parts in: acquired whole or not at all,
-/// released in the reverse order and once (code-structure FR-023, FR-067, T192).
+/// released in the reverse order and once, and refusing a part that arrives after it was released
+/// (code-structure FR-023, FR-067, T192, T193).
 /// </summary>
 public class ConnectionSessionTests
 {
@@ -12,44 +13,37 @@ public class ConnectionSessionTests
     private static readonly ShortGuid _watchId = ShortGuid.NewShortGuid();
 
     [Fact]
-    public void Open_AcquiresTheProjectPartsThenTheConnectionParts_InTheOrderGiven()
+    public void Open_AcquiresTheProjectParts_InTheOrderGiven()
     {
         // Arrange.
         var log = new List<string>();
-
-        var hierarchy = new ConnectionPart("hierarchy", log);
+        var problems = new ProjectPart("problems", log);
 
         // Act.
-        using var session = ConnectionSession.Open(
-            _watchId,
-            _root,
-            [new ProjectPart("history", log), new ProjectPart("problems", log)],
-            [hierarchy]);
+        using var session = ConnectionSession.Open(_watchId, _root, [new ProjectPart("history", log), problems]);
 
         // Assert.
-        Assert.Equal(["acquire history", "acquire problems", "acquire hierarchy"], log);
-        Assert.Equal((_watchId, _root), hierarchy.AcquiredFor);
+        Assert.Equal(["acquire history", "acquire problems"], log);
+        Assert.Equal(_root, problems.AcquiredFor);
         Assert.Equal(_watchId, session.WatchId);
         Assert.Equal(_root, session.Root);
     }
 
     [Fact]
-    public void Dispose_ReleasesEveryPart_TheLastAcquiredFirst()
+    public void Dispose_ReleasesWhatWasHeld_ThenTheProject_TheLastAcquiredFirst()
     {
         // Arrange.
         var log = new List<string>();
-        var session = ConnectionSession.Open(
-            _watchId,
-            _root,
-            [new ProjectPart("history", log), new ProjectPart("problems", log)],
-            [new ConnectionPart("hierarchy", log)]);
+        var session = ConnectionSession.Open(_watchId, _root, [new ProjectPart("history", log), new ProjectPart("problems", log)]);
+        session.Hold(() => Acquire("hierarchy", log));
+        session.Hold(() => Acquire("selection", log));
         log.Clear();
 
         // Act.
         session.Dispose();
 
         // Assert.
-        Assert.Equal(["release hierarchy", "release problems", "release history"], log);
+        Assert.Equal(["release selection", "release hierarchy", "release problems", "release history"], log);
     }
 
     [Fact]
@@ -62,8 +56,7 @@ public class ConnectionSessionTests
         var thrown = Assert.Throws<InvalidOperationException>(() => ConnectionSession.Open(
             _watchId,
             _root,
-            [new ProjectPart("history", log), new FailingPart("problems")],
-            [new ConnectionPart("hierarchy", log)]));
+            [new ProjectPart("history", log), new FailingPart("problems"), new ProjectPart("never", log)]));
 
         // Assert.
         Assert.Equal("problems failed", thrown.Message);
@@ -71,21 +64,36 @@ public class ConnectionSessionTests
     }
 
     [Fact]
-    public void Open_WhenAConnectionPartFails_ReleasesItsProjectSessionToo()
+    public void Hold_WhenTheAcquisitionFails_HoldsNothingAndTheSessionStillReleasesTheRest()
     {
         // Arrange.
         var log = new List<string>();
+        var session = ConnectionSession.Open(_watchId, _root, [new ProjectPart("history", log)]);
+        session.Hold(() => Acquire("hierarchy", log));
 
         // Act.
-        var thrown = Assert.Throws<InvalidOperationException>(() => ConnectionSession.Open(
-            _watchId,
-            _root,
-            [new ProjectPart("history", log)],
-            [new ConnectionPart("hierarchy", log), new FailingPart("selection")]));
+        Assert.Throws<InvalidOperationException>(() => session.Hold<IDisposable>(() => throw new InvalidOperationException("selection failed")));
+        log.Clear();
+        session.Dispose();
 
         // Assert.
-        Assert.Equal("selection failed", thrown.Message);
-        Assert.Equal(["acquire history", "acquire hierarchy", "release hierarchy", "release history"], log);
+        Assert.Equal(["release hierarchy", "release history"], log);
+    }
+
+    [Fact]
+    public void Hold_AfterTheSessionWasReleased_ReleasesThePartAtOnceAndThrows()
+    {
+        // Arrange: a part of the connection that starts while the connection is already going.
+        var log = new List<string>();
+        var session = ConnectionSession.Open(_watchId, _root, [new ProjectPart("history", log)]);
+        session.Dispose();
+        log.Clear();
+
+        // Act.
+        Assert.Throws<ObjectDisposedException>(() => session.Hold(() => Acquire("selection", log)));
+
+        // Assert.
+        Assert.Equal(["acquire selection", "release selection"], log);
     }
 
     [Fact]
@@ -93,7 +101,8 @@ public class ConnectionSessionTests
     {
         // Arrange.
         var log = new List<string>();
-        var session = ConnectionSession.Open(_watchId, _root, [new ProjectPart("history", log)], [new ConnectionPart("hierarchy", log)]);
+        var session = ConnectionSession.Open(_watchId, _root, [new ProjectPart("history", log)]);
+        session.Hold(() => Acquire("hierarchy", log));
         session.Dispose();
         log.Clear();
 
@@ -109,11 +118,8 @@ public class ConnectionSessionTests
     {
         // Arrange.
         var log = new List<string>();
-        var session = ConnectionSession.Open(
-            _watchId,
-            _root,
-            [new ProjectPart("history", log)],
-            [new ConnectionPart("hierarchy", log, failsToRelease: true)]);
+        var session = ConnectionSession.Open(_watchId, _root, [new ProjectPart("history", log)]);
+        session.Hold(() => Acquire("hierarchy", log, failsToRelease: true));
         log.Clear();
 
         // Act.
@@ -129,46 +135,36 @@ public class ConnectionSessionTests
     {
         // Arrange.
         var log = new List<string>();
-        var sessions = new ConnectionSessions([new ProjectPart("history", log)], [new ConnectionPart("hierarchy", log)]);
+        var sessions = new ConnectionSessions([new ProjectPart("history", log), new ProjectPart("problems", log)]);
 
         // Act.
         sessions.Open(_watchId, _root).Dispose();
 
         // Assert.
-        Assert.Equal(["acquire history", "acquire hierarchy", "release hierarchy", "release history"], log);
+        Assert.Equal(["acquire history", "acquire problems", "release problems", "release history"], log);
     }
 
     private sealed class ProjectPart(string name, List<string> log) : IProjectSessionPart
     {
+        public ProjectRoot? AcquiredFor { get; private set; }
+
         public IDisposable Acquire(ProjectRoot root)
         {
-            log.Add($"acquire {name}");
-            return Released(name, log, failsToRelease: false);
+            AcquiredFor = root;
+            return ConnectionSessionTests.Acquire(name, log);
         }
     }
 
-    private sealed class ConnectionPart(string name, List<string> log, bool failsToRelease = false) : IConnectionSessionPart
-    {
-        public (ShortGuid WatchId, ProjectRoot Root)? AcquiredFor { get; private set; }
-
-        public IDisposable Acquire(ShortGuid watchId, ProjectRoot root)
-        {
-            AcquiredFor = (watchId, root);
-            log.Add($"acquire {name}");
-            return Released(name, log, failsToRelease);
-        }
-    }
-
-    /// <summary>A part of either kind whose acquisition throws.</summary>
-    private sealed class FailingPart(string name) : IProjectSessionPart, IConnectionSessionPart
+    /// <summary>A project part whose acquisition throws.</summary>
+    private sealed class FailingPart(string name) : IProjectSessionPart
     {
         public IDisposable Acquire(ProjectRoot root) => throw new InvalidOperationException($"{name} failed");
-
-        public IDisposable Acquire(ShortGuid watchId, ProjectRoot root) => throw new InvalidOperationException($"{name} failed");
     }
 
-    private static CallbackDisposable Released(string name, List<string> log, bool failsToRelease) =>
-        new(() =>
+    private static CallbackDisposable Acquire(string name, List<string> log, bool failsToRelease = false)
+    {
+        log.Add($"acquire {name}");
+        return new CallbackDisposable(() =>
         {
             log.Add($"release {name}");
             if (failsToRelease)
@@ -176,4 +172,5 @@ public class ConnectionSessionTests
                 throw new InvalidOperationException($"{name} failed to release");
             }
         });
+    }
 }

@@ -442,9 +442,12 @@ public class RenameEntryCommandHandlerTests : IDisposable
             return model;
         }
 
-        public void AttachEvents(ShortGuid watchId, IDisposable events) => _inner.AttachEvents(watchId, events);
-
-        public void Remove(ShortGuid watchId) => _inner.Remove(watchId);
+        public HierarchyModelClaim Claim(ShortGuid watchId, ProjectRoot root)
+        {
+            var claim = _inner.Claim(watchId, root);
+            _models.Add(claim.Model);
+            return claim;
+        }
 
         public void ExpectRename(string oldPath, string newPath) => _inner.ExpectRename(oldPath, newPath);
 

@@ -26,7 +26,7 @@ public sealed class ContextSelectionStore : IContextSelectionStore, IDisposable
             dropUnclaimed: true);
     }
 
-    public void Register(
+    public IDisposable Register(
         ShortGuid watchId,
         ProjectRoot root,
         ChannelWriter<ContextMessage> writer,
@@ -51,6 +51,8 @@ public sealed class ContextSelectionStore : IContextSelectionStore, IDisposable
             writer.TryWrite(ContextActionGroups.ToProto(projectActions));
             writer.TryWrite(new ContextMessage { Problems = problems() });
         }
+
+        return Disposable.From(() => Remove(watchId));
     }
 
     public void PushProjectActions(ProjectRoot root, IReadOnlyList<ContextActionGroupDefinition> actions)
@@ -107,7 +109,7 @@ public sealed class ContextSelectionStore : IContextSelectionStore, IDisposable
         }
     }
 
-    public void Remove(ShortGuid watchId) => _entries.Remove(watchId);
+    private void Remove(ShortGuid watchId) => _entries.Remove(watchId);
 
     public ContextSelectionRecord? Get(ShortGuid watchId) =>
         _entries.TryGet(watchId, out var entry) ? entry.Record : null;

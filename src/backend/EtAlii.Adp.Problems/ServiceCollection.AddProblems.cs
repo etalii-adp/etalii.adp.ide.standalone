@@ -2,6 +2,7 @@ using EtAlii.Adp.Context;
 using EtAlii.Adp.Diagram;
 using EtAlii.Adp.Files;
 using EtAlii.Adp.Hierarchy;
+using EtAlii.Adp.Sessions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
@@ -60,5 +61,9 @@ public static class ServiceCollectionAddProblemsExtension
         // The watch seam Context consumes - see ContextWatchHooks; registered here
         // because the implementation is this area's, however Context-shaped the interface.
         services.AddSingleton<IContextWatchHooks, ContextWatchHooks>();
+
+        // The watching of a project's problems, acquired through the connection's scope.
+        services.AddConnectionSessions();
+        services.AddSingleton<IProjectSessionPart, ProblemTracking>();
     }
 }

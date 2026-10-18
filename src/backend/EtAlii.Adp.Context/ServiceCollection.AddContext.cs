@@ -1,4 +1,5 @@
 using EtAlii.Adp.History;
+using EtAlii.Adp.Sessions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
@@ -44,6 +45,8 @@ public static class ServiceCollectionAddContextExtension
 
         // The gRPC service, resolvable as an ordinary one too: a tab's one stream runs its context
         // stream in-process (two-tab-connection-wedge Requirement 3.1).
+        // The scope a context stream holds the project's history and its registrations in.
+        services.AddConnectionSessions();
         services.TryAddTransient<ContextService>();
 
         return services;

@@ -6,8 +6,6 @@ using Grpc.Core;
 using Serilog;
 using ContextService = EtAlii.Adp.Context.ContextService;
 using HierarchyService = EtAlii.Adp.Hierarchy.HierarchyService;
-using WatchContextRequest = EtAlii.Adp.Context.Wire.WatchContextRequest;
-using WatchHierarchyRequest = EtAlii.Adp.Hierarchy.Wire.WatchHierarchyRequest;
 
 namespace EtAlii.Adp.Workspace;
 
@@ -33,13 +31,23 @@ public sealed class WorkspaceService : Diagram.Wire.WorkspaceService.WorkspaceSe
 {
     private static readonly ILogger _logger = Log.ForContext<WorkspaceService>();
 
+    private readonly IProjectStore _projectStore;
+    private readonly ConnectionSessions _sessions;
     private readonly HierarchyService _hierarchy;
     private readonly ContextService _context;
     private readonly DiagramService _diagrams;
     private readonly WorkspaceConnections _connections;
 
-    public WorkspaceService(HierarchyService hierarchy, ContextService context, DiagramService diagrams, WorkspaceConnections connections)
+    public WorkspaceService(
+        IProjectStore projectStore,
+        ConnectionSessions sessions,
+        HierarchyService hierarchy,
+        ContextService context,
+        DiagramService diagrams,
+        WorkspaceConnections connections)
     {
+        _projectStore = projectStore;
+        _sessions = sessions;
         _hierarchy = hierarchy;
         _context = context;
         _diagrams = diagrams;
@@ -50,24 +58,34 @@ public sealed class WorkspaceService : Diagram.Wire.WorkspaceService.WorkspaceSe
     {
         var userId = SessionContext.GetUserId(context);
         var watchId = (ShortGuid)request.WatchId;
+        if (!ProjectRootResolver.TryResolve(_projectStore, userId, request.ProjectId, out var root, out var error))
+        {
+            _logger.Warning("Refused a workspace stream for {UserId} on project {ProjectId}: {Reason}", userId, request.ProjectId, error);
+            throw new RpcException(new Status(PermanentRefusal.CannotOpen, error));
+        }
+
+        // Everything the connection holds - its project's history and problems, its hierarchy
+        // model, its registrations, its place among the open connections - is acquired through this
+        // one scope and released when it goes (code-structure FR-067).
+        using var session = _sessions.Open(watchId, root);
 
         // One reader writes to the call; every source writes here. A call's stream accepts one
         // write at a time, and the sources run concurrently.
         var channel = Channel.CreateUnbounded<WorkspaceMessage>(new UnboundedChannelOptions { SingleReader = true });
         using var lifetime = CancellationTokenSource.CreateLinkedTokenSource(context.CancellationToken);
-        var connection = _connections.Register(watchId, userId, channel.Writer, lifetime.Token);
+        // Read here rather than in the acquisition, which captures nothing the method disposes.
+        var ended = lifetime.Token;
+        session.Hold(() => _connections.Register(watchId, userId, channel.Writer, ended));
         _logger.Information("Workspace stream open on watch {WatchId} for project {ProjectId}", watchId, request.ProjectId);
 
         var sources = new[]
         {
             _hierarchy.RunWatchAsync(
-                userId,
-                new WatchHierarchyRequest { ProjectId = request.ProjectId, WatchId = request.WatchId },
+                session,
                 (message, token) => channel.Writer.WriteAsync(new WorkspaceMessage { Hierarchy = message }, token).AsTask(),
                 lifetime.Token),
             _context.RunWatchAsync(
-                userId,
-                new WatchContextRequest { ProjectId = request.ProjectId, WatchId = request.WatchId },
+                session,
                 (message, token) => channel.Writer.WriteAsync(new WorkspaceMessage { Context = message }, token).AsTask(),
                 lifetime.Token),
         };
@@ -82,7 +100,6 @@ public sealed class WorkspaceService : Diagram.Wire.WorkspaceService.WorkspaceSe
         finally
         {
             await lifetime.CancelAsync();
-            _connections.Remove(connection);
             channel.Writer.TryComplete();
             try
             {
