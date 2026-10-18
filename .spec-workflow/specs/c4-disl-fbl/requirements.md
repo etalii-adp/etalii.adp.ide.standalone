@@ -95,6 +95,9 @@ The three kinds are those of `causal-loop-disl-fbl`: a **definition defect** is 
 10. **DISL 8.6: findings ordered by element** (A11).
 11. **DISL 11.5.1: the identifier of a new element made from its name** (A9).
 12. **Both: an id that depends on a directive of the body** (B12).
+13. **DISL 12.2: what a view exposes to a rule about the model**: a `View` offers only `id`, `viewpoint`, `name` and `members`, so a rule about the model cannot read the scope a view is written with or its line (`findings/finding-order.dsl`, `findings/view-without-key.dsl`). Found while writing the definitions (chat ruling, 2026-10-18).
+14. **DISL 11.2: the text an unset end was written with**: a relation or reference whose end names nothing keeps no trace of what the body wrote there (`findings/dangling-both-ends.dsl`). Found while writing the definitions (chat ruling, 2026-10-18).
+15. **DISL 6.13: the order of computed legend entries**: entries cannot take the members' order, only model order (`C4ElementMapper.LegendFor`). Found while writing the definitions (chat ruling, 2026-10-18).
 
 These are candidates. Requirement 11 says they are recorded with their evidence and reported, and never worked around silently.
 
@@ -131,16 +134,16 @@ The product direction (2026-09-26) is that every tool is a markup definition int
 3. A test SHALL require today's code to reproduce the checked-in transcript byte for byte, and SHALL have been seen to fail against a deliberately changed sentence before it is trusted.
 4. WHEN a later step changes the transcript THEN the change SHALL be one this document names (Q1, Q4, Q7, findings A14, B17, B19), regenerated on purpose, and the diff of the checked-in file SHALL be the review of it.
 
-### Requirement 2: Six definitions, at DISL 0.3, bundled
+### Requirement 2: Six definitions, at DISL 0.4, bundled
 
 **User Story:** As a tool engineer, I want one definition per C4 tool type that every host runs.
 
 #### Acceptance Criteria
 
-1. The six `definitions/diagrams/c4-*.dis` in etalii-adp/etalii.adp SHALL be rewritten at DISL 0.3, using the constructs finding A2 names in place of each workaround, and SHALL validate against the DISL schema there.
+1. The six `definitions/diagrams/c4-*.dis` in etalii-adp/etalii.adp SHALL be rewritten at the DISL version current on etalii-adp/etalii.adp `develop`, 0.4 (chat ruling, 2026-10-18), using the constructs finding A2 names in place of each workaround, and SHALL validate against the DISL schema there.
 2. Each SHALL declare `language.origin`, `persistence.format` `fbl` with `binding` naming the module's binding and a `typeMap`, an id rule (findings A7 to A9, Q7), and an `x-c4` block mapping its tools, actions and properties to the wire ids of finding A4.
 3. The layers the six share (metamodel, notation, forms, constraints, behavior, persistence) SHALL be equal in all six, held by a test that compares them as data (Q8); the six SHALL differ in their viewpoint, toolbox, labels and origin only.
-4. Each companion `.md` SHALL be rewritten to say what DISL 0.3 cannot express and nothing that it can.
+4. Each companion `.md` SHALL be rewritten to say what DISL 0.4 cannot express and nothing that it can.
 5. The six SHALL be bundled into `src/diagrams/c4/definition/` by `src/diagrams/tools/bundle-disl.sh`, extended to bundle several definitions for one module, never edited here, embedded in the backend project, and held by a `BundledDefinition.Tests`.
 6. WHEN a bundled definition is loaded by `EtAlii.Adp.Specification.Disl` THEN it SHALL load with no diagnostic of severity error.
 7. `c4/code` SHALL keep its registration and its refusing factory, with no definition.
@@ -379,7 +382,7 @@ The same in all six definitions, apart from the tools each offers. `Relationship
   "persistence": {
     "format": "fbl",
     "binding": "https://raw.githubusercontent.com/etalii-adp/etalii.adp.ide.standalone/develop/src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4/structurizr.fbl#workspace",
-    "ids": { "strategy": "natural", "stable": true, "pattern": "^[A-Za-z_][A-Za-z0-9_]*$", "suffix": "{n}", "compare": "ignore-case", "missing": "ephemeral" },
+    "ids": { "strategy": "natural", "stable": true, "pattern": "^[^\\s\"{}=\\-][^\\s\"{}=]*$", "suffix": "{n}", "compare": "ignore-case", "missing": "ephemeral" },
     "view": { "store": ["bounds"] },
     "typeMap": {
       "Workspace": { "as": "diagram", "attributes": { "name": "workspaceName" } },
@@ -396,20 +399,20 @@ The same in all six definitions, apart from the tools each offers. `Relationship
       "deploymentNode": { "id": "c4.toolbox.deploymentnode", "drop": "c4.add-deploymentnode" }
     },
     "actions": {
-      "editLabel": "c4.rename", "editDescription": "c4.edit-description", "setTechnology": "c4.set-technology",
-      "Relationship/editLabel": "c4.relabel", "setProtocol": "c4.set-protocol"
+      "rename": "c4.rename", "editDescription": "c4.edit-description", "setTechnology": "c4.set-technology",
+      "relabel": "c4.relabel", "setProtocol": "c4.set-protocol"
     },
     "properties": {
       "name": "c4.name", "description": "c4.description", "technology": "c4.technology", "tags": "c4.tags",
-      "Kind": "c4.kind", "identifier": "c4.identifier",
+      "kind": "c4.kind", "identifier": "c4.identifier",
       "relationshipDescription": "c4.relationship.description", "relationshipTechnology": "c4.relationship.technology",
-      "From": "c4.relationship.source", "To": "c4.relationship.destination"
+      "from": "c4.relationship.source", "to": "c4.relationship.destination"
     }
   }
 }
 ```
 
-Three of the eight tools are shown; the other five follow the same shape, with the kind in lower case. The toolbox names an add action for each of the eight kinds, and the module answers four; dropping one of the other four is refused with "Adding a deployment node from the toolbox is not supported yet." and its like, which the definitions state as refusals. The synthetic ids `c4:view` and `boundary:<id>` are the mapper's and stay code.
+Three of the eight tools are shown; the other five follow the same shape, with the kind in lower case. The toolbox names an add action for each of the eight kinds, and the module answers four; dropping one of the other four is refused as today's tool refuses it, with "That element is no longer in this model." on execute and "'c4.add-deploymentnode' does not apply to this selection." and its like on commit, which the definitions state as refusals (chat ruling, 2026-10-18). The synthetic ids `c4:view` and `boundary:<id>` are the mapper's and stay code.
 
 ## Sources
 
