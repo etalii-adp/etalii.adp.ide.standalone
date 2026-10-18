@@ -1,3 +1,4 @@
+using EtAlii.Adp.Files;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.WardleyMap.Tests;
@@ -25,7 +26,7 @@ public sealed class WardleyDocumentStoreIdentityTests : IDisposable
     public void AMissingBody_KeepsItsIdentitiesOnReload_AndLosesThemOnlyToTheWatchersDelete()
     {
         // Arrange.
-        var store = new WardleyDocumentStore();
+        var store = new WardleyDocumentStore(new FileWriter());
         var held = store.Identities(Body);
         Assert.NotEmpty(held);
         File.Delete(Body);
@@ -46,7 +47,7 @@ public sealed class WardleyDocumentStoreIdentityTests : IDisposable
     public async Task AnExternalEdit_KeepsTheIdsOfWhatSurvived_AndGivesTheNewcomerOne()
     {
         // Arrange.
-        var store = new WardleyDocumentStore();
+        var store = new WardleyDocumentStore(new FileWriter());
         var before = store.Identities(Body);
         await File.AppendAllTextAsync(Body, "component Kettle [0.45, 0.57]\n", TestContext.Current.CancellationToken);
 
@@ -63,7 +64,7 @@ public sealed class WardleyDocumentStoreIdentityTests : IDisposable
     public void AForgottenDocument_ForgetsItsIdentities_AndReadsTheSidecarAfresh()
     {
         // Arrange: ids handed out on open and never written, as on a map opened and not edited.
-        var store = new WardleyDocumentStore();
+        var store = new WardleyDocumentStore(new FileWriter());
         var minted = store.Identities(Body);
 
         // Act.
@@ -75,20 +76,20 @@ public sealed class WardleyDocumentStoreIdentityTests : IDisposable
     }
 
     [Fact]
-    public void ASaveWhoseIdentitiesCannotBeKept_LandsTheMap_AndSaysSo()
+    public async Task ASaveWhoseIdentitiesCannotBeKept_LandsTheMap_AndSaysSo()
     {
         // Arrange: a folder where the identity sidecar goes, which no platform lets a file replace.
-        var store = new WardleyDocumentStore();
+        var store = new WardleyDocumentStore(new FileWriter());
         Directory.CreateDirectory(WardleyIdentities.PathFor(Body));
         var document = store.GetOrLoad(Body).Document;
         WardleyWriter.ReplaceLine(document, 1, "title Kept anyway");
 
         // Act.
-        var saved = store.Save(Body, document);
+        var saved = await store.SaveAsync(Body, document, TestContext.Current.CancellationToken);
 
         // Assert: the map landed, and the ids it hands out will not survive a restart.
         Assert.False(saved.Failed, saved.Error);
-        Assert.Contains("title Kept anyway", File.ReadAllText(Body), StringComparison.Ordinal);
+        Assert.Contains("title Kept anyway", await File.ReadAllTextAsync(Body, TestContext.Current.CancellationToken), StringComparison.Ordinal);
         Assert.Contains("new ids", saved.Warning, StringComparison.Ordinal);
     }
 }

@@ -1,5 +1,6 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Files;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 using EtAlii.Adp.Sessions;
@@ -36,10 +37,11 @@ public class ServiceCollectionAddTimelineTests
     private static ServiceProvider Build()
     {
         var services = new ServiceCollection();
+        services.AddSingleton<IFileWriter>(new FileWriter());
 
         // The few core services this module's own registrations depend on. A production host
         // has far more; what matters here is that AddTimeline asks for nothing else.
-        services.AddSingleton<ICommandDispatcher>(new TimelineTestDispatcher(new TimelineDocumentStore()));
+        services.AddSingleton<ICommandDispatcher>(new TimelineTestDispatcher(new TimelineDocumentStore(new FileWriter())));
         services.AddSingleton<IHistoryStackStore>(provider =>
             new HistoryStackStore(provider.GetRequiredService<ICommandDispatcher>()));
         services.AddSingleton<IDiagramDefinitionCatalog, TimelineOnlyCatalog>();

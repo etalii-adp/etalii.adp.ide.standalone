@@ -1,4 +1,5 @@
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Files;
 using EtAlii.Adp.Sessions;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
@@ -13,6 +14,7 @@ public sealed class ServiceCollectionAddFunctionalDecompositionGraphTests
     {
         // Arrange.
         var services = new ServiceCollection();
+        services.AddSingleton<IFileWriter>(new FileWriter());
         services.AddFunctionalDecompositionGraph();
         using var provider = services.BuildServiceProvider();
 
@@ -35,6 +37,7 @@ public sealed class ServiceCollectionAddFunctionalDecompositionGraphTests
     {
         // Arrange.
         var services = new ServiceCollection();
+        services.AddSingleton<IFileWriter>(new FileWriter());
         services.AddFunctionalDecompositionGraph();
         services.AddSingleton(TestHistory.For(_ => { }));
         await using var provider = services.BuildServiceProvider();

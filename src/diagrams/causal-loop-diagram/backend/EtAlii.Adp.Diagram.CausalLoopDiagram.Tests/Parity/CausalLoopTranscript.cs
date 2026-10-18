@@ -543,7 +543,7 @@ internal static class CausalLoopTranscript
 
         public DocumentEntry<CausalLoopBody, CausalLoopModel> GetOrLoad(string path) => inner.GetOrLoad(path) with { Unreadable = "parity: read-only" };
 
-        public DocumentSaveResult Save(string path, CausalLoopBody document) => inner.Save(path, document);
+        public Task<DocumentSaveResult> SaveAsync(string path, CausalLoopBody document, CancellationToken cancellationToken) => inner.SaveAsync(path, document, cancellationToken);
 
         public void Forget(string path) => inner.Forget(path);
 

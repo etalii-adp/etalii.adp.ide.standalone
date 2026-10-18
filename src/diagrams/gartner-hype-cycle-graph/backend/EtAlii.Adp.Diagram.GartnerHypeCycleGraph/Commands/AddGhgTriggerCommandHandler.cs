@@ -10,9 +10,9 @@ public sealed class AddGhgTriggerCommandHandler(IGhgDocumentStore documents) : G
     public const string DefaultName = "Trigger";
 
     /// <inheritdoc />
-    protected override CommandResult Execute(AddGhgTriggerCommand command)
+    protected override async Task<CommandResult> RunAsync(AddGhgTriggerCommand command, CancellationToken cancellationToken)
     {
-        return base.Execute(command.TriggerId.Length > 0 ? command : command with { TriggerId = ShortGuid.NewShortGuid().ToString() });
+        return await base.RunAsync(command.TriggerId.Length > 0 ? command : command with { TriggerId = ShortGuid.NewShortGuid().ToString() }, cancellationToken);
     }
 
     /// <inheritdoc />

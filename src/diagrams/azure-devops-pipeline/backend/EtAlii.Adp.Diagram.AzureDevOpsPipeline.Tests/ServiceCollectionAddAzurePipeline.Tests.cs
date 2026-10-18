@@ -1,6 +1,7 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Documents.Wire;
+using EtAlii.Adp.Files;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 using EtAlii.Adp.Sessions;
@@ -37,10 +38,11 @@ public class ServiceCollectionAddAzurePipelineTests
     private static ServiceProvider Build()
     {
         var services = new ServiceCollection();
+        services.AddSingleton<IFileWriter>(new FileWriter());
 
         // The few core services this module's own registrations depend on. A production host has
         // far more; what matters here is that AddAzurePipeline asks for nothing else.
-        services.AddSingleton<ICommandDispatcher>(new PipelineTestDispatcher(new PipelineDocumentStore()));
+        services.AddSingleton<ICommandDispatcher>(new PipelineTestDispatcher(new PipelineDocumentStore(new FileWriter())));
         services.AddSingleton<IHistoryStackStore>(provider =>
             new HistoryStackStore(provider.GetRequiredService<ICommandDispatcher>()));
         services.AddSingleton<IDiagramDefinitionCatalog, PipelineOnlyCatalog>();

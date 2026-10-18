@@ -1,3 +1,4 @@
+using EtAlii.Adp.Files;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -54,7 +55,7 @@ public class CausalLoopDocumentStoreLostEditTests : IDisposable
         // ask the store to save.
         var path = IoPath.Combine(_workspace, "loop.cld");
         await File.WriteAllTextAsync(path, Text, TestContext.Current.CancellationToken);
-        var store = new CausalLoopDocumentStore();
+        var store = new CausalLoopDocumentStore(new FileWriter());
         var entry = store.GetOrLoad(path);
         var added = CausalLoopEdits.AddVariable(entry.Document, "c", "Gamma");
 
@@ -68,7 +69,7 @@ public class CausalLoopDocumentStoreLostEditTests : IDisposable
         // Act: the notification for an EARLIER write of this same file lands now. The store's own
         // self-write guard is already cleared, so this is exactly what the reload bridge does.
         store.Reload(path);
-        var error = store.Save(path, entry.Document);
+        var error = await store.SaveAsync(path, entry.Document, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Equal("", error.Error);

@@ -1,5 +1,6 @@
 using System.Text;
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Files;
 using Xunit;
 using Path = System.IO.Path;
 
@@ -48,7 +49,7 @@ public class PipelineDerivedOperationsTests
         var workspace = folder.Path;
         var body = Path.Combine(folder.Path, document.InFolder);
         var original = await File.ReadAllBytesAsync(body, TestContext.Current.CancellationToken);
-        var entry = new PipelineDocumentStore().GetOrLoad(folder.Path, body);
+        var entry = new PipelineDocumentStore(new FileWriter()).GetOrLoad(folder.Path, body);
         if (!entry.IsUsable) return;
 
         var model = entry.Model;
@@ -110,9 +111,9 @@ public class PipelineDerivedOperationsTests
 
             // The command, through a store of its own, on the file as it was.
             await File.WriteAllBytesAsync(body, original, TestContext.Current.CancellationToken);
-            var store = new PipelineDocumentStore();
+            var store = new PipelineDocumentStore(new FileWriter());
             var result = await new PipelineTestDispatcher(store).DispatchAsync(command(workspace), TestContext.Current.CancellationToken);
-            var actual = result.IsSuccess ? Pipeline(new PipelineDocumentStore().GetOrLoad(workspace, body).Model) : $"refused: {result.Error}";
+            var actual = result.IsSuccess ? Pipeline(new PipelineDocumentStore(new FileWriter()).GetOrLoad(workspace, body).Model) : $"refused: {result.Error}";
 
             if (actual == $"refused: {ThroughAMerge}" && expected != actual) return;
             if (written is { IsUsable: false })

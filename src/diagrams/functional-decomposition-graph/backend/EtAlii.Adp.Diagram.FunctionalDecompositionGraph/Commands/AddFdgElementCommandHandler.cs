@@ -16,12 +16,12 @@ public sealed class AddFdgElementCommandHandler(IFdgDocumentStore documents) : F
     private const double CommentHeight = 96;
 
     /// <inheritdoc />
-    protected override CommandResult Execute(AddFdgElementCommand command)
+    protected override async Task<CommandResult> RunAsync(AddFdgElementCommand command, CancellationToken cancellationToken)
     {
         return !FdgElementTypes.IsKnown(command.ElementType)
             ? CommandResult.Failure($"This notation has no `{command.ElementType}` element.")
             // Minted once and carried as the redo, so a redone element keeps its id.
-            : base.Execute(command.ElementId.Length > 0 ? command : command with { ElementId = ShortGuid.NewShortGuid().ToString() });
+            : await base.RunAsync(command.ElementId.Length > 0 ? command : command with { ElementId = ShortGuid.NewShortGuid().ToString() }, cancellationToken);
     }
 
     /// <inheritdoc />

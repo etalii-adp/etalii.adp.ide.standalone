@@ -21,7 +21,7 @@ public sealed class WritableDocumentLifecycle<TDocument>
 
     private readonly DocumentLifecycle<TDocument> _lifecycle;
     private readonly Func<TDocument, string> _serialize;
-    private readonly Action<string, string> _write;
+    private readonly Func<string, string, CancellationToken, Task> _write;
 
     // The paths this lifecycle is writing, and what it last wrote to each, so its own save does not
     // come back through Reload as an external change - per path, as every writable store kept it
@@ -30,12 +30,14 @@ public sealed class WritableDocumentLifecycle<TDocument>
 
     /// <param name="parse">As for <see cref="DocumentLifecycle{TDocument}"/>.</param>
     /// <param name="serialize">The text a document is saved as.</param>
+    /// <param name="writer">What publishes the text, waiting for another save of the path without blocking a thread.</param>
     /// <param name="unavailable">As for <see cref="DocumentLifecycle{TDocument}"/>.</param>
     public WritableDocumentLifecycle(
         Func<string, string, TDocument> parse,
         Func<TDocument, string> serialize,
+        IFileWriter writer,
         Func<string, DocumentUnavailability, string, TDocument>? unavailable = null)
-        : this(parse, serialize, unavailable, AdpFileWriter.Save)
+        : this(parse, serialize, unavailable, (writer ?? throw new ArgumentNullException(nameof(writer))).SaveAsync)
     {
     }
 
@@ -44,7 +46,7 @@ public sealed class WritableDocumentLifecycle<TDocument>
         Func<string, string, TDocument> parse,
         Func<TDocument, string> serialize,
         Func<string, DocumentUnavailability, string, TDocument>? unavailable,
-        Action<string, string> write)
+        Func<string, string, CancellationToken, Task> write)
         : this(new DocumentLifecycle<TDocument>(parse, unavailable), serialize, write)
     {
     }
@@ -77,15 +79,16 @@ public sealed class WritableDocumentLifecycle<TDocument>
         Func<string, DocumentUnavailability, string, TDocument>? unavailable,
         Func<string, string> read,
         int readAttempts,
-        TimeSpan betweenReadAttempts)
-        : this(new DocumentLifecycle<TDocument>(parse, unavailable, read, readAttempts, betweenReadAttempts), serialize, AdpFileWriter.Save)
+        TimeSpan betweenReadAttempts,
+        IFileWriter writer)
+        : this(new DocumentLifecycle<TDocument>(parse, unavailable, read, readAttempts, betweenReadAttempts), serialize, (writer ?? throw new ArgumentNullException(nameof(writer))).SaveAsync)
     {
     }
 
     private WritableDocumentLifecycle(
         DocumentLifecycle<TDocument> lifecycle,
         Func<TDocument, string> serialize,
-        Action<string, string> write)
+        Func<string, string, CancellationToken, Task> write)
     {
         ArgumentNullException.ThrowIfNull(serialize);
         ArgumentNullException.ThrowIfNull(write);
@@ -155,7 +158,11 @@ public sealed class WritableDocumentLifecycle<TDocument>
     /// once here. A folder that cannot be created is a failed write like any other.
     /// </para>
     /// </remarks>
-    public DocumentSaveResult Save(string path, TDocument document)
+    /// <exception cref="OperationCanceledException">
+    /// <paramref name="cancellationToken"/> gave up the wait for another save of the path; nothing was
+    /// written and nothing was cached.
+    /// </exception>
+    public async Task<DocumentSaveResult> SaveAsync(string path, TDocument document, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
         ArgumentNullException.ThrowIfNull(document);
@@ -165,7 +172,7 @@ public sealed class WritableDocumentLifecycle<TDocument>
         try
         {
             CreateFolderOf(path);
-            _write(path, text);
+            await _write(path, text, cancellationToken);
 
             // Cached while the self-write mark is still held, so a reload racing this save is either
             // ignored or arrives after the cache already holds what the file holds.
@@ -198,7 +205,7 @@ public sealed class WritableDocumentLifecycle<TDocument>
     /// when the entry it was for is no longer there.
     /// </param>
     /// <returns>
-    /// As for <see cref="Save(string, TDocument)"/>, and a failure carrying the edit's own reason when
+    /// As for <see cref="SaveAsync(string, TDocument, CancellationToken)"/>, and a failure carrying the edit's own reason when
     /// it was refused. Nothing is written and nothing is cached on a refusal.
     /// </returns>
     /// <remarks>
@@ -223,7 +230,7 @@ public sealed class WritableDocumentLifecycle<TDocument>
     /// agent with a text editor does not.
     /// </para>
     /// </remarks>
-    public DocumentSaveResult Save(string path, TDocument basis, Func<TDocument, DocumentEdit<TDocument>> edit)
+    public async Task<DocumentSaveResult> SaveAsync(string path, TDocument basis, Func<TDocument, DocumentEdit<TDocument>> edit, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
         ArgumentNullException.ThrowIfNull(basis);
@@ -240,7 +247,7 @@ public sealed class WritableDocumentLifecycle<TDocument>
         var edited = edit(current);
         return edited.Document is null
             ? DocumentSaveResult.Failure(edited.Refusal)
-            : Save(path, edited.Document);
+            : await SaveAsync(path, edited.Document, cancellationToken);
     }
 
     private static void CreateFolderOf(string path)

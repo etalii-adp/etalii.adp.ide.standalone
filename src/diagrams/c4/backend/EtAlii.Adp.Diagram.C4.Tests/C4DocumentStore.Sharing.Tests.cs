@@ -1,3 +1,4 @@
+using EtAlii.Adp.Files;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
@@ -11,7 +12,7 @@ namespace EtAlii.Adp.Diagram.C4.Tests;
 public class C4DocumentStoreSharingTests : IDisposable
 {
     private readonly string _root;
-    private readonly C4DocumentStore _store = new();
+    private readonly C4DocumentStore _store = new(new FileWriter());
 
     public C4DocumentStoreSharingTests()
     {
@@ -68,21 +69,21 @@ public class C4DocumentStoreSharingTests : IDisposable
     }
 
     [Fact]
-    public void Save_WritesTheDocumentBack_ByteForByte()
+    public async Task Save_WritesTheDocumentBack_ByteForByte()
     {
         // Arrange.
         var path = Write("model.dsl", Sample);
         _store.GetOrLoad(path);
 
         // Act.
-        _store.Save(path, _store.GetOrLoad(path).Document);
+        await _store.SaveAsync(path, _store.GetOrLoad(path).Document, TestContext.Current.CancellationToken);
 
         // Assert.
-        Assert.Equal(Sample, File.ReadAllText(path));
+        Assert.Equal(Sample, await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
     }
 
     [Fact]
-    public void Save_OfAnEditedDocument_ChangesOnlyTheEditedLine()
+    public async Task Save_OfAnEditedDocument_ChangesOnlyTheEditedLine()
     {
         // Arrange.
         var path = Write("model.dsl", Sample);
@@ -90,16 +91,16 @@ public class C4DocumentStoreSharingTests : IDisposable
         var line = document.CodeLines().First(l => l.Code.Contains("softwareSystem", StringComparison.Ordinal));
         document.ReplaceLine(line.Number, line.Text.Replace("\"System\"", "\"Renamed\"", StringComparison.Ordinal));
 
-        _store.Save(path, document);
+        await _store.SaveAsync(path, document, TestContext.Current.CancellationToken);
 
         // Act and assert, step by step.
-        var after = File.ReadAllText(path);
+        var after = await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken);
         Assert.Contains("Renamed", after, StringComparison.Ordinal);
         Assert.Equal(Sample.Split('\n').Length, after.Split('\n').Length);
     }
 
     [Fact]
-    public void Save_RaisesChanged_OnceTheWorkspaceIsReparsed()
+    public async Task Save_RaisesChanged_OnceTheWorkspaceIsReparsed()
     {
         // Arrange.
         var path = Write("model.dsl", Sample);
@@ -110,35 +111,35 @@ public class C4DocumentStoreSharingTests : IDisposable
         // Act.
         string? raised = null;
         _store.Changed += (_, args) => raised = _store.GetOrLoad(args.Path).Model.Find("s")!.Name;
-        _store.Save(path, document);
+        await _store.SaveAsync(path, document, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Equal("Renamed", raised);
     }
 
     [Fact]
-    public void TheModel_ReflectsASave_SoTheNextReaderSeesTheEdit()
+    public async Task TheModel_ReflectsASave_SoTheNextReaderSeesTheEdit()
     {
         // Arrange and act.
         var path = Write("model.dsl", Sample);
         var document = _store.GetOrLoad(path).Document;
         var line = document.CodeLines().First(l => l.Code.Contains("softwareSystem", StringComparison.Ordinal));
         document.ReplaceLine(line.Number, line.Text.Replace("\"System\"", "\"Renamed\"", StringComparison.Ordinal));
-        _store.Save(path, document);
+        await _store.SaveAsync(path, document, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Equal("Renamed", _store.GetOrLoad(path).Model.Find("s")!.Name);
     }
 
     [Fact]
-    public void Save_CreatesTheFolder_WhenTheBodyLivesBesideNothingYet()
+    public async Task Save_CreatesTheFolder_WhenTheBodyLivesBesideNothingYet()
     {
         // Arrange.
         var path = IoPath.Combine(_root, "nested", "model.dsl");
         _store.GetOrLoad(path);
 
         // Act.
-        _store.Save(path, _store.GetOrLoad(path).Document);
+        await _store.SaveAsync(path, _store.GetOrLoad(path).Document, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.True(File.Exists(path));

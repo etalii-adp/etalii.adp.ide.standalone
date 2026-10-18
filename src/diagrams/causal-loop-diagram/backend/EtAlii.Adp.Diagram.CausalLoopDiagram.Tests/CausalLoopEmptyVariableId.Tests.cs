@@ -1,5 +1,6 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents.Wire;
+using EtAlii.Adp.Files;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 using EtAlii.Adp.Sessions;
@@ -27,7 +28,7 @@ public class CausalLoopEmptyVariableIdTests : IDisposable
 
     private readonly string _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
     private readonly ServiceProvider _provider;
-    private readonly CausalLoopDocumentStore _store = new();
+    private readonly CausalLoopDocumentStore _store = new(new FileWriter());
     private readonly CausalLoopContextActionProvider _actions;
 
     public CausalLoopEmptyVariableIdTests()

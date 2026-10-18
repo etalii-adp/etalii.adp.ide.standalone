@@ -1,11 +1,12 @@
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Files;
 
 namespace EtAlii.Adp.Diagram.Sankey;
 
 /// <summary>
 /// The <c>.skv</c> document store: the shared store, told how a body reads and what it means.
 /// </summary>
-public sealed class SankeyDocumentStore : LifecycleDocumentStore<LineDocument, SankeyModel>, ISankeyDocumentStore
+public sealed class SankeyDocumentStore(IFileWriter writer) : LifecycleDocumentStore<LineDocument, SankeyModel>(writer), ISankeyDocumentStore
 {
     /// <inheritdoc />
     protected override LineDocument Read(string text) => LineDocument.Parse(text);

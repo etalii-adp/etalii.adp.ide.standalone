@@ -1,3 +1,5 @@
+using EtAlii.Adp.Files;
+
 namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph.Tests;
 
 /// <summary>The shared reload seam over the <c>.fdg</c> store, held to the contract every module's is.</summary>
@@ -7,7 +9,7 @@ public sealed class FdgDocumentReloaderTests : DocumentReloaderContract<IFdgDocu
 
     protected override string Example => FieldServiceExample.Path;
 
-    protected override IFdgDocumentStore CreateStore() => new FdgDocumentStore();
+    protected override IFdgDocumentStore CreateStore() => new FdgDocumentStore(new FileWriter());
 
     protected override bool IsEmpty(IFdgDocumentStore store, string path)
     {

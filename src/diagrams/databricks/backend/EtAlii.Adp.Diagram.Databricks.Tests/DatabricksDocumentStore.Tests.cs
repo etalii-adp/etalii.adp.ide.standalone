@@ -1,4 +1,5 @@
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Files;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -17,7 +18,7 @@ public sealed class DatabricksDocumentStoreTests : DocumentStoreContract<IDatabr
 
     protected override string EditMarker => "store-contract-marker";
 
-    protected override IDatabricksDocumentStore CreateStore() => new DatabricksDocumentStore();
+    protected override IDatabricksDocumentStore CreateStore() => new DatabricksDocumentStore(new FileWriter());
 
     protected override void Edit(LineDocument document) =>
         BundleWriter.SetName(document, DatabricksModel.Read(document).Bundle, EditMarker);
@@ -35,24 +36,24 @@ public sealed class DatabricksDocumentStoreTests : DocumentStoreContract<IDatabr
     [InlineData("lf-line-endings.yml")]
     [InlineData("no-trailing-newline.yml")]
     [InlineData("tied-line-endings.yml")]
-    public void SavingAnUntouchedDocument_LeavesTheFileByteIdentical(string name)
+    public async Task SavingAnUntouchedDocument_LeavesTheFileByteIdentical(string name)
     {
         // Arrange.
         using var folder = TestFolder.Create("databricks-store");
         var path = folder.Combine(name);
         File.Copy(Fixture(name), path);
-        var original = File.ReadAllBytes(path);
-        var store = new DatabricksDocumentStore();
+        var original = await File.ReadAllBytesAsync(path, TestContext.Current.CancellationToken);
+        var store = new DatabricksDocumentStore(new FileWriter());
         var entry = store.GetOrLoad(path);
 
         // Act. Nothing is edited between the load and the save, which is what makes this test about
         // byte identity rather than about edits surviving - see the LostEdit test beside it for the
         // case an untouched document cannot express.
-        var saved = store.Save(path, entry.Document);
+        var saved = await store.SaveAsync(path, entry.Document, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Equal("", saved.Error);
-        Assert.Equal(original, File.ReadAllBytes(path));
+        Assert.Equal(original, await File.ReadAllBytesAsync(path, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -62,7 +63,7 @@ public sealed class DatabricksDocumentStoreTests : DocumentStoreContract<IDatabr
         using var folder = TestFolder.Create("databricks-store");
 
         // Act.
-        var entry = new DatabricksDocumentStore().GetOrLoad(folder.Combine("not-yet.yml"));
+        var entry = new DatabricksDocumentStore(new FileWriter()).GetOrLoad(folder.Combine("not-yet.yml"));
 
         // Assert: a freshly created diagram opens, and the first save creates the file.
         Assert.True(entry.IsUsable);
@@ -71,18 +72,18 @@ public sealed class DatabricksDocumentStoreTests : DocumentStoreContract<IDatabr
     }
 
     [Fact]
-    public void AFileThatIsNotYaml_IsHeldUnreadable_AndASaveIsRefusedUnwritten()
+    public async Task AFileThatIsNotYaml_IsHeldUnreadable_AndASaveIsRefusedUnwritten()
     {
         // Arrange.
         using var folder = TestFolder.Create("databricks-store");
         var path = folder.Combine("broken.yml");
         File.Copy(Fixture("broken.yml"), path);
-        var before = File.ReadAllBytes(path);
-        var store = new DatabricksDocumentStore();
+        var before = await File.ReadAllBytesAsync(path, TestContext.Current.CancellationToken);
+        var store = new DatabricksDocumentStore(new FileWriter());
 
         // Act.
         var entry = store.GetOrLoad(path);
-        var saved = store.Save(path, entry.Document);
+        var saved = await store.SaveAsync(path, entry.Document, TestContext.Current.CancellationToken);
 
         // Assert: the broken file is never made worse - the save is refused with the reason.
         Assert.False(entry.IsUsable);
@@ -91,14 +92,14 @@ public sealed class DatabricksDocumentStoreTests : DocumentStoreContract<IDatabr
         Assert.Equal((1, entry.Unreadable), (problem.Line, problem.Message));
         Assert.True(saved.Failed);
         Assert.Contains("could not be read", saved.Error, StringComparison.Ordinal);
-        Assert.Equal(before, File.ReadAllBytes(path));
+        Assert.Equal(before, await File.ReadAllBytesAsync(path, TestContext.Current.CancellationToken));
     }
 
     [Fact]
     public void OneFile_ServesAllThreeReadings()
     {
         // Arrange & act.
-        var entry = new DatabricksDocumentStore().GetOrLoad(Example);
+        var entry = new DatabricksDocumentStore(new FileWriter()).GetOrLoad(Example);
 
         // Assert: a databricks.yml is a bundle that also declares a job and a pipeline inline - one
         // entry serves whichever diagram type opens it.
@@ -114,7 +115,7 @@ public sealed class DatabricksDocumentStoreTests : DocumentStoreContract<IDatabr
         using var folder = TestFolder.Create("databricks-store");
         var path = folder.Combine("crlf-line-endings.yml");
         File.Copy(Fixture("crlf-line-endings.yml"), path);
-        var store = new DatabricksDocumentStore();
+        var store = new DatabricksDocumentStore(new FileWriter());
         store.GetOrLoad(path);
         File.WriteAllText(path, "bundle:\r\n  name: replaced\r\n");
         string? heard = null;

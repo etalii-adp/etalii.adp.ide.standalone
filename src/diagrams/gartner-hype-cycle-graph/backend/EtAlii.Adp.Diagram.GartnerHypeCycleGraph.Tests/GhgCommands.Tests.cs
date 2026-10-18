@@ -1,4 +1,5 @@
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
 using Xunit;
 
@@ -21,7 +22,7 @@ namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph.Tests;
 public sealed class GhgCommandsTests : IDisposable
 {
     private readonly string _folder = Path.Combine(Path.GetTempPath(), "EtAlii.Adp.GhgCommandsTests", Guid.NewGuid().ToString("N"));
-    private readonly GhgDocumentStore _store = new();
+    private readonly GhgDocumentStore _store = new(new FileWriter());
     private readonly GhgTestDispatcher _dispatcher;
     private readonly byte[] _original;
 
@@ -271,7 +272,7 @@ public sealed class GhgCommandsTests : IDisposable
     public async Task ADocumentThatCouldNotBeRead_IsNeverWritten()
     {
         // Another program holds the file, so the first open cannot read it.
-        var store = new GhgDocumentStore();
+        var store = new GhgDocumentStore(new FileWriter());
         DocumentEntry<GhgBody, GhgModel> entry;
         await using (new FileStream(Body, FileMode.Open, FileAccess.Read, FileShare.None))
         {
@@ -284,7 +285,7 @@ public sealed class GhgCommandsTests : IDisposable
         var edited = await new GhgTestDispatcher(store).DispatchAsync(
             new RenameGhgElementCommand(Body, "railways", "Railroads"),
             TestContext.Current.CancellationToken);
-        var saved = store.Save(Body, GhgBody.Parse(GhgParser.EmptyDocument("\n")));
+        var saved = await store.SaveAsync(Body, GhgBody.Parse(GhgParser.EmptyDocument("\n")), TestContext.Current.CancellationToken);
 
         Assert.False(edited.IsSuccess);
         Assert.True(saved.Failed);

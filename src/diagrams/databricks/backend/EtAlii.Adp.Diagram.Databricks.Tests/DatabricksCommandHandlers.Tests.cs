@@ -1,4 +1,5 @@
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Files;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 using Microsoft.Extensions.DependencyInjection;
@@ -16,7 +17,7 @@ public sealed class DatabricksCommandHandlersTests : EditHandlerContract<IDatabr
 
     protected override string Example => Fixture("bundle.yml");
 
-    protected override IDatabricksDocumentStore CreateStore() => new DatabricksDocumentStore();
+    protected override IDatabricksDocumentStore CreateStore() => new DatabricksDocumentStore(new FileWriter());
 
     protected override IDatabricksDocumentStore Warning(IDatabricksDocumentStore store, string warning) => new WarningStore(store, warning);
 

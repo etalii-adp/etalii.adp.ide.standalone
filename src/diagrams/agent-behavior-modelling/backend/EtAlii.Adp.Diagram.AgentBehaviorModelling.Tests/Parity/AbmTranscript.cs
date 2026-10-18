@@ -1,6 +1,7 @@
 using System.Text.Json;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Files;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 using Google.Protobuf.Reflection;
@@ -356,7 +357,7 @@ internal static class AbmTranscript
 
         public string Registration => Path.ChangeExtension(Body, DiagramFileName.Extension);
 
-        private AbmDocumentStore Store { get; } = new();
+        private AbmDocumentStore Store { get; } = new(new FileWriter());
 
         public HistoryStackStore History { get; }
 
@@ -387,7 +388,7 @@ internal static class AbmTranscript
 
         public DocumentEntry<AbmBody, AbmModel> GetOrLoad(string path) => inner.GetOrLoad(path) with { Unreadable = "parity: read-only" };
 
-        public DocumentSaveResult Save(string path, AbmBody document) => inner.Save(path, document);
+        public Task<DocumentSaveResult> SaveAsync(string path, AbmBody document, CancellationToken cancellationToken) => inner.SaveAsync(path, document, cancellationToken);
 
         public void Forget(string path) => inner.Forget(path);
 

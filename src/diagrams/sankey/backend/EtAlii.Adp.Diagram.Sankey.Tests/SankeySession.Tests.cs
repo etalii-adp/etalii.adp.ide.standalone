@@ -1,4 +1,5 @@
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
 using Xunit;
 
@@ -11,7 +12,7 @@ namespace EtAlii.Adp.Diagram.Sankey.Tests;
 public sealed class SankeySessionTests : IDisposable
 {
     private readonly SankeyTestFolder _folder = new(SankeyExamples.BrightwaterCoffee, "brightwater-coffee.skv");
-    private readonly SankeyDocumentStore _store = new();
+    private readonly SankeyDocumentStore _store = new(new FileWriter());
 
     public void Dispose() => _folder.Dispose();
 

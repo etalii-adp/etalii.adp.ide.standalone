@@ -1,6 +1,7 @@
 using System.Text.Json;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
 using Google.Protobuf.Reflection;
 using Microsoft.Extensions.DependencyInjection;
@@ -91,7 +92,7 @@ internal static class PipelineTranscript
     private static ServiceProvider Services()
     {
         var services = new ServiceCollection();
-        services.AddSingleton<IHistoryStackStore>(new HistoryStackStore(new PipelineTestDispatcher(new PipelineDocumentStore())));
+        services.AddSingleton<IHistoryStackStore>(new HistoryStackStore(new PipelineTestDispatcher(new PipelineDocumentStore(new FileWriter()))));
         services.AddAzurePipeline();
         return services.BuildServiceProvider();
     }
@@ -396,7 +397,7 @@ internal static class PipelineTranscript
 
         public string Body { get; }
 
-        private PipelineDocumentStore Store { get; } = new();
+        private PipelineDocumentStore Store { get; } = new(new FileWriter());
 
         private PipelineViewState Views { get; } = new();
 

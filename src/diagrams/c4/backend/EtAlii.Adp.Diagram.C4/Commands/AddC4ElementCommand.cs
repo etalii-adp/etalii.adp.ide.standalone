@@ -31,10 +31,10 @@ public sealed record RemoveC4ElementCommand(string BodyPath, string Identifier, 
 internal sealed class AddC4ElementCommandHandler(IC4DocumentStore documents) : C4EditHandler<AddC4ElementCommand>(documents)
 {
     /// <inheritdoc />
-    protected override CommandResult Execute(AddC4ElementCommand command) =>
+    protected override async Task<CommandResult> RunAsync(AddC4ElementCommand command, CancellationToken cancellationToken) =>
         command.Name.Trim().Length == 0
             ? CommandResult.Failure("An element needs a name.")
-            : base.Execute(command);
+            : await base.RunAsync(command, cancellationToken);
 
     /// <inheritdoc />
     protected override EditOutcome Apply(LineDocument body, C4Workspace model, AddC4ElementCommand command)

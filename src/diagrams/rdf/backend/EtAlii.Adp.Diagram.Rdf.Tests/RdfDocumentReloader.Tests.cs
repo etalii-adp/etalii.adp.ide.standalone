@@ -1,4 +1,5 @@
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Files;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using IoPath = System.IO.Path;
@@ -16,7 +17,7 @@ public sealed class RdfDocumentReloaderTests : DocumentReloaderContract<IRdfDocu
 
     protected override string Example => IoPath.Combine(AppContext.BaseDirectory, "Fixtures", "constructs.ttl");
 
-    protected override IRdfDocumentStore CreateStore() => new RdfDocumentStore();
+    protected override IRdfDocumentStore CreateStore() => new RdfDocumentStore(new FileWriter());
 
     protected override bool IsEmpty(IRdfDocumentStore store, string path) => store.GetOrLoad(path).Model.Triples.Count == 0;
 

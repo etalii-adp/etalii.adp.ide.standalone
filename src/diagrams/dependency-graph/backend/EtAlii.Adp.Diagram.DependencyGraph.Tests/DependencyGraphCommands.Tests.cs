@@ -1,3 +1,4 @@
+using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
 using Xunit;
 using IoPath = System.IO.Path;
@@ -15,7 +16,7 @@ public class DependencyGraphCommandsTests : IDisposable
         IoPath.GetTempPath(),
         "adp-dgr-commands-" + Guid.NewGuid().ToString("N"));
 
-    private readonly DependencyGraphDocumentStore _store = new();
+    private readonly DependencyGraphDocumentStore _store = new(new FileWriter());
     private readonly HistoryStackStore _historyStacks;
 
     private IHistoryStack History => _historyStacks.Get(_workspace);

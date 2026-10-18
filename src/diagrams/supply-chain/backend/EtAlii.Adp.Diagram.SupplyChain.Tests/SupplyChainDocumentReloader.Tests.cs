@@ -1,3 +1,5 @@
+using EtAlii.Adp.Files;
+
 namespace EtAlii.Adp.Diagram.SupplyChain.Tests;
 
 /// <summary>The shared reload seam over the <c>.supply</c> store, held to the contract every module's is.</summary>
@@ -7,7 +9,7 @@ public sealed class SupplyChainDocumentReloaderTests : DocumentReloaderContract<
 
     protected override string Example => SupplyChainExamples.Automotive;
 
-    protected override ISupplyChainDocumentStore CreateStore() => new SupplyChainDocumentStore();
+    protected override ISupplyChainDocumentStore CreateStore() => new SupplyChainDocumentStore(new FileWriter());
 
     protected override bool IsEmpty(ISupplyChainDocumentStore store, string path)
     {

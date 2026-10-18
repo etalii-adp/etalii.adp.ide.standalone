@@ -1,6 +1,7 @@
 using System.Text.RegularExpressions;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Diagram.Modules;
+using EtAlii.Adp.Files;
 using EtAlii.Adp.Hierarchy;
 using Xunit;
 
@@ -9,7 +10,7 @@ namespace EtAlii.Adp.Diagram.AgentBehaviorModelling.Tests;
 /// <summary>A selection on the bug fixer example, by the contract every element resolver keeps, and what is its own.</summary>
 public sealed class AbmContextSourceResolverTests : DiagramElementSourceResolverContract
 {
-    private readonly AbmDocumentStore _store = new();
+    private readonly AbmDocumentStore _store = new(new FileWriter());
 
     protected override string Example => AbmExamples.BodyOf("bug-fixer");
 

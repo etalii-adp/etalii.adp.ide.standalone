@@ -1,4 +1,5 @@
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Files;
 
 namespace EtAlii.Adp.Diagram.Sankey.Tests;
 
@@ -9,7 +10,7 @@ public sealed class SankeyDocumentStoreTests : DocumentStoreContract<ISankeyDocu
 
     protected override string EditMarker => "# store contract marker";
 
-    protected override ISankeyDocumentStore CreateStore() => new SankeyDocumentStore();
+    protected override ISankeyDocumentStore CreateStore() => new SankeyDocumentStore(new FileWriter());
 
     protected override void Edit(LineDocument document) => document.Insert(1, [EditMarker]);
 

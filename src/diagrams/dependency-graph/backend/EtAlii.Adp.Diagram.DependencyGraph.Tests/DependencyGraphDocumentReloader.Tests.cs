@@ -1,3 +1,5 @@
+using EtAlii.Adp.Files;
+
 namespace EtAlii.Adp.Diagram.DependencyGraph.Tests;
 
 /// <summary>The shared reload seam over the dependency graph store, held to the contract every module's is.</summary>
@@ -7,7 +9,7 @@ public sealed class DependencyGraphDocumentReloaderTests : DocumentReloaderContr
 
     protected override string Example => DependencyGraphDocumentStoreTests.Simple;
 
-    protected override IDependencyGraphDocumentStore CreateStore() => new DependencyGraphDocumentStore();
+    protected override IDependencyGraphDocumentStore CreateStore() => new DependencyGraphDocumentStore(new FileWriter());
 
     protected override bool IsEmpty(IDependencyGraphDocumentStore store, string path) => store.GetOrLoad(path).Model.Elements.Count == 0;
 

@@ -1,5 +1,6 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
 using Xunit;
 
@@ -9,7 +10,7 @@ namespace EtAlii.Adp.Diagram.Sankey.Tests;
 public sealed class SankeyProvidersTests : IDisposable
 {
     private readonly SankeyTestFolder _folder = new(Path.Combine(AppContext.BaseDirectory, "Fixtures", "lf-line-endings.skv"), "small.skv");
-    private readonly SankeyDocumentStore _store = new();
+    private readonly SankeyDocumentStore _store = new(new FileWriter());
     private readonly HistoryStackStore _historyStacks;
     private readonly SankeyContextPropertyProvider _properties;
     private readonly SankeyContextActionProvider _actions;
@@ -246,7 +247,7 @@ public sealed class SankeyProvidersTests : IDisposable
 
         public DocumentEntry<LineDocument, SankeyModel> GetOrLoad(string path) => inner.GetOrLoad(path) with { Unreadable = "it is locked" };
 
-        public DocumentSaveResult Save(string path, LineDocument document) => inner.Save(path, document);
+        public Task<DocumentSaveResult> SaveAsync(string path, LineDocument document, CancellationToken cancellationToken) => inner.SaveAsync(path, document, cancellationToken);
 
         public void Reload(string path) => inner.Reload(path);
 

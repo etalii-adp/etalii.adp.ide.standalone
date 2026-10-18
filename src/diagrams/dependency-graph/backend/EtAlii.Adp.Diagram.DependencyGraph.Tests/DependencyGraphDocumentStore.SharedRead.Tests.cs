@@ -1,3 +1,4 @@
+using EtAlii.Adp.Files;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -35,7 +36,7 @@ public class DependencyGraphDocumentStoreSharedReadTests : IDisposable
         using var editor = new FileStream(path, FileMode.Open, FileAccess.Write, FileShare.Read);
 
         // Act.
-        var entry = new DependencyGraphDocumentStore().GetOrLoad(path);
+        var entry = new DependencyGraphDocumentStore(new FileWriter()).GetOrLoad(path);
 
         // Assert: the document itself, not the empty fallback.
         Assert.True(entry.IsUsable);

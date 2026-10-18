@@ -26,7 +26,7 @@ public class CausalLoopCommandsTests : IDisposable
 
     private readonly string _root;
     private readonly string _path;
-    private readonly CausalLoopDocumentStore _store = new();
+    private readonly CausalLoopDocumentStore _store = new(new FileWriter());
 
     public CausalLoopCommandsTests()
     {

@@ -1,3 +1,5 @@
+using EtAlii.Adp.Files;
+
 namespace EtAlii.Adp.Diagram.Timeline.Tests;
 
 /// <summary>The shared reload seam over the timeline store, held to the contract every module's is.</summary>
@@ -7,7 +9,7 @@ public sealed class TimelineDocumentReloaderTests : DocumentReloaderContract<ITi
 
     protected override string Example => TimelineDocumentStoreTests.Simple;
 
-    protected override ITimelineDocumentStore CreateStore() => new TimelineDocumentStore();
+    protected override ITimelineDocumentStore CreateStore() => new TimelineDocumentStore(new FileWriter());
 
     protected override bool IsEmpty(ITimelineDocumentStore store, string path) => store.GetOrLoad(path).Model.Elements.Count == 0;
 

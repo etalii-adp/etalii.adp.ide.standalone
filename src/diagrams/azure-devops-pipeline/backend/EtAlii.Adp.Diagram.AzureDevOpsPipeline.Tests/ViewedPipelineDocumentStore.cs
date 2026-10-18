@@ -1,4 +1,5 @@
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Files;
 
 namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline.Tests;
 
@@ -13,7 +14,7 @@ namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline.Tests;
 /// </remarks>
 internal sealed class ViewedPipelineDocumentStore(IDiagramDocumentStore<PipelineBody, PipelineModel> view) : IPipelineDocumentStore
 {
-    private readonly PipelineDocumentStore _reader = new();
+    private readonly PipelineDocumentStore _reader = new(new FileWriter());
 
     public event EventHandler<DocumentChangedEventArgs>? Changed
     {

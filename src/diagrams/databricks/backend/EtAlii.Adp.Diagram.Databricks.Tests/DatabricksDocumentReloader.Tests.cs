@@ -1,3 +1,4 @@
+using EtAlii.Adp.Files;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 using Microsoft.Extensions.DependencyInjection;
@@ -17,7 +18,7 @@ public sealed class DatabricksDocumentReloaderTests : DocumentReloaderContract<I
 
     protected override string Example => IoPath.Combine(AppContext.BaseDirectory, "Fixtures", "bundle.yml");
 
-    protected override IDatabricksDocumentStore CreateStore() => new DatabricksDocumentStore();
+    protected override IDatabricksDocumentStore CreateStore() => new DatabricksDocumentStore(new FileWriter());
 
     protected override bool IsEmpty(IDatabricksDocumentStore store, string path) => store.GetOrLoad(path).Model.Bundle.Name == "";
 
@@ -58,7 +59,7 @@ public sealed class DatabricksDocumentReloaderTests : DocumentReloaderContract<I
         using var folder = TestFolder.Create("EtAlii.Adp.DatabricksDocumentReloaderTests");
         var body = folder.Combine("databricks.yml");
         File.Copy(Example, body);
-        var store = new DatabricksDocumentStore();
+        var store = new DatabricksDocumentStore(new FileWriter());
         IDiagramDocumentReloader reloader = new DiagramDocumentReloader<IDatabricksDocumentStore>(Origin, store);
         Assert.Equal("lakehouse-nightly", store.GetOrLoad(body).Model.Bundle.Name);
         var told = 0;

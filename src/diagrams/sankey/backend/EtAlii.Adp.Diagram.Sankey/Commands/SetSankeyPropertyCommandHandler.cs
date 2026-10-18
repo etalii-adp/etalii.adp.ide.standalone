@@ -8,8 +8,8 @@ namespace EtAlii.Adp.Diagram.Sankey;
 public sealed class SetSankeyPropertyCommandHandler(ISankeyDocumentStore documents) : SankeyEditHandler<SetSankeyPropertyCommand>(documents)
 {
     /// <inheritdoc />
-    protected override CommandResult Execute(SetSankeyPropertyCommand command) =>
-        Read(command, out _, out _, out _) is { } refusal ? CommandResult.Failure(refusal) : base.Execute(command);
+    protected override async Task<CommandResult> RunAsync(SetSankeyPropertyCommand command, CancellationToken cancellationToken) =>
+        Read(command, out _, out _, out _) is { } refusal ? CommandResult.Failure(refusal) : await base.RunAsync(command, cancellationToken);
 
     /// <inheritdoc />
     protected override EditOutcome Apply(LineDocument document, SankeyModel model, SetSankeyPropertyCommand command)

@@ -12,21 +12,21 @@ public sealed record SetNodeLinkCommand(string BodyPath, string NodeId, string? 
 internal sealed class SetNodeLinkCommandHandler(IMindmapDocumentStore documents)
     : MindmapCommandHandler(documents), ICommandHandler<SetNodeLinkCommand>
 {
-    public Task<CommandResult> ExecuteAsync(SetNodeLinkCommand command, CancellationToken cancellationToken = default)
+    public async Task<CommandResult> ExecuteAsync(SetNodeLinkCommand command, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(command);
         cancellationToken.ThrowIfCancellationRequested();
 
         if (!TryResolve(command.BodyPath, command.NodeId, out var document, out var node, out var failure))
         {
-            return Task.FromResult(failure);
+            return failure;
         }
 
         var previous = node.Link;
         document.SetLink(node, command.Link);
-        var saved = Documents.Save(command.BodyPath, document, new MindmapNodeUpdated(command.NodeId));
+        var saved = await Documents.SaveAsync(command.BodyPath, document, new MindmapNodeUpdated(command.NodeId), cancellationToken);
 
         // The inverse restores the previous link, "no link" included (Requirement 12.6).
-        return Task.FromResult(CommandResult.FromSave(saved, command with { Link = previous }));
+        return CommandResult.FromSave(saved, command with { Link = previous });
     }
 }

@@ -1,3 +1,4 @@
+using EtAlii.Adp.Files;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 using Microsoft.Extensions.DependencyInjection;
@@ -15,7 +16,7 @@ namespace EtAlii.Adp.Diagram.C4.Tests;
 public class C4SharedReadTests : IDisposable
 {
     private readonly string _root;
-    private readonly C4DocumentStore _documents = new();
+    private readonly C4DocumentStore _documents = new(new FileWriter());
     private readonly C4ElementMapper _mapper = new(C4Metrics.Default, new C4LayoutSidecar());
     private readonly IHistoryStackStore _historyStacks = new ServiceCollection().AddCommands().AddHierarchyCommandHandlers().AddC4().BuildServiceProvider().GetRequiredService<IHistoryStackStore>();
 

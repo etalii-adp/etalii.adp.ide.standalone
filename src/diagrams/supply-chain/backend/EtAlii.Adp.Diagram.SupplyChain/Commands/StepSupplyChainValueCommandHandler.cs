@@ -10,8 +10,8 @@ namespace EtAlii.Adp.Diagram.SupplyChain;
 public sealed class StepSupplyChainValueCommandHandler(ISupplyChainDocumentStore documents) : SupplyChainEditHandler<StepSupplyChainValueCommand>(documents)
 {
     /// <inheritdoc />
-    protected override CommandResult Execute(StepSupplyChainValueCommand command) =>
-        command.Steps == 0 ? CommandResult.Failure("A step of nothing changes nothing.") : base.Execute(command);
+    protected override async Task<CommandResult> RunAsync(StepSupplyChainValueCommand command, CancellationToken cancellationToken) =>
+        command.Steps == 0 ? CommandResult.Failure("A step of nothing changes nothing.") : await base.RunAsync(command, cancellationToken);
 
     /// <inheritdoc />
     protected override EditOutcome Apply(LineDocument document, SupplyChainModel model, StepSupplyChainValueCommand command)

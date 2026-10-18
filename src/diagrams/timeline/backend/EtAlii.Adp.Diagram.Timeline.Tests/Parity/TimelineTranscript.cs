@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text.Json;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
 using Google.Protobuf.Reflection;
 using Path = System.IO.Path;
@@ -379,7 +380,7 @@ internal static class TimelineTranscript
 
         public string Body { get; }
 
-        private TimelineDocumentStore Store { get; } = new();
+        private TimelineDocumentStore Store { get; } = new(new FileWriter());
 
         public HistoryStackStore History { get; }
 

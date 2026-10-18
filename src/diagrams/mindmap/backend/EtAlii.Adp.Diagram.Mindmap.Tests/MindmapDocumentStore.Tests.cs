@@ -1,3 +1,4 @@
+using EtAlii.Adp.Files;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -10,7 +11,7 @@ namespace EtAlii.Adp.Diagram.Mindmap.Tests;
 public class MindmapDocumentStoreTests : IDisposable
 {
     private readonly string _root;
-    private readonly MindmapDocumentStore _store = new();
+    private readonly MindmapDocumentStore _store = new(new FileWriter());
 
     public MindmapDocumentStoreTests()
     {

@@ -1,3 +1,4 @@
+using EtAlii.Adp.Files;
 using IoPath = System.IO.Path;
 
 namespace EtAlii.Adp.Documents;
@@ -26,11 +27,13 @@ public abstract class LifecycleDocumentStore<TBody, TModel> : IDiagramDocumentSt
 {
     private readonly WritableDocumentLifecycle<DocumentEntry<TBody, TModel>> _lifecycle;
 
-    protected LifecycleDocumentStore()
+    /// <param name="writer">What publishes a save, waiting for another save of the body without blocking a thread.</param>
+    protected LifecycleDocumentStore(IFileWriter writer)
     {
         _lifecycle = new WritableDocumentLifecycle<DocumentEntry<TBody, TModel>>(
             (_, text) => ReadEntry(text),
             entry => TextOf(entry.Document),
+            writer,
             (_, unavailability, reason) => Unavailable(unavailability, reason));
     }
 
@@ -41,7 +44,7 @@ public abstract class LifecycleDocumentStore<TBody, TModel> : IDiagramDocumentSt
     public DocumentEntry<TBody, TModel> GetOrLoad(string path) => _lifecycle.GetOrLoad(path);
 
     /// <inheritdoc />
-    public DocumentSaveResult Save(string path, TBody document)
+    public async Task<DocumentSaveResult> SaveAsync(string path, TBody document, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
         ArgumentNullException.ThrowIfNull(document);
@@ -54,7 +57,7 @@ public abstract class LifecycleDocumentStore<TBody, TModel> : IDiagramDocumentSt
         }
 
         var entry = Entry(document);
-        var result = _lifecycle.Save(path, entry);
+        var result = await _lifecycle.SaveAsync(path, entry, cancellationToken);
         if (!result.Failed)
         {
             result = Kept(result, Saved(path, entry));
@@ -78,7 +81,7 @@ public abstract class LifecycleDocumentStore<TBody, TModel> : IDiagramDocumentSt
     /// <remarks>
     /// <para>
     /// <b>For a file other programs write while it is open</b>, as agents write an activity file:
-    /// the plain <see cref="Save(string, TBody)"/> would write the older text plus this one edit
+    /// the plain <see cref="SaveAsync(string, TBody, CancellationToken)"/> would write the older text plus this one edit
     /// over their change. <see cref="WritableDocumentLifecycle{TDocument}"/> says what this narrows
     /// and what it cannot close.
     /// </para>
@@ -86,7 +89,7 @@ public abstract class LifecycleDocumentStore<TBody, TModel> : IDiagramDocumentSt
     /// <b>The sessions hear about it only when it was written.</b> A refusal changed nothing.
     /// </para>
     /// </remarks>
-    public DocumentEditSaved Save(string path, DocumentEntry<TBody, TModel> basis, Func<TBody, string> edit)
+    public async Task<DocumentEditSaved> SaveAsync(string path, DocumentEntry<TBody, TModel> basis, Func<TBody, string> edit, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
         ArgumentNullException.ThrowIfNull(basis);
@@ -98,7 +101,7 @@ public abstract class LifecycleDocumentStore<TBody, TModel> : IDiagramDocumentSt
         // The lifecycle decides which entry the edit is applied to: the caller's, or one read afresh
         // when the file was written in between. Either way the edit gets a body of its own, so the
         // cached one is never changed under a reader.
-        var result = _lifecycle.Save(path, basis, current =>
+        var result = await _lifecycle.SaveAsync(path, basis, current =>
         {
             if (!current.IsUsable)
             {
@@ -116,7 +119,7 @@ public abstract class LifecycleDocumentStore<TBody, TModel> : IDiagramDocumentSt
 
             after = TextOf(body);
             return DocumentEdit<DocumentEntry<TBody, TModel>>.Applied(Entry(body));
-        });
+        }, cancellationToken);
 
         if (!result.Failed)
         {

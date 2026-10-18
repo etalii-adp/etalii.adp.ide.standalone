@@ -1,4 +1,5 @@
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Files;
 
 namespace EtAlii.Adp.Diagram.SupplyChain.Tests;
 
@@ -9,7 +10,7 @@ public sealed class SupplyChainDocumentStoreTests : DocumentStoreContract<ISuppl
 
     protected override string EditMarker => "# store contract marker";
 
-    protected override ISupplyChainDocumentStore CreateStore() => new SupplyChainDocumentStore();
+    protected override ISupplyChainDocumentStore CreateStore() => new SupplyChainDocumentStore(new FileWriter());
 
     protected override void Edit(LineDocument document) => document.Insert(1, [EditMarker]);
 

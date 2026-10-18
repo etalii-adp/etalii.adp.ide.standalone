@@ -34,12 +34,12 @@ public class CausalLoopDocumentStoreFailedReloadTests : IDisposable
     }
 
     [Fact]
-    public void ASaveAfterAReloadThatCouldNotRead_DoesNotWriteAnEmptyDocumentOverTheRealFile()
+    public async Task ASaveAfterAReloadThatCouldNotRead_DoesNotWriteAnEmptyDocumentOverTheRealFile()
     {
         // Arrange: a real diagram, loaded.
         var path = IoPath.Combine(_workspace, "loop.cld");
-        File.WriteAllText(path, Text);
-        var store = new CausalLoopDocumentStore();
+        await File.WriteAllTextAsync(path, Text, TestContext.Current.CancellationToken);
+        var store = new CausalLoopDocumentStore(new FileWriter());
         Assert.True(store.GetOrLoad(path).IsUsable);
 
         // Arrange, continued: a reload that cannot read the body.
@@ -55,10 +55,10 @@ public class CausalLoopDocumentStoreFailedReloadTests : IDisposable
         Assert.True(held.IsUsable, $"The failed reload replaced the last good diagram: {held.Unreadable}");
 
         // Act: whatever triggers the next save, once the file is readable again.
-        store.Save(path, held.Document);
+        await store.SaveAsync(path, held.Document, TestContext.Current.CancellationToken);
 
         // Assert: the real diagram is still on disk.
-        Assert.Equal(Text, File.ReadAllText(path));
+        Assert.Equal(Text, await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -71,7 +71,7 @@ public class CausalLoopDocumentStoreFailedReloadTests : IDisposable
         // which a publish in flight never raises.
         var path = IoPath.Combine(_workspace, "loop.cld");
         File.WriteAllText(path, Text);
-        var store = new CausalLoopDocumentStore();
+        var store = new CausalLoopDocumentStore(new FileWriter());
         Assert.True(store.GetOrLoad(path).IsUsable);
 
         File.Delete(path);
@@ -88,7 +88,7 @@ public class CausalLoopDocumentStoreFailedReloadTests : IDisposable
         // reloads on the delete leaves the store keeping the last good diagram.
         var path = IoPath.Combine(_workspace, "loop.cld");
         await File.WriteAllTextAsync(path, Text, TestContext.Current.CancellationToken);
-        var store = new CausalLoopDocumentStore();
+        var store = new CausalLoopDocumentStore(new FileWriter());
         var origin = new ToolOrigin("test", "causal-loop");
         using var events = new ProjectFileEvents();
         using var bridge = new DiagramDocumentReloadBridge([new DiagramDocumentReloader<ICausalLoopDocumentStore>(origin, store)], events);
@@ -103,23 +103,23 @@ public class CausalLoopDocumentStoreFailedReloadTests : IDisposable
     }
 
     [Fact]
-    public void ASaveOfADiagramThatCouldNotBeReadEvenOnce_RefusesAndLeavesTheFileAlone()
+    public async Task ASaveOfADiagramThatCouldNotBeReadEvenOnce_RefusesAndLeavesTheFileAlone()
     {
         // The case keeping the last good entry cannot cover: the very first read fails, so there
         // is nothing good to keep and the entry is Unreadable. Writing it would put its empty
         // document over the only copy of the diagram there is.
         var path = IoPath.Combine(_workspace, "loop.cld");
-        File.WriteAllText(path, Text);
-        var store = new CausalLoopDocumentStore();
+        await File.WriteAllTextAsync(path, Text, TestContext.Current.CancellationToken);
+        var store = new CausalLoopDocumentStore(new FileWriter());
 
         using (new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.None))
         {
             Assert.False(store.GetOrLoad(path).IsUsable, "The arrangement failed: the first read succeeded.");
         }
 
-        var answer = store.Save(path, store.GetOrLoad(path).Document);
+        var answer = await store.SaveAsync(path, store.GetOrLoad(path).Document, TestContext.Current.CancellationToken);
 
         Assert.NotEqual("", answer.Error);
-        Assert.Equal(Text, File.ReadAllText(path));
+        Assert.Equal(Text, await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
     }
 }

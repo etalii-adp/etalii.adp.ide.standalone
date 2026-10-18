@@ -8,20 +8,20 @@ public sealed record SetNodeNotesCommand(string BodyPath, string NodeId, string 
 internal sealed class SetNodeNotesCommandHandler(IMindmapDocumentStore documents)
     : MindmapCommandHandler(documents), ICommandHandler<SetNodeNotesCommand>
 {
-    public Task<CommandResult> ExecuteAsync(SetNodeNotesCommand command, CancellationToken cancellationToken = default)
+    public async Task<CommandResult> ExecuteAsync(SetNodeNotesCommand command, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(command);
         cancellationToken.ThrowIfCancellationRequested();
 
         if (!TryResolve(command.BodyPath, command.NodeId, out var document, out var node, out var failure))
         {
-            return Task.FromResult(failure);
+            return failure;
         }
 
         var previous = node.Notes;
         document.SetNotes(node, command.Notes);
-        var saved = Documents.Save(command.BodyPath, document, new MindmapNodeUpdated(command.NodeId));
+        var saved = await Documents.SaveAsync(command.BodyPath, document, new MindmapNodeUpdated(command.NodeId), cancellationToken);
 
-        return Task.FromResult(CommandResult.FromSave(saved, command with { Notes = previous }));
+        return CommandResult.FromSave(saved, command with { Notes = previous });
     }
 }

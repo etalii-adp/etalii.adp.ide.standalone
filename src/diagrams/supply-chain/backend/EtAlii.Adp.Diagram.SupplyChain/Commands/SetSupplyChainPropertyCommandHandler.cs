@@ -8,8 +8,8 @@ namespace EtAlii.Adp.Diagram.SupplyChain;
 public sealed class SetSupplyChainPropertyCommandHandler(ISupplyChainDocumentStore documents) : SupplyChainEditHandler<SetSupplyChainPropertyCommand>(documents)
 {
     /// <inheritdoc />
-    protected override CommandResult Execute(SetSupplyChainPropertyCommand command) =>
-        Read(command, out _, out _) is { } refusal ? CommandResult.Failure(refusal) : base.Execute(command);
+    protected override async Task<CommandResult> RunAsync(SetSupplyChainPropertyCommand command, CancellationToken cancellationToken) =>
+        Read(command, out _, out _) is { } refusal ? CommandResult.Failure(refusal) : await base.RunAsync(command, cancellationToken);
 
     /// <inheritdoc />
     protected override EditOutcome Apply(LineDocument document, SupplyChainModel model, SetSupplyChainPropertyCommand command)

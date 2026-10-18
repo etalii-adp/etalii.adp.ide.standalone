@@ -247,7 +247,7 @@ public class GhgDerivedGesturesTests
 
         public DocumentEntry<GhgBody, GhgModel> GetOrLoad(string path) => GhgEntries.Read(text);
 
-        public DocumentSaveResult Save(string path, GhgBody document) => DocumentSaveResult.Ok;
+        public Task<DocumentSaveResult> SaveAsync(string path, GhgBody document, CancellationToken cancellationToken) => Task.FromResult(DocumentSaveResult.Ok);
 
         public void Forget(string path)
         {

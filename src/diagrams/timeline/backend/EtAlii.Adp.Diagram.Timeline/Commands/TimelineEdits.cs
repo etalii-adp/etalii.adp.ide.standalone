@@ -36,10 +36,11 @@ internal static class TimelineEdits
     /// Runs <paramref name="command"/> against its document in <paramref name="documents"/>, with
     /// <paramref name="edit"/> handed the body and the model read from it.
     /// </summary>
-    public static CommandResult Run<TCommand>(
+    public static async Task<CommandResult> RunAsync<TCommand>(
         ITimelineDocumentStore documents,
         TCommand command,
-        Func<TimelineBody, TimelineModel, EditOutcome> edit)
+        Func<TimelineBody, TimelineModel, EditOutcome> edit,
+        CancellationToken cancellationToken)
         where TCommand : IDocumentEditCommand
     {
         ArgumentNullException.ThrowIfNull(documents);
@@ -66,7 +67,7 @@ internal static class TimelineEdits
             return CommandResult.Success();
         }
 
-        var saved = documents.Save(command.BodyPath, LineDocument.Parse(body.Text));
+        var saved = await documents.SaveAsync(command.BodyPath, LineDocument.Parse(body.Text), cancellationToken);
         return CommandResult.FromSave(saved, new RestoreDocumentCommand<ITimelineDocumentStore>(command.BodyPath, before, command));
     }
 

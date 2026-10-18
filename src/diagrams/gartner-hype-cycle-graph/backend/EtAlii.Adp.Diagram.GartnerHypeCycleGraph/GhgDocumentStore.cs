@@ -1,4 +1,5 @@
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Files;
 
 namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
 
@@ -6,7 +7,7 @@ namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
 /// The <c>.ghg</c> document store: the shared store, told how a body reads through its binding and
 /// what it means.
 /// </summary>
-public sealed class GhgDocumentStore : LifecycleDocumentStore<GhgBody, GhgModel>, IGhgDocumentStore
+public sealed class GhgDocumentStore(IFileWriter writer) : LifecycleDocumentStore<GhgBody, GhgModel>(writer), IGhgDocumentStore
 {
     /// <inheritdoc />
     protected override GhgBody Read(string text) => GhgBody.Parse(text);

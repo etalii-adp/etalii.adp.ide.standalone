@@ -1,4 +1,5 @@
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
 using Xunit;
 
@@ -23,7 +24,7 @@ namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph.Tests;
 public sealed class FdgCommandsTests : IDisposable
 {
     private readonly string _folder = Path.Combine(Path.GetTempPath(), "EtAlii.Adp.FdgCommandsTests", Guid.NewGuid().ToString("N"));
-    private readonly FdgDocumentStore _store = new();
+    private readonly FdgDocumentStore _store = new(new FileWriter());
     private readonly FdgTestDispatcher _dispatcher;
     private readonly byte[] _original;
 
@@ -253,7 +254,7 @@ public sealed class FdgCommandsTests : IDisposable
     public async Task ADocumentThatCouldNotBeRead_IsNeverWritten()
     {
         // Arrange: another program holds the file, so the first open cannot read it.
-        var store = new FdgDocumentStore();
+        var store = new FdgDocumentStore(new FileWriter());
         DocumentEntry<LineDocument, FdgModel> entry;
         await using (new FileStream(Body, FileMode.Open, FileAccess.Read, FileShare.None))
         {
@@ -267,7 +268,7 @@ public sealed class FdgCommandsTests : IDisposable
         var edited = await new FdgTestDispatcher(store).DispatchAsync(
             new RenameFdgElementCommand(Body, "planning", "Plan"),
             TestContext.Current.CancellationToken);
-        var saved = store.Save(Body, LineDocument.Parse("functional-decomposition-graph: 1\r\nelements: []\r\nconnections: []\r\n"));
+        var saved = await store.SaveAsync(Body, LineDocument.Parse("functional-decomposition-graph: 1\r\nelements: []\r\nconnections: []\r\n"), TestContext.Current.CancellationToken);
 
         // Assert: both refused, and the file is still the real diagram.
         Assert.False(edited.IsSuccess);

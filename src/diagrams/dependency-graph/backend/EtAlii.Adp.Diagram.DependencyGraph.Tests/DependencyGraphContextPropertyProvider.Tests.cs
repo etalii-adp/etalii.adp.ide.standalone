@@ -1,4 +1,5 @@
 using EtAlii.Adp.Context;
+using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
 using Xunit;
 using IoPath = System.IO.Path;
@@ -15,7 +16,7 @@ public class DependencyGraphContextPropertyProviderTests : IDisposable
         IoPath.GetTempPath(),
         "adp-dgr-properties-" + Guid.NewGuid().ToString("N"));
 
-    private readonly DependencyGraphDocumentStore _store = new();
+    private readonly DependencyGraphDocumentStore _store = new(new FileWriter());
     private readonly DependencyGraphContextPropertyProvider _properties;
     private readonly HistoryStackStore _historyStacks;
 

@@ -1,4 +1,5 @@
 using EtAlii.Adp.Diagram.Timeline.Tests.Parity;
+using EtAlii.Adp.Files;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -58,7 +59,7 @@ public class TimelineDocumentStoreLostEditTests : IDisposable
         // did it when this was found - GetOrLoad, splice through TimelineWriter (the parity oracle now), then ask the store to save.
         var path = IoPath.Combine(_workspace, "plan.tml");
         await File.WriteAllTextAsync(path, Text, TestContext.Current.CancellationToken);
-        var store = new TimelineDocumentStore();
+        var store = new TimelineDocumentStore(new FileWriter());
         var entry = store.GetOrLoad(path);
         var element = entry.Model.Elements.Single(candidate => candidate.Id == "aaa");
         TimelineWriter.SetBegin(entry.Document, element, "2026-03-01");
@@ -70,7 +71,7 @@ public class TimelineDocumentStoreLostEditTests : IDisposable
         // Act: the notification for an EARLIER write of this same file lands now. The store's own
         // guard is already cleared, so this is exactly what the bridge does with it.
         store.Reload(path);
-        var error = store.Save(path, entry.Document);
+        var error = await store.SaveAsync(path, entry.Document, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Equal("", error.Error);

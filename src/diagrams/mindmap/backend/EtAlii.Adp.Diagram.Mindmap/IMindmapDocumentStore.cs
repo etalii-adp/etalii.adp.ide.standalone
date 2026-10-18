@@ -42,7 +42,8 @@ public interface IMindmapDocumentStore : IDiagramDocumentStore
     /// whenever a reload landed between the edit and the save, and reported success for it.
     /// </param>
     /// <param name="change">What to tell listeners changed - not what to write.</param>
-    DocumentSaveResult Save(string bodyPath, MindmapDocument document, MindmapChange change);
+    /// <param name="cancellationToken">Gives up a wait for another save of the map; nothing is then written or cached.</param>
+    Task<DocumentSaveResult> SaveAsync(string bodyPath, MindmapDocument document, MindmapChange change, CancellationToken cancellationToken);
 
     /// <summary>
     /// Raised after every save, with what changed, so the open connections can be told; and after a

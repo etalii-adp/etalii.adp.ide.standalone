@@ -15,9 +15,9 @@ namespace EtAlii.Adp.Diagram.Sankey;
 public sealed class ScaleSankeyThicknessCommandHandler(ISankeyDocumentStore documents) : SankeyEditHandler<ScaleSankeyThicknessCommand>(documents)
 {
     /// <inheritdoc />
-    protected override CommandResult Execute(ScaleSankeyThicknessCommand command)
+    protected override async Task<CommandResult> RunAsync(ScaleSankeyThicknessCommand command, CancellationToken cancellationToken)
     {
-        return command.Steps == 0 ? CommandResult.Failure("A step of nothing changes nothing.") : base.Execute(command);
+        return command.Steps == 0 ? CommandResult.Failure("A step of nothing changes nothing.") : await base.RunAsync(command, cancellationToken);
     }
 
     /// <inheritdoc />

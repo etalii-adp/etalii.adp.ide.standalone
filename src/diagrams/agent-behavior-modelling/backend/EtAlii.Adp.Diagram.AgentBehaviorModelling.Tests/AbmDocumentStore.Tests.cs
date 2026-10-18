@@ -1,3 +1,5 @@
+using EtAlii.Adp.Files;
+
 namespace EtAlii.Adp.Diagram.AgentBehaviorModelling.Tests;
 
 /// <summary>The store over Markdown bodies, held to the contract every module's is.</summary>
@@ -7,7 +9,7 @@ public sealed class AbmDocumentStoreTests : DocumentStoreContract<IAbmDocumentSt
 
     protected override string EditMarker => "Store contract marker";
 
-    protected override IAbmDocumentStore CreateStore() => new AbmDocumentStore();
+    protected override IAbmDocumentStore CreateStore() => new AbmDocumentStore(new FileWriter());
 
     protected override void Edit(AbmBody document) =>
         document.Change(AbmEdits.Set(document.Model.Nodes[0], "label", EditMarker));

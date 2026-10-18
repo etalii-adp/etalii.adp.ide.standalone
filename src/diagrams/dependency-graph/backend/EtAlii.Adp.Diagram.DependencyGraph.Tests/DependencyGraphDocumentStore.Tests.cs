@@ -1,3 +1,4 @@
+using EtAlii.Adp.Files;
 using EtAlii.Adp.Specification.Disl;
 using EtAlii.Adp.Specification.Fbl.Planning;
 using Xunit;
@@ -13,7 +14,7 @@ public sealed class DependencyGraphDocumentStoreTests : DocumentStoreContract<ID
 
     protected override string EditMarker => "Store contract marker";
 
-    protected override IDependencyGraphDocumentStore CreateStore() => new DependencyGraphDocumentStore();
+    protected override IDependencyGraphDocumentStore CreateStore() => new DependencyGraphDocumentStore(new FileWriter());
 
     protected override void Edit(DependencyGraphBody document) =>
         document.Change(new ModelChange.Set(document.Model.Elements.First(element => element.Type == "Node").Id, new Dictionary<string, object?> { ["label"] = EditMarker }));
@@ -23,23 +24,23 @@ public sealed class DependencyGraphDocumentStoreTests : DocumentStoreContract<ID
     protected override bool IsEmpty(DislModel model) => model.Diagram.Elements.Count == 0;
 
     [Fact]
-    public void AGraphThatIsNotYaml_IsHeldUnreadable_AndASaveIsRefusedUnwritten()
+    public async Task AGraphThatIsNotYaml_IsHeldUnreadable_AndASaveIsRefusedUnwritten()
     {
         // Arrange.
         using var folder = TestFolder.Create("dependency-graph-store");
         var body = folder.Combine("broken.dgr");
-        File.WriteAllText(body, "elements: [\n  - id: a\n");
-        var before = File.ReadAllText(body);
-        var store = new DependencyGraphDocumentStore();
+        await File.WriteAllTextAsync(body, "elements: [\n  - id: a\n", TestContext.Current.CancellationToken);
+        var before = await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken);
+        var store = new DependencyGraphDocumentStore(new FileWriter());
 
         // Act.
         var entry = store.GetOrLoad(body);
-        var saved = store.Save(body, entry.Document);
+        var saved = await store.SaveAsync(body, entry.Document, TestContext.Current.CancellationToken);
 
         // Assert: what the file holds is unknown, so the empty model is not written over it.
         Assert.False(entry.IsUsable);
         Assert.Empty(entry.Model.Diagram.Elements);
         Assert.True(saved.Failed);
-        Assert.Equal(before, File.ReadAllText(body));
+        Assert.Equal(before, await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken));
     }
 }

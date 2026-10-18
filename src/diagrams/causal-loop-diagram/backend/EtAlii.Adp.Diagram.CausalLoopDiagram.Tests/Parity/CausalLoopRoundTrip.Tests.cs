@@ -33,10 +33,10 @@ public sealed class CausalLoopRoundTripTests : IDisposable
         var text = await ReadAsync(relative);
         var path = Path.Combine(_root, "unchanged.cld");
         await File.WriteAllBytesAsync(path, Encoding.UTF8.GetBytes(text), TestContext.Current.CancellationToken);
-        var store = new CausalLoopDocumentStore();
+        var store = new CausalLoopDocumentStore(new FileWriter());
 
         // Act.
-        var saved = store.Save(path, store.GetOrLoad(path).Document);
+        var saved = await store.SaveAsync(path, store.GetOrLoad(path).Document, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.False(saved.Failed, saved.Error);
@@ -91,7 +91,7 @@ public sealed class CausalLoopRoundTripTests : IDisposable
         {
             var path = Path.Combine(_root, $"{Guid.NewGuid():N}.cld");
             await File.WriteAllBytesAsync(path, bytes, TestContext.Current.CancellationToken);
-            var store = new CausalLoopDocumentStore();
+            var store = new CausalLoopDocumentStore(new FileWriter());
 
             // Act.
             var result = await run(store, path);

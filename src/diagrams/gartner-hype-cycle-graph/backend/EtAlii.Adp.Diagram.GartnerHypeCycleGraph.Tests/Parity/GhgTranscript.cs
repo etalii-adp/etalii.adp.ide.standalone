@@ -1,6 +1,7 @@
 using System.Text.Json;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
 using Google.Protobuf.Reflection;
 using Path = System.IO.Path;
@@ -404,7 +405,7 @@ internal static class GhgTranscript
 
         public string Body { get; }
 
-        public GhgDocumentStore Store { get; } = new();
+        public GhgDocumentStore Store { get; } = new(new FileWriter());
 
         public HistoryStackStore History { get; }
 
@@ -435,7 +436,7 @@ internal static class GhgTranscript
 
         public DocumentEntry<GhgBody, GhgModel> GetOrLoad(string path) => inner.GetOrLoad(path) with { Unreadable = "parity: read-only" };
 
-        public DocumentSaveResult Save(string path, GhgBody document) => inner.Save(path, document);
+        public Task<DocumentSaveResult> SaveAsync(string path, GhgBody document, CancellationToken cancellationToken) => inner.SaveAsync(path, document, cancellationToken);
 
         public void Forget(string path) => inner.Forget(path);
 

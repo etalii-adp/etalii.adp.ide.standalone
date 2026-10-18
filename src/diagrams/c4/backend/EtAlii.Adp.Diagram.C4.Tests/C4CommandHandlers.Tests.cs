@@ -1,4 +1,5 @@
 ﻿using EtAlii.Adp.Documents;
+using EtAlii.Adp.Files;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 using Microsoft.Extensions.DependencyInjection;
@@ -11,7 +12,7 @@ public sealed class C4CommandHandlersTests : EditHandlerContract<IC4DocumentStor
 {
     protected override string Example => C4DocumentStoreTests.Courier;
 
-    protected override IC4DocumentStore CreateStore() => new C4DocumentStore();
+    protected override IC4DocumentStore CreateStore() => new C4DocumentStore(new FileWriter());
 
     protected override IC4DocumentStore Warning(IC4DocumentStore store, string warning) => new WarningStore(store, warning);
 

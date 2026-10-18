@@ -318,11 +318,11 @@ public class CommandsTests : IDisposable
     }
 
     [Fact]
-    public void Save_NeverLeavesAScratchFileBehind_AndPersistsAssignedIds()
+    public async Task Save_NeverLeavesAScratchFileBehind_AndPersistsAssignedIds()
     {
         // Arrange and act.
         _ = Document;
-        _documents.Save(_bodyPath, _documents.GetOrLoad(_bodyPath), MindmapStructureChanged.Nothing);
+        await _documents.SaveAsync(_bodyPath, _documents.GetOrLoad(_bodyPath), MindmapStructureChanged.Nothing, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Empty(Directory.GetFiles(_root, "~adp-*"));

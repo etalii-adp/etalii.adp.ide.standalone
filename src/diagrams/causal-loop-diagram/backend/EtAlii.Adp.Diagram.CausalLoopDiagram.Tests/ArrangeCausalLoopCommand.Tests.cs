@@ -1,3 +1,4 @@
+using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
 using EtAlii.Adp.Layout;
 using Xunit;
@@ -42,7 +43,7 @@ public class ArrangeCausalLoopCommandTests : IDisposable
     private readonly string _root;
     private readonly string _bodyPath;
     private readonly string _adpPath;
-    private readonly CausalLoopDocumentStore _store = new();
+    private readonly CausalLoopDocumentStore _store = new(new FileWriter());
 
     public ArrangeCausalLoopCommandTests()
     {

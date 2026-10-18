@@ -1,4 +1,5 @@
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph.Tests;
@@ -8,7 +9,7 @@ public sealed class FdgCommandHandlersTests : EditHandlerContract<IFdgDocumentSt
 {
     protected override string Example => FieldServiceExample.Path;
 
-    protected override IFdgDocumentStore CreateStore() => new FdgDocumentStore();
+    protected override IFdgDocumentStore CreateStore() => new FdgDocumentStore(new FileWriter());
 
     protected override IFdgDocumentStore Warning(IFdgDocumentStore store, string warning) => new WarningStore(store, warning);
 

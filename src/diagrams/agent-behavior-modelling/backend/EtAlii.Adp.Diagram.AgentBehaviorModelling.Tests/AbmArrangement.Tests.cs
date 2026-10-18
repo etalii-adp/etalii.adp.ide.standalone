@@ -1,4 +1,5 @@
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Files;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 using Xunit;
@@ -12,7 +13,7 @@ namespace EtAlii.Adp.Diagram.AgentBehaviorModelling.Tests;
 public sealed class AbmArrangementTests : IDisposable
 {
     private readonly string _folder = Path.Combine(Path.GetTempPath(), "EtAlii.Adp.AbmArrangementTests", Guid.NewGuid().ToString("N"));
-    private readonly AbmTestDispatcher _dispatcher = new(new AbmDocumentStore());
+    private readonly AbmTestDispatcher _dispatcher = new(new AbmDocumentStore(new FileWriter()));
 
     public AbmArrangementTests()
     {

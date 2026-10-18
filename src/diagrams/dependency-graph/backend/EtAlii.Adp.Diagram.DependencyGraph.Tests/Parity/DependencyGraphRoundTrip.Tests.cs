@@ -1,3 +1,4 @@
+using EtAlii.Adp.Files;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.DependencyGraph.Tests.Parity;
@@ -25,12 +26,12 @@ public class DependencyGraphRoundTripTests
         using var folder = TestFolder.Create("dependency-graph-round-trip");
         var path = folder.Combine("body.dgr");
         await File.WriteAllBytesAsync(path, bytes, TestContext.Current.CancellationToken);
-        var store = new DependencyGraphDocumentStore();
+        var store = new DependencyGraphDocumentStore(new FileWriter());
         var entry = store.GetOrLoad(path);
         if (!entry.IsUsable) return;
 
         // Act.
-        var saved = store.Save(path, entry.Document);
+        var saved = await store.SaveAsync(path, entry.Document, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Equal("", saved.Error);

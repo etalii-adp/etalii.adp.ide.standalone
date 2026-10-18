@@ -7,11 +7,11 @@ namespace EtAlii.Adp.Diagram.SupplyChain;
 public sealed class AddSupplyChainNodeCommandHandler(ISupplyChainDocumentStore documents) : SupplyChainEditHandler<AddSupplyChainNodeCommand>(documents)
 {
     /// <inheritdoc />
-    protected override CommandResult Execute(AddSupplyChainNodeCommand command)
+    protected override async Task<CommandResult> RunAsync(AddSupplyChainNodeCommand command, CancellationToken cancellationToken)
     {
         return !SupplyChainNodeTypes.IsKnown(command.NodeType)
             ? CommandResult.Failure($"This notation has no `{command.NodeType}` stage.")
-            : base.Execute(command.NodeId.Length > 0 ? command : command with { NodeId = ShortGuid.NewShortGuid().ToString() });
+            : await base.RunAsync(command.NodeId.Length > 0 ? command : command with { NodeId = ShortGuid.NewShortGuid().ToString() }, cancellationToken);
     }
 
     /// <inheritdoc />

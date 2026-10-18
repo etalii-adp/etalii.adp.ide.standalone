@@ -1,3 +1,4 @@
+using EtAlii.Adp.Files;
 using EtAlii.Adp.Specification.Fbl.Planning;
 using Xunit;
 
@@ -12,7 +13,7 @@ public sealed class AadDocumentStoreTests : DocumentStoreContract<IAadDocumentSt
 
     protected override string EditMarker => "Store contract marker";
 
-    protected override IAadDocumentStore CreateStore() => new AadDocumentStore();
+    protected override IAadDocumentStore CreateStore() => new AadDocumentStore(new FileWriter());
 
     protected override void Edit(AadBody document) =>
         document.Change(new ModelChange.Set(AadModel.Read(document).Elements[0].Id, new Dictionary<string, object?>(StringComparer.Ordinal) { ["name"] = EditMarker }));
@@ -22,66 +23,66 @@ public sealed class AadDocumentStoreTests : DocumentStoreContract<IAadDocumentSt
     protected override bool IsEmpty(AadModel model) => model.Elements.Count == 0;
 
     [Fact]
-    public void AFileThatIsNotAnActivityFile_IsHeldUnreadable_AndAnEditIsRefusedUnwritten()
+    public async Task AFileThatIsNotAnActivityFile_IsHeldUnreadable_AndAnEditIsRefusedUnwritten()
     {
         // Arrange.
         using var folder = TestFolder.Create("aad-store");
         var body = folder.Combine("broken.aad");
-        File.WriteAllText(body, "projects: [unterminated\r\n");
-        var store = new AadDocumentStore();
+        await File.WriteAllTextAsync(body, "projects: [unterminated\r\n", TestContext.Current.CancellationToken);
+        var store = new AadDocumentStore(new FileWriter());
 
         // Act.
         var entry = store.GetOrLoad(body);
-        var saved = store.Save(body, entry, _ => "");
+        var saved = await store.SaveAsync(body, entry, _ => "", TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.False(entry.IsUsable);
         Assert.True(saved.Result.Failed);
-        Assert.Equal("projects: [unterminated\r\n", File.ReadAllText(body));
+        Assert.Equal("projects: [unterminated\r\n", await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken));
     }
 
     [Fact]
-    public void AnEdit_IsAppliedToWhatTheFileHoldsNow_WhenItWasWrittenSinceItWasRead()
+    public async Task AnEdit_IsAppliedToWhatTheFileHoldsNow_WhenItWasWrittenSinceItWasRead()
     {
         // Arrange.
         using var folder = TestFolder.Create("aad-store");
         var body = folder.Combine("work.aad");
         File.Copy(Example, body);
-        var store = new AadDocumentStore();
+        var store = new AadDocumentStore(new FileWriter());
         var basis = store.GetOrLoad(body);
-        var written = File.ReadAllText(body) + "# an agent's line\r\n";
-        File.WriteAllText(body, written);
+        var written = await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken) + "# an agent's line\r\n";
+        await File.WriteAllTextAsync(body, written, TestContext.Current.CancellationToken);
 
         // Act.
-        var saved = store.Save(body, basis, document =>
-            document.Change(new ModelChange.Set(AadModel.Read(document).Elements[0].Id, new Dictionary<string, object?>(StringComparer.Ordinal) { ["name"] = EditMarker })).Refusal ?? "");
+        var saved = (await store.SaveAsync(body, basis, document =>
+            document.Change(new ModelChange.Set(AadModel.Read(document).Elements[0].Id, new Dictionary<string, object?>(StringComparer.Ordinal) { ["name"] = EditMarker })).Refusal ?? "", TestContext.Current.CancellationToken));
 
         // Assert.
         Assert.False(saved.Result.Failed, saved.Result.Error);
         Assert.Equal(written, saved.Before);
-        Assert.Contains("# an agent's line", File.ReadAllText(body), StringComparison.Ordinal);
-        Assert.Contains(EditMarker, File.ReadAllText(body), StringComparison.Ordinal);
+        Assert.Contains("# an agent's line", await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken), StringComparison.Ordinal);
+        Assert.Contains(EditMarker, await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken), StringComparison.Ordinal);
     }
 
     [Fact]
-    public void ARefusedEdit_WritesNothing_AndTellsNoSession()
+    public async Task ARefusedEdit_WritesNothing_AndTellsNoSession()
     {
         // Arrange.
         using var folder = TestFolder.Create("aad-store");
         var body = folder.Combine("work.aad");
         File.Copy(Example, body);
-        var before = File.ReadAllText(body);
-        var store = new AadDocumentStore();
+        var before = await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken);
+        var store = new AadDocumentStore(new FileWriter());
         var told = 0;
         store.Changed += (_, _) => told++;
 
         // Act.
-        var saved = store.Save(body, store.GetOrLoad(body), _ => "Not today.");
+        var saved = await store.SaveAsync(body, store.GetOrLoad(body), _ => "Not today.", TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Equal("Not today.", saved.Result.Error);
         Assert.Equal(before, saved.After);
-        Assert.Equal(before, File.ReadAllText(body));
+        Assert.Equal(before, await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken));
         Assert.Equal(0, told);
     }
 }

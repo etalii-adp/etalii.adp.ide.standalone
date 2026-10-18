@@ -43,12 +43,12 @@ public class C4DocumentStoreFailedReloadTests : IDisposable
     }
 
     [Fact]
-    public void ASaveAfterAReloadThatCouldNotRead_DoesNotWriteAnEmptyModelOverTheRealFile()
+    public async Task ASaveAfterAReloadThatCouldNotRead_DoesNotWriteAnEmptyModelOverTheRealFile()
     {
         // Arrange: a real model, loaded.
         var body = IoPath.Combine(_root, "model.dsl");
-        File.WriteAllText(body, Model);
-        var store = new C4DocumentStore();
+        await File.WriteAllTextAsync(body, Model, TestContext.Current.CancellationToken);
+        var store = new C4DocumentStore(new FileWriter());
         Assert.NotEmpty(store.GetOrLoad(body).Model.Elements);
 
         // Arrange, continued: a reload that cannot read the body.
@@ -62,33 +62,33 @@ public class C4DocumentStoreFailedReloadTests : IDisposable
         Assert.NotEmpty(store.GetOrLoad(body).Model.Elements);
 
         // Act: whatever triggers the next save, once the file is readable again.
-        store.Save(body, store.GetOrLoad(body).Document);
+        await store.SaveAsync(body, store.GetOrLoad(body).Document, TestContext.Current.CancellationToken);
 
         // Assert: the real model is still on disk.
-        var onDisk = File.ReadAllText(body);
+        var onDisk = await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken);
         Assert.Contains("Customer", onDisk, StringComparison.Ordinal);
         Assert.Contains("Banking", onDisk, StringComparison.Ordinal);
     }
 
     [Fact]
-    public void ASaveOfAModelThatCouldNotBeReadEvenOnce_RefusesAndLeavesTheFileAlone()
+    public async Task ASaveOfAModelThatCouldNotBeReadEvenOnce_RefusesAndLeavesTheFileAlone()
     {
         // The case keeping the last good model cannot cover: the very first read fails, so there is
         // nothing good to keep and the store opens the model as empty. Writing that would put an
         // empty model over the only copy of the real one.
         var body = IoPath.Combine(_root, "model.dsl");
-        File.WriteAllText(body, Model);
-        var store = new C4DocumentStore();
+        await File.WriteAllTextAsync(body, Model, TestContext.Current.CancellationToken);
+        var store = new C4DocumentStore(new FileWriter());
 
         using (new FileStream(body, FileMode.Open, FileAccess.Read, FileShare.None))
         {
             Assert.Empty(store.GetOrLoad(body).Model.Elements); // the arrangement: the first read failed
         }
 
-        var answer = store.Save(body, store.GetOrLoad(body).Document);
+        var answer = await store.SaveAsync(body, store.GetOrLoad(body).Document, TestContext.Current.CancellationToken);
 
         Assert.NotEqual("", answer.Error);
-        Assert.Equal(Model, File.ReadAllText(body));
+        Assert.Equal(Model, await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -102,7 +102,7 @@ public class C4DocumentStoreFailedReloadTests : IDisposable
         // publish in flight never raises - before it is treated as gone.
         var body = IoPath.Combine(_root, "model.dsl");
         File.WriteAllText(body, Model);
-        var store = new C4DocumentStore();
+        var store = new C4DocumentStore(new FileWriter());
         Assert.NotEmpty(store.GetOrLoad(body).Model.Elements);
 
         File.Delete(body);
@@ -119,7 +119,7 @@ public class C4DocumentStoreFailedReloadTests : IDisposable
         // keeping the last good model, and the deleted diagram stays drawn.
         var body = IoPath.Combine(_root, "model.dsl");
         await File.WriteAllTextAsync(body, Model, TestContext.Current.CancellationToken);
-        var store = new C4DocumentStore();
+        var store = new C4DocumentStore(new FileWriter());
         var origin = new ToolOrigin("test", "c4");
         using var events = new ProjectFileEvents();
         using var bridge = new DiagramDocumentReloadBridge([new DiagramDocumentReloader<IC4DocumentStore>(origin, store)], events);
@@ -141,7 +141,7 @@ public class C4DocumentStoreFailedReloadTests : IDisposable
         // change event, so an empty model installed and then healed still counts.
         var body = IoPath.Combine(_root, "model.dsl");
         await File.WriteAllTextAsync(body, Model, TestContext.Current.CancellationToken);
-        var store = new C4DocumentStore();
+        var store = new C4DocumentStore(new FileWriter());
         var origin = new ToolOrigin("test", "c4");
         using var events = new ProjectFileEvents();
         using var bridge = new DiagramDocumentReloadBridge([new DiagramDocumentReloader<IC4DocumentStore>(origin, store)], events);
@@ -174,15 +174,15 @@ public class C4DocumentStoreFailedReloadTests : IDisposable
     }
 
     [Fact]
-    public void ANewBodyThatDoesNotExistYet_StillOpensEmptyAndSaves()
+    public async Task ANewBodyThatDoesNotExistYet_StillOpensEmptyAndSaves()
     {
         // The must-not-catch half: a missing body on a FIRST load is a new document, as it always
         // was - refusing to save it would break creating a diagram.
         var body = IoPath.Combine(_root, "new.dsl");
-        var store = new C4DocumentStore();
+        var store = new C4DocumentStore(new FileWriter());
 
         Assert.Empty(store.GetOrLoad(body).Model.Elements);
-        var answer = store.Save(body, store.GetOrLoad(body).Document);
+        var answer = await store.SaveAsync(body, store.GetOrLoad(body).Document, TestContext.Current.CancellationToken);
 
         Assert.Equal("", answer.Error);
         Assert.True(File.Exists(body), "A new, empty model was not saved.");

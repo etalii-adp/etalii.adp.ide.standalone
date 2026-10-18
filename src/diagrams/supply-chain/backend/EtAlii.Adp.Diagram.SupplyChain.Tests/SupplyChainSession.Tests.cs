@@ -1,4 +1,5 @@
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Files;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.SupplyChain.Tests;
@@ -10,7 +11,7 @@ namespace EtAlii.Adp.Diagram.SupplyChain.Tests;
 public sealed class SupplyChainSessionTests : IDisposable
 {
     private readonly SupplyChainTestFolder _folder = new(SupplyChainExamples.Automotive, "automotive.supply");
-    private readonly SupplyChainDocumentStore _store = new();
+    private readonly SupplyChainDocumentStore _store = new(new FileWriter());
     private readonly SupplyChainSelections _selections = new();
     private readonly ShortGuid _watchId = ShortGuid.NewShortGuid();
 

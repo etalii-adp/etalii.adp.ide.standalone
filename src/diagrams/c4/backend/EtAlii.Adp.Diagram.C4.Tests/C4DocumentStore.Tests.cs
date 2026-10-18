@@ -1,4 +1,5 @@
 ﻿using EtAlii.Adp.Documents;
+using EtAlii.Adp.Files;
 
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
@@ -18,7 +19,7 @@ public sealed class C4DocumentStoreTests : DocumentStoreContract<IC4DocumentStor
 
     protected override string EditMarker => "Store contract marker";
 
-    protected override IC4DocumentStore CreateStore() => new C4DocumentStore();
+    protected override IC4DocumentStore CreateStore() => new C4DocumentStore(new FileWriter());
 
     protected override void Edit(LineDocument document)
     {

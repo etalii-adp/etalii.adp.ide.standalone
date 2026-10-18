@@ -1,3 +1,4 @@
+using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.AgentActivityDiagram.Tests;
@@ -7,7 +8,7 @@ public sealed class AadCommandHandlersTests : EditHandlerContract<IAadDocumentSt
 {
     protected override string Example => Path.Combine(AppContext.BaseDirectory, "Fixtures", "one-day.aad");
 
-    protected override IAadDocumentStore CreateStore() => new AadDocumentStore();
+    protected override IAadDocumentStore CreateStore() => new AadDocumentStore(new FileWriter());
 
     protected override IAadDocumentStore Warning(IAadDocumentStore store, string warning) => new WarningStore(store, warning);
 

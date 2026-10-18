@@ -1,3 +1,4 @@
+using EtAlii.Adp.Files;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -24,7 +25,7 @@ public sealed class LifecycleDocumentStoreHooksTests : IDisposable
     }
 
     [Fact]
-    public void ASave_CarriesTheWarningOfWhatIsKeptBesideIt_AndTellsItBeforeTheSessions()
+    public async Task ASave_CarriesTheWarningOfWhatIsKeptBesideIt_AndTellsItBeforeTheSessions()
     {
         // Arrange.
         var path = Write("before\n");
@@ -33,7 +34,7 @@ public sealed class LifecycleDocumentStoreHooksTests : IDisposable
         document.Replace(new LineRange(0, 0), ["after"]);
 
         // Act.
-        var saved = store.Save(path, document);
+        var saved = await store.SaveAsync(path, document, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.False(saved.Failed, saved.Error);
@@ -42,7 +43,7 @@ public sealed class LifecycleDocumentStoreHooksTests : IDisposable
     }
 
     [Fact]
-    public void AnEditSavedAgainstTheFile_CarriesTheWarningToo()
+    public async Task AnEditSavedAgainstTheFile_CarriesTheWarningToo()
     {
         // Arrange.
         var path = Write("before\n");
@@ -50,11 +51,11 @@ public sealed class LifecycleDocumentStoreHooksTests : IDisposable
         var basis = store.GetOrLoad(path);
 
         // Act.
-        var saved = store.Save(path, basis, body =>
+        var saved = (await store.SaveAsync(path, basis, body =>
         {
             body.Replace(new LineRange(0, 0), ["after"]);
             return "";
-        });
+        }, TestContext.Current.CancellationToken));
 
         // Assert.
         Assert.False(saved.Result.Failed, saved.Result.Error);
@@ -102,6 +103,7 @@ public sealed class LifecycleDocumentStoreHooksTests : IDisposable
         private readonly string _warning;
 
         public KeepingStore(string warning)
+            : base(new FileWriter())
         {
             _warning = warning;
             Changed += (_, _) => Heard.Add("changed");

@@ -1,3 +1,4 @@
+using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
 using Xunit;
 using IoPath = System.IO.Path;
@@ -16,7 +17,7 @@ public class PipelineCommandsTests : IDisposable
         IoPath.GetTempPath(),
         "adp-pipeline-commands-" + Guid.NewGuid().ToString("N"));
 
-    private readonly PipelineDocumentStore _store = new();
+    private readonly PipelineDocumentStore _store = new(new FileWriter());
 
     public PipelineCommandsTests() => Directory.CreateDirectory(_workspace);
 

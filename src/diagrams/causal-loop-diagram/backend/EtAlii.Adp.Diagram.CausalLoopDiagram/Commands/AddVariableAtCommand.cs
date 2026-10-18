@@ -21,7 +21,7 @@ public sealed record AddVariableAtCommand(
 public sealed class AddVariableAtCommandHandler(ICausalLoopDocumentStore documents)
     : ICommandHandler<AddVariableAtCommand>
 {
-    public Task<CommandResult> ExecuteAsync(AddVariableAtCommand command, CancellationToken cancellationToken = default)
+    public async Task<CommandResult> ExecuteAsync(AddVariableAtCommand command, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(command);
         cancellationToken.ThrowIfCancellationRequested();
@@ -29,14 +29,14 @@ public sealed class AddVariableAtCommandHandler(ICausalLoopDocumentStore documen
         var entry = documents.GetOrLoad(command.BodyPath);
         if (!entry.IsUsable)
         {
-            return Task.FromResult(CommandResult.Failure(
-                "This causal loop diagram could not be read, so nothing can be added until it is fixed."));
+            return CommandResult.Failure(
+                "This causal loop diagram could not be read, so nothing can be added until it is fixed.");
         }
 
         var beforeBody = entry.Document.Text;
         if (CausalLoopEdits.AdditionRefusal(entry.Model, command.Id, command.Label) is { } refusal)
         {
-            return Task.FromResult(CommandResult.Failure(refusal));
+            return CommandResult.Failure(refusal);
         }
 
         // Edited on a copy, as every other edit is, so a refusal leaves nothing behind for the next save.
@@ -44,13 +44,13 @@ public sealed class AddVariableAtCommandHandler(ICausalLoopDocumentStore documen
         var added = CausalLoopEdits.AddVariable(body, command.Id, command.Label);
         if (!added.WasApplied)
         {
-            return Task.FromResult(CommandResult.Failure(added.Refusal!));
+            return CommandResult.Failure(added.Refusal!);
         }
 
-        var saved = documents.Save(command.BodyPath, body);
+        var saved = await documents.SaveAsync(command.BodyPath, body, cancellationToken);
         if (saved.Failed)
         {
-            return Task.FromResult(CommandResult.Failure(saved.Error));
+            return CommandResult.Failure(saved.Error);
         }
 
         RegistrationPosition? priorPosition;
@@ -64,14 +64,14 @@ public sealed class AddVariableAtCommandHandler(ICausalLoopDocumentStore documen
             // The variable is stated; only its position could not be written. Rather than leave a
             // half-done edit that undo cannot fully reverse, put the document back and report.
             RestoreCausalLoopDocument.Restore(documents, command.BodyPath, beforeBody);
-            return Task.FromResult(CommandResult.Failure($"Could not store the variable's position: {exception.Message}"));
+            return CommandResult.Failure($"Could not store the variable's position: {exception.Message}");
         }
 
         // Built from the save, so a warning of it reaches the user (code-structure FR-022).
-        return Task.FromResult(CommandResult.FromSave(
+        return CommandResult.FromSave(
             saved,
             new RestoreVariableAdditionCommand(
-                command.BodyPath, beforeBody, command.RegistrationPath, $"variable:{command.Id}", priorPosition, command)));
+                command.BodyPath, beforeBody, command.RegistrationPath, $"variable:{command.Id}", priorPosition, command));
     }
 }
 

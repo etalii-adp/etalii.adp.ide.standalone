@@ -1,6 +1,7 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
 using Xunit;
 using IoPath = System.IO.Path;
@@ -17,7 +18,7 @@ public class DependencyGraphToolboxTests : IDisposable
         IoPath.GetTempPath(),
         "adp-dgr-toolbox-" + Guid.NewGuid().ToString("N"));
 
-    private readonly DependencyGraphDocumentStore _store = new();
+    private readonly DependencyGraphDocumentStore _store = new(new FileWriter());
     private readonly DislToolboxProvider _toolbox = new(Diagram.DependencyGraph.Origin, DependencyGraphDefinition.Definition);
     private readonly DependencyGraphContextActionProvider _actions;
 

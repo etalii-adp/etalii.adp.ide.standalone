@@ -1,4 +1,5 @@
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Files;
 
 namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph.Tests;
 
@@ -9,7 +10,7 @@ public sealed class FdgDocumentStoreTests : DocumentStoreContract<IFdgDocumentSt
 
     protected override string EditMarker => "# store contract marker";
 
-    protected override IFdgDocumentStore CreateStore() => new FdgDocumentStore();
+    protected override IFdgDocumentStore CreateStore() => new FdgDocumentStore(new FileWriter());
 
     protected override void Edit(LineDocument document) => document.Insert(1, [EditMarker]);
 

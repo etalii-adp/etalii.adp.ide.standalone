@@ -35,9 +35,9 @@ internal sealed class AddC4ViewCommandHandler(IC4DocumentStore documents) : C4Ed
     private readonly IC4DocumentStore _documents = documents;
 
     /// <inheritdoc />
-    protected override CommandResult Execute(AddC4ViewCommand command)
+    protected override async Task<CommandResult> RunAsync(AddC4ViewCommand command, CancellationToken cancellationToken)
     {
-        var added = base.Execute(command);
+        var added = await base.RunAsync(command, cancellationToken);
         if (!added.IsSuccess)
         {
             return added;
@@ -53,7 +53,7 @@ internal sealed class AddC4ViewCommandHandler(IC4DocumentStore documents) : C4Ed
         {
             // The view is already in the document; leaving it there with no registration would
             // be a half-done job, so undo it before reporting.
-            C4ViewBlock.RemoveView(_documents, command.BodyPath, command.ViewKey);
+            await C4ViewBlock.RemoveViewAsync(_documents, command.BodyPath, command.ViewKey, cancellationToken);
             return CommandResult.Failure($"Could not create {Path.GetFileName(command.RegistrationPath)}: {exception.Message}");
         }
 
@@ -96,9 +96,9 @@ internal sealed class AddC4ViewCommandHandler(IC4DocumentStore documents) : C4Ed
 internal sealed class RemoveC4ViewCommandHandler(IC4DocumentStore documents) : C4EditHandler<RemoveC4ViewCommand>(documents)
 {
     /// <inheritdoc />
-    protected override CommandResult Execute(RemoveC4ViewCommand command)
+    protected override async Task<CommandResult> RunAsync(RemoveC4ViewCommand command, CancellationToken cancellationToken)
     {
-        var removed = base.Execute(command);
+        var removed = await base.RunAsync(command, cancellationToken);
         if (!removed.IsSuccess)
         {
             return removed;
@@ -231,7 +231,7 @@ internal static class C4ViewBlock
     }
 
     /// <summary>Removes a view that was saved into the document at <paramref name="bodyPath"/>, and saves that.</summary>
-    public static void RemoveView(IC4DocumentStore documents, string bodyPath, string viewKey)
+    public static async Task RemoveViewAsync(IC4DocumentStore documents, string bodyPath, string viewKey, CancellationToken cancellationToken)
     {
         var entry = documents.GetOrLoad(bodyPath);
         var copy = LineDocument.Parse(entry.Document.Text);
@@ -246,7 +246,7 @@ internal static class C4ViewBlock
         // view whose registration could not be written, and the caller is already returning
         // that failure. A second sentence about the undo would replace the one that says
         // what actually went wrong.
-        _ = documents.Save(bodyPath, copy);
+        _ = await documents.SaveAsync(bodyPath, copy, cancellationToken);
     }
 
     /// <summary>A component view is scoped to a container, so it needs one rather than a system.</summary>

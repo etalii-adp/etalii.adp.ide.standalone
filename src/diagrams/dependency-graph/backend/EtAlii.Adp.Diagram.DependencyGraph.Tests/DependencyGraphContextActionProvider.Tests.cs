@@ -1,5 +1,6 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
 using Xunit;
 using IoPath = System.IO.Path;
@@ -16,7 +17,7 @@ public class DependencyGraphContextActionProviderTests : IDisposable
         IoPath.GetTempPath(),
         "adp-dgr-actions-" + Guid.NewGuid().ToString("N"));
 
-    private readonly DependencyGraphDocumentStore _store = new();
+    private readonly DependencyGraphDocumentStore _store = new(new FileWriter());
     private readonly DependencyGraphContextActionProvider _actions;
     private readonly HistoryStackStore _historyStacks;
 

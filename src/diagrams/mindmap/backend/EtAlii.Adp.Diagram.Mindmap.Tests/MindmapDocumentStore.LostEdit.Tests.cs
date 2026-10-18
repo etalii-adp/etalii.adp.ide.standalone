@@ -1,3 +1,4 @@
+using EtAlii.Adp.Files;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -34,7 +35,7 @@ public class MindmapDocumentStoreLostEditTests : IDisposable
         IoPath.GetTempPath(),
         "adp-mindmap-lost-edit-" + Guid.NewGuid().ToString("N"));
 
-    private readonly MindmapDocumentStore _store = new();
+    private readonly MindmapDocumentStore _store = new(new FileWriter());
 
     public MindmapDocumentStoreLostEditTests() => Directory.CreateDirectory(_root);
 
@@ -61,7 +62,7 @@ public class MindmapDocumentStoreLostEditTests : IDisposable
         // Act: the notification for an EARLIER write of this same file lands now. The store's own
         // self-write guard is already cleared, so this is exactly what the watcher does with it.
         _store.Reload(bodyPath);
-        var saved = _store.Save(bodyPath, document, new MindmapNodeUpdated("ID_1"));
+        var saved = await _store.SaveAsync(bodyPath, document, new MindmapNodeUpdated("ID_1"), TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.False(saved.Failed);

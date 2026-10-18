@@ -7,7 +7,7 @@ namespace EtAlii.Adp.Documents;
 /// <remarks>
 /// <para>
 /// <b>It exists because an edit may be applied twice, to two different documents.</b>
-/// <see cref="WritableDocumentLifecycle{TDocument}.Save(string, TDocument, Func{TDocument, DocumentEdit{TDocument}})"/>
+/// <see cref="WritableDocumentLifecycle{TDocument}.SaveAsync(string, TDocument, Func{TDocument, DocumentEdit{TDocument}}, CancellationToken)"/>
 /// applies the edit to the document the caller read, unless another program changed the file since -
 /// then it applies the same edit to what the file holds now. The second document may no longer have
 /// the entry the edit was for, and that is an answer rather than an exception: the user is told, and

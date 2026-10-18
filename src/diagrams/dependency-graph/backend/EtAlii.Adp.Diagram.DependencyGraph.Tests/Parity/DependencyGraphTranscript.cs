@@ -4,6 +4,7 @@ using System.Text.RegularExpressions;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Diagram.DependencyGraph.Tests.Parity.Oracle;
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
 using EtAlii.Adp.Specification.Disl;
 using Google.Protobuf.Reflection;
@@ -376,7 +377,7 @@ internal static partial class DependencyGraphTranscript
 
         public string Body { get; }
 
-        public DependencyGraphDocumentStore Store { get; } = new();
+        public DependencyGraphDocumentStore Store { get; } = new(new FileWriter());
 
         public HistoryStackStore History { get; }
 
@@ -421,7 +422,7 @@ internal static partial class DependencyGraphTranscript
 
         public DocumentEntry<DependencyGraphBody, DislModel> GetOrLoad(string path) => inner.GetOrLoad(path) with { Unreadable = "parity: read-only" };
 
-        public DocumentSaveResult Save(string path, DependencyGraphBody document) => inner.Save(path, document);
+        public Task<DocumentSaveResult> SaveAsync(string path, DependencyGraphBody document, CancellationToken cancellationToken) => inner.SaveAsync(path, document, cancellationToken);
 
         public void Forget(string path) => inner.Forget(path);
 

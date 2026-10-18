@@ -27,12 +27,14 @@ public static class DocumentEditRun
     /// <paramref name="parse"/> reads from it.
     /// </summary>
     /// <param name="self">The command being run: the redo of the undo this returns.</param>
-    public static CommandResult Run<TStore, TBody, TModel>(
+    /// <param name="cancellationToken">Gives up a wait for another save of the document.</param>
+    public static async Task<CommandResult> RunAsync<TStore, TBody, TModel>(
         TStore documents,
         string bodyPath,
         ICommand self,
         Func<TBody, TModel> parse,
-        Func<TBody, TModel, EditOutcome> edit)
+        Func<TBody, TModel, EditOutcome> edit,
+        CancellationToken cancellationToken)
         where TStore : IDiagramDocumentStore<TBody, TModel>
         where TBody : ITextBody<TBody>
     {
@@ -62,12 +64,12 @@ public static class DocumentEditRun
             return CommandResult.Success();
         }
 
-        var saved = documents.Save(bodyPath, copy);
+        var saved = await documents.SaveAsync(bodyPath, copy, cancellationToken);
         return CommandResult.FromSave(saved, outcome.Inverse ?? new RestoreDocumentCommand<TStore>(bodyPath, before, self));
     }
 
     /// <summary>
-    /// Edits the document at <paramref name="bodyPath"/> as <see cref="Run"/> does, but against the
+    /// Edits the document at <paramref name="bodyPath"/> as <see cref="RunAsync"/> does, but against the
     /// file as it is when the edit is saved: where another program wrote it since it was read, the
     /// edit is applied to what that program wrote.
     /// </summary>
@@ -78,12 +80,14 @@ public static class DocumentEditRun
     /// Nor is <see cref="EditOutcome.Unchanged"/>: the edit is applied inside the store's save.
     /// </remarks>
     /// <param name="self">The command being run: the redo of the undo this returns.</param>
-    public static CommandResult RunOnCurrent<TStore, TBody, TModel>(
+    /// <param name="cancellationToken">Gives up a wait for another save of the document.</param>
+    public static async Task<CommandResult> RunOnCurrentAsync<TStore, TBody, TModel>(
         TStore documents,
         string bodyPath,
         ICommand self,
         Func<TBody, TModel> parse,
-        Func<TBody, TModel, EditOutcome> edit)
+        Func<TBody, TModel, EditOutcome> edit,
+        CancellationToken cancellationToken)
         where TStore : IEditSavingDocumentStore<TBody, TModel>
     {
         ArgumentNullException.ThrowIfNull(documents);
@@ -99,7 +103,7 @@ public static class DocumentEditRun
                 $"{Path.GetFileName(bodyPath)} could not be read, so nothing can be edited until it can: {entry.Unreadable}");
         }
 
-        var saved = documents.Save(bodyPath, entry, body => edit(body, parse(body)).Refusal ?? "");
+        var saved = await documents.SaveAsync(bodyPath, entry, body => edit(body, parse(body)).Refusal ?? "", cancellationToken);
         return CommandResult.FromSave(saved.Result, new RestoreDocumentCommand<TStore>(bodyPath, saved.Before, self, saved.After));
     }
 }

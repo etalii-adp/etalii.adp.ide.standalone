@@ -1,5 +1,6 @@
 using EtAlii.Adp.Diagram.Timeline.Tests.Parity;
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Files;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.Timeline.Tests;
@@ -13,7 +14,7 @@ public sealed class TimelineDocumentStoreTests : DocumentStoreContract<ITimeline
 
     protected override string EditMarker => "Store contract marker";
 
-    protected override ITimelineDocumentStore CreateStore() => new TimelineDocumentStore();
+    protected override ITimelineDocumentStore CreateStore() => new TimelineDocumentStore(new FileWriter());
 
     protected override void Edit(LineDocument document) =>
         TimelineWriter.SetLabel(document, TimelineReading.Of(document.Text).Elements[0], EditMarker);
@@ -23,24 +24,24 @@ public sealed class TimelineDocumentStoreTests : DocumentStoreContract<ITimeline
     protected override bool IsEmpty(TimelineModel model) => model.Elements.Count == 0;
 
     [Fact]
-    public void ATimelineThatIsNotYaml_IsHeldUnreadable_AndASaveIsRefusedUnwritten()
+    public async Task ATimelineThatIsNotYaml_IsHeldUnreadable_AndASaveIsRefusedUnwritten()
     {
         // Arrange.
         using var folder = TestFolder.Create("timeline-store");
         var body = folder.Combine("broken.tml");
         File.Copy(Path.Combine(AppContext.BaseDirectory, "Fixtures", "findings", "unparseable.tml"), body);
-        var before = File.ReadAllText(body);
-        var store = new TimelineDocumentStore();
+        var before = await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken);
+        var store = new TimelineDocumentStore(new FileWriter());
 
         // Act.
         var entry = store.GetOrLoad(body);
-        var saved = store.Save(body, entry.Document);
+        var saved = await store.SaveAsync(body, entry.Document, TestContext.Current.CancellationToken);
 
         // Assert: what the file holds is unknown, so the empty model is not written over it.
         Assert.False(entry.IsUsable);
         Assert.Empty(entry.Model.Elements);
         Assert.True(saved.Failed);
-        Assert.Equal(before, File.ReadAllText(body));
+        Assert.Equal(before, await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -50,7 +51,7 @@ public sealed class TimelineDocumentStoreTests : DocumentStoreContract<ITimeline
         using var folder = TestFolder.Create("timeline-store");
         var body = folder.Combine("broken.tml");
         File.Copy(Path.Combine(AppContext.BaseDirectory, "Fixtures", "findings", "unparseable.tml"), body);
-        var store = new TimelineDocumentStore();
+        var store = new TimelineDocumentStore(new FileWriter());
 
         // Act.
         var entry = store.GetOrLoad(body);

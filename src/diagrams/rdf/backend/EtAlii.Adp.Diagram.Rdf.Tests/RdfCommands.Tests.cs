@@ -19,7 +19,7 @@ public class RdfCommandsTests : IDisposable
         + "    ex:name \"Alice\" . # who else\r\n";
 
     private readonly string _root;
-    private readonly RdfDocumentStore _store = new();
+    private readonly RdfDocumentStore _store = new(new FileWriter());
     private readonly string _path;
 
     public RdfCommandsTests()

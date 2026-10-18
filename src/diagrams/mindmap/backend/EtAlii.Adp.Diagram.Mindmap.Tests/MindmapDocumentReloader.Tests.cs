@@ -1,3 +1,4 @@
+using EtAlii.Adp.Files;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -14,7 +15,7 @@ public sealed class MindmapDocumentReloaderTests : DocumentReloaderContract<IMin
 
     protected override string Example => IoPath.Combine(AppContext.BaseDirectory, "Fixtures", "architecture.mm");
 
-    protected override IMindmapDocumentStore CreateStore() => new MindmapDocumentStore();
+    protected override IMindmapDocumentStore CreateStore() => new MindmapDocumentStore(new FileWriter());
 
     protected override bool IsEmpty(IMindmapDocumentStore store, string path) => store.GetOrLoad(path).Root.Children.Count == 0;
 
@@ -28,7 +29,7 @@ public sealed class MindmapDocumentReloaderTests : DocumentReloaderContract<IMin
         using var folder = TestFolder.Create("EtAlii.Adp.MindmapDocumentReloaderTests");
         var body = folder.Combine("design.mm");
         File.Copy(Example, body);
-        var store = new MindmapDocumentStore();
+        var store = new MindmapDocumentStore(new FileWriter());
         IDiagramDocumentReloader reloader = new DiagramDocumentReloader<IMindmapDocumentStore>(Origin, store);
         Assert.NotEmpty(store.GetOrLoad(body).Root.Children);
         File.Delete(body);
@@ -49,7 +50,7 @@ public sealed class MindmapDocumentReloaderTests : DocumentReloaderContract<IMin
         using var folder = TestFolder.Create("EtAlii.Adp.MindmapDocumentReloaderTests");
         var body = folder.Combine("design.mm");
         File.Copy(Example, body);
-        var store = new MindmapDocumentStore();
+        var store = new MindmapDocumentStore(new FileWriter());
         IDiagramDocumentReloader reloader = new DiagramDocumentReloader<IMindmapDocumentStore>(Origin, store);
         Assert.NotEmpty(store.GetOrLoad(body).Root.Children);
         var told = 0;

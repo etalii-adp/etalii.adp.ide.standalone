@@ -1,3 +1,4 @@
+using EtAlii.Adp.Files;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -40,7 +41,7 @@ public class PipelineDocumentStoreLostEditTests : IDisposable
     // The only two-argument store: its root travels with every call, so the guard has to
     // carry it too rather than borrow timeline's single-path shape.
     private readonly string _root;
-    private readonly PipelineDocumentStore _store = new();
+    private readonly PipelineDocumentStore _store = new(new FileWriter());
 
     public PipelineDocumentStoreLostEditTests()
     {
@@ -72,7 +73,7 @@ public class PipelineDocumentStoreLostEditTests : IDisposable
         // Act: the notification for an EARLIER write of this same file lands now. The store's own
         // guard is already cleared, so this is exactly what the reload bridge does with it.
         _store.Reload(path);
-        var error = _store.Save(_root, path, entry);
+        var error = await _store.SaveAsync(_root, path, entry, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Equal("", error.Error);

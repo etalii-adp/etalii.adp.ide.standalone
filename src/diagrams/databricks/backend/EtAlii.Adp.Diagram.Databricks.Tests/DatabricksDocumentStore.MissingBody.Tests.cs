@@ -1,3 +1,4 @@
+using EtAlii.Adp.Files;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -61,7 +62,7 @@ public class DatabricksDocumentStoreMissingBodyTests : IDisposable
 
         // Act.
         using var capture = LogCapture.Start();
-        var entry = new DatabricksDocumentStore().GetOrLoad(path);
+        var entry = new DatabricksDocumentStore(new FileWriter()).GetOrLoad(path);
 
         // Assert: the outcome...
         Assert.NotNull(entry);
@@ -82,7 +83,7 @@ public class DatabricksDocumentStoreMissingBodyTests : IDisposable
         File.WriteAllText(path, "bundle:\r\n  name: sample\r\n");
 
         using var capture = LogCapture.Start();
-        var entry = new DatabricksDocumentStore().GetOrLoad(path);
+        var entry = new DatabricksDocumentStore(new FileWriter()).GetOrLoad(path);
 
         Assert.Contains("name: sample", entry.Document.Text, StringComparison.Ordinal);
         Assert.Empty(capture.Warnings);

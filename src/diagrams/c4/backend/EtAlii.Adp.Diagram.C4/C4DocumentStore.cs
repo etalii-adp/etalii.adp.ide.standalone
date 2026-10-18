@@ -1,4 +1,5 @@
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Files;
 
 namespace EtAlii.Adp.Diagram.C4;
 
@@ -18,7 +19,7 @@ namespace EtAlii.Adp.Diagram.C4;
 /// so no body of this type is unreadable for what it says - only for a read that failed.
 /// </para>
 /// </remarks>
-public sealed class C4DocumentStore : LifecycleDocumentStore<LineDocument, C4Workspace>, IC4DocumentStore
+public sealed class C4DocumentStore(IFileWriter writer) : LifecycleDocumentStore<LineDocument, C4Workspace>(writer), IC4DocumentStore
 {
     /// <inheritdoc />
     public void Touch(string path)

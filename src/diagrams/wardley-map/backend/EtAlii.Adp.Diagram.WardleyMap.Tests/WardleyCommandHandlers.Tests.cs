@@ -1,4 +1,5 @@
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Files;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 using Microsoft.Extensions.DependencyInjection;
@@ -11,7 +12,7 @@ public sealed class WardleyCommandHandlersTests : EditHandlerContract<IWardleyDo
 {
     protected override string Example => WardleyDocumentStoreTests.Minimal;
 
-    protected override IWardleyDocumentStore CreateStore() => new WardleyDocumentStore();
+    protected override IWardleyDocumentStore CreateStore() => new WardleyDocumentStore(new FileWriter());
 
     protected override IWardleyDocumentStore Warning(IWardleyDocumentStore store, string warning) => new WarningStore(store, warning);
 

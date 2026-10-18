@@ -1,4 +1,6 @@
-﻿namespace EtAlii.Adp.Diagram.C4.Tests;
+﻿using EtAlii.Adp.Files;
+
+namespace EtAlii.Adp.Diagram.C4.Tests;
 
 /// <summary>The shared reload seam over the C4 store, held to the contract every module's is.</summary>
 public sealed class C4DocumentReloaderTests : DocumentReloaderContract<IC4DocumentStore>
@@ -7,7 +9,7 @@ public sealed class C4DocumentReloaderTests : DocumentReloaderContract<IC4Docume
 
     protected override string Example => C4DocumentStoreTests.Courier;
 
-    protected override IC4DocumentStore CreateStore() => new C4DocumentStore();
+    protected override IC4DocumentStore CreateStore() => new C4DocumentStore(new FileWriter());
 
     protected override bool IsEmpty(IC4DocumentStore store, string path) => store.GetOrLoad(path).Model.Elements.Count == 0;
 

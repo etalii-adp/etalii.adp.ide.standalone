@@ -7,8 +7,8 @@ namespace EtAlii.Adp.Diagram.SupplyChain;
 public sealed class ConnectSupplyChainNodesCommandHandler(ISupplyChainDocumentStore documents) : SupplyChainEditHandler<ConnectSupplyChainNodesCommand>(documents)
 {
     /// <inheritdoc />
-    protected override CommandResult Execute(ConnectSupplyChainNodesCommand command) =>
-        base.Execute(command.FlowId.Length > 0 ? command : command with { FlowId = ShortGuid.NewShortGuid().ToString() });
+    protected override async Task<CommandResult> RunAsync(ConnectSupplyChainNodesCommand command, CancellationToken cancellationToken) =>
+        await base.RunAsync(command.FlowId.Length > 0 ? command : command with { FlowId = ShortGuid.NewShortGuid().ToString() }, cancellationToken);
 
     /// <inheritdoc />
     protected override EditOutcome Apply(LineDocument document, SupplyChainModel model, ConnectSupplyChainNodesCommand command)

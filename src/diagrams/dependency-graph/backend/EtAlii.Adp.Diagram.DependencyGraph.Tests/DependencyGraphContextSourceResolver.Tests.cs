@@ -2,6 +2,7 @@ using System.Text.RegularExpressions;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Files;
 using EtAlii.Adp.Hierarchy;
 using Xunit;
 
@@ -10,7 +11,7 @@ namespace EtAlii.Adp.Diagram.DependencyGraph.Tests;
 /// <summary>A selection on the simple graph, by the contract every element resolver keeps, and what is its own.</summary>
 public sealed class DependencyGraphContextSourceResolverTests : DiagramElementSourceResolverContract
 {
-    private readonly DependencyGraphDocumentStore _store = new();
+    private readonly DependencyGraphDocumentStore _store = new(new FileWriter());
 
     protected override string Example => DependencyGraphDocumentStoreTests.Simple;
 

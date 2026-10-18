@@ -25,7 +25,7 @@ public class ShaclCommandsTests : IDisposable
     private const string Ex = "http://example.org/";
 
     private readonly string _root;
-    private readonly RdfDocumentStore _store = new();
+    private readonly RdfDocumentStore _store = new(new FileWriter());
     private readonly string _path;
 
     public ShaclCommandsTests()

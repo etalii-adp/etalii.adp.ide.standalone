@@ -3,6 +3,7 @@ using EtAlii.Adp.Context;
 using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Documents.Wire;
+using EtAlii.Adp.Files;
 using EtAlii.Adp.Hierarchy;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
@@ -16,7 +17,7 @@ namespace EtAlii.Adp.Diagram.C4.Tests;
 /// </summary>
 public sealed class C4ContextSourceResolverTests : DiagramElementSourceResolverContract
 {
-    private readonly C4DocumentStore _store = new();
+    private readonly C4DocumentStore _store = new(new FileWriter());
     private readonly C4ElementMapper _mapper = new(C4Metrics.Default, new C4LayoutSidecar());
 
     protected override string Example => C4DocumentStoreTests.Courier;

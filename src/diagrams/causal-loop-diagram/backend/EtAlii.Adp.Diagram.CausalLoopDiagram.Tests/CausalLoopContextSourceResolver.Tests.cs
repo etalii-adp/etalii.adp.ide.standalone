@@ -2,6 +2,7 @@ using System.Text.RegularExpressions;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.Documents.Wire;
+using EtAlii.Adp.Files;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 using EtAlii.Adp.Sessions;
@@ -45,7 +46,7 @@ public sealed class CausalLoopContextSourceResolverTests : DiagramElementSourceR
         + "link births -> population +\r\n"
         + "loop R1 \"Births beget births\" population births\r\n";
 
-    private readonly CausalLoopDocumentStore _store = new();
+    private readonly CausalLoopDocumentStore _store = new(new FileWriter());
     private readonly CausalLoopElementMapper _mapper = new();
 
     protected override string Example => CausalLoopDocumentStoreTests.OnCall;

@@ -1,3 +1,5 @@
+using EtAlii.Adp.Files;
+
 namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph.Tests;
 
 /// <summary>The shared reload seam over the <c>.ghg</c> store, held to the contract every module's is.</summary>
@@ -7,7 +9,7 @@ public sealed class GhgDocumentReloaderTests : DocumentReloaderContract<IGhgDocu
 
     protected override string Example => GhgModuleFiles.Example;
 
-    protected override IGhgDocumentStore CreateStore() => new GhgDocumentStore();
+    protected override IGhgDocumentStore CreateStore() => new GhgDocumentStore(new FileWriter());
 
     protected override bool IsEmpty(IGhgDocumentStore store, string path)
     {

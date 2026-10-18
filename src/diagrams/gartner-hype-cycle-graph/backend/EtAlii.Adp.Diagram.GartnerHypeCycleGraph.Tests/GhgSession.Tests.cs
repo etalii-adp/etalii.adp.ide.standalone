@@ -1,3 +1,4 @@
+using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
 using Xunit;
 
@@ -14,7 +15,7 @@ namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph.Tests;
 public sealed class GhgSessionTests : IDisposable
 {
     private readonly string _folder = Path.Combine(Path.GetTempPath(), "EtAlii.Adp.GhgSessionTests", Guid.NewGuid().ToString("N"));
-    private readonly GhgDocumentStore _store = new();
+    private readonly GhgDocumentStore _store = new(new FileWriter());
     private readonly List<DiagramDeltasEventArgs> _raised = [];
 
     public GhgSessionTests()

@@ -7,11 +7,11 @@ namespace EtAlii.Adp.Diagram.SupplyChain;
 public sealed class GroupSupplyChainNodeCommandHandler(ISupplyChainDocumentStore documents) : SupplyChainEditHandler<GroupSupplyChainNodeCommand>(documents)
 {
     /// <inheritdoc />
-    protected override CommandResult Execute(GroupSupplyChainNodeCommand command)
+    protected override async Task<CommandResult> RunAsync(GroupSupplyChainNodeCommand command, CancellationToken cancellationToken)
     {
         return string.IsNullOrWhiteSpace(command.GroupName)
             ? CommandResult.Failure("A group needs a name.")
-            : base.Execute(command.GroupId.Length > 0 ? command : command with { GroupId = ShortGuid.NewShortGuid().ToString() });
+            : await base.RunAsync(command.GroupId.Length > 0 ? command : command with { GroupId = ShortGuid.NewShortGuid().ToString() }, cancellationToken);
     }
 
     /// <inheritdoc />

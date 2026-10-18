@@ -1,3 +1,4 @@
+using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
 using Xunit;
 using IoPath = System.IO.Path;
@@ -14,7 +15,7 @@ public class TimelineSessionTests : IDisposable
         IoPath.GetTempPath(),
         "adp-timeline-session-" + Guid.NewGuid().ToString("N"));
 
-    private readonly TimelineDocumentStore _store = new();
+    private readonly TimelineDocumentStore _store = new(new FileWriter());
     private readonly TimelineElementMapper _mapper = new();
     private readonly HistoryStackStore _historyStacks;
 

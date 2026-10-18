@@ -1,4 +1,5 @@
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Files;
 using EtAlii.Adp.Specification.Fbl;
 using Serilog;
 
@@ -20,7 +21,7 @@ namespace EtAlii.Adp.Diagram.Timeline;
 /// the store, and nothing is written to it until it parses (Requirement 2.4).
 /// </para>
 /// </remarks>
-public sealed class TimelineDocumentStore : LifecycleDocumentStore<LineDocument, TimelineModel>, ITimelineDocumentStore
+public sealed class TimelineDocumentStore(IFileWriter writer) : LifecycleDocumentStore<LineDocument, TimelineModel>(writer), ITimelineDocumentStore
 {
     private static readonly ILogger _logger = Log.ForContext<TimelineDocumentStore>();
 

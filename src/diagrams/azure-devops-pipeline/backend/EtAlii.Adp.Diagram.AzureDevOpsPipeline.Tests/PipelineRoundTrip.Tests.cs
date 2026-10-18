@@ -1,4 +1,5 @@
 using EtAlii.Adp.Diagram.AzureDevOpsPipeline.Tests.Parity;
+using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
 using EtAlii.Adp.Specification.Disl;
 using EtAlii.Adp.Specification.Fbl.History;
@@ -38,7 +39,7 @@ public class PipelineRoundTripTests
         // Arrange.
         using var folder = Copy(path, out var body);
         var original = await File.ReadAllBytesAsync(body, TestContext.Current.CancellationToken);
-        var store = new PipelineDocumentStore();
+        var store = new PipelineDocumentStore(new FileWriter());
         var entry = store.GetOrLoad(folder.Path, body);
 
         // Act: nothing asked for, then every element's display name as it already is.
@@ -54,7 +55,7 @@ public class PipelineRoundTripTests
                     : EditOutcome.Unchanged)
                 .ToList()
             : [];
-        var saved = store.Save(folder.Path, body, entry);
+        var saved = await store.SaveAsync(folder.Path, body, entry, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.True(nothing.IsUnchanged);
@@ -71,7 +72,7 @@ public class PipelineRoundTripTests
         // Arrange.
         using var folder = Copy(path, out var body);
         var original = await File.ReadAllBytesAsync(body, TestContext.Current.CancellationToken);
-        var model = new PipelineDocumentStore().GetOrLoad(folder.Path, body).Model;
+        var model = new PipelineDocumentStore(new FileWriter()).GetOrLoad(folder.Path, body).Model;
         List<string> failures = [];
         var applied = 0;
 
@@ -107,7 +108,7 @@ public class PipelineRoundTripTests
         {
             var cancellationToken = TestContext.Current.CancellationToken;
             await File.WriteAllBytesAsync(body, original, cancellationToken);
-            var dispatcher = new PipelineTestDispatcher(new PipelineDocumentStore());
+            var dispatcher = new PipelineTestDispatcher(new PipelineDocumentStore(new FileWriter()));
             var done = await dispatcher.DispatchAsync(command, cancellationToken);
             if (done is not { IsSuccess: true, Inverse: not null }) return;
 
@@ -133,7 +134,7 @@ public class PipelineRoundTripTests
     {
         // Arrange.
         using var folder = Copy("diagrams/azure-devops-pipeline/backend/EtAlii.Adp.Diagram.AzureDevOpsPipeline.Tests/Fixtures/multi-stage.yml", out var body);
-        var store = new PipelineDocumentStore();
+        var store = new PipelineDocumentStore(new FileWriter());
         var dispatcher = new PipelineTestDispatcher(store);
         var removed = await dispatcher.DispatchAsync(new RemovePipelineElementCommand(folder.Path, body, "Build/Compile/step-1"), TestContext.Current.CancellationToken);
         Assert.True(removed.IsSuccess, removed.Error);

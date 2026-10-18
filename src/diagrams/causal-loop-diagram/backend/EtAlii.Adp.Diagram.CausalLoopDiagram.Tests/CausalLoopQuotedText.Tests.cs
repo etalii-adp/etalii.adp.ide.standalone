@@ -1,3 +1,4 @@
+using EtAlii.Adp.Files;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -37,7 +38,7 @@ public class CausalLoopQuotedTextTests
         {
             var path = IoPath.Combine(folder, "quoted.cld");
             await File.WriteAllTextAsync(path, Text, TestContext.Current.CancellationToken);
-            var store = new CausalLoopDocumentStore();
+            var store = new CausalLoopDocumentStore(new FileWriter());
             var cancellationToken = TestContext.Current.CancellationToken;
 
             // Act.

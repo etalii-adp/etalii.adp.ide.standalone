@@ -1,3 +1,5 @@
+using EtAlii.Adp.Files;
+
 namespace EtAlii.Adp.Diagram.AgentBehaviorModelling.Tests;
 
 /// <summary>The shared reload seam over the behavior model store, held to the contract every module's is.</summary>
@@ -7,7 +9,7 @@ public sealed class AbmDocumentReloaderTests : DocumentReloaderContract<IAbmDocu
 
     protected override string Example => AbmExamples.BodyOf("bug-fixer");
 
-    protected override IAbmDocumentStore CreateStore() => new AbmDocumentStore();
+    protected override IAbmDocumentStore CreateStore() => new AbmDocumentStore(new FileWriter());
 
     protected override bool IsEmpty(IAbmDocumentStore store, string path) => store.GetOrLoad(path).Model.Nodes.Count == 0;
 

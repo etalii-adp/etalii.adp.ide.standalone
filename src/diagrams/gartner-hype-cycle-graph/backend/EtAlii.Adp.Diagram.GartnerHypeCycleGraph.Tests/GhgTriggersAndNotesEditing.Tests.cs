@@ -1,5 +1,6 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
 using Xunit;
 using IoPath = System.IO.Path;
@@ -14,7 +15,7 @@ namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph.Tests;
 public sealed class GhgTriggersAndNotesEditingTests : IDisposable
 {
     private readonly string _folder = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.GhgTriggersAndNotesEditingTests", Guid.NewGuid().ToString("N"));
-    private readonly GhgDocumentStore _store = new();
+    private readonly GhgDocumentStore _store = new(new FileWriter());
     private readonly GhgTestDispatcher _dispatcher;
     private readonly HistoryStackStore _historyStacks;
     private readonly byte[] _original;
@@ -276,7 +277,7 @@ public sealed class GhgTriggersAndNotesEditingTests : IDisposable
     [Fact]
     public async Task AGraphThatCouldNotBeRead_RefusesEveryNewCommand()
     {
-        var store = new GhgDocumentStore();
+        var store = new GhgDocumentStore(new FileWriter());
         await using (new FileStream(Body, FileMode.Open, FileAccess.Read, FileShare.None))
         {
             Assert.False(store.GetOrLoad(Body).IsUsable);

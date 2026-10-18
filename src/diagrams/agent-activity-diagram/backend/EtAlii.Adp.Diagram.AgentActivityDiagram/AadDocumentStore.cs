@@ -1,4 +1,5 @@
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Files;
 
 namespace EtAlii.Adp.Diagram.AgentActivityDiagram;
 
@@ -20,7 +21,7 @@ public interface IAadDocumentStore : IEditSavingDocumentStore<AadBody, AadModel>
 /// A file the binding cannot read - not YAML, or not an activity file - is held as unreadable with
 /// the reader's own sentence, and nothing is written to it until it can be read (Requirement 8.5).
 /// </remarks>
-public sealed class AadDocumentStore : LifecycleDocumentStore<AadBody, AadModel>, IAadDocumentStore
+public sealed class AadDocumentStore(IFileWriter writer) : LifecycleDocumentStore<AadBody, AadModel>(writer), IAadDocumentStore
 {
     /// <inheritdoc />
     protected override AadBody Read(string text) => AadBody.Parse(text);

@@ -1,3 +1,5 @@
+using EtAlii.Adp.Files;
+
 namespace EtAlii.Adp.Diagram.CausalLoopDiagram.Tests;
 
 /// <summary>The shared reload seam over the causal loop store, held to the contract every module's is.</summary>
@@ -7,7 +9,7 @@ public sealed class CausalLoopDocumentReloaderTests : DocumentReloaderContract<I
 
     protected override string Example => CausalLoopDocumentStoreTests.OnCall;
 
-    protected override ICausalLoopDocumentStore CreateStore() => new CausalLoopDocumentStore();
+    protected override ICausalLoopDocumentStore CreateStore() => new CausalLoopDocumentStore(new FileWriter());
 
     protected override bool IsEmpty(ICausalLoopDocumentStore store, string path) => store.GetOrLoad(path).Model.Variables.Count == 0;
 

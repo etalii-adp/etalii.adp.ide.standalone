@@ -1,5 +1,6 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Diagram.Modules;
+using EtAlii.Adp.Files;
 using EtAlii.Adp.Hierarchy;
 
 namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph.Tests;
@@ -7,7 +8,7 @@ namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph.Tests;
 /// <summary>A selection on the field service example, by the contract every element resolver keeps.</summary>
 public sealed class FdgContextSourceResolverTests : DiagramElementSourceResolverContract
 {
-    private readonly FdgDocumentStore _store = new();
+    private readonly FdgDocumentStore _store = new(new FileWriter());
 
     protected override string Example => FieldServiceExample.Path;
 

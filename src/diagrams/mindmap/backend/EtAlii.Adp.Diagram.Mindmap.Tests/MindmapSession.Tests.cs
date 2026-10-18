@@ -106,7 +106,7 @@ public class MindmapSessionTests : IDisposable
 
         // Act.
         var document = _documents.GetOrLoad(_bodyPath); // ensure loaded, as the service would have
-        _documents.Save(_bodyPath, document, new MindmapNodeUpdated("ID_88117420"));
+        await _documents.SaveAsync(_bodyPath, document, new MindmapNodeUpdated("ID_88117420"), TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.NotNull(pushed);
@@ -293,7 +293,7 @@ public class MindmapSessionTests : IDisposable
 
         // Act.
         document.Remove(document.Find("ID_88117420")!);
-        _documents.Save(_bodyPath, document, new MindmapStructureChanged(["ID_88117420"]));
+        await _documents.SaveAsync(_bodyPath, document, new MindmapStructureChanged(["ID_88117420"]), TestContext.Current.CancellationToken);
 
         // Assert.
         var deltas = Assert.Single(pushes);

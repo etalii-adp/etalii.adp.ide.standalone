@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using EtAlii.Adp.Files;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 using Microsoft.Extensions.DependencyInjection;
@@ -46,7 +47,7 @@ public class C4SessionUpdateViewOnTheRealCorpusTests : IDisposable
     private static readonly TimeSpan Patience = TimeSpan.FromSeconds(30);
 
     private readonly string _root = IoPath.Combine(IoPath.GetTempPath(), "adp-c4-wedge-" + Guid.NewGuid().ToString("N"));
-    private readonly C4DocumentStore _documents = new();
+    private readonly C4DocumentStore _documents = new(new FileWriter());
     private readonly C4ElementMapper _mapper = new(C4Metrics.Default, new C4LayoutSidecar());
     private readonly IHistoryStackStore _historyStacks = new ServiceCollection()
         .AddCommands()

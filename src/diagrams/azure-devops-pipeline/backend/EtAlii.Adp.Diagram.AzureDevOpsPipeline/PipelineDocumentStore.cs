@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Text;
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Files;
 using Serilog;
 using IoPath = System.IO.Path;
 
@@ -49,11 +50,13 @@ public sealed class PipelineDocumentStore : IPipelineDocumentStore
     // is declared here.
     private readonly WritableDocumentLifecycle<DocumentEntry<PipelineBody, PipelineModel>> _lifecycle;
 
-    public PipelineDocumentStore()
+    /// <param name="writer">What publishes a save, waiting for another save of the pipeline without blocking a thread.</param>
+    public PipelineDocumentStore(IFileWriter writer)
     {
         _lifecycle = new WritableDocumentLifecycle<DocumentEntry<PipelineBody, PipelineModel>>(
             (path, text) => Entry(Open(_roots[path], path, Encoding.UTF8.GetBytes(text))),
-            entry => entry.Document.Text);
+            entry => entry.Document.Text,
+            writer);
     }
 
     public event EventHandler<DocumentChangedEventArgs>? Changed;
@@ -79,7 +82,7 @@ public sealed class PipelineDocumentStore : IPipelineDocumentStore
     /// command's inverse on the undo stack for a change that never happened. Passing the entry makes
     /// that ordering unrepresentable: what the caller edited is what gets written.
     /// </remarks>
-    public DocumentSaveResult Save(string rootPath, string path, DocumentEntry<PipelineBody, PipelineModel> entry)
+    public async Task<DocumentSaveResult> SaveAsync(string rootPath, string path, DocumentEntry<PipelineBody, PipelineModel> entry, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(rootPath);
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
@@ -104,7 +107,7 @@ public sealed class PipelineDocumentStore : IPipelineDocumentStore
             return DocumentSaveResult.Failure($"{IoPath.GetFileName(path)} would not parse after this edit, so it was not written. {reparsed.Unreadable}");
         }
 
-        var result = _lifecycle.Save(path, reparsed);
+        var result = await _lifecycle.SaveAsync(path, reparsed, cancellationToken);
         if (result.Failed)
         {
             return result;
@@ -196,10 +199,10 @@ public sealed class PipelineDocumentStore : IPipelineDocumentStore
         public DocumentEntry<PipelineBody, PipelineModel> GetOrLoad(string path) => documents.GetOrLoad(rootPath, path);
 
         /// <remarks>Refused, as the store refuses it, while what the file holds does not parse.</remarks>
-        public DocumentSaveResult Save(string path, PipelineBody document)
+        public Task<DocumentSaveResult> SaveAsync(string path, PipelineBody document, CancellationToken cancellationToken)
         {
             var entry = documents.GetOrLoad(rootPath, path) with { Document = document };
-            return documents.Save(rootPath, path, entry);
+            return documents.SaveAsync(rootPath, path, entry, cancellationToken);
         }
 
         public void Reload(string path) => documents.Reload(path);

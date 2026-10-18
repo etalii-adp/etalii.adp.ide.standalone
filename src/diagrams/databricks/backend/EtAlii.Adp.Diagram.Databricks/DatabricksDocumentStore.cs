@@ -1,4 +1,5 @@
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Files;
 
 namespace EtAlii.Adp.Diagram.Databricks;
 
@@ -16,7 +17,7 @@ namespace EtAlii.Adp.Diagram.Databricks;
 /// written to it until it parses (Requirement 2.3).
 /// </para>
 /// </remarks>
-public sealed class DatabricksDocumentStore : LifecycleDocumentStore<LineDocument, DatabricksModel>, IDatabricksDocumentStore
+public sealed class DatabricksDocumentStore(IFileWriter writer) : LifecycleDocumentStore<LineDocument, DatabricksModel>(writer), IDatabricksDocumentStore
 {
     /// <inheritdoc />
     protected override LineDocument Read(string text) => LineDocument.Parse(text);

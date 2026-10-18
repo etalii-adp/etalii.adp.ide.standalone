@@ -1,3 +1,4 @@
+using EtAlii.Adp.Files;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -42,7 +43,7 @@ public sealed class LifecycleDocumentStoreOutcomeTests : IDisposable
     }
 
     [Fact]
-    public void ABodyItsParserCannotRead_IsUnusable_AndIsNotWritten()
+    public async Task ABodyItsParserCannotRead_IsUnusable_AndIsNotWritten()
     {
         // Arrange.
         var path = Write("a !! b\n");
@@ -51,13 +52,13 @@ public sealed class LifecycleDocumentStoreOutcomeTests : IDisposable
         entry.Document.Replace(new LineRange(0, 0), ["after"]);
 
         // Act.
-        var saved = store.Save(path, entry.Document);
+        var saved = await store.SaveAsync(path, entry.Document, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.False(entry.IsUsable);
         Assert.Equal("the body holds !!", entry.Unreadable);
         Assert.True(saved.Failed);
-        Assert.Equal("a !! b\n", File.ReadAllText(path));
+        Assert.Equal("a !! b\n", await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -74,7 +75,7 @@ public sealed class LifecycleDocumentStoreOutcomeTests : IDisposable
     /// A store over plain lines whose parser reports each line starting with <c>?</c> as a problem,
     /// and cannot read a body holding <c>!!</c> or no text at all.
     /// </summary>
-    private sealed class OutcomeStore : LifecycleDocumentStore<LineDocument, string>
+    private sealed class OutcomeStore() : LifecycleDocumentStore<LineDocument, string>(new FileWriter())
     {
         protected override LineDocument Read(string text) => LineDocument.Parse(text);
 

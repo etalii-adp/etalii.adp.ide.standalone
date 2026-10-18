@@ -2,6 +2,7 @@ using System.Text.RegularExpressions;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.Documents.Wire;
+using EtAlii.Adp.Files;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 using Microsoft.Extensions.DependencyInjection;
@@ -13,7 +14,7 @@ namespace EtAlii.Adp.Diagram.Databricks.Tests;
 /// <summary>A selection on the lakehouse bundle, by the contract every element resolver keeps, and what is its own.</summary>
 public sealed class DatabricksContextSourceResolverTests : DiagramElementSourceResolverContract
 {
-    private readonly DatabricksDocumentStore _store = new();
+    private readonly DatabricksDocumentStore _store = new(new FileWriter());
 
     private static string Fixture(string name) => IoPath.Combine(AppContext.BaseDirectory, "Fixtures", name);
 
