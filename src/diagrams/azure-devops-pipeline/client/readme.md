@@ -17,12 +17,13 @@ without that, nothing here could resolve `react`.
   canvas to count — the count travels on the stage (`job_count` in the proto) for exactly that
   reason.
 - **The canvas definition is compiled from the bundled definition**, `../definition/azure-devops-pipeline.dis`,
-  with `compileNotation` and `pipelineBindings.ts`; nothing here draws or handles a gesture. The
-  definition is compiled after `PIPELINE_CORRECTIONS`, each a defect of the definition to be fixed
-  upstream, which refuses to apply once fixed. `handWrittenDefinition.ts` is the definition it
-  replaced, imported by `pipelineCompiledDefinition.test.tsx` alone as the oracle.
-- **Folding rides `Group`/`Ungroup`**, the third independent use of those two delta actions after
-  the mindmap's, which is what Requirement 8.6 asks for rather than a new action.
+  as it is, with `compileNotation` and `pipelineBindings.ts`; nothing here draws or handles a gesture.
+  A wrong drawing is fixed in the definition upstream and bundled again. `handWrittenDefinition.ts` is
+  the definition it replaced, imported by `pipelineCompiledDefinition.test.tsx` alone as the oracle.
+- **Whether a stage or a job is open travels on it** (`expanded` in the proto), because a closed one
+  arrives without what it holds and would otherwise look like an open one holding nothing. `Group`
+  and `Ungroup` are honoured as well, the third independent use of those two delta actions after the
+  mindmap's.
 - **Imports back into the shell** go through the `@client` alias, defined in `vite.config.ts`,
   `vitest.config.ts` and `tsconfig.json`.
 - **`azure-pipeline.css`** is namespaced under `.pipeline-*` throughout, so nothing here can

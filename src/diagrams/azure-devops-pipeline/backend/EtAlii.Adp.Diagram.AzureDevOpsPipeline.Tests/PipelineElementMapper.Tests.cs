@@ -275,7 +275,7 @@ public class PipelineElementMapperTests
     public void ACollapsedStage_SendsNoJobs()
     {
         // Arrange: collapsing changes what this connection is looking at, not what the pipeline
-        // contains - which is what Group/Ungroup says, so the jobs are absent rather than marked.
+        // contains, so the jobs are absent rather than marked; the stage says it is closed.
         var elements = Map(ParseFixture("multi-stage.yml"));
 
         // Assert.
@@ -291,6 +291,20 @@ public class PipelineElementMapperTests
         // Assert.
         Assert.Equal(2, elements.Count(element => element.Type == PipelineElementMapper.JobType));
         Assert.Contains(elements, element => element.Id == "edge:stage-0/Build->stage-0/Test");
+    }
+
+    [Fact]
+    public void AStageAndAJob_SayWhetherThisConnectionHasThemOpen()
+    {
+        // Arrange & act: Test open and its Unit job open, Integration closed, Build closed.
+        var elements = Map(ParseFixture("multi-stage.yml"), "Test", "Test/Unit");
+
+        // Assert.
+        Assert.True(PayloadOf(elements.Single(element => element.Id == "Test")).Expanded);
+        Assert.True(PayloadOf(elements.Single(element => element.Id == "Test/Unit")).Expanded);
+        Assert.False(PayloadOf(elements.Single(element => element.Id == "Test/Integration")).Expanded);
+        Assert.False(PayloadOf(elements.Single(element => element.Id == "Build")).Expanded);
+        Assert.DoesNotContain(elements, element => element.Type == PipelineElementMapper.StepType && PayloadOf(element).Expanded);
     }
 
     [Fact]

@@ -102,4 +102,10 @@ message PipelineElementPayload {
   // STAGE only: `trigger: manual`, so it waits to be started by a person. Distinct from a
   // repository trigger, which is a different key that happens to share a name.
   bool trigger_is_manual = 29;
+  // STAGE and JOB only: whether this connection has it open, showing its jobs or its steps. Which
+  // stages and jobs somebody has opened is a property of looking rather than of the pipeline
+  // (`PipelineViewState`), so it is never written to the file - but the canvas has to be told it,
+  // or a closed stage, which arrives without its jobs, is drawn as an open one that is empty and
+  // never shows its job count.
+  bool expanded = 30;
 }
