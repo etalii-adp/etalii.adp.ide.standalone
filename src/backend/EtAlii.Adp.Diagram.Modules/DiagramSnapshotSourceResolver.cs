@@ -14,7 +14,7 @@ namespace EtAlii.Adp.Diagram.Modules;
 /// <remarks>
 /// <para>
 /// <b>A module says what its elements are, and where they are read from.</b> It loads a snapshot of
-/// the diagram behind a selected file (<see cref="Load"/>), follows it (<see cref="Follow"/>),
+/// the diagram behind a selected file (<see cref="LoadAsync"/>), follows it (<see cref="Follow"/>),
 /// describes an element and maps the one element the canvas was sent. Checking that the selection
 /// sits inside a file of this type, resolving a placement or a proposed relation, checking the
 /// client's path, building the payload and the target, and tracking a selection are here.
@@ -58,7 +58,7 @@ public abstract class DiagramSnapshotSourceResolver<TSnapshot> : IContextSourceR
     public bool CanResolve(ContextSource source) => source.SourceCase == ContextSource.SourceOneofCase.ElementId;
 
     /// <inheritdoc />
-    public ValueTask<ContextLevelResolution> ResolveAsync(
+    public async ValueTask<ContextLevelResolution> ResolveAsync(
         ShortGuid watchId,
         string rootPath,
         ContextSource id,
@@ -92,7 +92,7 @@ public abstract class DiagramSnapshotSourceResolver<TSnapshot> : IContextSourceR
             return Proposed(id, GestureIds.IsPlacement(elementId) ? Texts.NewElement : Texts.NewRelation, target);
         }
 
-        var snapshot = Load(bodyPath);
+        var snapshot = await LoadAsync(bodyPath, cancellationToken);
         if (ProposedOf(snapshot, elementId) is { } other)
         {
             return Proposed(id, other, target);
@@ -135,11 +135,25 @@ public abstract class DiagramSnapshotSourceResolver<TSnapshot> : IContextSourceR
 
         var bodyPath = level.Target.ResolvedFullPath;
         var elementId = level.Target.ElementId;
-        return Follow(watchId, bodyPath, elementId, () => onChange(Describe(Load(bodyPath), elementId)?.Path));
+        return Follow(watchId, bodyPath, elementId, () =>
+        {
+            if (Current(bodyPath) is { } snapshot)
+            {
+                onChange(Describe(snapshot, elementId)?.Path);
+            }
+        });
     }
 
     /// <summary>The diagram whose body, as the router names it, is at <paramref name="bodyPath"/>.</summary>
-    protected abstract TSnapshot Load(string bodyPath);
+    protected abstract ValueTask<TSnapshot> LoadAsync(string bodyPath, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// The diagram whose body is at <paramref name="bodyPath"/> as it stands when <see cref="Follow"/>
+    /// reports a change, or null when none is held. A selection is only tracked once it was resolved,
+    /// so the diagram was loaded, and a change is reported once the new diagram is in place: a module
+    /// whose store keeps what it read answers from that, and reads nothing.
+    /// </summary>
+    protected abstract TSnapshot? Current(string bodyPath);
 
     /// <summary>What a selection of <paramref name="elementId"/> in <paramref name="snapshot"/> shows, or null when nothing has that id.</summary>
     protected abstract (IReadOnlyList<string> Path, string Text)? Describe(TSnapshot snapshot, string elementId);
@@ -165,7 +179,7 @@ public abstract class DiagramSnapshotSourceResolver<TSnapshot> : IContextSourceR
     /// </summary>
     protected abstract IDisposable Follow(ShortGuid watchId, string bodyPath, string elementId, Action changed);
 
-    private ValueTask<ContextLevelResolution> Proposed(ContextSource id, string text, ContextTarget target) =>
+    private ContextLevelResolution Proposed(ContextSource id, string text, ContextTarget target) =>
         Resolved(new ContextResolvedLevel(
             id,
             [text],
@@ -174,11 +188,9 @@ public abstract class DiagramSnapshotSourceResolver<TSnapshot> : IContextSourceR
             new ContextLevelDetail { Element = new ElementDetail { Text = text } },
             this));
 
-    private static ValueTask<ContextLevelResolution> Resolved(ContextResolvedLevel level) =>
-        ValueTask.FromResult<ContextLevelResolution>(new ResolvedContextLevel(level));
+    private static ResolvedContextLevel Resolved(ContextResolvedLevel level) => new(level);
 
-    private static ValueTask<ContextLevelResolution> Rejected(string reason) =>
-        ValueTask.FromResult<ContextLevelResolution>(new RejectedContextLevel(reason));
+    private static RejectedContextLevel Rejected(string reason) => new(reason);
 }
 
 /// <summary>What a diagram type's resolver says in its own words.</summary>

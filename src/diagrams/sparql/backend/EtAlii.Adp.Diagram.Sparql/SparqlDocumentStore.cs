@@ -41,6 +41,9 @@ public sealed class SparqlDocumentStore : ISparqlDocumentStore
     public DocumentEntry<string, SparqlQueryModel> GetOrLoad(string path) => _lifecycle.GetOrLoad(path);
 
     /// <inheritdoc />
+    public DocumentEntry<string, SparqlQueryModel>? Get(string path) => _lifecycle.Get(path);
+
+    /// <inheritdoc />
     public void Forget(string path) => _lifecycle.Forget(path);
 
     /// <inheritdoc />

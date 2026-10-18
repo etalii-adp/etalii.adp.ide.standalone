@@ -35,7 +35,14 @@ public sealed class DotNetContextSourceResolver(DiagramFileRouter router, Depend
         "New relation");
 
     /// <inheritdoc />
-    protected override DependencyGraphModel Load(string bodyPath) => store.GetOrLoad(bodyPath);
+    /// <remarks>Its store reads as it is asked, so the read is already done when this returns.</remarks>
+    protected override ValueTask<DependencyGraphModel> LoadAsync(string bodyPath, CancellationToken cancellationToken) =>
+        ValueTask.FromResult(Load(bodyPath));
+
+    /// <inheritdoc />
+    protected override DependencyGraphModel Current(string bodyPath) => Load(bodyPath);
+
+    private DependencyGraphModel Load(string bodyPath) => store.GetOrLoad(bodyPath);
 
     /// <inheritdoc />
     /// <remarks>

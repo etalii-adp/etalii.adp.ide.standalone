@@ -53,7 +53,7 @@ public sealed class WardleyContextSourceResolver : IContextSourceResolver
 
     public bool CanResolve(ContextSource source) => source.SourceCase == ContextSource.SourceOneofCase.ElementId;
 
-    public ValueTask<ContextLevelResolution> ResolveAsync(
+    public async ValueTask<ContextLevelResolution> ResolveAsync(
         ShortGuid watchId,
         string rootPath,
         ContextSource id,
@@ -78,7 +78,7 @@ public sealed class WardleyContextSourceResolver : IContextSourceResolver
             return Rejected("The selected file is not a Wardley map.");
         }
 
-        var map = _documents.GetOrLoad(bodyPath).Model;
+        var map = (await _documents.GetOrLoadAsync(bodyPath, cancellationToken)).Model;
         var identities = _documents.Identities(bodyPath);
         var elementId = id.ElementId.Value;
 
@@ -141,7 +141,7 @@ public sealed class WardleyContextSourceResolver : IContextSourceResolver
             // it after the document changes.
             this);
 
-        return ValueTask.FromResult<ContextLevelResolution>(new ResolvedContextLevel(level));
+        return new ResolvedContextLevel(level);
     }
 
     /// <summary>
@@ -180,14 +180,18 @@ public sealed class WardleyContextSourceResolver : IContextSourceResolver
                 return;
             }
 
-            // Re-read rather than carrying the previous reading: the change may have been an
-            // external edit, and a rename keeps the id while changing everything shown.
-            var map = _documents.GetOrLoad(bodyPath).Model;
-            var description = WardleyElementDescriptions.Of(map, _documents.Identities(bodyPath), elementId);
+            // The map the store now holds rather than the previous reading: the change may have been
+            // an external edit, and a rename keeps the id while changing everything shown. The store
+            // holds the new map by the time it reports the change, so nothing is read here.
+            if (_documents.Get(bodyPath) is not { } entry)
+            {
+                return;
+            }
+
+            var description = WardleyElementDescriptions.Of(entry.Model, _documents.Identities(bodyPath), elementId);
             onChange(description?.Path);
         }
     }
 
-    private static ValueTask<ContextLevelResolution> Rejected(string reason) =>
-        ValueTask.FromResult<ContextLevelResolution>(new RejectedContextLevel(reason));
+    private static RejectedContextLevel Rejected(string reason) => new(reason);
 }

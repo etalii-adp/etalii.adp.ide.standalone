@@ -198,6 +198,8 @@ public sealed class PipelineDocumentStore : IPipelineDocumentStore
 
         public DocumentEntry<PipelineBody, PipelineModel> GetOrLoad(string path) => documents.GetOrLoad(rootPath, path);
 
+        public DocumentEntry<PipelineBody, PipelineModel>? Get(string path) => documents._lifecycle.Get(path);
+
         /// <remarks>Refused, as the store refuses it, while what the file holds does not parse.</remarks>
         public Task<DocumentSaveResult> SaveAsync(string path, PipelineBody document, CancellationToken cancellationToken)
         {

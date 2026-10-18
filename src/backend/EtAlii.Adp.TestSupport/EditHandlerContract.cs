@@ -117,6 +117,9 @@ public class WarningDocumentStore<TBody, TModel>(IDiagramDocumentStore<TBody, TM
     public DocumentEntry<TBody, TModel> GetOrLoad(string path) => inner.GetOrLoad(path);
 
     /// <inheritdoc />
+    public DocumentEntry<TBody, TModel>? Get(string path) => inner.Get(path);
+
+    /// <inheritdoc />
     public async Task<DocumentSaveResult> SaveAsync(string path, TBody document, CancellationToken cancellationToken)
     {
         var saved = await inner.SaveAsync(path, document, cancellationToken);

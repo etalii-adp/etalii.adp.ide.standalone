@@ -82,7 +82,7 @@ public sealed class RdfContextActionProvider : IContextActionProvider
     public ContextScope Scope => ContextScope.DiagramElement;
 
     /// <inheritdoc />
-    public ValueTask<IReadOnlyList<ContextActionGroupDefinition>> DiscoverAsync(ContextTarget target, CancellationToken cancellationToken)
+    public async ValueTask<IReadOnlyList<ContextActionGroupDefinition>> DiscoverAsync(ContextTarget target, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(target);
         cancellationToken.ThrowIfCancellationRequested();
@@ -91,21 +91,21 @@ public sealed class RdfContextActionProvider : IContextActionProvider
         {
             // Another type's element; a provider consulted for every element in its scope
             // answers with nothing rather than parsing another notation's file.
-            return Result([]);
+            return [];
         }
 
-        var entry = _documents.GetOrLoad(target.ResolvedFullPath);
+        var entry = await _documents.GetOrLoadAsync(target.ResolvedFullPath, cancellationToken);
         if (!entry.IsUsable || RdfSelection.IsTruncated(entry))
         {
             // A broken file withholds every edit (Requirement 1.5); so does a truncated view
             // (Requirement 8.4) - executing anyway answers with the sentence.
-            return Result([]);
+            return [];
         }
 
         if ((RdfSelection.ResourceOf(entry, target.ElementId) ?? OwlSelection.IndividualIriOf(entry, target.ElementId)) is { } iri)
         {
             var touching = RdfSelection.Touching(entry, iri).Count;
-            return Result(
+            return
             [
                 new ContextActionGroupDefinition(
                 [
@@ -116,14 +116,14 @@ public sealed class RdfContextActionProvider : IContextActionProvider
                         "mdi-delete-outline",
                         new ContextShortcutDefinition("Delete")),
                 ]),
-            ]);
+            ];
         }
 
         if (SkosSelection.PairOf(entry, target.ElementId) is not null)
         {
             // A hierarchy or related pair is the scheme reading's edge: its disconnect takes
             // every asserted direction as one undo, which the generic remove-statement cannot.
-            return Result([.. Shacl.ShaclActions.Discover(entry, target), .. SkosActions.Discover(entry, target)]);
+            return [.. Shacl.ShaclActions.Discover(entry, target), .. SkosActions.Discover(entry, target)];
         }
 
         if (RdfSelection.EdgeOf(entry, target.ElementId) is not null)
@@ -132,7 +132,7 @@ public sealed class RdfContextActionProvider : IContextActionProvider
             // valid family edge id too, so the reading's disconnect - which takes every asserted
             // direction as one undo - leads, and the family's single-statement removal stays
             // beneath it for the reader who means exactly that statement.
-            return Result(
+            return
             [
                 .. Shacl.ShaclActions.Discover(entry, target),
                 .. SkosActions.Discover(entry, target),
@@ -140,7 +140,7 @@ public sealed class RdfContextActionProvider : IContextActionProvider
                 [
                     new ContextActionDefinition(RemoveEdgeActionId, "Remove statement", "mdi-vector-polyline-remove", new ContextShortcutDefinition("Delete")),
                 ]),
-            ]);
+            ];
         }
 
         if (RdfNewPlacement.IsPlacement(target.ElementId))
@@ -163,8 +163,8 @@ public sealed class RdfContextActionProvider : IContextActionProvider
             // Each reading's entries lead where the file's own assertions say that reading
             // applies - a thesaurus for skos, an ontology marker for owl; the family's generic
             // pair stays beneath both.
-            return Result([.. Shacl.ShaclActions.Discover(entry, target),
-                .. SkosActions.Discover(entry, target), new ContextActionGroupDefinition(placementActions)]);
+            return [.. Shacl.ShaclActions.Discover(entry, target),
+                .. SkosActions.Discover(entry, target), new ContextActionGroupDefinition(placementActions)];
         }
 
         if (RdfRelationGesture.TryParse(target.ElementId, out var gestureFrom, out var gestureTo))
@@ -185,13 +185,13 @@ public sealed class RdfContextActionProvider : IContextActionProvider
 
             // The scheme reading's file-under and relate lead between two asserted concepts;
             // the ontology's subclass and the family's dialog stay beneath.
-            return Result([.. Shacl.ShaclActions.Discover(entry, target),
-                .. SkosActions.Discover(entry, target), new ContextActionGroupDefinition(relationActions)]);
+            return [.. Shacl.ShaclActions.Discover(entry, target),
+                .. SkosActions.Discover(entry, target), new ContextActionGroupDefinition(relationActions)];
         }
 
         // A skos edge id (the canonical broader-direction shape) is the scheme reading's alone;
         // blank nodes and the banner stay describable, never editable.
-        return Result([.. Shacl.ShaclActions.Discover(entry, target), .. SkosActions.Discover(entry, target)]);
+        return [.. Shacl.ShaclActions.Discover(entry, target), .. SkosActions.Discover(entry, target)];
     }
 
     /// <inheritdoc />
@@ -309,49 +309,49 @@ public sealed class RdfContextActionProvider : IContextActionProvider
     }
 
     /// <inheritdoc />
-    public ValueTask<ContextValidationResult> ValidateAsync(ContextTarget target, string actionId, string value, CancellationToken cancellationToken)
+    public async ValueTask<ContextValidationResult> ValidateAsync(ContextTarget target, string actionId, string value, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(target);
         cancellationToken.ThrowIfCancellationRequested();
 
         // The writers refuse on exactly these terms at commit; validating here lets the dialog
         // refuse first - an undeclared prefix by name, never silently invented (Requirement 5.7).
-        if (Shacl.ShaclActions.Validate(_documents.GetOrLoad(target.ResolvedFullPath), actionId, value) is { } shaclValidation)
+        var entry = await _documents.GetOrLoadAsync(target.ResolvedFullPath, cancellationToken);
+        if (Shacl.ShaclActions.Validate(entry, actionId, value) is { } shaclValidation)
         {
-            return ValueTask.FromResult(shaclValidation);
+            return shaclValidation;
         }
 
-        if (SkosActions.Validate(_documents.GetOrLoad(target.ResolvedFullPath), actionId, value) is { } skosValidation)
+        if (SkosActions.Validate(entry, actionId, value) is { } skosValidation)
         {
-            return ValueTask.FromResult(skosValidation);
+            return skosValidation;
         }
 
         if (actionId is RenameResourceActionId or ConnectActionId or AddResourceActionId
             || _owlDeclarationTypes.ContainsKey(actionId))
         {
-            var entry = _documents.GetOrLoad(target.ResolvedFullPath);
             (string? resolved, string error) = RdfTermInput.Resolve(entry.Model, value);
             if (resolved is null)
             {
-                return ValueTask.FromResult(ContextValidationResult.Rejected(error));
+                return ContextValidationResult.Rejected(error);
             }
 
             if (actionId == RenameResourceActionId
                 && entry.Model.Triples.Any(t =>
                     (t.Subject is IriTerm s && s.Iri == resolved) || (t.Object is IriTerm o && o.Iri == resolved)))
             {
-                return ValueTask.FromResult(ContextValidationResult.Rejected(
-                    $"{resolved} already names something in this document; renaming onto it would silently merge two resources."));
+                return ContextValidationResult.Rejected(
+                    $"{resolved} already names something in this document; renaming onto it would silently merge two resources.");
             }
         }
 
         if (actionId == AddPrefixActionId && ParsePrefixDeclaration(value) is null)
         {
-            return ValueTask.FromResult(ContextValidationResult.Rejected(
-                "Write the declaration as 'prefix: iri', e.g. ex: http://example.org/."));
+            return ContextValidationResult.Rejected(
+                "Write the declaration as 'prefix: iri', e.g. ex: http://example.org/.");
         }
 
-        return ValueTask.FromResult(ContextValidationResult.Accepted);
+        return ContextValidationResult.Accepted;
     }
 
     /// <inheritdoc />
@@ -469,7 +469,4 @@ public sealed class RdfContextActionProvider : IContextActionProvider
             ? new ContextExecutionCompleted()
             : new ContextExecutionFailed(result.Error);
     }
-
-    private static ValueTask<IReadOnlyList<ContextActionGroupDefinition>> Result(IReadOnlyList<ContextActionGroupDefinition> groups) =>
-        ValueTask.FromResult(groups);
 }

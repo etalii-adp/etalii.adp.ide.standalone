@@ -556,6 +556,8 @@ public sealed class WardleyContextActionProviderTests : IDisposable
 
         public DocumentEntry<LineDocument, WardleyMap> GetOrLoad(string path) => inner.GetOrLoad(path) with { Unreadable = "it is locked" };
 
+        public DocumentEntry<LineDocument, WardleyMap>? Get(string path) => inner.Get(path) is { } held ? held with { Unreadable = "it is locked" } : null;
+
         public Task<DocumentSaveResult> SaveAsync(string path, LineDocument document, CancellationToken cancellationToken) => inner.SaveAsync(path, document, cancellationToken);
 
         public void Reload(string path) => inner.Reload(path);

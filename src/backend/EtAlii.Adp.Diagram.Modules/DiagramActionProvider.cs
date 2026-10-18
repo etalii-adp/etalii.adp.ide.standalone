@@ -27,7 +27,7 @@ namespace EtAlii.Adp.Diagram.Modules;
 public abstract class DiagramActionProvider<TBody, TModel> : IContextActionProvider
 {
     private readonly IHistoryStackStore _historyStacks;
-    private readonly Func<ContextTarget, DocumentEntry<TBody, TModel>> _load;
+    private readonly Func<ContextTarget, CancellationToken, ValueTask<DocumentEntry<TBody, TModel>>> _load;
 
     protected DiagramActionProvider(IHistoryStackStore historyStacks, IDiagramDocumentStore<TBody, TModel> documents)
         : this(historyStacks, DiagramPropertyProvider<TBody, TModel>.LoadFrom(documents))
@@ -38,7 +38,7 @@ public abstract class DiagramActionProvider<TBody, TModel> : IContextActionProvi
     /// A provider whose documents are loaded by <paramref name="load"/>, for a module whose store
     /// needs more of a target than the path of its body to read it.
     /// </summary>
-    protected DiagramActionProvider(IHistoryStackStore historyStacks, Func<ContextTarget, DocumentEntry<TBody, TModel>> load)
+    protected DiagramActionProvider(IHistoryStackStore historyStacks, Func<ContextTarget, CancellationToken, ValueTask<DocumentEntry<TBody, TModel>>> load)
     {
         ArgumentNullException.ThrowIfNull(historyStacks);
         ArgumentNullException.ThrowIfNull(load);
@@ -50,14 +50,14 @@ public abstract class DiagramActionProvider<TBody, TModel> : IContextActionProvi
     public ContextScope Scope => ContextScope.DiagramElement;
 
     /// <inheritdoc />
-    public ValueTask<IReadOnlyList<ContextActionGroupDefinition>> DiscoverAsync(ContextTarget target, CancellationToken cancellationToken)
+    public async ValueTask<IReadOnlyList<ContextActionGroupDefinition>> DiscoverAsync(ContextTarget target, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(target);
         cancellationToken.ThrowIfCancellationRequested();
 
-        return ValueTask.FromResult(Serves(target)
-            ? Discover(target, Load(target))
-            : []);
+        return Serves(target)
+            ? Discover(target, await LoadAsync(target, cancellationToken))
+            : [];
     }
 
     /// <inheritdoc />
@@ -66,19 +66,19 @@ public abstract class DiagramActionProvider<TBody, TModel> : IContextActionProvi
         ArgumentNullException.ThrowIfNull(target);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var entry = Load(target);
+        var entry = await LoadAsync(target, cancellationToken);
         return entry.IsUsable
             ? await RunAsync(target, entry, actionId, cancellationToken)
             : new ContextExecutionFailed(Unreadable(target));
     }
 
     /// <inheritdoc />
-    public ValueTask<ContextValidationResult> ValidateAsync(ContextTarget target, string actionId, string value, CancellationToken cancellationToken)
+    public async ValueTask<ContextValidationResult> ValidateAsync(ContextTarget target, string actionId, string value, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(target);
         cancellationToken.ThrowIfCancellationRequested();
 
-        return ValueTask.FromResult(Validate(target, actionId, value));
+        return Validate(target, await LoadAsync(target, cancellationToken), actionId, value);
     }
 
     /// <inheritdoc />
@@ -92,13 +92,13 @@ public abstract class DiagramActionProvider<TBody, TModel> : IContextActionProvi
         ArgumentNullException.ThrowIfNull(target);
         _ = text;
 
-        var entry = Load(target);
+        var entry = await LoadAsync(target, cancellationToken);
         if (!entry.IsUsable)
         {
             return ContextCommitResult.Failed(Unreadable(target));
         }
 
-        if (CommitCommand(target, entry.Model, actionId, value) is not { } command)
+        if (CommitCommand(target, entry, actionId, value) is not { } command)
         {
             return ContextCommitResult.Failed($"'{actionId}' does not apply to this selection.");
         }
@@ -112,10 +112,10 @@ public abstract class DiagramActionProvider<TBody, TModel> : IContextActionProvi
         $"{System.IO.Path.GetFileName(target.ResolvedFullPath)} could not be read, so it cannot be edited.";
 
     /// <summary>The entry of the document <paramref name="target"/> is in, for a leg that is not handed one.</summary>
-    protected DocumentEntry<TBody, TModel> Load(ContextTarget target)
+    protected ValueTask<DocumentEntry<TBody, TModel>> LoadAsync(ContextTarget target, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(target);
-        return _load(target);
+        return _load(target, cancellationToken);
     }
 
     /// <summary>Whether <paramref name="path"/> is a document of this module.</summary>
@@ -159,10 +159,30 @@ public abstract class DiagramActionProvider<TBody, TModel> : IContextActionProvi
         ContextValidationResult.Accepted;
 
     /// <summary>
+    /// Whether <paramref name="value"/> may be committed for <paramref name="actionId"/> on
+    /// <paramref name="target"/> in <paramref name="entry"/>: what the overload not given the entry
+    /// says, by default. A module that checks the value against the document answers here.
+    /// </summary>
+    protected virtual ContextValidationResult Validate(ContextTarget target, DocumentEntry<TBody, TModel> entry, string actionId, string value) =>
+        Validate(target, actionId, value);
+
+    /// <summary>
     /// The command that commits <paramref name="value"/> for <paramref name="actionId"/>, asked for
     /// earlier as input or a confirmation, or null when the action does not apply to the target.
+    /// None by default, for a module that overrides the overload given the whole entry instead.
     /// </summary>
-    protected abstract ICommand? CommitCommand(ContextTarget target, TModel model, string actionId, string value);
+    protected virtual ICommand? CommitCommand(ContextTarget target, TModel model, string actionId, string value) => null;
+
+    /// <summary>
+    /// The command that commits <paramref name="value"/> for <paramref name="actionId"/> on
+    /// <paramref name="target"/> in <paramref name="entry"/>: what the overload given the model says,
+    /// by default. A module that needs the document's body as well answers here.
+    /// </summary>
+    protected virtual ICommand? CommitCommand(ContextTarget target, DocumentEntry<TBody, TModel> entry, string actionId, string value)
+    {
+        ArgumentNullException.ThrowIfNull(entry);
+        return CommitCommand(target, entry.Model, actionId, value);
+    }
 
     /// <summary>Runs <paramref name="command"/> on the project's history.</summary>
     protected async ValueTask<ContextExecutionResult> DispatchAsync(ContextTarget target, ICommand command, CancellationToken cancellationToken)
