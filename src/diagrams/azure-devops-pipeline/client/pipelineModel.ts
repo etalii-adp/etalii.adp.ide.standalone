@@ -45,9 +45,10 @@ export interface PipelineModel {
   nodes: ReadonlyMap<string, PipelineNode>;
   edges: ReadonlyMap<string, PipelineEdgeLine>;
   /**
-   * Which stages this connection has expanded. Held here rather than in the canvas because the
-   * backend decides it: a `group` delta folds a stage and an `ungroup` opens it, and the model is
-   * what remembers which way round each one currently is.
+   * Which stages and jobs this connection has closed. Held here rather than in the canvas because the
+   * backend decides it: each stage and job it sends says whether it is open (`expanded`), and a
+   * `group` delta folds one and an `ungroup` opens it; the model is what remembers which way round
+   * each one currently is.
    */
   collapsed: ReadonlySet<string>;
 }
@@ -70,6 +71,7 @@ export function applyDelta(model: PipelineModel, delta: Delta): PipelineModel {
     case "add": {
       const nodes = new Map(model.nodes);
       const edges = new Map(model.edges);
+      const collapsed = new Set(model.collapsed);
 
       for (const raw of delta.action.value.elements) {
         const id = raw.id?.value;
@@ -87,17 +89,27 @@ export function applyDelta(model: PipelineModel, delta: Delta): PipelineModel {
         }
 
         if (raw.type === STAGE_TYPE || raw.type === JOB_TYPE || raw.type === STEP_TYPE || raw.type === TEMPLATE_TYPE) {
+          const payload = fromBinary(PipelineElementPayloadSchema, raw.payload.value);
           nodes.set(id, {
             id,
             x: raw.position?.x ?? 0,
             y: raw.position?.y ?? 0,
             type: raw.type,
-            payload: fromBinary(PipelineElementPayloadSchema, raw.payload.value),
+            payload,
           });
+          // A closed stage arrives without its jobs, and a closed job without its steps - which,
+          // unless it says so, looks like an open one holding none. So each says which it is.
+          if (raw.type === STAGE_TYPE || raw.type === JOB_TYPE) {
+            if (payload.expanded) {
+              collapsed.delete(id);
+            } else {
+              collapsed.add(id);
+            }
+          }
         }
       }
 
-      return { ...model, nodes, edges };
+      return { ...model, nodes, edges, collapsed };
     }
 
     case "remove": {
