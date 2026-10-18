@@ -1,0 +1,297 @@
+{
+  "$schema": "https://etalii.net/adp/fbl/schema/0.1/fbl.schema.json#/$defs/Document",
+  "fbl": "0.2",
+  "doc": "The C4 module's own binding of a Structurizr DSL workspace, which the six bundled definitions name as persistence.binding (c4-disl-fbl Requirement 4.1, design Amendment 2). It is written in the state FBL 0.2 can express: findings B1, B2, B8, B10, B11 and B23 are repaired, and what needs a language change waits for it (gaps C1 to C6: a comment after a statement or a brace, block comments, an escaped quote, positional optional arguments, an unbalanced body, and the statements of the selected view only). It is on no reading path yet: C4Parser reads every body. Quoted arguments are written as \"[^\"]*\" and identifiers as any run without whitespace, quotes, braces or '='; the lenient spellings of finding B6 are not read yet. Which elements a view shows, and relationships lifted to the nearest drawn ancestor, are the viewpoint's and DISL's; this binding says only how the model is read and written. !script and the other directives, styles, properties and tags written on a line of their own are unbound statements: kept byte for byte, never followed.",
+  "bindings": {
+    "workspace": {
+      "title": "Structurizr DSL workspace",
+      "claims": {
+        "extensions": [".dsl"],
+        "origins": ["c4/system-landscape", "c4/context", "c4/container", "c4/component", "c4/dynamic", "c4/deployment"]
+      },
+      "body": { "kind": "file", "family": "blocks" },
+      "reader": "declared",
+      "text": { "newline": "lf", "indent": 4, "finalNewline": true },
+      "comment": "^\\s*(#|//)",
+      "registration": {
+        "legacyLayout": "{base}.layout.json",
+        "createOnFirstPlacement": true
+      },
+      "blocks": [
+        { "name": "model", "line": "^model\\s*\\{\\s*$", "caseInsensitive": true },
+        { "name": "group", "line": "^group\\s+\"[^\"]*\"\\s*\\{\\s*$", "caseInsensitive": true },
+        {
+          "name": "environment",
+          "doc": "[identifier =] deploymentEnvironment \"name\": its nodes are top-level elements, as C4Parser reads them (finding B1).",
+          "line": "^(?:[^\\s\"{}=]+\\s*=\\s*)?deploymentEnvironment\\s+\"[^\"]*\"\\s*\\{\\s*$",
+          "caseInsensitive": true
+        },
+        { "name": "views", "line": "^views\\s*\\{\\s*$", "caseInsensitive": true },
+        {
+          "name": "landscapeView",
+          "doc": "systemLandscape \"key\" [\"description\"]: the key is the first string (finding B2).",
+          "line": "^systemLandscape\\s+\"(?<key>[^\"]*)\"(?:\\s+\"[^\"]*\")*\\s*\\{\\s*$",
+          "within": ["views"],
+          "caseInsensitive": true,
+          "view": "key"
+        },
+        {
+          "name": "landscapeViewWithoutKey",
+          "doc": "systemLandscape without a key is the view 'landscape', as C4Parser names it; the key is read from the keyword, and a registration's view header is matched ignoring case (FBL 9.3).",
+          "line": "^system(?<key>Landscape)\\s*\\{\\s*$",
+          "within": ["views"],
+          "caseInsensitive": true,
+          "view": "key"
+        },
+        {
+          "name": "scopedView",
+          "doc": "systemContext, container, component and dynamic <scope> \"key\" [\"description\"]: the key is the first string after the scope (finding B2).",
+          "line": "^(?:systemContext|container|component|dynamic)\\s+(?<scope>\\*|\"[^\"]*\"|[^\\s\"{}]+)\\s+\"(?<key>[^\"]*)\"(?:\\s+\"[^\"]*\")*\\s*\\{\\s*$",
+          "within": ["views"],
+          "caseInsensitive": true,
+          "view": "key"
+        },
+        {
+          "name": "scopedViewWithoutKey",
+          "doc": "A view of these kinds without a key is named by its kind in lower case, as C4Parser names it; the key is read from the keyword and matched ignoring case (FBL 9.3).",
+          "line": "^(?<key>systemContext|container|component|dynamic)(?:\\s+(?<scope>\\*|\"[^\"]*\"|[^\\s\"{}]+))?\\s*\\{\\s*$",
+          "within": ["views"],
+          "caseInsensitive": true,
+          "view": "key"
+        },
+        {
+          "name": "deploymentView",
+          "doc": "deployment <scope> \"environment\" \"key\" [\"description\"]: the key is the first string after the environment (finding B2).",
+          "line": "^deployment\\s+(?<scope>\\*|\"[^\"]*\"|[^\\s\"{}]+)\\s+\"(?<environment>[^\"]*)\"\\s+\"(?<key>[^\"]*)\"(?:\\s+\"[^\"]*\")*\\s*\\{\\s*$",
+          "within": ["views"],
+          "caseInsensitive": true,
+          "view": "key"
+        },
+        {
+          "name": "deploymentViewWithoutKey",
+          "doc": "A deployment view without a key is named by its environment, as C4Parser names it.",
+          "line": "^deployment\\s+(?<scope>\\*|\"[^\"]*\"|[^\\s\"{}]+)\\s+\"(?<key>[^\"]*)\"\\s*\\{\\s*$",
+          "within": ["views"],
+          "caseInsensitive": true,
+          "view": "key"
+        },
+        {
+          "name": "deploymentViewWithoutEnvironment",
+          "doc": "A deployment view without an environment is the view 'deployment', as C4Parser names it; the key is read from the keyword.",
+          "line": "^(?<key>deployment)(?:\\s+(?<scope>\\*|\"[^\"]*\"|[^\\s\"{}]+))?\\s*\\{\\s*$",
+          "within": ["views"],
+          "caseInsensitive": true,
+          "view": "key"
+        }
+      ],
+      "elements": [
+        {
+          "name": "workspace",
+          "type": "Workspace",
+          "doc": "The workspace statement, read as the diagram's attributes (typeMap Workspace).",
+          "line": "^workspace(?:\\s+\"(?<name>[^\"]*)\")?(?:\\s+\"[^\"]*\")*\\s*(?:\\{\\s*)?$",
+          "opens": true,
+          "caseInsensitive": true,
+          "readOnly": true,
+          "attributes": {
+            "name": { "group": "name" }
+          }
+        },
+        {
+          "name": "include",
+          "type": "IncludedFile",
+          "doc": "!include is read, never followed, so that a rule of the definition reports it as c4.include-not-followed; IncludedFile is a type no viewpoint draws (finding B11).",
+          "line": "^!include\\s+(?<path>\\S+)",
+          "caseInsensitive": true,
+          "readOnly": true,
+          "attributes": {
+            "path": { "group": "path" }
+          }
+        },
+        {
+          "name": "person",
+          "type": "Person",
+          "doc": "[identifier =] person \"name\" [\"description\"] [\"tags\"]. Like every element rule it is read in any block but the views, where C4Parser reads an element, so a misplaced one is read and reported (finding B10).",
+          "line": "^(?:(?<id>[^\\s\"{}=]+)\\s*=\\s*)?person(?:\\s+\"(?<name>[^\"]*)\")?(?:\\s+\"(?<description>[^\"]*)\")?(?:\\s+\"(?<tags>[^\"]*)\")?(?<rest>(?:\\s+[^\\s{]+)*)\\s*(?:\\{\\s*)?$",
+          "within": ["^", "workspace", "model", "group", "environment", "person", "softwareSystem", "container", "component", "deploymentNode", "infrastructureNode", "containerInstance", "softwareSystemInstance"],
+          "opens": true,
+          "caseInsensitive": true,
+          "id": { "from": { "group": "id" } },
+          "parent": { "rules": ["person", "softwareSystem", "container", "component", "deploymentNode", "infrastructureNode", "containerInstance", "softwareSystemInstance"], "slot": "children" },
+          "attributes": {
+            "identifier": { "group": "id", "readOnly": true },
+            "name": { "group": "name", "empty": "refuse" },
+            "description": { "group": "description", "empty": "keep" },
+            "tags": { "group": "tags", "readOnly": true }
+          },
+          "insert": { "place": "end", "container": "model", "emit": "{id} = person \"{name}\" \"{description}\"" }
+        },
+        {
+          "name": "softwareSystem",
+          "type": "SoftwareSystem",
+          "doc": "[identifier =] softwareSystem \"name\" [\"description\"] [\"tags\"].",
+          "line": "^(?:(?<id>[^\\s\"{}=]+)\\s*=\\s*)?softwareSystem(?:\\s+\"(?<name>[^\"]*)\")?(?:\\s+\"(?<description>[^\"]*)\")?(?:\\s+\"(?<tags>[^\"]*)\")?(?<rest>(?:\\s+[^\\s{]+)*)\\s*(?:\\{\\s*)?$",
+          "within": ["^", "workspace", "model", "group", "environment", "person", "softwareSystem", "container", "component", "deploymentNode", "infrastructureNode", "containerInstance", "softwareSystemInstance"],
+          "opens": true,
+          "caseInsensitive": true,
+          "id": { "from": { "group": "id" } },
+          "parent": { "rules": ["person", "softwareSystem", "container", "component", "deploymentNode", "infrastructureNode", "containerInstance", "softwareSystemInstance"], "slot": "children" },
+          "attributes": {
+            "identifier": { "group": "id", "readOnly": true },
+            "name": { "group": "name", "empty": "refuse" },
+            "description": { "group": "description", "empty": "keep" },
+            "tags": { "group": "tags", "readOnly": true }
+          },
+          "insert": { "place": "end", "container": "model", "emit": "{id} = softwareSystem \"{name}\" \"{description}\"" }
+        },
+        {
+          "name": "container",
+          "type": "Container",
+          "doc": "[identifier =] container \"name\" [\"description\"] [\"technology\"] [\"tags\"].",
+          "line": "^(?:(?<id>[^\\s\"{}=]+)\\s*=\\s*)?container(?:\\s+\"(?<name>[^\"]*)\")?(?:\\s+\"(?<description>[^\"]*)\")?(?:\\s+\"(?<technology>[^\"]*)\")?(?:\\s+\"(?<tags>[^\"]*)\")?(?<rest>(?:\\s+[^\\s{]+)*)\\s*(?:\\{\\s*)?$",
+          "within": ["^", "workspace", "model", "group", "environment", "person", "softwareSystem", "container", "component", "deploymentNode", "infrastructureNode", "containerInstance", "softwareSystemInstance"],
+          "opens": true,
+          "caseInsensitive": true,
+          "id": { "from": { "group": "id" } },
+          "parent": { "rules": ["person", "softwareSystem", "container", "component", "deploymentNode", "infrastructureNode", "containerInstance", "softwareSystemInstance"], "slot": "children" },
+          "attributes": {
+            "identifier": { "group": "id", "readOnly": true },
+            "name": { "group": "name", "empty": "refuse" },
+            "description": { "group": "description", "empty": "keep" },
+            "technology": { "group": "technology", "empty": "keep" },
+            "tags": { "group": "tags", "readOnly": true }
+          },
+          "insert": { "place": "last-child", "emit": "{id} = container \"{name}\" \"{description}\" \"{technology}\"" }
+        },
+        {
+          "name": "component",
+          "type": "Component",
+          "doc": "[identifier =] component \"name\" [\"description\"] [\"technology\"] [\"tags\"] (finding B1).",
+          "line": "^(?:(?<id>[^\\s\"{}=]+)\\s*=\\s*)?component(?:\\s+\"(?<name>[^\"]*)\")?(?:\\s+\"(?<description>[^\"]*)\")?(?:\\s+\"(?<technology>[^\"]*)\")?(?:\\s+\"(?<tags>[^\"]*)\")?(?<rest>(?:\\s+[^\\s{]+)*)\\s*(?:\\{\\s*)?$",
+          "within": ["^", "workspace", "model", "group", "environment", "person", "softwareSystem", "container", "component", "deploymentNode", "infrastructureNode", "containerInstance", "softwareSystemInstance"],
+          "opens": true,
+          "caseInsensitive": true,
+          "id": { "from": { "group": "id" } },
+          "parent": { "rules": ["person", "softwareSystem", "container", "component", "deploymentNode", "infrastructureNode", "containerInstance", "softwareSystemInstance"], "slot": "children" },
+          "attributes": {
+            "identifier": { "group": "id", "readOnly": true },
+            "name": { "group": "name", "empty": "refuse" },
+            "description": { "group": "description", "empty": "keep" },
+            "technology": { "group": "technology", "empty": "keep" },
+            "tags": { "group": "tags", "readOnly": true }
+          },
+          "insert": { "place": "last-child", "emit": "{id} = component \"{name}\" \"{description}\" \"{technology}\"" }
+        },
+        {
+          "name": "deploymentNode",
+          "type": "DeploymentNode",
+          "doc": "[identifier =] deploymentNode \"name\" [\"description\"] [\"technology\"] [\"tags\"] [instances]: the instance count comes after the tags (finding B1).",
+          "line": "^(?:(?<id>[^\\s\"{}=]+)\\s*=\\s*)?deploymentNode(?:\\s+\"(?<name>[^\"]*)\")?(?:\\s+\"(?<description>[^\"]*)\")?(?:\\s+\"(?<technology>[^\"]*)\")?(?:\\s+\"(?<tags>[^\"]*)\")?(?<rest>(?:\\s+[^\\s{]+)*)\\s*(?:\\{\\s*)?$",
+          "within": ["^", "workspace", "model", "group", "environment", "person", "softwareSystem", "container", "component", "deploymentNode", "infrastructureNode", "containerInstance", "softwareSystemInstance"],
+          "opens": true,
+          "caseInsensitive": true,
+          "id": { "from": { "group": "id" } },
+          "parent": { "rules": ["person", "softwareSystem", "container", "component", "deploymentNode", "infrastructureNode", "containerInstance", "softwareSystemInstance"], "slot": "children" },
+          "attributes": {
+            "identifier": { "group": "id", "readOnly": true },
+            "name": { "group": "name", "empty": "refuse" },
+            "description": { "group": "description", "empty": "keep" },
+            "technology": { "group": "technology", "empty": "keep" },
+            "tags": { "group": "tags", "readOnly": true }
+          }
+        },
+        {
+          "name": "infrastructureNode",
+          "type": "InfrastructureNode",
+          "doc": "[identifier =] infrastructureNode \"name\" [\"description\"] [\"technology\"] [\"tags\"] (finding B1).",
+          "line": "^(?:(?<id>[^\\s\"{}=]+)\\s*=\\s*)?infrastructureNode(?:\\s+\"(?<name>[^\"]*)\")?(?:\\s+\"(?<description>[^\"]*)\")?(?:\\s+\"(?<technology>[^\"]*)\")?(?:\\s+\"(?<tags>[^\"]*)\")?(?<rest>(?:\\s+[^\\s{]+)*)\\s*(?:\\{\\s*)?$",
+          "within": ["^", "workspace", "model", "group", "environment", "person", "softwareSystem", "container", "component", "deploymentNode", "infrastructureNode", "containerInstance", "softwareSystemInstance"],
+          "opens": true,
+          "caseInsensitive": true,
+          "id": { "from": { "group": "id" } },
+          "parent": { "rules": ["person", "softwareSystem", "container", "component", "deploymentNode", "infrastructureNode", "containerInstance", "softwareSystemInstance"], "slot": "children" },
+          "attributes": {
+            "identifier": { "group": "id", "readOnly": true },
+            "name": { "group": "name", "empty": "refuse" },
+            "description": { "group": "description", "empty": "keep" },
+            "technology": { "group": "technology", "empty": "keep" },
+            "tags": { "group": "tags", "readOnly": true }
+          }
+        },
+        {
+          "name": "containerInstance",
+          "type": "ContainerInstance",
+          "doc": "[identifier =] containerInstance <container> [\"tags\"]: no name, description or technology; the container it is an instance of is a reference (finding B1).",
+          "line": "^(?:(?<id>[^\\s\"{}=]+)\\s*=\\s*)?containerInstance\\s+(?<of>[^\\s\"{}]+)(?:\\s+\"(?<tags>[^\"]*)\")?(?<rest>(?:\\s+[^\\s{]+)*)\\s*(?:\\{\\s*)?$",
+          "within": ["^", "workspace", "model", "group", "environment", "person", "softwareSystem", "container", "component", "deploymentNode", "infrastructureNode", "containerInstance", "softwareSystemInstance"],
+          "opens": true,
+          "caseInsensitive": true,
+          "id": { "from": { "group": "id" } },
+          "parent": { "rules": ["person", "softwareSystem", "container", "component", "deploymentNode", "infrastructureNode", "containerInstance", "softwareSystemInstance"], "slot": "children" },
+          "attributes": {
+            "identifier": { "group": "id", "readOnly": true },
+            "container": { "group": "of", "readOnly": true, "reference": { "to": ["container"], "by": "identifier" } },
+            "tags": { "group": "tags", "readOnly": true }
+          }
+        },
+        {
+          "name": "softwareSystemInstance",
+          "type": "SoftwareSystemInstance",
+          "doc": "[identifier =] softwareSystemInstance <softwareSystem> [\"tags\"] (finding B1).",
+          "line": "^(?:(?<id>[^\\s\"{}=]+)\\s*=\\s*)?softwareSystemInstance\\s+(?<of>[^\\s\"{}]+)(?:\\s+\"(?<tags>[^\"]*)\")?(?<rest>(?:\\s+[^\\s{]+)*)\\s*(?:\\{\\s*)?$",
+          "within": ["^", "workspace", "model", "group", "environment", "person", "softwareSystem", "container", "component", "deploymentNode", "infrastructureNode", "containerInstance", "softwareSystemInstance"],
+          "opens": true,
+          "caseInsensitive": true,
+          "id": { "from": { "group": "id" } },
+          "parent": { "rules": ["person", "softwareSystem", "container", "component", "deploymentNode", "infrastructureNode", "containerInstance", "softwareSystemInstance"], "slot": "children" },
+          "attributes": {
+            "identifier": { "group": "id", "readOnly": true },
+            "softwareSystem": { "group": "of", "readOnly": true, "reference": { "to": ["softwareSystem"], "by": "identifier" } },
+            "tags": { "group": "tags", "readOnly": true }
+          }
+        },
+        {
+          "name": "relationship",
+          "type": "Relationship",
+          "doc": "[identifier =] source -> destination [\"description\"] [\"technology\"] [\"tags\"], in any block but the views, a deployment node and an environment included, on one line or opening a block (finding B8). An element with two reference attributes rather than a relation, so that one whose end names nothing is kept and reported (FBL 5.4; typeMap Relationship).",
+          "line": "^(?:[^\\s\"{}=]+\\s*=\\s*)?(?<source>[^\\s\"{}=]+)\\s+->\\s+(?<destination>[^\\s\"{}]+)(?:\\s+\"(?<description>[^\"]*)\")?(?:\\s+\"(?<technology>[^\"]*)\")?(?:\\s+\"(?<tags>[^\"]*)\")?(?<rest>(?:\\s+[^\\s{]+)*)\\s*(?:\\{\\s*)?$",
+          "within": ["^", "workspace", "model", "group", "environment", "person", "softwareSystem", "container", "component", "deploymentNode", "infrastructureNode", "containerInstance", "softwareSystemInstance"],
+          "opens": true,
+          "attributes": {
+            "from": { "group": "source", "readOnly": true, "reference": { "to": ["person", "softwareSystem", "container", "component", "deploymentNode", "infrastructureNode", "containerInstance", "softwareSystemInstance"], "by": "identifier" } },
+            "to": { "group": "destination", "readOnly": true, "reference": { "to": ["person", "softwareSystem", "container", "component", "deploymentNode", "infrastructureNode", "containerInstance", "softwareSystemInstance"], "by": "identifier" } },
+            "description": { "group": "description", "empty": "keep" },
+            "technology": { "group": "technology", "empty": "keep" },
+            "tags": { "group": "tags", "readOnly": true }
+          }
+        },
+        {
+          "name": "nestedRelationship",
+          "type": "Relationship",
+          "doc": "-> destination [\"description\"] [\"technology\"] [\"tags\"] inside an element's block: its source is the enclosing element (finding B8).",
+          "line": "^->\\s+(?<destination>[^\\s\"{}]+)(?:\\s+\"(?<description>[^\"]*)\")?(?:\\s+\"(?<technology>[^\"]*)\")?(?:\\s+\"(?<tags>[^\"]*)\")?(?<rest>(?:\\s+[^\\s{]+)*)\\s*(?:\\{\\s*)?$",
+          "within": ["group", "person", "softwareSystem", "container", "component", "deploymentNode", "infrastructureNode", "containerInstance", "softwareSystemInstance"],
+          "opens": true,
+          "attributes": {
+            "from": { "parent": "identifier", "readOnly": true },
+            "to": { "group": "destination", "readOnly": true, "reference": { "to": ["person", "softwareSystem", "container", "component", "deploymentNode", "infrastructureNode", "containerInstance", "softwareSystemInstance"], "by": "identifier" } },
+            "description": { "group": "description", "empty": "keep" },
+            "technology": { "group": "technology", "empty": "keep" },
+            "tags": { "group": "tags", "readOnly": true }
+          }
+        }
+      ],
+      "template": {
+        "doc": "The six texts C4's document factory writes (ServiceCollection.AddC4.EmptyDocument), the container view's as the default (finding B23). {base} stands for the factory's name and {key} for its identifier: the factory keeps every Unicode letter and falls back to 'system', {key} keeps ASCII and falls back to 'untitled', and the factory escapes a quote in the name, which {base} does not (gap C4).",
+        "text": "workspace \"{base}\" {\n\n    model {\n        {key} = softwareSystem \"{base}\"\n    }\n\n    views {\n        container {key} \"containers\" {\n            include *\n            autoLayout lr\n        }\n    }\n\n}\n",
+        "byOrigin": {
+          "c4/system-landscape": "workspace \"{base}\" {\n\n    model {\n        {key} = softwareSystem \"{base}\"\n    }\n\n    views {\n        systemLandscape \"landscape\" {\n            include *\n            autoLayout lr\n        }\n    }\n\n}\n",
+          "c4/context": "workspace \"{base}\" {\n\n    model {\n        {key} = softwareSystem \"{base}\"\n    }\n\n    views {\n        systemContext {key} \"context\" {\n            include *\n            autoLayout lr\n        }\n    }\n\n}\n",
+          "c4/component": "workspace \"{base}\" {\n\n    model {\n        {key} = softwareSystem \"{base}\" {\n            application = container \"Application\" \"\" \"Technology\"\n        }\n    }\n\n    views {\n        component application \"components\" {\n            include *\n            autoLayout lr\n        }\n    }\n\n}\n",
+          "c4/dynamic": "workspace \"{base}\" {\n\n    model {\n        {key} = softwareSystem \"{base}\"\n    }\n\n    views {\n        dynamic {key} \"scenario\" {\n            autoLayout lr\n        }\n    }\n\n}\n",
+          "c4/deployment": "workspace \"{base}\" {\n\n    model {\n        {key} = softwareSystem \"{base}\"\n\n        deploymentEnvironment \"Production\" {\n            deploymentNode \"Server\" {\n            }\n        }\n    }\n\n    views {\n        deployment {key} \"Production\" \"deployment\" {\n            include *\n            autoLayout lr\n        }\n    }\n\n}\n"
+        }
+      }
+    }
+  }
+}
