@@ -126,7 +126,7 @@ internal static class C4Corpus
                     await File.WriteAllBytesAsync(Path.Combine(folder, name), bytes, cancellationToken);
                 }
 
-                var workspace = store.GetOrLoad(body).Model;
+                var workspace = (await store.GetOrLoadAsync(body, cancellationToken)).Model;
                 List<(C4View, IReadOnlyList<string>)> views =
                 [
                     .. workspace.Views.Select(view => (view, (IReadOnlyList<string>)[.. mapper.Visible(workspace, view, DiagramViewport.Unbounded, body).Select(element => element.Id)])),
