@@ -22,6 +22,9 @@ public sealed class DislDiagram : ICelObject
     private Dictionary<DislElement, (List<DislElement> Incoming, List<DislElement> Outgoing)>? _ends;
     private readonly Dictionary<(string Type, long Max), (IReadOnlyList<IReadOnlyList<DislElement>> Cycles, bool Truncated)> _cycles = [];
 
+    /// <summary>The derived diagram attributes being computed, so one that reads itself stops.</summary>
+    private readonly HashSet<string> _computing = new(StringComparer.Ordinal);
+
     /// <summary>A diagram of <paramref name="specification"/> with the diagram attributes <paramref name="attributes"/>, as CEL values.</summary>
     public DislDiagram(DislSpecification specification, IReadOnlyDictionary<string, object?>? attributes = null)
     {
@@ -166,11 +169,36 @@ public sealed class DislDiagram : ICelObject
     /// <summary>Sets diagram attribute <paramref name="name"/>, as a reader does.</summary>
     internal void SetAttribute(string name, object? value) => _attributes[name] = value;
 
-    /// <summary>The value CEL reads for diagram attribute <paramref name="name"/>: stored, else its default, else its type's zero value (§4.3).</summary>
-    public object? ValueOf(string name) =>
-        Specification.Metamodel.DiagramAttributes.TryGetValue(name, out var attribute)
-            ? _attributes.TryGetValue(name, out var value) ? value : DislValues.Unset(attribute, Specification.Metamodel)
-            : throw new ArgumentException($"'{name}' is not an attribute of the diagram.", nameof(name));
+    /// <summary>
+    /// The value CEL reads for diagram attribute <paramref name="name"/>: a derived attribute's
+    /// expression (§4.3), else stored, else its default, else its type's zero value.
+    /// </summary>
+    public object? ValueOf(string name)
+    {
+        if (!Specification.Metamodel.DiagramAttributes.TryGetValue(name, out var attribute)) throw new ArgumentException($"'{name}' is not an attribute of the diagram.", nameof(name));
+        if (attribute.Json.TryGetProperty("derived", out _)) return Derived(attribute);
+        return _attributes.TryGetValue(name, out var value) ? value : DislValues.Unset(attribute, Specification.Metamodel);
+    }
+
+    /// <summary>
+    /// A derived diagram attribute's value (§4.3): its expression, compiled by the loader in the
+    /// <c>element</c> context, with <c>self</c> and <c>diagram</c> this diagram and <c>env</c> its own.
+    /// One that fails, or that reads its own value, gives the attribute's unset value, as an element's does.
+    /// </summary>
+    private object? Derived(DislAttribute attribute)
+    {
+        var pointer = DislJson.Pointer(DislJson.Pointer("/metamodel/diagram/attributes", attribute.Name), "derived");
+        if (Specification.ExpressionAt(pointer) is not { } expression || !_computing.Add(attribute.Name)) return DislValues.Unset(attribute, Specification.Metamodel);
+        try
+        {
+            var value = expression.Program.Evaluate(new Dictionary<string, object?> { ["self"] = this, ["diagram"] = this, ["env"] = Env.ToCel() });
+            return value is CelError ? DislValues.Unset(attribute, Specification.Metamodel) : value;
+        }
+        finally
+        {
+            _computing.Remove(attribute.Name);
+        }
+    }
 
     /// <summary>The first element with <paramref name="id"/> in model order, or null.</summary>
     public DislElement? ElementById(string id) =>
@@ -252,7 +280,9 @@ public sealed class DislDiagram : ICelObject
 
     /// <inheritdoc />
     public bool HasMember(string name) =>
-        Specification.Metamodel.DiagramAttributes.ContainsKey(name) ? _attributes.ContainsKey(name) : TryGetMember(name, out _);
+        Specification.Metamodel.DiagramAttributes.TryGetValue(name, out var attribute)
+            ? _attributes.ContainsKey(name) || attribute.Json.TryGetProperty("derived", out _)
+            : TryGetMember(name, out _);
 
     /// <inheritdoc />
     public bool TryInvoke(string name, IReadOnlyList<object?> arguments, out object? value)
