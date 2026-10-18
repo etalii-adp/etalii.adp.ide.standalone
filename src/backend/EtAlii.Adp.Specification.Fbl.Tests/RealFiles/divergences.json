@@ -357,6 +357,83 @@
       "file": "src/diagrams/helm-chart/backend/EtAlii.Adp.Diagram.HelmChart.Tests/Fixtures/unconventional/charts/deep",
       "observed": "Subchart: the binding lacks 1 (sub:charts/deeper)",
       "reason": "Read as a chart of its own, deep's charts/deeper holds only marker.txt, which no file rule selects. helm-chart.fbl's file rules select files, and the folder body hands the plugin only what they select (FBL sections 10.2 and 11.2), so a directory under charts/ that holds no selected file is no entry the plugin can see: the reader drew it as a subchart. This is gap 3 of definitions/diagrams/helm-chart.md (findings B4 and B5), which the module answers with directory entries of its own (HelmFolderEntries, handed to the folder body beside the binding); this cross-check gives the folder body the binding alone, so the gap shows. Candidate follow-up for etalii.adp: entries: \"all\" on a file rule, so a binding can select a directory as an entry."
+    },
+    {
+      "property": "unreadable",
+      "binding": "structurizr",
+      "file": "src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4.Tests/Fixtures/findings/block-comments.dsl",
+      "observed": "offset 326: The braces of the body do not balance on this line.",
+      "reason": "The fixture is one of the C4 module's findings corpus (c4-disl-fbl task 1), written to hold '/* */' block comments on purpose (finding B5). structurizr.fbl's comment expression knows only a line starting with '#' or '//', so the '{' in 's = softwareSystem \"System\" \"A system.\" /* a brace { inside a comment */' is a brace that does not balance on its line, which makes the body unreadable; C4Parser skips block comments and reads the fixture. The parity transcript freezes what the module does with it today."
+    },
+    {
+      "property": "cross-check",
+      "binding": "structurizr",
+      "file": "src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4.Tests/Fixtures/findings/dangling-both-ends.dsl",
+      "observed": "Relationship: the binding lacks 3 (ghost->phantom, ghost->s, u->phantom)",
+      "reason": "The fixture is one of the C4 module's findings corpus (c4-disl-fbl task 1), written to hold relationships whose source, destination or both name nothing on purpose (findings A13 and B8). FBL section 5.4 reads no relation whose end names no element; C4Parser keeps them and the module reports each one. The parity transcript freezes what the module does with it today."
+    },
+    {
+      "property": "cross-check",
+      "binding": "structurizr",
+      "file": "src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4.Tests/Fixtures/findings/escaped-quote.dsl",
+      "observed": "Person: the binding lacks 1 (u) | Relationship: the binding lacks 1 (u->s) | SoftwareSystem: the binding lacks 1 (s)",
+      "reason": "The fixture is one of the C4 module's findings corpus (c4-disl-fbl task 1), written to hold escaped quotes inside quoted arguments on purpose (finding B7). structurizr.fbl's quoted groups are '\"[^\"]*\"', which end at the first '\\\"', so a declaration holding an escaped quote matches no rule and the relationship between them has no ends to name. C4Parser reads the escape. The parity transcript freezes what the module does with it today."
+    },
+    {
+      "property": "cross-check",
+      "binding": "structurizr",
+      "file": "src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4.Tests/Fixtures/findings/finding-order.dsl",
+      "observed": "Relationship: the binding lacks 1 (q->missing)",
+      "reason": "The fixture is one of the C4 module's findings corpus (c4-disl-fbl task 1), written to hold one of every finding, to fix the order they are reported in (finding A11). Its relationship 'q -> missing' names no element, and FBL section 5.4 reads no such relation; C4Parser keeps it and the module reports it as dangling. The parity transcript freezes what the module does with it today."
+    },
+    {
+      "property": "cross-check",
+      "binding": "structurizr",
+      "file": "src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4.Tests/Fixtures/findings/hierarchical-identifiers.dsl",
+      "observed": "Relationship: the binding lacks 2 (u->a.api, u->b.api)",
+      "reason": "The fixture is one of the C4 module's findings corpus (c4-disl-fbl task 1), written to hold '!identifiers hierarchical' and dotted references on purpose (finding B12). structurizr.fbl's relationship ends are plain identifiers, so 'a.api' and 'b.api' match no rule. C4Parser ignores the directive and keeps both relationships, reporting each as dangling. The parity transcript freezes what the module does with it today."
+    },
+    {
+      "property": "cross-check",
+      "binding": "structurizr",
+      "file": "src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4.Tests/Fixtures/findings/lenient-spellings.dsl",
+      "observed": "Container: the binding lacks 1 (api) | Person: the binding lacks 1 (User) | Relationship: the binding lacks 3 (User->SYS, user->sys, user->web)",
+      "reason": "The fixture is one of the C4 module's findings corpus (c4-disl-fbl task 1), written to hold the spellings Structurizr tolerates on purpose (finding B6). structurizr.fbl's lines want a quoted name and nothing after the last quoted argument, so 'Person User' (unquoted), the container with 'extra words' after its tags and the relationship with an unquoted description match no rule; ids are matched case-sensitively, so 'user' and 'SYS' name no element and those relationships are dropped (FBL section 5.4). C4Parser reads all of them, resolving ids in any case. The parity transcript freezes what the module does with it today."
+    },
+    {
+      "property": "cross-check",
+      "binding": "structurizr",
+      "file": "src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4.Tests/Fixtures/findings/misplaced-container.dsl",
+      "observed": "Container: the binding lacks 2 (inside, stray) | Relationship: the binding lacks 2 (p->stray, stray->loose)",
+      "reason": "The fixture is one of the C4 module's findings corpus (c4-disl-fbl task 1), written to hold containers and a component outside their C4 parents on purpose (finding B10). structurizr.fbl reads a container only within a software system or a group, and no component at all, so the container in the model, the one in a person's block and the relationships that name them are not read; C4Parser reads them and the module reports the misplacement. The parity transcript freezes what the module does with it today."
+    },
+    {
+      "property": "cross-check",
+      "binding": "structurizr",
+      "file": "src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4.Tests/Fixtures/findings/nested-relationships.dsl",
+      "observed": "Relationship: the binding lacks 6 (gw->wi, n->gw, u->nobody, u->s, u->web, …)",
+      "reason": "The fixture is one of the C4 module's findings corpus (c4-disl-fbl task 1), written to hold relationships written inside an element's block and from deployment elements on purpose (finding B8). structurizr.fbl has no rule for a relationship without a source ('-> s'), none for deployment nodes, infrastructure nodes or instances, and its relationship line must end after its last quoted argument, so 'u -> web ... {' opens nothing it reads; FBL section 5.4 drops a relationship whose end names no element, as 'u -> nobody' does. C4Parser reads the implied source, the deployment kinds and the block, and keeps the dangling relationship. The parity transcript freezes what the module does with it today."
+    },
+    {
+      "property": "unreadable",
+      "binding": "structurizr",
+      "file": "src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4.Tests/Fixtures/findings/trailing-comments.dsl",
+      "observed": "offset 0: The braces of the body do not balance on this line.",
+      "reason": "The fixture is one of the C4 module's findings corpus (c4-disl-fbl task 1), written to hold a comment after every kind of line on purpose (findings B4 and B19). FBL section 4.7 opens a block only when a statement's last non-whitespace character is '{', so 'workspace \"Trailing comments\" { // after the workspace brace' opens none and the braces do not balance, which makes the body unreadable; C4Parser strips the comment first and reads the fixture. This is the same gap as comments-everywhere.dsl. The parity transcript freezes what the module does with it today."
+    },
+    {
+      "property": "unreadable",
+      "binding": "structurizr",
+      "file": "src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4.Tests/Fixtures/findings/unbalanced.dsl",
+      "observed": "offset 219: The braces of the body do not balance: this block is never closed.",
+      "reason": "The fixture is one of the C4 module's findings corpus (c4-disl-fbl task 1), written to hold a block that is never closed on purpose (finding B22). FBL refuses a body whose braces do not balance, while C4Parser reads what it can and the module opens it. The parity transcript freezes what the module does with it today."
+    },
+    {
+      "property": "cross-check",
+      "binding": "structurizr",
+      "file": "src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4.Tests/Fixtures/findings/view-without-key.dsl",
+      "observed": "Relationship: the binding lacks 1 (u->c)",
+      "reason": "The fixture is one of the C4 module's findings corpus (c4-disl-fbl task 1), written to hold views written without a key on purpose (finding B2). Its one relationship ends at a component, and structurizr.fbl has rules for people, software systems and containers only, so the relationship has a dangling end and is dropped (FBL section 5.4), while C4Parser reads components. The parity transcript freezes what the module does with it today."
     }
   ]
 }
