@@ -223,6 +223,39 @@ public class ProblemMaintenanceTests : IDisposable
         Assert.DoesNotContain(_store.Mutations, mutation => mutation.Kind is "Move" or "Remove");
     }
 
+    [Fact]
+    public async Task DisposeAsync_StopsTheRevalidationUnderWay_AndReturnsOnlyOnceItHas()
+    {
+        // Arrange: one burst of two changed diagrams, its re-validation held as it records the
+        // first verdict - a point no cancellation reaches.
+        CreatePair("a");
+        CreatePair("b");
+        var recording = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var release = new ManualResetEventSlim(false);
+        _store.ReplacingFor = () =>
+        {
+            recording.TrySetResult();
+            // ReSharper disable once AccessToDisposedClosure - Reason: this runs inside the re-validation, which DisposeAsync awaits below before the using disposes `release`.
+            release.Wait(WaitLimit, TestContext.Current.CancellationToken);
+        };
+        using var root = new TrackedProblemRoot(_root, _maintenance);
+        root.Enqueue(IoPath.Combine(_root, "a.mm"));
+        root.Enqueue(IoPath.Combine(_root, "b.mm"));
+        _clock.Advance(SettleDelay);
+        await recording.Task.WaitAsync(WaitLimit, TestContext.Current.CancellationToken);
+
+        // Act.
+        var disposing = _maintenance.DisposeAsync().AsTask();
+
+        // Assert: still closing while the re-validation finishes; closed once it has, without
+        // validating the burst's second diagram.
+        var first = await Task.WhenAny(disposing, Task.Delay(TimeSpan.FromSeconds(1), TestContext.Current.CancellationToken));
+        Assert.False(first == disposing, "Maintenance closed while a re-validation it started was still running.");
+        release.Set();
+        await disposing.WaitAsync(WaitLimit, TestContext.Current.CancellationToken);
+        Assert.Single(_store.Mutations, mutation => mutation.Kind == "ReplaceFor");
+    }
+
     // ---- plumbing ----------------------------------------------------------------------
 
     [Fact]
@@ -249,7 +282,7 @@ public class ProblemMaintenanceTests : IDisposable
             using var root = new TrackedProblemRoot(_root, _maintenance);
 
             // Act.
-            await _maintenance.RevalidateAsync(root, [IoPath.Combine(link, "outside.adp")]);
+            await _maintenance.RevalidateAsync(root, [IoPath.Combine(link, "outside.adp")], TestContext.Current.CancellationToken);
 
             // Assert.
             Assert.Equal(0, _validator.Calls);

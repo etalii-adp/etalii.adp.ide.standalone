@@ -65,12 +65,14 @@ public sealed class HierarchyWatch
 
         using var recoveryCts = new CancellationTokenSource();
 
-        // Read once, here, and never through the source again. CancelAsync in the finally asks the
-        // presence poll to stop but does not wait for it, so a poll already past its delay can still
-        // announce an outage after the using has disposed the source - and the source's Token
-        // throws once disposed, faulting a recovery nobody awaits. The token itself outlives the
-        // dispose and is cancelled before it, so a late recovery gives up at its first wait instead.
+        // Read once, here, and never through the source again: a root lost through the file events
+        // after the watch has returned starts a recovery once the source is disposed, and the
+        // source's Token throws once disposed. The token itself outlives the dispose and is
+        // cancelled before it, so such a recovery gives up at its first wait instead.
         var recoveryToken = recoveryCts.Token;
+
+        // The recovery under way, if any; the latch below lets only one run at a time.
+        Task? recovery = null;
 
         // One notification per outage, whichever detector saw it first. On Windows the
         // watcher's own Error event (heard as Lost, with the root gone) reports the root's deletion almost instantly; on Linux,
@@ -82,7 +84,7 @@ public sealed class HierarchyWatch
         var rootLost = 0;
 
         connection.Hold(() => Subscribe(rootPath, model, HandleRootLost));
-        _ = WatchRootPresenceAsync(rootPath, HandleRootLost, recoveryToken);
+        var presence = WatchRootPresenceAsync(rootPath, HandleRootLost, recoveryToken);
         // Information: a watch is a long-lived resource with a subscription to the root's one
         // watcher behind it, so its open and close are the pair to look for when one is suspected
         // of leaking.
@@ -108,6 +110,15 @@ public sealed class HierarchyWatch
         {
             model.EntryChanged -= OnEntryChanged;
             await recoveryCts.CancelAsync();
+
+            // The poll first, since it may start a recovery on its way out; then that recovery,
+            // so neither outlives the watch that started it (code-structure FR-070).
+            await presence;
+            if (Volatile.Read(ref recovery) is { } recovering)
+            {
+                await recovering;
+            }
+
             _logger.Information("Stopped watching {RootPath} on watch {WatchId}", rootPath, watchId);
         }
 
@@ -129,7 +140,7 @@ public sealed class HierarchyWatch
             }
 
             model.NotifyRootUnavailable(message);
-            _ = RecoverAsync();
+            Volatile.Write(ref recovery, RecoverAsync());
         }
     }
 
@@ -181,9 +192,15 @@ public sealed class HierarchyWatch
                 }
             }
         }
-        catch (Exception exception) when (exception is OperationCanceledException or ObjectDisposedException)
+        catch (OperationCanceledException)
         {
             // The watch ended; the poll dies with it.
+        }
+        catch (Exception exception)
+        {
+            // Awaited by the watch as it closes, so it never throws: an announcement that failed
+            // ends the poll, and the file events still report a lost root.
+            _logger.Warning(exception, "The presence poll of {RootPath} failed; it stops", rootPath);
         }
     }
 
@@ -206,6 +223,11 @@ public sealed class HierarchyWatch
         {
             // The watch ended before the root folder came back; nothing to recover.
             _logger.Debug("Gave up waiting for {RootPath} to come back: the watch ended first", rootPath);
+        }
+        catch (Exception exception)
+        {
+            // Awaited by the watch as it closes, so it never throws.
+            _logger.Warning(exception, "Recovering {RootPath} failed; the next change tries again", rootPath);
         }
     }
 }

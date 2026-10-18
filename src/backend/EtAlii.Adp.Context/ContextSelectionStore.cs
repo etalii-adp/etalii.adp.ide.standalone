@@ -6,7 +6,7 @@ using Path = EtAlii.Adp.Documents.Wire.Path;
 namespace EtAlii.Adp.Context;
 
 /// <inheritdoc cref="IContextSelectionStore" />
-public sealed class ContextSelectionStore : IContextSelectionStore, IDisposable
+public sealed class ContextSelectionStore : IContextSelectionStore, IDisposable, IAsyncDisposable
 {
     private static readonly TimeSpan DefaultIdleTimeout = TimeSpan.FromSeconds(30);
 
@@ -16,6 +16,10 @@ public sealed class ContextSelectionStore : IContextSelectionStore, IDisposable
     // back - the same eviction HierarchyModelStore applies to a model that ListEntries created
     // but no WatchHierarchy ever claimed. Registering the stream claims it.
     private readonly RetainedRegistry<ShortGuid, ContextSelectionStoreEntry> _entries;
+
+    // The re-discoveries a moved or refreshed selection starts off the caller's thread, waited for
+    // when the store closes (code-structure FR-070).
+    private readonly RunningTasks _rediscoveries = new();
 
     public ContextSelectionStore(TimeSpan? idleTimeout = null, TimeProvider? time = null)
     {
@@ -168,7 +172,7 @@ public sealed class ContextSelectionStore : IContextSelectionStore, IDisposable
 
         // The same off-thread re-derivation a moved selection gets; a selection replaced in
         // the meantime supersedes this push inside RediscoverAndPushAsync.
-        _ = RediscoverAndPushAsync(entry, record, rediscover);
+        _rediscoveries.Start(cancellationToken => RediscoverAndPushAsync(entry, record, rediscover, cancellationToken));
     }
 
     public void PushTransient(ShortGuid watchId, ContextSelectionRecord record)
@@ -213,21 +217,33 @@ public sealed class ContextSelectionStore : IContextSelectionStore, IDisposable
 
         // Actions may well differ at the new location; re-derive them off the event
         // thread, then push whichever record is current once that finishes.
-        _ = RediscoverAndPushAsync(entry, rewritten, rediscover);
+        _rediscoveries.Start(cancellationToken => RediscoverAndPushAsync(entry, rewritten, rediscover, cancellationToken));
     }
 
-    public void Dispose() => _entries.Dispose();
+    /// <summary>Cancels the re-discoveries under way without waiting for them, and drops every selection.</summary>
+    public void Dispose()
+    {
+        _rediscoveries.Dispose();
+        _entries.Dispose();
+    }
 
-    private static async Task RediscoverAndPushAsync(ContextSelectionStoreEntry entry, ContextSelectionRecord rewritten, ContextRediscovery? rediscover)
+    /// <summary>Cancels the re-discoveries under way and waits until they have returned, then drops every selection.</summary>
+    public async ValueTask DisposeAsync()
+    {
+        await _rediscoveries.StopAsync();
+        Dispose();
+    }
+
+    private static async Task RediscoverAndPushAsync(ContextSelectionStoreEntry entry, ContextSelectionRecord rewritten, ContextRediscovery? rediscover, CancellationToken cancellationToken)
     {
         var updated = rewritten;
         if (rediscover is not null)
         {
             try
             {
-                updated = await rediscover(rewritten, CancellationToken.None);
+                updated = await rediscover(rewritten, cancellationToken);
             }
-            catch (Exception exception)
+            catch (Exception exception) when (!cancellationToken.IsCancellationRequested)
             {
                 // A provider failing to answer leaves the selection itself intact: it is
                 // pushed with the actions it had, and the next change tries again. Swallowed

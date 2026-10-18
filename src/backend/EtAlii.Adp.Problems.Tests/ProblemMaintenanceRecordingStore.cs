@@ -6,6 +6,9 @@ internal sealed class ProblemMaintenanceRecordingStore : IProblemStore
 
     public event Action<string>? Changed { add { } remove { } }
 
+    /// <summary>Runs inside every <see cref="ReplaceFor"/>, before it is recorded.</summary>
+    public Action? ReplacingFor { get; set; }
+
     public IReadOnlyList<(string Kind, object Payload)> Mutations
     {
         get { lock (_mutations) { return _mutations.ToArray(); } }
@@ -15,8 +18,11 @@ internal sealed class ProblemMaintenanceRecordingStore : IProblemStore
 
     public void Replace(string rootPath, IReadOnlyList<StoredProblem> problems) => Record("Replace", problems);
 
-    public void ReplaceFor(string rootPath, IReadOnlyList<string> relativePaths, IReadOnlyList<StoredProblem> problems) =>
+    public void ReplaceFor(string rootPath, IReadOnlyList<string> relativePaths, IReadOnlyList<StoredProblem> problems)
+    {
+        ReplacingFor?.Invoke();
         Record("ReplaceFor", relativePaths);
+    }
 
     public void Remove(string rootPath, string relativePath) => Record("Remove", relativePath);
 
