@@ -186,6 +186,36 @@ public class HierarchyModelNestingTests : IDisposable
     }
 
     [Fact]
+    public void OnWatcherEvent_RenamingAFolder_MovesTheRegistrationsNestedInIt_KeepingTheirIds()
+    {
+        // Arrange: a registered pair inside a folder, the registration nested under its subject.
+        // Found by spec 025's T187: a folder's rename moved only the entries whose parent is the
+        // folder, so a registration - whose parent is its subject - kept its old path, resolved
+        // to nothing, and came back from the next listing as a second entry with a new id.
+        Directory.CreateDirectory(IoPath.Combine(_root, "before"));
+        CreateSubject(IoPath.Combine("before", "test.mm"));
+        CreateRegistration(IoPath.Combine("before", "test"));
+        var model = new HierarchyModel(_root, _catalog);
+        var folder = Assert.Single(model.ListChildren(null));
+        var subject = Assert.Single(model.ListChildren(folder.Id));
+        var nested = Assert.Single(model.ListChildren(subject.Id));
+
+        // Act.
+        var oldPath = IoPath.Combine(_root, "before");
+        var newPath = IoPath.Combine(_root, "after");
+        Directory.Move(oldPath, newPath);
+        model.OnWatcherEvent(WatcherChangeTypes.Renamed, oldPath, newPath);
+
+        // Assert: the registration resolves where it now lives, and a fresh listing finds it
+        // under its subject with the id it had.
+        Assert.True(model.TryResolvePath(nested.Id, out var resolved, out _), "the nested registration must resolve after its folder's rename");
+        Assert.Equal(IoPath.Combine(newPath, "test.adp"), resolved);
+        model.ListChildren(folder.Id);
+        var relisted = Assert.Single(model.ListChildren(subject.Id));
+        Assert.Equal(nested.Id, relisted.Id);
+    }
+
+    [Fact]
     public void OnWatcherEvent_RemovingTheLastRegistration_CollapsesTheSubject()
     {
         // Arrange.
