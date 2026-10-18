@@ -13,6 +13,8 @@ namespace EtAlii.Adp.Hierarchy.Tests;
 /// </summary>
 public class HierarchyModelPublishSurvivesNestingTests : IDisposable
 {
+    private readonly FileWriter _writer = new();
+
     private static readonly DiagramDefinition Mindmap = new(new ToolOrigin("freeplane", "mindmap"), "Mind map", Extension: ".mm");
     private static readonly TimeSpan Patience = TimeSpan.FromSeconds(10);
     private static readonly TimeSpan Silence = TimeSpan.FromMilliseconds(500);
@@ -104,7 +106,7 @@ public class HierarchyModelPublishSurvivesNestingTests : IDisposable
             });
 
         // Act: what every module's document store now does on save.
-        AdpFileWriter.Save(subjectPath, "<map>renamed</map>");
+        await _writer.SaveAsync(subjectPath, "<map>renamed</map>", TestContext.Current.CancellationToken);
 
         // The watcher raises on its own thread: the publish heard, then a while for whatever
         // else the swap raised to land, with the registration watched for leaving its subject.

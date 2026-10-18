@@ -52,7 +52,6 @@ public partial class SaveResultIsNeverDiscardedTests
     /// </summary>
     private static readonly (string Receiver, string Reason)[] VoidByDesign =
     [
-        ("AdpFileWriter", "the central writer's Save returns void and reports by throwing; it is the implementation a store's Save calls, not a store's Save"),
         ("writer", "an IFileWriter's SaveAsync completes or throws and carries no result; it is what a store's save calls, not a store's save"),
         ("_writer", "an IFileWriter's SaveAsync completes or throws and carries no result; it is what a store's save calls, not a store's save"),
     ];
@@ -191,7 +190,6 @@ public partial class SaveResultIsNeverDiscardedTests
         Assert.Empty(Offences("Fake/Returned.cs", ["        return _documents.Save(path, entry);"]));
         Assert.Empty(Offences("Fake/Argument.cs", ["        Report(_documents.Save(path, entry));"]));
         Assert.Empty(Offences("Fake/Chained.cs", ["        _documents.Save(path, entry).Warning.Log();"]));
-        Assert.Empty(Offences("Fake/Writer.cs", ["        AdpFileWriter.Save(path, text);"]));
         Assert.Empty(Offences("Fake/InjectedWriter.cs", ["        await _writer.SaveAsync(path, text, cancellationToken);"]));
         Assert.Empty(Offences("Fake/AwaitedAssigned.cs", ["        var result = await _documents.SaveAsync(path, entry, cancellationToken);"]));
         Assert.Empty(Offences("Fake/AwaitedCondition.cs", ["        if ((await _documents.SaveAsync(path, entry, cancellationToken)).Failed)"]));

@@ -51,30 +51,6 @@ internal sealed class PathTurns
         return new Taken(this, destination, turn);
     }
 
-    /// <summary>
-    /// <see cref="TakeAsync"/> for the synchronous callers of <see cref="AdpFileWriter"/>, which wait
-    /// on their thread as they always have.
-    /// </summary>
-    public IDisposable Take(string destination, Action waiting)
-    {
-        var turn = Join(destination);
-        try
-        {
-            if (!turn.Semaphore.Wait(0, CancellationToken.None))
-            {
-                waiting();
-                turn.Semaphore.Wait(CancellationToken.None);
-            }
-        }
-        catch
-        {
-            Leave(destination, turn);
-            throw;
-        }
-
-        return new Taken(this, destination, turn);
-    }
-
     private Turn Join(string destination)
     {
         lock (_gate)

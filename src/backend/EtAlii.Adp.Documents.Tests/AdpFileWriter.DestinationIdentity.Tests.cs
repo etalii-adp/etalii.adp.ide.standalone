@@ -17,6 +17,8 @@ namespace EtAlii.Adp.Documents.Tests;
 [Collection(FileHoldersSeam.Name)]
 public class AdpFileWriterDestinationIdentityTests : IDisposable
 {
+    private readonly FileWriter _writer = new();
+
     private readonly string _folder = IoPath.Combine(IoPath.GetTempPath(), "adp-destination-identity-" + Guid.NewGuid().ToString("N"));
 
     public AdpFileWriterDestinationIdentityTests()
@@ -35,22 +37,22 @@ public class AdpFileWriterDestinationIdentityTests : IDisposable
 
     private static IOException Wild() => new("Unable to remove the file to be replaced.") { HResult = unchecked((int)0x80070497) };
 
-    private string RecordFor(string path, Action<string, string> replace)
+    private async Task<string> RecordForAsync(string path, Action<string, string> replace)
     {
         using var logs = LogCapture.Start();
-        Assert.Throws<IOException>(() => AdpFileWriter.Save(path, "after\n", replace));
+        await Assert.ThrowsAsync<IOException>(() => _writer.SaveAsync(path, "after\n", replace, TestContext.Current.CancellationToken));
         // One warning ABOUT THIS path: the capture is process-wide.
         return Assert.Single(logs.Warnings, w => w.Contains(path, StringComparison.Ordinal) && w.Contains("Could not publish", StringComparison.Ordinal));
     }
 
     [Fact]
-    public void ADestinationLeftAlone_IsTheSameFile()
+    public async Task ADestinationLeftAlone_IsTheSameFile()
     {
         Assert.SkipUnless(OperatingSystem.IsWindows(), "A destination's file identity is read only on Windows.");
         var path = IoPath.Combine(_folder, "same.owm");
-        File.WriteAllText(path, "before\n");
+        await File.WriteAllTextAsync(path, "before\n", TestContext.Current.CancellationToken);
 
-        var record = RecordFor(path, (_, _) => throw Wild());
+        var record = await RecordForAsync(path, (_, _) => throw Wild());
 
         Assert.Contains("identity: same file as when this publish began", record, StringComparison.Ordinal);
         Assert.DoesNotContain("GONE", record, StringComparison.Ordinal);
@@ -58,13 +60,13 @@ public class AdpFileWriterDestinationIdentityTests : IDisposable
     }
 
     [Fact]
-    public void ADestinationDeletedDuringThePublish_IsGone()
+    public async Task ADestinationDeletedDuringThePublish_IsGone()
     {
         Assert.SkipUnless(OperatingSystem.IsWindows(), "A destination's file identity is read only on Windows.");
         var path = IoPath.Combine(_folder, "gone.owm");
-        File.WriteAllText(path, "before\n");
+        await File.WriteAllTextAsync(path, "before\n", TestContext.Current.CancellationToken);
 
-        var record = RecordFor(path, (_, destination) =>
+        var record = await RecordForAsync(path, (_, destination) =>
         {
             File.Delete(destination);
             throw Wild();
@@ -76,18 +78,18 @@ public class AdpFileWriterDestinationIdentityTests : IDisposable
     }
 
     [Fact]
-    public void ADestinationDeletedAndWrittenAgain_IsRecreated_ThoughItsCreationTimeSaysOtherwise()
+    public async Task ADestinationDeletedAndWrittenAgain_IsRecreated_ThoughItsCreationTimeSaysOtherwise()
     {
         Assert.SkipUnless(OperatingSystem.IsWindows(), "A destination's file identity is read only on Windows.");
         // The shape the instrument exists for, and the reason it reads the file index: NTFS tunneling
         // hands a file recreated under the same name within ~15 s its predecessor's creation time, so
         // a creation-time comparison would have answered "same file" here. Both halves are asserted.
         var path = IoPath.Combine(_folder, "recreated.owm");
-        File.WriteAllText(path, "before\n");
+        await File.WriteAllTextAsync(path, "before\n", TestContext.Current.CancellationToken);
         var createdBefore = File.GetCreationTimeUtc(path);
         var createdAfter = DateTime.MinValue;
 
-        var record = RecordFor(path, (_, destination) =>
+        var record = await RecordForAsync(path, (_, destination) =>
         {
             File.Delete(destination);
             File.WriteAllText(destination, "someone else's\n");

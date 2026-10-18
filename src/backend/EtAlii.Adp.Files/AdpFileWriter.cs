@@ -13,7 +13,7 @@ namespace EtAlii.Adp.Files;
 /// <remarks>
 /// Two publishes, and the difference is the move's <c>overwrite</c> flag rather than the
 /// algorithm. <see cref="Create" /> and <see cref="CreateAll" /> create something that was not
-/// there, so a name already taken is a failure they report. <see cref="Save(string, string)" /> replaces what
+/// there, so a name already taken is a failure they report. <see cref="FileWriter.SaveAsync(string, string, CancellationToken)" /> replaces what
 /// is there, which is what a document save is, so the same taken name is the expected case.
 /// </remarks>
 public static class AdpFileWriter
@@ -141,138 +141,8 @@ public static class AdpFileWriter
     /// </remarks>
     private static ILogger Logger => Log.ForContext(typeof(AdpFileWriter));
 
-    private static readonly FileWriter _process = new();
-
-    /// <summary>
-    /// The writer of the process: the static <see cref="Save(string, string)"/> and
-    /// <see cref="Delete"/> take their turns through it, and the host hands it to what takes an
-    /// <see cref="IFileWriter"/>, so a path saved both ways still takes one turn at a time while
-    /// the static callers are moved over to the injected writer (code-structure FR-068).
-    /// </summary>
-    public static IFileWriter Process => _process;
-
     public static AdpFileWriteResult Create(string folder, string fileName, string firstLine) =>
         CreateAll(folder, [(fileName, firstLine + NewLine)]);
-
-    /// <summary>
-    /// Publishes <paramref name="content" /> over whatever is at <paramref name="path" />, or
-    /// leaves that file untouched: the content goes to a scratch name in the same folder and
-    /// the move into place replaces the old bytes in one step. A reader holding the file open
-    /// sees the previous version until the move lands, never a half-written one.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// This is the overwriting half of the class, added for file-io-centralization task 5:
-    /// four modules had hand-rolled exactly this - a <c>~adp-</c> scratch file and a
-    /// <c>File.Move(overwrite: true)</c> - because <see cref="CreateAll" /> refuses to
-    /// overwrite and a save is an overwrite. They were copies of this algorithm differing in
-    /// one boolean, which is why all four convert here rather than being justified separately.
-    /// </para>
-    /// <para>
-    /// <b>It imposes no error policy, deliberately.</b> A failed publish throws, and each
-    /// caller keeps the policy it already had - the mindmap store lets it propagate, the
-    /// Wardley store and the two sidecars catch it and keep the edit in memory. Centralizing
-    /// the algorithm while quietly centralizing the error handling would have changed three
-    /// modules' behaviour under the same commit that claimed to change none.
-    /// </para>
-    /// <para>
-    /// The scratch file is removed if the write or the move fails, so a failure leaves the
-    /// folder as it found it. The original exception is what surfaces; a failure to clean up
-    /// never replaces it.
-    /// </para>
-    /// <para>
-    /// <b>Concurrent saves to one destination take turns, and a save that waited says so.</b>
-    /// Two threads publishing one path failed 1009 of 3000 saves with <c>IOException
-    /// 0x80070497</c> (1175) <c>"Unable to remove the file to be replaced."</c> - the exception
-    /// behind a flake in <c>DiagramElementActionFlowTests</c> - and, worse, produced
-    /// <c>FileNotFoundException</c> and 1177, so a reader could briefly find the document missing
-    /// or under a backup name. Measured on 2026-09-15; readers in any sharing mode never produced
-    /// it. The turn is held across the whole save, so the destination always holds exactly one
-    /// writer's complete content. The wait is logged, by path, because in the failing test the two
-    /// saves were awaited one after the other: a second writer exists, and a silent lock would
-    /// hide it where a logged wait names it.
-    /// </para>
-    /// <para>
-    /// <b>This is not an error policy</b> in the sense above: a save still fails exactly as it did
-    /// for any other reason, and each caller still decides what a failure means. A sharing
-    /// violation (<c>0x80070020</c>) from a reader sharing only <c>Read</c> is not retried and
-    /// still fails at once - that is ADP's own file-access bug class, and a runtime retry would
-    /// be the wrong layer to meet it.
-    /// </para>
-    /// <para>
-    /// <b>Scope, stated so it is not assumed.</b> In process only: two ADP processes publishing
-    /// one file are not protected, and nothing measured requires it. <see cref="CreateAll"/> is
-    /// not covered - it creates new files and refuses to overwrite, so it does not race this way.
-    /// A destination's turn is kept only while a save or a delete of it holds or waits for it
-    /// (code-structure FR-068).
-    /// </para>
-    /// </remarks>
-    /// <exception cref="IOException">The write or the move failed.</exception>
-    /// <exception cref="UnauthorizedAccessException">The write or the move was refused.</exception>
-    public static void Save(string path, string content) =>
-        Save(path, content, ReplaceDestination);
-
-    /// <summary>
-    /// <see cref="Save(string, string)"/> for content that is already bytes - a file whose exact
-    /// encoding is the caller's to decide, a byte-order mark above all.
-    /// </summary>
-    /// <remarks>
-    /// The string overload writes UTF-8 without a BOM, which is right for documents ADP AUTHORS
-    /// and wrong for one it merely EDITS: a text buffer round-tripping somebody else's file has
-    /// to put back the BOM it found. That is why this exists rather than the caller reaching for
-    /// its own FileStream - it takes the same per-destination turn and the same temp-then-replace
-    /// publish, so a reader never sees a half-written file and a delete cannot interleave.
-    /// </remarks>
-    /// <exception cref="IOException">The write or the move failed.</exception>
-    /// <exception cref="UnauthorizedAccessException">The write or the move was refused.</exception>
-    public static void Save(string path, byte[] content) =>
-        Save(path, content, ReplaceDestination);
-
-    /// <summary><see cref="Save(string, byte[])"/> with the replace handed in, for guards.</summary>
-    private static void Save(string path, byte[] content, Action<string, string> replace)
-    {
-        ArgumentNullException.ThrowIfNull(content);
-        _process.SaveOnThisThread(path, null, content, replace);
-    }
-
-    /// <summary>
-    /// <see cref="Save(string, string)"/> with the replace handed in. <b>The seam lets a guard stop
-    /// a save inside its replace</b>, which is what makes the turn-taking deterministic to test:
-    /// with the first save held there, a second save to the same destination either waits and
-    /// says so or goes straight through, and no timing decides which. It also drives a failure
-    /// with a chosen HResult, so the failure record can be asserted without needing the OS to
-    /// produce one on request. The application runs the same code with the real replace.
-    /// </summary>
-    internal static void Save(string path, string content, Action<string, string> replace)
-    {
-        ArgumentNullException.ThrowIfNull(content);
-        _process.SaveOnThisThread(path, content, null, replace);
-    }
-
-    /// <summary>
-    /// Deletes a file ADP publishes, taking the SAME turn a save of that path takes, and records
-    /// that it happened. Missing already is success: the end state is what was asked for.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <b>Why a delete needs the save's turn.</b> A delete interleaved with a publish of the same
-    /// path breaks the publish, and the codes it produces are the ones that cost a day: measured,
-    /// 400 replaces against a concurrent delete-and-recreate failed 305 times - 75 of them
-    /// <c>0x80070497</c>, the gate flake's own code - plus <c>0x800700B7</c>, <c>0x80070002</c>,
-    /// <c>0x80070020</c> and <c>0x80070005</c>. Sharing one turn: 400 of 400 succeeded, no failure
-    /// of any code. The lock was serialising writers against writers only, and a deleter was never
-    /// a writer to it.
-    /// </para>
-    /// <para>
-    /// <b>The record is the other half.</b> Restart Manager can only name a process still holding
-    /// the file, and a completed delete holds nothing - so a publish that lost to a delete finds
-    /// nobody to name. A line per delete, with the process and the path, is what a later failure
-    /// can be correlated against.
-    /// </para>
-    /// </remarks>
-    /// <exception cref="IOException">The delete failed.</exception>
-    /// <exception cref="UnauthorizedAccessException">The delete was refused.</exception>
-    public static void Delete(string path) => _process.DeleteOnThisThread(path);
 
     /// <summary>
     /// Deletes <paramref name="destination"/>, a full path, and records that it happened, with the

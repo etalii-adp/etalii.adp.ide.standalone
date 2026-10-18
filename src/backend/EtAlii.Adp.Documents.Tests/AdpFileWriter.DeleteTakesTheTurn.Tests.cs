@@ -31,6 +31,8 @@ namespace EtAlii.Adp.Documents.Tests;
 /// </remarks>
 public class AdpFileWriterDeleteTakesTheTurnTests : IDisposable
 {
+    private readonly FileWriter _writer = new();
+
     private static readonly TimeSpan Patience = TimeSpan.FromSeconds(10);
 
     private readonly string _folder = IoPath.Combine(IoPath.GetTempPath(), "adp-delete-turn-" + Guid.NewGuid().ToString("N"));
@@ -54,17 +56,17 @@ public class AdpFileWriterDeleteTakesTheTurnTests : IDisposable
         using var inside = new ManualResetEventSlim(false);
         using var release = new ManualResetEventSlim(false);
 
-        var saving = Task.Run(() => AdpFileWriter.Save(path, "after", replace: (temporary, destination) =>
+        var saving = Task.Run(() => _writer.SaveAsync(path, "after", replace: (temporary, destination) =>
         {
             // ReSharper disable AccessToDisposedClosure - Reason: this replace callback runs inside `saving`, which the test awaits with saving.WaitAsync(Patience, ...) after release.Set() and before the usings dispose the two events.
             inside.Set();
             release.Wait(Patience, TestContext.Current.CancellationToken);
             // ReSharper restore AccessToDisposedClosure
             File.Replace(temporary, destination, destinationBackupFileName: null, ignoreMetadataErrors: true);
-        }), TestContext.Current.CancellationToken);
+        }, TestContext.Current.CancellationToken), TestContext.Current.CancellationToken);
 
         Assert.True(inside.Wait(Patience, TestContext.Current.CancellationToken), "The arrangement failed: the save never reached its replace.");
-        var deleting = Task.Run(() => AdpFileWriter.Delete(path), TestContext.Current.CancellationToken);
+        var deleting = Task.Run(() => _writer.DeleteAsync(path, TestContext.Current.CancellationToken), TestContext.Current.CancellationToken);
 
         // The delete cannot have run: the save is holding the turn, mid-replace. Asked by watching
         // it for a while rather than by blocking on it - the assertion is the same, and a guard
@@ -81,15 +83,15 @@ public class AdpFileWriterDeleteTakesTheTurnTests : IDisposable
     }
 
     [Fact]
-    public void ADelete_IsRecordedWithThePathAndTheProcess()
+    public async Task ADelete_IsRecordedWithThePathAndTheProcess()
     {
         // The correlation half: a completed delete holds nothing, so the holder query on a later
         // failed publish will find nobody. This line is what that failure is read against.
         var path = IoPath.Combine(_folder, "tea.owm");
-        File.WriteAllText(path, "before");
+        await File.WriteAllTextAsync(path, "before", TestContext.Current.CancellationToken);
         using var logs = LogCapture.Start();
 
-        AdpFileWriter.Delete(path);
+        await _writer.DeleteAsync(path, TestContext.Current.CancellationToken);
 
         Assert.Contains(
             logs.Informations,
@@ -98,14 +100,14 @@ public class AdpFileWriterDeleteTakesTheTurnTests : IDisposable
     }
 
     [Fact]
-    public void DeletingWhatIsNotThere_IsNeitherAnErrorNorARecord()
+    public async Task DeletingWhatIsNotThere_IsNeitherAnErrorNorARecord()
     {
         // The must-not-catch half: File.Delete's own contract is that a missing file is success,
         // and a record of a delete that did not happen would be a false correlation later.
         var path = IoPath.Combine(_folder, "never-existed.owm");
         using var logs = LogCapture.Start();
 
-        AdpFileWriter.Delete(path);
+        await _writer.DeleteAsync(path, TestContext.Current.CancellationToken);
 
         Assert.DoesNotContain(logs.Informations, line => line.Contains(path, StringComparison.Ordinal));
     }

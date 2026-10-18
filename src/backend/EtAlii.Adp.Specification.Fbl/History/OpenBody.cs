@@ -71,7 +71,7 @@ public sealed class OpenBody : SplicedFile
 
     /// <summary>
     /// Hands the body's bytes to <paramref name="write"/>, the host's atomic writer (FBL §6.6), which in
-    /// this repository is <c>AdpFileWriter.Save</c>. The library writes no file itself: it references no
+    /// this repository is the host's <c>IFileWriter</c>. The library writes no file itself: it references no
     /// project of the solution, and a second temp-then-move beside the central one is what the
     /// repository's file-access guard refuses.
     /// </summary>

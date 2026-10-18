@@ -99,7 +99,7 @@ public class HistoryTests
         // Act.
         body.Save(written.Add);
 
-        // Assert: the atomic write itself is the host's (AdpFileWriter.Save here), not the library's.
+        // Assert: the atomic write itself is the host's (its IFileWriter here), not the library's.
         Assert.Equal(body.Bytes, Assert.Single(written));
     }
 

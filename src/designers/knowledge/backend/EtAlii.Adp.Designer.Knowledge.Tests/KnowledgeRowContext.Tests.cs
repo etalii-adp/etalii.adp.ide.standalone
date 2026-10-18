@@ -15,6 +15,8 @@ namespace EtAlii.Adp.Designer.Knowledge.Tests;
 /// </summary>
 public sealed class KnowledgeRowContextTests : IDisposable
 {
+    private readonly FileWriter _writer = new();
+
     private readonly string _root = Directory.CreateTempSubdirectory("adp-knowledge-row-").FullName;
     private readonly KnowledgeDocuments _documents = new();
     private readonly HistoryStackStore _histories;
@@ -179,7 +181,7 @@ public sealed class KnowledgeRowContextTests : IDisposable
         await _provider.SetAsync(level.Target, "p1", "Mokum", TestContext.Current.CancellationToken);
         var body = KnowledgeDocumentStore.Read(Cities).Body!;
         (byte[]? without, _) = body.Change([new ModelChange.Remove("r1")]);
-        AdpFileWriter.Save(Cities, without!);
+        await _writer.SaveAsync(Cities, without!, TestContext.Current.CancellationToken);
         _documents.Reload(Cities);
 
         // Assert: told its new title, and then that it is gone.

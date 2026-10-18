@@ -9,6 +9,8 @@ namespace EtAlii.Adp.Documents.Tests;
 
 public class AdpFileWriterTests : IDisposable
 {
+    private readonly FileWriter _writer = new();
+
     private readonly string _folder;
 
     public AdpFileWriterTests()
@@ -130,23 +132,23 @@ public class AdpFileWriterTests : IDisposable
     }
 
     [Fact]
-    public void Save_ReplacesWhatIsThere_WhichIsTheWholeDifferenceFromCreate()
+    public async Task Save_ReplacesWhatIsThere_WhichIsTheWholeDifferenceFromCreate()
     {
         // Arrange.
         // Create refuses a taken name; a save is an overwrite, and every caller this method was
         // written for is a document save.
         var path = IoPath.Combine(_folder, "map.owm");
-        File.WriteAllText(path, "the old content");
+        await File.WriteAllTextAsync(path, "the old content", TestContext.Current.CancellationToken);
 
         // Act.
-        AdpFileWriter.Save(path, "the new content");
+        await _writer.SaveAsync(path, "the new content", TestContext.Current.CancellationToken);
 
         // Assert.
-        Assert.Equal("the new content", File.ReadAllText(path));
+        Assert.Equal("the new content", await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
     }
 
     [Fact]
-    public void Save_WritesWithoutAByteOrderMark()
+    public async Task Save_WritesWithoutAByteOrderMark()
     {
         // Arrange.
         // The stores this replaced either asked for UTF-8-without-BOM explicitly or took
@@ -156,16 +158,16 @@ public class AdpFileWriterTests : IDisposable
         var path = IoPath.Combine(_folder, "map.owm");
 
         // Act.
-        AdpFileWriter.Save(path, "content");
+        await _writer.SaveAsync(path, "content", TestContext.Current.CancellationToken);
 
         // Assert.
-        var bytes = File.ReadAllBytes(path);
+        var bytes = await File.ReadAllBytesAsync(path, TestContext.Current.CancellationToken);
         Assert.False(bytes is [0xEF, 0xBB, 0xBF, ..], "a BOM was written");
         Assert.Equal("content", Encoding.UTF8.GetString(bytes));
     }
 
     [Fact]
-    public void Save_WritesTheContentVerbatim_AddingNoTerminator()
+    public async Task Save_WritesTheContentVerbatim_AddingNoTerminator()
     {
         // Arrange.
         // Create appends the house CRLF because it is writing a new first line. Save is handed
@@ -174,27 +176,27 @@ public class AdpFileWriterTests : IDisposable
         var path = IoPath.Combine(_folder, "map.owm");
 
         // Act.
-        AdpFileWriter.Save(path, "no trailing newline");
+        await _writer.SaveAsync(path, "no trailing newline", TestContext.Current.CancellationToken);
 
         // Assert.
-        Assert.Equal("no trailing newline", File.ReadAllText(path));
+        Assert.Equal("no trailing newline", await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
     }
 
     [Fact]
-    public void Save_LeavesNoTemporaryFileBehind()
+    public async Task Save_LeavesNoTemporaryFileBehind()
     {
         // Arrange.
         var path = IoPath.Combine(_folder, "map.owm");
 
         // Act.
-        AdpFileWriter.Save(path, "content");
+        await _writer.SaveAsync(path, "content", TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Empty(TempFiles());
     }
 
     [Fact]
-    public void Save_WhenTheFolderIsGone_ThrowsAndLeavesNoScratchFile()
+    public async Task Save_WhenTheFolderIsGone_ThrowsAndLeavesNoScratchFile()
     {
         // Arrange.
         // Save imposes no error policy: it throws and each caller keeps the policy it had - the
@@ -203,12 +205,12 @@ public class AdpFileWriterTests : IDisposable
         var missing = IoPath.Combine(_folder, "gone", "map.owm");
 
         // Act and assert.
-        Assert.ThrowsAny<IOException>(() => AdpFileWriter.Save(missing, "content"));
+        await Assert.ThrowsAnyAsync<IOException>(() => _writer.SaveAsync(missing, "content", TestContext.Current.CancellationToken));
         Assert.Empty(TempFiles());
     }
 
     [Fact]
-    public void Save_WhenTheDestinationIsAFolder_ThrowsAndLeavesTheFolderThere()
+    public async Task Save_WhenTheDestinationIsAFolder_ThrowsAndLeavesTheFolderThere()
     {
         // Arrange.
         var path = IoPath.Combine(_folder, "occupied");
@@ -218,7 +220,7 @@ public class AdpFileWriterTests : IDisposable
         // Moving onto a folder raises UnauthorizedAccessException rather than IOException,
         // which is precisely why every caller of Save catches both - and why this asserts the
         // pair rather than the one it first guessed.
-        var thrown = Record.Exception(() => AdpFileWriter.Save(path, "content"));
+        var thrown = await Record.ExceptionAsync(() => _writer.SaveAsync(path, "content", TestContext.Current.CancellationToken));
         Assert.True(
             thrown is IOException or UnauthorizedAccessException,
             $"expected an IO or access failure, got {thrown.GetType().Name}");
@@ -240,7 +242,7 @@ public class AdpFileWriterTests : IDisposable
         watcher.Created += (_, args) => seen.Enqueue(IoPath.GetFileName(args.FullPath));
 
         // Act.
-        AdpFileWriter.Save(path, "content");
+        await _writer.SaveAsync(path, "content", TestContext.Current.CancellationToken);
 
         // Assert: the save's first file was caught, so what follows is about something seen.
         // Whatever the watcher caught, anything that was not the destination must carry the

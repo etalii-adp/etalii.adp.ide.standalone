@@ -190,7 +190,7 @@ public sealed class HierarchyModel
                     break;
                 case FileEventKind.Deleted when facts is not null:
                     // A Deleted whose path still exists is not a deletion: Windows' ReplaceFile -
-                    // which File.Replace uses, and AdpFileWriter.Save with it to rewrite a
+                    // which File.Replace uses, and FileWriter.SaveAsync with it to rewrite a
                     // registration in place - raises a spurious Deleted for the destination it
                     // just refreshed, immediately followed by a Created. Removing the entry here
                     // would hand the file a new id on that Created, orphaning any open document

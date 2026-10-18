@@ -43,6 +43,8 @@ namespace EtAlii.Adp.Documents.Tests;
 [Collection(FileHoldersSeam.Name)]
 public class AdpFileWriterSpeaksAfterLateConfigurationTests : IDisposable
 {
+    private readonly FileWriter _writer = new();
+
     private static readonly TimeSpan Patience = TimeSpan.FromSeconds(10);
 
     private readonly string _folder = IoPath.Combine(IoPath.GetTempPath(), "adp-late-config-" + Guid.NewGuid().ToString("N"));
@@ -77,20 +79,20 @@ public class AdpFileWriterSpeaksAfterLateConfigurationTests : IDisposable
     }
 
     [Fact]
-    public void AFailedPublish_IsRecorded_OnAPipelineInstalledAfterTheWriterWasFirstUsed()
+    public async Task AFailedPublish_IsRecorded_OnAPipelineInstalledAfterTheWriterWasFirstUsed()
     {
         // Arrange. The writer is used FIRST, binding anything it caches to the pipeline of the
         // moment, and only then is a new one installed - a host that touches the writer before
         // Program.cs builds its logging.
         var path = IoPath.Combine(_folder, "roadmap.mm");
-        File.WriteAllText(path, "before");
-        AdpFileWriter.Save(path, "a save before the pipeline changed");
+        await File.WriteAllTextAsync(path, "before", TestContext.Current.CancellationToken);
+        await _writer.SaveAsync(path, "a save before the pipeline changed", TestContext.Current.CancellationToken);
 
         var heard = ConfigureSerilogLate();
 
         // Act. A publish that fails, after the change.
         var wild = new IOException("Unable to remove the file to be replaced.") { HResult = unchecked((int)0x80070497) };
-        Assert.Throws<IOException>(() => AdpFileWriter.Save(path, "after", replace: (_, _) => throw wild));
+        await Assert.ThrowsAsync<IOException>(() => _writer.SaveAsync(path, "after", replace: (_, _) => throw wild, TestContext.Current.CancellationToken));
 
         // Assert. The record arrived HERE, on the new pipeline. A cached logger would still be
         // writing to the old one, where this sink is not - and nothing else about the run would

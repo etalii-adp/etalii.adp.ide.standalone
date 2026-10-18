@@ -54,7 +54,7 @@ public class FileWriterTurnsTests : IDisposable
         using var firstIsInside = new ManualResetEventSlim(false);
         using var releaseFirst = new ManualResetEventSlim(false);
         var first = Task.Run(
-            () => writer.SaveAsync(path, "first", null, (temporary, destination) =>
+            () => writer.SaveAsync(path, "first", (temporary, destination) =>
             {
                 // ReSharper disable AccessToDisposedClosure - Reason: the test awaits `first` before the usings dispose the two events.
                 firstIsInside.Set();
@@ -88,7 +88,7 @@ public class FileWriterTurnsTests : IDisposable
         using var firstIsInside = new ManualResetEventSlim(false);
         using var releaseFirst = new ManualResetEventSlim(false);
         var first = Task.Run(
-            () => writer.SaveAsync(path, "first", null, (temporary, destination) =>
+            () => writer.SaveAsync(path, "first", (temporary, destination) =>
             {
                 // ReSharper disable AccessToDisposedClosure - Reason: the test awaits `first` before the usings dispose the two events.
                 firstIsInside.Set();

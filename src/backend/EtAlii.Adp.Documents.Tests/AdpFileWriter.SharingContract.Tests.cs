@@ -5,7 +5,7 @@ using IoPath = System.IO.Path;
 namespace EtAlii.Adp.Documents.Tests;
 
 /// <summary>
-/// What a reader must permit for <see cref="AdpFileWriter.Save(string, string)"/> to be able to replace the file
+/// What a reader must permit for <see cref="FileWriter.SaveAsync(string, string, CancellationToken)"/> to be able to replace the file
 /// underneath it — the contract behind a flaky integration failure, pinned deterministically.
 /// </summary>
 /// <remarks>
@@ -32,7 +32,7 @@ namespace EtAlii.Adp.Documents.Tests;
 /// </para>
 /// <para>
 /// <b>The mechanism map lives with the decision, not here.</b> Three write primitives against two
-/// sharing modes are tabulated in <c>AdpFileWriter.Save</c>, beside the line that chooses between
+/// sharing modes are tabulated in <c>AdpFileWriter.Publish</c>, beside the line that chooses between
 /// them — which is where anyone reaching for <c>File.Move(overwrite: true)</c> is standing. It is
 /// not repeated in this file, because one measured fact with two homes is one fact that can drift.
 /// </para>
@@ -72,6 +72,8 @@ namespace EtAlii.Adp.Documents.Tests;
 /// </remarks>
 public class AdpFileWriterSharingContractTests : IDisposable
 {
+    private readonly FileWriter _writer = new();
+
     private readonly string _folder = IoPath.Combine(
         IoPath.GetTempPath(),
         "adp-sharing-" + Guid.NewGuid().ToString("N"));
@@ -86,54 +88,54 @@ public class AdpFileWriterSharingContractTests : IDisposable
     }
 
     [Fact]
-    public void AReaderSharingDelete_DoesNotStopASaveFromReplacingTheFile()
+    public async Task AReaderSharingDelete_DoesNotStopASaveFromReplacingTheFile()
     {
         // Arrange: exactly what SharedDocumentReader opens, which is what the application uses.
         var path = IoPath.Combine(_folder, "document.tml");
-        File.WriteAllText(path, "before");
+        await File.WriteAllTextAsync(path, "before", TestContext.Current.CancellationToken);
         using var reader = new FileStream(
             path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
 
         // Act.
-        AdpFileWriter.Save(path, "after");
+        await _writer.SaveAsync(path, "after", TestContext.Current.CancellationToken);
 
         // Assert: the publish landed while the handle was still open.
-        Assert.Equal("after", File.ReadAllText(path));
+        Assert.Equal("after", await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
     }
 
     [Fact]
-    public void AReaderSharingOnlyRead_DeniesTheReplaceAndTheSaveSaysSo()
+    public async Task AReaderSharingOnlyRead_DeniesTheReplaceAndTheSaveSaysSo()
     {
         Assert.SkipUnless(OperatingSystem.IsWindows(), "A handle's sharing mode denies a replace or delete only on Windows.");
         // Arrange: what File.ReadAllText opens - no Delete.
         var path = IoPath.Combine(_folder, "document.tml");
-        File.WriteAllText(path, "before");
+        await File.WriteAllTextAsync(path, "before", TestContext.Current.CancellationToken);
         using var reader = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
 
         // Act & assert: the failure the flow test hit, made deterministic. It surfaces as one of
         // the pair every caller of Save already catches, which is why the store could report
         // "could not be written" and keep the edit rather than losing it.
-        var thrown = Assert.ThrowsAny<Exception>(() => AdpFileWriter.Save(path, "after"));
+        var thrown = await Assert.ThrowsAnyAsync<Exception>(() => _writer.SaveAsync(path, "after", TestContext.Current.CancellationToken));
         Assert.True(
             thrown is UnauthorizedAccessException or IOException,
             $"Save threw {thrown.GetType().Name}, which callers do not catch: {thrown.Message}");
 
         // And the original is intact - a denied replace must not truncate what was there.
-        Assert.Equal("before", File.ReadAllText(path));
+        Assert.Equal("before", await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
     }
 
     [Fact]
-    public void ADeniedSave_LeavesNoTemporaryBehind()
+    public async Task ADeniedSave_LeavesNoTemporaryBehind()
     {
         Assert.SkipUnless(OperatingSystem.IsWindows(), "A handle's sharing mode denies a replace or delete only on Windows.");
         // The other half of a failed publish: the scratch file is cleaned up before the failure
         // is allowed out, or the project folder fills with ~adp- debris nobody owns.
         var path = IoPath.Combine(_folder, "document.tml");
-        File.WriteAllText(path, "before");
+        await File.WriteAllTextAsync(path, "before", TestContext.Current.CancellationToken);
 
         using (var _ = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read))
         {
-            Assert.ThrowsAny<Exception>(() => AdpFileWriter.Save(path, "after"));
+            await Assert.ThrowsAnyAsync<Exception>(() => _writer.SaveAsync(path, "after", TestContext.Current.CancellationToken));
         }
 
         Assert.Empty(Directory.GetFiles(_folder, $"{AdpFileWriter.TempPrefix}*"));

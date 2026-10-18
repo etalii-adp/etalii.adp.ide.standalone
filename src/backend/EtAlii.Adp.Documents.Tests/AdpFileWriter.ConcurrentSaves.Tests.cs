@@ -24,6 +24,8 @@ namespace EtAlii.Adp.Documents.Tests;
 /// </remarks>
 public class AdpFileWriterConcurrentSavesTests : IDisposable
 {
+    private readonly FileWriter _writer = new();
+
     private const string WaitedMessage = "Waited for another save to";
     private static readonly TimeSpan Patience = TimeSpan.FromSeconds(10);
 
@@ -43,6 +45,7 @@ public class AdpFileWriterConcurrentSavesTests : IDisposable
         // Arrange. Real Save, real File.Replace, no seam - the measured race, flat out.
         var path = IoPath.Combine(_folder, "roadmap.mm");
         File.WriteAllText(path, "before");
+        var cancellationToken = TestContext.Current.CancellationToken;
         const int writers = 4;
         const int savesEach = 300;
         var failures = new System.Collections.Concurrent.ConcurrentQueue<string>();
@@ -61,7 +64,8 @@ public class AdpFileWriterConcurrentSavesTests : IDisposable
                 written[content] = 0;
                 try
                 {
-                    AdpFileWriter.Save(path, content);
+                    // Waited for on this thread: each thread is one writer saving in a loop.
+                    _writer.SaveAsync(path, content, cancellationToken).GetAwaiter().GetResult();
                 }
                 catch (Exception e)
                 {
@@ -96,18 +100,18 @@ public class AdpFileWriterConcurrentSavesTests : IDisposable
         using var firstIsInside = new ManualResetEventSlim(false);
         using var releaseFirst = new ManualResetEventSlim(false);
 
-        var first = Task.Run(() => AdpFileWriter.Save(path, "first", replace: (temporary, destination) =>
+        var first = Task.Run(() => _writer.SaveAsync(path, "first", replace: (temporary, destination) =>
         {
-            // ReSharper disable AccessToDisposedClosure - Reason: this replace callback runs inside `first`, which Task.WaitAll([first, second], Patience) at the end of the test waits for (failing the test if it does not finish) before the usings dispose the two events.
+            // ReSharper disable AccessToDisposedClosure - Reason: this replace callback runs inside `first`, which Task.WhenAll(first, second).WaitAsync(Patience, ...) at the end of the test awaits (failing the test if it does not finish) before the usings dispose the two events.
             firstIsInside.Set();
             releaseFirst.Wait(Patience, TestContext.Current.CancellationToken);
             // ReSharper restore AccessToDisposedClosure
             File.Replace(temporary, destination, destinationBackupFileName: null, ignoreMetadataErrors: true);
-        }), TestContext.Current.CancellationToken);
+        }, TestContext.Current.CancellationToken), TestContext.Current.CancellationToken);
         Assert.True(firstIsInside.Wait(Patience, TestContext.Current.CancellationToken), "The first save never reached its replace.");
 
         // Act. A second save to the same destination while the first is inside.
-        var second = Task.Run(() => AdpFileWriter.Save(path, "second"), TestContext.Current.CancellationToken);
+        var second = Task.Run(() => _writer.SaveAsync(path, "second", TestContext.Current.CancellationToken), TestContext.Current.CancellationToken);
 
         // Assert, first: it waits - and says so, by path, before it gets its turn.
         Assert.True(
@@ -125,13 +129,7 @@ public class AdpFileWriterConcurrentSavesTests : IDisposable
 
         // Then both finish, in order, and the later one's content is what remains.
         releaseFirst.Set();
-        // xUnit1031 is suppressed rather than obeyed here: the subject of this guard is
-        // AdpFileWriter.Save, which is SYNCHRONOUS, and the test has to observe two of them
-        // contending from different threads. Awaiting instead would remove the contention the
-        // test exists to measure.
-#pragma warning disable xUnit1031 // Test methods should not use blocking task operations
-        Assert.True(Task.WaitAll([first, second], Patience), "The saves did not finish after the first was released.");
-#pragma warning restore xUnit1031
+        await Task.WhenAll(first, second).WaitAsync(Patience, TestContext.Current.CancellationToken);
         Assert.Equal("second", await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
     }
 
@@ -148,17 +146,17 @@ public class AdpFileWriterConcurrentSavesTests : IDisposable
         using var firstIsInside = new ManualResetEventSlim(false);
         using var releaseFirst = new ManualResetEventSlim(false);
 
-        var first = Task.Run(() => AdpFileWriter.Save(path, "first", replace: (temporary, destination) =>
+        var first = Task.Run(() => _writer.SaveAsync(path, "first", replace: (temporary, destination) =>
         {
-            // ReSharper disable AccessToDisposedClosure - Reason: this replace callback runs inside `first`, which Task.WaitAll([first, second], Patience) at the end of the test waits for (failing the test if it does not finish) before the usings dispose the two events.
+            // ReSharper disable AccessToDisposedClosure - Reason: this replace callback runs inside `first`, which Task.WhenAll(first, second).WaitAsync(Patience, ...) at the end of the test awaits (failing the test if it does not finish) before the usings dispose the two events.
             firstIsInside.Set();
             releaseFirst.Wait(Patience, TestContext.Current.CancellationToken);
             // ReSharper restore AccessToDisposedClosure
             File.Replace(temporary, destination, destinationBackupFileName: null, ignoreMetadataErrors: true);
-        }), TestContext.Current.CancellationToken);
+        }, TestContext.Current.CancellationToken), TestContext.Current.CancellationToken);
         Assert.True(firstIsInside.Wait(Patience, TestContext.Current.CancellationToken), "The first save never reached its replace.");
 
-        var second = Task.Run(() => AdpFileWriter.Save(otherSpelling, "second"), TestContext.Current.CancellationToken);
+        var second = Task.Run(() => _writer.SaveAsync(otherSpelling, "second", TestContext.Current.CancellationToken), TestContext.Current.CancellationToken);
 
         Assert.True(
             // ReSharper disable once AccessToDisposedClosure - Reason: SpinWait.SpinUntil invokes this closure synchronously and returns before the using disposes `logs`. The suppression sits on the line above the one that closes over `logs` rather than inside a block body: `disable once` applies to the next line either way, and a block body whose only purpose is to host this comment is what IDE0053 reports.
@@ -167,13 +165,7 @@ public class AdpFileWriterConcurrentSavesTests : IDisposable
         Assert.False(second.IsCompleted, "A different spelling of the same destination got through while the first held it.");
 
         releaseFirst.Set();
-        // xUnit1031 is suppressed rather than obeyed here: the subject of this guard is
-        // AdpFileWriter.Save, which is SYNCHRONOUS, and the test has to observe two of them
-        // contending from different threads. Awaiting instead would remove the contention the
-        // test exists to measure.
-#pragma warning disable xUnit1031 // Test methods should not use blocking task operations
-        Assert.True(Task.WaitAll([first, second], Patience), "The saves did not finish after the first was released.");
-#pragma warning restore xUnit1031
+        await Task.WhenAll(first, second).WaitAsync(Patience, TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -189,20 +181,20 @@ public class AdpFileWriterConcurrentSavesTests : IDisposable
         using var firstIsInside = new ManualResetEventSlim(false);
         using var releaseFirst = new ManualResetEventSlim(false);
 
-        var first = Task.Run(() => AdpFileWriter.Save(held, "first", replace: (temporary, destination) =>
+        var first = Task.Run(() => _writer.SaveAsync(held, "first", replace: (temporary, destination) =>
         {
             // ReSharper disable AccessToDisposedClosure - Reason: this replace callback runs inside `first`, which the finally below awaits with first.WaitAsync(Patience, ...) before the usings dispose the two events.
             firstIsInside.Set();
             releaseFirst.Wait(Patience, TestContext.Current.CancellationToken);
             // ReSharper restore AccessToDisposedClosure
             File.Replace(temporary, destination, destinationBackupFileName: null, ignoreMetadataErrors: true);
-        }), TestContext.Current.CancellationToken);
+        }, TestContext.Current.CancellationToken), TestContext.Current.CancellationToken);
         Assert.True(firstIsInside.Wait(Patience, TestContext.Current.CancellationToken), "The first save never reached its replace.");
 
         try
         {
             // Act: a save to a different file completes while the first is still inside.
-            AdpFileWriter.Save(other, "unrelated");
+            await _writer.SaveAsync(other, "unrelated", TestContext.Current.CancellationToken);
 
             // Assert.
             Assert.Equal("unrelated", await File.ReadAllTextAsync(other, TestContext.Current.CancellationToken));
