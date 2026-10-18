@@ -95,6 +95,56 @@ public class HistoryActionsBroadcasterTests
     }
 
     [Fact]
+    public async Task ADiscoveryStillRunning_DoesNotHoldTheClocksThread()
+    {
+        // Arrange: a discovery that answers only when it is let go.
+        var resolver = new GatedResolver();
+        using var broadcaster = new HistoryActionsBroadcaster(_store, resolver, _selection, _clock);
+        _store.Raise(Root);
+
+        // Act.
+        await AdvanceOffThreadAsync();
+
+        // Assert: nothing pushed yet, and the push follows once the discovery answers.
+        Assert.Empty(_selection.Pushes);
+        resolver.Answer();
+        Assert.Single(_selection.Pushes);
+        await broadcaster.StopAsync(TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task StopAsync_CancelsTheDiscoveryUnderWay_AndReturnsOnceItHas()
+    {
+        // Arrange: a discovery that, once cancelled, finishes only when it is let go.
+        var resolver = new GatedResolver { HoldsOnCancel = true };
+        using var broadcaster = new HistoryActionsBroadcaster(_store, resolver, _selection, _clock);
+        _store.Raise(Root);
+        await AdvanceOffThreadAsync();
+
+        // Act.
+        var stopping = broadcaster.StopAsync(TestContext.Current.CancellationToken);
+
+        // Assert: still stopping while the discovery finishes, stopped once it has, nothing pushed.
+        var first = await Task.WhenAny(stopping, Task.Delay(TimeSpan.FromSeconds(1), TestContext.Current.CancellationToken));
+        Assert.False(first == stopping, "StopAsync returned while the discovery it cancelled was still running.");
+        resolver.LetFinish();
+        await stopping.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
+        Assert.True(resolver.Cancelled);
+        Assert.Empty(_selection.Pushes);
+    }
+
+    [Fact]
+    public async Task DisposingTwice_AfterStopAsync_DoesNotThrow()
+    {
+        // The host stops its services and may dispose its provider more than once.
+        var broadcaster = new HistoryActionsBroadcaster(_store, _resolver, _selection, _clock);
+        await broadcaster.StopAsync(TestContext.Current.CancellationToken);
+
+        broadcaster.Dispose();
+        broadcaster.Dispose();
+    }
+
+    [Fact]
     public void AChangeAfterDispose_PushesNothing()
     {
         // Arrange.
@@ -109,5 +159,63 @@ public class HistoryActionsBroadcasterTests
         // Assert: neither the change pending at disposal nor the one after it.
         Assert.Empty(_selection.Pushes);
         Assert.Equal(0, _resolver.DiscoverCount);
+    }
+
+    /// <summary>
+    /// Lets the window pass on another thread, so a timer callback that waits on the discovery
+    /// fails the test as an advance that never returns, rather than holding the test's own thread.
+    /// </summary>
+    private async Task AdvanceOffThreadAsync()
+    {
+        var advancing = Task.Run(() => _clock.Advance(Window), TestContext.Current.CancellationToken);
+        await advancing.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
+    }
+
+    /// <summary>
+    /// A resolver whose discovery runs until it is answered or cancelled. Its continuations run
+    /// inside <see cref="Answer"/>, so the push it leads to has happened when that returns.
+    /// </summary>
+    private sealed class GatedResolver : IContextActionResolver
+    {
+        private readonly TaskCompletionSource _answer = new();
+        private readonly TaskCompletionSource _finish = new();
+
+        /// <summary>Whether a cancelled discovery waits for <see cref="LetFinish"/> before it returns.</summary>
+        public bool HoldsOnCancel { get; init; }
+
+        public bool Cancelled { get; private set; }
+
+        public void Answer() => _answer.TrySetResult();
+
+        public void LetFinish() => _finish.TrySetResult();
+
+        public async ValueTask<IReadOnlyList<ContextActionGroupDefinition>> DiscoverAsync(ContextTarget target, CancellationToken cancellationToken)
+        {
+            try
+            {
+                await using (cancellationToken.Register(() => _answer.TrySetCanceled(cancellationToken)))
+                {
+                    await _answer.Task;
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                Cancelled = true;
+                if (HoldsOnCancel)
+                {
+                    await _finish.Task;
+                }
+
+                throw;
+            }
+
+            return [new ContextActionGroupDefinition([new ContextActionDefinition("history.undo", "Undo", "mdi-undo")])];
+        }
+
+        public ValueTask<ContextActionOwner?> ResolveByActionIdAsync(ContextTarget target, string actionId, CancellationToken cancellationToken) =>
+            throw new NotSupportedException();
+
+        public ValueTask<ContextActionOwner?> ResolveByShortcutAsync(ContextTarget target, ContextShortcutDefinition shortcut, CancellationToken cancellationToken) =>
+            throw new NotSupportedException();
     }
 }

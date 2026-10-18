@@ -389,7 +389,7 @@ public class HistoryStackTests
     // ---- clear ------------------------------------------------------------------------
 
     [Fact]
-    public async Task Clear_ForgetsBothSidesWithoutTouchingTheState()
+    public async Task ClearAsync_ForgetsBothSidesWithoutTouchingTheState()
     {
         // Arrange.
         (HistoryStack stack, HistoryStackRecordingDispatcher dispatcher) = CreateStack();
@@ -399,7 +399,7 @@ public class HistoryStackTests
         await stack.UndoAsync(TestContext.Current.CancellationToken);
 
         // Act.
-        stack.Clear();
+        await stack.ClearAsync(TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.False(stack.CanUndo);
@@ -408,6 +408,28 @@ public class HistoryStackTests
     }
 
     // ---- concurrency ------------------------------------------------------------------
+
+    [Fact]
+    public async Task ClearAsync_WhileACommandRuns_WaitsForItWithoutHoldingTheCallersThread()
+    {
+        // Arrange: a command that holds the gate until it is let go.
+        (HistoryStack stack, HistoryStackRecordingDispatcher dispatcher) = CreateStack();
+        using var guard = stack;
+        var letGo = new TaskCompletionSource();
+        dispatcher.BeforeEachDispatch = () => letGo.Task;
+        var executing = stack.ExecuteAsync(new HistoryStackSetCommand("a"), TestContext.Current.CancellationToken);
+
+        // Act: asked from another thread, so a call that blocks shows as a call that never returns.
+        var asking = Task.Run<Task>(() => stack.ClearAsync(TestContext.Current.CancellationToken), TestContext.Current.CancellationToken);
+        var clearing = await asking.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
+
+        // Assert: the clear waits on the command rather than on a thread, and forgets it once it has run.
+        Assert.False(clearing.IsCompleted);
+        letGo.SetResult();
+        await executing;
+        await clearing;
+        Assert.False(stack.CanUndo);
+    }
 
     [Fact]
     public async Task ExecuteAsync_FromManyCallersAtOnce_IsSerialized()
@@ -484,7 +506,7 @@ public class HistoryStackTests
         await Assert.ThrowsAsync<ObjectDisposedException>(() => stack.ExecuteAsync(new HistoryStackSetCommand("a"), TestContext.Current.CancellationToken));
         await Assert.ThrowsAsync<ObjectDisposedException>(() => stack.UndoAsync(TestContext.Current.CancellationToken));
         await Assert.ThrowsAsync<ObjectDisposedException>(() => stack.RedoAsync(TestContext.Current.CancellationToken));
-        Assert.Throws<ObjectDisposedException>(() => stack.Clear());
+        await Assert.ThrowsAsync<ObjectDisposedException>(() => stack.ClearAsync(TestContext.Current.CancellationToken));
     }
 
     [Fact]

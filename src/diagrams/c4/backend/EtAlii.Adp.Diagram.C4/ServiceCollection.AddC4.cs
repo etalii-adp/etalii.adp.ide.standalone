@@ -20,17 +20,6 @@ namespace EtAlii.Adp.Diagram.C4;
 /// </remarks>
 public static class ServiceCollectionAddC4Extension
 {
-    /// <summary>Each C4 diagram type, paired with the view kind it binds.</summary>
-    private static readonly (string Type, C4ViewKind ViewKind)[] Types =
-    [
-        ("system-landscape", C4ViewKind.SystemLandscape),
-        ("context", C4ViewKind.SystemContext),
-        ("container", C4ViewKind.Container),
-        ("component", C4ViewKind.Component),
-        ("dynamic", C4ViewKind.Dynamic),
-        ("deployment", C4ViewKind.Deployment),
-    ];
-
     public static IServiceCollection AddC4(this IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);
@@ -60,9 +49,9 @@ public static class ServiceCollectionAddC4Extension
         services.TryAddSingleton<C4LayoutSidecar>();
         services.TryAddSingleton(provider => new C4ElementMapper(provider.GetRequiredService<C4Metrics>(), provider.GetRequiredService<C4LayoutSidecar>()));
 
-        foreach ((string type, C4ViewKind viewKind) in Types)
+        // Each type and the view kind it binds, from the table that also names its definition.
+        foreach ((ToolOrigin origin, C4ViewKind viewKind, string _) in C4Definitions.Types)
         {
-            var origin = new ToolOrigin("c4", type);
             services.AddEmptyDocument(origin, baseName => EmptyDocument(viewKind, baseName));
 
             // Makes a C4 element selectable, one per type, because the shared base answers for the

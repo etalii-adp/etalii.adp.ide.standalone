@@ -315,11 +315,12 @@ public sealed class HistoryStack : IHistoryStack, IDisposable
         }
     }
 
-    public void Clear()
+    /// <summary>Forgets both sides, once whatever runs under the gate has finished, without holding a thread while it waits.</summary>
+    public async Task ClearAsync(CancellationToken cancellationToken = default)
     {
         ObjectDisposedException.ThrowIf(_isDisposed, this);
 
-        _gate.Wait();
+        await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
             lock (_sync)

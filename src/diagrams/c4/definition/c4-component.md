@@ -1,0 +1,168 @@
+# C4 component diagram
+
+The DISL specification of this diagram type is [c4-component.dis](c4-component.dis), written at DISL 0.4. This page holds what DISL 0.4 and FBL 0.7 cannot express about the tool, each gap with the construct it concerns, the document that shows it and what would resolve it. Everything either language can say is said in the `.dis` and is not repeated here.
+
+The tool is the C4 component diagram of the standalone IDE (origin `c4/component`), one of six C4 tool types that share one model of a Structurizr DSL workspace. The other five are [c4-context.dis](c4-context.dis), [c4-container.dis](c4-container.dis), [c4-system-landscape.dis](c4-system-landscape.dis), [c4-dynamic.dis](c4-dynamic.dis), [c4-deployment.dis](c4-deployment.dis); the six definitions differ only in their viewpoint, toolbox, labels and origin, so their companions share their gaps. Every sentence, label, code and id in the `.dis` is the standalone tool's, as its parity transcript records them: `Parity/c4.transcript.json` under [`src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4.Tests/`](https://github.com/etalii-adp/etalii.adp.ide.standalone/tree/develop/src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4.Tests) in etalii.adp.ide.standalone. The documents named below are that test project's fixtures; `findings/` is its `Fixtures/findings/` folder. The conversion is specified in that repository's [`.spec-workflow/specs/c4-disl-fbl/`](https://github.com/etalii-adp/etalii.adp.ide.standalone/tree/develop/.spec-workflow/specs/c4-disl-fbl), whose findings (A1 to A16, B1 to B24) and questions (Q1 to Q9) this page cites by number.
+
+## What the diagram is for
+
+The components inside one container and how they work together. A component diagram zooms into one container and shows the components inside it, their responsibilities and their technology, with the containers, people and systems they interact with. A component view shows people, software systems, containers and components. The container it is scoped to is drawn as the boundary around its components, not as a card. Relationships between what it does not show are drawn between the nearest elements it does show, one line per pair.
+
+## The gaps
+
+Fifteen, each a candidate change for this repository: the twelve the conversion's requirements list (C1 to C12, in their order) and three found while writing the definitions. None is worked around in the `.dis` by stating something the tool does not do.
+
+| # | Language | Construct | Finding |
+| --- | --- | --- | --- |
+| 1 | FBL | The statements of the selected view | B13 |
+| 2 | FBL | A comment after a brace or a statement | B3, B4 |
+| 3 | FBL | A comment that spans lines | B5 |
+| 4 | FBL | An escape inside a quoted group | B7 |
+| 5 | FBL | Positional optional arguments | B18 |
+| 6 | FBL | A body whose braces do not balance | B22 |
+| 7 | FBL | The legacy layout and the view header | B14, B16 |
+| 8 | FBL | Adding a block, and a value gathered from two places | B24, B9 |
+| 9 | DISL | A layout's direction and spacing from a diagram attribute | A12 |
+| 10 | DISL | Findings ordered by element | A11 |
+| 11 | DISL | The identifier of a new element made from its name | A9 |
+| 12 | Both | An id that depends on a directive of the body | B12 |
+| 13 | DISL | What a view exposes to a rule about the model | found while writing |
+| 14 | DISL | The text an unset end was written with | found while writing |
+| 15 | DISL | The order of computed legend entries | found while writing |
+
+### 1. FBL: the statements of the selected view (B13)
+
+- **Construct.** FBL names a view by its block (4.7) and leaves its content to the reading's viewpoint (9.3). Nothing reads the statements of the view a registration selects (`include`, `exclude`, `title`, `autoLayout` and its separations, the scope, a deployment view's environment, a dynamic view's interactions) into the diagram's attributes; a rule `within` a view block reads every view's.
+- **Shown by.** `findings/view-statements.dsl`.
+- **Would resolve it.** Rules `within` a view block read for the registration's view only, and a `typeMap` entry that maps them `as: "diagram"`; or a view block as an element rule that a registration header selects.
+- **Meanwhile.** The module reads the body itself and builds the model this definition describes from its reading (`C4Disl` in the conversion's design, standing in for gaps 1, 2 and 6). The `typeMap` entry `ViewInclude` is the shape the binding will give it.
+
+### 2. FBL 4.7 and 4.6: a comment after a brace or a statement (B3, B4)
+
+- **Construct.** FBL 4.7 opens a block only when a statement's last non-whitespace character is the brace, so `model { // …` opens none and the braces no longer balance. FBL's `comment` is a whole line (4.6), so every rule's expression would have to admit a comment tail. Structurizr accepts both and the tool reads them.
+- **Shown by.** `comments-everywhere.dsl` (one `unreadable` entry under the example binding), `findings/trailing-comments.dsl`.
+- **Would resolve it.** The binding's `comment`, or a second expression, stripped from the end of a statement outside quoted strings before the block test and before any rule.
+- **Meanwhile.** As gap 1.
+
+### 3. FBL: a comment that spans lines (B5)
+
+- **Construct.** The tool skips `/* … */`, within a line and across lines. FBL has no comment that spans lines: the lines inside one are statements, a declaration inside one becomes an element, and a brace inside one counts toward the balance.
+- **Shown by.** `findings/block-comments.dsl`.
+- **Would resolve it.** `blockComment: {open, close}` on a binding.
+- **Meanwhile.** As gap 1.
+
+### 4. FBL: an escape inside a quoted group (B7)
+
+- **Construct.** The tool reads `\"` inside a quoted argument as a quote and writes a quote back escaped. FBL has escaping rules for XML, YAML and JSON, and none for a quoted group of the `lines` or `blocks` family.
+- **Shown by.** `findings/escaped-quote.dsl`; the transcript's renames to `Parity "name"`.
+- **Would resolve it.** An escape for a quoted group, read and written.
+- **Meanwhile.** The module's commands write every edit.
+
+### 5. FBL: positional optional arguments (B18)
+
+- **Construct.** Where an argument is absent the tool appends it and writes `""` for each absent argument before it, so a technology set on `container "Web"` gives `container "Web" "" "…"`. FBL's `insert-key` writes the one segment, which puts the technology in the description's place, and what `re-emit-line` does to a statement that opens a block is not stated.
+- **Shown by.** Finding B18, read in the module's commands; no fixture of its own.
+- **Would resolve it.** Writing argument n writes an empty value for each absent argument before it, and never re-emits a statement that opens a block.
+- **Meanwhile.** As gap 4.
+
+### 6. FBL 4.7 and 7.5: a body whose braces do not balance (B22)
+
+- **Construct.** The tool opens a document whose braces do not balance with what can be read; FBL 4.7 makes such a body unreadable, empty and read-only. A document being typed in the text editor is unbalanced between two keystrokes.
+- **Shown by.** `findings/unbalanced.dsl`.
+- **Would resolve it.** A binding that asks to read what balances.
+- **Meanwhile.** As gap 1.
+
+### 7. FBL 8.7 and 9.3: the legacy layout and the view header (B14, B16)
+
+- **Construct.** The tool's positions live in `<base>.layout.json`, keyed by view and element, the element keys compared without case, each number as .NET writes a double. FBL 8.7 reads and writes such a file while it exists but states neither its number form, nor how its element keys compare, nor whether stale entries are pruned; and FBL 9.3 does not say what a registration whose `view:` names no view opens.
+- **Shown by.** `findings/sidecar-keys.dsl` with its `.layout.json`, `findings/first-drag-undo.dsl`, `findings/view-without-key.dsl`.
+- **Would resolve it.** The number form, the comparison of element keys and the pruning of a legacy file, and what a `view` that names nothing opens.
+- **Meanwhile.** The module's `C4LayoutSidecar` stores positions as today, and a move on a view that names nothing is refused with "This diagram has no view to arrange."
+
+### 8. FBL: adding a block, and a value gathered from two places (B24, B9)
+
+- **Construct.** A block rule has no `insert`, so a view block cannot be added; and a `tags "A" "B"` line inside an element's block adds to the tags of its declaration, while FBL binds a value to one place (3.3).
+- **Shown by.** `findings/tags-in-block.dsl`; `AddC4ViewCommand` for the view block.
+- **Would resolve it.** An `insert` for a block rule; a slot that gathers its values from several statements.
+- **Meanwhile.** `AddC4ViewCommand` stays code. Tags are read-only in the tool, so nothing writes them.
+
+### 9. DISL 10: a layout's direction and spacing from a diagram attribute (A12)
+
+- **Construct.** A view's `autoLayout` sets the layout's direction and its rank and node separation (top to bottom, 120 and 60 otherwise), and a view that declares one ignores every stored position. `LayoutConfig.direction` and `spacing` are literals, and nothing says that view data is ignored while a diagram attribute is set.
+- **Shown by.** `findings/autolayout-ignores-positions.dsl` with its `.layout.json`.
+- **Would resolve it.** `direction` and `spacing` as bindable values, and a layout setting that makes stored view data ignored while an expression holds.
+- **Meanwhile.** The definition's `c4Ranks` states the defaults; the module's layout reads the view's statements.
+
+### 10. DISL 8.6: findings ordered by element (A11)
+
+- **Construct.** The tool reports the includes, then for each element its description, technology, connection and placement findings, then each relationship's, then each view's, then the coverage findings. DISL orders by rule (8.6), and `constraints.order` by code and then by line; neither states "element by element".
+- **Shown by.** `findings/finding-order.dsl`.
+- **Would resolve it.** An order key per finding, such as the position of its target in reading order, before the rule's position.
+- **Meanwhile.** The module orders the definition's findings itself (`C4FindingOrder` in the conversion's design, Q4).
+
+### 11. DISL 11.5.1: the identifier of a new element made from its name (A9)
+
+- **Construct.** A new element's identifier is the letters and digits of its name, the first one lowered, `_` before a leading digit and `element` when nothing is left, then `web`, `web2`, `web3` against a clash. `natural` composes the key attributes as written, so the name `Web App` gives `Web App`, which the pattern refuses; DISL 11.5.1 says its `natural` example gives `web`, which it does not.
+- **Shown by.** The transcript's adds, and its new documents (`42 things` gives `_42_things`).
+- **Would resolve it.** A transform of the key attributes before the pattern is applied, or `natural` defined to drop what the pattern refuses.
+- **Meanwhile.** The module makes the identifier (`C4Placement.IdentifierFor`) and hands it to the operation, and refuses one already in use with "This model already has something called '<identifier>'."
+
+### 12. Both: an id that depends on a directive of the body (B12)
+
+- **Construct.** `!identifiers hierarchical` makes a dotted reference such as `a.api` name an element by its path. Neither language states an id that depends on a directive of the body.
+- **Shown by.** `findings/hierarchical-identifiers.dsl`.
+- **Would resolve it.** An id rule chosen by a value the reader takes from the body.
+- **Meanwhile.** Kept unsupported, as today: the directive is carried and not honoured, a dotted reference names nothing and is reported as dangling, and two elements of one name under different parents resolve to the first.
+
+### 13. DISL 12.2: what a view exposes to a rule about the model
+
+- **Construct.** A rule about every view reads `diagram.views`, whose `View` has `id`, `viewpoint`, `name` and `members` only. The tool's view findings need more of each view: `c4.unknown-view-scope` names the scope the view is written with and is located at the view's line, and `c4.empty-view` is located at the view's line. A view's own statements are diagram attributes of the reading that shows it, and no rule about the model can read them for another view.
+- **Shown by.** `findings/finding-order.dsl` (`c4.unknown-view-scope` at line 20, `c4.empty-view` at line 26), `findings/view-without-key.dsl`, the new `c4/container` and `c4/dynamic` documents.
+- **Would resolve it.** `View` exposing its reading's diagram attributes and a `location()`.
+- **Meanwhile.** `emptyView` is a rule without the line, and `c4.unknown-view-scope` is not a rule of the definition; the module reports both from its reading.
+
+### 14. DISL 11.2: the text an unset end was written with
+
+- **Construct.** A relation whose mapped end names nothing is created with that end unset (11.2), and the identifier the body writes there is then nowhere in the model. The tool's sentence names it ("The relationship on line 11 names 'missing', which the model does not declare."), and the ids of a relationship and of an interaction are their ends as written. The same holds for a reference attribute: the scope a view names when it names nothing (gap 13).
+- **Shown by.** `findings/dangling-both-ends.dsl`, `findings/nested-relationships.dsl`, `findings/hierarchical-identifiers.dsl`.
+- **Would resolve it.** The written text of an unset end or reference, readable in CEL, such as `self.written('source')`.
+- **Meanwhile.** The plugin function `writtenEnd(relation, end)`, which the module supplies from its reading, as the timeline does (`timeline.md`, gap 4).
+
+### 15. DISL 6.13: the order of computed legend entries
+
+- **Construct.** The tool lists the legend's entries in the order of the view's members, which lists what the view's `include` statements name first, in their order, then what `include *` adds. `legend.computed.order` is evaluated on the first element of each group in model order, so an entry cannot take the earliest position any of its elements has among the members.
+- **Shown by.** `C4ElementMapper.LegendFor`, read; no fixture shows the two orders apart.
+- **Would resolve it.** An `order` that is the least of an expression over the group's elements.
+- **Meanwhile.** The entries come in model order, which is the tool's order for every view of the corpus.
+
+## Stand-ins
+
+Code that stands in for a gap while it stands, named so that nobody reads it as the design:
+
+| Stand-in | For | Where |
+| --- | --- | --- |
+| `C4Disl` | Gaps 1, 2, 3 and 6: the module builds this definition's model from its own reading of the body | Planned in the conversion's design (Q5) |
+| `C4FindingOrder` | Gap 10: today's order of findings | Planned in the conversion's design (Q4) |
+| `C4Placement.IdentifierFor` | Gap 11: a new element's identifier | The module, handed to the operation |
+| `AddC4ViewCommand` | Gap 8: adding a view block | The module |
+| `C4LayoutSidecar` | Gap 7: positions in the legacy sidecar | The module |
+| `net.etalii.adp.c4.writtenEnds` | Gap 14: `writtenEnd`, supplied from the module's reading | A plugin of the definition, with a fallback |
+
+## Outside the definition, and not a gap
+
+Behaviour the definition does not state because it is the host's, not because DISL or FBL lacks a construct:
+
+- **The canvas.** How big a card is, the `c4Ranks` arrangement, the boundary drawn around a container or component view's scope and around a hosting deployment node, the moving of outsiders out of a boundary, the viewport filter and the `.proto` payloads (finding A16). The ids `c4:view` and `boundary:<id>` are the mapper's.
+- **An element declared without an identifier** is named `<kind>_<name>_<n>` by the host for the session, n counting such elements in document order, and nothing is stored under that name (finding A8, Q7).
+- **The host's own refusals**, which come from the wire rather than from an operation: "'<action id>' does not apply to this selection." for an action it does not answer, which is also what a commit of an answer to one of the four deployment adds receives; "'<property id>' is not a property of what is selected." for a write to a read-only row, such as Tags, Kind, Identifier, From or To; "'<id>' is not in this model any more." for a move of an id the model no longer has; "The element it would go inside is no longer in this model." when the parent of an add is gone by the time it is written; and the writer's "This document has no model block to add an element to." and "That element's block is not closed, so nothing can be added to it."
+- **Prompts.** A rename or relabel prompt may be drawn in place of the element's name or the line's label. The prompt's validation refuses a blank name as it is typed; a commit of an empty rename is written.
+- **Styles.** The `styles` block's headers are recorded and its properties never read, so a document's styles change nothing; the definition states the default theme (finding A15).
+- **`c4/code`** keeps its registration and its refusing factory, and has no definition.
+
+## Sources
+
+- The standalone module: [`src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4/`](https://github.com/etalii-adp/etalii.adp.ide.standalone/tree/develop/src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4), in particular `C4RuleSet.cs`, `C4ElementMapper.cs`, `C4ContextActionProvider.cs`, `C4ContextPropertyProvider.cs`, `C4ToolboxProvider.cs`, `C4Theme.cs` and `Commands/C4Placement.cs`.
+- Its parity transcript and fixtures: [`src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4.Tests/`](https://github.com/etalii-adp/etalii.adp.ide.standalone/tree/develop/src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4.Tests).
+- The conversion's requirements and design: [`.spec-workflow/specs/c4-disl-fbl/`](https://github.com/etalii-adp/etalii.adp.ide.standalone/tree/develop/.spec-workflow/specs/c4-disl-fbl).
+- [DISL](../../specifications/disl/DISL-specification.md), sections 3.5, 4.11.3, 6.13, 8.2, 8.6, 8.7, 10, 11.2, 11.5 and 12; [FBL](../../specifications/fbl/FBL-specification.md), sections 3, 4.6, 4.7, 5.4, 7.5, 8.7 and 9.3.
+- [The C4 model](https://c4model.com) and the [Structurizr DSL](https://docs.structurizr.com/dsl).

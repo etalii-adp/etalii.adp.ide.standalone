@@ -87,7 +87,7 @@ A diagram type is `src/diagrams/<type>/` with up to five parts:
 - `backend/` — its project, `EtAlii.Adp.Diagram.<Type>`, and `.Tests` where it has tests of its own
 - `api/` — its own `.proto`, when it has wire messages of its own
 - `client/` — its canvas and registration
-- `definition/` — its DISL definition (`<type>.dis`, its prose and `provenance.json`), bundled from etalii-adp/etalii.adp by `src/diagrams/tools/bundle-disl.sh`, when the type is specified in DISL; the backend embeds it and the client compiles its notation
+- `definition/` — its DISL definition (`<type>.dis`, its prose and `provenance.json`; one `<type>.dis` with its own `<type>.provenance.json` per type where several types read one body, as C4's six do), bundled from etalii-adp/etalii.adp by `src/diagrams/tools/bundle-disl.sh`, when the type is specified in DISL; the backend embeds it and the client compiles its notation
 - `examples/` — documents a reader can open
 
 Editors are the same shape under `src/editors/<type>/`, with `EtAlii.Adp.Editor.<Type>`. Designers are too, under `src/designers/<type>/`, with `EtAlii.Adp.Designer.<Type>`; the first is `src/designers/knowledge`. [creating-a-diagram-module.md](creating-a-diagram-module.md) walks one module end to end.
