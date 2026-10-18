@@ -131,16 +131,16 @@ The product direction (2026-09-26) is that every tool is a markup definition int
 3. A test SHALL require today's code to reproduce the checked-in transcript byte for byte, and SHALL have been seen to fail against a deliberately changed sentence before it is trusted.
 4. WHEN a later step changes the transcript THEN the change SHALL be one this document names (Q1, Q4, Q7, findings A14, B17, B19), regenerated on purpose, and the diff of the checked-in file SHALL be the review of it.
 
-### Requirement 2: Six definitions, at DISL 0.3, bundled
+### Requirement 2: Six definitions, at DISL 0.4, bundled
 
 **User Story:** As a tool engineer, I want one definition per C4 tool type that every host runs.
 
 #### Acceptance Criteria
 
-1. The six `definitions/diagrams/c4-*.dis` in etalii-adp/etalii.adp SHALL be rewritten at DISL 0.3, using the constructs finding A2 names in place of each workaround, and SHALL validate against the DISL schema there.
+1. The six `definitions/diagrams/c4-*.dis` in etalii-adp/etalii.adp SHALL be rewritten at the DISL version current on etalii-adp/etalii.adp `develop`, 0.4 (chat ruling, 2026-10-18), using the constructs finding A2 names in place of each workaround, and SHALL validate against the DISL schema there.
 2. Each SHALL declare `language.origin`, `persistence.format` `fbl` with `binding` naming the module's binding and a `typeMap`, an id rule (findings A7 to A9, Q7), and an `x-c4` block mapping its tools, actions and properties to the wire ids of finding A4.
 3. The layers the six share (metamodel, notation, forms, constraints, behavior, persistence) SHALL be equal in all six, held by a test that compares them as data (Q8); the six SHALL differ in their viewpoint, toolbox, labels and origin only.
-4. Each companion `.md` SHALL be rewritten to say what DISL 0.3 cannot express and nothing that it can.
+4. Each companion `.md` SHALL be rewritten to say what DISL 0.4 cannot express and nothing that it can.
 5. The six SHALL be bundled into `src/diagrams/c4/definition/` by `src/diagrams/tools/bundle-disl.sh`, extended to bundle several definitions for one module, never edited here, embedded in the backend project, and held by a `BundledDefinition.Tests`.
 6. WHEN a bundled definition is loaded by `EtAlii.Adp.Specification.Disl` THEN it SHALL load with no diagnostic of severity error.
 7. `c4/code` SHALL keep its registration and its refusing factory, with no definition.
@@ -409,7 +409,7 @@ The same in all six definitions, apart from the tools each offers. `Relationship
 }
 ```
 
-Three of the eight tools are shown; the other five follow the same shape, with the kind in lower case. The toolbox names an add action for each of the eight kinds, and the module answers four; dropping one of the other four is refused with "Adding a deployment node from the toolbox is not supported yet." and its like, which the definitions state as refusals. The synthetic ids `c4:view` and `boundary:<id>` are the mapper's and stay code.
+Three of the eight tools are shown; the other five follow the same shape, with the kind in lower case. The toolbox names an add action for each of the eight kinds, and the module answers four; dropping one of the other four is refused as today's tool refuses it, with "That element is no longer in this model." on execute and "'c4.add-deploymentnode' does not apply to this selection." and its like on commit, which the definitions state as refusals (chat ruling, 2026-10-18). The synthetic ids `c4:view` and `boundary:<id>` are the mapper's and stay code.
 
 ## Sources
 
