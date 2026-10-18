@@ -191,7 +191,7 @@ internal static partial class DependencyGraphTranscript
             lines.Add((target, menu, menuReadOnly, rows, rowsReadOnly));
         }
 
-        json.WriteString("readable", session.Store.GetOrLoad(session.Body) is { IsUsable: true } ? "yes" : "no");
+        json.WriteString("readable", await session.Store.GetOrLoadAsync(session.Body, cancellationToken) is { IsUsable: true } ? "yes" : "no");
 
         json.WriteStartArray("menus");
         foreach (var menu in menus)

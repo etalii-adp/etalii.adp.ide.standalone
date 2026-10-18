@@ -27,7 +27,7 @@ public static class DocumentEditRun
     /// <paramref name="parse"/> reads from it.
     /// </summary>
     /// <param name="self">The command being run: the redo of the undo this returns.</param>
-    /// <param name="cancellationToken">Gives up a wait for another save of the document.</param>
+    /// <param name="cancellationToken">Gives up the read of the document, or a wait for another save of it.</param>
     public static async Task<CommandResult> RunAsync<TStore, TBody, TModel>(
         TStore documents,
         string bodyPath,
@@ -44,7 +44,7 @@ public static class DocumentEditRun
         ArgumentNullException.ThrowIfNull(parse);
         ArgumentNullException.ThrowIfNull(edit);
 
-        var entry = documents.GetOrLoad(bodyPath);
+        var entry = await documents.GetOrLoadAsync(bodyPath, cancellationToken);
         if (!entry.IsUsable)
         {
             return CommandResult.Failure(
@@ -80,7 +80,7 @@ public static class DocumentEditRun
     /// Nor is <see cref="EditOutcome.Unchanged"/>: the edit is applied inside the store's save.
     /// </remarks>
     /// <param name="self">The command being run: the redo of the undo this returns.</param>
-    /// <param name="cancellationToken">Gives up a wait for another save of the document.</param>
+    /// <param name="cancellationToken">Gives up the read of the document, or a wait for another save of it.</param>
     public static async Task<CommandResult> RunOnCurrentAsync<TStore, TBody, TModel>(
         TStore documents,
         string bodyPath,
@@ -96,7 +96,7 @@ public static class DocumentEditRun
         ArgumentNullException.ThrowIfNull(parse);
         ArgumentNullException.ThrowIfNull(edit);
 
-        var entry = documents.GetOrLoad(bodyPath);
+        var entry = await documents.GetOrLoadAsync(bodyPath, cancellationToken);
         if (!entry.IsUsable)
         {
             return CommandResult.Failure(

@@ -200,7 +200,7 @@ public sealed class RdfContextActionProvider : IContextActionProvider
         ArgumentNullException.ThrowIfNull(target);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var entry = _documents.GetOrLoad(target.ResolvedFullPath);
+        var entry = await _documents.GetOrLoadAsync(target.ResolvedFullPath, cancellationToken);
         if (RdfSelection.IsTruncated(entry))
         {
             return new ContextExecutionFailed(RdfSelection.TruncatedRefusal);
@@ -365,7 +365,7 @@ public sealed class RdfContextActionProvider : IContextActionProvider
         ArgumentNullException.ThrowIfNull(target);
         _ = text;
 
-        var entry = _documents.GetOrLoad(target.ResolvedFullPath);
+        var entry = await _documents.GetOrLoadAsync(target.ResolvedFullPath, cancellationToken);
         if (RdfSelection.IsTruncated(entry))
         {
             return ContextCommitResult.Failed(RdfSelection.TruncatedRefusal);

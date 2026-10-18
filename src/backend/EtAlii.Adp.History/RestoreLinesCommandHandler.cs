@@ -56,7 +56,9 @@ public sealed class RestoreLinesCommandHandler<TStore>(TStore documents, IFileWr
             return CommandResult.Failure($"Could not restore the file: {exception.Message}");
         }
 
-        documents.Reload(command.BodyPath);
+        // Not with the request's token: the file is written, so the store reads it whatever
+        // becomes of the request.
+        await documents.ReloadAsync(command.BodyPath, CancellationToken.None);
         return CommandResult.Success(command.Redo);
     }
 }

@@ -63,38 +63,77 @@ public sealed class LifecycleDocumentStoreHooksTests : IDisposable
         Assert.Equal(["saved after\n", "changed"], store.Heard);
     }
 
-    [Fact]
-    public void AReloadThatInstallsADocument_AndADeletion_TellWhatIsKeptBesideIt_BeforeTheSessions()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task AReloadThatInstallsADocument_AndADeletion_TellWhatIsKeptBesideIt_BeforeTheSessions(bool asynchronously)
     {
         // Arrange.
         var path = Write("before\n");
         var store = new KeepingStore("");
-        store.GetOrLoad(path);
-        File.WriteAllText(path, "written elsewhere\n");
+        await GetOrLoad(store, path, asynchronously);
+        await File.WriteAllTextAsync(path, "written elsewhere\n", TestContext.Current.CancellationToken);
 
         // Act.
-        store.Reload(path);
+        await Reload(store, path, asynchronously);
         File.Delete(path);
-        store.BodyDeleted(path);
+        await BodyDeleted(store, path, asynchronously);
 
         // Assert.
         Assert.Equal(["installed written elsewhere\n", "changed", "installed ", "changed"], store.Heard);
     }
 
-    [Fact]
-    public void AReloadThatKeepsTheLastGoodDocument_TellsNothingBesideIt()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task AReloadThatKeepsTheLastGoodDocument_TellsNothingBesideIt(bool asynchronously)
     {
         // Arrange.
         var path = Write("before\n");
         var store = new KeepingStore("");
-        store.GetOrLoad(path);
+        await GetOrLoad(store, path, asynchronously);
         File.Delete(path);
 
         // Act: a reload that finds no file is far more often a publish in flight than a deletion.
-        store.Reload(path);
+        await Reload(store, path, asynchronously);
 
         // Assert.
         Assert.Empty(store.Heard);
+    }
+
+    // The synchronous reads and the asynchronous ones answer alike until the synchronous ones go
+    // (code-structure T283), so these run through both.
+    private static async Task GetOrLoad(KeepingStore store, string path, bool asynchronously)
+    {
+        if (asynchronously)
+        {
+            await store.GetOrLoadAsync(path, TestContext.Current.CancellationToken);
+            return;
+        }
+
+        store.GetOrLoad(path);
+    }
+
+    private static async Task Reload(KeepingStore store, string path, bool asynchronously)
+    {
+        if (asynchronously)
+        {
+            await store.ReloadAsync(path, TestContext.Current.CancellationToken);
+            return;
+        }
+
+        store.Reload(path);
+    }
+
+    private static async Task BodyDeleted(KeepingStore store, string path, bool asynchronously)
+    {
+        if (asynchronously)
+        {
+            await store.BodyDeletedAsync(path, TestContext.Current.CancellationToken);
+            return;
+        }
+
+        store.BodyDeleted(path);
     }
 
     /// <summary>A store over plain lines that records what it is told, and warns of every save.</summary>
