@@ -1,0 +1,62 @@
+{
+  "disl": "0.3",
+  "language": {
+    "id": "org.example.reading.narrow",
+    "version": "1.0.0",
+    "origin": "example/narrow"
+  },
+  "doc": "A test definition: the other of two readings of one body, which offers notes only. Written for the tests of the bundled definition set; bundled from nowhere.",
+  "metamodel": {
+    "types": {
+      "Box": {
+        "label": "Box",
+        "attributes": {
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "Note": {
+        "label": "Note",
+        "attributes": {
+          "text": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "relations": {
+      "Link": {
+        "source": "Box",
+        "target": "Box"
+      }
+    }
+  },
+  "toolbox": {
+    "groups": [
+      {
+        "id": "notes",
+        "tools": [
+          {
+            "id": "addNote",
+            "creates": "Note",
+            "label": "Sticky note"
+          }
+        ]
+      }
+    ],
+    "contextMenus": [
+      {
+        "for": [
+          "Box"
+        ],
+        "tools": [
+          {
+            "kind": "editLabel",
+            "label": "Rename"
+          }
+        ]
+      }
+    ]
+  }
+}

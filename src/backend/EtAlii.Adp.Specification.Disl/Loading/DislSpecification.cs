@@ -47,6 +47,13 @@ public sealed class DislSpecification
 
     public string LanguageId => DislJson.String(Language, "id") ?? "";
 
+    /// <summary>
+    /// The tool type the specification is the definition of, as <c>&lt;vendor&gt;/&lt;type&gt;</c>
+    /// (<c>language.origin</c>, §3.2), else the extension property it supersedes, <c>x-adp-origin</c>;
+    /// null when it declares neither.
+    /// </summary>
+    public string? Origin => DislJson.String(Language, "origin") ?? DislJson.String(Language, "x-adp-origin");
+
     private JsonElement Language => Root.GetProperty("language");
 
     /// <summary>The top-level <c>x-</c> properties, unread and unchanged.</summary>
