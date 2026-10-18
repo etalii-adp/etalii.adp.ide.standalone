@@ -32,9 +32,10 @@ public interface IContextSelectionStore
     /// <param name="watchId">The connection's id.</param>
     /// <param name="projectActions">The project's actions.</param>
     /// <param name="problems">
-    /// The project's current problems, carried as part of the baseline so the panel is
-    /// current the moment it connects (errors-and-warnings-panel Requirement 1.2). Data,
-    /// not a store: this store never learns where problems come from.
+    /// Reads the project's current problems, carried as part of the baseline so the panel is
+    /// current the moment it connects (errors-and-warnings-panel Requirement 1.2). Read once the
+    /// connection is registered, so no change can fall between the baseline and the pushes that
+    /// follow it. A function, not a store: this store never learns where problems come from.
     /// </param>
     void Register(
         ShortGuid watchId,
@@ -42,7 +43,7 @@ public interface IContextSelectionStore
         ChannelWriter<ContextMessage> writer,
         IReadOnlyList<ContextActionGroupDefinition> rootActions,
         IReadOnlyList<ContextActionGroupDefinition> projectActions,
-        ProjectProblems problems);
+        Func<ProjectProblems> problems);
 
     /// <summary>
     /// Writes one project-actions message to every connection in <paramref name="root"/>'s

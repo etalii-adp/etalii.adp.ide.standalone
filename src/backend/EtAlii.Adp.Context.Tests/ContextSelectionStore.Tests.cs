@@ -73,7 +73,7 @@ public class ContextSelectionStoreTests : IDisposable
         // selection stays absent and only the actions travel.
         var channel = Channel.CreateUnbounded<ContextMessage>();
 
-        _store.Register(ShortGuid.NewShortGuid(), Root, channel.Writer, [RootGroup()], [], new ProjectProblems());
+        _store.Register(ShortGuid.NewShortGuid(), Root, channel.Writer, [RootGroup()], [], () => new ProjectProblems());
 
         // Act and assert, step by step.
         var message = await ReadAsync(channel.Reader);
@@ -88,7 +88,7 @@ public class ContextSelectionStoreTests : IDisposable
         // Arrange.
         var watchId = ShortGuid.NewShortGuid();
         var channel = Channel.CreateUnbounded<ContextMessage>();
-        _store.Register(watchId, Root, channel.Writer, [RootGroup()], [], new ProjectProblems());
+        _store.Register(watchId, Root, channel.Writer, [RootGroup()], [], () => new ProjectProblems());
         await TestBaselineAsync(channel.Reader);
 
         // Arrange, continued.
@@ -114,7 +114,7 @@ public class ContextSelectionStoreTests : IDisposable
         // Arrange.
         var channel = Channel.CreateUnbounded<ContextMessage>();
 
-        _store.Register(ShortGuid.NewShortGuid(), Root, channel.Writer, [], [], new ProjectProblems());
+        _store.Register(ShortGuid.NewShortGuid(), Root, channel.Writer, [], [], () => new ProjectProblems());
 
         // Act and assert, step by step.
         var message = await ReadAsync(channel.Reader);
@@ -130,7 +130,7 @@ public class ContextSelectionStoreTests : IDisposable
         _store.Set(watchId, Root, Record(new ContextSelectionStoreStubResolver(), "a.txt"), NoRediscovery);
         var channel = Channel.CreateUnbounded<ContextMessage>();
 
-        _store.Register(watchId, Root, channel.Writer, [], [], new ProjectProblems());
+        _store.Register(watchId, Root, channel.Writer, [], [], () => new ProjectProblems());
 
         // Act and assert, step by step.
         var message = await ReadAsync(channel.Reader);
@@ -145,8 +145,8 @@ public class ContextSelectionStoreTests : IDisposable
         var theirs = Channel.CreateUnbounded<ContextMessage>();
         var myId = ShortGuid.NewShortGuid();
         var theirId = ShortGuid.NewShortGuid();
-        _store.Register(myId, Root, mine.Writer, [], [], new ProjectProblems());
-        _store.Register(theirId, Root, theirs.Writer, [], [], new ProjectProblems());
+        _store.Register(myId, Root, mine.Writer, [], [], () => new ProjectProblems());
+        _store.Register(theirId, Root, theirs.Writer, [], [], () => new ProjectProblems());
         await TestBaselineAsync(mine.Reader);
         await TestBaselineAsync(theirs.Reader);
 
@@ -164,7 +164,7 @@ public class ContextSelectionStoreTests : IDisposable
         // Arrange.
         var watchId = ShortGuid.NewShortGuid();
         var channel = Channel.CreateUnbounded<ContextMessage>();
-        _store.Register(watchId, Root, channel.Writer, [], [], new ProjectProblems());
+        _store.Register(watchId, Root, channel.Writer, [], [], () => new ProjectProblems());
         await TestBaselineAsync(channel.Reader);
         var current = Record(new ContextSelectionStoreStubResolver(), "current.txt");
         _store.Set(watchId, Root, current, NoRediscovery);
@@ -185,7 +185,7 @@ public class ContextSelectionStoreTests : IDisposable
         // Arrange.
         var watchId = ShortGuid.NewShortGuid();
         var channel = Channel.CreateUnbounded<ContextMessage>();
-        _store.Register(watchId, Root, channel.Writer, [], [], new ProjectProblems());
+        _store.Register(watchId, Root, channel.Writer, [], [], () => new ProjectProblems());
         await TestBaselineAsync(channel.Reader);
         var resolver = new ContextSelectionStoreStubResolver();
         _store.Set(watchId, Root, Record(resolver, "a.txt"), NoRediscovery);
@@ -206,7 +206,7 @@ public class ContextSelectionStoreTests : IDisposable
         // Arrange.
         var watchId = ShortGuid.NewShortGuid();
         var channel = Channel.CreateUnbounded<ContextMessage>();
-        _store.Register(watchId, Root, channel.Writer, [], [], new ProjectProblems());
+        _store.Register(watchId, Root, channel.Writer, [], [], () => new ProjectProblems());
         await TestBaselineAsync(channel.Reader);
         var resolver = new ContextSelectionStoreStubResolver();
         var rediscovered = 0;
@@ -310,7 +310,7 @@ public class ContextSelectionStoreTests : IDisposable
         // Arrange.
         var watchId = ShortGuid.NewShortGuid();
         var channel = Channel.CreateUnbounded<ContextMessage>();
-        _store.Register(watchId, Root, channel.Writer, [], [], new ProjectProblems());
+        _store.Register(watchId, Root, channel.Writer, [], [], () => new ProjectProblems());
         await TestBaselineAsync(channel.Reader);
         var resolver = new ContextSelectionStoreStubResolver();
         _store.Set(watchId, Root, Record(resolver, "a.txt"), NoRediscovery);
@@ -355,7 +355,7 @@ public class ContextSelectionStoreTests : IDisposable
         using var store = new ContextSelectionStore(idle, clock);
         var watchId = ShortGuid.NewShortGuid();
         store.Set(watchId, Root, Record(new ContextSelectionStoreStubResolver(), "a.txt"), NoRediscovery);
-        store.Register(watchId, Root, Channel.CreateUnbounded<ContextMessage>().Writer, [], [], new ProjectProblems());
+        store.Register(watchId, Root, Channel.CreateUnbounded<ContextMessage>().Writer, [], [], () => new ProjectProblems());
 
         // Act.
         clock.Advance(idle * 2);
@@ -369,7 +369,7 @@ public class ContextSelectionStoreTests : IDisposable
     {
         // Arrange.
         var watchId = ShortGuid.NewShortGuid();
-        _store.Register(watchId, Root, Channel.CreateUnbounded<ContextMessage>().Writer, [], [], new ProjectProblems());
+        _store.Register(watchId, Root, Channel.CreateUnbounded<ContextMessage>().Writer, [], [], () => new ProjectProblems());
         var resolver = new ContextSelectionStoreStubResolver();
         _store.Set(watchId, Root, Record(resolver, "a.txt"), NoRediscovery);
 
@@ -389,9 +389,9 @@ public class ContextSelectionStoreTests : IDisposable
         var watchId = ShortGuid.NewShortGuid();
         var first = Channel.CreateUnbounded<ContextMessage>();
         var second = Channel.CreateUnbounded<ContextMessage>();
-        _store.Register(watchId, Root, first.Writer, [], [], new ProjectProblems());
+        _store.Register(watchId, Root, first.Writer, [], [], () => new ProjectProblems());
         await TestBaselineAsync(first.Reader);
-        _store.Register(watchId, Root, second.Writer, [], [], new ProjectProblems());
+        _store.Register(watchId, Root, second.Writer, [], [], () => new ProjectProblems());
         await TestBaselineAsync(second.Reader);
 
         _store.Set(watchId, Root, Record(new ContextSelectionStoreStubResolver(), "a.txt"), NoRediscovery);
@@ -411,7 +411,7 @@ public class ContextSelectionStoreTests : IDisposable
         // message right after the selection baseline (diagram-undo-redo Deviation 1).
         var channel = Channel.CreateUnbounded<ContextMessage>();
 
-        _store.Register(ShortGuid.NewShortGuid(), Root, channel.Writer, [], [ProjectGroup()], new ProjectProblems());
+        _store.Register(ShortGuid.NewShortGuid(), Root, channel.Writer, [], [ProjectGroup()], () => new ProjectProblems());
 
         // Act and assert, step by step.
         var selection = await ReadAsync(channel.Reader);
@@ -428,8 +428,8 @@ public class ContextSelectionStoreTests : IDisposable
         var other = ProjectRoot.From(@"C:\other");
         var mine = Channel.CreateUnbounded<ContextMessage>();
         var theirs = Channel.CreateUnbounded<ContextMessage>();
-        _store.Register(ShortGuid.NewShortGuid(), Root, mine.Writer, [], [ProjectGroup()], new ProjectProblems());
-        _store.Register(ShortGuid.NewShortGuid(), other, theirs.Writer, [], [ProjectGroup()], new ProjectProblems());
+        _store.Register(ShortGuid.NewShortGuid(), Root, mine.Writer, [], [ProjectGroup()], () => new ProjectProblems());
+        _store.Register(ShortGuid.NewShortGuid(), other, theirs.Writer, [], [ProjectGroup()], () => new ProjectProblems());
         await TestBaselineAsync(mine.Reader);
         await TestBaselineAsync(theirs.Reader);
 
@@ -452,7 +452,7 @@ public class ContextSelectionStoreTests : IDisposable
         var channel = Channel.CreateUnbounded<ContextMessage>();
         var problems = new ProjectProblems { State = ProblemSetState.Validated, ErrorCount = 2, WarningCount = 1 };
 
-        _store.Register(ShortGuid.NewShortGuid(), Root, channel.Writer, [], [], problems);
+        _store.Register(ShortGuid.NewShortGuid(), Root, channel.Writer, [], [], () => problems);
 
         // Act and assert, step by step.
         await ReadAsync(channel.Reader); // the selection baseline
@@ -463,6 +463,39 @@ public class ContextSelectionStoreTests : IDisposable
     }
 
     [Fact]
+    public async Task Register_AProblemSetChangingWhileTheBaselineIsRead_ReachesTheConnectionAfterIt()
+    {
+        // Arrange.
+        // Stability run 12 (T292): a second connection to one project read the problems for its
+        // baseline, the project's validation finished and pushed, and only then did the connection
+        // register - so the push missed it, its baseline said Validating, and nothing ever told it
+        // otherwise. Here the validation finishes on another thread during the read itself, and the
+        // read waits a moment for that push to be done, as it was on the CI runner. Read under the
+        // connection's gate, the push cannot be done yet: it waits, and arrives behind the baseline.
+        var channel = Channel.CreateUnbounded<ContextMessage>();
+        var validated = new ProjectProblems { State = ProblemSetState.Validated, ErrorCount = 1 };
+        Task? validation = null;
+
+        // Act.
+        _store.Register(ShortGuid.NewShortGuid(), Root, channel.Writer, [], [], ReadWhileTheValidationFinishes);
+
+        // Assert.
+        await TestBaselineAsync(channel.Reader);
+        var message = await ReadAsync(channel.Reader);
+        Assert.Equal(ContextMessage.MessageOneofCase.Problems, message.MessageCase);
+        Assert.Same(validated, message.Problems);
+        await validation!;
+
+        ProjectProblems ReadWhileTheValidationFinishes()
+        {
+            var current = new ProjectProblems { State = ProblemSetState.Validating };
+            validation = Task.Run(() => _store.PushProblems(Root, validated), TestContext.Current.CancellationToken);
+            validation.Wait(TimeSpan.FromMilliseconds(200), TestContext.Current.CancellationToken);
+            return current;
+        }
+    }
+
+    [Fact]
     public async Task PushProblems_ReachesEveryConnectionInTheProject()
     {
         // Arrange.
@@ -470,8 +503,8 @@ public class ContextSelectionStoreTests : IDisposable
         // (errors-and-warnings-panel Requirement 6.4).
         var first = Channel.CreateUnbounded<ContextMessage>();
         var second = Channel.CreateUnbounded<ContextMessage>();
-        _store.Register(ShortGuid.NewShortGuid(), Root, first.Writer, [], [], new ProjectProblems());
-        _store.Register(ShortGuid.NewShortGuid(), Root, second.Writer, [], [], new ProjectProblems());
+        _store.Register(ShortGuid.NewShortGuid(), Root, first.Writer, [], [], () => new ProjectProblems());
+        _store.Register(ShortGuid.NewShortGuid(), Root, second.Writer, [], [], () => new ProjectProblems());
         await TestBaselineAsync(first.Reader);
         await TestBaselineAsync(second.Reader);
 
@@ -491,7 +524,7 @@ public class ContextSelectionStoreTests : IDisposable
     {
         // Arrange. One project, however its root is spelled (code-structure FR-059).
         var channel = Channel.CreateUnbounded<ContextMessage>();
-        _store.Register(ShortGuid.NewShortGuid(), Root, channel.Writer, [], [], new ProjectProblems());
+        _store.Register(ShortGuid.NewShortGuid(), Root, channel.Writer, [], [], () => new ProjectProblems());
         await TestBaselineAsync(channel.Reader);
 
         // Act.
@@ -509,8 +542,8 @@ public class ContextSelectionStoreTests : IDisposable
         var other = ProjectRoot.From(@"C:\other");
         var mine = Channel.CreateUnbounded<ContextMessage>();
         var theirs = Channel.CreateUnbounded<ContextMessage>();
-        _store.Register(ShortGuid.NewShortGuid(), Root, mine.Writer, [], [], new ProjectProblems());
-        _store.Register(ShortGuid.NewShortGuid(), other, theirs.Writer, [], [], new ProjectProblems());
+        _store.Register(ShortGuid.NewShortGuid(), Root, mine.Writer, [], [], () => new ProjectProblems());
+        _store.Register(ShortGuid.NewShortGuid(), other, theirs.Writer, [], [], () => new ProjectProblems());
         await TestBaselineAsync(mine.Reader);
         await TestBaselineAsync(theirs.Reader);
 
@@ -528,7 +561,7 @@ public class ContextSelectionStoreTests : IDisposable
         // Arrange.
         var watchId = ShortGuid.NewShortGuid();
         var channel = Channel.CreateUnbounded<ContextMessage>();
-        _store.Register(watchId, Root, channel.Writer, [], [], new ProjectProblems());
+        _store.Register(watchId, Root, channel.Writer, [], [], () => new ProjectProblems());
         await TestBaselineAsync(channel.Reader);
         _store.Set(watchId, Root, Record(new ContextSelectionStoreStubResolver(), "a.txt"), NoRediscovery);
         await ReadAsync(channel.Reader);

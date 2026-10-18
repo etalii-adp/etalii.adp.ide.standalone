@@ -129,6 +129,8 @@ export function resolveDecorations(
 
   const centre = { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 };
   const resolved: ResolvedDecoration[] = [];
+  // How many packed decorations are drawn so far: the slot the next one takes.
+  let slot = 0;
 
   declarations.forEach((declaration, index) => {
     if (!holds(declaration.when, source)) {
@@ -140,7 +142,10 @@ export function resolveDecorations(
       return;
     }
 
-    const from = pointOf(declaration.from, source, centre, declaration.anchor);
+    const placed = pointOf(declaration.from, source, centre, declaration.anchor);
+    const step = declaration.pack?.step;
+    const from = step === undefined ? placed : { x: placed.x + step.x * slot, y: placed.y + step.y * slot };
+    slot += step === undefined ? 0 : 1;
     const radius = numberOf(declaration.radius, source, 0);
     resolved.push({
       glyph: declaration.glyph,

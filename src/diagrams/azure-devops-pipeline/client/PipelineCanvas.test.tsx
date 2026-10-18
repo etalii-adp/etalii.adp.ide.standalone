@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, fireEvent, waitFor, act } from "@testing-library/react";
+import { render, fireEvent, waitFor, act, createEvent } from "@testing-library/react";
 import { create, toBinary } from "@bufbuild/protobuf";
 import { ElementSchema } from "@client/generated/elements_pb";
 import { ProblemSchema, ProblemSeverity } from "@client/generated/problems_pb";
@@ -18,7 +18,7 @@ import {
   type PipelineModel,
 } from "./pipelineModel";
 import { ToolboxItemSchema, type ToolboxItem } from "@client/generated/diagrams_pb";
-import { DiagramToolboxProvider, useDiagramToolbox } from "@client/shell/panels/DiagramToolboxContext";
+import { DiagramToolboxProvider, TOOLBOX_DRAG_TYPE, useDiagramToolbox } from "@client/shell/panels/DiagramToolboxContext";
 import { expectLibrarySelection } from "@client/canvas/library/testing/expectLibrarySelection";
 import { fakeContextConnection, idsPushed, pointer } from "@client/canvas/library/testing/canvasHarness";
 
@@ -145,6 +145,23 @@ function draw() {
   );
 }
 
+/**
+ * A toolbox drop of `payload` released on the middle of the element `id` is drawn at. jsdom lays
+ * nothing out, so the surface is given the size of its view box: a client pixel is a canvas unit.
+ */
+function dropOnto(container: HTMLElement, payload: string, id: string) {
+  const surface = container.querySelector("svg.library-canvas-surface") as SVGSVGElement;
+  const [vx, vy, vw, vh] = surface.getAttribute("viewBox")!.split(" ").map(Number) as [number, number, number, number];
+  surface.getBoundingClientRect = () => ({ left: 0, top: 0, x: 0, y: 0, width: vw, height: vh, right: vw, bottom: vh, toJSON: () => ({}) }) as DOMRect;
+  const box = container.querySelector(`[data-element-id="${id}"] > g`)!;
+  const [, x, y] = /translate\(([-\d.]+) ([-\d.]+)\)/.exec(box.getAttribute("transform")!)!;
+  const shape = box.querySelector("rect")!;
+  const event = createEvent.drop(surface, { dataTransfer: { types: [TOOLBOX_DRAG_TYPE], getData: () => payload, dropEffect: "" } });
+  Object.defineProperty(event, "clientX", { value: Number(x) + Number(shape.getAttribute("width")) / 2 - vx });
+  Object.defineProperty(event, "clientY", { value: Number(y) + Number(shape.getAttribute("height")) / 2 - vy });
+  fireEvent(surface, event);
+}
+
 /** A click in the pointer vocabulary the surface listens to: press and release, unmoved. */
 function press(target: Element, init: MouseEventInit = {}) {
   fireEvent(target, pointer("pointerdown", { button: 0, ...init }));
@@ -173,7 +190,7 @@ describe("PipelineCanvas", () => {
 
     // Assert.
     expect(view.getByTestId("stage-Build")).toBeTruthy();
-    expect(view.getByText("Build the solution")).toBeTruthy();
+    expect(view.getByTestId("stage-Build").querySelector(".pipeline-stage-name")?.textContent).toBe("Build the solution");
   });
 
   it("shows a collapsed stage's job count rather than its jobs", () => {
@@ -246,7 +263,7 @@ describe("PipelineCanvas", () => {
     expect(view.getByTestId("node-Build/Compile").getAttribute("class")).toContain("pipeline-from-template");
   });
 
-  it("marks a template it could not follow, and says why on hover", () => {
+  it("marks a template it could not follow, and names it on hover", () => {
     // Arrange.
     currentModel = applyDelta(
       emptyModel,
@@ -257,6 +274,7 @@ describe("PipelineCanvas", () => {
           payload({
             kind: PipelineElementKindProto.PIPELINE_ELEMENT_KIND_TEMPLATE,
             displayName: "shared.yml@other",
+            reference: "shared.yml@other",
             unresolvedReason: "It comes from the 'other' repository resource, which is not checked out here.",
           }),
         ),
@@ -267,8 +285,11 @@ describe("PipelineCanvas", () => {
     const view = draw();
 
     // Assert.
-    expect(view.getByTestId("node-template:0").getAttribute("class")).toContain("pipeline-template");
-    expect(view.getByText(/not checked out here/)).toBeTruthy();
+    // The definition's tooltip names the reference; why it was not followed is the template's
+    // "Why it is not shown" property, which the backend's rows give.
+    const template = view.getByTestId("node-template:0");
+    expect(template.getAttribute("class")).toContain("pipeline-template");
+    expect(template.querySelector(":scope > title")?.textContent).toBe("shared.yml@other");
   });
 
   it("draws an arrow between two stages", () => {
@@ -653,6 +674,48 @@ describe("PipelineCanvas", () => {
     const [sent, source] = executeAction.mock.calls[0] as unknown as [string, { source: { value: { value: string } } }];
     expect(sent).toBe(actionId);
     expect(source.source.value.value).toBe("Build/Compile/step-0");
+  });
+
+  it.each([
+    ["element:Build", "azure-pipeline.toggle-stage", "Build"],
+    ["element:Build/Compile", "azure-pipeline.toggle-job", "Build/Compile"],
+  ])("sends the definition's fold for Space on %s, by its id", (selection, actionId, target) => {
+    // Arrange. The definition offers Show jobs and Hide jobs, and Show steps and Hide steps, on
+    // Space; the canvas sends what the definition declares rather than a list of its own.
+    currentModel = applyDelta(emptyModel, add(stage("Build", "Build"), job("Build/Compile", "Build", "Compile")));
+    currentSelectionKey = selection;
+    const { container } = draw();
+
+    // Act.
+    fireEvent.keyDown(container.querySelector("svg.library-canvas-surface") as SVGSVGElement, { key: " " });
+
+    // Assert.
+    expect(executeAction).toHaveBeenCalledTimes(1);
+    const [sent, source] = executeAction.mock.calls[0] as unknown as [string, { source: { value: { value: string } } }];
+    expect(sent).toBe(actionId);
+    expect(source.source.value.value).toBe(target);
+    expect(executeShortcut).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["azure-pipeline.add-stage", "Build"],
+    ["azure-pipeline.add-job", "Build"],
+    ["azure-pipeline.add-deployment-job", "Build/Compile"],
+    ["azure-pipeline.add-step", "Build/Compile"],
+  ])("runs the toolbox entry %s on the box it is dropped on, %s", (actionId, target) => {
+    // Arrange. The definition says each entry is dropped on a stage, a job or a step and runs its
+    // operation there; the canvas never answered a drop, so all four did nothing.
+    currentModel = applyDelta(emptyModel, add(stage("Build", "Build", { width: 400, height: 200 }), job("Build/Compile", "Build", "Compile", { width: 180, height: 56 }, 24, 140)));
+    const { container } = draw();
+
+    // Act.
+    dropOnto(container, actionId, target);
+
+    // Assert.
+    expect(executeAction).toHaveBeenCalledTimes(1);
+    const [sent, source] = executeAction.mock.calls[0] as unknown as [string, { source: { value: { value: string } } }];
+    expect(sent).toBe(actionId);
+    expect(source.source.value.value).toBe(target);
   });
 
   it("moves nothing for a bare arrow key, or for Alt and an arrow on a stage", () => {
