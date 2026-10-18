@@ -53,15 +53,18 @@ public static class DislModelBuilder
 
     /// <summary>
     /// The model of <paramref name="reading"/> under <paramref name="specification"/>, with its derived
-    /// elements and attributes computed under <paramref name="env"/>: for the viewpoint it names.
+    /// elements and attributes computed under <paramref name="env"/>: for the viewpoint it names. The
+    /// diagram's <see cref="DislDiagram.File"/> is <paramref name="file"/> from the start, so that an
+    /// expression computed while the model is built - a derived id, a derived element - reads an
+    /// element's <c>location()</c> (§12.2) as the findings later do.
     /// </summary>
-    public static DislModel From(FblModel reading, DislSpecification specification, DislEnv env)
+    public static DislModel From(FblModel reading, DislSpecification specification, DislEnv env, string? file = null)
     {
         ArgumentNullException.ThrowIfNull(reading);
         ArgumentNullException.ThrowIfNull(specification);
         ArgumentNullException.ThrowIfNull(env);
 
-        var diagram = new DislDiagram(specification) { Env = env };
+        var diagram = new DislDiagram(specification) { Env = env, File = file };
         List<Finding> findings = [.. reading.Findings];
         List<FblElement> header = [];
         List<FblElement> unreadable = [];
