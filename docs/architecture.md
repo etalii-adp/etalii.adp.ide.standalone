@@ -83,7 +83,7 @@ One line each, with the project that owns it. Their internals are deliberately o
 | Commands and undo/redo | `EtAlii.Adp.History` |
 | Errors and warnings | `EtAlii.Adp.Problems` |
 | Known projects and workspace roots | `EtAlii.Adp.Projects` |
-| Every kind of session: sign-in sessions - the session store, the session context and the interceptor that checks every call - the tool-session contracts of the three kinds with their factory contracts and registries, the document session and the text editor session a module builds on, and the viewport registry | `EtAlii.Adp.Sessions` |
+| Every kind of session: sign-in sessions - the session store, the session context and the interceptor that checks every call - the tool-session contracts of the three kinds with their factory contracts and registries, the document session and the text editor session a module builds on, the viewport registry, and the lifetime of a connection and of the project it has open - the one scope that acquires what each holds (its history, the watching of its problems, its hierarchy model) and releases it, through parts the owning projects implement | `EtAlii.Adp.Sessions` |
 | The workspace tree, kept current from the project's file events | `EtAlii.Adp.Hierarchy` |
 | Geometry: the rectangle, row packing, the row a drag snaps to, text width and graph layering | `EtAlii.Adp.Layout` |
 | Diagram-type abstractions, including the diagram definition contract | `EtAlii.Adp.Diagram` |
