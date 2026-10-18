@@ -70,7 +70,7 @@ public static class DislModelBuilder
         var map = DislTypeMap.Of(specification);
         var metamodel = specification.Metamodel;
         var built = new Dictionary<FblElement, DislElement>(ReferenceEqualityComparer.Instance);
-        var byReadId = new Dictionary<string, DislElement>(StringComparer.Ordinal);
+        var byReadId = new Dictionary<string, DislElement>(specification.IdComparer);
         var pending = new List<(FblElement Element, DislTypeMapping Mapping, DislType Type)>();
 
         foreach (var element in reading.Elements)
@@ -210,7 +210,7 @@ public static class DislModelBuilder
     {
         var specification = diagram.Specification;
         var programs = new Dictionary<string, CelProgram>(StringComparer.Ordinal);
-        var computed = new Dictionary<string, DislElement>(StringComparer.Ordinal);
+        var computed = new Dictionary<string, DislElement>(specification.IdComparer);
         var reportsDuplicates = specification.IsBuiltInEnabled(FindingCodes.DuplicateId);
         foreach (var element in elements)
         {

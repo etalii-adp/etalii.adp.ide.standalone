@@ -208,9 +208,9 @@ public sealed class DislDiagram : ICelObject
         }
     }
 
-    /// <summary>The first element with <paramref name="id"/> in model order, or null.</summary>
+    /// <summary>The first element with <paramref name="id"/> in model order, or null; ids compared as the specification says (§11.5.4).</summary>
     public DislElement? ElementById(string id) =>
-        _nodes.FirstOrDefault(node => node.Id == id) ?? _relations.FirstOrDefault(relation => relation.Id == id);
+        _nodes.FirstOrDefault(node => Specification.IdComparer.Equals(node.Id, id)) ?? _relations.FirstOrDefault(relation => Specification.IdComparer.Equals(relation.Id, id));
 
     /// <summary>The nodes that are <paramref name="type"/> or one of its subtypes, in model order.</summary>
     public IReadOnlyList<DislElement> NodesOfType(string type) => [.. _nodes.Where(node => node.IsA(type))];
