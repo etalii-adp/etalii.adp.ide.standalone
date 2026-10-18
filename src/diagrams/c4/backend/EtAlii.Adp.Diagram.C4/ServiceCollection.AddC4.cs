@@ -62,9 +62,9 @@ public static class ServiceCollectionAddC4Extension
                 provider.GetRequiredService<IC4DocumentStore>(),
                 provider.GetRequiredService<C4ElementMapper>()));
 
-            // The palette this view offers: exactly the kinds it permits, drawn from the
-            // same rule the validator uses so the two cannot disagree (Requirement 12.2).
-            services.AddSingleton<IDiagramToolboxProvider>(_ => new C4ToolboxProvider(origin, viewKind));
+            // The palette this view offers: exactly the kinds it permits, derived from the
+            // type's DISL definition (Requirement 12.2, c4-disl-fbl Requirement 3.1).
+            services.AddSingleton<IDiagramToolboxProvider>(_ => new C4ToolboxProvider(origin));
 
             // The session seam: which view a session shows comes from the .adp file, so all six
             // factories are the same code under different origins.

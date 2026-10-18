@@ -4,12 +4,13 @@ namespace EtAlii.Adp.Diagram.C4.Tests;
 
 /// <summary>
 /// The palette a view offers: exactly what it permits, and nothing it would then refuse
-/// (c4-diagrams Requirement 12.2).
+/// (c4-diagrams Requirement 12.2). Held against the palette derived from each type's definition
+/// (c4-disl-fbl task 7), which the provider now hands out.
 /// </summary>
 public class C4ToolboxProviderTests
 {
     private static IReadOnlyList<ToolboxItemDefinition> Items(C4ViewKind kind) =>
-        new C4ToolboxProvider(new ToolOrigin("c4", "test"), kind).Items;
+        new C4ToolboxProvider(C4Definitions.Types.Single(type => type.ViewKind == kind).Origin).Items;
 
     [Fact]
     public void AContextView_OffersPeopleAndSoftwareSystemsOnly()
