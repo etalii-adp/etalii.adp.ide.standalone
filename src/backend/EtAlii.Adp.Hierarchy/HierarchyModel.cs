@@ -21,9 +21,8 @@ public sealed class HierarchyModel
 
     private readonly Lock _gate = new();
     private readonly IDiagramDefinitionCatalog? _catalog;
-    private readonly DiagramFileRouter? _router;
-    private readonly EditorResolver? _editorResolver;
     private readonly ToolRouter? _tools;
+    private readonly DiagramStateDecorator? _states;
     private readonly HierarchyIndex _index = new();
     private readonly HashSet<ShortGuid> _listedFolderIds = new();
     private bool _rootListed;
@@ -35,9 +34,10 @@ public sealed class HierarchyModel
     {
         RootPath = IoPath.GetFullPath(rootPath);
         _catalog = catalog;
-        _router = router;
-        _editorResolver = editorResolver;
         _tools = tools;
+        _states = router is null || editorResolver is null
+            ? null
+            : new DiagramStateDecorator(RootPath, router, editorResolver, ResolvedBodyNameOf);
     }
 
     /// <summary>The absolute project root this model views; what the store matches on to route a rename to it.</summary>
@@ -559,14 +559,10 @@ public sealed class HierarchyModel
     }
 
     /// <summary>
-    /// Computes every entry's <see cref="EntryDiagramState"/> for one scanned folder - its
-    /// files against their sibling set, and the folder itself against its contents - and
-    /// raises <see cref="HierarchyEntryUpdated"/> where a rescan changed one (small-refinements
-    /// Requirements 3.1, 3.2, 3.6). The decision is <see cref="EntryDiagramStates.Decide"/>;
-    /// everything here is the wiring, over the same name set the nesting pass just used, with
-    /// each registration's body resolved once rather than per file.
+    /// Applies <see cref="DiagramStateDecorator"/>'s states for one scanned folder and raises
+    /// <see cref="HierarchyEntryUpdated"/> where a rescan changed one. Addressed by path, which is
+    /// what the watcher handlers hold.
     /// </summary>
-    /// <summary>The same refresh, addressed by path - what the watcher handlers hold.</summary>
     private void RefreshDiagramStatesAt(string folderPath, bool raiseEvents)
     {
         if (string.Equals(folderPath, RootPath, StringComparison.OrdinalIgnoreCase))
@@ -581,88 +577,24 @@ public sealed class HierarchyModel
 
     private void RefreshDiagramStates(ShortGuid? folderId, string folderPath, bool raiseEvents)
     {
-        if (_router is null || _editorResolver is null)
+        if (_states is null)
         {
             return; // A model built without routing (older tests, degraded hosts) stays neutral.
         }
 
-        var contained = _index.In(folderPath).ToList();
-        var names = contained.Select(entry => entry.Name).ToList();
-
-        // Each registration's resolution and routing, once: rule 2 would otherwise re-read
-        // every registration per sibling file (the NFR Performance clause).
-        var bodyByRegistration = names
-            .Where(DiagramFilePair.IsRegistrationFile)
-            .ToDictionary(name => name, name => ResolvedBodyNameOf(folderPath, name), StringComparer.OrdinalIgnoreCase);
-
-        foreach (var file in contained.Where(entry => !entry.IsFolder))
+        var folder = folderId is { } id && _index.TryGet(id, out var own) ? own : null;
+        foreach (var decision in _states.Decide(folder, folderPath, _index.In(folderPath).ToList()))
         {
-            Apply(file.Id, EntryDiagramStates.Decide(
-                file.Name, isFolder: false, names, BodyNameOf, _router.ClaimsExtensionOf, _editorResolver.IsClaimed, DeclaresFolderSubject), raiseEvents);
-        }
-
-        // The folder's own state comes from its contents, so it is decided here - in ITS scan -
-        // rather than in its parent's, which never enumerates it. The root has no entry. Its
-        // update is raised even on a listing-triggered scan (raiseEvents false): the listing's
-        // response carries the folder's CHILDREN, never the folder itself, so the watch stream
-        // is the only channel this change can reach the client on - found live, where the
-        // folder stayed neutral after expanding it.
-        if (folderId is { } id && _index.TryGet(id, out var folder))
-        {
-            Apply(id, EntryDiagramStates.Decide(
-                folder.Name, isFolder: true, names, BodyNameOf, _router.ClaimsExtensionOf, _editorResolver.IsClaimed, DeclaresFolderSubject), raise: true);
-        }
-
-        // And each CONTAINED folder's state, from a one-level peek at its files - the colour
-        // has to be right on first paint, before the folder is ever expanded, and until it is
-        // expanded no scan of its own will run. Found in the field: a folder holding a
-        // folder-subject .adp showed its colour only after being opened. Only file names are
-        // read; the folder is not synced, and once it is, its own scan decides the same way.
-        foreach (var sub in contained.Where(entry => entry.IsFolder))
-        {
-            var subPath = IoPath.Combine(folderPath, sub.Name);
-            string[] subNames;
-            try
+            var current = _index[decision.EntryId];
+            if (current.DiagramState == decision.State)
             {
-                subNames = Directory.EnumerateFiles(subPath).Select(IoPath.GetFileName).OfType<string>().ToArray();
-            }
-            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or DirectoryNotFoundException)
-            {
-                continue; // Vanished or unreadable mid-scan: its state stays what it was.
+                continue;
             }
 
-            Apply(sub.Id, EntryDiagramStates.Decide(
-                sub.Name, isFolder: true, subNames, name => ResolvedBodyNameOf(subPath, name), _router.ClaimsExtensionOf, _editorResolver.IsClaimed, DeclaresFolderSubjectIn), raiseEvents);
-            continue;
-
-            bool DeclaresFolderSubjectIn(string registration) =>
-                _router.HasFolderSubjectTypes
-                && _router.Route(IoPath.Combine(subPath, registration), RootPath) is DiagramRouted { Definition.HasFolderSubject: true };
-        }
-
-        return;
-
-        // An unreadable registration routes to DiagramUnreadable, which simply is not a
-        // folder-subject type: neutral, never an exception out of the scan. The catalog probe
-        // keeps deployments without folder-subject types from paying any reads at all.
-        bool DeclaresFolderSubject(string registration) =>
-            _router.HasFolderSubjectTypes
-            && _router.Route(IoPath.Combine(folderPath, registration), RootPath) is DiagramRouted { Definition.HasFolderSubject: true };
-
-        string? BodyNameOf(string registration) => bodyByRegistration.GetValueOrDefault(registration);
-
-        void Apply(ShortGuid entryId, EntryDiagramState state, bool raise)
-        {
-            var current = _index[entryId];
-            if (current.DiagramState == state)
+            _index.Set(current with { DiagramState = decision.State });
+            if (raiseEvents || decision.RaisedOnAListing)
             {
-                return;
-            }
-
-            _index.Set(current with { DiagramState = state });
-            if (raise)
-            {
-                EntryChanged?.Invoke(new HierarchyEntryUpdated(entryId, current.HasChildren, DiagramState: state));
+                EntryChanged?.Invoke(new HierarchyEntryUpdated(decision.EntryId, current.HasChildren, DiagramState: decision.State));
             }
         }
     }
