@@ -856,9 +856,16 @@ public sealed class HierarchyModel
         // destination and the watcher reports the swap as renames of the subject - after
         // which the registrations were invisible to every sibling computation, could never
         // re-nest, and reached the client flattened to the folder.
+        //
+        // And a folder carries every entry that LIVES in it, which is not the same as every entry
+        // whose parent it is: a registration nested under a subject in the folder has the subject
+        // as its parent, and moving only the folder's children left it at its old path.
         if (_entriesById.TryGetValue(id, out var renamed) && renamed.IsFolder)
         {
-            foreach (var childId in _entriesById.Values.Where(e => e.ParentId == id).Select(e => e.Id).ToList())
+            foreach (var childId in _pathById
+                         .Where(pair => string.Equals(IoPath.GetDirectoryName(pair.Value), oldPath, StringComparison.OrdinalIgnoreCase))
+                         .Select(pair => pair.Key)
+                         .ToList())
             {
                 var childOldPath = _pathById[childId];
                 var childNewPath = IoPath.Combine(newPath, IoPath.GetFileName(childOldPath));
