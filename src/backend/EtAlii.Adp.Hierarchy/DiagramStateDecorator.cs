@@ -56,10 +56,10 @@ internal sealed class DiagramStateDecorator
             .Where(DiagramFilePair.IsRegistrationFile)
             .ToDictionary(name => name, name => _bodyNameOf(folderPath, name), StringComparer.OrdinalIgnoreCase);
 
-        foreach (var file in contained.Where(entry => !entry.IsFolder))
+        foreach ((string fileName, _) in contained.Where(entry => !entry.IsFolder))
         {
-            decisions.Add(new Decision(file.Name, EntryDiagramStates.Decide(
-                file.Name, isFolder: false, names, BodyNameOf, _router.ClaimsExtensionOf, _editors.IsClaimed, DeclaresFolderSubject), IsTheFolder: false));
+            decisions.Add(new Decision(fileName, EntryDiagramStates.Decide(
+                fileName, isFolder: false, names, BodyNameOf, _router.ClaimsExtensionOf, _editors.IsClaimed, DeclaresFolderSubject), IsTheFolder: false));
         }
 
         // The folder's own state comes from its contents, so it is decided here - in ITS scan -
@@ -79,9 +79,9 @@ internal sealed class DiagramStateDecorator
         // expanded no scan of its own will run. Found in the field: a folder holding a
         // folder-subject .adp showed its colour only after being opened. Only file names are
         // read; the folder is not synced, and once it is, its own scan decides the same way.
-        foreach (var sub in contained.Where(entry => entry.IsFolder))
+        foreach ((string subName, _) in contained.Where(entry => entry.IsFolder))
         {
-            var subPath = IoPath.Combine(folderPath, sub.Name);
+            var subPath = IoPath.Combine(folderPath, subName);
             string[] subNames;
             try
             {
@@ -92,8 +92,8 @@ internal sealed class DiagramStateDecorator
                 continue; // Vanished or unreadable mid-scan: its state stays what it was.
             }
 
-            decisions.Add(new Decision(sub.Name, EntryDiagramStates.Decide(
-                sub.Name, isFolder: true, subNames, name => _bodyNameOf(subPath, name), _router.ClaimsExtensionOf, _editors.IsClaimed, registration => DeclaresFolderSubjectIn(subPath, registration)), IsTheFolder: false));
+            decisions.Add(new Decision(subName, EntryDiagramStates.Decide(
+                subName, isFolder: true, subNames, name => _bodyNameOf(subPath, name), _router.ClaimsExtensionOf, _editors.IsClaimed, registration => DeclaresFolderSubjectIn(subPath, registration)), IsTheFolder: false));
         }
 
         return decisions;

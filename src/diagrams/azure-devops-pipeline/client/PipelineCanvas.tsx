@@ -13,7 +13,7 @@ import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
 import { useViewReport } from "@client/diagrams/useViewReport";
 import { PipelineElementKindProto } from "@client/generated/azure-pipeline_pb";
 import disText from "../definition/azure-devops-pipeline.dis?raw";
-import { correctedDefinition, PIPELINE_BINDINGS } from "./pipelineBindings";
+import { PIPELINE_BINDINGS } from "./pipelineBindings";
 import {
   endpointsOf,
   JOB_TYPE,
@@ -32,13 +32,13 @@ export interface PipelineCanvasProps {
 }
 
 /**
- * What a pipeline diagram is, compiled from the bundled definition (`definition/azure-devops-pipeline.dis`,
- * with the corrections `pipelineBindings.ts` lists): five kinds of box the backend places and sizes,
+ * What a pipeline diagram is, compiled from the bundled definition (`definition/azure-devops-pipeline.dis`)
+ * as it is, with what the library cannot read there bound in `pipelineBindings.ts`: five kinds of box the backend places and sizes,
  * none moved, connected or deleted by hand; the name and job-count lines; the indicators packed into
  * the definition's badge layout; the "waits for" arrow, one relation per way of waiting; the rename,
  * the folding and the step moves and their keys; a manual layout with dragging refused.
  */
-export const PIPELINE_DEFINITION: DiagramDefinition = assertValidDiagramDefinition(compileNotation(correctedDefinition(parseDisl(disText)), PIPELINE_BINDINGS));
+export const PIPELINE_DEFINITION: DiagramDefinition = assertValidDiagramDefinition(compileNotation(parseDisl(disText), PIPELINE_BINDINGS));
 
 /**
  * The declared actions this canvas sends by id. One declared with a backend key - the rename, which
@@ -103,6 +103,7 @@ export function PipelineCanvas({ projectId, entryId, path }: PipelineCanvasProps
           indeterminate: node.payload.indeterminate,
           fromTemplate: node.payload.fromTemplate,
           templatePath: node.payload.templatePath,
+          unresolvedReason: node.payload.unresolvedReason,
           enabled: node.payload.enabled,
           triggerIsManual: node.payload.triggerIsManual,
           condition: node.payload.condition,
