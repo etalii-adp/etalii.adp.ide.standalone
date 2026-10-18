@@ -50,7 +50,7 @@ public sealed class LifecycleDocumentStoreWriterTests : IDisposable
 
         protected override string TextOf(LineDocument body) => body.Text;
 
-        protected override ParseOutcome<string> Parse(LineDocument body) => new(body.Text, [], "");
+        protected override ParseOutcome<string> Parse(LineDocument body) => new(body.Text, []);
     }
 
     /// <summary>Records each save and completes none of them until <see cref="Release"/>; writes nothing.</summary>
