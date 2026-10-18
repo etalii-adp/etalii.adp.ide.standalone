@@ -39,7 +39,7 @@ public sealed class PipelineContextSourceResolver : IContextSourceResolver
     public bool CanResolve(ContextSource source) => source.SourceCase == ContextSource.SourceOneofCase.ElementId;
 
     /// <inheritdoc />
-    public ValueTask<ContextLevelResolution> ResolveAsync(
+    public async ValueTask<ContextLevelResolution> ResolveAsync(
         ShortGuid watchId,
         string rootPath,
         ContextSource id,
@@ -63,7 +63,7 @@ public sealed class PipelineContextSourceResolver : IContextSourceResolver
         }
 
         var bodyPath = routed.BodyPath!;
-        var entry = _documents.GetOrLoad(rootPath, bodyPath);
+        var entry = await _documents.GetOrLoadAsync(rootPath, bodyPath, cancellationToken);
         if (!entry.IsUsable)
         {
             // Nothing can be selected in a file that does not parse, and saying so is better than
@@ -113,7 +113,7 @@ public sealed class PipelineContextSourceResolver : IContextSourceResolver
             },
             this);
 
-        return ValueTask.FromResult<ContextLevelResolution>(new ResolvedContextLevel(level));
+        return new ResolvedContextLevel(level);
     }
 
     /// <summary>
@@ -150,7 +150,11 @@ public sealed class PipelineContextSourceResolver : IContextSourceResolver
                 return;
             }
 
-            onChange(Find(_documents.GetOrLoad(rootPath, bodyPath).Model, elementId)?.Path);
+            // The document the change names is held by now; reading it again here would block the raiser.
+            if (_documents.In(rootPath).Get(bodyPath) is { } entry)
+            {
+                onChange(Find(entry.Model, elementId)?.Path);
+            }
         }
     }
 
@@ -267,6 +271,5 @@ public sealed class PipelineContextSourceResolver : IContextSourceResolver
     private static PipelineSelectableElement Arrow(IReadOnlyList<string> waitingPath, string waiting, string waitedFor, bool waitingIsFromTemplate) =>
         new(waitingPath, $"{waiting} waits for {waitedFor}", HasChildren: false, waitingIsFromTemplate);
 
-    private static ValueTask<ContextLevelResolution> Rejected(string reason) =>
-        ValueTask.FromResult<ContextLevelResolution>(new RejectedContextLevel(reason));
+    private static RejectedContextLevel Rejected(string reason) => new(reason);
 }

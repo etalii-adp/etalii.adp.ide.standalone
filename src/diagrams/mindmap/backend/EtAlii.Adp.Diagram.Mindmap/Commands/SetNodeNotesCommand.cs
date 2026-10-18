@@ -13,10 +13,14 @@ internal sealed class SetNodeNotesCommandHandler(IMindmapDocumentStore documents
         ArgumentNullException.ThrowIfNull(command);
         cancellationToken.ThrowIfCancellationRequested();
 
-        if (!TryResolve(command.BodyPath, command.NodeId, out var document, out var node, out var failure))
+        var resolution = await ResolveAsync(command.BodyPath, command.NodeId, cancellationToken);
+        if (resolution.Failure is { } failure)
         {
             return failure;
         }
+
+        var document = resolution.Document;
+        var node = resolution.Node;
 
         var previous = node.Notes;
         document.SetNotes(node, command.Notes);

@@ -69,6 +69,14 @@ public sealed class PipelineDocumentStore : IPipelineDocumentStore
         return _lifecycle.GetOrLoad(path);
     }
 
+    public ValueTask<DocumentEntry<PipelineBody, PipelineModel>> GetOrLoadAsync(string rootPath, string path, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(rootPath);
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+        _roots[path] = rootPath;
+        return _lifecycle.GetOrLoadAsync(path, cancellationToken);
+    }
+
     /// <summary>
     /// Writes the document back and tells every session on it. Refuses while the document does not
     /// parse, so a file that is already broken is never made worse.
@@ -197,6 +205,9 @@ public sealed class PipelineDocumentStore : IPipelineDocumentStore
         }
 
         public DocumentEntry<PipelineBody, PipelineModel> GetOrLoad(string path) => documents.GetOrLoad(rootPath, path);
+
+        public ValueTask<DocumentEntry<PipelineBody, PipelineModel>> GetOrLoadAsync(string path, CancellationToken cancellationToken) =>
+            documents.GetOrLoadAsync(rootPath, path, cancellationToken);
 
         public DocumentEntry<PipelineBody, PipelineModel>? Get(string path) => documents._lifecycle.Get(path);
 

@@ -83,62 +83,62 @@ public sealed class SparqlContextPropertyProvider : IContextPropertyProvider
     public ContextScope Scope => ContextScope.DiagramElement;
 
     /// <inheritdoc />
-    public ValueTask<IReadOnlyList<ContextPropertyDefinition>> DescribeAsync(ContextTarget target, CancellationToken cancellationToken)
+    public async ValueTask<IReadOnlyList<ContextPropertyDefinition>> DescribeAsync(ContextTarget target, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(target);
         cancellationToken.ThrowIfCancellationRequested();
 
         if (!SparqlSelection.CouldBeQueryFile(target.ResolvedFullPath))
         {
-            return Rows([]);
+            return [];
         }
 
-        var entry = _documents.GetOrLoad(target.ResolvedFullPath);
+        var entry = await _documents.GetOrLoadAsync(target.ResolvedFullPath, cancellationToken);
         if (SparqlSelection.ProjectionOf(entry) is not { } projection)
         {
-            return Rows([]);
+            return [];
         }
 
         if (target.ElementId == SparqlElementMapper.HeaderId)
         {
-            return Rows(
+            return
             [
                 Row(QueryFormProperty, "Form", projection.HeaderForm, QueryGroup),
                 Row(QueryModifiersProperty, "Modifiers", string.Join(" · ", projection.HeaderRows), QueryGroup),
-            ]);
+            ];
         }
 
         if (SparqlSelection.NodeOf(projection, target.ElementId) is { } node)
         {
-            return Rows(RowsFor(node));
+            return RowsFor(node);
         }
 
         if (SparqlSelection.RegionOf(projection, target.ElementId) is { } region)
         {
-            return Rows(
+            return
             [
                 Row(RegionKindProperty, "Group", region.Kind.ToUpperInvariant(), StructureGroup),
                 Row(RegionLabelProperty, "Constraint", region.Label, StructureGroup),
-            ]);
+            ];
         }
 
         if (SparqlSelection.EdgeOf(projection, target.ElementId) is { } edge)
         {
-            return Rows(
+            return
             [
                 Row(EdgeLabelProperty, edge.IsPath ? "Property path" : "Predicate", edge.Label, StructureGroup),
-            ]);
+            ];
         }
 
         if (SparqlSelection.AnnotationOf(projection, target.ElementId) is { } annotation)
         {
-            return Rows(
+            return
             [
                 Row(AnnotationTextProperty, annotation.Kind.ToUpperInvariant(), annotation.Text, StructureGroup),
-            ]);
+            ];
         }
 
-        return Rows([]);
+        return [];
     }
 
     /// <summary>
@@ -185,7 +185,4 @@ public sealed class SparqlContextPropertyProvider : IContextPropertyProvider
     /// <summary>Every row is built here, so none can be created without its reason.</summary>
     private static ContextPropertyDefinition Row(string id, string label, string value, string group) =>
         new(id, label, value, ReadOnlyReason: ReadOnlyReason, Group: group);
-
-    private static ValueTask<IReadOnlyList<ContextPropertyDefinition>> Rows(IReadOnlyList<ContextPropertyDefinition> rows) =>
-        ValueTask.FromResult(rows);
 }

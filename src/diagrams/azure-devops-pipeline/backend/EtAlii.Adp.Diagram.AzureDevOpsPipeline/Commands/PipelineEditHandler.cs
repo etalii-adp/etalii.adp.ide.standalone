@@ -47,7 +47,7 @@ internal abstract class PipelineEditHandler<TCommand>(IPipelineDocumentStore doc
         ArgumentNullException.ThrowIfNull(command);
         ArgumentNullException.ThrowIfNull(edit);
 
-        var entry = documents.GetOrLoad(command.RootPath, command.BodyPath);
+        var entry = await documents.GetOrLoadAsync(command.RootPath, command.BodyPath, cancellationToken);
         if (!entry.IsUsable)
         {
             return CommandResult.Failure(

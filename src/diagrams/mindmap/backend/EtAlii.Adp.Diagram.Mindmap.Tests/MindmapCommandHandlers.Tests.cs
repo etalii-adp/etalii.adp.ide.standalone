@@ -93,6 +93,8 @@ public sealed class MindmapCommandHandlersTests : IDisposable
 
         public MindmapDocument GetOrLoad(string bodyPath) => inner.GetOrLoad(bodyPath);
 
+        public ValueTask<MindmapDocument> GetOrLoadAsync(string bodyPath, CancellationToken cancellationToken) => inner.GetOrLoadAsync(bodyPath, cancellationToken);
+
         public MindmapDocument? Get(string bodyPath) => inner.Get(bodyPath);
 
         public async Task<DocumentSaveResult> SaveAsync(string bodyPath, MindmapDocument document, MindmapChange change, CancellationToken cancellationToken)

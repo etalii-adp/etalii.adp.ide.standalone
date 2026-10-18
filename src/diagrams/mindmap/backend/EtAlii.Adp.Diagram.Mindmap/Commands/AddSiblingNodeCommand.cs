@@ -13,10 +13,14 @@ internal sealed class AddSiblingNodeCommandHandler(IMindmapDocumentStore documen
         ArgumentNullException.ThrowIfNull(command);
         cancellationToken.ThrowIfCancellationRequested();
 
-        if (!TryResolve(command.BodyPath, command.SiblingId, out var document, out var sibling, out var failure))
+        var resolution = await ResolveAsync(command.BodyPath, command.SiblingId, cancellationToken);
+        if (resolution.Failure is { } failure)
         {
             return failure;
         }
+
+        var document = resolution.Document;
+        var sibling = resolution.Node;
 
         if (sibling.IsRoot)
         {

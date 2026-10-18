@@ -50,14 +50,14 @@ public sealed class MindmapContextPropertyProvider : IContextPropertyProvider
 
     public ContextScope Scope => ContextScope.DiagramElement;
 
-    public ValueTask<IReadOnlyList<ContextPropertyDefinition>> DescribeAsync(ContextTarget target, CancellationToken cancellationToken)
+    public async ValueTask<IReadOnlyList<ContextPropertyDefinition>> DescribeAsync(ContextTarget target, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(target);
         cancellationToken.ThrowIfCancellationRequested();
 
-        if (Resolve(target) is not { } node)
+        if (await ResolveAsync(target, cancellationToken) is not { } resolved)
         {
-            return ValueTask.FromResult<IReadOnlyList<ContextPropertyDefinition>>([]);
+            return [];
         }
 
         // Derived from the DISL definition's form: Text, Notes and Link editable; Collapsed (only for
@@ -66,11 +66,10 @@ public sealed class MindmapContextPropertyProvider : IContextPropertyProvider
         // and lands on no history (Requirements 9.4, 9.6), so a grid that promises every edit is one
         // undo away must not offer it. Worth showing all the same - a reader looking at a node with
         // hidden children wants to know that is why.
-        var model = MindmapDefinition.ModelOf(_documents.GetOrLoad(target.ResolvedFullPath));
-        IReadOnlyList<ContextPropertyDefinition> properties = MindmapDefinition.ElementOf(model, node.Id) is { } element
+        var model = MindmapDefinition.ModelOf(resolved.Document);
+        return MindmapDefinition.ElementOf(model, resolved.Node.Id) is { } element
             ? MindmapDefinition.Rows(element)
             : [];
-        return ValueTask.FromResult(properties);
     }
 
     public async ValueTask<ContextPropertyResult> SetAsync(
@@ -81,7 +80,7 @@ public sealed class MindmapContextPropertyProvider : IContextPropertyProvider
     {
         ArgumentNullException.ThrowIfNull(target);
 
-        if (Resolve(target) is not { } node)
+        if (await ResolveAsync(target, cancellationToken) is not { Node: var node })
         {
             return ContextPropertyResult.Failure(Gone);
         }
@@ -106,7 +105,8 @@ public sealed class MindmapContextPropertyProvider : IContextPropertyProvider
         return result.IsSuccess ? ContextPropertyResult.Success : ContextPropertyResult.Failure(result.Error);
     }
 
-    private MindmapNode? Resolve(ContextTarget target)
+    /// <summary>The node the target names and the document it is in, or null when there is none.</summary>
+    private async ValueTask<ResolvedNode?> ResolveAsync(ContextTarget target, CancellationToken cancellationToken)
     {
         if (target.Scope != ContextScope.DiagramElement || target.ElementId.Length == 0)
         {
@@ -122,7 +122,8 @@ public sealed class MindmapContextPropertyProvider : IContextPropertyProvider
 
         try
         {
-            return _documents.GetOrLoad(target.ResolvedFullPath).Find(target.ElementId);
+            var document = await _documents.GetOrLoadAsync(target.ResolvedFullPath, cancellationToken);
+            return document.Find(target.ElementId) is { } node ? new ResolvedNode(document, node) : null;
         }
         catch (MindmapFormatException exception)
         {
@@ -130,4 +131,6 @@ public sealed class MindmapContextPropertyProvider : IContextPropertyProvider
             return null;
         }
     }
+
+    private sealed record ResolvedNode(MindmapDocument Document, MindmapNode Node);
 }

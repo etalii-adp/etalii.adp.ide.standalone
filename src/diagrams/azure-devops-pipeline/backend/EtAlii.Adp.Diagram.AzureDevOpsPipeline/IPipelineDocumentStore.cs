@@ -30,6 +30,10 @@ public interface IPipelineDocumentStore : IDiagramDocumentStore
     /// </summary>
     DocumentEntry<PipelineBody, PipelineModel> GetOrLoad(string rootPath, string path);
 
+    /// <inheritdoc cref="GetOrLoad"/>
+    /// <remarks>Reads without blocking a thread, for a caller that can wait.</remarks>
+    ValueTask<DocumentEntry<PipelineBody, PipelineModel>> GetOrLoadAsync(string rootPath, string path, CancellationToken cancellationToken);
+
     /// <summary>
     /// This store as seen from <paramref name="rootPath"/>: the shared store interface, whose calls
     /// name a path alone, answered with that root. It is how a session opened in a workspace stands
@@ -49,12 +53,11 @@ public interface IPipelineDocumentStore : IDiagramDocumentStore
 
     /// <summary>
     /// How the pipeline a context target names is read from <paramref name="documents"/>: from the
-    /// target's root as well as its path. The store reads as it is asked, so the read is already done
-    /// when the load returns.
+    /// target's root as well as its path.
     /// </summary>
     internal static Func<ContextTarget, CancellationToken, ValueTask<DocumentEntry<PipelineBody, PipelineModel>>> LoaderFor(IPipelineDocumentStore documents)
     {
         ArgumentNullException.ThrowIfNull(documents);
-        return (target, _) => ValueTask.FromResult(documents.GetOrLoad(target.RootPath, target.ResolvedFullPath));
+        return (target, cancellationToken) => documents.GetOrLoadAsync(target.RootPath, target.ResolvedFullPath, cancellationToken);
     }
 }

@@ -21,10 +21,14 @@ internal sealed class RemoveNodeCommandHandler(IMindmapDocumentStore documents)
         ArgumentNullException.ThrowIfNull(command);
         cancellationToken.ThrowIfCancellationRequested();
 
-        if (!TryResolve(command.BodyPath, command.NodeId, out var document, out var node, out var failure))
+        var resolution = await ResolveAsync(command.BodyPath, command.NodeId, cancellationToken);
+        if (resolution.Failure is { } failure)
         {
             return failure;
         }
+
+        var document = resolution.Document;
+        var node = resolution.Node;
 
         if (node.IsRoot)
         {
@@ -53,10 +57,14 @@ internal sealed class RestoreSubtreeCommandHandler(IMindmapDocumentStore documen
         ArgumentNullException.ThrowIfNull(command);
         cancellationToken.ThrowIfCancellationRequested();
 
-        if (!TryResolve(command.BodyPath, command.ParentId, out var document, out var parent, out var failure))
+        var resolution = await ResolveAsync(command.BodyPath, command.ParentId, cancellationToken);
+        if (resolution.Failure is { } failure)
         {
             return failure;
         }
+
+        var document = resolution.Document;
+        var parent = resolution.Node;
 
         var subtree = MindmapDocument.ParseFragment(command.Subtree);
         var restoredId = subtree.Attribute(MindmapNode.IdAttribute)?.Value ?? "";
