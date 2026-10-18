@@ -10,14 +10,7 @@ public sealed class ProjectSession : IDisposable
 {
     private readonly HeldParts _parts;
 
-    private ProjectSession(ProjectRoot root, HeldParts parts)
-    {
-        Root = root;
-        _parts = parts;
-    }
-
-    /// <summary>The project held.</summary>
-    public ProjectRoot Root { get; }
+    private ProjectSession(HeldParts parts) => _parts = parts;
 
     /// <summary>
     /// Acquires every part in the order given. When one fails, those acquired before it are released
@@ -26,7 +19,7 @@ public sealed class ProjectSession : IDisposable
     public static ProjectSession Open(ProjectRoot root, IEnumerable<IProjectSessionPart> parts)
     {
         ArgumentNullException.ThrowIfNull(parts);
-        return new ProjectSession(root, HeldParts.Acquire(parts.Select(part => (Func<IDisposable>)(() => part.Acquire(root)))));
+        return new ProjectSession(HeldParts.Acquire(parts.Select(part => (Func<IDisposable>)(() => part.Acquire(root)))));
     }
 
     /// <summary>Releases every part, the last acquired first; a second call releases nothing.</summary>

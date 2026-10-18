@@ -10,21 +10,18 @@ public sealed class ConnectionSession : IDisposable
 {
     private readonly HeldParts _parts;
 
-    private ConnectionSession(ShortGuid watchId, ProjectSession project, HeldParts parts)
+    private ConnectionSession(ShortGuid watchId, ProjectRoot root, HeldParts parts)
     {
         WatchId = watchId;
-        Project = project;
+        Root = root;
         _parts = parts;
     }
 
     /// <summary>The watch the connection is known by.</summary>
     public ShortGuid WatchId { get; }
 
-    /// <summary>What the connection holds of its project.</summary>
-    public ProjectSession Project { get; }
-
     /// <summary>The project the connection has open.</summary>
-    public ProjectRoot Root => Project.Root;
+    public ProjectRoot Root { get; }
 
     /// <summary>
     /// Opens the project session, then acquires every connection part in the order given. When any
@@ -45,7 +42,7 @@ public sealed class ConnectionSession : IDisposable
             connectionParts
                 .Select(part => (Func<IDisposable>)(() => part.Acquire(watchId, root)))
                 .Prepend(() => project));
-        return new ConnectionSession(watchId, project, parts);
+        return new ConnectionSession(watchId, root, parts);
     }
 
     /// <summary>Releases the connection's own parts, the last acquired first, then its project session; a second call releases nothing.</summary>
