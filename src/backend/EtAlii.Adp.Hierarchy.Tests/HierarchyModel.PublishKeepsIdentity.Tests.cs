@@ -39,7 +39,7 @@ public class HierarchyModelPublishKeepsIdentityTests : IDisposable
         var subjectPath = IoPath.Combine(_root, "plan.mm");
         await File.WriteAllTextAsync(subjectPath, "<map/>", TestContext.Current.CancellationToken);
 
-        var model = new HierarchyModel(_root, _catalog);
+        var model = new HierarchyModel(_root, TestToolRouters.For(_catalog));
         var subject = Assert.Single(model.ListChildren(null));
         var events = new List<string>();
         var published = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);

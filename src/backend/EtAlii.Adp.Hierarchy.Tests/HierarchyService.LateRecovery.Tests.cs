@@ -46,7 +46,7 @@ public class HierarchyServiceLateRecoveryTests : IDisposable
             userId,
             "late-recovery",
             new PathRecord(_projectFolder.Split(IoPath.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries)));
-        using var modelStore = new HierarchyModelStore();
+        using var modelStore = new HierarchyModelStore(TestToolRouters.For());
         var watchId = ShortGuid.NewShortGuid();
 
         // The watch takes this same model from the store; listening on it shows when the late

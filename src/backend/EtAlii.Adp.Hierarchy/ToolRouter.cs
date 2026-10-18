@@ -39,6 +39,12 @@ public sealed class ToolRouter
         _editors = editors;
     }
 
+    /// <summary>The diagram types' own router, for what only diagrams are asked: which extensions they claim, and which take a folder as their subject.</summary>
+    public DiagramFileRouter Diagrams => _diagrams;
+
+    /// <summary>The editors' own resolver, for what only editors are asked: whether one claims an extension.</summary>
+    public EditorResolver Editors => _editors;
+
     /// <summary>
     /// The tool that serves <paramref name="path"/>: <see cref="DiagramRouted"/>,
     /// <see cref="DesignerRouted"/>, <see cref="EditorRouted"/>, <see cref="ToolUnreadable"/> or

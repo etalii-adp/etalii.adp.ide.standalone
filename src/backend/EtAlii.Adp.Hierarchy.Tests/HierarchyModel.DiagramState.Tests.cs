@@ -34,13 +34,8 @@ public class HierarchyModelDiagramStateTests : IDisposable
         TestFolder.TryDelete(_root);
     }
 
-    private sealed class StubEditorCatalog(params EditorDefinition[] definitions) : IEditorDefinitionCatalog
-    {
-        public IReadOnlyList<EditorDefinition> All { get; } = definitions;
-    }
-
     private HierarchyModel Model() =>
-        new(_root, _catalog, new DiagramFileRouter(_catalog), new EditorResolver(new StubEditorCatalog(Plain, Markdown)));
+        new(_root, TestToolRouters.For(_catalog, editors: [Plain, Markdown]));
 
     private string Write(string relativePath, string content)
     {

@@ -68,11 +68,6 @@ public class HierarchyModelDiskOutsideTheLockTests : IDisposable
         public void Release() => _released.Set();
     }
 
-    private sealed class StubEditorCatalog(params EditorDefinition[] definitions) : IEditorDefinitionCatalog
-    {
-        public IReadOnlyList<EditorDefinition> All { get; } = definitions;
-    }
-
     public static TheoryData<string> EntryPoints =>
     [
         "ListChildren",
@@ -86,7 +81,7 @@ public class HierarchyModelDiskOutsideTheLockTests : IDisposable
     public void ASlowRead_HoldsUpNoConcurrentQuery(string entryPoint)
     {
         // Arrange.
-        var model = new HierarchyModel(_root, _catalog, new DiagramFileRouter(_catalog), new EditorResolver(new StubEditorCatalog(Plain)));
+        var model = new HierarchyModel(_root, TestToolRouters.For(_catalog, editors: [Plain]));
         var act = Arrange(entryPoint, model);
         _catalog.Arm();
 

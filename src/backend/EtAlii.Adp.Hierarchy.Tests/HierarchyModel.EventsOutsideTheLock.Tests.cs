@@ -36,11 +36,6 @@ public class HierarchyModelEventsOutsideTheLockTests : IDisposable
         TestFolder.TryDelete(_root);
     }
 
-    private sealed class StubEditorCatalog(params EditorDefinition[] definitions) : IEditorDefinitionCatalog
-    {
-        public IReadOnlyList<EditorDefinition> All { get; } = definitions;
-    }
-
     public static TheoryData<string> RaisingSites =>
     [
         "OnCreated",
@@ -62,7 +57,7 @@ public class HierarchyModelEventsOutsideTheLockTests : IDisposable
     public void EntryChanged_IsRaisedOutsideTheLock_SoASubscriberCanAskTheModelFromAnotherThread(string site)
     {
         // Arrange.
-        var model = new HierarchyModel(_root, _catalog, new DiagramFileRouter(_catalog), new EditorResolver(new StubEditorCatalog(Plain)));
+        var model = new HierarchyModel(_root, TestToolRouters.For(_catalog, editors: [Plain]));
         var (act, raisedBySite) = Arrange(site, model);
         var heard = new List<HierarchyEntryChange>();
         var raisedUnderTheLock = new List<HierarchyEntryChange>();

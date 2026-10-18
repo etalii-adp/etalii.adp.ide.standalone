@@ -41,7 +41,7 @@ public class HierarchyModelTests : IDisposable
         CreateFile(segments: "a.txt");
         CreateFolder("zeta");
         CreateFolder("alpha");
-        var model = new HierarchyModel(_root);
+        var model = new HierarchyModel(_root, TestToolRouters.For());
 
         // Act.
         var children = model.ListChildren(null);
@@ -59,7 +59,7 @@ public class HierarchyModelTests : IDisposable
     {
         // Arrange.
         CreateFile(segments: "a.txt");
-        var model = new HierarchyModel(_root);
+        var model = new HierarchyModel(_root, TestToolRouters.For());
 
         // Act.
         var first = model.ListChildren(null).Single();
@@ -75,7 +75,7 @@ public class HierarchyModelTests : IDisposable
         // Arrange: a listed file, so the model knows its id.
         var oldPath = CreateFile(segments: "original.txt");
         var newPath = IoPath.Combine(_root, "renamed.txt");
-        var model = new HierarchyModel(_root);
+        var model = new HierarchyModel(_root, TestToolRouters.For());
         var originalId = model.ListChildren(null).Single().Id;
         var changes = new List<HierarchyEntryChange>();
         model.EntryChanged += changes.Add;
@@ -100,7 +100,7 @@ public class HierarchyModelTests : IDisposable
         // suppression this would land as Remove+Create and discard the entry's id.
         var oldPath = CreateFile(segments: "original.txt");
         var newPath = IoPath.Combine(_root, "renamed.txt");
-        var model = new HierarchyModel(_root);
+        var model = new HierarchyModel(_root, TestToolRouters.For());
         var originalId = model.ListChildren(null).Single().Id;
         var changes = new List<HierarchyEntryChange>();
         model.EntryChanged += changes.Add;
@@ -126,7 +126,7 @@ public class HierarchyModelTests : IDisposable
         // (the intermittent UndoRedoFlowTests failure on Linux CI).
         var oldPath = CreateFile(segments: "original.txt");
         var newPath = IoPath.Combine(_root, "renamed.txt");
-        var model = new HierarchyModel(_root);
+        var model = new HierarchyModel(_root, TestToolRouters.For());
         var originalId = model.ListChildren(null).Single().Id;
         var changes = new List<HierarchyEntryChange>();
         model.EntryChanged += changes.Add;
@@ -150,7 +150,7 @@ public class HierarchyModelTests : IDisposable
         // Arrange: a rename was announced but never happened; the file is then really deleted.
         var oldPath = CreateFile(segments: "original.txt");
         var newPath = IoPath.Combine(_root, "renamed.txt");
-        var model = new HierarchyModel(_root);
+        var model = new HierarchyModel(_root, TestToolRouters.For());
         var originalId = model.ListChildren(null).Single().Id;
         var changes = new List<HierarchyEntryChange>();
         model.EntryChanged += changes.Add;
@@ -170,7 +170,7 @@ public class HierarchyModelTests : IDisposable
     public void OnWatcherEvent_Created_UnderAListedParent_RaisesCreatedWithParentIdNameAndKind()
     {
         // Arrange.
-        var model = new HierarchyModel(_root);
+        var model = new HierarchyModel(_root, TestToolRouters.For());
         model.ListChildren(null); // root now "listed"
 
         HierarchyEntryChange? raised = null;
@@ -191,7 +191,7 @@ public class HierarchyModelTests : IDisposable
     {
         // Arrange.
         var unlisted = CreateFolder("unlisted");
-        var model = new HierarchyModel(_root);
+        var model = new HierarchyModel(_root, TestToolRouters.For());
         var unlistedEntry = model.ListChildren(null).Single(); // root listed, but "unlisted"'s own children are not
 
         HierarchyEntryChange? raised = null;
@@ -216,7 +216,7 @@ public class HierarchyModelTests : IDisposable
         var populated = CreateFolder("populated");
         CreateFile(segments: ["populated", "inside.txt"]);
         CreateFolder("empty");
-        var model = new HierarchyModel(_root);
+        var model = new HierarchyModel(_root, TestToolRouters.For());
 
         // Act.
         var children = model.ListChildren(null);
@@ -232,7 +232,7 @@ public class HierarchyModelTests : IDisposable
     {
         // Arrange.
         var folderPath = CreateFolder("sub");
-        var model = new HierarchyModel(_root);
+        var model = new HierarchyModel(_root, TestToolRouters.For());
         var before = model.ListChildren(null).Single();
         Assert.False(before.HasChildren);
 
@@ -251,7 +251,7 @@ public class HierarchyModelTests : IDisposable
         // Act and assert, step by step.
         var folderPath = CreateFolder("sub");
         var filePath = CreateFile(segments: ["sub", "only.txt"]);
-        var model = new HierarchyModel(_root);
+        var model = new HierarchyModel(_root, TestToolRouters.For());
         var folderEntry = model.ListChildren(null).Single();
         Assert.True(folderEntry.HasChildren);
 
@@ -273,7 +273,7 @@ public class HierarchyModelTests : IDisposable
         // Arrange.
         CreateFolder("sub");
         CreateFile(segments: ["sub", "a.txt"]);
-        var model = new HierarchyModel(_root);
+        var model = new HierarchyModel(_root, TestToolRouters.For());
         model.ListChildren(null); // "sub" already known to have children
 
         // Arrange, continued.
@@ -294,7 +294,7 @@ public class HierarchyModelTests : IDisposable
     {
         // Arrange.
         var filePath = CreateFile(segments: "a.txt");
-        var model = new HierarchyModel(_root);
+        var model = new HierarchyModel(_root, TestToolRouters.For());
         var entry = model.ListChildren(null).Single();
 
         HierarchyEntryChange? raised = null;
@@ -319,7 +319,7 @@ public class HierarchyModelTests : IDisposable
         // unselectable after the first variable drag: its positions live in the .adp's layout:
         // block, so every move rewrites the registration in place.
         var filePath = CreateFile(segments: "a.txt");
-        var model = new HierarchyModel(_root);
+        var model = new HierarchyModel(_root, TestToolRouters.For());
         var entry = model.ListChildren(null).Single();
 
         var changes = new List<HierarchyEntryChange>();
@@ -346,7 +346,7 @@ public class HierarchyModelTests : IDisposable
         // .adp's layout: block and every move rewrites that registration in place.
         var filePath = CreateFile(segments: "a.txt");
         var backupPath = filePath + "~RF17c7806.TMP";
-        var model = new HierarchyModel(_root);
+        var model = new HierarchyModel(_root, TestToolRouters.For());
         var entry = model.ListChildren(null).Single();
 
         var changes = new List<HierarchyEntryChange>();
@@ -370,7 +370,7 @@ public class HierarchyModelTests : IDisposable
     {
         // Arrange.
         var filePath = CreateFile(segments: "old.txt");
-        var model = new HierarchyModel(_root);
+        var model = new HierarchyModel(_root, TestToolRouters.For());
         var entry = model.ListChildren(null).Single();
 
         HierarchyEntryChange? raised = null;
@@ -391,7 +391,7 @@ public class HierarchyModelTests : IDisposable
         // Arrange.
         CreateFolder("old-name");
         var childFile = CreateFile(segments: ["old-name", "child.txt"]);
-        var model = new HierarchyModel(_root);
+        var model = new HierarchyModel(_root, TestToolRouters.For());
         var folderEntry = model.ListChildren(null).Single();
         var childEntry = model.ListChildren(folderEntry.Id).Single();
 
@@ -416,7 +416,7 @@ public class HierarchyModelTests : IDisposable
         // Arrange.
         var survivorPath = CreateFile(segments: "survivor.txt");
         var victimPath = CreateFile(segments: "victim.txt");
-        var model = new HierarchyModel(_root);
+        var model = new HierarchyModel(_root, TestToolRouters.For());
         var before = model.ListChildren(null);
         var survivorId = before.Single(e => e.Name == "survivor.txt").Id;
 
@@ -455,7 +455,7 @@ public class HierarchyModelTests : IDisposable
             }
 
             // Act.
-            var model = new HierarchyModel(_root);
+            var model = new HierarchyModel(_root, TestToolRouters.For());
             var children = model.ListChildren(null);
 
         // Assert.
@@ -474,7 +474,7 @@ public class HierarchyModelTests : IDisposable
         // Arrange.
         var filePath = CreateFile(segments: "a.txt");
         CreateFolder("sub");
-        var model = new HierarchyModel(_root);
+        var model = new HierarchyModel(_root, TestToolRouters.For());
         var children = model.ListChildren(null);
 
         // Act.
@@ -491,7 +491,7 @@ public class HierarchyModelTests : IDisposable
     public void TryResolvePath_ForAnIdThisModelDoesNotKnow_ResolvesToNothing()
     {
         // Arrange.
-        var model = new HierarchyModel(_root);
+        var model = new HierarchyModel(_root, TestToolRouters.For());
 
         // Act.
         var resolved = model.TryResolvePath(ShortGuid.NewShortGuid(), out var path, out _);
@@ -510,7 +510,7 @@ public class HierarchyModelTests : IDisposable
         try
         {
             var entryPath = CreateFolder("swapped");
-            var model = new HierarchyModel(_root);
+            var model = new HierarchyModel(_root, TestToolRouters.For());
             var entryId = model.ListChildren(null).Single(c => c.Name == "swapped").Id;
 
         // Act.
@@ -542,7 +542,7 @@ public class HierarchyModelTests : IDisposable
         // Arrange.
         // AdpFileWriter writes a new diagram to a scratch file in the destination folder and
         // moves it into place; neither step is project content, so neither may reach a client.
-        var model = new HierarchyModel(_root);
+        var model = new HierarchyModel(_root, TestToolRouters.For());
         model.ListChildren(null);
         var changes = new List<HierarchyEntryChange>();
         model.EntryChanged += changes.Add;
@@ -561,7 +561,7 @@ public class HierarchyModelTests : IDisposable
     public void OnWatcherEvent_ForTheMoveThatPublishesADiagram_ReportsOnlyTheCreatedFile()
     {
         // Arrange.
-        var model = new HierarchyModel(_root);
+        var model = new HierarchyModel(_root, TestToolRouters.For());
         model.ListChildren(null);
         var changes = new List<HierarchyEntryChange>();
         model.EntryChanged += changes.Add;
@@ -577,8 +577,9 @@ public class HierarchyModelTests : IDisposable
         model.OnWatcherEvent(WatcherChangeTypes.Renamed, scratch, published);
 
         // The move is the only announcement the published file gets - a watcher reports it as
-        // a rename, not a create - so it must arrive as the creation it actually is.
-        var created = Assert.IsType<HierarchyEntryCreated>(Assert.Single(changes));
+        // a rename, not a create - so it must arrive as the creation it actually is. Its state
+        // follows as an update.
+        var created = Assert.IsType<HierarchyEntryCreated>(Assert.Single(changes, change => change is not HierarchyEntryUpdated));
         Assert.Equal("domain.adp", created.Entry.Name);
         Assert.Equal("domain.adp", Assert.Single(model.ListChildren(null)).Name);
     }
@@ -587,7 +588,7 @@ public class HierarchyModelTests : IDisposable
     public void Reconcile_NeverResurrectsAScratchFileLeftBehind()
     {
         // Arrange.
-        var model = new HierarchyModel(_root);
+        var model = new HierarchyModel(_root, TestToolRouters.For());
         model.ListChildren(null);
         File.WriteAllText(IoPath.Combine(_root, $"{AdpFileWriter.TempPrefix}abandoned{AdpFileWriter.TempExtension}"), "");
 
