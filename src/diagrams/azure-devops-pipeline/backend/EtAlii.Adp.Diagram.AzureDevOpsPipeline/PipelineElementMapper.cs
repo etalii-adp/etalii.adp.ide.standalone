@@ -78,13 +78,13 @@ public sealed class PipelineElementMapper
                 continue;
             }
 
-            elements.Add(StageElement(stage, placement, stageGraph));
+            elements.Add(StageElement(stage, placement, stageGraph, expanded.Contains(stage.Id)));
 
             if (!expanded.Contains(stage.Id))
             {
                 // A collapsed stage carries no children on the wire. What it contains has not
-                // changed, only whether this connection is looking at it - which is what
-                // Group/Ungroup says, and why the jobs are simply absent rather than marked.
+                // changed, only whether this connection is looking at it, so the jobs are simply
+                // absent rather than marked - and the stage says it is closed.
                 continue;
             }
 
@@ -96,7 +96,7 @@ public sealed class PipelineElementMapper
                     continue;
                 }
 
-                elements.Add(JobElement(job, stage, jobPlacement));
+                elements.Add(JobElement(job, stage, jobPlacement, expanded.Contains(job.Id)));
 
                 if (!expanded.Contains(job.Id))
                 {
@@ -157,7 +157,7 @@ public sealed class PipelineElementMapper
             .ToList();
     }
 
-    private DiagramElement StageElement(PipelineStage stage, PipelinePlacement placement, PipelineGraph graph)
+    private DiagramElement StageElement(PipelineStage stage, PipelinePlacement placement, PipelineGraph graph, bool expanded)
     {
         // A stage is uncertain either because a compile-time expression decides whether it exists
         // at all, or because it waits on something that does not. The second half stands in for
@@ -191,13 +191,16 @@ public sealed class PipelineElementMapper
                 // Sent whether or not the stage is expanded, because a collapsed one is exactly
                 // when it is needed and exactly when the jobs are not on the wire to be counted.
                 JobCount = stage.Jobs.Count,
+                // Whether this connection has it open. A closed stage arrives without its jobs, which
+                // the canvas cannot tell from an open one holding none, so the stage says which it is.
+                Expanded = expanded,
                 // An implicit stage is not in the file, so there is no line to open.
                 FirstLine = stage.IsImplicit ? 0 : stage.Lines.Start + 1,
                 LastLine = stage.IsImplicit ? 0 : stage.Lines.End + 1,
             });
     }
 
-    private DiagramElement JobElement(PipelineJob job, PipelineStage stage, PipelinePlacement placement) =>
+    private DiagramElement JobElement(PipelineJob job, PipelineStage stage, PipelinePlacement placement, bool expanded) =>
         Element(
             job.Id,
             placement.X,
@@ -223,6 +226,7 @@ public sealed class PipelineElementMapper
                 Environment = job.Environment,
                 Strategy = job.Strategy.Kind == PipelineStrategyKind.None ? "" : job.Strategy.Kind.ToString(),
                 ParentId = stage.Id,
+                Expanded = expanded,
                 Width = placement.Size.Width,
                 Height = placement.Size.Height,
                 FirstLine = job.IsImplicit ? 0 : job.Lines.Start + 1,

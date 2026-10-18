@@ -158,6 +158,37 @@ public class PipelineSessionTests : IDisposable
     }
 
     [Fact]
+    public async Task AClosedStage_ReachesTheCanvasAsClosed_AndAnOpenedOneAsOpen()
+    {
+        // Arrange: a closed stage arrives without its jobs, and the canvas cannot tell that from an
+        // open stage that has none - so it drew every stage open and never wrote a job count. The
+        // stage itself has to say which it is, on the baseline and on every toggle's push.
+        var path = Write(TwoStages);
+        var watchId = ShortGuid.NewShortGuid();
+        await using var session = OpenWith(path, watchId);
+        var pushed = new List<DiagramDeltasEventArgs>();
+        session.Changed += (_, args) => pushed.Add(args);
+
+        // Act.
+        var baseline = session.Baseline();
+        _views.Toggle(watchId, path, "Build");
+        _views.Toggle(watchId, path, "Build/Compile");
+        _views.Toggle(watchId, path, "Build");
+
+        // Assert.
+        Assert.False(ExpandedIn(baseline, "Build"));
+        Assert.False(ExpandedIn(baseline, "Test"));
+        Assert.True(ExpandedIn(pushed[0].Deltas, "Build"));
+        Assert.False(ExpandedIn(pushed[0].Deltas, "Build/Compile"));
+        Assert.True(ExpandedIn(pushed[1].Deltas, "Build/Compile"));
+        Assert.False(ExpandedIn(pushed[2].Deltas, "Build"));
+    }
+
+    /// <summary>Whether the last add of <paramref name="id"/> among <paramref name="deltas"/> says it is open.</summary>
+    private static bool ExpandedIn(IEnumerable<DiagramDelta> deltas, string id) =>
+        PipelineElementPayload.Parser.ParseFrom(deltas.OfType<DiagramAddDelta>().SelectMany(delta => delta.Elements).Last(element => element.Id == id).Payload.ToArray()).Expanded;
+
+    [Fact]
     public async Task AToggleOnAnotherConnection_IsNotThisOnesBusiness()
     {
         // Arrange: which stages somebody has opened is a property of looking, not of the file.
