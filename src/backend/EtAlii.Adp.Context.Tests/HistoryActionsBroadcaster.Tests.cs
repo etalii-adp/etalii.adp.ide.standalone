@@ -145,6 +145,17 @@ public class HistoryActionsBroadcasterTests
     }
 
     [Fact]
+    public async Task StopAsync_AfterDispose_DoesNotThrow()
+    {
+        // The host can dispose a service before it stops it: a test host's fixture disposed the
+        // broadcaster first, and its StopAsync then threw on the disposed token source.
+        var broadcaster = new HistoryActionsBroadcaster(_store, _resolver, _selection, _clock);
+        broadcaster.Dispose();
+
+        await broadcaster.StopAsync(TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
     public void AChangeAfterDispose_PushesNothing()
     {
         // Arrange.

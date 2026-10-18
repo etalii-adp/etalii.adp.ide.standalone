@@ -96,11 +96,18 @@ public sealed class HistoryActionsBroadcaster : IHostedService, IDisposable
     /// </summary>
     public Task StartAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 
-    /// <summary>Starts no broadcast more, cancels the ones under way and waits until they have returned.</summary>
+    /// <summary>
+    /// Starts no broadcast more, cancels the ones under way and waits until they have returned. The
+    /// host may have disposed the broadcaster already, which cancelled them.
+    /// </summary>
     public async Task StopAsync(CancellationToken cancellationToken)
     {
         _pending.Dispose();
-        await _stopping.CancelAsync();
+        if (!Volatile.Read(ref _isDisposed))
+        {
+            await _stopping.CancelAsync();
+        }
+
         await Task.WhenAll(_broadcasts.Values.OfType<Task>()).WaitAsync(cancellationToken);
     }
 
