@@ -10,12 +10,12 @@ using IoPath = System.IO.Path;
 namespace EtAlii.Adp.Hierarchy.Tests;
 
 /// <summary>
-/// The presence poll can find the root gone just as its watch closes: <c>CancelAsync</c> in the
-/// watch's <c>finally</c> asks the poll to stop but does not wait for it, so a poll already past
-/// its delay announces the outage after the recovery source is disposed. That late announcement
-/// must start a recovery that simply gives up, not one that faults on the disposed source in a
-/// task nobody observes (found by the Rider warnings cleanup, pull request 5, where an
-/// AccessToDisposedClosure suppression claimed the opposite).
+/// The presence poll can find the root gone just as its watch closes. The watch waits for the
+/// poll, and for the recovery its announcement starts, before it returns and disposes the
+/// recovery source (code-structure FR-070): neither outlives the watch, and the recovery, handed a
+/// cancelled token, simply gives up rather than faulting in a task nobody observes (found by the
+/// Rider warnings cleanup, pull request 5, where an AccessToDisposedClosure suppression claimed
+/// the opposite).
 /// </summary>
 public class HierarchyServiceLateRecoveryTests : IDisposable
 {
@@ -37,7 +37,7 @@ public class HierarchyServiceLateRecoveryTests : IDisposable
     }
 
     [Fact]
-    public async Task RootFoundMissingAsTheWatchCloses_StartsARecoveryThatDoesNotFaultOnTheDisposedSource()
+    public async Task RootFoundMissingAsTheWatchCloses_TheWatchWaitsForThePollAndTheRecoveryItStarts()
     {
         // Arrange.
         var cancellationToken = TestContext.Current.CancellationToken;
@@ -77,8 +77,8 @@ public class HierarchyServiceLateRecoveryTests : IDisposable
         };
         var service = new HierarchyService(projectStore, modelStore, new ConnectionSessions([]), watcher);
 
-        // The recovery task is discarded where it starts, so a fault in it surfaces only as an
-        // unobserved task exception once the task is collected.
+        // A fault in a task nobody awaits surfaces only as an unobserved task exception once the
+        // task is collected.
         var faults = new ConcurrentQueue<Exception>();
 
         TaskScheduler.UnobservedTaskException += OnUnobserved;
@@ -91,8 +91,7 @@ public class HierarchyServiceLateRecoveryTests : IDisposable
                 (_, _) => Task.CompletedTask,
                 watchCts.Token);
 
-            // Act: the poll finds the root gone and is held there while the watch closes and
-            // disposes its recovery source; only then does the poll announce the outage.
+            // Act: the poll finds the root gone and is held there while the watch is closed.
             Directory.Delete(_projectFolder);
             var polled = Task.WhenAny(foundMissing.Task, watch);
             await clock.DriveAsync(polled, HierarchyWatch.RootRecoveryPollInterval, steps: 200);
@@ -104,12 +103,17 @@ public class HierarchyServiceLateRecoveryTests : IDisposable
             }
 
             await watchCts.CancelAsync();
-            await watch.WaitAsync(StepTimeout, cancellationToken);
-            release.SetResult();
-            await announced.Task.WaitAsync(StepTimeout, cancellationToken);
 
-            // Assert: a fault is only reported once its task is finalized, so the collector is
-            // asked to run at every look.
+            // Assert: the watch is still closing while its poll is held, and returns once the poll
+            // has announced the outage and the recovery that started has given up.
+            var first = await Task.WhenAny(watch, Task.Delay(TimeSpan.FromSeconds(1), cancellationToken));
+            Assert.False(first == watch, "The watch returned while its presence poll was still running.");
+            release.SetResult();
+            await watch.WaitAsync(StepTimeout, cancellationToken);
+            Assert.True(announced.Task.IsCompleted, "The watch returned before its poll announced the outage.");
+
+            // And nothing faulted unobserved: a fault is only reported once its task is
+            // finalized, so the collector is asked to run at every look.
             await Eventually.TrueAsync(
                 () =>
                 {

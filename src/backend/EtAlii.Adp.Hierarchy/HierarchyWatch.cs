@@ -65,12 +65,17 @@ public sealed class HierarchyWatch
 
         using var recoveryCts = new CancellationTokenSource();
 
-        // Read once, here, and never through the source again. CancelAsync in the finally asks the
-        // presence poll to stop but does not wait for it, so a poll already past its delay can still
-        // announce an outage after the using has disposed the source - and the source's Token
-        // throws once disposed, faulting a recovery nobody awaits. The token itself outlives the
-        // dispose and is cancelled before it, so a late recovery gives up at its first wait instead.
+        // Read once, here, and never through the source again: a root lost through the file events
+        // after the watch has returned starts a recovery once the source is disposed, and the
+        // source's Token throws once disposed. The token itself outlives the dispose and is
+        // cancelled before it, so such a recovery gives up at its first wait instead.
         var recoveryToken = recoveryCts.Token;
+
+        // The recovery an announcement starts, waited for as the watch closes; the latch below lets
+        // only one run at a time. Held before the subscription, so the connection releases it after
+        // the subscription: a late announcement through the file events starts a recovery that is
+        // handed a cancelled token and gives up at once, and none starts once it is released.
+        var recoveries = connection.Hold(() => new RunningTasks());
 
         // One notification per outage, whichever detector saw it first. On Windows the
         // watcher's own Error event (heard as Lost, with the root gone) reports the root's deletion almost instantly; on Linux,
@@ -82,7 +87,7 @@ public sealed class HierarchyWatch
         var rootLost = 0;
 
         connection.Hold(() => Subscribe(rootPath, model, HandleRootLost));
-        _ = WatchRootPresenceAsync(rootPath, HandleRootLost, recoveryToken);
+        var presence = WatchRootPresenceAsync(rootPath, HandleRootLost, recoveryToken);
         // Information: a watch is a long-lived resource with a subscription to the root's one
         // watcher behind it, so its open and close are the pair to look for when one is suspected
         // of leaking.
@@ -108,6 +113,14 @@ public sealed class HierarchyWatch
         {
             model.EntryChanged -= OnEntryChanged;
             await recoveryCts.CancelAsync();
+
+            // The poll first, since it may start a recovery on its way out; then that recovery,
+            // so neither outlives the watch that started it (code-structure FR-070). Not with the
+            // watch's token, which has usually ended by now: the recovery is cancelled, and only
+            // its return is waited for.
+            await presence;
+            await recoveries.StopAsync(CancellationToken.None);
+
             _logger.Information("Stopped watching {RootPath} on watch {WatchId}", rootPath, watchId);
         }
 
@@ -129,7 +142,7 @@ public sealed class HierarchyWatch
             }
 
             model.NotifyRootUnavailable(message);
-            _ = RecoverAsync();
+            recoveries.Start(_ => RecoverAsync());
         }
     }
 
@@ -181,9 +194,15 @@ public sealed class HierarchyWatch
                 }
             }
         }
-        catch (Exception exception) when (exception is OperationCanceledException or ObjectDisposedException)
+        catch (OperationCanceledException)
         {
             // The watch ended; the poll dies with it.
+        }
+        catch (Exception exception)
+        {
+            // Awaited by the watch as it closes, so it never throws: an announcement that failed
+            // ends the poll, and the file events still report a lost root.
+            _logger.Warning(exception, "The presence poll of {RootPath} failed; it stops", rootPath);
         }
     }
 
@@ -206,6 +225,11 @@ public sealed class HierarchyWatch
         {
             // The watch ended before the root folder came back; nothing to recover.
             _logger.Debug("Gave up waiting for {RootPath} to come back: the watch ended first", rootPath);
+        }
+        catch (Exception exception)
+        {
+            // Awaited by the watch as it closes, so it never throws.
+            _logger.Warning(exception, "Recovering {RootPath} failed; the next change tries again", rootPath);
         }
     }
 }

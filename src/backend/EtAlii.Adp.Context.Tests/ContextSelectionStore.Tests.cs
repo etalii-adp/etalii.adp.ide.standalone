@@ -576,4 +576,43 @@ public class ContextSelectionStoreTests : IDisposable
         Assert.Equal(ContextMessage.MessageOneofCase.Problems, message.MessageCase);
     }
 
+    [Fact]
+    public async Task DisposeAsync_CancelsTheRediscoveryUnderWay_AndReturnsOnlyOnceItHas()
+    {
+        // Arrange: a re-discovery that, once cancelled, finishes only when it is let go.
+        var store = new ContextSelectionStore(idleTimeout: TimeSpan.FromMinutes(5));
+        var watchId = ShortGuid.NewShortGuid();
+        var finish = new TaskCompletionSource();
+        var cancelled = false;
+        store.Set(watchId, Root, Record(new ContextSelectionStoreStubResolver(), "a.txt"), Holding);
+        store.Refresh(watchId);
+
+        // Act.
+        var disposing = store.DisposeAsync().AsTask();
+
+        // Assert: still closing while the re-discovery finishes, closed once it has.
+        var first = await Task.WhenAny(disposing, Task.Delay(TimeSpan.FromSeconds(1), TestContext.Current.CancellationToken));
+        Assert.False(first == disposing, "The store closed while a re-discovery it cancelled was still running.");
+        finish.SetResult();
+        await disposing.WaitAsync(Timeout, TestContext.Current.CancellationToken);
+        Assert.True(cancelled);
+
+        return;
+
+        async ValueTask<ContextSelectionRecord> Holding(ContextSelectionRecord record, CancellationToken cancellationToken)
+        {
+            try
+            {
+                await Task.Delay(System.Threading.Timeout.Infinite, cancellationToken);
+            }
+            catch (OperationCanceledException)
+            {
+                cancelled = true;
+                await finish.Task;
+                throw;
+            }
+
+            return record;
+        }
+    }
 }

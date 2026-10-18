@@ -98,7 +98,7 @@ public class HelmValidationFlowTests : IDisposable
         // Arrange.
         var store = _provider.GetRequiredService<IProblemStore>();
         var validator = _provider.GetRequiredService<ProjectValidator>();
-        using var maintenance = _provider.GetRequiredService<ProblemMaintenance>();
+        await using var maintenance = _provider.GetRequiredService<ProblemMaintenance>();
 
         var outcome = await validator.ValidateAsync(new ProjectValidationScope(_projectFolder), TestContext.Current.CancellationToken);
         store.Replace(_projectFolder, outcome.Problems);
@@ -123,7 +123,7 @@ public class HelmValidationFlowTests : IDisposable
         // Arrange.
         var store = _provider.GetRequiredService<IProblemStore>();
         var validator = _provider.GetRequiredService<ProjectValidator>();
-        using var maintenance = _provider.GetRequiredService<ProblemMaintenance>();
+        await using var maintenance = _provider.GetRequiredService<ProblemMaintenance>();
 
         HelmFixture.RepairIn(_chart);
         var clean = await validator.ValidateAsync(new ProjectValidationScope(_projectFolder), TestContext.Current.CancellationToken);

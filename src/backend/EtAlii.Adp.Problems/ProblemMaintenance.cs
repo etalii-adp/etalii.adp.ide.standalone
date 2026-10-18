@@ -18,7 +18,7 @@ namespace EtAlii.Adp.Problems;
 /// store cares (design note: a deviation from the design's "subscribes to the hierarchy's
 /// entry changes", which assumed a central model that does not exist).
 /// </remarks>
-public sealed class ProblemMaintenance : IDisposable
+public sealed class ProblemMaintenance : IDisposable, IAsyncDisposable
 {
     private static readonly ILogger _logger = Log.ForContext<ProblemMaintenance>();
 
@@ -32,6 +32,9 @@ public sealed class ProblemMaintenance : IDisposable
 
     /// <summary>Rapid changes coalesce per root: the window starts over until the burst settles.</summary>
     internal Debouncer<TrackedProblemRoot> Settling { get; }
+
+    /// <summary>The re-validations a settled burst started, waited for when maintenance closes (code-structure FR-070).</summary>
+    internal RunningTasks Revalidations { get; } = new();
 
     /// <summary>Where a tracked root hears its changes: the one watcher of each project root.</summary>
     internal ProjectFileEvents Events { get; }
@@ -68,14 +71,24 @@ public sealed class ProblemMaintenance : IDisposable
         });
     }
 
+    /// <summary>Cancels the re-validations under way without waiting for them, and stops tracking every root.</summary>
     public void Dispose()
     {
         Settling.Dispose();
+        Revalidations.Dispose();
         foreach (var root in _tracked.Values)
         {
             root.Dispose();
         }
         _tracked.Clear();
+    }
+
+    /// <summary>Settles nothing more, cancels the re-validations under way and waits until they have returned, then stops tracking every root.</summary>
+    public async ValueTask DisposeAsync()
+    {
+        Settling.Dispose();
+        await Revalidations.StopAsync();
+        Dispose();
     }
 
     // ---- what one event means ----------------------------------------------------------
@@ -126,7 +139,7 @@ public sealed class ProblemMaintenance : IDisposable
         _store.Move(root.Path, IoPath.GetRelativePath(root.Path, oldPath), IoPath.GetRelativePath(root.Path, newPath));
     }
 
-    internal async Task RevalidateAsync(TrackedProblemRoot root, IReadOnlyList<string> paths)
+    internal async Task RevalidateAsync(TrackedProblemRoot root, IReadOnlyList<string> paths, CancellationToken cancellationToken)
     {
         foreach (var path in paths)
         {
@@ -194,7 +207,7 @@ public sealed class ProblemMaintenance : IDisposable
 
             // One file changed, one file's worth of work (Requirement 5.1): a File scope
             // routes and validates just this pair.
-            var outcome = await _validator.ValidateAsync(new FileValidationScope(root.Path, relative), CancellationToken.None);
+            var outcome = await _validator.ValidateAsync(new FileValidationScope(root.Path, relative), cancellationToken);
             covered.AddRange(outcome.Problems.Select(problem => problem.RelativePath));
             _store.ReplaceFor(root.Path, covered.Distinct(StringComparer.OrdinalIgnoreCase).ToArray(), outcome.Problems);
         }
