@@ -13,25 +13,22 @@ namespace EtAlii.Adp.Hierarchy;
 public sealed class HierarchyContextSourceResolver : IContextSourceResolver
 {
     private readonly IHierarchyModelStore _hierarchyModelStore;
-    private readonly DiagramFileRouter _router;
-    private readonly DesignerFileRouter? _designerRouter;
-    private readonly EditorResolver _editorResolver;
+    private readonly ToolRouter _tools;
+    private readonly DiagramFileRouter _diagrams;
 
     /// <param name="hierarchyModelStore">The hierarchy model store.</param>
-    /// <param name="router">Says whether a file is a diagram, which is what decides that it may contain a selected element.</param>
-    /// <param name="editorResolver">
-    /// Answers for the files the router does not claim, so an activation can open the resolved
-    /// text editor's tab through the same mime-keyed mechanism a diagram uses
-    /// (modular-text-editors Requirement 5.2).
+    /// <param name="tools">
+    /// Says which tool serves a file: whether it may contain a selected element, and which canvas
+    /// an activation opens, an editor's included (modular-text-editors Requirement 5.2).
     /// </param>
-    public HierarchyContextSourceResolver(IHierarchyModelStore hierarchyModelStore, DiagramFileRouter router, EditorResolver editorResolver, DesignerFileRouter? designerRouter = null)
+    /// <param name="diagrams">Names the type of a registration that no deployed tool serves, so its tab can say so.</param>
+    public HierarchyContextSourceResolver(IHierarchyModelStore hierarchyModelStore, ToolRouter tools, DiagramFileRouter diagrams)
     {
-        _designerRouter = designerRouter;
-        ArgumentNullException.ThrowIfNull(router);
-        ArgumentNullException.ThrowIfNull(editorResolver);
+        ArgumentNullException.ThrowIfNull(tools);
+        ArgumentNullException.ThrowIfNull(diagrams);
         _hierarchyModelStore = hierarchyModelStore;
-        _router = router;
-        _editorResolver = editorResolver;
+        _tools = tools;
+        _diagrams = diagrams;
     }
 
     public bool CanResolve(ContextSource source) => source.SourceCase == ContextSource.SourceOneofCase.EntryId;
@@ -100,7 +97,7 @@ public sealed class HierarchyContextSourceResolver : IContextSourceResolver
     /// selected in it, a row of a table say, resolved by the designer type's resolver likewise.
     /// </summary>
     public ContextNesting NestingOf(ContextResolvedLevel level) =>
-        level.Target.IsContainer || _router.Route(level.Target.ResolvedFullPath) is DiagramRouted || _designerRouter?.Route(level.Target.ResolvedFullPath) is DesignerRouted
+        level.Target.IsContainer || _tools.Route(level.Target.ResolvedFullPath) is DiagramRouted or DesignerRouted
             ? ContextNesting.Contained
             : ContextNesting.NotNestable;
 
@@ -171,22 +168,24 @@ public sealed class HierarchyContextSourceResolver : IContextSourceResolver
         isFolder ? Directory.Exists(fullPath) : File.Exists(fullPath);
 
     /// <summary>
-    /// The routed diagram type of a file, for the selection detail. <c>Routed</c> carries the
-    /// definition's type and <c>UnknownType</c> the type the registration names - the client
-    /// can then open a tab that says the type is unavailable rather than treating the file as
-    /// plain. Everything else - no diagram, unreadable, or an extension more than one type
-    /// claims - is empty: what the backend refuses to route is not presented as openable.
+    /// The type of tool a file opens in, for the selection detail, as <see cref="ToolRouter"/>
+    /// decides it (code-structure FR-058; SC-015): a diagram's or a designer's origin, or
+    /// <c>editor/&lt;id&gt;</c> for an editor, whose tab keys on the same field. A registration naming
+    /// a type no deployed tool serves carries the type it names, so the client opens a tab that says
+    /// the type is unavailable rather than treating the file as plain (diagram-workspace-tabs
+    /// Requirements 1.4, 4.4). Everything else is empty: a registration that cannot be served, as
+    /// the open refuses it (behaviour change B-27, after B-26), and a file no tool claims or several
+    /// editors claim without a default. What the backend refuses to route is not presented as
+    /// openable.
     /// </summary>
     private string DiagramMimeTypeOf(string fullPath) =>
-        _router.Route(fullPath) switch
+        _tools.Route(fullPath) switch
         {
-            DiagramRouted routed => routed.Definition.Origin.MimeType,
-            DiagramUnknownType unknown => unknown.MimeType,
-            // Diagrams first, unconditionally - only what the router leaves falls through to
-            // the editor family, whose tab keys on the same field ("editor/<id>"). An
-            // ambiguous editor claim answers empty: the conflict was reported at startup, and
-            // an activation that opens nothing beats one that picks an arbitrary rival.
-            _ => _editorResolver.Resolve(fullPath) is EditorRouted editor ? $"editor/{editor.Definition.Id}" : "",
+            DiagramRouted diagram => diagram.Definition.Origin.MimeType,
+            DesignerRouted designer => designer.Definition.Origin,
+            ToolUnreadable => "",
+            var served => _diagrams.Route(fullPath) is DiagramUnknownType unknown
+                ? unknown.MimeType
+                : served is EditorRouted editor ? $"editor/{editor.Definition.Id}" : "",
         };
-
 }
