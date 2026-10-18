@@ -99,3 +99,30 @@ organisation resolves fine (`structurizr/lite` returns 200); the repositories ta
 read as a filter. Maven Central and GitHub releases were reachable the whole time, which is
 where the CLI used above came from. Recorded here rather than deleted, because the mistake
 was to treat one failed fetch as proof of a policy.
+
+## The findings corpus
+
+`findings/` holds one hand-written document per finding of the `c4-disl-fbl` specification that its requirements mark as read from the module, for the parity transcript (`../Parity/c4.transcript.json`, Requirement 1.2) to freeze what today's code does with it. Each holds its finding on purpose, so several are not valid Structurizr DSL and none is certified by the Structurizr CLI; they are kept out of the module's other sweeps, which name their fixtures one by one. The FBL real-file suite does read them, and `src/backend/EtAlii.Adp.Specification.Fbl.Tests/RealFiles/divergences.json` lists where `structurizr.fbl` reads them differently.
+
+| File | What it holds |
+|---|---|
+| `findings/lenient-spellings.dsl` | B6: keywords in any case, an unquoted name and description, extra words after the last argument, `web->api` without spaces, and ids written in another case. |
+| `findings/block-comments.dsl` | B5: `/* */` before and after a declaration, between a relationship's arguments, around a hidden declaration, and around a brace. |
+| `findings/trailing-comments.dsl` | B4 and B19: a `//` or `#` comment after every kind of line, and comment marks inside quotes. |
+| `findings/escaped-quote.dsl` | B7: `\"` inside names, descriptions and technologies, and a backslash that escapes nothing. |
+| `findings/nested-relationships.dsl` | B8: a relationship inside an element's block with its source implied, one with a block, one to nothing, and relationships between deployment elements. |
+| `findings/tags-in-block.dsl` | B9: tags written as a `tags` line inside an element's block, and the `External` tag. |
+| `findings/misplaced-container.dsl` | B10: a container in the model, a component outside any container, a container under a person and one in a group. |
+| `findings/unbalanced.dsl` | B22: a block that is never closed. |
+| `findings/view-without-key.dsl` | B2: a view of every kind written without a key, one with a key and a description, and a deployment view of `*`. |
+| `findings/unidentified-elements.dsl` | A8: elements declared without an identifier. |
+| `findings/dangling-both-ends.dsl` | A13: relationships whose source, destination or both name nothing, with and without a label. |
+| `findings/autolayout-ignores-positions.dsl` | A12: stored positions beside a view that declares `autoLayout` and one that does not (with `autolayout-ignores-positions.layout.json`). |
+| `findings/finding-order.dsl` | A11: one of every finding, so their order is frozen. |
+| `findings/include-directive.dsl` | B11: `!include` of a file and of a URL, before the workspace and inside the model and the views. |
+| `findings/hierarchical-identifiers.dsl` | B12: `!identifiers hierarchical`, two containers with the same identifier, and dotted references. |
+| `findings/view-statements.dsl` | B13: `title`, `include` lists, `exclude`, `autoLayout` with arguments, and a dynamic view's steps. |
+| `findings/sidecar-keys.dsl` | B16: a sidecar whose view and element keys are in another case, with a position for an element and a view that do not exist (with `sidecar-keys.layout.json`). |
+| `findings/first-drag-undo.dsl` | B17: two views over the same element, one with a stored position, for the undo of the first drag on the other (with `first-drag-undo.layout.json`). |
+
+What this corpus does not demonstrate: that the DSL in it is what Structurizr accepts (it is ADP's reading of the findings, not the CLI's), the sentences that need an I/O failure to appear (Requirement 7.4), and any construct a finding does not name.
