@@ -63,7 +63,7 @@ public class HierarchyModelEventsOutsideTheLockTests : IDisposable
     {
         // Arrange.
         var model = new HierarchyModel(_root, _catalog, new DiagramFileRouter(_catalog), new EditorResolver(new StubEditorCatalog(Plain)));
-        var (act, raisedBySite) = Arrange(site, model);
+        (Action act, Predicate<HierarchyEntryChange> raisedBySite) = Arrange(site, model);
         var heard = new List<HierarchyEntryChange>();
         var raisedUnderTheLock = new List<HierarchyEntryChange>();
         model.EntryChanged += change =>
