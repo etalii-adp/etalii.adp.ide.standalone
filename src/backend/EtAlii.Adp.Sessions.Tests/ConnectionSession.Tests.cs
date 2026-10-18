@@ -17,15 +17,18 @@ public class ConnectionSessionTests
         // Arrange.
         var log = new List<string>();
 
+        var hierarchy = new ConnectionPart("hierarchy", log);
+
         // Act.
         using var session = ConnectionSession.Open(
             _watchId,
             _root,
             [new ProjectPart("history", log), new ProjectPart("problems", log)],
-            [new ConnectionPart("hierarchy", log)]);
+            [hierarchy]);
 
         // Assert.
         Assert.Equal(["acquire history", "acquire problems", "acquire hierarchy"], log);
+        Assert.Equal((_watchId, _root), hierarchy.AcquiredFor);
         Assert.Equal(_watchId, session.WatchId);
         Assert.Equal(_root, session.Root);
     }
@@ -59,7 +62,7 @@ public class ConnectionSessionTests
         var thrown = Assert.Throws<InvalidOperationException>(() => ConnectionSession.Open(
             _watchId,
             _root,
-            [new ProjectPart("history", log), new ProjectPart("problems", log, failsToAcquire: true)],
+            [new ProjectPart("history", log), new FailingPart("problems")],
             [new ConnectionPart("hierarchy", log)]));
 
         // Assert.
@@ -78,7 +81,7 @@ public class ConnectionSessionTests
             _watchId,
             _root,
             [new ProjectPart("history", log)],
-            [new ConnectionPart("hierarchy", log), new ConnectionPart("selection", log, failsToAcquire: true)]));
+            [new ConnectionPart("hierarchy", log), new FailingPart("selection")]));
 
         // Assert.
         Assert.Equal("selection failed", thrown.Message);
@@ -135,34 +138,42 @@ public class ConnectionSessionTests
         Assert.Equal(["acquire history", "acquire hierarchy", "release hierarchy", "release history"], log);
     }
 
-    private sealed class ProjectPart(string name, List<string> log, bool failsToAcquire = false) : IProjectSessionPart
+    private sealed class ProjectPart(string name, List<string> log) : IProjectSessionPart
     {
-        public IDisposable Acquire(ProjectRoot root) => Part.Acquire(name, log, failsToAcquire, failsToRelease: false);
-    }
-
-    private sealed class ConnectionPart(string name, List<string> log, bool failsToAcquire = false, bool failsToRelease = false) : IConnectionSessionPart
-    {
-        public IDisposable Acquire(ShortGuid watchId, ProjectRoot root) => Part.Acquire(name, log, failsToAcquire, failsToRelease);
-    }
-
-    private static class Part
-    {
-        public static IDisposable Acquire(string name, List<string> log, bool failsToAcquire, bool failsToRelease)
+        public IDisposable Acquire(ProjectRoot root)
         {
-            if (failsToAcquire)
-            {
-                throw new InvalidOperationException($"{name} failed");
-            }
-
             log.Add($"acquire {name}");
-            return new CallbackDisposable(() =>
-            {
-                log.Add($"release {name}");
-                if (failsToRelease)
-                {
-                    throw new InvalidOperationException($"{name} failed to release");
-                }
-            });
+            return Released(name, log, failsToRelease: false);
         }
     }
+
+    private sealed class ConnectionPart(string name, List<string> log, bool failsToRelease = false) : IConnectionSessionPart
+    {
+        public (ShortGuid WatchId, ProjectRoot Root)? AcquiredFor { get; private set; }
+
+        public IDisposable Acquire(ShortGuid watchId, ProjectRoot root)
+        {
+            AcquiredFor = (watchId, root);
+            log.Add($"acquire {name}");
+            return Released(name, log, failsToRelease);
+        }
+    }
+
+    /// <summary>A part of either kind whose acquisition throws.</summary>
+    private sealed class FailingPart(string name) : IProjectSessionPart, IConnectionSessionPart
+    {
+        public IDisposable Acquire(ProjectRoot root) => throw new InvalidOperationException($"{name} failed");
+
+        public IDisposable Acquire(ShortGuid watchId, ProjectRoot root) => throw new InvalidOperationException($"{name} failed");
+    }
+
+    private static CallbackDisposable Released(string name, List<string> log, bool failsToRelease) =>
+        new(() =>
+        {
+            log.Add($"release {name}");
+            if (failsToRelease)
+            {
+                throw new InvalidOperationException($"{name} failed to release");
+            }
+        });
 }
