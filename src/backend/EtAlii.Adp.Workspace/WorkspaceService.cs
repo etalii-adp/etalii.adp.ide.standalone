@@ -75,7 +75,9 @@ public sealed class WorkspaceService : Diagram.Wire.WorkspaceService.WorkspaceSe
         // write at a time, and the sources run concurrently.
         var channel = Channel.CreateUnbounded<WorkspaceMessage>(new UnboundedChannelOptions { SingleReader = true });
         using var lifetime = CancellationTokenSource.CreateLinkedTokenSource(context.CancellationToken);
-        session.Hold(() => _connections.Register(watchId, userId, channel.Writer, lifetime.Token));
+        // Read here rather than in the acquisition, which captures nothing the method disposes.
+        var ended = lifetime.Token;
+        session.Hold(() => _connections.Register(watchId, userId, channel.Writer, ended));
         _logger.Information("Workspace stream open on watch {WatchId} for project {ProjectId}", watchId, request.ProjectId);
 
         var sources = new[]
