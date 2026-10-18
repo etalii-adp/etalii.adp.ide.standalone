@@ -142,12 +142,11 @@ public static class AdpFileWriter
     private static ILogger Logger => Log.ForContext(typeof(AdpFileWriter));
 
     /// <summary>
-    /// One turn per destination, keyed by the normalised full path - see <see cref="Save(string, string)"/>.
-    /// Ignoring case on Windows, where two spellings name one file and would otherwise take two
-    /// turns and race exactly as before; case-sensitive elsewhere, where they are two files.
+    /// The writer the static <see cref="Save(string, string)"/> and <see cref="Delete"/> take their
+    /// turns through, until their callers are handed an <see cref="IFileWriter"/> instead. It shares
+    /// no turns with an injected writer, so the callers of one path move over together.
     /// </summary>
-    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, object> _destinationTurns =
-        new(OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
+    private static readonly FileWriter _process = new();
 
     public static AdpFileWriteResult Create(string folder, string fileName, string firstLine) =>
         CreateAll(folder, [(fileName, firstLine + NewLine)]);
@@ -201,8 +200,8 @@ public static class AdpFileWriter
     /// <b>Scope, stated so it is not assumed.</b> In process only: two ADP processes publishing
     /// one file are not protected, and nothing measured requires it. <see cref="CreateAll"/> is
     /// not covered - it creates new files and refuses to overwrite, so it does not race this way.
-    /// One turn object is kept per distinct destination saved in the process's lifetime, which is
-    /// bounded by the documents a session touches.
+    /// A destination's turn is kept only while a save or a delete of it holds or waits for it
+    /// (code-structure FR-068).
     /// </para>
     /// </remarks>
     /// <exception cref="IOException">The write or the move failed.</exception>
@@ -230,7 +229,7 @@ public static class AdpFileWriter
     private static void Save(string path, byte[] content, Action<string, string> replace)
     {
         ArgumentNullException.ThrowIfNull(content);
-        SaveCore(path, null, content, replace);
+        _process.SaveOnThisThread(path, null, content, replace);
     }
 
     /// <summary>
@@ -244,47 +243,7 @@ public static class AdpFileWriter
     internal static void Save(string path, string content, Action<string, string> replace)
     {
         ArgumentNullException.ThrowIfNull(content);
-        SaveCore(path, content, null, replace);
-    }
-
-    /// <summary>
-    /// The one turn-taking save. Text or bytes, never both: the content is carried IN rather
-    /// than fetched through a callback, because the turn below may not call back out.
-    /// </summary>
-    private static void SaveCore(string path, string? text, byte[]? bytes, Action<string, string> replace)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(path);
-
-        var destination = IoPath.GetFullPath(path);
-        var turn = _destinationTurns.GetOrAdd(destination, static _ => new object());
-        var taken = false;
-        try
-        {
-            // Try first, without waiting, so a wait is logged only when one really happened - and
-            // only for another save to THIS destination, which is why the turns are per path and
-            // not striped: a stripe would report contention between files nobody wrote twice.
-            Monitor.TryEnter(turn, ref taken);
-            if (!taken)
-            {
-                Logger.Warning("Waited for another save to {Path} before publishing it", destination);
-                Monitor.Enter(turn, ref taken);
-            }
-
-            // NOTHING INSIDE THIS TURN MAY CALL BACK OUT. The turn is held across the scratch
-            // write, the replace or move, and the cleanup - so the destination holds exactly one
-            // writer's complete content by construction - and nothing below can re-enter Save or
-            // wait on something that might. Adding a callback, an event or a caller-supplied
-            // action here would make a deadlock possible; the replace handed in is a test seam
-            // and must stay a file operation.
-            Publish(path, text, bytes, replace);
-        }
-        finally
-        {
-            if (taken)
-            {
-                Monitor.Exit(turn);
-            }
-        }
+        _process.SaveOnThisThread(path, content, null, replace);
     }
 
     /// <summary>
@@ -310,42 +269,34 @@ public static class AdpFileWriter
     /// </remarks>
     /// <exception cref="IOException">The delete failed.</exception>
     /// <exception cref="UnauthorizedAccessException">The delete was refused.</exception>
-    public static void Delete(string path)
+    public static void Delete(string path) => _process.DeleteOnThisThread(path);
+
+    /// <summary>
+    /// Deletes <paramref name="destination"/>, a full path, and records that it happened, with the
+    /// turn of that path already taken. Missing already is success.
+    /// </summary>
+    internal static void DeleteTaken(string destination)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(path);
-
-        var destination = IoPath.GetFullPath(path);
-        var turn = _destinationTurns.GetOrAdd(destination, static _ => new object());
-        var taken = false;
-        try
+        if (!File.Exists(destination))
         {
-            Monitor.TryEnter(turn, ref taken);
-            if (!taken)
-            {
-                Logger.Warning("Waited for a save of {Path} before deleting it", destination);
-                Monitor.Enter(turn, ref taken);
-            }
-
-            if (!File.Exists(destination))
-            {
-                return;
-            }
-
-            File.Delete(destination);
-
-            // Information rather than Debug: this is the line a future failed publish is read
-            // against, and a record only kept at Debug is a record the gate log does not have.
-            Logger.Information("Deleted {Path} from pid {ProcessId}", destination, Environment.ProcessId);
+            return;
         }
-        finally
-        {
-            if (taken)
-            {
-                Monitor.Exit(turn);
-            }
-        }
+
+        File.Delete(destination);
+
+        // Information rather than Debug: this is the line a future failed publish is read
+        // against, and a record only kept at Debug is a record the gate log does not have.
+        Logger.Information("Deleted {Path} from pid {ProcessId}", destination, Environment.ProcessId);
     }
-    private static void Publish(string path, string? text, byte[]? bytes, Action<string, string> replace)
+
+    /// <summary>
+    /// Publishes the content over <paramref name="path"/>, with the turn of that path already taken.
+    /// NOTHING INSIDE THE TURN MAY CALL BACK OUT: it is held across the scratch write, the replace
+    /// or move, and the cleanup - so the destination holds exactly one writer's complete content by
+    /// construction - and nothing here can re-enter a save or wait on something that might. The
+    /// replace handed in is a test seam and must stay a file operation.
+    /// </summary>
+    internal static void Publish(string path, string? text, byte[]? bytes, Action<string, string> replace)
     {
         var directory = IoPath.GetDirectoryName(path);
         var folder = directory is { Length: > 0 } ? directory : ".";
@@ -457,7 +408,7 @@ public static class AdpFileWriter
         Logger.Debug("Published {Path}", path);
     }
 
-    private static void ReplaceDestination(string temporary, string path) =>
+    internal static void ReplaceDestination(string temporary, string path) =>
         File.Replace(temporary, path, destinationBackupFileName: null, ignoreMetadataErrors: true);
 
     /// <summary>
