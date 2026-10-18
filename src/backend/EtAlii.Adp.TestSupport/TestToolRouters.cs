@@ -13,7 +13,7 @@ namespace EtAlii.Adp.TestSupport;
 public static class TestToolRouters
 {
     /// <summary>The fallback editor every deployment has.</summary>
-    public static readonly EditorDefinition PlainText = new("plain", "Plain Text", IsFallback: true);
+    private static readonly EditorDefinition _plainText = new("plain", "Plain Text", IsFallback: true);
 
     public static ToolRouter For(params DiagramDefinition[] diagrams) =>
         For(new TestDiagramDefinitionCatalog(diagrams));
@@ -22,5 +22,5 @@ public static class TestToolRouters
         new(
             new DiagramFileRouter(diagrams),
             new DesignerFileRouter(new DesignerDefinitionCatalog { All = designers ?? [] }),
-            new EditorResolver(new EditorDefinitionCatalog { All = editors ?? [PlainText] }));
+            new EditorResolver(new EditorDefinitionCatalog { All = editors ?? [_plainText] }));
 }
