@@ -241,6 +241,29 @@ public class C4ContextActionProviderTests : IDisposable
         Assert.Contains("does not apply", failed.Message, StringComparison.OrdinalIgnoreCase);
     }
 
+    [Theory]
+    [InlineData("addPerson", "", "Auditor", "auditor")]
+    [InlineData("addSoftwareSystem", "", "Web App", "webApp")]
+    [InlineData("addContainer", "s", "Api", "api")]
+    [InlineData("addComponent", "web", "Router", "router")]
+    [InlineData("addContainer", "", "Nowhere", null)]
+    [InlineData("addContainer", "u", "Wrong parent", null)]
+    [InlineData("addPerson", "", "  ", null)]
+    [InlineData("addContainer", "parity:unknown", "Orphan", null)]
+    public void AnAdd_IsTheDefinitionsOperation_UnderTheIdentifierTheModuleMakesFromTheName(string operation, string parent, string name, string? expected)
+    {
+        // Arrange.
+        var workspace = _documents.GetOrLoad(_bodyPath).Model;
+        var identifier = C4Placement.IdentifierFor(workspace, name.Trim());
+
+        // Act: the operation the commit runs first, handed that identifier (gap C11).
+        var created = C4Definitions.Created(workspace, "model.dsl", C4Definitions.ViewOf(workspace, null), null, operation, parent, name, identifier);
+
+        // Assert: it creates the element under that identifier where the definition allows the add, and
+        // nothing where it refuses, which leaves the command to refuse on its own.
+        Assert.Equal(expected, created);
+    }
+
     [Fact]
     public async Task ADocumentThatCouldNotBeRead_IsRefusedByTheMenusAndTheGrid_AndWritesNothing()
     {

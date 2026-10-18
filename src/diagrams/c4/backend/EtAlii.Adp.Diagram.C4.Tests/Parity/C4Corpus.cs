@@ -1,4 +1,6 @@
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Hierarchy;
+using EtAlii.Adp.History;
 using Microsoft.Extensions.DependencyInjection;
 using Path = System.IO.Path;
 
@@ -93,6 +95,91 @@ internal static class C4Corpus
         return documents;
 
         static IEnumerable<string> Sorted(IEnumerable<string> paths) => paths.Order(StringComparer.Ordinal);
+    }
+
+    /// <summary>
+    /// One document of the corpus as the module reads it: its recorded name, the file name its body
+    /// was read from, its workspace, and for each view the ids of what that view draws.
+    /// </summary>
+    public sealed record Reading(string Name, string File, C4Workspace Workspace, IReadOnlyList<(C4View View, IReadOnlyList<string> Drawn)> Views);
+
+    /// <summary>
+    /// Every document of the corpus, read as the transcript reads it: in a temporary folder of its own
+    /// with the files that travel with it, through the module's store, and drawn by its mapper.
+    /// </summary>
+    public static async Task<IReadOnlyList<Reading>> ReadingsAsync(CancellationToken cancellationToken)
+    {
+        var readings = new List<Reading>();
+        await using var services = new ServiceCollection().AddCommands().AddHierarchyCommandHandlers().AddC4().BuildServiceProvider();
+        var store = services.GetRequiredService<IC4DocumentStore>();
+        var mapper = services.GetRequiredService<C4ElementMapper>();
+        foreach (var document in await DocumentsAsync(cancellationToken))
+        {
+            var folder = Path.Combine(Path.GetTempPath(), "EtAlii.Adp.C4Corpus", Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(folder);
+            try
+            {
+                var body = Path.Combine(folder, Path.GetFileName(document.Relative));
+                await File.WriteAllBytesAsync(body, document.Bytes, cancellationToken);
+                foreach ((string name, byte[] bytes) in document.Companions)
+                {
+                    await File.WriteAllBytesAsync(Path.Combine(folder, name), bytes, cancellationToken);
+                }
+
+                var workspace = (await store.GetOrLoadAsync(body, cancellationToken)).Model;
+                List<(C4View, IReadOnlyList<string>)> views =
+                [
+                    .. workspace.Views.Select(view => (view, (IReadOnlyList<string>)[.. mapper.Visible(workspace, view, DiagramViewport.Unbounded, body).Select(element => element.Id)])),
+                ];
+                readings.Add(new Reading(document.Relative, Path.GetFileName(body), workspace, views));
+                store.Forget(body);
+            }
+            finally
+            {
+                TestFolder.TryDelete(folder);
+            }
+        }
+
+        return readings;
+    }
+
+    /// <summary>An id no document of the corpus gives anything.</summary>
+    public const string Unknown = "parity:unknown";
+
+    /// <summary>
+    /// Every target the derived menus and rows are compared on: under each view of a document, with the
+    /// origin of that view's kind, every element and relationship of the model, everything the view
+    /// draws, the empty canvas and an unknown id; then with no view, under each of the six origins, the
+    /// model's targets, the empty canvas and the unknown id.
+    /// </summary>
+    public static IEnumerable<(string Document, string File, C4View? View, ToolOrigin Origin, string Target, C4Workspace Workspace)> Targets(IReadOnlyList<Reading> readings)
+    {
+        ArgumentNullException.ThrowIfNull(readings);
+        foreach (var reading in readings)
+        {
+            var workspace = reading.Workspace;
+            List<string> model =
+            [
+                .. workspace.Elements.Select(element => element.Id)
+                    .Concat(workspace.Relationships.Select(relationship => relationship.Id))
+                    .Distinct(StringComparer.Ordinal),
+            ];
+            foreach ((C4View view, IReadOnlyList<string> drawn) in reading.Views)
+            {
+                foreach (var target in model.Concat(drawn).Append("").Append(Unknown).Distinct(StringComparer.Ordinal))
+                {
+                    yield return (reading.Name, reading.File, view, OriginOf(view.Kind), target, workspace);
+                }
+            }
+
+            foreach ((ToolOrigin origin, _) in Types)
+            {
+                foreach (var target in model.Append("").Append(Unknown))
+                {
+                    yield return (reading.Name, reading.File, null, origin, target, workspace);
+                }
+            }
+        }
     }
 
     /// <summary>A path as the transcript names it: relative to <c>src/</c>, with forward slashes.</summary>

@@ -12,9 +12,16 @@ namespace EtAlii.Adp.Diagram.C4;
 /// history; the provider never touches the document itself (c4-diagrams Requirements 13.2, 13.3).
 /// </summary>
 /// <remarks>
+/// <para>
 /// What is offered depends on what is selected, and on what C4 says about it: only containers
 /// and components are offered a technology, because only they have one. An action that does not
 /// apply is not offered at all rather than greyed out (Requirement 13.7).
+/// </para>
+/// <para>
+/// <b>What is offered is derived from the DISL definition</b> (c4-disl-fbl Requirement 3.1): its context
+/// menus, their visibility, labels and groups, and the ids of its <c>x-c4</c> block. What each action
+/// asks, what it refuses and which command it builds stays here.
+/// </para>
 /// </remarks>
 public sealed class C4ContextActionProvider(IHistoryStackStore historyStacks, IC4DocumentStore documents)
     : DiagramActionProvider<LineDocument, C4Workspace>(historyStacks, documents)
@@ -25,78 +32,37 @@ public sealed class C4ContextActionProvider(IHistoryStackStore historyStacks, IC
     public const string RelabelActionId = "c4.relabel";
     public const string SetProtocolActionId = "c4.set-protocol";
 
-    /// <summary>
-    /// The add actions the toolbox names. `C4ToolboxProvider` builds these ids from the kinds a
-    /// view permits, and they were dangling until now - a palette whose entries named actions
-    /// nothing implemented.
-    /// </summary>
-    private static string AddActionIdFor(C4ElementKind kind) => $"c4.add-{kind.ToString().ToLowerInvariant()}";
-
-    /// <summary>The kinds the toolbox can currently add; the rest live in a deployment environment.</summary>
-    private static readonly C4ElementKind[] AddableKinds =
+    /// <summary>The add actions the toolbox and the empty canvas name, and the operation of the definition each runs.</summary>
+    private static readonly (C4ElementKind Kind, string Operation)[] AddableKinds =
     [
-        C4ElementKind.Person,
-        C4ElementKind.SoftwareSystem,
-        C4ElementKind.Container,
-        C4ElementKind.Component,
+        (C4ElementKind.Person, "addPerson"),
+        (C4ElementKind.SoftwareSystem, "addSoftwareSystem"),
+        (C4ElementKind.Container, "addContainer"),
+        (C4ElementKind.Component, "addComponent"),
     ];
 
     private const string Gone = "That element is no longer in this model.";
+
+    /// <summary>The add action's id for <paramref name="kind"/>, as the toolbox's drop names it.</summary>
+    private static string AddActionIdFor(C4ElementKind kind) => $"c4.add-{kind.ToString().ToLowerInvariant()}";
 
     /// <inheritdoc />
     protected override bool IsBody(string path) => path.EndsWith(Diagram.DocumentExtension, StringComparison.OrdinalIgnoreCase);
 
     /// <inheritdoc />
-    protected override IReadOnlyList<ContextActionGroupDefinition> Discover(DocumentEntry<LineDocument, C4Workspace> entry, string elementId)
+    /// <remarks>
+    /// Derived from the DISL definition of the view the target is drawn on (<see cref="C4Definitions.Menus"/>):
+    /// an element's menu, a stored relationship's, the empty canvas's adds; nothing for a line the view
+    /// derives, for an unknown id, or for a document that could not be read, every edit of which would
+    /// be refused.
+    /// </remarks>
+    protected override IReadOnlyList<ContextActionGroupDefinition> Discover(ContextTarget target, DocumentEntry<LineDocument, C4Workspace> entry)
     {
+        ArgumentNullException.ThrowIfNull(target);
         ArgumentNullException.ThrowIfNull(entry);
-
-        if (!entry.IsUsable)
-        {
-            // A document that could not be read offers nothing: every edit of it would be refused.
-            return [];
-        }
-
-        (C4Element? element, C4Relationship? relationship) = Resolve(entry.Model, elementId);
-        if (element is null && relationship is null)
-        {
-            // No element: the diagram itself. Only the adds that need no parent apply.
-            return elementId.Length == 0
-                ? [new ContextActionGroupDefinition(AddActionsFor(parent: null))]
-                : [];
-        }
-
-        if (relationship is not null)
-        {
-            // C4 requires a relationship to be labelled, and a protocol where it crosses a
-            // boundary - so those are the two things there are to do to one.
-            return [new ContextActionGroupDefinition([
-                new ContextActionDefinition(RelabelActionId, "Relabel…", "mdi-pencil-outline", new ContextShortcutDefinition("F2")),
-                new ContextActionDefinition(SetProtocolActionId, "Set technology…", "mdi-transit-connection-variant"),
-            ])];
-        }
-
-        var actions = new List<ContextActionDefinition>
-        {
-            new(RenameActionId, "Rename…", "mdi-pencil-outline", new ContextShortcutDefinition("F2")),
-            new(EditDescriptionActionId, element!.Description.Length > 0 ? "Edit description…" : "Add description…", "mdi-text-box-outline"),
-        };
-
-        // Only containers and components have a technology in C4; offering one on a person
-        // would invite an edit that the command then has to refuse.
-        if (element.Kind is C4ElementKind.Container or C4ElementKind.Component
-            or C4ElementKind.DeploymentNode or C4ElementKind.InfrastructureNode)
-        {
-            actions.Add(new ContextActionDefinition(
-                SetTechnologyActionId,
-                element.Technology.Length > 0 ? "Change technology…" : "Set technology…",
-                "mdi-tools"));
-        }
-
-        var adds = AddActionsFor(element);
-        return adds.Count == 0
-            ? [new ContextActionGroupDefinition(actions)]
-            : [new ContextActionGroupDefinition(actions), new ContextActionGroupDefinition(adds)];
+        return entry.IsUsable
+            ? C4Definitions.Menus(entry.Model, C4Disl.FileOf(target.ResolvedFullPath), C4Definitions.ViewOf(entry.Model, target.Origin), target.Origin, target.ElementId)
+            : [];
     }
 
     /// <inheritdoc />
@@ -182,7 +148,7 @@ public sealed class C4ContextActionProvider(IHistoryStackStore historyStacks, IC
         // canvas. The command judges whether that pairing is legal and says so if not.
         if (KindOfAdd(actionId) is { } adding)
         {
-            return new AddC4ElementCommand(bodyPath, adding, value, target.ElementId);
+            return AddCommand(bodyPath, model, target.Origin, adding, value, target.ElementId);
         }
 
         (C4Element? element, C4Relationship? relationship) = Resolve(model, target.ElementId);
@@ -200,7 +166,7 @@ public sealed class C4ContextActionProvider(IHistoryStackStore historyStacks, IC
     /// <summary>The kind an add action adds, or null when the id is not an add.</summary>
     private static C4ElementKind? KindOfAdd(string actionId)
     {
-        foreach (var kind in AddableKinds)
+        foreach ((C4ElementKind kind, string _) in AddableKinds)
         {
             if (actionId == AddActionIdFor(kind))
             {
@@ -211,22 +177,20 @@ public sealed class C4ContextActionProvider(IHistoryStackStore historyStacks, IC
         return null;
     }
 
-    /// <summary>What may be added inside <paramref name="parent"/> - or at the top, when it is null.</summary>
-    private static IReadOnlyList<ContextActionDefinition> AddActionsFor(C4Element? parent) =>
-        AddableKinds
-            .Where(kind => C4Placement.Refuse(C4Workspace.Empty, kind, parentId: "") is null)
-            .Where(kind => FitsInside(kind, parent))
-            .Select(kind => new ContextActionDefinition(AddActionIdFor(kind), $"Add {Spell(kind).ToLowerInvariant()}&", "mdi-plus"))
-            .ToArray();
-
-    /// <summary>C4's containment rule, as the menu needs it: what belongs inside what.</summary>
-    private static bool FitsInside(C4ElementKind kind, C4Element? parent) => kind switch
+    /// <summary>
+    /// The add <paramref name="kind"/> named <paramref name="value"/> inside <paramref name="parentId"/>, as
+    /// today's command writes it. The definition's operation is run first, with the identifier the
+    /// module makes from the name handed to it (<see cref="C4Placement.IdentifierFor"/>, standing in for
+    /// gap C11): where it creates the element, the command declares it under that identifier; where it
+    /// refuses, or the parent is not one it is for, the command is built as before and refuses on its own.
+    /// </summary>
+    private static AddC4ElementCommand AddCommand(string bodyPath, C4Workspace model, ToolOrigin? origin, C4ElementKind kind, string value, string parentId)
     {
-        C4ElementKind.Person or C4ElementKind.SoftwareSystem => parent is null,
-        C4ElementKind.Container => parent?.Kind == C4ElementKind.SoftwareSystem,
-        C4ElementKind.Component => parent?.Kind == C4ElementKind.Container,
-        _ => false,
-    };
+        var identifier = C4Placement.IdentifierFor(model, value.Trim());
+        var operation = AddableKinds.First(addable => addable.Kind == kind).Operation;
+        var created = C4Definitions.Created(model, C4Disl.FileOf(bodyPath), C4Definitions.ViewOf(model, origin), origin, operation, parentId, value, identifier);
+        return new AddC4ElementCommand(bodyPath, kind, value, parentId, created is { } id && id == identifier ? identifier : "");
+    }
 
     private static string Spell(C4ElementKind kind) => kind switch
     {

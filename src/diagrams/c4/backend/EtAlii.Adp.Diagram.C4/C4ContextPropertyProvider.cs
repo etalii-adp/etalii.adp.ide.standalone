@@ -1,7 +1,6 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.Documents;
-using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.C4;
@@ -23,6 +22,11 @@ namespace EtAlii.Adp.Diagram.C4;
 /// editable, because changing either is a change to the model's structure rather than to a
 /// value, and belongs to an action that can think about the consequences.
 /// </para>
+/// <para>
+/// <b>The rows are derived from the DISL definition</b> (c4-disl-fbl Requirement 3.1): its forms, their
+/// visibility, values, sections and reasons, and the ids of its <c>x-c4</c> block. Which command a new
+/// value is stays here.
+/// </para>
 /// </remarks>
 public sealed class C4ContextPropertyProvider(IHistoryStackStore historyStacks, IC4DocumentStore documents)
     : DiagramPropertyProvider<LineDocument, C4Workspace>(historyStacks, documents)
@@ -30,7 +34,6 @@ public sealed class C4ContextPropertyProvider(IHistoryStackStore historyStacks, 
     public const string NamePropertyId = "c4.name";
     public const string DescriptionPropertyId = "c4.description";
     public const string TechnologyPropertyId = "c4.technology";
-    private const string TagsPropertyId = "c4.tags";
     public const string KindPropertyId = "c4.kind";
     public const string IdentifierPropertyId = "c4.identifier";
 
@@ -41,26 +44,19 @@ public sealed class C4ContextPropertyProvider(IHistoryStackStore historyStacks, 
 
     private const string Gone = "That element is no longer in this model.";
 
-    /// <summary>Why the structural facts are shown without being editable.</summary>
-    private const string StructureReason =
-        "Changing this changes the shape of the model rather than a value, so it is done from the diagram rather than here.";
-
-    private const string EndpointReason =
-        "The ends of a relationship are what it is. Draw a different relationship to connect something else.";
-
     /// <inheritdoc />
     protected override bool IsBody(string path) => path.EndsWith(Diagram.DocumentExtension, StringComparison.OrdinalIgnoreCase);
 
     /// <inheritdoc />
-    protected override IReadOnlyList<ContextPropertyDefinition> Describe(DocumentEntry<LineDocument, C4Workspace> entry, string elementId)
+    /// <remarks>
+    /// Derived from the DISL definition of the view the target is drawn on (<see cref="C4Definitions.Rows"/>):
+    /// an element's form or a stored relationship's, nothing for anything else.
+    /// </remarks>
+    protected override IReadOnlyList<ContextPropertyDefinition> Describe(ContextTarget target, DocumentEntry<LineDocument, C4Workspace> entry)
     {
+        ArgumentNullException.ThrowIfNull(target);
         ArgumentNullException.ThrowIfNull(entry);
-
-        var workspace = entry.Model;
-        (C4Element? element, C4Relationship? relationship) = Resolve(workspace, elementId);
-        return element is not null ? Describe(element)
-            : relationship is not null ? Describe(workspace, relationship)
-            : [];
+        return C4Definitions.Rows(entry.Model, C4Disl.FileOf(target.ResolvedFullPath), C4Definitions.ViewOf(entry.Model, target.Origin), target.Origin, target.ElementId);
     }
 
     /// <inheritdoc />
@@ -89,59 +85,6 @@ public sealed class C4ContextPropertyProvider(IHistoryStackStore historyStacks, 
             ? DiagramPropertyChange.By(command)
             : DiagramPropertyChange.Refused($"'{propertyId}' is not a property of what is selected.");
     }
-
-    private static IReadOnlyList<ContextPropertyDefinition> Describe(C4Element element)
-    {
-        var properties = new List<ContextPropertyDefinition>
-        {
-            new(NamePropertyId, "Name", element.Name),
-            new(DescriptionPropertyId, "Description", element.Description, ContextPropertyEditor.Text),
-        };
-
-        // Only what C4 gives a technology to. A person does not have one, and offering an empty
-        // box for it would suggest the model is missing something it is not.
-        if (element.Kind is C4ElementKind.Container or C4ElementKind.Component
-            or C4ElementKind.DeploymentNode or C4ElementKind.InfrastructureNode)
-        {
-            properties.Add(new ContextPropertyDefinition(TechnologyPropertyId, "Technology", element.Technology));
-        }
-
-        properties.Add(new ContextPropertyDefinition(
-            TagsPropertyId,
-            "Tags",
-            string.Join(", ", element.Tags),
-            ContextPropertyEditor.Line,
-            // Tags drive the palette and mark an element external, so writing them wants a
-            // command of its own that can say what a tag will do. Shown meanwhile, because a
-            // reader wondering why a box is grey finds the answer here.
-            "Tags are edited in the document until an action exists for them."));
-
-        properties.Add(new ContextPropertyDefinition(KindPropertyId, "Kind", Spell(element.Kind), ContextPropertyEditor.Line, StructureReason, "Model"));
-        properties.Add(new ContextPropertyDefinition(IdentifierPropertyId, "Identifier", element.Id, ContextPropertyEditor.Line, StructureReason, "Model"));
-        return properties;
-    }
-
-    private static IReadOnlyList<ContextPropertyDefinition> Describe(C4Workspace workspace, C4Relationship relationship) =>
-    [
-        new(RelationshipDescriptionPropertyId, "Description", relationship.Description),
-        new(RelationshipTechnologyPropertyId, "Technology", relationship.Technology),
-        new(RelationshipSourcePropertyId, "From", NameOf(workspace, relationship.SourceId), ContextPropertyEditor.Line, EndpointReason, "Model"),
-        new(RelationshipDestinationPropertyId, "To", NameOf(workspace, relationship.DestinationId), ContextPropertyEditor.Line, EndpointReason, "Model"),
-    ];
-
-    /// <summary>The element's name where the model has one, and the raw identifier where it does not.</summary>
-    private static string NameOf(C4Workspace workspace, string id) =>
-        workspace.Find(id) is { Name.Length: > 0 } found ? found.Name : id;
-
-    private static string Spell(C4ElementKind kind) => kind switch
-    {
-        C4ElementKind.SoftwareSystem => "Software system",
-        C4ElementKind.DeploymentNode => "Deployment node",
-        C4ElementKind.InfrastructureNode => "Infrastructure node",
-        C4ElementKind.ContainerInstance => "Container instance",
-        C4ElementKind.SoftwareSystemInstance => "Software system instance",
-        _ => kind.ToString(),
-    };
 
     /// <summary>
     /// What <paramref name="elementId"/> names: an element, or a relationship, or neither. A
