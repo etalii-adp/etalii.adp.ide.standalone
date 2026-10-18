@@ -1,4 +1,3 @@
-using System.Threading.Channels;
 using EtAlii.Adp.Designer.TableModel;
 using EtAlii.Adp.Diagram.Wire;
 using EtAlii.Adp.Hierarchy;
@@ -154,7 +153,9 @@ public sealed class DesignerService : Proto.DesignerService.DesignerServiceBase
         // Before the first wait, so a call that follows the open finds the session.
         var id = (ShortGuid)streamId;
         _streams.Add(connection.WatchId, id, opened);
-        var changes = Channel.CreateUnbounded<TableChange>();
+        // Bounded by what one event raised, as a diagram stream's deltas are; a tab that stops
+        // reading ends the stream, and its consumer re-opens it for a fresh baseline (B-28).
+        var changes = StreamBound.Ending<TableChange[]>($"Table stream {id} on watch {connection.WatchId}");
 
         await using var session = opened;
         session.Changed += OnChanged;
@@ -163,9 +164,12 @@ public sealed class DesignerService : Proto.DesignerService.DesignerServiceBase
             await WriteAsync(connection, new Proto.TableStreamMessage { StreamId = streamId, Baseline = TableWire.ToProto(session.Baseline()) }, cancellationToken);
             _logger.Information("Opened table stream {StreamId} on watch {WatchId}", id, connection.WatchId);
 
-            await foreach (var change in changes.Reader.ReadAllAsync(cancellationToken))
+            await foreach (var batch in changes.Reader.ReadAllAsync(cancellationToken))
             {
-                await WriteAsync(connection, new Proto.TableStreamMessage { StreamId = streamId, Change = TableWire.ToProto(change) }, cancellationToken);
+                foreach (var change in batch)
+                {
+                    await WriteAsync(connection, new Proto.TableStreamMessage { StreamId = streamId, Change = TableWire.ToProto(change) }, cancellationToken);
+                }
             }
         }
         finally
@@ -179,9 +183,9 @@ public sealed class DesignerService : Proto.DesignerService.DesignerServiceBase
         // MUST STAY NON-BLOCKING: a session may raise this while holding its lock.
         void OnChanged(object? sender, TableChangedEventArgs args)
         {
-            foreach (var change in args.Changes)
+            if (args.Changes.Count > 0)
             {
-                changes.Writer.TryWrite(change);
+                changes.Writer.TryWrite([.. args.Changes]);
             }
         }
     }

@@ -177,7 +177,10 @@ public sealed class DiagramPump
     {
         (IDiagramSession openedSession, string bodyPath, ShortGuid watchId) = opened;
         await using var session = openedSession;
-        var channel = Channel.CreateUnbounded<Delta>();
+        // Bounded by batches - what one change or one view update produced - rather than by deltas,
+        // so a batch larger than the bound, such as a zoom out over a large diagram, never ends the
+        // stream it would only produce again once re-opened. A tab that stops reading ends it (B-28).
+        var channel = StreamBound.Ending<Delta[]>($"Diagram stream of {bodyPath} on watch {watchId}");
 
         session.Changed += OnChanged;
 
@@ -220,9 +223,12 @@ public sealed class DiagramPump
                 await write(DiagramWire.ToProto(delta), cancellationToken);
             }
 
-            await foreach (var delta in channel.Reader.ReadAllAsync(cancellationToken))
+            await foreach (var batch in channel.Reader.ReadAllAsync(cancellationToken))
             {
-                await write(delta, cancellationToken);
+                foreach (var delta in batch)
+                {
+                    await write(delta, cancellationToken);
+                }
             }
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -254,10 +260,7 @@ public sealed class DiagramPump
                 KindsOf(args.Deltas));
 
             // MUST STAY NON-BLOCKING: DiagramDocumentChangeHandler raises into this while holding its lock.
-            foreach (var delta in args.Deltas)
-            {
-                channel.Writer.TryWrite(DiagramWire.ToProto(delta));
-            }
+            Push(args.Deltas, channel);
         }
     }
 
@@ -292,7 +295,7 @@ public sealed class DiagramPump
         }
     }
 
-    private static void Apply(IDiagramSession session, DiagramViewport viewport, Channel<Delta> channel)
+    private static void Apply(IDiagramSession session, DiagramViewport viewport, Channel<Delta[]> channel)
     {
         var deltas = session.UpdateView(viewport);
         // What the new window cost: a module that streams by viewport answers with the elements
@@ -304,9 +307,14 @@ public sealed class DiagramPump
             _logger.Debug("The view update produced {DeltaCount} deltas: {DeltaKinds}", deltas.Count, KindsOf(deltas));
         }
 
-        foreach (var delta in deltas)
+        Push(deltas, channel);
+    }
+
+    private static void Push(IReadOnlyList<DiagramDelta> deltas, Channel<Delta[]> channel)
+    {
+        if (deltas.Count > 0)
         {
-            channel.Writer.TryWrite(DiagramWire.ToProto(delta));
+            channel.Writer.TryWrite([.. deltas.Select(DiagramWire.ToProto)]);
         }
     }
 
