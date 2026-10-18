@@ -133,7 +133,8 @@ public class ServiceCollectionAddAzurePipelineTests
         // Assert.
         Assert.IsType<PipelineSession>(session);
         Assert.NotEmpty(drawn);
-        Assert.Equal("Shared", provider.GetRequiredService<IPipelineDocumentStore>().GetOrLoad(folder.Path, body).Model.Jobs.Single().Name);
+        var held = await provider.GetRequiredService<IPipelineDocumentStore>().GetOrLoadAsync(folder.Path, body, cancellationToken);
+        Assert.Equal("Shared", held.Model.Jobs.Single().Name);
     }
 
     [Fact]
