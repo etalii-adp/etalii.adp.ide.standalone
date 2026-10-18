@@ -14,7 +14,7 @@ A diagram type is a folder under `src/diagrams/<diagram>/` with up to four subfo
 - `api/` — `timeline.proto`, the type's own wire payloads.
 - `client/` — the canvas, its registration, and a small `package.json`.
 - `examples/` — documents a reader can open and click around in.
-- `definition/` — `timeline.dis`, the type's DISL specification, with `timeline.md` beside it and the `provenance.json` that names the etalii-adp/etalii.adp revision it was copied from. It is bundled by [`bundle-disl.sh`](../src/diagrams/tools/bundle-disl.sh), never edited here, and embedded in the backend project.
+- `definition/` — `timeline.dis`, the type's DISL specification, with `timeline.md` beside it and the `provenance.json` that names the etalii-adp/etalii.adp revision it was copied from. It is bundled by [`bundle-disl.sh`](../src/diagrams/tools/bundle-disl.sh), never edited here, and embedded in the backend project. A module whose body several diagram types read names their definitions to the script, which writes a `<definition>.provenance.json` beside each, and loads them as one `BundledDefinitionSet`: C4's six, in `src/diagrams/c4/definition/`, are the example.
 
 The dependency direction is absolute: a module depends on core abstractions (`EtAlii.Adp.Diagram`, the bases of `EtAlii.Adp.Diagram.Modules` and the shared contracts), and **nothing in core depends on any module**. Core compiles and runs with your module's assembly absent. Everything below is a consequence of that rule.
 
