@@ -32,7 +32,7 @@ public sealed class ContextSelectionStore : IContextSelectionStore, IDisposable
         ChannelWriter<ContextMessage> writer,
         IReadOnlyList<ContextActionGroupDefinition> rootActions,
         IReadOnlyList<ContextActionGroupDefinition> projectActions,
-        ProjectProblems problems)
+        Func<ProjectProblems> problems)
     {
         var entry = _entries.Retain(watchId, CreateEntry);
         lock (entry.Gate)
@@ -42,10 +42,14 @@ public sealed class ContextSelectionStore : IContextSelectionStore, IDisposable
             entry.RootActions = rootActions;
             // The baseline: the selection (or the root's actions when nothing is selected), the
             // project's own actions, and the project's problems, so a connection is fully
-            // current the moment it registers.
+            // current the moment it registers. The problems are read here, with the writer
+            // already set and the gate held: a set that changes before this read is in the
+            // baseline, and the push of one that changes after it waits for the gate and lands
+            // behind it. Read before registering, a validation finishing in between pushed to a
+            // connection that was not there yet, and the baseline went stale for good (T292).
             writer.TryWrite(ContextSelectionRecord.ToWire(entry.Record, entry.RootActions));
             writer.TryWrite(ContextActionGroups.ToProto(projectActions));
-            writer.TryWrite(new ContextMessage { Problems = problems });
+            writer.TryWrite(new ContextMessage { Problems = problems() });
         }
     }
 
