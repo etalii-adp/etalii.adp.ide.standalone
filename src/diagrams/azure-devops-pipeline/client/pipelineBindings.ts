@@ -22,9 +22,6 @@ import type { NotationBindings } from "@client/canvas/library/disl/compileNotati
  *   strokes, which the classes paint).
  * - **The test ids** the canvas's tests and the browser pass find each element and indicator by.
  * - **F2.** The backend resolves the rename by its key rather than its id, as it always has.
- *
- * What the definition states and this canvas has never drawn is corrected before it is compiled, each
- * correction listed in {@link PIPELINE_CORRECTIONS} with its reason, until the definition says it.
  */
 
 /** The fixed control reach the "waits for" arrows have always had: the definition's `curvature`. */
@@ -106,6 +103,13 @@ export const PIPELINE_BINDINGS: NotationBindings = {
     // already falls back for.
     "self.label": NAME,
     "self.reference": NAME,
+    // Each kind's name line, which falls back to the kind's own identifying value: the display name
+    // the backend sends already does (`PipelineStage.Label`, `PipelineJob.Label`, `PipelineStep.Label`).
+    "self.label != '' ? self.label : 'stage'": NAME,
+    "self.label != '' ? self.label : 'job'": NAME,
+    "self.displayName != '' ? self.displayName : (has(self.identifier) && self.identifier != '' ? self.identifier.split('\\n')[0] : 'step')": NAME,
+    // Why a template is not followed, the sentence the backend sends (`PipelineTemplateUnresolved.Explanation`).
+    "self.explanation": "payload.unresolvedReason",
     "self.template": "payload.templatePath",
     "string(self.multiplicity)": "payload.multiplicity",
     "(has(self.environment) ? self.environment : '')": "payload.environment",
@@ -137,113 +141,3 @@ export const PIPELINE_BINDINGS: NotationBindings = {
   // The backend resolves the rename by its key, F2, as it always has; every other action is sent by its id.
   action: (action) => (action.id === RENAME ? { ...action, backendKey: "F2" } : action),
 };
-
-/**
- * One place where the bundled definition does not say what this canvas has always drawn, corrected
- * before it is compiled. Each is a defect of the definition, to be corrected in etalii-adp/etalii.adp
- * and bundled again; each states what the definition says now, and `correctedDefinition` refuses to
- * apply one whose definition no longer says it - so a corrected definition fails the build until its
- * correction here is removed, and none can outlive its reason.
- */
-export interface DefinitionCorrection {
-  /** The key's path from the definition's root. */
-  at: readonly (string | number)[];
-  /** What the definition says there now; `undefined` where it says nothing. */
-  says: unknown;
-  /** What it should say. */
-  should: unknown;
-  why: string;
-}
-
-/** The kinds drawn as a box inside a stage, or below the arrangement. */
-const BOXES: readonly string[] = ["Job", "DeploymentJob", "Step", "TemplateReference"];
-
-/** The name lines Rename… edits in place. */
-const RENAMED: readonly (readonly [string, string])[] = [
-  ["Stage", "self.label != '' ? self.label : 'stage'"],
-  ["Job", "self.label != '' ? self.label : 'job'"],
-  ["DeploymentJob", "self.label != '' ? self.label : 'job'"],
-  ["Step", "self.displayName != '' ? self.displayName : (has(self.identifier) && self.identifier != '' ? self.identifier.split('\\n')[0] : 'step')"],
-];
-
-export const PIPELINE_CORRECTIONS: readonly DefinitionCorrection[] = [
-  ...RENAMED.flatMap(([node, cel]): DefinitionCorrection[] => [
-    {
-      at: ["notation", "nodes", node, "labels", 0, "text"],
-      says: { cel },
-      should: { attribute: "displayName" },
-      why: "The menu offers Rename… (editLabel, F2), which edits this line in place, and only a label bound to an attribute can be edited (DISL 6.5). The backend's display name already falls back to the kind's own identifying value.",
-    },
-    {
-      at: ["notation", "nodes", node, "labels", 0, "editable"],
-      says: false,
-      should: "inline",
-      why: "Rename… edits this line in place; a label that is not editable refuses editLabel (DISL 6.9 GestureRefusals).",
-    },
-  ]),
-  ...[0, 1].map((label): DefinitionCorrection => ({
-    at: ["notation", "nodes", "Stage", "labels", label, "position", "align"],
-    says: undefined,
-    should: "start",
-    why: "A label anchored at the left edge and moved 12 in is written from there; with no align it is centred on that point (DISL 6.9 Positions), half of it outside the card.",
-  })),
-  ...BOXES.flatMap((node): DefinitionCorrection[] => [
-    {
-      at: ["notation", "nodes", node, "labels", 0, "position"],
-      says: { anchor: [0, 0], offset: [12, 24] },
-      should: { anchor: [0, 0.5], offset: [10, 4], align: "start" },
-      why: "A box's one line is its name, written 10 in from the left on a baseline 4 below the box's middle; anchored at the top and centred on its point, it stood 4 higher, 2 further in and half outside the box.",
-    },
-    {
-      at: ["notation", "nodes", node, "shape", "params", "radius"],
-      says: 6,
-      should: 4,
-      why: "A job, a step and a template are drawn with the corner of 4 every box has; only a stage's card has 6.",
-    },
-  ]),
-  {
-    at: ["notation", "nodes", "Stage", "badgeLayout", "offset"],
-    says: [-12, 12],
-    should: [-12, 20],
-    why: "A stage's indicators stand on the line of its name, 20 below its top; the offset is where their text stands, not their top.",
-  },
-  ...BOXES.filter((node) => node !== "TemplateReference").map((node): DefinitionCorrection => ({
-    at: ["notation", "nodes", node, "badgeLayout", "offset"],
-    says: [-12, 12],
-    should: [-8, 16],
-    why: "A box's indicators sit 8 in from its right edge and stand 16 below its top, closer to the corner than a stage's.",
-  })),
-  {
-    at: ["notation", "edges", "Dependency", "targetMarker"],
-    says: "arrow",
-    should: "arrowFilled",
-    why: "The arrow has always ended in a filled triangle; DISL's `arrow` is the open V (Appendix B.3).",
-  },
-];
-
-function same(a: unknown, b: unknown): boolean {
-  return JSON.stringify(a) === JSON.stringify(b);
-}
-
-/** The definition with every correction applied, each checked against what the definition says. */
-export function correctedDefinition<T extends object>(definition: T, corrections: readonly DefinitionCorrection[] = PIPELINE_CORRECTIONS): T {
-  const copy = structuredClone(definition) as Record<string | number, unknown>;
-  for (const correction of corrections) {
-    let holder = copy;
-    for (const key of correction.at.slice(0, -1)) {
-      const next = holder[key];
-      if (typeof next !== "object" || next === null) {
-        throw new Error(`pipelineBindings: the definition has no ${correction.at.join(".")}; the correction for it has nothing to correct.`);
-      }
-      holder = next as Record<string | number, unknown>;
-    }
-
-    const key = correction.at[correction.at.length - 1]!;
-    if (!same(holder[key], correction.says)) {
-      throw new Error(`pipelineBindings: the definition now says ${JSON.stringify(holder[key])} at ${correction.at.join(".")}, not ${JSON.stringify(correction.says)}; remove or update its correction.`);
-    }
-    holder[key] = correction.should;
-  }
-
-  return copy as T;
-}
