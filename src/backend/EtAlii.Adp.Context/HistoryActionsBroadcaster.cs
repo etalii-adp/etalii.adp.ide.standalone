@@ -1,3 +1,4 @@
+﻿using System.Collections.Concurrent;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.History;
 using Microsoft.Extensions.Hosting;
@@ -20,6 +21,12 @@ public sealed class HistoryActionsBroadcaster : IHostedService, IDisposable
     private readonly IContextActionResolver _actionResolver;
     private readonly IContextSelectionStore _selectionStore;
     private readonly Debouncer<string> _pending;
+    private readonly CancellationTokenSource _stopping = new();
+    private bool _isDisposed;
+
+    // The broadcasts under way, keyed by a token each knows and its task does not, so it can remove
+    // itself; null for the moment between a broadcast starting and its task being known.
+    private readonly ConcurrentDictionary<object, Task?> _broadcasts = new();
 
     public HistoryActionsBroadcaster(
         IHistoryStackStore historyStacks,
@@ -44,19 +51,38 @@ public sealed class HistoryActionsBroadcaster : IHostedService, IDisposable
     // A short window is enough to fold a handler that records several commands.
     private void OnHistoryChanged(object? sender, HistoryChangedEventArgs args) => _pending.Schedule(args.RootPath);
 
+    // Runs on the clock's timer, which it hands back at once: the discovery is awaited by the
+    // broadcast, and the broadcast by StopAsync, rather than waited on here (code-structure FR-070).
     private void Broadcast(string rootPath)
+    {
+        var key = new object();
+        _broadcasts[key] = null;
+        var broadcast = BroadcastAsync(rootPath, key);
+        _broadcasts.TryUpdate(key, broadcast, null);
+    }
+
+    /// <summary>Never throws: a broadcast that fails is logged and pushes nothing.</summary>
+    private async Task BroadcastAsync(string rootPath, object key)
     {
         try
         {
             var target = ProjectTarget(rootPath);
-            var actions = _actionResolver.DiscoverAsync(target, CancellationToken.None).AsTask().GetAwaiter().GetResult();
+            var actions = await _actionResolver.DiscoverAsync(target, _stopping.Token);
             _selectionStore.PushProjectActions(ProjectRoot.From(rootPath), actions);
+        }
+        catch (OperationCanceledException) when (_stopping.IsCancellationRequested)
+        {
+            // The host is stopping; nobody is left to push to.
         }
         catch (Exception exception)
         {
             // A discovery that failed pushes nothing; the clients keep the availability they
             // last had rather than losing their buttons to a transient fault.
             _logger.Warning(exception, "Could not broadcast project actions for {RootPath}", rootPath);
+        }
+        finally
+        {
+            _broadcasts.TryRemove(key, out _);
         }
     }
 
@@ -70,12 +96,26 @@ public sealed class HistoryActionsBroadcaster : IHostedService, IDisposable
     /// </summary>
     public Task StartAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 
-    /// <inheritdoc />
-    public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+    /// <summary>Starts no broadcast more, cancels the ones under way and waits until they have returned.</summary>
+    public async Task StopAsync(CancellationToken cancellationToken)
+    {
+        _pending.Dispose();
+        await _stopping.CancelAsync();
+        await Task.WhenAll(_broadcasts.Values.OfType<Task>()).WaitAsync(cancellationToken);
+    }
 
+    /// <summary>Safe to call more than once: the host may dispose its services twice.</summary>
     public void Dispose()
     {
+        if (_isDisposed)
+        {
+            return;
+        }
+
+        _isDisposed = true;
         _historyStacks.Changed -= OnHistoryChanged;
         _pending.Dispose();
+        _stopping.Cancel();
+        _stopping.Dispose();
     }
 }
