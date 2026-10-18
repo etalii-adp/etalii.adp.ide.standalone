@@ -25,9 +25,10 @@ internal sealed class RemovePipelineElementCommandHandler(IPipelineDocumentStore
 {
     /// <remarks>
     /// <para>
-    /// <b>Refused by the definition's deletion rules</b> (<c>keepLastStage</c>,
+    /// <b>Refused by the definition's deletion rules</b> (<c>keepLastStage</c>, <c>keepTheOnlyStart</c>,
     /// <c>keepLastJob</c> and <c>keepLastStep</c>), after the element is found and is one this file writes: a stage,
-    /// a job and a step must each keep a sibling, so the pipeline still queues (Requirement 9.4).
+    /// a job and a step must each keep a sibling, and the stages left must keep one that waits for nothing, so the
+    /// pipeline still queues (Requirement 9.4).
     /// </para>
     /// <para>
     /// <b>Then the definition's deletion policy</b>, with the children written inside the entry, so the removal of the
