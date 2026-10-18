@@ -50,6 +50,13 @@ public static class FileSystemWatchers
     /// <summary>Whether <paramref name="file"/> made a watcher of its own rather than being heard through its project root's.</summary>
     public static bool HasWatcherOfItsOwn(this WatchedFile file) => file.Folder is not null;
 
+    /// <summary>The watcher behind <paramref name="tree"/>; the tree must have been made outside every watched project root.</summary>
+    public static FileSystemWatcher Watcher(this WatchedTree tree) =>
+        tree.Folder?.Watcher ?? throw new InvalidOperationException($"{tree.Path} has no watcher of its own: it is heard through its project root.");
+
+    /// <summary>Whether <paramref name="tree"/> made a watcher of its own rather than being heard through its project root's.</summary>
+    public static bool HasWatcherOfItsOwn(this WatchedTree tree) => tree.Folder is not null;
+
     private static void Raise(FileSystemWatcher watcher, string method, EventArgs arguments) =>
         (typeof(FileSystemWatcher).GetMethod(method, BindingFlags.Instance | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException($"FileSystemWatcher.{method} was not found."))

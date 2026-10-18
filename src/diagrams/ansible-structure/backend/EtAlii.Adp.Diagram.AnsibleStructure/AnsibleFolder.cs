@@ -1,3 +1,4 @@
+using EtAlii.Adp.Files;
 using EtAlii.Adp.Specification.Disl;
 using EtAlii.Adp.Specification.Fbl.Plugins;
 using Serilog;
@@ -15,13 +16,14 @@ namespace EtAlii.Adp.Diagram.AnsibleStructure;
 /// <remarks>
 /// <para>
 /// <b>The library reads, settles and reads again; this watches.</b> The folder body opens no watcher, so
-/// this holds one, over the folder and everything under it, and hands every path it reports to
+/// this hears the folder and everything under it (<see cref="WatchedTree"/>: through the watched project root
+/// that holds it, or through a watcher of its own where none does), and hands every path it hears to
 /// <see cref="FolderBody.Notify"/>, which ignores what the reading does not depend on and reads once after
 /// the binding's <c>settle</c>. A path the plugin's <c>watch</c> names (a role's folders, the inventories) is
 /// one it depends on, so a file added to <c>roles/x/templates/</c> reads the folder again.
 /// </para>
 /// <para>
-/// <b>An overflow is a change.</b> A watcher's <c>Error</c> is the only sign that it dropped events, and which
+/// <b>An overflow is a change.</b> A lost event is the only sign that the watcher dropped events, and which
 /// path changed is then unknowable, so the folder itself is notified and read again.
 /// </para>
 /// <para>
@@ -41,14 +43,14 @@ public sealed class AnsibleFolder : IDisposable
     private readonly FolderBody _body;
     private volatile DislModel _disl;
 
-    internal AnsibleFolder(string folder, string? registration, TimeProvider? time = null)
+    internal AnsibleFolder(string folder, string? registration, TimeProvider? time = null, ProjectFileEvents? events = null)
     {
         _path = IoPath.GetFullPath(folder);
         Registration = registration is null ? null : IoPath.GetFullPath(registration);
         _body = FolderBody.Open(_path, AnsibleDefinition.Binding, new AnsibleFolderPlugin(new AnsibleFolderListing(_path)), registration: Registration, time: time);
         _disl = AnsibleDefinition.Model(_body.Model);
         _body.Changed += OnSettled;
-        FolderWatcher = Directory.Exists(_path) ? Watcher(_path) : null;
+        Tree = Directory.Exists(_path) ? new WatchedTree(_path, Heard, events) : null;
     }
 
     /// <summary>Raised once a burst of changes has settled: after the folder was read again, or after only the registration changed.</summary>
@@ -60,12 +62,12 @@ public sealed class AnsibleFolder : IDisposable
     /// <summary>The definition's model of the last reading, built once per reading.</summary>
     public DislModel Disl => _disl;
 
-    /// <summary>The watcher, for a test that has to make it overflow.</summary>
-    internal FileSystemWatcher? FolderWatcher { get; }
+    /// <summary>What hears the folder, for a test that has to reach its watcher; null for a folder that was not there.</summary>
+    internal WatchedTree? Tree { get; }
 
     public void Dispose()
     {
-        FolderWatcher?.Dispose();
+        Tree?.Dispose();
         _body.Changed -= OnSettled;
         _body.Dispose();
     }
@@ -80,32 +82,24 @@ public sealed class AnsibleFolder : IDisposable
         Changed?.Invoke(this, change);
     }
 
-    private FileSystemWatcher Watcher(string folder)
+    private void Heard(FileEvent heard)
     {
-        var watcher = new FileSystemWatcher(folder)
+        switch (heard)
         {
-            IncludeSubdirectories = true,
-            // Content matters as much as names: editing a file changes what the diagram means without renaming anything.
-            NotifyFilter = NotifyFilters.FileName | NotifyFilters.DirectoryName | NotifyFilters.LastWrite | NotifyFilters.Size,
-        };
-        watcher.Created += (_, e) => Notify(e.FullPath);
-        watcher.Changed += (_, e) => Notify(e.FullPath);
-        watcher.Deleted += (_, e) => Notify(e.FullPath);
-        // Either name counts: a file renamed away is as much a change as one renamed in.
-        watcher.Renamed += (_, e) =>
-        {
-            Notify(e.OldFullPath);
-            Notify(e.FullPath);
-        };
-        watcher.Error += (_, e) =>
-        {
-            _logger.Warning(e.GetException(), "The watcher for {Path} stumbled; reading it again", folder);
-            Notify(folder);
-        };
-
-        // Enabled after the handlers: a watcher live before its handlers exist raises into nothing.
-        watcher.EnableRaisingEvents = true;
-        return watcher;
+            case { Kind: FileEventKind.Lost }:
+                // Which path changed is unknowable, so the folder itself is read again.
+                _logger.Warning("Events under {Path} may have been lost; reading it again", _path);
+                Notify(_path);
+                break;
+            case { Kind: FileEventKind.Renamed, OldPath: { } oldPath }:
+                // Either name counts: a file renamed away is as much a change as one renamed in.
+                Notify(oldPath);
+                Notify(heard.Path);
+                break;
+            default:
+                Notify(heard.Path);
+                break;
+        }
     }
 
     /// <summary>Hands a path the watcher reported to the folder body. Guarded: this runs on the watcher's thread, where an exception ends the process.</summary>
