@@ -232,7 +232,6 @@ public class ServiceCollectionAddAzurePipelineTests
             nameof(PipelineContextSourceResolver),
             nameof(PipelineContextActionProvider),
             nameof(PipelineContextPropertyProvider),
-            nameof(PipelineToolboxProvider),
             nameof(PipelineDocumentStore),
         }.Where(name => program.Contains(name, StringComparison.Ordinal)).ToList();
 

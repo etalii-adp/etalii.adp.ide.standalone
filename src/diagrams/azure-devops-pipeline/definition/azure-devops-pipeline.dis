@@ -852,6 +852,10 @@
       { "id": "stepHasNothingToWaitFor", "kind": "change", "scope": "Step", "enforcement": "prevent",
         "rule": "attribute != 'dependsOn'",
         "message": "Steps run in order, so a step has nothing to wait for." },
+      { "id": "readOnlyElements", "kind": "change", "scope": "PipelineElement", "enforcement": "prevent",
+        "rule": "self.editable",
+        "message": { "cel": "self.readOnlyReason" },
+        "doc": "Declared second of the change rules, because the first refusal is the one a user reads (DISL 8.4: the declared gesture constraints are checked in the order of `rules`): a step's dependencies, then an element this file does not write, then a name that names nothing, a cycle and a pipeline left with nothing to start with, as the tool has always asked." },
       { "id": "knownName", "kind": "change", "scope": "JobBase", "enforcement": "prevent",
         "rule": "attribute != 'dependsOn' || newValue == null || newValue.all(n, self.parent.childrenOfType('JobBase').exists(o, has(o.name) && o.name.lowerAscii() == n.lowerAscii()))",
         "message": { "cel": "'This pipeline has nothing called \\'' + newValue.filter(n, !self.parent.childrenOfType('JobBase').exists(o, has(o.name) && o.name.lowerAscii() == n.lowerAscii()))[0] + '\\' to wait for.'" } },
@@ -881,10 +885,7 @@
         "message": { "cel": "(self.parent.label != '' ? self.parent.label : 'job') + ' needs at least one step.'" } },
       { "id": "templateStepsKeepOrder", "kind": "reorder", "scope": "Step", "enforcement": "prevent",
         "rule": "!self.parent.children.exists(s, s.fromTemplate)",
-        "message": "Some of this job's steps come from a template, so their order cannot be changed here." },
-      { "id": "readOnlyElements", "kind": "change", "scope": "PipelineElement", "enforcement": "prevent",
-        "rule": "self.editable",
-        "message": { "cel": "self.readOnlyReason" } }
+        "message": "Some of this job's steps come from a template, so their order cannot be changed here." }
     ]
   },
 

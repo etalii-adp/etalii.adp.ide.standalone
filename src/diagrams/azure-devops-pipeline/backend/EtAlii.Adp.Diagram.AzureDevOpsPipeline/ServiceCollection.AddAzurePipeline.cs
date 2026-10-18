@@ -1,4 +1,5 @@
 using EtAlii.Adp.Context;
+using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.History;
 using EtAlii.Adp.Sessions;
 using Microsoft.Extensions.DependencyInjection;
@@ -64,9 +65,10 @@ public static class ServiceCollectionAddAzurePipelineExtension
         // and the keyboard through the same path (Requirement 9.7).
         services.AddSingleton<IContextActionProvider, PipelineContextActionProvider>();
 
-        // What can be dragged onto the canvas. Each entry names an action above rather than
+        // What can be dragged onto the canvas: the bundled definition's toolbox, handed out by core's
+        // provider as for every type with a definition. Each entry names an action above rather than
         // carrying an implementation, so a drop and a menu click are the same edit.
-        services.AddSingleton<IDiagramToolboxProvider, PipelineToolboxProvider>();
+        services.AddSingleton<IDiagramToolboxProvider>(new DislToolboxProvider(Diagram.Pipeline.Origin, PipelineDefinition.Definition));
 
         // What a selected element shows, and which of it may be written from the panel
         // (Requirement 13.1). Almost everything is shown and not editable, on purpose.
