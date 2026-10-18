@@ -1,3 +1,4 @@
+using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph.Tests;
@@ -16,7 +17,7 @@ internal sealed class FdgTestDispatcher(IFdgDocumentStore documents) : ICommandD
         RenameFdgElementCommand rename => new RenameFdgElementCommandHandler(documents).ExecuteAsync(rename, cancellationToken),
         SetFdgDescriptionCommand describe => new SetFdgDescriptionCommandHandler(documents).ExecuteAsync(describe, cancellationToken),
         RenameFdgConnectionCommand renameConnection => new RenameFdgConnectionCommandHandler(documents).ExecuteAsync(renameConnection, cancellationToken),
-        RestoreDocumentCommand<IFdgDocumentStore> restore => new RestoreDocumentCommandHandler<IFdgDocumentStore>(documents).ExecuteAsync(restore, cancellationToken),
+        RestoreDocumentCommand<IFdgDocumentStore> restore => new RestoreDocumentCommandHandler<IFdgDocumentStore>(documents, new FileWriter()).ExecuteAsync(restore, cancellationToken),
         _ => throw new InvalidOperationException($"No handler is registered for {command.GetType().Name}."),
     };
 }

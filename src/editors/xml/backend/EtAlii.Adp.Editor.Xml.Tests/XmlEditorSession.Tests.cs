@@ -1,3 +1,4 @@
+using EtAlii.Adp.Files;
 using Xunit;
 
 namespace EtAlii.Adp.Editor.Xml.Tests;
@@ -39,7 +40,7 @@ public class XmlEditorSessionTests : IDisposable
         // Act: what this module read, written back the way every editor's save writes it.
         var opened = TextFileBuffer.Open(path);
         Assert.NotNull(opened.Buffer);
-        var error = await opened.Buffer.SaveAsync(session.Content, TestContext.Current.CancellationToken);
+        var error = await opened.Buffer.SaveAsync(session.Content, new FileWriter(), TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Equal("", error);

@@ -1,3 +1,4 @@
+using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
 using Xunit;
 using IoPath = System.IO.Path;
@@ -46,7 +47,7 @@ public class RdfCommandsTests : IDisposable
 
         // Act: undo through the reported inverse.
         var restore = Assert.IsType<RestoreDocumentCommand<IRdfDocumentStore>>(result.Inverse);
-        var undone = await new RestoreDocumentCommandHandler<IRdfDocumentStore>(_store).ExecuteAsync(restore, TestContext.Current.CancellationToken);
+        var undone = await new RestoreDocumentCommandHandler<IRdfDocumentStore>(_store, new FileWriter()).ExecuteAsync(restore, TestContext.Current.CancellationToken);
 
         // Assert: bytes restored exactly - comments, formatting and abbreviations included -
         // and the undo's own inverse is the original command, so redo re-runs the same edit.

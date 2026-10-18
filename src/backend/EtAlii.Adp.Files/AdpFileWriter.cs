@@ -141,12 +141,15 @@ public static class AdpFileWriter
     /// </remarks>
     private static ILogger Logger => Log.ForContext(typeof(AdpFileWriter));
 
-    /// <summary>
-    /// The writer the static <see cref="Save(string, string)"/> and <see cref="Delete"/> take their
-    /// turns through, until their callers are handed an <see cref="IFileWriter"/> instead. It shares
-    /// no turns with an injected writer, so the callers of one path move over together.
-    /// </summary>
     private static readonly FileWriter _process = new();
+
+    /// <summary>
+    /// The writer of the process: the static <see cref="Save(string, string)"/> and
+    /// <see cref="Delete"/> take their turns through it, and the host hands it to what takes an
+    /// <see cref="IFileWriter"/>, so a path saved both ways still takes one turn at a time while
+    /// the static callers are moved over to the injected writer (code-structure FR-068).
+    /// </summary>
+    public static IFileWriter Process => _process;
 
     public static AdpFileWriteResult Create(string folder, string fileName, string firstLine) =>
         CreateAll(folder, [(fileName, firstLine + NewLine)]);

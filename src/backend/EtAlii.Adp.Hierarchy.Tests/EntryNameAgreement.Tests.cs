@@ -1,3 +1,4 @@
+using EtAlii.Adp.Files;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -11,7 +12,7 @@ namespace EtAlii.Adp.Hierarchy.Tests;
 public sealed class EntryNameAgreementTests : IDisposable
 {
     private readonly string _root = Directory.CreateTempSubdirectory("adp-entry-names-").FullName;
-    private readonly RenameEntryCommandHandler _handler = new(new EmptyCatalog());
+    private readonly RenameEntryCommandHandler _handler = new(new EmptyCatalog(), new FileWriter());
 
     public void Dispose() => TestFolder.TryDelete(_root);
 

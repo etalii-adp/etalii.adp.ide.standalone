@@ -1,3 +1,4 @@
+using EtAlii.Adp.Files;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -52,7 +53,7 @@ public class ExamplesTests
             Assert.Equal("", session.Refusal);
             var opened = TextFileBuffer.Open(temp);
             Assert.NotNull(opened.Buffer);
-            var error = await opened.Buffer.SaveAsync(session.Content, TestContext.Current.CancellationToken);
+            var error = await opened.Buffer.SaveAsync(session.Content, new FileWriter(), TestContext.Current.CancellationToken);
 
             // Assert (Requirement 8.1: everything plain guarantees, this module guarantees).
             Assert.Equal("", error);

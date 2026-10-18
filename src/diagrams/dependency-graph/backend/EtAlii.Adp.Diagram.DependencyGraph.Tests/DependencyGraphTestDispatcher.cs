@@ -1,3 +1,4 @@
+using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.DependencyGraph.Tests;
@@ -21,7 +22,7 @@ internal sealed class DependencyGraphTestDispatcher(IDependencyGraphDocumentStor
         RemoveDependencyGraphElementCommand remove =>
             new RemoveDependencyGraphElementCommandHandler(documents).ExecuteAsync(remove, cancellationToken),
         RestoreDocumentCommand<IDependencyGraphDocumentStore> restore =>
-            new RestoreDocumentCommandHandler<IDependencyGraphDocumentStore>(documents).ExecuteAsync(restore, cancellationToken),
+            new RestoreDocumentCommandHandler<IDependencyGraphDocumentStore>(documents, new FileWriter()).ExecuteAsync(restore, cancellationToken),
         RenameDependencyGraphElementCommand rename =>
             new RenameDependencyGraphElementCommandHandler(documents).ExecuteAsync(rename, cancellationToken),
         ConnectDependencyGraphElementsCommand connect =>

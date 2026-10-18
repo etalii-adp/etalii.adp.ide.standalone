@@ -158,9 +158,13 @@ public sealed class TextFileBuffer
     /// own terminator, new lines get the file's dominant style, and the BOM comes back iff
     /// the file arrived with one. Returns an empty string, or the reason the save failed.
     /// </summary>
-    public async Task<string> SaveAsync(string newContent, CancellationToken cancellationToken = default)
+    /// <param name="newContent">The whole text to save.</param>
+    /// <param name="writer">What publishes the bytes, waiting for another save of the file without blocking a thread.</param>
+    /// <param name="cancellationToken">Gives up a wait for another save of the file.</param>
+    public async Task<string> SaveAsync(string newContent, IFileWriter writer, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(newContent);
+        ArgumentNullException.ThrowIfNull(writer);
 
         var rendered = Render(newContent);
         var bytes = StrictUtf8.GetBytes(rendered);
@@ -173,11 +177,11 @@ public sealed class TextFileBuffer
         {
             // THROUGH THE CENTRAL WRITER, not a FileStream of our own. Truncating the destination
             // in place let a reader see a half-written file, and opening it at FileShare.Read made
-            // a concurrent save fail; neither is this class's to decide. AdpFileWriter publishes
+            // a concurrent save fail; neither is this class's to decide. The writer publishes
             // through a scratch file and takes the destination's turn, so a reader sees the old
             // file or the new one and a delete cannot interleave. The bytes overload is what keeps
             // the byte-order mark this file arrived with.
-            await Task.Run(() => AdpFileWriter.Save(_path, bytes), cancellationToken);
+            await writer.SaveAsync(_path, bytes, cancellationToken);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {

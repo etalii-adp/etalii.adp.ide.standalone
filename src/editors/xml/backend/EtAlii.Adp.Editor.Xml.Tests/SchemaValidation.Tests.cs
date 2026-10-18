@@ -1,3 +1,4 @@
+using EtAlii.Adp.Files;
 using Xunit;
 
 namespace EtAlii.Adp.Editor.Xml.Tests;
@@ -133,7 +134,7 @@ public sealed class SchemaValidationTests : IDisposable
             await _project.AnalyzeAsync(Path.GetFileName(file));
             var opened = TextFileBuffer.Open(file);
             Assert.NotNull(opened.Buffer);
-            Assert.Equal("", await opened.Buffer.SaveAsync(opened.Buffer.Content, TestContext.Current.CancellationToken));
+            Assert.Equal("", await opened.Buffer.SaveAsync(opened.Buffer.Content, new FileWriter(), TestContext.Current.CancellationToken));
         }
 
         // Assert.

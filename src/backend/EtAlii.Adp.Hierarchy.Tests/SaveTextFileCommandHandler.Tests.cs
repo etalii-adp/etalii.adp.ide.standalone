@@ -1,3 +1,4 @@
+using EtAlii.Adp.Files;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -11,7 +12,7 @@ namespace EtAlii.Adp.Hierarchy.Tests;
 public class SaveTextFileCommandHandlerTests : IDisposable
 {
     private readonly string _root;
-    private readonly SaveTextFileCommandHandler _handler = new();
+    private readonly SaveTextFileCommandHandler _handler = new(new FileWriter());
 
     public SaveTextFileCommandHandlerTests()
     {

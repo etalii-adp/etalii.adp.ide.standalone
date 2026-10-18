@@ -34,21 +34,25 @@ public sealed class DeleteEntryCommandHandler : ICommandHandler<DeleteEntryComma
 
     private readonly IDiagramDefinitionCatalog _catalog;
     private readonly ToolRouter? _tools;
+    private readonly IFileWriter _writer;
 
     /// <param name="catalog">The diagram types, for a registration's body file and a subject's registrations.</param>
+    /// <param name="writer">What deletes a file, taking the turn a save of it takes.</param>
     /// <param name="tools">
     /// Which tool serves a file, or null in a host without the designer and editor families. A
     /// designer's document is two files as a diagram with a body file is, and neither is left
     /// behind by the other.
     /// </param>
-    public DeleteEntryCommandHandler(IDiagramDefinitionCatalog catalog, ToolRouter? tools = null)
+    public DeleteEntryCommandHandler(IDiagramDefinitionCatalog catalog, IFileWriter writer, ToolRouter? tools = null)
     {
         ArgumentNullException.ThrowIfNull(catalog);
+        ArgumentNullException.ThrowIfNull(writer);
         _catalog = catalog;
+        _writer = writer;
         _tools = tools;
     }
 
-    public Task<CommandResult> ExecuteAsync(
+    public async Task<CommandResult> ExecuteAsync(
         DeleteEntryCommand command,
         CancellationToken cancellationToken = default)
     {
@@ -57,14 +61,14 @@ public sealed class DeleteEntryCommandHandler : ICommandHandler<DeleteEntryComma
 
         if (string.IsNullOrWhiteSpace(command.FullPath))
         {
-            return Task.FromResult(CommandResult.Failure("No entry was given to delete."));
+            return CommandResult.Failure("No entry was given to delete.");
         }
 
         var path = IoPath.TrimEndingDirectorySeparator(command.FullPath);
         var isDirectory = Directory.Exists(path);
         if (!isDirectory && !File.Exists(path))
         {
-            return Task.FromResult(CommandResult.Failure("The entry no longer exists."));
+            return CommandResult.Failure("The entry no longer exists.");
         }
 
         // Resolved before the registration file goes: its first line is what names the
@@ -102,15 +106,15 @@ public sealed class DeleteEntryCommandHandler : ICommandHandler<DeleteEntryComma
             }
             else
             {
-                AdpFileWriter.Delete(path);
+                await _writer.DeleteAsync(path, cancellationToken);
                 if (sibling is not null && File.Exists(sibling))
                 {
-                    AdpFileWriter.Delete(sibling);
+                    await _writer.DeleteAsync(sibling, cancellationToken);
                 }
 
                 foreach (var registration in cascade)
                 {
-                    AdpFileWriter.Delete(registration);
+                    await _writer.DeleteAsync(registration, cancellationToken);
                 }
             }
         }
@@ -122,7 +126,7 @@ public sealed class DeleteEntryCommandHandler : ICommandHandler<DeleteEntryComma
             var remains = isDirectory && Directory.Exists(path);
             var suffix = remains ? " Some of its contents may already have been removed." : "";
             _logger.Warning(exception, "Could not fully delete {Path}", path);
-            return Task.FromResult(CommandResult.Failure($"Could not fully delete this item: {exception.Message}{suffix}"));
+            return CommandResult.Failure($"Could not fully delete this item: {exception.Message}{suffix}");
         }
 
         _logger.Information("Deleted {Path}", path);
@@ -131,6 +135,6 @@ public sealed class DeleteEntryCommandHandler : ICommandHandler<DeleteEntryComma
             _logger.Information("Deleted {Path} with its registration file", sibling);
         }
 
-        return Task.FromResult(CommandResult.Success());
+        return CommandResult.Success();
     }
 }

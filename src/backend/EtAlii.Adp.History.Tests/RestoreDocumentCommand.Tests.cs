@@ -1,4 +1,5 @@
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Files;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using IoPath = System.IO.Path;
@@ -34,7 +35,7 @@ public sealed class RestoreDocumentCommandTests : IDisposable
         var store = new FirstStore();
         var redo = new SampleEdit();
 
-        var result = await new RestoreDocumentCommandHandler<FirstStore>(store)
+        var result = await new RestoreDocumentCommandHandler<FirstStore>(store, new FileWriter())
             .ExecuteAsync(new RestoreDocumentCommand<FirstStore>(path, "before the edit\r\n", redo), TestContext.Current.CancellationToken);
 
         Assert.True(result.IsSuccess, result.Error);
@@ -50,7 +51,7 @@ public sealed class RestoreDocumentCommandTests : IDisposable
         await File.WriteAllTextAsync(path, "after the edit", TestContext.Current.CancellationToken);
         var store = new FirstStore();
 
-        var result = await new RestoreDocumentCommandHandler<FirstStore>(store)
+        var result = await new RestoreDocumentCommandHandler<FirstStore>(store, new FileWriter())
             .ExecuteAsync(new RestoreDocumentCommand<FirstStore>(path, "before the edit", new SampleEdit(), After: "after the edit"), TestContext.Current.CancellationToken);
 
         Assert.True(result.IsSuccess, result.Error);
@@ -67,7 +68,7 @@ public sealed class RestoreDocumentCommandTests : IDisposable
         await File.WriteAllTextAsync(path, "after the edit, and then an agent's line", TestContext.Current.CancellationToken);
         var store = new FirstStore();
 
-        var result = await new RestoreDocumentCommandHandler<FirstStore>(store)
+        var result = await new RestoreDocumentCommandHandler<FirstStore>(store, new FileWriter())
             .ExecuteAsync(new RestoreDocumentCommand<FirstStore>(path, "before the edit", new SampleEdit(), After: "after the edit"), TestContext.Current.CancellationToken);
 
         Assert.False(result.IsSuccess);
@@ -86,7 +87,7 @@ public sealed class RestoreDocumentCommandTests : IDisposable
         var path = IoPath.Combine(blocker, "body.yml");
         var store = new FirstStore();
 
-        var result = await new RestoreDocumentCommandHandler<FirstStore>(store)
+        var result = await new RestoreDocumentCommandHandler<FirstStore>(store, new FileWriter())
             .ExecuteAsync(new RestoreDocumentCommand<FirstStore>(path, "text", new SampleEdit()), TestContext.Current.CancellationToken);
 
         Assert.False(result.IsSuccess);
@@ -109,6 +110,7 @@ public sealed class RestoreDocumentCommandTests : IDisposable
         var services = new ServiceCollection()
             .AddSingleton(first)
             .AddSingleton(second)
+            .AddSingleton<IFileWriter>(new FileWriter())
             .AddSingleton<ICommandHandler<RestoreDocumentCommand<FirstStore>>, RestoreDocumentCommandHandler<FirstStore>>()
             .AddSingleton<ICommandHandler<RestoreDocumentCommand<SecondStore>>, RestoreDocumentCommandHandler<SecondStore>>()
             .BuildServiceProvider();

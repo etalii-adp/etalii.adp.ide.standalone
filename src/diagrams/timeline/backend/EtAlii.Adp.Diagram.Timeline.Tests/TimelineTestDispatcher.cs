@@ -1,3 +1,4 @@
+using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.Timeline.Tests;
@@ -21,7 +22,7 @@ internal sealed class TimelineTestDispatcher(ITimelineDocumentStore documents) :
         RemoveTimelineElementCommand remove =>
             new RemoveTimelineElementCommandHandler(documents).ExecuteAsync(remove, cancellationToken),
         RestoreDocumentCommand<ITimelineDocumentStore> restore =>
-            new RestoreDocumentCommandHandler<ITimelineDocumentStore>(documents).ExecuteAsync(restore, cancellationToken),
+            new RestoreDocumentCommandHandler<ITimelineDocumentStore>(documents, new FileWriter()).ExecuteAsync(restore, cancellationToken),
         RenameTimelineElementCommand rename =>
             new RenameTimelineElementCommandHandler(documents).ExecuteAsync(rename, cancellationToken),
         ConnectTimelineElementsCommand connect =>

@@ -1,3 +1,4 @@
+using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.SupplyChain.Tests;
@@ -17,7 +18,7 @@ internal sealed class SupplyChainTestDispatcher(ISupplyChainDocumentStore docume
         SetSupplyChainPropertyCommand set => new SetSupplyChainPropertyCommandHandler(documents).ExecuteAsync(set, cancellationToken),
         StepSupplyChainValueCommand step => new StepSupplyChainValueCommandHandler(documents).ExecuteAsync(step, cancellationToken),
         GroupSupplyChainNodeCommand group => new GroupSupplyChainNodeCommandHandler(documents).ExecuteAsync(group, cancellationToken),
-        RestoreDocumentCommand<ISupplyChainDocumentStore> restore => new RestoreDocumentCommandHandler<ISupplyChainDocumentStore>(documents).ExecuteAsync(restore, cancellationToken),
+        RestoreDocumentCommand<ISupplyChainDocumentStore> restore => new RestoreDocumentCommandHandler<ISupplyChainDocumentStore>(documents, new FileWriter()).ExecuteAsync(restore, cancellationToken),
         _ => throw new InvalidOperationException($"No handler is registered for {command.GetType().Name}."),
     };
 }

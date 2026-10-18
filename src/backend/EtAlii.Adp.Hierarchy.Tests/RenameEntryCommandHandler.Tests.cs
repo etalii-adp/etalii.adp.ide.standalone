@@ -1,5 +1,6 @@
 using EtAlii.Adp.Diagram;
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
@@ -10,7 +11,7 @@ namespace EtAlii.Adp.Hierarchy.Tests;
 public class RenameEntryCommandHandlerTests : IDisposable
 {
     private readonly string _root;
-    private readonly RenameEntryCommandHandler _handler = new(new EmptyCatalog());
+    private readonly RenameEntryCommandHandler _handler = new(new EmptyCatalog(), new FileWriter());
 
     public RenameEntryCommandHandlerTests()
     {
@@ -342,7 +343,7 @@ public class RenameEntryCommandHandlerTests : IDisposable
         var originalId = model.ListChildren(null).Single().Id;
         var changes = new List<HierarchyEntryChange>();
         model.EntryChanged += changes.Add;
-        var handler = new RenameEntryCommandHandler(new EmptyCatalog(), store);
+        var handler = new RenameEntryCommandHandler(new EmptyCatalog(), new FileWriter(), store);
 
         // Act.
         var result = await handler.ExecuteAsync(new RenameEntryCommand(path, "renamed.txt"), TestContext.Current.CancellationToken);
@@ -360,7 +361,7 @@ public class RenameEntryCommandHandlerTests : IDisposable
         // Arrange.
         var path = CreateFile("original.txt");
         var follower = new RecordingFollower();
-        var handler = new RenameEntryCommandHandler(new EmptyCatalog(), followers: [follower]);
+        var handler = new RenameEntryCommandHandler(new EmptyCatalog(), new FileWriter(), followers: [follower]);
 
         // Act: renamed in a project, and undone by its inverse.
         var result = await handler.ExecuteAsync(new RenameEntryCommand(path, "renamed.txt", _root), TestContext.Current.CancellationToken);
@@ -381,7 +382,7 @@ public class RenameEntryCommandHandlerTests : IDisposable
         var path = CreateFile("original.txt");
         CreateFile("taken.txt");
         var follower = new RecordingFollower();
-        var handler = new RenameEntryCommandHandler(new EmptyCatalog(), followers: [follower]);
+        var handler = new RenameEntryCommandHandler(new EmptyCatalog(), new FileWriter(), followers: [follower]);
 
         // Act: one refused, and one made without a project.
         var refused = await handler.ExecuteAsync(new RenameEntryCommand(path, "taken.txt", _root), TestContext.Current.CancellationToken);
@@ -411,7 +412,7 @@ public class RenameEntryCommandHandlerTests : IDisposable
         var store = new HierarchyModelStore(TestToolRouters.For());
         var model = store.GetOrCreate(ShortGuid.NewShortGuid(), ProjectRoot.From(_root));
         var originalId = model.ListChildren(null).Single().Id;
-        var handler = new RenameEntryCommandHandler(new EmptyCatalog(), store);
+        var handler = new RenameEntryCommandHandler(new EmptyCatalog(), new FileWriter(), store);
         var refused = await handler.ExecuteAsync(new RenameEntryCommand(path, "prod.first.adp"), TestContext.Current.CancellationToken);
         Assert.False(refused.IsSuccess);
         var changes = new List<HierarchyEntryChange>();

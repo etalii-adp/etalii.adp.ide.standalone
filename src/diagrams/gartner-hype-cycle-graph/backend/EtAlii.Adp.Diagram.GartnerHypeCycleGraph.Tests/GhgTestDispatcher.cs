@@ -1,3 +1,4 @@
+using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph.Tests;
@@ -24,7 +25,7 @@ internal sealed class GhgTestDispatcher(IGhgDocumentStore documents) : ICommandD
         AddGhgInfluenceCommand c => new AddGhgInfluenceCommandHandler(documents).ExecuteAsync(c, cancellationToken),
         SetGhgAttachmentCommand c => new SetGhgAttachmentCommandHandler(documents).ExecuteAsync(c, cancellationToken),
         RemoveGhgInfluenceCommand c => new RemoveGhgInfluenceCommandHandler(documents).ExecuteAsync(c, cancellationToken),
-        RestoreDocumentCommand<IGhgDocumentStore> c => new RestoreDocumentCommandHandler<IGhgDocumentStore>(documents).ExecuteAsync(c, cancellationToken),
+        RestoreDocumentCommand<IGhgDocumentStore> c => new RestoreDocumentCommandHandler<IGhgDocumentStore>(documents, new FileWriter()).ExecuteAsync(c, cancellationToken),
         _ => throw new InvalidOperationException($"No handler is registered for {command.GetType().Name}."),
     };
 }

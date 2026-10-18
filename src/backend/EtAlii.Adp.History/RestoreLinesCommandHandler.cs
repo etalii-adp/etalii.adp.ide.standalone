@@ -13,11 +13,11 @@ namespace EtAlii.Adp.History;
 /// <see cref="RestoreDocumentCommandHandler{TStore}"/> does: putting lines back needs nothing of the
 /// module's model, so a file that does not parse can still have its lines put back.
 /// </remarks>
-public sealed class RestoreLinesCommandHandler<TStore>(TStore documents)
+public sealed class RestoreLinesCommandHandler<TStore>(TStore documents, IFileWriter writer)
     : ICommandHandler<RestoreLinesCommand<TStore>>
     where TStore : IReloadableDocumentStore
 {
-    public Task<CommandResult> ExecuteAsync(
+    public async Task<CommandResult> ExecuteAsync(
         RestoreLinesCommand<TStore> command,
         CancellationToken cancellationToken = default)
     {
@@ -27,11 +27,11 @@ public sealed class RestoreLinesCommandHandler<TStore>(TStore documents)
         LineDocument document;
         try
         {
-            document = LineDocument.Parse(SharedDocumentReader.ReadAllText(command.BodyPath));
+            document = LineDocument.Parse(await SharedDocumentReader.ReadAllTextAsync(command.BodyPath, cancellationToken));
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
-            return Task.FromResult(CommandResult.Failure($"Could not restore the file: {exception.Message}"));
+            return CommandResult.Failure($"Could not restore the file: {exception.Message}");
         }
 
         foreach (var segment in command.Segments)
@@ -40,8 +40,8 @@ public sealed class RestoreLinesCommandHandler<TStore>(TStore documents)
             {
                 // The file has been cut down since the removal, so there is no longer a place to put
                 // these back. Refusing is honest; guessing a position is not.
-                return Task.FromResult(CommandResult.Failure(
-                    $"{Path.GetFileName(command.BodyPath)} has changed too much since then to put that back."));
+                return CommandResult.Failure(
+                    $"{Path.GetFileName(command.BodyPath)} has changed too much since then to put that back.");
             }
 
             document.Insert(segment.Start, segment.Lines);
@@ -49,14 +49,14 @@ public sealed class RestoreLinesCommandHandler<TStore>(TStore documents)
 
         try
         {
-            AdpFileWriter.Save(command.BodyPath, document.Text);
+            await writer.SaveAsync(command.BodyPath, document.Text, cancellationToken);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
-            return Task.FromResult(CommandResult.Failure($"Could not restore the file: {exception.Message}"));
+            return CommandResult.Failure($"Could not restore the file: {exception.Message}");
         }
 
         documents.Reload(command.BodyPath);
-        return Task.FromResult(CommandResult.Success(command.Redo));
+        return CommandResult.Success(command.Redo);
     }
 }
