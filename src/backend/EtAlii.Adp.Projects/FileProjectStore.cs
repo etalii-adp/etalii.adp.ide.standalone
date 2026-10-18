@@ -128,6 +128,7 @@ public sealed class FileProjectStore : IProjectStore
 
         var json = JsonSerializer.Serialize(projects, new JsonSerializerOptions { WriteIndented = true });
         await _writer.SaveAsync(filePath, json, cancellationToken);
+        // ReSharper disable once InconsistentlySynchronizedField - Reason: a static Serilog logger is safe on any thread; the lock guards the kept lists, not it.
         _logger.Debug("Wrote {Count} projects for {UserId} to {StorePath}", projects.Count, userId, filePath);
     }
 
