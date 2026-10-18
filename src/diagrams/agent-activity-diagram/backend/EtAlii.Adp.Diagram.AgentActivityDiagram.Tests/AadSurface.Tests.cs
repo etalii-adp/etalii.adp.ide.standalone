@@ -98,7 +98,7 @@ public sealed class AadSurfaceTests : IDisposable
         // Assert.
         Assert.IsType<ContextExecutionCompleted>(folded);
         Assert.IsType<ContextExecutionCompleted>(shown);
-        var model = _services.GetRequiredService<IAadDocumentStore>().GetOrLoad(Body).Model;
+        var model = (await _services.GetRequiredService<IAadDocumentStore>().GetOrLoadAsync(Body, TestContext.Current.CancellationToken)).Model;
         Assert.Contains("progressing", model.Collapsed["s-knowledge"]);
         Assert.True(model.ShowArchived);
         Assert.Contains("already joined", Assert.IsType<ContextExecutionFailed>(refused).Message, StringComparison.Ordinal);

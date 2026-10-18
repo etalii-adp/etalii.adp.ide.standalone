@@ -24,14 +24,6 @@ public interface IDiagramDocumentStore : IReloadableDocumentStore
     /// <summary>The body at <paramref name="path"/> was deleted: the document ends as a new, empty one, and the sessions on it are told.</summary>
     void BodyDeleted(string path);
 
-    /// <inheritdoc cref="BodyDeleted"/>
-    /// <remarks>As <see cref="IReloadableDocumentStore.ReloadAsync"/> answers through <see cref="IReloadableDocumentStore.Reload"/> until a store has moved.</remarks>
-    Task BodyDeletedAsync(string path, CancellationToken cancellationToken)
-    {
-        BodyDeleted(path);
-        return Task.CompletedTask;
-    }
-
     /// <summary>Drops the loaded document at <paramref name="path"/>, so the next open reads the file afresh.</summary>
     void Forget(string path);
 }

@@ -143,7 +143,7 @@ public sealed class AadFindingsTests : IDisposable
         // Act: an agent leaves the file half written.
         const string broken = "agent-activity-diagram: 1\r\nprojects: [\r\n";
         await File.WriteAllTextAsync(Body, broken, token);
-        documents.Reload(Body);
+        await documents.ReloadAsync(Body, TestContext.Current.CancellationToken);
         var still = session.UpdateView(DiagramViewport.Unbounded);
         var shown = session.Baseline().OfType<DiagramAddDelta>().Sum(delta => delta.Elements.Count);
         var edit = await _services.GetRequiredService<IHistoryStackStore>().Get(_root).ExecuteAsync(new SetAadAttributeCommand(Body, "p-adp", "name", "Renamed"), token);

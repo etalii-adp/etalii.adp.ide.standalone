@@ -47,7 +47,7 @@ public class DocumentLifecycleTests : IDisposable
         var path = Write("held.note", "content nobody can read right now");
         var lifecycle = new DocumentLifecycle<Note>(Parse);
 
-        using var holder = Hold(path);
+        await using var holder = Hold(path);
         var note = await GetOrLoad(lifecycle, path, asynchronously);
 
         Assert.Equal("", note.Text);
@@ -63,7 +63,7 @@ public class DocumentLifecycleTests : IDisposable
         var missing = IoPath.Combine(_folder, "missing.note");
         var lifecycle = new DocumentLifecycle<Note>(Parse, Unavailable);
 
-        using var holder = Hold(held);
+        await using var holder = Hold(held);
         var unreadable = await GetOrLoad(lifecycle, held, asynchronously);
 
         Assert.Equal("unavailable: Unreadable", unreadable.Text);
@@ -101,7 +101,7 @@ public class DocumentLifecycleTests : IDisposable
         var lifecycle = new DocumentLifecycle<Note>(Parse);
         var good = await GetOrLoad(lifecycle, path, asynchronously);
 
-        using var holder = Hold(path);
+        await using var holder = Hold(path);
         var installed = await Reload(lifecycle, path, asynchronously);
 
         Assert.False(installed);

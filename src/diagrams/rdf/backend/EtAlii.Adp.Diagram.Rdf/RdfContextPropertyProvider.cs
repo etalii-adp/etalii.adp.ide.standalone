@@ -152,7 +152,7 @@ public sealed class RdfContextPropertyProvider : IContextPropertyProvider
     {
         ArgumentNullException.ThrowIfNull(target);
 
-        var entry = _documents.GetOrLoad(target.ResolvedFullPath);
+        var entry = await _documents.GetOrLoadAsync(target.ResolvedFullPath, cancellationToken);
         if (RdfSelection.IsTruncated(entry))
         {
             return ContextPropertyResult.Failure(RdfSelection.TruncatedRefusal);

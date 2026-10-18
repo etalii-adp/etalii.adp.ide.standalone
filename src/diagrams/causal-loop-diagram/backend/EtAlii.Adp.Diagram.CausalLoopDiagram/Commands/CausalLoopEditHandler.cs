@@ -27,7 +27,7 @@ public abstract class CausalLoopEditHandler<TCommand> : DocumentEditHandler<TCom
     /// <inheritdoc />
     /// <remarks>A document that could not be read is refused in this module's own sentence, as it always was.</remarks>
     protected override async Task<CommandResult> RunAsync(TCommand command, CancellationToken cancellationToken) =>
-        _documents.GetOrLoad(command.BodyPath).IsUsable ? await base.RunAsync(command, cancellationToken) : CommandResult.Failure(CausalLoopEdits.Unreadable);
+        (await _documents.GetOrLoadAsync(command.BodyPath, cancellationToken)).IsUsable ? await base.RunAsync(command, cancellationToken) : CommandResult.Failure(CausalLoopEdits.Unreadable);
 
     /// <inheritdoc />
     protected sealed override CausalLoopModel Parse(CausalLoopBody body) => body.Read();

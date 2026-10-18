@@ -121,7 +121,7 @@ public sealed class ArrangeAbmNodeCommandHandler(IAbmDocumentStore documents, IF
         ArgumentNullException.ThrowIfNull(command);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var entry = documents.GetOrLoad(command.BodyPath);
+        var entry = await documents.GetOrLoadAsync(command.BodyPath, cancellationToken);
         if (!entry.IsUsable)
         {
             return CommandResult.Failure(
@@ -221,7 +221,7 @@ public sealed class RestoreAbmArrangementCommandHandler(IAbmDocumentStore docume
         }
 
         var positions = RegistrationLayout.Read(command.RegistrationPath);
-        var text = command.Text is not null ? documents.GetOrLoad(command.BodyPath).Document.Text : null;
+        var text = command.Text is not null ? (await documents.GetOrLoadAsync(command.BodyPath, cancellationToken)).Document.Text : null;
         try
         {
             // The positions first, for the same reason the drop writes them first.
@@ -229,7 +229,9 @@ public sealed class RestoreAbmArrangementCommandHandler(IAbmDocumentStore docume
             if (command.Text is not null)
             {
                 await writer.SaveAsync(command.BodyPath, command.Text, cancellationToken);
-                documents.Reload(command.BodyPath);
+                // Not with the request's token: the file is written, so the store reads it whatever
+                // becomes of the request.
+                await documents.ReloadAsync(command.BodyPath, CancellationToken.None);
             }
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)

@@ -92,7 +92,7 @@ public sealed class TimelineRoundTripTests : IDisposable
         var token = TestContext.Current.CancellationToken;
         var store = new TimelineDocumentStore(new FileWriter());
         var path = await CopyAsync(bytes);
-        var model = store.GetOrLoad(path).Model;
+        var model = (await store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Model;
         var lines = Encoding.UTF8.GetString(bytes).Split('\n');
         var edits = new List<(string Name, Func<Task<CommandResult>> Run)>();
 
@@ -133,8 +133,9 @@ public sealed class TimelineRoundTripTests : IDisposable
         var bytes = await ReadAsync(relative);
         var token = TestContext.Current.CancellationToken;
         var applied = 0;
+        var original = (await new TimelineDocumentStore(new FileWriter()).GetOrLoadAsync(await CopyAsync(bytes), token)).Model;
 
-        foreach ((string name, Func<string, ICommand> edit) in Edits(new TimelineDocumentStore(new FileWriter()).GetOrLoad(await CopyAsync(bytes)).Model))
+        foreach ((string name, Func<string, ICommand> edit) in Edits(original))
         {
             var path = await CopyAsync(bytes);
             var store = new TimelineDocumentStore(new FileWriter());
@@ -156,7 +157,7 @@ public sealed class TimelineRoundTripTests : IDisposable
         }
 
         // A document that cannot be read takes no edit; every other takes at least the adds.
-        Assert.True(applied >= 2 || new TimelineDocumentStore(new FileWriter()).GetOrLoad(await CopyAsync(bytes)).Model.Elements.Count == 0, $"{relative}: only {applied} edits applied, so the round trips prove little.");
+        Assert.True(applied >= 2 || original.Elements.Count == 0, $"{relative}: only {applied} edits applied, so the round trips prove little.");
     }
 
     /// <summary>The text the row of <paramref name="element"/> is written with, without its quotes; null for no row key.</summary>

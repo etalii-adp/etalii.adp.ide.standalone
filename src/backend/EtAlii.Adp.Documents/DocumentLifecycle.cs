@@ -360,7 +360,7 @@ public sealed class DocumentLifecycle<TDocument> : DocumentLifecycle
     /// </summary>
     private async Task<ReadOutcome> TryReadAsync(string path, bool retryMissing, CancellationToken cancellationToken)
     {
-        var (outcome, attempts) = await WatchedFile.RetryAsync(
+        (ReadOutcome outcome, int attempts) = await WatchedFile.RetryAsync(
             token => TryReadOnceAsync(path, token),
             read => read.Succeeded || !(read.Unavailability == DocumentUnavailability.Unreadable || retryMissing),
             _readAttempts,

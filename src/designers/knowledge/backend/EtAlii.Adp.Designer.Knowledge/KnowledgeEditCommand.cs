@@ -133,7 +133,9 @@ internal sealed class KnowledgeEditCommandHandler(IKnowledgeDocumentStore docume
 
         foreach (var file in written)
         {
-            documents.Reload(file.Path);
+            // Not with the request's token: the file is written, so the store reads it whatever
+            // becomes of the request.
+            await documents.ReloadAsync(file.Path, CancellationToken.None);
         }
 
         if (written.Count > 1 || written[0].Path != command.BodyPath)
@@ -221,7 +223,9 @@ internal sealed class RestoreKnowledgeFilesCommandHandler(IKnowledgeDocumentStor
 
         foreach (var file in restored)
         {
-            documents.Reload(file.BodyPath);
+            // Not with the request's token: the file is written, so the store reads it whatever
+            // becomes of the request.
+            await documents.ReloadAsync(file.BodyPath, CancellationToken.None);
         }
 
         return CommandResult.Success(command.Redo);

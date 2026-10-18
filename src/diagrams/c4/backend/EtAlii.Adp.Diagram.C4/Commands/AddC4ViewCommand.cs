@@ -234,7 +234,7 @@ internal static class C4ViewBlock
     /// <summary>Removes a view that was saved into the document at <paramref name="bodyPath"/>, and saves that.</summary>
     public static async Task RemoveViewAsync(IC4DocumentStore documents, string bodyPath, string viewKey, CancellationToken cancellationToken)
     {
-        var entry = documents.GetOrLoad(bodyPath);
+        var entry = await documents.GetOrLoadAsync(bodyPath, cancellationToken);
         var copy = LineDocument.Parse(entry.Document.Text);
         if (C4Parser.Parse(copy).FindView(viewKey) is not { } view)
         {
