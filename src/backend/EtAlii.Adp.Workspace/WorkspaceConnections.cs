@@ -172,20 +172,37 @@ public sealed class WorkspaceConnection(ShortGuid watchId, ShortGuid userId, Cha
             // Ending the stream would read as a drop the client re-opens every RECONNECT_DELAY_MS
             // for ever; the refusal is what its own Open call would have ended with.
             _logger.Debug("{Kind} stream {StreamId} on watch {WatchId} refused: {Reason}", map.Kind, streamId, WatchId, refusal.Status.Detail);
-            Writer.TryWrite(map.Refused(wireStreamId, refusal));
+            await TellAsync(map.Refused(wireStreamId, refusal));
         }
         catch (Exception exception)
         {
             // The session failed on its own. Its own Open call would have ended in an error the
             // client re-opens from; here the connection carries on, so the stream says it ended.
             _logger.Warning(exception, "{Kind} stream {StreamId} on watch {WatchId} failed; telling the client it ended", map.Kind, streamId, WatchId);
-            Writer.TryWrite(map.Ended(wireStreamId));
+            await TellAsync(map.Ended(wireStreamId));
         }
         finally
         {
             _streams.TryRemove(new KeyValuePair<ShortGuid, CancellationTokenSource>(streamId, source));
             source.Dispose();
             _pumps.TryRemove(source, out _);
+        }
+    }
+
+    /// <summary>
+    /// Writes how a stream ended, waiting for room on the connection's bounded channel: a message
+    /// that did not fit would leave the tab showing a stream that no longer runs. Gives up only
+    /// when the connection itself ends, which takes the stream with it.
+    /// </summary>
+    private async Task TellAsync(WorkspaceMessage message)
+    {
+        try
+        {
+            await Writer.WriteAsync(message, lifetime);
+        }
+        catch (Exception exception) when (exception is OperationCanceledException or ChannelClosedException)
+        {
+            _logger.Debug("Watch {WatchId} ended before a stream's end could be told", WatchId);
         }
     }
 }

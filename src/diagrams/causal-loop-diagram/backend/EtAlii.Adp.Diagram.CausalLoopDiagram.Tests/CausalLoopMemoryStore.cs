@@ -29,6 +29,8 @@ internal sealed class CausalLoopMemoryStore : ICausalLoopDocumentStore
         return new DocumentEntry<CausalLoopBody, CausalLoopModel>(body, body.Read());
     }
 
+    public DocumentEntry<CausalLoopBody, CausalLoopModel>? Get(string path) => _texts.ContainsKey(path) ? GetOrLoad(path) : null;
+
     public Task<DocumentSaveResult> SaveAsync(string path, CausalLoopBody document, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(document);

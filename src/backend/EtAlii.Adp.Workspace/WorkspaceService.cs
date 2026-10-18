@@ -92,8 +92,9 @@ public sealed class WorkspaceService : Diagram.Wire.WorkspaceService.WorkspaceSe
         using var session = _sessions.Open(watchId, root);
 
         // One reader writes to the call; every source writes here. A call's stream accepts one
-        // write at a time, and the sources run concurrently.
-        var channel = Channel.CreateUnbounded<WorkspaceMessage>(new UnboundedChannelOptions { SingleReader = true });
+        // write at a time, and the sources run concurrently. Bounded, and its writers wait: they
+        // read bounded channels of their own, which end once a tab stops reading (B-28).
+        var channel = StreamBound.Waiting<WorkspaceMessage>();
         using var lifetime = CancellationTokenSource.CreateLinkedTokenSource(context.CancellationToken);
         // Read here rather than in the acquisition, which captures nothing the method disposes.
         var ended = lifetime.Token;

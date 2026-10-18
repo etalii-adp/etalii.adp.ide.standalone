@@ -47,7 +47,7 @@ internal static class TimelineEdits
         ArgumentNullException.ThrowIfNull(command);
         ArgumentNullException.ThrowIfNull(edit);
 
-        var entry = documents.GetOrLoad(command.BodyPath);
+        var entry = await documents.GetOrLoadAsync(command.BodyPath, cancellationToken);
         if (!entry.IsUsable)
         {
             return CommandResult.Failure(

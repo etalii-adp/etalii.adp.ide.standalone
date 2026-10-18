@@ -44,6 +44,18 @@ public interface IReadableDiagramDocumentStore<TBody, TModel> : IDiagramDocument
     /// <summary>The document whose body is at <paramref name="path"/>, loaded once and kept.</summary>
     DocumentEntry<TBody, TModel> GetOrLoad(string path);
 
+    /// <inheritdoc cref="GetOrLoad"/>
+    /// <remarks>As <see cref="IReloadableDocumentStore.ReloadAsync"/> answers through <see cref="IReloadableDocumentStore.Reload"/> until a store has moved.</remarks>
+    ValueTask<DocumentEntry<TBody, TModel>> GetOrLoadAsync(string path, CancellationToken cancellationToken) =>
+        ValueTask.FromResult(GetOrLoad(path));
+
+    /// <summary>
+    /// The document whose body is at <paramref name="path"/> as the store holds it, or null when it
+    /// holds none; reads nothing. The document a <see cref="Changed"/> names is held by the time the
+    /// event is raised.
+    /// </summary>
+    DocumentEntry<TBody, TModel>? Get(string path);
+
     /// <summary>Raised when the document at a path has been replaced, for the sessions on it.</summary>
     event EventHandler<DocumentChangedEventArgs>? Changed;
 }

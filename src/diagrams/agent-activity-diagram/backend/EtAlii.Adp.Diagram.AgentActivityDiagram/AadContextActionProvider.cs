@@ -188,19 +188,20 @@ public sealed class AadContextActionProvider(IHistoryStackStore historyStacks, I
 
     /// <inheritdoc />
     /// <remarks>The one value asked for is a name, and the only wrong one is an empty one.</remarks>
-    protected override ContextValidationResult Validate(ContextTarget target, string actionId, string value) =>
+    protected override ContextValidationResult Validate(string actionId, string value) =>
         actionId == RenameActionId && string.IsNullOrWhiteSpace(value)
             ? ContextValidationResult.Rejected("It needs a name.")
             : ContextValidationResult.Accepted;
 
     /// <inheritdoc />
-    protected override ICommand? CommitCommand(ContextTarget target, AadModel model, string actionId, string value)
+    protected override ICommand? CommitCommand(ContextTarget target, DocumentEntry<AadBody, AadModel> entry, string actionId, string value)
     {
         ArgumentNullException.ThrowIfNull(target);
+        ArgumentNullException.ThrowIfNull(entry);
 
         var body = target.ResolvedFullPath;
         var id = target.ElementId;
-        var element = AadDefinition.ElementOf(Load(target).Document.Disl.Diagram, id);
+        var element = AadDefinition.ElementOf(entry.Document.Disl.Diagram, id);
         return actionId switch
         {
             RenameActionId when element is { Type.IsRelation: false } && AadDefinition.LabelAttribute(element) is { } label => new SetAadAttributeCommand(body, id, label, value),

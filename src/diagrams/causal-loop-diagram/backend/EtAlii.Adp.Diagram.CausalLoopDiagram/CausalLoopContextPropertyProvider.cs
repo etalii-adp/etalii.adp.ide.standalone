@@ -84,14 +84,14 @@ public sealed class CausalLoopContextPropertyProvider(
         CausalLoopDefinition.Rows(entry, elementId);
 
     /// <inheritdoc />
-    protected override DiagramPropertyChange Change(ContextTarget target, CausalLoopModel model, string propertyId, string value)
+    protected override DiagramPropertyChange Change(ContextTarget target, DocumentEntry<CausalLoopBody, CausalLoopModel> entry, string propertyId, string value)
     {
         ArgumentNullException.ThrowIfNull(target);
-        ArgumentNullException.ThrowIfNull(model);
+        ArgumentNullException.ThrowIfNull(entry);
 
         // The row's form item at commit: refused before any command is made, so the message names the value
         // the user typed rather than reporting a command failure, and nothing unreadable is ever written.
-        var entry = documents.GetOrLoad(target.ResolvedFullPath);
+        var model = entry.Model;
         var committed = CausalLoopDefinition.Row(entry.Document, target.ElementId, propertyId, value);
         if (committed is { WasApplied: false })
         {

@@ -132,7 +132,7 @@ public sealed class C4ContextActionProvider(IHistoryStackStore historyStacks, IC
     /// model mid-edit is routinely incomplete, and refusing the keystroke would make the rule a
     /// blocker rather than the guidance Requirement 10.7 says it is.
     /// </remarks>
-    protected override ContextValidationResult Validate(ContextTarget target, string actionId, string value) =>
+    protected override ContextValidationResult Validate(string actionId, string value) =>
         (actionId == RenameActionId || KindOfAdd(actionId) is not null) && string.IsNullOrWhiteSpace(value)
             ? ContextValidationResult.Rejected("Every C4 element needs a name.")
             : ContextValidationResult.Accepted;

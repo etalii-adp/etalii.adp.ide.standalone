@@ -52,6 +52,8 @@ public sealed class DocumentEditRunTests
 
         public DocumentEntry<LineDocument, string> GetOrLoad(string path) => new(LineDocument.Parse(text), text);
 
+        public DocumentEntry<LineDocument, string> Get(string path) => GetOrLoad(path);
+
         public Task<DocumentSaveResult> SaveAsync(string path, LineDocument document, CancellationToken cancellationToken)
         {
             Saves++;

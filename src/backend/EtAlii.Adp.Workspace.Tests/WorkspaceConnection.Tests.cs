@@ -108,6 +108,32 @@ public class WorkspaceConnectionTests
         Assert.Equal(0, connection.StreamCount);
     }
 
+    [Fact]
+    public async Task AStreamThatEndsWhileTheConnectionIsFull_StillTellsTheClient_OnceThereIsRoom()
+    {
+        // Arrange: a tab whose connection holds as much as it can.
+        var connections = new WorkspaceConnections();
+        var channel = StreamBound.Waiting<WorkspaceMessage>();
+        while (channel.Writer.TryWrite(new WorkspaceMessage()))
+        {
+        }
+
+        using var connection = connections.Register(ShortGuid.NewShortGuid(), Owner, channel.Writer, CancellationToken.None);
+        Documents.Wire.ShortGuid streamId = ShortGuid.NewShortGuid();
+
+        // Act: the stream ends, and the tab reads again.
+        await connection.OpenStreamAsync((ShortGuid)streamId, new FakeSession(), Map((_, _) => throw new InvalidOperationException("The session failed.")));
+        var held = new List<WorkspaceMessage>();
+        while (held.Count <= StreamBound.Capacity)
+        {
+            held.Add(await channel.Reader.ReadAsync(TestContext.Current.CancellationToken).AsTask().WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken));
+        }
+
+        // Assert: the end arrived behind what was held, rather than being dropped for want of room.
+        Assert.Equal(streamId, held[^1].Diagram.StreamId);
+        Assert.Equal(DiagramStreamMessage.EventOneofCase.Ended, held[^1].Diagram.EventCase);
+    }
+
     [Theory]
     [InlineData(true, DiagramStreamMessage.EventOneofCase.Refused)]
     [InlineData(false, DiagramStreamMessage.EventOneofCase.Ended)]

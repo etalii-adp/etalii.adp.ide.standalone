@@ -51,17 +51,17 @@ public sealed class RdfContextPropertyProvider : IContextPropertyProvider
     public ContextScope Scope => ContextScope.DiagramElement;
 
     /// <inheritdoc />
-    public ValueTask<IReadOnlyList<ContextPropertyDefinition>> DescribeAsync(ContextTarget target, CancellationToken cancellationToken)
+    public async ValueTask<IReadOnlyList<ContextPropertyDefinition>> DescribeAsync(ContextTarget target, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(target);
         cancellationToken.ThrowIfCancellationRequested();
 
         if (!RdfSelection.AnswersFor(target))
         {
-            return Rows([]);
+            return [];
         }
 
-        var entry = _documents.GetOrLoad(target.ResolvedFullPath);
+        var entry = await _documents.GetOrLoadAsync(target.ResolvedFullPath, cancellationToken);
 
         // An element the file asserts to be a concept, scheme or collection gets the scheme
         // reading's grid wholesale; every other resource keeps the family's rows - the ontology
@@ -69,7 +69,7 @@ public sealed class RdfContextPropertyProvider : IContextPropertyProvider
         // which registration selected the element.
         if (SkosProperties.Describe(entry, target) is { } skosRows)
         {
-            return Rows(skosRows);
+            return skosRows;
         }
 
         // The shapes reading answers only for its own origin, so this cannot hijack the grid of
@@ -77,7 +77,7 @@ public sealed class RdfContextPropertyProvider : IContextPropertyProvider
         // a shape card's element id is an ordinary `res:` id that the fallback would also claim.
         if (ShaclProperties.Describe(entry, target) is { } shaclRows)
         {
-            return Rows(shaclRows);
+            return shaclRows;
         }
 
         if ((RdfSelection.ResourceOf(entry, target.ElementId) ?? OwlSelection.IndividualIriOf(entry, target.ElementId)) is { } iri)
@@ -99,7 +99,7 @@ public sealed class RdfContextPropertyProvider : IContextPropertyProvider
                     ReadOnlyReason: truncated ? RdfSelection.TruncatedRefusal : "", Group: DocumentationGroup),
             };
             rows.AddRange(OwlRowsFor(entry, iri));
-            return Rows(rows);
+            return rows;
         }
 
         // An expression node: the full, uncapped Manchester rendering, read-only with the
@@ -107,40 +107,40 @@ public sealed class RdfContextPropertyProvider : IContextPropertyProvider
         if (OwlSelection.ExpressionOf(entry, target.ElementId) is { ExpressionRoot: { } root })
         {
             var uncapped = ExpressionRenderer.Render(root, entry.Model);
-            return Rows(
+            return
             [
                 new ContextPropertyDefinition(
                     "owl.expression", "Expression", uncapped.Text,
                     ReadOnlyReason: OwlSelection.ExpressionRefusal, Group: IdentityGroup),
-            ]);
+            ];
         }
 
         // A derived property edge - a domain-range span, not one triple - shows the property's
         // own axioms (owl-diagram Requirement 7.3).
         if (OwlSelection.PropertyEdgeIriOf(entry, target.ElementId) is { } propertyIri)
         {
-            return Rows(PropertyRowsFor(entry, propertyIri));
+            return PropertyRowsFor(entry, propertyIri);
         }
 
         if (RdfSelection.EdgeOf(entry, target.ElementId) is { } edge)
         {
-            return Rows(
+            return
             [
                 new ContextPropertyDefinition(
                     PredicateProperty, "Predicate", RdfProjection.Display(entry.Model, edge.Predicate),
                     ReadOnlyReason: "A statement's predicate is the statement; remove and restate to change it.", Group: IdentityGroup),
-            ]);
+            ];
         }
 
         if (RdfSelection.IsBlank(target.ElementId) && RdfSelection.Describe(entry, target.ElementId) is { } text)
         {
-            return Rows(
+            return
             [
                 new ContextPropertyDefinition(IriProperty, "Node", text, ReadOnlyReason: BlankBoundary, Group: IdentityGroup),
-            ]);
+            ];
         }
 
-        return Rows([]);
+        return [];
     }
 
     /// <inheritdoc />
@@ -152,7 +152,7 @@ public sealed class RdfContextPropertyProvider : IContextPropertyProvider
     {
         ArgumentNullException.ThrowIfNull(target);
 
-        var entry = _documents.GetOrLoad(target.ResolvedFullPath);
+        var entry = await _documents.GetOrLoadAsync(target.ResolvedFullPath, cancellationToken);
         if (RdfSelection.IsTruncated(entry))
         {
             return ContextPropertyResult.Failure(RdfSelection.TruncatedRefusal);
@@ -305,7 +305,4 @@ public sealed class RdfContextPropertyProvider : IContextPropertyProvider
             .Select(t => t.Object)
             .OfType<LiteralTerm>()
             .FirstOrDefault()?.Lexical ?? "";
-
-    private static ValueTask<IReadOnlyList<ContextPropertyDefinition>> Rows(IReadOnlyList<ContextPropertyDefinition> rows) =>
-        ValueTask.FromResult(rows);
 }

@@ -100,6 +100,9 @@ public sealed class WritableDocumentLifecycle<TDocument>
     /// <inheritdoc cref="DocumentLifecycle{TDocument}.GetOrLoad"/>
     public TDocument GetOrLoad(string path) => _lifecycle.GetOrLoad(path);
 
+    /// <inheritdoc cref="DocumentLifecycle{TDocument}.GetOrLoadAsync"/>
+    public ValueTask<TDocument> GetOrLoadAsync(string path, CancellationToken cancellationToken) => _lifecycle.GetOrLoadAsync(path, cancellationToken);
+
     /// <inheritdoc cref="DocumentLifecycle{TDocument}.Get"/>
     public TDocument? Get(string path) => _lifecycle.Get(path);
 
@@ -121,11 +124,25 @@ public sealed class WritableDocumentLifecycle<TDocument>
         return !_selfWrites.IsOwnWrite(path) && _lifecycle.Reload(path);
     }
 
+    /// <inheritdoc cref="Reload"/>
+    public async ValueTask<bool> ReloadAsync(string path, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+        return !_selfWrites.IsOwnWrite(path) && await _lifecycle.ReloadAsync(path, cancellationToken);
+    }
+
     /// <inheritdoc cref="DocumentLifecycle{TDocument}.BodyDeleted"/>
     public bool BodyDeleted(string path)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
         return !_selfWrites.IsWriting(path) && _lifecycle.BodyDeleted(path);
+    }
+
+    /// <inheritdoc cref="BodyDeleted"/>
+    public async ValueTask<bool> BodyDeletedAsync(string path, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+        return !_selfWrites.IsWriting(path) && await _lifecycle.BodyDeletedAsync(path, cancellationToken);
     }
 
     /// <summary>Writes <paramref name="document"/> to <paramref name="path"/> and caches it.</summary>

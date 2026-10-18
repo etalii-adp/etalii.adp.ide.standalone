@@ -158,7 +158,7 @@ internal static class GhgTranscript
 
     private static async Task WriteReadingsAsync(Utf8JsonWriter json, Session session, byte[] bytes, CancellationToken cancellationToken)
     {
-        var model = session.Store.GetOrLoad(session.Body).Model;
+        var model = (await session.Store.GetOrLoadAsync(session.Body, cancellationToken)).Model;
         List<string> elements =
         [
             .. model.Trends.Select(trend => trend.Id)
@@ -435,6 +435,8 @@ internal static class GhgTranscript
         }
 
         public DocumentEntry<GhgBody, GhgModel> GetOrLoad(string path) => inner.GetOrLoad(path) with { Unreadable = "parity: read-only" };
+
+        public DocumentEntry<GhgBody, GhgModel>? Get(string path) => inner.Get(path) is { } held ? held with { Unreadable = "parity: read-only" } : null;
 
         public Task<DocumentSaveResult> SaveAsync(string path, GhgBody document, CancellationToken cancellationToken) => inner.SaveAsync(path, document, cancellationToken);
 

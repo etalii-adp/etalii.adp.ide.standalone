@@ -16,7 +16,7 @@ namespace EtAlii.Adp.Diagram.Modules;
 public abstract class DiagramPropertyProvider<TBody, TModel> : IContextPropertyProvider
 {
     private readonly IHistoryStackStore _historyStacks;
-    private readonly Func<ContextTarget, DocumentEntry<TBody, TModel>> _load;
+    private readonly Func<ContextTarget, CancellationToken, ValueTask<DocumentEntry<TBody, TModel>>> _load;
 
     protected DiagramPropertyProvider(IHistoryStackStore historyStacks, IDiagramDocumentStore<TBody, TModel> documents)
         : this(historyStacks, LoadFrom(documents))
@@ -27,7 +27,7 @@ public abstract class DiagramPropertyProvider<TBody, TModel> : IContextPropertyP
     /// A provider whose documents are loaded by <paramref name="load"/>, for a module whose store
     /// needs more of a target than the path of its body to read it.
     /// </summary>
-    protected DiagramPropertyProvider(IHistoryStackStore historyStacks, Func<ContextTarget, DocumentEntry<TBody, TModel>> load)
+    protected DiagramPropertyProvider(IHistoryStackStore historyStacks, Func<ContextTarget, CancellationToken, ValueTask<DocumentEntry<TBody, TModel>>> load)
     {
         ArgumentNullException.ThrowIfNull(historyStacks);
         ArgumentNullException.ThrowIfNull(load);
@@ -36,24 +36,24 @@ public abstract class DiagramPropertyProvider<TBody, TModel> : IContextPropertyP
     }
 
     /// <summary>How a target's document is loaded from a store that needs only the path of its body.</summary>
-    internal static Func<ContextTarget, DocumentEntry<TBody, TModel>> LoadFrom(IDiagramDocumentStore<TBody, TModel> documents)
+    internal static Func<ContextTarget, CancellationToken, ValueTask<DocumentEntry<TBody, TModel>>> LoadFrom(IDiagramDocumentStore<TBody, TModel> documents)
     {
         ArgumentNullException.ThrowIfNull(documents);
-        return target => documents.GetOrLoad(target.ResolvedFullPath);
+        return (target, cancellationToken) => documents.GetOrLoadAsync(target.ResolvedFullPath, cancellationToken);
     }
 
     /// <inheritdoc />
     public ContextScope Scope => ContextScope.DiagramElement;
 
     /// <inheritdoc />
-    public ValueTask<IReadOnlyList<ContextPropertyDefinition>> DescribeAsync(ContextTarget target, CancellationToken cancellationToken)
+    public async ValueTask<IReadOnlyList<ContextPropertyDefinition>> DescribeAsync(ContextTarget target, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(target);
         cancellationToken.ThrowIfCancellationRequested();
 
-        return ValueTask.FromResult(Serves(target)
-            ? Describe(target, _load(target))
-            : []);
+        return Serves(target)
+            ? Describe(target, await _load(target, cancellationToken))
+            : [];
     }
 
     /// <inheritdoc />
@@ -65,13 +65,13 @@ public abstract class DiagramPropertyProvider<TBody, TModel> : IContextPropertyP
     {
         ArgumentNullException.ThrowIfNull(target);
 
-        var entry = _load(target);
+        var entry = await _load(target, cancellationToken);
         if (!entry.IsUsable)
         {
             return ContextPropertyResult.Failure(DiagramActionProvider<TBody, TModel>.Unreadable(target));
         }
 
-        var change = Change(target, entry.Model, propertyId, value);
+        var change = Change(target, entry, propertyId, value);
         if (change.Command is not { } command)
         {
             return change.Refusal.Length > 0 ? ContextPropertyResult.Failure(change.Refusal) : ContextPropertyResult.Success;
@@ -113,7 +113,20 @@ public abstract class DiagramPropertyProvider<TBody, TModel> : IContextPropertyP
     }
 
     /// <summary>What setting <paramref name="propertyId"/> to <paramref name="value"/> on <paramref name="target"/> is.</summary>
-    protected abstract DiagramPropertyChange Change(ContextTarget target, TModel model, string propertyId, string value);
+    /// <remarks>Nothing to do by default, for a module that overrides the overload given the whole entry instead.</remarks>
+    protected virtual DiagramPropertyChange Change(ContextTarget target, TModel model, string propertyId, string value) =>
+        DiagramPropertyChange.Unchanged;
+
+    /// <summary>
+    /// What setting <paramref name="propertyId"/> to <paramref name="value"/> on <paramref name="target"/>
+    /// in <paramref name="entry"/> is: what the overload given the model says, by default. A module that
+    /// checks the value against the document's body answers here.
+    /// </summary>
+    protected virtual DiagramPropertyChange Change(ContextTarget target, DocumentEntry<TBody, TModel> entry, string propertyId, string value)
+    {
+        ArgumentNullException.ThrowIfNull(entry);
+        return Change(target, entry.Model, propertyId, value);
+    }
 }
 
 /// <summary>What a new value in the property grid is: a command to dispatch, nothing to do, or a refusal.</summary>

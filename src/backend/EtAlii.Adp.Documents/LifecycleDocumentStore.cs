@@ -44,6 +44,13 @@ public abstract class LifecycleDocumentStore<TBody, TModel> : IDiagramDocumentSt
     public DocumentEntry<TBody, TModel> GetOrLoad(string path) => _lifecycle.GetOrLoad(path);
 
     /// <inheritdoc />
+    public DocumentEntry<TBody, TModel>? Get(string path) => _lifecycle.Get(path);
+
+    /// <inheritdoc />
+    public ValueTask<DocumentEntry<TBody, TModel>> GetOrLoadAsync(string path, CancellationToken cancellationToken) =>
+        _lifecycle.GetOrLoadAsync(path, cancellationToken);
+
+    /// <inheritdoc />
     public async Task<DocumentSaveResult> SaveAsync(string path, TBody document, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
@@ -123,7 +130,7 @@ public abstract class LifecycleDocumentStore<TBody, TModel> : IDiagramDocumentSt
 
         if (!result.Failed)
         {
-            result = Kept(result, await SavedAsync(path, _lifecycle.GetOrLoad(path), cancellationToken));
+            result = Kept(result, await SavedAsync(path, await _lifecycle.GetOrLoadAsync(path, cancellationToken), cancellationToken));
             OnChanged(path);
         }
 
@@ -141,9 +148,29 @@ public abstract class LifecycleDocumentStore<TBody, TModel> : IDiagramDocumentSt
     }
 
     /// <inheritdoc />
+    public async Task ReloadAsync(string path, CancellationToken cancellationToken)
+    {
+        if (await _lifecycle.ReloadAsync(path, cancellationToken))
+        {
+            Installed(path);
+            OnChanged(path);
+        }
+    }
+
+    /// <inheritdoc />
     public void BodyDeleted(string path)
     {
         if (_lifecycle.BodyDeleted(path))
+        {
+            Installed(path);
+            OnChanged(path);
+        }
+    }
+
+    /// <inheritdoc cref="BodyDeleted"/>
+    public async Task BodyDeletedAsync(string path, CancellationToken cancellationToken)
+    {
+        if (await _lifecycle.BodyDeletedAsync(path, cancellationToken))
         {
             Installed(path);
             OnChanged(path);

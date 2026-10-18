@@ -26,7 +26,7 @@ public sealed class AddVariableAtCommandHandler(ICausalLoopDocumentStore documen
         ArgumentNullException.ThrowIfNull(command);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var entry = documents.GetOrLoad(command.BodyPath);
+        var entry = await documents.GetOrLoadAsync(command.BodyPath, cancellationToken);
         if (!entry.IsUsable)
         {
             return CommandResult.Failure(
@@ -131,6 +131,8 @@ internal static class RestoreCausalLoopDocument
     public static async Task RestoreAsync(ICausalLoopDocumentStore documents, IFileWriter writer, string bodyPath, string text, CancellationToken cancellationToken)
     {
         await writer.SaveAsync(bodyPath, text, cancellationToken);
-        documents.Reload(bodyPath);
+        // Not with the request's token: the file is written, so the store reads it whatever
+        // becomes of the request.
+        await documents.ReloadAsync(bodyPath, CancellationToken.None);
     }
 }

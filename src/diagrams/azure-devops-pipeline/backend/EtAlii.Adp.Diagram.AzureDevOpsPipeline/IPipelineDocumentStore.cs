@@ -47,10 +47,14 @@ public interface IPipelineDocumentStore : IDiagramDocumentStore
     /// <summary>Raised after a save, and after an external change is picked up.</summary>
     event EventHandler<DocumentChangedEventArgs>? Changed;
 
-    /// <summary>How the pipeline a context target names is read from <paramref name="documents"/>: from the target's root as well as its path.</summary>
-    internal static Func<ContextTarget, DocumentEntry<PipelineBody, PipelineModel>> LoaderFor(IPipelineDocumentStore documents)
+    /// <summary>
+    /// How the pipeline a context target names is read from <paramref name="documents"/>: from the
+    /// target's root as well as its path. The store reads as it is asked, so the read is already done
+    /// when the load returns.
+    /// </summary>
+    internal static Func<ContextTarget, CancellationToken, ValueTask<DocumentEntry<PipelineBody, PipelineModel>>> LoaderFor(IPipelineDocumentStore documents)
     {
         ArgumentNullException.ThrowIfNull(documents);
-        return target => documents.GetOrLoad(target.RootPath, target.ResolvedFullPath);
+        return (target, _) => ValueTask.FromResult(documents.GetOrLoad(target.RootPath, target.ResolvedFullPath));
     }
 }

@@ -1,6 +1,6 @@
-using System.Threading.Channels;
 using EtAlii.Adp.Files;
 using EtAlii.Adp.Hierarchy.Wire;
+using EtAlii.Adp.Projects;
 using EtAlii.Adp.Sessions;
 using Serilog;
 
@@ -59,7 +59,8 @@ public sealed class HierarchyWatch
 
         // The watcher and the presence checks work on the folder itself.
         var rootPath = root.FullPath;
-        var channel = Channel.CreateUnbounded<HierarchyMessage>();
+        // Bounded: a tab that stops reading ends the watch rather than growing it (B-28).
+        var channel = StreamBound.Ending<HierarchyMessage>($"Hierarchy stream on watch {watchId}");
 
         model.EntryChanged += OnEntryChanged;
 

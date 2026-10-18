@@ -123,20 +123,44 @@ public sealed class WatchedFile : IDisposable
     /// <see cref="ReadAttempts"/> are spent, waiting <see cref="BetweenReadAttempts"/> on this file's
     /// clock between two; the last result and how many attempts it took.
     /// </summary>
-    public async Task<(T Result, int Attempts)> ReadAsync<T>(Func<string, T> read, Func<T, bool> succeeded, CancellationToken cancellationToken = default)
+    public Task<(T Result, int Attempts)> ReadAsync<T>(Func<string, T> read, Func<T, bool> succeeded, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(read);
+        return RetryAsync(_ => Task.FromResult(read(Path)), succeeded, ReadAttempts, BetweenReadAttempts, _time, cancellationToken);
+    }
+
+    /// <summary>
+    /// Reads with <paramref name="read"/> until <paramref name="succeeded"/> says it did or
+    /// <paramref name="attempts"/> are spent, waiting <paramref name="between"/> on
+    /// <paramref name="time"/> between two; the last result and how many attempts it took.
+    /// </summary>
+    /// <remarks>
+    /// The one read-retry of the backend: a watched file's re-read and a document's load both run
+    /// through it, each with its own count and interval, and no thread sleeps through the wait
+    /// (code-structure FR-050).
+    /// </remarks>
+    public static async Task<(T Result, int Attempts)> RetryAsync<T>(
+        Func<CancellationToken, Task<T>> read,
+        Func<T, bool> succeeded,
+        int attempts,
+        TimeSpan between,
+        TimeProvider time,
+        CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(read);
         ArgumentNullException.ThrowIfNull(succeeded);
+        ArgumentOutOfRangeException.ThrowIfLessThan(attempts, 1);
+        ArgumentNullException.ThrowIfNull(time);
 
         for (var attempt = 1; ; attempt++)
         {
-            var result = read(Path);
-            if (succeeded(result) || attempt >= ReadAttempts)
+            var result = await read(cancellationToken).ConfigureAwait(false);
+            if (succeeded(result) || attempt >= attempts)
             {
                 return (result, attempt);
             }
 
-            await Task.Delay(BetweenReadAttempts, _time, cancellationToken).ConfigureAwait(false);
+            await Task.Delay(between, time, cancellationToken).ConfigureAwait(false);
         }
     }
 

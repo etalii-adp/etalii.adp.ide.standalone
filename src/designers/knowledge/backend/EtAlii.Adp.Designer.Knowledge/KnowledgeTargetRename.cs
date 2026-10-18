@@ -49,7 +49,9 @@ internal sealed class KnowledgeTargetRename(IKnowledgeDocumentStore documents, I
             }
 
             await writer.SaveAsync(path, after, cancellationToken);
-            documents.Reload(path);
+            // Not with the request's token: the file is written, so the store reads it whatever
+            // becomes of the request.
+            await documents.ReloadAsync(path, CancellationToken.None);
         }
     }
 

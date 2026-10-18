@@ -244,15 +244,18 @@ public sealed class TimelineContextActionProvider(IHistoryStackStore historyStac
     /// Give-end is validated as typed, so the dialog can refuse before the commit does - by running
     /// the definition's giveEnd, whose refusals the handler applies again (Requirement 3.4).
     /// </remarks>
-    protected override ContextValidationResult Validate(ContextTarget target, string actionId, string value)
+    protected override ContextValidationResult Validate(ContextTarget target, DocumentEntry<LineDocument, TimelineModel> entry, string actionId, string value)
     {
+        ArgumentNullException.ThrowIfNull(target);
+        ArgumentNullException.ThrowIfNull(entry);
+
         if (actionId != GiveEndActionId)
         {
             return ContextValidationResult.Accepted;
         }
 
         (_, string refusal) = TimelineDefinition.EndChange(
-            Load(target).Model, target.ResolvedFullPath, "giveEnd", target.ElementId, value);
+            entry.Model, target.ResolvedFullPath, "giveEnd", target.ElementId, value);
         return refusal.Length > 0 ? ContextValidationResult.Rejected(refusal) : ContextValidationResult.Accepted;
     }
 

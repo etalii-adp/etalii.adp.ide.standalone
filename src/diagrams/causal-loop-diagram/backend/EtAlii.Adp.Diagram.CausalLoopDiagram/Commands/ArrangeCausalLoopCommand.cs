@@ -53,7 +53,7 @@ public sealed class ArrangeCausalLoopCommandHandler(ICausalLoopDocumentStore doc
             return CommandResult.Failure("The registration file is no longer there.");
         }
 
-        var entry = documents.GetOrLoad(command.BodyPath);
+        var entry = await documents.GetOrLoadAsync(command.BodyPath, cancellationToken);
         if (!entry.IsUsable)
         {
             return CommandResult.Failure(

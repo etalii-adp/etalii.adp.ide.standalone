@@ -133,23 +133,23 @@ public sealed class CausalLoopContextActionProvider(
             RenameLoopActionId => Ask(CausalLoopDefinition.Request(entry, "renameLoop", target.ElementId)),
             RemoveVariableActionId => Confirm(entry, target),
             ArrangeActionId => ArrangeAsync(target, cancellationToken),
-            _ => CommitCommand(target, entry.Model, actionId, "") is { } command
+            _ => CommitCommand(target, entry, actionId, "") is { } command
                 ? DispatchAsync(target, command, cancellationToken)
                 : ValueTask.FromResult<ContextExecutionResult>(new ContextExecutionFailed("That action does not apply to this selection.")),
         };
     }
 
     /// <inheritdoc />
-    protected override ContextValidationResult Validate(ContextTarget target, string actionId, string value)
+    protected override ContextValidationResult Validate(ContextTarget target, DocumentEntry<CausalLoopBody, CausalLoopModel> entry, string actionId, string value)
     {
         ArgumentNullException.ThrowIfNull(target);
+        ArgumentNullException.ThrowIfNull(entry);
 
         if (!IsBody(target.ResolvedFullPath))
         {
             return ContextValidationResult.Accepted;
         }
 
-        var entry = Load(target);
         var refusal = actionId switch
         {
             RenameVariableActionId => CausalLoopDefinition.Rename(entry.Document, target.ElementId, value)?.Refusal,
@@ -162,10 +162,10 @@ public sealed class CausalLoopContextActionProvider(
     }
 
     /// <inheritdoc />
-    protected override ICommand? CommitCommand(ContextTarget target, CausalLoopModel model, string actionId, string value)
+    protected override ICommand? CommitCommand(ContextTarget target, DocumentEntry<CausalLoopBody, CausalLoopModel> entry, string actionId, string value)
     {
         ArgumentNullException.ThrowIfNull(target);
-        ArgumentNullException.ThrowIfNull(model);
+        ArgumentNullException.ThrowIfNull(entry);
 
         var body = target.ResolvedFullPath;
         var variable = CausalLoopSelection.VariableOf(target.ElementId);
@@ -178,7 +178,7 @@ public sealed class CausalLoopContextActionProvider(
             // The visible name is the label, so renaming edits the label - the identifier a link
             // refers to stays put. It is edited inline, over the variable, rather than in a dialog,
             // and what is written is what the label's parse writes.
-            RenameVariableActionId when variable is not null => new SetVariableLabelCommand(body, variable, RenamedTo(target, value)),
+            RenameVariableActionId when variable is not null => new SetVariableLabelCommand(body, variable, RenamedTo(entry, target, value)),
             RemoveVariableActionId when variable is not null => new RemoveVariableCommand(body, variable),
             AddLinkActionId when variable is not null => Operation(body, "addLink", target.ElementId, ("to", value)),
             ConnectActionId when CausalLoopSelection.RelationOf(target.ElementId) is { } ends =>
@@ -203,8 +203,8 @@ public sealed class CausalLoopContextActionProvider(
         new(body, operation, target, parameters.ToDictionary(parameter => parameter.Name, parameter => parameter.Value, StringComparer.Ordinal));
 
     /// <summary>The label the variable label's <c>parse</c> writes for <paramref name="value"/>; the value itself where it writes none, for the command to judge.</summary>
-    private string RenamedTo(ContextTarget target, string value) =>
-        CausalLoopDefinition.Rename(Load(target).Document, target.ElementId, value) is { } renamed && CausalLoopDefinition.Writes(renamed, "label", out var label) && label is string text
+    private static string RenamedTo(DocumentEntry<CausalLoopBody, CausalLoopModel> entry, ContextTarget target, string value) =>
+        CausalLoopDefinition.Rename(entry.Document, target.ElementId, value) is { } renamed && CausalLoopDefinition.Writes(renamed, "label", out var label) && label is string text
             ? text
             : value;
 

@@ -372,6 +372,8 @@ public class CausalLoopSessionTests : IDisposable
 
         public DocumentEntry<CausalLoopBody, CausalLoopModel> GetOrLoad(string path) => Failure is null ? inner.GetOrLoad(path) : throw Failure;
 
+        public DocumentEntry<CausalLoopBody, CausalLoopModel>? Get(string path) => Failure is null ? inner.Get(path) : throw Failure;
+
         public Task<DocumentSaveResult> SaveAsync(string path, CausalLoopBody document, CancellationToken cancellationToken) => inner.SaveAsync(path, document, cancellationToken);
 
         public void Reload(string path) => inner.Reload(path);

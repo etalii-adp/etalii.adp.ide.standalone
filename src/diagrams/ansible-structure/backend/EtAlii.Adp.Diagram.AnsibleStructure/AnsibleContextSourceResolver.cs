@@ -45,7 +45,14 @@ public sealed class AnsibleContextSourceResolver(DiagramFileRouter router, Ansib
         "New relation");
 
     /// <inheritdoc />
-    protected override Selected Load(string bodyPath)
+    /// <remarks>Its folder store reads as it is asked, so the read is already done when this returns.</remarks>
+    protected override ValueTask<Selected> LoadAsync(string bodyPath, CancellationToken cancellationToken) =>
+        ValueTask.FromResult(Load(bodyPath));
+
+    /// <inheritdoc />
+    protected override Selected Current(string bodyPath) => Load(bodyPath);
+
+    private Selected Load(string bodyPath)
     {
         return new Selected(folders.GetOrLoad(FolderOf(bodyPath), bodyPath).Disl.Diagram, bodyPath);
     }
