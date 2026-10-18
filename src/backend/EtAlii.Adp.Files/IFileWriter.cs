@@ -8,7 +8,6 @@ namespace EtAlii.Adp.Files;
 /// </summary>
 public interface IFileWriter
 {
-    // ReSharper disable UnusedMemberInSuper.Global - Reason: nothing calls these through the interface until the stores and handlers that use the static writer are handed this one, the next step of code-structure FR-068, which removes this suppression.
     /// <summary>Publishes <paramref name="content"/> over whatever is at <paramref name="path"/>, as UTF-8 without a byte-order mark.</summary>
     /// <exception cref="IOException">The write or the move failed.</exception>
     /// <exception cref="UnauthorizedAccessException">The write or the move was refused.</exception>
@@ -26,5 +25,4 @@ public interface IFileWriter
     /// <exception cref="IOException">The delete failed.</exception>
     /// <exception cref="UnauthorizedAccessException">The delete was refused.</exception>
     Task DeleteAsync(string path, CancellationToken cancellationToken);
-    // ReSharper restore UnusedMemberInSuper.Global
 }
