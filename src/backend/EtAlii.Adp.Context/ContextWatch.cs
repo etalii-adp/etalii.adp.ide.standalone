@@ -1,6 +1,6 @@
-using System.Threading.Channels;
 using EtAlii.Adp.Context.Wire;
 using EtAlii.Adp.Documents.Wire;
+using EtAlii.Adp.Projects;
 using EtAlii.Adp.Sessions;
 using Serilog;
 
@@ -49,7 +49,8 @@ public sealed class ContextWatch
 
         var watchId = connection.WatchId;
         var root = connection.Root;
-        var channel = Channel.CreateUnbounded<ContextMessage>();
+        // Bounded: a tab that stops reading ends the stream rather than growing it (B-28).
+        var channel = StreamBound.Ending<ContextMessage>($"Context stream on watch {watchId}");
 
         // The targets take the root as a path.
         var rootPath = root.FullPath;
