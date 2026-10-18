@@ -30,15 +30,8 @@ public sealed class HierarchyModel
     private readonly HashSet<ShortGuid> _listedFolderIds = new();
     private bool _rootListed;
 
-    // Renames this model has already applied directly, from a command it caused rather than
-    // from the watcher (see ApplyLocalRename). The FileSystemWatcher still reports the same
-    // move moments later - as one Renamed on Windows, but as a separate Delete+Create on Linux,
-    // where inotify does not correlate the two halves - and that echo must not double-apply or,
-    // worse, land as a Remove+Create that discards the entry's id. Each applied rename is
-    // remembered briefly so its watcher echo, whatever shape it takes, is recognised and
-    // dropped. The window only needs to outlast the watcher's own latency.
-    private static readonly TimeSpan RenameEchoWindow = TimeSpan.FromSeconds(5);
-    private readonly List<(string OldPath, string NewPath, long Ticks)> _appliedRenames = new();
+    // Rename echoes and write transients (see WatcherEventNormalizer); used under _gate only.
+    private readonly WatcherEventNormalizer _normalizer = new();
 
     public HierarchyModel(string rootPath, IDiagramDefinitionCatalog? catalog = null, DiagramFileRouter? router = null, EditorResolver? editorResolver = null, ToolRouter? tools = null)
     {
@@ -67,7 +60,7 @@ public sealed class HierarchyModel
 
         lock (_gate)
         {
-            _appliedRenames.Add((IoPath.GetFullPath(oldPath), IoPath.GetFullPath(newPath), DateTime.UtcNow.Ticks));
+            _normalizer.Expect(oldPath, newPath);
             OnRenamed(oldPath, newPath);
         }
     }
@@ -87,7 +80,7 @@ public sealed class HierarchyModel
 
         lock (_gate)
         {
-            _appliedRenames.Add((IoPath.GetFullPath(oldPath), IoPath.GetFullPath(newPath), DateTime.UtcNow.Ticks));
+            _normalizer.Expect(oldPath, newPath);
         }
     }
 
@@ -100,42 +93,11 @@ public sealed class HierarchyModel
         ArgumentNullException.ThrowIfNull(oldPath);
         ArgumentNullException.ThrowIfNull(newPath);
 
-        var old = IoPath.GetFullPath(oldPath);
-        var fresh = IoPath.GetFullPath(newPath);
         lock (_gate)
         {
-            _appliedRenames.RemoveAll(r => PathEquals(r.OldPath, old) && PathEquals(r.NewPath, fresh));
+            _normalizer.Withdraw(oldPath, newPath);
         }
     }
-
-    /// <summary>
-    /// Whether a watcher event is the echo of a rename this model already applied directly. A
-    /// Renamed matches the pair; a Delete matches the old half; a Create matches the new half
-    /// (the two halves the Linux watcher splits a move into). Expired records are pruned here.
-    /// </summary>
-    private bool IsRenameEcho(WatcherChangeTypes changeType, string? oldPath, string? newPath)
-    {
-        if (_appliedRenames.Count == 0)
-        {
-            return false;
-        }
-
-        var cutoff = DateTime.UtcNow.Ticks - RenameEchoWindow.Ticks;
-        _appliedRenames.RemoveAll(entry => entry.Ticks < cutoff);
-
-        var old = oldPath is null ? null : IoPath.GetFullPath(oldPath);
-        var fresh = newPath is null ? null : IoPath.GetFullPath(newPath);
-        return changeType switch
-        {
-            WatcherChangeTypes.Renamed => _appliedRenames.Any(r => PathEquals(r.OldPath, old) && PathEquals(r.NewPath, fresh)),
-            WatcherChangeTypes.Deleted => _appliedRenames.Any(r => PathEquals(r.OldPath, old)),
-            WatcherChangeTypes.Created => _appliedRenames.Any(r => PathEquals(r.NewPath, fresh)),
-            _ => false,
-        };
-    }
-
-    private static bool PathEquals(string? left, string? right) =>
-        string.Equals(left, right, StringComparison.OrdinalIgnoreCase);
 
     public IReadOnlyList<EntryNode> ListChildren(ShortGuid? folderId)
     {
@@ -187,81 +149,27 @@ public sealed class HierarchyModel
     }
 
     /// <summary>
-    /// Applies one event of the project's <see cref="ProjectFileEvents"/>. A Lost is not the
-    /// model's to answer: the service decides whether the tree is read again or the root is gone.
+    /// Applies one event of the project's <see cref="ProjectFileEvents"/>, as
+    /// <see cref="WatcherEventNormalizer"/> reads it. An event under a folder this connection has
+    /// never listed is silently discarded (Requirement 4.7) - there is nothing yet to reconcile it
+    /// against. A Lost is not the model's to answer: the service decides whether the tree is read
+    /// again or the root is gone.
     /// </summary>
     public void OnFileEvent(FileEvent heard)
     {
-        switch (heard.Kind)
-        {
-            case FileEventKind.Created:
-                OnWatcherEvent(WatcherChangeTypes.Created, null, heard.Path);
-                break;
-            case FileEventKind.Changed:
-                OnWatcherEvent(WatcherChangeTypes.Changed, null, heard.Path);
-                break;
-            case FileEventKind.Deleted:
-                OnWatcherEvent(WatcherChangeTypes.Deleted, heard.Path, null);
-                break;
-            case FileEventKind.Renamed:
-                OnWatcherEvent(WatcherChangeTypes.Renamed, heard.OldPath, heard.Path);
-                break;
-        }
-    }
-
-    /// <summary>
-    /// Applies one filesystem-watcher event. An event under a folder this
-    /// connection has never listed is silently discarded (Requirement 4.7) —
-    /// there is nothing yet to reconcile it against.
-    /// </summary>
-    public void OnWatcherEvent(WatcherChangeTypes changeType, string? oldPath, string? newPath)
-    {
-        // ADP's own scratch files are not project content: AdpFileWriter writes a new diagram
-        // to one of these in the destination folder and moves it into place. The scratch file
-        // itself never becomes an entry - but the move that publishes the diagram is reported
-        // as a rename *away* from that name, and it is the only announcement the real file
-        // gets, so it is turned into the create it actually is.
-        if (IsScratchFile(newPath))
-        {
-            _logger.Verbose("Ignoring the watcher event for scratch file {Path}", newPath);
-            return;
-        }
-
-        if (IsScratchFile(oldPath))
-        {
-            if (changeType == WatcherChangeTypes.Renamed && newPath is not null)
-            {
-                _logger.Verbose("Reading the move of scratch file {OldPath} onto {NewPath} as a create", oldPath, newPath);
-                changeType = WatcherChangeTypes.Created;
-                oldPath = null;
-            }
-            else
-            {
-                _logger.Verbose("Ignoring the {ChangeType} watcher event for scratch file {Path}", changeType, oldPath);
-                return;
-            }
-        }
-
-        // Verbose: one line per file system event, which is far too much for normal running
-        // but exactly what is wanted when the tree and disk have gone out of step.
-        _logger.Verbose("Watcher event {ChangeType}: {OldPath} -> {NewPath}", changeType, oldPath, newPath);
-
         lock (_gate)
         {
-            if (IsRenameEcho(changeType, oldPath, newPath))
+            if (_normalizer.Normalize(heard) is not { } change)
             {
-                // Already applied directly from the command that caused it; this is only the
-                // watcher catching up. Dropping it is what keeps a rename's id stable on Linux.
-                _logger.Verbose("Dropping the watcher echo of an already-applied rename: {ChangeType} {OldPath} -> {NewPath}", changeType, oldPath, newPath);
                 return;
             }
 
-            switch (changeType)
+            switch (change.Kind)
             {
-                case WatcherChangeTypes.Created when newPath is not null:
-                    OnCreated(newPath);
+                case FileEventKind.Created:
+                    OnCreated(change.Path);
                     break;
-                case WatcherChangeTypes.Deleted when oldPath is not null:
+                case FileEventKind.Deleted:
                     // A Deleted whose path still exists is not a deletion: Windows' ReplaceFile -
                     // which File.Replace uses, and AdpFileWriter.Save with it to rewrite a
                     // registration in place - raises a spurious Deleted for the destination it
@@ -270,43 +178,32 @@ public sealed class HierarchyModel
                     // that still holds the old one. An entry stands for a path, and the path is
                     // still there, so the entry - and its id - must survive. A genuine deletion
                     // leaves nothing on disk and still removes, as it must.
-                    if (IoPath.Exists(oldPath))
+                    if (IoPath.Exists(change.Path))
                     {
-                        _logger.Verbose("Dropping a Deleted watcher event for {Path}, which still exists on disk - an in-place replace, not a deletion", oldPath);
+                        _logger.Verbose("Dropping a Deleted watcher event for {Path}, which still exists on disk - an in-place replace, not a deletion", change.Path);
                         break;
                     }
 
-                    OnRemoved(oldPath);
+                    OnRemoved(change.Path);
                     break;
-                case WatcherChangeTypes.Renamed when oldPath is not null && newPath is not null:
-                    OnRenamed(oldPath, newPath);
+                case FileEventKind.Renamed when change.OldPath is { } oldPath:
+                    OnRenamed(oldPath, change.Path);
                     break;
-                case WatcherChangeTypes.Changed:
+                case FileEventKind.Changed:
                     // A content change never affects the tree's shape; nothing to update.
                     break;
             }
         }
     }
 
-    /// <summary>
-    /// Whether a path is a write transient rather than project content
-    /// (<see cref="AdpFileWriter.IsTransient"/>). A reconcile filters on this too, so a scratch file
-    /// left behind by an interrupted write can never reappear as an entry.
-    /// </summary>
-    /// <remarks>
-    /// The <c>File.Replace</c> backup must be transient to this model, and the reason is subtle
-    /// enough to spell out: ReplaceFile announces itself as <i>Created(backup)</i>,
-    /// <b>Renamed(file → backup)</b>, <i>Created(file)</i>, <i>Deleted(backup)</i> - observed verbatim
-    /// from a live watcher. Taken at face value, the Renamed walks the file's entry off its path onto
-    /// the backup name, the Created then mints a NEW id for the same file, and the Deleted removes the
-    /// old entry under its backup name. Every open document holding the old id is orphaned - which is
-    /// exactly what left a causal-loop diagram unselectable after its first variable drag, since that
-    /// module stores positions in the <c>.adp</c>'s <c>layout:</c> block and so rewrites the
-    /// registration in place on every move. Treating the backup name as transient makes the whole
-    /// sequence a no-op: the rename onto it is ignored, so the entry never leaves its path, and the
-    /// create finds the path already known.
-    /// </remarks>
-    private static bool IsScratchFile(string? path) => path is not null && AdpFileWriter.IsTransient(path);
+    /// <summary>Applies one event in the watcher's own shape; see <see cref="OnFileEvent"/>.</summary>
+    public void OnWatcherEvent(WatcherChangeTypes changeType, string? oldPath, string? newPath)
+    {
+        if (WatcherEventNormalizer.Translate(changeType, oldPath, newPath) is { } heard)
+        {
+            OnFileEvent(heard);
+        }
+    }
 
     public void NotifyRootUnavailable(string message)
     {
@@ -467,7 +364,7 @@ public sealed class HierarchyModel
     {
         try
         {
-            return Directory.EnumerateFileSystemEntries(path).Any(entry => !IsScratchFile(entry));
+            return Directory.EnumerateFileSystemEntries(path).Any(entry => !WatcherEventNormalizer.IsTransient(entry));
         }
         catch (Exception ex) when (ex is UnauthorizedAccessException or DirectoryNotFoundException or IOException)
         {
@@ -516,7 +413,7 @@ public sealed class HierarchyModel
         IEnumerable<string> diskEntries;
         try
         {
-            diskEntries = Directory.EnumerateFileSystemEntries(folderPath).Where(entry => IsContained(entry) && !IsScratchFile(entry));
+            diskEntries = Directory.EnumerateFileSystemEntries(folderPath).Where(entry => IsContained(entry) && !WatcherEventNormalizer.IsTransient(entry));
         }
         catch (Exception ex) when (ex is UnauthorizedAccessException or DirectoryNotFoundException or IOException)
         {
