@@ -36,7 +36,7 @@ internal static class HandWrittenPipeline
     private const string DefaultCandidate = PipelineContextPropertyProvider.DefaultCandidate;
     private const string EditItInTheFile = "This is edited in the pipeline file. A wrong value here would break the build.";
 
-    /// <summary>The palette (<c>PipelineToolboxProvider.Items</c>).</summary>
+    /// <summary>The palette, as the module's own <c>PipelineToolboxProvider.Items</c> gave it before core's <c>DislToolboxProvider</c> replaced that class.</summary>
     public static IReadOnlyList<ToolboxItemDefinition> Toolbox { get; } =
     [
         new(

@@ -57,7 +57,7 @@ internal static class PipelineTranscript
 
             // The toolbox is static: it does not read the document, so it is written once.
             json.WriteStartArray("toolbox");
-            foreach (var item in new PipelineToolboxProvider().Items)
+            foreach (var item in PipelineDefinition.Toolbox)
             {
                 json.WriteStringValue($"{item.Id} | {item.Label} | {item.Icon} | drops {item.DropActionId} | {item.Description}");
             }
