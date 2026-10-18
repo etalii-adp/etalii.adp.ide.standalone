@@ -12,6 +12,8 @@ namespace EtAlii.Adp.Documents.Tests;
 /// </summary>
 public sealed class ProjectFileEventsTests : IDisposable
 {
+    private readonly FileWriter _writer = new();
+
     private static readonly TimeSpan Patience = TimeSpan.FromSeconds(10);
     private static readonly TimeSpan Silence = TimeSpan.FromMilliseconds(300);
 
@@ -86,8 +88,8 @@ public sealed class ProjectFileEventsTests : IDisposable
         using var subscription = _events.Subscribe(_root, heard.Enqueue);
 
         // Act.
-        AdpFileWriter.Save(replaced, "after");
-        AdpFileWriter.Save(created, "new");
+        await _writer.SaveAsync(replaced, "after", TestContext.Current.CancellationToken);
+        await _writer.SaveAsync(created, "new", TestContext.Current.CancellationToken);
 
         // Assert: both destinations heard; no transient name, no destination gone.
         Assert.True(await Eventually.TrueAsync(() => heard.Any(e => e.Path == replaced) && heard.Any(e => e.Path == created), TestContext.Current.CancellationToken, Patience), "A save was not heard as its destination.");

@@ -17,6 +17,8 @@ namespace EtAlii.Adp.Diagram.C4.Tests;
 /// </remarks>
 public class C4DocumentStoreFailedReloadTests : IDisposable
 {
+    private readonly FileWriter _writer = new();
+
     private const string Model = """
         workspace "Bank" {
             model {
@@ -160,7 +162,7 @@ public class C4DocumentStoreFailedReloadTests : IDisposable
 
         for (var i = 0; i < 50; i++)
         {
-            AdpFileWriter.Save(body, Model);
+            await _writer.SaveAsync(body, Model, TestContext.Current.CancellationToken);
             await Task.Delay(5, TestContext.Current.CancellationToken);
         }
 

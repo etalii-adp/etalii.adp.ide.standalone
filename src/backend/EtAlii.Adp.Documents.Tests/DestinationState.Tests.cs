@@ -17,6 +17,8 @@ namespace EtAlii.Adp.Documents.Tests;
 /// </remarks>
 public class DestinationStateTests : IDisposable
 {
+    private readonly FileWriter _writer = new();
+
     private readonly string _folder = IoPath.Combine(IoPath.GetTempPath(), "adp-destination-state-" + Guid.NewGuid().ToString("N"));
 
     public DestinationStateTests() => Directory.CreateDirectory(_folder);
@@ -28,19 +30,19 @@ public class DestinationStateTests : IDisposable
     }
 
     [Fact]
-    public void AFailedPublishWhoseDestinationWasDeleted_RecordsThatItIsGone()
+    public async Task AFailedPublishWhoseDestinationWasDeleted_RecordsThatItIsGone()
     {
         // The case no holder query can answer: the deleter finished and holds nothing.
         var path = IoPath.Combine(_folder, "tea.owm");
-        File.WriteAllText(path, "before");
+        await File.WriteAllTextAsync(path, "before", TestContext.Current.CancellationToken);
         var wild = new IOException("Unable to remove the file to be replaced.") { HResult = unchecked((int)0x80070497) };
         using var logs = LogCapture.Start();
 
-        Assert.Throws<IOException>(() => AdpFileWriter.Save(path, "after", replace: (_, _) =>
+        await Assert.ThrowsAsync<IOException>(() => _writer.SaveAsync(path, "after", replace: (_, _) =>
         {
             File.Delete(path);
             throw wild;
-        }));
+        }, TestContext.Current.CancellationToken));
 
         // One warning ABOUT THIS, not one warning in total: the capture is process-wide, so a
         // concurrent test's warning must not redden this one. An absent line still fails.
@@ -52,18 +54,18 @@ public class DestinationStateTests : IDisposable
     }
 
     [Fact]
-    public void AFailedPublishBesideAnotherPublishersScratchFile_NamesIt()
+    public async Task AFailedPublishBesideAnotherPublishersScratchFile_NamesIt()
     {
         // The other half of the same distinction: the destination is still there, and somebody
         // else's publish is visibly in flight around it.
         var path = IoPath.Combine(_folder, "tea.owm");
-        File.WriteAllText(path, "before");
+        await File.WriteAllTextAsync(path, "before", TestContext.Current.CancellationToken);
         var intruder = IoPath.Combine(_folder, $"{AdpFileWriter.TempPrefix}somebodyelse{AdpFileWriter.TempExtension}");
-        File.WriteAllText(intruder, "another publisher's scratch");
+        await File.WriteAllTextAsync(intruder, "another publisher's scratch", TestContext.Current.CancellationToken);
         var wild = new IOException("Unable to remove the file to be replaced.") { HResult = unchecked((int)0x80070497) };
         using var logs = LogCapture.Start();
 
-        Assert.Throws<IOException>(() => AdpFileWriter.Save(path, "after", replace: (_, _) => throw wild));
+        await Assert.ThrowsAsync<IOException>(() => _writer.SaveAsync(path, "after", replace: (_, _) => throw wild, TestContext.Current.CancellationToken));
 
         // One warning ABOUT THIS, not one warning in total: the capture is process-wide, so a
         // concurrent test's warning must not redden this one. An absent line still fails.
@@ -89,7 +91,7 @@ public class DestinationStateTests : IDisposable
     }
 
     [Fact]
-    public void AFailedPublish_TellsTheDescriptionWhichScratchFileIsItsOwn()
+    public async Task AFailedPublish_TellsTheDescriptionWhichScratchFileIsItsOwn()
     {
         // THE WIRING, not the unit. The two guards below call Describe directly and pass the
         // scratch name themselves, so they would stay green while the PUBLISH forgot to pass it -
@@ -98,11 +100,11 @@ public class DestinationStateTests : IDisposable
         // This one drives the real Save, whose temporary exists only during the failure it is
         // describing.
         var path = IoPath.Combine(_folder, "roadmap.mm");
-        File.WriteAllText(path, "before");
+        await File.WriteAllTextAsync(path, "before", TestContext.Current.CancellationToken);
         var wild = new IOException("Unable to remove the file to be replaced.") { HResult = unchecked((int)0x80070497) };
         using var logs = LogCapture.Start();
 
-        Assert.Throws<IOException>(() => AdpFileWriter.Save(path, "after", replace: (_, _) => throw wild));
+        await Assert.ThrowsAsync<IOException>(() => _writer.SaveAsync(path, "after", replace: (_, _) => throw wild, TestContext.Current.CancellationToken));
 
         // One warning ABOUT THIS, not one warning in total: the capture is process-wide, so a
         // concurrent test's warning must not redden this one. An absent line still fails.

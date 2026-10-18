@@ -31,6 +31,8 @@ namespace EtAlii.Adp.Documents.Tests;
 [Collection(FileHoldersSeam.Name)]
 public class AdpFileWriterHolderRecordTests : IDisposable
 {
+    private readonly FileWriter _writer = new();
+
     private readonly string _folder = IoPath.Combine(IoPath.GetTempPath(), "adp-holder-record-" + Guid.NewGuid().ToString("N"));
 
     public AdpFileWriterHolderRecordTests() => Directory.CreateDirectory(_folder);
@@ -65,7 +67,7 @@ public class AdpFileWriterHolderRecordTests : IDisposable
             await WaitForHolder(ready, holder);
             using var logs = LogCapture.Start();
 
-            Assert.ThrowsAny<IOException>(() => AdpFileWriter.Save(path, "after"));
+            await Assert.ThrowsAnyAsync<IOException>(() => _writer.SaveAsync(path, "after", TestContext.Current.CancellationToken));
 
             // One warning ABOUT THIS, not one warning in total: the capture is process-wide, so a
             // concurrent test's warning must not redden this one. An absent line still fails.
@@ -83,13 +85,13 @@ public class AdpFileWriterHolderRecordTests : IDisposable
     }
 
     [Fact]
-    public void AFailedPublish_SaysSoWhenThisProcessIsTheHolder()
+    public async Task AFailedPublish_SaysSoWhenThisProcessIsTheHolder()
     {
         Assert.SkipUnless(OperatingSystem.IsWindows(), "A handle's sharing mode denies a replace or delete only on Windows.");
         // The other half of naming: a handle held here is ours, and a record that did not say so
         // would send the next reader hunting for a process that was never involved.
         var path = IoPath.Combine(_folder, "tea.owm");
-        File.WriteAllText(path, "before");
+        await File.WriteAllTextAsync(path, "before", TestContext.Current.CancellationToken);
         // The real Restart Manager talks to a service, and this guard is about what the RECORD
         // SAYS rather than about how busy the machine is: at the production budget a loaded gate
         // timed out the query and reddened this test for a reason it does not pin. The timeout
@@ -97,9 +99,9 @@ public class AdpFileWriterHolderRecordTests : IDisposable
         FileHolders.Budget = TimeSpan.FromSeconds(30);
         using var logs = LogCapture.Start();
 
-        using (new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read))
+        await using (new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read))
         {
-            Assert.ThrowsAny<IOException>(() => AdpFileWriter.Save(path, "after"));
+            await Assert.ThrowsAnyAsync<IOException>(() => _writer.SaveAsync(path, "after", TestContext.Current.CancellationToken));
         }
 
         // One warning ABOUT THIS, not one warning in total: the capture is process-wide, so a
@@ -113,16 +115,16 @@ public class AdpFileWriterHolderRecordTests : IDisposable
     }
 
     [Fact]
-    public void AHolderQueryThatThrows_LeavesTheSaveFailingExactlyAsItDid()
+    public async Task AHolderQueryThatThrows_LeavesTheSaveFailingExactlyAsItDid()
     {
         // THE CONDITION ON THE WHOLE CHANGE: a diagnostic may not change the outcome it describes.
         var path = IoPath.Combine(_folder, "tea.owm");
-        File.WriteAllText(path, "before");
+        await File.WriteAllTextAsync(path, "before", TestContext.Current.CancellationToken);
         var wild = new IOException("Unable to remove the file to be replaced.") { HResult = unchecked((int)0x80070497) };
         FileHolders.Query = _ => throw new InvalidOperationException("the Restart Manager is not available here");
         using var logs = LogCapture.Start();
 
-        var thrown = Assert.Throws<IOException>(() => AdpFileWriter.Save(path, "after", replace: (_, _) => throw wild));
+        var thrown = await Assert.ThrowsAsync<IOException>(() => _writer.SaveAsync(path, "after", replace: (_, _) => throw wild, TestContext.Current.CancellationToken));
 
         // Same exception, same record, and the failed query says it failed rather than saying nobody.
         Assert.Same(wild, thrown);
@@ -135,16 +137,16 @@ public class AdpFileWriterHolderRecordTests : IDisposable
         Assert.Contains("0x80070497", warning, StringComparison.Ordinal);
         Assert.Contains("holders could not be determined", warning, StringComparison.Ordinal);
         Assert.DoesNotContain(FileHolders.None, warning, StringComparison.Ordinal);
-        Assert.Equal("before", File.ReadAllText(path));
+        Assert.Equal("before", await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
     }
 
     [Fact]
-    public void AHolderQueryThatHangs_DoesNotHoldTheSaveOpen()
+    public async Task AHolderQueryThatHangs_DoesNotHoldTheSaveOpen()
     {
         // "Slow" is the failure mode a timeout hides badly: without a budget the save waits on a
         // service that may never answer. Thirty seconds of hang must cost the save a few.
         var path = IoPath.Combine(_folder, "tea.owm");
-        File.WriteAllText(path, "before");
+        await File.WriteAllTextAsync(path, "before", TestContext.Current.CancellationToken);
         var wild = new IOException("Unable to remove the file to be replaced.") { HResult = unchecked((int)0x80070497) };
         FileHolders.Budget = TimeSpan.FromMilliseconds(200);
 
@@ -161,7 +163,7 @@ public class AdpFileWriterHolderRecordTests : IDisposable
         var clock = Stopwatch.StartNew();
         try
         {
-            Assert.Throws<IOException>(() => AdpFileWriter.Save(path, "after", replace: (_, _) => throw wild));
+            await Assert.ThrowsAsync<IOException>(() => _writer.SaveAsync(path, "after", replace: (_, _) => throw wild, TestContext.Current.CancellationToken));
         }
         finally
         {
@@ -175,12 +177,12 @@ public class AdpFileWriterHolderRecordTests : IDisposable
     }
 
     [Fact]
-    public void ASuccessfulSave_AsksNobodyWhoIsHoldingAnything()
+    public async Task ASuccessfulSave_AsksNobodyWhoIsHoldingAnything()
     {
         // The must-not-catch half: the query costs a service call, and a save that succeeds has no
         // question to ask.
         var path = IoPath.Combine(_folder, "tea.owm");
-        File.WriteAllText(path, "before");
+        await File.WriteAllTextAsync(path, "before", TestContext.Current.CancellationToken);
 
         // ASKED ABOUT THIS PATH, not asked at all. FileHolders.Query is a static seam and the
         // assembly runs its classes in parallel, so a DIFFERENT class's deliberately failing
@@ -194,10 +196,10 @@ public class AdpFileWriterHolderRecordTests : IDisposable
             return "asked";
         };
 
-        AdpFileWriter.Save(path, "after");
+        await _writer.SaveAsync(path, "after", TestContext.Current.CancellationToken);
 
         Assert.DoesNotContain(path, asked);
-        Assert.Equal("after", File.ReadAllText(path));
+        Assert.Equal("after", await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
     }
 
     [Fact]

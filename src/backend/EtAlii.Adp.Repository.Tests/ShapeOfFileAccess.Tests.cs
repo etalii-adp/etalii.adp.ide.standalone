@@ -113,7 +113,7 @@ public partial class ShapeOfFileAccessTests
 
     private const string RawWriteStream = "writes a file through its own FileStream, so it truncates in place and a reader can see it half-written - and at FileShare.Read a concurrent save is refused outright";
 
-    private static readonly string Replacement = "SharedDocumentReader (reads), AdpFileWriter.Save (overwrites) or AdpFileWriter.Create/CreateAll (new files)";
+    private static readonly string Replacement = "SharedDocumentReader (reads), IFileWriter.SaveAsync (overwrites) or AdpFileWriter.Create/CreateAll (new files)";
 
     private static string RepositoryRoot { get; } = RepositoryPaths.Root;
 
@@ -489,15 +489,15 @@ public partial class ShapeOfFileAccessTests
         var writeText = Offences("Fake/Save.cs", ["            File.WriteAllText(path, text);"]);
         Assert.Single(writeText);
         Assert.Contains("Fake/Save.cs:1", writeText[0], StringComparison.Ordinal);
-        Assert.Contains("AdpFileWriter.Save", writeText[0], StringComparison.Ordinal);
+        Assert.Contains("IFileWriter.SaveAsync", writeText[0], StringComparison.Ordinal);
 
         var writeLines = Offences("Fake/Lines.cs", ["        File.WriteAllLines(path, lines);"]);
         Assert.Single(writeLines);
-        Assert.Contains("AdpFileWriter.Save", writeLines[0], StringComparison.Ordinal);
+        Assert.Contains("IFileWriter.SaveAsync", writeLines[0], StringComparison.Ordinal);
 
         var writeBytes = Offences("Fake/Bytes.cs", ["        File.WriteAllBytes(path, bytes);"]);
         Assert.Single(writeBytes);
-        Assert.Contains("AdpFileWriter.Save", writeBytes[0], StringComparison.Ordinal);
+        Assert.Contains("IFileWriter.SaveAsync", writeBytes[0], StringComparison.Ordinal);
 
         // THE WRITE STREAM, WHICH THIS GUARD USED TO CALL FINE. The line below is verbatim what
         // TextFileBuffer.SaveAsync did, and it sat in TheGuardDoesNotFireOnWhatIsGenuinelyFine
@@ -507,11 +507,11 @@ public partial class ShapeOfFileAccessTests
         var writeStream = Offences("Fake/Write.cs", ["            await using var stream = new FileStream(_path, FileMode.Create, FileAccess.Write, FileShare.Read);"]);
         Assert.Single(writeStream);
         Assert.Contains("Fake/Write.cs:1", writeStream[0], StringComparison.Ordinal);
-        Assert.Contains("AdpFileWriter.Save", writeStream[0], StringComparison.Ordinal);
+        Assert.Contains("IFileWriter.SaveAsync", writeStream[0], StringComparison.Ordinal);
 
         var readWriteStream = Offences("Fake/Both.cs", ["        using var s = new FileStream(p, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);"]);
         Assert.Single(readWriteStream);
-        Assert.Contains("AdpFileWriter.Save", readWriteStream[0], StringComparison.Ordinal);
+        Assert.Contains("IFileWriter.SaveAsync", readWriteStream[0], StringComparison.Ordinal);
     }
 
     [Fact]
@@ -529,7 +529,7 @@ public partial class ShapeOfFileAccessTests
         // A memory stream's ToArray is not a file read, and neither is anything else whose name
         // merely ends the same way - the rule is anchored on File. for that reason.
         Assert.Empty(Offences("Fake/Memory.cs", ["        var bytes = buffer.ReadAllBytes();"]));
-        Assert.Empty(Offences("Fake/Saved.cs", ["            AdpFileWriter.Save(path, entry.Document.Text);"]));
+        Assert.Empty(Offences("Fake/Saved.cs", ["            await writer.SaveAsync(path, entry.Document.Text, cancellationToken);"]));
         // Same anchoring point on the write side: a WriteAllText that is not the filesystem's.
         Assert.Empty(Offences("Fake/Buffer.cs", ["        sink.WriteAllText(text);"]));
     }

@@ -4,7 +4,7 @@ namespace EtAlii.Adp.Files;
 /// Publishes and deletes the files ADP writes, one save or delete of a path at a time, so a reader
 /// sees either the previous content or the new content complete (code-structure FR-068). Waiting
 /// for another save of the same path blocks no thread. What a publish does is
-/// <see cref="AdpFileWriter.Save(string, string)"/>'s, which says why.
+/// <see cref="FileWriter.SaveAsync(string, string, CancellationToken)"/>'s, which says why.
 /// </summary>
 public interface IFileWriter
 {

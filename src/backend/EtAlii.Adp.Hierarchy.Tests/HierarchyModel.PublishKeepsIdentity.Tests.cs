@@ -14,6 +14,8 @@ namespace EtAlii.Adp.Hierarchy.Tests;
 /// </summary>
 public class HierarchyModelPublishKeepsIdentityTests : IDisposable
 {
+    private readonly FileWriter _writer = new();
+
     private static readonly DiagramDefinition Mindmap = new(new ToolOrigin("freeplane", "mindmap"), "Mind map", Extension: ".mm");
     private static readonly TimeSpan Patience = TimeSpan.FromSeconds(10);
     private static readonly TimeSpan Silence = TimeSpan.FromMilliseconds(500);
@@ -62,7 +64,7 @@ public class HierarchyModelPublishKeepsIdentityTests : IDisposable
             });
 
         // Act: the write every property-grid commit ends in.
-        AdpFileWriter.Save(subjectPath, "<map>changed</map>");
+        await _writer.SaveAsync(subjectPath, "<map>changed</map>", TestContext.Current.CancellationToken);
 
         // Assert: the id selected before the publish still resolves, to the same file - which
         // is precisely the question HierarchyContextSourceResolver.Track asks before deciding

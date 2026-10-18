@@ -13,6 +13,8 @@ namespace EtAlii.Adp.Workspace.Tests;
 /// </summary>
 public class DiagramDocumentReloadBridgeTests : IDisposable
 {
+    private readonly FileWriter _writer = new();
+
     private static readonly TimeSpan _arrival = TimeSpan.FromSeconds(10);
     private static readonly TimeSpan _silence = TimeSpan.FromMilliseconds(300);
 
@@ -105,7 +107,7 @@ public class DiagramDocumentReloadBridgeTests : IDisposable
 
         for (var i = 0; i < 20; i++)
         {
-            AdpFileWriter.Save(bodyPath, $"body {i}");
+            await _writer.SaveAsync(bodyPath, $"body {i}", TestContext.Current.CancellationToken);
         }
 
         (_, string reloadedBody) = await reloader.NextAsync(TestContext.Current.CancellationToken);

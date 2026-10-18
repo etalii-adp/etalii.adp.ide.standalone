@@ -23,6 +23,8 @@ namespace EtAlii.Adp.Documents.Tests;
 /// </remarks>
 public class AdpFileWriterBytesOverloadTests : IDisposable
 {
+    private readonly FileWriter _writer = new();
+
     private static readonly byte[] Bom = [0xEF, 0xBB, 0xBF];
 
     private readonly string _folder = IoPath.Combine(IoPath.GetTempPath(), "adp-bytes-overload-" + Guid.NewGuid().ToString("N"));
@@ -36,56 +38,56 @@ public class AdpFileWriterBytesOverloadTests : IDisposable
     }
 
     [Fact]
-    public void ItWritesExactlyTheBytesItWasGiven_ByteOrderMarkIncluded()
+    public async Task ItWritesExactlyTheBytesItWasGiven_ByteOrderMarkIncluded()
     {
         var path = IoPath.Combine(_folder, "notes.txt");
-        File.WriteAllText(path, "before");
+        await File.WriteAllTextAsync(path, "before", TestContext.Current.CancellationToken);
         byte[] content = [.. Bom, .. "héllo → wörld\r\n"u8];
 
-        AdpFileWriter.Save(path, content);
+        await _writer.SaveAsync(path, content, TestContext.Current.CancellationToken);
 
-        Assert.Equal(content, File.ReadAllBytes(path));
+        Assert.Equal(content, await File.ReadAllBytesAsync(path, TestContext.Current.CancellationToken));
     }
 
     [Fact]
-    public void ItLeavesNoScratchFileBehind()
+    public async Task ItLeavesNoScratchFileBehind()
     {
         // The publish is temp-then-replace, so the scratch file is an implementation detail that
         // must not survive the save - the same property the string overload is held to.
         var path = IoPath.Combine(_folder, "notes.txt");
-        File.WriteAllText(path, "before");
+        await File.WriteAllTextAsync(path, "before", TestContext.Current.CancellationToken);
 
-        AdpFileWriter.Save(path, [.. Bom, .. "after"u8]);
+        await _writer.SaveAsync(path, [.. Bom, .. "after"u8], TestContext.Current.CancellationToken);
 
         Assert.Empty(Directory.GetFiles(_folder, $"{AdpFileWriter.TempPrefix}*"));
     }
 
     [Fact]
-    public void AReaderSharingDelete_DoesNotStopIt()
+    public async Task AReaderSharingDelete_DoesNotStopIt()
     {
         // What the raw FileStream could not do: a reader in SharedDocumentReader's own sharing mode
         // is reading the file, and the save still publishes underneath it.
         var path = IoPath.Combine(_folder, "notes.txt");
-        File.WriteAllText(path, "before");
+        await File.WriteAllTextAsync(path, "before", TestContext.Current.CancellationToken);
         byte[] content = [.. Bom, .. "after"u8];
 
-        using (new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete))
+        await using (new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete))
         {
-            AdpFileWriter.Save(path, content);
+            await _writer.SaveAsync(path, content, TestContext.Current.CancellationToken);
         }
 
-        Assert.Equal(content, File.ReadAllBytes(path));
+        Assert.Equal(content, await File.ReadAllBytesAsync(path, TestContext.Current.CancellationToken));
     }
 
     [Fact]
-    public void ANewFile_IsCreatedRatherThanRefused()
+    public async Task ANewFile_IsCreatedRatherThanRefused()
     {
         // A first publish has no destination to replace, which is a move rather than a replace.
         var path = IoPath.Combine(_folder, "fresh.txt");
         byte[] content = [.. Bom, .. "new"u8];
 
-        AdpFileWriter.Save(path, content);
+        await _writer.SaveAsync(path, content, TestContext.Current.CancellationToken);
 
-        Assert.Equal(content, File.ReadAllBytes(path));
+        Assert.Equal(content, await File.ReadAllBytesAsync(path, TestContext.Current.CancellationToken));
     }
 }

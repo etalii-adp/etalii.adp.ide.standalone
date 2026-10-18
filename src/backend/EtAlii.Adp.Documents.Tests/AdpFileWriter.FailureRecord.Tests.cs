@@ -12,7 +12,7 @@ namespace EtAlii.Adp.Documents.Tests;
 /// <para>
 /// <b>Why.</b> <c>DiagramElementActionFlowTests</c> failed about once in fifty runs under load
 /// with <c>IOException: "Unable to remove the file to be replaced."</c> out of
-/// <c>File.Replace</c> in <see cref="AdpFileWriter.Save"/>. Five captures, one signature, two
+/// <c>File.Replace</c> in <see cref="FileWriter.SaveAsync(string, string, CancellationToken)"/>. Five captures, one signature, two
 /// entry points (adding a node and renaming one). Every server log recorded the type and the
 /// message and none recorded the <c>HResult</c>, so the code a fix would need to match was never
 /// seen.
@@ -31,6 +31,8 @@ namespace EtAlii.Adp.Documents.Tests;
 /// </remarks>
 public class AdpFileWriterFailureRecordTests : IDisposable
 {
+    private readonly FileWriter _writer = new();
+
     private readonly string _folder = IoPath.Combine(IoPath.GetTempPath(), "adp-failure-record-" + Guid.NewGuid().ToString("N"));
 
     public AdpFileWriterFailureRecordTests() => Directory.CreateDirectory(_folder);
@@ -42,17 +44,17 @@ public class AdpFileWriterFailureRecordTests : IDisposable
     }
 
     [Fact]
-    public void AFailedReplace_LogsTheHResultThePathAndTheMessage()
+    public async Task AFailedReplace_LogsTheHResultThePathAndTheMessage()
     {
         // Arrange. The wild message with its measured code, 0x80070497, driven through the seam so
         // the record is asserted deterministically rather than by racing writers for it.
         var path = IoPath.Combine(_folder, "roadmap.mm");
-        File.WriteAllText(path, "before");
+        await File.WriteAllTextAsync(path, "before", TestContext.Current.CancellationToken);
         var wild = new IOException("Unable to remove the file to be replaced.") { HResult = unchecked((int)0x80070497) };
         using var logs = LogCapture.Start();
 
         // Act.
-        var thrown = Assert.Throws<IOException>(() => AdpFileWriter.Save(path, "after", replace: (_, _) => throw wild));
+        var thrown = await Assert.ThrowsAsync<IOException>(() => _writer.SaveAsync(path, "after", replace: (_, _) => throw wild, TestContext.Current.CancellationToken));
 
         // Assert. The caller still gets the original exception - no error policy is imposed here.
         Assert.Same(wild, thrown);
@@ -68,34 +70,34 @@ public class AdpFileWriterFailureRecordTests : IDisposable
     }
 
     [Fact]
-    public void ARealHolderDenyingTheReplace_IsRecordedWithTheCodeTheOsActuallyGave()
+    public async Task ARealHolderDenyingTheReplace_IsRecordedWithTheCodeTheOsActuallyGave()
     {
         Assert.SkipUnless(OperatingSystem.IsWindows(), "A handle's sharing mode denies a replace or delete only on Windows.");
         // The half the seam cannot vouch for: a genuine OS refusal, through the real File.Replace,
         // records the code Windows actually returned. Measured as 0x80070020 for this arrangement.
         var path = IoPath.Combine(_folder, "roadmap.mm");
-        File.WriteAllText(path, "before");
+        await File.WriteAllTextAsync(path, "before", TestContext.Current.CancellationToken);
         using var logs = LogCapture.Start();
 
-        using (new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read))
+        await using (new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read))
         {
-            Assert.ThrowsAny<IOException>(() => AdpFileWriter.Save(path, "after"));
+            await Assert.ThrowsAnyAsync<IOException>(() => _writer.SaveAsync(path, "after", TestContext.Current.CancellationToken));
         }
 
         Assert.Contains(logs.Warnings, warning => warning.Contains("0x80070020", StringComparison.Ordinal));
     }
 
     [Fact]
-    public void ASuccessfulSave_LogsNoWarning()
+    public async Task ASuccessfulSave_LogsNoWarning()
     {
         // The must-not-catch half: a warning on every save would bury the one that matters.
         var path = IoPath.Combine(_folder, "roadmap.mm");
-        File.WriteAllText(path, "before");
+        await File.WriteAllTextAsync(path, "before", TestContext.Current.CancellationToken);
         using var logs = LogCapture.Start();
 
-        AdpFileWriter.Save(path, "after");
+        await _writer.SaveAsync(path, "after", TestContext.Current.CancellationToken);
 
-        Assert.Equal("after", File.ReadAllText(path));
+        Assert.Equal("after", await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
         Assert.Empty(logs.Warnings);
     }
 }

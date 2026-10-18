@@ -20,6 +20,8 @@ namespace EtAlii.Adp.Documents.Tests;
 [Collection(FileHoldersSeam.Name)]
 public class AdpFileWriterSnapshotBeforeHoldersTests : IDisposable
 {
+    private readonly FileWriter _writer = new();
+
     private readonly string _folder = IoPath.Combine(IoPath.GetTempPath(), "adp-snapshot-order-" + Guid.NewGuid().ToString("N"));
 
     public AdpFileWriterSnapshotBeforeHoldersTests() => Directory.CreateDirectory(_folder);
@@ -33,12 +35,12 @@ public class AdpFileWriterSnapshotBeforeHoldersTests : IDisposable
     }
 
     [Fact]
-    public void ACompetingPublishThatFinishesDuringTheHolderQuery_IsStillNamed()
+    public async Task ACompetingPublishThatFinishesDuringTheHolderQuery_IsStillNamed()
     {
         var path = IoPath.Combine(_folder, "plan.tml");
-        File.WriteAllText(path, "before");
+        await File.WriteAllTextAsync(path, "before", TestContext.Current.CancellationToken);
         var competitor = IoPath.Combine(_folder, $"{AdpFileWriter.TempPrefix}competitor{AdpFileWriter.TempExtension}");
-        File.WriteAllText(competitor, "another publisher's scratch");
+        await File.WriteAllTextAsync(competitor, "another publisher's scratch", TestContext.Current.CancellationToken);
         var wild = new IOException("Unable to remove the file to be replaced.") { HResult = unchecked((int)0x80070497) };
 
         // Inline, not late: the reordering is about what happens while the record is being built,
@@ -58,7 +60,7 @@ public class AdpFileWriterSnapshotBeforeHoldersTests : IDisposable
         };
         using var logs = LogCapture.Start();
 
-        Assert.Throws<IOException>(() => AdpFileWriter.Save(path, "after", replace: (_, _) => throw wild));
+        await Assert.ThrowsAsync<IOException>(() => _writer.SaveAsync(path, "after", replace: (_, _) => throw wild, TestContext.Current.CancellationToken));
 
         // The query really ran and really removed it - otherwise this would pass for either order.
         Assert.True(competitorFinished, "the holder query was never asked about this path");

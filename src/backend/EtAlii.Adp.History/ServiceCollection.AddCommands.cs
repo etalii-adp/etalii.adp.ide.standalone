@@ -23,9 +23,8 @@ public static class ServiceCollectionAddCommandsExtension
 
         // The one file writer: what publishes or deletes a file takes it through its constructor,
         // and waits for another save of the same path without blocking a thread (code-structure
-        // FR-068). Here, beside the dispatcher, because the handlers it runs are what write; the
-        // static writer's own, so a caller not yet handed it takes the same turns.
-        services.TryAddSingleton(AdpFileWriter.Process);
+        // FR-068). Here, beside the dispatcher, because the handlers it runs are what write.
+        services.TryAddSingleton<IFileWriter, FileWriter>();
 
         // The eight command/handler registrations moved to AddHierarchy with the area
         // (backend-project-decomposition task 10, the task-4 forward flag honoured):

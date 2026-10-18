@@ -312,7 +312,7 @@ public class HierarchyModelTests : IDisposable
     public void OnWatcherEvent_Deleted_ForAPathThatStillExists_KeepsTheEntryAndItsId()
     {
         // A Deleted event whose path is still on disk is not a deletion: Windows' ReplaceFile -
-        // which File.Replace uses, and AdpFileWriter.Save with it, to rewrite a registration in
+        // which File.Replace uses, and FileWriter.SaveAsync with it, to rewrite a registration in
         // place - raises a spurious Deleted for the destination it just refreshed. Removing the
         // entry here would hand the file a new id on the Created that follows, orphaning any open
         // document that still holds the old one. That is what left a causal-loop diagram
