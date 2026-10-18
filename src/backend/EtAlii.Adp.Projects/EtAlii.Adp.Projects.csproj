@@ -1,8 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <FrameworkReference Include="Microsoft.AspNetCore.App" />
-    <PackageReference Include="Grpc.AspNetCore" />
+    <!-- The gRPC API alone - the service bases, ServerCallContext, RpcException - and not the
+         ASP.NET Core server, which only the host project carries, so that no tool module reaches a
+         hosting package (code-structure FR-054, FR-065). -->
+    <PackageReference Include="Grpc.Core.Api" />
     <PackageReference Include="Grpc.Tools">
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
