@@ -55,7 +55,7 @@ public class MindmapDocumentStoreFailedSaveTests : IDisposable
         var node = document.Find("ID_1")!;
         document.SetText(node, "Design, renamed");
 
-        using var holder = new FileStream(bodyPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+        await using var holder = new FileStream(bodyPath, FileMode.Open, FileAccess.Read, FileShare.Read);
 
         // Act.
         var saved = await _store.SaveAsync(bodyPath, document, new MindmapNodeUpdated("ID_1"), TestContext.Current.CancellationToken);

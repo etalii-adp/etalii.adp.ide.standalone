@@ -43,7 +43,7 @@ public class CausalLoopDocumentStoreFailedReloadTests : IDisposable
         Assert.True(store.GetOrLoad(path).IsUsable);
 
         // Arrange, continued: a reload that cannot read the body.
-        using (new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.None))
+        await using (new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.None))
         {
             store.Reload(path);
         }
@@ -112,7 +112,7 @@ public class CausalLoopDocumentStoreFailedReloadTests : IDisposable
         await File.WriteAllTextAsync(path, Text, TestContext.Current.CancellationToken);
         var store = new CausalLoopDocumentStore(new FileWriter());
 
-        using (new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.None))
+        await using (new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.None))
         {
             Assert.False(store.GetOrLoad(path).IsUsable, "The arrangement failed: the first read succeeded.");
         }

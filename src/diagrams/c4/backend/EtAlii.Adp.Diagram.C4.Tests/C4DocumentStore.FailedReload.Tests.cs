@@ -52,7 +52,7 @@ public class C4DocumentStoreFailedReloadTests : IDisposable
         Assert.NotEmpty(store.GetOrLoad(body).Model.Elements);
 
         // Arrange, continued: a reload that cannot read the body.
-        using (new FileStream(body, FileMode.Open, FileAccess.Read, FileShare.None))
+        await using (new FileStream(body, FileMode.Open, FileAccess.Read, FileShare.None))
         {
             store.Reload(body);
         }
@@ -80,7 +80,7 @@ public class C4DocumentStoreFailedReloadTests : IDisposable
         await File.WriteAllTextAsync(body, Model, TestContext.Current.CancellationToken);
         var store = new C4DocumentStore(new FileWriter());
 
-        using (new FileStream(body, FileMode.Open, FileAccess.Read, FileShare.None))
+        await using (new FileStream(body, FileMode.Open, FileAccess.Read, FileShare.None))
         {
             Assert.Empty(store.GetOrLoad(body).Model.Elements); // the arrangement: the first read failed
         }
