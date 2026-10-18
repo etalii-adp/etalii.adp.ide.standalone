@@ -82,11 +82,11 @@ public static class ServiceCollectionAddHierarchyExtension
 
         services.AddHierarchyCommandHandlers();
 
-        // The gRPC service, resolvable as an ordinary one too: a tab's one stream runs its watch
-        // in-process (two-tab-connection-wedge Requirement 3.1).
-        // The scope a watch on a connection of its own holds its model and its subscription in.
+        // The watch, which HierarchyService runs on a call of its own and a tab's one stream runs
+        // in-process (two-tab-connection-wedge Requirement 3.1), and the scope it holds its model
+        // and its subscription in.
+        services.AddSingleton<HierarchyWatch>();
         services.AddConnectionSessions();
-        services.TryAddTransient<HierarchyService>();
 
         return services;
     }

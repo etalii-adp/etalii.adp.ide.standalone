@@ -43,11 +43,11 @@ public static class ServiceCollectionAddContextExtension
         services.AddSingleton<ICommandNoticeSink, ContextNoticeSink>();
         services.AddSingleton<ContextSelectionResolver>();
 
-        // The gRPC service, resolvable as an ordinary one too: a tab's one stream runs its context
-        // stream in-process (two-tab-connection-wedge Requirement 3.1).
-        // The scope a context stream holds the project's history and its registrations in.
+        // The context stream, which ContextService runs on a call of its own and a tab's one
+        // stream runs in-process (two-tab-connection-wedge Requirement 3.1), and the scope it holds
+        // the project's history and its registrations in.
+        services.AddSingleton<ContextWatch>();
         services.AddConnectionSessions();
-        services.TryAddTransient<ContextService>();
 
         return services;
     }
