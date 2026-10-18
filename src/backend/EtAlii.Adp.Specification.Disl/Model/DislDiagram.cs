@@ -19,6 +19,7 @@ public sealed class DislDiagram : ICelObject
     private readonly Dictionary<string, object?> _attributes;
     private readonly List<DislElement> _nodes = [];
     private readonly List<DislElement> _relations = [];
+    private readonly List<DislView> _views = [];
     private Dictionary<DislElement, (List<DislElement> Incoming, List<DislElement> Outgoing)>? _ends;
     private readonly Dictionary<(string Type, long Max), (IReadOnlyList<IReadOnlyList<DislElement>> Cycles, bool Truncated)> _cycles = [];
 
@@ -68,6 +69,31 @@ public sealed class DislDiagram : ICelObject
 
     /// <summary>The nodes, then the relations.</summary>
     public IReadOnlyList<DislElement> Elements => [.. _nodes, .. _relations];
+
+    /// <summary>The views of the model (§12.2, <c>diagram.views</c>), in the order the host added them: those its readings define.</summary>
+    public IReadOnlyList<DislView> Views => _views;
+
+    /// <summary>
+    /// Adds a view of <paramref name="viewpoint"/> with the diagram attributes it has of its own,
+    /// <paramref name="attributes"/>, as CEL values; its members are computed from the viewpoint unless
+    /// <paramref name="members"/> gives them (<see cref="DislView"/>). View ids are compared as element ids are (§11.5.4).
+    /// </summary>
+    public DislView AddView(string id, string viewpoint, string name = "", IReadOnlyDictionary<string, object?>? attributes = null, IReadOnlyList<DislElement>? members = null)
+    {
+        ArgumentNullException.ThrowIfNull(id);
+        ArgumentNullException.ThrowIfNull(viewpoint);
+        ArgumentNullException.ThrowIfNull(name);
+        if (_views.Any(view => Specification.IdComparer.Equals(view.Id, id))) throw new ArgumentException($"The model already has a view '{id}'.", nameof(id));
+        var own = new Dictionary<string, object?>(StringComparer.Ordinal);
+        foreach ((string attribute, object? value) in attributes ?? new Dictionary<string, object?>())
+        {
+            if (!Specification.Metamodel.DiagramAttributes.ContainsKey(attribute)) throw new ArgumentException($"'{attribute}' is not an attribute of the diagram.", nameof(attributes));
+            own[attribute] = value;
+        }
+        var added = new DislView(this, id, viewpoint, name, own, members);
+        _views.Add(added);
+        return added;
+    }
 
     /// <summary>Adds a node of <paramref name="type"/>, beneath <paramref name="parent"/> when one is given.</summary>
     public DislElement AddNode(string type, string id, IReadOnlyDictionary<string, object?>? attributes = null, DislElement? parent = null, string? slot = null) =>
@@ -160,6 +186,13 @@ public sealed class DislDiagram : ICelObject
     {
         _ends = null;
         _cycles.Clear();
+        ViewsChanged();
+    }
+
+    /// <summary>An element changed: the views' members are computed again.</summary>
+    internal void ViewsChanged()
+    {
+        foreach (var view in _views) view.Changed();
     }
 
     /// <summary>The children of <paramref name="parent"/>, or the top-level nodes, in model order.</summary>
@@ -271,6 +304,7 @@ public sealed class DislDiagram : ICelObject
             "nodes" => Nodes.Cast<object?>().ToList(),
             "relations" => Relations.Cast<object?>().ToList(),
             "elements" => Elements.Cast<object?>().ToList(),
+            "views" => Views.Cast<object?>().ToList(),
             "id" => "",
             "type" => "diagram",
             "kind" => "diagram",

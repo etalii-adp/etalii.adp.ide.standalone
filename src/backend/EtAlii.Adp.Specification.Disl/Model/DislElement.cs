@@ -194,6 +194,7 @@ public sealed class DislElement : ICelObject
             if (value is null) _attributes.Remove(name);
             else _attributes[name] = value;
         }
+        Diagram.ViewsChanged();
     }
 
     internal void AddChild(DislElement child) => _children.Add(child);
@@ -208,6 +209,7 @@ public sealed class DislElement : ICelObject
         if (!Type.Attributes.ContainsKey(name)) throw new ArgumentException($"'{name}' is not an attribute of {Type.Name}.", nameof(name));
         if (value is null) _attributes.Remove(name);
         else _attributes[name] = value;
+        Diagram.ViewsChanged();
     }
 
     /// <summary>
