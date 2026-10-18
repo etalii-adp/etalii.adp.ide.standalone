@@ -1,4 +1,5 @@
 using EtAlii.Adp.Context;
+using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.History;
 using Xunit;
 using IoPath = System.IO.Path;
@@ -9,9 +10,10 @@ namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline.Tests;
 /// The toolbox, whose whole job is to carry data rather than behaviour: each entry names a context
 /// action, and dropping it runs that action. The tests that matter here are therefore about the
 /// join - that every entry names an action that exists, and that a drop really does end at the
-/// same command the menu does (Requirement 9.6).
+/// same command the menu does (Requirement 9.6). The palette is the bundled definition's, handed out by
+/// core's <see cref="DislToolboxProvider"/> as the module registers it.
 /// </summary>
-public class PipelineToolboxProviderTests : IDisposable
+public class PipelineToolboxTests : IDisposable
 {
     private readonly string _workspace = IoPath.Combine(
         IoPath.GetTempPath(),
@@ -19,10 +21,10 @@ public class PipelineToolboxProviderTests : IDisposable
 
     private readonly PipelineDocumentStore _store = new();
     private readonly PipelineViewState _views = new();
-    private readonly PipelineToolboxProvider _toolbox = new();
+    private readonly DislToolboxProvider _toolbox = new(Diagram.Pipeline.Origin, PipelineDefinition.Definition);
     private readonly PipelineContextActionProvider _actions;
 
-    public PipelineToolboxProviderTests()
+    public PipelineToolboxTests()
     {
         Directory.CreateDirectory(_workspace);
         _actions = new PipelineContextActionProvider(new HistoryStackStore(new PipelineTestDispatcher(_store)), _store, _views);

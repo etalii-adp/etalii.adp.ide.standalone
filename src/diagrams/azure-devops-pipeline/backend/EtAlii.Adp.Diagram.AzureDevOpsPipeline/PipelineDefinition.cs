@@ -41,8 +41,8 @@ namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline;
 /// </remarks>
 internal static class PipelineDefinition
 {
-    /// <summary>The definition, with its <c>x-azure-pipeline</c> wire ids.</summary>
-    private static DislDiagramDefinition Definition { get; } = new(typeof(PipelineDefinition).Assembly, "azure-devops-pipeline.dis", "x-azure-pipeline");
+    /// <summary>The definition, with its <c>x-azure-pipeline</c> wire ids; core's <see cref="DislToolboxProvider"/> hands out its palette.</summary>
+    public static DislDiagramDefinition Definition { get; } = new(typeof(PipelineDefinition).Assembly, "azure-devops-pipeline.dis", "x-azure-pipeline");
 
     /// <summary>The definition.</summary>
     public static DislSpecification Specification => Definition.Specification;
@@ -114,20 +114,15 @@ internal static class PipelineDefinition
     /// <paramref name="newValue"/> (its change rules, DISL 8.4); null when it does not. Null unsets the attribute.
     /// </summary>
     /// <remarks>
-    /// <b>The first refusal in the order today's commands asked</b>: a step's dependencies, then an element this file
-    /// does not write, then a name that names nothing, then a cycle (<c>noCycleByEdit</c>), then a pipeline left with
-    /// no stage to start with (<c>keepAStart</c>); the definition declares the read-only rule last, which would put its
-    /// sentence behind the others.
+    /// <b>The first refusal in the order of the definition's rules</b> (DISL 8.4), which is the order today's commands
+    /// asked: a step's dependencies, then an element this file does not write, then a name that names nothing, then a
+    /// cycle (<c>noCycleByEdit</c>), then a pipeline left with no stage to start with (<c>keepAStart</c>).
     /// </remarks>
     public static string? ChangeRefusal(DislElement element, string attribute, object? newValue)
     {
         ArgumentNullException.ThrowIfNull(element);
         ArgumentNullException.ThrowIfNull(attribute);
-        var refusals = GestureConstraintEvaluator.Change(Specification, element, attribute, newValue, Env).ToList();
-        return First("stepHasNothingToWaitFor") ?? First("readOnlyElements") ?? First("knownName") ?? First("knownStageName")
-            ?? refusals.FirstOrDefault()?.Message;
-
-        string? First(string id) => refusals.FirstOrDefault(refusal => refusal.ConstraintId == id)?.Message;
+        return GestureConstraintEvaluator.Change(Specification, element, attribute, newValue, Env).FirstOrDefault()?.Message;
     }
 
     /// <summary>Why the definition refuses deleting <paramref name="element"/> (its deletion rules, DISL 8.4); null when it does not.</summary>
