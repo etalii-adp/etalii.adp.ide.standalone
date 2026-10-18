@@ -32,6 +32,12 @@ public sealed class HierarchyModel
     // Rename echoes and write transients (see WatcherEventNormalizer); used under _gate only.
     private readonly WatcherEventNormalizer _normalizer = new();
 
+    // The changes applied under _gate and not yet raised, and whether a thread is raising them.
+    // A change is raised after the lock is released (FR-026), so a subscriber that waits on
+    // another thread asking the model something cannot deadlock the two (report D10).
+    private readonly List<HierarchyEntryChange> _queued = new();
+    private bool _raising;
+
     public HierarchyModel(string rootPath, IDiagramDefinitionCatalog? catalog = null, DiagramFileRouter? router = null, EditorResolver? editorResolver = null, ToolRouter? tools = null)
     {
         RootPath = IoPath.GetFullPath(rootPath);
@@ -65,6 +71,7 @@ public sealed class HierarchyModel
             refresh = OnRenamed(oldPath, newPath);
         }
 
+        RaiseQueued();
         RefreshFolder(refresh);
     }
 
@@ -210,6 +217,7 @@ public sealed class HierarchyModel
             }
         }
 
+        RaiseQueued();
         RefreshFolder(refresh);
     }
 
@@ -225,7 +233,12 @@ public sealed class HierarchyModel
     public void NotifyRootUnavailable(string message)
     {
         _logger.Warning("Telling the client that {RootPath} is unavailable: {Reason}", RootPath, message);
-        EntryChanged?.Invoke(new HierarchyRootUnavailable(message));
+        lock (_gate)
+        {
+            Queue(new HierarchyRootUnavailable(message));
+        }
+
+        RaiseQueued();
     }
 
     /// <summary>
@@ -260,6 +273,50 @@ public sealed class HierarchyModel
 
         fullPath = IoPath.GetFullPath(path);
         return true;
+    }
+
+    /// <summary>Queues a change applied under the lock, for <see cref="RaiseQueued"/> to raise after it.</summary>
+    private void Queue(HierarchyEntryChange change) => _queued.Add(change);
+
+    /// <summary>
+    /// Raises the queued changes, in the order they were applied, with the lock released. One
+    /// thread raises at a time: a thread finding another raising leaves its changes to that one,
+    /// which raises until the queue is empty, so a subscriber hears every change once and in
+    /// order, and one that calls back into the model hears that call's changes after the current
+    /// ones rather than inside them.
+    /// </summary>
+    private void RaiseQueued()
+    {
+        while (true)
+        {
+            HierarchyEntryChange[] changes;
+            lock (_gate)
+            {
+                if (_raising || _queued.Count == 0)
+                {
+                    return;
+                }
+
+                _raising = true;
+                changes = [.. _queued];
+                _queued.Clear();
+            }
+
+            try
+            {
+                foreach (var change in changes)
+                {
+                    EntryChanged?.Invoke(change);
+                }
+            }
+            finally
+            {
+                lock (_gate)
+                {
+                    _raising = false;
+                }
+            }
+        }
     }
 
     /// <summary>
@@ -351,7 +408,7 @@ public sealed class HierarchyModel
         }
 
         var node = AddEntry(parentId, IoPath.GetFileName(path), facts.IsFolder, facts.HasAnyChild, path);
-        EntryChanged?.Invoke(new HierarchyEntryCreated(node));
+        Queue(new HierarchyEntryCreated(node));
 
         // A created registration nests immediately, and a created subject adopts its orphans -
         // both are re-parents pushed as updates, so a client applying them in order arrives at
@@ -387,12 +444,12 @@ public sealed class HierarchyModel
             {
                 var reparented = child with { ParentId = folderParent };
                 _index.Set(reparented);
-                EntryChanged?.Invoke(new HierarchyEntryUpdated(child.Id, reparented.HasChildren, ParentChanged: true, ParentId: folderParent, DiagramState: reparented.DiagramState));
+                Queue(new HierarchyEntryUpdated(child.Id, reparented.HasChildren, ParentChanged: true, ParentId: folderParent, DiagramState: reparented.DiagramState));
             }
         }
 
         RemoveSubtree(id);
-        EntryChanged?.Invoke(new HierarchyEntryRemoved(id));
+        Queue(new HierarchyEntryRemoved(id));
 
         // The reverse of the create: a deleted .adp downgrades its subject's state
         // (small-refinements Requirement 3.6).
@@ -424,7 +481,7 @@ public sealed class HierarchyModel
         }
 
         _index.Set(entry with { HasChildren = hasChildren });
-        EntryChanged?.Invoke(new HierarchyEntryUpdated(folderId, hasChildren, DiagramState: entry.DiagramState));
+        Queue(new HierarchyEntryUpdated(folderId, hasChildren, DiagramState: entry.DiagramState));
     }
 
     private static bool SafeHasAnyChild(string path)
@@ -449,7 +506,7 @@ public sealed class HierarchyModel
         var newName = IoPath.GetFileName(newPath);
         _index.Move(id, newPath);
         _index.Set(_index[id] with { Name = newName });
-        EntryChanged?.Invoke(new HierarchyEntryRenamed(id, newName));
+        Queue(new HierarchyEntryRenamed(id, newName));
 
         // A rename can change what nests where - a subject gaining or losing its name, a
         // registration changing which subject it derives.
@@ -488,6 +545,8 @@ public sealed class HierarchyModel
                 ApplyStates(folderId, refresh.FolderPath, view.States, raiseEvents: true);
             }
         }
+
+        RaiseQueued();
     }
 
     /// <summary>
@@ -522,16 +581,17 @@ public sealed class HierarchyModel
 
         var read = ReadFolder(folderPath, folderName);
 
+        IReadOnlyList<EntryNode> listing;
         lock (_gate)
         {
             // Renamed or removed while it was read: what was read describes a folder that is gone.
-            if (folderId is { } id && (!_index.TryGetPath(id, out var currentPath) || !string.Equals(currentPath, folderPath, StringComparison.OrdinalIgnoreCase)))
-            {
-                return Array.Empty<EntryNode>();
-            }
-
-            return ApplyFolder(folderId, folderPath, read, knownBefore, raiseEvents);
+            listing = folderId is { } id && (!_index.TryGetPath(id, out var currentPath) || !string.Equals(currentPath, folderPath, StringComparison.OrdinalIgnoreCase))
+                ? Array.Empty<EntryNode>()
+                : ApplyFolder(folderId, folderPath, read, knownBefore, raiseEvents);
         }
+
+        RaiseQueued();
+        return listing;
     }
 
     /// <summary>Reads a folder's entries, and decides their nesting and states, without the lock.</summary>
@@ -621,7 +681,7 @@ public sealed class HierarchyModel
 
                 if (raiseEvents)
                 {
-                    EntryChanged?.Invoke(new HierarchyEntryCreated(node));
+                    Queue(new HierarchyEntryCreated(node));
                 }
             }
         }
@@ -637,7 +697,7 @@ public sealed class HierarchyModel
             RemoveSubtree(staleId);
             if (raiseEvents)
             {
-                EntryChanged?.Invoke(new HierarchyEntryRemoved(staleId));
+                Queue(new HierarchyEntryRemoved(staleId));
             }
         }
 
@@ -693,7 +753,7 @@ public sealed class HierarchyModel
                 _index.Set(current with { ParentId = wantedParent });
                 if (raiseEvents)
                 {
-                    EntryChanged?.Invoke(new HierarchyEntryUpdated(registration.Id, current.HasChildren, ParentChanged: true, ParentId: wantedParent, DiagramState: current.DiagramState));
+                    Queue(new HierarchyEntryUpdated(registration.Id, current.HasChildren, ParentChanged: true, ParentId: wantedParent, DiagramState: current.DiagramState));
                 }
             }
         }
@@ -708,7 +768,7 @@ public sealed class HierarchyModel
                 _index.Set(current with { HasChildren = hasChildren });
                 if (raiseEvents)
                 {
-                    EntryChanged?.Invoke(new HierarchyEntryUpdated(file.Id, hasChildren, DiagramState: current.DiagramState));
+                    Queue(new HierarchyEntryUpdated(file.Id, hasChildren, DiagramState: current.DiagramState));
                 }
             }
         }
@@ -753,7 +813,7 @@ public sealed class HierarchyModel
             _index.Set(current with { DiagramState = decision.State });
             if (raiseEvents || decision.IsTheFolder)
             {
-                EntryChanged?.Invoke(new HierarchyEntryUpdated(entryId, current.HasChildren, DiagramState: decision.State));
+                Queue(new HierarchyEntryUpdated(entryId, current.HasChildren, DiagramState: decision.State));
             }
         }
     }
