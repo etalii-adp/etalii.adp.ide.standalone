@@ -56,7 +56,7 @@ public class AdpFileWriterConcurrentSavesTests : IDisposable
         var threads = Enumerable.Range(0, writers).Select(w => new Thread(() =>
         {
             // ReSharper disable once AccessToDisposedClosure - Reason: every thread that runs this closure is Joined below before the using disposes `go`.
-            go.Wait();
+            go.Wait(cancellationToken);
             for (var i = 0; i < savesEach; i++)
             {
                 // Long enough that a torn or interleaved write could not pass as a real one.

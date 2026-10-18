@@ -99,7 +99,7 @@ public class AdpFileWriterHolderRecordTests : IDisposable
         FileHolders.Budget = TimeSpan.FromSeconds(30);
         using var logs = LogCapture.Start();
 
-        using (new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read))
+        await using (new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read))
         {
             await Assert.ThrowsAnyAsync<IOException>(() => _writer.SaveAsync(path, "after", TestContext.Current.CancellationToken));
         }

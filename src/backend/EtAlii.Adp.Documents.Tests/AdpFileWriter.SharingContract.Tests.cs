@@ -93,7 +93,7 @@ public class AdpFileWriterSharingContractTests : IDisposable
         // Arrange: exactly what SharedDocumentReader opens, which is what the application uses.
         var path = IoPath.Combine(_folder, "document.tml");
         await File.WriteAllTextAsync(path, "before", TestContext.Current.CancellationToken);
-        using var reader = new FileStream(
+        await using var reader = new FileStream(
             path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
 
         // Act.
@@ -110,7 +110,7 @@ public class AdpFileWriterSharingContractTests : IDisposable
         // Arrange: what File.ReadAllText opens - no Delete.
         var path = IoPath.Combine(_folder, "document.tml");
         await File.WriteAllTextAsync(path, "before", TestContext.Current.CancellationToken);
-        using var reader = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+        await using var reader = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
 
         // Act & assert: the failure the flow test hit, made deterministic. It surfaces as one of
         // the pair every caller of Save already catches, which is why the store could report
@@ -133,7 +133,7 @@ public class AdpFileWriterSharingContractTests : IDisposable
         var path = IoPath.Combine(_folder, "document.tml");
         await File.WriteAllTextAsync(path, "before", TestContext.Current.CancellationToken);
 
-        using (var _ = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read))
+        await using (var _ = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read))
         {
             await Assert.ThrowsAnyAsync<Exception>(() => _writer.SaveAsync(path, "after", TestContext.Current.CancellationToken));
         }

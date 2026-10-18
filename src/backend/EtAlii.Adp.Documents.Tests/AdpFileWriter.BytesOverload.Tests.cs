@@ -71,7 +71,7 @@ public class AdpFileWriterBytesOverloadTests : IDisposable
         await File.WriteAllTextAsync(path, "before", TestContext.Current.CancellationToken);
         byte[] content = [.. Bom, .. "after"u8];
 
-        using (new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete))
+        await using (new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete))
         {
             await _writer.SaveAsync(path, content, TestContext.Current.CancellationToken);
         }
