@@ -1,5 +1,4 @@
-﻿using System.Threading.Channels;
-using EtAlii.Adp.Diagram;
+﻿using EtAlii.Adp.Diagram;
 using EtAlii.Adp.Diagram.Wire;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.Projects;
@@ -10,10 +9,11 @@ using Path = EtAlii.Adp.Documents.Wire.Path;
 namespace EtAlii.Adp.Workspace;
 
 /// <summary>
-/// The one entry point for viewing and editing a diagram, whatever its type. It resolves the
-/// project, resolves the diagram's type from its <c>.adp</c> file, opens the matching module's
-/// <see cref="IDiagramSession"/>, and pumps that session's deltas onto the stream - mapping
-/// the module's backend delta records to the contract's proto through <see cref="DiagramWire"/>. It knows no diagram type (mindmap-diagram Requirement 13.4).
+/// The one entry point for viewing and editing a diagram, whatever its type. Its <c>Open</c> has
+/// <see cref="DiagramPump"/> resolve the project and the diagram's type, open the matching module's
+/// <see cref="IDiagramSession"/> and pump that session's deltas onto the stream; its unary calls
+/// reach the open session through the viewport registry. It knows no diagram type
+/// (mindmap-diagram Requirement 13.4).
 /// </summary>
 public sealed partial class DiagramService : Diagram.Wire.DiagramService.DiagramServiceBase
 {
@@ -21,32 +21,20 @@ public sealed partial class DiagramService : Diagram.Wire.DiagramService.Diagram
 
     private readonly IProjectStore _projectStore;
     private readonly DiagramFileRouter _router;
-    private readonly ToolRouter _toolRouter;
-    private readonly DiagramSessionFactories _sessionFactories;
-    private readonly EditorResolver _editorResolver;
-    private readonly EditorSessionFactories _editorSessionFactories;
-    private readonly DiagramDocumentReloadBridge _reloadBridge;
+    private readonly DiagramPump _pump;
     private readonly IReadOnlyList<IDiagramToolboxProvider> _toolboxProviders;
 
     public DiagramService(
         IProjectStore projectStore,
         DiagramFileRouter router,
-        ToolRouter toolRouter,
-        DiagramSessionFactories sessionFactories,
-        EditorResolver editorResolver,
-        EditorSessionFactories editorSessionFactories,
+        DiagramPump pump,
         IDiagramViewportRegistry viewports,
-        DiagramDocumentReloadBridge reloadBridge,
         IEnumerable<IDiagramToolboxProvider> toolboxProviders)
     {
         _projectStore = projectStore;
         _router = router;
-        _toolRouter = toolRouter;
-        _sessionFactories = sessionFactories;
-        _editorResolver = editorResolver;
-        _editorSessionFactories = editorSessionFactories;
+        _pump = pump;
         _viewports = viewports;
-        _reloadBridge = reloadBridge;
         _toolboxProviders = [.. toolboxProviders];
     }
 
@@ -121,41 +109,6 @@ public sealed partial class DiagramService : Diagram.Wire.DiagramService.Diagram
         return Task.FromResult(response);
     }
 
-    private static void Apply(IDiagramSession session, DiagramViewport viewport, Channel<Delta> channel)
-    {
-        var deltas = session.UpdateView(viewport);
-        // What the new window cost: a module that streams by viewport answers with the elements
-        // that just came into view (and the ones that left), and this is where that shows.
-        // Silent at zero - a view update that changes nothing is the common case and would
-        // otherwise drown the log during a pan.
-        if (deltas.Count > 0)
-        {
-            _logger.Debug("The view update produced {DeltaCount} deltas: {DeltaKinds}", deltas.Count, KindsOf(deltas));
-        }
-
-        foreach (var delta in deltas)
-        {
-            channel.Writer.TryWrite(DiagramWire.ToProto(delta));
-        }
-    }
-
-    /// <summary>
-    /// A batch of deltas as "kind×count" pairs - what was sent, without the payloads. Element
-    /// contents are deliberately not logged: a baseline can carry a whole document.
-    /// </summary>
-    private static string KindsOf(IReadOnlyList<DiagramDelta> deltas) =>
-        string.Join(", ", deltas
-            .GroupBy(delta => delta switch
-            {
-                DiagramAddDelta => "add",
-                DiagramRemoveDelta => "remove",
-                DiagramGroupDelta => "group",
-                DiagramUngroupDelta => "ungroup",
-                _ => delta.GetType().Name,
-            })
-            .OrderBy(group => group.Key, StringComparer.Ordinal)
-            .Select(group => $"{group.Key}×{group.Count()}"));
-
     /// <summary>
     /// The shared first half of every open: the project root, the containment check, and the
     /// file's existence - nothing about which tool.
@@ -166,15 +119,4 @@ public sealed partial class DiagramService : Diagram.Wire.DiagramService.Diagram
         ShortGuid userId,
         out ProjectPath file) =>
         ProjectTextFile.TryResolve(_projectStore, projectId, path, userId, out file);
-
-    /// <summary>
-    /// The definition id behind a forced <c>"*"</c>: whatever the resolver answers - the one
-    /// claimant, the declared default of a legitimately shared extension, or the fallback.
-    /// </summary>
-    private string ResolvedEditorIdOf(string fullPath) =>
-        _editorResolver.Resolve(fullPath) is EditorRouted routed
-            ? routed.Definition.Id
-            : throw new RpcException(new Status(
-                PermanentRefusal.CannotOpen,
-                $"No editor can open '{System.IO.Path.GetFileName(fullPath)}': rival editors claim it and none is the default."));
 }

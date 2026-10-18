@@ -66,7 +66,7 @@ public class HierarchyServiceLateRecoveryTests : IDisposable
         var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         using var events = new ProjectFileEvents();
         var clock = new FakeTimeProvider();
-        var service = new HierarchyService(projectStore, modelStore, events, new ConnectionSessions([]), clock)
+        var watcher = new HierarchyWatch(modelStore, events, clock)
         {
             RootFoundMissing = async () =>
             {
@@ -74,6 +74,7 @@ public class HierarchyServiceLateRecoveryTests : IDisposable
                 await release.Task;
             },
         };
+        var service = new HierarchyService(projectStore, modelStore, new ConnectionSessions([]), watcher);
 
         // The recovery task is discarded where it starts, so a fault in it surfaces only as an
         // unobserved task exception once the task is collected.
@@ -93,7 +94,7 @@ public class HierarchyServiceLateRecoveryTests : IDisposable
             // disposes its recovery source; only then does the poll announce the outage.
             Directory.Delete(_projectFolder);
             var polled = Task.WhenAny(foundMissing.Task, watch);
-            await clock.DriveAsync(polled, HierarchyService.RootRecoveryPollInterval, steps: 200);
+            await clock.DriveAsync(polled, HierarchyWatch.RootRecoveryPollInterval, steps: 200);
             if (await polled == watch)
             {
                 // The watch ended before the poll got there: surface why, rather than a timeout.
@@ -133,7 +134,7 @@ public class HierarchyServiceLateRecoveryTests : IDisposable
         void OnUnobserved(object? sender, UnobservedTaskExceptionEventArgs args)
         {
             var ours = args.Exception.Flatten().InnerExceptions
-                .Where(exception => exception.StackTrace?.Contains(nameof(HierarchyService), StringComparison.Ordinal) == true)
+                .Where(exception => exception.StackTrace?.Contains(nameof(HierarchyWatch), StringComparison.Ordinal) == true)
                 .ToList();
             if (ours.Count == 0)
             {

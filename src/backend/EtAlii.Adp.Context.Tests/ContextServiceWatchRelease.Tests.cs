@@ -60,16 +60,20 @@ public sealed class ContextServiceWatchReleaseTests : IDisposable
 
     public void Dispose() => _root.Delete(recursive: true);
 
-    private ContextService CreateService(IHistoryStackStore history, IContextActionResolver actions) =>
-        new(
+    private ContextService CreateService(IHistoryStackStore history, IContextActionResolver actions)
+    {
+        var selections = new ContextSelectionStore();
+        var interactions = new ContextInteractionStore();
+        return new ContextService(
             new OneProjectStore(new ProjectRecord(ProjectId, "project", new PathRecord(_root.FullName.Split(System.IO.Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries)))),
-            new ContextSelectionStore(),
+            selections,
             new ContextSelectionResolver([]),
             actions,
             new NoProperties(),
-            new ContextInteractionStore(),
+            interactions,
             new ConnectionSessions([new HistoryRetention(history)]),
-            new NoProblems());
+            new ContextWatch(selections, actions, interactions, new NoProblems()));
+    }
 
     private static Task WatchAsync(ContextService service, CancellationToken cancellationToken) =>
         service.RunWatchAsync(
