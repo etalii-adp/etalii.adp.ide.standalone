@@ -22,7 +22,7 @@ flowchart LR
 
 ## The solution, with its counts
 
-`src/backend/EtAlii.Adp.slnx` holds **142** projects, as a flat list rather than a folder hierarchy, so the whole thing opens and builds as one solution in Rider:
+`src/backend/EtAlii.Adp.slnx` holds **142** projects: the core projects at its root and the modules in one solution folder per kind (`/Diagrams/`, `/editors/`, `/designers/`), so the whole thing opens and builds as one solution in Rider:
 
 | Split | Count |
 | --- | --- |
@@ -35,13 +35,13 @@ flowchart LR
 
 Those are **two different splits of the same 142**, and a figure appearing in both tables is a coincidence rather than a correspondence, which is exactly what makes a wrong classification look right.
 
-There are **157** tracked `.csproj` files under `src/`, which is **15** more than the solution holds. Every one of the 15 is fixture or example data belonging to `src/diagrams/dotnet-dependency-graph` — a module whose subject matter *is* reading `.csproj` files, so its test fixtures and its showcase project are themselves `.csproj`. **A page claiming "147 projects" would be wrong in the confident direction.**
+There are **157** tracked `.csproj` files under `src/`, which is **15** more than the solution holds. Every one of the 15 is fixture or example data of the dotnet-dependency-graph module — a module whose subject matter *is* reading `.csproj` files, so its test fixtures and its showcase project are themselves `.csproj`, in `src/diagrams/dotnet-dependency-graph` and in the showcase copy under `src/examples/`. **A page giving the tracked count as the number of projects would be wrong in the confident direction.**
 
 ## The relative-path trap
 
 **The solution's project paths are relative to `src/backend/`.** A core project therefore appears as `EtAlii.Adp.Context/EtAlii.Adp.Context.csproj` with no `backend` segment, while a diagram project appears as `../diagrams/<type>/backend/...`.
 
-Classifying by path segment — "count the ones containing `backend`" — yields a plausible **88 / 37** split that is not the core/module split at all. When this page was first written that split was 78 / 27 and matched the production/test sizes exactly, which is how it survived a sanity check; the coincidence has since ended, and the trap has not. **Classify core projects by the absence of a leading `../`.**
+Classifying by path segment — "count the ones containing `backend`" as the core — yields a plausible split that is the core/module split with its labels swapped: every module path contains `backend` and no core path does. When this page was first written that split was 78 / 27 and matched the production/test sizes exactly, which is how it survived a sanity check; the coincidence has since ended, and the trap has not. **Classify core projects by the absence of a leading `../`.**
 
 ## The core projects
 
@@ -58,7 +58,7 @@ Classifying by path segment — "count the ones containing `backend`" — yields
 | Commands and undo/redo | `EtAlii.Adp.History` |
 | Errors and warnings | `EtAlii.Adp.Problems` |
 | Known projects and workspace roots | `EtAlii.Adp.Projects` |
-| Every kind of session: sign-in sessions (the session store, the session context and the interceptor that checks every call), the tool-session contracts of the three kinds with their factory contracts and registries, the document session and the text editor session a module builds on, the viewport registry, and connection lifetime; it references the diagram, designer, editor and history projects, never the reverse | `EtAlii.Adp.Sessions` |
+| Every kind of session: sign-in sessions (the session store, the session context and the interceptor that checks every call), the tool-session contracts of the three kinds with their factory contracts and registries, the document session and the text editor session a module builds on, and the viewport registry; it references the diagram, designer, editor and history projects, never the reverse | `EtAlii.Adp.Sessions` |
 | Workspace tree, kept current from the project's file events | `EtAlii.Adp.Hierarchy` |
 | Geometry with no dependency: the rectangle, the viewport test's operand, row packing, the row a drag snaps to, text width and graph layering | `EtAlii.Adp.Layout` |
 | Diagram-type abstractions, including the diagram definition and validation contracts; it references the documents project and the shared primitives only | `EtAlii.Adp.Diagram` |
@@ -74,7 +74,7 @@ Classifying by path segment — "count the ones containing `backend`" — yields
 
 **22** test: `EtAlii.Adp.Tests`, `EtAlii.Adp.Authentication.Tests`, `EtAlii.Adp.Backend.Tests`, `EtAlii.Adp.Client.Tests`, `EtAlii.Adp.Context.Tests`, `EtAlii.Adp.Designer.Tests`, `EtAlii.Adp.Diagram.Tests`, `EtAlii.Adp.Diagram.Modules.Tests`, `EtAlii.Adp.Documents.Tests`, `EtAlii.Adp.Editor.Tests`, `EtAlii.Adp.Hierarchy.Tests`, `EtAlii.Adp.History.Tests`, `EtAlii.Adp.HostLogging.Tests`, `EtAlii.Adp.Layout.Tests`, `EtAlii.Adp.Problems.Tests`, `EtAlii.Adp.Projects.Tests`, `EtAlii.Adp.Repository.Tests`, `EtAlii.Adp.Sessions.Tests`, `EtAlii.Adp.Specification.Cel.Tests`, `EtAlii.Adp.Specification.Disl.Tests`, `EtAlii.Adp.Specification.Fbl.Tests`, `EtAlii.Adp.Workspace.Tests`.
 
-Not every production project has a matching test project, and that is not a gap to close by reflex — some are covered from `EtAlii.Adp.Backend.Tests`.
+Not every production project has a matching test project, and that is not a gap to close by reflex — some are covered from `EtAlii.Adp.Backend.Tests`, and `EtAlii.Adp.Files` from `EtAlii.Adp.Documents.Tests`.
 
 **This list was measured from the solution, not written from memory**, and `ArchitecturePages.Tests` holds it there: every name above must be a project in `EtAlii.Adp.slnx`. That guard is the whole reason to trust it. The list this replaced was written from memory, named two projects that have never existed, and omitted fifteen that do — and it read as authoritative for as long as nothing checked it.
 
@@ -82,7 +82,7 @@ Not every production project has a matching test project, and that is not a gap 
 
 A diagram type is `src/diagrams/<type>/` with up to five parts:
 
-- `backend/` — its projects, `EtAlii.Adp.Diagram.<Type>` and `.Tests`
+- `backend/` — its project, `EtAlii.Adp.Diagram.<Type>`, and `.Tests` where it has tests of its own
 - `api/` — its own `.proto`, when it has wire messages of its own
 - `client/` — its canvas and registration
 - `definition/` — its DISL definition (`<type>.dis`, its prose and `provenance.json`), bundled from etalii-adp/etalii.adp by `src/diagrams/tools/bundle-disl.sh`, when the type is specified in DISL; the backend embeds it and the client compiles its notation
@@ -96,9 +96,9 @@ Namespaces are `EtAlii.Adp.<Area>`, following the project rather than the folder
 
 **`EtAlii.Adp.Diagram` is singular, and carries no `Backend` segment.** A plural form and a `Backend`-prefixed form have both been written down as though they existed — three times between them, one of which was the naming rule's own worked example, so the rule told a reader checking against it the wrong answer. **This page cannot spell either form**, even to deny it: the guard rejects any `EtAlii.Adp.*` name on it that is not a project in the solution, which is what found the third instance and then immediately caught this sentence's first draft.
 
-Four folder names are deliberately **skipped** when a namespace is derived — `_Model`, `Commands`, `History` and `Support` — so a type in `Context/Commands/` stays in `EtAlii.Adp.Context`.
+Folders that hold a kind of type rather than an area are deliberately **skipped** when a namespace is derived, chiefly `_Model` and `Commands`, and `Support` in test projects, so a type in `Hierarchy/Commands/` stays in `EtAlii.Adp.Hierarchy`. Several projects skip further folders of their own.
 
-The skips are declared per project in a `.csproj.DotSettings` file, and `NamespaceProviders.Tests` asserts every declared namespace matches project-plus-unskipped-folders. **A namespace that looks wrong for its folder is usually right**; check the `.DotSettings` before "correcting" it.
+The skips are declared per project in a `.csproj.DotSettings` file, and `NamespaceProviders.Tests` asserts, for every non-test project under `src/backend`, that every declared namespace matches project-plus-unskipped-folders. **A namespace that looks wrong for its folder is usually right**; check the `.DotSettings` before "correcting" it.
 
 **Identities are `ShortGuid`** (`src/backend/EtAlii.Adp/ShortGuid.cs`): a `Guid` in a fixed-length 25-character base36 form, used wherever an id is needed. The base36 spelling is a display and URL concern — on the wire it travels as a `Guid`. The steering documents called this type `ShortId` until this page replaced them, and no such type has ever existed.
 
@@ -122,6 +122,6 @@ Showcase documents live in `src/examples/`, not in a module's `Fixtures/`. The t
 
 **Not covered here, deliberately** (a later pass, each its own specification): what is inside a module, the wire contracts and generated code, the client component tree, deployment and hosting, and the editor family's internals.
 
-**Its guard is `ArchitecturePages.Tests`** (`src/backend/EtAlii.Adp.Repository.Tests/ArchitecturePages.Tests.cs`), listed in [guards.md](guards.md). It checks that every path and project name here exists, that every count above recomputes from the tree, and that the page stays within its size limit.
+**Its guard is `ArchitecturePages.Tests`** (`src/backend/EtAlii.Adp.Repository.Tests/ArchitecturePages.Tests.cs`), listed in [guards.md](guards.md). It checks that every path and project name here exists, that every figure written in bold is a value the tree recomputes (without binding it to its label), and that the page stays within its size limit. It does not check that a list is complete.
 
-**It cannot check whether a description is still accurate.** Every count on this page is guarded; every *sentence* around them is not. A concern column that names the wrong project would pass silently, because the project exists.
+**It cannot check whether a description is still accurate.** Every bold count on this page is guarded; every *sentence* around them is not. A concern column that names the wrong project would pass silently, because the project exists.
