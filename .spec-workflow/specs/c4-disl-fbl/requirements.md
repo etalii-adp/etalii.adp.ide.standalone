@@ -95,6 +95,9 @@ The three kinds are those of `causal-loop-disl-fbl`: a **definition defect** is 
 10. **DISL 8.6: findings ordered by element** (A11).
 11. **DISL 11.5.1: the identifier of a new element made from its name** (A9).
 12. **Both: an id that depends on a directive of the body** (B12).
+13. **DISL 12.2: what a view exposes to a rule about the model**: a `View` offers only `id`, `viewpoint`, `name` and `members`, so a rule about the model cannot read the scope a view is written with or its line (`findings/finding-order.dsl`, `findings/view-without-key.dsl`). Found while writing the definitions (chat ruling, 2026-10-18).
+14. **DISL 11.2: the text an unset end was written with**: a relation or reference whose end names nothing keeps no trace of what the body wrote there (`findings/dangling-both-ends.dsl`). Found while writing the definitions (chat ruling, 2026-10-18).
+15. **DISL 6.13: the order of computed legend entries**: entries cannot take the members' order, only model order (`C4ElementMapper.LegendFor`). Found while writing the definitions (chat ruling, 2026-10-18).
 
 These are candidates. Requirement 11 says they are recorded with their evidence and reported, and never worked around silently.
 
@@ -379,7 +382,7 @@ The same in all six definitions, apart from the tools each offers. `Relationship
   "persistence": {
     "format": "fbl",
     "binding": "https://raw.githubusercontent.com/etalii-adp/etalii.adp.ide.standalone/develop/src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4/structurizr.fbl#workspace",
-    "ids": { "strategy": "natural", "stable": true, "pattern": "^[A-Za-z_][A-Za-z0-9_]*$", "suffix": "{n}", "compare": "ignore-case", "missing": "ephemeral" },
+    "ids": { "strategy": "natural", "stable": true, "pattern": "^[^\\s\"{}=\\-][^\\s\"{}=]*$", "suffix": "{n}", "compare": "ignore-case", "missing": "ephemeral" },
     "view": { "store": ["bounds"] },
     "typeMap": {
       "Workspace": { "as": "diagram", "attributes": { "name": "workspaceName" } },
@@ -396,14 +399,14 @@ The same in all six definitions, apart from the tools each offers. `Relationship
       "deploymentNode": { "id": "c4.toolbox.deploymentnode", "drop": "c4.add-deploymentnode" }
     },
     "actions": {
-      "editLabel": "c4.rename", "editDescription": "c4.edit-description", "setTechnology": "c4.set-technology",
-      "Relationship/editLabel": "c4.relabel", "setProtocol": "c4.set-protocol"
+      "rename": "c4.rename", "editDescription": "c4.edit-description", "setTechnology": "c4.set-technology",
+      "relabel": "c4.relabel", "setProtocol": "c4.set-protocol"
     },
     "properties": {
       "name": "c4.name", "description": "c4.description", "technology": "c4.technology", "tags": "c4.tags",
-      "Kind": "c4.kind", "identifier": "c4.identifier",
+      "kind": "c4.kind", "identifier": "c4.identifier",
       "relationshipDescription": "c4.relationship.description", "relationshipTechnology": "c4.relationship.technology",
-      "From": "c4.relationship.source", "To": "c4.relationship.destination"
+      "from": "c4.relationship.source", "to": "c4.relationship.destination"
     }
   }
 }
