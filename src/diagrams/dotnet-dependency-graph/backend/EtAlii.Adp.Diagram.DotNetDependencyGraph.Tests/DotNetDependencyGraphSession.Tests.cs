@@ -1,3 +1,4 @@
+using EtAlii.Adp.Files;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 using Xunit;
@@ -46,18 +47,18 @@ public sealed class DotNetDependencyGraphSessionTests : IDisposable
 
         public event EventHandler? Changed;
 
-        public Task<CommandResult> ExecuteAsync(ICommand command, CancellationToken cancellationToken = default)
+        public async Task<CommandResult> ExecuteAsync(ICommand command, CancellationToken cancellationToken = default)
         {
             if (command is SetRegistrationLayoutCommand layout)
             {
-                RegistrationLayout.SetPosition(layout.AdpPath, layout.ElementId, new RegistrationPosition(layout.X, layout.Y));
+                await RegistrationLayout.SetPositionAsync(new FileWriter(), layout.AdpPath, layout.ElementId, new RegistrationPosition(layout.X, layout.Y), cancellationToken);
             }
 
             // AFTER the write, as HistoryStack.ExecuteAsync does - it raises Changed once the
             // command has run and been recorded. This double used to raise it first, which was
             // harmless while nothing listened and would have made a listener read the OLD file.
             Changed?.Invoke(this, EventArgs.Empty);
-            return Task.FromResult(CommandResult.Success());
+            return CommandResult.Success();
         }
 
         /// <summary>
@@ -371,7 +372,7 @@ public sealed class DotNetDependencyGraphSessionTests : IDisposable
         session.Changed += (_, args) => pushed.AddRange(args.Deltas);
 
         // Act. What an undo's inverse does to the file, then what the real stack does after it.
-        RegistrationLayout.SetPosition(registration, "project:App/App.csproj", new RegistrationPosition(10, 20));
+        await RegistrationLayout.SetPositionAsync(new FileWriter(), registration, "project:App/App.csproj", new RegistrationPosition(10, 20), TestContext.Current.CancellationToken);
         history.AnnounceChange();
 
         // Assert.
@@ -395,7 +396,7 @@ public sealed class DotNetDependencyGraphSessionTests : IDisposable
         session.Changed += (_, _) => pushed++;
 
         await session.DisposeAsync();
-        RegistrationLayout.SetPosition(registration, "project:App/App.csproj", new RegistrationPosition(77, 88));
+        await RegistrationLayout.SetPositionAsync(new FileWriter(), registration, "project:App/App.csproj", new RegistrationPosition(77, 88), TestContext.Current.CancellationToken);
         history.AnnounceChange();
 
         Assert.Equal(0, pushed);

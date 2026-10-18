@@ -1,4 +1,5 @@
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Files;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
@@ -13,7 +14,7 @@ public class C4LayoutSidecarTests : IDisposable
 {
     private readonly string _root;
     private readonly string _bodyPath;
-    private readonly C4LayoutSidecar _sidecar = new();
+    private readonly C4LayoutSidecar _sidecar = new(new FileWriter());
 
     private const string Model = """
         workspace {
@@ -57,10 +58,10 @@ public class C4LayoutSidecarTests : IDisposable
     }
 
     [Fact]
-    public void APositionWritten_IsReadBack()
+    public async Task APositionWritten_IsReadBack()
     {
         // Arrange.
-        _sidecar.Write(_bodyPath, "all", "a", new C4SidecarPosition(120, 340));
+        await _sidecar.WriteAsync(_bodyPath, "all", "a", new C4SidecarPosition(120, 340), TestContext.Current.CancellationToken);
 
         // Act.
         var positions = _sidecar.Read(_bodyPath, "all");
@@ -70,11 +71,11 @@ public class C4LayoutSidecarTests : IDisposable
     }
 
     [Fact]
-    public void PositionsAreKeptPerView_SoArrangingOneDoesNotMoveAnother()
+    public async Task PositionsAreKeptPerView_SoArrangingOneDoesNotMoveAnother()
     {
         // Arrange and act.
-        _sidecar.Write(_bodyPath, "all", "a", new C4SidecarPosition(10, 10));
-        _sidecar.Write(_bodyPath, "other", "a", new C4SidecarPosition(99, 99));
+        await _sidecar.WriteAsync(_bodyPath, "all", "a", new C4SidecarPosition(10, 10), TestContext.Current.CancellationToken);
+        await _sidecar.WriteAsync(_bodyPath, "other", "a", new C4SidecarPosition(99, 99), TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Equal(new C4SidecarPosition(10, 10), _sidecar.Read(_bodyPath, "all")["a"]);
@@ -101,13 +102,13 @@ public class C4LayoutSidecarTests : IDisposable
 
         // Arrange, continued.
     [Fact]
-    public void Clear_ForgetsOneViewsPositions()
+    public async Task Clear_ForgetsOneViewsPositions()
     {
-        _sidecar.Write(_bodyPath, "all", "a", new C4SidecarPosition(10, 10));
-        _sidecar.Write(_bodyPath, "other", "b", new C4SidecarPosition(20, 20));
+        await _sidecar.WriteAsync(_bodyPath, "all", "a", new C4SidecarPosition(10, 10), TestContext.Current.CancellationToken);
+        await _sidecar.WriteAsync(_bodyPath, "other", "b", new C4SidecarPosition(20, 20), TestContext.Current.CancellationToken);
 
         // Arrange, continued.
-        Assert.Equal("", _sidecar.Clear(_bodyPath, "all"));
+        Assert.Equal("", await _sidecar.ClearAsync(_bodyPath, "all", TestContext.Current.CancellationToken));
 
         // Arrange, continued.
         Assert.Empty(_sidecar.Read(_bodyPath, "all"));

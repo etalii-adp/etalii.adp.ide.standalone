@@ -42,11 +42,12 @@ public class HierarchyServiceLateRecoveryTests : IDisposable
         // Arrange.
         var cancellationToken = TestContext.Current.CancellationToken;
         var userId = ShortGuid.NewShortGuid();
-        var projectStore = new FileProjectStore(_appDataRoot);
-        var project = projectStore.Add(
+        var projectStore = new FileProjectStore(_appDataRoot, new FileWriter());
+        var project = await projectStore.AddAsync(
             userId,
             "late-recovery",
-            new PathRecord(_projectFolder.Split(IoPath.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries)));
+            new PathRecord(_projectFolder.Split(IoPath.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries)),
+            cancellationToken);
         using var modelStore = new HierarchyModelStore(TestToolRouters.For());
         var watchId = ShortGuid.NewShortGuid();
 

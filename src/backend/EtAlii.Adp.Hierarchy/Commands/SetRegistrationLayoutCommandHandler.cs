@@ -1,4 +1,5 @@
 using EtAlii.Adp.Diagram;
+using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Hierarchy;
@@ -21,65 +22,65 @@ public sealed record SetRegistrationLayoutCommand(string AdpPath, string Element
 /// </summary>
 public sealed record RemoveRegistrationLayoutCommand(string AdpPath, string ElementId) : ICommand;
 
-public sealed class SetRegistrationLayoutCommandHandler : ICommandHandler<SetRegistrationLayoutCommand>
+public sealed class SetRegistrationLayoutCommandHandler(IFileWriter writer) : ICommandHandler<SetRegistrationLayoutCommand>
 {
-    public Task<CommandResult> ExecuteAsync(SetRegistrationLayoutCommand command, CancellationToken cancellationToken = default)
+    public async Task<CommandResult> ExecuteAsync(SetRegistrationLayoutCommand command, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(command);
         cancellationToken.ThrowIfCancellationRequested();
 
         if (!File.Exists(command.AdpPath))
         {
-            return Task.FromResult(CommandResult.Failure("The registration file is no longer there."));
+            return CommandResult.Failure("The registration file is no longer there.");
         }
 
         RegistrationPosition? prior;
         try
         {
-            prior = RegistrationLayout.SetPosition(
-                command.AdpPath, command.ElementId, new RegistrationPosition(command.X, command.Y));
+            prior = await RegistrationLayout.SetPositionAsync(
+                writer, command.AdpPath, command.ElementId, new RegistrationPosition(command.X, command.Y), cancellationToken);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
-            return Task.FromResult(CommandResult.Failure($"Could not store the position: {exception.Message}"));
+            return CommandResult.Failure($"Could not store the position: {exception.Message}");
         }
 
         // The inverse restores what was there before: the prior entry, or its absence.
         ICommand inverse = prior is { } previous
             ? command with { X = previous.X, Y = previous.Y }
             : new RemoveRegistrationLayoutCommand(command.AdpPath, command.ElementId);
-        return Task.FromResult(CommandResult.Success(inverse));
+        return CommandResult.Success(inverse);
     }
 }
 
-public sealed class RemoveRegistrationLayoutCommandHandler : ICommandHandler<RemoveRegistrationLayoutCommand>
+public sealed class RemoveRegistrationLayoutCommandHandler(IFileWriter writer) : ICommandHandler<RemoveRegistrationLayoutCommand>
 {
-    public Task<CommandResult> ExecuteAsync(RemoveRegistrationLayoutCommand command, CancellationToken cancellationToken = default)
+    public async Task<CommandResult> ExecuteAsync(RemoveRegistrationLayoutCommand command, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(command);
         cancellationToken.ThrowIfCancellationRequested();
 
         if (!File.Exists(command.AdpPath))
         {
-            return Task.FromResult(CommandResult.Failure("The registration file is no longer there."));
+            return CommandResult.Failure("The registration file is no longer there.");
         }
 
         var positions = RegistrationLayout.Read(command.AdpPath);
         if (!positions.TryGetValue(command.ElementId, out var existing))
         {
-            return Task.FromResult(CommandResult.Failure("That element has no stored position any more."));
+            return CommandResult.Failure("That element has no stored position any more.");
         }
 
         try
         {
-            RegistrationLayout.RemovePosition(command.AdpPath, command.ElementId);
+            await RegistrationLayout.RemovePositionAsync(writer, command.AdpPath, command.ElementId, cancellationToken);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
-            return Task.FromResult(CommandResult.Failure($"Could not remove the position: {exception.Message}"));
+            return CommandResult.Failure($"Could not remove the position: {exception.Message}");
         }
 
-        return Task.FromResult(CommandResult.Success(
-            new SetRegistrationLayoutCommand(command.AdpPath, command.ElementId, existing.X, existing.Y)));
+        return CommandResult.Success(
+            new SetRegistrationLayoutCommand(command.AdpPath, command.ElementId, existing.X, existing.Y));
     }
 }

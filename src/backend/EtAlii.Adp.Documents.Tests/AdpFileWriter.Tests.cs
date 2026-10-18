@@ -42,7 +42,7 @@ public class AdpFileWriterTests : IDisposable
     }
 
     [Fact]
-    public void Create_ThenALayoutBlock_LeavesNoMixedLineEndings()
+    public async Task Create_ThenALayoutBlock_LeavesNoMixedLineEndings()
     {
         // Arrange. The two writers that once disagreed: creation wrote LF, the layout block
         // CRLF, so a registration created and then repositioned in the running app carried
@@ -50,10 +50,10 @@ public class AdpFileWriterTests : IDisposable
         var created = Assert.IsType<AdpFileCreated>(AdpFileWriter.Create(_folder, "map.adp", "wardley/map"));
 
         // Act.
-        RegistrationLayout.SetPosition(created.FullPath, "kettle", new RegistrationPosition(120.5, 44));
+        await RegistrationLayout.SetPositionAsync(new FileWriter(), created.FullPath, "kettle", new RegistrationPosition(120.5, 44), TestContext.Current.CancellationToken);
 
         // Assert. Every line feed is half of a CRLF - one convention for the whole file.
-        var text = File.ReadAllText(created.FullPath);
+        var text = await File.ReadAllTextAsync(created.FullPath, TestContext.Current.CancellationToken);
         for (var index = 0; index < text.Length; index++)
         {
             if (text[index] == '\n')

@@ -113,7 +113,7 @@ public readonly record struct AbmArrangement(int From, int To, double Dy)
 /// Carries out a drop: rewrites the sibling order in the Markdown when it changed, and stores the
 /// row's new height for every node in it and beneath it - one history entry for both files.
 /// </summary>
-public sealed class ArrangeAbmNodeCommandHandler(IAbmDocumentStore documents) : ICommandHandler<ArrangeAbmNodeCommand>
+public sealed class ArrangeAbmNodeCommandHandler(IAbmDocumentStore documents, IFileWriter writer) : ICommandHandler<ArrangeAbmNodeCommand>
 {
     /// <inheritdoc />
     public async Task<CommandResult> ExecuteAsync(ArrangeAbmNodeCommand command, CancellationToken cancellationToken = default)
@@ -179,7 +179,7 @@ public sealed class ArrangeAbmNodeCommandHandler(IAbmDocumentStore documents) : 
         // positions already under their new ids, or the rows would jump for one frame.
         try
         {
-            RegistrationLayout.Replace(command.RegistrationPath, positions);
+            await RegistrationLayout.ReplaceAsync(writer, command.RegistrationPath, positions, cancellationToken);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
@@ -193,7 +193,8 @@ public sealed class ArrangeAbmNodeCommandHandler(IAbmDocumentStore documents) : 
             if (saved.Failed)
             {
                 // Half a drop is worse than none: the positions would follow an order the Markdown does not have.
-                RegistrationLayout.Replace(command.RegistrationPath, stored);
+                // So the put-back is not cancelled.
+                await RegistrationLayout.ReplaceAsync(writer, command.RegistrationPath, stored, CancellationToken.None);
                 return CommandResult.Failure(saved.Error);
             }
 
@@ -206,17 +207,17 @@ public sealed class ArrangeAbmNodeCommandHandler(IAbmDocumentStore documents) : 
 }
 
 /// <summary>Puts a drop's two files back, and answers with the command that puts them forward again.</summary>
-public sealed class RestoreAbmArrangementCommandHandler(IAbmDocumentStore documents) : ICommandHandler<RestoreAbmArrangementCommand>
+public sealed class RestoreAbmArrangementCommandHandler(IAbmDocumentStore documents, IFileWriter writer) : ICommandHandler<RestoreAbmArrangementCommand>
 {
     /// <inheritdoc />
-    public Task<CommandResult> ExecuteAsync(RestoreAbmArrangementCommand command, CancellationToken cancellationToken = default)
+    public async Task<CommandResult> ExecuteAsync(RestoreAbmArrangementCommand command, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(command);
         cancellationToken.ThrowIfCancellationRequested();
 
         if (!File.Exists(command.RegistrationPath))
         {
-            return Task.FromResult(CommandResult.Failure("The registration file is no longer there."));
+            return CommandResult.Failure("The registration file is no longer there.");
         }
 
         var positions = RegistrationLayout.Read(command.RegistrationPath);
@@ -224,18 +225,18 @@ public sealed class RestoreAbmArrangementCommandHandler(IAbmDocumentStore docume
         try
         {
             // The positions first, for the same reason the drop writes them first.
-            RegistrationLayout.Replace(command.RegistrationPath, command.Positions);
+            await RegistrationLayout.ReplaceAsync(writer, command.RegistrationPath, command.Positions, cancellationToken);
             if (command.Text is not null)
             {
-                AdpFileWriter.Save(command.BodyPath, command.Text);
+                await writer.SaveAsync(command.BodyPath, command.Text, cancellationToken);
                 documents.Reload(command.BodyPath);
             }
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
-            return Task.FromResult(CommandResult.Failure($"Could not put the drop back: {exception.Message}"));
+            return CommandResult.Failure($"Could not put the drop back: {exception.Message}");
         }
 
-        return Task.FromResult(CommandResult.Success(command with { Text = text, Positions = positions }));
+        return CommandResult.Success(command with { Text = text, Positions = positions });
     }
 }

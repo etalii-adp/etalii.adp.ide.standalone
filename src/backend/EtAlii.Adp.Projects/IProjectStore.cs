@@ -5,7 +5,7 @@ public interface IProjectStore
     IReadOnlyList<ProjectRecord> List(ShortGuid userId);
 
     /// <exception cref="InvalidProjectPathException">The path does not resolve to an accessible folder.</exception>
-    ProjectRecord Add(ShortGuid userId, string name, PathRecord path);
+    Task<ProjectRecord> AddAsync(ShortGuid userId, string name, PathRecord path, CancellationToken cancellationToken);
 
-    void Remove(ShortGuid userId, ShortGuid projectId);
+    Task RemoveAsync(ShortGuid userId, ShortGuid projectId, CancellationToken cancellationToken);
 }

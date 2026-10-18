@@ -18,7 +18,7 @@ namespace EtAlii.Adp.Diagram.C4.Tests;
 public sealed class C4ContextSourceResolverTests : DiagramElementSourceResolverContract
 {
     private readonly C4DocumentStore _store = new(new FileWriter());
-    private readonly C4ElementMapper _mapper = new(C4Metrics.Default, new C4LayoutSidecar());
+    private readonly C4ElementMapper _mapper = new(C4Metrics.Default, new C4LayoutSidecar(new FileWriter()));
 
     protected override string Example => C4DocumentStoreTests.Courier;
 

@@ -1,3 +1,4 @@
+using EtAlii.Adp.Files;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
@@ -6,7 +7,7 @@ namespace EtAlii.Adp.Diagram.WardleyMap.Tests;
 public sealed class WardleyIdentitiesTests : IDisposable
 {
     private readonly string _folder = IoPath.Combine(IoPath.GetTempPath(), $"wardley-ids-{Guid.NewGuid():N}");
-    private readonly WardleyIdentities _identities = new();
+    private readonly WardleyIdentities _identities = new(new FileWriter());
 
     public WardleyIdentitiesTests() => Directory.CreateDirectory(_folder);
 
@@ -48,7 +49,7 @@ public sealed class WardleyIdentitiesTests : IDisposable
     }
 
     [Fact]
-    public void WriteThenRead_RoundTripsTheEntries()
+    public async Task WriteThenRead_RoundTripsTheEntries()
     {
         // Arrange.
         WardleyIdentityEntry[] written =
@@ -59,7 +60,7 @@ public sealed class WardleyIdentitiesTests : IDisposable
         ];
 
         // Act.
-        _identities.Write(BodyPath, written);
+        await _identities.WriteAsync(BodyPath, written, TestContext.Current.CancellationToken);
         var read = _identities.Read(BodyPath);
 
         // Assert.
@@ -67,13 +68,13 @@ public sealed class WardleyIdentitiesTests : IDisposable
     }
 
     [Fact]
-    public void Write_ReplacesWhatWasThere_RatherThanAppending()
+    public async Task Write_ReplacesWhatWasThere_RatherThanAppending()
     {
         // Arrange.
-        _identities.Write(BodyPath, [new WardleyIdentityEntry("abc123", "component", "Old")]);
+        await _identities.WriteAsync(BodyPath, [new WardleyIdentityEntry("abc123", "component", "Old")], TestContext.Current.CancellationToken);
 
         // Act.
-        _identities.Write(BodyPath, [new WardleyIdentityEntry("def456", "component", "New")]);
+        await _identities.WriteAsync(BodyPath, [new WardleyIdentityEntry("def456", "component", "New")], TestContext.Current.CancellationToken);
         var read = _identities.Read(BodyPath);
 
         // Assert.
@@ -81,10 +82,10 @@ public sealed class WardleyIdentitiesTests : IDisposable
     }
 
     [Fact]
-    public void Write_LeavesNoTemporaryFileBehind()
+    public async Task Write_LeavesNoTemporaryFileBehind()
     {
         // Act.
-        _identities.Write(BodyPath, [new WardleyIdentityEntry("abc123", "component", "Cup of Tea")]);
+        await _identities.WriteAsync(BodyPath, [new WardleyIdentityEntry("abc123", "component", "Cup of Tea")], TestContext.Current.CancellationToken);
 
         // Assert. The sidecar is written atomically, and its scratch file must not litter the
         // project folder any more than the document's does.
@@ -94,13 +95,13 @@ public sealed class WardleyIdentitiesTests : IDisposable
     }
 
     [Fact]
-    public void Write_RemovesTheSidecar_WhenThereIsNothingLeftToKeep()
+    public async Task Write_RemovesTheSidecar_WhenThereIsNothingLeftToKeep()
     {
         // Arrange.
-        _identities.Write(BodyPath, [new WardleyIdentityEntry("abc123", "component", "Cup of Tea")]);
+        await _identities.WriteAsync(BodyPath, [new WardleyIdentityEntry("abc123", "component", "Cup of Tea")], TestContext.Current.CancellationToken);
 
         // Act.
-        _identities.Write(BodyPath, []);
+        await _identities.WriteAsync(BodyPath, [], TestContext.Current.CancellationToken);
 
         // Assert. A stray empty file would only invite the question of what it is for.
         Assert.False(File.Exists(WardleyIdentities.PathFor(BodyPath)));
@@ -161,38 +162,38 @@ public sealed class WardleyIdentitiesTests : IDisposable
     }
 
     [Fact]
-    public void Remove_DeletesTheSidecar()
+    public async Task Remove_DeletesTheSidecar()
     {
         // Arrange.
-        _identities.Write(BodyPath, [new WardleyIdentityEntry("abc123", "component", "Cup of Tea")]);
+        await _identities.WriteAsync(BodyPath, [new WardleyIdentityEntry("abc123", "component", "Cup of Tea")], TestContext.Current.CancellationToken);
 
         // Act.
-        _identities.Remove(BodyPath);
+        await _identities.RemoveAsync(BodyPath, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.False(File.Exists(WardleyIdentities.PathFor(BodyPath)));
     }
 
     [Fact]
-    public void Remove_IsSilent_WhenThereIsNoSidecar()
+    public async Task Remove_IsSilent_WhenThereIsNoSidecar()
     {
         // Act and assert. Nothing here throws for a file that is not there.
-        _identities.Remove(BodyPath);
+        await _identities.RemoveAsync(BodyPath, TestContext.Current.CancellationToken);
         Assert.False(File.Exists(WardleyIdentities.PathFor(BodyPath)));
     }
 
     [Fact]
-    public void Write_DoesNotTouchTheOwmItself()
+    public async Task Write_DoesNotTouchTheOwmItself()
     {
         // Arrange. Requirement 3.7 - ADP's own data never goes into the document, not even as
         // a comment.
-        File.WriteAllText(BodyPath, "title Untouched\n");
+        await File.WriteAllTextAsync(BodyPath, "title Untouched\n", TestContext.Current.CancellationToken);
 
         // Act.
-        _identities.Write(BodyPath, [new WardleyIdentityEntry("abc123", "component", "Cup of Tea")]);
+        await _identities.WriteAsync(BodyPath, [new WardleyIdentityEntry("abc123", "component", "Cup of Tea")], TestContext.Current.CancellationToken);
 
         // Assert.
-        Assert.Equal("title Untouched\n", File.ReadAllText(BodyPath));
+        Assert.Equal("title Untouched\n", await File.ReadAllTextAsync(BodyPath, TestContext.Current.CancellationToken));
     }
 
     [Theory]

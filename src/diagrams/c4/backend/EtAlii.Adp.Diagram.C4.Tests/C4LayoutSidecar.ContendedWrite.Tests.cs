@@ -1,3 +1,4 @@
+using EtAlii.Adp.Files;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
@@ -15,7 +16,7 @@ public class C4LayoutSidecarContendedWriteTests : IDisposable
 {
     private readonly string _root;
     private readonly string _bodyPath;
-    private readonly C4LayoutSidecar _sidecar = new();
+    private readonly C4LayoutSidecar _sidecar = new(new FileWriter());
 
     public C4LayoutSidecarContendedWriteTests()
     {
@@ -30,18 +31,18 @@ public class C4LayoutSidecarContendedWriteTests : IDisposable
     }
 
     [Fact]
-    public void Write_WhileTheSidecarCannotBeRead_RefusesRatherThanWipingOtherViews()
+    public async Task Write_WhileTheSidecarCannotBeRead_RefusesRatherThanWipingOtherViews()
     {
         // Arrange: one view's arrangement is on disk.
-        _sidecar.Write(_bodyPath, "context", "a", new C4SidecarPosition(100, 200));
+        await _sidecar.WriteAsync(_bodyPath, "context", "a", new C4SidecarPosition(100, 200), TestContext.Current.CancellationToken);
 
         // A holder that blocks reads but not writes - FileShare.Write without Read - which is
         // exactly the shape that used to make the destructive path fire: the modify's read was
         // refused, came back empty, and the write then succeeded over the full file.
-        using (new FileStream(C4LayoutSidecar.PathFor(_bodyPath), FileMode.Open, FileAccess.Read, FileShare.Write))
+        await using (new FileStream(C4LayoutSidecar.PathFor(_bodyPath), FileMode.Open, FileAccess.Read, FileShare.Write))
         {
             // Act: another view's drag lands while the read is refused.
-            _sidecar.Write(_bodyPath, "containers", "b", new C4SidecarPosition(300, 400));
+            await _sidecar.WriteAsync(_bodyPath, "containers", "b", new C4SidecarPosition(300, 400), TestContext.Current.CancellationToken);
         }
 
         // Assert: the first view's arrangement survived (Requirement 8.3). The contended
@@ -50,14 +51,14 @@ public class C4LayoutSidecarContendedWriteTests : IDisposable
     }
 
     [Fact]
-    public void Write_OverANonsenseSidecar_StillProceeds()
+    public async Task Write_OverANonsenseSidecar_StillProceeds()
     {
         // Arrange: content that is already unrecoverable - replacing it costs nothing that
         // still exists, and keeps a corrupt sidecar self-healing on the next drag.
-        File.WriteAllText(C4LayoutSidecar.PathFor(_bodyPath), "{ not json");
+        await File.WriteAllTextAsync(C4LayoutSidecar.PathFor(_bodyPath), "{ not json", TestContext.Current.CancellationToken);
 
         // Act.
-        _sidecar.Write(_bodyPath, "context", "a", new C4SidecarPosition(1, 2));
+        await _sidecar.WriteAsync(_bodyPath, "context", "a", new C4SidecarPosition(1, 2), TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Equal(new C4SidecarPosition(1, 2), _sidecar.Read(_bodyPath, "context")["a"]);

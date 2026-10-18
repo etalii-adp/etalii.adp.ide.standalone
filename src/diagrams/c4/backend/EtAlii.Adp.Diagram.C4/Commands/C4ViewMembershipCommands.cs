@@ -29,7 +29,7 @@ public sealed record RestoreC4ElementPositionCommand(
 internal sealed class MoveC4ElementCommandHandler(IC4DocumentStore documents, C4LayoutSidecar sidecar)
     : ICommandHandler<MoveC4ElementCommand>
 {
-    public Task<CommandResult> ExecuteAsync(MoveC4ElementCommand command, CancellationToken cancellationToken = default)
+    public async Task<CommandResult> ExecuteAsync(MoveC4ElementCommand command, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(command);
         cancellationToken.ThrowIfCancellationRequested();
@@ -37,7 +37,7 @@ internal sealed class MoveC4ElementCommandHandler(IC4DocumentStore documents, C4
         var workspace = documents.GetOrLoad(command.BodyPath).Model;
         if (workspace.Find(command.ElementId) is null)
         {
-            return Task.FromResult(CommandResult.Failure($"'{command.ElementId}' is not in this model any more."));
+            return CommandResult.Failure($"'{command.ElementId}' is not in this model any more.");
         }
 
         // The inverse restores the previous authored position, or clears it when there was
@@ -50,16 +50,16 @@ internal sealed class MoveC4ElementCommandHandler(IC4DocumentStore documents, C4
         // Succeeds either way: the element HAS moved, and refusing the drag because its new
         // position could not be recorded would lose work the user can see. The warning is
         // what stops the position quietly not being there on the next open.
-        var warning = sidecar.Write(command.BodyPath, command.ViewKey, command.ElementId, new C4SidecarPosition(command.X, command.Y));
+        var warning = await sidecar.WriteAsync(command.BodyPath, command.ViewKey, command.ElementId, new C4SidecarPosition(command.X, command.Y), cancellationToken);
         documents.Touch(command.BodyPath);
-        return Task.FromResult(CommandResult.Success(previous, warning));
+        return CommandResult.Success(previous, warning);
     }
 }
 
 internal sealed class RestoreC4ElementPositionCommandHandler(IC4DocumentStore documents, C4LayoutSidecar sidecar)
     : ICommandHandler<RestoreC4ElementPositionCommand>
 {
-    public Task<CommandResult> ExecuteAsync(RestoreC4ElementPositionCommand command, CancellationToken cancellationToken = default)
+    public async Task<CommandResult> ExecuteAsync(RestoreC4ElementPositionCommand command, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(command);
         cancellationToken.ThrowIfCancellationRequested();
@@ -69,15 +69,15 @@ internal sealed class RestoreC4ElementPositionCommandHandler(IC4DocumentStore do
             : null;
 
         var warning = command is { X: { } x, Y: { } y }
-            ? sidecar.Write(command.BodyPath, command.ViewKey, command.ElementId, new C4SidecarPosition(x, y))
-            : sidecar.Remove(command.BodyPath, command.ViewKey, command.ElementId);
+            ? await sidecar.WriteAsync(command.BodyPath, command.ViewKey, command.ElementId, new C4SidecarPosition(x, y), cancellationToken)
+            : await sidecar.RemoveAsync(command.BodyPath, command.ViewKey, command.ElementId, cancellationToken);
 
         documents.Touch(command.BodyPath);
 
         // Redoing a "restore to computed" means moving back to where the drag put it; when
         // there was nothing to move back to, the inverse is a no-op restore.
-        return Task.FromResult(CommandResult.Success(
+        return CommandResult.Success(
             (ICommand?)current ?? command with { X = null, Y = null },
-            warning));
+            warning);
     }
 }

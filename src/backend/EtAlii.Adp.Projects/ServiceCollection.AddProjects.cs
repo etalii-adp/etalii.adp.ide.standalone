@@ -1,3 +1,4 @@
+using EtAlii.Adp.Files;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace EtAlii.Adp.Projects;
@@ -20,7 +21,7 @@ public static class ServiceCollectionAddProjectsExtension
         ArgumentNullException.ThrowIfNull(services);
         ArgumentException.ThrowIfNullOrWhiteSpace(appDataRoot);
 
-        services.AddSingleton<IProjectStore>(_ => new FileProjectStore(appDataRoot));
+        services.AddSingleton<IProjectStore>(provider => new FileProjectStore(appDataRoot, provider.GetRequiredService<IFileWriter>()));
 
         return services;
     }

@@ -1,4 +1,5 @@
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Files;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.C4.Tests;
@@ -10,7 +11,7 @@ namespace EtAlii.Adp.Diagram.C4.Tests;
 /// </summary>
 public class C4ElementMapperTests
 {
-    private static readonly C4ElementMapper Mapper = new(C4Metrics.Default, new C4LayoutSidecar());
+    private static readonly C4ElementMapper Mapper = new(C4Metrics.Default, new C4LayoutSidecar(new FileWriter()));
 
     private const string Sample = """
         workspace "Big Bank" {

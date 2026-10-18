@@ -26,7 +26,7 @@ public sealed class ProjectService : Wire.ProjectService.ProjectServiceBase
         return Task.FromResult(response);
     }
 
-    public override Task<AddProjectResponse> AddProject(AddProjectRequest request, ServerCallContext context)
+    public override async Task<AddProjectResponse> AddProject(AddProjectRequest request, ServerCallContext context)
     {
         var userId = SessionContext.GetUserId(context);
         // The REQUESTED name and path, before validation: the rejection below carries only the
@@ -34,7 +34,7 @@ public sealed class ProjectService : Wire.ProjectService.ProjectServiceBase
         _logger.Debug("Adding project {ProjectName} at {ProjectPath} for {UserId}", request.Name, string.Join('/', request.Path.Segments), userId);
         try
         {
-            var added = _projectStore.Add(userId, request.Name, new PathRecord(request.Path.Segments.ToList()));
+            var added = await _projectStore.AddAsync(userId, request.Name, new PathRecord(request.Path.Segments.ToList()), context.CancellationToken);
             // Information: the user's project list is durable state, and this changed it.
             _logger.Information(
                 "Added project {ProjectName} ({ProjectId}) for {UserId} at {ProjectPath}",
@@ -42,26 +42,26 @@ public sealed class ProjectService : Wire.ProjectService.ProjectServiceBase
                 added.Id,
                 userId,
                 added.Path.Segments.AbsolutePath());
-            return Task.FromResult(new AddProjectResponse { Added = ToProto(added) });
+            return new AddProjectResponse { Added = ToProto(added) };
         }
         catch (InvalidProjectPathException ex)
         {
             // The user pointed at a folder that is not there - their mistake to correct, not
             // a fault of ours, so a warning rather than an error.
             _logger.Warning(ex, "Rejected the project {UserId} tried to add:", userId);
-            return Task.FromResult(new AddProjectResponse
+            return new AddProjectResponse
             {
                 Error = new AddProjectError { Message = ex.Message }
-            });
+            };
         }
     }
 
-    public override Task<RemoveProjectResponse> RemoveProject(RemoveProjectRequest request, ServerCallContext context)
+    public override async Task<RemoveProjectResponse> RemoveProject(RemoveProjectRequest request, ServerCallContext context)
     {
         var userId = SessionContext.GetUserId(context);
-        _projectStore.Remove(userId, request.ProjectId);
+        await _projectStore.RemoveAsync(userId, request.ProjectId, context.CancellationToken);
         _logger.Information("Removed project {ProjectId} for {UserId}", request.ProjectId, userId);
-        return Task.FromResult(new RemoveProjectResponse());
+        return new RemoveProjectResponse();
     }
 
     private static Project ToProto(ProjectRecord record)
