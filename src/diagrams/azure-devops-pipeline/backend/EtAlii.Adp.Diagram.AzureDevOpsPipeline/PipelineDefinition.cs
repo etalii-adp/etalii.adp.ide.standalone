@@ -41,8 +41,8 @@ namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline;
 /// </remarks>
 internal static class PipelineDefinition
 {
-    /// <summary>The definition, with its <c>x-azure-pipeline</c> wire ids.</summary>
-    private static DislDiagramDefinition Definition { get; } = new(typeof(PipelineDefinition).Assembly, "azure-devops-pipeline.dis", "x-azure-pipeline");
+    /// <summary>The definition, with its <c>x-azure-pipeline</c> wire ids; core's <see cref="DislToolboxProvider"/> hands out its palette.</summary>
+    public static DislDiagramDefinition Definition { get; } = new(typeof(PipelineDefinition).Assembly, "azure-devops-pipeline.dis", "x-azure-pipeline");
 
     /// <summary>The definition.</summary>
     public static DislSpecification Specification => Definition.Specification;
@@ -114,55 +114,22 @@ internal static class PipelineDefinition
     /// <paramref name="newValue"/> (its change rules, DISL 8.4); null when it does not. Null unsets the attribute.
     /// </summary>
     /// <remarks>
-    /// <para>
-    /// <b>The first refusal in the order today's commands asked</b>: a step's dependencies, then an element this file
-    /// does not write, then a name that names nothing, then a cycle, then a pipeline left with no stage to start
-    /// with; the definition declares the read-only rule last, which would put its sentence behind the others.
-    /// </para>
-    /// <para>
-    /// <b>The cycle and the starting stage are preconditions over <c>reachable</c></b>, in place of the definition's
-    /// <c>noCycleByEdit</c> and <c>keepAStart</c>: as bundled, the first refuses a dependency on what the element
-    /// already waits for and lets the one that closes a loop through, because <c>reachable</c> walks from what is
-    /// waited for to what waits; the second refuses taking a stage back to the default order, which is no edge.
-    /// </para>
+    /// <b>The first refusal in the order of the definition's rules</b> (DISL 8.4), which is the order today's commands
+    /// asked: a step's dependencies, then an element this file does not write, then a name that names nothing, then a
+    /// cycle (<c>noCycleByEdit</c>), then a pipeline left with no stage to start with (<c>keepAStart</c>).
     /// </remarks>
     public static string? ChangeRefusal(DislElement element, string attribute, object? newValue)
     {
         ArgumentNullException.ThrowIfNull(element);
         ArgumentNullException.ThrowIfNull(attribute);
-        var refusals = GestureConstraintEvaluator.Change(Specification, element, attribute, newValue, Env)
-            .Where(refusal => refusal.ConstraintId is not ("noCycleByEdit" or "keepAStart"))
-            .ToList();
-        return First("stepHasNothingToWaitFor") ?? First("readOnlyElements") ?? First("knownName") ?? First("knownStageName")
-            ?? (attribute == "dependsOn" && newValue is IReadOnlyList<object?> names ? Waits(element, names) : null)
-            ?? refusals.FirstOrDefault()?.Message;
-
-        string? First(string id) => refusals.FirstOrDefault(refusal => refusal.ConstraintId == id)?.Message;
+        return GestureConstraintEvaluator.Change(Specification, element, attribute, newValue, Env).FirstOrDefault()?.Message;
     }
 
     /// <summary>Why the definition refuses deleting <paramref name="element"/> (its deletion rules, DISL 8.4); null when it does not.</summary>
-    /// <remarks>
-    /// <para>
-    /// <b>All but <c>keepTheOnlyStart</c></b>, which the remove command has never refused with: as bundled it refuses
-    /// removing the first of stages that follow the default order, which leaves the next one to start with, and the
-    /// menu offers that removal.
-    /// </para>
-    /// <para>
-    /// <b>The last job and the last step are refused with today's sentence</b>, which calls a stage or a job without a
-    /// display name or a name "stage" or "job": the definition's <c>label</c> is empty for one, which would make the
-    /// sentence start with nothing.
-    /// </para>
-    /// </remarks>
     public static string? DeleteRefusal(DislElement element)
     {
         ArgumentNullException.ThrowIfNull(element);
-        return GestureConstraintEvaluator.Delete(Specification, element, env: Env).FirstOrDefault(refusal => refusal.ConstraintId != "keepTheOnlyStart") switch
-        {
-            null => null,
-            { ConstraintId: "keepLastJob" } => $"{Label(element.Parent, "stage")} needs at least one job.",
-            { ConstraintId: "keepLastStep" } => $"{Label(element.Parent, "job")} needs at least one step.",
-            var refusal => refusal.Message,
-        };
+        return GestureConstraintEvaluator.Delete(Specification, element, env: Env).FirstOrDefault()?.Message;
     }
 
     /// <summary>
@@ -174,41 +141,6 @@ internal static class PipelineDefinition
         ArgumentNullException.ThrowIfNull(element);
         return GestureConstraintEvaluator.Reorder(Specification, element, siblings, oldIndex, newIndex, Env).FirstOrDefault()?.Message;
     }
-
-    /// <summary>
-    /// Why <paramref name="element"/>, a stage or a job, may not wait for <paramref name="names"/>: one of them already
-    /// waits for it, or is it, or the pipeline would be left with no stage that waits for nothing.
-    /// </summary>
-    /// <remarks>A name is the first stage, or the first job of the same stage, of that name, compared without regard to case.</remarks>
-    private static string? Waits(DislElement element, IReadOnlyList<object?> names)
-    {
-        var isStage = element.IsA("Stage");
-        var candidates = isStage ? element.Diagram.NodesOfType("Stage") : element.Parent?.Children.Where(child => child.IsA("JobBase")).ToList() ?? [];
-        var downstream = Reachable(element);
-        foreach (var name in names.OfType<string>())
-        {
-            var named = candidates.FirstOrDefault(candidate => candidate.ValueOf("name") is string { Length: > 0 } written && string.Equals(written, name, StringComparison.OrdinalIgnoreCase));
-            if (named is not null && (ReferenceEquals(named, element) || downstream.Contains(named)))
-            {
-                return $"That would make {Label(element, isStage ? "stage" : "job")} wait for something that is already waiting for it.";
-            }
-        }
-
-        var starts = names.Count > 0 && isStage && !element.Diagram.NodesOfType("Stage").Any(stage => !ReferenceEquals(stage, element) && !stage.Incoming.Any(relation => relation.IsA("Dependency") && relation.Source is not null));
-        return starts ? "A pipeline must contain at least one stage with no dependencies, or it has nothing to start with." : null;
-    }
-
-    /// <summary>What waits for <paramref name="element"/>, directly or not: the definition's <c>reachable('Dependency')</c>.</summary>
-    private static HashSet<DislElement> Reachable(DislElement element) =>
-        element.TryInvoke("reachable", ["Dependency"], out var reached) && reached is IEnumerable<object?> found
-            ? found.OfType<DislElement>().ToHashSet<DislElement>(ReferenceEqualityComparer.Instance)
-            : [];
-
-    /// <summary>What a sentence calls <paramref name="element"/>: its display name, else its name, else <paramref name="fallback"/>.</summary>
-    private static string Label(DislElement? element, string fallback) =>
-        element?.ValueOf("displayName") is string { Length: > 0 } displayName ? displayName
-        : element?.ValueOf("name") is string { Length: > 0 } name ? name
-        : fallback;
 
     /// <summary>
     /// Writes the changes of <paramref name="transaction"/>, run in <paramref name="body"/>'s DISL model, into the

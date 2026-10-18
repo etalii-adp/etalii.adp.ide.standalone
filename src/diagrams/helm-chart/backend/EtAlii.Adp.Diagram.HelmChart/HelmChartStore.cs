@@ -1,3 +1,4 @@
+using EtAlii.Adp.Files;
 using Serilog;
 
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
@@ -30,7 +31,11 @@ namespace EtAlii.Adp.Diagram.HelmChart;
 /// </remarks>
 /// <param name="reader">The reader the plugin reads every folder with.</param>
 /// <param name="time">The clock a burst of changes settles on; the system's when none is given.</param>
-public sealed class HelmChartStore(HelmChartReader reader, TimeProvider? time = null) : IHelmChartStore, IDisposable
+/// <param name="events">
+/// The project roots' event sources: a chart folder inside a watched project root is heard through that root's
+/// one watcher rather than a watcher of its own (code-structure T280).
+/// </param>
+public sealed class HelmChartStore(HelmChartReader reader, TimeProvider? time = null, ProjectFileEvents? events = null) : IHelmChartStore, IDisposable
 {
     private static readonly ILogger _logger = Log.ForContext<HelmChartStore>();
 
@@ -131,7 +136,7 @@ public sealed class HelmChartStore(HelmChartReader reader, TimeProvider? time = 
         if (_open.TryGetValue(key, out var entry)) return entry;
 
         _logger.Debug("Reading and watching {Folder}", key);
-        var opened = HelmBody.Open(folder, registration, time, _reader);
+        var opened = HelmBody.Open(folder, registration, time, _reader, events);
         opened.Changed += (_, _) => Changed?.Invoke(key, opened);
         entry = new Entry(opened);
         _open[key] = entry;

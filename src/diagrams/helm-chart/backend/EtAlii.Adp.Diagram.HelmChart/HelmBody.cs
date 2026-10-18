@@ -1,3 +1,4 @@
+using EtAlii.Adp.Files;
 using EtAlii.Adp.Specification.Fbl;
 using EtAlii.Adp.Specification.Fbl.Plugins;
 using Serilog;
@@ -20,9 +21,10 @@ namespace EtAlii.Adp.Diagram.HelmChart;
 /// </para>
 /// <para>
 /// <b>The library reads, settles and reads again; this watches.</b> The folder body opens no watcher, so an
-/// opened body holds one over the folder and everything under it and hands every path it reports to
+/// opened body hears the folder and everything under it (<see cref="WatchedTree"/>: through the watched project
+/// root that holds it, or through a watcher of its own where none does) and hands every path it hears to
 /// <see cref="FolderBody.Notify"/>, which ignores what the reading does not depend on and reads once after the
-/// binding's <c>settle</c>. An overflow is a change: a watcher's <c>Error</c> is the only sign that it dropped
+/// binding's <c>settle</c>. An overflow is a change: a lost event is the only sign that the watcher dropped
 /// events, and which path changed is then unknowable, so the folder itself is notified and read again.
 /// </para>
 /// <para>
@@ -43,7 +45,7 @@ public sealed class HelmBody : IDisposable
     private readonly FolderBody _body;
     private volatile HelmReading _current;
 
-    private HelmBody(string folder, string? registration, bool watch, TimeProvider? time, HelmChartReader? reader)
+    private HelmBody(string folder, string? registration, bool watch, TimeProvider? time, HelmChartReader? reader, ProjectFileEvents? events)
     {
         _path = IoPath.GetFullPath(folder);
         Registration = registration is null ? null : IoPath.GetFullPath(registration);
@@ -52,7 +54,7 @@ public sealed class HelmBody : IDisposable
         if (!watch) return;
 
         _body.Changed += OnSettled;
-        FolderWatcher = Directory.Exists(_path) ? Watcher(_path) : null;
+        Tree = Directory.Exists(_path) ? new WatchedTree(_path, Heard, events) : null;
     }
 
     /// <summary>Raised once a burst of changes has settled: after the folder was read again, or after only the registration changed.</summary>
@@ -64,8 +66,8 @@ public sealed class HelmBody : IDisposable
     /// <summary>The last reading and its model, built once per reading.</summary>
     public HelmReading Current => _current;
 
-    /// <summary>The watcher, for a test that has to make it overflow; null for a one-shot read and a folder that was not there.</summary>
-    internal FileSystemWatcher? FolderWatcher { get; }
+    /// <summary>What hears the folder, for a test that has to reach its watcher; null for a one-shot read and a folder that was not there.</summary>
+    internal WatchedTree? Tree { get; }
 
     /// <summary>What the folder body is told beside the binding: the directories no file rule can select (gap 3).</summary>
     private static FblOptions Options { get; } = new() { SupplementaryEntries = HelmFolderEntries.Of };
@@ -74,25 +76,27 @@ public sealed class HelmBody : IDisposable
     /// Opens <paramref name="folder"/> and keeps it open, watched and read again after every settled burst, with
     /// <paramref name="registration"/>, whether or not it exists yet, watched as the registration;
     /// <paramref name="time"/> is the clock of the settle delay, the system's unless a test passes another,
-    /// and <paramref name="reader"/> the reader the plugin reads with, the module's own unless one is given.
+    /// <paramref name="reader"/> the reader the plugin reads with, the module's own unless one is given, and
+    /// <paramref name="events"/> the project roots' event sources, through which a folder inside a watched root is
+    /// heard rather than by a watcher of its own.
     /// </summary>
-    public static HelmBody Open(string folder, string? registration = null, TimeProvider? time = null, HelmChartReader? reader = null)
+    public static HelmBody Open(string folder, string? registration = null, TimeProvider? time = null, HelmChartReader? reader = null, ProjectFileEvents? events = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(folder);
-        return new HelmBody(folder, registration, watch: true, time, reader);
+        return new HelmBody(folder, registration, watch: true, time, reader, events);
     }
 
     /// <summary>Reads <paramref name="folder"/> once: nothing is open, watched or pending afterwards.</summary>
     public static HelmReading Read(string folder)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(folder);
-        using var body = new HelmBody(folder, null, watch: false, null, null);
+        using var body = new HelmBody(folder, null, watch: false, null, null, null);
         return body.Current;
     }
 
     public void Dispose()
     {
-        FolderWatcher?.Dispose();
+        Tree?.Dispose();
         _body.Changed -= OnSettled;
         _body.Dispose();
     }
@@ -109,32 +113,24 @@ public sealed class HelmBody : IDisposable
         Changed?.Invoke(this, change);
     }
 
-    private FileSystemWatcher Watcher(string folder)
+    private void Heard(FileEvent heard)
     {
-        var watcher = new FileSystemWatcher(folder)
+        switch (heard)
         {
-            IncludeSubdirectories = true,
-            // Content matters as much as names: editing a file changes what the diagram means without renaming anything.
-            NotifyFilter = NotifyFilters.FileName | NotifyFilters.DirectoryName | NotifyFilters.LastWrite | NotifyFilters.Size,
-        };
-        watcher.Created += (_, e) => Notify(e.FullPath);
-        watcher.Changed += (_, e) => Notify(e.FullPath);
-        watcher.Deleted += (_, e) => Notify(e.FullPath);
-        // Either name counts: a file renamed away is as much a change as one renamed in.
-        watcher.Renamed += (_, e) =>
-        {
-            Notify(e.OldFullPath);
-            Notify(e.FullPath);
-        };
-        watcher.Error += (_, e) =>
-        {
-            _logger.Warning(e.GetException(), "The watcher for {Path} stumbled; reading it again", folder);
-            Notify(folder);
-        };
-
-        // Enabled after the handlers: a watcher live before its handlers exist raises into nothing.
-        watcher.EnableRaisingEvents = true;
-        return watcher;
+            case { Kind: FileEventKind.Lost }:
+                // Which path changed is unknowable, so the folder itself is read again.
+                _logger.Warning("Events under {Path} may have been lost; reading it again", _path);
+                Notify(_path);
+                break;
+            case { Kind: FileEventKind.Renamed, OldPath: { } oldPath }:
+                // Either name counts: a file renamed away is as much a change as one renamed in.
+                Notify(oldPath);
+                Notify(heard.Path);
+                break;
+            default:
+                Notify(heard.Path);
+                break;
+        }
     }
 
     /// <summary>Hands a path the watcher reported to the folder body. Guarded: this runs on the watcher's thread, where an exception ends the process.</summary>

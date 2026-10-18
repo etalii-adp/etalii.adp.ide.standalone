@@ -333,6 +333,38 @@ public class PipelineTemplatesTests : IDisposable
         Assert.Equal("After", model.Jobs.Single().Name);
     }
 
+    [Theory]
+    [InlineData("stages:\n  - template: deploy.yml@shared\n", "", "")]
+    [InlineData("stages:\n  - template: C:/Windows/win.ini\n", "", "")]
+    [InlineData("stages:\n  - template: templates/${{ parameters.which }}.yml\n", "", "")]
+    [InlineData("stages:\n  - template: templates/gone.yml\n", "", "")]
+    [InlineData("stages:\n  - template: templates/loop.yml\n", "templates/loop.yml", "stages:\n  - template: loop.yml\n")]
+    [InlineData("stages:\n  - stage: Build\n    jobs:\n      - template: templates/broken.yml\n", "templates/broken.yml", "jobs:\n  - job: A\n   steps:\n      - script: x\n     bad: [indent\n")]
+    public void AnUnfollowedTemplate_IsExplainedByTheDefinitionInTheToolsOwnSentence(string pipeline, string templatePath, string template)
+    {
+        // Arrange: the canvas's hover on an unfollowed template is the definition's `explanation`,
+        // which the backend sends as the payload's unresolved reason; the two must be one sentence,
+        // for each of the six reasons.
+        var body = Write("azure-pipelines.yml", pipeline);
+        if (templatePath.Length > 0)
+        {
+            Write(templatePath, template);
+        }
+
+        // Act.
+        var entry = new PipelineDocumentStore().GetOrLoad(_workspace, body);
+        var explained = entry.Document.Disl.Diagram.Nodes
+            .Where(node => node.IsA("TemplateReference"))
+            .Select(node => (Path: node.ValueOf("path") as string, Sentence: node.ValueOf("explanation") as string))
+            .ToList();
+
+        // Assert.
+        Assert.NotEmpty(entry.Model.Unresolved);
+        Assert.Equal(
+            entry.Model.Unresolved.Select(unresolved => (Path: (string?)unresolved.Reference.Path, Sentence: (string?)unresolved.Explanation)).OrderBy(each => each.Sentence, StringComparer.Ordinal),
+            explained.OrderBy(each => each.Sentence, StringComparer.Ordinal));
+    }
+
     [Fact]
     public void WithoutAResolver_ATemplateIsNeitherFollowedNorReportedAsUnresolved()
     {

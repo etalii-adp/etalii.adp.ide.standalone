@@ -153,9 +153,9 @@ public sealed partial class ContextService : Wire.ContextService.ContextServiceB
                 HistoryActionsBroadcaster.ProjectTarget(rootPath), cancellationToken);
 
             // Registering writes the baseline first, so a late subscriber is consistent
-            // before anything else can arrive. The problems ride along as data: only the
-            // broadcaster knows both stores.
-            _selectionStore.Register(watchId, root, channel.Writer, rootActions, projectActions, _watchHooks.CurrentFor(root));
+            // before anything else can arrive. The problems are read by the registration
+            // itself, once the connection can be pushed to: only the broadcaster knows both stores.
+            _selectionStore.Register(watchId, root, channel.Writer, rootActions, projectActions, () => _watchHooks.CurrentFor(root));
             _contextInteractionStore.Register(watchId, channel.Writer);
             registered = true;
 

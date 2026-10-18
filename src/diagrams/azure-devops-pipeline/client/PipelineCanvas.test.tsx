@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, fireEvent, waitFor, act } from "@testing-library/react";
+import { render, fireEvent, waitFor, act, createEvent } from "@testing-library/react";
 import { create, toBinary } from "@bufbuild/protobuf";
 import { ElementSchema } from "@client/generated/elements_pb";
 import { ProblemSchema, ProblemSeverity } from "@client/generated/problems_pb";
@@ -18,7 +18,7 @@ import {
   type PipelineModel,
 } from "./pipelineModel";
 import { ToolboxItemSchema, type ToolboxItem } from "@client/generated/diagrams_pb";
-import { DiagramToolboxProvider, useDiagramToolbox } from "@client/shell/panels/DiagramToolboxContext";
+import { DiagramToolboxProvider, TOOLBOX_DRAG_TYPE, useDiagramToolbox } from "@client/shell/panels/DiagramToolboxContext";
 import { expectLibrarySelection } from "@client/canvas/library/testing/expectLibrarySelection";
 import { fakeContextConnection, idsPushed, pointer } from "@client/canvas/library/testing/canvasHarness";
 
@@ -145,6 +145,23 @@ function draw() {
   );
 }
 
+/**
+ * A toolbox drop of `payload` released on the middle of the element `id` is drawn at. jsdom lays
+ * nothing out, so the surface is given the size of its view box: a client pixel is a canvas unit.
+ */
+function dropOnto(container: HTMLElement, payload: string, id: string) {
+  const surface = container.querySelector("svg.library-canvas-surface") as SVGSVGElement;
+  const [vx, vy, vw, vh] = surface.getAttribute("viewBox")!.split(" ").map(Number) as [number, number, number, number];
+  surface.getBoundingClientRect = () => ({ left: 0, top: 0, x: 0, y: 0, width: vw, height: vh, right: vw, bottom: vh, toJSON: () => ({}) }) as DOMRect;
+  const box = container.querySelector(`[data-element-id="${id}"] > g`)!;
+  const [, x, y] = /translate\(([-\d.]+) ([-\d.]+)\)/.exec(box.getAttribute("transform")!)!;
+  const shape = box.querySelector("rect")!;
+  const event = createEvent.drop(surface, { dataTransfer: { types: [TOOLBOX_DRAG_TYPE], getData: () => payload, dropEffect: "" } });
+  Object.defineProperty(event, "clientX", { value: Number(x) + Number(shape.getAttribute("width")) / 2 - vx });
+  Object.defineProperty(event, "clientY", { value: Number(y) + Number(shape.getAttribute("height")) / 2 - vy });
+  fireEvent(surface, event);
+}
+
 /** A click in the pointer vocabulary the surface listens to: press and release, unmoved. */
 function press(target: Element, init: MouseEventInit = {}) {
   fireEvent(target, pointer("pointerdown", { button: 0, ...init }));
@@ -173,7 +190,7 @@ describe("PipelineCanvas", () => {
 
     // Assert.
     expect(view.getByTestId("stage-Build")).toBeTruthy();
-    expect(view.getByText("Build the solution")).toBeTruthy();
+    expect(view.getByTestId("stage-Build").querySelector(".pipeline-stage-name")?.textContent).toBe("Build the solution");
   });
 
   it("shows a collapsed stage's job count rather than its jobs", () => {
@@ -193,9 +210,23 @@ describe("PipelineCanvas", () => {
     expect(view.getByTestId("stage-Build").getAttribute("data-expanded")).toBe("false");
   });
 
+  it("shows a stage the backend sends closed as closed, with its job count", () => {
+    // Arrange: the backend opens nothing until asked, sends a closed stage without its jobs and no
+    // fold of its own - so the stage itself has to say it is closed, or it is drawn open and empty.
+    currentModel = applyDelta(emptyModel, add(stage("Build", "Build", { jobCount: 3, height: 88 })));
+
+    // Act.
+    const view = draw();
+
+    // Assert.
+    expect(view.getByText("3 jobs")).toBeTruthy();
+    expect(view.getByTestId("stage-Build").getAttribute("data-expanded")).toBe("false");
+    expect(view.getByTestId("stage-Build").getAttribute("class")).toContain("pipeline-stage-collapsed");
+  });
+
   it("shows the jobs of an open stage", () => {
     // Arrange.
-    currentModel = applyDelta(emptyModel, add(stage("Build", "Build"), job("Build/Compile", "Build", "Compile")));
+    currentModel = applyDelta(emptyModel, add(stage("Build", "Build", { expanded: true }), job("Build/Compile", "Build", "Compile")));
 
     // Act.
     const view = draw();
@@ -246,7 +277,7 @@ describe("PipelineCanvas", () => {
     expect(view.getByTestId("node-Build/Compile").getAttribute("class")).toContain("pipeline-from-template");
   });
 
-  it("marks a template it could not follow, and says why on hover", () => {
+  it("marks a template it could not follow, and names it on hover", () => {
     // Arrange.
     currentModel = applyDelta(
       emptyModel,
@@ -257,6 +288,7 @@ describe("PipelineCanvas", () => {
           payload({
             kind: PipelineElementKindProto.PIPELINE_ELEMENT_KIND_TEMPLATE,
             displayName: "shared.yml@other",
+            reference: "shared.yml@other",
             unresolvedReason: "It comes from the 'other' repository resource, which is not checked out here.",
           }),
         ),
@@ -266,9 +298,11 @@ describe("PipelineCanvas", () => {
     // Act.
     const view = draw();
 
-    // Assert.
-    expect(view.getByTestId("node-template:0").getAttribute("class")).toContain("pipeline-template");
-    expect(view.getByText(/not checked out here/)).toBeTruthy();
+    // Assert: its hover says why it was not followed, as it always has; its name line says what it is.
+    const template = view.getByTestId("node-template:0");
+    expect(template.getAttribute("class")).toContain("pipeline-template");
+    expect(template.querySelector(":scope > title")?.textContent).toBe("It comes from the 'other' repository resource, which is not checked out here.");
+    expect(template.querySelector("text.pipeline-box-name")?.textContent).toBe("shared.yml@other");
   });
 
   it("draws an arrow between two stages", () => {
@@ -653,6 +687,70 @@ describe("PipelineCanvas", () => {
     const [sent, source] = executeAction.mock.calls[0] as unknown as [string, { source: { value: { value: string } } }];
     expect(sent).toBe(actionId);
     expect(source.source.value.value).toBe("Build/Compile/step-0");
+  });
+
+  it.each([
+    ["element:Build", "azure-pipeline.toggle-stage", "Build"],
+    ["element:Build/Compile", "azure-pipeline.toggle-job", "Build/Compile"],
+  ])("sends the definition's fold for Space on %s, by its id", (selection, actionId, target) => {
+    // Arrange. The definition offers Show jobs and Hide jobs, and Show steps and Hide steps, on
+    // Space; the canvas sends what the definition declares rather than a list of its own.
+    currentModel = applyDelta(emptyModel, add(stage("Build", "Build"), job("Build/Compile", "Build", "Compile")));
+    currentSelectionKey = selection;
+    const { container } = draw();
+
+    // Act.
+    fireEvent.keyDown(container.querySelector("svg.library-canvas-surface") as SVGSVGElement, { key: " " });
+
+    // Assert.
+    expect(executeAction).toHaveBeenCalledTimes(1);
+    const [sent, source] = executeAction.mock.calls[0] as unknown as [string, { source: { value: { value: string } } }];
+    expect(sent).toBe(actionId);
+    expect(source.source.value.value).toBe(target);
+    expect(executeShortcut).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["azure-pipeline.add-stage", "Build", "Build"],
+    ["azure-pipeline.add-job", "Build", "Build"],
+    ["azure-pipeline.add-job", "Build/Compile", "Build"],
+    ["azure-pipeline.add-deployment-job", "Build/Compile/step-0", "Build"],
+    ["azure-pipeline.add-step", "Build/Compile", "Build/Compile"],
+    ["azure-pipeline.add-step", "Build/Compile/step-0", "Build/Compile"],
+  ])("runs the toolbox entry %s dropped on %s on %s, where the menu offers it", (actionId, droppedOn, target) => {
+    // Arrange. The backend offers Add stage, Add job and Add deployment job on a stage and Add step
+    // on a job, and refuses each anywhere else; the definition drops each where it is offered, on
+    // the topmost box under the pointer that it names - the stage or the job a box sits in.
+    currentModel = applyDelta(emptyModel, add(
+      stage("Build", "Build", { width: 600, height: 240 }),
+      job("Build/Compile", "Build", "Compile", { width: 228, height: 144 }, 24, 40),
+      element("Build/Compile/step-0", STEP_TYPE, payload({ displayName: "dotnet build", parentId: "Build/Compile", kind: PipelineElementKindProto.PIPELINE_ELEMENT_KIND_STEP, width: 180, height: 56 }), 48, 104),
+    ));
+    const { container } = draw();
+
+    // Act.
+    dropOnto(container, actionId, droppedOn);
+
+    // Assert.
+    expect(executeAction).toHaveBeenCalledTimes(1);
+    const [sent, source] = executeAction.mock.calls[0] as unknown as [string, { source: { value: { value: string } } }];
+    expect(sent).toBe(actionId);
+    expect(source.source.value.value).toBe(target);
+  });
+
+  it("sends nothing for a script step dropped on a stage outside its jobs, where the menu offers no Add step", () => {
+    // Arrange.
+    currentModel = applyDelta(emptyModel, add(
+      stage("Build", "Build", { width: 600, height: 240 }),
+      job("Build/Compile", "Build", "Compile", { width: 228, height: 144 }, 24, 40),
+    ));
+    const { container } = draw();
+
+    // Act.
+    dropOnto(container, "azure-pipeline.add-step", "Build");
+
+    // Assert: refused on the canvas, before the backend could only refuse it.
+    expect(executeAction).not.toHaveBeenCalled();
   });
 
   it("moves nothing for a bare arrow key, or for Alt and an arrow on a stage", () => {

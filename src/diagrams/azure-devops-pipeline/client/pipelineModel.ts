@@ -8,6 +8,8 @@ import {
   PipelineElementPayloadSchema,
   type PipelineElementPayload,
 } from "@client/generated/azure-pipeline_pb";
+import type { Problem } from "@client/generated/problems_pb";
+import { ProblemSeverity } from "@client/generated/problems_pb";
 
 /** The element kinds this module puts on the wire; anything else on the stream is ignored. */
 export const STAGE_TYPE = "azure-devops/pipeline+stage";
@@ -43,9 +45,10 @@ export interface PipelineModel {
   nodes: ReadonlyMap<string, PipelineNode>;
   edges: ReadonlyMap<string, PipelineEdgeLine>;
   /**
-   * Which stages this connection has expanded. Held here rather than in the canvas because the
-   * backend decides it: a `group` delta folds a stage and an `ungroup` opens it, and the model is
-   * what remembers which way round each one currently is.
+   * Which stages and jobs this connection has closed. Held here rather than in the canvas because the
+   * backend decides it: each stage and job it sends says whether it is open (`expanded`), and a
+   * `group` delta folds one and an `ungroup` opens it; the model is what remembers which way round
+   * each one currently is.
    */
   collapsed: ReadonlySet<string>;
 }
@@ -68,6 +71,7 @@ export function applyDelta(model: PipelineModel, delta: Delta): PipelineModel {
     case "add": {
       const nodes = new Map(model.nodes);
       const edges = new Map(model.edges);
+      const collapsed = new Set(model.collapsed);
 
       for (const raw of delta.action.value.elements) {
         const id = raw.id?.value;
@@ -85,17 +89,27 @@ export function applyDelta(model: PipelineModel, delta: Delta): PipelineModel {
         }
 
         if (raw.type === STAGE_TYPE || raw.type === JOB_TYPE || raw.type === STEP_TYPE || raw.type === TEMPLATE_TYPE) {
+          const payload = fromBinary(PipelineElementPayloadSchema, raw.payload.value);
           nodes.set(id, {
             id,
             x: raw.position?.x ?? 0,
             y: raw.position?.y ?? 0,
             type: raw.type,
-            payload: fromBinary(PipelineElementPayloadSchema, raw.payload.value),
+            payload,
           });
+          // A closed stage arrives without its jobs, and a closed job without its steps - which,
+          // unless it says so, looks like an open one holding none. So each says which it is.
+          if (raw.type === STAGE_TYPE || raw.type === JOB_TYPE) {
+            if (payload.expanded) {
+              collapsed.delete(id);
+            } else {
+              collapsed.add(id);
+            }
+          }
         }
       }
 
-      return { ...model, nodes, edges };
+      return { ...model, nodes, edges, collapsed };
     }
 
     case "remove": {
@@ -201,4 +215,40 @@ export function endpointsOf(
   const from = model.nodes.get(edge.payload.sourceId);
   const to = model.nodes.get(edge.payload.targetId);
   return from && to ? { from, to } : null;
+}
+
+/**
+ * The problems sitting on a given element.
+ *
+ * Problems arrive for the whole project, so they are filtered by both the file and the element -
+ * two pipelines in one project may each have a stage called Build, and marking the wrong one would
+ * be worse than marking neither.
+ */
+export function problemsOn(
+  problems: readonly Problem[],
+  path: readonly string[],
+  elementId: string,
+): Problem[] {
+  const key = path.join("/");
+  return problems.filter(
+    (problem) =>
+      problem.location?.location.case === "elementId" &&
+      problem.location.location.value.value === elementId &&
+      (problem.path?.segments ?? []).join("/") === key,
+  );
+}
+
+/** The mark an element wears when something is wrong with it: the worst of what was reported. */
+export function problemMarkOf(problems: readonly Problem[]): { severity: string; title: string } | null {
+  if (problems.length === 0) {
+    return null;
+  }
+
+  // An error outranks a warning: a stage with both is a stage that will not run, and that is the
+  // thing to say about it.
+  const worst = problems.some((problem) => problem.severity === ProblemSeverity.ERROR) ? "error" : "warning";
+  return {
+    severity: worst,
+    title: problems.map((problem) => problem.message).join("\n"),
+  };
 }

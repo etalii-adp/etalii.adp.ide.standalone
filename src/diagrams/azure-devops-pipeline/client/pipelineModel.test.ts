@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { create, toBinary } from "@bufbuild/protobuf";
 import { ElementSchema } from "@client/generated/elements_pb";
+import { ProblemSchema, ProblemSeverity } from "@client/generated/problems_pb";
 import {
   PipelineElementKindProto,
   PipelineElementPayloadSchema,
@@ -12,6 +13,8 @@ import {
   endpointsOf,
   jobCountLabel,
   jobsOf,
+  problemMarkOf,
+  problemsOn,
   EDGE_TYPE,
   JOB_TYPE,
   STAGE_TYPE,
@@ -27,7 +30,7 @@ function element(id: string, type: string, payload: Uint8Array, x = 0, y = 0) {
   });
 }
 
-function stage(id: string, displayName: string, x = 0, y = 0, jobCount = 0) {
+function stage(id: string, displayName: string, x = 0, y = 0, jobCount = 0, expanded = false) {
   return element(
     id,
     STAGE_TYPE,
@@ -40,6 +43,7 @@ function stage(id: string, displayName: string, x = 0, y = 0, jobCount = 0) {
         width: 220,
         height: 88,
         jobCount,
+        expanded,
         enabled: true,
         multiplicity: 1,
       }),
@@ -49,7 +53,7 @@ function stage(id: string, displayName: string, x = 0, y = 0, jobCount = 0) {
   );
 }
 
-function job(id: string, parentId: string, displayName: string, x = 0, y = 0) {
+function job(id: string, parentId: string, displayName: string, x = 0, y = 0, expanded = false) {
   return element(
     id,
     JOB_TYPE,
@@ -62,6 +66,7 @@ function job(id: string, parentId: string, displayName: string, x = 0, y = 0) {
         parentId,
         width: 180,
         height: 56,
+        expanded,
         enabled: true,
         multiplicity: 1,
       }),
@@ -172,11 +177,27 @@ describe("pipelineModel", () => {
   });
 
   describe("folding", () => {
+    it("takes a stage or a job as closed or open from what the backend says of it", () => {
+      // Arrange: the backend opens nothing until asked, and sends a closed stage without its jobs -
+      // which, unless the stage says so, looks like an open stage holding none.
+      const opened = applyDelta(emptyModel, add(stage("Build", "Build", 0, 0, 2, true), job("Build/Compile", "Build", "Compile", 0, 0, false), stage("Test", "Test", 300, 0, 1)));
+
+      // Act: Hide jobs: the jobs are removed and the stage arrives again, closed.
+      const closed = applyDelta(applyDelta(opened, remove("Build/Compile")), add(stage("Build", "Build", 0, 0, 2)));
+
+      // Assert.
+      expect(opened.collapsed.has("Build")).toBe(false);
+      expect(opened.collapsed.has("Build/Compile")).toBe(true);
+      expect(opened.collapsed.has("Test")).toBe(true);
+      expect(closed.collapsed.has("Build")).toBe(true);
+    });
+
     it("takes a collapsed stage's jobs off the canvas", () => {
-      // Arrange: the third independent use of Group/Ungroup, after the mindmap's.
+      // Arrange: the third independent use of Group/Ungroup, after the mindmap's; the backend says
+      // the same on the stage itself (above).
       const model = applyDelta(
         emptyModel,
-        add(stage("Build", "Build"), job("Build/Compile", "Build", "Compile"), job("Build/Lint", "Build", "Lint")),
+        add(stage("Build", "Build", 0, 0, 2, true), job("Build/Compile", "Build", "Compile"), job("Build/Lint", "Build", "Lint")),
       );
 
       // Act.
@@ -206,7 +227,7 @@ describe("pipelineModel", () => {
     it("ignores a fold that names nothing", () => {
       // Arrange: a malformed delta must not put an empty string in the collapsed set, where it
       // would sit forever matching no stage.
-      const model = applyDelta(emptyModel, add(stage("Build", "Build")));
+      const model = applyDelta(emptyModel, add(stage("Build", "Build", 0, 0, 0, true)));
 
       // Act.
       const after = applyDelta(model, group(""));
@@ -320,5 +341,81 @@ describe("pipelineModel", () => {
 
     // Assert.
     expect(model.nodes.get("template:0")?.payload.unresolvedReason).toContain("repository resource");
+  });
+});
+
+function problem(elementId: string, segments: string[], extra: Record<string, unknown> = {}) {
+  return create(ProblemSchema, {
+    severity: ProblemSeverity.WARNING,
+    message: "Something is off.",
+    path: { segments },
+    location: { location: { case: "elementId", value: { value: elementId } } },
+    ...extra,
+  });
+}
+
+describe("problem marks", () => {
+  it("finds the problems naming an element in this file", () => {
+    // Arrange.
+    const problems = [problem("Build", ["azure-pipelines.yml"])];
+
+    // Act & assert.
+    expect(problemsOn(problems, ["azure-pipelines.yml"], "Build")).toHaveLength(1);
+  });
+
+  it("ignores a problem on the same element name in a different pipeline", () => {
+    // Arrange: two pipelines in one project may each have a stage called Build, and marking the
+    // wrong one is worse than marking neither.
+    const problems = [problem("Build", ["other", "azure-pipelines.yml"])];
+
+    // Act & assert.
+    expect(problemsOn(problems, ["azure-pipelines.yml"], "Build")).toHaveLength(0);
+  });
+
+  it("ignores a problem located on a line rather than an element", () => {
+    // Arrange: a rule that judged the text has nothing to mark on the canvas.
+    const onALine = create(ProblemSchema, {
+      severity: ProblemSeverity.ERROR,
+      message: "Bad indentation.",
+      path: { segments: ["azure-pipelines.yml"] },
+      location: { location: { case: "line", value: 12 } },
+    });
+
+    // Act & assert.
+    expect(problemsOn([onALine], ["azure-pipelines.yml"], "Build")).toHaveLength(0);
+  });
+
+  it("marks nothing when nothing is wrong", () => {
+    // Act & assert.
+    expect(problemMarkOf([])).toBeNull();
+  });
+
+  it("lets an error outrank a warning", () => {
+    // Arrange: a stage with both is a stage that will not run, and that is the thing to say.
+    const both = [
+      problem("Build", ["p.yml"]),
+      problem("Build", ["p.yml"], { severity: ProblemSeverity.ERROR, message: "Depends on nothing that exists." }),
+    ];
+
+    // Act.
+    const mark = problemMarkOf(both);
+
+    // Assert.
+    expect(mark?.severity).toBe("error");
+  });
+
+  it("says everything that is wrong, not only the first thing", () => {
+    // Arrange.
+    const both = [
+      problem("Build", ["p.yml"], { message: "First." }),
+      problem("Build", ["p.yml"], { message: "Second." }),
+    ];
+
+    // Act.
+    const mark = problemMarkOf(both);
+
+    // Assert.
+    expect(mark?.title).toContain("First.");
+    expect(mark?.title).toContain("Second.");
   });
 });

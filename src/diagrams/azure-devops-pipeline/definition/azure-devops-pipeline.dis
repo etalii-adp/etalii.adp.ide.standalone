@@ -27,7 +27,7 @@
     "fileExtension": "yml",
     "requires": {
       "conformance": "standard",
-      "features": ["placement.computed", "node.variants", "node.badgeLayout", "edge.bezier", "view.viewer", "form.rowId", "persist.typeMap"]
+      "features": ["placement.computed", "node.variants", "node.badgeLayout", "edge.bezier", "view.viewer", "form.rowId", "persist.typeMap", "label.editText"]
     }
   },
 
@@ -257,7 +257,10 @@
           "reason": { "type": "UnresolvedReason", "label": "Why it is not shown", "readOnly": true },
           "ordinal": { "type": "int", "readOnly": true, "doc": "The reference's number among every template reference of the reading, followed ones and those in followed templates included, in reading order (finding A9)." },
           "referencedFrom": { "type": "PipelineElement", "readOnly": true, "doc": "The stage or job whose list names the template; absent for an extends or a stages template." },
-          "reference": { "type": "string", "derived": "has(self.resource) && self.resource != '' ? self.path + '@' + self.resource : self.path" }
+          "reference": { "type": "string", "derived": "has(self.resource) && self.resource != '' ? self.path + '@' + self.resource : self.path" },
+          "explanation": { "type": "string",
+            "derived": "!has(self.reason) ? '' : self.reason == 'otherRepository' ? 'It comes from the \\'' + self.resource + '\\' repository resource, which is not checked out here.' : self.reason == 'outsideWorkspace' ? 'Its path leads outside this workspace, so it was not read.' : self.reason == 'parameterDependent' ? 'Its path depends on a parameter, so which file it means is decided at compile time.' : self.reason == 'notFound' ? 'There is no file at \\'' + self.path + '\\'.' : self.reason == 'unreadable' ? '\\'' + self.path + '\\' could not be read as a pipeline.' : self.reason == 'cyclic' ? '\\'' + self.path + '\\' includes itself, directly or through another template.' : ''",
+            "doc": "Why the reference is not followed, in the terms the file was written in: the sentence its hover shows." }
         }
       }
     },
@@ -320,7 +323,7 @@
       "box": {
         "fill": { "token": "color.surface" },
         "stroke": { "color": { "token": "color.border" }, "width": 1 },
-        "cornerRadius": 6,
+        "cornerRadius": 4,
         "font": { "size": 12, "color": { "token": "color.text" } }
       },
       "deploymentBox": {
@@ -343,10 +346,10 @@
                        "doc": "A pipeline has no coordinates: every position comes from the layout." },
         "refusals": { "move": ["A pipeline arranges itself from its dependencies. Change what a stage waits for to change where it sits."] },
         "labels": [
-          { "id": "name", "text": { "cel": "self.label != '' ? self.label : 'stage'" }, "position": { "anchor": [0, 0], "offset": [12, 24] }, "style": "stageName", "editable": false,
+          { "id": "name", "text": { "cel": "self.label != '' ? self.label : 'stage'" }, "editText": { "attribute": "displayName" }, "position": { "anchor": [0, 0], "offset": [12, 24], "align": "start" }, "style": "stageName", "editable": "inline",
             "overflow": "ellipsis" },
           { "id": "jobs", "text": { "cel": "string(self.jobCount) + (self.jobCount == 1 ? ' job' : ' jobs')" },
-            "position": { "anchor": [0, 0], "offset": [12, 44] }, "style": "muted", "editable": false,
+            "position": { "anchor": [0, 0], "offset": [12, 44], "align": "start" }, "style": "muted", "editable": false,
             "visible": { "cel": "self.view.collapsed" } }
         ],
         "container": {
@@ -360,7 +363,7 @@
         "variants": [
           { "when": "self.view.collapsed", "size": { "fixed": [220, 88] } }
         ],
-        "badgeLayout": { "start": "top-right", "offset": [-12, 12], "direction": "left", "spacing": 16 },
+        "badgeLayout": { "start": "top-right", "offset": [-12, 20], "direction": "left", "spacing": 16 },
         "badges": [
           { "id": "disabled", "pack": true, "text": "⊘", "style": "indicator",
             "visible": { "cel": "self.isDisabled" }, "tooltip": "Disabled: this will not run." },
@@ -386,13 +389,14 @@
         "accessibility": { "role": "group", "name": { "cel": "self.label" } }
       },
       "Job": {
-        "shape": { "type": "roundedRect", "params": { "radius": 6 } },
+        "shape": { "type": "roundedRect", "params": { "radius": 4 } },
         "style": "box",
         "size": { "default": [180, 56], "min": [180, 56], "autoSize": "grow", "resizable": false },
         "placement": { "x": { "layout": true }, "y": { "layout": true }, "movable": false, "resizable": false },
         "refusals": { "move": ["A pipeline arranges itself from its dependencies. Change what a stage waits for to change where it sits."] },
         "labels": [
-          { "id": "name", "text": { "cel": "self.label != '' ? self.label : 'job'" }, "position": { "anchor": [0, 0], "offset": [12, 24] }, "editable": false, "overflow": "ellipsis" }
+          { "id": "name", "text": { "cel": "self.label != '' ? self.label : 'job'" }, "editText": { "attribute": "displayName" }, "position": { "anchor": [0, 0], "offset": [10, 32], "align": "start" }, "editable": "inline", "overflow": "ellipsis",
+            "doc": "In the header, 32 below the top: on a closed job's 56 that is 4 below its middle, and on an open one it stays above the steps." }
         ],
         "container": {
           "layout": "stack",
@@ -407,7 +411,7 @@
         "variants": [
           { "when": "self.view.collapsed", "size": { "fixed": [180, 56] } }
         ],
-        "badgeLayout": { "start": "top-right", "offset": [-12, 12], "direction": "left", "spacing": 16 },
+        "badgeLayout": { "start": "top-right", "offset": [-8, 16], "direction": "left", "spacing": 16 },
         "badges": [
           { "id": "disabled", "pack": true, "text": "⊘", "style": "indicator",
             "visible": { "cel": "self.isDisabled" }, "tooltip": "Disabled: this will not run." },
@@ -434,13 +438,14 @@
         "connectable": false
       },
       "DeploymentJob": {
-        "shape": { "type": "roundedRect", "params": { "radius": 6 } },
+        "shape": { "type": "roundedRect", "params": { "radius": 4 } },
         "style": "deploymentBox",
         "size": { "default": [180, 56], "min": [180, 56], "autoSize": "grow", "resizable": false },
         "placement": { "x": { "layout": true }, "y": { "layout": true }, "movable": false, "resizable": false },
         "refusals": { "move": ["A pipeline arranges itself from its dependencies. Change what a stage waits for to change where it sits."] },
         "labels": [
-          { "id": "name", "text": { "cel": "self.label != '' ? self.label : 'job'" }, "position": { "anchor": [0, 0], "offset": [12, 24] }, "editable": false, "overflow": "ellipsis" }
+          { "id": "name", "text": { "cel": "self.label != '' ? self.label : 'job'" }, "editText": { "attribute": "displayName" }, "position": { "anchor": [0, 0], "offset": [10, 32], "align": "start" }, "editable": "inline", "overflow": "ellipsis",
+            "doc": "In the header, 32 below the top: on a closed job's 56 that is 4 below its middle, and on an open one it stays above the steps." }
         ],
         "container": {
           "layout": "stack",
@@ -454,7 +459,7 @@
         "variants": [
           { "when": "self.view.collapsed", "size": { "fixed": [180, 56] } }
         ],
-        "badgeLayout": { "start": "top-right", "offset": [-12, 12], "direction": "left", "spacing": 16 },
+        "badgeLayout": { "start": "top-right", "offset": [-8, 16], "direction": "left", "spacing": 16 },
         "badges": [
           { "id": "disabled", "pack": true, "text": "⊘", "style": "indicator",
             "visible": { "cel": "self.isDisabled" }, "tooltip": "Disabled: this will not run." },
@@ -481,15 +486,15 @@
         "connectable": false
       },
       "Step": {
-        "shape": { "type": "roundedRect", "params": { "radius": 6 } },
+        "shape": { "type": "roundedRect", "params": { "radius": 4 } },
         "style": "box",
         "size": { "fixed": [180, 56] },
         "placement": { "x": { "layout": true }, "y": { "layout": true }, "movable": false, "resizable": false },
         "refusals": { "move": ["A pipeline arranges itself from its dependencies. Change what a stage waits for to change where it sits."] },
         "labels": [
-          { "id": "name", "text": { "cel": "self.displayName != '' ? self.displayName : (has(self.identifier) && self.identifier != '' ? self.identifier.split('\\n')[0] : 'step')" }, "position": { "anchor": [0, 0], "offset": [12, 24] }, "editable": false, "overflow": "ellipsis" }
+          { "id": "name", "text": { "cel": "self.displayName != '' ? self.displayName : (has(self.identifier) && self.identifier != '' ? self.identifier.split('\\n')[0] : 'step')" }, "editText": { "attribute": "displayName" }, "position": { "anchor": [0, 0.5], "offset": [10, 4], "align": "start" }, "editable": "inline", "overflow": "ellipsis" }
         ],
-        "badgeLayout": { "start": "top-right", "offset": [-12, 12], "direction": "left", "spacing": 16 },
+        "badgeLayout": { "start": "top-right", "offset": [-8, 16], "direction": "left", "spacing": 16 },
         "badges": [
           { "id": "disabled", "pack": true, "text": "⊘", "style": "indicator",
             "visible": { "cel": "self.isDisabled" }, "tooltip": "Disabled: this will not run." },
@@ -510,15 +515,15 @@
         "connectable": false
       },
       "TemplateReference": {
-        "shape": { "type": "roundedRect", "params": { "radius": 6 } },
+        "shape": { "type": "roundedRect", "params": { "radius": 4 } },
         "style": { "fill": "none", "stroke": { "color": { "token": "color.border-strong" }, "width": 1, "dash": [6, 4] }, "font": { "size": 12 } },
-        "size": { "fixed": [180, 56] },
+        "size": { "fixed": [220, 88] },
         "placement": { "x": { "layout": true }, "y": { "layout": true }, "movable": false, "resizable": false,
                        "doc": "Below the arrangement, at the x of the element whose list names it." },
         "labels": [
-          { "id": "reference", "text": { "cel": "self.reference" }, "position": { "anchor": [0, 0], "offset": [12, 24] }, "editable": false, "overflow": "ellipsis" }
+          { "id": "reference", "text": { "cel": "self.reference" }, "position": { "anchor": [0, 0.5], "offset": [10, 4], "align": "start" }, "editable": false, "overflow": "ellipsis" }
         ],
-        "tooltip": { "cel": "self.reference" },
+        "tooltip": { "cel": "self.explanation" },
         "deletable": false,
         "copyable": false,
         "connectable": false
@@ -539,7 +544,7 @@
           "source": { "mode": "fixed", "points": [ { "id": "out", "x": 1, "y": 0.5 } ] },
           "target": { "mode": "fixed", "points": [ { "id": "in", "x": 0, "y": 0.5 } ] }
         },
-        "targetMarker": "arrow",
+        "targetMarker": "arrowFilled",
         "conditions": [
           { "when": "self.isImplicit", "style": { "stroke": { "dash": [3, 3] }, "opacity": 0.7 },
             "doc": "The default order: the stage waits for the one before it because it declares no dependsOn." }
@@ -553,16 +558,16 @@
     "groups": [
       { "id": "add", "label": "Add", "tools": [
         { "id": "stage", "kind": "operation", "operation": "addStage", "label": "Stage", "icon": "mdi-layers-plus",
-          "mode": "drop", "drop": { "targets": [ { "on": ["Stage", "JobBase", "Step"], "kind": "operation", "operation": "addStage" } ], "elsewhere": "refuse", "refusal": "That element is no longer in this pipeline." },
+          "mode": "drop", "drop": { "targets": [ { "on": ["Stage"], "kind": "operation", "operation": "addStage" } ], "elsewhere": "refuse", "refusal": "That element is no longer in this pipeline." },
           "doc": "Drop on a stage to add another after it. It arrives with a job and a step, so it runs." },
         { "id": "job", "kind": "operation", "operation": "addJob", "label": "Job", "icon": "mdi-plus-box-outline",
-          "mode": "drop", "drop": { "targets": [ { "on": ["Stage", "JobBase", "Step"], "kind": "operation", "operation": "addJob" } ], "elsewhere": "refuse", "refusal": "That element is no longer in this pipeline." },
+          "mode": "drop", "drop": { "targets": [ { "on": ["Stage"], "kind": "operation", "operation": "addJob" } ], "elsewhere": "refuse", "refusal": "That element is no longer in this pipeline." },
           "doc": "Drop on a stage to add a job to it." },
         { "id": "deploymentJob", "kind": "operation", "operation": "addDeploymentJob", "label": "Deployment job", "icon": "mdi-rocket-launch-outline",
-          "mode": "drop", "drop": { "targets": [ { "on": ["Stage", "JobBase", "Step"], "kind": "operation", "operation": "addDeploymentJob" } ], "elsewhere": "refuse", "refusal": "That element is no longer in this pipeline." },
+          "mode": "drop", "drop": { "targets": [ { "on": ["Stage"], "kind": "operation", "operation": "addDeploymentJob" } ], "elsewhere": "refuse", "refusal": "That element is no longer in this pipeline." },
           "doc": "Drop on a stage to add a deployment job, with the environment and strategy one needs." },
         { "id": "step", "kind": "operation", "operation": "addStep", "label": "Script step", "icon": "mdi-console-line",
-          "mode": "drop", "drop": { "targets": [ { "on": ["Stage", "JobBase", "Step"], "kind": "operation", "operation": "addStep" } ], "elsewhere": "refuse", "refusal": "That element is no longer in this pipeline." },
+          "mode": "drop", "drop": { "targets": [ { "on": ["JobBase"], "kind": "operation", "operation": "addStep" } ], "elsewhere": "refuse", "refusal": "That element is no longer in this pipeline." },
           "doc": "Drop on a job to add a script step to it." }
       ] }
     ],
@@ -847,6 +852,10 @@
       { "id": "stepHasNothingToWaitFor", "kind": "change", "scope": "Step", "enforcement": "prevent",
         "rule": "attribute != 'dependsOn'",
         "message": "Steps run in order, so a step has nothing to wait for." },
+      { "id": "readOnlyElements", "kind": "change", "scope": "PipelineElement", "enforcement": "prevent",
+        "rule": "self.editable",
+        "message": { "cel": "self.readOnlyReason" },
+        "doc": "Declared second of the change rules, because the first refusal is the one a user reads (DISL 8.4: the declared gesture constraints are checked in the order of `rules`): a step's dependencies, then an element this file does not write, then a name that names nothing, a cycle and a pipeline left with nothing to start with, as the tool has always asked." },
       { "id": "knownName", "kind": "change", "scope": "JobBase", "enforcement": "prevent",
         "rule": "attribute != 'dependsOn' || newValue == null || newValue.all(n, self.parent.childrenOfType('JobBase').exists(o, has(o.name) && o.name.lowerAscii() == n.lowerAscii()))",
         "message": { "cel": "'This pipeline has nothing called \\'' + newValue.filter(n, !self.parent.childrenOfType('JobBase').exists(o, has(o.name) && o.name.lowerAscii() == n.lowerAscii()))[0] + '\\' to wait for.'" } },
@@ -854,30 +863,29 @@
         "rule": "attribute != 'dependsOn' || newValue == null || newValue.all(n, diagram.nodesOfType('Stage').exists(o, has(o.name) && o.name.lowerAscii() == n.lowerAscii()))",
         "message": { "cel": "'This pipeline has nothing called \\'' + newValue.filter(n, !diagram.nodesOfType('Stage').exists(o, has(o.name) && o.name.lowerAscii() == n.lowerAscii()))[0] + '\\' to wait for.'" } },
       { "id": "noCycleByEdit", "kind": "change", "scope": ["Stage", "JobBase"], "enforcement": "prevent",
-        "rule": "attribute != 'dependsOn' || newValue == null || !newValue.exists(n, (self.isA('Stage') ? diagram.nodesOfType('Stage') : self.parent.childrenOfType('JobBase')).exists(o, has(o.name) && o.name.lowerAscii() == n.lowerAscii() && (o == self || self in o.reachable('Dependency') || o.reachable('Dependency').exists(x, x == self))))",
-        "message": { "cel": "'That would make ' + self.label + ' wait for something that is already waiting for it.'" },
-        "doc": "Refused before anything is written, as today: an edit that would close a cycle." },
+        "rule": "attribute != 'dependsOn' || newValue == null || !newValue.exists(n, cel.bind(named, (self.isA('Stage') ? diagram.nodesOfType('Stage') : self.parent.childrenOfType('JobBase')).filter(o, has(o.name) && o.name != '' && o.name.lowerAscii() == n.lowerAscii()), named.size() > 0 && (named[0] == self || named[0] in self.reachable('Dependency'))))",
+        "message": { "cel": "'That would make ' + (self.label != '' ? self.label : (self.isA('Stage') ? 'stage' : 'job')) + ' wait for something that is already waiting for it.'" },
+        "doc": "Refused before anything is written, as today: an edit that would close a cycle. A name means the first stage, or the first job of the same stage, of that name; waiting for it closes a cycle when it is the element itself or already waits for it, directly or not, which is what self.reachable('Dependency') holds, because a Dependency is drawn from what is waited for to what waits." },
       { "id": "keepAStart", "kind": "change", "scope": "Stage", "enforcement": "prevent",
-        "rule": "attribute != 'dependsOn' || (newValue != null && newValue.size() == 0) || starts().exists(s, s != self)",
-        "message": "A pipeline must contain at least one stage with no dependencies, or it has nothing to start with." },
+        "rule": "attribute != 'dependsOn' || newValue == null || newValue.size() == 0 || diagram.nodesOfType('Stage').exists(s, s != self && !s.incomingOf('Dependency').exists(r, has(r.source)))",
+        "message": "A pipeline must contain at least one stage with no dependencies, or it has nothing to start with.",
+        "doc": "Refused before anything is written, as today: giving a stage dependencies when no other stage waits for nothing. Clearing dependsOn (null, back to the default order) and dependsOn: [] are never refused. A stage whose dependencies all name nothing counts as waiting for nothing, as noStartingStage has it." },
       { "id": "keepLastStage", "kind": "delete", "scope": "Stage", "enforcement": "prevent",
         "rule": "diagram.nodesOfType('Stage').filter(s, !s.isImplicit).size() > 1",
         "message": "A pipeline needs at least one stage." },
       { "id": "keepTheOnlyStart", "kind": "delete", "scope": "Stage", "enforcement": "prevent",
-        "rule": "starts().exists(s, s != self)",
-        "message": "A pipeline must contain at least one stage with no dependencies, and this is the only one." },
+        "rule": "cel.bind(st, diagram.nodesOfType('Stage').filter(s, s != self), lists.range(st.size()).exists(i, has(st[i].dependsOn) ? !st[i].dependsOn.exists(n, st.exists(o, has(o.name) && o.name != '' && o.name.lowerAscii() == n.lowerAscii())) : i == 0 || st[i - 1].id == st[i].id))",
+        "message": "A pipeline must contain at least one stage with no dependencies, and this is the only one.",
+        "doc": "Judged on the stages that would be left: one waits for nothing when its dependsOn is [] or names only stages that would be gone, or when it has no dependsOn and would be the first stage, the default order then giving it nothing before it. Removing the first of stages that follow the default order is therefore allowed, the next one becoming the first." },
       { "id": "keepLastJob", "kind": "delete", "scope": "JobBase", "enforcement": "prevent",
         "rule": "self.parent.childrenOfType('JobBase').size() > 1",
-        "message": { "cel": "self.parent.label + ' needs at least one job.'" } },
+        "message": { "cel": "(self.parent.label != '' ? self.parent.label : 'stage') + ' needs at least one job.'" } },
       { "id": "keepLastStep", "kind": "delete", "scope": "Step", "enforcement": "prevent",
         "rule": "self.parent.children.size() > 1",
-        "message": { "cel": "self.parent.label + ' needs at least one step.'" } },
+        "message": { "cel": "(self.parent.label != '' ? self.parent.label : 'job') + ' needs at least one step.'" } },
       { "id": "templateStepsKeepOrder", "kind": "reorder", "scope": "Step", "enforcement": "prevent",
         "rule": "!self.parent.children.exists(s, s.fromTemplate)",
-        "message": "Some of this job's steps come from a template, so their order cannot be changed here." },
-      { "id": "readOnlyElements", "kind": "change", "scope": "PipelineElement", "enforcement": "prevent",
-        "rule": "self.editable",
-        "message": { "cel": "self.readOnlyReason" } }
+        "message": "Some of this job's steps come from a template, so their order cannot be changed here." }
     ]
   },
 

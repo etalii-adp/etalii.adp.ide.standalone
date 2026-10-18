@@ -121,6 +121,28 @@ public class WatcherWiringTests
     }
 
     /// <summary>
+    /// <see cref="FileSystemWatcher"/> is made in one production place, <c>WatchedFolder</c>, and
+    /// everything else watches through it, or through the project root's one watcher
+    /// (code-structure FR-050). A module that makes its own puts a second recursive watcher over a
+    /// tree the project's already covers, and copies the wiring this file guards.
+    /// </summary>
+    /// <remarks>
+    /// <b>Seen to fail</b> against develop before T280's second half: it named <c>AnsibleFolder</c>
+    /// and <c>HelmBody</c>, the second a copy of the first.
+    /// </remarks>
+    [Fact]
+    public void OnlyWatchedFolderMakesAWatcher()
+    {
+        var makers = SourceFiles()
+            .Where(file => !IsTestProject(file))
+            .Where(file => File.ReadAllText(file).Contains("new FileSystemWatcher", StringComparison.Ordinal))
+            .Select(file => IoPath.GetRelativePath(RepositoryRoot, file).Replace('\\', '/'))
+            .ToList();
+
+        Assert.Equal(["src/backend/EtAlii.Adp.Files/WatchedFolder.cs"], makers);
+    }
+
+    /// <summary>
     /// The guard's own floor. A pattern that matches nothing and a tree that is clean print the
     /// same green, so this asserts the sweep actually reached the watchers - without it, a typo in
     /// the glob would read as compliance.
