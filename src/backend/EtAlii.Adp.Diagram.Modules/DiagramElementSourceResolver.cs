@@ -29,7 +29,11 @@ public abstract class DiagramElementSourceResolver<TBody, TModel> : DiagramSnaps
     }
 
     /// <summary>The document whose body is at <paramref name="bodyPath"/>.</summary>
-    protected sealed override DocumentEntry<TBody, TModel> Load(string bodyPath) => _documents.GetOrLoad(bodyPath);
+    protected sealed override ValueTask<DocumentEntry<TBody, TModel>> LoadAsync(string bodyPath, CancellationToken cancellationToken) =>
+        _documents.GetOrLoadAsync(bodyPath, cancellationToken);
+
+    /// <summary>The document whose body is at <paramref name="bodyPath"/>, as the store holds it.</summary>
+    protected sealed override DocumentEntry<TBody, TModel>? Current(string bodyPath) => _documents.Get(bodyPath);
 
     /// <summary>What a selection of <paramref name="elementId"/> shows, or null when nothing has that id.</summary>
     /// <remarks>None by default, for a module that overrides the overload given the whole entry instead.</remarks>

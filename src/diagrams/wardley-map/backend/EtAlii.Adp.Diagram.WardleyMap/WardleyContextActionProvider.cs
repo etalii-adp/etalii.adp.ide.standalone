@@ -89,7 +89,7 @@ public sealed class WardleyContextActionProvider(IHistoryStackStore historyStack
     }
 
     /// <inheritdoc />
-    protected override ContextValidationResult Validate(ContextTarget target, string actionId, string value) =>
+    protected override ContextValidationResult Validate(string actionId, string value) =>
         WardleyActions.All.Named(actionId)?.Validate(value) ?? ContextValidationResult.Accepted;
 
     /// <inheritdoc />

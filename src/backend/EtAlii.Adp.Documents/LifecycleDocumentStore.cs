@@ -44,6 +44,9 @@ public abstract class LifecycleDocumentStore<TBody, TModel> : IDiagramDocumentSt
     public DocumentEntry<TBody, TModel> GetOrLoad(string path) => _lifecycle.GetOrLoad(path);
 
     /// <inheritdoc />
+    public DocumentEntry<TBody, TModel>? Get(string path) => _lifecycle.Get(path);
+
+    /// <inheritdoc />
     public ValueTask<DocumentEntry<TBody, TModel>> GetOrLoadAsync(string path, CancellationToken cancellationToken) =>
         _lifecycle.GetOrLoadAsync(path, cancellationToken);
 

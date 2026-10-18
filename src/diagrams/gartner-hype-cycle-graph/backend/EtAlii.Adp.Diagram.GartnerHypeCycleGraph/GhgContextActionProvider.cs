@@ -153,8 +153,11 @@ public sealed class GhgContextActionProvider(IHistoryStackStore historyStacks, I
     }
 
     /// <inheritdoc />
-    protected override ContextValidationResult Validate(ContextTarget target, string actionId, string value)
+    protected override ContextValidationResult Validate(ContextTarget target, DocumentEntry<GhgBody, GhgModel> entry, string actionId, string value)
     {
+        ArgumentNullException.ThrowIfNull(target);
+        ArgumentNullException.ThrowIfNull(entry);
+
         // The one value asked for is a name or a note's text, and the only wrong one is an empty name:
         // a note may be emptied.
         if (actionId != RenameActionId || !string.IsNullOrWhiteSpace(value))
@@ -162,7 +165,6 @@ public sealed class GhgContextActionProvider(IHistoryStackStore historyStacks, I
             return ContextValidationResult.Accepted;
         }
 
-        var entry = Load(target);
         return entry.IsUsable && entry.Model.NoteOf(target.ElementId) is not null
             ? ContextValidationResult.Accepted
             : ContextValidationResult.Rejected(entry.IsUsable && entry.Model.TriggerOf(target.ElementId) is not null

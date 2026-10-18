@@ -422,6 +422,8 @@ internal static partial class DependencyGraphTranscript
 
         public DocumentEntry<DependencyGraphBody, DislModel> GetOrLoad(string path) => inner.GetOrLoad(path) with { Unreadable = "parity: read-only" };
 
+        public DocumentEntry<DependencyGraphBody, DislModel>? Get(string path) => inner.Get(path) is { } held ? held with { Unreadable = "parity: read-only" } : null;
+
         public Task<DocumentSaveResult> SaveAsync(string path, DependencyGraphBody document, CancellationToken cancellationToken) => inner.SaveAsync(path, document, cancellationToken);
 
         public void Forget(string path) => inner.Forget(path);

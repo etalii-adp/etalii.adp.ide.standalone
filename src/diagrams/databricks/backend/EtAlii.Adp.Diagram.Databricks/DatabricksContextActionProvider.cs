@@ -321,9 +321,10 @@ public sealed class DatabricksContextActionProvider : DiagramActionProvider<Line
 
     /// <inheritdoc />
     /// <remarks>The writers refuse on exactly these terms at commit; validating here lets the dialog refuse first (Requirement 6.4).</remarks>
-    protected override ContextValidationResult Validate(ContextTarget target, string actionId, string value)
+    protected override ContextValidationResult Validate(ContextTarget target, DocumentEntry<LineDocument, DatabricksModel> entry, string actionId, string value)
     {
         ArgumentNullException.ThrowIfNull(target);
+        ArgumentNullException.ThrowIfNull(entry);
         ArgumentNullException.ThrowIfNull(value);
 
         if (actionId == RenameTaskActionId || actionId.StartsWith(AddTaskActionPrefix, StringComparison.Ordinal))
@@ -333,7 +334,7 @@ public sealed class DatabricksContextActionProvider : DiagramActionProvider<Line
                 return ContextValidationResult.Rejected("A task needs a key.");
             }
 
-            if (Load(target).Model.Jobs.SelectMany(job => job.Tasks).Any(task => task.Key == value.Trim()))
+            if (entry.Model.Jobs.SelectMany(job => job.Tasks).Any(task => task.Key == value.Trim()))
             {
                 return ContextValidationResult.Rejected($"A task named '{value.Trim()}' is already there.");
             }
