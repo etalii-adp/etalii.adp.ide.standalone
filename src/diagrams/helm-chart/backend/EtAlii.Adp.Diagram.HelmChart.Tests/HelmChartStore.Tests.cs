@@ -1,3 +1,4 @@
+using EtAlii.Adp.Files;
 using EtAlii.Adp.Specification.Fbl.Plugins;
 using Microsoft.Extensions.Time.Testing;
 using Xunit;
@@ -238,8 +239,8 @@ public sealed class HelmChartStoreTests : IDisposable
 
         // Act: lose the change - nothing is watching while it happens, so no event can carry it - then
         // overflow, as the watcher itself would.
-        var watcher = opened.FolderWatcher;
-        Assert.NotNull(watcher);
+        Assert.NotNull(opened.Tree);
+        var watcher = opened.Tree.Watcher();
         watcher.EnableRaisingEvents = false;
         await ChangeAsync(_root, cancellationToken);
         watcher.RaiseOverflow();
@@ -247,6 +248,54 @@ public sealed class HelmChartStoreTests : IDisposable
         // Assert.
         var reading = await WaitFor(heard, _ => true);
         Assert.True(ShowsTheChange(reading), "An overflow left the reading looking fresh.");
+    }
+
+    // ---- one watcher per project root (T280) -------------------------------------------------------
+
+    [Fact]
+    public async Task AFolderInsideAWatchedProject_IsHeardThroughTheProjectsWatcher_AndMakesNoneOfItsOwn()
+    {
+        // Arrange: the project holding the folder is watched already, as the hierarchy watches an open project.
+        var cancellationToken = TestContext.Current.CancellationToken;
+        using var events = new ProjectFileEvents();
+        using var project = events.Subscribe(IoPath.GetDirectoryName(_root)!, _ => { });
+        using var store = new HelmChartStore(new HelmChartReader(), _clock, events);
+        var opened = store.GetOrLoad(_root);
+        var reads = Reads(opened);
+
+        // Act.
+        await ChangeAsync(_root, cancellationToken);
+
+        // Assert.
+        await WaitFor(reads, 1);
+        Assert.True(ShowsTheChange(opened.Current), "The change was not read through the project's watcher.");
+        Assert.NotNull(opened.Tree);
+        Assert.False(opened.Tree.HasWatcherOfItsOwn(), "The folder made a watcher of its own beside the project's.");
+        Assert.Equal(1, events.WatchedRoots());
+    }
+
+    [Fact]
+    public async Task AnOverflowOfTheProjectsWatcher_IsReadAgain_AsThoughAFileHadChanged()
+    {
+        // Arrange.
+        var cancellationToken = TestContext.Current.CancellationToken;
+        var projectRoot = IoPath.GetDirectoryName(_root)!;
+        using var events = new ProjectFileEvents();
+        using var project = events.Subscribe(projectRoot, _ => { });
+        using var store = new HelmChartStore(new HelmChartReader(), _clock, events);
+        var opened = store.GetOrLoad(_root);
+        var reads = Reads(opened);
+
+        // Act: lose the change - nothing is watching while it happens - then overflow the project's watcher.
+        var watcher = events.Watcher(projectRoot);
+        Assert.NotNull(watcher);
+        watcher.EnableRaisingEvents = false;
+        await ChangeAsync(_root, cancellationToken);
+        watcher.RaiseOverflow();
+
+        // Assert.
+        await WaitFor(reads, 1);
+        Assert.True(ShowsTheChange(opened.Current), "An overflow of the project's watcher left the reading looking fresh.");
     }
 
     // ---- the module's own cases ----------------------------------------------------------------
