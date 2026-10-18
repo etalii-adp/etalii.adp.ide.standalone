@@ -1,4 +1,5 @@
 using EtAlii.Adp.Designer.TableModel;
+using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
 using Xunit;
 
@@ -32,7 +33,7 @@ internal sealed class EditingTable : IAsyncDisposable
         {
             [typeof(ICommandHandler<KnowledgeEditCommand>)] = new KnowledgeEditCommandHandler(documents),
             [typeof(ICommandHandler<RestoreKnowledgeFilesCommand>)] = new RestoreKnowledgeFilesCommandHandler(documents),
-            [typeof(ICommandHandler<RestoreDocumentCommand<IKnowledgeDocumentStore>>)] = new RestoreDocumentCommandHandler<IKnowledgeDocumentStore>(documents),
+            [typeof(ICommandHandler<RestoreDocumentCommand<IKnowledgeDocumentStore>>)] = new RestoreDocumentCommandHandler<IKnowledgeDocumentStore>(documents, new FileWriter()),
         };
         History = new HistoryStack(new CommandDispatcher(services));
         Session = new KnowledgeSession(path, read ?? KnowledgeDocumentStore.Read, Write, documents, rootPath ?? "");

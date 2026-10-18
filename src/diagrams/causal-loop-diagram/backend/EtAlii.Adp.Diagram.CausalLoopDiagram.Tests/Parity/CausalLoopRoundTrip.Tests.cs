@@ -1,4 +1,5 @@
 using System.Text;
+using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
 using EtAlii.Adp.Specification.Disl;
 using Xunit;
@@ -98,7 +99,7 @@ public sealed class CausalLoopRoundTripTests : IDisposable
             {
                 applied++;
                 var restore = Assert.IsType<RestoreDocumentCommand<ICausalLoopDocumentStore>>(result.Inverse);
-                var undone = await new RestoreDocumentCommandHandler<ICausalLoopDocumentStore>(store).ExecuteAsync(restore, TestContext.Current.CancellationToken);
+                var undone = await new RestoreDocumentCommandHandler<ICausalLoopDocumentStore>(store, new FileWriter()).ExecuteAsync(restore, TestContext.Current.CancellationToken);
                 Assert.True(undone.IsSuccess, $"{relative} {name}: {undone.Error}");
             }
 

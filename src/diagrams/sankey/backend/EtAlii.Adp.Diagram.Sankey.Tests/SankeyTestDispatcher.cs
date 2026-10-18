@@ -1,3 +1,4 @@
+using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.Sankey.Tests;
@@ -15,7 +16,7 @@ internal sealed class SankeyTestDispatcher(ISankeyDocumentStore documents) : ICo
         StepSankeyValueCommand step => new StepSankeyValueCommandHandler(documents).ExecuteAsync(step, cancellationToken),
         ScaleSankeyThicknessCommand scale => new ScaleSankeyThicknessCommandHandler(documents).ExecuteAsync(scale, cancellationToken),
         ArrangeSankeyCommand arrange => new ArrangeSankeyCommandHandler(documents).ExecuteAsync(arrange, cancellationToken),
-        RestoreDocumentCommand<ISankeyDocumentStore> restore => new RestoreDocumentCommandHandler<ISankeyDocumentStore>(documents).ExecuteAsync(restore, cancellationToken),
+        RestoreDocumentCommand<ISankeyDocumentStore> restore => new RestoreDocumentCommandHandler<ISankeyDocumentStore>(documents, new FileWriter()).ExecuteAsync(restore, cancellationToken),
         _ => throw new InvalidOperationException($"No handler is registered for {command.GetType().Name}."),
     };
 }

@@ -1,3 +1,4 @@
+using EtAlii.Adp.Files;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 
@@ -21,7 +22,7 @@ internal sealed class AbmTestDispatcher(IAbmDocumentStore documents) : ICommandD
         RemoveRegistrationLayoutCommand layout => new RemoveRegistrationLayoutCommandHandler().ExecuteAsync(layout, cancellationToken),
         ArrangeAbmCommand arrange => new ArrangeAbmCommandHandler().ExecuteAsync(arrange, cancellationToken),
         RestoreAbmRegistrationCommand restore => new RestoreAbmRegistrationCommandHandler().ExecuteAsync(restore, cancellationToken),
-        RestoreDocumentCommand<IAbmDocumentStore> restore => new RestoreDocumentCommandHandler<IAbmDocumentStore>(documents).ExecuteAsync(restore, cancellationToken),
+        RestoreDocumentCommand<IAbmDocumentStore> restore => new RestoreDocumentCommandHandler<IAbmDocumentStore>(documents, new FileWriter()).ExecuteAsync(restore, cancellationToken),
         _ => throw new InvalidOperationException($"No handler is registered for {command.GetType().Name}."),
     };
 }

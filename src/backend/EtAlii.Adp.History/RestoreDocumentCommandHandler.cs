@@ -12,11 +12,11 @@ namespace EtAlii.Adp.History;
 /// session hears about the restored state at once. A failure to write stops before the reload, so
 /// a document nobody could write is not re-read as though it had changed.
 /// </remarks>
-public sealed class RestoreDocumentCommandHandler<TStore>(TStore documents)
+public sealed class RestoreDocumentCommandHandler<TStore>(TStore documents, IFileWriter writer)
     : ICommandHandler<RestoreDocumentCommand<TStore>>
     where TStore : IReloadableDocumentStore
 {
-    public Task<CommandResult> ExecuteAsync(
+    public async Task<CommandResult> ExecuteAsync(
         RestoreDocumentCommand<TStore> command,
         CancellationToken cancellationToken = default)
     {
@@ -28,22 +28,22 @@ public sealed class RestoreDocumentCommandHandler<TStore>(TStore documents)
             // Another program wrote the file after the edit this would undo. Restoring the text from
             // before that edit would take the other program's change with it, so nothing is written
             // and the history is told this record is spent.
-            return Task.FromResult(CommandResult.Outdated(
+            return CommandResult.Outdated(
                 $"{Path.GetFileName(command.BodyPath)} was changed by another program, so the edits made to it before that can no longer be undone.",
-                command.BodyPath));
+                command.BodyPath);
         }
 
         try
         {
-            AdpFileWriter.Save(command.BodyPath, command.Text);
+            await writer.SaveAsync(command.BodyPath, command.Text, cancellationToken);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
-            return Task.FromResult(CommandResult.Failure($"Could not restore the file: {exception.Message}"));
+            return CommandResult.Failure($"Could not restore the file: {exception.Message}");
         }
 
         documents.Reload(command.BodyPath);
-        return Task.FromResult(CommandResult.Success(command.Redo));
+        return CommandResult.Success(command.Redo);
     }
 
     /// <summary>

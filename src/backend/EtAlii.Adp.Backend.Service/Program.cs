@@ -4,7 +4,6 @@ using EtAlii.Adp.Context;
 using EtAlii.Adp.Designer;
 using EtAlii.Adp.Diagram;
 using EtAlii.Adp.Editor;
-using EtAlii.Adp.Files;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 using EtAlii.Adp.Problems;
@@ -48,10 +47,6 @@ var appDataRoot = Environment.GetFolderPath(Environment.SpecialFolder.Applicatio
 // The one clock. What waits, coalesces or evicts takes it through its constructor, so a test
 // advances a fake one rather than sleeping (code-structure FR-051).
 builder.Services.AddSingleton(TimeProvider.System);
-
-// The one file writer: what publishes or deletes a file takes it through its constructor, and
-// waits for another save of the same path without blocking a thread (code-structure FR-068).
-builder.Services.AddSingleton<IFileWriter, FileWriter>();
 
 // Who is calling: the authenticator, its options, the calls that need no session, and the
 // store a login lands in.

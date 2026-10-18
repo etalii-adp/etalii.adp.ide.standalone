@@ -1,4 +1,5 @@
 using EtAlii.Adp.Context;
+using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
 using Xunit;
 using ContextScope = EtAlii.Adp.Documents.Wire.ContextScope;
@@ -25,7 +26,7 @@ public sealed class KnowledgeContextActionsTests : IDisposable
         {
             [typeof(ICommandHandler<KnowledgeEditCommand>)] = new KnowledgeEditCommandHandler(_documents),
             [typeof(ICommandHandler<RestoreKnowledgeFilesCommand>)] = new RestoreKnowledgeFilesCommandHandler(_documents),
-            [typeof(ICommandHandler<RestoreDocumentCommand<IKnowledgeDocumentStore>>)] = new RestoreDocumentCommandHandler<IKnowledgeDocumentStore>(_documents),
+            [typeof(ICommandHandler<RestoreDocumentCommand<IKnowledgeDocumentStore>>)] = new RestoreDocumentCommandHandler<IKnowledgeDocumentStore>(_documents, new FileWriter()),
         };
         _histories = new HistoryStackStore(new CommandDispatcher(services));
         _provider = new KnowledgeContextActionProvider(_histories);

@@ -1,4 +1,5 @@
 using EtAlii.Adp.Diagram.Rdf.Shacl;
+using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
 using Xunit;
 using IoPath = System.IO.Path;
@@ -49,7 +50,7 @@ public class ShaclCommandsTests : IDisposable
         Assert.NotEqual(Corpus, await File.ReadAllTextAsync(_path));
 
         var restore = Assert.IsType<RestoreDocumentCommand<IRdfDocumentStore>>(result.Inverse);
-        var undone = await new RestoreDocumentCommandHandler<IRdfDocumentStore>(_store).ExecuteAsync(restore, TestContext.Current.CancellationToken);
+        var undone = await new RestoreDocumentCommandHandler<IRdfDocumentStore>(_store, new FileWriter()).ExecuteAsync(restore, TestContext.Current.CancellationToken);
 
         Assert.True(undone.IsSuccess, undone.Error);
         Assert.Equal(Corpus, await File.ReadAllTextAsync(_path));

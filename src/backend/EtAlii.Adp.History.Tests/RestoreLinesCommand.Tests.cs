@@ -1,4 +1,5 @@
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Files;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -34,7 +35,7 @@ public sealed class RestoreLinesCommandTests : IDisposable
         var segments = new[] { new LineSegment(1, ["b"]), new LineSegment(3, ["d"]) };
 
         // Act.
-        var result = await new RestoreLinesCommandHandler<RecordingStore>(store)
+        var result = await new RestoreLinesCommandHandler<RecordingStore>(store, new FileWriter())
             .ExecuteAsync(new RestoreLinesCommand<RecordingStore>(path, segments, redo), TestContext.Current.CancellationToken);
 
         // Assert.
@@ -53,7 +54,7 @@ public sealed class RestoreLinesCommandTests : IDisposable
         var store = new RecordingStore();
 
         // Act.
-        var result = await new RestoreLinesCommandHandler<RecordingStore>(store)
+        var result = await new RestoreLinesCommandHandler<RecordingStore>(store, new FileWriter())
             .ExecuteAsync(new RestoreLinesCommand<RecordingStore>(path, [new LineSegment(5, ["f"])], new SampleEdit()), TestContext.Current.CancellationToken);
 
         // Assert.

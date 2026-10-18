@@ -1,3 +1,4 @@
+using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
 using Xunit;
 using IoPath = System.IO.Path;
@@ -49,7 +50,7 @@ public class CausalLoopCommandsTests : IDisposable
         Assert.NotEqual(Corpus, await File.ReadAllTextAsync(_path));
 
         var restore = Assert.IsType<RestoreDocumentCommand<ICausalLoopDocumentStore>>(result.Inverse);
-        var undone = await new RestoreDocumentCommandHandler<ICausalLoopDocumentStore>(_store)
+        var undone = await new RestoreDocumentCommandHandler<ICausalLoopDocumentStore>(_store, new FileWriter())
             .ExecuteAsync(restore, TestContext.Current.CancellationToken);
 
         Assert.True(undone.IsSuccess, undone.Error);
@@ -299,7 +300,7 @@ public class CausalLoopCommandsTests : IDisposable
 
         // The link and its loop are one edit: undo removes both.
         var restore = Assert.IsType<RestoreDocumentCommand<ICausalLoopDocumentStore>>(result.Inverse);
-        await new RestoreDocumentCommandHandler<ICausalLoopDocumentStore>(_store).ExecuteAsync(restore, TestContext.Current.CancellationToken);
+        await new RestoreDocumentCommandHandler<ICausalLoopDocumentStore>(_store, new FileWriter()).ExecuteAsync(restore, TestContext.Current.CancellationToken);
         Assert.Empty(_store.GetOrLoad(path).Model.Loops);
         Assert.Single(_store.GetOrLoad(path).Model.Links);
     }
@@ -424,7 +425,7 @@ public class CausalLoopCommandsTests : IDisposable
             await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken));
 
         var restore = Assert.IsType<RestoreDocumentCommand<ICausalLoopDocumentStore>>(result.Inverse);
-        var undone = await new RestoreDocumentCommandHandler<ICausalLoopDocumentStore>(_store)
+        var undone = await new RestoreDocumentCommandHandler<ICausalLoopDocumentStore>(_store, new FileWriter())
             .ExecuteAsync(restore, TestContext.Current.CancellationToken);
 
         Assert.True(undone.IsSuccess, undone.Error);

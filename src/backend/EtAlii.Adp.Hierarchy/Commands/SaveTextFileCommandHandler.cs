@@ -1,4 +1,5 @@
 using EtAlii.Adp.Editor;
+using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Hierarchy;
@@ -19,7 +20,7 @@ public sealed record SaveTextFileCommand(string FullPath, string Content) : ICom
 /// save carrying the text the file held before - undo puts the old content back through the
 /// very same preserving path.
 /// </summary>
-public sealed class SaveTextFileCommandHandler : ICommandHandler<SaveTextFileCommand>
+public sealed class SaveTextFileCommandHandler(IFileWriter writer) : ICommandHandler<SaveTextFileCommand>
 {
     // No logger of its own: TextFileBuffer reports its refusals as values, which travel to
     // the user, and the history logs what it executes.
@@ -38,7 +39,7 @@ public sealed class SaveTextFileCommandHandler : ICommandHandler<SaveTextFileCom
         }
 
         var previousContent = opened.Buffer.Content;
-        var error = await opened.Buffer.SaveAsync(command.Content, cancellationToken);
+        var error = await opened.Buffer.SaveAsync(command.Content, writer, cancellationToken);
         return error.Length > 0
             ? CommandResult.Failure(error)
             : CommandResult.Success(command with { Content = previousContent });

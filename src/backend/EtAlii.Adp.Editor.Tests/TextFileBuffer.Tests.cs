@@ -1,3 +1,4 @@
+using EtAlii.Adp.Files;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -52,7 +53,7 @@ public class TextFileBufferTests : IDisposable
         Assert.NotNull(opened.Buffer);
 
         // Act.
-        var error = await opened.Buffer.SaveAsync(opened.Buffer.Content, TestContext.Current.CancellationToken);
+        var error = await opened.Buffer.SaveAsync(opened.Buffer.Content, new FileWriter(), TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Equal("", error);
@@ -68,7 +69,7 @@ public class TextFileBufferTests : IDisposable
         Assert.NotNull(opened.Buffer);
 
         // Act.
-        var error = await opened.Buffer.SaveAsync("one\r\nTWO\nthree\r\n", TestContext.Current.CancellationToken);
+        var error = await opened.Buffer.SaveAsync("one\r\nTWO\nthree\r\n", new FileWriter(), TestContext.Current.CancellationToken);
 
         // Assert: each line still carries the terminator it always had.
         Assert.Equal("", error);
@@ -84,10 +85,32 @@ public class TextFileBufferTests : IDisposable
         Assert.NotNull(opened.Buffer);
 
         // Act.
-        await opened.Buffer.SaveAsync("one\r\ntwo\r\nthree\n", TestContext.Current.CancellationToken);
+        await opened.Buffer.SaveAsync("one\r\ntwo\r\nthree\n", new FileWriter(), TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Equal("one\r\ntwo\r\nthree\r\n"u8.ToArray(), await File.ReadAllBytesAsync(path, TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task ASave_PublishesThroughTheWriterItIsHanded()
+    {
+        // Arrange: a writer that records what it is handed rather than writing it (code-structure FR-068).
+        byte[] before = [0xEF, 0xBB, 0xBF, .. "one\r\n"u8];
+        var path = Write("handed.txt", before);
+        var opened = TextFileBuffer.Open(path);
+        Assert.NotNull(opened.Buffer);
+        var writer = new RecordingWriter();
+
+        // Act.
+        var error = await opened.Buffer.SaveAsync("one\r\ntwo\r\n", writer, TestContext.Current.CancellationToken);
+
+        // Assert: the writer was handed the bytes, byte-order mark and all, and nothing else wrote the file.
+        Assert.Equal("", error);
+        var saved = Assert.Single(writer.Saved);
+        Assert.Equal(path, saved.Path);
+        byte[] expected = [0xEF, 0xBB, 0xBF, .. "one\r\ntwo\r\n"u8];
+        Assert.Equal(expected, saved.Content);
+        Assert.Equal(before, await File.ReadAllBytesAsync(path, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -167,5 +190,23 @@ public class TextFileBufferTests : IDisposable
         // Assert.
         Assert.Equal("Mixed (mostly CRLF)", buffer.LineEndingStyle);
         Assert.Equal("UTF-8", buffer.EncodingName);
+    }
+
+    /// <summary>Records each save it is handed and writes nothing.</summary>
+    private sealed class RecordingWriter : IFileWriter
+    {
+        public List<(string Path, byte[] Content)> Saved { get; } = [];
+
+        public Task SaveAsync(string path, string content, CancellationToken cancellationToken) =>
+            throw new InvalidOperationException("The buffer saves bytes, so it keeps the byte-order mark the file arrived with.");
+
+        public Task SaveAsync(string path, byte[] content, CancellationToken cancellationToken)
+        {
+            Saved.Add((path, content));
+            return Task.CompletedTask;
+        }
+
+        public Task DeleteAsync(string path, CancellationToken cancellationToken) =>
+            throw new InvalidOperationException("The buffer deletes nothing.");
     }
 }

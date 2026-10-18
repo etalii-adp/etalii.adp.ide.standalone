@@ -49,8 +49,10 @@ public sealed class RenameEntryCommandHandler : ICommandHandler<RenameEntryComma
     private readonly IDiagramDefinitionCatalog _catalog;
     private readonly IHierarchyModelStore? _modelStore;
     private readonly IReadOnlyList<IEntryRenameFollower> _followers;
+    private readonly IFileWriter _writer;
 
     /// <param name="catalog">The catalog.</param>
+    /// <param name="writer">What rewrites a registration whose body header names the renamed file.</param>
     /// <param name="modelStore">
     /// Optional, and injected in every real deployment (AddHierarchy registers it): where the
     /// stable-id rename notification below is sent. Absent only in a partial test container that
@@ -58,10 +60,12 @@ public sealed class RenameEntryCommandHandler : ICommandHandler<RenameEntryComma
     /// simply raises no direct model notification.
     /// </param>
     /// <param name="followers">What the tool types registered to follow a rename; none in a host without such a module.</param>
-    public RenameEntryCommandHandler(IDiagramDefinitionCatalog catalog, IHierarchyModelStore? modelStore = null, IEnumerable<IEntryRenameFollower>? followers = null)
+    public RenameEntryCommandHandler(IDiagramDefinitionCatalog catalog, IFileWriter writer, IHierarchyModelStore? modelStore = null, IEnumerable<IEntryRenameFollower>? followers = null)
     {
         ArgumentNullException.ThrowIfNull(catalog);
+        ArgumentNullException.ThrowIfNull(writer);
         _catalog = catalog;
+        _writer = writer;
         _modelStore = modelStore;
         _followers = [.. followers ?? []];
     }
@@ -93,7 +97,7 @@ public sealed class RenameEntryCommandHandler : ICommandHandler<RenameEntryComma
         return false;
     }
 
-    public Task<CommandResult> ExecuteAsync(
+    public async Task<CommandResult> ExecuteAsync(
         RenameEntryCommand command,
         CancellationToken cancellationToken = default)
     {
@@ -103,7 +107,7 @@ public sealed class RenameEntryCommandHandler : ICommandHandler<RenameEntryComma
         if (string.IsNullOrWhiteSpace(command.FullPath))
         {
             var result = CommandResult.Failure("No entry was given to rename.");
-            return Task.FromResult(result);
+            return result;
         }
 
         // A trailing separator would make GetFileName return an empty name, which would leave
@@ -118,7 +122,7 @@ public sealed class RenameEntryCommandHandler : ICommandHandler<RenameEntryComma
             EntryNameRules.Validate(command.NewName, folder, IoPath.GetFileName(sourcePath)) is { Valid: false } refused)
         {
             var result = CommandResult.Failure(refused.Reason);
-            return Task.FromResult(result);
+            return result;
         }
 
         var newName = command.NewName.Trim();
@@ -127,14 +131,14 @@ public sealed class RenameEntryCommandHandler : ICommandHandler<RenameEntryComma
         if (!isDirectory && !File.Exists(sourcePath))
         {
             var result = CommandResult.Failure("The entry no longer exists.");
-            return Task.FromResult(result);
+            return result;
         }
 
         var parentPath = IoPath.GetDirectoryName(sourcePath);
         if (string.IsNullOrEmpty(parentPath))
         {
             var result = CommandResult.Failure("A root folder cannot be renamed.");
-            return Task.FromResult(result);
+            return result;
         }
 
         var originalName = IoPath.GetFileName(sourcePath);
@@ -154,7 +158,7 @@ public sealed class RenameEntryCommandHandler : ICommandHandler<RenameEntryComma
             _modelStore!.ExpectRename(sourcePath, targetPath);
         }
 
-        var moved = Move(sourcePath, targetPath, originalName, newName, isDirectory, isCaseOnlyRename);
+        var moved = await MoveAsync(sourcePath, targetPath, originalName, newName, isDirectory, isCaseOnlyRename, cancellationToken);
         var notified = moved.IsSuccess && NotifyMoved(sourcePath, targetPath);
         if (announced && !notified)
         {
@@ -169,7 +173,7 @@ public sealed class RenameEntryCommandHandler : ICommandHandler<RenameEntryComma
             moved = CommandResult.Success(inverse with { RootPath = command.RootPath });
         }
 
-        return Task.FromResult(moved);
+        return moved;
     }
 
     /// <summary>Tells each follower of the move. One that fails is logged and does not undo a rename that happened.</summary>
@@ -189,7 +193,7 @@ public sealed class RenameEntryCommandHandler : ICommandHandler<RenameEntryComma
     }
 
     /// <summary>The move itself, for every shape a rename takes; the models are told by the caller.</summary>
-    private CommandResult Move(string sourcePath, string targetPath, string originalName, string newName, bool isDirectory, bool isCaseOnlyRename)
+    private async Task<CommandResult> MoveAsync(string sourcePath, string targetPath, string originalName, string newName, bool isDirectory, bool isCaseOnlyRename, CancellationToken cancellationToken)
     {
         var parentPath = IoPath.GetDirectoryName(sourcePath)!;
 
@@ -228,7 +232,7 @@ public sealed class RenameEntryCommandHandler : ICommandHandler<RenameEntryComma
         {
             // On success the caller tells the models of the subject's own move; the cascade's
             // registration siblings still ride the watcher.
-            var setResult = RenameSubjectWithItsRegistrations(sourcePath, targetPath, originalName, newName, isCaseOnlyRename);
+            var setResult = await RenameSubjectWithItsRegistrationsAsync(sourcePath, targetPath, originalName, newName, isCaseOnlyRename, cancellationToken);
             if (setResult is not null)
             {
                 return setResult;
@@ -308,7 +312,7 @@ public sealed class RenameEntryCommandHandler : ICommandHandler<RenameEntryComma
     /// Atomic in effect: every target is checked before anything moves, and a mid-set failure
     /// rolls the completed moves back (Requirement 5.3).
     /// </summary>
-    private CommandResult? RenameSubjectWithItsRegistrations(string sourcePath, string targetPath, string originalName, string newName, bool isCaseOnlyRename)
+    private async Task<CommandResult?> RenameSubjectWithItsRegistrationsAsync(string sourcePath, string targetPath, string originalName, string newName, bool isCaseOnlyRename, CancellationToken cancellationToken)
     {
         var parentPath = IoPath.GetDirectoryName(sourcePath)!;
         var oldBase = DiagramRegistrationName.TryParse(originalName)?.FullBase ?? IoPath.GetFileNameWithoutExtension(originalName);
@@ -374,7 +378,7 @@ public sealed class RenameEntryCommandHandler : ICommandHandler<RenameEntryComma
 
             foreach ((string path, var _, string newContent) in rewrites)
             {
-                AdpFileWriter.Save(finalPathOf.GetValueOrDefault(path, path), newContent);
+                await _writer.SaveAsync(finalPathOf.GetValueOrDefault(path, path), newContent, cancellationToken);
             }
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
