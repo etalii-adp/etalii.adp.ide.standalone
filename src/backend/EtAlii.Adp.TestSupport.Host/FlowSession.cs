@@ -28,6 +28,9 @@ public sealed class FlowSession : IDisposable
 
     public ShortGuid ProjectId { get; }
 
+    /// <summary>The signed-in user: the developer, by the id the host gives a username.</summary>
+    public ShortGuid UserId { get; } = ShortGuid.FromName(FlowConstants.DeveloperUsername);
+
     /// <summary>This connection's watch id; a test that needs a second one makes it.</summary>
     public ShortGuid WatchId { get; } = ShortGuid.NewShortGuid();
 
