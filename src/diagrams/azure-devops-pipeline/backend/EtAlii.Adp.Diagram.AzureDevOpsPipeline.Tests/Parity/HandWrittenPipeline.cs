@@ -90,7 +90,7 @@ internal static class HandWrittenPipeline
     }
 
     /// <summary>The context menu of <paramref name="elementId"/>, open as <paramref name="view"/> has it (<c>PipelineContextActionProvider.Discover</c>).</summary>
-    public static IReadOnlyList<ContextActionGroupDefinition> Menus(DocumentEntry<LineDocument, PipelineModel> entry, PipelineConnectionView view, string elementId)
+    public static IReadOnlyList<ContextActionGroupDefinition> Menus(DocumentEntry<PipelineBody, PipelineModel> entry, PipelineConnectionView view, string elementId)
     {
         var groups = Menus(entry, elementId);
         if (groups.Count == 0 || Resolve(entry, elementId) is not { } location || OpenerOf(location) is not { } inside)
@@ -109,7 +109,7 @@ internal static class HandWrittenPipeline
     }
 
     /// <summary>What the element offers whatever is open.</summary>
-    private static IReadOnlyList<ContextActionGroupDefinition> Menus(DocumentEntry<LineDocument, PipelineModel> entry, string elementId)
+    private static IReadOnlyList<ContextActionGroupDefinition> Menus(DocumentEntry<PipelineBody, PipelineModel> entry, string elementId)
     {
         if (Resolve(entry, elementId) is not { } location || !location.Target.IsEditable)
         {
@@ -203,7 +203,7 @@ internal static class HandWrittenPipeline
     private static int IndexOf(PipelineElementLocation location) =>
         location.Job!.Steps.ToList().FindIndex(step => step.Id == location.Step!.Id);
 
-    private static PipelineElementLocation? Resolve(DocumentEntry<LineDocument, PipelineModel> entry, string elementId) =>
+    private static PipelineElementLocation? Resolve(DocumentEntry<PipelineBody, PipelineModel> entry, string elementId) =>
         entry.IsUsable && elementId.Length > 0 ? PipelineEdits.Locate(entry.Model, elementId) : null;
 
     private static PipelineOpener? OpenerOf(PipelineElementLocation location) => location switch
@@ -218,7 +218,7 @@ internal static class HandWrittenPipeline
     private sealed record PipelineOpener(string Id, string ActionId, string Show, string Hide);
 
     /// <summary>The property rows of <paramref name="elementId"/> (<c>PipelineContextPropertyProvider.Describe</c>).</summary>
-    public static IReadOnlyList<ContextPropertyDefinition> Rows(DocumentEntry<LineDocument, PipelineModel> entry, string elementId)
+    public static IReadOnlyList<ContextPropertyDefinition> Rows(DocumentEntry<PipelineBody, PipelineModel> entry, string elementId)
     {
         if (!entry.IsUsable || PipelineEdits.Locate(entry.Model, elementId) is not { } location)
         {

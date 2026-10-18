@@ -24,12 +24,12 @@ namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline;
 /// only what it draws and why it cannot be rearranged.
 /// </para>
 /// </remarks>
-public sealed class PipelineSession : DocumentDiagramSession<LineDocument, PipelineModel>
+public sealed class PipelineSession : DocumentDiagramSession<PipelineBody, PipelineModel>
 {
     private static readonly ILogger _logger = Log.ForContext<PipelineSession>();
 
     private readonly ShortGuid _watchId;
-    private readonly IDiagramDocumentStore<LineDocument, PipelineModel> _documents;
+    private readonly IDiagramDocumentStore<PipelineBody, PipelineModel> _documents;
     private readonly PipelineElementMapper _mapper;
     private readonly PipelineViewState _views;
 
@@ -53,7 +53,7 @@ public sealed class PipelineSession : DocumentDiagramSession<LineDocument, Pipel
     private PipelineSession(
         ShortGuid watchId,
         string bodyPath,
-        IDiagramDocumentStore<LineDocument, PipelineModel> documents,
+        IDiagramDocumentStore<PipelineBody, PipelineModel> documents,
         PipelineElementMapper mapper,
         PipelineViewState views)
         : base(bodyPath, documents, history: null)
@@ -135,7 +135,7 @@ public sealed class PipelineSession : DocumentDiagramSession<LineDocument, Pipel
         Rerender();
     }
 
-    private static IDiagramDocumentStore<LineDocument, PipelineModel> In(IPipelineDocumentStore documents, string rootPath)
+    private static IDiagramDocumentStore<PipelineBody, PipelineModel> In(IPipelineDocumentStore documents, string rootPath)
     {
         ArgumentNullException.ThrowIfNull(documents);
         ArgumentException.ThrowIfNullOrWhiteSpace(rootPath);

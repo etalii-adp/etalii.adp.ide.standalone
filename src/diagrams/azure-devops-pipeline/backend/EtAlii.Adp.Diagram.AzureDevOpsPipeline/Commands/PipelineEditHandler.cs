@@ -1,25 +1,24 @@
-using System.Diagnostics.CodeAnalysis;
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline;
 
 /// <summary>
-/// A handler of a command that edits a pipeline: the shared edit run, over the store seen from the
-/// command's root (code-structure FR-033). Each command says what it does to a body.
+/// A handler of a command that edits a pipeline: the edit of a copy of the body, written through the
+/// module's binding, saved, and undone by <see cref="RestorePipelineSpanCommand"/>. Each command says what it
+/// does to a body.
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>Not the shared <see cref="DocumentEditHandler{TCommand, TStore, TBody, TModel}"/>, because a
-/// pipeline's store answers only once it knows the workspace root, and the root comes with each
-/// command rather than once with the handler.</b> So the run is the shared one, and the store it is
-/// given is <see cref="IPipelineDocumentStore.In"/> the command's root.
+/// <b>Not the shared <see cref="DocumentEditHandler{TCommand, TStore, TBody, TModel}"/>, because a pipeline's
+/// store answers only once it knows the workspace root, and the root comes with each command rather than once
+/// with the handler.</b> The copy is opened by the store as it opens its own (<see cref="IPipelineDocumentStore.Open"/>),
+/// so its templates are followed as the shared run's text-only copy would not follow them.
 /// </para>
 /// <para>
-/// <b>An edit that names no undo is undone by a restore of the whole text through the module's own
-/// store</b>, as the run's would be had it the store. The run's own would restore through the store
-/// seen from one root, which no handler serves. Most edits name theirs, which outlive a later write
-/// of the file where a restore of the old text does not.
+/// <b>Every edit is undone by the library's inverse of its splices</b>, carried by the host's command with the
+/// digest of the bytes the edit left (amendment 2 of azure-devops-pipeline-disl-fbl): the undo puts back exactly
+/// what the edit replaced, so the file is byte for byte what it was, and it is refused when the file has changed
+/// since (FBL 7.2). The undo's own inverse is the redo, which writes the edit's bytes again.
 /// </para>
 /// </remarks>
 /// <typeparam name="TCommand">The command handled.</typeparam>
@@ -32,42 +31,45 @@ internal abstract class PipelineEditHandler<TCommand>(IPipelineDocumentStore doc
         ArgumentNullException.ThrowIfNull(command);
         cancellationToken.ThrowIfCancellationRequested();
 
-        return Task.FromResult(DocumentEditRun.Run<IDiagramDocumentStore<LineDocument, PipelineModel>, LineDocument, PipelineModel>(
-            documents.In(command.RootPath),
-            command.BodyPath,
-            command,
-            body => ModelOf(command, body),
-            (body, model) => Run(body, model, command)));
+        return Task.FromResult(Run(documents, command, body => Apply(body, command)));
     }
 
-    /// <summary>Applies <paramref name="command"/>, with the module's restore as the undo where it names none.</summary>
-    private EditOutcome Run(LineDocument body, PipelineModel model, TCommand command)
-    {
-        var before = body.Text;
-        var outcome = Apply(body, model, command);
-        return outcome is { WasApplied: true, IsUnchanged: false, Inverse: null }
-            ? EditOutcome.UndoneBy(new RestoreDocumentCommand<IPipelineDocumentStore>(command.BodyPath, before, command))
-            : outcome;
-    }
-
-    /// <summary>Changes <paramref name="body"/>, whose model is <paramref name="model"/>, as <paramref name="command"/> asks, or says why not.</summary>
-    protected abstract EditOutcome Apply(LineDocument body, PipelineModel model, TCommand command);
-
-    /// <summary>The model of <paramref name="body"/>, read as the store reads the document <paramref name="command"/> edits.</summary>
-    protected PipelineModel ModelOf(TCommand command, LineDocument body) =>
-        documents.ModelOf(command.RootPath, command.BodyPath, body);
+    /// <summary>Changes <paramref name="body"/> as <paramref name="command"/> asks, through the definition and the binding, or says why not.</summary>
+    protected abstract EditOutcome Apply(PipelineBody body, TCommand command);
 
     /// <summary>
-    /// Whether an element found at <paramref name="location"/> may not be edited here, and if so the
-    /// refusal that says why: it is gone, or it is written in a template.
+    /// Edits a copy of the body <paramref name="command"/> names with <paramref name="edit"/> and saves it, with the
+    /// undo that restores what the edit replaced; refused, with nothing written, where the edit is.
     /// </summary>
-    protected static bool Refuses([NotNullWhen(false)] PipelineElementLocation? location, out EditOutcome refusal)
+    private static CommandResult Run(IPipelineDocumentStore documents, IPipelineEditCommand command, Func<PipelineBody, EditOutcome> edit)
     {
-        refusal = location is null
-            ? EditOutcome.Refused("That element is no longer in this pipeline.")
-            : PipelineEdits.RefusalFor(location) is { Length: > 0 } reason
-            ? EditOutcome.Refused(reason)
-            : default;
-        return location is null || refusal.Refusal is not null;
+        ArgumentNullException.ThrowIfNull(documents);
+        ArgumentNullException.ThrowIfNull(command);
+        ArgumentNullException.ThrowIfNull(edit);
+
+        var entry = documents.GetOrLoad(command.RootPath, command.BodyPath);
+        if (!entry.IsUsable)
+        {
+            return CommandResult.Failure(
+                $"{Path.GetFileName(command.BodyPath)} could not be read, so nothing can be edited until it can: {entry.Unreadable}");
+        }
+
+        // The edit is made on a copy, so a refusal halfway through leaves nothing behind for the next save to write.
+        var before = entry.Document.Bytes;
+        var copy = documents.Open(command.RootPath, command.BodyPath, before);
+        var outcome = edit(copy);
+        if (!outcome.WasApplied)
+        {
+            return CommandResult.Failure(outcome.Refusal!);
+        }
+
+        if (outcome.IsUnchanged || copy.LastEdit is not { } applied)
+        {
+            return CommandResult.Success();
+        }
+
+        var undo = RestorePipelineSpanCommand.Undoing(command, before, copy.Bytes, applied, isRedo: command is RestorePipelineSpanCommand { IsRedo: false });
+        var saved = documents.In(command.RootPath).Save(command.BodyPath, copy);
+        return CommandResult.FromSave(saved, undo);
     }
 }

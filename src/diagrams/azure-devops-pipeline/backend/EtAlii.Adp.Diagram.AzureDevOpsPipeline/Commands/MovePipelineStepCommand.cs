@@ -1,5 +1,5 @@
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
+using EtAlii.Adp.Specification.Disl;
 
 namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline;
 
@@ -25,48 +25,49 @@ public sealed record MovePipelineStepCommand(
 internal sealed class MovePipelineStepCommandHandler(IPipelineDocumentStore documents)
     : PipelineEditHandler<MovePipelineStepCommand>(documents)
 {
-    protected override EditOutcome Apply(LineDocument body, PipelineModel model, MovePipelineStepCommand command)
+    /// <remarks>
+    /// <para>
+    /// <b>The definition's built-in reorder</b> (<c>moveUp</c> and <c>moveDown</c> are menu entries, not operations):
+    /// the step reparented into its own job before the step it is to end up in front of, which the plugin plans as
+    /// the step's entry cut out and written in again there. Its undo puts back the bytes the move replaced, so the
+    /// step returns to where it was with the blank lines and comments around it as they were.
+    /// </para>
+    /// <para>
+    /// <b>Refused by the definition's reorder rule</b> (<c>templateStepsKeepOrder</c>), after the step is found, is one
+    /// this file writes and is asked to go somewhere else.
+    /// </para>
+    /// </remarks>
+    protected override EditOutcome Apply(PipelineBody body, MovePipelineStepCommand command)
     {
-        var location = PipelineEdits.Locate(model, command.StepId);
-        if (location is null || location.Kind != PipelineElementLocationKind.Step)
+        if (PipelineDefinition.ElementOf(body, command.StepId) is not { } step || !step.IsA("Step") || step.Parent is not { } job)
         {
             return EditOutcome.Refused("That step is no longer in this pipeline.");
         }
 
-        if (PipelineEdits.RefusalFor(location) is { Length: > 0 } refusal)
+        if (step.ValueOf("editable") is false)
         {
-            return EditOutcome.Refused(refusal);
+            return EditOutcome.Refused(step.ValueOf("readOnlyReason") as string ?? "");
         }
 
-        var job = location.Job!;
-        var steps = job.Steps;
-        var from = steps.ToList().FindIndex(step => step.Id == command.StepId);
+        var steps = job.Children.Where(child => child.IsA("Step")).ToList();
+        var from = steps.IndexOf(step);
         var to = Math.Clamp(command.ToIndex, 0, steps.Count - 1);
         if (from < 0 || from == to)
         {
             return EditOutcome.Unchanged;
         }
 
-        if (steps.Any(step => step.IsFromTemplate))
+        if (PipelineDefinition.ReorderRefusal(step, steps, from, to) is { } refused)
         {
             // Some of what runs here is written in another file, so the order on the canvas is
             // not the order in this one and moving by position would move the wrong lines.
-            return EditOutcome.Refused("Some of this job's steps come from a template, so their order cannot be changed here.");
+            return EditOutcome.Refused(refused);
         }
 
-        // The step it should follow: the one currently at the destination when moving down, and
-        // the one before it when moving up. Null means it becomes the first. The list's key is the
-        // line above the job's first step, which is where the front of the list is.
-        var after = to > from ? steps[to] : to == 0 ? null : steps[to - 1];
-        var listKeyLine = steps[0].Lines.Start - 1;
-
-        // Undo moves it back to where it was. Ids are positional, so the step that is now at
-        // `to` is the one to send home - which is the same step, under its new id.
-        return new PipelineWriter(body).MoveElement(
-                location.Target,
-                after is null ? null : PipelineEditTarget.For(after),
-                listKeyLine)
-            ? EditOutcome.UndoneBy(command with { StepId = $"{job.Id}/step-{to}", ToIndex = from })
-            : EditOutcome.Unchanged;
+        // Before the step now at the destination when moving up, and before the one after it when moving down: the
+        // index counts the step itself where it is now. Past the last step is the end of the list.
+        var before = to > from ? to + 1 : to;
+        var index = before >= steps.Count ? -1 : before;
+        return PipelineDefinition.Apply(body, new DislTransaction([new DislChange.Reparent(step.Id, job.Id, index)], [], null));
     }
 }

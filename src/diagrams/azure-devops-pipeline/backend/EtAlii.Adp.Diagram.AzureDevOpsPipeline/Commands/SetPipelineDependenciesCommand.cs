@@ -1,5 +1,5 @@
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
+using EtAlii.Adp.Specification.Disl;
 
 namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline;
 
@@ -38,59 +38,35 @@ public sealed record SetPipelineDependenciesCommand(
 internal sealed class SetPipelineDependenciesCommandHandler(IPipelineDocumentStore documents)
     : PipelineEditHandler<SetPipelineDependenciesCommand>(documents)
 {
-    protected override EditOutcome Apply(LineDocument body, PipelineModel model, SetPipelineDependenciesCommand command)
+    /// <remarks>
+    /// <para>
+    /// <b>Refused by the definition's change rules before anything is planned</b>: a step has nothing to wait for, a
+    /// name must name a stage, or a sibling job, an edit must not close a cycle (over <c>reachable</c> and
+    /// <c>inCycle</c>), and a pipeline must keep a stage that waits for nothing.
+    /// </para>
+    /// <para>
+    /// <b>Undeclared is the definition's <c>clearDependencies</c></b>, which unsets the key. A declared list is the
+    /// value the gesture asks for, written as the dependsOn row would write it, which the definition's row cannot
+    /// state for its two special entries, "(nothing)" and "(the default order)".
+    /// </para>
+    /// </remarks>
+    protected override EditOutcome Apply(PipelineBody body, SetPipelineDependenciesCommand command)
     {
-        var location = PipelineEdits.Locate(model, command.ElementId);
-        if (location?.Kind == PipelineElementLocationKind.Step)
+        if (PipelineDefinition.ElementOf(body, command.ElementId) is not { } element)
         {
-            // Steps are a sequence, not a graph - they run in the order they are written and have
-            // no dependsOn to set.
-            return EditOutcome.Refused("Steps run in order, so a step has nothing to wait for.");
+            return EditOutcome.Refused(PipelineDefinition.Gone);
         }
 
-        if (Refuses(location, out var refusal))
+        List<object?>? names = command.Declared ? [.. command.DependsOn] : null;
+        if (PipelineDefinition.ChangeRefusal(element, DependsOn, names) is { } refused)
         {
-            return refusal;
+            return EditOutcome.Refused(refused);
         }
 
-        if (Unknown(model, location, command.DependsOn) is { Length: > 0 } unknown)
-        {
-            return EditOutcome.Refused($"This pipeline has nothing called '{unknown}' to wait for.");
-        }
-
-        if (PipelineEdits.WouldCycle(model, command.ElementId, command.DependsOn))
-        {
-            return EditOutcome.Refused($"That would make {location.Label} wait for something that is already waiting for it.");
-        }
-
-        if (location.Kind == PipelineElementLocationKind.Stage &&
-            command.Declared &&
-            PipelineEdits.WouldLeaveNoStartingStage(model, command.ElementId, command.DependsOn))
-        {
-            return EditOutcome.Refused(
-                "A pipeline must contain at least one stage with no dependencies, or it has nothing to start with.");
-        }
-
-        (IReadOnlyList<string> previous, bool wasDeclared) = Current(location);
-        var writer = new PipelineWriter(body);
-        var changed = command.Declared
-            ? writer.SetDependsOn(location.Target, command.DependsOn)
-            : writer.ClearDependsOn(location.Target);
-
-        return changed
-            ? EditOutcome.UndoneBy(command with { DependsOn = previous, Declared = wasDeclared })
-            : EditOutcome.Unchanged;
+        return PipelineDefinition.Apply(body, names is null
+            ? PipelineDefinition.Run("clearDependencies", element.Diagram, element)
+            : new DislTransaction([new DislChange.Set(element.Id, element.Type.Name, new Dictionary<string, object?>(StringComparer.Ordinal) { [DependsOn] = names })], [], null));
     }
 
-    /// <summary>The first name that matches nothing, or empty when they all do.</summary>
-    private static string Unknown(PipelineModel model, PipelineElementLocation location, IReadOnlyList<string> dependsOn)
-    {
-        var names = PipelineEdits.NamesToIds(model, location);
-        return dependsOn.FirstOrDefault(name => !names.ContainsKey(name)) ?? "";
-    }
-
-    private static (IReadOnlyList<string> DependsOn, bool Declared) Current(PipelineElementLocation location) =>
-        location.Kind == PipelineElementLocationKind.Stage
-            ? (location.Stage.DependsOn, location.Stage.DependsOnDeclared)
-            : (location.Job!.DependsOn, location.Job.DependsOnDeclared);
+    private const string DependsOn = "dependsOn";
 }

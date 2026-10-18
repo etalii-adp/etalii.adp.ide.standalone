@@ -1,7 +1,7 @@
 using EtAlii.Adp.Documents;
 using Serilog;
 
-namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline;
+namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline.Tests.Parity;
 
 /// <summary>
 /// Changes one property of one element, by rewriting the lines that declare it and nothing else.
@@ -27,7 +27,7 @@ namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline;
 /// rewritten to accommodate them.
 /// </para>
 /// </remarks>
-public sealed class PipelineWriter
+internal sealed class PipelineWriter
 {
     private static readonly ILogger _logger = Log.ForContext<PipelineWriter>();
 

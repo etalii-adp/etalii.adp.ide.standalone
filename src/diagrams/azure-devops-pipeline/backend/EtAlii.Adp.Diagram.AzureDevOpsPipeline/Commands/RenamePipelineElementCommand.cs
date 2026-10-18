@@ -1,5 +1,5 @@
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
+using EtAlii.Adp.Specification.Disl;
 
 namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline;
 
@@ -25,25 +25,15 @@ public sealed record RenamePipelineElementCommand(
 internal sealed class RenamePipelineElementCommandHandler(IPipelineDocumentStore documents)
     : PipelineEditHandler<RenamePipelineElementCommand>(documents)
 {
-    protected override EditOutcome Apply(LineDocument body, PipelineModel model, RenamePipelineElementCommand command)
-    {
-        var location = PipelineEdits.Locate(model, command.ElementId);
-        if (Refuses(location, out var refusal))
-        {
-            return refusal;
-        }
+    /// <remarks>
+    /// The definition's own row commits it (<see cref="FormCommit.Row"/>): its read-only reasons refuse an element
+    /// that is implicit or from a template, and an empty name unsets the key.
+    /// </remarks>
+    protected override EditOutcome Apply(PipelineBody body, RenamePipelineElementCommand command) =>
+        PipelineDefinition.ElementOf(body, command.ElementId) is { } element
+            ? PipelineDefinition.Apply(body, FormCommit.Row(PipelineDefinition.Specification, element, DisplayName, command.DisplayName, new DislEnv()))
+            : EditOutcome.Refused(PipelineDefinition.Gone);
 
-        // The old value, captured before the write, is the whole of the inverse.
-        var previous = DisplayNameOf(location);
-        return new PipelineWriter(body).SetDisplayName(location.Target, command.DisplayName)
-            ? EditOutcome.UndoneBy(command with { DisplayName = previous })
-            : EditOutcome.Unchanged;
-    }
-
-    private static string DisplayNameOf(PipelineElementLocation location) => location.Kind switch
-    {
-        PipelineElementLocationKind.Stage => location.Stage.DisplayName,
-        PipelineElementLocationKind.Job => location.Job!.DisplayName,
-        _ => location.Step!.DisplayName,
-    };
+    /// <summary>The form row, and the attribute, a rename writes.</summary>
+    private const string DisplayName = "displayName";
 }

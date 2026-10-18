@@ -11,7 +11,8 @@ namespace EtAlii.Adp.Specification.Disl;
 /// <remarks>
 /// <para>
 /// <b>Declared constraints only.</b> The built-ins that also refuse (§8.4, step 3) are checked by the
-/// host where it has them; neither bundled definition configures one for a change or a placement.
+/// host where it has them; no bundled definition configures one for a change, a placement, a deletion or
+/// a reorder.
 /// </para>
 /// <para>
 /// <b>A rule that fails to evaluate refuses</b>: a gesture is let through only when its rule is seen
@@ -52,6 +53,33 @@ public static class GestureConstraintEvaluator
             ["newBounds"] = Map(newBounds),
             ["newParent"] = newParent,
         }, env);
+
+    /// <summary>A deletion of <paramref name="self"/>, with <paramref name="selection"/> the elements deleted with it; itself alone when none is given.</summary>
+    public static IReadOnlyList<DislFinding> Delete(DislSpecification specification, DislElement self, IReadOnlyList<DislElement>? selection = null, DislEnv? env = null)
+    {
+        ArgumentNullException.ThrowIfNull(self);
+        return Refusals(specification, "delete", self, new Dictionary<string, object?>
+        {
+            ["selection"] = selection?.Cast<object?>().ToList() ?? [self],
+        }, env);
+    }
+
+    /// <summary>
+    /// A reorder of <paramref name="self"/> among the children of its parent: from <paramref name="oldIndex"/> to
+    /// <paramref name="newIndex"/> among <paramref name="siblings"/>, itself included.
+    /// </summary>
+    public static IReadOnlyList<DislFinding> Reorder(DislSpecification specification, DislElement self, IReadOnlyList<DislElement> siblings, int oldIndex, int newIndex, DislEnv? env = null)
+    {
+        ArgumentNullException.ThrowIfNull(self);
+        ArgumentNullException.ThrowIfNull(siblings);
+        return Refusals(specification, "reorder", self, new Dictionary<string, object?>
+        {
+            ["parent"] = self.Parent,
+            ["oldIndex"] = (long)oldIndex,
+            ["newIndex"] = (long)newIndex,
+            ["siblings"] = siblings.Cast<object?>().ToList(),
+        }, env);
+    }
 
     /// <summary>The refusals of a gesture of <paramref name="kind"/> on <paramref name="self"/>, its own variables in <paramref name="gesture"/>.</summary>
     private static IReadOnlyList<DislFinding> Refusals(DislSpecification specification, string kind, DislElement? self, IReadOnlyDictionary<string, object?> gesture, DislEnv? env = null)

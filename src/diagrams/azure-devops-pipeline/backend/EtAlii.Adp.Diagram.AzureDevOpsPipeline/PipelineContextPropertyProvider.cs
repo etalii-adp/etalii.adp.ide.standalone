@@ -2,6 +2,7 @@ using EtAlii.Adp.Context;
 using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
+using EtAlii.Adp.Specification.Disl;
 
 namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline;
 
@@ -29,7 +30,7 @@ namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline;
 /// one (Requirement 13.10).
 /// </para>
 /// </remarks>
-public sealed class PipelineContextPropertyProvider : DiagramPropertyProvider<LineDocument, PipelineModel>
+public sealed class PipelineContextPropertyProvider : DiagramPropertyProvider<PipelineBody, PipelineModel>
 {
     /// <summary>The element's <c>displayName</c> - one of the three editable properties.</summary>
     public const string DisplayNamePropertyId = "azure-pipeline.display-name";
@@ -68,7 +69,7 @@ public sealed class PipelineContextPropertyProvider : DiagramPropertyProvider<Li
     /// text lives in a template, or that the pipeline's shape implies, shows every row with the reason
     /// it cannot be written here (Requirement 13.7).
     /// </remarks>
-    protected override IReadOnlyList<ContextPropertyDefinition> Describe(DocumentEntry<LineDocument, PipelineModel> entry, string elementId) =>
+    protected override IReadOnlyList<ContextPropertyDefinition> Describe(DocumentEntry<PipelineBody, PipelineModel> entry, string elementId) =>
         PipelineDefinition.Rows(entry, elementId);
 
     /// <inheritdoc />
@@ -81,27 +82,27 @@ public sealed class PipelineContextPropertyProvider : DiagramPropertyProvider<Li
     {
         ArgumentNullException.ThrowIfNull(target);
 
-        if (PipelineEdits.Locate(model, target.ElementId) is not { } location)
+        if (PipelineDefinition.ElementOf(PipelineBody.ReadingOf(model), target.ElementId) is not { } element)
         {
-            return DiagramPropertyChange.Refused("That element is no longer in this pipeline.");
+            return DiagramPropertyChange.Refused(PipelineDefinition.Gone);
         }
 
-        return CommandFor(target, propertyId, value, location) is { } command
+        return CommandFor(target, propertyId, value, element) is { } command
             ? DiagramPropertyChange.By(command)
             : DiagramPropertyChange.Refused($"'{propertyId}' cannot be set on this element.");
     }
 
-    private static ICommand? CommandFor(ContextTarget target, string propertyId, string value, PipelineElementLocation location)
+    private static ICommand? CommandFor(ContextTarget target, string propertyId, string value, DislElement element)
     {
         var root = target.RootPath;
         var body = target.ResolvedFullPath;
-        var id = location.Id;
+        var id = element.Id;
 
         return propertyId switch
         {
             DisplayNamePropertyId => new RenamePipelineElementCommand(root, body, id, value.Trim()),
             EnabledPropertyId => new SetPipelineElementEnabledCommand(root, body, id, IsTrue(value)),
-            DependsOnPropertyId when location.Kind != PipelineElementLocationKind.Step =>
+            DependsOnPropertyId when !element.IsA("Step") =>
                 DependenciesCommand(root, body, id, value),
             _ => null,
         };

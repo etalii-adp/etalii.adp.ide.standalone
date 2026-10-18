@@ -617,8 +617,8 @@ internal sealed class PipelinePlanner
 
         var isImplicit = element.Attributes.GetValueOrDefault("isImplicit") is true;
         var template = AsText(element.Attributes.GetValueOrDefault("template"));
-        var target = new PipelineEditTarget(element.Id, default, isImplicit, template);
-        if (!target.IsEditable) return target.ReadOnlyReason;
+        if (isImplicit) return "This is implied by the pipeline's shape rather than written down, so there is nothing here to edit.";
+        if (template.Length > 0) return $"This comes from {template}, so it has to be edited there.";
 
         return _entries.TryGetValue(element.Line, out mapping) ? null : Gone;
     }

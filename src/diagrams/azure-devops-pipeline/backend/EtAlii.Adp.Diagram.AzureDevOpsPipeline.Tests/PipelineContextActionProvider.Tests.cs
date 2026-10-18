@@ -651,7 +651,7 @@ public class PipelineContextActionProviderTests : IDisposable
     public async Task ASelectedArrow_OffersNothing_AndDoesNotThrow()
     {
         // Arrange: an arrow is selectable now (centralized-selection 2.1), so its actions are
-        // discovered. PipelineEdits.Locate knows no arrow; the answer must be an empty menu, never
+        // discovered. The definition finds no stage, job or step by it; the answer must be an empty menu, never
         // an exception.
         var path = Write();
 

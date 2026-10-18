@@ -1,6 +1,6 @@
 using EtAlii.Adp.Documents;
 
-namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline;
+namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline.Tests.Parity;
 
 /// <summary>
 /// An element as the writer sees it: which lines to edit, and whether editing them is allowed at
@@ -25,7 +25,7 @@ namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline;
 /// <param name="Lines">The lines declaring it.</param>
 /// <param name="IsImplicit">Whether the schema implied it rather than the file declaring it.</param>
 /// <param name="Template">The template it came from, if any.</param>
-public sealed record PipelineEditTarget(string Id, LineRange Lines, bool IsImplicit, string Template)
+internal sealed record PipelineEditTarget(string Id, LineRange Lines, bool IsImplicit, string Template)
 {
     /// <summary>The stage, as something that may or may not be edited.</summary>
     public static PipelineEditTarget For(PipelineStage stage)

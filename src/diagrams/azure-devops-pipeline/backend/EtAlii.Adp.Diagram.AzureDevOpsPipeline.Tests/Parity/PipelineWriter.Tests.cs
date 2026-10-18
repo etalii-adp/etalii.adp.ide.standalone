@@ -2,13 +2,18 @@ using EtAlii.Adp.Documents;
 using Xunit;
 using IoPath = System.IO.Path;
 
-namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline.Tests;
+namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline.Tests.Parity;
 
 /// <summary>
-/// The writer is the only thing in this module that changes a file, and the file is a build
+/// The writer was the only thing in this module that changed a file, and the file is a build
 /// definition somebody's releases depend on. So almost every test here checks two things: that the
 /// intended change happened, and that every other byte of the file is exactly as it was.
 /// </summary>
+/// <remarks>
+/// The writer left the product for the oracle when every command came to be planned by the persistence
+/// plugin (azure-devops-pipeline-disl-fbl task 10), and its tests moved with it, unchanged: they keep the
+/// oracle that <see cref="PipelineDerivedOperationsTests"/> compares the commands with honest.
+/// </remarks>
 public class PipelineWriterTests
 {
     private static LineDocument FixtureDocument(string name) =>

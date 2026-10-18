@@ -76,14 +76,13 @@ public static class ServiceCollectionAddAzurePipelineExtension
         services.AddSingleton<IDiagramValidator, PipelineValidator>();
 
         // The editable set, one handler per command. Every one of them is undoable, because every
-        // one reports the command that reverses it (Requirement 9.2).
+        // one reports the command that puts back the bytes it replaced (Requirement 9.2).
         services.AddSingleton<ICommandHandler<RenamePipelineElementCommand>, RenamePipelineElementCommandHandler>();
         services.AddSingleton<ICommandHandler<SetPipelineDependenciesCommand>, SetPipelineDependenciesCommandHandler>();
         services.AddSingleton<ICommandHandler<SetPipelineElementEnabledCommand>, SetPipelineElementEnabledCommandHandler>();
         services.AddSingleton<ICommandHandler<AddPipelineElementCommand>, AddPipelineElementCommandHandler>();
         services.AddSingleton<ICommandHandler<RemovePipelineElementCommand>, RemovePipelineElementCommandHandler>();
-        services.AddSingleton<ICommandHandler<RestorePipelineLinesCommand>, RestorePipelineLinesCommandHandler>();
         services.AddSingleton<ICommandHandler<MovePipelineStepCommand>, MovePipelineStepCommandHandler>();
-        services.AddSingleton<ICommandHandler<RestoreDocumentCommand<IPipelineDocumentStore>>, RestoreDocumentCommandHandler<IPipelineDocumentStore>>();
+        services.AddSingleton<ICommandHandler<RestorePipelineSpanCommand>, RestorePipelineSpanCommandHandler>();
     }
 }
