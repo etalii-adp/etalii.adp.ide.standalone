@@ -188,7 +188,7 @@ public sealed class AadContextActionProvider(IHistoryStackStore historyStacks, I
 
     /// <inheritdoc />
     /// <remarks>The one value asked for is a name, and the only wrong one is an empty one.</remarks>
-    protected override ContextValidationResult Validate(ContextTarget target, string actionId, string value) =>
+    protected override ContextValidationResult Validate(string actionId, string value) =>
         actionId == RenameActionId && string.IsNullOrWhiteSpace(value)
             ? ContextValidationResult.Rejected("It needs a name.")
             : ContextValidationResult.Accepted;

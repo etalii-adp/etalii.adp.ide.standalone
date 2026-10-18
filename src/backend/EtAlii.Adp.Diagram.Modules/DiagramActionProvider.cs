@@ -112,7 +112,7 @@ public abstract class DiagramActionProvider<TBody, TModel> : IContextActionProvi
         $"{System.IO.Path.GetFileName(target.ResolvedFullPath)} could not be read, so it cannot be edited.";
 
     /// <summary>The entry of the document <paramref name="target"/> is in, for a leg that is not handed one.</summary>
-    protected ValueTask<DocumentEntry<TBody, TModel>> LoadAsync(ContextTarget target, CancellationToken cancellationToken)
+    private ValueTask<DocumentEntry<TBody, TModel>> LoadAsync(ContextTarget target, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(target);
         return _load(target, cancellationToken);
@@ -154,8 +154,8 @@ public abstract class DiagramActionProvider<TBody, TModel> : IContextActionProvi
         string actionId,
         CancellationToken cancellationToken);
 
-    /// <summary>Whether <paramref name="value"/> may be committed for <paramref name="actionId"/> on <paramref name="target"/>; anything, by default.</summary>
-    protected virtual ContextValidationResult Validate(ContextTarget target, string actionId, string value) =>
+    /// <summary>Whether <paramref name="value"/> may be committed for <paramref name="actionId"/>, whatever it targets; anything, by default.</summary>
+    protected virtual ContextValidationResult Validate(string actionId, string value) =>
         ContextValidationResult.Accepted;
 
     /// <summary>
@@ -164,7 +164,7 @@ public abstract class DiagramActionProvider<TBody, TModel> : IContextActionProvi
     /// says, by default. A module that checks the value against the document answers here.
     /// </summary>
     protected virtual ContextValidationResult Validate(ContextTarget target, DocumentEntry<TBody, TModel> entry, string actionId, string value) =>
-        Validate(target, actionId, value);
+        Validate(actionId, value);
 
     /// <summary>
     /// The command that commits <paramref name="value"/> for <paramref name="actionId"/>, asked for
