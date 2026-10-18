@@ -88,10 +88,10 @@ public class ModuleHostingPackagesTests
         ModuleFolders
             .Select(folder => IoPath.Combine(RepositoryRoot, "src", folder))
             .Where(Directory.Exists)
-            .SelectMany(folder => Directory.EnumerateDirectories(folder))
+            .SelectMany(Directory.EnumerateDirectories)
             .Select(module => IoPath.Combine(module, "backend"))
             .Where(Directory.Exists)
-            .SelectMany(backend => Directory.EnumerateDirectories(backend))
+            .SelectMany(Directory.EnumerateDirectories)
             .SelectMany(project => Directory.EnumerateFiles(project, "*.csproj", SearchOption.TopDirectoryOnly))
             .Where(project => !IoPath.GetFileNameWithoutExtension(project).EndsWith(".Tests", StringComparison.Ordinal))
             .Where(project => !IoPath.GetFileNameWithoutExtension(project).Contains(".TestSupport", StringComparison.Ordinal));
