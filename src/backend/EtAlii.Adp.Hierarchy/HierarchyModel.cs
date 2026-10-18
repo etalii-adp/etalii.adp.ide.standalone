@@ -13,12 +13,14 @@ namespace EtAlii.Adp.Hierarchy;
 /// </summary>
 public sealed class HierarchyModel
 {
+    private static readonly ILogger _logger = Log.ForContext<HierarchyModel>();
+
     // Guards every field below: ListEntries (gRPC threads) and the connection's own
     // FileSystemWatcher (its own background thread, via OnWatcherEvent) can call into
     // this model concurrently - plain Dictionary/HashSet are not thread-safe, so every
-    // public entry point that reads or writes them takes this lock.
-    private static readonly ILogger _logger = Log.ForContext<HierarchyModel>();
-
+    // public entry point that reads or writes them takes this lock. The disk is never read
+    // under it (FR-066): a folder is read, and its registrations routed, before the lock is
+    // taken to apply what was read, so a slow disk holds up no other caller.
     private readonly Lock _gate = new();
     private readonly IDiagramDefinitionCatalog? _catalog;
     private readonly ToolRouter? _tools;
@@ -56,11 +58,14 @@ public sealed class HierarchyModel
         ArgumentNullException.ThrowIfNull(oldPath);
         ArgumentNullException.ThrowIfNull(newPath);
 
+        Refresh? refresh;
         lock (_gate)
         {
             _normalizer.Expect(oldPath, newPath);
-            OnRenamed(oldPath, newPath);
+            refresh = OnRenamed(oldPath, newPath);
         }
+
+        RefreshFolder(refresh);
     }
 
     /// <summary>
@@ -99,19 +104,29 @@ public sealed class HierarchyModel
 
     public IReadOnlyList<EntryNode> ListChildren(ShortGuid? folderId)
     {
+        ShortGuid? fileId = null;
         lock (_gate)
         {
             if (folderId is { } id && _index.TryGet(id, out var entry) && !entry.IsFolder)
             {
                 // Listing a FILE: its children are its nested registrations (adp-file-nesting
                 // Requirement 3). Syncing the containing folder is what nests them.
-                SyncFolder(entry.ParentId, raiseEvents: false);
-                return _index.ChildrenOf(id)
-                    .OrderBy(e => e.Name, Comparer<string>.Create(HierarchyNesting.CompareRegistrations))
-                    .ToList();
+                fileId = id;
+                folderId = entry.ParentId;
             }
+        }
 
-            return SyncFolder(folderId, raiseEvents: false);
+        var listing = Sync(folderId, raiseEvents: false);
+        if (fileId is not { } file)
+        {
+            return listing;
+        }
+
+        lock (_gate)
+        {
+            return _index.ChildrenOf(file)
+                .OrderBy(e => e.Name, Comparer<string>.Create(HierarchyNesting.CompareRegistrations))
+                .ToList();
         }
     }
 
@@ -123,25 +138,24 @@ public sealed class HierarchyModel
     /// </summary>
     public void Reconcile()
     {
+        List<ShortGuid> knownFolderIds;
         lock (_gate)
         {
-            var knownFolderIds = _index.Folders.Select(e => e.Id).ToList();
+            knownFolderIds = _index.Folders.Select(e => e.Id).ToList();
+        }
 
-            // Debug rather than Information: a reconcile is recovery, but its trigger is
-            // already logged where it happened, and this only says how much was re-scanned.
-            _logger.Debug(
-                "Reconciling {RootPath} against disk: the root plus {FolderCount} known folders",
-                RootPath,
-                knownFolderIds.Count);
+        // Debug rather than Information: a reconcile is recovery, but its trigger is
+        // already logged where it happened, and this only says how much was re-scanned.
+        _logger.Debug(
+            "Reconciling {RootPath} against disk: the root plus {FolderCount} known folders",
+            RootPath,
+            knownFolderIds.Count);
 
-            SyncFolder(null, raiseEvents: true);
-            foreach (var folderId in knownFolderIds)
-            {
-                if (_index.Contains(folderId))
-                {
-                    SyncFolder(folderId, raiseEvents: true);
-                }
-            }
+        // A folder the sync of another removed is unknown by its turn, and its sync reads nothing.
+        Sync(null, raiseEvents: true);
+        foreach (var folderId in knownFolderIds)
+        {
+            Sync(folderId, raiseEvents: true);
         }
     }
 
@@ -154,6 +168,10 @@ public sealed class HierarchyModel
     /// </summary>
     public void OnFileEvent(FileEvent heard)
     {
+        // What the event's path is on disk, read before the lock is taken.
+        var facts = EventFacts.Read(heard);
+
+        Refresh? refresh = null;
         lock (_gate)
         {
             if (_normalizer.Normalize(heard) is not { } change)
@@ -163,10 +181,10 @@ public sealed class HierarchyModel
 
             switch (change.Kind)
             {
-                case FileEventKind.Created:
-                    OnCreated(change.Path);
+                case FileEventKind.Created when facts is not null:
+                    refresh = OnCreated(change.Path, facts);
                     break;
-                case FileEventKind.Deleted:
+                case FileEventKind.Deleted when facts is not null:
                     // A Deleted whose path still exists is not a deletion: Windows' ReplaceFile -
                     // which File.Replace uses, and AdpFileWriter.Save with it to rewrite a
                     // registration in place - raises a spurious Deleted for the destination it
@@ -175,22 +193,24 @@ public sealed class HierarchyModel
                     // that still holds the old one. An entry stands for a path, and the path is
                     // still there, so the entry - and its id - must survive. A genuine deletion
                     // leaves nothing on disk and still removes, as it must.
-                    if (IoPath.Exists(change.Path))
+                    if (facts.Exists)
                     {
                         _logger.Verbose("Dropping a Deleted watcher event for {Path}, which still exists on disk - an in-place replace, not a deletion", change.Path);
                         break;
                     }
 
-                    OnRemoved(change.Path);
+                    refresh = OnRemoved(change.Path, facts);
                     break;
                 case FileEventKind.Renamed when change.OldPath is { } oldPath:
-                    OnRenamed(oldPath, change.Path);
+                    refresh = OnRenamed(oldPath, change.Path);
                     break;
                 case FileEventKind.Changed:
                     // A content change never affects the tree's shape; nothing to update.
                     break;
             }
         }
+
+        RefreshFolder(refresh);
     }
 
     /// <summary>Applies one event in the watcher's own shape; see <see cref="OnFileEvent"/>.</summary>
@@ -217,46 +237,105 @@ public sealed class HierarchyModel
     /// </summary>
     public bool TryResolvePath(ShortGuid entryId, out string fullPath, out bool isFolder)
     {
+        string path;
         lock (_gate)
         {
-            if (!_index.TryGetPath(entryId, out var path) || !IsContained(path))
+            if (!_index.TryGetPath(entryId, out path))
             {
                 fullPath = "";
                 isFolder = false;
                 return false;
             }
 
-            fullPath = IoPath.GetFullPath(path);
             isFolder = _index[entryId].IsFolder;
-            return true;
+        }
+
+        // The containment check probes the disk, so it runs after the lock is released.
+        if (!IsContained(path))
+        {
+            fullPath = "";
+            isFolder = false;
+            return false;
+        }
+
+        fullPath = IoPath.GetFullPath(path);
+        return true;
+    }
+
+    /// <summary>
+    /// What the disk says about an event's path and its folder, read outside the lock: whether
+    /// the path exists, whether it is a folder with anything in it, and whether its folder still
+    /// holds anything. Null for an event that needs none of it.
+    /// </summary>
+    private sealed record EventFacts(bool Exists, bool IsFolder, bool HasAnyChild, bool ParentHasAnyChild)
+    {
+        public static EventFacts? Read(FileEvent heard)
+        {
+            // A rename needs none of it, unless it publishes a scratch file and so is a create.
+            var needed = heard.Kind switch
+            {
+                FileEventKind.Created or FileEventKind.Deleted => true,
+                FileEventKind.Renamed => WatcherEventNormalizer.IsTransient(heard.OldPath),
+                _ => false,
+            };
+            if (!needed || WatcherEventNormalizer.IsTransient(heard.Path))
+            {
+                return null;
+            }
+
+            var isFolder = Directory.Exists(heard.Path);
+            var parent = IoPath.GetDirectoryName(heard.Path);
+            return new EventFacts(
+                isFolder || File.Exists(heard.Path),
+                isFolder,
+                isFolder && SafeHasAnyChild(heard.Path),
+                parent is not null && SafeHasAnyChild(parent));
         }
     }
 
-    private void OnCreated(string path)
+    /// <summary>
+    /// A folder whose nesting and states an event changed, with the names it held then: the
+    /// registrations among them are read, and the states decided, outside the lock.
+    /// </summary>
+    private sealed record Refresh(string FolderPath, string? FolderName, IReadOnlyList<(string Name, bool IsFolder)> Names);
+
+    /// <summary>
+    /// What one folder's scan read from disk and decided from it, outside the lock: its entries,
+    /// or the failure that made it unreadable, and where its registrations nest and what state each
+    /// entry is in.
+    /// </summary>
+    private sealed record FolderRead(IReadOnlyList<DiskEntry>? Entries, Exception? Failure, FolderView View);
+
+    private readonly record struct DiskEntry(string Path, string Name, bool IsFolder, bool HasAnyChild);
+
+    /// <summary>Where one folder's registrations nest, and the state of each entry in it.</summary>
+    private sealed record FolderView(IReadOnlyList<NestedEntry>? Placements, IReadOnlyList<DiagramStateDecorator.Decision> States);
+
+    private Refresh? OnCreated(string path, EventFacts facts)
     {
         if (_index.ContainsPath(path))
         {
-            return; // already known (e.g. observed via a prior ListChildren call)
+            return null; // already known (e.g. observed via a prior ListChildren call)
         }
 
         var parentPath = IoPath.GetDirectoryName(path);
         if (parentPath is null)
         {
-            return;
+            return null;
         }
 
         // A new entry under a folder can flip that folder from empty to non-empty
         // (unlocking expand) regardless of whether the folder's own children are
         // being tracked in detail on this connection - so this check runs even
         // when the create itself is about to be discarded below.
-        RecomputeHasChildren(parentPath);
+        RecomputeHasChildren(parentPath, facts.ParentHasAnyChild);
 
         ShortGuid? parentId;
         if (string.Equals(parentPath, RootPath, StringComparison.OrdinalIgnoreCase))
         {
             if (!_rootListed)
             {
-                return; // this connection has never listed the root (Requirement 4.7)
+                return null; // this connection has never listed the root (Requirement 4.7)
             }
 
             parentId = null;
@@ -265,27 +344,24 @@ public sealed class HierarchyModel
         {
             if (!_index.TryGetId(parentPath, out var pid) || !_listedFolderIds.Contains(pid))
             {
-                return; // parent folder's children were never listed on this connection (Requirement 4.7)
+                return null; // parent folder's children were never listed on this connection (Requirement 4.7)
             }
 
             parentId = pid;
         }
 
-        var isFolder = Directory.Exists(path);
-        var node = AddEntry(parentId, IoPath.GetFileName(path), isFolder, path);
+        var node = AddEntry(parentId, IoPath.GetFileName(path), facts.IsFolder, facts.HasAnyChild, path);
         EntryChanged?.Invoke(new HierarchyEntryCreated(node));
 
         // A created registration nests immediately, and a created subject adopts its orphans -
         // both are re-parents pushed as updates, so a client applying them in order arrives at
-        // the same tree a fresh listing would build (Requirements 10.1, 10.3, 10.4).
-        ApplyNesting(parentPath, raiseEvents: true);
-
-        // An .adp appearing changes its subject's state; the update rides the same stream
+        // the same tree a fresh listing would build (Requirements 10.1, 10.3, 10.4). An .adp
+        // appearing changes its subject's state; the update rides the same stream
         // (small-refinements Requirement 3.6).
-        RefreshDiagramStatesAt(parentPath, raiseEvents: true);
+        return RefreshOf(parentPath);
     }
 
-    private void OnRemoved(string path)
+    private Refresh? OnRemoved(string path, EventFacts facts)
     {
         // Mirrors OnCreated: a removal can flip a folder from non-empty to empty
         // (locking expand again), regardless of whether the removed entry itself
@@ -293,12 +369,12 @@ public sealed class HierarchyModel
         var parentPath = IoPath.GetDirectoryName(path);
         if (parentPath is not null)
         {
-            RecomputeHasChildren(parentPath);
+            RecomputeHasChildren(parentPath, facts.ParentHasAnyChild);
         }
 
         if (!_index.TryGetId(path, out var id))
         {
-            return; // never known on this connection
+            return null; // never known on this connection
         }
 
         // A removed SUBJECT must not take its nested registrations with it - their files still
@@ -318,24 +394,18 @@ public sealed class HierarchyModel
         RemoveSubtree(id);
         EntryChanged?.Invoke(new HierarchyEntryRemoved(id));
 
-        if (parentPath is not null)
-        {
-            ApplyNesting(parentPath, raiseEvents: true);
-
-            // The reverse of the create: a deleted .adp downgrades its subject's state
-            // (small-refinements Requirement 3.6).
-            RefreshDiagramStatesAt(parentPath, raiseEvents: true);
-        }
+        // The reverse of the create: a deleted .adp downgrades its subject's state
+        // (small-refinements Requirement 3.6).
+        return parentPath is null ? null : RefreshOf(parentPath);
     }
 
     /// <summary>
-    /// Refreshes an already-known folder's <see cref="EntryNode.HasChildren"/> against
-    /// current disk state and pushes an <see cref="HierarchyEntryUpdated"/> if it
-    /// changed. A no-op for the root (it has no <see cref="EntryNode"/> of its own - the
-    /// explorer's root level is always expanded) or a folder this connection doesn't know
-    /// as an entry at all yet.
+    /// Updates an already-known folder's <see cref="EntryNode.HasChildren"/> to what the disk
+    /// said and pushes an <see cref="HierarchyEntryUpdated"/> if it changed. A no-op for the root
+    /// (it has no <see cref="EntryNode"/> of its own - the explorer's root level is always
+    /// expanded) or a folder this connection doesn't know as an entry at all yet.
     /// </summary>
-    private void RecomputeHasChildren(string folderPath)
+    private void RecomputeHasChildren(string folderPath, bool hasChildren)
     {
         if (string.Equals(folderPath, RootPath, StringComparison.OrdinalIgnoreCase))
         {
@@ -347,7 +417,6 @@ public sealed class HierarchyModel
             return;
         }
 
-        var hasChildren = SafeHasAnyChild(folderPath);
         var entry = _index[folderId];
         if (entry.HasChildren == hasChildren)
         {
@@ -370,11 +439,11 @@ public sealed class HierarchyModel
         }
     }
 
-    private void OnRenamed(string oldPath, string newPath)
+    private Refresh? OnRenamed(string oldPath, string newPath)
     {
         if (!_index.TryGetId(oldPath, out var id))
         {
-            return; // never known on this connection
+            return null; // never known on this connection
         }
 
         var newName = IoPath.GetFileName(newPath);
@@ -384,40 +453,132 @@ public sealed class HierarchyModel
 
         // A rename can change what nests where - a subject gaining or losing its name, a
         // registration changing which subject it derives.
-        if (IoPath.GetDirectoryName(newPath) is { } directory)
+        return IoPath.GetDirectoryName(newPath) is { } directory ? RefreshOf(directory) : null;
+    }
+
+    /// <summary>The folder's nesting and states to read again, with the names it holds now.</summary>
+    private Refresh RefreshOf(string folderPath)
+    {
+        var folderName = !string.Equals(folderPath, RootPath, StringComparison.OrdinalIgnoreCase) && _index.TryGetId(folderPath, out var folderId)
+            ? _index[folderId].Name
+            : null;
+        return new Refresh(folderPath, folderName, _index.In(folderPath).Select(entry => (entry.Name, entry.IsFolder)).ToList());
+    }
+
+    /// <summary>Reads a folder's nesting and states outside the lock, and applies them under it.</summary>
+    private void RefreshFolder(Refresh? refresh)
+    {
+        if (refresh is null)
         {
-            ApplyNesting(directory, raiseEvents: true);
-            RefreshDiagramStatesAt(directory, raiseEvents: true);
+            return;
+        }
+
+        var view = ReadView(refresh.FolderPath, refresh.FolderName, refresh.Names);
+        lock (_gate)
+        {
+            ApplyNesting(refresh.FolderPath, view.Placements, raiseEvents: true);
+
+            // The states of the root, or of a folder this connection knows; another's stay unread.
+            if (string.Equals(refresh.FolderPath, RootPath, StringComparison.OrdinalIgnoreCase))
+            {
+                ApplyStates(null, refresh.FolderPath, view.States, raiseEvents: true);
+            }
+            else if (_index.TryGetId(refresh.FolderPath, out var folderId))
+            {
+                ApplyStates(folderId, refresh.FolderPath, view.States, raiseEvents: true);
+            }
         }
     }
 
-    private IReadOnlyList<EntryNode> SyncFolder(ShortGuid? folderId, bool raiseEvents)
+    /// <summary>
+    /// Brings one folder's entries in line with the disk: its path is taken under the lock, the
+    /// disk is read without it, and what was read is applied under it again. Returns the folder's
+    /// listing.
+    /// </summary>
+    private IReadOnlyList<EntryNode> Sync(ShortGuid? folderId, bool raiseEvents)
     {
         string folderPath;
-        if (folderId is { } id)
+        string? folderName = null;
+        HashSet<ShortGuid> knownBefore;
+        lock (_gate)
         {
-            if (!_index.TryGetPath(id, out var knownPath))
+            if (folderId is { } id)
             {
-                return Array.Empty<EntryNode>(); // unknown folder id
+                if (!_index.TryGetPath(id, out var knownPath))
+                {
+                    return Array.Empty<EntryNode>(); // unknown folder id
+                }
+
+                folderPath = knownPath;
+                folderName = _index[id].Name;
+            }
+            else
+            {
+                folderPath = RootPath;
             }
 
-            folderPath = knownPath;
-        }
-        else
-        {
-            folderPath = RootPath;
+            knownBefore = _index.In(folderPath).Select(entry => entry.Id).ToHashSet();
         }
 
-        IEnumerable<string> diskEntries;
+        var read = ReadFolder(folderPath, folderName);
+
+        lock (_gate)
+        {
+            // Renamed or removed while it was read: what was read describes a folder that is gone.
+            if (folderId is { } id && (!_index.TryGetPath(id, out var currentPath) || !string.Equals(currentPath, folderPath, StringComparison.OrdinalIgnoreCase)))
+            {
+                return Array.Empty<EntryNode>();
+            }
+
+            return ApplyFolder(folderId, folderPath, read, knownBefore, raiseEvents);
+        }
+    }
+
+    /// <summary>Reads a folder's entries, and decides their nesting and states, without the lock.</summary>
+    private FolderRead ReadFolder(string folderPath, string? folderName)
+    {
+        IEnumerable<string> found;
         try
         {
-            diskEntries = Directory.EnumerateFileSystemEntries(folderPath).Where(entry => IsContained(entry) && !WatcherEventNormalizer.IsTransient(entry));
+            found = Directory.EnumerateFileSystemEntries(folderPath);
         }
         catch (Exception ex) when (ex is UnauthorizedAccessException or DirectoryNotFoundException or IOException)
         {
+            return new FolderRead(null, ex, new FolderView(null, []));
+        }
+
+        var entries = found
+            .Where(entry => IsContained(entry) && !WatcherEventNormalizer.IsTransient(entry))
+            .Select(entry =>
+            {
+                var isFolder = Directory.Exists(entry);
+                return new DiskEntry(entry, IoPath.GetFileName(entry), isFolder, isFolder && SafeHasAnyChild(entry));
+            })
+            .ToList();
+        return new FolderRead(entries, null, ReadView(folderPath, folderName, entries.Select(entry => (entry.Name, entry.IsFolder)).ToList()));
+    }
+
+    /// <summary>
+    /// Where a folder's registrations nest and what state each entry is in, decided from its names
+    /// without the lock: both read the registrations, and the states peek into the folders in it.
+    /// </summary>
+    private FolderView ReadView(string folderPath, string? folderName, IReadOnlyList<(string Name, bool IsFolder)> names) =>
+        new(
+            _catalog is null ? null : HierarchyNesting.Assign(names, name => ResolvedBodyNameOf(folderPath, name)),
+            _states?.Decide(folderName, folderPath, names) ?? []);
+
+    /// <summary>
+    /// Applies one folder's scan under the lock: new entries are added, known ones refreshed, and
+    /// those known when the scan began that it did not find are removed; then the nesting and the
+    /// states read with it. An entry the watcher added while the scan ran is left alone.
+    /// </summary>
+    private IReadOnlyList<EntryNode> ApplyFolder(ShortGuid? folderId, string folderPath, FolderRead read, HashSet<ShortGuid> knownBefore, bool raiseEvents)
+    {
+        if (read.Entries is not { } diskEntries)
+        {
             // The folder is shown greyed out rather than the call failing, so without this
             // line there is nothing anywhere saying why it went grey.
-            _logger.Warning(ex, "Could not read {FolderPath}; marking it unavailable", folderPath);
+            _logger.Warning(read.Failure, "Could not read {FolderPath}; marking it unavailable", folderPath);
             if (folderId is { } unavailableId && _index.TryGet(unavailableId, out var unavailableEntry) && unavailableEntry.Available)
             {
                 _index.Set(unavailableEntry with { Available = false });
@@ -437,18 +598,18 @@ public sealed class HierarchyModel
 
         var currentPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-        foreach (var entryPath in diskEntries)
+        foreach (var diskEntry in diskEntries)
         {
-            currentPaths.Add(entryPath);
+            currentPaths.Add(diskEntry.Path);
 
-            if (_index.TryGetId(entryPath, out var existingId))
+            if (_index.TryGetId(diskEntry.Path, out var existingId))
             {
                 var existing = _index[existingId];
 
                 // A folder's HasChildren comes from disk; a FILE's comes from its nested
                 // registrations, which ApplyNesting below owns - zeroing it here would make
                 // every sync flap a subject's expander.
-                var refreshedHasChildren = existing.IsFolder ? SafeHasAnyChild(entryPath) : existing.HasChildren;
+                var refreshedHasChildren = existing.IsFolder ? diskEntry.HasAnyChild : existing.HasChildren;
                 if (!existing.Available || existing.HasChildren != refreshedHasChildren)
                 {
                     _index.Set(existing with { Available = true, HasChildren = refreshedHasChildren });
@@ -456,8 +617,7 @@ public sealed class HierarchyModel
             }
             else
             {
-                var isFolder = Directory.Exists(entryPath);
-                var node = AddEntry(folderId, IoPath.GetFileName(entryPath), isFolder, entryPath);
+                var node = AddEntry(folderId, diskEntry.Name, diskEntry.IsFolder, diskEntry.HasAnyChild, diskEntry.Path);
 
                 if (raiseEvents)
                 {
@@ -470,7 +630,7 @@ public sealed class HierarchyModel
         // registration's model parent is its subject, but it still lives in this folder,
         // and its deletion must still be noticed here.
         foreach (var staleId in _index.In(folderPath)
-                     .Where(e => _index.TryGetPath(e.Id, out var p) && !currentPaths.Contains(p))
+                     .Where(e => knownBefore.Contains(e.Id) && _index.TryGetPath(e.Id, out var p) && !currentPaths.Contains(p))
                      .Select(e => e.Id)
                      .ToList())
         {
@@ -481,8 +641,8 @@ public sealed class HierarchyModel
             }
         }
 
-        ApplyNesting(folderPath, raiseEvents);
-        RefreshDiagramStates(folderId, folderPath, raiseEvents);
+        ApplyNesting(folderPath, read.View.Placements, raiseEvents);
+        ApplyStates(folderId, folderPath, read.View.States, raiseEvents);
 
         // Rebuilt rather than returned from `results`: the nesting pass may have re-parented
         // entries after their snapshot was taken, and a registration appears under its subject
@@ -500,9 +660,9 @@ public sealed class HierarchyModel
     /// re-parent under their subject files, subjects' <see cref="EntryNode.HasChildren"/> follow,
     /// and every change is pushed so a watching client converges without a reload.
     /// </summary>
-    private void ApplyNesting(string folderPath, bool raiseEvents)
+    private void ApplyNesting(string folderPath, IReadOnlyList<NestedEntry>? placements, bool raiseEvents)
     {
-        if (_catalog is null)
+        if (placements is null)
         {
             return;
         }
@@ -514,10 +674,6 @@ public sealed class HierarchyModel
         {
             folderParentId = ownId;
         }
-
-        var placements = HierarchyNesting.Assign(
-            siblings.Select(sibling => (sibling.Name, sibling.IsFolder)).ToList(),
-            name => ResolvedBodyNameOf(folderPath, name));
 
         var byName = siblings.ToDictionary(sibling => sibling.Name, sibling => sibling, StringComparer.OrdinalIgnoreCase);
         foreach (var placement in placements)
@@ -560,41 +716,44 @@ public sealed class HierarchyModel
 
     /// <summary>
     /// Applies <see cref="DiagramStateDecorator"/>'s states for one scanned folder and raises
-    /// <see cref="HierarchyEntryUpdated"/> where a rescan changed one. Addressed by path, which is
-    /// what the watcher handlers hold.
+    /// <see cref="HierarchyEntryUpdated"/> where a rescan changed one. The folder's own change is
+    /// raised even on a listing, whose response carries the folder's children but never the folder.
     /// </summary>
-    private void RefreshDiagramStatesAt(string folderPath, bool raiseEvents)
+    private void ApplyStates(ShortGuid? folderId, string folderPath, IReadOnlyList<DiagramStateDecorator.Decision> states, bool raiseEvents)
     {
-        if (string.Equals(folderPath, RootPath, StringComparison.OrdinalIgnoreCase))
+        var byName = new Dictionary<string, ShortGuid>(StringComparer.OrdinalIgnoreCase);
+        foreach (var entry in _index.In(folderPath))
         {
-            RefreshDiagramStates(null, folderPath, raiseEvents);
-        }
-        else if (_index.TryGetId(folderPath, out var folderId))
-        {
-            RefreshDiagramStates(folderId, folderPath, raiseEvents);
-        }
-    }
-
-    private void RefreshDiagramStates(ShortGuid? folderId, string folderPath, bool raiseEvents)
-    {
-        if (_states is null)
-        {
-            return; // A model built without routing (older tests, degraded hosts) stays neutral.
+            byName.TryAdd(entry.Name, entry.Id);
         }
 
-        var folder = folderId is { } id && _index.TryGet(id, out var own) ? own : null;
-        foreach (var decision in _states.Decide(folder, folderPath, _index.In(folderPath).ToList()))
+        foreach (var decision in states)
         {
-            var current = _index[decision.EntryId];
+            ShortGuid entryId;
+            if (decision.IsTheFolder)
+            {
+                if (folderId is not { } ownId || !_index.Contains(ownId))
+                {
+                    continue;
+                }
+
+                entryId = ownId;
+            }
+            else if (!byName.TryGetValue(decision.Name, out entryId))
+            {
+                continue; // gone while the states were read
+            }
+
+            var current = _index[entryId];
             if (current.DiagramState == decision.State)
             {
                 continue;
             }
 
             _index.Set(current with { DiagramState = decision.State });
-            if (raiseEvents || decision.RaisedOnAListing)
+            if (raiseEvents || decision.IsTheFolder)
             {
-                EntryChanged?.Invoke(new HierarchyEntryUpdated(decision.EntryId, current.HasChildren, DiagramState: decision.State));
+                EntryChanged?.Invoke(new HierarchyEntryUpdated(entryId, current.HasChildren, DiagramState: decision.State));
             }
         }
     }
@@ -635,10 +794,9 @@ public sealed class HierarchyModel
             : null;
     }
 
-    private EntryNode AddEntry(ShortGuid? parentId, string name, bool isFolder, string path)
+    private EntryNode AddEntry(ShortGuid? parentId, string name, bool isFolder, bool hasChildren, string path)
     {
         var newId = ShortGuid.NewShortGuid();
-        var hasChildren = isFolder && SafeHasAnyChild(path);
         var node = new EntryNode(newId, parentId, name, isFolder, Available: true, hasChildren);
         _index.Add(node, path);
         return node;

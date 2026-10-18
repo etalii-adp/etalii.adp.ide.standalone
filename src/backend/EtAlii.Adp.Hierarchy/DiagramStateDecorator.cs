@@ -10,8 +10,8 @@ namespace EtAlii.Adp.Hierarchy;
 /// pass uses, with each registration's body resolved once rather than per file. Which tool a
 /// registration names is <see cref="ToolRouter"/>'s answer, reached through the body names the
 /// model resolves; which extensions the diagram types claim, and which of them take a folder as
-/// their subject, are the diagram router's own questions. It decides and changes nothing:
-/// <see cref="HierarchyModel"/> applies the states and raises their updates.
+/// their subject, are the diagram router's own questions. It decides and changes nothing, so the
+/// model runs it outside its lock and applies the states, and raises their updates, under it.
 /// </summary>
 internal sealed class DiagramStateDecorator
 {
@@ -32,17 +32,20 @@ internal sealed class DiagramStateDecorator
         _bodyNameOf = bodyNameOf;
     }
 
-    /// <summary>One entry's decided state, and whether its change is raised even on a listing.</summary>
-    public readonly record struct Decision(ShortGuid EntryId, EntryDiagramState State, bool RaisedOnAListing);
+    /// <summary>
+    /// One entry's decided state, by its name in the folder; <paramref name="IsTheFolder"/> marks
+    /// the folder's own, whose change is raised even on a listing.
+    /// </summary>
+    public readonly record struct Decision(string Name, EntryDiagramState State, bool IsTheFolder);
 
     /// <summary>
     /// The states of the entries living in <paramref name="folderPath"/>, and of the folder itself
-    /// when it is not the root.
+    /// when it is not the root. Reads the disk: the registrations, and the files of each folder in it.
     /// </summary>
-    /// <param name="folder">The folder's own entry; null for the root, which has none.</param>
+    /// <param name="folderName">The folder's own name; null for the root, which has no entry.</param>
     /// <param name="folderPath">The folder.</param>
     /// <param name="contained">The entries living in it, whatever their parent.</param>
-    public IReadOnlyList<Decision> Decide(EntryNode? folder, string folderPath, IReadOnlyList<EntryNode> contained)
+    public IReadOnlyList<Decision> Decide(string? folderName, string folderPath, IReadOnlyList<(string Name, bool IsFolder)> contained)
     {
         var decisions = new List<Decision>();
         var names = contained.Select(entry => entry.Name).ToList();
@@ -55,8 +58,8 @@ internal sealed class DiagramStateDecorator
 
         foreach (var file in contained.Where(entry => !entry.IsFolder))
         {
-            decisions.Add(new Decision(file.Id, EntryDiagramStates.Decide(
-                file.Name, isFolder: false, names, BodyNameOf, _router.ClaimsExtensionOf, _editors.IsClaimed, DeclaresFolderSubject), RaisedOnAListing: false));
+            decisions.Add(new Decision(file.Name, EntryDiagramStates.Decide(
+                file.Name, isFolder: false, names, BodyNameOf, _router.ClaimsExtensionOf, _editors.IsClaimed, DeclaresFolderSubject), IsTheFolder: false));
         }
 
         // The folder's own state comes from its contents, so it is decided here - in ITS scan -
@@ -65,10 +68,10 @@ internal sealed class DiagramStateDecorator
         // folder's CHILDREN, never the folder itself, so the watch stream is the only channel this
         // change can reach the client on - found live, where the folder stayed neutral after
         // expanding it.
-        if (folder is not null)
+        if (folderName is not null)
         {
-            decisions.Add(new Decision(folder.Id, EntryDiagramStates.Decide(
-                folder.Name, isFolder: true, names, BodyNameOf, _router.ClaimsExtensionOf, _editors.IsClaimed, DeclaresFolderSubject), RaisedOnAListing: true));
+            decisions.Add(new Decision(folderName, EntryDiagramStates.Decide(
+                folderName, isFolder: true, names, BodyNameOf, _router.ClaimsExtensionOf, _editors.IsClaimed, DeclaresFolderSubject), IsTheFolder: true));
         }
 
         // And each CONTAINED folder's state, from a one-level peek at its files - the colour
@@ -89,8 +92,8 @@ internal sealed class DiagramStateDecorator
                 continue; // Vanished or unreadable mid-scan: its state stays what it was.
             }
 
-            decisions.Add(new Decision(sub.Id, EntryDiagramStates.Decide(
-                sub.Name, isFolder: true, subNames, name => _bodyNameOf(subPath, name), _router.ClaimsExtensionOf, _editors.IsClaimed, registration => DeclaresFolderSubjectIn(subPath, registration)), RaisedOnAListing: false));
+            decisions.Add(new Decision(sub.Name, EntryDiagramStates.Decide(
+                sub.Name, isFolder: true, subNames, name => _bodyNameOf(subPath, name), _router.ClaimsExtensionOf, _editors.IsClaimed, registration => DeclaresFolderSubjectIn(subPath, registration)), IsTheFolder: false));
         }
 
         return decisions;
