@@ -8,7 +8,7 @@ namespace EtAlii.Adp.Hierarchy.Tests;
 
 /// <summary>
 /// <see cref="DiagramStateDecorator"/> on its own: what it decides for a folder's files, the folder
-/// itself and the folders in it, and that only the folder's own decision is raised on a listing.
+/// itself and the folders in it, by name, with the folder's own decision marked as its own.
 /// </summary>
 public class DiagramStateDecoratorTests : IDisposable
 {
@@ -35,11 +35,8 @@ public class DiagramStateDecoratorTests : IDisposable
         public IReadOnlyList<EditorDefinition> All { get; } = definitions;
     }
 
-    private static EntryNode Entry(string name, bool isFolder = false) =>
-        new(ShortGuid.NewShortGuid(), null, name, isFolder, Available: true, HasChildren: false);
-
     [Fact]
-    public void Decide_AFoldersFilesAndTheFoldersInIt_AndRaisesOnlyTheFoldersOwnOnAListing()
+    public void Decide_AFoldersFilesAndTheFoldersInIt_MarkingTheFoldersOwn()
     {
         // Arrange: in "docs", a registered pair, a bare body, a text file and a folder holding a
         // folder-subject registration.
@@ -50,8 +47,7 @@ public class DiagramStateDecoratorTests : IDisposable
         File.WriteAllText(IoPath.Combine(docs, "bare.mm"), "<map/>");
         File.WriteAllText(IoPath.Combine(docs, "notes.txt"), "notes\n");
         File.WriteAllText(IoPath.Combine(docs, "infrastructure", "structure.adp"), Structure.Origin.MimeType + "\n");
-        var folder = Entry("docs", isFolder: true);
-        var contained = new[] { Entry("ideas.mm"), Entry("ideas.adp"), Entry("bare.mm"), Entry("notes.txt"), Entry("infrastructure", isFolder: true) };
+        (string Name, bool IsFolder)[] contained = [("ideas.mm", false), ("ideas.adp", false), ("bare.mm", false), ("notes.txt", false), ("infrastructure", true)];
         var decorator = new DiagramStateDecorator(
             _root,
             new DiagramFileRouter(_catalog),
@@ -59,15 +55,14 @@ public class DiagramStateDecoratorTests : IDisposable
             (folderPath, name) => name.Equals("ideas.adp", StringComparison.OrdinalIgnoreCase) && folderPath == docs ? "ideas.mm" : null);
 
         // Act.
-        var decisions = decorator.Decide(folder, docs, contained).ToDictionary(decision => decision.EntryId);
+        var byName = decorator.Decide("docs", docs, contained).ToDictionary(decision => decision.Name);
 
         // Assert.
-        var byName = contained.Append(folder).ToDictionary(entry => entry.Name, entry => decisions[entry.Id]);
         Assert.Equal(EntryDiagramState.Registered, byName["ideas.mm"].State);
         Assert.Equal(EntryDiagramState.Registered, byName["ideas.adp"].State);
         Assert.Equal(EntryDiagramState.Potential, byName["bare.mm"].State);
         Assert.Equal(EntryDiagramState.Unspecified, byName["notes.txt"].State);
         Assert.Equal(EntryDiagramState.Registered, byName["infrastructure"].State);
-        Assert.Equal(["docs"], byName.Where(pair => pair.Value.RaisedOnAListing).Select(pair => pair.Key));
+        Assert.Equal(["docs"], byName.Where(pair => pair.Value.IsTheFolder).Select(pair => pair.Key));
     }
 }
