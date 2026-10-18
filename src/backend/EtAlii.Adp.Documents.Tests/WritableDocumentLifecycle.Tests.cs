@@ -71,8 +71,10 @@ public class WritableDocumentLifecycleTests : IDisposable
         Assert.Same(note, lifecycle.Get(path));
     }
 
-    [Fact]
-    public async Task AReloadForItsOwnSave_ArrivingAfterTheSaveReturned_IsIgnored()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task AReloadForItsOwnSave_ArrivingAfterTheSaveReturned_IsIgnored(bool asynchronously)
     {
         // The ordering the watcher actually produces: it reports a write after it lands, on its own
         // thread, so the notification for a save nearly always arrives once the save has returned.
@@ -84,14 +86,16 @@ public class WritableDocumentLifecycleTests : IDisposable
         note.Text = "edited";
         await lifecycle.SaveAsync(path, note, TestContext.Current.CancellationToken);
 
-        var reloaded = lifecycle.Reload(path);
+        var reloaded = await Reload(lifecycle, path, asynchronously);
 
         Assert.False(reloaded);
         Assert.Same(note, lifecycle.Get(path));
     }
 
-    [Fact]
-    public async Task AnExternalEditAfterItsOwnSave_IsTaken()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task AnExternalEditAfterItsOwnSave_IsTaken(bool asynchronously)
     {
         // The control for the test above: a guard that ignored every reload after a save would pass
         // that one and leave the store deaf to the next person who edits the file.
@@ -102,7 +106,7 @@ public class WritableDocumentLifecycleTests : IDisposable
         await lifecycle.SaveAsync(path, note, TestContext.Current.CancellationToken);
         await File.WriteAllTextAsync(path, "changed elsewhere", TestContext.Current.CancellationToken);
 
-        var reloaded = lifecycle.Reload(path);
+        var reloaded = await Reload(lifecycle, path, asynchronously);
 
         Assert.True(reloaded);
         Assert.Equal("changed elsewhere", lifecycle.GetOrLoad(path).Text);
@@ -266,6 +270,11 @@ public class WritableDocumentLifecycleTests : IDisposable
         Assert.Equal("two\n", await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
         Assert.Same(basis, lifecycle.Get(path));
     }
+
+    // The synchronous reload and the asynchronous one answer alike until the synchronous one goes
+    // (code-structure T283), so the self-write rule is held for both.
+    private static async Task<bool> Reload(WritableDocumentLifecycle<Note> lifecycle, string path, bool asynchronously) =>
+        asynchronously ? await lifecycle.ReloadAsync(path, TestContext.Current.CancellationToken) : lifecycle.Reload(path);
 
     private static WritableDocumentLifecycle<Note> Lifecycle(Func<string, string, CancellationToken, Task>? write = null) =>
         new((_, text) => new Note(text), note => note.Text, unavailable: null, write ?? new FileWriter().SaveAsync);

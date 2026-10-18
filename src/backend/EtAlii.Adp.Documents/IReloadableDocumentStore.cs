@@ -17,4 +17,15 @@ public interface IReloadableDocumentStore
     /// external change, and must not bounce back as one.
     /// </summary>
     void Reload(string path);
+
+    /// <inheritdoc cref="Reload"/>
+    /// <remarks>
+    /// Read without holding a thread (code-structure FR-050). A store that has not moved to the
+    /// asynchronous reads yet answers through <see cref="Reload"/>, until every store has (T283).
+    /// </remarks>
+    Task ReloadAsync(string path, CancellationToken cancellationToken)
+    {
+        Reload(path);
+        return Task.CompletedTask;
+    }
 }
