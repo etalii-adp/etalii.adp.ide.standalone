@@ -10,12 +10,11 @@ namespace EtAlii.Adp.Sessions;
 /// </summary>
 public static class ServiceCollectionAddConnectionSessionsExtension
 {
-    public static IServiceCollection AddConnectionSessions(this IServiceCollection services)
+    public static void AddConnectionSessions(this IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);
 
         services.TryAddSingleton<ConnectionSessions>();
         services.TryAddEnumerable(ServiceDescriptor.Singleton<IProjectSessionPart, HistoryRetention>());
-        return services;
     }
 }
