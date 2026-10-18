@@ -25,6 +25,11 @@
     <EmbeddedResource Include="..\..\diagrams\gartner-hype-cycle-graph\definition\provenance.json" LogicalName="gartner-hype-cycle-graph.provenance.json" />
     <EmbeddedResource Include="..\..\diagrams\agent-behavior-modelling\definition\agent-behavior-modelling.dis" LogicalName="agent-behavior-modelling.dis" />
     <EmbeddedResource Include="..\..\diagrams\agent-behavior-modelling\definition\provenance.json" LogicalName="agent-behavior-modelling.provenance.json" />
+    <!-- Two test definitions of one metamodel and two origins, for the set of bundled definitions. -->
+    <EmbeddedResource Include="Definitions\wide-reading.dis" LogicalName="wide-reading.dis" />
+    <EmbeddedResource Include="Definitions\wide-reading.provenance.json" LogicalName="wide-reading.provenance.json" />
+    <EmbeddedResource Include="Definitions\narrow-reading.dis" LogicalName="narrow-reading.dis" />
+    <EmbeddedResource Include="Definitions\narrow-reading.provenance.json" LogicalName="narrow-reading.provenance.json" />
   </ItemGroup>
 
 </Project>

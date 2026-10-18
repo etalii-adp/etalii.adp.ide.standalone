@@ -1,0 +1,65 @@
+{
+  "disl": "0.3",
+  "language": {
+    "id": "org.example.reading.wide",
+    "version": "1.0.0",
+    "origin": "example/wide"
+  },
+  "doc": "A test definition: one of two readings of one body, which shows boxes and notes. Written for the tests of the bundled definition set; bundled from nowhere.",
+  "metamodel": {
+    "types": {
+      "Box": {
+        "label": "Box",
+        "attributes": {
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "Note": {
+        "label": "Note",
+        "attributes": {
+          "text": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "relations": {
+      "Link": {
+        "source": "Box",
+        "target": "Box"
+      }
+    }
+  },
+  "toolbox": {
+    "groups": [
+      {
+        "id": "shapes",
+        "tools": [
+          {
+            "id": "addBox",
+            "creates": "Box"
+          },
+          {
+            "id": "addNote",
+            "creates": "Note"
+          }
+        ]
+      }
+    ],
+    "contextMenus": [
+      {
+        "for": [
+          "Box"
+        ],
+        "tools": [
+          {
+            "kind": "delete",
+            "label": "Remove box"
+          }
+        ]
+      }
+    ]
+  }
+}
