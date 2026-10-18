@@ -104,7 +104,7 @@ Twenty-nine of the 65 are claimed by a waiting task of the second stage (tasks 1
   - Run it for the six, never editing a bundled file by hand, and embed each `.dis` with its provenance resource.
   - `C4Definitions`: the six loaded once through `BundledDefinitionSet`, `For(DiagramOrigin)`, `For(C4ViewKind)` and `Diagnostics`; the table of origins and view kinds moves here from `ServiceCollection.AddC4.cs`. Nothing derives from it yet.
   - `BundledDefinition.Tests`: for each of the six, the embedded bytes equal `definition/`, the recorded sha256 holds and the definition loads with no diagnostic of severity error; and the six shared layers (metamodel, notation, forms, constraints, behavior, persistence) are equal as parsed data, the failure naming the layer and the two files. See the comparison fail against a deliberately changed copy first.
-  - `c4/code` keeps its registration and `C4CodeDocumentFactory`, and gets no definition; a test holds that `C4Definitions` has none for it and that the factory still refuses with its sentence.
+  - `c4/code` keeps its registration and its refusing empty document, and gets no definition; a test holds that `C4Definitions` has none for it and that the factory still refuses with its sentence.
   - Build a newly created worktree before trusting the gates, because this task changes what is embedded. The transcript is unchanged.
   - _Leverage: `src/diagrams/timeline/backend/EtAlii.Adp.Diagram.Timeline.Tests/BundledDefinition.Tests.cs`, `src/diagrams/timeline/definition/provenance.json`, `TimelineDefinition.cs` for the shape of `C4Definitions`_
   - _Requirements: 2.3, 2.5, 2.6, 2.7, 12.3_
