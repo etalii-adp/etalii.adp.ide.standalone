@@ -58,7 +58,7 @@ Classifying by path segment — "count the ones containing `backend`" as the cor
 | Commands and undo/redo | `EtAlii.Adp.History` |
 | Errors and warnings | `EtAlii.Adp.Problems` |
 | Known projects and workspace roots | `EtAlii.Adp.Projects` |
-| Every kind of session: sign-in sessions (the session store, the session context and the interceptor that checks every call), the tool-session contracts of the three kinds with their factory contracts and registries, the document session and the text editor session a module builds on, and the viewport registry; it references the diagram, designer, editor and history projects, never the reverse | `EtAlii.Adp.Sessions` |
+| Every kind of session: sign-in sessions (the session store, the session context and the interceptor that checks every call), the tool-session contracts of the three kinds with their factory contracts and registries, the document session and the text editor session a module builds on, the viewport registry, and the connection and project sessions that acquire and release what a connection holds; it references the diagram, designer, editor and history projects, never the reverse | `EtAlii.Adp.Sessions` |
 | Workspace tree, kept current from the project's file events | `EtAlii.Adp.Hierarchy` |
 | Geometry with no dependency: the rectangle, the viewport test's operand, row packing, the row a drag snaps to, text width and graph layering | `EtAlii.Adp.Layout` |
 | Diagram-type abstractions, including the diagram definition and validation contracts; it references the documents project and the shared primitives only | `EtAlii.Adp.Diagram` |
