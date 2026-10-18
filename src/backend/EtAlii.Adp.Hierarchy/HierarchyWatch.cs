@@ -71,8 +71,10 @@ public sealed class HierarchyWatch
         // cancelled before it, so such a recovery gives up at its first wait instead.
         var recoveryToken = recoveryCts.Token;
 
-        // The recovery under way, if any; the latch below lets only one run at a time.
-        Task? recovery = null;
+        // The recovery an announcement starts, waited for as the watch closes; the latch below lets
+        // only one run at a time. Disposed in the finally rather than by a using, since a late
+        // announcement through the file events may still start one, which then gives up at once.
+        var recoveries = new RunningTasks();
 
         // One notification per outage, whichever detector saw it first. On Windows the
         // watcher's own Error event (heard as Lost, with the root gone) reports the root's deletion almost instantly; on Linux,
@@ -114,10 +116,8 @@ public sealed class HierarchyWatch
             // The poll first, since it may start a recovery on its way out; then that recovery,
             // so neither outlives the watch that started it (code-structure FR-070).
             await presence;
-            if (Volatile.Read(ref recovery) is { } recovering)
-            {
-                await recovering;
-            }
+            await recoveries.StopAsync();
+            recoveries.Dispose();
 
             _logger.Information("Stopped watching {RootPath} on watch {WatchId}", rootPath, watchId);
         }
@@ -140,7 +140,7 @@ public sealed class HierarchyWatch
             }
 
             model.NotifyRootUnavailable(message);
-            Volatile.Write(ref recovery, RecoverAsync());
+            recoveries.Start(_ => RecoverAsync());
         }
     }
 
