@@ -229,9 +229,9 @@ public sealed class FilePromptFlowTests : IClassFixture<FilePromptFlowTests.Host
             return inner.List(userId);
         }
 
-        public ProjectRecord Add(ShortGuid userId, string name, PathRecord path) => inner.Add(userId, name, path);
+        public Task<ProjectRecord> AddAsync(ShortGuid userId, string name, PathRecord path, CancellationToken cancellationToken) => inner.AddAsync(userId, name, path, cancellationToken);
 
-        public void Remove(ShortGuid userId, ShortGuid projectId) => inner.Remove(userId, projectId);
+        public Task RemoveAsync(ShortGuid userId, ShortGuid projectId, CancellationToken cancellationToken) => inner.RemoveAsync(userId, projectId, cancellationToken);
     }
 
     /// <summary>Asks for a YAML file of the project, with one pinned file its own rule would refuse.</summary>

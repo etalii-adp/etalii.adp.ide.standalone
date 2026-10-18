@@ -1,4 +1,5 @@
 using EtAlii.Adp.Designer.TableModel;
+using EtAlii.Adp.Files;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -355,11 +356,11 @@ public sealed class KnowledgeRelationsTests : IDisposable
         var cities = KnowledgeFiles.CopyPlain("cities" + extension, _root);
         var before = await File.ReadAllBytesAsync(cities, TestContext.Current.CancellationToken);
         var regions = IoPath.Combine(_root, "regions.yaml");
-        var follower = new KnowledgeTargetRename(new KnowledgeDocuments());
+        var follower = new KnowledgeTargetRename(new KnowledgeDocuments(), new FileWriter());
 
         // Act: the target is renamed, as the explorer does it.
         File.Move(Provinces, regions);
-        follower.Renamed(_root, Provinces, regions);
+        await follower.RenamedAsync(_root, Provinces, regions, TestContext.Current.CancellationToken);
 
         // Assert: the relation names the file where it is now, and resolves; the renamed file is untouched.
         var table = KnowledgeDocumentStore.Read(cities).Body!.Table;
@@ -372,7 +373,7 @@ public sealed class KnowledgeRelationsTests : IDisposable
 
         // Act: the rename is undone, which is a rename back.
         File.Move(regions, Provinces);
-        follower.Renamed(_root, regions, Provinces);
+        await follower.RenamedAsync(_root, regions, Provinces, TestContext.Current.CancellationToken);
 
         // Assert: byte for byte what it was.
         Assert.Equal(before, await File.ReadAllBytesAsync(cities, TestContext.Current.CancellationToken));
@@ -393,7 +394,7 @@ public sealed class KnowledgeRelationsTests : IDisposable
 
         // Act.
         Directory.Move(old, renamed);
-        new KnowledgeTargetRename(new KnowledgeDocuments()).Renamed(_root, old, renamed);
+        await new KnowledgeTargetRename(new KnowledgeDocuments(), new FileWriter()).RenamedAsync(_root, old, renamed, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Equal("reference/provinces.yaml", KnowledgeDocumentStore.Read(cities).Body!.Table.Properties.Single(property => property.Id == "p5").TargetFile);

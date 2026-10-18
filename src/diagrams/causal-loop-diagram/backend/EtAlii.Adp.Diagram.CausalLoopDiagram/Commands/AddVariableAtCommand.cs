@@ -18,7 +18,7 @@ public sealed record AddVariableAtCommand(
     string BodyPath, string RegistrationPath, string Id, string Label, double X, double Y) : ICommand;
 
 /// <inheritdoc cref="AddVariableAtCommand" />
-public sealed class AddVariableAtCommandHandler(ICausalLoopDocumentStore documents)
+public sealed class AddVariableAtCommandHandler(ICausalLoopDocumentStore documents, IFileWriter writer)
     : ICommandHandler<AddVariableAtCommand>
 {
     public async Task<CommandResult> ExecuteAsync(AddVariableAtCommand command, CancellationToken cancellationToken = default)
@@ -56,14 +56,15 @@ public sealed class AddVariableAtCommandHandler(ICausalLoopDocumentStore documen
         RegistrationPosition? priorPosition;
         try
         {
-            priorPosition = RegistrationLayout.SetPosition(
-                command.RegistrationPath, $"variable:{command.Id}", new RegistrationPosition(command.X, command.Y));
+            priorPosition = await RegistrationLayout.SetPositionAsync(
+                writer, command.RegistrationPath, $"variable:{command.Id}", new RegistrationPosition(command.X, command.Y), cancellationToken);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
             // The variable is stated; only its position could not be written. Rather than leave a
             // half-done edit that undo cannot fully reverse, put the document back and report.
-            RestoreCausalLoopDocument.Restore(documents, command.BodyPath, beforeBody);
+            // Not cancelled: a put-back stopped halfway would leave the half-done edit it exists to undo.
+            await RestoreCausalLoopDocument.RestoreAsync(documents, writer, command.BodyPath, beforeBody, CancellationToken.None);
             return CommandResult.Failure($"Could not store the variable's position: {exception.Message}");
         }
 
@@ -94,10 +95,10 @@ public sealed record RestoreVariableAdditionCommand(
     ICommand Redo) : ICommand;
 
 /// <inheritdoc cref="RestoreVariableAdditionCommand" />
-public sealed class RestoreVariableAdditionCommandHandler(ICausalLoopDocumentStore documents)
+public sealed class RestoreVariableAdditionCommandHandler(ICausalLoopDocumentStore documents, IFileWriter writer)
     : ICommandHandler<RestoreVariableAdditionCommand>
 {
-    public Task<CommandResult> ExecuteAsync(
+    public async Task<CommandResult> ExecuteAsync(
         RestoreVariableAdditionCommand command, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(command);
@@ -105,31 +106,31 @@ public sealed class RestoreVariableAdditionCommandHandler(ICausalLoopDocumentSto
 
         try
         {
-            RestoreCausalLoopDocument.Restore(documents, command.BodyPath, command.BodyText);
+            await RestoreCausalLoopDocument.RestoreAsync(documents, writer, command.BodyPath, command.BodyText, cancellationToken);
             if (command.PriorPosition is { } position)
             {
-                RegistrationLayout.SetPosition(command.RegistrationPath, command.ElementId, position);
+                await RegistrationLayout.SetPositionAsync(writer, command.RegistrationPath, command.ElementId, position, cancellationToken);
             }
             else
             {
-                RegistrationLayout.RemovePosition(command.RegistrationPath, command.ElementId);
+                await RegistrationLayout.RemovePositionAsync(writer, command.RegistrationPath, command.ElementId, cancellationToken);
             }
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
-            return Task.FromResult(CommandResult.Failure($"Could not undo the variable: {exception.Message}"));
+            return CommandResult.Failure($"Could not undo the variable: {exception.Message}");
         }
 
-        return Task.FromResult(CommandResult.Success(command.Redo));
+        return CommandResult.Success(command.Redo);
     }
 }
 
 /// <summary>Restoring a document's exact bytes, shared by the commands that need to undo an edit to it.</summary>
 internal static class RestoreCausalLoopDocument
 {
-    public static void Restore(ICausalLoopDocumentStore documents, string bodyPath, string text)
+    public static async Task RestoreAsync(ICausalLoopDocumentStore documents, IFileWriter writer, string bodyPath, string text, CancellationToken cancellationToken)
     {
-        AdpFileWriter.Save(bodyPath, text);
+        await writer.SaveAsync(bodyPath, text, cancellationToken);
         documents.Reload(bodyPath);
     }
 }

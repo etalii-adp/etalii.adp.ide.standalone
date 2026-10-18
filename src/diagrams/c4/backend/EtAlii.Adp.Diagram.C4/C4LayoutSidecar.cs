@@ -24,7 +24,8 @@ namespace EtAlii.Adp.Diagram.C4;
 /// Requirement 8.3 says survive reopening. A refused read therefore refuses the modify.
 /// </para>
 /// </remarks>
-public sealed class C4LayoutSidecar
+/// <param name="writer">Publishes and deletes the sidecar.</param>
+public sealed class C4LayoutSidecar(IFileWriter writer)
 {
     private static readonly ILogger _logger = Log.ForContext<C4LayoutSidecar>();
 
@@ -58,7 +59,7 @@ public sealed class C4LayoutSidecar
     }
 
     /// <summary>Records one element's position on one view, leaving every other view's alone.</summary>
-    public string Write(string bodyPath, string viewKey, string elementId, C4SidecarPosition position)
+    public async Task<string> WriteAsync(string bodyPath, string viewKey, string elementId, C4SidecarPosition position, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(bodyPath);
         ArgumentNullException.ThrowIfNull(viewKey);
@@ -79,11 +80,11 @@ public sealed class C4LayoutSidecar
         }
 
         view[elementId] = position;
-        return Persist(bodyPath, all);
+        return await PersistAsync(bodyPath, all, cancellationToken);
     }
 
     /// <summary>Forgets one element's authored position, handing it back to the layout.</summary>
-    public string Remove(string bodyPath, string viewKey, string elementId)
+    public async Task<string> RemoveAsync(string bodyPath, string viewKey, string elementId, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(bodyPath);
         ArgumentNullException.ThrowIfNull(viewKey);
@@ -101,11 +102,11 @@ public sealed class C4LayoutSidecar
             view.Remove(elementId);
         }
 
-        return Persist(bodyPath, all);
+        return await PersistAsync(bodyPath, all, cancellationToken);
     }
 
     /// <summary>Forgets every authored position for one view - what "reset layout" would do.</summary>
-    public string Clear(string bodyPath, string viewKey)
+    public async Task<string> ClearAsync(string bodyPath, string viewKey, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(bodyPath);
         ArgumentNullException.ThrowIfNull(viewKey);
@@ -125,7 +126,7 @@ public sealed class C4LayoutSidecar
             {
                 if (File.Exists(PathFor(bodyPath)))
                 {
-                    AdpFileWriter.Delete(PathFor(bodyPath));
+                    await writer.DeleteAsync(PathFor(bodyPath), cancellationToken);
                 }
             }
             catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
@@ -137,7 +138,7 @@ public sealed class C4LayoutSidecar
             return "";
         }
 
-        return Persist(bodyPath, all);
+        return await PersistAsync(bodyPath, all, cancellationToken);
     }
 
     /// <summary>
@@ -241,19 +242,19 @@ public sealed class C4LayoutSidecar
     private static string Unreadable(string bodyPath) =>
         $"The layout beside {Path.GetFileName(bodyPath)} could not be updated, so positions may not be as expected when the diagram is reopened.";
 
-    private static string Persist(string bodyPath, Dictionary<string, Dictionary<string, C4SidecarPosition>> all)
+    private async Task<string> PersistAsync(string bodyPath, Dictionary<string, Dictionary<string, C4SidecarPosition>> all, CancellationToken cancellationToken)
     {
         var path = PathFor(bodyPath);
         try
         {
-            AdpFileWriter.Save(path, JsonSerializer.Serialize(all, Options));
+            await writer.SaveAsync(path, JsonSerializer.Serialize(all, Options), cancellationToken);
             return "";
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
             _logger.Warning(exception, "Could not write the layout sidecar beside {BodyPath}", bodyPath);
 
-            // AdpFileWriter.Save removes its own scratch file before the failure surfaces.
+            // The writer removes its own scratch file before the failure surfaces.
             return $"The new position could not be saved beside {Path.GetFileName(bodyPath)}, so it will not be there when the diagram is reopened.";
         }
     }

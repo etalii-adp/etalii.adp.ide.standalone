@@ -63,7 +63,7 @@ public class ArrangeCausalLoopCommandTests : IDisposable
     }
 
     private Task<CommandResult> Arrange() =>
-        new ArrangeCausalLoopCommandHandler(_store).ExecuteAsync(
+        new ArrangeCausalLoopCommandHandler(_store, new FileWriter()).ExecuteAsync(
             new ArrangeCausalLoopCommand(_adpPath, _bodyPath), TestContext.Current.CancellationToken);
 
     // ---- what it writes, and where -------------------------------------------------------------
@@ -153,7 +153,7 @@ public class ArrangeCausalLoopCommandTests : IDisposable
         Assert.NotEqual(Registration, await File.ReadAllTextAsync(_adpPath, TestContext.Current.CancellationToken));
 
         var restore = Assert.IsType<RestoreCausalLoopRegistrationCommand>(result.Inverse);
-        var undone = await new RestoreCausalLoopRegistrationCommandHandler()
+        var undone = await new RestoreCausalLoopRegistrationCommandHandler(new FileWriter())
             .ExecuteAsync(restore, TestContext.Current.CancellationToken);
 
         // Assert.

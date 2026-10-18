@@ -15,5 +15,6 @@ public interface IEntryRenameFollower
     /// <param name="rootPath">The project the entry is in: how far a follower looks.</param>
     /// <param name="fromPath">Where the file or folder was.</param>
     /// <param name="toPath">Where it is now.</param>
-    void Renamed(string rootPath, string fromPath, string toPath);
+    /// <param name="cancellationToken">Stops the follow between the files it writes.</param>
+    Task RenamedAsync(string rootPath, string fromPath, string toPath, CancellationToken cancellationToken);
 }

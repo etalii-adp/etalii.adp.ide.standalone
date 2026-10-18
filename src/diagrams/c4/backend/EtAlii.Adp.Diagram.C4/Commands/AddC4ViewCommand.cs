@@ -30,7 +30,7 @@ public sealed record RemoveC4ViewCommand(string BodyPath, string RegistrationPat
 /// once the body that holds the view has been saved, because a registration naming a view its
 /// body does not contain would be worse than none.
 /// </remarks>
-internal sealed class AddC4ViewCommandHandler(IC4DocumentStore documents) : C4EditHandler<AddC4ViewCommand>(documents)
+internal sealed class AddC4ViewCommandHandler(IC4DocumentStore documents, IFileWriter writer) : C4EditHandler<AddC4ViewCommand>(documents)
 {
     private readonly IC4DocumentStore _documents = documents;
 
@@ -45,9 +45,10 @@ internal sealed class AddC4ViewCommandHandler(IC4DocumentStore documents) : C4Ed
 
         try
         {
-            AdpFileWriter.Save(
+            await writer.SaveAsync(
                 command.RegistrationPath,
-                command.MimeType + "\n" + "body: " + command.BodyRelativePath + "\n" + "view: " + command.ViewKey + "\n");
+                command.MimeType + "\n" + "body: " + command.BodyRelativePath + "\n" + "view: " + command.ViewKey + "\n",
+                cancellationToken);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
@@ -93,7 +94,7 @@ internal sealed class AddC4ViewCommandHandler(IC4DocumentStore documents) : C4Ed
 }
 
 /// <remarks>The view comes out through the edit run, and its registration is deleted once it has.</remarks>
-internal sealed class RemoveC4ViewCommandHandler(IC4DocumentStore documents) : C4EditHandler<RemoveC4ViewCommand>(documents)
+internal sealed class RemoveC4ViewCommandHandler(IC4DocumentStore documents, IFileWriter writer) : C4EditHandler<RemoveC4ViewCommand>(documents)
 {
     /// <inheritdoc />
     protected override async Task<CommandResult> RunAsync(RemoveC4ViewCommand command, CancellationToken cancellationToken)
@@ -108,7 +109,7 @@ internal sealed class RemoveC4ViewCommandHandler(IC4DocumentStore documents) : C
         {
             if (File.Exists(command.RegistrationPath))
             {
-                AdpFileWriter.Delete(command.RegistrationPath);
+                await writer.DeleteAsync(command.RegistrationPath, cancellationToken);
             }
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)

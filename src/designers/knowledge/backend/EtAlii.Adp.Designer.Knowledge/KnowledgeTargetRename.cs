@@ -14,11 +14,11 @@ namespace EtAlii.Adp.Designer.Knowledge;
 /// Part of the rename's own step. An undo of the rename is a rename back, which comes through
 /// here again and puts each relation back as it was, so nothing is kept between the two.
 /// </remarks>
-internal sealed class KnowledgeTargetRename(IKnowledgeDocumentStore documents) : IEntryRenameFollower
+internal sealed class KnowledgeTargetRename(IKnowledgeDocumentStore documents, IFileWriter writer) : IEntryRenameFollower
 {
     private static readonly ILogger _logger = Log.ForContext<KnowledgeTargetRename>();
 
-    public void Renamed(string rootPath, string fromPath, string toPath)
+    public async Task RenamedAsync(string rootPath, string fromPath, string toPath, CancellationToken cancellationToken)
     {
         foreach (var path in KnowledgeProject.Files(rootPath))
         {
@@ -48,7 +48,7 @@ internal sealed class KnowledgeTargetRename(IKnowledgeDocumentStore documents) :
                 continue;
             }
 
-            AdpFileWriter.Save(path, after);
+            await writer.SaveAsync(path, after, cancellationToken);
             documents.Reload(path);
         }
     }

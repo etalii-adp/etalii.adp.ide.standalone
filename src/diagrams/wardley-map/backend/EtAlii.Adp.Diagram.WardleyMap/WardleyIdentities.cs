@@ -25,7 +25,8 @@ namespace EtAlii.Adp.Diagram.WardleyMap;
 /// sidecar rule exists for.
 /// </para>
 /// </remarks>
-public sealed class WardleyIdentities
+/// <param name="writer">Publishes and deletes the sidecar.</param>
+public sealed class WardleyIdentities(IFileWriter writer)
 {
     private static readonly ILogger _logger = Log.ForContext<WardleyIdentities>();
 
@@ -89,7 +90,7 @@ public sealed class WardleyIdentities
     /// elements has no identities to keep, and a stray file would only invite the question of
     /// what it is for.
     /// </remarks>
-    public string Write(string bodyPath, IReadOnlyList<WardleyIdentityEntry> entries)
+    public async Task<string> WriteAsync(string bodyPath, IReadOnlyList<WardleyIdentityEntry> entries, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(bodyPath);
         ArgumentNullException.ThrowIfNull(entries);
@@ -97,7 +98,7 @@ public sealed class WardleyIdentities
         var path = PathFor(bodyPath);
         if (entries.Count == 0)
         {
-            Remove(bodyPath);
+            await RemoveAsync(bodyPath, cancellationToken);
             return "";
         }
 
@@ -113,7 +114,7 @@ public sealed class WardleyIdentities
                 Directory.CreateDirectory(directory);
             }
 
-            AdpFileWriter.Save(path, JsonSerializer.Serialize(entries, Options));
+            await writer.SaveAsync(path, JsonSerializer.Serialize(entries, Options), cancellationToken);
             return "";
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
@@ -126,7 +127,7 @@ public sealed class WardleyIdentities
             // underneath any selection still pointing at the old ones.
             _logger.Warning(exception, "Could not write the identity sidecar beside {BodyPath}", bodyPath);
 
-            // AdpFileWriter.Save removes its own scratch file before the failure surfaces.
+            // The writer removes its own scratch file before the failure surfaces.
             return $"The element identities beside {IoPath.GetFileName(bodyPath)} could not be saved, so this map's elements may be given new ids the next time it is opened.";
         }
     }
@@ -211,19 +212,19 @@ public sealed class WardleyIdentities
     }
 
     /// <summary>Deletes the sidecar, if there is one. Used when a map has no identities left to keep.</summary>
-    public void Remove(string bodyPath)
+    public Task RemoveAsync(string bodyPath, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(bodyPath);
-        TryDelete(PathFor(bodyPath));
+        return TryDeleteAsync(PathFor(bodyPath), cancellationToken);
     }
 
-    private static void TryDelete(string path)
+    private async Task TryDeleteAsync(string path, CancellationToken cancellationToken)
     {
         try
         {
             if (File.Exists(path))
             {
-                AdpFileWriter.Delete(path);
+                await writer.DeleteAsync(path, cancellationToken);
             }
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)

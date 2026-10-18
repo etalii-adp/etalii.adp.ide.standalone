@@ -24,58 +24,58 @@ public sealed record ArrangeAbmCommand(string AdpPath) : ICommand;
 public sealed record RestoreAbmRegistrationCommand(string AdpPath, string Text, ICommand Redo) : ICommand;
 
 /// <inheritdoc cref="ArrangeAbmCommand" />
-public sealed class ArrangeAbmCommandHandler : ICommandHandler<ArrangeAbmCommand>
+public sealed class ArrangeAbmCommandHandler(IFileWriter writer) : ICommandHandler<ArrangeAbmCommand>
 {
     /// <inheritdoc />
-    public Task<CommandResult> ExecuteAsync(ArrangeAbmCommand command, CancellationToken cancellationToken = default)
+    public async Task<CommandResult> ExecuteAsync(ArrangeAbmCommand command, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(command);
         cancellationToken.ThrowIfCancellationRequested();
 
         if (!File.Exists(command.AdpPath))
         {
-            return Task.FromResult(CommandResult.Failure(
-                "This behavior model was opened without a registration, so it has no dragged positions to forget."));
+            return CommandResult.Failure(
+                "This behavior model was opened without a registration, so it has no dragged positions to forget.");
         }
 
         string before;
         try
         {
-            before = SharedDocumentReader.ReadAllText(command.AdpPath);
+            before = await SharedDocumentReader.ReadAllTextAsync(command.AdpPath, cancellationToken);
             if (RegistrationLayout.Read(command.AdpPath).Count == 0)
             {
-                return Task.FromResult(CommandResult.Failure("This behavior model is already arranged."));
+                return CommandResult.Failure("This behavior model is already arranged.");
             }
 
-            RegistrationLayout.Prune(command.AdpPath, new HashSet<string>(StringComparer.Ordinal));
+            await RegistrationLayout.PruneAsync(writer, command.AdpPath, new HashSet<string>(StringComparer.Ordinal), cancellationToken);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
-            return Task.FromResult(CommandResult.Failure($"Could not arrange this behavior model: {exception.Message}"));
+            return CommandResult.Failure($"Could not arrange this behavior model: {exception.Message}");
         }
 
-        return Task.FromResult(CommandResult.Success(new RestoreAbmRegistrationCommand(command.AdpPath, before, command)));
+        return CommandResult.Success(new RestoreAbmRegistrationCommand(command.AdpPath, before, command));
     }
 }
 
 /// <inheritdoc cref="RestoreAbmRegistrationCommand" />
-public sealed class RestoreAbmRegistrationCommandHandler : ICommandHandler<RestoreAbmRegistrationCommand>
+public sealed class RestoreAbmRegistrationCommandHandler(IFileWriter writer) : ICommandHandler<RestoreAbmRegistrationCommand>
 {
     /// <inheritdoc />
-    public Task<CommandResult> ExecuteAsync(RestoreAbmRegistrationCommand command, CancellationToken cancellationToken = default)
+    public async Task<CommandResult> ExecuteAsync(RestoreAbmRegistrationCommand command, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(command);
         cancellationToken.ThrowIfCancellationRequested();
 
         try
         {
-            AdpFileWriter.Save(command.AdpPath, command.Text);
+            await writer.SaveAsync(command.AdpPath, command.Text, cancellationToken);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
-            return Task.FromResult(CommandResult.Failure($"Could not restore the registration: {exception.Message}"));
+            return CommandResult.Failure($"Could not restore the registration: {exception.Message}");
         }
 
-        return Task.FromResult(CommandResult.Success(command.Redo));
+        return CommandResult.Success(command.Redo);
     }
 }

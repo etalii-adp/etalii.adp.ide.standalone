@@ -1,4 +1,5 @@
 using EtAlii.Adp.Diagram;
+using EtAlii.Adp.Files;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.Problems;
 using EtAlii.Adp.Projects;
@@ -46,7 +47,7 @@ public class HostFixture : IDisposable
                 // The project list and the problem cache live and die with this host, not in
                 // the real user profile the host's own registrations point at.
                 services.RemoveAll<IProjectStore>();
-                services.AddSingleton<IProjectStore>(new FileProjectStore(AppDataRoot));
+                services.AddSingleton<IProjectStore>(new FileProjectStore(AppDataRoot, new FileWriter()));
                 services.RemoveAll<IProblemStore>();
                 services.AddSingleton<IProblemStore>(provider => new ProblemStore(
                     AppDataRoot,

@@ -250,9 +250,9 @@ public sealed class EditorServiceAnalysisTests : IDisposable
     {
         public IReadOnlyList<ProjectRecord> List(ShortGuid userId) => [project];
 
-        public ProjectRecord Add(ShortGuid userId, string name, PathRecord path) => throw new NotSupportedException();
+        public Task<ProjectRecord> AddAsync(ShortGuid userId, string name, PathRecord path, CancellationToken cancellationToken) => throw new NotSupportedException();
 
-        public void Remove(ShortGuid userId, ShortGuid projectId) => throw new NotSupportedException();
+        public Task RemoveAsync(ShortGuid userId, ShortGuid projectId, CancellationToken cancellationToken) => throw new NotSupportedException();
     }
 
     /// <summary>The analysis calls never touch the history; a call that did would throw here.</summary>

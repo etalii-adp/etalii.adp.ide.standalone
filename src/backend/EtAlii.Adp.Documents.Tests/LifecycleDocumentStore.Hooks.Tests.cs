@@ -117,10 +117,10 @@ public sealed class LifecycleDocumentStoreHooksTests : IDisposable
 
         protected override ParseOutcome<string> Parse(LineDocument body) => new(body.Text, []);
 
-        protected override string Saved(string path, DocumentEntry<LineDocument, string> entry)
+        protected override Task<string> SavedAsync(string path, DocumentEntry<LineDocument, string> entry, CancellationToken cancellationToken)
         {
             Heard.Add("saved " + entry.Model);
-            return _warning;
+            return Task.FromResult(_warning);
         }
 
         protected override void Installed(string path) => Heard.Add("installed " + GetOrLoad(path).Model);

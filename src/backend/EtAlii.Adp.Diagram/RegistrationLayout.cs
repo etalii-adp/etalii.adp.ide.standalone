@@ -59,7 +59,8 @@ public static class RegistrationLayout
     /// Writes one element's position and answers with the entry it replaced - null when the
     /// element had none - which is exactly what an undoable command needs for its inverse.
     /// </summary>
-    public static RegistrationPosition? SetPosition(string adpPath, string elementId, RegistrationPosition position)
+    /// <param name="writer">What publishes the registration, waiting for another save of it without blocking a thread.</param>
+    public static async Task<RegistrationPosition?> SetPositionAsync(IFileWriter writer, string adpPath, string elementId, RegistrationPosition position, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrEmpty(elementId);
 
@@ -67,19 +68,19 @@ public static class RegistrationLayout
         positions.TryGetValue(elementId, out var existing);
         var had = positions.ContainsKey(elementId);
         positions[elementId] = position;
-        WriteBlock(adpPath, positions);
+        await WriteBlockAsync(writer, adpPath, positions, cancellationToken);
         return had ? existing : null;
     }
 
     /// <summary>Removes one element's entry; removing the last entry removes the block itself.</summary>
-    public static void RemovePosition(string adpPath, string elementId)
+    public static async Task RemovePositionAsync(IFileWriter writer, string adpPath, string elementId, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrEmpty(elementId);
 
         var positions = new Dictionary<string, RegistrationPosition>(Read(adpPath), StringComparer.Ordinal);
         if (positions.Remove(elementId))
         {
-            WriteBlock(adpPath, positions);
+            await WriteBlockAsync(writer, adpPath, positions, cancellationToken);
         }
     }
 
@@ -88,11 +89,11 @@ public static class RegistrationLayout
     /// elements - and whose undo must put all of them back, not only the one that was dragged.
     /// An empty set removes the block.
     /// </summary>
-    public static void Replace(string adpPath, IReadOnlyDictionary<string, RegistrationPosition> positions)
+    public static Task ReplaceAsync(IFileWriter writer, string adpPath, IReadOnlyDictionary<string, RegistrationPosition> positions, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(positions);
 
-        WriteBlock(adpPath, positions);
+        return WriteBlockAsync(writer, adpPath, positions, cancellationToken);
     }
 
     /// <summary>
@@ -100,7 +101,7 @@ public static class RegistrationLayout
     /// on the next write" half of Requirement 7.5, for a module that knows which elements
     /// its document still holds.
     /// </summary>
-    public static void Prune(string adpPath, IReadOnlySet<string> liveElementIds)
+    public static async Task PruneAsync(IFileWriter writer, string adpPath, IReadOnlySet<string> liveElementIds, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(liveElementIds);
 
@@ -110,7 +111,7 @@ public static class RegistrationLayout
             .ToDictionary(entry => entry.Key, entry => entry.Value, StringComparer.Ordinal);
         if (kept.Count != positions.Count)
         {
-            WriteBlock(adpPath, kept);
+            await WriteBlockAsync(writer, adpPath, kept, cancellationToken);
         }
     }
 
@@ -121,10 +122,11 @@ public static class RegistrationLayout
     /// read and written by <see cref="AdpRegistration"/>, the one parser of a registration
     /// (code-structure FR-061).
     /// </summary>
-    private static void WriteBlock(string adpPath, IReadOnlyDictionary<string, RegistrationPosition> positions)
+    private static Task WriteBlockAsync(IFileWriter writer, string adpPath, IReadOnlyDictionary<string, RegistrationPosition> positions, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(writer);
         var registration = ReadRegistration(adpPath) ?? throw new FileNotFoundException("The registration file is not there.", adpPath);
-        AdpFileWriter.Save(adpPath, registration.WithLayout(positions));
+        return writer.SaveAsync(adpPath, registration.WithLayout(positions), cancellationToken);
     }
 
     /// <summary>

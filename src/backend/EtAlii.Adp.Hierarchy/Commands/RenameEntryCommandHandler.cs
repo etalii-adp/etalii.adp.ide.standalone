@@ -169,7 +169,7 @@ public sealed class RenameEntryCommandHandler : ICommandHandler<RenameEntryComma
         {
             // What names the entry elsewhere in the project follows it, and follows it back: the
             // inverse is a rename in the same project, so an undo runs the followers the other way.
-            Follow(command.RootPath, sourcePath, targetPath);
+            await FollowAsync(command.RootPath, sourcePath, targetPath);
             moved = CommandResult.Success(inverse with { RootPath = command.RootPath });
         }
 
@@ -177,13 +177,14 @@ public sealed class RenameEntryCommandHandler : ICommandHandler<RenameEntryComma
     }
 
     /// <summary>Tells each follower of the move. One that fails is logged and does not undo a rename that happened.</summary>
-    private void Follow(string rootPath, string sourcePath, string targetPath)
+    /// <remarks>Not cancelled: the rename has happened, and a follow stopped halfway would leave relations naming where it was.</remarks>
+    private async Task FollowAsync(string rootPath, string sourcePath, string targetPath)
     {
         foreach (var follower in _followers)
         {
             try
             {
-                follower.Renamed(rootPath, sourcePath, targetPath);
+                await follower.RenamedAsync(rootPath, sourcePath, targetPath, CancellationToken.None);
             }
             catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
             {

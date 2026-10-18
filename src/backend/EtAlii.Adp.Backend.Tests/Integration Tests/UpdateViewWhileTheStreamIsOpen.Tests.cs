@@ -123,7 +123,7 @@ public sealed class UpdateViewWhileTheStreamIsOpenTests : IDisposable
     {
         // Arrange. A project over the real corpus, and the document the wedged client opened.
         var userId = ShortGuid.NewShortGuid();
-        var project = _projects.Add(userId, "wedge", new PathRecord(_projectFolder.Split(IoPath.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries)));
+        var project = await _projects.AddAsync(userId, "wedge", new PathRecord(_projectFolder.Split(IoPath.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries)), TestContext.Current.CancellationToken);
         var watchId = ShortGuid.NewShortGuid();
 
         var registration = Path.Of("bottling-mes.plant-landscape.adp");

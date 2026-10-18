@@ -399,7 +399,11 @@ public class RenameEntryCommandHandlerTests : IDisposable
     {
         public List<(string Root, string From, string To, bool Moved)> Seen { get; } = [];
 
-        public void Renamed(string rootPath, string fromPath, string toPath) => Seen.Add((rootPath, fromPath, toPath, File.Exists(toPath) && !File.Exists(fromPath)));
+        public Task RenamedAsync(string rootPath, string fromPath, string toPath, CancellationToken cancellationToken)
+        {
+            Seen.Add((rootPath, fromPath, toPath, File.Exists(toPath) && !File.Exists(fromPath)));
+            return Task.CompletedTask;
+        }
     }
 
     [Fact]

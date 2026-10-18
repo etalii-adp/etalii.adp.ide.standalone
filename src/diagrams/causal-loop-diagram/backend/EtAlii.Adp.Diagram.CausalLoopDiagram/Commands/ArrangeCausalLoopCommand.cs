@@ -39,10 +39,10 @@ public sealed record ArrangeCausalLoopCommand(string AdpPath, string BodyPath) :
 public sealed record RestoreCausalLoopRegistrationCommand(string AdpPath, string Text, ICommand Redo) : ICommand;
 
 /// <inheritdoc cref="ArrangeCausalLoopCommand" />
-public sealed class ArrangeCausalLoopCommandHandler(ICausalLoopDocumentStore documents)
+public sealed class ArrangeCausalLoopCommandHandler(ICausalLoopDocumentStore documents, IFileWriter writer)
     : ICommandHandler<ArrangeCausalLoopCommand>
 {
-    public Task<CommandResult> ExecuteAsync(
+    public async Task<CommandResult> ExecuteAsync(
         ArrangeCausalLoopCommand command, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(command);
@@ -50,14 +50,14 @@ public sealed class ArrangeCausalLoopCommandHandler(ICausalLoopDocumentStore doc
 
         if (!File.Exists(command.AdpPath))
         {
-            return Task.FromResult(CommandResult.Failure("The registration file is no longer there."));
+            return CommandResult.Failure("The registration file is no longer there.");
         }
 
         var entry = documents.GetOrLoad(command.BodyPath);
         if (!entry.IsUsable)
         {
-            return Task.FromResult(CommandResult.Failure(
-                "This causal loop diagram could not be read, so there is nothing to arrange."));
+            return CommandResult.Failure(
+                "This causal loop diagram could not be read, so there is nothing to arrange.");
         }
 
         // The refusal is the layout's own sentence, passed through rather than reworded: it
@@ -66,22 +66,22 @@ public sealed class ArrangeCausalLoopCommandHandler(ICausalLoopDocumentStore doc
         var arrangement = SelfOrganizingLayout.Compute(entry.Model);
         if (!arrangement.IsArranged)
         {
-            return Task.FromResult(CommandResult.Failure(arrangement.Refusal));
+            return CommandResult.Failure(arrangement.Refusal);
         }
 
         if (arrangement.Boxes.Count == 0)
         {
-            return Task.FromResult(CommandResult.Failure("This diagram has no variables to arrange."));
+            return CommandResult.Failure("This diagram has no variables to arrange.");
         }
 
         string before;
         try
         {
-            before = SharedDocumentReader.ReadAllText(command.AdpPath);
+            before = await SharedDocumentReader.ReadAllTextAsync(command.AdpPath, cancellationToken);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
-            return Task.FromResult(CommandResult.Failure($"Could not read the registration: {exception.Message}"));
+            return CommandResult.Failure($"Could not read the registration: {exception.Message}");
         }
 
         try
@@ -97,29 +97,32 @@ public sealed class ArrangeCausalLoopCommandHandler(ICausalLoopDocumentStore doc
 
                 // Stored positions are centres - the render subtracts the half-extents again -
                 // and they are keyed by the element id a drag reports, not by the bare variable.
-                RegistrationLayout.SetPosition(
+                await RegistrationLayout.SetPositionAsync(
+                    writer,
                     command.AdpPath,
                     $"variable:{variable.Id}",
-                    new RegistrationPosition(box.CenterX, box.CenterY));
+                    new RegistrationPosition(box.CenterX, box.CenterY),
+                    cancellationToken);
             }
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
             // Put back whatever was there before giving up, so a half-written block is never
             // what the user is left looking at.
-            Restore(command.AdpPath, before);
-            return Task.FromResult(CommandResult.Failure($"Could not store the arrangement: {exception.Message}"));
+            await RestoreAsync(command.AdpPath, before);
+            return CommandResult.Failure($"Could not store the arrangement: {exception.Message}");
         }
 
-        return Task.FromResult(CommandResult.Success(
-            new RestoreCausalLoopRegistrationCommand(command.AdpPath, before, command)));
+        return CommandResult.Success(
+            new RestoreCausalLoopRegistrationCommand(command.AdpPath, before, command));
     }
 
-    private static void Restore(string adpPath, string text)
+    // Not cancelled: a put-back stopped halfway leaves the half-written block it exists to remove.
+    private async Task RestoreAsync(string adpPath, string text)
     {
         try
         {
-            AdpFileWriter.Save(adpPath, text);
+            await writer.SaveAsync(adpPath, text, CancellationToken.None);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
@@ -129,10 +132,10 @@ public sealed class ArrangeCausalLoopCommandHandler(ICausalLoopDocumentStore doc
 }
 
 /// <inheritdoc cref="RestoreCausalLoopRegistrationCommand" />
-public sealed class RestoreCausalLoopRegistrationCommandHandler
+public sealed class RestoreCausalLoopRegistrationCommandHandler(IFileWriter writer)
     : ICommandHandler<RestoreCausalLoopRegistrationCommand>
 {
-    public Task<CommandResult> ExecuteAsync(
+    public async Task<CommandResult> ExecuteAsync(
         RestoreCausalLoopRegistrationCommand command, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(command);
@@ -140,13 +143,13 @@ public sealed class RestoreCausalLoopRegistrationCommandHandler
 
         try
         {
-            AdpFileWriter.Save(command.AdpPath, command.Text);
+            await writer.SaveAsync(command.AdpPath, command.Text, cancellationToken);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
-            return Task.FromResult(CommandResult.Failure($"Could not restore the registration: {exception.Message}"));
+            return CommandResult.Failure($"Could not restore the registration: {exception.Message}");
         }
 
-        return Task.FromResult(CommandResult.Success(command.Redo));
+        return CommandResult.Success(command.Redo);
     }
 }

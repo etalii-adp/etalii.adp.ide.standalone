@@ -16,7 +16,7 @@ public class C4SessionTests : IDisposable
 {
     private readonly string _root;
     private readonly C4DocumentStore _documents = new(new FileWriter());
-    private readonly C4ElementMapper _mapper = new(C4Metrics.Default, new C4LayoutSidecar());
+    private readonly C4ElementMapper _mapper = new(C4Metrics.Default, new C4LayoutSidecar(new FileWriter()));
     private readonly IHistoryStackStore _historyStacks = new ServiceCollection().AddCommands().AddHierarchyCommandHandlers().AddC4().BuildServiceProvider().GetRequiredService<IHistoryStackStore>();
 
     public C4SessionTests()
@@ -201,7 +201,7 @@ public class C4SessionTests : IDisposable
         await using var session = Open(body, null);
         _ = session.Baseline();
         _ = _documents.GetOrLoad(other).Document;
-        Assert.Equal("", new C4LayoutSidecar().Write(body, "context", "u", new C4SidecarPosition(4321, 1234)));
+        Assert.Equal("", await new C4LayoutSidecar(new FileWriter()).WriteAsync(body, "context", "u", new C4SidecarPosition(4321, 1234), TestContext.Current.CancellationToken));
 
         var pushed = new List<IReadOnlyList<DiagramDelta>>();
         session.Changed += (_, args) => pushed.Add(args.Deltas);

@@ -72,9 +72,9 @@ internal sealed class KnowledgeDocuments : IKnowledgeDocumentStore
 /// fails after another has landed, what landed is put back.
 /// </para>
 /// </remarks>
-internal sealed class KnowledgeEditCommandHandler(IKnowledgeDocumentStore documents) : ICommandHandler<KnowledgeEditCommand>
+internal sealed class KnowledgeEditCommandHandler(IKnowledgeDocumentStore documents, IFileWriter writer) : ICommandHandler<KnowledgeEditCommand>
 {
-    public Task<CommandResult> ExecuteAsync(KnowledgeEditCommand command, CancellationToken cancellationToken = default)
+    public async Task<CommandResult> ExecuteAsync(KnowledgeEditCommand command, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(command);
         cancellationToken.ThrowIfCancellationRequested();
@@ -87,18 +87,18 @@ internal sealed class KnowledgeEditCommandHandler(IKnowledgeDocumentStore docume
             var read = KnowledgeDocumentStore.Read(file.BodyPath);
             if (read.Body is not { } body)
             {
-                return Task.FromResult(CommandResult.Failure($"{name} could not be changed. {read.Refusal}"));
+                return CommandResult.Failure($"{name} could not be changed. {read.Refusal}");
             }
 
             if (body.ReadOnlyReason.Length > 0)
             {
-                return Task.FromResult(CommandResult.Failure(file.BodyPath == command.BodyPath ? body.ReadOnlyReason : $"{name} cannot be changed: {body.ReadOnlyReason}"));
+                return CommandResult.Failure(file.BodyPath == command.BodyPath ? body.ReadOnlyReason : $"{name} cannot be changed: {body.ReadOnlyReason}");
             }
 
             (byte[]? after, string refusal) = body.Change(file.Changes);
             if (after is null)
             {
-                return Task.FromResult(CommandResult.Failure(refusal));
+                return CommandResult.Failure(refusal);
             }
 
             planned.Add(new PlannedFile(file.BodyPath, body.Bytes, after));
@@ -108,7 +108,7 @@ internal sealed class KnowledgeEditCommandHandler(IKnowledgeDocumentStore docume
         if (changed.Count == 0)
         {
             // Nothing to write and nothing to undo.
-            return Task.FromResult(CommandResult.Success());
+            return CommandResult.Success();
         }
 
         List<PlannedFile> written = [];
@@ -116,7 +116,7 @@ internal sealed class KnowledgeEditCommandHandler(IKnowledgeDocumentStore docume
         {
             try
             {
-                AdpFileWriter.Save(file.Path, file.After);
+                await writer.SaveAsync(file.Path, file.After, cancellationToken);
                 written.Add(file);
             }
             catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
@@ -124,10 +124,10 @@ internal sealed class KnowledgeEditCommandHandler(IKnowledgeDocumentStore docume
                 // What landed before this one is put back: a step is every file or none.
                 foreach (var landed in written)
                 {
-                    PutBack(landed.Path, landed.Before);
+                    await PutBackAsync(landed.Path, landed.Before);
                 }
 
-                return Task.FromResult(CommandResult.Failure($"{Path.GetFileName(file.Path)} could not be written: {exception.Message}"));
+                return CommandResult.Failure($"{Path.GetFileName(file.Path)} could not be written: {exception.Message}");
             }
         }
 
@@ -138,9 +138,9 @@ internal sealed class KnowledgeEditCommandHandler(IKnowledgeDocumentStore docume
 
         if (written.Count > 1 || written[0].Path != command.BodyPath)
         {
-            return Task.FromResult(CommandResult.Success(new RestoreKnowledgeFilesCommand(
+            return CommandResult.Success(new RestoreKnowledgeFilesCommand(
                 [.. written.Select(file => new KnowledgeFileState(file.Path, Encoding.UTF8.GetString(file.Before), Encoding.UTF8.GetString(file.After)))],
-                command)));
+                command));
         }
 
         // The restore keeps the file as text. A byte-order mark is a character of that text, so it
@@ -148,18 +148,19 @@ internal sealed class KnowledgeEditCommandHandler(IKnowledgeDocumentStore docume
         // without one, since the shared reader that does the checking leaves a mark out.
         var only = written[0];
         var hasMark = only.After.AsSpan().StartsWith(Encoding.UTF8.Preamble);
-        return Task.FromResult(CommandResult.Success(new RestoreDocumentCommand<IKnowledgeDocumentStore>(
+        return CommandResult.Success(new RestoreDocumentCommand<IKnowledgeDocumentStore>(
             command.BodyPath,
             Encoding.UTF8.GetString(only.Before),
             command,
-            hasMark ? null : Encoding.UTF8.GetString(only.After))));
+            hasMark ? null : Encoding.UTF8.GetString(only.After)));
     }
 
-    private static void PutBack(string path, byte[] content)
+    // Not cancelled: a put-back stopped halfway leaves half a step, which is what it exists to prevent.
+    private async Task PutBackAsync(string path, byte[] content)
     {
         try
         {
-            AdpFileWriter.Save(path, content);
+            await writer.SaveAsync(path, content, CancellationToken.None);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
@@ -172,9 +173,9 @@ internal sealed class KnowledgeEditCommandHandler(IKnowledgeDocumentStore docume
 }
 
 /// <summary>Carries out a <see cref="RestoreKnowledgeFilesCommand"/>: every file back to what it held, or none.</summary>
-internal sealed class RestoreKnowledgeFilesCommandHandler(IKnowledgeDocumentStore documents) : ICommandHandler<RestoreKnowledgeFilesCommand>
+internal sealed class RestoreKnowledgeFilesCommandHandler(IKnowledgeDocumentStore documents, IFileWriter writer) : ICommandHandler<RestoreKnowledgeFilesCommand>
 {
-    public Task<CommandResult> ExecuteAsync(RestoreKnowledgeFilesCommand command, CancellationToken cancellationToken = default)
+    public async Task<CommandResult> ExecuteAsync(RestoreKnowledgeFilesCommand command, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(command);
         cancellationToken.ThrowIfCancellationRequested();
@@ -185,9 +186,9 @@ internal sealed class RestoreKnowledgeFilesCommandHandler(IKnowledgeDocumentStor
             var read = KnowledgeDocumentStore.Read(file.BodyPath);
             if (read.Body is null || !string.Equals(Encoding.UTF8.GetString(read.Body.Bytes), file.After, StringComparison.Ordinal))
             {
-                return Task.FromResult(CommandResult.Outdated(
+                return CommandResult.Outdated(
                     $"{Path.GetFileName(file.BodyPath)} was changed by another program, so the edits made to it before that can no longer be undone.",
-                    file.BodyPath));
+                    file.BodyPath);
             }
         }
 
@@ -196,16 +197,17 @@ internal sealed class RestoreKnowledgeFilesCommandHandler(IKnowledgeDocumentStor
         {
             try
             {
-                AdpFileWriter.Save(file.BodyPath, Encoding.UTF8.GetBytes(file.Before));
+                await writer.SaveAsync(file.BodyPath, Encoding.UTF8.GetBytes(file.Before), cancellationToken);
                 restored.Add(file);
             }
             catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
             {
+                // Not cancelled, for the reason the edit's own put-back is not.
                 foreach (var done in restored)
                 {
                     try
                     {
-                        AdpFileWriter.Save(done.BodyPath, Encoding.UTF8.GetBytes(done.After));
+                        await writer.SaveAsync(done.BodyPath, Encoding.UTF8.GetBytes(done.After), CancellationToken.None);
                     }
                     catch (Exception again) when (again is IOException or UnauthorizedAccessException)
                     {
@@ -213,7 +215,7 @@ internal sealed class RestoreKnowledgeFilesCommandHandler(IKnowledgeDocumentStor
                     }
                 }
 
-                return Task.FromResult(CommandResult.Failure($"Could not restore {Path.GetFileName(file.BodyPath)}: {exception.Message}"));
+                return CommandResult.Failure($"Could not restore {Path.GetFileName(file.BodyPath)}: {exception.Message}");
             }
         }
 
@@ -222,6 +224,6 @@ internal sealed class RestoreKnowledgeFilesCommandHandler(IKnowledgeDocumentStor
             documents.Reload(file.BodyPath);
         }
 
-        return Task.FromResult(CommandResult.Success(command.Redo));
+        return CommandResult.Success(command.Redo);
     }
 }

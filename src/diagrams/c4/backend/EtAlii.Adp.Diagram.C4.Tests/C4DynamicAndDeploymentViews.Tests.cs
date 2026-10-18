@@ -1,4 +1,5 @@
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Files;
 using EtAlii.Adp.Layout;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
@@ -13,7 +14,7 @@ namespace EtAlii.Adp.Diagram.C4.Tests;
 /// </summary>
 public class C4DynamicAndDeploymentViewsTests
 {
-    private static readonly C4ElementMapper Mapper = new(C4Metrics.Default, new C4LayoutSidecar());
+    private static readonly C4ElementMapper Mapper = new(C4Metrics.Default, new C4LayoutSidecar(new FileWriter()));
 
     private static (C4Workspace Workspace, C4View View) LoadFixture(string name)
     {

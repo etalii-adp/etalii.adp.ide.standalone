@@ -17,21 +17,25 @@ namespace EtAlii.Adp.Projects;
 /// project asks for it, so parsing the file each time is most of what resolving a project costs
 /// (code-structure FR-062). The store's own writes drop the kept list; a change made to the file
 /// by anything else is noticed by its time and size, which are compared on every read. Add and
-/// Remove read, change and write the list under one lock, so two at once cannot both start from
-/// the same list and lose one another's change.
+/// Remove read, change and write the list one at a time, so two at once cannot both start from
+/// the same list and lose one another's change; that turn is a semaphore rather than a lock
+/// because the write is awaited inside it.
 /// </remarks>
 public sealed class FileProjectStore : IProjectStore
 {
     private static readonly ILogger _logger = Log.ForContext<FileProjectStore>();
 
     private readonly string _appDataRoot;
+    private readonly IFileWriter _writer;
 
     private readonly Lock _gate = new();
+    private readonly SemaphoreSlim _changes = new(1, 1);
     private readonly Dictionary<ShortGuid, CachedList> _cache = [];
 
-    public FileProjectStore(string appDataRoot)
+    public FileProjectStore(string appDataRoot, IFileWriter writer)
     {
         _appDataRoot = appDataRoot;
+        _writer = writer;
     }
 
     public IReadOnlyList<ProjectRecord> List(ShortGuid userId)
@@ -42,7 +46,7 @@ public sealed class FileProjectStore : IProjectStore
         }
     }
 
-    public ProjectRecord Add(ShortGuid userId, string name, PathRecord path)
+    public async Task<ProjectRecord> AddAsync(ShortGuid userId, string name, PathRecord path, CancellationToken cancellationToken)
     {
         var folderPath = path.Segments.AbsolutePath();
         if (!Directory.Exists(folderPath))
@@ -52,18 +56,31 @@ public sealed class FileProjectStore : IProjectStore
 
         var resolvedName = string.IsNullOrWhiteSpace(name) ? new DirectoryInfo(folderPath).Name : name.Trim();
         var record = new ProjectRecord(ShortGuid.NewShortGuid(), resolvedName, path);
-        lock (_gate)
-        {
-            Write(userId, [.. Read(userId), record]);
-        }
+        await ChangeAsync(userId, projects => [.. projects, record], cancellationToken);
         return record;
     }
 
-    public void Remove(ShortGuid userId, ShortGuid projectId)
+    public Task RemoveAsync(ShortGuid userId, ShortGuid projectId, CancellationToken cancellationToken) =>
+        ChangeAsync(userId, projects => [.. projects.Where(p => p.Id != projectId)], cancellationToken);
+
+    /// <summary>Reads the user's list, changes it and writes it, one change at a time.</summary>
+    private async Task ChangeAsync(ShortGuid userId, Func<IReadOnlyList<ProjectRecord>, IReadOnlyList<ProjectRecord>> change, CancellationToken cancellationToken)
     {
-        lock (_gate)
+        await _changes.WaitAsync(cancellationToken);
+        try
         {
-            Write(userId, [.. Read(userId).Where(p => p.Id != projectId)]);
+            IReadOnlyList<ProjectRecord> projects;
+            lock (_gate)
+            {
+                projects = change(Read(userId));
+                _cache.Remove(userId);
+            }
+
+            await WriteAsync(userId, projects, cancellationToken);
+        }
+        finally
+        {
+            _changes.Release();
         }
     }
 
@@ -104,14 +121,14 @@ public sealed class FileProjectStore : IProjectStore
         }
     }
 
-    private void Write(ShortGuid userId, IReadOnlyList<ProjectRecord> projects)
+    private async Task WriteAsync(ShortGuid userId, IReadOnlyList<ProjectRecord> projects, CancellationToken cancellationToken)
     {
         var filePath = GetFilePath(userId);
         Directory.CreateDirectory(IoPath.GetDirectoryName(filePath)!);
 
         var json = JsonSerializer.Serialize(projects, new JsonSerializerOptions { WriteIndented = true });
-        _cache.Remove(userId);
-        AdpFileWriter.Save(filePath, json);
+        await _writer.SaveAsync(filePath, json, cancellationToken);
+        // ReSharper disable once InconsistentlySynchronizedField - Reason: a static Serilog logger is safe on any thread; the lock guards the kept lists, not it.
         _logger.Debug("Wrote {Count} projects for {UserId} to {StorePath}", projects.Count, userId, filePath);
     }
 

@@ -27,7 +27,7 @@ public sealed class WardleyDocumentStore(IFileWriter writer) : LifecycleDocument
     private readonly ConcurrentDictionary<string, IReadOnlyList<WardleyIdentityEntry>> _identities =
         new(StringComparer.OrdinalIgnoreCase);
 
-    private readonly WardleyIdentities _sidecar = new();
+    private readonly WardleyIdentities _sidecar = new(writer);
 
     /// <inheritdoc />
     public IReadOnlyList<WardleyIdentityEntry> Identities(string path)
@@ -90,11 +90,11 @@ public sealed class WardleyDocumentStore(IFileWriter writer) : LifecycleDocument
     /// and never edited reaches none of this (Requirement 4.3). A sidecar that could not be written
     /// is the save's warning: the map landed, and the ids it hands out will not survive a restart.
     /// </remarks>
-    protected override string Saved(string path, DocumentEntry<LineDocument, WardleyMap> entry)
+    protected override Task<string> SavedAsync(string path, DocumentEntry<LineDocument, WardleyMap> entry, CancellationToken cancellationToken)
     {
         var reconciled = WardleyIdentities.Reconcile(entry.Model, Identities(path));
         _identities[path] = reconciled;
-        return _sidecar.Write(path, reconciled);
+        return _sidecar.WriteAsync(path, reconciled, cancellationToken);
     }
 
     /// <inheritdoc />

@@ -60,7 +60,7 @@ public abstract class LifecycleDocumentStore<TBody, TModel> : IDiagramDocumentSt
         var result = await _lifecycle.SaveAsync(path, entry, cancellationToken);
         if (!result.Failed)
         {
-            result = Kept(result, Saved(path, entry));
+            result = Kept(result, await SavedAsync(path, entry, cancellationToken));
         }
 
         OnChanged(path);
@@ -123,7 +123,7 @@ public abstract class LifecycleDocumentStore<TBody, TModel> : IDiagramDocumentSt
 
         if (!result.Failed)
         {
-            result = Kept(result, Saved(path, _lifecycle.GetOrLoad(path)));
+            result = Kept(result, await SavedAsync(path, _lifecycle.GetOrLoad(path), cancellationToken));
             OnChanged(path);
         }
 
@@ -184,7 +184,7 @@ public abstract class LifecycleDocumentStore<TBody, TModel> : IDiagramDocumentSt
     /// something beside it did not.
     /// </summary>
     /// <remarks>Nothing is kept beside a document unless the module says otherwise.</remarks>
-    protected virtual string Saved(string path, DocumentEntry<TBody, TModel> entry) => "";
+    protected virtual Task<string> SavedAsync(string path, DocumentEntry<TBody, TModel> entry, CancellationToken cancellationToken) => Task.FromResult("");
 
     /// <summary>
     /// What a module keeps beside a document, brought up to date with the entry a reload or a

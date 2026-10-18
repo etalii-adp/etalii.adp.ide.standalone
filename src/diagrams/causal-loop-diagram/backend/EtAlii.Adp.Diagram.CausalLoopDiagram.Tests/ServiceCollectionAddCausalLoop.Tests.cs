@@ -1,3 +1,4 @@
+using EtAlii.Adp.Files;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 using EtAlii.Adp.Sessions;
@@ -45,7 +46,7 @@ public class ServiceCollectionAddCausalLoopTests
         using var folder = TestFolder.Create("causal-loop-registration");
         var registration = folder.Combine("on-call.adp");
         await File.WriteAllTextAsync(registration, "systems/causal-loop-diagram\r\n", TestContext.Current.CancellationToken);
-        RegistrationLayout.SetPosition(registration, "variable:incidents", new RegistrationPosition(4321, 1234));
+        await RegistrationLayout.SetPositionAsync(new FileWriter(), registration, "variable:incidents", new RegistrationPosition(4321, 1234), TestContext.Current.CancellationToken);
 
         // Act.
         await using var bare = factory.Open(ShortGuid.NewShortGuid(), "root", CausalLoopDocumentStoreTests.OnCall, null);
