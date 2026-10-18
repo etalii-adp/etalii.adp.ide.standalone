@@ -253,11 +253,6 @@ public static class DislModelBuilder
             }
 
             if (type.Derived is not { ValueKind: JsonValueKind.Object } derived) continue;
-            if (derived.TryGetProperty("key", out _))
-            {
-                findings.Add(new Finding(DerivedFailed, FindingSeverity.Warning, $"{type.Name} groups its items by key, which this runtime does not compute yet.", null));
-                continue;
-            }
 
             var variables = new Dictionary<string, object?> { ["diagram"] = diagram, ["env"] = diagram.Env.ToCel() };
             if (Evaluate(specification, DislJson.Pointer(pointer, "from"), variables) is not IReadOnlyList<object?> items)
@@ -269,9 +264,11 @@ public static class DislModelBuilder
             var failures = new HashSet<string>(StringComparer.Ordinal);
             var badEnds = new Dictionary<string, int>(StringComparer.Ordinal);
             var repeats = new Dictionary<string, int>(StringComparer.Ordinal);
-            for (var index = 0; index < items.Count; index++)
+            var groups = Groups(specification, derived, pointer, variables, items, failures);
+            for (var index = 0; index < groups.Count; index++)
             {
-                var item = new Dictionary<string, object?>(variables) { ["item"] = items[index], ["group"] = new List<object?> { items[index] }, ["index"] = (long)index };
+                var group = groups[index];
+                var item = new Dictionary<string, object?>(variables) { ["item"] = group[0], ["group"] = group, ["index"] = (long)index };
                 var source = Evaluate(specification, DislJson.Pointer(pointer, "source"), item);
                 var target = Evaluate(specification, DislJson.Pointer(pointer, "target"), item);
                 if (source is CelError || target is CelError)
@@ -301,7 +298,8 @@ public static class DislModelBuilder
                     id = seen == 1 ? plain : $"{plain}#{seen}";
                 }
 
-                IReadOnlyList<DislElement> sources = items[index] is DislElement element ? [element] : [];
+                // Without sources, the group when its items are elements (§4.11.3).
+                IReadOnlyList<DislElement> sources = group.All(member => member is DislElement) ? [.. group.Cast<DislElement>()] : [];
                 if (derived.TryGetProperty("sources", out _))
                 {
                     if (Evaluate(specification, DislJson.Pointer(pointer, "sources"), item) is not IReadOnlyList<object?> listed)
@@ -344,6 +342,42 @@ public static class DislModelBuilder
                 findings.Add(new Finding(DerivedEnds, FindingSeverity.Warning, $"{count} item(s) of {type.Name} were dropped: their {end} is not one its declaration allows.", null));
             }
         }
+    }
+
+    /// <summary>
+    /// The items of a derived type grouped by its <c>key</c> (§4.11.3): items with equal keys (CEL
+    /// <c>==</c>) are one group, the groups in the order of their first item; without a key every item
+    /// is a group of its own. An item whose key fails, or is not a string, number, bool or list of
+    /// those, is dropped.
+    /// </summary>
+    private static List<List<object?>> Groups(DislSpecification specification, JsonElement derived, string pointer, Dictionary<string, object?> variables, IReadOnlyList<object?> items, HashSet<string> failures)
+    {
+        if (!derived.TryGetProperty("key", out _)) return [.. items.Select(item => new List<object?> { item })];
+
+        var groups = new List<(object? Key, List<object?> Members)>();
+        for (var index = 0; index < items.Count; index++)
+        {
+            var bound = new Dictionary<string, object?>(variables) { ["item"] = items[index], ["group"] = new List<object?> { items[index] }, ["index"] = (long)index };
+            var key = Evaluate(specification, DislJson.Pointer(pointer, "key"), bound);
+            if (key is CelError error)
+            {
+                failures.Add(error.Message);
+                continue;
+            }
+            if (!IsKey(key))
+            {
+                failures.Add("the key of an item is not a string, number, bool or list of those");
+                continue;
+            }
+            var found = groups.FindIndex(group => CelEquality.Equal(group.Key, key));
+            if (found >= 0) groups[found].Members.Add(items[index]);
+            else groups.Add((key, [items[index]]));
+        }
+        return [.. groups.Select(group => group.Members)];
+
+        static bool IsKey(object? key) => IsScalar(key) || key is IReadOnlyList<object?> list && list.All(IsScalar);
+
+        static bool IsScalar(object? key) => key is string or long or double or bool;
     }
 
     /// <summary>
