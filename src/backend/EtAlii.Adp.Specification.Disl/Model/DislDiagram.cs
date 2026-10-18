@@ -41,6 +41,13 @@ public sealed class DislDiagram : ICelObject
     public DislSpecification Specification { get; }
 
     /// <summary>
+    /// What the model's own expressions read as <c>env</c> (DISL §12.3): the derived elements' (§4.11)
+    /// and the derived attributes' (§4.3), which depend on the viewpoint a host builds the model for.
+    /// Headless, with no viewpoint, unless the host gives one.
+    /// </summary>
+    public DislEnv Env { get; init; } = new();
+
+    /// <summary>
     /// What <c>diagram.file</c> reads (§8.2): the file a finding attributes the diagram to, relative to
     /// its subject, which a host binds when a message names it; null, and no <c>file</c> member, when
     /// the host gives none. A diagram attribute named <c>file</c> shadows it.

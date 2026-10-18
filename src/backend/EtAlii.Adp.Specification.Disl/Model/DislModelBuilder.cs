@@ -48,13 +48,20 @@ public static class DislModelBuilder
     /// <summary>A derived type whose <c>from</c> or per-item expressions failed (§4.11.5).</summary>
     public const string DerivedFailed = "std.derivedFailed";
 
-    /// <summary>The model of <paramref name="reading"/> under <paramref name="specification"/>.</summary>
-    public static DislModel From(FblModel reading, DislSpecification specification)
+    /// <summary>The model of <paramref name="reading"/> under <paramref name="specification"/>, built headless.</summary>
+    public static DislModel From(FblModel reading, DislSpecification specification) => From(reading, specification, new DislEnv());
+
+    /// <summary>
+    /// The model of <paramref name="reading"/> under <paramref name="specification"/>, with its derived
+    /// elements and attributes computed under <paramref name="env"/>: for the viewpoint it names.
+    /// </summary>
+    public static DislModel From(FblModel reading, DislSpecification specification, DislEnv env)
     {
         ArgumentNullException.ThrowIfNull(reading);
         ArgumentNullException.ThrowIfNull(specification);
+        ArgumentNullException.ThrowIfNull(env);
 
-        var diagram = new DislDiagram(specification);
+        var diagram = new DislDiagram(specification) { Env = env };
         List<Finding> findings = [.. reading.Findings];
         List<FblElement> header = [];
         List<FblElement> unreadable = [];
@@ -214,7 +221,7 @@ public static class DislModelBuilder
             {
                 program = programs[expression] = specification.Environment(DislContexts.Identity).Compile(expression);
             }
-            var value = program.Evaluate(new Dictionary<string, object?> { ["self"] = element, ["diagram"] = diagram, ["env"] = null });
+            var value = program.Evaluate(new Dictionary<string, object?> { ["self"] = element, ["diagram"] = diagram, ["env"] = diagram.Env.ToCel() });
             if (value is not string id)
             {
                 var why = value is CelError error ? error.Message : "it did not give a string";
@@ -252,7 +259,7 @@ public static class DislModelBuilder
                 continue;
             }
 
-            var variables = new Dictionary<string, object?> { ["diagram"] = diagram, ["env"] = null };
+            var variables = new Dictionary<string, object?> { ["diagram"] = diagram, ["env"] = diagram.Env.ToCel() };
             if (Evaluate(specification, DislJson.Pointer(pointer, "from"), variables) is not IReadOnlyList<object?> items)
             {
                 findings.Add(new Finding(DerivedFailed, FindingSeverity.Warning, $"The items of {type.Name} could not be computed, so there are none.", null));
@@ -348,7 +355,7 @@ public static class DislModelBuilder
     /// </summary>
     private static void ExpressionForm(DislDiagram diagram, DislType type, string pointer, List<Finding> findings)
     {
-        var variables = new Dictionary<string, object?> { ["diagram"] = diagram, ["env"] = null };
+        var variables = new Dictionary<string, object?> { ["diagram"] = diagram, ["env"] = diagram.Env.ToCel() };
         if (Evaluate(diagram.Specification, pointer, variables) is not IReadOnlyList<object?> items)
         {
             findings.Add(new Finding(DerivedFailed, FindingSeverity.Warning, $"The items of {type.Name} could not be computed, so there are none.", null));

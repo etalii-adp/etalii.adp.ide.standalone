@@ -134,7 +134,7 @@ public sealed class DislElement : ICelObject
 
     /// <summary>
     /// A derived attribute's value (§4.3): its expression, compiled by the loader in the
-    /// <c>element</c> context, with <c>self</c> this element and <c>env</c> a headless one. An expression
+    /// <c>element</c> context, with <c>self</c> this element and <c>env</c> the diagram's. An expression
     /// that fails, or that reads its own value, gives the attribute's unset value, as a visual property
     /// falls back to its default (§2.5).
     /// </summary>
@@ -149,7 +149,7 @@ public sealed class DislElement : ICelObject
         if (!_computing.Add((this, attribute.Name))) return DislValues.Unset(attribute, metamodel);
         try
         {
-            var value = expression.Program.Evaluate(new Dictionary<string, object?> { ["self"] = this, ["diagram"] = Diagram, ["env"] = HeadlessEnv });
+            var value = expression.Program.Evaluate(new Dictionary<string, object?> { ["self"] = this, ["diagram"] = Diagram, ["env"] = Diagram.Env.ToCel() });
             return value is CelError ? DislValues.Unset(attribute, metamodel) : value;
         }
         finally
@@ -161,8 +161,6 @@ public sealed class DislElement : ICelObject
     /// <summary>The derived attributes being computed on this thread, so one that reads itself stops.</summary>
     [ThreadStatic]
     private static HashSet<(DislElement Element, string Attribute)>? _computing;
-
-    private static readonly CelMap HeadlessEnv = new DislEnv().ToCel();
 
     /// <summary>Every node beneath this one, depth first in model order.</summary>
     public IEnumerable<DislElement> Descendants() => _children.SelectMany(child => child.Descendants().Prepend(child));
