@@ -155,7 +155,7 @@ public class FileProjectStoreTests : IDisposable
             var workers = pair.Select(folder => new Thread(() =>
             {
                 // ReSharper disable once AccessToDisposedClosure - Reason: both worker threads that run this closure are Joined below before the using disposes `barrier`.
-                barrier.SignalAndWait();
+                barrier.SignalAndWait(cancellationToken);
                 store.AddAsync(UserId, "", folder, cancellationToken).GetAwaiter().GetResult();
             })).ToArray();
             foreach (var worker in workers)
