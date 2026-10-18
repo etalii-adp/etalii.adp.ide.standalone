@@ -5,8 +5,4 @@
     <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Sessions\EtAlii.Adp.Sessions.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.Hosting.Abstractions" />
-  </ItemGroup>
-
 </Project>

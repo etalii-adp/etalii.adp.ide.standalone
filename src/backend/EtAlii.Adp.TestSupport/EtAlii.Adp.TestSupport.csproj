@@ -18,6 +18,8 @@
     <PackageReference Include="xunit.v3.extensibility.core" />
     <!-- FakeTimeProvider, for every test project: the one clock is advanced, never slept on (code-structure FR-051). -->
     <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" />
+    <!-- TestHistory builds a ServiceProvider of its own, outside any host. -->
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
     <ProjectReference Include="..\EtAlii.Adp\EtAlii.Adp.csproj" />
     <ProjectReference Include="..\EtAlii.Adp.Hierarchy\EtAlii.Adp.Hierarchy.csproj" />
     <ProjectReference Include="..\EtAlii.Adp.History\EtAlii.Adp.History.csproj" />

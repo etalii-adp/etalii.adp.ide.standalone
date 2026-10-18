@@ -5,9 +5,11 @@
          same static Serilog pipeline everything else uses. -->
     <PackageReference Include="Microsoft.Extensions.DependencyModel" />
     <PackageReference Include="Serilog" />
-    <!-- Serves AddToolDefinitions only: the one registration of the three tool kinds takes the host
-         builder each module's Build hook is run with. -->
-    <PackageReference Include="Microsoft.AspNetCore.Hosting.Abstractions" />
+    <!-- Serves AddToolDefinitions only: the one registration of every kind of tool takes the host
+         builder each module's Build hook is run with. IHostApplicationBuilder is in the generic
+         host's abstractions, so no project that references this one reaches ASP.NET Core
+         (code-structure FR-054). -->
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
   </ItemGroup>
 
   <ItemGroup>

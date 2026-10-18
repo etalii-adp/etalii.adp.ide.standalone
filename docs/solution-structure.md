@@ -76,6 +76,8 @@ Classifying by path segment — "count the ones containing `backend`" as the cor
 
 Not every production project has a matching test project, and that is not a gap to close by reflex — some are covered from `EtAlii.Adp.Backend.Tests`, and `EtAlii.Adp.Files` from `EtAlii.Adp.Documents.Tests`.
 
+**No project a tool module reaches carries a hosting package.** ASP.NET Core and the gRPC server are in the host project and in the projects only the host reaches: authentication, problems and workspace. The context, hierarchy, projects and sessions projects take the gRPC API alone (`Grpc.Core.Api`), and the shared primitives, editor and designer projects take the generic host's abstractions (`Microsoft.Extensions.Hosting.Abstractions`) for `IHostApplicationBuilder`. `ModuleHostingPackages.Tests` holds this.
+
 **This list was measured from the solution, not written from memory**, and `ArchitecturePages.Tests` holds it there: every name above must be a project in `EtAlii.Adp.slnx`. That guard is the whole reason to trust it. The list this replaced was written from memory, named two projects that have never existed, and omitted fifteen that do — and it read as authoritative for as long as nothing checked it.
 
 ## A module's folder shape
