@@ -32,6 +32,7 @@ public sealed class DesignerService : Proto.DesignerService.DesignerServiceBase
     private readonly DesignerSessionFactories _factories;
     private readonly WorkspaceConnections _connections;
     private readonly TableStreams _streams;
+    private readonly StreamMap<IDesignerSession> _tableStream;
 
     public DesignerService(
         IProjectStore projectStore,
@@ -45,41 +46,29 @@ public sealed class DesignerService : Proto.DesignerService.DesignerServiceBase
         _factories = factories;
         _connections = connections;
         _streams = streams;
+        _tableStream = new StreamMap<IDesignerSession>
+        {
+            Kind = "Table",
+            RunAsync = RunAsync,
+            Ended = streamId => new WorkspaceMessage { Table = new Proto.TableStreamMessage { StreamId = streamId, Ended = new Proto.TableStreamEnded() } },
+        };
     }
 
-    public override Task<Proto.OpenTableResponse> OpenTable(Proto.OpenTableRequest request, ServerCallContext context)
+    public override async Task<Proto.OpenTableResponse> OpenTable(Proto.OpenTableRequest request, ServerCallContext context)
     {
         var userId = SessionContext.GetUserId(context);
-        var watchId = (ShortGuid)request.WatchId;
-        var streamId = (ShortGuid)request.StreamId;
+        var connection = _connections.Require((ShortGuid)request.WatchId, userId);
 
-        // A connection that is not open yet is transient, as it is for a diagram stream.
-        var connection = _connections.Find(watchId);
-        if (connection is null || connection.UserId != userId)
-        {
-            _logger.Debug("Refused a table stream on watch {WatchId}: no workspace stream of this user is open under it", watchId);
-            throw new RpcException(new Status(StatusCode.Unavailable, "The connection is not open."));
-        }
+        var session = OpenSession(userId, connection.WatchId, request);
 
-        var session = OpenSession(userId, watchId, request);
-
-        var source = connection.TryStart(streamId);
-        if (source is null)
-        {
-            _ = session.DisposeAsync();
-            throw new RpcException(new Status(StatusCode.AlreadyExists, "A stream with this id is already open."));
-        }
-
-        _streams.Add(watchId, streamId, session);
-        _ = PumpAsync(connection, streamId, session, source);
-        return Task.FromResult(new Proto.OpenTableResponse());
+        await connection.OpenStreamAsync((ShortGuid)request.StreamId, session, _tableStream);
+        return new Proto.OpenTableResponse();
     }
 
     public override Task<Proto.CloseTableResponse> CloseTable(Proto.CloseTableRequest request, ServerCallContext context)
     {
-        var userId = SessionContext.GetUserId(context);
-        var connection = _connections.Find((ShortGuid)request.WatchId);
-        if (connection is not null && connection.UserId == userId && connection.Stop((ShortGuid)request.StreamId))
+        var connection = _connections.Find((ShortGuid)request.WatchId, SessionContext.GetUserId(context));
+        if (connection is not null && connection.Stop((ShortGuid)request.StreamId))
         {
             _logger.Debug("Closed table stream {StreamId} on watch {WatchId}", (ShortGuid)request.StreamId, (ShortGuid)request.WatchId);
         }
@@ -118,10 +107,8 @@ public sealed class DesignerService : Proto.DesignerService.DesignerServiceBase
     /// </summary>
     private IDesignerSession SessionOf(ServerCallContext context, Documents.Wire.ShortGuid wireWatchId, Documents.Wire.ShortGuid wireStreamId)
     {
-        var userId = SessionContext.GetUserId(context);
         var watchId = (ShortGuid)wireWatchId;
-        var connection = _connections.Find(watchId);
-        if (connection is not null && connection.UserId == userId && _streams.Find(watchId, (ShortGuid)wireStreamId) is { } session)
+        if (_connections.Find(watchId, SessionContext.GetUserId(context)) is not null && _streams.Find(watchId, (ShortGuid)wireStreamId) is { } session)
         {
             return session;
         }
@@ -162,45 +149,29 @@ public sealed class DesignerService : Proto.DesignerService.DesignerServiceBase
     /// under <paramref name="streamId"/>, until the stream is closed or the connection ends.
     /// Disposes the session when it returns.
     /// </summary>
-    private async Task PumpAsync(WorkspaceConnection connection, ShortGuid streamId, IDesignerSession opened, CancellationTokenSource source)
+    private async Task RunAsync(IDesignerSession opened, WorkspaceConnection connection, Documents.Wire.ShortGuid streamId, CancellationToken cancellationToken)
     {
-        Documents.Wire.ShortGuid wireStreamId = streamId;
+        // Before the first wait, so a call that follows the open finds the session.
+        var id = (ShortGuid)streamId;
+        _streams.Add(connection.WatchId, id, opened);
         var changes = Channel.CreateUnbounded<TableChange>();
 
+        await using var session = opened;
+        session.Changed += OnChanged;
         try
         {
-            await using var session = opened;
-            session.Changed += OnChanged;
-            try
-            {
-                await WriteAsync(connection, new Proto.TableStreamMessage { StreamId = wireStreamId, Baseline = TableWire.ToProto(session.Baseline()) }, source.Token);
-                _logger.Information("Opened table stream {StreamId} on watch {WatchId}", streamId, connection.WatchId);
+            await WriteAsync(connection, new Proto.TableStreamMessage { StreamId = streamId, Baseline = TableWire.ToProto(session.Baseline()) }, cancellationToken);
+            _logger.Information("Opened table stream {StreamId} on watch {WatchId}", id, connection.WatchId);
 
-                await foreach (var change in changes.Reader.ReadAllAsync(source.Token))
-                {
-                    await WriteAsync(connection, new Proto.TableStreamMessage { StreamId = wireStreamId, Change = TableWire.ToProto(change) }, source.Token);
-                }
-            }
-            finally
+            await foreach (var change in changes.Reader.ReadAllAsync(cancellationToken))
             {
-                session.Changed -= OnChanged;
-                _streams.Remove(connection.WatchId, streamId, session);
+                await WriteAsync(connection, new Proto.TableStreamMessage { StreamId = streamId, Change = TableWire.ToProto(change) }, cancellationToken);
             }
-        }
-        catch (OperationCanceledException) when (source.IsCancellationRequested)
-        {
-            _logger.Debug("Table stream {StreamId} on watch {WatchId} closed", streamId, connection.WatchId);
-        }
-        catch (Exception exception)
-        {
-            // The session failed on its own. The connection carries on, so the stream says it ended.
-            _logger.Warning(exception, "Table stream {StreamId} on watch {WatchId} failed; telling the client it ended", streamId, connection.WatchId);
-            connection.Writer.TryWrite(new WorkspaceMessage { Table = new Proto.TableStreamMessage { StreamId = wireStreamId, Ended = new Proto.TableStreamEnded() } });
         }
         finally
         {
-            connection.Forget(streamId, source);
-            source.Dispose();
+            session.Changed -= OnChanged;
+            _streams.Remove(connection.WatchId, id, session);
         }
 
         return;

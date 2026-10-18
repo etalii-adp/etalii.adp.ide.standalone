@@ -140,7 +140,7 @@ public sealed class TableStreamFlowTests : IClassFixture<TableStreamFlowTests.Ho
         await session.Designer.CloseTableAsync(new Proto.CloseTableRequest { WatchId = session.WatchId, StreamId = streamId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         Assert.True(await Eventually.TrueAsync(() => opened.Disposed, TestContext.Current.CancellationToken, FlowConstants.MessageTimeout), "The session was not disposed when its stream was closed.");
         Assert.Equal(0, Streams().Count);
-        Assert.NotNull(Connections().Find((ShortGuid)session.WatchId));
+        Assert.NotNull(Connections().Find((ShortGuid)session.WatchId, session.UserId));
     }
 
     [Fact]
@@ -205,7 +205,7 @@ public sealed class TableStreamFlowTests : IClassFixture<TableStreamFlowTests.Ho
         Assert.Equal(expected, refusal.StatusCode);
         Assert.True(PermanentRefusal.IsPermanent(refusal.StatusCode));
         Assert.Empty(_sessions.Opened);
-        Assert.Equal(0, Connections().Find((ShortGuid)session.WatchId)?.DiagramStreamCount);
+        Assert.Equal(0, Connections().Find((ShortGuid)session.WatchId, session.UserId)?.StreamCount);
     }
 
     [Fact]
@@ -273,7 +273,8 @@ public sealed class TableStreamFlowTests : IClassFixture<TableStreamFlowTests.Ho
             flow.ProjectId,
             flow.WatchId,
             new WorkspaceService.WorkspaceServiceClient(flow.Channel),
-            new DesignerService.DesignerServiceClient(flow.Channel));
+            new DesignerService.DesignerServiceClient(flow.Channel),
+            flow.UserId);
     }
 
     private sealed record Session(
@@ -281,7 +282,8 @@ public sealed class TableStreamFlowTests : IClassFixture<TableStreamFlowTests.Ho
         Documents.Wire.ShortGuid ProjectId,
         Documents.Wire.ShortGuid WatchId,
         WorkspaceService.WorkspaceServiceClient Workspace,
-        DesignerService.DesignerServiceClient Designer);
+        DesignerService.DesignerServiceClient Designer,
+        ShortGuid UserId);
 
     /// <summary>The shared host, with the test-double designers riding in beside whatever discovery found.</summary>
     public sealed class Host : HostFixture

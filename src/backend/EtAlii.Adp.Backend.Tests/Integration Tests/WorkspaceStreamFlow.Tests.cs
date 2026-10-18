@@ -52,7 +52,7 @@ public sealed class WorkspaceStreamFlowTests(HostFixture host) : IClassFixture<H
         var delta = await watch.ResponseStream.FirstAsync(message => message.MessageCase == WorkspaceMessage.MessageOneofCase.Diagram, cts.Token);
         Assert.Equal(streamId, delta.Diagram.StreamId);
         Assert.Equal(DiagramStreamMessage.EventOneofCase.Delta, delta.Diagram.EventCase);
-        Assert.Equal(1, Connections().Find((ShortGuid)session.WatchId)?.DiagramStreamCount);
+        Assert.Equal(1, Connections().Find((ShortGuid)session.WatchId, session.UserId)?.StreamCount);
 
         // The hierarchy's changes ride the same stream: list the root so the entry is known, then
         // change the disk underneath it.
@@ -65,8 +65,8 @@ public sealed class WorkspaceStreamFlowTests(HostFixture host) : IClassFixture<H
 
         // Closing the diagram stops its pump and leaves the connection open.
         await session.Workspace.CloseDiagramAsync(new CloseDiagramStreamRequest { WatchId = session.WatchId, StreamId = streamId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
-        Assert.True(await Eventually.TrueAsync(() => Connections().Find((ShortGuid)session.WatchId)?.DiagramStreamCount == 0, TestContext.Current.CancellationToken, FlowConstants.MessageTimeout), "The diagram stream was still running after it was closed.");
-        Assert.NotNull(Connections().Find((ShortGuid)session.WatchId));
+        Assert.True(await Eventually.TrueAsync(() => Connections().Find((ShortGuid)session.WatchId, session.UserId)?.StreamCount == 0, TestContext.Current.CancellationToken, FlowConstants.MessageTimeout), "The diagram stream was still running after it was closed.");
+        Assert.NotNull(Connections().Find((ShortGuid)session.WatchId, session.UserId));
     }
 
     [Fact]
@@ -83,16 +83,16 @@ public sealed class WorkspaceStreamFlowTests(HostFixture host) : IClassFixture<H
             new OpenDiagramStreamRequest { StreamId = ShortGuid.NewShortGuid(), Request = OpenRequest(session, "notes.txt") },
             session.Headers,
             cancellationToken: TestContext.Current.CancellationToken);
-        var connection = Connections().Find((ShortGuid)session.WatchId);
-        Assert.Equal(1, connection?.DiagramStreamCount);
+        var connection = Connections().Find((ShortGuid)session.WatchId, session.UserId);
+        Assert.Equal(1, connection?.StreamCount);
 
         // Act: the tab goes away.
         await watchCancellation.CancelAsync();
         watch.Dispose();
 
         // Assert: the connection is gone, and so is the pump it carried - not merely forgotten.
-        Assert.True(await Eventually.TrueAsync(() => Connections().Find((ShortGuid)session.WatchId) is null, TestContext.Current.CancellationToken, FlowConstants.MessageTimeout), "The connection outlived its stream.");
-        Assert.True(await Eventually.TrueAsync(() => connection!.DiagramStreamCount == 0, TestContext.Current.CancellationToken, FlowConstants.MessageTimeout), "A diagram stream kept running after the stream carrying it ended.");
+        Assert.True(await Eventually.TrueAsync(() => Connections().Find((ShortGuid)session.WatchId, session.UserId) is null, TestContext.Current.CancellationToken, FlowConstants.MessageTimeout), "The connection outlived its stream.");
+        Assert.True(await Eventually.TrueAsync(() => connection!.StreamCount == 0, TestContext.Current.CancellationToken, FlowConstants.MessageTimeout), "A diagram stream kept running after the stream carrying it ended.");
     }
 
     [Fact]
@@ -136,7 +136,7 @@ public sealed class WorkspaceStreamFlowTests(HostFixture host) : IClassFixture<H
         // Assert: the same code DiagramService.Open answers, which is what the client reads as
         // "this diagram cannot be opened here" rather than as a dropped connection.
         Assert.Equal(PermanentRefusal.CannotOpen, refusal.StatusCode);
-        Assert.Equal(0, Connections().Find((ShortGuid)session.WatchId)?.DiagramStreamCount);
+        Assert.Equal(0, Connections().Find((ShortGuid)session.WatchId, session.UserId)?.StreamCount);
     }
 
     [Fact]
@@ -180,7 +180,8 @@ public sealed class WorkspaceStreamFlowTests(HostFixture host) : IClassFixture<H
             flow.ProjectId,
             flow.WatchId,
             new WorkspaceService.WorkspaceServiceClient(flow.Channel),
-            flow.Hierarchy);
+            flow.Hierarchy,
+            flow.UserId);
     }
 
     private sealed record Session(
@@ -188,5 +189,6 @@ public sealed class WorkspaceStreamFlowTests(HostFixture host) : IClassFixture<H
         Documents.Wire.ShortGuid ProjectId,
         Documents.Wire.ShortGuid WatchId,
         WorkspaceService.WorkspaceServiceClient Workspace,
-        HierarchyService.HierarchyServiceClient Hierarchy);
+        HierarchyService.HierarchyServiceClient Hierarchy,
+        ShortGuid UserId);
 }

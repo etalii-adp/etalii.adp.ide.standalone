@@ -113,7 +113,7 @@ public sealed class KnowledgeDesignerTests(HostFixture host) : IClassFixture<Hos
 
         // Act and assert: closed, and the connection stays.
         await session.Designer.CloseTableAsync(new Proto.CloseTableRequest { WatchId = session.WatchId, StreamId = streamId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
-        Assert.NotNull(host.Services.GetRequiredService<WorkspaceConnections>().Find((ShortGuid)session.WatchId));
+        Assert.NotNull(host.Services.GetRequiredService<WorkspaceConnections>().Find((ShortGuid)session.WatchId, session.UserId));
     }
 
     [Fact]
@@ -292,7 +292,8 @@ public sealed class KnowledgeDesignerTests(HostFixture host) : IClassFixture<Hos
             new WorkspaceService.WorkspaceServiceClient(flow.Channel),
             new DesignerService.DesignerServiceClient(flow.Channel),
             flow.Hierarchy,
-            flow.Context);
+            flow.Context,
+            flow.UserId);
     }
 
     private sealed record Session(
@@ -302,5 +303,6 @@ public sealed class KnowledgeDesignerTests(HostFixture host) : IClassFixture<Hos
         WorkspaceService.WorkspaceServiceClient Workspace,
         DesignerService.DesignerServiceClient Designer,
         HierarchyService.HierarchyServiceClient Hierarchy,
-        ContextService.ContextServiceClient Context);
+        ContextService.ContextServiceClient Context,
+        ShortGuid UserId);
 }

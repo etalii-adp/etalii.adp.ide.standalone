@@ -5,6 +5,10 @@ namespace EtAlii.Adp.Workspace;
 /// <summary>
 /// A diagram session that <see cref="DiagramPump.Open"/> resolved and opened, not yet pumping: the
 /// half of an open that can refuse, separated from the half that runs for the stream's life,
-/// so a caller can answer the refusal before it commits to a stream.
+/// so a caller can answer the refusal before it commits to a stream. Disposing it disposes the
+/// session, for a stream that never starts.
 /// </summary>
-public sealed record OpenedDiagram(IDiagramSession Session, string BodyPath, ShortGuid WatchId);
+public sealed record OpenedDiagram(IDiagramSession Session, string BodyPath, ShortGuid WatchId) : IAsyncDisposable
+{
+    public ValueTask DisposeAsync() => Session.DisposeAsync();
+}

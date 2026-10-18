@@ -39,6 +39,7 @@ public sealed class WorkspaceService : Diagram.Wire.WorkspaceService.WorkspaceSe
     private readonly ContextWatch _context;
     private readonly DiagramPump _diagrams;
     private readonly WorkspaceConnections _connections;
+    private readonly StreamMap<OpenedDiagram> _diagramStream;
 
     public WorkspaceService(
         IProjectStore projectStore,
@@ -54,6 +55,25 @@ public sealed class WorkspaceService : Diagram.Wire.WorkspaceService.WorkspaceSe
         _context = context;
         _diagrams = diagrams;
         _connections = connections;
+        _diagramStream = new StreamMap<OpenedDiagram>
+        {
+            Kind = "Diagram",
+            RunAsync = (opened, connection, streamId, token) => _diagrams.RunAsync(
+                opened,
+                (delta, write) => connection.Writer.WriteAsync(
+                    new WorkspaceMessage { Diagram = new DiagramStreamMessage { StreamId = streamId, Delta = delta } },
+                    write).AsTask(),
+                token),
+            Ended = streamId => new WorkspaceMessage { Diagram = new DiagramStreamMessage { StreamId = streamId, Ended = new DiagramStreamEnded() } },
+            Refused = (streamId, refusal) => new WorkspaceMessage
+            {
+                Diagram = new DiagramStreamMessage
+                {
+                    StreamId = streamId,
+                    Refused = new DiagramStreamRefused { Code = (int)refusal.StatusCode, Message = refusal.Status.Detail },
+                },
+            },
+        };
     }
 
     public override async Task Watch(WatchWorkspaceRequest request, IServerStreamWriter<WorkspaceMessage> responseStream, ServerCallContext context)
@@ -77,7 +97,7 @@ public sealed class WorkspaceService : Diagram.Wire.WorkspaceService.WorkspaceSe
         using var lifetime = CancellationTokenSource.CreateLinkedTokenSource(context.CancellationToken);
         // Read here rather than in the acquisition, which captures nothing the method disposes.
         var ended = lifetime.Token;
-        session.Hold(() => _connections.Register(watchId, userId, channel.Writer, ended));
+        var connection = session.Hold(() => _connections.Register(watchId, userId, channel.Writer, ended));
         _logger.Information("Workspace stream open on watch {WatchId} for project {ProjectId}", watchId, request.ProjectId);
 
         var sources = new[]
@@ -102,6 +122,10 @@ public sealed class WorkspaceService : Diagram.Wire.WorkspaceService.WorkspaceSe
         finally
         {
             await lifetime.CancelAsync();
+
+            // The diagram and table streams it carried end with it, and what they hold is released
+            // before the connection's own parts are (code-structure FR-069).
+            await connection.CloseAsync();
             channel.Writer.TryComplete();
             try
             {
@@ -119,84 +143,25 @@ public sealed class WorkspaceService : Diagram.Wire.WorkspaceService.WorkspaceSe
     public override async Task<OpenDiagramStreamResponse> OpenDiagram(OpenDiagramStreamRequest request, ServerCallContext context)
     {
         var userId = SessionContext.GetUserId(context);
-        var watchId = (ShortGuid)request.Request.WatchId;
-        var streamId = (ShortGuid)request.StreamId;
-
-        // A connection that is not open yet is transient: the client waits for the stream's
-        // baseline before it opens anything, so this is a reconnect racing a close.
-        var connection = _connections.Find(watchId);
-        if (connection is null || connection.UserId != userId)
-        {
-            _logger.Debug("Refused a diagram stream on watch {WatchId}: no workspace stream of this user is open under it", watchId);
-            throw new RpcException(new Status(StatusCode.Unavailable, "The connection is not open."));
-        }
+        var connection = _connections.Require((ShortGuid)request.Request.WatchId, userId);
 
         // Resolution refuses with the same permanent codes DiagramService.Open answers, so the
         // client still tells a diagram that cannot open from a connection that dropped.
         var opened = _diagrams.Open(userId, request.Request);
 
-        var source = connection.TryStart(streamId);
-        if (source is null)
-        {
-            await opened.Session.DisposeAsync();
-            throw new RpcException(new Status(StatusCode.AlreadyExists, "A diagram stream with this id is already open."));
-        }
-
-        _ = PumpAsync(connection, streamId, opened, source);
+        await connection.OpenStreamAsync((ShortGuid)request.StreamId, opened, _diagramStream);
         return new OpenDiagramStreamResponse();
     }
 
     public override Task<CloseDiagramStreamResponse> CloseDiagram(CloseDiagramStreamRequest request, ServerCallContext context)
     {
-        var userId = SessionContext.GetUserId(context);
-        var connection = _connections.Find((ShortGuid)request.WatchId);
-        if (connection is not null && connection.UserId == userId && connection.Stop((ShortGuid)request.StreamId))
+        var connection = _connections.Find((ShortGuid)request.WatchId, SessionContext.GetUserId(context));
+        if (connection is not null && connection.Stop((ShortGuid)request.StreamId))
         {
             _logger.Debug("Closed diagram stream {StreamId} on watch {WatchId}", (ShortGuid)request.StreamId, (ShortGuid)request.WatchId);
         }
 
         return Task.FromResult(new CloseDiagramStreamResponse());
-    }
-
-    private async Task PumpAsync(WorkspaceConnection connection, ShortGuid streamId, OpenedDiagram opened, CancellationTokenSource source)
-    {
-        Documents.Wire.ShortGuid wireStreamId = streamId;
-        try
-        {
-            await _diagrams.RunAsync(
-                opened,
-                (delta, token) => connection.Writer.WriteAsync(
-                    new WorkspaceMessage { Diagram = new DiagramStreamMessage { StreamId = wireStreamId, Delta = delta } },
-                    token).AsTask(),
-                source.Token);
-        }
-        catch (RpcException refusal) when (PermanentRefusal.IsPermanent(refusal.StatusCode))
-        {
-            // Refused for good after the open was answered - a baseline that could not be made.
-            // Ending the stream would read as a drop the client re-opens every RECONNECT_DELAY_MS
-            // for ever; the refusal is what its own Open call would have ended with.
-            _logger.Debug("Diagram stream {StreamId} on watch {WatchId} refused: {Reason}", streamId, connection.WatchId, refusal.Status.Detail);
-            connection.Writer.TryWrite(new WorkspaceMessage
-            {
-                Diagram = new DiagramStreamMessage
-                {
-                    StreamId = wireStreamId,
-                    Refused = new DiagramStreamRefused { Code = (int)refusal.StatusCode, Message = refusal.Status.Detail },
-                },
-            });
-        }
-        catch (Exception exception) when (exception is not OperationCanceledException || !source.IsCancellationRequested)
-        {
-            // The session failed on its own. Its own Open call would have ended in an error the
-            // client re-opens from; here the connection carries on, so the stream says it ended.
-            _logger.Warning(exception, "Diagram stream {StreamId} on watch {WatchId} failed; telling the client it ended", streamId, connection.WatchId);
-            connection.Writer.TryWrite(new WorkspaceMessage { Diagram = new DiagramStreamMessage { StreamId = wireStreamId, Ended = new DiagramStreamEnded() } });
-        }
-        finally
-        {
-            connection.Forget(streamId, source);
-            source.Dispose();
-        }
     }
 
     private static async Task DrainAsync(ChannelReader<WorkspaceMessage> reader, IServerStreamWriter<WorkspaceMessage> responseStream, CancellationToken cancellationToken)
