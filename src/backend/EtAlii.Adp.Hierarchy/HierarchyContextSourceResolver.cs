@@ -184,8 +184,8 @@ public sealed class HierarchyContextSourceResolver : IContextSourceResolver
             DiagramRouted diagram => diagram.Definition.Origin.MimeType,
             DesignerRouted designer => designer.Definition.Origin,
             ToolUnreadable => "",
-            var served => _diagrams.Route(fullPath) is DiagramUnknownType unknown
-                ? unknown.MimeType
-                : served is EditorRouted editor ? $"editor/{editor.Definition.Id}" : "",
+            _ when _diagrams.Route(fullPath) is DiagramUnknownType unknown => unknown.MimeType,
+            EditorRouted editor => $"editor/{editor.Definition.Id}",
+            _ => "",
         };
 }
