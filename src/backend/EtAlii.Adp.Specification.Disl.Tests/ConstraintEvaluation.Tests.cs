@@ -186,6 +186,36 @@ public class ConstraintEvaluationTests
     }
 
     [Fact]
+    public void ADeletionAndAReorder_AreRefusedByTheRulesOfTheirKind()
+    {
+        var specification = Specifications.Loaded(Specifications.With(Metamodel + """
+            ,
+            "constraints": {
+              "rules": [
+                { "id": "keepOne", "kind": "delete", "scope": "Box", "rule": "diagram.nodesOfType('Box').size() > 1", "message": { "cel": "self.name + ' is the last box.'" } },
+                { "id": "notWithLid", "kind": "delete", "scope": "Box", "rule": "!selection.exists(e, e.isA('Lid'))", "message": "Not with a lid." },
+                { "id": "lidFirst", "kind": "reorder", "scope": "Lid", "rule": "newIndex > oldIndex || siblings.size() < 2", "message": { "cel": "'Only down, from ' + string(oldIndex) + '.'" } },
+                { "id": "named", "kind": "change", "scope": "Box", "rule": "false", "message": "A change rule." }
+              ]
+            }
+            """));
+        var diagram = new DislDiagram(specification);
+        var box = Node(diagram, "Box", "a", 1, new Dictionary<string, object?> { ["name"] = "Ann" });
+        var lid = Node(diagram, "Lid", "l", 2, new Dictionary<string, object?> { ["name"] = "Lid" });
+        var other = Node(diagram, "Lid", "m", 3, new Dictionary<string, object?> { ["name"] = "Other" });
+
+        Assert.Equal("keepOne: Ann is the last box.", Refused(GestureConstraintEvaluator.Delete(specification, box)));
+        Assert.Equal("keepOne: Ann is the last box. / notWithLid: Not with a lid.", Refused(GestureConstraintEvaluator.Delete(specification, box, [box, lid])));
+        Assert.Equal("", Refused(GestureConstraintEvaluator.Delete(specification, lid)));
+        Assert.Equal("lidFirst: Only down, from 1.", Refused(GestureConstraintEvaluator.Reorder(specification, other, [lid, other], 1, 0)));
+        Assert.Equal("", Refused(GestureConstraintEvaluator.Reorder(specification, lid, [lid, other], 0, 1)));
+        Assert.Equal("", Refused(GestureConstraintEvaluator.Reorder(specification, box, [box], 0, 0)));
+        return;
+
+        static string Refused(IReadOnlyList<DislFinding> refusals) => string.Join(" / ", refusals.Select(refusal => $"{refusal.ConstraintId}: {refusal.Message}"));
+    }
+
+    [Fact]
     public void AGestureRuleThatCannotBeEvaluated_Refuses()
     {
         var specification = Specifications.Loaded(Specifications.With(Metamodel + """

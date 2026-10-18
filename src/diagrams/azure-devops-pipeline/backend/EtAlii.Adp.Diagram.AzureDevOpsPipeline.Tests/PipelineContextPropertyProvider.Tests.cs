@@ -712,7 +712,7 @@ public class PipelineContextPropertyProviderTests : IDisposable
     public async Task ASelectedArrow_DescribesNothing_AndDoesNotThrow()
     {
         // Arrange: an arrow is selectable now (centralized-selection 2.1), so the property grid is
-        // asked about one. PipelineEdits.Locate knows no arrow; the answer must be "nothing to
+        // asked about one. The definition finds no stage, job or step by it; the answer must be "nothing to
         // show", never an exception that takes the grid down.
         var path = Write();
 

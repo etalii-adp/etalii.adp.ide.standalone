@@ -1,5 +1,5 @@
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
+using EtAlii.Adp.Specification.Disl;
 
 namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline;
 
@@ -13,10 +13,9 @@ namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline;
 /// the same thing (Requirement 9.6).
 /// </para>
 /// <para>
-/// The name is decided by the handler rather than carried by the command, except when the command
-/// names one - which is what makes undo and redo land on the same element. Redoing an add has to
-/// recreate the element the undo removed, and an add that picked a fresh name each time would
-/// create a second one.
+/// The name is the definition's, a free one among the pipeline's stages or jobs, except when the
+/// command names one, which is then made free the same way. Undo and redo land on the same element
+/// whatever the name, because they put back bytes.
 /// </para>
 /// </remarks>
 /// <param name="RootPath">The project.</param>
@@ -34,119 +33,110 @@ public sealed record AddPipelineElementCommand(
 internal sealed class AddPipelineElementCommandHandler(IPipelineDocumentStore documents)
     : PipelineEditHandler<AddPipelineElementCommand>(documents)
 {
-    protected override EditOutcome Apply(LineDocument body, PipelineModel model, AddPipelineElementCommand command)
+    /// <remarks>
+    /// <para>
+    /// <b>The definition's operation</b>, <c>addStage</c>, <c>addJob</c>, <c>addDeploymentJob</c> or <c>addStep</c>,
+    /// run on the element the command names: its refusals are the definition's, and what it creates (a stage with a
+    /// job and a step, a job with a step, a step) is planned as one edit, after the last entry of its list.
+    /// </para>
+    /// <para>
+    /// <b>A stage is added beside the stages, whatever it was asked on</b>: a command that names no parent runs the
+    /// operation on the pipeline's first element, which the operation reads only for where it was asked.
+    /// </para>
+    /// </remarks>
+    protected override EditOutcome Apply(PipelineBody body, AddPipelineElementCommand command)
     {
-        var added = command.Kind == PipelineAddKind.Stage
-            ? AddStage(body, model, command)
-            : AddWithin(body, model, command);
+        var diagram = body.Disl.Diagram;
+        DislElement? self;
+        if (command.ParentId.Length > 0)
+        {
+            self = PipelineDefinition.ElementOf(body, command.ParentId);
+            if (self is null) return EditOutcome.Refused(PipelineDefinition.Gone);
 
-        return added.Error.Length > 0
-            ? EditOutcome.Refused(added.Error)
-            : EditOutcome.UndoneBy(new RemovePipelineElementCommand(command.RootPath, command.BodyPath, added.ElementId));
+            // Nothing is added inside an element this file does not write: the definition's reason, as for any edit of it.
+            if (self.ValueOf("editable") is false) return EditOutcome.Refused(self.ValueOf("readOnlyReason") as string ?? "");
+        }
+        else
+        {
+            self = diagram.Nodes.FirstOrDefault(node => node.IsA("Stage") || node.IsA("JobBase") || node.IsA("Step"));
+
+            // A pipeline that holds nothing to ask on, as one that only extends another: the definition's sentence for
+            // a pipeline with no stage of its own, which the operation would give were there anything to give it on.
+            if (self is null && command.Kind == PipelineAddKind.Stage) return EditOutcome.Refused(NoStages);
+        }
+
+        var operation = command.Kind switch
+        {
+            PipelineAddKind.Stage => "addStage",
+            PipelineAddKind.Job => "addJob",
+            PipelineAddKind.DeploymentJob => "addDeploymentJob",
+            _ => "addStep",
+        };
+
+        var taken = Names(diagram, command.Kind);
+        var transaction = PipelineDefinition.Run(operation, diagram, self);
+        return PipelineDefinition.Apply(body, command.Name.Length > 0 && transaction.WasApplied ? Named(transaction, UnusedName(command.Name, taken)) : transaction);
+    }
+
+    /// <summary>The sentence the definition's <c>addStage</c> is unavailable with in a pipeline with no stage of its own.</summary>
+    private static string NoStages { get; } = PipelineDefinition.Specification.Root.GetProperty("behavior").GetProperty("operations")
+        .GetProperty("addStage").GetProperty("unavailable")[0].GetProperty("message").GetString()!;
+
+    /// <summary>The names a new element of <paramref name="kind"/> must not take: every stage's, or every job's of the pipeline.</summary>
+    private static List<string> Names(DislDiagram diagram, PipelineAddKind kind) =>
+    [
+        .. diagram.NodesOfType(kind == PipelineAddKind.Stage ? "Stage" : "JobBase").Select(node => node.ValueOf("name") as string ?? ""),
+    ];
+
+    /// <summary>
+    /// <paramref name="transaction"/> with what it created named <paramref name="name"/> in place of the name the
+    /// operation chose, and the job of a new stage, and a deployment job's environment, after it as the operation
+    /// names them.
+    /// </summary>
+    /// <remarks>The definition's operations take no name, so a command that brings one renames what the operation made.</remarks>
+    private static DislTransaction Named(DislTransaction transaction, string name)
+    {
+        if (transaction.Changes.OfType<DislChange.Create>().FirstOrDefault()?.Attributes.GetValueOrDefault("name") is not string chosen)
+        {
+            return transaction;
+        }
+
+        Dictionary<string, string> renamed = new(StringComparer.Ordinal)
+        {
+            [chosen] = name,
+            [chosen + "Job"] = name + "Job",
+            [chosen.ToLowerInvariant()] = name.ToLowerInvariant(),
+        };
+        return transaction with
+        {
+            Changes =
+            [
+                .. transaction.Changes.Select(change => change is DislChange.Create create
+                    ? create with
+                    {
+                        Attributes = create.Attributes.ToDictionary(
+                            attribute => attribute.Key,
+                            attribute => attribute.Key is "name" or "environment" && attribute.Value is string value && renamed.TryGetValue(value, out var replaced) ? replaced : attribute.Value,
+                            StringComparer.Ordinal),
+                    }
+                    : change),
+            ],
+        };
     }
 
     /// <summary>
-    /// A stage joins the pipeline's <c>stages</c> list, after the last stage there is.
+    /// <paramref name="wanted"/> if nothing in <paramref name="taken"/> uses it, compared without regard to case,
+    /// else <paramref name="wanted"/> followed by 2, 3 and so on: the definition's <c>unusedName</c>.
     /// </summary>
-    /// <remarks>
-    /// A file with no <c>stages</c> key is refused rather than restructured. Turning a jobs-only
-    /// pipeline into a staged one means re-indenting everything in it, which is a rewrite of the
-    /// whole file and exactly what this module promises not to do to one.
-    /// </remarks>
-    private static PipelineAddOutcome AddStage(LineDocument body, PipelineModel model, AddPipelineElementCommand command)
+    private static string UnusedName(string wanted, IEnumerable<string> taken)
     {
-        var declared = model.Stages.Where(stage => stage is { IsImplicit: false, IsFromTemplate: false }).ToList();
-        if (declared.Count == 0)
+        var used = taken.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        if (!used.Contains(wanted)) return wanted;
+
+        for (var suffix = 2; ; suffix++)
         {
-            return PipelineAddOutcome.Failed(
-                "This pipeline has no stages block to add a stage to. Add one in the file first.");
+            var candidate = $"{wanted}{suffix}";
+            if (!used.Contains(candidate)) return candidate;
         }
-
-        var name = PipelineBlocks.UnusedName(
-            command.Name.Length > 0 ? command.Name : "NewStage",
-            model.Stages.Select(stage => stage.Name));
-
-        var last = declared[^1];
-        var indent = body.Lines[last.Lines.Start].Indent();
-        new PipelineWriter(body).InsertElement(
-            PipelineEditTarget.For(last),
-            listKeyLine: 0,
-            PipelineBlocks.Stage(name, indent));
-
-        return PipelineAddOutcome.Added(name);
-    }
-
-    /// <summary>A job joins a stage's <c>jobs</c>, a step joins a job's <c>steps</c>.</summary>
-    private static PipelineAddOutcome AddWithin(LineDocument body, PipelineModel model, AddPipelineElementCommand command)
-    {
-        var parent = PipelineEdits.Locate(model, command.ParentId);
-        return parent is null
-            ? PipelineAddOutcome.Failed("That element is no longer in this pipeline.")
-            : PipelineEdits.RefusalFor(parent) is { Length: > 0 } refusal
-            ? PipelineAddOutcome.Failed(refusal)
-            : command.Kind switch
-            {
-                PipelineAddKind.Step => AddStep(body, parent),
-                _ => AddJob(body, model, command, parent),
-            };
-    }
-
-    private static PipelineAddOutcome AddJob(
-        LineDocument body,
-        PipelineModel model,
-        AddPipelineElementCommand command,
-        PipelineElementLocation parent)
-    {
-        if (parent.Kind != PipelineElementLocationKind.Stage)
-        {
-            return PipelineAddOutcome.Failed("A job goes in a stage.");
-        }
-
-        var stage = parent.Stage;
-        var authored = stage.Jobs.Where(job => !job.IsFromTemplate).ToList();
-        if (authored.Count == 0)
-        {
-            // Every stage this module can add has a job in it already, so a stage with none is one
-            // whose jobs all came from a template - and there is nowhere here to put another.
-            return PipelineAddOutcome.Failed("This stage has no jobs of its own to add one beside.");
-        }
-
-        var name = PipelineBlocks.UnusedName(
-            command.Name.Length > 0 ? command.Name : "NewJob",
-            model.Jobs.Select(job => job.Name));
-
-        var last = authored[^1];
-        var indent = body.Lines[last.Lines.Start].Indent();
-        var lines = command.Kind == PipelineAddKind.DeploymentJob
-            ? PipelineBlocks.DeploymentJob(name, name.ToLowerInvariant(), indent)
-            : PipelineBlocks.Job(name, indent);
-
-        new PipelineWriter(body).InsertElement(PipelineEditTarget.For(last), listKeyLine: 0, lines);
-        return PipelineAddOutcome.Added($"{stage.Id}/{name}");
-    }
-
-    private static PipelineAddOutcome AddStep(LineDocument body, PipelineElementLocation parent)
-    {
-        if (parent.Kind != PipelineElementLocationKind.Job)
-        {
-            return PipelineAddOutcome.Failed("A step goes in a job.");
-        }
-
-        var job = parent.Job!;
-        var authored = job.Steps.Where(step => !step.IsFromTemplate).ToList();
-        if (authored.Count == 0)
-        {
-            return PipelineAddOutcome.Failed("This job has no steps of its own to add one beside.");
-        }
-
-        var last = authored[^1];
-        var indent = body.Lines[last.Lines.Start].Indent();
-        new PipelineWriter(body).InsertElement(
-            PipelineEditTarget.For(last),
-            listKeyLine: 0,
-            PipelineBlocks.Step(PipelineBlocks.PlaceholderScript, indent));
-
-        // A step has no name, so its id is its position - and the new one is at the end.
-        return PipelineAddOutcome.Added($"{job.Id}/step-{job.Steps.Count}");
     }
 }

@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline;
@@ -25,24 +24,27 @@ public sealed record SetPipelineElementEnabledCommand(
 internal sealed class SetPipelineElementEnabledCommandHandler(IPipelineDocumentStore documents)
     : PipelineEditHandler<SetPipelineElementEnabledCommand>(documents)
 {
-    protected override EditOutcome Apply(LineDocument body, PipelineModel model, SetPipelineElementEnabledCommand command)
+    /// <remarks>
+    /// The definition's <c>toggleEnabled</c>, run where the element is not already as asked: it unsets
+    /// <c>enabled</c> on an element that is disabled and writes <c>false</c> on one that is not. An element already
+    /// as asked is left as it is, so nothing is written and nothing lands on the history.
+    /// </remarks>
+    protected override EditOutcome Apply(PipelineBody body, SetPipelineElementEnabledCommand command)
     {
-        var location = PipelineEdits.Locate(model, command.ElementId);
-        if (Refuses(location, out var refusal))
+        if (PipelineDefinition.ElementOf(body, command.ElementId) is not { } element)
         {
-            return refusal;
+            return EditOutcome.Refused(PipelineDefinition.Gone);
         }
 
-        var wasEnabled = !ExecutionOf(location).IsDisabled;
-        return new PipelineWriter(body).SetEnabled(location.Target, command.Enabled ? "" : "false")
-            ? EditOutcome.UndoneBy(command with { Enabled = wasEnabled })
-            : EditOutcome.Unchanged;
+        if (PipelineDefinition.ChangeRefusal(element, Enabled, command.Enabled ? null : "false") is { } refused)
+        {
+            return EditOutcome.Refused(refused);
+        }
+
+        return (element.ValueOf("isDisabled") is true) != command.Enabled
+            ? EditOutcome.Unchanged
+            : PipelineDefinition.Apply(body, PipelineDefinition.Run("toggleEnabled", element.Diagram, element));
     }
 
-    private static PipelineExecution ExecutionOf(PipelineElementLocation location) => location.Kind switch
-    {
-        PipelineElementLocationKind.Stage => location.Stage.Execution,
-        PipelineElementLocationKind.Job => location.Job!.Execution,
-        _ => location.Step!.Execution,
-    };
+    private const string Enabled = "enabled";
 }

@@ -14,7 +14,7 @@ internal sealed class PipelineReadings : IDisposable
 
     private readonly string _folder;
 
-    private PipelineReadings(string folder, DocumentEntry<LineDocument, PipelineModel> entry)
+    private PipelineReadings(string folder, DocumentEntry<PipelineBody, PipelineModel> entry)
     {
         _folder = folder;
         var drawn = new PipelineElementMapper(PipelineMetrics.Default)
@@ -36,7 +36,7 @@ internal sealed class PipelineReadings : IDisposable
     public IReadOnlyList<string> Targets { get; }
 
     /// <summary>The entry as read, and the same entry as one that could not be read.</summary>
-    public IReadOnlyList<DocumentEntry<LineDocument, PipelineModel>> Entries { get; }
+    public IReadOnlyList<DocumentEntry<PipelineBody, PipelineModel>> Entries { get; }
 
     /// <summary>The corpus's documents, by their path under <c>src</c>.</summary>
     public static IEnumerable<string> Paths() => PipelineCorpus.Documents().Select(document => document.Relative);

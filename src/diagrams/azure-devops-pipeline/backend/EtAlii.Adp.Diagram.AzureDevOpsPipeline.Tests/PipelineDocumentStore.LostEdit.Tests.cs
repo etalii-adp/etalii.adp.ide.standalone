@@ -63,11 +63,11 @@ public class PipelineDocumentStoreLostEditTests : IDisposable
         File.Copy(IoPath.Combine(AppContext.BaseDirectory, "Fixtures", "edge-anchors.yml"), path);
         var entry = _store.GetOrLoad(_root, path);
         var document = entry.Document;
-        document.Insert(0, ["# lost-edit marker"]);
+        PipelineBodyEdits.Rename(document, null, "lost-edit marker");
 
         // The edit is in memory and nowhere else yet, which is the precondition the store tests
         // beside this one never establish.
-        Assert.Contains("# lost-edit marker", document.Text, StringComparison.Ordinal);
+        Assert.Contains("lost-edit marker", document.Text, StringComparison.Ordinal);
 
         // Act: the notification for an EARLIER write of this same file lands now. The store's own
         // guard is already cleared, so this is exactly what the reload bridge does with it.
@@ -79,6 +79,6 @@ public class PipelineDocumentStoreLostEditTests : IDisposable
         var written = await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken);
 
         // The save reported success, so the edit it reported success for has to be in the file.
-        Assert.Contains("# lost-edit marker", written, StringComparison.Ordinal);
+        Assert.Contains("lost-edit marker", written, StringComparison.Ordinal);
     }
 }

@@ -1,6 +1,6 @@
 using EtAlii.Adp.Documents;
 
-namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline;
+namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline.Tests.Parity;
 
 /// <summary>
 /// The one reading of a <see cref="Line"/> this module needs that core's line does not carry: how

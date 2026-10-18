@@ -1,4 +1,4 @@
-namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline;
+namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline.Tests.Parity;
 
 /// <summary>
 /// An element found in a model, together with everything around it a command needs.
@@ -12,7 +12,7 @@ namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline;
 /// <param name="Stage">The stage it is, or the stage it is in.</param>
 /// <param name="Job">The job it is, or the job it is in; null for a stage.</param>
 /// <param name="Step">The step it is; null for a stage or a job.</param>
-public sealed record PipelineElementLocation(
+internal sealed record PipelineElementLocation(
     PipelineElementLocationKind Kind,
     PipelineStage Stage,
     PipelineJob? Job,
@@ -27,6 +27,7 @@ public sealed record PipelineElementLocation(
     };
 
     /// <summary>Its id.</summary>
+    // ReSharper disable once UnusedMember.Global - Reason: the oracle is the hand-written code moved here as it was (azure-devops-pipeline-disl-fbl task 10); the handlers that read the id are now the definition's, and the record is kept whole so it stays the code it was.
     public string Id => Kind switch
     {
         PipelineElementLocationKind.Stage => Stage.Id,

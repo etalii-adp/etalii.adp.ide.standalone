@@ -47,18 +47,18 @@ public sealed class PipelineDocumentStore : IPipelineDocumentStore
     // A first open that cannot read opens as empty with a warning naming the path, which is the
     // lifecycle's own default and what this store did before it (R2.2) - so no unavailable document
     // is declared here.
-    private readonly WritableDocumentLifecycle<DocumentEntry<LineDocument, PipelineModel>> _lifecycle;
+    private readonly WritableDocumentLifecycle<DocumentEntry<PipelineBody, PipelineModel>> _lifecycle;
 
     public PipelineDocumentStore()
     {
-        _lifecycle = new WritableDocumentLifecycle<DocumentEntry<LineDocument, PipelineModel>>(
-            (path, text) => Parse(_roots[path], path, LineDocument.Parse(text)),
+        _lifecycle = new WritableDocumentLifecycle<DocumentEntry<PipelineBody, PipelineModel>>(
+            (path, text) => Entry(Open(_roots[path], path, Encoding.UTF8.GetBytes(text))),
             entry => entry.Document.Text);
     }
 
     public event EventHandler<DocumentChangedEventArgs>? Changed;
 
-    public DocumentEntry<LineDocument, PipelineModel> GetOrLoad(string rootPath, string path)
+    public DocumentEntry<PipelineBody, PipelineModel> GetOrLoad(string rootPath, string path)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(rootPath);
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
@@ -79,7 +79,7 @@ public sealed class PipelineDocumentStore : IPipelineDocumentStore
     /// command's inverse on the undo stack for a change that never happened. Passing the entry makes
     /// that ordering unrepresentable: what the caller edited is what gets written.
     /// </remarks>
-    public DocumentSaveResult Save(string rootPath, string path, DocumentEntry<LineDocument, PipelineModel> entry)
+    public DocumentSaveResult Save(string rootPath, string path, DocumentEntry<PipelineBody, PipelineModel> entry)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(rootPath);
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
@@ -93,11 +93,17 @@ public sealed class PipelineDocumentStore : IPipelineDocumentStore
             return DocumentSaveResult.Failure($"{IoPath.GetFileName(path)} does not parse, so it was not written. {entry.Unreadable}");
         }
 
-        // The document's own lines are authoritative and unchanged by writing them out, but what
-        // they mean may have changed - so the model is rebuilt from the document before it is saved,
-        // and the lifecycle caches exactly that entry, whether or not the write lands.
+        // The body was read as it was edited, through the same resolver, so what it says is already its
+        // reading: the entry is built from it, and the lifecycle caches exactly that entry, whether or not
+        // the write lands. A body an edit left unreadable is never written.
         _roots[path] = rootPath;
-        var reparsed = Parse(rootPath, path, entry.Document);
+        var reparsed = Entry(entry.Document);
+        if (!reparsed.IsUsable)
+        {
+            _logger.Warning("Refusing to write {Path}: the edit left it unreadable ({Error})", path, reparsed.Unreadable);
+            return DocumentSaveResult.Failure($"{IoPath.GetFileName(path)} would not parse after this edit, so it was not written. {reparsed.Unreadable}");
+        }
+
         var result = _lifecycle.Save(path, reparsed);
         if (result.Failed)
         {
@@ -120,18 +126,18 @@ public sealed class PipelineDocumentStore : IPipelineDocumentStore
 
     public void Forget(string path) => _lifecycle.Forget(path);
 
-    public IDiagramDocumentStore<LineDocument, PipelineModel> In(string rootPath)
+    public IDiagramDocumentStore<PipelineBody, PipelineModel> In(string rootPath)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(rootPath);
         return new Rooted(this, rootPath);
     }
 
-    public PipelineModel ModelOf(string rootPath, string path, LineDocument document)
+    public PipelineBody Open(string rootPath, string path, byte[] bytes)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(rootPath);
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
-        ArgumentNullException.ThrowIfNull(document);
-        return Parse(rootPath, path, document).Model;
+        ArgumentNullException.ThrowIfNull(bytes);
+        return PipelineBody.Open(bytes, new PipelineReadContext(path, Resolver(rootPath)));
     }
 
     public void Reload(string path)
@@ -179,7 +185,7 @@ public sealed class PipelineDocumentStore : IPipelineDocumentStore
     private void OnChanged(string path) => Changed?.Invoke(this, new DocumentChangedEventArgs(path));
 
     /// <summary>The store with every open and save made from one root.</summary>
-    private sealed class Rooted(PipelineDocumentStore documents, string rootPath) : IDiagramDocumentStore<LineDocument, PipelineModel>
+    private sealed class Rooted(PipelineDocumentStore documents, string rootPath) : IDiagramDocumentStore<PipelineBody, PipelineModel>
     {
         public event EventHandler<DocumentChangedEventArgs>? Changed
         {
@@ -187,10 +193,10 @@ public sealed class PipelineDocumentStore : IPipelineDocumentStore
             remove => documents.Changed -= value;
         }
 
-        public DocumentEntry<LineDocument, PipelineModel> GetOrLoad(string path) => documents.GetOrLoad(rootPath, path);
+        public DocumentEntry<PipelineBody, PipelineModel> GetOrLoad(string path) => documents.GetOrLoad(rootPath, path);
 
         /// <remarks>Refused, as the store refuses it, while what the file holds does not parse.</remarks>
-        public DocumentSaveResult Save(string path, LineDocument document)
+        public DocumentSaveResult Save(string path, PipelineBody document)
         {
             var entry = documents.GetOrLoad(rootPath, path) with { Document = document };
             return documents.Save(rootPath, path, entry);
@@ -207,13 +213,13 @@ public sealed class PipelineDocumentStore : IPipelineDocumentStore
         _templates.GetOrAdd(rootPath, root => new PipelineTemplates(root));
 
     /// <summary>
-    /// The model for a document, or the reason there is none.
+    /// The entry of a body: the body, and the model the plugin read from it, or the reason there is none.
     /// </summary>
     /// <remarks>
     /// <para>
     /// <b>Read through the module's binding</b>: the document's bytes opened as a <see cref="PipelineBody"/>,
     /// whose plugin is handed the path and the workspace's resolver (<see cref="PipelineReadContext"/>).
-    /// The entry keeps the document, which the writer still edits, and the model the plugin read.
+    /// The entry is the body, which every edit writes, and the model the plugin read.
     /// </para>
     /// <para>
     /// A file that is not YAML is an ordinary state for a file somebody is editing, so it is
@@ -221,6 +227,5 @@ public sealed class PipelineDocumentStore : IPipelineDocumentStore
     /// the reader's finding and is what makes the message worth reading.
     /// </para>
     /// </remarks>
-    private DocumentEntry<LineDocument, PipelineModel> Parse(string rootPath, string path, LineDocument document) =>
-        new(document, PipelineBody.Open(Encoding.UTF8.GetBytes(document.Text), new PipelineReadContext(path, Resolver(rootPath))).Outcome);
+    private static DocumentEntry<PipelineBody, PipelineModel> Entry(PipelineBody body) => new(body, body.Outcome);
 }

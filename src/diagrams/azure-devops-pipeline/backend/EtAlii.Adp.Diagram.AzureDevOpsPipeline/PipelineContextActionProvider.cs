@@ -2,6 +2,7 @@ using EtAlii.Adp.Context;
 using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
+using EtAlii.Adp.Specification.Disl;
 
 namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline;
 
@@ -24,7 +25,7 @@ namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline;
 /// the click.
 /// </para>
 /// </remarks>
-public sealed class PipelineContextActionProvider : DiagramActionProvider<LineDocument, PipelineModel>
+public sealed class PipelineContextActionProvider : DiagramActionProvider<PipelineBody, PipelineModel>
 {
     /// <summary>Sets the element's <c>displayName</c>.</summary>
     public const string RenameActionId = "azure-pipeline.rename";
@@ -90,7 +91,7 @@ public sealed class PipelineContextActionProvider : DiagramActionProvider<LineDo
     /// connection has the element: opening a stage or a job leads what can be done to one, and only
     /// where there is something inside to show (Requirement 8.2).
     /// </remarks>
-    protected override IReadOnlyList<ContextActionGroupDefinition> Discover(ContextTarget target, DocumentEntry<LineDocument, PipelineModel> entry)
+    protected override IReadOnlyList<ContextActionGroupDefinition> Discover(ContextTarget target, DocumentEntry<PipelineBody, PipelineModel> entry)
     {
         ArgumentNullException.ThrowIfNull(target);
         return PipelineDefinition.Menus(entry, _views.For(target.WatchId, target.ResolvedFullPath), target.ElementId);
@@ -99,14 +100,14 @@ public sealed class PipelineContextActionProvider : DiagramActionProvider<LineDo
     /// <inheritdoc />
     protected override async ValueTask<ContextExecutionResult> RunAsync(
         ContextTarget target,
-        DocumentEntry<LineDocument, PipelineModel> entry,
+        DocumentEntry<PipelineBody, PipelineModel> entry,
         string actionId,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(target);
         ArgumentNullException.ThrowIfNull(entry);
 
-        if (Resolve(entry, target.ElementId) is not { } location)
+        if (Resolve(entry, target.ElementId) is not { } element)
         {
             return new ContextExecutionFailed(Gone);
         }
@@ -138,7 +139,7 @@ public sealed class PipelineContextActionProvider : DiagramActionProvider<LineDo
                 "Rename",
                 "mdi-pencil-outline",
                 "Display name",
-                DisplayName(location),
+                DisplayName(element),
                 "Rename",
                 target.ElementId));
         }
@@ -146,27 +147,27 @@ public sealed class PipelineContextActionProvider : DiagramActionProvider<LineDo
         // Everything else has all it needs already, so it runs now rather than putting a dialog in
         // the way of one keystroke - through the project's history, so every one of these is one
         // undo away like every other edit in the IDE (Requirement 9.8).
-        return CommandFor(target, actionId, "", location) is { } command
+        return CommandFor(target, actionId, "", element) is { } command
             ? await DispatchAsync(target, command, cancellationToken)
             : new ContextExecutionFailed($"'{actionId}' does not apply to this selection.");
     }
 
     /// <inheritdoc />
     protected override ICommand? CommitCommand(ContextTarget target, PipelineModel model, string actionId, string value) =>
-        PipelineEdits.Locate(model, target.ElementId) is { } location
-            ? CommandFor(target, actionId, value, location)
+        PipelineDefinition.ElementOf(PipelineBody.ReadingOf(model), target.ElementId) is { } element
+            ? CommandFor(target, actionId, value, element)
             : null;
 
-    private static ICommand? CommandFor(ContextTarget target, string actionId, string value, PipelineElementLocation location)
+    private static ICommand? CommandFor(ContextTarget target, string actionId, string value, DislElement element)
     {
         var root = target.RootPath;
         var body = target.ResolvedFullPath;
-        var id = location.Id;
+        var id = element.Id;
 
         return actionId switch
         {
             RenameActionId => new RenamePipelineElementCommand(root, body, id, value),
-            ToggleEnabledActionId => new SetPipelineElementEnabledCommand(root, body, id, Execution(location).IsDisabled),
+            ToggleEnabledActionId => new SetPipelineElementEnabledCommand(root, body, id, element.ValueOf("isDisabled") is true),
             ClearDependenciesActionId => new SetPipelineDependenciesCommand(root, body, id, [], Declared: false),
             RemoveActionId => new RemovePipelineElementCommand(root, body, id),
             // The element itself is the parent, not the stage or job enclosing it. The menu only
@@ -178,30 +179,20 @@ public sealed class PipelineContextActionProvider : DiagramActionProvider<LineDo
             AddJobActionId => new AddPipelineElementCommand(root, body, PipelineAddKind.Job, id),
             AddDeploymentJobActionId => new AddPipelineElementCommand(root, body, PipelineAddKind.DeploymentJob, id),
             AddStepActionId => new AddPipelineElementCommand(root, body, PipelineAddKind.Step, id),
-            MoveStepUpActionId => new MovePipelineStepCommand(root, body, id, IndexOf(location) - 1),
-            MoveStepDownActionId => new MovePipelineStepCommand(root, body, id, IndexOf(location) + 1),
+            MoveStepUpActionId => new MovePipelineStepCommand(root, body, id, IndexOf(element) - 1),
+            MoveStepDownActionId => new MovePipelineStepCommand(root, body, id, IndexOf(element) + 1),
             _ => null,
         };
     }
 
-    private static PipelineExecution Execution(PipelineElementLocation location) => location.Kind switch
-    {
-        PipelineElementLocationKind.Stage => location.Stage.Execution,
-        PipelineElementLocationKind.Job => location.Job!.Execution,
-        _ => location.Step!.Execution,
-    };
+    /// <summary>The display name as written, which the rename's input starts from.</summary>
+    private static string DisplayName(DislElement element) => element.ValueOf("displayName") as string ?? "";
 
-    private static string DisplayName(PipelineElementLocation location) => location.Kind switch
-    {
-        PipelineElementLocationKind.Stage => location.Stage.DisplayName,
-        PipelineElementLocationKind.Job => location.Job!.DisplayName,
-        _ => location.Step!.DisplayName,
-    };
+    /// <summary>Where a step is among its job's steps.</summary>
+    private static int IndexOf(DislElement element) =>
+        element.Parent is { } parent ? parent.Children.Where(child => child.IsA("Step")).ToList().IndexOf(element) : -1;
 
-    private static int IndexOf(PipelineElementLocation location) =>
-        location.Job!.Steps.ToList().FindIndex(step => step.Id == location.Step!.Id);
-
-    /// <summary>The element <paramref name="elementId"/> names in a document that was read, or null.</summary>
-    private static PipelineElementLocation? Resolve(DocumentEntry<LineDocument, PipelineModel> entry, string elementId) =>
-        entry.IsUsable && elementId.Length > 0 ? PipelineEdits.Locate(entry.Model, elementId) : null;
+    /// <summary>The stage, job or step <paramref name="elementId"/> names in a document that was read, or null.</summary>
+    private static DislElement? Resolve(DocumentEntry<PipelineBody, PipelineModel> entry, string elementId) =>
+        entry.IsUsable ? PipelineDefinition.ElementOf(entry.Document, elementId) : null;
 }

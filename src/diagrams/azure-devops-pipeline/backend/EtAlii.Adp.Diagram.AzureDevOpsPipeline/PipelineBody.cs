@@ -19,22 +19,25 @@ namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>Every write is a <see cref="ModelChange"/></b> (azure-devops-pipeline-disl-fbl task 9), planned by the
-/// plugin's <see cref="PipelinePlanner"/> as splices of the spans it touches and applied by the library, one at a
-/// time (<see cref="Change"/>) or several as one edit (<see cref="Batch"/>). No command writes through it yet: a
-/// pipeline is still written by <see cref="PipelineWriter"/> on the store's <see cref="LineDocument"/>, and every
-/// such edit opens a new body over the bytes it leaves.
+/// <b>Every write is a <see cref="ModelChange"/></b>, planned by the plugin's <see cref="PipelinePlanner"/> as
+/// splices of the spans it touches and applied by the library: one at a time (<see cref="Change"/>), several as one
+/// edit (<see cref="Batch"/>), or a command's changes as one edit that is refused whole (<see cref="Write"/>). Every
+/// command of the module writes through <see cref="Write"/> (azure-devops-pipeline-disl-fbl task 10), and its undo
+/// puts back what that edit replaced (<see cref="Restore"/>).
 /// </para>
 /// <para>
-/// <b>Undo stays the host's</b>, as for the behavior model: the library's own history is per open body.
+/// <b>Undo stays the host's</b>, as for the behavior model: the library's own history is per open body, and a reload
+/// clears it, so the host's command carries the library's inverse splices and the digest of the bytes it expects
+/// (<c>RestorePipelineSpanCommand</c>, amendment 2).
 /// </para>
 /// <para>
-/// <b>The store's entry keeps the parser's model</b>, which the canvas, the layout and the commands
-/// address, and the body that read it is found from it (<see cref="ReadingOf"/>), which is how the
-/// definition derives the menus and the rows from the DISL model of the same reading.
+/// <b>The store's entry is the body</b>: its bytes are what is saved and its <see cref="Model"/> is the parser's
+/// model, which the canvas and the layout address. The body that read a model is found from it
+/// (<see cref="ReadingOf"/>), which is how the definition derives the menus and the rows from the DISL model of
+/// the same reading.
 /// </para>
 /// </remarks>
-internal sealed class PipelineBody : ITextBody<PipelineBody>
+public sealed class PipelineBody : ITextBody<PipelineBody>
 {
     private static readonly Lazy<FblBinding> LoadedBinding = new(() => BundledBinding.Load(typeof(PipelineBody).Assembly, "azure-devops-pipeline.fbl", "pipeline"));
 
@@ -44,6 +47,7 @@ internal sealed class PipelineBody : ITextBody<PipelineBody>
     private readonly PluginBody _body;
     private readonly PipelineYamlPlugin _plugin;
     private readonly TextMemo<DislModel> _disl = new();
+    private readonly TextMemo<IReadOnlyDictionary<string, string>> _readIds = new();
 
     // While a batch is open, the planner every change of it is planned by, against the body as it was.
     private PipelinePlanner? _batch;
@@ -78,6 +82,9 @@ internal sealed class PipelineBody : ITextBody<PipelineBody>
     /// </summary>
     public DislModel Disl => _disl.Of(_body.Bytes, () => DislModelBuilder.From(_body.Model, PipelineDefinition.Specification));
 
+    /// <summary>The edit <see cref="Write"/> or <see cref="Restore"/> applied last, its offsets in the bytes before it; null before either.</summary>
+    public Edit? LastEdit { get; private set; }
+
     /// <summary>
     /// What the store keeps of the body: its model, or, for a body that is not YAML, the empty model, the
     /// reader's message on the line it names, and that line and message as the reason nothing is written to it.
@@ -111,7 +118,7 @@ internal sealed class PipelineBody : ITextBody<PipelineBody>
     }
 
     /// <summary>A body for <paramref name="bytes"/>, as they are, with its templates followed as <paramref name="context"/> allows. Never throws on content.</summary>
-    public static PipelineBody Open(byte[] bytes, PipelineReadContext context)
+    internal static PipelineBody Open(byte[] bytes, PipelineReadContext context)
     {
         ArgumentNullException.ThrowIfNull(bytes);
         ArgumentNullException.ThrowIfNull(context);
@@ -170,6 +177,79 @@ internal sealed class PipelineBody : ITextBody<PipelineBody>
         _body.Apply(edit);
         Remember();
         return edit;
+    }
+
+    /// <summary>
+    /// Plans <paramref name="changes"/> together against the body as it is now and applies them as one edit
+    /// (<see cref="LastEdit"/>), or refuses them all with the first refusal and writes nothing: the write of one
+    /// command, whose changes stand or fall together.
+    /// </summary>
+    /// <remarks>
+    /// As in <see cref="Batch"/>, every change names an element of the reading as it was before any of them, or one
+    /// an add of the same write made, by the id that add gave.
+    /// </remarks>
+    /// <returns><see cref="EditOutcome.Unchanged"/> when the changes ask for what the body already says.</returns>
+    public EditOutcome Write(IReadOnlyList<ModelChange> changes)
+    {
+        ArgumentNullException.ThrowIfNull(changes);
+        if (_batch is not null) throw new InvalidOperationException("A batch is open on this body.");
+
+        var readOnly = _body.Plan(new ModelChange.Save()) as PlanResult.Refused;
+        var planner = new PipelinePlanner(_body.Bytes, Reading.Elements, readOnly?.Reason);
+        foreach (var change in changes)
+        {
+            if (planner.Plan(change) is { } refused) return EditOutcome.Refused(refused);
+        }
+
+        var splices = planner.Splices;
+        if (splices.Count == 0) return EditOutcome.Unchanged;
+
+        var edit = new Edit(splices);
+        _body.Apply(edit);
+        LastEdit = edit;
+        Remember();
+        return EditOutcome.Applied;
+    }
+
+    /// <summary>Applies <paramref name="splices"/>, the inverse of an earlier edit, as one edit (<see cref="LastEdit"/>).</summary>
+    public void Restore(IReadOnlyList<Splice> splices)
+    {
+        ArgumentNullException.ThrowIfNull(splices);
+        var edit = new Edit(splices);
+        _body.Apply(edit);
+        LastEdit = edit;
+        Remember();
+    }
+
+    /// <summary>
+    /// The id the plugin read the stage, job, step or template reference of DISL id <paramref name="id"/> with, the
+    /// first of that id in reading order, as a gesture finds it; null for an id the reading does not hold.
+    /// </summary>
+    /// <remarks>
+    /// The definition derives its ids (a stage's name, <c>stage/job</c>, <c>job/step-n</c>), and the plugin reads
+    /// each element under an id of its own place, because the derived ids are not unique where two stages share a
+    /// name (finding A8). The DISL model is built from the reading's nodes in their order, so the two are paired by
+    /// place.
+    /// </remarks>
+    public string? ReadIdOf(string id)
+    {
+        ArgumentNullException.ThrowIfNull(id);
+        return _readIds.Of(_body.Bytes, ReadIds).GetValueOrDefault(id);
+    }
+
+    private Dictionary<string, string> ReadIds()
+    {
+        var read = Reading.Elements.Where(element => !element.IsRelation && element.Type != "Pipeline").ToList();
+        var nodes = Disl.Diagram.Nodes;
+        if (nodes.Count < read.Count) throw new InvalidOperationException("The DISL model of this pipeline does not hold every node of its reading.");
+
+        var ids = new Dictionary<string, string>(StringComparer.Ordinal);
+        for (var index = 0; index < read.Count; index++)
+        {
+            ids.TryAdd(nodes[index].Id, read[index].Id);
+        }
+
+        return ids;
     }
 
     /// <summary>The body that read <paramref name="model"/>.</summary>

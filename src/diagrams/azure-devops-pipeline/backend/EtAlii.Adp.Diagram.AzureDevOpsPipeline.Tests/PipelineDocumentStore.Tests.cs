@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -115,7 +114,7 @@ public class PipelineDocumentStoreTests : IDisposable
 
         // Act.
         var entry = rooted.GetOrLoad(path);
-        var edited = LineDocument.Parse(entry.Document.Text + "# edited\n");
+        var edited = new PipelineDocumentStore().Open(_workspace, path, [.. entry.Document.Bytes, .. "# edited\n"u8]);
         var saved = rooted.Save(path, edited);
         var refused = rooted.Save(brokenPath, rooted.GetOrLoad(brokenPath).Document);
 
@@ -136,7 +135,7 @@ public class PipelineDocumentStoreTests : IDisposable
         var stage = entry.Model.Stages.Single();
 
         // Act.
-        new PipelineWriter(entry.Document).SetDisplayName(PipelineEditTarget.For(stage), "Build it");
+        PipelineBodyEdits.Rename(entry.Document, stage.Id, "Build it");
         var refusal = store.Save(_workspace, path, entry);
 
         // Assert.
@@ -152,7 +151,7 @@ public class PipelineDocumentStoreTests : IDisposable
         var path = Write("azure-pipelines.yml", Simple);
         var store = new PipelineDocumentStore();
         var entry = store.GetOrLoad(_workspace, path);
-        new PipelineWriter(entry.Document).SetDisplayName(PipelineEditTarget.For(entry.Model.Stages.Single()), "Build it");
+        PipelineBodyEdits.Rename(entry.Document, entry.Model.Stages.Single().Id, "Build it");
 
         // Act.
         store.Save(_workspace, path, entry);
@@ -168,7 +167,7 @@ public class PipelineDocumentStoreTests : IDisposable
         var path = Write("azure-pipelines.yml", Simple);
         var store = new PipelineDocumentStore();
         var entry = store.GetOrLoad(_workspace, path);
-        new PipelineWriter(entry.Document).SetDisplayName(PipelineEditTarget.For(entry.Model.Stages.Single()), "Build it");
+        PipelineBodyEdits.Rename(entry.Document, entry.Model.Stages.Single().Id, "Build it");
         var announced = new List<string>();
         store.Changed += (_, args) => announced.Add(args.Path);
 

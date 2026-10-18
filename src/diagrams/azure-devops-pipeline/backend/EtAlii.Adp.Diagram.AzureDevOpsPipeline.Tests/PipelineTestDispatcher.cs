@@ -25,12 +25,10 @@ internal sealed class PipelineTestDispatcher(IPipelineDocumentStore documents) :
             new AddPipelineElementCommandHandler(documents).ExecuteAsync(add, cancellationToken),
         RemovePipelineElementCommand remove =>
             new RemovePipelineElementCommandHandler(documents).ExecuteAsync(remove, cancellationToken),
-        RestorePipelineLinesCommand restore =>
-            new RestorePipelineLinesCommandHandler(documents).ExecuteAsync(restore, cancellationToken),
         MovePipelineStepCommand move =>
             new MovePipelineStepCommandHandler(documents).ExecuteAsync(move, cancellationToken),
-        RestoreDocumentCommand<IPipelineDocumentStore> text =>
-            new RestoreDocumentCommandHandler<IPipelineDocumentStore>(documents).ExecuteAsync(text, cancellationToken),
+        RestorePipelineSpanCommand restore =>
+            new RestorePipelineSpanCommandHandler(documents).ExecuteAsync(restore, cancellationToken),
         _ => throw new InvalidOperationException($"No handler is registered for {command.GetType().Name}."),
     };
 }

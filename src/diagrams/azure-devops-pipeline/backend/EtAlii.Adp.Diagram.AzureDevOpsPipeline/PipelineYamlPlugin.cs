@@ -42,9 +42,8 @@ namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline;
 /// written to it. Because YamlDotNet still reads, findings B14 and B15 do not arise.
 /// </para>
 /// <para>
-/// <b>It plans through <see cref="PipelinePlanner"/></b>, by byte spans of the bytes it is handed. No
-/// command plans through it yet: the commands still write through <see cref="PipelineWriter"/>
-/// (azure-devops-pipeline-disl-fbl task 9).
+/// <b>It plans through <see cref="PipelinePlanner"/></b>, by byte spans of the bytes it is handed, and every
+/// command of the module writes through it (azure-devops-pipeline-disl-fbl task 10).
 /// </para>
 /// </remarks>
 internal sealed class PipelineYamlPlugin(PipelineReadContext context) : IPersistencePlugin

@@ -1,4 +1,4 @@
-namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline;
+namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline.Tests.Parity;
 
 /// <summary>
 /// What every pipeline command needs before it can do anything: find the element, decide whether
@@ -10,7 +10,7 @@ namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline;
 /// trusting that somebody checked earlier. That means these checks happen on every path, and a
 /// second copy of them would be a second thing to get wrong.
 /// </remarks>
-public static class PipelineEdits
+internal static class PipelineEdits
 {
     /// <summary>The element an id names, or null when the model holds no such thing.</summary>
     public static PipelineElementLocation? Locate(PipelineModel model, string elementId)

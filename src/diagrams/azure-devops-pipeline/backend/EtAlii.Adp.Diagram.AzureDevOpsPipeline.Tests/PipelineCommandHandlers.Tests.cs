@@ -12,7 +12,7 @@ namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline.Tests;
 /// is the pipeline store seen from one root, and the handlers reach it through
 /// <see cref="ViewedPipelineDocumentStore"/>.
 /// </remarks>
-public sealed class PipelineCommandHandlersTests : EditHandlerContract<IDiagramDocumentStore<LineDocument, PipelineModel>, LineDocument, PipelineModel>
+public sealed class PipelineCommandHandlersTests : EditHandlerContract<IDiagramDocumentStore<PipelineBody, PipelineModel>, PipelineBody, PipelineModel>
 {
     private const string SaveWarning = "The handlers' test warning: something beside the file was not kept.";
 
@@ -20,13 +20,13 @@ public sealed class PipelineCommandHandlersTests : EditHandlerContract<IDiagramD
 
     protected override string Example => Fixture("multi-stage.yml");
 
-    protected override IDiagramDocumentStore<LineDocument, PipelineModel> CreateStore() =>
+    protected override IDiagramDocumentStore<PipelineBody, PipelineModel> CreateStore() =>
         new PipelineDocumentStore().In(IoPath.GetTempPath());
 
-    protected override IDiagramDocumentStore<LineDocument, PipelineModel> Warning(IDiagramDocumentStore<LineDocument, PipelineModel> store, string warning) =>
-        new WarningDocumentStore<LineDocument, PipelineModel>(store, warning);
+    protected override IDiagramDocumentStore<PipelineBody, PipelineModel> Warning(IDiagramDocumentStore<PipelineBody, PipelineModel> store, string warning) =>
+        new WarningDocumentStore<PipelineBody, PipelineModel>(store, warning);
 
-    protected override ICommandDispatcher Dispatcher(IDiagramDocumentStore<LineDocument, PipelineModel> store) =>
+    protected override ICommandDispatcher Dispatcher(IDiagramDocumentStore<PipelineBody, PipelineModel> store) =>
         new PipelineTestDispatcher(new ViewedPipelineDocumentStore(store));
 
     protected override ICommand EditOf(string bodyPath) => new RenamePipelineElementCommand(RootOf(bodyPath), bodyPath, "Build", "Build it all");

@@ -92,9 +92,8 @@ public class PipelineCommandsTests : IDisposable
         SetPipelineDependenciesCommand set => await new SetPipelineDependenciesCommandHandler(_store).ExecuteAsync(set),
         SetPipelineElementEnabledCommand enabled => await new SetPipelineElementEnabledCommandHandler(_store).ExecuteAsync(enabled),
         RemovePipelineElementCommand remove => await new RemovePipelineElementCommandHandler(_store).ExecuteAsync(remove),
-        RestorePipelineLinesCommand restore => await new RestorePipelineLinesCommandHandler(_store).ExecuteAsync(restore),
         MovePipelineStepCommand move => await new MovePipelineStepCommandHandler(_store).ExecuteAsync(move),
-        RestoreDocumentCommand<IPipelineDocumentStore> text => await new RestoreDocumentCommandHandler<IPipelineDocumentStore>(_store).ExecuteAsync(text),
+        RestorePipelineSpanCommand restore => await new RestorePipelineSpanCommandHandler(_store).ExecuteAsync(restore),
         _ => throw new InvalidOperationException($"No handler for {inverse.GetType().Name} in this test."),
     };
 
@@ -430,7 +429,7 @@ public class PipelineCommandsTests : IDisposable
         Assert.True(result.IsSuccess, result.Error);
         var steps = Model(path).Jobs.Single(job => job.Name == "Compile").Steps;
         Assert.Equal(3, steps.Count);
-        Assert.Contains(PipelineBlocks.PlaceholderScript, steps[^1].Identifier);
+        Assert.Contains("echo Add your build steps here", steps[^1].Identifier);
     }
 
     [Fact]

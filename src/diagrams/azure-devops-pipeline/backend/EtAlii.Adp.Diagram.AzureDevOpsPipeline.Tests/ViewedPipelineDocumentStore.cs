@@ -8,10 +8,10 @@ namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline.Tests;
 /// </summary>
 /// <remarks>
 /// Every call goes to <paramref name="view"/> whatever root it names, which is right for a test whose
-/// commands all name the one root the view was made for. A model is read by a store of its own,
-/// which reads it as the view's store would.
+/// commands all name the one root the view was made for. A copy of a body is opened by a store of its
+/// own, which opens it as the view's store would.
 /// </remarks>
-internal sealed class ViewedPipelineDocumentStore(IDiagramDocumentStore<LineDocument, PipelineModel> view) : IPipelineDocumentStore
+internal sealed class ViewedPipelineDocumentStore(IDiagramDocumentStore<PipelineBody, PipelineModel> view) : IPipelineDocumentStore
 {
     private readonly PipelineDocumentStore _reader = new();
 
@@ -21,11 +21,11 @@ internal sealed class ViewedPipelineDocumentStore(IDiagramDocumentStore<LineDocu
         remove => view.Changed -= value;
     }
 
-    public DocumentEntry<LineDocument, PipelineModel> GetOrLoad(string rootPath, string path) => view.GetOrLoad(path);
+    public DocumentEntry<PipelineBody, PipelineModel> GetOrLoad(string rootPath, string path) => view.GetOrLoad(path);
 
-    public IDiagramDocumentStore<LineDocument, PipelineModel> In(string rootPath) => view;
+    public IDiagramDocumentStore<PipelineBody, PipelineModel> In(string rootPath) => view;
 
-    public PipelineModel ModelOf(string rootPath, string path, LineDocument document) => _reader.ModelOf(rootPath, path, document);
+    public PipelineBody Open(string rootPath, string path, byte[] bytes) => _reader.Open(rootPath, path, bytes);
 
     public void Reload(string path) => view.Reload(path);
 

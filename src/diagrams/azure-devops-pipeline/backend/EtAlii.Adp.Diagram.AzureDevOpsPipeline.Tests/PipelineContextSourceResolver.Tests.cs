@@ -291,7 +291,7 @@ public class PipelineContextSourceResolverTests : IDisposable
         // Act.
         var entry = _store.GetOrLoad(_workspace, BodyOf(path));
         var stage = entry.Model.Stages.Single(candidate => candidate.Name == "Build");
-        new PipelineWriter(entry.Document).SetDisplayName(PipelineEditTarget.For(stage), "Built");
+        PipelineBodyEdits.Rename(entry.Document, stage.Id, "Built");
         _store.Save(_workspace, BodyOf(path), entry);
 
         // Assert.

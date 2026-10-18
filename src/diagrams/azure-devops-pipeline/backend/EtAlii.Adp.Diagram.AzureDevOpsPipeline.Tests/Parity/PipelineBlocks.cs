@@ -1,4 +1,4 @@
-namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline;
+namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline.Tests.Parity;
 
 /// <summary>
 /// The YAML a newly added stage, job or step is written as.
@@ -15,7 +15,7 @@ namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline;
 /// fails at queue time - the diagram would have "worked" and the build would not.
 /// </para>
 /// </remarks>
-public static class PipelineBlocks
+internal static class PipelineBlocks
 {
     /// <summary>The placeholder step a new job gets, so the job is runnable the moment it exists.</summary>
     public const string PlaceholderScript = "echo Add your build steps here";

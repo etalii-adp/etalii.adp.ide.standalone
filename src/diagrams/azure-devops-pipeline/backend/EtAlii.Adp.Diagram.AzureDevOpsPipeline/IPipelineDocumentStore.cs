@@ -28,27 +28,27 @@ public interface IPipelineDocumentStore : IDiagramDocumentStore
     /// yields an empty document rather than throwing, so a diagram whose body has not been written
     /// still opens and the first save creates it.
     /// </summary>
-    DocumentEntry<LineDocument, PipelineModel> GetOrLoad(string rootPath, string path);
+    DocumentEntry<PipelineBody, PipelineModel> GetOrLoad(string rootPath, string path);
 
     /// <summary>
     /// This store as seen from <paramref name="rootPath"/>: the shared store interface, whose calls
     /// name a path alone, answered with that root. It is how a session opened in a workspace stands
     /// on the session base.
     /// </summary>
-    IDiagramDocumentStore<LineDocument, PipelineModel> In(string rootPath);
+    IDiagramDocumentStore<PipelineBody, PipelineModel> In(string rootPath);
 
     /// <summary>
-    /// What <paramref name="document"/> says, read as the pipeline at <paramref name="path"/> in
-    /// <paramref name="rootPath"/> is: its templates resolved from that root. An edit reads the copy
-    /// of a body it changes with this. A document that does not parse yields an empty model.
+    /// <paramref name="bytes"/> read as the pipeline at <paramref name="path"/> in <paramref name="rootPath"/> is:
+    /// its templates followed from that root. An edit opens the copy of a body it changes with this, so the copy
+    /// reads as the store's own does. Never throws on content.
     /// </summary>
-    PipelineModel ModelOf(string rootPath, string path, LineDocument document);
+    PipelineBody Open(string rootPath, string path, byte[] bytes);
 
     /// <summary>Raised after a save, and after an external change is picked up.</summary>
     event EventHandler<DocumentChangedEventArgs>? Changed;
 
     /// <summary>How the pipeline a context target names is read from <paramref name="documents"/>: from the target's root as well as its path.</summary>
-    internal static Func<ContextTarget, DocumentEntry<LineDocument, PipelineModel>> LoaderFor(IPipelineDocumentStore documents)
+    internal static Func<ContextTarget, DocumentEntry<PipelineBody, PipelineModel>> LoaderFor(IPipelineDocumentStore documents)
     {
         ArgumentNullException.ThrowIfNull(documents);
         return target => documents.GetOrLoad(target.RootPath, target.ResolvedFullPath);
