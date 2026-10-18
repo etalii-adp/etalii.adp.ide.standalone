@@ -82,8 +82,8 @@ const RULED_BUT_NOT_DRAWN_AT_REST: readonly Listed[] = [
     classes: ["ansible-canvas-message", "canvas-host-message", "causal-loop-message", "dotnet-dependency-canvas-message", "helm-canvas-message"],
   },
   {
-    reason: "shown only after the user changes the view: a hidden or re-shown ambient package, a stage the user has shut (stages open expanded)",
-    classes: ["dotnet-dependency-canvas-filtered", "pipeline-stage-count"],
+    reason: "shown only after the user changes the view: a hidden or re-shown ambient package",
+    classes: ["dotnet-dependency-canvas-filtered"],
   },
   {
     reason: "a banner for a view the sanity bound cut short, and no shipped example is that large",
@@ -252,6 +252,7 @@ const DRAWN_BUT_UNRULED: readonly Listed[] = [
       "owl-ontology",
       "pipeline-job",
       "pipeline-stage",
+      "pipeline-stage-collapsed",
       "pipeline-stage-expanded",
       "pipeline-step",
       "rdf-node",

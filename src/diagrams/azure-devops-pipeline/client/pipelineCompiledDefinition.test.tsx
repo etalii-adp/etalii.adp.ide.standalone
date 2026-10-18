@@ -10,7 +10,7 @@ import { compileNotation } from "@client/canvas/library/disl/compileNotation";
 import { parseDisl } from "@client/canvas/library/disl/disTypes";
 import { fakeContextConnection } from "@client/canvas/library/testing/canvasHarness";
 import { applyDelta, emptyModel, EDGE_TYPE, JOB_TYPE, STAGE_TYPE, STEP_TYPE, TEMPLATE_TYPE, type PipelineModel } from "./pipelineModel";
-import { correctedDefinition, PIPELINE_BINDINGS, PIPELINE_CORRECTIONS } from "./pipelineBindings";
+import { PIPELINE_BINDINGS } from "./pipelineBindings";
 import { HAND_WRITTEN_DEFINITION, handWrittenModel } from "./handWrittenDefinition";
 
 /**
@@ -18,15 +18,12 @@ import { HAND_WRITTEN_DEFINITION, handWrittenModel } from "./handWrittenDefiniti
  * the hand-written definition it replaced (`handWrittenDefinition.ts`) is kept here as the oracle. Both
  * are drawn by the real `DiagramCanvas` over one corpus, and their markup must be the same.
  *
- * The definition is compiled after `PIPELINE_CORRECTIONS` (`pipelineBindings.ts`), each of which states
- * what the definition says today, what it should say for the drawing to stay as it was, and why; each
- * refuses to apply once the definition no longer says it, so a correction fails until it is removed.
+ * The definition is compiled as it is bundled: nothing corrects it on the way in.
  *
  * What the compiled definition draws differently on purpose, because the definition says so, is stated
  * below as a replacement that must match an exact number of times rather than tolerated:
- *  - every box carries its tooltip (`<title>`), where the oracle carried one on a template only, and the
- *    template's names its reference instead of why it is not followed - the reason stays in its
- *    property grid's "Why it is not shown" row;
+ *  - every box carries its tooltip (`<title>`), where the oracle carried one on a template only, which
+ *    says why the template is not followed in both;
  *  - a stage's role is `group`, a box holding boxes, where it was `button`;
  *  - a box's accessible name is DISL's default (6.15), its type's label and its name;
  *  - the unknown count ("×?") is shown on a job only, as the definition states it for jobs only.
@@ -95,7 +92,7 @@ const CORPUS: PipelineModel = applyDelta(
   applyDelta(
     emptyModel,
     add(
-      stage("Build", 0, 0, 476, 400, { jobCount: 3, condition: "succeeded()", triggerIsManual: true }),
+      stage("Build", 0, 0, 476, 400, { jobCount: 3, condition: "succeeded()", triggerIsManual: true, expanded: true }),
       job("Build/Compile", "Build", 24, 64, { multiplicity: 3, continuesOnError: true }),
       job("Build/Matrix", "Build", 24, 152, { indeterminate: true }),
       element("Build/Deploy", JOB_TYPE, 24, 240, 180, 56, { name: "Deploy", displayName: "Deploy", parentId: "Build", kind: PipelineElementKindProto.PIPELINE_ELEMENT_KIND_DEPLOYMENT_JOB, environment: "prod", enabled: false, fromTemplate: true, templatePath: "templates/deploy.yml" }),
@@ -169,16 +166,17 @@ function compiledDrawing() {
 describe("the pipeline's compiled definition", () => {
   it("draws what the hand-written definition drew, element for element", () => {
     const oracle = oracleDrawing();
-    // The oracle's one tooltip: why a template is not followed (see below).
-    const expected = replaced(ids(oracle.container.innerHTML), /(<g class="library-element pipeline-template[^>]*>)<title>[^<]*<\/title>/g, "$1", 1);
+    const expected = ids(oracle.container.innerHTML);
     oracle.unmount();
 
     const compiled = compiledDrawing();
     let actual = ids(compiled.container.innerHTML);
     compiled.unmount();
 
-    // The definition's tooltip on every box, which the oracle drew on none but a template.
-    actual = replaced(actual, /(<g class="library-element [^>]*>)<title>[^<]*<\/title>/g, "$1", 9);
+    // The definition's tooltip on every box, which the oracle drew on none but a template: why it is
+    // not followed, the one both draw.
+    expect(actual).toContain("<title>There is no file at 'templates/missing.yml'.</title>");
+    actual = replaced(actual, /(<g class="library-element (?!pipeline-template)[^>]*>)<title>[^<]*<\/title>/g, "$1", 8);
     // A stage announces itself as a group of jobs, as the definition says.
     actual = replaced(actual, /(data-testid="stage-[^"]*" data-expanded="[a-z]+") role="group"/g, '$1 role="button"', 3);
     // A box is named by DISL's default (6.15): its type's label and its name.
@@ -215,18 +213,31 @@ describe("the pipeline's compiled definition", () => {
   it("is what the canvas draws: the module's definition is compiled from the bundled definition", () => {
     // The canary for the tests above: were the canvas still holding its own definition, they would
     // compare the oracle with a copy of itself.
-    expect(PIPELINE_DEFINITION).toEqual(assertValidDiagramDefinition(compileNotation(correctedDefinition(parseDisl(disText)), PIPELINE_BINDINGS)));
+    expect(PIPELINE_DEFINITION).toEqual(assertValidDiagramDefinition(compileNotation(parseDisl(disText), PIPELINE_BINDINGS)));
     expect(PIPELINE_DEFINITION.layout).toEqual(HAND_WRITTEN_DEFINITION.layout);
     expect(PIPELINE_DEFINITION.dragging).toBe(HAND_WRITTEN_DEFINITION.dragging);
     expect(PIPELINE_DEFINITION.elementTypes.every((type) => type.draggable === false && type.deletable === false && type.sizing === "model")).toBe(true);
   });
 
-  it("refuses a correction the definition no longer needs, so none outlives its reason", () => {
-    const spec = parseDisl(disText);
-    const [first] = PIPELINE_CORRECTIONS;
+  it("writes an open job's name in its header, above its steps, where they no longer cover it", () => {
+    // Today's hand-written definition wrote it 4 below the box's middle, which on an open job is
+    // behind its steps; on a closed job, 56 tall, the header's line is that same place.
+    currentModel = applyDelta(emptyModel, add(
+      stage("Build", 0, 0, 276, 344, { jobCount: 1, expanded: true }),
+      job("Build/Compile", "Build", 24, 64, { width: 228, height: 232, expanded: true }),
+      step("Build/Compile/dotnet build", "Build/Compile", 48, 128),
+      step("Build/Compile/dotnet test", "Build/Compile", 48, 216),
+      job("Build/Lint", "Build", 24, 328),
+    ));
+    currentProblems = [];
+    const view = render(<PipelineCanvas projectId={new Uint8Array(16)} entryId={new Uint8Array(16)} path={PATH} />);
 
-    expect(PIPELINE_CORRECTIONS.length).toBeGreaterThan(0);
-    expect(() => correctedDefinition(correctedDefinition(spec, [first!]), [first!])).toThrow(/now says .*; remove or update its correction/);
-    expect(() => correctedDefinition(spec, [{ ...first!, at: ["notation", "nodes", "Nothing", "labels"] }])).toThrow(/has no notation\.nodes\.Nothing\.labels/);
+    const nameOf = (id: string) => view.getByTestId(id).querySelector("text.pipeline-box-name")!;
+    expect(nameOf("node-Build/Compile").textContent).toBe("Compile");
+    // The header's line, above the first step's top at 128.
+    expect(Number(nameOf("node-Build/Compile").getAttribute("y"))).toBe(64 + 32);
+    // A closed job's name stays where it always was: 4 below its middle.
+    expect(Number(nameOf("node-Build/Lint").getAttribute("y"))).toBe(328 + 56 / 2 + 4);
+    view.unmount();
   });
 });
