@@ -6,8 +6,8 @@ namespace EtAlii.Adp.Sessions;
 /// </summary>
 /// <remarks>
 /// Declared here and implemented by the project that owns the part, wherever the sessions project
-/// referencing that project would close a cycle (code-structure FR-065, FR-067): the problems and
-/// the hierarchy reference the sessions project, so it cannot reference them.
+/// referencing that project would close a cycle (code-structure FR-065, FR-067): the problems
+/// project references the sessions project, so it cannot reference the problems project.
 /// </remarks>
 public interface IProjectSessionPart
 {

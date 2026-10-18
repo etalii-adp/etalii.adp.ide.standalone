@@ -18,6 +18,7 @@ public sealed class HierarchyService : Wire.HierarchyService.HierarchyServiceBas
 
     private readonly IProjectStore _projectStore;
     private readonly IHierarchyModelStore _hierarchyModelStore;
+    private readonly ConnectionSessions _sessions;
     private readonly ProjectFileEvents _events;
     private readonly TimeProvider _time;
 
@@ -31,11 +32,13 @@ public sealed class HierarchyService : Wire.HierarchyService.HierarchyServiceBas
     /// <param name="projectStore">The projects a watch is asked for by id.</param>
     /// <param name="hierarchyModelStore">One model per watch.</param>
     /// <param name="events">The file events of each project root.</param>
+    /// <param name="sessions">The scope a watch on a connection of its own holds what it acquires in.</param>
     /// <param name="time">The clock the presence and recovery polls wait on; the system's when not given.</param>
-    public HierarchyService(IProjectStore projectStore, IHierarchyModelStore hierarchyModelStore, ProjectFileEvents events, TimeProvider? time = null)
+    public HierarchyService(IProjectStore projectStore, IHierarchyModelStore hierarchyModelStore, ProjectFileEvents events, ConnectionSessions sessions, TimeProvider? time = null)
     {
         _projectStore = projectStore;
         _hierarchyModelStore = hierarchyModelStore;
+        _sessions = sessions;
         _events = events;
         _time = time ?? TimeProvider.System;
     }
@@ -71,10 +74,9 @@ public sealed class HierarchyService : Wire.HierarchyService.HierarchyServiceBas
         RunWatchAsync(SessionContext.GetUserId(context), request, responseStream.WriteAsync, context.CancellationToken);
 
     /// <summary>
-    /// The watch itself, written to whatever carries it: its own <c>WatchHierarchy</c> call, or the
-    /// tab's one <c>WorkspaceService.Watch</c> stream (two-tab-connection-wedge Requirement 3.1).
-    /// Refuses with an <see cref="RpcException"/> before anything is registered, and runs until
-    /// <paramref name="cancellationToken"/> ends it.
+    /// The watch on a connection of its own: refuses with an <see cref="RpcException"/> before
+    /// anything is acquired, then holds the connection's scope for as long as the watch runs, so
+    /// whatever the watch acquires is released when it ends.
     /// </summary>
     public async Task RunWatchAsync(
         ShortGuid userId,
@@ -88,8 +90,27 @@ public sealed class HierarchyService : Wire.HierarchyService.HierarchyServiceBas
             throw new RpcException(new Status(PermanentRefusal.CannotOpen, error));
         }
 
-        var watchId = request.WatchId;
-        var model = _hierarchyModelStore.GetOrCreate(watchId, root);
+        using var connection = _sessions.Open(request.WatchId, root);
+        await RunWatchAsync(connection, write, cancellationToken);
+    }
+
+    /// <summary>
+    /// The watch itself, written to whatever carries it: its own <c>WatchHierarchy</c> call, or the
+    /// tab's one <c>WorkspaceService.Watch</c> stream (two-tab-connection-wedge Requirement 3.1).
+    /// Its claim on the model and its subscription to the project's file events are held in
+    /// <paramref name="connection"/>, which releases them, so the watch releases nothing itself
+    /// (code-structure FR-067). Runs until <paramref name="cancellationToken"/> ends it.
+    /// </summary>
+    public async Task RunWatchAsync(
+        ConnectionSession connection,
+        Func<HierarchyMessage, CancellationToken, Task> write,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(connection);
+
+        var watchId = connection.WatchId;
+        var root = connection.Root;
+        var model = connection.Hold(() => _hierarchyModelStore.Claim(watchId, root)).Model;
 
         // The watcher and the presence checks work on the folder itself.
         var rootPath = root.FullPath;
@@ -115,16 +136,14 @@ public sealed class HierarchyService : Wire.HierarchyService.HierarchyServiceBas
         // second outage announces again.
         var rootLost = 0;
 
-        var events = Subscribe(rootPath, model, HandleRootLost);
-        _hierarchyModelStore.AttachEvents(watchId, events);
+        connection.Hold(() => Subscribe(rootPath, model, HandleRootLost));
         _ = WatchRootPresenceAsync(rootPath, HandleRootLost, recoveryToken);
         // Information: a watch is a long-lived resource with a subscription to the root's one
         // watcher behind it, so its open and close are the pair to look for when one is suspected
         // of leaking.
         _logger.Information(
-            "Watching {RootPath} for project {ProjectId} on watch {WatchId}",
+            "Watching {RootPath} on watch {WatchId}",
             rootPath,
-            request.ProjectId,
             watchId);
 
         try
@@ -144,7 +163,6 @@ public sealed class HierarchyService : Wire.HierarchyService.HierarchyServiceBas
         {
             model.EntryChanged -= OnEntryChanged;
             await recoveryCts.CancelAsync();
-            _hierarchyModelStore.Remove(watchId);
             _logger.Information("Stopped watching {RootPath} on watch {WatchId}", rootPath, watchId);
         }
 

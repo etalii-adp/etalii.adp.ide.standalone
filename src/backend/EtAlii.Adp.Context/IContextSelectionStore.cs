@@ -37,7 +37,8 @@ public interface IContextSelectionStore
     /// connection is registered, so no change can fall between the baseline and the pushes that
     /// follow it. A function, not a store: this store never learns where problems come from.
     /// </param>
-    void Register(
+    /// <returns>What unregisters the connection, dropping its stream, selection and observations: a connection holds it in its scope, and it is the only way to unregister (code-structure FR-067).</returns>
+    IDisposable Register(
         ShortGuid watchId,
         ProjectRoot root,
         ChannelWriter<ContextMessage> writer,
@@ -71,9 +72,6 @@ public interface IContextSelectionStore
     /// only for whoever dragged it.
     /// </remarks>
     void PushNotice(ProjectRoot root, string message);
-
-    /// <summary>Drops a connection's stream, selection and observations.</summary>
-    void Remove(ShortGuid watchId);
 
     /// <summary>The connection's current selection, for providers and actions without an explicit target.</summary>
     ContextSelectionRecord? Get(ShortGuid watchId);

@@ -9,7 +9,7 @@ public sealed class HierarchyModelStore : IHierarchyModelStore, IDisposable
     private static readonly ILogger _logger = Log.ForContext<HierarchyModelStore>();
 
     // A model built by ListEntries that no WatchHierarchy ever claims - a client that listed
-    // and then went away - is dropped once the idle window passes; attaching the watch claims
+    // and then went away - is dropped once the idle window passes; the watch's claim keeps
     // it. The registry logs each such drop, worth seeing because a steady stream of them means
     // clients are not opening the watch they were expected to.
     private readonly RetainedRegistry<ShortGuid, HierarchyModelEntry> _entries;
@@ -23,25 +23,18 @@ public sealed class HierarchyModelStore : IHierarchyModelStore, IDisposable
         _tools = tools;
         _entries = new RetainedRegistry<ShortGuid, HierarchyModelEntry>(
             idleTimeout ?? DefaultIdleTimeout,
-            (_, entry) => entry.Events?.Dispose(),
+            (_, _) => { },
             time ?? TimeProvider.System,
             dropUnclaimed: true);
     }
 
     public HierarchyModel GetOrCreate(ShortGuid watchId, ProjectRoot root) =>
-        _entries.GetOrAdd(watchId, _ => new HierarchyModelEntry
-        {
-            Model = new HierarchyModel(root.FullPath, _tools),
-        }).Model;
+        _entries.GetOrAdd(watchId, _ => Create(root)).Model;
 
-    public void AttachEvents(ShortGuid watchId, IDisposable events)
+    public HierarchyModelClaim Claim(ShortGuid watchId, ProjectRoot root)
     {
-        if (!_entries.TryRetain(watchId) || !_entries.TryGet(watchId, out var entry))
-        {
-            return;
-        }
-
-        entry.Events = events;
+        var entry = _entries.Retain(watchId, _ => Create(root));
+        return new HierarchyModelClaim(entry.Model, () => Remove(watchId));
     }
 
     public void NotifyRenamed(string oldPath, string newPath)
@@ -83,7 +76,7 @@ public sealed class HierarchyModelStore : IHierarchyModelStore, IDisposable
     /// <summary>Whether <paramref name="path"/> is the folder <paramref name="root"/> itself or something inside it.</summary>
     private static bool Contains(string root, string path) => PathContainment.IsAtOrInside(root, path);
 
-    public void Remove(ShortGuid watchId)
+    private void Remove(ShortGuid watchId)
     {
         if (_entries.Remove(watchId))
         {
@@ -92,4 +85,6 @@ public sealed class HierarchyModelStore : IHierarchyModelStore, IDisposable
     }
 
     public void Dispose() => _entries.Dispose();
+
+    private HierarchyModelEntry Create(ProjectRoot root) => new() { Model = new HierarchyModel(root.FullPath, _tools) };
 }

@@ -2,6 +2,7 @@ using EtAlii.Adp.Context.Wire;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.History;
 using EtAlii.Adp.Projects;
+using EtAlii.Adp.Sessions;
 using Xunit;
 
 namespace EtAlii.Adp.Context.Tests;
@@ -67,7 +68,7 @@ public sealed class ContextServiceWatchReleaseTests : IDisposable
             actions,
             new NoProperties(),
             new ContextInteractionStore(),
-            history,
+            new ConnectionSessions([new HistoryRetention(history)]),
             new NoProblems());
 
     private static Task WatchAsync(ContextService service, CancellationToken cancellationToken) =>

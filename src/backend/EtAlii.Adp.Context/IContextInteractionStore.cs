@@ -10,11 +10,8 @@ namespace EtAlii.Adp.Context;
 /// </summary>
 public interface IContextInteractionStore
 {
-    /// <summary>Claims this connection's prompt channel; called as its stream opens.</summary>
-    void Register(ShortGuid watchId, ChannelWriter<ContextMessage> writer);
-
-    /// <summary>Discards a connection's prompt channel and every interaction started on it.</summary>
-    void Remove(ShortGuid watchId);
+    /// <summary>Claims this connection's prompt channel; called as its stream opens. Disposing what is returned discards the channel and every interaction started on it: a connection holds it in its scope, and it is the only way to discard them (code-structure FR-067).</summary>
+    IDisposable Register(ShortGuid watchId, ChannelWriter<ContextMessage> writer);
 
     /// <summary>
     /// Pushes a prompt down one connection's own stream. Returns false when that connection

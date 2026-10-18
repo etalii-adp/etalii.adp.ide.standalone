@@ -60,18 +60,18 @@ public class ContextInteractionStoreTests
     }
 
     [Fact]
-    public void Remove_DiscardsBothTheWriterAndThatConnectionsInFlightInteractions()
+    public void ReleasingTheRegistration_DiscardsBothTheWriterAndThatConnectionsInFlightInteractions()
     {
         // Arrange.
         var store = new ContextInteractionStore();
         var watchId = ShortGuid.NewShortGuid();
         var interactionId = ShortGuid.NewShortGuid();
         var channel = Channel.CreateUnbounded<ContextMessage>();
-        store.Register(watchId, channel.Writer);
+        var registration = store.Register(watchId, channel.Writer);
         store.Begin(Interaction(watchId, interactionId));
 
         // Act.
-        store.Remove(watchId);
+        registration.Dispose();
 
         // Assert.
         Assert.Null(store.Get(interactionId));
@@ -79,19 +79,19 @@ public class ContextInteractionStoreTests
     }
 
     [Fact]
-    public void Remove_LeavesAnotherConnectionsInteractionsUntouched()
+    public void ReleasingTheRegistration_LeavesAnotherConnectionsInteractionsUntouched()
     {
         // Arrange.
         var store = new ContextInteractionStore();
         var watchIdA = ShortGuid.NewShortGuid();
         var watchIdB = ShortGuid.NewShortGuid();
         var interactionB = ShortGuid.NewShortGuid();
-        store.Register(watchIdA, Channel.CreateUnbounded<ContextMessage>().Writer);
+        var registrationA = store.Register(watchIdA, Channel.CreateUnbounded<ContextMessage>().Writer);
         store.Register(watchIdB, Channel.CreateUnbounded<ContextMessage>().Writer);
         store.Begin(Interaction(watchIdB, interactionB));
 
         // Act.
-        store.Remove(watchIdA);
+        registrationA.Dispose();
 
         // Assert.
         Assert.NotNull(store.Get(interactionB));

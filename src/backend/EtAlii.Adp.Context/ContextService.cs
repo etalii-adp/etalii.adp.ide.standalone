@@ -1,6 +1,5 @@
 using System.Threading.Channels;
 using EtAlii.Adp.Context.Wire;
-using EtAlii.Adp.History;
 using EtAlii.Adp.Projects;
 using EtAlii.Adp.Sessions;
 using Grpc.Core;
@@ -29,7 +28,7 @@ public sealed partial class ContextService : Wire.ContextService.ContextServiceB
     private readonly IContextActionResolver _contextActionResolver;
     private readonly IContextPropertyResolver _contextPropertyResolver;
     private readonly IContextInteractionStore _contextInteractionStore;
-    private readonly IHistoryStackStore _historyStacks;
+    private readonly ConnectionSessions _sessions;
     private readonly IContextWatchHooks _watchHooks;
 
     public ContextService(
@@ -39,7 +38,7 @@ public sealed partial class ContextService : Wire.ContextService.ContextServiceB
         IContextActionResolver contextActionResolver,
         IContextPropertyResolver contextPropertyResolver,
         IContextInteractionStore contextInteractionStore,
-        IHistoryStackStore historyStacks,
+        ConnectionSessions sessions,
         IContextWatchHooks watchHooks)
     {
         _projectStore = projectStore;
@@ -48,7 +47,7 @@ public sealed partial class ContextService : Wire.ContextService.ContextServiceB
         _contextActionResolver = contextActionResolver;
         _contextPropertyResolver = contextPropertyResolver;
         _contextInteractionStore = contextInteractionStore;
-        _historyStacks = historyStacks;
+        _sessions = sessions;
         _watchHooks = watchHooks;
     }
 
@@ -111,10 +110,9 @@ public sealed partial class ContextService : Wire.ContextService.ContextServiceB
         RunWatchAsync(SessionContext.GetUserId(context), request, responseStream.WriteAsync, context.CancellationToken);
 
     /// <summary>
-    /// The context stream itself, written to whatever carries it: its own <c>Watch</c> call, or the
-    /// tab's one <c>WorkspaceService.Watch</c> stream (two-tab-connection-wedge Requirement 3.1).
-    /// Refuses with an <see cref="RpcException"/> before anything is registered; the first message
-    /// written is the connection's baseline.
+    /// The context stream on a connection of its own: refuses with an <see cref="RpcException"/>
+    /// before anything is acquired, then holds the connection's scope for as long as the stream
+    /// runs, so whatever the stream acquires is released when it ends.
     /// </summary>
     public async Task RunWatchAsync(
         ShortGuid userId,
@@ -128,49 +126,61 @@ public sealed partial class ContextService : Wire.ContextService.ContextServiceB
             throw new RpcException(new Status(PermanentRefusal.CannotOpen, error));
         }
 
-        var watchId = (ShortGuid)request.WatchId;
+        using var connection = _sessions.Open((ShortGuid)request.WatchId, root);
+        await RunWatchAsync(connection, write, cancellationToken);
+    }
+
+    /// <summary>
+    /// The context stream itself, written to whatever carries it: its own <c>Watch</c> call, or the
+    /// tab's one <c>WorkspaceService.Watch</c> stream (two-tab-connection-wedge Requirement 3.1).
+    /// What it registers it holds in <paramref name="connection"/>, whose scope already holds the
+    /// project's history, so it releases nothing itself: a discovery that fails or is cancelled
+    /// leaves nothing behind once the scope goes (code-structure FR-023, FR-067). The first message
+    /// written is the connection's baseline.
+    /// </summary>
+    public async Task RunWatchAsync(
+        ConnectionSession connection,
+        Func<ContextMessage, CancellationToken, Task> write,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(connection);
+
+        var watchId = connection.WatchId;
+        var root = connection.Root;
         var channel = Channel.CreateUnbounded<ContextMessage>();
 
-        // The targets and the history belong to the modules' side, which takes the root as a path.
+        // The targets take the root as a path.
         var rootPath = root.FullPath;
 
         // What applies when nothing is selected: the project root's actions, discovered once
         // here and carried on every "nothing selected" message for this connection.
         var rootActions = await _contextActionResolver.DiscoverAsync(RootTarget(rootPath, watchId), cancellationToken);
 
-        // What this connection holds, so the finally gives back exactly that: a discovery that
-        // fails or is cancelled after the retain must still release it.
-        var retained = false;
-        var registered = false;
         try
         {
             // The project's own actions - undo and redo - which belong to the project rather than
             // the selection and travel on their own message (diagram-undo-redo Deviation 1). The
-            // connection's lifetime drives the project's history: retained here, released below.
-            _historyStacks.Retain(rootPath);
-            retained = true;
+            // project's history they act on is held by the connection's scope.
             var projectActions = await _contextActionResolver.DiscoverAsync(
                 HistoryActionsBroadcaster.ProjectTarget(rootPath), cancellationToken);
 
             // Registering writes the baseline first, so a late subscriber is consistent
             // before anything else can arrive. The problems are read by the registration
             // itself, once the connection can be pushed to: only the broadcaster knows both stores.
-            _selectionStore.Register(watchId, root, channel.Writer, rootActions, projectActions, () => _watchHooks.CurrentFor(root));
-            _contextInteractionStore.Register(watchId, channel.Writer);
-            registered = true;
+            connection.Hold(() => _selectionStore.Register(watchId, root, channel.Writer, rootActions, projectActions, () => _watchHooks.CurrentFor(root)));
+            connection.Hold(() => _contextInteractionStore.Register(watchId, channel.Writer));
 
-            // An open project's problems stay current without anyone asking: the maintenance
-            // watcher follows its files, and the project's validation moves to the front of the
-            // background queue - joining it when the project was never validated - because its
-            // freshness is the one the user can see (errors-and-warnings-panel Requirements 4.2,
-            // 5). After the registration, so the baseline is always what was known before and
-            // that validation's answer always arrives as a push behind it.
+            // An open project's problems stay current without anyone asking: the connection's scope
+            // tracks them, and here the project's validation moves to the front of the background
+            // queue - joining it when the project was never validated - because its freshness is
+            // the one the user can see (errors-and-warnings-panel Requirements 4.2, 5). After the
+            // registration, so that validation's answer arrives as a push behind the baseline.
             _watchHooks.ProjectWatched(root);
 
             _logger.Information(
-                "Context stream open on watch {WatchId} for project {ProjectId}, with {GroupCount} root action groups",
+                "Context stream open on watch {WatchId} for project {ProjectRoot}, with {GroupCount} root action groups",
                 watchId,
-                request.ProjectId,
+                rootPath,
                 rootActions.Count);
 
             await foreach (var message in channel.Reader.ReadAllAsync(cancellationToken))
@@ -185,18 +195,6 @@ public sealed partial class ContextService : Wire.ContextService.ContextServiceB
         }
         finally
         {
-            // A watch that never registered removes nothing: its id may be another connection's.
-            if (registered)
-            {
-                _contextInteractionStore.Remove(watchId);
-                _selectionStore.Remove(watchId);
-            }
-
-            if (retained)
-            {
-                _historyStacks.Release(rootPath);
-            }
-
             _logger.Information("Context stream closed on watch {WatchId}", watchId);
         }
     }

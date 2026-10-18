@@ -1,6 +1,7 @@
 using EtAlii.Adp.Files;
 using EtAlii.Adp.Hierarchy.Wire;
 using EtAlii.Adp.Projects;
+using EtAlii.Adp.Sessions;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -38,7 +39,7 @@ public sealed class HierarchyServiceFileEventsTests : IDisposable
             new PathRecord(_projectFolder.Split(IoPath.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries)));
         using var modelStore = new HierarchyModelStore(TestToolRouters.For());
         using var events = new ProjectFileEvents();
-        var service = new HierarchyService(projectStore, modelStore, events);
+        var service = new HierarchyService(projectStore, modelStore, events, new ConnectionSessions([]));
         using var stop = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         var first = ShortGuid.NewShortGuid();
         var second = ShortGuid.NewShortGuid();

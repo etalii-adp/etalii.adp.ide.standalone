@@ -5,22 +5,18 @@ namespace EtAlii.Adp.Problems;
 
 /// <summary>
 /// The problems area's answer to <see cref="IContextWatchHooks"/>: when a project gains a
-/// watcher its problems get tracked and its revalidation moves up the queue, and a new
-/// watcher's stream is seeded with what is currently known. A thin adapter over the three
-/// concretes rather than the concretes themselves in ContextService's constructor, so the
+/// watcher its revalidation moves up the queue, and a new watcher's stream is seeded with what
+/// is currently known. A thin adapter over the two concretes rather than the concretes themselves in ContextService's constructor, so the
 /// two areas meet at an interface Context owns (backend-project-decomposition task 10);
 /// it travels with the problems area when that extracts.
 /// </summary>
 internal sealed class ContextWatchHooks(
     ProblemBroadcaster broadcaster,
-    ProblemMaintenance maintenance,
     StartupRevalidation revalidation) : IContextWatchHooks
 {
-    public void ProjectWatched(ProjectRoot root)
-    {
-        maintenance.Track(root.FullPath);
-        revalidation.Prioritize(root.FullPath);
-    }
+    // Tracking the project's problems is not here but a part of the connection's scope
+    // (ProblemTracking), acquired with it; what is left is moving its validation up the queue.
+    public void ProjectWatched(ProjectRoot root) => revalidation.Prioritize(root.FullPath);
 
     public ProjectProblems CurrentFor(ProjectRoot root) => broadcaster.CurrentFor(root.FullPath);
 }

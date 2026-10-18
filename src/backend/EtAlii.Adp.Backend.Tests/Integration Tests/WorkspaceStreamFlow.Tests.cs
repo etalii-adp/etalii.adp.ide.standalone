@@ -1,4 +1,5 @@
 using EtAlii.Adp.Diagram.Wire;
+using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.Hierarchy.Wire;
 using EtAlii.Adp.Projects;
 using EtAlii.Adp.TestSupport.Host;
@@ -92,6 +93,29 @@ public sealed class WorkspaceStreamFlowTests(HostFixture host) : IClassFixture<H
         // Assert: the connection is gone, and so is the pump it carried - not merely forgotten.
         Assert.True(await Eventually.TrueAsync(() => Connections().Find((ShortGuid)session.WatchId) is null, TestContext.Current.CancellationToken, FlowConstants.MessageTimeout), "The connection outlived its stream.");
         Assert.True(await Eventually.TrueAsync(() => connection!.DiagramStreamCount == 0, TestContext.Current.CancellationToken, FlowConstants.MessageTimeout), "A diagram stream kept running after the stream carrying it ended.");
+    }
+
+    [Fact]
+    public async Task EndingTheWatch_ReleasesTheHierarchyModelItHeld()
+    {
+        // Arrange: the watch's model is claimed in the connection's scope as the stream opens.
+        var session = await OpenSessionAsync();
+        using var cts = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken);
+        using var watchCancellation = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        var watch = session.Workspace.Watch(new WatchWorkspaceRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers, cancellationToken: watchCancellation.Token);
+        await ReadAsync(watch.ResponseStream, cts.Token);
+        var models = host.Services.GetRequiredService<IHierarchyModelStore>();
+        var root = ProjectRoot.From(_projectFolder);
+        var held = models.GetOrCreate((ShortGuid)session.WatchId, root);
+
+        // Act: the tab goes away.
+        await watchCancellation.CancelAsync();
+        watch.Dispose();
+
+        // Assert: the scope let the model go, so asking again builds another.
+        Assert.True(
+            await Eventually.TrueAsync(() => !ReferenceEquals(held, models.GetOrCreate((ShortGuid)session.WatchId, root)), TestContext.Current.CancellationToken, FlowConstants.MessageTimeout),
+            "The watch's hierarchy model outlived its stream.");
     }
 
     [Fact]

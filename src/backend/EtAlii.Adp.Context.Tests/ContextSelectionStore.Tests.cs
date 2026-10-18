@@ -365,16 +365,16 @@ public class ContextSelectionStoreTests : IDisposable
     }
 
     [Fact]
-    public async Task Remove_DisposesTracksAndForgetsTheSelection()
+    public async Task ReleasingTheRegistration_DisposesTracksAndForgetsTheSelection()
     {
         // Arrange.
         var watchId = ShortGuid.NewShortGuid();
-        _store.Register(watchId, Root, Channel.CreateUnbounded<ContextMessage>().Writer, [], [], () => new ProjectProblems());
+        var registration = _store.Register(watchId, Root, Channel.CreateUnbounded<ContextMessage>().Writer, [], [], () => new ProjectProblems());
         var resolver = new ContextSelectionStoreStubResolver();
         _store.Set(watchId, Root, Record(resolver, "a.txt"), NoRediscovery);
 
         // Act.
-        _store.Remove(watchId);
+        registration.Dispose();
 
         // Assert.
         Assert.Equal(1, resolver.Disposed);

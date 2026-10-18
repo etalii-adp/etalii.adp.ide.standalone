@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using EtAlii.Adp.Files;
 using EtAlii.Adp.Hierarchy.Wire;
 using EtAlii.Adp.Projects;
+using EtAlii.Adp.Sessions;
 using Microsoft.Extensions.Time.Testing;
 using Xunit;
 using IoPath = System.IO.Path;
@@ -65,7 +66,7 @@ public class HierarchyServiceLateRecoveryTests : IDisposable
         var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         using var events = new ProjectFileEvents();
         var clock = new FakeTimeProvider();
-        var service = new HierarchyService(projectStore, modelStore, events, clock)
+        var service = new HierarchyService(projectStore, modelStore, events, new ConnectionSessions([]), clock)
         {
             RootFoundMissing = async () =>
             {

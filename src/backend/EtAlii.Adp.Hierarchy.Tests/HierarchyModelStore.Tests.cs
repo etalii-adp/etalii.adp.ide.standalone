@@ -1,4 +1,3 @@
-using EtAlii.Adp.Files;
 using Microsoft.Extensions.Time.Testing;
 using Xunit;
 using IoPath = System.IO.Path;
@@ -53,23 +52,20 @@ public class HierarchyModelStoreTests : IDisposable
     }
 
     [Fact]
-    public async Task Remove_StopsTheAttachedSubscriptionFromHearingFurtherEvents()
+    public void Claim_ReturnsTheModelListEntriesMade_AndReleasingItDropsTheModel()
     {
         // Arrange.
         using var store = new HierarchyModelStore(TestToolRouters.For());
-        using var events = new ProjectFileEvents();
         var watchId = ShortGuid.NewShortGuid();
-        store.GetOrCreate(watchId, ProjectRoot.From(_root));
-        var eventCount = 0;
-        var subscription = events.Subscribe(_root, _ => Interlocked.Increment(ref eventCount));
-        store.AttachEvents(watchId, subscription);
+        var listed = store.GetOrCreate(watchId, ProjectRoot.From(_root));
 
         // Act.
-        store.Remove(watchId);
-        await File.WriteAllTextAsync(IoPath.Combine(_root, "after-remove.txt"), "", TestContext.Current.CancellationToken);
+        var claim = store.Claim(watchId, ProjectRoot.From(_root));
+        claim.Dispose();
 
         // Assert.
-        Assert.False(await Eventually.TrueAsync(() => Volatile.Read(ref eventCount) > 0, TestContext.Current.CancellationToken, TimeSpan.FromMilliseconds(300)), "A removed entry's subscription still heard a change.");
+        Assert.Same(listed, claim.Model);
+        Assert.NotSame(listed, store.GetOrCreate(watchId, ProjectRoot.From(_root)));
     }
 
     [Fact]
@@ -89,15 +85,13 @@ public class HierarchyModelStoreTests : IDisposable
     }
 
     [Fact]
-    public void AttachingASubscription_CancelsTheIdleEviction()
+    public void Claiming_CancelsTheIdleEviction()
     {
         // Arrange.
         using var store = new HierarchyModelStore(TestToolRouters.For(), IdleTimeout, _clock);
         var watchId = ShortGuid.NewShortGuid();
         var first = store.GetOrCreate(watchId, ProjectRoot.From(_root));
-        using var events = new ProjectFileEvents();
-        using var subscription = events.Subscribe(_root, _ => { });
-        store.AttachEvents(watchId, subscription);
+        using var claim = store.Claim(watchId, ProjectRoot.From(_root));
 
         _clock.Advance(IdleTimeout * 2);
 
