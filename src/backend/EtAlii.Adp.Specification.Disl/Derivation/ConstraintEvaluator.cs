@@ -102,7 +102,7 @@ public static class ConstraintEvaluator
             var setting = Setting("std.duplicateId");
             if (!setting.Enabled) return;
             var stored = diagram.Elements.Where(element => !element.IsDerived && WrittenId(element).Length > 0).OrderBy(element => element.Line ?? int.MaxValue).ToList();
-            foreach (var group in stored.GroupBy(WrittenId, StringComparer.Ordinal).Where(group => group.Count() > 1))
+            foreach (var group in stored.GroupBy(WrittenId, specification.IdComparer).Where(group => group.Count() > 1))
             {
                 var members = group.ToList();
                 foreach (var flagged in Flagged(members, setting))

@@ -19,8 +19,12 @@ public sealed class DislDiagram : ICelObject
     private readonly Dictionary<string, object?> _attributes;
     private readonly List<DislElement> _nodes = [];
     private readonly List<DislElement> _relations = [];
+    private readonly List<DislView> _views = [];
     private Dictionary<DislElement, (List<DislElement> Incoming, List<DislElement> Outgoing)>? _ends;
     private readonly Dictionary<(string Type, long Max), (IReadOnlyList<IReadOnlyList<DislElement>> Cycles, bool Truncated)> _cycles = [];
+
+    /// <summary>The derived diagram attributes being computed, so one that reads itself stops.</summary>
+    private readonly HashSet<string> _computing = new(StringComparer.Ordinal);
 
     /// <summary>A diagram of <paramref name="specification"/> with the diagram attributes <paramref name="attributes"/>, as CEL values.</summary>
     public DislDiagram(DislSpecification specification, IReadOnlyDictionary<string, object?>? attributes = null)
@@ -41,6 +45,13 @@ public sealed class DislDiagram : ICelObject
     public DislSpecification Specification { get; }
 
     /// <summary>
+    /// What the model's own expressions read as <c>env</c> (DISL §12.3): the derived elements' (§4.11)
+    /// and the derived attributes' (§4.3), which depend on the viewpoint a host builds the model for.
+    /// Headless, with no viewpoint, unless the host gives one.
+    /// </summary>
+    public DislEnv Env { get; init; } = new();
+
+    /// <summary>
     /// What <c>diagram.file</c> reads (§8.2): the file a finding attributes the diagram to, relative to
     /// its subject, which a host binds when a message names it; null, and no <c>file</c> member, when
     /// the host gives none. A diagram attribute named <c>file</c> shadows it.
@@ -58,6 +69,31 @@ public sealed class DislDiagram : ICelObject
 
     /// <summary>The nodes, then the relations.</summary>
     public IReadOnlyList<DislElement> Elements => [.. _nodes, .. _relations];
+
+    /// <summary>The views of the model (§12.2, <c>diagram.views</c>), in the order the host added them: those its readings define.</summary>
+    public IReadOnlyList<DislView> Views => _views;
+
+    /// <summary>
+    /// Adds a view of <paramref name="viewpoint"/> with the diagram attributes it has of its own,
+    /// <paramref name="attributes"/>, as CEL values; its members are computed from the viewpoint unless
+    /// <paramref name="members"/> gives them (<see cref="DislView"/>). View ids are compared as element ids are (§11.5.4).
+    /// </summary>
+    public DislView AddView(string id, string viewpoint, string name = "", IReadOnlyDictionary<string, object?>? attributes = null, IReadOnlyList<DislElement>? members = null)
+    {
+        ArgumentNullException.ThrowIfNull(id);
+        ArgumentNullException.ThrowIfNull(viewpoint);
+        ArgumentNullException.ThrowIfNull(name);
+        if (_views.Any(view => Specification.IdComparer.Equals(view.Id, id))) throw new ArgumentException($"The model already has a view '{id}'.", nameof(id));
+        var own = new Dictionary<string, object?>(StringComparer.Ordinal);
+        foreach ((string attribute, object? value) in attributes ?? new Dictionary<string, object?>())
+        {
+            if (!Specification.Metamodel.DiagramAttributes.ContainsKey(attribute)) throw new ArgumentException($"'{attribute}' is not an attribute of the diagram.", nameof(attributes));
+            own[attribute] = value;
+        }
+        var added = new DislView(this, id, viewpoint, name, own, members);
+        _views.Add(added);
+        return added;
+    }
 
     /// <summary>Adds a node of <paramref name="type"/>, beneath <paramref name="parent"/> when one is given.</summary>
     public DislElement AddNode(string type, string id, IReadOnlyDictionary<string, object?>? attributes = null, DislElement? parent = null, string? slot = null) =>
@@ -150,6 +186,13 @@ public sealed class DislDiagram : ICelObject
     {
         _ends = null;
         _cycles.Clear();
+        ViewsChanged();
+    }
+
+    /// <summary>An element changed: the views' members are computed again.</summary>
+    internal void ViewsChanged()
+    {
+        foreach (var view in _views) view.Changed();
     }
 
     /// <summary>The children of <paramref name="parent"/>, or the top-level nodes, in model order.</summary>
@@ -159,15 +202,48 @@ public sealed class DislDiagram : ICelObject
     /// <summary>Sets diagram attribute <paramref name="name"/>, as a reader does.</summary>
     internal void SetAttribute(string name, object? value) => _attributes[name] = value;
 
-    /// <summary>The value CEL reads for diagram attribute <paramref name="name"/>: stored, else its default, else its type's zero value (§4.3).</summary>
-    public object? ValueOf(string name) =>
-        Specification.Metamodel.DiagramAttributes.TryGetValue(name, out var attribute)
-            ? _attributes.TryGetValue(name, out var value) ? value : DislValues.Unset(attribute, Specification.Metamodel)
-            : throw new ArgumentException($"'{name}' is not an attribute of the diagram.", nameof(name));
+    /// <summary>
+    /// The value CEL reads for diagram attribute <paramref name="name"/>: a derived attribute's
+    /// expression (§4.3), else stored, else its default, else its type's zero value; a reference
+    /// resolved to its element, as an element's attribute is.
+    /// </summary>
+    public object? ValueOf(string name)
+    {
+        if (!Specification.Metamodel.DiagramAttributes.TryGetValue(name, out var attribute)) throw new ArgumentException($"'{name}' is not an attribute of the diagram.", nameof(name));
+        if (attribute.Json.TryGetProperty("derived", out _)) return Derived(attribute);
+        if (!_attributes.TryGetValue(name, out var value)) return DislValues.Unset(attribute, Specification.Metamodel);
+        if (Specification.Metamodel.TypeOf(attribute.Type) is null) return value;
+        return value switch
+        {
+            string id => ElementById(id),
+            IReadOnlyList<object?> ids => ids.Select(id => id is string text ? ElementById(text) : null).ToList(),
+            _ => value,
+        };
+    }
 
-    /// <summary>The first element with <paramref name="id"/> in model order, or null.</summary>
+    /// <summary>
+    /// A derived diagram attribute's value (§4.3): its expression, compiled by the loader in the
+    /// <c>element</c> context, with <c>self</c> and <c>diagram</c> this diagram and <c>env</c> its own.
+    /// One that fails, or that reads its own value, gives the attribute's unset value, as an element's does.
+    /// </summary>
+    private object? Derived(DislAttribute attribute)
+    {
+        var pointer = DislJson.Pointer(DislJson.Pointer("/metamodel/diagram/attributes", attribute.Name), "derived");
+        if (Specification.ExpressionAt(pointer) is not { } expression || !_computing.Add(attribute.Name)) return DislValues.Unset(attribute, Specification.Metamodel);
+        try
+        {
+            var value = expression.Program.Evaluate(new Dictionary<string, object?> { ["self"] = this, ["diagram"] = this, ["env"] = Env.ToCel() });
+            return value is CelError ? DislValues.Unset(attribute, Specification.Metamodel) : value;
+        }
+        finally
+        {
+            _computing.Remove(attribute.Name);
+        }
+    }
+
+    /// <summary>The first element with <paramref name="id"/> in model order, or null; ids compared as the specification says (§11.5.4).</summary>
     public DislElement? ElementById(string id) =>
-        _nodes.FirstOrDefault(node => node.Id == id) ?? _relations.FirstOrDefault(relation => relation.Id == id);
+        _nodes.FirstOrDefault(node => Specification.IdComparer.Equals(node.Id, id)) ?? _relations.FirstOrDefault(relation => Specification.IdComparer.Equals(relation.Id, id));
 
     /// <summary>The nodes that are <paramref name="type"/> or one of its subtypes, in model order.</summary>
     public IReadOnlyList<DislElement> NodesOfType(string type) => [.. _nodes.Where(node => node.IsA(type))];
@@ -228,6 +304,7 @@ public sealed class DislDiagram : ICelObject
             "nodes" => Nodes.Cast<object?>().ToList(),
             "relations" => Relations.Cast<object?>().ToList(),
             "elements" => Elements.Cast<object?>().ToList(),
+            "views" => Views.Cast<object?>().ToList(),
             "id" => "",
             "type" => "diagram",
             "kind" => "diagram",
@@ -245,7 +322,9 @@ public sealed class DislDiagram : ICelObject
 
     /// <inheritdoc />
     public bool HasMember(string name) =>
-        Specification.Metamodel.DiagramAttributes.ContainsKey(name) ? _attributes.ContainsKey(name) : TryGetMember(name, out _);
+        Specification.Metamodel.DiagramAttributes.TryGetValue(name, out var attribute)
+            ? _attributes.ContainsKey(name) || attribute.Json.TryGetProperty("derived", out _)
+            : TryGetMember(name, out _);
 
     /// <inheritdoc />
     public bool TryInvoke(string name, IReadOnlyList<object?> arguments, out object? value)
