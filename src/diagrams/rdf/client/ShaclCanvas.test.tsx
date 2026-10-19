@@ -7,7 +7,7 @@ import {
   type ShaclShape,
 } from "./shaclModel";
 import { expectLibrarySelection } from "@client/canvas/library/testing/expectLibrarySelection";
-import { fakeContextConnection, idsPushed } from "@client/canvas/library/testing/canvasHarness";
+import { fakeContextConnection, idsPushed, dragAndSettle } from "@client/canvas/library/testing/canvasHarness";
 import { capacityOf, LABEL_FONT_SIZE } from "@client/canvas/label/textMetrics";
 
 let currentModel: ShaclModel = emptyShaclModel;
@@ -225,6 +225,21 @@ describe("ShaclCanvas", () => {
 
     expect(container.querySelector(".shacl-shape-blank")).not.toBeNull();
     expect(container.textContent).toContain("anonymous shape");
+  });
+
+  it("snaps an element back when the backend refuses its move, rather than leaving it at the drop", async () => {
+    // Arrange: the library holds a drop until the model moves the element, and a refused move never
+    // does - so the move's answer has to be handed back for the element to return (ruled 2026-10-19).
+    moveError = "An anonymous shape has no position to store.";
+    const { container } = renderCanvas();
+
+    // Act.
+    const { before, after } = await dragAndSettle(container, PERSON);
+
+    // Assert.
+    expect(moves, "the move was never sent, so this test cannot say anything").toHaveLength(1);
+    expect(after).toBe(before);
+    moveError = "";
   });
 
   it("sends a drag as a layout edit, and leaves the backend's refusal to the library's line", async () => {

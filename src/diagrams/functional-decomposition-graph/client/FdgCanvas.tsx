@@ -205,10 +205,8 @@ export function FdgCanvas({ projectId, entryId, path }: ToolContentProps) {
 
   // A move takes the stream's one `moveElementTo` (client-centralization task 8). The position passed
   // is the TOP-LEFT, which is what the document holds; a position is what makes this an arrangement
-  // rather than a re-parenting.
-  const moveTo = async (elementId: string, left: number, top: number) => {
-    await moveElementTo(elementId, left, top);
-  };
+  // rather than a re-parenting. It answers with the backend's refusal, or "" when the move was recorded.
+  const moveTo = (elementId: string, left: number, top: number): Promise<string> => moveElementTo(elementId, left, top);
 
   const events: DiagramEventHandlers = {
     // Rename, delete and disconnect, as the library dispatched them from their declarations.
@@ -223,7 +221,8 @@ export function FdgCanvas({ projectId, entryId, path }: ToolContentProps) {
       if (element === undefined) {
         return;
       }
-      void moveTo(elementId, position.x - element.payload.width / 2, position.y - element.payload.height / 2);
+      // Returned, so a refusal lets the library put the element back where it was (ruled 2026-10-19).
+      return moveTo(elementId, position.x - element.payload.width / 2, position.y - element.payload.height / 2);
     },
     // A resize is a size. Dragging the left or top edge also moves the top-left, because the far
     // edge stays put - and a property carries one value, so that edge is a size and then a move.

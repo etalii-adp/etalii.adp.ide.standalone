@@ -470,7 +470,8 @@ export function SupplyChainCanvas({ projectId, entryId, path }: ToolContentProps
       const group = model.groups.get(elementId);
       const size = node?.payload ?? group?.payload;
       if (size !== undefined) {
-        void moveElementTo(elementId, position.x - size.width / 2, position.y - size.height / 2);
+        // Returned, so a refusal lets the library put the element back where it was (ruled 2026-10-19).
+        return moveElementTo(elementId, position.x - size.width / 2, position.y - size.height / 2);
       }
     },
     onConnectionDrawn: ({ sourceElementId, targetElementId }) => {

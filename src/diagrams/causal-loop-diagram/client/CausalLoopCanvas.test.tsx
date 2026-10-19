@@ -16,7 +16,7 @@ import { ContextSelectionAction, type ContextSelection } from "@client/generated
 import type { ContextSource } from "@client/generated/context-contract_pb";
 import { expectLibrarySelection } from "@client/canvas/library/testing/expectLibrarySelection";
 import { CanvasFrame } from "@client/canvas/library/surface/CanvasFrame";
-import { fakeContextConnection, idsPushed, pointer } from "@client/canvas/library/testing/canvasHarness";
+import { fakeContextConnection, idsPushed, pointer, dragAndSettle } from "@client/canvas/library/testing/canvasHarness";
 
 const select = vi.fn();
 const moveElementTo = vi.fn(() => Promise.resolve(""));
@@ -459,6 +459,20 @@ describe("CausalLoopCanvas", () => {
     const sel = select.mock.calls.at(-1)?.[0] as { detail?: { value?: { id?: { source?: { value?: { value?: string } } } } } } | null;
     return sel?.detail?.value?.id?.source?.value?.value ?? "(none)";
   }
+
+  it("snaps an element back when the backend refuses its move, rather than leaving it at the drop", async () => {
+    // Arrange: the library holds a drop until the model moves the element, and a refused move never
+    // does - so the move's answer has to be handed back for the element to return (ruled 2026-10-19).
+    moveElementTo.mockResolvedValueOnce("This diagram is read-only.");
+    const { container } = renderCanvas();
+
+    // Act.
+    const { before, after } = await dragAndSettle(container, "variable:a");
+
+    // Assert.
+    expect(moveElementTo, "the move was never sent, so this test cannot say anything").toHaveBeenCalledTimes(1);
+    expect(after).toBe(before);
+  });
 
   it("a completed drag leaves the selection alone - the trailing click selects nothing", () => {
     // The user-reported defect's first face: dropping a variable made the browser's trailing

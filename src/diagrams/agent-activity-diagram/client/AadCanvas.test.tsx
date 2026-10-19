@@ -6,8 +6,12 @@ import { fireEvent, render } from "@testing-library/react";
 import { create } from "@bufbuild/protobuf";
 import { AadElementPayloadSchema, AadRelationPayloadSchema, AadRowPayloadSchema } from "@client/generated/agent-activity-diagram_pb";
 import { expectLibrarySelection } from "@client/canvas/library/testing/expectLibrarySelection";
-import { fakeContextConnection, idsPushed } from "@client/canvas/library/testing/canvasHarness";
+import { fakeContextConnection, idsPushed, dragAndSettle } from "@client/canvas/library/testing/canvasHarness";
 import { emptyModel, type AadElement, type AadModel } from "./aadModel";
+
+// The moves the canvas sent, and what the backend answers one with: empty when recorded, its refusal otherwise.
+const moves: string[] = [];
+let moveAnswer = "";
 
 /**
  * The REAL canvas, mounted: what the library draws from this module's definition and model, the
@@ -25,7 +29,10 @@ vi.mock("@client/diagrams/useDiagramStream", () => ({
     loading: false,
     failed: false,
     client: { moveElement: () => Promise.resolve({ error: "" }) },
-    moveElementTo: () => Promise.resolve(""),
+    moveElementTo: (elementId: string) => {
+      moves.push(elementId);
+      return Promise.resolve(moveAnswer);
+    },
   }),
 }));
 
@@ -166,6 +173,22 @@ describe("the agent activity diagram canvas, mounted", () => {
     // Assert: the newer task above the older; the pending one is folded away.
     const rows = [...container.querySelectorAll('[data-element-id="s"] .library-compartment-row-text')].map((row) => row.textContent);
     expect(rows).toEqual(["The newer task", "The older task"]);
+  });
+
+  it("snaps an element back when the backend refuses its move, rather than leaving it at the drop", async () => {
+    // Arrange: the library holds a drop until the model moves the element, and a refused move never
+    // does - so the move's answer has to be handed back for the element to return (ruled 2026-10-19).
+    moves.length = 0;
+    moveAnswer = "This diagram is read-only.";
+    const { container } = renderCanvas();
+
+    // Act.
+    const { before, after } = await dragAndSettle(container, "s");
+
+    // Assert.
+    expect(moves, "the move was never sent, so this test cannot say anything").toHaveLength(1);
+    expect(after).toBe(before);
+    moveAnswer = "";
   });
 
   it("asks the backend to unfold a group, naming the element and the group", () => {

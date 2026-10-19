@@ -1,7 +1,10 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { fireEvent, render, waitFor } from "@testing-library/react";
 import { emptyModel, type DatabricksModel } from "./databricksModel";
-import { fakeContextConnection, idsPushed, pointer } from "@client/canvas/library/testing/canvasHarness";
+import { fakeContextConnection, idsPushed, pointer, dragAndSettle } from "@client/canvas/library/testing/canvasHarness";
+
+// What the backend answers a move with: empty when recorded, its refusal sentence otherwise.
+let moveAnswer = "";
 
 let currentModel: DatabricksModel = emptyModel;
 let currentLoading = false;
@@ -23,7 +26,7 @@ vi.mock("./useDatabricksStream", () => ({
     failed: currentFailed,
     moveElementTo: (elementId: string, x: number, y: number) => {
       moves.push({ elementId, x, y });
-      return Promise.resolve("");
+      return Promise.resolve(moveAnswer);
     },
     reportView: () => undefined,
   }),
@@ -159,6 +162,21 @@ describe("the job canvas", () => {
 
     // Assert: the edge's own id travels, as a connection's does on every canvas.
     expect(idsPushed(selections)).toEqual(["edge:ingest->publish"]);
+  });
+
+  it("snaps an element back when the backend refuses its move, rather than leaving it at the drop", async () => {
+    // Arrange: the library holds a drop until the model moves the element, and a refused move never
+    // does - so the move's answer has to be handed back for the element to return (ruled 2026-10-19).
+    moveAnswer = "This bundle is read-only.";
+    const { container } = renderCanvas();
+
+    // Act.
+    const { before, after } = await dragAndSettle(container, "task:ingest");
+
+    // Assert.
+    expect(moves, "the move was never sent, so this test cannot say anything").toHaveLength(1);
+    expect(after).toBe(before);
+    moveAnswer = "";
   });
 
   it("commits a drag as one move in raw module coordinates - the layout path, never a grid", () => {

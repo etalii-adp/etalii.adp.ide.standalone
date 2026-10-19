@@ -364,7 +364,8 @@ export function DatabricksCanvas({
       const height = isFrame ? FRAME_HEIGHT : NODE_HEIGHT;
       // The authored position, raw: the layout block stores what the author placed, and
       // rounding it here would quietly turn the canvas into a grid.
-      void moveElementTo(elementId, position.x - width / 2, position.y - height / 2);
+      // Returned, so a refusal lets the library put the element back where it was (ruled 2026-10-19).
+      return moveElementTo(elementId, position.x - width / 2, position.y - height / 2);
     },
     // The whole gesture in one stateless rel: call - the dragged task becomes the dependency
     // the landing task waits for. Released on nothing, the library raises nothing: this

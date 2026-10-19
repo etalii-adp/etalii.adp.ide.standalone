@@ -1,4 +1,5 @@
 import { vi, type Mock } from "vitest";
+import { act, fireEvent } from "@testing-library/react";
 import { selectedElementIdOf } from "../../selection";
 import type { ActionOutcome, ContextConnectionValue, PropertyDescription } from "../../../shell/context/ContextConnectionProvider";
 import type { ContextSelection } from "../../../generated/context_pb";
@@ -35,6 +36,30 @@ export function pointer(type: string, init: MouseEventInit & { pointerId?: numbe
     Object.defineProperty(event, "pointerId", { value: pointerId });
   }
   return event;
+}
+
+/**
+ * Drags the element drawn for `elementId` by (`dx`, `dy`) pixels, lets go, and waits for the move's
+ * answer: the element's markup before the drag and once the answer has landed.
+ *
+ * For the refused-drag check every positional canvas has (ruled 2026-10-19): the library holds a
+ * dropped element at the drop until the model moves it, and a refused move never does - so unless
+ * the module hands the move's answer back from `onElementMoved`, `after` is the dropped element and
+ * not `before`. Answer the faked `moveElementTo` with a refusal, then expect `after` to be `before`.
+ */
+export async function dragAndSettle(container: Element, elementId: string, dx = 80, dy = 60): Promise<{ before: string; after: string }> {
+  const selector = `[data-element-id="${elementId}"]`;
+  const target = container.querySelector(selector);
+  if (target === null) {
+    throw new Error(`Nothing is drawn for '${elementId}', so there is no drag to check.`);
+  }
+
+  const before = target.outerHTML;
+  fireEvent(target, pointer("pointerdown", { button: 0, clientX: 100, clientY: 100 }));
+  fireEvent(target, pointer("pointermove", { clientX: 100 + dx, clientY: 100 + dy }));
+  fireEvent(target, pointer("pointerup", { clientX: 100 + dx, clientY: 100 + dy }));
+  await act(async () => {});
+  return { before, after: container.querySelector(selector)?.outerHTML ?? "" };
 }
 
 /** The element id one pushed selection names, or `null` for a clear or a selection of no element. */

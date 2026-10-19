@@ -10,7 +10,7 @@ import {
   type SparqlNode,
   type SparqlRegion,
 } from "./sparqlModel";
-import { fakeContextConnection, idsPushed } from "@client/canvas/library/testing/canvasHarness";
+import { fakeContextConnection, idsPushed, dragAndSettle } from "@client/canvas/library/testing/canvasHarness";
 
 let currentModel: SparqlModel = emptyModel;
 let currentLoading = false;
@@ -201,6 +201,21 @@ describe("SparqlCanvas", () => {
     expect(band?.textContent).toContain("LIMIT 10");
     // The header is a band, not a drawn element - nothing on the canvas carries its id.
     expect(container.querySelector('[data-element-id="header:query"]')).toBeNull();
+  });
+
+  it("snaps an element back when the backend refuses its move, rather than leaving it at the drop", async () => {
+    // Arrange: the library holds a drop until the model moves the element, and a refused move never
+    // does - so the move's answer has to be handed back for the element to return (ruled 2026-10-19).
+    moveError = "An anonymous variable has no position to store.";
+    const { container } = renderCanvas();
+
+    // Act.
+    const { before, after } = await dragAndSettle(container, "var:person");
+
+    // Assert.
+    expect(moves, "the move was never sent, so this test cannot say anything").toHaveLength(1);
+    expect(after).toBe(before);
+    moveError = "";
   });
 
   it("sends a drag as a layout move and nothing else", () => {

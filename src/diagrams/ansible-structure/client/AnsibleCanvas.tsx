@@ -146,7 +146,8 @@ export function AnsibleCanvas({ projectId, entryId, path }: AnsibleCanvasProps) 
       // The write goes to the .adp's layout block; the change comes back through the folder's
       // own watcher, so nothing is echoed locally. A refusal is the backend's sentence, which the
       // move reports to the library's refusal line itself.
-      void moveElementTo(elementId, position.x - node.payload.width / 2, position.y - node.payload.height / 2);
+      // Returned, so a refusal lets the library put the element back where it was (ruled 2026-10-19).
+      return moveElementTo(elementId, position.x - node.payload.width / 2, position.y - node.payload.height / 2);
     },
     onViewChanged: ({ viewport: next }) => setViewport(next),
   };
