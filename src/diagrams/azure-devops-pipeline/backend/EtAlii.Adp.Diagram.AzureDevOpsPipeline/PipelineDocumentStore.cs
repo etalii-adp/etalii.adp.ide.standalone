@@ -38,12 +38,12 @@ public sealed class PipelineDocumentStore : IPipelineDocumentStore
     /// pipelines get read once rather than twenty times - the cache lives in the resolver, so it
     /// has to outlive any one document.
     /// </summary>
-    private readonly ConcurrentDictionary<string, PipelineTemplates> _templates = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ConcurrentDictionary<ProjectRoot, PipelineTemplates> _templates = new();
 
     // The workspace root each path was last asked about. The lifecycle parses from a path and its
     // text alone, but a pipeline's parse needs its root to resolve templates, so every call records
     // the root it carries before handing the path on.
-    private readonly ConcurrentDictionary<string, string> _roots = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ConcurrentDictionary<string, ProjectRoot> _roots = new(StringComparer.OrdinalIgnoreCase);
 
     // A first open that cannot read opens as empty with a warning naming the path, which is the
     // lifecycle's own default and what this store did before it (R2.2) - so no unavailable document
@@ -61,11 +61,11 @@ public sealed class PipelineDocumentStore : IPipelineDocumentStore
 
     public event EventHandler<DocumentChangedEventArgs>? Changed;
 
-    public ValueTask<DocumentEntry<PipelineBody, PipelineModel>> GetOrLoadAsync(string rootPath, string path, CancellationToken cancellationToken)
+    public ValueTask<DocumentEntry<PipelineBody, PipelineModel>> GetOrLoadAsync(ProjectRoot root, string path, CancellationToken cancellationToken)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(rootPath);
+        ArgumentException.ThrowIfNullOrWhiteSpace(root.FullPath, nameof(root));
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
-        _roots[path] = rootPath;
+        _roots[path] = root;
         return _lifecycle.GetOrLoadAsync(path, cancellationToken);
     }
 
@@ -82,9 +82,9 @@ public sealed class PipelineDocumentStore : IPipelineDocumentStore
     /// command's inverse on the undo stack for a change that never happened. Passing the entry makes
     /// that ordering unrepresentable: what the caller edited is what gets written.
     /// </remarks>
-    public async Task<DocumentSaveResult> SaveAsync(string rootPath, string path, DocumentEntry<PipelineBody, PipelineModel> entry, CancellationToken cancellationToken)
+    public async Task<DocumentSaveResult> SaveAsync(ProjectRoot root, string path, DocumentEntry<PipelineBody, PipelineModel> entry, CancellationToken cancellationToken)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(rootPath);
+        ArgumentException.ThrowIfNullOrWhiteSpace(root.FullPath, nameof(root));
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
 
         ArgumentNullException.ThrowIfNull(entry);
@@ -99,7 +99,7 @@ public sealed class PipelineDocumentStore : IPipelineDocumentStore
         // The body was read as it was edited, through the same resolver, so what it says is already its
         // reading: the entry is built from it, and the lifecycle caches exactly that entry, whether or not
         // the write lands. A body an edit left unreadable is never written.
-        _roots[path] = rootPath;
+        _roots[path] = root;
         var reparsed = Entry(entry.Document);
         if (!reparsed.IsUsable)
         {
@@ -121,26 +121,26 @@ public sealed class PipelineDocumentStore : IPipelineDocumentStore
     /// Tells every session on this document to re-deliver, without changing the document - for a
     /// change to how it is drawn rather than to what it says.
     /// </summary>
-    public async Task TouchAsync(string rootPath, string path, CancellationToken cancellationToken)
+    public async Task TouchAsync(ProjectRoot root, string path, CancellationToken cancellationToken)
     {
-        await GetOrLoadAsync(rootPath, path, cancellationToken);
+        await GetOrLoadAsync(root, path, cancellationToken);
         OnChanged(path);
     }
 
     public void Forget(string path) => _lifecycle.Forget(path);
 
-    public IDiagramDocumentStore<PipelineBody, PipelineModel> In(string rootPath)
+    public IDiagramDocumentStore<PipelineBody, PipelineModel> In(ProjectRoot root)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(rootPath);
-        return new Rooted(this, rootPath);
+        ArgumentException.ThrowIfNullOrWhiteSpace(root.FullPath, nameof(root));
+        return new Rooted(this, root);
     }
 
-    public PipelineBody Open(string rootPath, string path, byte[] bytes)
+    public PipelineBody Open(ProjectRoot root, string path, byte[] bytes)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(rootPath);
+        ArgumentException.ThrowIfNullOrWhiteSpace(root.FullPath, nameof(root));
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
         ArgumentNullException.ThrowIfNull(bytes);
-        return PipelineBody.Open(bytes, new PipelineReadContext(path, Resolver(rootPath)));
+        return PipelineBody.Open(bytes, new PipelineReadContext(path, Resolver(root)));
     }
 
     public async Task ReloadAsync(string path, CancellationToken cancellationToken)
@@ -187,7 +187,7 @@ public sealed class PipelineDocumentStore : IPipelineDocumentStore
     private void OnChanged(string path) => Changed?.Invoke(this, new DocumentChangedEventArgs(path));
 
     /// <summary>The store with every open and save made from one root.</summary>
-    private sealed class Rooted(PipelineDocumentStore documents, string rootPath) : IDiagramDocumentStore<PipelineBody, PipelineModel>
+    private sealed class Rooted(PipelineDocumentStore documents, ProjectRoot root) : IDiagramDocumentStore<PipelineBody, PipelineModel>
     {
         public event EventHandler<DocumentChangedEventArgs>? Changed
         {
@@ -196,15 +196,15 @@ public sealed class PipelineDocumentStore : IPipelineDocumentStore
         }
 
         public ValueTask<DocumentEntry<PipelineBody, PipelineModel>> GetOrLoadAsync(string path, CancellationToken cancellationToken) =>
-            documents.GetOrLoadAsync(rootPath, path, cancellationToken);
+            documents.GetOrLoadAsync(root, path, cancellationToken);
 
         public DocumentEntry<PipelineBody, PipelineModel>? Get(string path) => documents._lifecycle.Get(path);
 
         /// <remarks>Refused, as the store refuses it, while what the file holds does not parse.</remarks>
         public async Task<DocumentSaveResult> SaveAsync(string path, PipelineBody document, CancellationToken cancellationToken)
         {
-            var entry = await documents.GetOrLoadAsync(rootPath, path, cancellationToken) with { Document = document };
-            return await documents.SaveAsync(rootPath, path, entry, cancellationToken);
+            var entry = await documents.GetOrLoadAsync(root, path, cancellationToken) with { Document = document };
+            return await documents.SaveAsync(root, path, entry, cancellationToken);
         }
 
         public Task ReloadAsync(string path, CancellationToken cancellationToken) => documents.ReloadAsync(path, cancellationToken);
@@ -214,8 +214,8 @@ public sealed class PipelineDocumentStore : IPipelineDocumentStore
         public void Forget(string path) => documents.Forget(path);
     }
 
-    private PipelineTemplates Resolver(string rootPath) =>
-        _templates.GetOrAdd(rootPath, root => new PipelineTemplates(root));
+    private PipelineTemplates Resolver(ProjectRoot root) =>
+        _templates.GetOrAdd(root, key => new PipelineTemplates(key));
 
     /// <summary>
     /// The entry of a body: the body, and the model the plugin read from it, or the reason there is none.

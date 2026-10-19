@@ -63,7 +63,7 @@ public sealed class PipelineContextSourceResolver : IContextSourceResolver
         }
 
         var bodyPath = routed.BodyPath!;
-        var entry = await _documents.GetOrLoadAsync(root.FullPath, bodyPath, cancellationToken);
+        var entry = await _documents.GetOrLoadAsync(root, bodyPath, cancellationToken);
         if (!entry.IsUsable)
         {
             // Nothing can be selected in a file that does not parse, and saying so is better than
@@ -151,7 +151,7 @@ public sealed class PipelineContextSourceResolver : IContextSourceResolver
             }
 
             // The document the change names is held by now; reading it again here would block the raiser.
-            if (_documents.In(root.FullPath).Get(bodyPath) is { } entry)
+            if (_documents.In(root).Get(bodyPath) is { } entry)
             {
                 onChange(Find(entry.Model, elementId)?.Path);
             }

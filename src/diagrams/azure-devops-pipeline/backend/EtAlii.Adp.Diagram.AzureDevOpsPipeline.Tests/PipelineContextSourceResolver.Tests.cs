@@ -19,6 +19,8 @@ public class PipelineContextSourceResolverTests : IDisposable
         IoPath.GetTempPath(),
         "adp-pipeline-context-" + Guid.NewGuid().ToString("N"));
 
+    private ProjectRoot Root => ProjectRoot.From(_workspace);
+
     private readonly PipelineDocumentStore _store = new(new FileWriter());
 
     public PipelineContextSourceResolverTests() => Directory.CreateDirectory(_workspace);
@@ -102,7 +104,7 @@ public class PipelineContextSourceResolverTests : IDisposable
         var id = new ContextSource { ElementId = new ElementId { Value = elementId } };
         return await Resolver().ResolveAsync(
             ShortGuid.NewShortGuid(),
-            ProjectRoot.From(_workspace),
+            Root,
             id,
             clientPath ?? [],
             parent,
@@ -287,13 +289,13 @@ public class PipelineContextSourceResolverTests : IDisposable
         var resolution = await ResolveAsync(path, "Build");
         var level = Assert.IsType<ResolvedContextLevel>(resolution).Level;
         IReadOnlyList<string>? reported = null;
-        using var tracking = Resolver().Track(ShortGuid.NewShortGuid(), ProjectRoot.From(_workspace), level, updated => reported = updated);
+        using var tracking = Resolver().Track(ShortGuid.NewShortGuid(), Root, level, updated => reported = updated);
 
         // Act.
-        var entry = await _store.GetOrLoadAsync(_workspace, BodyOf(path), TestContext.Current.CancellationToken);
+        var entry = await _store.GetOrLoadAsync(Root, BodyOf(path), TestContext.Current.CancellationToken);
         var stage = entry.Model.Stages.Single(candidate => candidate.Name == "Build");
         PipelineBodyEdits.Rename(entry.Document, stage.Id, "Built");
-        await _store.SaveAsync(_workspace, BodyOf(path), entry, TestContext.Current.CancellationToken);
+        await _store.SaveAsync(Root, BodyOf(path), entry, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Equal(["Built"], reported);
@@ -306,7 +308,7 @@ public class PipelineContextSourceResolverTests : IDisposable
         var path = Write("azure-pipelines", Pipeline);
         var level = Assert.IsType<ResolvedContextLevel>(await ResolveAsync(path, "Test")).Level;
         var reported = new List<IReadOnlyList<string>?>();
-        using var tracking = Resolver().Track(ShortGuid.NewShortGuid(), ProjectRoot.From(_workspace), level, reported.Add);
+        using var tracking = Resolver().Track(ShortGuid.NewShortGuid(), Root, level, reported.Add);
 
         // Act.
         await File.WriteAllTextAsync(BodyOf(path), "stages:\n  - stage: Build\n    jobs:\n      - job: Compile\n        steps:\n          - script: x\n", TestContext.Current.CancellationToken);
@@ -324,11 +326,11 @@ public class PipelineContextSourceResolverTests : IDisposable
         var path = Write("azure-pipelines", Pipeline);
         var level = Assert.IsType<ResolvedContextLevel>(await ResolveAsync(path, "Build")).Level;
         var reported = 0;
-        var tracking = Resolver().Track(ShortGuid.NewShortGuid(), ProjectRoot.From(_workspace), level, _ => reported++);
+        var tracking = Resolver().Track(ShortGuid.NewShortGuid(), Root, level, _ => reported++);
 
         // Act.
         tracking.Dispose();
-        await _store.TouchAsync(_workspace, BodyOf(path), TestContext.Current.CancellationToken);
+        await _store.TouchAsync(Root, BodyOf(path), TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Equal(0, reported);
@@ -342,11 +344,11 @@ public class PipelineContextSourceResolverTests : IDisposable
         var theirs = Write("other", Pipeline);
         var level = Assert.IsType<ResolvedContextLevel>(await ResolveAsync(mine, "Build")).Level;
         var reported = 0;
-        using var tracking = Resolver().Track(ShortGuid.NewShortGuid(), ProjectRoot.From(_workspace), level, _ => reported++);
+        using var tracking = Resolver().Track(ShortGuid.NewShortGuid(), Root, level, _ => reported++);
 
         // Act.
-        await _store.GetOrLoadAsync(_workspace, BodyOf(theirs), TestContext.Current.CancellationToken);
-        await _store.TouchAsync(_workspace, BodyOf(theirs), TestContext.Current.CancellationToken);
+        await _store.GetOrLoadAsync(Root, BodyOf(theirs), TestContext.Current.CancellationToken);
+        await _store.TouchAsync(Root, BodyOf(theirs), TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Equal(0, reported);
@@ -391,7 +393,7 @@ public class PipelineContextSourceResolverTests : IDisposable
     /// </summary>
     private async Task<IReadOnlyList<PipelineEdge>> DrawnEdgesAsync(string registration)
     {
-        var model = (await _store.GetOrLoadAsync(_workspace, BodyOf(registration), TestContext.Current.CancellationToken)).Model;
+        var model = (await _store.GetOrLoadAsync(Root, BodyOf(registration), TestContext.Current.CancellationToken)).Model;
         return
         [
             .. PipelineGraphBuilder.OfStages(model).Edges,
@@ -465,10 +467,10 @@ public class PipelineContextSourceResolverTests : IDisposable
         var edge = (await DrawnEdgesAsync(path)).Single(candidate => candidate is { FromId: "Test", ToId: "Deploy" });
         var level = Assert.IsType<ResolvedContextLevel>(await ResolveAsync(path, PipelineElementMapper.EdgeId(edge))).Level;
         var reported = new List<IReadOnlyList<string>?>();
-        using var tracking = Resolver().Track(ShortGuid.NewShortGuid(), ProjectRoot.From(_workspace), level, reported.Add);
+        using var tracking = Resolver().Track(ShortGuid.NewShortGuid(), Root, level, reported.Add);
 
         // Act: an edit elsewhere, then one that removes the dependency.
-        await _store.TouchAsync(_workspace, BodyOf(path), TestContext.Current.CancellationToken);
+        await _store.TouchAsync(Root, BodyOf(path), TestContext.Current.CancellationToken);
         await File.WriteAllTextAsync(BodyOf(path), Arrows.Replace("- Test", "", StringComparison.Ordinal), TestContext.Current.CancellationToken);
         await _store.ReloadAsync(BodyOf(path), TestContext.Current.CancellationToken);
 

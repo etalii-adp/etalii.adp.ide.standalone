@@ -627,6 +627,6 @@ public class PipelinePlannerTests
     private static PipelineBody OpenInFolder(string name)
     {
         var path = FixturePath(name);
-        return PipelineBody.Open(File.ReadAllBytes(path), new PipelineReadContext(path, new PipelineTemplates(IoPath.GetDirectoryName(path)!)));
+        return PipelineBody.Open(File.ReadAllBytes(path), new PipelineReadContext(path, new PipelineTemplates(ProjectRoot.From(IoPath.GetDirectoryName(path)!))));
     }
 }

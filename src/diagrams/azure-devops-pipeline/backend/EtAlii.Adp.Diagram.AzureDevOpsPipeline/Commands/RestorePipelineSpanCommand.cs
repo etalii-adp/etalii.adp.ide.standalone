@@ -27,13 +27,13 @@ namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline;
 /// It lives on the host's history, so it outlives a reload of the file that leaves the bytes as they were.
 /// </para>
 /// </remarks>
-/// <param name="RootPath">The project.</param>
+/// <param name="Root">The project.</param>
 /// <param name="BodyPath">The pipeline file.</param>
 /// <param name="Splices">What to put back, as offsets in the bytes of <paramref name="Sha256"/>.</param>
 /// <param name="Sha256">The SHA-256 of the bytes the splices are offsets in, in upper-case hex.</param>
 /// <param name="IsRedo">Whether this puts back an edit an undo took away, which its refusal says.</param>
 public sealed record RestorePipelineSpanCommand(
-    string RootPath,
+    ProjectRoot Root,
     string BodyPath,
     IReadOnlyList<Splice> Splices,
     string Sha256,
@@ -51,7 +51,7 @@ public sealed record RestorePipelineSpanCommand(
         ArgumentNullException.ThrowIfNull(before);
         ArgumentNullException.ThrowIfNull(after);
         ArgumentNullException.ThrowIfNull(edit);
-        return new RestorePipelineSpanCommand(command.RootPath, command.BodyPath, Edit.Inverse(before, edit.Splices), DigestOf(after), isRedo);
+        return new RestorePipelineSpanCommand(command.Root, command.BodyPath, Edit.Inverse(before, edit.Splices), DigestOf(after), isRedo);
     }
 
     /// <summary>The SHA-256 of <paramref name="bytes"/>, as <see cref="Sha256"/> holds it.</summary>

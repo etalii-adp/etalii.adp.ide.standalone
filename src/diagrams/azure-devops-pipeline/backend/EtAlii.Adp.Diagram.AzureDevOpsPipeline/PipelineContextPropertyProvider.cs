@@ -94,7 +94,7 @@ public sealed class PipelineContextPropertyProvider : DiagramPropertyProvider<Pi
 
     private static ICommand? CommandFor(ContextTarget target, string propertyId, string value, DislElement element)
     {
-        var root = target.Root.FullPath;
+        var root = target.Root;
         var body = target.ResolvedFullPath;
         var id = element.Id;
 
@@ -133,7 +133,7 @@ public sealed class PipelineContextPropertyProvider : DiagramPropertyProvider<Pi
     /// element already waits for several things, the property is shown read-only rather than
     /// offered as a picker that would silently drop all but one of them.
     /// </remarks>
-    private static ICommand DependenciesCommand(string root, string body, string id, string value)
+    private static ICommand DependenciesCommand(ProjectRoot root, string body, string id, string value)
     {
         var chosen = value.Trim();
         return chosen switch

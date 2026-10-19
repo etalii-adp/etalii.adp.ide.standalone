@@ -18,13 +18,13 @@ namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline;
 /// whatever the name, because they put back bytes.
 /// </para>
 /// </remarks>
-/// <param name="RootPath">The project.</param>
+/// <param name="Root">The project.</param>
 /// <param name="BodyPath">The pipeline file.</param>
 /// <param name="Kind">What to add.</param>
 /// <param name="ParentId">The stage a job joins, or the job a step joins; empty for a stage.</param>
 /// <param name="Name">The name to use, or empty to pick a free one.</param>
 public sealed record AddPipelineElementCommand(
-    string RootPath,
+    ProjectRoot Root,
     string BodyPath,
     PipelineAddKind Kind,
     string ParentId,

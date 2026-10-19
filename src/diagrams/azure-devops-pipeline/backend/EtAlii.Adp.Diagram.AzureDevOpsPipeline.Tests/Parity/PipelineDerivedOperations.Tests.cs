@@ -49,7 +49,7 @@ public class PipelineDerivedOperationsTests
         var workspace = folder.Path;
         var body = Path.Combine(folder.Path, document.InFolder);
         var original = await File.ReadAllBytesAsync(body, TestContext.Current.CancellationToken);
-        var entry = await new PipelineDocumentStore(new FileWriter()).GetOrLoadAsync(folder.Path, body, TestContext.Current.CancellationToken);
+        var entry = await new PipelineDocumentStore(new FileWriter()).GetOrLoadAsync(ProjectRoot.From(folder.Path), body, TestContext.Current.CancellationToken);
         if (!entry.IsUsable) return;
 
         var model = entry.Model;
@@ -65,9 +65,9 @@ public class PipelineDerivedOperationsTests
         var otherStage = model.Stages.Skip(1).FirstOrDefault()?.Name ?? "";
         foreach (var id in ids)
         {
-            await Compare($"rename {id}", root => new RenamePipelineElementCommand(root, body, id, "Parity name"), (text, read) => HandWrittenPipelineEdits.Rename(text, read, id, "Parity name"));
-            await Compare($"disable {id}", root => new SetPipelineElementEnabledCommand(root, body, id, false), (text, read) => HandWrittenPipelineEdits.SetEnabled(text, read, id, false));
-            await Compare($"enable {id}", root => new SetPipelineElementEnabledCommand(root, body, id, true), (text, read) => HandWrittenPipelineEdits.SetEnabled(text, read, id, true));
+            await Compare($"rename {id}", root => new RenamePipelineElementCommand(ProjectRoot.From(root), body, id, "Parity name"), (text, read) => HandWrittenPipelineEdits.Rename(text, read, id, "Parity name"));
+            await Compare($"disable {id}", root => new SetPipelineElementEnabledCommand(ProjectRoot.From(root), body, id, false), (text, read) => HandWrittenPipelineEdits.SetEnabled(text, read, id, false));
+            await Compare($"enable {id}", root => new SetPipelineElementEnabledCommand(ProjectRoot.From(root), body, id, true), (text, read) => HandWrittenPipelineEdits.SetEnabled(text, read, id, true));
             foreach ((string name, IReadOnlyList<string> names, bool declared) in new (string, IReadOnlyList<string>, bool)[]
                      {
                          ("the default order", [], false), ("nothing", [], true), ("nobody", ["nobody"], true), (otherStage, [otherStage], true),
@@ -77,21 +77,21 @@ public class PipelineDerivedOperationsTests
                 // A name nobody wrote is not one a gesture asks for: the row offers only the names there are.
                 if (names.Any(each => each.Length == 0)) continue;
 
-                await Compare($"dependencies of {id} on {name}", root => new SetPipelineDependenciesCommand(root, body, id, names, declared), (text, read) => HandWrittenPipelineEdits.SetDependencies(text, read, id, names, declared));
+                await Compare($"dependencies of {id} on {name}", root => new SetPipelineDependenciesCommand(ProjectRoot.From(root), body, id, names, declared), (text, read) => HandWrittenPipelineEdits.SetDependencies(text, read, id, names, declared));
             }
 
             foreach (var kind in new[] { PipelineAddKind.Job, PipelineAddKind.DeploymentJob, PipelineAddKind.Step })
             {
-                await Compare($"add {kind} to {id}", root => new AddPipelineElementCommand(root, body, kind, id), (text, read) => HandWrittenPipelineEdits.Add(text, read, kind, id));
+                await Compare($"add {kind} to {id}", root => new AddPipelineElementCommand(ProjectRoot.From(root), body, kind, id), (text, read) => HandWrittenPipelineEdits.Add(text, read, kind, id));
             }
 
-            await Compare($"remove {id}", root => new RemovePipelineElementCommand(root, body, id), (text, read) => HandWrittenPipelineEdits.Remove(text, read, id));
-            await Compare($"move {id} up", root => new MovePipelineStepCommand(root, body, id, IndexOf(model, id) - 1), (text, read) => HandWrittenPipelineEdits.MoveStep(text, read, id, IndexOf(model, id) - 1));
-            await Compare($"move {id} down", root => new MovePipelineStepCommand(root, body, id, IndexOf(model, id) + 1), (text, read) => HandWrittenPipelineEdits.MoveStep(text, read, id, IndexOf(model, id) + 1));
+            await Compare($"remove {id}", root => new RemovePipelineElementCommand(ProjectRoot.From(root), body, id), (text, read) => HandWrittenPipelineEdits.Remove(text, read, id));
+            await Compare($"move {id} up", root => new MovePipelineStepCommand(ProjectRoot.From(root), body, id, IndexOf(model, id) - 1), (text, read) => HandWrittenPipelineEdits.MoveStep(text, read, id, IndexOf(model, id) - 1));
+            await Compare($"move {id} down", root => new MovePipelineStepCommand(ProjectRoot.From(root), body, id, IndexOf(model, id) + 1), (text, read) => HandWrittenPipelineEdits.MoveStep(text, read, id, IndexOf(model, id) + 1));
         }
 
-        await Compare("add a stage", root => new AddPipelineElementCommand(root, body, PipelineAddKind.Stage, ""), (text, read) => HandWrittenPipelineEdits.Add(text, read, PipelineAddKind.Stage, ""));
-        await Compare("add a stage named Build", root => new AddPipelineElementCommand(root, body, PipelineAddKind.Stage, "", "Build"), (text, read) => HandWrittenPipelineEdits.Add(text, read, PipelineAddKind.Stage, "", "Build"));
+        await Compare("add a stage", root => new AddPipelineElementCommand(ProjectRoot.From(root), body, PipelineAddKind.Stage, ""), (text, read) => HandWrittenPipelineEdits.Add(text, read, PipelineAddKind.Stage, ""));
+        await Compare("add a stage named Build", root => new AddPipelineElementCommand(ProjectRoot.From(root), body, PipelineAddKind.Stage, "", "Build"), (text, read) => HandWrittenPipelineEdits.Add(text, read, PipelineAddKind.Stage, "", "Build"));
 
         Assert.True(mismatches.Count == 0, $"{path}: {mismatches.Count} of {compared.Count} differ\n{string.Join("\n", mismatches)}");
         Assert.True(broken.Count == 0 || path.EndsWith("/findings/gates-nested.yml", StringComparison.Ordinal), $"{path}: the hand-written writer broke the file in {string.Join(", ", broken)}");
@@ -103,8 +103,8 @@ public class PipelineDerivedOperationsTests
 
             // The hand-written edit, on the text as it is, with the templates followed as the store follows them.
             var text = LineDocument.Parse(Encoding.UTF8.GetString(original));
-            var refusal = handWritten(text, PipelineParser.Parse(text, new PipelineTemplates(workspace), body));
-            var written = refusal is null ? PipelineParser.Outcome(LineDocument.Parse(text.Text), new PipelineTemplates(workspace), body) : null;
+            var refusal = handWritten(text, PipelineParser.Parse(text, new PipelineTemplates(ProjectRoot.From(workspace)), body));
+            var written = refusal is null ? PipelineParser.Outcome(LineDocument.Parse(text.Text), new PipelineTemplates(ProjectRoot.From(workspace)), body) : null;
             var expected = refusal is not null ? $"refused: {refusal}"
                 : written!.IsUsable ? Pipeline(written.Model)
                 : $"a file that does not parse: {written.Unreadable}";
@@ -113,7 +113,7 @@ public class PipelineDerivedOperationsTests
             await File.WriteAllBytesAsync(body, original, TestContext.Current.CancellationToken);
             var store = new PipelineDocumentStore(new FileWriter());
             var result = await new PipelineTestDispatcher(store).DispatchAsync(command(workspace), TestContext.Current.CancellationToken);
-            var actual = result.IsSuccess ? Pipeline((await new PipelineDocumentStore(new FileWriter()).GetOrLoadAsync(workspace, body, TestContext.Current.CancellationToken)).Model) : $"refused: {result.Error}";
+            var actual = result.IsSuccess ? Pipeline((await new PipelineDocumentStore(new FileWriter()).GetOrLoadAsync(ProjectRoot.From(workspace), body, TestContext.Current.CancellationToken)).Model) : $"refused: {result.Error}";
 
             if (actual == $"refused: {ThroughAMerge}" && expected != actual) return;
             if (written is { IsUsable: false })

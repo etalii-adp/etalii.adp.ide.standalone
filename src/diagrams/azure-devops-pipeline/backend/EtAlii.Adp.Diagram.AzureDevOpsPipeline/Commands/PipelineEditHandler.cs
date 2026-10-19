@@ -47,7 +47,7 @@ internal abstract class PipelineEditHandler<TCommand>(IPipelineDocumentStore doc
         ArgumentNullException.ThrowIfNull(command);
         ArgumentNullException.ThrowIfNull(edit);
 
-        var entry = await documents.GetOrLoadAsync(command.RootPath, command.BodyPath, cancellationToken);
+        var entry = await documents.GetOrLoadAsync(command.Root, command.BodyPath, cancellationToken);
         if (!entry.IsUsable)
         {
             return CommandResult.Failure(
@@ -56,7 +56,7 @@ internal abstract class PipelineEditHandler<TCommand>(IPipelineDocumentStore doc
 
         // The edit is made on a copy, so a refusal halfway through leaves nothing behind for the next save to write.
         var before = entry.Document.Bytes;
-        var copy = documents.Open(command.RootPath, command.BodyPath, before);
+        var copy = documents.Open(command.Root, command.BodyPath, before);
         var outcome = edit(copy);
         if (!outcome.WasApplied)
         {
@@ -69,7 +69,7 @@ internal abstract class PipelineEditHandler<TCommand>(IPipelineDocumentStore doc
         }
 
         var undo = RestorePipelineSpanCommand.Undoing(command, before, copy.Bytes, applied, isRedo: command is RestorePipelineSpanCommand { IsRedo: false });
-        var saved = await documents.In(command.RootPath).SaveAsync(command.BodyPath, copy, cancellationToken);
+        var saved = await documents.In(command.Root).SaveAsync(command.BodyPath, copy, cancellationToken);
         return CommandResult.FromSave(saved, undo);
     }
 }

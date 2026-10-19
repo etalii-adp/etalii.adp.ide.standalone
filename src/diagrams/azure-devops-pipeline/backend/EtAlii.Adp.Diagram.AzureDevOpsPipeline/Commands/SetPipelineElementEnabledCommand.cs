@@ -11,12 +11,12 @@ namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline;
 /// pipeline that accumulated an <c>enabled: true</c> on everything anyone had ever toggled would
 /// be noisier for it.
 /// </remarks>
-/// <param name="RootPath">The project.</param>
+/// <param name="Root">The project.</param>
 /// <param name="BodyPath">The pipeline file.</param>
 /// <param name="ElementId">The element to switch.</param>
 /// <param name="Enabled">Whether it should run.</param>
 public sealed record SetPipelineElementEnabledCommand(
-    string RootPath,
+    ProjectRoot Root,
     string BodyPath,
     string ElementId,
     bool Enabled) : IPipelineEditCommand;

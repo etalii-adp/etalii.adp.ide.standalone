@@ -12,12 +12,12 @@ namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline;
 /// it; the display name is what the canvas shows and nothing depends on. Renaming the identifier
 /// is a refactor across a file, which is a text editor's job.
 /// </remarks>
-/// <param name="RootPath">The project, which the store needs to resolve templates.</param>
+/// <param name="Root">The project, which the store needs to resolve templates.</param>
 /// <param name="BodyPath">The pipeline file.</param>
 /// <param name="ElementId">The element to rename.</param>
 /// <param name="DisplayName">Its new display name; empty removes it.</param>
 public sealed record RenamePipelineElementCommand(
-    string RootPath,
+    ProjectRoot Root,
     string BodyPath,
     string ElementId,
     string DisplayName) : IPipelineEditCommand;

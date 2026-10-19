@@ -698,7 +698,7 @@ public sealed class PipelineParser
     private string Display(string path) =>
         _resolver is null
             ? path
-            : IoPath.GetRelativePath(_resolver.WorkspaceRoot, path).Replace('\\', '/');
+            : IoPath.GetRelativePath(_resolver.Root.FullPath, path).Replace('\\', '/');
 
     private PipelineTemplateReference TemplateReference(
         string id,

@@ -12,12 +12,12 @@ namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline;
 /// them is a real edit, where dragging a stage is not - a stage's position on the canvas is
 /// derived from what it waits for, and moving one would have nowhere to be written down.
 /// </remarks>
-/// <param name="RootPath">The project.</param>
+/// <param name="Root">The project.</param>
 /// <param name="BodyPath">The pipeline file.</param>
 /// <param name="StepId">The step to move.</param>
 /// <param name="ToIndex">Where it should end up among its job's steps, counting from zero.</param>
 public sealed record MovePipelineStepCommand(
-    string RootPath,
+    ProjectRoot Root,
     string BodyPath,
     string StepId,
     int ToIndex) : IPipelineEditCommand;

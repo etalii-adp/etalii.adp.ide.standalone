@@ -42,7 +42,7 @@ public class PipelineSharedReadTests : IDisposable
         await using var editor = new FileStream(full, FileMode.Open, FileAccess.Write, FileShare.Read);
 
         // Act.
-        var entry = await new PipelineDocumentStore(new FileWriter()).GetOrLoadAsync(_workspace, full, TestContext.Current.CancellationToken);
+        var entry = await new PipelineDocumentStore(new FileWriter()).GetOrLoadAsync(ProjectRoot.From(_workspace), full, TestContext.Current.CancellationToken);
 
         // Assert: the document itself, not the empty fallback.
         Assert.True(entry.IsUsable);
@@ -58,7 +58,7 @@ public class PipelineSharedReadTests : IDisposable
         using var editor = new FileStream(full, FileMode.Open, FileAccess.Write, FileShare.Read);
 
         // Act.
-        var document = new PipelineTemplates(_workspace).Read(full);
+        var document = new PipelineTemplates(ProjectRoot.From(_workspace)).Read(full);
 
         // Assert.
         Assert.NotNull(document);

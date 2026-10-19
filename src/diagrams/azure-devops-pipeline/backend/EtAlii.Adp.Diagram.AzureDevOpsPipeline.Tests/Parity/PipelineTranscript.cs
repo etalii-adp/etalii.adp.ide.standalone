@@ -409,9 +409,9 @@ internal static class PipelineTranscript
         public PipelineContextPropertyProvider Properties { get; }
 
         /// <summary>Opens the document, as the diagram's first open does; the readings and edits read what it holds.</summary>
-        public async Task ReadAsync(CancellationToken cancellationToken) => await Store.GetOrLoadAsync(Folder, Body, cancellationToken);
+        public async Task ReadAsync(CancellationToken cancellationToken) => await Store.GetOrLoadAsync(ProjectRoot.From(Folder), Body, cancellationToken);
 
-        public PipelineModel Model => Store.In(Folder).Get(Body)!.Model;
+        public PipelineModel Model => Store.In(ProjectRoot.From(Folder)).Get(Body)!.Model;
 
         public ContextTarget Target(string elementId) =>
             ContextTarget.ForElement(Body, elementId, ProjectRoot.From(Folder), _watchId, Diagram.Pipeline.Origin);

@@ -182,7 +182,7 @@ public class PipelineYamlPluginTests : IDisposable
         {
             File.WriteAllText(IoPath.Combine(outside, "jobs.yml"), "jobs:\n  - job: Escaped\n    steps:\n      - script: x\n");
             var path = Write("azure-pipelines.yml", $"stages:\n  - stage: Build\n    jobs:\n      - template: ../{IoPath.GetFileName(outside)}/jobs.yml\n");
-            var templates = new PipelineTemplates(_workspace);
+            var templates = new PipelineTemplates(ProjectRoot.From(_workspace));
 
             // Act.
             var body = PipelineBody.Open(File.ReadAllBytes(path), new PipelineReadContext(path, templates));
@@ -228,7 +228,7 @@ public class PipelineYamlPluginTests : IDisposable
             "azure-pipelines.yml",
             "stages:\n  - stage: Build\n    jobs:\n      - job: One\n        steps:\n          - template: templates/steps.yml\n"
             + "      - job: Two\n        steps:\n          - template: templates/steps.yml\n      - template: templates/jobs.yml\n");
-        var templates = new PipelineTemplates(_workspace);
+        var templates = new PipelineTemplates(ProjectRoot.From(_workspace));
 
         // Act.
         var body = PipelineBody.Open(File.ReadAllBytes(path), new PipelineReadContext(path, templates));
@@ -288,7 +288,7 @@ public class PipelineYamlPluginTests : IDisposable
         var document = PipelineCorpus.Documents().Single(candidate => candidate.Relative == path);
         var full = IoPath.Combine(PipelineCorpus.SourceFolder, document.Relative);
         var bytes = File.ReadAllBytes(full);
-        var context = new PipelineReadContext(full, new PipelineTemplates(IoPath.Combine(PipelineCorpus.SourceFolder, document.Root)));
+        var context = new PipelineReadContext(full, new PipelineTemplates(ProjectRoot.From(IoPath.Combine(PipelineCorpus.SourceFolder, document.Root))));
         var random = new Random(bytes.Length);
         var copies = new List<byte[]>();
         for (var length = 0; length <= bytes.Length; length++)
@@ -348,8 +348,8 @@ public class PipelineYamlPluginTests : IDisposable
         var document = PipelineCorpus.Documents().Single(candidate => candidate.Relative == path);
         var full = IoPath.Combine(PipelineCorpus.SourceFolder, document.Relative);
         var root = IoPath.Combine(PipelineCorpus.SourceFolder, document.Root);
-        var body = PipelineBody.Open(File.ReadAllBytes(full), new PipelineReadContext(full, new PipelineTemplates(root)));
-        var parsed = PipelineParser.Outcome(LineDocument.Parse(File.ReadAllText(full)), new PipelineTemplates(root), full).Model;
+        var body = PipelineBody.Open(File.ReadAllBytes(full), new PipelineReadContext(full, new PipelineTemplates(ProjectRoot.From(root))));
+        var parsed = PipelineParser.Outcome(LineDocument.Parse(File.ReadAllText(full)), new PipelineTemplates(ProjectRoot.From(root)), full).Model;
         return (body, parsed);
     }
 

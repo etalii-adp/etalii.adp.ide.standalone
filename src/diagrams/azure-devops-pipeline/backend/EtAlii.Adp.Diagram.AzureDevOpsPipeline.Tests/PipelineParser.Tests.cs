@@ -376,7 +376,7 @@ public class PipelineParserTests
         var path = IoPath.Combine(fixtures, "template-in-template.yml");
 
         // Act.
-        var model = PipelineParser.Parse(LineDocument.Parse(File.ReadAllText(path)), new PipelineTemplates(fixtures), path);
+        var model = PipelineParser.Parse(LineDocument.Parse(File.ReadAllText(path)), new PipelineTemplates(ProjectRoot.From(fixtures)), path);
 
         // Assert.
         Assert.Equal(

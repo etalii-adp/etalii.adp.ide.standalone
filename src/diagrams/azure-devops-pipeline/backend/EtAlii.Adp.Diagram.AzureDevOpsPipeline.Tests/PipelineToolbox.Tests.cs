@@ -20,6 +20,8 @@ public class PipelineToolboxTests : IDisposable
         IoPath.GetTempPath(),
         "adp-pipeline-toolbox-" + Guid.NewGuid().ToString("N"));
 
+    private ProjectRoot Root => ProjectRoot.From(_workspace);
+
     private readonly PipelineDocumentStore _store = new(new FileWriter());
     private readonly PipelineViewState _views = new();
     private readonly DislToolboxProvider _toolbox = new(Diagram.Pipeline.Origin, PipelineDefinition.Definition);
@@ -56,7 +58,7 @@ public class PipelineToolboxTests : IDisposable
     }
 
     private ContextTarget Target(string path, string elementId) =>
-        ContextTarget.ForElement(path, elementId, ProjectRoot.From(_workspace), ShortGuid.NewShortGuid());
+        ContextTarget.ForElement(path, elementId, Root, ShortGuid.NewShortGuid());
 
     /// <summary>Dropping an entry on an element is committing the action the entry names.</summary>
     private async Task<ContextCommitResult> DropAsync(string entryId, string path, string ontoElementId)
@@ -143,7 +145,7 @@ public class PipelineToolboxTests : IDisposable
 
         // Assert.
         Assert.True(result.Completed, result.Error);
-        Assert.Equal(2, (await _store.GetOrLoadAsync(_workspace, path, TestContext.Current.CancellationToken)).Model.Stages.Single().Jobs.Count);
+        Assert.Equal(2, (await _store.GetOrLoadAsync(Root, path, TestContext.Current.CancellationToken)).Model.Stages.Single().Jobs.Count);
     }
 
     [Fact]
@@ -155,7 +157,7 @@ public class PipelineToolboxTests : IDisposable
 
         // Assert.
         Assert.True(result.Completed, result.Error);
-        Assert.Equal(2, (await _store.GetOrLoadAsync(_workspace, path, TestContext.Current.CancellationToken)).Model.Jobs.Single().Steps.Count);
+        Assert.Equal(2, (await _store.GetOrLoadAsync(Root, path, TestContext.Current.CancellationToken)).Model.Jobs.Single().Steps.Count);
     }
 
     [Fact]
@@ -167,7 +169,7 @@ public class PipelineToolboxTests : IDisposable
 
         // Assert.
         Assert.True(result.Completed, result.Error);
-        Assert.Equal(2, (await _store.GetOrLoadAsync(_workspace, path, TestContext.Current.CancellationToken)).Model.Stages.Count);
+        Assert.Equal(2, (await _store.GetOrLoadAsync(Root, path, TestContext.Current.CancellationToken)).Model.Stages.Count);
     }
 
     [Fact]
@@ -179,7 +181,7 @@ public class PipelineToolboxTests : IDisposable
 
         // Assert.
         Assert.True(result.Completed, result.Error);
-        var job = (await _store.GetOrLoadAsync(_workspace, path, TestContext.Current.CancellationToken)).Model.Jobs.Single(candidate => candidate.IsDeployment);
+        var job = (await _store.GetOrLoadAsync(Root, path, TestContext.Current.CancellationToken)).Model.Jobs.Single(candidate => candidate.IsDeployment);
         Assert.NotEmpty(job.Environment);
         Assert.NotEmpty(job.Steps);
     }
@@ -231,7 +233,7 @@ public class PipelineToolboxTests : IDisposable
 
         // Act.
         await actions.CommitAsync(Target(path, "Build"), item.DropActionId, "", "", CancellationToken.None);
-        await historyStacks.Get(ProjectRoot.From(_workspace)).UndoAsync(CancellationToken.None);
+        await historyStacks.Get(Root).UndoAsync(CancellationToken.None);
 
         // Assert.
         Assert.Equal(before, await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
