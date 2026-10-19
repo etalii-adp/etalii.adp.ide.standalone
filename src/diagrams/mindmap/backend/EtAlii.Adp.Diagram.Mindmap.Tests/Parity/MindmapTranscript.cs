@@ -199,7 +199,7 @@ internal static partial class MindmapTranscript
         json.WriteEndArray();
 
         var problems = await new MindmapValidator().ValidateAsync(
-            new DiagramValidationRequest(session.Original, Path.GetFileNameWithoutExtension(session.Body), session.Folder, session.Body, Path.ChangeExtension(session.Body, ".adp")),
+            new DiagramValidationRequest(session.Original, Path.GetFileNameWithoutExtension(session.Body), ProjectRoot.From(session.Folder), session.Body, Path.ChangeExtension(session.Body, ".adp")),
             cancellationToken);
         json.WritePropertyName("findings");
         json.WriteLines([.. problems.Select(problem => $"{Location(problem.Location)} | {problem.Severity} | {problem.RuleId} | {problem.Message}")]);

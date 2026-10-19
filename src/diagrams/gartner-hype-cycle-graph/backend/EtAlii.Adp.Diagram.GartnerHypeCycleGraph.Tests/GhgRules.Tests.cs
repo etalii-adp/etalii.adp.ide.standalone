@@ -124,7 +124,7 @@ public class GhgRulesTests
         var text = await File.ReadAllTextAsync(Path.Combine(AppContext.BaseDirectory, "Fixtures", "rule-self-influence.ghg"), TestContext.Current.CancellationToken);
 
         var problems = await new GhgValidator().ValidateAsync(
-            new DiagramValidationRequest(text, "rule-self-influence", "/root", "/root/rule-self-influence.ghg", null),
+            new DiagramValidationRequest(text, "rule-self-influence", ProjectRoot.From("/root"), "/root/rule-self-influence.ghg", null),
             TestContext.Current.CancellationToken);
 
         var problem = Assert.Single(problems);

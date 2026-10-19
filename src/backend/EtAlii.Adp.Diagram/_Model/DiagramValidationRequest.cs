@@ -23,7 +23,7 @@ namespace EtAlii.Adp.Diagram;
 /// and says nothing - such a validator reads <see cref="SubjectFolder"/> instead.
 /// </param>
 /// <param name="BaseName">The diagram's file base name, for messages that want to name it.</param>
-/// <param name="RootPath">The project root. Every path a problem names is relative to this.</param>
+/// <param name="Root">The project root. Every path a problem names is relative to this.</param>
 /// <param name="BodyPath">The document that was read, already resolved and containment-checked.</param>
 /// <param name="RegistrationPath">
 /// The <c>.adp</c> this was routed through, or null for a body opened without one. Equal to
@@ -32,7 +32,7 @@ namespace EtAlii.Adp.Diagram;
 public sealed record DiagramValidationRequest(
     string Document,
     string BaseName,
-    string RootPath,
+    ProjectRoot Root,
     string BodyPath,
     string? RegistrationPath)
 {

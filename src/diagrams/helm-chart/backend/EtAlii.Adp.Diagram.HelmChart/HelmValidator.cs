@@ -47,7 +47,7 @@ public sealed class HelmValidator : IDiagramValidator
         }
 
         var problems = HelmDefinition.Findings(HelmBody.Read(folder));
-        return ValueTask.FromResult(Rebased(problems, request.RootPath, folder));
+        return ValueTask.FromResult(Rebased(problems, request.Root, folder));
     }
 
     /// <summary>
@@ -62,14 +62,14 @@ public sealed class HelmValidator : IDiagramValidator
     /// literal <c>prefix/.</c>.
     /// </remarks>
     private static IReadOnlyList<DiagramProblem> Rebased(
-        IReadOnlyList<DiagramProblem> problems, string rootPath, string folder)
+        IReadOnlyList<DiagramProblem> problems, ProjectRoot root, string folder)
     {
-        if (rootPath.Length == 0)
+        if (root.FullPath.Length == 0)
         {
             return problems;
         }
 
-        var prefix = IoPath.GetRelativePath(rootPath, folder).Replace('\\', '/');
+        var prefix = IoPath.GetRelativePath(root.FullPath, folder).Replace('\\', '/');
         if (prefix is "." or "")
         {
             return problems;

@@ -211,7 +211,7 @@ public class SparqlValidatorTests
 
     private static async Task<IReadOnlyList<DiagramProblem>> Validate(string text) =>
         await new SparqlValidator(_origin).ValidateAsync(
-            new DiagramValidationRequest(text, "query.rq", "root", "root/query.rq", null), CancellationToken.None);
+            new DiagramValidationRequest(text, "query.rq", ProjectRoot.From("root"), "root/query.rq", null), CancellationToken.None);
 
     [Fact]
     public async Task AQueryThatDoesNotParse_IsOneErrorNamingItsLine()

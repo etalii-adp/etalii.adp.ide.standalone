@@ -71,7 +71,7 @@ public class ShaclExamplesTests
 
             // Nothing above info: a real file has to be clean, not merely parseable.
             var problems = await new ShaclValidator(_origin).ValidateAsync(
-                new DiagramValidationRequest(text, IoPath.GetFileNameWithoutExtension(body), path, body, registration),
+                new DiagramValidationRequest(text, IoPath.GetFileNameWithoutExtension(body), ProjectRoot.From(path), body, registration),
                 TestContext.Current.CancellationToken);
 
             Assert.DoesNotContain(problems, problem => problem.Severity > DiagramProblemSeverity.Info);

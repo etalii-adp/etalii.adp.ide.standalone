@@ -61,7 +61,7 @@ public class ExamplesTests
             new DiagramValidationRequest(
                 await File.ReadAllTextAsync(path),
                 name,
-                ExamplesRoot,
+                ProjectRoot.From(ExamplesRoot),
                 path,
                 IoPath.Combine(ExamplesRoot, name, $"{name}.adp")),
             TestContext.Current.CancellationToken);

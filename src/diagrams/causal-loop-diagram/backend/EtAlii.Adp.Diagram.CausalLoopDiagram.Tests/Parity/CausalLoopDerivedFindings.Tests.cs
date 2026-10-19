@@ -78,7 +78,7 @@ public class CausalLoopDerivedFindingsTests
 
     private static async Task<IReadOnlyList<DiagramProblem>> Validate(string text) =>
         await new CausalLoopValidator(Diagram.CausalLoop.Origin).ValidateAsync(
-            new DiagramValidationRequest(text, "parity", "", "parity.cld", null),
+            new DiagramValidationRequest(text, "parity", default, "parity.cld", null),
             TestContext.Current.CancellationToken);
 
     private static string Text(DiagramProblem problem) =>

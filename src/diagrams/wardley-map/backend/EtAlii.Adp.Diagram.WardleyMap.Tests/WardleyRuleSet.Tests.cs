@@ -347,6 +347,22 @@ public sealed class WardleyValidatorTests : IDisposable
     }
 
     [Fact]
+    public async Task AnAddressNamingTheProjectRootItself_IsNotFollowed()
+    {
+        // Act. The root is the project, not a file in it, so an address that names it is not a
+        // missing map either (code-structure FR-059: the check moved onto ProjectRoot unchanged).
+        var problems = await Validate("""
+            anchor Business [0.95, 0.63]
+            component Project [0.5, 0.5] url(project)
+            url project [.]
+
+            """);
+
+        // Assert.
+        Assert.DoesNotContain(problems, problem => problem.RuleId == WardleyValidator.SubmapMissingRuleId);
+    }
+
+    [Fact]
     public async Task ItCarriesTheRuleSetsProblemsThrough_Unchanged()
     {
         // Act.
@@ -384,7 +400,7 @@ public sealed class WardleyValidatorTests : IDisposable
     {
         var body = IoPath.Combine(_root, "map.owm");
         await File.WriteAllTextAsync(body, text);
-        var request = new DiagramValidationRequest(text, "map", _root, body, null);
+        var request = new DiagramValidationRequest(text, "map", ProjectRoot.From(_root), body, null);
         return await _validator.ValidateAsync(request, TestContext.Current.CancellationToken);
     }
 }

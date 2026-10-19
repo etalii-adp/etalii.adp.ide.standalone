@@ -17,7 +17,7 @@ namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph.Tests;
 public class FdgValidatorTests
 {
     private static DiagramValidationRequest RequestFor(string text) => new(
-        text, "graph", "/project", "/project/graph.fdg", "/project/graph.adp");
+        text, "graph", ProjectRoot.From("/project"), "/project/graph.fdg", "/project/graph.adp");
 
     private static async Task<IReadOnlyList<DiagramProblem>> ProblemsIn(string fixture)
     {

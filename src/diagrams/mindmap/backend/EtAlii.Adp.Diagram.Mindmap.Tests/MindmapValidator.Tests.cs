@@ -115,7 +115,7 @@ public class MindmapValidatorTests
             new DiagramValidationRequest(
                 document,
                 "architecture",
-                RootPath: Root,
+                Root: ProjectRoot.From(Root),
                 BodyPath: IoPath.Combine(Root, "architecture.mm"),
                 RegistrationPath: IoPath.Combine(Root, "architecture.adp")),
             TestContext.Current.CancellationToken);

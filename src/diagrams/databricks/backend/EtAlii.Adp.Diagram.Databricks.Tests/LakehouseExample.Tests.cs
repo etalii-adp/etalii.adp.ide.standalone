@@ -32,7 +32,7 @@ public class LakehouseExampleTests
 
         // Act.
         var problems = await validator.ValidateAsync(
-            new DiagramValidationRequest(text, relativePath, "", "", null),
+            new DiagramValidationRequest(text, relativePath, default, "", null),
             TestContext.Current.CancellationToken);
 
         // Assert.

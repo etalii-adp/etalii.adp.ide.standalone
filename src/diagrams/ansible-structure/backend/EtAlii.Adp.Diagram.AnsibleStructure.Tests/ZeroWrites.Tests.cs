@@ -106,7 +106,7 @@ public class ZeroWritesTests : IDisposable
 
             // And the rules, which read the whole tree again through their own reader.
             await new AnsibleValidator().ValidateAsync(
-                new DiagramValidationRequest("ansible/structure\n", "infrastructure", _root, registration, registration)
+                new DiagramValidationRequest("ansible/structure\n", "infrastructure", ProjectRoot.From(_root), registration, registration)
                 {
                     SubjectFolder = _root,
                 },

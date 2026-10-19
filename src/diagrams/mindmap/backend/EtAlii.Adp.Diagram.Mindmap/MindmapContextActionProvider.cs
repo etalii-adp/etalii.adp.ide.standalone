@@ -141,7 +141,7 @@ public sealed class MindmapContextActionProvider : IContextActionProvider
                     "Link to",
                     "mdi-link-variant",
                     "Link",
-                    ProjectTree(target.Root.FullPath),
+                    ProjectTree(target.Root),
                     "The project has no files to link to."));
 
             case UnlinkActionId:
@@ -191,7 +191,7 @@ public sealed class MindmapContextActionProvider : IContextActionProvider
     private static SetNodeLinkCommand LinkCommand(ContextTarget target, MindmapNode node, string projectRelative)
     {
         var segments = projectRelative.Split('/', StringSplitOptions.RemoveEmptyEntries);
-        var stored = MindmapLinks.ToMapRelative(target.ResolvedFullPath, segments, target.Root.FullPath);
+        var stored = MindmapLinks.ToMapRelative(target.ResolvedFullPath, segments, target.Root);
         return new SetNodeLinkCommand(target.ResolvedFullPath, node.Id, stored);
     }
 
@@ -278,17 +278,17 @@ public sealed class MindmapContextActionProvider : IContextActionProvider
     /// file's id its project-relative path - so a link target is picked, never typed
     /// (Requirement 12.7).
     /// </summary>
-    private static IReadOnlyList<ContextOptionNode> ProjectTree(string rootPath)
+    private static IReadOnlyList<ContextOptionNode> ProjectTree(ProjectRoot root)
     {
-        if (rootPath.Length == 0 || !Directory.Exists(rootPath))
+        if (root.FullPath.Length == 0 || !Directory.Exists(root.FullPath))
         {
             return [];
         }
 
-        return Options(rootPath, rootPath);
+        return Options(root.FullPath, root);
     }
 
-    private static IReadOnlyList<ContextOptionNode> Options(string folder, string rootPath)
+    private static IReadOnlyList<ContextOptionNode> Options(string folder, ProjectRoot root)
     {
         var options = new List<ContextOptionNode>();
         IEnumerable<string> entries;
@@ -304,7 +304,7 @@ public sealed class MindmapContextActionProvider : IContextActionProvider
         foreach (var entry in entries)
         {
             var name = IoPath.GetFileName(entry);
-            var id = string.Join('/', MindmapLinks.ProjectRelative(entry, rootPath));
+            var id = string.Join('/', MindmapLinks.ProjectRelative(entry, root));
             if (Directory.Exists(entry))
             {
                 if (SkippedFolders.Contains(name, StringComparer.OrdinalIgnoreCase))
@@ -312,7 +312,7 @@ public sealed class MindmapContextActionProvider : IContextActionProvider
                     continue;
                 }
 
-                var children = Options(entry, rootPath);
+                var children = Options(entry, root);
                 if (children.Count > 0)
                 {
                     options.Add(new ContextOptionNode(id, name, Selectable: true, children));

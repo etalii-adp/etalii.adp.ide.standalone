@@ -21,7 +21,7 @@ public class DatabricksValidatorTests
     {
         var validator = new DatabricksValidator(ServiceCollectionAddDatabricksExtension.JobOrigin);
         return await validator.ValidateAsync(
-            new DiagramValidationRequest(text, "under-test", "", "", null),
+            new DiagramValidationRequest(text, "under-test", default, "", null),
             TestContext.Current.CancellationToken);
     }
 

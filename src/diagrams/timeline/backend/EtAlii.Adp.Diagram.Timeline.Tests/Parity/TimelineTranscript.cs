@@ -225,7 +225,7 @@ internal static class TimelineTranscript
         json.WriteEndArray();
 
         var problems = await new TimelineValidator().ValidateAsync(
-            new DiagramValidationRequest(TranscriptText.Decode(bytes), Path.GetFileNameWithoutExtension(session.Body), session.Folder, session.Body, null),
+            new DiagramValidationRequest(TranscriptText.Decode(bytes), Path.GetFileNameWithoutExtension(session.Body), ProjectRoot.From(session.Folder), session.Body, null),
             cancellationToken);
         json.WritePropertyName("findings");
         json.WriteLines([.. problems.Select(problem => $"{Location(problem.Location)} | {problem.Severity} | {problem.RuleId} | {problem.Message}")]);

@@ -241,7 +241,7 @@ internal static class C4Transcript
         foreach ((ToolOrigin origin, _) in C4Corpus.Types)
         {
             var problems = await new C4Validator(origin).ValidateAsync(
-                new DiagramValidationRequest(await File.ReadAllTextAsync(session.Body, cancellationToken), Path.GetFileNameWithoutExtension(session.Body), session.Folder, session.Body, null),
+                new DiagramValidationRequest(await File.ReadAllTextAsync(session.Body, cancellationToken), Path.GetFileNameWithoutExtension(session.Body), ProjectRoot.From(session.Folder), session.Body, null),
                 cancellationToken);
             findings.Add((origin.Key, [.. problems.Select(problem => $"{Location(problem.Location)} | {problem.Severity} | {problem.RuleId} | {problem.Message}")]));
         }

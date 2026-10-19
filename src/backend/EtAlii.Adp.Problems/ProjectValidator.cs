@@ -344,7 +344,7 @@ public sealed class ProjectValidator
         // the one MIME line the registration holds. The folder is the registration's own, so it
         // inherits the containment check the route already passed
         // (ansible-structure-diagram Requirement 2.2).
-        var request = new DiagramValidationRequest(document, baseName, collector.Root, bodyPath, registrationPath)
+        var request = new DiagramValidationRequest(document, baseName, ProjectRoot.From(collector.Root), bodyPath, registrationPath)
         {
             SubjectFolder = hasFolderSubject ? IoPath.GetDirectoryName(attribution) : null,
         };

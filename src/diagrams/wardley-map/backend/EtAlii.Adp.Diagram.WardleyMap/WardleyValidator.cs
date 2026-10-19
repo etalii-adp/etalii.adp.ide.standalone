@@ -70,14 +70,11 @@ public sealed class WardleyValidator : IDiagramValidator
                 continue;
             }
 
-            var full = IoPath.GetFullPath(IoPath.Combine(request.RootPath, url.Address.Replace('/', IoPath.DirectorySeparatorChar)));
-
-            // Containment is core's job everywhere else, and it is this rule's here: a `..`
-            // walking out of the project is not a reference this reports on, it is one it
-            // refuses to go looking for.
-            var inside = PathContainment.IsInside(request.RootPath, full);
-
-            if (!inside || File.Exists(full))
+            // Containment is the project root's to judge: a `..` walking out of the project is
+            // not a reference this reports on, it is one it refuses to go looking for. Nor is the
+            // root itself, which no address names as a file.
+            if (request.Root.Resolve(url.Address.Replace('/', IoPath.DirectorySeparatorChar)) is not { RelativePath: not "." } target
+                || File.Exists(target.FullPath))
             {
                 continue;
             }

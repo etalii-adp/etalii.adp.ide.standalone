@@ -29,7 +29,7 @@ public class SkosExamplesTests
 
         // Act.
         var problems = await new SkosValidator(_origin).ValidateAsync(
-            new DiagramValidationRequest(await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken), name, folder, path, registration),
+            new DiagramValidationRequest(await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken), name, ProjectRoot.From(folder), path, registration),
             TestContext.Current.CancellationToken);
 
         // Assert.
