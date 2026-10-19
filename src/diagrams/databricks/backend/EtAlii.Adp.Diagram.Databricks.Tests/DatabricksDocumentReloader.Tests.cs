@@ -32,7 +32,7 @@ public sealed class DatabricksDocumentReloaderTests : DocumentReloaderContract<I
     public async Task EachTypeOfTheFamily_ReloadsIntoTheOneSharedStore(string type)
     {
         // Arrange.
-        using var provider = new ServiceCollection()
+        await using var provider = new ServiceCollection()
             .AddSingleton<IReadOnlyList<DiagramDefinition>>(Diagram.Definitions)
             .AddCommands().AddHierarchyCommandHandlers()
             .AddDatabricks()

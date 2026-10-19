@@ -141,7 +141,7 @@ public class ServiceCollectionAddAzurePipelineTests
     public async Task TheReloadSeam_ReachesTheModulesOneStore()
     {
         // Arrange.
-        using var provider = Build();
+        await using var provider = Build();
         using var folder = TestFolder.Create("pipeline-reload");
         var body = folder.Combine("azure-pipelines.yml");
         File.Copy(IoPath.Combine(AppContext.BaseDirectory, "Fixtures", "jobs-only.yml"), body);

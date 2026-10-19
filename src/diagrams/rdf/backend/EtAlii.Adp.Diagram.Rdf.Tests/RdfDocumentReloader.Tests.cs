@@ -57,7 +57,7 @@ public sealed class RdfDocumentReloaderTests : DocumentReloaderContract<IRdfDocu
         var services = new ServiceCollection();
         services.AddSingleton(store);
         services.AddRdf();
-        using var provider = services.BuildServiceProvider();
+        await using var provider = services.BuildServiceProvider();
         using var folder = TestFolder.Create("EtAlii.Adp.RdfDocumentReloaderTests");
         var body = folder.Combine("constructs.ttl");
         File.Copy(Example, body);
