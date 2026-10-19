@@ -41,7 +41,7 @@ describe("outlineOf", () => {
 
   it("leaves a shape with no outline alone, rather than approximating it", () => {
     // A circle replaced by a 64-gon would move drawings nobody asked to move.
-    for (const shape of ["box", "pill", "ellipse", "cylinder", "none"] as const) {
+    for (const shape of ["box", "pill", "ellipse", "cylinder", "person", "none"] as const) {
       expect(outlineOf(shape, boundsOf(160))).toEqual([]);
     }
   });

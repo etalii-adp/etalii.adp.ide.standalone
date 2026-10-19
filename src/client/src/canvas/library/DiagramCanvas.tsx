@@ -3810,6 +3810,16 @@ function renderShapeBody(
           {centredText(element, label)}
         </g>
       );
+    case "person":
+      // The head first and the body over it, so the body covers the head's bottom. The body is
+      // the outline: no polygon is stated for it, so the edge point and the text region are the box's.
+      return (
+        <g>
+          <circle className={shapeClass} cx={element.x} cy={bounds.y - 8} r={10} style={paint} />
+          <rect className={shapeClass} x={bounds.x} y={bounds.y} width={bounds.width} height={bounds.height} rx={8} style={paint} />
+          {centredText(element, label)}
+        </g>
+      );
   }
 }
 
