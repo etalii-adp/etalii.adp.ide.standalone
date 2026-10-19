@@ -12,6 +12,7 @@ import { applyDelta, emptyModel, BOUNDARY_TYPE, NODE_TYPE, RELATIONSHIP_TYPE, VI
 import { ContextPromptSchema } from "@client/generated/context_pb";
 import type { ContextPrompt } from "@client/generated/context_pb";
 import type { ContextSource } from "@client/generated/context-contract_pb";
+import type { ActionOptions } from "@client/shell/context/ContextConnectionProvider";
 import { act } from "@testing-library/react";
 import { elementSelectionOf, elementSourceOf } from "@client/canvas/selection";
 import { placementId } from "@client/canvas/gestureIds";
@@ -63,9 +64,10 @@ vi.mock("@client/shell/context/ContextConnectionProvider", async (importOriginal
 
 const connection = fakeContextConnection({
   select,
-  executeAction: (actionId: string, source?: ContextSource) => {
+  executeAction: (actionId: string, source?: ContextSource, options?: ActionOptions) => {
     executed.push(actionId);
     executedSources.push(source);
+    executedOptions.push(options);
     return Promise.resolve({ accepted: true, error: "" });
   },
   executeShortcut: () => Promise.resolve(shortcutOutcome),
@@ -84,6 +86,9 @@ const executed: string[] = [];
 
 /** What each of those was run on: the source it named, or none for the selection. */
 const executedSources: (ContextSource | undefined)[] = [];
+
+/** How each of those was asked for: as a toolbox entry's drop, or as an action. */
+const executedOptions: (ActionOptions | undefined)[] = [];
 
 /** Positions the canvas asked the backend to record - what a completed drag produces. */
 const moves: Array<{ elementId: string; x: number; y: number }> = [];
@@ -134,6 +139,7 @@ describe("C4Canvas", () => {
     select.mockClear();
     executed.length = 0;
     executedSources.length = 0;
+    executedOptions.length = 0;
     moves.length = 0;
     currentLoading = false;
     currentFailed = false;
@@ -586,9 +592,34 @@ describe("C4Canvas", () => {
     // Act: dropped where Alpha sits.
     dropAt(container, "c4.add-container", 0, 0);
 
-    // Assert.
+    // Assert: sent as the entry's drop, which the backend resolves by the entry - no C4 element's
+    // menu has an add, so resolved as an action it was refused on every element.
     expect(executed).toEqual(["c4.add-container"]);
     expect(executedSources).toEqual([elementSourceOf("a", props.entryId)]);
+    expect(executedOptions).toEqual([{ drop: true }]);
+  });
+
+  it("names the element a boundary is drawn for when a toolbox entry is dropped inside it, on no box", () => {
+    // The software system a container view is about is drawn as its boundary, not as a box, and
+    // dropping a container into that boundary is how one is added to it.
+    currentModel = seed(
+      node("a", "Alpha", 0, 0),
+      element("boundary:s", BOUNDARY_TYPE, toBinary(C4BoundaryPayloadSchema, create(C4BoundaryPayloadSchema, {
+        name: "Internet Banking",
+        kind: "Software System",
+        width: 400,
+        height: 300,
+      })), 500, 500),
+    );
+    const { container } = render(<C4Canvas {...props} />);
+
+    // Act: inside the boundary, far from Alpha.
+    dropAt(container, "c4.add-container", 600, 560);
+
+    // Assert.
+    expect(executed).toEqual(["c4.add-container"]);
+    expect(executedSources).toEqual([elementSourceOf("s", props.entryId)]);
+    expect(executedOptions).toEqual([{ drop: true }]);
   });
 
   it("runs the action on the point it landed on when a toolbox entry is dropped on empty canvas", () => {
@@ -604,6 +635,7 @@ describe("C4Canvas", () => {
     // Assert.
     expect(executed).toEqual(["c4.add-softwaresystem"]);
     expect(executedSources).toEqual([elementSourceOf(placementId(-110, -110), props.entryId)]);
+    expect(executedOptions).toEqual([{ drop: true }]);
   });
 
   it("ignores a drag that is not from the toolbox", () => {

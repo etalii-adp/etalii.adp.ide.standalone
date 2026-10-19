@@ -3,10 +3,14 @@ using EtAlii.Adp.Layout;
 namespace EtAlii.Adp.Diagram.C4;
 
 /// <summary>A boundary drawn around the elements inside one scope (Requirement 4.7).</summary>
-/// <param name="Id">A synthetic id, since a boundary is drawn from an element rather than declared.</param>
+/// <param name="Id">A synthetic id, since a boundary is drawn from an element rather than declared: <see cref="IdPrefix"/> and the element's id.</param>
 /// <param name="Name">The scope element's name.</param>
 /// <param name="Kind">What the boundary encloses, for its label: "Software System" or "Container".</param>
-public sealed record C4Boundary(string Id, string Name, string Kind, Rect Box);
+public sealed record C4Boundary(string Id, string Name, string Kind, Rect Box)
+{
+    /// <summary>What a boundary's id begins with, the id of the element it is drawn for following it; the canvas reads it to name that element for a drop inside the boundary.</summary>
+    public const string IdPrefix = "boundary:";
+}
 
 /// <summary>Where everything on one view goes.</summary>
 /// <param name="AuthoredPositionsIgnored">
@@ -302,7 +306,7 @@ public static class C4LayoutEngine
                 }
 
                 // Outermost first, so a canvas drawing them in order puts the inner ones on top.
-                resultBoundaries.Add(new C4Boundary($"boundary:{sibling.Id}", sibling.Name, BoundaryKindOf(sibling), box));
+                resultBoundaries.Add(new C4Boundary($"{C4Boundary.IdPrefix}{sibling.Id}", sibling.Name, BoundaryKindOf(sibling), box));
                 var dx = box.X + padding;
                 var dy = box.Y + padding;
                 foreach ((string id, Rect child) in contents.Boxes)
@@ -577,7 +581,7 @@ public static class C4LayoutEngine
         var bottom = inside.Max(box => box.Bottom) + padding + metrics.FontSize * metrics.LineHeight;
 
         var kind = view.Kind == C4ViewKind.Container ? "Software System" : "Container";
-        return [new C4Boundary($"boundary:{scope.Id}", scope.Name, kind, new Rect(Math.Round(x, 2), Math.Round(y, 2), Math.Round(right - x, 2), Math.Round(bottom - y, 2)))];
+        return [new C4Boundary($"{C4Boundary.IdPrefix}{scope.Id}", scope.Name, kind, new Rect(Math.Round(x, 2), Math.Round(y, 2), Math.Round(right - x, 2), Math.Round(bottom - y, 2)))];
     }
     /// <summary>
     /// Separates outsiders that landed on each other on the way out of a boundary.

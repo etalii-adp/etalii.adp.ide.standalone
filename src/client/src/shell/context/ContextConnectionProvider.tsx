@@ -91,6 +91,16 @@ export interface ActionOutcome {
   error: string;
 }
 
+/** How an action is asked for, beyond its id and what it is run on. */
+export interface ActionOptions {
+  /**
+   * The id is a toolbox entry's drop action, dropped on the source: the backend resolves it by the
+   * entry rather than by the source's menu, so an entry can land on an element whose menu does not
+   * offer it. A module whose backend does not resolve drops itself answers it from the menu, as ever.
+   */
+  drop?: boolean;
+}
+
 /**
  * The properties of what is selected, and whether they could be read at all.
  *
@@ -110,7 +120,7 @@ export interface ContextConnectionValue {
   watchId: Uint8Array;
   /** A plain selection (`none`) is coalesced; any action, or `null` to clear, goes at once. */
   select: (selection: ContextSelection | null) => void;
-  executeAction: (actionId: string, source?: ContextSource) => Promise<ActionOutcome>;
+  executeAction: (actionId: string, source?: ContextSource, options?: ActionOptions) => Promise<ActionOutcome>;
   /** Forgets a pending reveal, once whoever shows the hierarchy has acted on it. */
   clearReveal: () => void;
   /**
@@ -477,7 +487,10 @@ export function ContextConnectionProvider({ projectId, children }: ContextConnec
 
   const execute = useCallback(
     async (
-      trigger: { case: "actionId"; value: string } | { case: "shortcut"; value: ContextShortcut },
+      trigger:
+        | { case: "actionId"; value: string }
+        | { case: "dropActionId"; value: string }
+        | { case: "shortcut"; value: ContextShortcut },
       source?: ContextSource,
     ): Promise<ActionOutcome> => {
       // Only the call is guarded. What follows opens a workspace tab, and a fault there is a
@@ -518,7 +531,8 @@ export function ContextConnectionProvider({ projectId, children }: ContextConnec
     () => ({
       watchId: watchIdRef.current,
       select,
-      executeAction: (actionId, source) => execute({ case: "actionId", value: actionId }, source),
+      executeAction: (actionId, source, options) =>
+        execute(options?.drop === true ? { case: "dropActionId", value: actionId } : { case: "actionId", value: actionId }, source),
       clearReveal: () => setPendingReveal(null),
       revealPath: (segments) => setPendingReveal(segments),
       executeShortcut: (shortcut, source) => execute({ case: "shortcut", value: shortcut }, source),
@@ -701,7 +715,7 @@ export function useContextConnection(): ContextConnectionValue {
         ? value
         : {
             ...value,
-            executeAction: (actionId, source) => reportedCall(reporter, () => value.executeAction(actionId, source)),
+            executeAction: (actionId, source, options) => reportedCall(reporter, () => value.executeAction(actionId, source, options)),
             executeShortcut: (shortcut, source) => reportedCall(reporter, () => value.executeShortcut(shortcut, source)),
             setProperty: (propertyId, newValue, source) =>
               reportedCall(reporter, () => value.setProperty(propertyId, newValue, source)),

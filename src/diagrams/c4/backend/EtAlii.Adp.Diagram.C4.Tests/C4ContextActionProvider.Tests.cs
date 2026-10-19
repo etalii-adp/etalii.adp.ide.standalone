@@ -195,9 +195,9 @@ public class C4ContextActionProviderTests : IDisposable
     [Fact]
     public async Task ADropOnTheEmptyCanvas_ResolvesTheDroppedEntry_AndAddsItAtTheTopOfTheModel()
     {
-        // Arrange: the gate the context service puts every action through, by its id, on the target.
+        // Arrange: the gate the context service puts a toolbox drop through, by the entry, on the point it landed on.
         var target = TargetFor(GestureIds.Placement(40, 600));
-        var owner = await new ContextActionResolver([_provider]).ResolveByActionIdAsync(target, "c4.add-person", TestContext.Current.CancellationToken);
+        var owner = await DropAsync(target, "c4.add-person");
 
         // Act.
         Assert.NotNull(owner);
@@ -210,6 +210,101 @@ public class C4ContextActionProviderTests : IDisposable
         var added = Assert.Single((await _documents.GetOrLoadAsync(_bodyPath, TestContext.Current.CancellationToken)).Model.Elements, element => element.Name == "Auditor");
         Assert.Null(added.ParentId);
     }
+
+    [Fact]
+    public async Task AContainerDroppedOnASoftwareSystem_ResolvesByTheEntry_AndIsAddedInsideIt()
+    {
+        // Arrange: no element menu has an add, so a drop resolved by the target's menu found nothing.
+        var target = TargetFor("s");
+
+        // Act.
+        var owner = await DropAsync(target, "c4.add-container");
+        Assert.NotNull(owner);
+        Assert.True(owner.Action.Available, owner.Action.UnavailableReason);
+        var asked = await Input(target, owner.Action.Id);
+        var committed = await _provider.CommitAsync(target, owner.Action.Id, "Api", "", TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.Equal("Name", asked.Request.FieldLabel);
+        Assert.True(committed.Completed, committed.Error);
+        var added = Assert.Single((await _documents.GetOrLoadAsync(_bodyPath, TestContext.Current.CancellationToken)).Model.Elements, element => element.Name == "Api");
+        Assert.Equal("s", added.ParentId);
+    }
+
+    [Fact]
+    public async Task AContainerDroppedOnAPerson_IsRefusedWithTheDefinitionsSentence()
+    {
+        // Act.
+        var owner = await DropAsync(TargetFor("u"), "c4.add-container");
+
+        // Assert: the definition's `drop.refusal`, before anything is asked.
+        Assert.NotNull(owner);
+        Assert.False(owner.Action.Available);
+        Assert.Equal("A container lives inside a software system, not inside a person.", owner.Action.UnavailableReason);
+    }
+
+    [Fact]
+    public async Task APersonDroppedOnAnElement_IsAddedAtTheTopOfTheModel()
+    {
+        // Arrange: a drop on another element means nothing rather than something forbidden.
+        var target = TargetFor("web");
+
+        // Act.
+        var owner = await DropAsync(target, "c4.add-person");
+        Assert.NotNull(owner);
+        Assert.True(owner.Action.Available, owner.Action.UnavailableReason);
+        var committed = await _provider.CommitAsync(target, owner.Action.Id, "Auditor", "", TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.True(committed.Completed, committed.Error);
+        var added = Assert.Single((await _documents.GetOrLoadAsync(_bodyPath, TestContext.Current.CancellationToken)).Model.Elements, element => element.Name == "Auditor");
+        Assert.Null(added.ParentId);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("s")]
+    public async Task ADeploymentEntryDropped_KeepsItsRefusal_TheSentenceItsDefinitionStates(string elementId)
+    {
+        // Arrange: no add of a deployment node, an infrastructure node or an instance is implemented, and the
+        // definition answers the drop with its operation's `unavailable` reason (ruled 2026-10-18).
+        var body = IoPath.Combine(_root, "deployment.dsl");
+        await File.WriteAllTextAsync(body, """
+            workspace "Bank" {
+                model {
+                    s = softwareSystem "Banking" "Does banking."
+                    deploymentEnvironment "Live" {
+                        deploymentNode "Server" "A server." "Linux"
+                    }
+                }
+                views {
+                    deployment s "Live" "live" {
+                        include *
+                    }
+                }
+            }
+            """, TestContext.Current.CancellationToken);
+        var target = ContextTarget.ForElement(body, elementId, ProjectRoot.From(_root), ShortGuid.NewShortGuid(), new ToolOrigin("c4", "deployment"));
+
+        // Act.
+        var owners = new List<ContextActionOwner?>();
+        foreach (var entry in new[] { "c4.add-deploymentnode", "c4.add-infrastructurenode", "c4.add-containerinstance", "c4.add-softwaresysteminstance" })
+        {
+            owners.Add(await DropAsync(target, entry));
+        }
+
+        // Assert.
+        Assert.All(owners, owner =>
+        {
+            Assert.NotNull(owner);
+            Assert.False(owner.Action.Available);
+            Assert.Equal("That element is no longer in this model.", owner.Action.UnavailableReason);
+        });
+    }
+
+    /// <summary>How the context service resolves a toolbox entry dropped on <paramref name="target"/>.</summary>
+    private async Task<ContextActionOwner?> DropAsync(ContextTarget target, string dropActionId) =>
+        await new ContextActionResolver([_provider]).ResolveDropAsync(target, dropActionId, TestContext.Current.CancellationToken);
 
     [Fact]
     public async Task Rename_CommitsThroughACommand_SoItIsOneUndoAway()

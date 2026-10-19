@@ -146,6 +146,40 @@ internal static class C4Definitions
             ];
     }
 
+    /// <summary>
+    /// What a drop of the toolbox entry whose drop action is <paramref name="dropActionId"/> does on
+    /// <paramref name="elementId"/> drawn on <paramref name="view"/> of <paramref name="workspace"/> (the empty id for the
+    /// empty canvas), read from the body named <paramref name="file"/>: the definition's <c>drop.targets</c> tried against
+    /// the element's kind (DISL 7.2). A target that matches runs the entry's drop action there; a target whose operation
+    /// is unavailable, and a drop no target takes, are refused with the definition's sentence. Null for an entry the
+    /// definition does not drop, for an id that names no element, and for a drop that would do anything else.
+    /// </summary>
+    public static ContextActionDefinition? Drop(C4Workspace workspace, string file, C4View? view, ToolOrigin? origin, string elementId, string dropActionId)
+    {
+        ArgumentNullException.ThrowIfNull(elementId);
+        ArgumentNullException.ThrowIfNull(dropActionId);
+        var specification = DefinitionOf(view, origin).Specification;
+        var tool = ToolboxDerivation.Derive(specification, IdsOf(specification)).FirstOrDefault(each => each.DropActionId == dropActionId);
+        if (tool is null)
+        {
+            return null;
+        }
+
+        var diagram = C4Disl.Of(workspace, view, specification, file).Diagram;
+        var on = C4Disl.ElementOf(diagram, elementId);
+        if (elementId.Length > 0 && on is null)
+        {
+            return null;
+        }
+
+        return DislDrop.Resolve(specification, tool.Name, diagram, on, EnvOf(diagram)) switch
+        {
+            DislDropOutcome.Target { Kind: "operation" } => new ContextActionDefinition(dropActionId, tool.Label, tool.Icon),
+            DislDropOutcome.Refused refused => new ContextActionDefinition(dropActionId, tool.Label, tool.Icon, Available: false, UnavailableReason: refused.Reason),
+            _ => null,
+        };
+    }
+
     /// <summary>The property rows of <paramref name="elementId"/> drawn on <paramref name="view"/> of <paramref name="workspace"/>: an element's or a stored relationship's form; none for anything else.</summary>
     public static IReadOnlyList<ContextPropertyDefinition> Rows(C4Workspace workspace, string file, C4View? view, ToolOrigin? origin, string elementId)
     {
@@ -163,7 +197,15 @@ internal static class C4Definitions
     /// <paramref name="identifier"/> (<see cref="DislIds.Fixed"/>), on a model of its own; null when it
     /// refuses, creates anything else, or the parent names nothing.
     /// </summary>
-    public static string? Created(C4Workspace workspace, string file, C4View? view, ToolOrigin? origin, string operation, string parentId, string name, string identifier)
+    public static string? Created(C4Workspace workspace, string file, C4View? view, ToolOrigin? origin, string operation, string parentId, string name, string identifier) =>
+        Creation(workspace, file, view, origin, operation, parentId, name, identifier)?.Id;
+
+    /// <summary>
+    /// The element the definition's add <paramref name="operation"/> creates, as <see cref="Created"/> runs it: with
+    /// the parent it puts it inside, which is not the element it ran on for an add that goes at the top of the model,
+    /// as a person dropped on another element does. Null where <see cref="Created"/> is.
+    /// </summary>
+    public static DislChange.Create? Creation(C4Workspace workspace, string file, C4View? view, ToolOrigin? origin, string operation, string parentId, string name, string identifier)
     {
         ArgumentNullException.ThrowIfNull(parentId);
         var specification = DefinitionOf(view, origin).Specification;
@@ -182,7 +224,7 @@ internal static class C4Definitions
             DislIds.Fixed(identifier),
             new DislInvocation(Parameters: new Dictionary<string, object?>(StringComparer.Ordinal) { ["name"] = name }),
             EnvOf(diagram));
-        return transaction is { WasApplied: true, Changes: [DislChange.Create created] } ? created.Id : null;
+        return transaction is { WasApplied: true, Changes: [DislChange.Create created] } ? created : null;
     }
 
     /// <summary>

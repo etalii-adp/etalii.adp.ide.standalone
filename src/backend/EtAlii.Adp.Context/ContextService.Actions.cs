@@ -65,6 +65,8 @@ public sealed partial class ContextService
                 await _contextActionResolver.ResolveByActionIdAsync(target, request.ActionId, context.CancellationToken),
             ExecuteActionRequest.TriggerOneofCase.Shortcut =>
                 await _contextActionResolver.ResolveByShortcutAsync(target, ContextWire.FromProto(request.Shortcut), context.CancellationToken),
+            ExecuteActionRequest.TriggerOneofCase.DropActionId =>
+                await _contextActionResolver.ResolveDropAsync(target, request.DropActionId, context.CancellationToken),
             _ => null,
         };
 
@@ -74,9 +76,19 @@ public sealed partial class ContextService
             // bound to an action currently reported unavailable: none of them do anything.
             _logger.Debug(
                 "Nothing to run for {Trigger} on {TargetPath}: no available action claims it",
-                request.TriggerCase == ExecuteActionRequest.TriggerOneofCase.ActionId ? request.ActionId : request.Shortcut.Key,
+                request.TriggerCase switch
+                {
+                    ExecuteActionRequest.TriggerOneofCase.ActionId => request.ActionId,
+                    ExecuteActionRequest.TriggerOneofCase.DropActionId => request.DropActionId,
+                    _ => request.Shortcut?.Key,
+                },
                 target.ResolvedFullPath);
-            return Rejected("That action is not available for this item.");
+
+            // A drop the entry refuses here says why, in the sentence its provider gave; every other
+            // trigger keeps the one sentence it has always had.
+            return Rejected(request.TriggerCase == ExecuteActionRequest.TriggerOneofCase.DropActionId && owner is { Action.UnavailableReason: { Length: > 0 } reason }
+                ? reason
+                : "That action is not available for this item.");
         }
 
         var execution = await owner.Provider.ExecuteAsync(target, owner.Action.Id, context.CancellationToken);
