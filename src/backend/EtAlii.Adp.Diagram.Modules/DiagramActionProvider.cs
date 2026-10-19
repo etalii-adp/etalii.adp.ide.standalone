@@ -112,7 +112,7 @@ public abstract class DiagramActionProvider<TBody, TModel> : IContextActionProvi
         $"{System.IO.Path.GetFileName(target.ResolvedFullPath)} could not be read, so it cannot be edited.";
 
     /// <summary>The entry of the document <paramref name="target"/> is in, for a leg that is not handed one.</summary>
-    private ValueTask<DocumentEntry<TBody, TModel>> LoadAsync(ContextTarget target, CancellationToken cancellationToken)
+    protected ValueTask<DocumentEntry<TBody, TModel>> LoadAsync(ContextTarget target, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(target);
         return _load(target, cancellationToken);

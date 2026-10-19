@@ -102,7 +102,8 @@ internal static class DislEvaluation
         return null;
     }
 
-    private static string? Reason(DislSpecification specification, JsonElement reason, string pointer, string context, IReadOnlyDictionary<string, object?> variables)
+    /// <summary>One Reason (§2.3): a Message, an object while its <c>when</c> holds, a <c>{reason: id}</c> while the named one's does; null when it does not apply.</summary>
+    internal static string? Reason(DislSpecification specification, JsonElement reason, string pointer, string context, IReadOnlyDictionary<string, object?> variables)
     {
         if (reason.ValueKind == JsonValueKind.Object && DislJson.String(reason, "reason") is { } id)
         {

@@ -226,6 +226,9 @@ public class HistoryActionsBroadcasterTests
         public ValueTask<ContextActionOwner?> ResolveByActionIdAsync(ContextTarget target, string actionId, CancellationToken cancellationToken) =>
             throw new NotSupportedException();
 
+        public ValueTask<ContextActionOwner?> ResolveDropAsync(ContextTarget target, string dropActionId, CancellationToken cancellationToken) =>
+            throw new NotSupportedException();
+
         public ValueTask<ContextActionOwner?> ResolveByShortcutAsync(ContextTarget target, ContextShortcutDefinition shortcut, CancellationToken cancellationToken) =>
             throw new NotSupportedException();
     }
