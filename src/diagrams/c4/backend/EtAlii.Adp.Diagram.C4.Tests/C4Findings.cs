@@ -7,7 +7,7 @@ namespace EtAlii.Adp.Diagram.C4.Tests;
 internal static class C4Findings
 {
     /// <summary>The file name a test's workspace is read from.</summary>
-    public const string File = "workspace.dsl";
+    private const string File = "workspace.dsl";
 
     public static IReadOnlyList<DiagramProblem> Of(C4Workspace workspace) => C4Definitions.Problems(workspace, File, Diagram.SystemContext.Origin);
 
