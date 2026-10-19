@@ -20,7 +20,7 @@ public sealed class ProjectXmlResolverTests : IDisposable
     public void AReference_ResolvesAgainstTheFolderOfTheFileThatNamesIt()
     {
         // Arrange.
-        var resolver = new ProjectXmlResolver(Root);
+        var resolver = new ProjectXmlResolver(ProjectRoot.From(Root));
         var document = new Uri(ProjectXmlResolver.BaseUriOf(Path.Combine(Root, "settings", "app.xml")));
 
         // Act.
@@ -39,7 +39,7 @@ public sealed class ProjectXmlResolverTests : IDisposable
     public void AReferenceThatIsNotAFileOfTheProject_IsRefusedWithItsReason_AndReadingItFails(string reference, string reason)
     {
         // Arrange.
-        var resolver = new ProjectXmlResolver(Root);
+        var resolver = new ProjectXmlResolver(ProjectRoot.From(Root));
         var document = new Uri(ProjectXmlResolver.BaseUriOf(Path.Combine(Root, "app.xml")));
 
         // Act.
@@ -58,11 +58,41 @@ public sealed class ProjectXmlResolverTests : IDisposable
         // Arrange: a reader may ask for an entity by an address it built itself.
         Directory.CreateDirectory(Root);
         File.WriteAllText(_folder.Combine("outside.txt"), "outside");
-        var resolver = new ProjectXmlResolver(Root);
+        var resolver = new ProjectXmlResolver(ProjectRoot.From(Root));
 
         // Act and assert.
         Assert.Throws<XmlException>(() => resolver.GetEntity(new Uri(_folder.Combine("outside.txt")), null, typeof(Stream)));
         Assert.Empty(resolver.Read);
+    }
+
+    [Fact]
+    public void AFileReachedThroughALinkThatLeavesTheProject_IsNotRead()
+    {
+        // Arrange: a folder of the project that is a link to one outside it, which the project's
+        // root refuses as it refuses `..` (code-structure B-11).
+        Directory.CreateDirectory(Root);
+        var elsewhere = _folder.Combine("elsewhere");
+        Directory.CreateDirectory(elsewhere);
+        File.WriteAllText(Path.Combine(elsewhere, "app.xsd"), "<schema/>");
+        CreateLinkOrSkip(Path.Combine(Root, "schemas"), elsewhere);
+        var resolver = new ProjectXmlResolver(ProjectRoot.From(Root));
+
+        // Act and assert.
+        Assert.Throws<XmlException>(() => resolver.GetEntity(new Uri(Path.Combine(Root, "schemas", "app.xsd")), null, typeof(Stream)));
+        Assert.Empty(resolver.Read);
+    }
+
+    // Windows lets only an elevated process or one in developer mode create a symbolic link.
+    private static void CreateLinkOrSkip(string link, string target)
+    {
+        try
+        {
+            Directory.CreateSymbolicLink(link, target);
+        }
+        catch (Exception exception) when (exception is UnauthorizedAccessException or IOException && OperatingSystem.IsWindows())
+        {
+            Assert.Skip($"This process may not create a symbolic link: {exception.Message}");
+        }
     }
 
     [Fact]
@@ -72,7 +102,7 @@ public sealed class ProjectXmlResolverTests : IDisposable
         Directory.CreateDirectory(Path.Combine(Root, "schemas"));
         var schema = Path.Combine(Root, "schemas", "app.xsd");
         File.WriteAllText(schema, "<schema/>");
-        var resolver = new ProjectXmlResolver(Root);
+        var resolver = new ProjectXmlResolver(ProjectRoot.From(Root));
 
         // Act.
         using var stream = Assert.IsType<MemoryStream>(resolver.GetEntity(new Uri(schema), null, typeof(Stream)));
@@ -89,7 +119,7 @@ public sealed class ProjectXmlResolverTests : IDisposable
         Directory.CreateDirectory(Root);
         var schema = Path.Combine(Root, "latin.xsd");
         File.WriteAllBytes(schema, [0x3C, 0x61, 0xE9, 0x2F, 0x3E]);
-        var resolver = new ProjectXmlResolver(Root);
+        var resolver = new ProjectXmlResolver(ProjectRoot.From(Root));
 
         // Act.
         var failure = Assert.Throws<XmlException>(() => resolver.GetEntity(new Uri(schema), null, typeof(Stream)));

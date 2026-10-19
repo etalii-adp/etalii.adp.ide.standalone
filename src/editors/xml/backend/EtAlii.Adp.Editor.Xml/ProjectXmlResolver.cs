@@ -17,15 +17,15 @@ internal sealed class ProjectXmlResolver : XmlResolver
     /// <summary>The scheme of the address a refused reference resolves to, so that reading it fails with its reason.</summary>
     private const string RefusedScheme = "adp-refused";
 
-    private readonly string _rootPath;
+    private readonly ProjectRoot _root;
     private readonly List<string> _read = [];
     private readonly List<string> _attempted = [];
     private readonly List<RefusedReference> _refused = [];
 
-    public ProjectXmlResolver(string rootPath)
+    public ProjectXmlResolver(ProjectRoot root)
     {
-        ArgumentNullException.ThrowIfNull(rootPath);
-        _rootPath = Path.GetFullPath(rootPath);
+        ArgumentException.ThrowIfNullOrWhiteSpace(root.FullPath, nameof(root));
+        _root = root;
     }
 
     /// <summary>The full paths of the project files read, in the order they were first read.</summary>
@@ -59,7 +59,7 @@ internal sealed class ProjectXmlResolver : XmlResolver
 
         return SchemaReferenceRules.Resolve(reference, documentPath, new HashSet<string>()) switch
         {
-            SchemaTarget.Project project => new Uri(Path.Combine([_rootPath, .. project.Path])),
+            SchemaTarget.Project project => new Uri(Path.Combine([_root.FullPath, .. project.Path])),
             SchemaTarget.None none => Refuse(reference, none.Reason),
             _ => Refuse(reference, "is not a file of the project"),
         };
@@ -78,7 +78,7 @@ internal sealed class ProjectXmlResolver : XmlResolver
         // Checked again here rather than trusted from ResolveUri: a reader may ask for an entity
         // by an address it built itself, and nothing outside the project is read whoever asks.
         var fullPath = absoluteUri.IsFile ? Path.GetFullPath(absoluteUri.LocalPath) : "";
-        if (fullPath.Length == 0 || !IsInsideRoot(fullPath))
+        if (fullPath.Length == 0 || Within(fullPath) is null)
         {
             throw new XmlException($"'{absoluteUri.OriginalString}' is not a file of the project.");
         }
@@ -93,7 +93,7 @@ internal sealed class ProjectXmlResolver : XmlResolver
     public string ReadText(string fullPath)
     {
         fullPath = Path.GetFullPath(fullPath);
-        if (!IsInsideRoot(fullPath))
+        if (Within(fullPath) is null)
         {
             throw new XmlException($"'{fullPath}' is not a file of the project.");
         }
@@ -118,7 +118,7 @@ internal sealed class ProjectXmlResolver : XmlResolver
     }
 
     /// <summary>The full path of a file of the project, from its path segments.</summary>
-    public string FullPathOf(IReadOnlyList<string> projectPath) => Path.Combine([_rootPath, .. projectPath]);
+    public string FullPathOf(IReadOnlyList<string> projectPath) => Path.Combine([_root.FullPath, .. projectPath]);
 
     /// <summary>The project path of a file, its file name last, or null when it is outside the root.</summary>
     public string[]? ProjectPathOf(string fullPath) => DocumentPathOf(new Uri(Path.GetFullPath(fullPath)));
@@ -141,16 +141,16 @@ internal sealed class ProjectXmlResolver : XmlResolver
         }
 
         var fullPath = Path.GetFullPath(baseUri.LocalPath);
-        return IsInsideRoot(fullPath)
-            ? Path.GetRelativePath(_rootPath, fullPath).Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
+        return Within(fullPath) is { } path
+            ? path.RelativePath.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
             : null;
     }
 
-    private bool IsInsideRoot(string fullPath)
-    {
-        var relative = Path.GetRelativePath(_rootPath, fullPath);
-        return relative != "." && !relative.StartsWith("..", StringComparison.Ordinal) && !Path.IsPathRooted(relative);
-    }
+    /// <summary>
+    /// <paramref name="fullPath"/> as a file of the project, or null when it is the root itself or
+    /// leads out of it, through a link as much as through <c>..</c> (code-structure B-11).
+    /// </summary>
+    private ProjectPath? Within(string fullPath) => _root.Resolve(fullPath) is { RelativePath: not "." } path ? path : null;
 }
 
 /// <summary>A reference the resolver would not read, and why, in words said after the reference.</summary>
