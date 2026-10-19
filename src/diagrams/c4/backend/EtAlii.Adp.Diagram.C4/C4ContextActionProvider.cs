@@ -22,9 +22,14 @@ namespace EtAlii.Adp.Diagram.C4;
 /// menus, their visibility, labels and groups, and the ids of its <c>x-c4</c> block. What each action
 /// asks, what it refuses and which command it builds stays here.
 /// </para>
+/// <para>
+/// <b>A toolbox drop is answered by the entry, not by the target's menu</b> (<see cref="IContextDropProvider"/>, the
+/// user's ruling of 2026-10-19): no element menu has an add, and the definition's <c>drop.targets</c> say where each
+/// entry may land and its <c>drop.refusal</c> what is said where it may not (<see cref="C4Definitions.Drop"/>).
+/// </para>
 /// </remarks>
 public sealed class C4ContextActionProvider(IHistoryStackStore historyStacks, IC4DocumentStore documents)
-    : DiagramActionProvider<LineDocument, C4Workspace>(historyStacks, documents)
+    : DiagramActionProvider<LineDocument, C4Workspace>(historyStacks, documents), IContextDropProvider
 {
     public const string RenameActionId = "c4.rename";
     public const string EditDescriptionActionId = "c4.edit-description";
@@ -71,6 +76,22 @@ public sealed class C4ContextActionProvider(IHistoryStackStore historyStacks, IC
     /// at the top of the model wherever on the canvas it lands.
     /// </summary>
     private static string ElementOrCanvas(string elementId) => GestureIds.IsPlacement(elementId) ? "" : elementId;
+
+    /// <inheritdoc />
+    public async ValueTask<ContextActionDefinition?> ResolveDropAsync(ContextTarget target, string dropActionId, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(target);
+        cancellationToken.ThrowIfCancellationRequested();
+        if (!Serves(target))
+        {
+            return null;
+        }
+
+        var entry = await LoadAsync(target, cancellationToken);
+        return entry.IsUsable
+            ? C4Definitions.Drop(entry.Model, C4Disl.FileOf(target.ResolvedFullPath), C4Definitions.ViewOf(entry.Model, target.Origin), target.Origin, ElementOrCanvas(target.ElementId), dropActionId)
+            : null;
+    }
 
     /// <inheritdoc />
     protected override ValueTask<ContextExecutionResult> RunAsync(
@@ -185,18 +206,22 @@ public sealed class C4ContextActionProvider(IHistoryStackStore historyStacks, IC
     }
 
     /// <summary>
-    /// The add <paramref name="kind"/> named <paramref name="value"/> inside <paramref name="parentId"/>, as
+    /// The add <paramref name="kind"/> named <paramref name="value"/> run on <paramref name="parentId"/>, as
     /// today's command writes it. The definition's operation is run first, with the identifier the
     /// module makes from the name handed to it (<see cref="C4Placement.IdentifierFor"/>, standing in for
-    /// gap C11): where it creates the element, the command declares it under that identifier; where it
-    /// refuses, or the parent is not one it is for, the command is built as before and refuses on its own.
+    /// gap C11): where it creates the element, the command declares it under that identifier, inside the
+    /// parent the operation puts it in, which is none for a person or a software system dropped on another
+    /// element; where it refuses, or the parent is not one it is for, the command is built as before and
+    /// refuses on its own.
     /// </summary>
     private static AddC4ElementCommand AddCommand(string bodyPath, C4Workspace model, ToolOrigin? origin, C4ElementKind kind, string value, string parentId)
     {
         var identifier = C4Placement.IdentifierFor(model, value.Trim());
         var operation = AddableKinds.First(addable => addable.Kind == kind).Operation;
-        var created = C4Definitions.Created(model, C4Disl.FileOf(bodyPath), C4Definitions.ViewOf(model, origin), origin, operation, parentId, value, identifier);
-        return new AddC4ElementCommand(bodyPath, kind, value, parentId, created is { } id && id == identifier ? identifier : "");
+        var created = C4Definitions.Creation(model, C4Disl.FileOf(bodyPath), C4Definitions.ViewOf(model, origin), origin, operation, parentId, value, identifier);
+        return created is { } creation && creation.Id == identifier
+            ? new AddC4ElementCommand(bodyPath, kind, value, creation.ParentId is null ? "" : parentId, identifier)
+            : new AddC4ElementCommand(bodyPath, kind, value, parentId);
     }
 
     private static string Spell(C4ElementKind kind) => kind switch

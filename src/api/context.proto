@@ -307,6 +307,10 @@ message ExecuteActionRequest {
   oneof trigger {
     string action_id = 6;
     ContextShortcut shortcut = 7;
+    // A toolbox entry dropped on the source: the entry's own drop action, resolved by the entry
+    // rather than looked up in the source's menu. A provider that does not resolve drops itself
+    // is asked through its menu, exactly as for action_id.
+    string drop_action_id = 8;
   }
 }
 
