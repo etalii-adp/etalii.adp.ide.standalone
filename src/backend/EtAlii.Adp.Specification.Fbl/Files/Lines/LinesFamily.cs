@@ -283,9 +283,9 @@ internal sealed class LinesFamily(BodyText text, FblBinding binding, FblOptions 
 
     public override SlotRead Read(Candidate candidate, Slot slot)
     {
-        if (slot.Group is null) return SlotRead.ReadOnlyAbsent($"A {FamilyName} statement has no {slot}.");
+        if (slot.Kind is not SlotKind.Group(var name)) return SlotRead.ReadOnlyAbsent($"A {FamilyName} statement has no {slot}.");
         var groups = Groups(candidate);
-        if (!groups.TryGetValue(slot.Group, out var group))
+        if (!groups.TryGetValue(name, out var group))
         {
             return slot.Flag ? new SlotRead(false, null, false, true) : SlotRead.Absent;
         }
@@ -508,15 +508,15 @@ internal sealed class LinesFamily(BodyText text, FblBinding binding, FblOptions 
             return false;
         }
         if (match is null) return false;
-        var changed = changes.Select(change => change.Binding.Group).OfType<string>().ToHashSet(StringComparer.Ordinal);
+        var changed = changes.Select(change => change.Binding.Kind).OfType<SlotKind.Group>().Select(group => group.Name).ToHashSet(StringComparer.Ordinal);
         foreach ((string name, Group held) in Groups(statement, expression, element.Rule.CaseInsensitive))
         {
             if (!changed.Contains(name) && match.Groups[name].Value != held.Value) return false;
         }
         foreach (var change in changes)
         {
-            if (!change.IsEmpty || change.Binding.Group is not { } group) continue;
-            var own = element.Rule.Attributes.Count(attribute => attribute.Value.Group == group) == 1;
+            if (!change.IsEmpty || change.Binding.Kind is not SlotKind.Group(var group)) continue;
+            var own = element.Rule.Attributes.Count(attribute => attribute.Value.Kind == change.Binding.Kind) == 1;
             if (own && match.Groups[group].Success) return false;
         }
         return true;
@@ -649,21 +649,21 @@ internal sealed class LinesFamily(BodyText text, FblBinding binding, FblOptions 
         Statement? previous = null;
         switch (insert.Place)
         {
-            case "after-last":
+            case InsertPlace.AfterLast:
                 previous = siblings.LastOrDefault(s => plan.Reading.ClaimedBy(s) == rule.Name) ?? siblings.LastOrDefault();
                 break;
-            case "end":
-            case "last-child":
+            case InsertPlace.End:
+            case InsertPlace.LastChild:
                 previous = siblings.LastOrDefault();
                 break;
-            case "start":
+            case InsertPlace.Start:
                 previous = null;
                 break;
-            case "end-of-document":
+            case InsertPlace.EndOfDocument:
                 previous = _statements.LastOrDefault();
                 break;
             default:
-                Plan.Refuse($"A {FamilyName} body cannot place a new entry '{insert.Place}'.");
+                Plan.Refuse($"A {FamilyName} body cannot place a new entry '{WireName.Of(insert.Place)}'.");
                 break;
         }
         if (container is not null && !container.Opens)

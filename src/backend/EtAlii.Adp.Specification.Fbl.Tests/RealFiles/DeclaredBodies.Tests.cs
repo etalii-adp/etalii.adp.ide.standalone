@@ -172,9 +172,9 @@ public class DeclaredBodiesTests
         {
             foreach ((string name, AttributeBinding binding) in element.Rule.Attributes)
             {
-                if (binding.IsComputed || binding.Parent is not null || binding.Reference is not null || binding.Map is not null || binding.Flag) continue;
+                if (binding.Kind is SlotKind.Value or SlotKind.Parent || binding.Reference is not null || binding.Map is not null || binding.Flag) continue;
                 if (name == element.KeyAttribute) continue;
-                if (element.Rule.Id?.From is { } from && from.Key == binding.Key && from.XmlAttribute == binding.XmlAttribute && from.Group == binding.Group && from.Capture == binding.Capture) continue;
+                if (element.Rule.Id?.From?.Kind == binding.Kind) continue;
                 if (!element.Slots.TryGetValue(name, out var read) || !read.Present || !read.Writable || read.Value is not string { Length: > 0 } value) continue;
                 return (element, name, value);
             }

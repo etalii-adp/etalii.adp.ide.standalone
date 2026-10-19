@@ -137,7 +137,7 @@ internal sealed class YamlFamily(BodyText text, FblBinding binding, FblOptions o
         var wire = binding is null ? null : NewText.Wire(binding, value, read.Wire);
         var written = Scalar(wire ?? value, old, binding, (read.Node as TreeEntry)?.Indent ?? 0);
         // A number or a bool read from a quoted scalar (FBL 0.5 quoted: convert) keeps its quotes.
-        if (binding?.Quoted == "convert" && old?.Style is ValueStyle.Single or ValueStyle.Double && (wire ?? value) is bool or long or int or double or decimal)
+        if (binding?.Quoted == QuotedRule.Convert && old?.Style is ValueStyle.Single or ValueStyle.Double && (wire ?? value) is bool or long or int or double or decimal)
         {
             written = old.Style == ValueStyle.Single ? YamlScalars.SingleQuoted(written) : YamlScalars.DoubleQuoted(written);
         }
@@ -174,13 +174,13 @@ internal sealed class YamlFamily(BodyText text, FblBinding binding, FblOptions o
         }
         switch (binding?.Style)
         {
-            case "single" when !multiline: return YamlScalars.SingleQuoted(value);
-            case "double": return YamlScalars.DoubleQuoted(value);
-            case "literal" when multiline: return Literal(value, keyIndent);
-            case "plain" when YamlScalars.IsPlainWritable(value, timeTyped) || (_textRead.Contains(binding) && YamlScalars.IsPlainSyntax(value)): return value;
+            case WrittenStyle.Single when !multiline: return YamlScalars.SingleQuoted(value);
+            case WrittenStyle.Double: return YamlScalars.DoubleQuoted(value);
+            case WrittenStyle.Literal when multiline: return Literal(value, keyIndent);
+            case WrittenStyle.Plain when YamlScalars.IsPlainWritable(value, timeTyped) || (_textRead.Contains(binding) && YamlScalars.IsPlainSyntax(value)): return value;
         }
         if (YamlScalars.IsPlainSafe(value, timeTyped)) return value;
-        return Binding.Text.Quote == "single" && !multiline ? YamlScalars.SingleQuoted(value) : YamlScalars.DoubleQuoted(value);
+        return Binding.Text.Quote == QuoteStyle.Single && !multiline ? YamlScalars.SingleQuoted(value) : YamlScalars.DoubleQuoted(value);
     }
 
     /// <summary>
@@ -226,7 +226,7 @@ internal sealed class YamlFamily(BodyText text, FblBinding binding, FblOptions o
     protected override bool InsertSlot(Plan plan, ReadElement element, SlotChange change)
     {
         var mapping = change.Read.Node as TreeValue ?? Mapping((TreeEntry)element.Entry, change.Binding.Child);
-        if (mapping is null && change.Binding is { Create.AtEnd: true, Child: { } child, Key: { } created })
+        if (mapping is null && change.Binding is { Create.AtEnd: true, Child: { } child, Kind: SlotKind.Key(var created) })
         {
             // FBL 0.4, section 5.2: every missing level of the child mapping, then the key, at one offset.
             if (!MissingLevels((TreeEntry)element.Entry, child.Trim('/').Split('/'), out var at, out var levels, out var inside))
@@ -238,9 +238,10 @@ internal sealed class YamlFamily(BodyText text, FblBinding binding, FblOptions o
             plan.Add(SpliceOperation.InsertKey, at, at, NewLine(at, [Indentation(inside) + created + ": " + Scalar(change.Value, null, change.Binding, inside)]));
             return true;
         }
-        if (mapping is null || mapping.Kind != ValueKind.Mapping || change.Binding.Key is not { } key)
+        var key = change.Binding.Kind is SlotKind.Key(var name) ? name : null;
+        if (mapping is null || mapping.Kind != ValueKind.Mapping || key is null)
         {
-            Plan.Refuse($"The {Binding.Name} file has no mapping to write '{change.Binding.Key}' in.");
+            Plan.Refuse($"The {Binding.Name} file has no mapping to write '{key}' in.");
             return true;
         }
         InsertKey(plan, mapping, key, change);
@@ -311,7 +312,7 @@ internal sealed class YamlFamily(BodyText text, FblBinding binding, FblOptions o
         var rule = request.Rule;
         var insert = rule.Insert!;
         // FBL §5's place: {before: key} is not implemented here yet; refused, as the lines family does, rather than placed at the end.
-        if (insert.Place == "before") Plan.Refuse($"A {FamilyName} body cannot place a new entry '{insert.Place}'.");
+        if (insert.Place == InsertPlace.Before) Plan.Refuse($"A {FamilyName} body cannot place a new entry '{WireName.Of(insert.Place)}'.");
         var parent = request.Parent?.Entry ?? EndParent(request);
         var captures = request.Parent?.Candidate.Captures ?? (parent is null ? null : plan.Reading.ElementOf(parent)?.Candidate.Captures) ?? CapturesOf(plan);
         var selector = insert.Container ?? ContainerOf(rule.At);
@@ -333,8 +334,8 @@ internal sealed class YamlFamily(BodyText text, FblBinding binding, FblOptions o
             var siblings = value.Entries;
             var previous = insert.Place switch
             {
-                "start" => null,
-                "after-last" => siblings.LastOrDefault(s => plan.Reading.ClaimedBy(s) == rule.Name) ?? siblings.LastOrDefault(),
+                InsertPlace.Start => null,
+                InsertPlace.AfterLast => siblings.LastOrDefault(s => plan.Reading.ClaimedBy(s) == rule.Name) ?? siblings.LastOrDefault(),
                 _ => siblings.LastOrDefault(),
             };
             var model = previous ?? siblings[0];
@@ -375,9 +376,9 @@ internal sealed class YamlFamily(BodyText text, FblBinding binding, FblOptions o
     /// <summary>The entry a relation is written inside when one of its ends is its enclosing entry (a Databricks dependency inside its task).</summary>
     private static Entry? EndParent(InsertRequest request)
     {
-        return request.Rule.Target?.Parent is not null
+        return request.Rule.Target?.Kind is SlotKind.Parent
             ? request.Target?.Entry
-            : request.Rule.Source?.Parent is not null
+            : request.Rule.Source?.Kind is SlotKind.Parent
                 ? request.Source?.Entry
                 : null;
     }
@@ -397,7 +398,7 @@ internal sealed class YamlFamily(BodyText text, FblBinding binding, FblOptions o
         int indent;
         switch (create.At)
         {
-            case "end":
+            case ContainerPlace.End:
             {
                 // FBL 0.4, section 6.2, Missing levels: outermost first, then the entry, all at one offset.
                 var from = selector.StartsWith('/') ? Root : parent as TreeEntry;
@@ -412,24 +413,24 @@ internal sealed class YamlFamily(BodyText text, FblBinding binding, FblOptions o
                 plan.Add(SpliceOperation.InsertEntry, at, at, NewLine(at, Item(keys, first, first + 2)));
                 return;
             }
-            case "end-of-document":
+            case ContainerPlace.EndOfDocument:
                 offset = Text.Length;
                 indent = mapping is { Kind: ValueKind.Mapping, Entries.Count: > 0 } ? mapping.Entries[0].Indent : 0;
                 break;
-            case "after" when mapping?.Member(create.Argument!) is { } after:
+            case ContainerPlace.After when mapping?.Member(create.Argument!) is { } after:
                 offset = LineEndAfter(after);
                 indent = after.Indent;
                 break;
-            case "before" when mapping?.Member(create.Argument!) is { } before:
+            case ContainerPlace.Before when mapping?.Member(create.Argument!) is { } before:
                 offset = before.LineSpan?.Start ?? before.Own.Start;
                 indent = before.Indent;
                 break;
             // Before a key the file does not have: at its end, as after-last falls back to end.
-            case "before" when mapping is { Kind: ValueKind.Mapping, Entries.Count: > 0 }:
+            case ContainerPlace.Before when mapping is { Kind: ValueKind.Mapping, Entries.Count: > 0 }:
                 offset = Text.Length;
                 indent = mapping.Entries[0].Indent;
                 break;
-            case "under" when Container(create.Argument!, parent, new Dictionary<string, string>()) is { Value: { Kind: ValueKind.Mapping, Entries.Count: > 0 } under }:
+            case ContainerPlace.Under when Container(create.Argument!, parent, new Dictionary<string, string>()) is { Value: { Kind: ValueKind.Mapping, Entries.Count: > 0 } under }:
                 offset = LineEndAfter(under.Entries[^1]);
                 indent = under.Entries[0].Indent;
                 break;

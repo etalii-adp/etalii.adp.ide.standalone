@@ -150,7 +150,7 @@ internal static class BindingReader
             Newline = JsonProperties.String(t, "newline") switch { "crlf" => "\r\n", "cr" => "\r", _ => "\n" },
             Indent = indent,
             SequenceFlush = JsonProperties.String(t, "sequenceIndent") == "flush",
-            Quote = JsonProperties.String(t, "quote") ?? "double",
+            Quote = Setting<QuoteStyle>(t, "quote", pointer + "/text", "A text's quote", problems) ?? QuoteStyle.Double,
         };
     }
 
@@ -194,7 +194,7 @@ internal static class BindingReader
     {
         if (Object(json, "id", pointer, "A rule's id", problems) is not { } id) return null;
         return new IdBinding(
-            Object(id, "from", pointer + "/id", "An id's from", problems) is { } from ? ReadSlot(from) : null,
+            Object(id, "from", pointer + "/id", "An id's from", problems) is { } from ? ReadSlot(from, pointer + "/id/from", problems) : null,
             Object(id, "sidecar", pointer + "/id", "An id's sidecar", problems) is { } sidecar ? JsonProperties.String(sidecar, "key") : null);
     }
 
@@ -205,8 +205,8 @@ internal static class BindingReader
         foreach (var member in members.EnumerateObject())
         {
             var at = JsonPointer.Append(pointer + "/attributes", member.Name);
-            if (member.Value.ValueKind == JsonValueKind.Object) attributes.Add(new KeyValuePair<string, AttributeBinding>(member.Name, ReadAttribute(member.Value, at, problems)));
-            else problems.Add(new LoadDiagnostic(at, LoadSeverity.Error, "An attribute binding is an object."));
+            if (member.Value.ValueKind != JsonValueKind.Object) problems.Add(new LoadDiagnostic(at, LoadSeverity.Error, "An attribute binding is an object."));
+            else if (ReadAttribute(member.Value, at, problems) is { } attribute) attributes.Add(new KeyValuePair<string, AttributeBinding>(member.Name, attribute));
         }
         return attributes;
     }
@@ -223,21 +223,17 @@ internal static class BindingReader
     };
 
     /// <summary>An insert's place: its name, or "before" for <c>{before: key}</c>, which is recognised so every family can refuse it; no family places by it yet.</summary>
-    private static string ReadPlace(JsonElement json, string pointer, List<LoadDiagnostic> problems)
+    private static InsertPlace ReadPlace(JsonElement json, string pointer, List<LoadDiagnostic> problems)
     {
         if (!json.TryGetProperty("place", out var place))
         {
             problems.Add(new LoadDiagnostic(pointer + "/place", LoadSeverity.Error, "An insert names its place."));
-            return "end";
+            return InsertPlace.End;
         }
-        switch (place.ValueKind)
-        {
-            case JsonValueKind.Object: return "before";
-            case JsonValueKind.String: return place.GetString()!;
-            default:
-                problems.Add(new LoadDiagnostic(pointer + "/place", LoadSeverity.Error, "An insert's place is a name or an object naming the key it goes before."));
-                return "end";
-        }
+        if (place.ValueKind == JsonValueKind.Object) return InsertPlace.Before;
+        if (place.ValueKind == JsonValueKind.String && place.GetString() != WireName.Of(InsertPlace.Before) && WireName.TryParse<InsertPlace>(place.GetString(), out var named)) return named;
+        problems.Add(new LoadDiagnostic(pointer + "/place", LoadSeverity.Error, "An insert's place is a name or an object naming the key it goes before."));
+        return InsertPlace.End;
     }
 
     private static CreateContainer? ReadCreateContainer(JsonElement json, string pointer, List<LoadDiagnostic> problems)
@@ -245,10 +241,10 @@ internal static class BindingReader
         var text = JsonProperties.String(json, "text");
         if (json.TryGetProperty("at", out var at))
         {
-            if (at.ValueKind == JsonValueKind.String) return new CreateContainer(at.GetString()!, null, text);
-            if (at.ValueKind == JsonValueKind.Object && at.EnumerateObject().ToList() is [{ Value.ValueKind: JsonValueKind.String } where, ..])
+            if (at.ValueKind == JsonValueKind.String && WireName.TryParse<ContainerPlace>(at.GetString(), out var named)) return new CreateContainer(named, null, text);
+            if (at.ValueKind == JsonValueKind.Object && at.EnumerateObject().ToList() is [{ Value.ValueKind: JsonValueKind.String } where, ..] && WireName.TryParse<ContainerPlace>(where.Name, out var keyed))
             {
-                return new CreateContainer(where.Name, where.Value.GetString(), text);
+                return new CreateContainer(keyed, where.Value.GetString(), text);
             }
         }
         problems.Add(new LoadDiagnostic(pointer + "/at", LoadSeverity.Error, "A container's create says where: a name, or an object naming a key or a selector."));
@@ -261,51 +257,52 @@ internal static class BindingReader
         return new RemoveSettings(JsonProperties.Strings(json, "cascade"), container is "remove-when-empty" or "remove-empty-levels", container == "remove-empty-levels");
     }
 
-    private static Slot ReadSlot(JsonElement json) => new()
-    {
-        Key = JsonProperties.String(json, "key"),
-        XmlAttribute = JsonProperties.String(json, "attribute"),
-        Text = JsonProperties.Bool(json, "text"),
-        Child = JsonProperties.String(json, "child"),
-        Group = JsonProperties.String(json, "group"),
-        Parent = JsonProperties.String(json, "parent"),
-        Capture = JsonProperties.String(json, "capture"),
-        Value = JsonProperties.String(json, "value"),
-        Word = JsonProperties.String(json, "word"),
-        Flag = JsonProperties.Bool(json, "flag"),
-    };
+    private static Slot? ReadSlot(JsonElement json, string pointer, List<LoadDiagnostic> problems) =>
+        ReadKind(json, pointer, "A slot names exactly one place (FBL §3.3).", problems) is { } kind
+            ? new Slot { Kind = kind, Child = JsonProperties.String(json, "child"), Word = JsonProperties.String(json, "word"), Flag = JsonProperties.Bool(json, "flag") }
+            : null;
 
-    private static AttributeBinding ReadAttribute(JsonElement json, string pointer, List<LoadDiagnostic> problems)
+    /// <summary>The one kind of slot <paramref name="json"/> names; none or several are reported as <paramref name="problem"/>.</summary>
+    private static SlotKind? ReadKind(JsonElement json, string pointer, string problem, List<LoadDiagnostic> problems)
     {
-        var slot = ReadSlot(json);
+        List<SlotKind> kinds = [];
+        if (JsonProperties.String(json, "key") is { } key) kinds.Add(new SlotKind.Key(key));
+        if (JsonProperties.String(json, "attribute") is { } attribute) kinds.Add(new SlotKind.XmlAttribute(attribute));
+        if (JsonProperties.Bool(json, "text")) kinds.Add(new SlotKind.Text());
+        if (JsonProperties.String(json, "group") is { } group) kinds.Add(new SlotKind.Group(group));
+        if (JsonProperties.String(json, "parent") is { } parent) kinds.Add(new SlotKind.Parent(parent));
+        if (JsonProperties.String(json, "capture") is { } capture) kinds.Add(new SlotKind.Capture(capture));
+        if (JsonProperties.String(json, "value") is { } value) kinds.Add(new SlotKind.Value(value));
+        if (kinds is [var kind]) return kind;
+        problems.Add(new LoadDiagnostic(pointer, LoadSeverity.Error, problem));
+        return null;
+    }
+
+    private static AttributeBinding? ReadAttribute(JsonElement json, string pointer, List<LoadDiagnostic> problems)
+    {
+        if (ReadKind(json, pointer, "An attribute binding names exactly one slot (FBL §3.3).", problems) is not { } kind) return null;
         return new AttributeBinding
         {
-            Key = slot.Key,
-            XmlAttribute = slot.XmlAttribute,
-            Text = slot.Text,
-            Child = slot.Child,
-            Group = slot.Group,
-            Parent = slot.Parent,
-            Capture = slot.Capture,
-            Value = slot.Value,
-            Word = slot.Word,
-            Flag = slot.Flag,
-            Empty = JsonProperties.String(json, "empty"),
-            Absent = Strings(json, "absent", pointer, "An attribute's absent", problems),
+            Kind = kind,
+            Child = JsonProperties.String(json, "child"),
+            Word = JsonProperties.String(json, "word"),
+            Flag = JsonProperties.Bool(json, "flag"),
+            Empty = Setting<EmptyRule>(json, "empty", pointer, "An attribute's empty", problems) ?? EmptyRule.Keep,
+            Absent = ReadAbsent(json, pointer, problems),
             Default = json.TryGetProperty("default", out var def) ? def.Clone() : null,
             Decimals = ReadDecimals(json, pointer, problems),
             KeepTimePrecision = JsonProperties.String(json, "time") == "keep-precision",
-            Style = JsonProperties.String(json, "style"),
+            Style = Setting<WrittenStyle>(json, "style", pointer, "An attribute's style", problems),
             Reference = Object(json, "reference", pointer, "An attribute's reference", problems) is { } r ? new ReferenceBinding(JsonProperties.Strings(r, "to"), JsonProperties.String(r, "by") ?? "") : null,
             Map = json.TryGetProperty("map", out var m) && m.ValueKind == JsonValueKind.Object
                 ? m.EnumerateObject().Select(p => new KeyValuePair<string, string>(p.Name, ScalarText(p.Value))).ToList()
                 : null,
-            Override = Object(json, "override", pointer, "An attribute's override", problems) is { } o ? ReadSlot(o) : null,
+            Override = Object(json, "override", pointer, "An attribute's override", problems) is { } o ? ReadSlot(o, pointer + "/override", problems) : null,
             HtmlParagraphs = JsonProperties.String(json, "content") == "html-paragraphs",
-            Create = Object(json, "create", pointer, "An attribute's create", problems) is { } c ? ReadCreateChild(c) : null,
+            Create = Object(json, "create", pointer, "An attribute's create", problems) is { } c ? ReadCreateChild(c, pointer + "/create", problems) : null,
             ReadOnly = ReadOnly(json),
-            Read = JsonProperties.String(json, "read"),
-            Quoted = JsonProperties.String(json, "quoted"),
+            Read = Setting<ReadAs>(json, "read", pointer, "An attribute's read", problems),
+            Quoted = Setting<QuotedRule>(json, "quoted", pointer, "An attribute's quoted", problems),
             Fallback = json.TryGetProperty("fallback", out var f) && f.ValueKind == JsonValueKind.Object
                 ? new FallbackBinding(f.TryGetProperty("value", out var fv) ? fv.Clone() : default, !f.TryGetProperty("report", out var report) || report.ValueKind != JsonValueKind.False)
                 : null,
@@ -321,12 +318,37 @@ internal static class BindingReader
         return null;
     }
 
-    private static CreateChild ReadCreateChild(JsonElement json)
+    private static CreateChild ReadCreateChild(JsonElement json, string pointer, List<LoadDiagnostic> problems)
     {
         var place = json.TryGetProperty("place", out var p) ? p : default;
-        if (JsonProperties.String(json, "at") == "end") return new CreateChild("", "last", null, true);
-        if (place.ValueKind == JsonValueKind.Object) return new CreateChild(JsonProperties.String(json, "emit") ?? "", "before", JsonProperties.String(place, "before"));
-        return new CreateChild(JsonProperties.String(json, "emit") ?? "", place.ValueKind == JsonValueKind.String ? place.GetString()! : "last", null);
+        if (JsonProperties.String(json, "at") == "end") return new CreateChild("", ChildPlace.Last, null, true);
+        if (place.ValueKind == JsonValueKind.Object) return new CreateChild(JsonProperties.String(json, "emit") ?? "", ChildPlace.Before, JsonProperties.String(place, "before"));
+        return new CreateChild(JsonProperties.String(json, "emit") ?? "", Setting<ChildPlace>(json, "place", pointer, "A child's place", problems) ?? ChildPlace.Last, null);
+    }
+
+    /// <summary>
+    /// The setting <paramref name="name"/> as its enumeration, or null when it is not given; a value
+    /// that names none of its cases is reported at its pointer as <paramref name="what"/>.
+    /// </summary>
+    private static T? Setting<T>(JsonElement json, string name, string pointer, string what, List<LoadDiagnostic> problems) where T : struct, Enum
+    {
+        if (!json.TryGetProperty(name, out var value)) return null;
+        if (value.ValueKind == JsonValueKind.String && WireName.TryParse<T>(value.GetString(), out var setting)) return setting;
+        var names = string.Join(", ", Enum.GetValues<T>().Select(c => $"\"{WireName.Of(c)}\""));
+        problems.Add(new LoadDiagnostic(JsonPointer.Append(pointer, name), LoadSeverity.Error, $"{what} is one of {names}."));
+        return null;
+    }
+
+    /// <summary>An attribute's <c>absent</c>: per family, what setting a value whose slot is absent does.</summary>
+    private static Dictionary<string, AbsentRule> ReadAbsent(JsonElement json, string pointer, List<LoadDiagnostic> problems)
+    {
+        var absent = new Dictionary<string, AbsentRule>(StringComparer.Ordinal);
+        if (Object(json, "absent", pointer, "An attribute's absent", problems) is not { } members) return absent;
+        foreach (var member in members.EnumerateObject())
+        {
+            if (Setting<AbsentRule>(members, member.Name, pointer + "/absent", "An attribute's absent", problems) is { } rule) absent[member.Name] = rule;
+        }
+        return absent;
     }
 
     private static RegistrationSettings ReadRegistration(JsonElement json, string pointer, List<LoadDiagnostic> problems)

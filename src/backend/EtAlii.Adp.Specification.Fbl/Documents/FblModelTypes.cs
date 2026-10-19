@@ -123,7 +123,7 @@ public sealed class TextDefaults
 
     public bool SequenceFlush { get; init; }
 
-    public string Quote { get; init; } = "double";
+    public QuoteStyle Quote { get; init; } = QuoteStyle.Double;
 }
 
 public sealed record HeaderSettings(string? Key, JsonElement? Value, string? Line, bool Required);
@@ -206,7 +206,12 @@ public sealed partial class Rule
         {
             var name = placeholder.Groups[1].Value;
             var slot = name == "id" ? Id?.From : Attribute(name);
-            var wire = slot?.Key ?? slot?.XmlAttribute;
+            var wire = slot?.Kind switch
+            {
+                SlotKind.Key(var key) => key,
+                SlotKind.XmlAttribute(var attribute) => attribute,
+                _ => null,
+            };
             if (wire is not null && !order.Contains(wire)) order.Add(wire);
         }
         return order;
@@ -229,7 +234,7 @@ public sealed partial class Rule
 
         void Add(Slot? slot)
         {
-            if (slot?.Key is { } key && slot.Child == child && !order.Contains(key)) order.Add(key);
+            if (slot is { Kind: SlotKind.Key(var key) } && slot.Child == child && !order.Contains(key)) order.Add(key);
         }
     }
 }
@@ -239,51 +244,79 @@ public sealed record IdBinding(Slot? From, string? SidecarKey);
 public sealed record ParentBinding(IReadOnlyList<string> Rules, string? Slot);
 
 /// <summary>
-/// A slot (FBL §5.2): exactly one place a value is read from and written to. Exactly one of the
-/// slot kinds is set; <see cref="Child"/>, <see cref="Word"/> and <see cref="Flag"/> qualify it.
+/// A slot (FBL §5.2): exactly one place a value is read from and written to, its <see cref="Kind"/>;
+/// <see cref="Child"/>, <see cref="Word"/> and <see cref="Flag"/> qualify it.
 /// </summary>
 public record Slot
 {
-    public string? Key { get; init; }
-
-    public string? XmlAttribute { get; init; }
-
-    public bool Text { get; init; }
+    public required SlotKind Kind { get; init; }
 
     public string? Child { get; init; }
-
-    public string? Group { get; init; }
-
-    public string? Parent { get; init; }
-
-    public string? Capture { get; init; }
-
-    public string? Value { get; init; }
 
     public string? Word { get; init; }
 
     public bool Flag { get; init; }
 
-    public bool IsComputed => Value is not null;
+    public override string ToString() => Kind.ToString();
+}
 
-    public override string ToString() =>
-        Key is not null ? $"key {Key}" :
-        XmlAttribute is not null ? $"attribute {XmlAttribute}" :
-        Text ? "text" :
-        Group is not null ? $"group {Group}" :
-        Parent is not null ? $"parent {Parent}" :
-        Capture is not null ? $"capture {Capture}" :
-        Value is not null ? "value" : "slot";
+/// <summary>The kinds of slot (FBL §3.3, §5.2), a closed set: a slot is exactly one of them.</summary>
+public abstract record SlotKind
+{
+    private SlotKind()
+    {
+    }
+
+    /// <summary>A key of a tree entry (yaml, json).</summary>
+    public sealed record Key(string Name) : SlotKind
+    {
+        public override string ToString() => $"key {Name}";
+    }
+
+    /// <summary>An attribute of an xml element.</summary>
+    public sealed record XmlAttribute(string Name) : SlotKind
+    {
+        public override string ToString() => $"attribute {Name}";
+    }
+
+    /// <summary>The text of an xml element, or of its child that <see cref="Slot.Child"/> selects.</summary>
+    public sealed record Text : SlotKind
+    {
+        public override string ToString() => "text";
+    }
+
+    /// <summary>A named group of a lines or blocks rule's expression.</summary>
+    public sealed record Group(string Name) : SlotKind
+    {
+        public override string ToString() => $"group {Name}";
+    }
+
+    /// <summary>The matching slot of the enclosing entry.</summary>
+    public sealed record Parent(string Name) : SlotKind
+    {
+        public override string ToString() => $"parent {Name}";
+    }
+
+    /// <summary>A capture of the rule's selector.</summary>
+    public sealed record Capture(string Name) : SlotKind
+    {
+        public override string ToString() => $"capture {Name}";
+    }
+
+    /// <summary>A value computed by CEL, read-only.</summary>
+    public sealed record Value(string Expression) : SlotKind
+    {
+        public override string ToString() => "value";
+    }
 }
 
 /// <summary>An attribute binding (FBL §5.2): a slot with the options that decide reading and writing.</summary>
 public sealed record AttributeBinding : Slot
 {
-    /// <summary>"remove", "keep" or "refuse"; null for the default.</summary>
-    public string? Empty { get; init; }
+    public EmptyRule Empty { get; init; } = EmptyRule.Keep;
 
-    /// <summary>Per family name: "insert" or "refuse".</summary>
-    public IReadOnlyDictionary<string, string> Absent { get; init; } = new Dictionary<string, string>();
+    /// <summary>Per family name: what setting a value whose slot is absent does.</summary>
+    public IReadOnlyDictionary<string, AbsentRule> Absent { get; init; } = new Dictionary<string, AbsentRule>();
 
     public JsonElement? Default { get; init; }
 
@@ -292,7 +325,7 @@ public sealed record AttributeBinding : Slot
 
     public bool KeepTimePrecision { get; init; }
 
-    public string? Style { get; init; }
+    public WrittenStyle? Style { get; init; }
 
     public ReferenceBinding? Reference { get; init; }
 
@@ -307,11 +340,11 @@ public sealed record AttributeBinding : Slot
 
     public string? ReadOnly { get; init; }
 
-    /// <summary>yaml, json (FBL 0.5): "text" or "typed", what the slot reads from a scalar; null to let the attribute's type decide.</summary>
-    public string? Read { get; init; }
+    /// <summary>yaml, json (FBL 0.5): what the slot reads from a scalar; null to let the attribute's type decide.</summary>
+    public ReadAs? Read { get; init; }
 
-    /// <summary>yaml, read as typed (FBL 0.5): "convert" to convert a quoted scalar from its written text, "text" or null not to.</summary>
-    public string? Quoted { get; init; }
+    /// <summary>yaml, read as typed (FBL 0.5): whether a quoted scalar converts from its written text; null for not given, which does not.</summary>
+    public QuotedRule? Quoted { get; init; }
 
     /// <summary>yaml, json (FBL 0.5): what the attribute is when its value does not convert, keeping the entry readable.</summary>
     public FallbackBinding? Fallback { get; init; }
@@ -327,12 +360,11 @@ public sealed record FallbackBinding(JsonElement Value, bool Report);
 /// (FBL 0.4): <see cref="AtEnd"/>, each missing level of the mapping <c>child</c> reaches created at
 /// the end of the level above it.
 /// </summary>
-public sealed record CreateChild(string Emit, string Place, string? Before, bool AtEnd = false);
+public sealed record CreateChild(string Emit, ChildPlace Place, string? Before, bool AtEnd = false);
 
 public sealed class InsertSettings
 {
-    /// <summary>"after-last", "end", "start", "last-child", "next-sibling", "end-of-document" or "before".</summary>
-    public required string Place { get; init; }
+    public required InsertPlace Place { get; init; }
 
     public string? Container { get; init; }
 
@@ -347,8 +379,8 @@ public sealed class InsertSettings
     public string? When { get; init; }
 }
 
-/// <summary>How a missing container is created: <see cref="At"/> is "end-of-document", "before", "after", "under" or (FBL 0.4) "end".</summary>
-public sealed record CreateContainer(string At, string? Argument, string? Text);
+/// <summary>How a missing container is created: where, with the key or selector <see cref="At"/> names, and its own text.</summary>
+public sealed record CreateContainer(ContainerPlace At, string? Argument, string? Text);
 
 /// <summary>
 /// What goes with a removed entry. <see cref="RemoveEmptyLevels"/> (FBL 0.4) implies

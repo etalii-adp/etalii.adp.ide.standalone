@@ -173,8 +173,8 @@ public class LoadingTests
         // Assert.
         Assert.Empty(problems);
         var attributes = document!.Bindings["t"].Elements[0].Attributes.ToDictionary(a => a.Key, a => a.Value);
-        Assert.Equal(("text", null, null), (attributes["label"].Read, attributes["label"].Quoted, attributes["label"].Fallback));
-        Assert.Equal(("typed", "convert"), (attributes["row"].Read, attributes["row"].Quoted));
+        Assert.Equal((ReadAs.Text, null, null), (attributes["label"].Read, attributes["label"].Quoted, attributes["label"].Fallback));
+        Assert.Equal((ReadAs.Typed, QuotedRule.Convert), (attributes["row"].Read, attributes["row"].Quoted));
         Assert.Equal((0, false), (attributes["row"].Fallback!.Value.GetInt32(), attributes["row"].Fallback!.Report));
         Assert.Equal(("wide", true), (attributes["size"].Fallback!.Value.GetString(), attributes["size"].Fallback!.Report));
         Assert.Equal((null, null, null), (attributes["plain"].Read, attributes["plain"].Quoted, attributes["plain"].Fallback));
@@ -287,6 +287,37 @@ public class LoadingTests
     [InlineData(", \"elements\": [" + Item + "], \"header\": \"version\"", "/bindings/t/header")]
     [InlineData(", \"elements\": [" + Item + "], \"registration\": { \"resource\": \"x\" }", "/bindings/t/registration/resource")]
     public void InputTheSchemaRefusesIsAProblemAtItsPointer(string rest, string pointer)
+    {
+        // Arrange.
+        var binding = $$"""{ "claims": { "extensions": [".t"] }, "body": { "kind": "file", "family": "yaml" }, "reader": "declared"{{rest}} }""";
+
+        // Act.
+        var problems = Load(binding);
+
+        // Assert.
+        Assert.Contains(problems, p => p.Severity == LoadSeverity.Error && p.Pointer == pointer);
+    }
+
+    /// <summary>
+    /// A setting that names none of its cases, and a slot that names no place or several, are refused by
+    /// the schema and are a problem at their pointer: before T218 each loaded without one, the setting
+    /// read as its default and the slot as whichever of its places a family looked at first.
+    /// </summary>
+    [Theory]
+    [InlineData(", \"elements\": [{ \"name\": \"item\", \"type\": \"Item\", \"at\": \"/items/*\", \"attributes\": { \"n\": { \"key\": \"n\", \"empty\": \"nope\" } } }]", "/bindings/t/elements/0/attributes/n/empty")]
+    [InlineData(", \"elements\": [{ \"name\": \"item\", \"type\": \"Item\", \"at\": \"/items/*\", \"attributes\": { \"n\": { \"key\": \"n\", \"style\": \"bold\" } } }]", "/bindings/t/elements/0/attributes/n/style")]
+    [InlineData(", \"elements\": [{ \"name\": \"item\", \"type\": \"Item\", \"at\": \"/items/*\", \"attributes\": { \"n\": { \"key\": \"n\", \"read\": \"raw\" } } }]", "/bindings/t/elements/0/attributes/n/read")]
+    [InlineData(", \"elements\": [{ \"name\": \"item\", \"type\": \"Item\", \"at\": \"/items/*\", \"attributes\": { \"n\": { \"key\": \"n\", \"quoted\": \"yes\" } } }]", "/bindings/t/elements/0/attributes/n/quoted")]
+    [InlineData(", \"elements\": [{ \"name\": \"item\", \"type\": \"Item\", \"at\": \"/items/*\", \"attributes\": { \"n\": { \"key\": \"n\", \"absent\": { \"yaml\": \"skip\" } } } }]", "/bindings/t/elements/0/attributes/n/absent/yaml")]
+    [InlineData(", \"elements\": [{ \"name\": \"item\", \"type\": \"Item\", \"at\": \"/items/*\", \"attributes\": { \"n\": { \"key\": \"n\", \"create\": { \"emit\": \"<n/>\", \"place\": \"middle\" } } } }]", "/bindings/t/elements/0/attributes/n/create/place")]
+    [InlineData(", \"elements\": [{ \"name\": \"item\", \"type\": \"Item\", \"at\": \"/items/*\", \"attributes\": { \"n\": { \"key\": \"n\", \"override\": { \"key\": \"m\", \"attribute\": \"m\" } } } }]", "/bindings/t/elements/0/attributes/n/override")]
+    [InlineData(", \"elements\": [{ \"name\": \"item\", \"type\": \"Item\", \"at\": \"/items/*\", \"insert\": { \"place\": \"middle\" } }]", "/bindings/t/elements/0/insert/place")]
+    [InlineData(", \"elements\": [{ \"name\": \"item\", \"type\": \"Item\", \"at\": \"/items/*\", \"insert\": { \"place\": \"before\" } }]", "/bindings/t/elements/0/insert/place")]
+    [InlineData(", \"elements\": [{ \"name\": \"item\", \"type\": \"Item\", \"at\": \"/items/*\", \"insert\": { \"place\": \"end\", \"create\": { \"at\": \"beside\" } } }]", "/bindings/t/elements/0/insert/create/at")]
+    [InlineData(", \"elements\": [{ \"name\": \"item\", \"type\": \"Item\", \"at\": \"/items/*\", \"id\": { \"from\": { \"key\": \"id\", \"text\": true } } }]", "/bindings/t/elements/0/id/from")]
+    [InlineData(", \"elements\": [{ \"name\": \"item\", \"type\": \"Item\", \"at\": \"/items/*\", \"source\": { \"parent\": \"id\", \"capture\": \"id\" } }]", "/bindings/t/elements/0/source")]
+    [InlineData(", \"elements\": [" + Item + "], \"text\": { \"quote\": \"back\" }", "/bindings/t/text/quote")]
+    public void ASettingOrASlotTheSchemaRefusesIsAProblemAtItsPointer(string rest, string pointer)
     {
         // Arrange.
         var binding = $$"""{ "claims": { "extensions": [".t"] }, "body": { "kind": "file", "family": "yaml" }, "reader": "declared"{{rest}} }""";
