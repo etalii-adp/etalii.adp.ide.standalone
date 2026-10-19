@@ -202,7 +202,8 @@ internal sealed class BodyReading
                 foreach (var slot in rule.Attributes.Select(Slot? (attribute) => attribute.Value).Append(rule.Id?.From).OfType<Slot>())
                 {
                     if (slot.Child is { } child) Step(child);
-                    else if ((slot.Key ?? slot.XmlAttribute) is { } key) keys.Add(key);
+                    else if (slot.Kind is SlotKind.Key(var key)) keys.Add(key);
+                    else if (slot.Kind is SlotKind.XmlAttribute(var attribute)) keys.Add(attribute);
                 }
                 keys.UnionWith(rule.Insert?.Keys ?? []);
             }
@@ -502,7 +503,7 @@ internal sealed class BodyReading
     /// </summary>
     private object? Convert(ReadElement element, string name, AttributeBinding binding, SlotRead read, string type, object? value, bool scalar)
     {
-        var quoted = binding.Quoted == "convert" && Family is YamlFamily;
+        var quoted = binding.Quoted == QuotedRule.Convert && Family is YamlFamily;
         if (ScalarConversion.Convert(type, value, read.Written, scalar ? read.Style : null, quoted, out var converted)) return converted;
         if (binding.Fallback is not { } fallback)
         {
@@ -529,14 +530,14 @@ internal sealed class BodyReading
 
     private SlotRead ReadSlotUnchecked(Candidate candidate, Slot slot, ReadElement element)
     {
-        if (slot.Value is { } expression)
+        if (slot.Kind is SlotKind.Value(var expression))
         {
             var value = Evaluate(expression, candidate, out var problem);
             return problem is null
                 ? new SlotRead(value, null, true, false, "The value is computed from the file.")
                 : SlotRead.ReadOnlyAbsent($"The value cannot be computed: {problem}");
         }
-        if (slot.Parent is { } name)
+        if (slot.Kind is SlotKind.Parent(var name))
         {
             foreach (var enclosing in Family.Enclosing(candidate.Entry))
             {
@@ -550,8 +551,7 @@ internal sealed class BodyReading
         {
             var overriding = Family.Read(candidate, new AttributeBinding
             {
-                Key = over.Key, XmlAttribute = over.XmlAttribute, Text = over.Text, Child = over.Child, Group = over.Group,
-                Capture = over.Capture, Word = over.Word, HtmlParagraphs = attribute.HtmlParagraphs,
+                Kind = over.Kind, Child = over.Child, Word = over.Word, HtmlParagraphs = attribute.HtmlParagraphs,
             });
             if (overriding.Present) return overriding with { Node = new OverrideNode(overriding.Node) };
         }

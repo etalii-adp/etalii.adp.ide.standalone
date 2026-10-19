@@ -183,7 +183,7 @@ internal abstract class TreeFamily(BodyText text, FblBinding binding, FblOptions
     public override SlotRead Read(Candidate candidate, Slot slot)
     {
         var entry = (TreeEntry)candidate.Entry;
-        if (slot.Capture is { } capture)
+        if (slot.Kind is SlotKind.Capture(var capture))
         {
             if (!candidate.Captures.TryGetValue(capture, out var key)) return SlotRead.Absent;
             for (Entry? e = entry; e is TreeEntry tree; e = e.Parent)
@@ -192,7 +192,7 @@ internal abstract class TreeFamily(BodyText text, FblBinding binding, FblOptions
             }
             return new SlotRead(key, null, true, false, "The captured key cannot be found to rewrite.");
         }
-        if (slot.Key is not { } name) return SlotRead.ReadOnlyAbsent($"A {FamilyName} entry has no {slot}.");
+        if (slot.Kind is not SlotKind.Key(var name)) return SlotRead.ReadOnlyAbsent($"A {FamilyName} entry has no {slot}.");
         var mapping = Mapping(entry, slot.Child);
         return mapping is null
             ? SlotRead.Absent

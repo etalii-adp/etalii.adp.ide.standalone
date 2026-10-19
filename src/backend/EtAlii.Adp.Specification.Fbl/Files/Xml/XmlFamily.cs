@@ -408,18 +408,18 @@ internal sealed partial class XmlFamily(BodyText text, FblBinding binding, FblOp
     public override SlotRead Read(Candidate candidate, Slot slot)
     {
         var element = (XmlElement)candidate.Entry;
-        if (slot.Capture is { } capture)
+        if (slot.Kind is SlotKind.Capture(var capture))
         {
             return candidate.Captures.TryGetValue(capture, out var key)
                 ? new SlotRead(key, null, true, false, "An element's name is not rewritten in this file.")
                 : SlotRead.Absent;
         }
         var target = slot.Child is null ? element : Child(element, slot.Child);
-        if (slot.XmlAttribute is { } name)
+        if (slot.Kind is SlotKind.XmlAttribute(var name))
         {
             return target is null ? SlotRead.Absent : ReadAttribute(target, name);
         }
-        if (slot.Text)
+        if (slot.Kind is SlotKind.Text)
         {
             if (target is null) return SlotRead.Absent;
             var html = slot is AttributeBinding { HtmlParagraphs: true };
@@ -546,7 +546,7 @@ internal sealed partial class XmlFamily(BodyText text, FblBinding binding, FblOp
     {
         var read = change.Read;
         var binding = change.Binding;
-        if (binding.XmlAttribute is { } name)
+        if (binding.Kind is SlotKind.XmlAttribute(var name))
         {
             if (Node(read) is not XmlElement target)
             {
@@ -562,7 +562,7 @@ internal sealed partial class XmlFamily(BodyText text, FblBinding binding, FblOp
             plan.Add(SpliceOperation.InsertKey, offset, offset, $" {name}=\"{Format(read, binding, change.Value)}\"");
             return true;
         }
-        if (binding is { Text: true, Create: { } create })
+        if (binding is { Kind: SlotKind.Text, Create: { } create })
         {
             var owner = (XmlElement)element.Entry;
             var content = Format(read with { Node = new XmlTextNode(owner, null, binding.HtmlParagraphs) }, binding, change.Value);
@@ -650,8 +650,8 @@ internal sealed partial class XmlFamily(BodyText text, FblBinding binding, FblOp
         }
         var before = create.Place switch
         {
-            "first" => element.Elements.FirstOrDefault(),
-            "before" => element.Elements.FirstOrDefault(e => e.Name == create.Before),
+            ChildPlace.First => element.Elements.FirstOrDefault(),
+            ChildPlace.Before => element.Elements.FirstOrDefault(e => e.Name == create.Before),
             _ => null,
         };
         if (before is null)
@@ -694,7 +694,7 @@ internal sealed partial class XmlFamily(BodyText text, FblBinding binding, FblOp
     {
         var insert = request.Rule.Insert!;
         // FBL §5's place: {before: key} is not implemented here yet; refused, as the lines family does, rather than placed at the end.
-        if (insert.Place == "before") Plan.Refuse($"A {FamilyName} body cannot place a new entry '{insert.Place}'.");
+        if (insert.Place == InsertPlace.Before) Plan.Refuse($"A {FamilyName} body cannot place a new entry '{WireName.Of(insert.Place)}'.");
         var parent = request.Parent?.Entry as XmlElement
             ?? (insert.Container is { } container && _root is not null ? Selector.Match(Selector.Start(container, _root, null), container, AttributeEquals).FirstOrDefault().Entry as XmlElement : null)
             ?? _document;
@@ -712,7 +712,7 @@ internal sealed partial class XmlFamily(BodyText text, FblBinding binding, FblOp
                 _ => request.Values.TryGetValue(name, out var v) && v is not null ? EscapeAttribute(NewText.Plain(v, request.Rule.Attribute(name))) : null,
             })
             : NewElement(request);
-        if (insert.Place == "start" && parent.Elements.FirstOrDefault() is { } first)
+        if (insert.Place == InsertPlace.Start && parent.Elements.FirstOrDefault() is { } first)
         {
             if (first.LineSpan is not null)
             {
@@ -736,16 +736,16 @@ internal sealed partial class XmlFamily(BodyText text, FblBinding binding, FblOp
         var bracket = last.IndexOf('[', StringComparison.Ordinal);
         var name = bracket > 0 ? last[..bracket] : last;
         var written = new List<(string Name, string Value)>();
-        if (rule.Id?.From?.XmlAttribute is { } idAttribute && request.Id is { } id) written.Add((idAttribute, id));
+        if (rule.Id?.From?.Kind is SlotKind.XmlAttribute(var idAttribute) && request.Id is { } id) written.Add((idAttribute, id));
         foreach ((string attribute, AttributeBinding binding) in rule.Attributes)
         {
-            if (binding.XmlAttribute is { } xml && binding.Child is null && request.Values.TryGetValue(attribute, out var value) && value is not null)
+            if (binding is { Kind: SlotKind.XmlAttribute(var xml), Child: null } && request.Values.TryGetValue(attribute, out var value) && value is not null)
             {
                 written.Add((xml, NewText.Plain(value, binding)));
             }
         }
-        if (rule.Source?.XmlAttribute is { } source && request.Source is not null) written.Add((source, request.Source.Key));
-        if (rule.Target?.XmlAttribute is { } target && request.Target is not null) written.Add((target, request.Target.Key));
+        if (rule.Source?.Kind is SlotKind.XmlAttribute(var source) && request.Source is not null) written.Add((source, request.Source.Key));
+        if (rule.Target?.Kind is SlotKind.XmlAttribute(var target) && request.Target is not null) written.Add((target, request.Target.Key));
         var keys = rule.Insert!.Keys;
         var ordered = written.OrderBy(w => keys.Contains(w.Name) ? keys.ToList().IndexOf(w.Name) : keys.Count).ToList();
         return $"<{name}" + string.Concat(ordered.Select(w => $" {w.Name}=\"{EscapeAttribute(w.Value)}\"")) + "/>";
@@ -764,7 +764,7 @@ internal sealed partial class XmlFamily(BodyText text, FblBinding binding, FblOp
         // or of one that goes when it is left empty: the parent is closed again, so that adding a
         // child and removing it leaves the bytes it started from. The
         // entry goes with the line break before it, and its parent becomes self-closed.
-        if ((element.Rule.Remove?.RemoveContainerWhenEmpty == true || element.Rule.Insert?.Place == "last-child") &&
+        if ((element.Rule.Remove?.RemoveContainerWhenEmpty == true || element.Rule.Insert?.Place == InsertPlace.LastChild) &&
             entry.Parent is XmlElement { SelfClosed: false } parent &&
             parent != _document &&
             parent.Elements.Count() == 1)

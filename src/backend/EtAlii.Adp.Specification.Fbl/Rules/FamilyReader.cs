@@ -254,7 +254,7 @@ internal abstract class FamilyReader(BodyText text, FblBinding binding, FblOptio
         var placed = true;
         foreach (var change in changes)
         {
-            if (change is { IsEmpty: true, Binding.Empty: "remove" } && RemoveSlot(plan, element, change)) continue;
+            if (change is { IsEmpty: true, Binding.Empty: EmptyRule.Remove } && RemoveSlot(plan, element, change)) continue;
             if (change.Read.Present && ReplaceSlot(plan, change)) continue;
             placed &= InsertSlot(plan, element, change);
         }
@@ -303,13 +303,14 @@ internal abstract class FamilyReader(BodyText text, FblBinding binding, FblOptio
     private static InsertedValue? InsertValue(InsertRequest request, string key)
     {
         var rule = request.Rule;
-        if (rule.Id?.From?.Key == key && request.Id is { } id) return new InsertedValue(key, id, null);
-        if (rule.Source?.Key == key && request.Source is { } source) return new InsertedValue(key, source.Key, null);
-        if (rule.Target?.Key == key && request.Target is { } target) return new InsertedValue(key, target.Key, null);
+        var slot = new SlotKind.Key(key);
+        if (rule.Id?.From?.Kind == slot && request.Id is { } id) return new InsertedValue(key, id, null);
+        if (rule.Source?.Kind == slot && request.Source is { } source) return new InsertedValue(key, source.Key, null);
+        if (rule.Target?.Kind == slot && request.Target is { } target) return new InsertedValue(key, target.Key, null);
         foreach ((string name, AttributeBinding binding) in rule.Attributes)
         {
-            if (binding.Key != key || binding.Child is not null || binding.IsComputed) continue;
-            if (!request.Values.TryGetValue(name, out var value) || (NewText.IsEmpty(value) && binding.Empty == "remove")) continue;
+            if (binding.Kind != slot || binding.Child is not null) continue;
+            if (!request.Values.TryGetValue(name, out var value) || (NewText.IsEmpty(value) && binding.Empty == EmptyRule.Remove)) continue;
             return new InsertedValue(key, value, binding);
         }
         return null;

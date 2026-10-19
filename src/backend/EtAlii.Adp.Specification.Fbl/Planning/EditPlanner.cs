@@ -76,7 +76,7 @@ internal static class EditPlanner
         if (store.NewId.Length == 0 || reading.Find(store.NewId) is not null) Planning.Plan.Refuse($"'{store.NewId}' cannot be the id of a {element.Rule.Type} here.");
 
         // The slot an id is read from, written as an attribute's is: the family puts it where an absent value goes.
-        var binding = new AttributeBinding { Key = from.Key, XmlAttribute = from.XmlAttribute, Child = from.Child, Group = from.Group };
+        var binding = new AttributeBinding { Kind = from.Kind, Child = from.Child };
         reading.Family.Write(plan, element, [new SlotChange("id", binding, element.Rule, element.IdRead ?? SlotRead.Absent, store.NewId, false)]);
     }
 
@@ -111,13 +111,13 @@ internal static class EditPlanner
                 Planning.Plan.Refuse($"A {element.Rule.Type} keeps no '{attribute}' in this file.");
                 return;
             }
-            if (binding.IsComputed || binding.Parent is not null || !read.Writable)
+            if (binding.Kind is SlotKind.Value or SlotKind.Parent || !read.Writable)
             {
                 Planning.Plan.Refuse(read.Reason is { Length: > 0 } reason ? reason : $"The {attribute} of a {element.Rule.Type} cannot be changed in this file.");
             }
             var empty = NewText.IsEmpty(value) || (binding.Flag && value is false);
-            if (empty && binding is { Flag: false, Empty: "refuse" }) Planning.Plan.Refuse($"The {attribute} of a {element.Rule.Type} cannot be empty.");
-            if (!read.Present && !empty && !binding.Flag && binding.Absent.TryGetValue(reading.Family.FamilyName, out var absent) && absent == "refuse")
+            if (empty && binding is { Flag: false, Empty: EmptyRule.Refuse }) Planning.Plan.Refuse($"The {attribute} of a {element.Rule.Type} cannot be empty.");
+            if (!read.Present && !empty && !binding.Flag && binding.Absent.TryGetValue(reading.Family.FamilyName, out var absent) && absent == AbsentRule.Refuse)
             {
                 Planning.Plan.Refuse($"The {reading.Binding.Name} file has no \"{SlotName(binding)}\" to rewrite.");
             }
@@ -141,7 +141,14 @@ internal static class EditPlanner
         if (element.Rule.SnapshotUndo) plan.Snapshot = true;
     }
 
-    private static string SlotName(Slot slot) => slot.Key ?? slot.XmlAttribute ?? slot.Group ?? slot.Capture ?? slot.Child ?? "value";
+    private static string SlotName(Slot slot) => slot.Kind switch
+    {
+        SlotKind.Key(var key) => key,
+        SlotKind.XmlAttribute(var attribute) => attribute,
+        SlotKind.Group(var group) => group,
+        SlotKind.Capture(var capture) => capture,
+        _ => slot.Child ?? "value",
+    };
 
     /// <summary>
     /// The binding that stores <paramref name="attribute"/> for the element: its own rule's, else
@@ -165,8 +172,7 @@ internal static class EditPlanner
         return element.KeyAttribute is null && element.Rule.Id?.From is { } from && SameSlot(from, binding);
     }
 
-    private static bool SameSlot(Slot a, Slot b) =>
-        a.Key == b.Key && a.XmlAttribute == b.XmlAttribute && a.Group == b.Group && a.Text == b.Text && a.Child == b.Child && a.Word == b.Word && a.Capture == b.Capture;
+    private static bool SameSlot(Slot a, Slot b) => a.Kind == b.Kind && a.Child == b.Child && a.Word == b.Word;
 
     /// <summary>
     /// A rename (FBL §5.7): every reference to the old value is rewritten in the same edit, one
@@ -243,7 +249,7 @@ internal static class EditPlanner
         // which follows its own rule for optional segments.
         foreach ((string name, object? value) in values)
         {
-            if (rule.Insert!.Emit is null && rule.Attribute(name) is { Flag: false, Empty: "refuse" } && NewText.IsEmpty(value))
+            if (rule.Insert!.Emit is null && rule.Attribute(name) is { Flag: false, Empty: EmptyRule.Refuse } && NewText.IsEmpty(value))
             {
                 Planning.Plan.Refuse($"The {name} of a {add.Type} cannot be empty.");
             }

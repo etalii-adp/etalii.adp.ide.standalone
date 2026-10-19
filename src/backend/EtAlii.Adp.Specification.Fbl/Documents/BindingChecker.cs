@@ -93,10 +93,6 @@ internal static class BindingChecker
             }
             if (attribute.Override is { } o) CheckSlot(rule, o, context, a + "/override", problems);
             CheckScalarOptions(attribute, scalars, a, problems);
-            if (CountSlots(attribute) != 1)
-            {
-                problems.Add(new LoadDiagnostic(a, LoadSeverity.Error, "An attribute binding names exactly one slot (FBL §3.3)."));
-            }
         }
     }
 
@@ -145,7 +141,13 @@ internal static class BindingChecker
     /// </summary>
     private static void CheckScalarOptions(AttributeBinding attribute, bool scalars, string pointer, List<LoadDiagnostic> problems)
     {
-        var where = !scalars ? "a slot of the xml, lines or blocks family" : attribute.Value is not null ? "a value slot" : attribute.Capture is not null ? "a capture slot" : null;
+        var where = (scalars, attribute.Kind) switch
+        {
+            (false, _) => "a slot of the xml, lines or blocks family",
+            (_, SlotKind.Value) => "a value slot",
+            (_, SlotKind.Capture) => "a capture slot",
+            _ => null,
+        };
         if (where is null) return;
         foreach ((string option, bool given) in new[] { ("read", attribute.Read is not null), ("quoted", attribute.Quoted is not null), ("fallback", attribute.Fallback is not null) })
         {
@@ -153,13 +155,9 @@ internal static class BindingChecker
         }
     }
 
-    private static int CountSlots(Slot s) =>
-        (s.Key is null ? 0 : 1) + (s.XmlAttribute is null ? 0 : 1) + (s.Text ? 1 : 0) + (s.Group is null ? 0 : 1) +
-        (s.Parent is null ? 0 : 1) + (s.Capture is null ? 0 : 1) + (s.Value is null ? 0 : 1);
-
     private static void CheckSlot(Rule rule, Slot slot, CelContext context, string pointer, List<LoadDiagnostic> problems)
     {
-        if (slot.Value is not null) Compile(rule, slot.Value, context, pointer + "/value", problems);
+        if (slot.Kind is SlotKind.Value(var expression)) Compile(rule, expression, context, pointer + "/value", problems);
         if (slot.Word is not null) CheckRegex(slot.Word, pointer + "/word", problems);
     }
 

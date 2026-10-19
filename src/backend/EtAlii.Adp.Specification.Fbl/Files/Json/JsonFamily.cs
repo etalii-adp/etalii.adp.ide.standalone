@@ -317,9 +317,10 @@ internal sealed class JsonFamily(BodyText text, FblBinding binding, FblOptions o
     protected override bool InsertSlot(Plan plan, ReadElement element, SlotChange change)
     {
         var mapping = Mapping((TreeEntry)element.Entry, change.Binding.Child);
-        if (mapping is null || change.Binding.Key is not { } key)
+        var key = change.Binding.Kind is SlotKind.Key(var name) ? name : null;
+        if (mapping is null || key is null)
         {
-            Plan.Refuse($"The {Binding.Name} file has no object to write \"{change.Binding.Key}\" in.");
+            Plan.Refuse($"The {Binding.Name} file has no object to write \"{key}\" in.");
             return true;
         }
         var added = $"{Quote(key)}: {Format(change.Read, change.Binding, change.Value)}";
@@ -366,7 +367,7 @@ internal sealed class JsonFamily(BodyText text, FblBinding binding, FblOptions o
     {
         var insert = request.Rule.Insert!;
         // FBL §5's place: {before: key} is not implemented here yet; refused, as the lines family does, rather than placed at the end.
-        if (insert.Place == "before") Plan.Refuse($"A {FamilyName} body cannot place a new entry '{insert.Place}'.");
+        if (insert.Place == InsertPlace.Before) Plan.Refuse($"A {FamilyName} body cannot place a new entry '{WireName.Of(insert.Place)}'.");
         var container = insert.Container is null ? null : Container(insert.Container, request.Parent?.Entry, CapturesOf(plan));
         string text;
         if (insert.Emit is { } emit)
@@ -383,7 +384,7 @@ internal sealed class JsonFamily(BodyText text, FblBinding binding, FblOptions o
         {
             var members = InsertValues(request).Select(v => $"{Quote(v.Key)}: {(v.Binding is null ? Quote(NewText.Plain(v.Value, null)) : Write(v.Value, v.Binding))}").ToList();
             IReadOnlyList<TreeEntry> entries = container is null ? [] : container.Value.Entries;
-            var neighbour = entries.Count == 0 ? null : insert.Place == "start" ? entries[0] : entries[^1];
+            var neighbour = entries.Count == 0 ? null : insert.Place == InsertPlace.Start ? entries[0] : entries[^1];
             text = NewObject(members, neighbour);
         }
         if (container is null)
@@ -407,7 +408,7 @@ internal sealed class JsonFamily(BodyText text, FblBinding binding, FblOptions o
             Plan.Refuse($"The {Binding.Name} file has no {insert.Container ?? "container"} to add the {request.Rule.Type} to.");
             return;
         }
-        if (insert.Place == "start" && container.Value.Entries.Count > 0)
+        if (insert.Place == InsertPlace.Start && container.Value.Entries.Count > 0)
         {
             var first = container.Value.Entries[0];
             var newline = first.LineSpan is not null;
@@ -426,11 +427,11 @@ internal sealed class JsonFamily(BodyText text, FblBinding binding, FblOptions o
     /// </summary>
     private static (int Offset, string Opening)? NewContainer(InsertSettings insert, TreeEntry? parent)
     {
-        if (insert is not { Container: { } selector, Create: { At: "after" or "end", Text: null } create } || selector.StartsWith('/')) return null;
+        if (insert is not { Container: { } selector, Create: { At: ContainerPlace.After or ContainerPlace.End, Text: null } create } || selector.StartsWith('/')) return null;
         if (parent?.Value is not { Kind: ValueKind.Mapping, Entries.Count: > 0 } mapping) return null;
 
         // "end" (FBL 0.4) is after the last member of the container's parent; "after" names the member.
-        var member = create.At == "end" ? mapping.Entries[^1] : create.Argument is { } after ? mapping.Member(after) : null;
+        var member = create.At == ContainerPlace.End ? mapping.Entries[^1] : create.Argument is { } after ? mapping.Member(after) : null;
         if (member is not { LineSpan: null }) return null;
         var name = selector.TrimEnd('/')[(selector.TrimEnd('/').LastIndexOf('/') + 1)..];
         return (member.Own.End, $", {Quote(name)}: [");
