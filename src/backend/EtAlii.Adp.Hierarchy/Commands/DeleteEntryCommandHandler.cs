@@ -71,28 +71,7 @@ public sealed class DeleteEntryCommandHandler : ICommandHandler<DeleteEntryComma
             return CommandResult.Failure("The entry no longer exists.");
         }
 
-        // Resolved before the registration file goes: its first line is what names the
-        // sibling, and once it is deleted there is nothing left to ask. Whose document the file
-        // is, a designer's or otherwise a diagram's, is the tool router's answer.
-        var designer = isDirectory ? null : _tools?.Route(path) as DesignerRouted;
-        var isRegistration = DiagramFilePair.IsRegistrationFile(path);
-        var sibling = isDirectory ? null
-            : designer is null ? DiagramFilePair.SiblingOf(path, _catalog)
-            : isRegistration ? designer.BodyPath
-            : null;
-
-        // A SUBJECT's delete cascades to its registrations (adp-file-nesting Requirement 6.1):
-        // a registration pointing at nothing serves nobody, and the confirmation dialog said
-        // the count before this ran. Deleting one REGISTRATION cascades to nothing beyond its
-        // owned sibling - a body other registrations still reference is never owned (6.2).
-        var cascade = !isDirectory && !DiagramFilePair.IsRegistrationFile(path)
-            ? DiagramRegistrationSet.Over(IoPath.GetDirectoryName(path)!, path, _catalog).ToList()
-            : [];
-        if (designer is not null && !isRegistration)
-        {
-            // The body of a designer's document: its registration names nothing once it is gone.
-            cascade.Add(designer.RegistrationPath);
-        }
+        (string? sibling, List<string> cascade) = isDirectory ? (null, []) : CompanionsOf(path);
         if (cascade.Count > 0)
         {
             _logger.Information("Deleting {Path} and the {Count} diagram registration(s) over it", path, cascade.Count);
@@ -106,16 +85,7 @@ public sealed class DeleteEntryCommandHandler : ICommandHandler<DeleteEntryComma
             }
             else
             {
-                await _writer.DeleteAsync(path, cancellationToken);
-                if (sibling is not null && File.Exists(sibling))
-                {
-                    await _writer.DeleteAsync(sibling, cancellationToken);
-                }
-
-                foreach (var registration in cascade)
-                {
-                    await _writer.DeleteAsync(registration, cancellationToken);
-                }
+                await DeleteFileAsync(path, sibling, cascade, cancellationToken);
             }
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
@@ -136,5 +106,49 @@ public sealed class DeleteEntryCommandHandler : ICommandHandler<DeleteEntryComma
         }
 
         return CommandResult.Success();
+    }
+
+    /// <summary>
+    /// What goes with a file: its document sibling, and the registrations a subject's delete
+    /// cascades to. Resolved before the registration file goes: its first line is what names the
+    /// sibling, and once it is deleted there is nothing left to ask. Whose document the file is, a
+    /// designer's or otherwise a diagram's, is the tool router's answer.
+    /// </summary>
+    private (string? Sibling, List<string> Cascade) CompanionsOf(string path)
+    {
+        var designer = _tools?.Route(path) as DesignerRouted;
+        var isRegistration = DiagramFilePair.IsRegistrationFile(path);
+        var sibling = designer is null ? DiagramFilePair.SiblingOf(path, _catalog)
+            : isRegistration ? designer.BodyPath
+            : null;
+
+        // A SUBJECT's delete cascades to its registrations (adp-file-nesting Requirement 6.1):
+        // a registration pointing at nothing serves nobody, and the confirmation dialog said
+        // the count before this ran. Deleting one REGISTRATION cascades to nothing beyond its
+        // owned sibling - a body other registrations still reference is never owned (6.2).
+        List<string> cascade = !isRegistration
+            ? DiagramRegistrationSet.Over(IoPath.GetDirectoryName(path)!, path, _catalog).ToList()
+            : [];
+        if (designer is not null && !isRegistration)
+        {
+            // The body of a designer's document: its registration names nothing once it is gone.
+            cascade.Add(designer.RegistrationPath);
+        }
+
+        return (sibling, cascade);
+    }
+
+    private async Task DeleteFileAsync(string path, string? sibling, List<string> cascade, CancellationToken cancellationToken)
+    {
+        await _writer.DeleteAsync(path, cancellationToken);
+        if (sibling is not null && File.Exists(sibling))
+        {
+            await _writer.DeleteAsync(sibling, cancellationToken);
+        }
+
+        foreach (var registration in cascade)
+        {
+            await _writer.DeleteAsync(registration, cancellationToken);
+        }
     }
 }
