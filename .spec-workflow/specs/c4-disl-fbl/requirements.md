@@ -243,7 +243,7 @@ The product direction (2026-09-26) is that every tool is a markup definition int
 
 #### Acceptance Criteria
 
-1. `EtAlii.Adp.Specification.Disl` SHALL implement what finding A5 lists and the rewritten definitions call: `matchesGlob`, a viewpoint's `members`, constraints `over` the model and the view with `diagram.views`, `ids.compare`, `location()`, and a derived relation's `key`. Each SHALL be proven by a library test seen to fail first.
+1. `EtAlii.Adp.Specification.Disl` SHALL implement what finding A5 lists and the rewritten definitions call: `matchesGlob`, a viewpoint's `members`, constraints `over` the model and the view with `diagram.views`, `ids.compare`, `location()`, and a derived relation's `key`. The list is read as "of these, what the rewritten definitions call": `matchesGlob` and constraints `over` a view are called by none of them and are not built (measured in #463; chat ruling, 2026-10-19). Each SHALL be proven by a library test seen to fail first.
 2. The derivations SHALL answer for one of several definitions over one body, chosen by origin.
 3. The runtime SHALL resolve `imports` only if Q8 is ruled that way.
 4. `EtAlii.Adp.Specification.Fbl` SHALL implement what FBL gains for the gaps of section C, each with a conformance fixture vendored from etalii.adp; a defect a fixture of Requirement 1 shows SHALL be repaired in the library, and a language gap SHALL NOT be repaired here.
