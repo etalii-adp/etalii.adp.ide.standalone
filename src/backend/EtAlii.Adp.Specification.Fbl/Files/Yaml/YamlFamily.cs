@@ -202,57 +202,54 @@ internal sealed class YamlFamily(BodyText text, FblBinding binding, FblOptions o
 
     // ---- writing ----
 
-    public override void Write(Plan plan, ReadElement element, IReadOnlyList<SlotChange> changes)
+    protected override bool RemoveSlot(Plan plan, ReadElement element, SlotChange change)
     {
-        foreach (var change in changes)
+        if (change.Read.Node is not TreeEntry member) return true;
+
+        // FBL 0.4, section 5.2: the levels the key leaves empty go with it, up to the entry itself.
+        if (change.Binding is { Create.AtEnd: true, Child: { } reached })
         {
-            var read = change.Read;
-            var member = read.Node as TreeEntry;
-            if (change is { IsEmpty: true, Binding.Empty: "remove" })
+            RemoveEmptiedLevels(plan, member, reached.Trim('/').Split('/').Length, entry => entry == member);
+        }
+        plan.Add(SpliceOperation.RemoveKey, member.LineSpan ?? member.Own, "");
+        return true;
+    }
+
+    protected override bool ReplaceSlot(Plan plan, ReadElement element, SlotChange change)
+    {
+        if (change.Read.Node is not TreeEntry member) return false;
+        var written = Format(change.Read, change.Binding, change.Value);
+        if (written != Text.Text(member.Value.Span)) plan.Add(SpliceOperation.ReplaceValue, member.Value.Span, written);
+        return true;
+    }
+
+    protected override void InsertSlot(Plan plan, ReadElement element, SlotChange change)
+    {
+        var mapping = change.Read.Node as TreeValue ?? Mapping((TreeEntry)element.Entry, change.Binding.Child);
+        if (mapping is null && change.Binding is { Create.AtEnd: true, Child: { } child, Key: { } created })
+        {
+            // FBL 0.4, section 5.2: every missing level of the child mapping, then the key, at one offset.
+            if (!MissingLevels((TreeEntry)element.Entry, child.Trim('/').Split('/'), out var at, out var levels, out var inside))
             {
-                if (member is not null)
-                {
-                    // FBL 0.4, section 5.2: the levels the key leaves empty go with it, up to the entry itself.
-                    if (change.Binding is { Create.AtEnd: true, Child: { } reached })
-                    {
-                        RemoveEmptiedLevels(plan, member, reached.Trim('/').Split('/').Length, entry => entry == member);
-                    }
-                    plan.Add(SpliceOperation.RemoveKey, member.LineSpan ?? member.Own, "");
-                }
-                continue;
-            }
-            if (read.Present && member is not null)
-            {
-                var written = Format(read, change.Binding, change.Value);
-                if (written != Text.Text(member.Value.Span)) plan.Add(SpliceOperation.ReplaceValue, member.Value.Span, written);
-                continue;
-            }
-            var mapping = read.Node as TreeValue ?? Mapping((TreeEntry)element.Entry, change.Binding.Child);
-            if (mapping is null && change.Binding is { Create.AtEnd: true, Child: { } child, Key: { } created })
-            {
-                // FBL 0.4, section 5.2: every missing level of the child mapping, then the key, at one offset.
-                if (!MissingLevels((TreeEntry)element.Entry, child.Trim('/').Split('/'), out var at, out var levels, out var inside))
-                {
-                    Plan.Refuse($"The {Binding.Name} file has no place to create {child} in.");
-                    return;
-                }
-                foreach (var level in levels) plan.Add(SpliceOperation.EnsureContainer, at, at, NewLine(at, [level]));
-                plan.Add(SpliceOperation.InsertKey, at, at, NewLine(at, [Indentation(inside) + created + ": " + Scalar(change.Value, null, change.Binding, inside)]));
-                continue;
-            }
-            if (mapping is null || mapping.Kind != ValueKind.Mapping || change.Binding.Key is not { } key)
-            {
-                Plan.Refuse($"The {Binding.Name} file has no mapping to write '{change.Binding.Key}' in.");
+                Plan.Refuse($"The {Binding.Name} file has no place to create {child} in.");
                 return;
             }
-            InsertKey(plan, mapping, key, change);
+            foreach (var level in levels) plan.Add(SpliceOperation.EnsureContainer, at, at, NewLine(at, [level]));
+            plan.Add(SpliceOperation.InsertKey, at, at, NewLine(at, [Indentation(inside) + created + ": " + Scalar(change.Value, null, change.Binding, inside)]));
+            return;
         }
+        if (mapping is null || mapping.Kind != ValueKind.Mapping || change.Binding.Key is not { } key)
+        {
+            Plan.Refuse($"The {Binding.Name} file has no mapping to write '{change.Binding.Key}' in.");
+            return;
+        }
+        InsertKey(plan, mapping, key, change);
     }
 
     /// <summary>A key the entry lacks goes at its place in the rule's key order: after the nearest present key before it, else before the nearest after it.</summary>
     private void InsertKey(Plan plan, TreeValue mapping, string key, SlotChange change)
     {
-        var order = KeyOrder(change.Rule, change.Binding.Child);
+        var order = change.Rule.KeyOrder(change.Binding.Child);
         var index = order.IndexOf(key);
         int offset;
         TreeEntry? before = null;
@@ -275,23 +272,6 @@ internal sealed class YamlFamily(BodyText text, FblBinding binding, FblOptions o
         var indent = Indentation(mapping.Entries[0].Indent);
         var line = indent + key + ": " + Scalar(change.Value, null, change.Binding, mapping.Entries[0].Indent);
         plan.Add(SpliceOperation.InsertKey, offset, offset, NewLine(offset, [line]));
-    }
-
-    /// <summary>The order keys are written in: the rule's <c>insert.keys</c>, then its bindings' keys in binding order.</summary>
-    private static List<string> KeyOrder(Rule rule, string? child)
-    {
-        var order = new List<string>();
-        if (child is null) order.AddRange(rule.Insert?.Keys ?? []);
-        Add(rule.Id?.From);
-        Add(rule.Source);
-        Add(rule.Target);
-        foreach ((_, AttributeBinding binding) in rule.Attributes) Add(binding);
-        return order;
-
-        void Add(Slot? slot)
-        {
-            if (slot?.Key is { } key && slot.Child == child && !order.Contains(key)) order.Add(key);
-        }
     }
 
     /// <summary>
@@ -555,15 +535,14 @@ internal sealed class YamlFamily(BodyText text, FblBinding binding, FblOptions o
         return string.Join('\n', parts);
     }
 
-    /// <summary>The key lines of a new item in <c>insert.keys</c> order, then the skeleton's lines.</summary>
+    /// <summary>The key lines of a new item in the rule's key order, then the skeleton's lines.</summary>
     private List<string> ItemLines(InsertRequest request)
     {
         var rule = request.Rule;
         var lines = new List<string>();
-        foreach (var key in KeyOrder(rule, null))
+        foreach ((string key, object? value, AttributeBinding? binding) in InsertValues(request))
         {
-            if (rule.Insert!.Keys.Count > 0 && !rule.Insert.Keys.Contains(key)) continue;
-            if (WireValue(request, key) is { } value) lines.Add($"{key}: {value}");
+            lines.Add($"{key}: {Scalar(binding is null ? value : NewText.Wire(binding, value, null) ?? value, null, binding, 0)}");
         }
         if (rule.Insert!.Skeleton is { } skeleton)
         {
@@ -571,22 +550,6 @@ internal sealed class YamlFamily(BodyText text, FblBinding binding, FblOptions o
             lines.AddRange(rendered.Replace("\r\n", "\n", StringComparison.Ordinal).TrimEnd('\n').Split('\n'));
         }
         return lines;
-    }
-
-    private string? WireValue(InsertRequest request, string key)
-    {
-        var rule = request.Rule;
-        if (rule.Id?.From?.Key == key && request.Id is { } id) return Scalar(id, null, null, 0);
-        if (rule.Source?.Key == key && request.Source is { } source) return Scalar(source.Key, null, null, 0);
-        if (rule.Target?.Key == key && request.Target is { } target) return Scalar(target.Key, null, null, 0);
-        foreach ((string name, AttributeBinding binding) in rule.Attributes)
-        {
-            if (binding.Key != key || binding.Child is not null || binding.IsComputed) continue;
-            if (!request.Values.TryGetValue(name, out var value) || (NewText.IsEmpty(value) && binding.Empty != "keep")) continue;
-            var wire = NewText.Wire(binding, value, null);
-            return Scalar(wire ?? value, null, binding, 0);
-        }
-        return null;
     }
 
     public override void Remove(Plan plan, ReadElement element, IReadOnlySet<ReadElement> removed)

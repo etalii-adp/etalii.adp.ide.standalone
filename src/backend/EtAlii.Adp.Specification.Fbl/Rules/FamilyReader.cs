@@ -240,8 +240,66 @@ internal abstract class FamilyReader(BodyText text, FblBinding binding, FblOptio
     /// <summary>The text that replaces a value's span: the new value in the value's own style when it fits (FBL §6.3).</summary>
     public abstract string Format(SlotRead read, AttributeBinding? binding, object? value);
 
-    /// <summary>Writes <paramref name="changes"/> to <paramref name="element"/>; the engine has already refused what must be refused.</summary>
-    public abstract void Write(Plan plan, ReadElement element, IReadOnlyList<SlotChange> changes);
+    /// <summary>
+    /// Writes <paramref name="changes"/> to <paramref name="element"/>; the engine has already refused what
+    /// must be refused. Each change is one of three (FBL §6.1): a value emptied under <c>empty: "remove"</c>
+    /// goes, a value the entry has is replaced, and any other is inserted. A hook that does not take its
+    /// change hands it on: a removal the family does not make is written as a replacement, a replacement it
+    /// cannot make as an insertion.
+    /// </summary>
+    /// <remarks>Virtual until the json, lines and xml families write through the hooks too (T216).</remarks>
+    public virtual void Write(Plan plan, ReadElement element, IReadOnlyList<SlotChange> changes)
+    {
+        foreach (var change in changes)
+        {
+            if (change is { IsEmpty: true, Binding.Empty: "remove" } && RemoveSlot(plan, element, change)) continue;
+            if (change.Read.Present && ReplaceSlot(plan, element, change)) continue;
+            InsertSlot(plan, element, change);
+        }
+    }
+
+    /// <summary>Removes the slot of an emptied value; false hands the change on to <see cref="ReplaceSlot"/>.</summary>
+    protected virtual bool RemoveSlot(Plan plan, ReadElement element, SlotChange change) => throw WritesItsOwn();
+
+    /// <summary>Replaces a value the entry has; false hands the change on to <see cref="InsertSlot"/>.</summary>
+    protected virtual bool ReplaceSlot(Plan plan, ReadElement element, SlotChange change) => throw WritesItsOwn();
+
+    /// <summary>Writes a value the entry does not have, at its place in the rule's <see cref="Rule.KeyOrder"/>, or refuses.</summary>
+    protected virtual void InsertSlot(Plan plan, ReadElement element, SlotChange change) => throw WritesItsOwn();
+
+    private NotSupportedException WritesItsOwn() => new($"The {FamilyName} family writes its changes in its own Write.");
+
+    /// <summary>
+    /// The values a new entry writes, in the rule's key order (FBL §6.1): under each key, the id, the
+    /// source or the target the add gives, else the value of the first attribute bound to that key that
+    /// the add gives. Only <c>insert.keys</c> is written when the rule names them. A computed attribute
+    /// and one under a <c>child</c> mapping write nothing, and an emptied value is left out unless its
+    /// binding keeps it (<c>empty: "keep"</c>).
+    /// </summary>
+    protected static IEnumerable<InsertedValue> InsertValues(InsertRequest request)
+    {
+        var rule = request.Rule;
+        foreach (var key in rule.KeyOrder(null))
+        {
+            if (rule.Insert!.Keys.Count > 0 && !rule.Insert.Keys.Contains(key)) continue;
+            if (InsertValue(request, key) is { } value) yield return value;
+        }
+    }
+
+    private static InsertedValue? InsertValue(InsertRequest request, string key)
+    {
+        var rule = request.Rule;
+        if (rule.Id?.From?.Key == key && request.Id is { } id) return new InsertedValue(key, id, null);
+        if (rule.Source?.Key == key && request.Source is { } source) return new InsertedValue(key, source.Key, null);
+        if (rule.Target?.Key == key && request.Target is { } target) return new InsertedValue(key, target.Key, null);
+        foreach ((string name, AttributeBinding binding) in rule.Attributes)
+        {
+            if (binding.Key != key || binding.Child is not null || binding.IsComputed) continue;
+            if (!request.Values.TryGetValue(name, out var value) || (NewText.IsEmpty(value) && binding.Empty != "keep")) continue;
+            return new InsertedValue(key, value, binding);
+        }
+        return null;
+    }
 
     public abstract void Insert(Plan plan, InsertRequest request);
 
@@ -340,6 +398,9 @@ internal abstract class FamilyReader(BodyText text, FblBinding binding, FblOptio
 
 /// <summary>One attribute to write, after the engine's checks: its binding, how it is read now, and its new value.</summary>
 internal sealed record SlotChange(string Attribute, AttributeBinding Binding, Rule Rule, SlotRead Read, object? Value, bool IsEmpty);
+
+/// <summary>One key of a new entry and the value written under it, with the attribute binding it comes from; none for an id, a source or a target.</summary>
+internal sealed record InsertedValue(string Key, object? Value, AttributeBinding? Binding);
 
 /// <summary>What adding an element or relation needs to know (FBL §6.2).</summary>
 internal sealed record InsertRequest(Rule Rule, string? Id, IReadOnlyDictionary<string, object?> Values, ReadElement? Parent, ReadElement? Source, ReadElement? Target);

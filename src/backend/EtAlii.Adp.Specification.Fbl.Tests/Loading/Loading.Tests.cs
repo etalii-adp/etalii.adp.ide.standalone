@@ -135,6 +135,25 @@ public class LoadingTests
         Assert.Null(item.Program(CelContext.Tree, "line > 0"));
     }
 
+    [Theory]
+    [InlineData("\"keys\": [\"label\", \"id\"]", "label,id,size")]
+    [InlineData("\"emit\": \"{size} {label}\"", "size,label,id")]
+    [InlineData("\"skeleton\": \"tags: []\"", "id,label,size")]
+    public void ARulesKeyOrderIsItsWireOrderThenItsBindingsKeysInBindingOrder(string insert, string expected)
+    {
+        // Arrange: three keys at the entry's level and one under its "meta" mapping.
+        var rule = $$"""{ "name": "item", "type": "Item", "at": "/items/*", "id": { "from": { "key": "id" } }, "attributes": { "label": { "key": "label" }, "deep": { "key": "deep", "child": "meta" }, "size": { "key": "size" } }, "insert": { "container": "/items", "place": "end", {{insert}} } }""";
+
+        // Act.
+        var problems = FblDocumentLoader.Load(Encoding.UTF8.GetBytes($$"""{ "fbl": "0.1", "bindings": { "t": {{Binding(elements: "[" + rule + "]")}} } }"""), out var document);
+
+        // Assert: insert.keys, or the emit's placeholders, first (FBL §6.1), then id, attributes; a child mapping's keys apart.
+        Assert.Empty(problems);
+        var item = Assert.Single(document!.Bindings["t"].Elements);
+        Assert.Equal(expected, string.Join(",", item.KeyOrder(null)));
+        Assert.Equal(["deep"], item.KeyOrder("meta"));
+    }
+
     [Fact]
     public void ReadQuotedAndFallbackAreReadFromAnAttributeBinding()
     {

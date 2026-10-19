@@ -211,6 +211,27 @@ public sealed partial class Rule
         }
         return order;
     }
+
+    /// <summary>
+    /// The order keys are written in (FBL §6.1): the <see cref="WireOrder"/>, then the keys of the rule's
+    /// bindings in binding order, the id's, the source's, the target's and the attributes'. With
+    /// <paramref name="child"/>, the keys of the bindings under that <c>child</c> mapping only.
+    /// </summary>
+    public List<string> KeyOrder(string? child)
+    {
+        var order = new List<string>();
+        if (child is null) order.AddRange(WireOrder());
+        Add(Id?.From);
+        Add(Source);
+        Add(Target);
+        foreach ((_, AttributeBinding binding) in Attributes) Add(binding);
+        return order;
+
+        void Add(Slot? slot)
+        {
+            if (slot?.Key is { } key && slot.Child == child && !order.Contains(key)) order.Add(key);
+        }
+    }
 }
 
 public sealed record IdBinding(Slot? From, string? SidecarKey);
