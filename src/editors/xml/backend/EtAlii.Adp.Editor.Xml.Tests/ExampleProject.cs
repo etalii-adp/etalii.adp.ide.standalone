@@ -26,6 +26,8 @@ internal sealed class ExampleProject : IDisposable
 
     public string PathOf(string name) => Path.Combine(Root, name);
 
+    private ProjectPath FileOf(string name) => ProjectPath.Within(ProjectRoot.From(Root), PathOf(name))!.Value;
+
     public string Text(string name) => File.ReadAllText(PathOf(name)).ReplaceLineEndings("\n");
 
     /// <summary>Writes <paramref name="text"/> as <paramref name="name"/> and moves its last-write time on, so a change is seen whatever the clock's grain.</summary>
@@ -38,14 +40,14 @@ internal sealed class ExampleProject : IDisposable
     }
 
     public Task<TextAnalysis> AnalyzeAsync(string name, string? text = null) =>
-        Analyzer.AnalyzeAsync(Root, PathOf(name), text ?? Text(name), TestContext.Current.CancellationToken);
+        Analyzer.AnalyzeAsync(FileOf(name), text ?? Text(name), TestContext.Current.CancellationToken);
 
     /// <summary>Asks for completion where <paramref name="text"/> holds a <c>|</c>, which is taken out first.</summary>
     public Task<IReadOnlyList<TextCompletion>> CompleteAsync(string name, string text, bool isExplicit = false)
     {
         var offset = text.IndexOf('|', StringComparison.Ordinal);
         Assert.True(offset >= 0, "the text marks no caret");
-        return Analyzer.CompleteAsync(Root, PathOf(name), text.Remove(offset, 1), offset, isExplicit, TestContext.Current.CancellationToken);
+        return Analyzer.CompleteAsync(FileOf(name), text.Remove(offset, 1), offset, isExplicit, TestContext.Current.CancellationToken);
     }
 
     public void Dispose() => _folder.Dispose();

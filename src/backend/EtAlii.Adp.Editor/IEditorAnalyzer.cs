@@ -12,15 +12,15 @@ public interface IEditorAnalyzer
     string EditorId { get; }
 
     /// <summary>
-    /// The findings for <paramref name="content"/>, the file at <paramref name="filePath"/> as
-    /// the user has typed it, inside the project at <paramref name="rootPath"/>.
+    /// The findings for <paramref name="content"/>, the file at <paramref name="file"/> as the
+    /// user has typed it; the path carries the project it is inside.
     /// </summary>
-    Task<TextAnalysis> AnalyzeAsync(string rootPath, string filePath, string content, CancellationToken cancellationToken);
+    Task<TextAnalysis> AnalyzeAsync(ProjectPath file, string content, CancellationToken cancellationToken);
 
     /// <summary>
     /// What is offered at <paramref name="offset"/>, a UTF-16 offset into
     /// <paramref name="content"/>. <paramref name="isExplicit"/> says the user asked rather
     /// than typed.
     /// </summary>
-    Task<IReadOnlyList<TextCompletion>> CompleteAsync(string rootPath, string filePath, string content, int offset, bool isExplicit, CancellationToken cancellationToken);
+    Task<IReadOnlyList<TextCompletion>> CompleteAsync(ProjectPath file, string content, int offset, bool isExplicit, CancellationToken cancellationToken);
 }

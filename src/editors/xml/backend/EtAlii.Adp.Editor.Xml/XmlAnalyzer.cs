@@ -28,9 +28,12 @@ public sealed class XmlAnalyzer : IEditorAnalyzer
 
     public string EditorId => Editor.Xml.Id;
 
-    public Task<TextAnalysis> AnalyzeAsync(string rootPath, string filePath, string content, CancellationToken cancellationToken)
+    public Task<TextAnalysis> AnalyzeAsync(ProjectPath file, string content, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
+
+        var rootPath = file.Root.FullPath;
+        var filePath = file.FullPath;
 
         var resolver = new ProjectXmlResolver(rootPath);
         var positions = new TextPositions(content);
@@ -72,9 +75,12 @@ public sealed class XmlAnalyzer : IEditorAnalyzer
             dependsOn.Distinct(StringComparer.Ordinal).Where(path => !string.Equals(path, Path.GetFullPath(filePath), StringComparison.Ordinal)).ToArray()));
     }
 
-    public Task<IReadOnlyList<TextCompletion>> CompleteAsync(string rootPath, string filePath, string content, int offset, bool isExplicit, CancellationToken cancellationToken)
+    public Task<IReadOnlyList<TextCompletion>> CompleteAsync(ProjectPath file, string content, int offset, bool isExplicit, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
+
+        var rootPath = file.Root.FullPath;
+        var filePath = file.FullPath;
 
         // Only an XSD the document names offers anything: a DTD validates and offers nothing
         // (ruling A2), and with no schema the end tag is the client's (Requirement 7.8).

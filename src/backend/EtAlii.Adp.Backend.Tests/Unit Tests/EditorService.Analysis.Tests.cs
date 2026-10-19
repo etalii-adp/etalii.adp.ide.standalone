@@ -232,13 +232,13 @@ public sealed class EditorServiceAnalysisTests : IDisposable
 
         public string EditorId => editorId;
 
-        public Task<TextAnalysis> AnalyzeAsync(string rootPath, string filePath, string content, CancellationToken cancellationToken)
+        public Task<TextAnalysis> AnalyzeAsync(ProjectPath file, string content, CancellationToken cancellationToken)
         {
             LastContent = content;
             return Throws is null ? Task.FromResult(Analysis) : Task.FromException<TextAnalysis>(Throws);
         }
 
-        public Task<IReadOnlyList<TextCompletion>> CompleteAsync(string rootPath, string filePath, string content, int offset, bool isExplicit, CancellationToken cancellationToken)
+        public Task<IReadOnlyList<TextCompletion>> CompleteAsync(ProjectPath file, string content, int offset, bool isExplicit, CancellationToken cancellationToken)
         {
             LastContent = content;
             LastOffset = offset;
