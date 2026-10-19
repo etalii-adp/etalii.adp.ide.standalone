@@ -20,6 +20,13 @@ public interface IContextActionResolver
     ValueTask<ContextActionOwner?> ResolveByActionIdAsync(ContextTarget target, string actionId, CancellationToken cancellationToken);
 
     /// <summary>
+    /// The provider answering a toolbox entry whose drop action is <paramref name="dropActionId"/>, dropped
+    /// on <paramref name="target"/>, if any: a provider that resolves drops itself (<see cref="IContextDropProvider"/>)
+    /// answers by the entry, any other one by its menu, as <see cref="ResolveByActionIdAsync"/> does.
+    /// </summary>
+    ValueTask<ContextActionOwner?> ResolveDropAsync(ContextTarget target, string dropActionId, CancellationToken cancellationToken);
+
+    /// <summary>
     /// The provider offering an available action bound to <paramref name="shortcut"/> for
     /// this target, if any. An action reported unavailable resolves to nothing, so its
     /// shortcut is inert too.

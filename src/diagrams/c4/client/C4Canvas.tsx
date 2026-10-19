@@ -28,6 +28,9 @@ export interface C4CanvasProps {
   path: readonly string[];
 }
 
+/** What the backend begins a boundary's id with (`C4Boundary.IdPrefix`); the id of the element it is drawn for follows. */
+const BOUNDARY_ID_PREFIX = "boundary:";
+
 /** The view kinds the backend names (`C4ViewKind`), each with the specification of its diagram type. */
 const SPECIFICATIONS: Readonly<Record<string, string>> = {
   SystemLandscape: systemLandscape,
@@ -156,16 +159,22 @@ export function C4Canvas({ projectId, entryId, path }: C4CanvasProps) {
       void moveElementTo(elementId, position.x, position.y);
     },
     onElementDropped: ({ elementType, position }) => {
-      // The entry carries the backend's own action id. Dropped on an element, that element
-      // becomes the new one's parent - which is how C4's containment gets decided by the
-      // gesture; on empty canvas only what stands alone can land, and the backend refuses
-      // the rest with a sentence. Empty canvas is named by the point, as the background menu
-      // names it: with no source the backend would run the action on whatever is selected.
-      const target = [...model.nodes.values()].reverse().find((node) => {
-        const { width, height } = node.payload;
-        return Math.abs(position.x - node.x) <= width / 2 && Math.abs(position.y - node.y) <= height / 2;
-      });
-      void executeAction(elementType, elementSourceOf(target !== undefined ? target.id : placementId(position.x, position.y), entryId));
+      // The entry carries the backend's own drop action, and is sent as a drop: the backend
+      // resolves it by the entry - the definition's drop targets and refusals - rather than by
+      // the menu of what it landed on, which for a C4 element has no add. Dropped on an element,
+      // that element is what the entry lands on, which is how C4's containment gets decided by
+      // the gesture; inside a boundary and on no box, the element the boundary is drawn for, as
+      // the software system a container view is about is drawn. Empty canvas is named by the
+      // point, as the background menu names it: with no source the backend would run the action
+      // on whatever is selected.
+      const inside = (x: number, y: number, width: number, height: number) =>
+        Math.abs(position.x - x) <= width / 2 && Math.abs(position.y - y) <= height / 2;
+      const target = [...model.nodes.values()].reverse().find((node) => inside(node.x, node.y, node.payload.width, node.payload.height));
+      const boundary = [...model.boundaries.values()]
+        .filter((each) => inside(each.x, each.y, each.payload.width, each.payload.height))
+        .sort((a, b) => a.payload.width * a.payload.height - b.payload.width * b.payload.height)[0];
+      const landedOn = target?.id ?? (boundary !== undefined ? boundary.id.slice(BOUNDARY_ID_PREFIX.length) : placementId(position.x, position.y));
+      void executeAction(elementType, elementSourceOf(landedOn, entryId), { drop: true });
     },
     onViewChanged: ({ viewport: next }) => setViewport(next),
   };

@@ -20,8 +20,11 @@ internal sealed class HistoryActionsBroadcasterCountingResolver : IContextAction
         return ValueTask.FromResult<IReadOnlyList<ContextActionGroupDefinition>>([group]);
     }
 
-    // The broadcaster only discovers; these two are never reached from it.
+    // The broadcaster only discovers; none of these is reached from it.
     public ValueTask<ContextActionOwner?> ResolveByActionIdAsync(ContextTarget target, string actionId, CancellationToken cancellationToken) =>
+        throw new NotSupportedException();
+
+    public ValueTask<ContextActionOwner?> ResolveDropAsync(ContextTarget target, string dropActionId, CancellationToken cancellationToken) =>
         throw new NotSupportedException();
 
     public ValueTask<ContextActionOwner?> ResolveByShortcutAsync(ContextTarget target, ContextShortcutDefinition shortcut, CancellationToken cancellationToken) =>

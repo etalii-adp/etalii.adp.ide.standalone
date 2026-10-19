@@ -31,6 +31,23 @@ public sealed class ContextActionResolver : IContextActionResolver
         ResolveAsync(target, action => action.Id == actionId, cancellationToken);
 
     // <inheritdoc />
+    public async ValueTask<ContextActionOwner?> ResolveDropAsync(ContextTarget target, string dropActionId, CancellationToken cancellationToken)
+    {
+        foreach (var provider in ProvidersFor(target.Scope))
+        {
+            var match = provider is IContextDropProvider dropping
+                ? await dropping.ResolveDropAsync(target, dropActionId, cancellationToken)
+                : Flatten(await provider.DiscoverAsync(target, cancellationToken)).FirstOrDefault(action => action.Id == dropActionId);
+            if (match is not null)
+            {
+                return new ContextActionOwner(provider, match);
+            }
+        }
+
+        return null;
+    }
+
+    // <inheritdoc />
     public ValueTask<ContextActionOwner?> ResolveByShortcutAsync(ContextTarget target, ContextShortcutDefinition shortcut, CancellationToken cancellationToken) =>
         ResolveAsync(target, action => action is { Available: true, Shortcut: { } bound } && bound.Matches(shortcut), cancellationToken);
 

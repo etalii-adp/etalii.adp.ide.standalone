@@ -271,6 +271,30 @@ public static class OperationInterpreter
         return targets.Count == 0 || targets.Contains("diagram") || targets.Contains("selection") || self is not null && targets.Any(self.IsA);
     }
 
+    /// <summary>
+    /// Why operation <paramref name="operationId"/> would be refused on <paramref name="self"/> (null for the
+    /// diagram) before any of its actions ran: the reason a <see cref="Run"/> gives for an operation that is not
+    /// available (§9.3), or null when it is. No parameter is answered, so a reason that reads <c>p</c> sees none.
+    /// </summary>
+    public static string? Refusal(DislSpecification specification, string operationId, DislDiagram diagram, DislElement? self, DislEnv? env = null)
+    {
+        ArgumentNullException.ThrowIfNull(specification);
+        ArgumentNullException.ThrowIfNull(operationId);
+        ArgumentNullException.ThrowIfNull(diagram);
+        if (!specification.Root.TryGetProperty("behavior", out var behavior) || !behavior.TryGetProperty("operations", out var operations)
+            || !operations.TryGetProperty(operationId, out var operation))
+        {
+            return $"There is no operation '{operationId}'.";
+        }
+
+        var variables = Variables(DislContexts.Operation, diagram, env);
+        variables["self"] = self;
+        variables["selection"] = self is null ? new List<object?>() : [self];
+        variables["position"] = Map(null);
+        variables["p"] = Map(null);
+        return Unavailable(specification, operation, DislJson.Pointer("/behavior/operations", operationId), diagram, self is null ? null : self.IsA, variables, operationId);
+    }
+
     internal static Dictionary<string, object?> Variables(string context, DislDiagram diagram, DislEnv? env)
     {
         var variables = DislContexts.VariablesOf(context).ToDictionary(name => name, _ => (object?)null, StringComparer.Ordinal);
@@ -313,7 +337,7 @@ public static class OperationInterpreter
         new(StringComparer.Ordinal) { ["self"] = diagram, ["diagram"] = diagram, ["env"] = variables["env"] };
 
     /// <summary>The tool <paramref name="toolId"/> as the palette declares it, inline in a group or from the toolbox's library, with its pointer.</summary>
-    private static (JsonElement Tool, string Pointer)? Tool(DislSpecification specification, string toolId)
+    internal static (JsonElement Tool, string Pointer)? Tool(DislSpecification specification, string toolId)
     {
         if (!specification.Root.TryGetProperty("toolbox", out var toolbox)) return null;
         return toolbox.TryGetProperty("groups", out var groups) ? InGroups(groups, "/toolbox/groups") : null;

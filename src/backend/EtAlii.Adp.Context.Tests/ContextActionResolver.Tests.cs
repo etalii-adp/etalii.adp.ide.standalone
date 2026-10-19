@@ -201,4 +201,81 @@ public class ContextActionResolverTests
         var ids = groups.ActionIds();
         Assert.Equal(["family.rename", "shacl.deactivate"], ids);
     }
+
+    [Fact]
+    public async Task ResolveDropAsync_AsksAProviderThatDoesNotResolveDrops_ThroughItsMenu()
+    {
+        // Arrange: every module that has not opted in answers a drop exactly as it answers its action id.
+        var offering = new ContextActionResolverStubProvider(ContextScope.Hierarchy, "add-child");
+        var resolver = new ContextActionResolver(new IContextActionProvider[] { offering });
+
+        // Act.
+        var dropped = await resolver.ResolveDropAsync(Target(), "add-child", TestContext.Current.CancellationToken);
+        var missing = await resolver.ResolveDropAsync(Target(), "add-sibling", TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.NotNull(dropped);
+        Assert.Same(offering, dropped.Provider);
+        Assert.Equal("add-child", dropped.Action.Id);
+        Assert.Null(missing);
+    }
+
+    [Fact]
+    public async Task ResolveDropAsync_AsksAProviderThatResolvesDrops_ByTheEntry_NotByItsMenu()
+    {
+        // Arrange: its menu offers nothing of the kind, as a C4 element's menu offers no add.
+        var dropping = new DroppingProvider("menu-only", new ContextActionDefinition("add-inside", "Add inside", "mdi-plus"));
+        var resolver = new ContextActionResolver(new IContextActionProvider[] { dropping });
+
+        // Act.
+        var dropped = await resolver.ResolveDropAsync(Target(), "add-inside", TestContext.Current.CancellationToken);
+        var byMenu = await resolver.ResolveDropAsync(Target(), "menu-only", TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.NotNull(dropped);
+        Assert.Same(dropping, dropped.Provider);
+        Assert.Equal("add-inside", dropped.Action.Id);
+        Assert.Null(byMenu);
+    }
+
+    [Fact]
+    public async Task ResolveDropAsync_HandsBackARefusedDrop_WithItsReason_AndAsksTheNextProviderWhenOneAnswersNothing()
+    {
+        // Arrange.
+        var silent = new DroppingProvider("x", null);
+        var refusing = new DroppingProvider("x", new ContextActionDefinition("add-inside", "Add inside", "mdi-plus", Available: false, UnavailableReason: "Not on that."));
+        var resolver = new ContextActionResolver(new IContextActionProvider[] { silent, refusing });
+
+        // Act.
+        var dropped = await resolver.ResolveDropAsync(Target(), "add-inside", TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.NotNull(dropped);
+        Assert.Same(refusing, dropped.Provider);
+        Assert.False(dropped.Action.Available);
+        Assert.Equal("Not on that.", dropped.Action.UnavailableReason);
+    }
+
+    /// <summary>A provider that answers drops itself: one answer for every drop, and a menu of one other action.</summary>
+    private sealed class DroppingProvider(string menuActionId, ContextActionDefinition? drop) : IContextActionProvider, IContextDropProvider
+    {
+        private readonly ContextActionResolverStubProvider _menu = new(ContextScope.Hierarchy, menuActionId);
+
+        public ContextScope Scope => ContextScope.Hierarchy;
+
+        public ValueTask<ContextActionDefinition?> ResolveDropAsync(ContextTarget target, string dropActionId, CancellationToken cancellationToken) =>
+            ValueTask.FromResult(drop is not null && drop.Id == dropActionId ? drop : null);
+
+        public ValueTask<IReadOnlyList<ContextActionGroupDefinition>> DiscoverAsync(ContextTarget target, CancellationToken cancellationToken) =>
+            _menu.DiscoverAsync(target, cancellationToken);
+
+        public ValueTask<ContextExecutionResult> ExecuteAsync(ContextTarget target, string actionId, CancellationToken cancellationToken) =>
+            _menu.ExecuteAsync(target, actionId, cancellationToken);
+
+        public ValueTask<ContextValidationResult> ValidateAsync(ContextTarget target, string actionId, string value, CancellationToken cancellationToken) =>
+            _menu.ValidateAsync(target, actionId, value, cancellationToken);
+
+        public ValueTask<ContextCommitResult> CommitAsync(ContextTarget target, string actionId, string value, string text, CancellationToken cancellationToken) =>
+            _menu.CommitAsync(target, actionId, value, text, cancellationToken);
+    }
 }
