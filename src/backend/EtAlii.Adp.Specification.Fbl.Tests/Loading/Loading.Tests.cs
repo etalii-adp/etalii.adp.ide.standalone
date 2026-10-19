@@ -65,6 +65,47 @@ public class LoadingTests
     }
 
     [Theory]
+    [InlineData("0.5.1")]
+    [InlineData("+0.5")]
+    [InlineData(" 0.5")]
+    [InlineData("0")]
+    public void AVersionNotWrittenAsMajorDotMinorInDigitsIsRefused(string version)
+    {
+        // Act.
+        var problems = FblDocumentLoader.Load(Encoding.UTF8.GetBytes($$"""{ "fbl": "{{version}}", "bindings": { "t": {{Binding()}} } }"""), out var document);
+
+        // Assert: exactly major.minor in digits, as FBL §2.7 writes it (behaviour change B-08).
+        Assert.Null(document);
+        Assert.Equal($"error at /fbl: The FBL version '{version}' is not written as major.minor (FBL §2.7).", Assert.Single(problems).ToString());
+    }
+
+    [Fact]
+    public void AMissingVersionIsRefused()
+    {
+        // Act.
+        var problems = FblDocumentLoader.Load(Encoding.UTF8.GetBytes($$"""{ "bindings": { "t": {{Binding()}} } }"""), out var document);
+
+        // Assert.
+        Assert.Null(document);
+        Assert.Equal("error at /fbl: The document does not say which FBL version it is written in.", Assert.Single(problems).ToString());
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("\"fbl\": \"1.0\", ")]
+    [InlineData("\"fbl\": \"0.5.1\", ")]
+    public void AVersionThatIsRefusedLeavesTheRestOfTheDocumentReported(string version)
+    {
+        // Act.
+        var problems = FblDocumentLoader.Load(Encoding.UTF8.GetBytes($$"""{ {{version}}"bindings": { "1t": {{Binding()}} } }"""), out var document);
+
+        // Assert: the version's refusal and the binding name's, not only the first (behaviour change B-08).
+        Assert.Null(document);
+        Assert.Contains(problems, p => p is { Severity: LoadSeverity.Error, Pointer: "/fbl" });
+        Assert.Contains(problems, p => p is { Severity: LoadSeverity.Error, Pointer: "/bindings/1t" });
+    }
+
+    [Theory]
     [InlineData("0.2")]
     [InlineData("0.5")]
     public void AVersionThisLibraryKnowsLoadsWithoutAWarning(string version)

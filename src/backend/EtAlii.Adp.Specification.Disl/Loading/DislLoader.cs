@@ -35,8 +35,7 @@ public sealed record DislLoadResult(DislSpecification? Specification, IReadOnlyL
 public static class DislLoader
 {
     /// <summary>The DISL major version this runtime reads, and the highest minor it knows.</summary>
-    private const int Major = 0;
-    private const int Minor = 3;
+    private static readonly LanguageVersion Disl = new("DISL", 0, 3, "DISL §2.9");
 
     /// <summary>The default per-evaluation cost limit of DISL §2.5.</summary>
     private const long DefaultCostLimit = 1_000_000;
@@ -97,7 +96,7 @@ public static class DislLoader
             diagnostics.Add(Error("", "A specification is a JSON object (DISL §2.1)."));
             return new DislLoadResult(null, diagnostics);
         }
-        DuplicateKeys(root, "", diagnostics);
+        diagnostics.AddRange(JsonDuplicateKeys.Find(root, "DISL §2.1"));
 
         // Step 2: the version (§2.9).
         Version(root, diagnostics);
@@ -142,30 +141,6 @@ public static class DislLoader
 
     private static LoadDiagnostic Warning(string pointer, string message) => new(pointer, LoadSeverity.Warning, message);
 
-    /// <summary>Every object's keys are unique (§2.1); a repeated key is reported at its second occurrence.</summary>
-    private static void DuplicateKeys(JsonElement element, string pointer, List<LoadDiagnostic> diagnostics)
-    {
-        switch (element.ValueKind)
-        {
-            case JsonValueKind.Object:
-                var seen = new HashSet<string>(StringComparer.Ordinal);
-                foreach (var property in element.EnumerateObject())
-                {
-                    var child = DislJson.Pointer(pointer, property.Name);
-                    if (!seen.Add(property.Name)) diagnostics.Add(Error(child, $"The key '{property.Name}' appears more than once in one object (DISL §2.1)."));
-                    DuplicateKeys(property.Value, child, diagnostics);
-                }
-                break;
-            case JsonValueKind.Array:
-                var index = 0;
-                foreach (var item in element.EnumerateArray())
-                {
-                    DuplicateKeys(item, DislJson.Pointer(pointer, index++), diagnostics);
-                }
-                break;
-        }
-    }
-
     /// <summary>The <c>disl</c> version, or its deprecated alias <c>dedl</c> (§2.9, §18): a higher major is refused, a higher minor warned about.</summary>
     private static void Version(JsonElement root, List<LoadDiagnostic> diagnostics)
     {
@@ -183,21 +158,7 @@ public static class DislLoader
             diagnostics.Add(Error("/disl", "A specification declares the DISL version it targets (DISL §2.9)."));
             return;
         }
-        var parts = version.Split('.');
-        if (parts.Length != 2 || !int.TryParse(parts[0], System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var major)
-            || !int.TryParse(parts[1], System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var minor))
-        {
-            diagnostics.Add(Error(pointer, $"'{version}' is not a DISL version written as major.minor (DISL §2.9)."));
-            return;
-        }
-        if (major > Major)
-        {
-            diagnostics.Add(Error(pointer, $"This runtime reads DISL {Major}.x; DISL {version} is refused (DISL §2.9)."));
-        }
-        else if (major == Major && minor > Minor)
-        {
-            diagnostics.Add(Warning(pointer, $"This runtime knows DISL up to {Major}.{Minor}; what DISL {version} adds is not read (DISL §2.9)."));
-        }
+        if (Disl.Check(version, pointer) is { } diagnostic) diagnostics.Add(diagnostic);
         if (dedl is not null)
         {
             diagnostics.Add(Warning(pointer, "'dedl' is the deprecated alias of 'disl' (DISL §18)."));
