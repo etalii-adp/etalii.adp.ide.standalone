@@ -72,7 +72,7 @@ public class ServiceCollectionAddCausalLoopTests
             candidate => candidate.Origin == ServiceCollectionAddCausalLoopExtension.CausalLoopOrigin);
         var changed = new List<string>();
         store.Changed += (_, args) => changed.Add(args.Path);
-        _ = store.GetOrLoad(CausalLoopDocumentStoreTests.OnCall);
+        _ = await store.GetOrLoadAsync(CausalLoopDocumentStoreTests.OnCall, TestContext.Current.CancellationToken);
 
         // Act.
         await reloader.BodyDeletedAsync("root", CausalLoopDocumentStoreTests.OnCall, TestContext.Current.CancellationToken);

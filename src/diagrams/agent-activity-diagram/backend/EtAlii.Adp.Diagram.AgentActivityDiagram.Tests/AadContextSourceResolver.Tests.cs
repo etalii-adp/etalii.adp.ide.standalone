@@ -16,7 +16,7 @@ public sealed class AadContextSourceResolverTests : DiagramElementSourceResolver
     protected override IContextSourceResolver CreateResolver() =>
         new AadContextSourceResolver(new DiagramFileRouter(new AadOnlyCatalog()), _store, new AadElementMapper());
 
-    protected override void Reload(string body) => _store.Reload(body);
+    protected override Task ReloadAsync(string body, CancellationToken cancellationToken) => _store.ReloadAsync(body, cancellationToken);
 
     protected override string ElementId => "s-knowledge";
 

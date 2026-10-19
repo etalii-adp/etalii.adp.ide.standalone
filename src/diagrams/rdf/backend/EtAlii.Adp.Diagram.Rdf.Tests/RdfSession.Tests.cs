@@ -165,7 +165,7 @@ public class RdfSessionTests : IDisposable
         // Touch the document: a comment is enough - the reload re-renders and diffs.
         var text = await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken);
         await File.WriteAllTextAsync(body, text + Environment.NewLine + "# an edit while the reader is zoomed in" + Environment.NewLine, TestContext.Current.CancellationToken);
-        _provider.GetRequiredService<IRdfDocumentStore>().Reload(body);
+        await _provider.GetRequiredService<IRdfDocumentStore>().ReloadAsync(body, TestContext.Current.CancellationToken);
 
         // Assert.
         var resent = seen.OfType<DiagramAddDelta>().SelectMany(delta => delta.Elements).Select(element => element.Id);

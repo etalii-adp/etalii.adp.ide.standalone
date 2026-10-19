@@ -341,7 +341,7 @@ public class PipelineTemplatesTests : IDisposable
     [InlineData("stages:\n  - template: templates/gone.yml\n", "", "")]
     [InlineData("stages:\n  - template: templates/loop.yml\n", "templates/loop.yml", "stages:\n  - template: loop.yml\n")]
     [InlineData("stages:\n  - stage: Build\n    jobs:\n      - template: templates/broken.yml\n", "templates/broken.yml", "jobs:\n  - job: A\n   steps:\n      - script: x\n     bad: [indent\n")]
-    public void AnUnfollowedTemplate_IsExplainedByTheDefinitionInTheToolsOwnSentence(string pipeline, string templatePath, string template)
+    public async Task AnUnfollowedTemplate_IsExplainedByTheDefinitionInTheToolsOwnSentence(string pipeline, string templatePath, string template)
     {
         // Arrange: the canvas's hover on an unfollowed template is the definition's `explanation`,
         // which the backend sends as the payload's unresolved reason; the two must be one sentence,
@@ -353,7 +353,7 @@ public class PipelineTemplatesTests : IDisposable
         }
 
         // Act.
-        var entry = new PipelineDocumentStore(new FileWriter()).GetOrLoad(_workspace, body);
+        var entry = await new PipelineDocumentStore(new FileWriter()).GetOrLoadAsync(_workspace, body, TestContext.Current.CancellationToken);
         var explained = entry.Document.Disl.Diagram.Nodes
             .Where(node => node.IsA("TemplateReference"))
             .Select(node => (Path: node.ValueOf("path") as string, Sentence: node.ValueOf("explanation") as string))

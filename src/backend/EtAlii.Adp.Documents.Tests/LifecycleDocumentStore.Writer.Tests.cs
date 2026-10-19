@@ -27,7 +27,7 @@ public sealed class LifecycleDocumentStoreWriterTests : IDisposable
         var store = new LineStore(writer);
         var told = new List<string>();
         store.Changed += (_, args) => told.Add(args.Path);
-        var edited = LineDocument.Parse(store.GetOrLoad(path).Document.Text + "after\n");
+        var edited = LineDocument.Parse((await store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Document.Text + "after\n");
 
         // Act: called on this thread, the save returns while its writer still holds it.
         var saving = store.SaveAsync(path, edited, TestContext.Current.CancellationToken);

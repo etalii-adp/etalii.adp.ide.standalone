@@ -148,6 +148,8 @@ internal static class AbmTranscript
             }
 
             using var session = new Session(folder, body);
+
+            await session.ReadAsync(cancellationToken);
             await WriteReadingsAsync(json, session, bytes, cancellationToken);
             await WriteEditsAsync(json, session, cancellationToken);
         }
@@ -369,7 +371,10 @@ internal static class AbmTranscript
 
         public AbmContextPropertyProvider ReadOnlyProperties { get; }
 
-        public AbmModel Model => Store.GetOrLoad(Body).Model;
+        /// <summary>Opens the document, as the diagram's first open does; the readings and edits read what it holds.</summary>
+        public async Task ReadAsync(CancellationToken cancellationToken) => await Store.GetOrLoadAsync(Body, cancellationToken);
+
+        public AbmModel Model => Store.Get(Body)!.Model;
 
         public ContextTarget Target(string elementId) =>
             ContextTarget.ForElement(Body, elementId, Folder, origin: Diagram.AgentBehaviorModelling.Origin);

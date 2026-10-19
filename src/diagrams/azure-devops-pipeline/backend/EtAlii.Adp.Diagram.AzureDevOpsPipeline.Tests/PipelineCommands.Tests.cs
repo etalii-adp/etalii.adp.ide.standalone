@@ -57,7 +57,7 @@ public class PipelineCommandsTests : IDisposable
         return path;
     }
 
-    private PipelineModel Model(string path) => _store.GetOrLoad(_workspace, path).Model;
+    private async Task<PipelineModel> ModelAsync(string path) => (await _store.GetOrLoadAsync(_workspace, path, TestContext.Current.CancellationToken)).Model;
 
     private string Text(string path) => File.ReadAllText(path);
 
@@ -184,7 +184,7 @@ public class PipelineCommandsTests : IDisposable
 
         // Assert.
         Assert.True(result.IsSuccess, result.Error);
-        Assert.Equal(["A"], Model(path).Stages.Single(stage => stage.Name == "C").DependsOn);
+        Assert.Equal(["A"], (await ModelAsync(path)).Stages.Single(stage => stage.Name == "C").DependsOn);
     }
 
     [Fact]
@@ -214,7 +214,7 @@ public class PipelineCommandsTests : IDisposable
 
         // Assert.
         Assert.True(result.IsSuccess);
-        Assert.False(Model(path).Stages.Single(stage => stage.Name == "Test").DependsOnDeclared);
+        Assert.False((await ModelAsync(path)).Stages.Single(stage => stage.Name == "Test").DependsOnDeclared);
     }
 
     [Fact]
@@ -224,7 +224,7 @@ public class PipelineCommandsTests : IDisposable
         // file without being written down. Drawing an edge that contradicts it is the moment the
         // default has to become explicit, or the file would say something the diagram does not.
         var path = Write(Sequential);
-        Assert.False(Model(path).Stages.Single(stage => stage.Name == "C").DependsOnDeclared);
+        Assert.False((await ModelAsync(path)).Stages.Single(stage => stage.Name == "C").DependsOnDeclared);
 
         // Act.
         var result = await SetDependencies(path, "C", ["A"]);
@@ -232,10 +232,10 @@ public class PipelineCommandsTests : IDisposable
         // Assert.
         Assert.True(result.IsSuccess, result.Error);
         Assert.Contains("dependsOn: A", Text(path));
-        Assert.True(Model(path).Stages.Single(stage => stage.Name == "C").DependsOnDeclared);
+        Assert.True((await ModelAsync(path)).Stages.Single(stage => stage.Name == "C").DependsOnDeclared);
         // B is untouched and still relies on the default, which is the point: only the element
         // whose ordering actually changed had to be written down.
-        Assert.False(Model(path).Stages.Single(stage => stage.Name == "B").DependsOnDeclared);
+        Assert.False((await ModelAsync(path)).Stages.Single(stage => stage.Name == "B").DependsOnDeclared);
     }
 
     [Fact]
@@ -293,7 +293,7 @@ public class PipelineCommandsTests : IDisposable
 
         // Assert.
         Assert.True(result.IsSuccess);
-        Assert.True(Model(path).Steps.First().Execution.IsDisabled);
+        Assert.True((await ModelAsync(path)).Steps.First().Execution.IsDisabled);
 
         // Act.
         await UndoAsync(result.Inverse!);
@@ -329,7 +329,7 @@ public class PipelineCommandsTests : IDisposable
 
         // Assert.
         Assert.True(result.IsSuccess, result.Error);
-        var stage = Model(path).Stages.Single(candidate => candidate.Name == "Ship");
+        var stage = (await ModelAsync(path)).Stages.Single(candidate => candidate.Name == "Ship");
         Assert.NotEmpty(stage.Jobs);
         Assert.NotEmpty(stage.Jobs[0].Steps);
     }
@@ -360,7 +360,7 @@ public class PipelineCommandsTests : IDisposable
         await Add(path, PipelineAddKind.Stage, name: "Build");
 
         // Assert.
-        Assert.Contains(Model(path).Stages, stage => stage.Name == "Build2");
+        Assert.Contains((await ModelAsync(path)).Stages, stage => stage.Name == "Build2");
     }
 
     [Fact]
@@ -372,7 +372,7 @@ public class PipelineCommandsTests : IDisposable
 
         // Assert.
         Assert.True(result.IsSuccess, result.Error);
-        Assert.Contains(Model(path).Stages.Single(stage => stage.Name == "Test").Jobs, job => job.Name == "Smoke");
+        Assert.Contains((await ModelAsync(path)).Stages.Single(stage => stage.Name == "Test").Jobs, job => job.Name == "Smoke");
     }
 
     [Fact]
@@ -386,7 +386,7 @@ public class PipelineCommandsTests : IDisposable
 
         // Assert.
         Assert.True(result.IsSuccess, result.Error);
-        var job = Model(path).Jobs.Single(candidate => candidate.Name == "Release");
+        var job = (await ModelAsync(path)).Jobs.Single(candidate => candidate.Name == "Release");
         Assert.True(job.IsDeployment);
         Assert.NotEmpty(job.Environment);
         Assert.Equal(PipelineStrategyKind.RunOnce, job.Strategy.Kind);
@@ -428,7 +428,7 @@ public class PipelineCommandsTests : IDisposable
 
         // Assert.
         Assert.True(result.IsSuccess, result.Error);
-        var steps = Model(path).Jobs.Single(job => job.Name == "Compile").Steps;
+        var steps = (await ModelAsync(path)).Jobs.Single(job => job.Name == "Compile").Steps;
         Assert.Equal(3, steps.Count);
         Assert.Contains("echo Add your build steps here", steps[^1].Identifier);
     }
@@ -542,7 +542,7 @@ public class PipelineCommandsTests : IDisposable
 
         // Assert.
         Assert.True(result.IsSuccess, result.Error);
-        var steps = Model(path).Jobs.Single(job => job.Name == "Compile").Steps;
+        var steps = (await ModelAsync(path)).Jobs.Single(job => job.Name == "Compile").Steps;
         Assert.Single(steps);
         Assert.Equal("Pack", steps[0].Label);
     }
@@ -560,7 +560,7 @@ public class PipelineCommandsTests : IDisposable
         Assert.True(result.IsSuccess, result.Error);
         Assert.Equal(
             ["Pack", "Build"],
-            Model(path).Jobs.Single(job => job.Name == "Compile").Steps.Select(step => step.Label));
+            (await ModelAsync(path)).Jobs.Single(job => job.Name == "Compile").Steps.Select(step => step.Label));
     }
 
     [Fact]
@@ -638,7 +638,7 @@ public class PipelineCommandsTests : IDisposable
         Assert.True((await SetDependencies(path, "Ship", ["Test"])).IsSuccess);
 
         // Assert.
-        var entry = _store.GetOrLoad(_workspace, path);
+        var entry = await _store.GetOrLoadAsync(_workspace, path, TestContext.Current.CancellationToken);
         Assert.True(entry.IsUsable, entry.Unreadable);
         Assert.Equal(["Build", "Test", "Ship"], entry.Model.Stages.Select(stage => stage.Name));
         Assert.Equal(["Test"], entry.Model.Stages.Single(stage => stage.Name == "Ship").DependsOn);

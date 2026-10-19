@@ -216,7 +216,7 @@ public sealed class SankeyProvidersTests : IDisposable
         // Assert.
         Assert.Contains("could not be read", Assert.IsType<ContextExecutionFailed>(added).Message, StringComparison.Ordinal);
         Assert.Equal(broken, await File.ReadAllTextAsync(_folder.Body, TestContext.Current.CancellationToken));
-        var entry = _store.GetOrLoad(_folder.Body);
+        var entry = await _store.GetOrLoadAsync(_folder.Body, TestContext.Current.CancellationToken);
         Assert.StartsWith("The document could not be read as YAML: ", entry.Unreadable, StringComparison.Ordinal);
         Assert.Equal(entry.Model.Problems, entry.Problems);
     }

@@ -157,7 +157,7 @@ public class DependencyGraphContextPropertyProviderTests : IDisposable
 
         // Assert.
         Assert.True(result.IsSuccess, result.Error);
-        Assert.Equal(612.75d, _store.GetOrLoad(path).Model.Elements[0].X);
+        Assert.Equal(612.75d, (await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Model.Elements[0].X);
     }
 
     [Fact]
@@ -186,7 +186,7 @@ public class DependencyGraphContextPropertyProviderTests : IDisposable
 
         // Assert.
         Assert.False(result.IsSuccess);
-        Assert.Equal(0, _store.GetOrLoad(path).Model.Elements[0].Row);
+        Assert.Equal(0, (await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Model.Elements[0].Row);
     }
 
     [Fact]
@@ -199,7 +199,7 @@ public class DependencyGraphContextPropertyProviderTests : IDisposable
 
         // Assert.
         Assert.True(result.IsSuccess, result.Error);
-        Assert.Equal(7, _store.GetOrLoad(path).Model.Elements[0].Row);
+        Assert.Equal(7, (await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Model.Elements[0].Row);
     }
 
     [Fact]
@@ -212,7 +212,7 @@ public class DependencyGraphContextPropertyProviderTests : IDisposable
 
         // Assert.
         Assert.True(result.IsSuccess, result.Error);
-        Assert.Equal("Edge router", _store.GetOrLoad(path).Model.Elements[0].Label);
+        Assert.Equal("Edge router", (await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Model.Elements[0].Label);
     }
 
     [Fact]
@@ -233,7 +233,7 @@ public class DependencyGraphContextPropertyProviderTests : IDisposable
         // thing.
         Assert.True(relabelled.IsSuccess, relabelled.Error);
         Assert.False(reversed.IsSuccess);
-        var relation = _store.GetOrLoad(path).Model.Relations[0];
+        var relation = (await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Model.Relations[0];
         Assert.Equal("authenticates against", relation.Label);
         Assert.Equal("aaa", relation.From);
     }

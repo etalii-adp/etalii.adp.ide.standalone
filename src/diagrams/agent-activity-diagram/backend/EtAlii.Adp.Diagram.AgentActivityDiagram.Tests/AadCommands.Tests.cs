@@ -72,7 +72,7 @@ public sealed class AadCommandsTests : IDisposable
         await GivenAsync("agent-activity-diagram: 1\r\n");
         Assert.True((await RunAsync(new AddAadElementCommand(Body, "project", 0, 0))).IsSuccess);
         Assert.True((await RunAsync(new AddAadElementCommand(Body, "specification", 100, 0))).IsSuccess);
-        var model = Documents.GetOrLoad(Body).Model;
+        var model = (await Documents.GetOrLoadAsync(Body, TestContext.Current.CancellationToken)).Model;
         Assert.True((await RunAsync(new ConnectAadCommand(Body, model.Elements[0].Id, model.Elements[1].Id))).IsSuccess);
         var joined = await ReadAsync();
 
@@ -110,7 +110,7 @@ public sealed class AadCommandsTests : IDisposable
         Assert.Equal(["        title: New task", "        status: pending"], added[1..3]);
         Assert.Matches(@"^        updated: \d{4}-\d\d-\d\dT\d\d:\d\d:\d\d[+-]\d\d:\d\d$", added[3]);
         Assert.Empty(Lines(before).Except(Lines(await ReadAsync())));
-        Assert.Equal(3, Documents.GetOrLoad(Body).Model.Elements.Single(element => element.Id == "s-knowledge").Rows.Count);
+        Assert.Equal(3, (await Documents.GetOrLoadAsync(Body, TestContext.Current.CancellationToken)).Model.Elements.Single(element => element.Id == "s-knowledge").Rows.Count);
     }
 
     [Fact]
@@ -144,7 +144,7 @@ public sealed class AadCommandsTests : IDisposable
 
         // Assert.
         Assert.True(byMenu.IsSuccess, byMenu.Error);
-        var model = Documents.GetOrLoad(Body).Model;
+        var model = (await Documents.GetOrLoadAsync(Body, TestContext.Current.CancellationToken)).Model;
         Assert.Equal("inputRequired", model.Elements.Single(element => element.Id == "s-knowledge").Status);
         Assert.Equal("inputRequired", model.Elements.Single(element => element.Id == "s-knowledge").Rows.Single(row => row.Id == "t-k2").Status);
         // The specification, the task, and the task the file already had so.
@@ -238,7 +238,7 @@ public sealed class AadCommandsTests : IDisposable
         Assert.Equal("Its position is not locked.", none.Error);
         Assert.True(all.IsSuccess, all.Error);
         Assert.Equal(before.Replace("  placements:\r\n    - element: s-knowledge\r\n      x: 240\r\n      y: -80\r\n", "", StringComparison.Ordinal), await ReadAsync());
-        Assert.Empty(Documents.GetOrLoad(Body).Model.Placements);
+        Assert.Empty((await Documents.GetOrLoadAsync(Body, TestContext.Current.CancellationToken)).Model.Placements);
     }
 
     [Fact]
@@ -258,7 +258,7 @@ public sealed class AadCommandsTests : IDisposable
         // Assert.
         Assert.EndsWith("      collapsed: false\r\n    - element: s-knowledge\r\n      group: progressing\r\n      collapsed: true\r\n", kept, StringComparison.Ordinal);
         Assert.Equal(before.Replace("  groups:\r\n    - element: s-knowledge\r\n      group: pending\r\n      collapsed: false\r\n", "", StringComparison.Ordinal), await ReadAsync());
-        Assert.Equal(["finished", "pending"], Documents.GetOrLoad(Body).Model.Collapsed["s-knowledge"].Order(StringComparer.Ordinal));
+        Assert.Equal(["finished", "pending"], (await Documents.GetOrLoadAsync(Body, TestContext.Current.CancellationToken)).Model.Collapsed["s-knowledge"].Order(StringComparer.Ordinal));
     }
 
     [Fact]
@@ -266,9 +266,9 @@ public sealed class AadCommandsTests : IDisposable
     {
         // Arrange: a reader's part without the switch.
         await GivenAsync((await GivenOneDayAsync()).Replace("  showArchived: false\r\n", "", StringComparison.Ordinal));
-        Documents.Reload(Body);
+        await Documents.ReloadAsync(Body, TestContext.Current.CancellationToken);
         var mapper = new AadElementMapper();
-        Assert.DoesNotContain(mapper.Visible(Documents.GetOrLoad(Body).Model, DiagramViewport.Unbounded), element => element.Id == "s-rider");
+        Assert.DoesNotContain(mapper.Visible((await Documents.GetOrLoadAsync(Body, TestContext.Current.CancellationToken)).Model, DiagramViewport.Unbounded), element => element.Id == "s-rider");
 
         // Act.
         var result = await RunAsync(new SetAadShowArchivedCommand(Body, Show: true));
@@ -276,7 +276,7 @@ public sealed class AadCommandsTests : IDisposable
         // Assert.
         Assert.True(result.IsSuccess, result.Error);
         Assert.Contains("view:\r\n  showArchived: true\r\n  placements:\r\n", await ReadAsync(), StringComparison.Ordinal);
-        Assert.Contains(mapper.Visible(Documents.GetOrLoad(Body).Model, DiagramViewport.Unbounded), element => element.Id == "s-rider");
+        Assert.Contains(mapper.Visible((await Documents.GetOrLoadAsync(Body, TestContext.Current.CancellationToken)).Model, DiagramViewport.Unbounded), element => element.Id == "s-rider");
     }
 
     [Fact]
@@ -284,7 +284,7 @@ public sealed class AadCommandsTests : IDisposable
     {
         // Arrange: the diagram has read the file; then an agent renames a project behind its back.
         var before = await GivenOneDayAsync();
-        Documents.GetOrLoad(Body);
+        await Documents.GetOrLoadAsync(Body, TestContext.Current.CancellationToken);
         var agents = before.Replace("    name: etalii.adp\r\n", "    name: etalii.adp (languages)\r\n", StringComparison.Ordinal);
         await File.WriteAllTextAsync(Body, agents, TestContext.Current.CancellationToken);
 

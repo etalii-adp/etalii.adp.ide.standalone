@@ -405,14 +405,14 @@ public class PipelineContextActionProviderTests : IDisposable
         await CommitAsync(path, "Build/Lint", PipelineContextActionProvider.ToggleEnabledActionId);
 
         // Assert.
-        Assert.True(_store.GetOrLoad(_workspace, path).Model.Jobs.Single(job => job.Name == "Lint").Execution.IsDisabled);
+        Assert.True((await _store.GetOrLoadAsync(_workspace, path, TestContext.Current.CancellationToken)).Model.Jobs.Single(job => job.Name == "Lint").Execution.IsDisabled);
 
         // Act: the action's label and effect both follow the current state, so committing again
         // turns it back on rather than off a second time.
         await CommitAsync(path, "Build/Lint", PipelineContextActionProvider.ToggleEnabledActionId);
 
         // Assert.
-        Assert.False(_store.GetOrLoad(_workspace, path).Model.Jobs.Single(job => job.Name == "Lint").Execution.IsDisabled);
+        Assert.False((await _store.GetOrLoadAsync(_workspace, path, TestContext.Current.CancellationToken)).Model.Jobs.Single(job => job.Name == "Lint").Execution.IsDisabled);
     }
 
     [Fact]
@@ -442,7 +442,7 @@ public class PipelineContextActionProviderTests : IDisposable
 
         // Assert.
         Assert.True(result.Completed, result.Error);
-        Assert.Equal(2, _store.GetOrLoad(_workspace, path).Model.Stages.Single(stage => stage.Name == "Test").Jobs.Count);
+        Assert.Equal(2, (await _store.GetOrLoadAsync(_workspace, path, TestContext.Current.CancellationToken)).Model.Stages.Single(stage => stage.Name == "Test").Jobs.Count);
     }
 
     [Fact]
@@ -456,7 +456,7 @@ public class PipelineContextActionProviderTests : IDisposable
         Assert.True(result.Completed, result.Error);
         Assert.Equal(
             ["dotnet pack", "dotnet build"],
-            _store.GetOrLoad(_workspace, path).Model.Jobs.Single(job => job.Name == "Compile").Steps.Select(step => step.Identifier));
+            (await _store.GetOrLoadAsync(_workspace, path, TestContext.Current.CancellationToken)).Model.Jobs.Single(job => job.Name == "Compile").Steps.Select(step => step.Identifier));
     }
 
     [Fact]
@@ -468,7 +468,7 @@ public class PipelineContextActionProviderTests : IDisposable
 
         // Assert.
         Assert.True(result.Completed, result.Error);
-        Assert.Equal(["Build"], _store.GetOrLoad(_workspace, path).Model.Stages.Select(stage => stage.Name));
+        Assert.Equal(["Build"], (await _store.GetOrLoadAsync(_workspace, path, TestContext.Current.CancellationToken)).Model.Stages.Select(stage => stage.Name));
     }
 
     [Fact]
@@ -480,7 +480,7 @@ public class PipelineContextActionProviderTests : IDisposable
 
         // Assert.
         Assert.True(result.Completed, result.Error);
-        Assert.False(_store.GetOrLoad(_workspace, path).Model.Stages.Single(stage => stage.Name == "Test").DependsOnDeclared);
+        Assert.False((await _store.GetOrLoadAsync(_workspace, path, TestContext.Current.CancellationToken)).Model.Stages.Single(stage => stage.Name == "Test").DependsOnDeclared);
     }
 
     [Fact]
@@ -507,7 +507,7 @@ public class PipelineContextActionProviderTests : IDisposable
         // failure that was its own: an action doing view-state work finishes in ExecuteAsync and
         // is never committed at all, so demanding a successful commit of it was asking the wrong
         // question of the right code.
-        var elementIds = AllElementIds().ToArray();
+        var elementIds = (await AllElementIdsAsync()).ToArray();
 
         // Assert, first, that the walk found the pipeline at all. The fixture yields nine ids
         // today - stages, their jobs and their steps - so five is a floor with headroom either
@@ -618,21 +618,21 @@ public class PipelineContextActionProviderTests : IDisposable
     }
 
     /// <summary>Every element of the fixture pipeline, at all three levels.</summary>
-    private IEnumerable<string> AllElementIds()
+    private async Task<IReadOnlyList<string>> AllElementIdsAsync()
     {
-        var model = _store.GetOrLoad(_workspace, Write()).Model;
+        var model = (await _store.GetOrLoadAsync(_workspace, Write(), TestContext.Current.CancellationToken)).Model;
+        List<string> ids = [];
         foreach (var stage in model.Stages)
         {
-            yield return stage.Id;
+            ids.Add(stage.Id);
             foreach (var job in stage.Jobs)
             {
-                yield return job.Id;
-                foreach (var step in job.Steps)
-                {
-                    yield return step.Id;
-                }
+                ids.Add(job.Id);
+                ids.AddRange(job.Steps.Select(step => step.Id));
             }
         }
+
+        return ids;
     }
 
     private async Task<string> LabelOf(string path, string elementId, string actionId)
@@ -642,9 +642,9 @@ public class PipelineContextActionProviderTests : IDisposable
     }
 
     /// <summary>The id the canvas gives the Build -> Test arrow, from the module's own graph.</summary>
-    private string ArrowId(string path)
+    private async Task<string> ArrowIdAsync(string path)
     {
-        var model = _store.GetOrLoad(_workspace, path).Model;
+        var model = (await _store.GetOrLoadAsync(_workspace, path, TestContext.Current.CancellationToken)).Model;
         return PipelineElementMapper.EdgeId(PipelineGraphBuilder.OfStages(model).Edges.Single(edge => edge is { FromId: "Build", ToId: "Test" }));
     }
 
@@ -657,7 +657,7 @@ public class PipelineContextActionProviderTests : IDisposable
         var path = Write();
 
         // Act.
-        var actions = await ActionsOn(path, ArrowId(path));
+        var actions = await ActionsOn(path, await ArrowIdAsync(path));
 
         // Assert.
         Assert.Empty(actions);

@@ -25,17 +25,17 @@ public class MindmapDocumentStoreTests : IDisposable
     }
 
     [Fact]
-    public void GetOrLoad_AnEmptyFile_OpensAsAnEmptyMapNamedAfterIt()
+    public async Task GetOrLoad_AnEmptyFile_OpensAsAnEmptyMapNamedAfterIt()
     {
         // Arrange.
         // A zero-byte .mm - a file created by hand, or a body a tool left blank - used to
         // throw "Data at the root level is invalid" on every open attempt. It is a map that
         // has not been written yet, which is Requirement 2.5's recoverable state.
         var bodyPath = IoPath.Combine(_root, "design.mm");
-        File.WriteAllText(bodyPath, "");
+        await File.WriteAllTextAsync(bodyPath, "", TestContext.Current.CancellationToken);
 
         // Act.
-        var document = _store.GetOrLoad(bodyPath);
+        var document = await _store.GetOrLoadAsync(bodyPath, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Equal("design", document.Root.Text);
@@ -43,29 +43,29 @@ public class MindmapDocumentStoreTests : IDisposable
     }
 
     [Fact]
-    public void GetOrLoad_AWhitespaceOnlyFile_OpensAsAnEmptyMapToo()
+    public async Task GetOrLoad_AWhitespaceOnlyFile_OpensAsAnEmptyMapToo()
     {
         // Arrange.
         var bodyPath = IoPath.Combine(_root, "notes.mm");
-        File.WriteAllText(bodyPath, " \r\n\t\n");
+        await File.WriteAllTextAsync(bodyPath, " \r\n\t\n", TestContext.Current.CancellationToken);
 
         // Act.
-        var document = _store.GetOrLoad(bodyPath);
+        var document = await _store.GetOrLoadAsync(bodyPath, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Equal("notes", document.Root.Text);
     }
 
     [Fact]
-    public void GetOrLoad_AGenuinelyMalformedFile_StillFailsNamingIt()
+    public async Task GetOrLoad_AGenuinelyMalformedFile_StillFailsNamingIt()
     {
         // Arrange.
         // Requirement 3.7: real damage degrades to a clear error on that one diagram.
         var bodyPath = IoPath.Combine(_root, "broken.mm");
-        File.WriteAllText(bodyPath, "<map version=\"freeplane 1.11.5\"><node TEXT=\"unclosed\"></map>");
+        await File.WriteAllTextAsync(bodyPath, "<map version=\"freeplane 1.11.5\"><node TEXT=\"unclosed\"></map>", TestContext.Current.CancellationToken);
 
         // Act.
-        var exception = Assert.Throws<MindmapFormatException>(() => _store.GetOrLoad(bodyPath));
+        var exception = await Assert.ThrowsAsync<MindmapFormatException>(async () => await _store.GetOrLoadAsync(bodyPath, TestContext.Current.CancellationToken));
 
         // Assert.
         Assert.Contains("broken.mm", exception.Message, StringComparison.Ordinal);

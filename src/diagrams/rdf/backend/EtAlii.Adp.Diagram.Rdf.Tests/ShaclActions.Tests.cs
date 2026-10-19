@@ -53,7 +53,7 @@ public class ShaclActionsTests : IDisposable
         GC.SuppressFinalize(this);
     }
 
-    private DocumentEntry<LineDocument, RdfModel> Entry() => _provider.GetRequiredService<IRdfDocumentStore>().GetOrLoad(_body);
+    private async Task<DocumentEntry<LineDocument, RdfModel>> EntryAsync() => await _provider.GetRequiredService<IRdfDocumentStore>().GetOrLoadAsync(_body, TestContext.Current.CancellationToken);
 
     private ContextTarget Target(string elementId, ToolOrigin? origin) =>
         new(ContextScope.DiagramElement, _body, false, ShortGuid.NewShortGuid(), _root, default, elementId) { Origin = origin };
@@ -61,9 +61,9 @@ public class ShaclActionsTests : IDisposable
     private const string CardId = "res:http://example.org/PersonShape";
 
     [Fact]
-    public void TheCases_AnswerForTheirOwnOrigin()
+    public async Task TheCases_AnswerForTheirOwnOrigin()
     {
-        var groups = ShaclActions.Discover(Entry(), Target(CardId, ServiceCollectionAddShaclExtension.ShaclOrigin));
+        var groups = ShaclActions.Discover(await EntryAsync(), Target(CardId, ServiceCollectionAddShaclExtension.ShaclOrigin));
 
         var actions = Assert.Single(groups).Actions;
         Assert.Contains(actions, action => action.Id == ShaclActions.AddTargetClassActionId);
@@ -73,19 +73,19 @@ public class ShaclActionsTests : IDisposable
     }
 
     [Fact]
-    public void TheCases_StaySilentForAnotherReadingsOrigin()
+    public async Task TheCases_StaySilentForAnotherReadingsOrigin()
     {
         // The rule that needs enforcing precisely because one selection vocabulary is shared
         // across the family: the same element id under the anchor's origin is not this
         // reading's business, and a shapes menu must not appear on a data-graph diagram.
-        Assert.Empty(ShaclActions.Discover(Entry(), Target(CardId, ServiceCollectionAddRdfExtension.RdfOrigin)));
-        Assert.Empty(ShaclActions.Discover(Entry(), Target(CardId, ServiceCollectionAddSkosExtension.SkosOrigin)));
+        Assert.Empty(ShaclActions.Discover(await EntryAsync(), Target(CardId, ServiceCollectionAddRdfExtension.RdfOrigin)));
+        Assert.Empty(ShaclActions.Discover(await EntryAsync(), Target(CardId, ServiceCollectionAddSkosExtension.SkosOrigin)));
     }
 
     [Fact]
-    public void ATargetChip_IsRemovableByItsOwnAddress()
+    public async Task ATargetChip_IsRemovableByItsOwnAddress()
     {
-        var groups = ShaclActions.Discover(Entry(), Target(CardId, ServiceCollectionAddShaclExtension.ShaclOrigin));
+        var groups = ShaclActions.Discover(await EntryAsync(), Target(CardId, ServiceCollectionAddShaclExtension.ShaclOrigin));
 
         // One entry per declared target, its id carrying the predicate and term the chip holds -
         // so the chip is removable although it is not a selectable element.
@@ -100,9 +100,9 @@ public class ShaclActionsTests : IDisposable
     }
 
     [Fact]
-    public void TheRemoveEntry_StatesTheCountBeforeAnythingRuns()
+    public async Task TheRemoveEntry_StatesTheCountBeforeAnythingRuns()
     {
-        var groups = ShaclActions.Discover(Entry(), Target(CardId, ServiceCollectionAddShaclExtension.ShaclOrigin));
+        var groups = ShaclActions.Discover(await EntryAsync(), Target(CardId, ServiceCollectionAddShaclExtension.ShaclOrigin));
 
         var remove = Assert.Single(Assert.Single(groups).Actions, action => action.Id == ShaclActions.RemoveShapeActionId);
 
@@ -115,7 +115,7 @@ public class ShaclActionsTests : IDisposable
     {
         var body = IoPath.Combine(_root, "anon.ttl");
         await File.WriteAllTextAsync(body, "@prefix sh: <http://www.w3.org/ns/shacl#> .\r\n@prefix ex: <http://example.org/> .\r\n\r\nex:S a sh:NodeShape ; sh:node [ sh:closed true ] .\r\n", TestContext.Current.CancellationToken);
-        var entry = _provider.GetRequiredService<IRdfDocumentStore>().GetOrLoad(body);
+        var entry = await _provider.GetRequiredService<IRdfDocumentStore>().GetOrLoadAsync(body, TestContext.Current.CancellationToken);
         var blankId = ShaclProjection.Project(entry.Model).Cards.Single(card => card.Blank).Id;
         var target = new ContextTarget(ContextScope.DiagramElement, body, false, ShortGuid.NewShortGuid(), _root, default, blankId)
         {
@@ -149,13 +149,13 @@ public class ShaclActionsTests : IDisposable
         var target = Target(CardId, ServiceCollectionAddShaclExtension.ShaclOrigin);
         var history = _provider.GetRequiredService<IHistoryStackStore>();
 
-        var asked = await ShaclActions.ExecuteAsync(history, Entry(), target, ShaclActions.AddTargetClassActionId, TestContext.Current.CancellationToken);
+        var asked = await ShaclActions.ExecuteAsync(history, await EntryAsync(), target, ShaclActions.AddTargetClassActionId, TestContext.Current.CancellationToken);
         Assert.IsType<ContextExecutionRequiresInput>(asked);
 
         // An undeclared prefix is refused by name before any splice.
-        Assert.False(ShaclActions.Validate(Entry(), ShaclActions.AddTargetClassActionId, "nope:Thing")!.Valid);
+        Assert.False(ShaclActions.Validate(await EntryAsync(), ShaclActions.AddTargetClassActionId, "nope:Thing")!.Valid);
 
-        var command = ShaclActions.CommandFor(Entry(), target, ShaclActions.AddTargetClassActionId, "ex:Employee");
+        var command = ShaclActions.CommandFor(await EntryAsync(), target, ShaclActions.AddTargetClassActionId, "ex:Employee");
         var add = Assert.IsType<AddShaclTargetCommand>(command);
         var result = await history.Get(_root).ExecuteAsync(add, TestContext.Current.CancellationToken);
 
@@ -170,7 +170,7 @@ public class ShaclActionsTests : IDisposable
         var history = _provider.GetRequiredService<IHistoryStackStore>();
 
         var result = await ShaclActions.ExecuteAsync(
-            history, Entry(), target,
+            history, await EntryAsync(), target,
             ShaclActions.RemoveTargetActionIdPrefix + ShaclVocabulary.TargetClass + "|http://example.org/Person",
             TestContext.Current.CancellationToken);
 

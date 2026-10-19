@@ -371,13 +371,13 @@ public class DocumentLifecycleTests : IDisposable
     // The synchronous reads and the asynchronous ones answer alike until the synchronous ones go
     // (code-structure T283), so every test runs through both.
     private static async Task<Note> GetOrLoad(DocumentLifecycle<Note> lifecycle, string path, bool asynchronously) =>
-        asynchronously ? await lifecycle.GetOrLoadAsync(path, TestContext.Current.CancellationToken) : lifecycle.GetOrLoad(path);
+        asynchronously ? await lifecycle.GetOrLoadAsync(path, TestContext.Current.CancellationToken) : await lifecycle.GetOrLoadAsync(path, TestContext.Current.CancellationToken);
 
     private static async Task<bool> Reload(DocumentLifecycle<Note> lifecycle, string path, bool asynchronously) =>
-        asynchronously ? await lifecycle.ReloadAsync(path, TestContext.Current.CancellationToken) : lifecycle.Reload(path);
+        asynchronously ? await lifecycle.ReloadAsync(path, TestContext.Current.CancellationToken) : await lifecycle.ReloadAsync(path, TestContext.Current.CancellationToken);
 
     private static async Task<bool> BodyDeleted(DocumentLifecycle<Note> lifecycle, string path, bool asynchronously) =>
-        asynchronously ? await lifecycle.BodyDeletedAsync(path, TestContext.Current.CancellationToken) : lifecycle.BodyDeleted(path);
+        asynchronously ? await lifecycle.BodyDeletedAsync(path, TestContext.Current.CancellationToken) : await lifecycle.BodyDeletedAsync(path, TestContext.Current.CancellationToken);
 
     // Lambdas with discards rather than methods, so no parameter is left unused.
     private static readonly Func<string, string, Note> Parse = (_, text) => new Note(text);

@@ -17,7 +17,7 @@ public sealed class AbmContextSourceResolverTests : DiagramElementSourceResolver
     protected override IContextSourceResolver CreateResolver() =>
         new AbmContextSourceResolver(new DiagramFileRouter(new AbmOnlyCatalog()), _store, new AbmElementMapper());
 
-    protected override void Reload(string body) => _store.Reload(body);
+    protected override Task ReloadAsync(string body, CancellationToken cancellationToken) => _store.ReloadAsync(body, cancellationToken);
 
     protected override string ElementId => "1.1";
 

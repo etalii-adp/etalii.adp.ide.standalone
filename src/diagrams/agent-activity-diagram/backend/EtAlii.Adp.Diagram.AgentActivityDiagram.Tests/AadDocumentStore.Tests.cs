@@ -32,7 +32,7 @@ public sealed class AadDocumentStoreTests : DocumentStoreContract<IAadDocumentSt
         var store = new AadDocumentStore(new FileWriter());
 
         // Act.
-        var entry = store.GetOrLoad(body);
+        var entry = await store.GetOrLoadAsync(body, TestContext.Current.CancellationToken);
         var saved = await store.SaveAsync(body, entry, _ => "", TestContext.Current.CancellationToken);
 
         // Assert.
@@ -49,7 +49,7 @@ public sealed class AadDocumentStoreTests : DocumentStoreContract<IAadDocumentSt
         var body = folder.Combine("work.aad");
         File.Copy(Example, body);
         var store = new AadDocumentStore(new FileWriter());
-        var basis = store.GetOrLoad(body);
+        var basis = await store.GetOrLoadAsync(body, TestContext.Current.CancellationToken);
         var written = await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken) + "# an agent's line\r\n";
         await File.WriteAllTextAsync(body, written, TestContext.Current.CancellationToken);
 
@@ -77,7 +77,7 @@ public sealed class AadDocumentStoreTests : DocumentStoreContract<IAadDocumentSt
         store.Changed += (_, _) => told++;
 
         // Act.
-        var saved = await store.SaveAsync(body, store.GetOrLoad(body), _ => "Not today.", TestContext.Current.CancellationToken);
+        var saved = await store.SaveAsync(body, await store.GetOrLoadAsync(body, TestContext.Current.CancellationToken), _ => "Not today.", TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Equal("Not today.", saved.Result.Error);

@@ -11,7 +11,7 @@ public sealed class WardleyDocumentReloaderTests : DocumentReloaderContract<IWar
 
     protected override IWardleyDocumentStore CreateStore() => new WardleyDocumentStore(new FileWriter());
 
-    protected override bool IsEmpty(IWardleyDocumentStore store, string path) => store.GetOrLoad(path).Model.Components.Count == 0;
+    protected override async Task<bool> IsEmptyAsync(IWardleyDocumentStore store, string path, CancellationToken cancellationToken) => (await store.GetOrLoadAsync(path, cancellationToken)).Model.Components.Count == 0;
 
     protected override void OnChanged(IWardleyDocumentStore store, Action<string> changed) =>
         store.Changed += (_, args) => changed(args.Path);

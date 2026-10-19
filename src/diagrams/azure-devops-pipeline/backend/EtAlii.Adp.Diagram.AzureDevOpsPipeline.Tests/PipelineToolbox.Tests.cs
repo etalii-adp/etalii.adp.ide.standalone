@@ -143,7 +143,7 @@ public class PipelineToolboxTests : IDisposable
 
         // Assert.
         Assert.True(result.Completed, result.Error);
-        Assert.Equal(2, _store.GetOrLoad(_workspace, path).Model.Stages.Single().Jobs.Count);
+        Assert.Equal(2, (await _store.GetOrLoadAsync(_workspace, path, TestContext.Current.CancellationToken)).Model.Stages.Single().Jobs.Count);
     }
 
     [Fact]
@@ -155,7 +155,7 @@ public class PipelineToolboxTests : IDisposable
 
         // Assert.
         Assert.True(result.Completed, result.Error);
-        Assert.Equal(2, _store.GetOrLoad(_workspace, path).Model.Jobs.Single().Steps.Count);
+        Assert.Equal(2, (await _store.GetOrLoadAsync(_workspace, path, TestContext.Current.CancellationToken)).Model.Jobs.Single().Steps.Count);
     }
 
     [Fact]
@@ -167,7 +167,7 @@ public class PipelineToolboxTests : IDisposable
 
         // Assert.
         Assert.True(result.Completed, result.Error);
-        Assert.Equal(2, _store.GetOrLoad(_workspace, path).Model.Stages.Count);
+        Assert.Equal(2, (await _store.GetOrLoadAsync(_workspace, path, TestContext.Current.CancellationToken)).Model.Stages.Count);
     }
 
     [Fact]
@@ -179,7 +179,7 @@ public class PipelineToolboxTests : IDisposable
 
         // Assert.
         Assert.True(result.Completed, result.Error);
-        var job = _store.GetOrLoad(_workspace, path).Model.Jobs.Single(candidate => candidate.IsDeployment);
+        var job = (await _store.GetOrLoadAsync(_workspace, path, TestContext.Current.CancellationToken)).Model.Jobs.Single(candidate => candidate.IsDeployment);
         Assert.NotEmpty(job.Environment);
         Assert.NotEmpty(job.Steps);
     }

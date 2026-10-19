@@ -94,7 +94,7 @@ public class ArrangeCausalLoopCommandTests : IDisposable
     public async Task ThePositionsStored_AreTheCentresTheLayoutComputed()
     {
         // Arrange.
-        var expected = SelfOrganizingLayout.Compute(_store.GetOrLoad(_bodyPath).Model).Boxes;
+        var expected = SelfOrganizingLayout.Compute((await _store.GetOrLoadAsync(_bodyPath, TestContext.Current.CancellationToken)).Model).Boxes;
 
         // Act.
         await Arrange();
@@ -206,9 +206,9 @@ public class ArrangeCausalLoopCommandTests : IDisposable
         }
 
         await File.WriteAllTextAsync(_bodyPath, text.ToString(), TestContext.Current.CancellationToken);
-        _store.Reload(_bodyPath);
+        await _store.ReloadAsync(_bodyPath, TestContext.Current.CancellationToken);
 
-        var expected = SelfOrganizingLayout.Compute(_store.GetOrLoad(_bodyPath).Model);
+        var expected = SelfOrganizingLayout.Compute((await _store.GetOrLoadAsync(_bodyPath, TestContext.Current.CancellationToken)).Model);
 
         // Act.
         var result = await Arrange();
@@ -227,7 +227,7 @@ public class ArrangeCausalLoopCommandTests : IDisposable
     {
         // Arrange.
         await File.WriteAllTextAsync(_bodyPath, "causal-loop 1\r\n", TestContext.Current.CancellationToken);
-        _store.Reload(_bodyPath);
+        await _store.ReloadAsync(_bodyPath, TestContext.Current.CancellationToken);
 
         // Act.
         var result = await Arrange();
@@ -258,7 +258,7 @@ public class ArrangeCausalLoopCommandTests : IDisposable
     {
         // Arrange.
         await File.WriteAllTextAsync(_bodyPath, "this is not a causal loop diagram at all\r\n", TestContext.Current.CancellationToken);
-        _store.Reload(_bodyPath);
+        await _store.ReloadAsync(_bodyPath, TestContext.Current.CancellationToken);
 
         // Act.
         var result = await Arrange();

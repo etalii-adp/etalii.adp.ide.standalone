@@ -18,10 +18,10 @@ public class PipelineDerivedMenusTests
 
     [Theory]
     [MemberData(nameof(Documents))]
-    public void EveryMenu_IsTheHandWrittenOne(string path)
+    public async Task EveryMenu_IsTheHandWrittenOne(string path)
     {
         // Arrange.
-        using var reading = PipelineReadings.Open(path);
+        using var reading = await PipelineReadings.OpenAsync(path, TestContext.Current.CancellationToken);
         var closed = new PipelineConnectionView();
         var open = new PipelineConnectionView();
         foreach (var id in reading.Targets)

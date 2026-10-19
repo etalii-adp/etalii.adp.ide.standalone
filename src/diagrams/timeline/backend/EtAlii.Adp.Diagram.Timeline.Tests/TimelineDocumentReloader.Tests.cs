@@ -11,7 +11,7 @@ public sealed class TimelineDocumentReloaderTests : DocumentReloaderContract<ITi
 
     protected override ITimelineDocumentStore CreateStore() => new TimelineDocumentStore(new FileWriter());
 
-    protected override bool IsEmpty(ITimelineDocumentStore store, string path) => store.GetOrLoad(path).Model.Elements.Count == 0;
+    protected override async Task<bool> IsEmptyAsync(ITimelineDocumentStore store, string path, CancellationToken cancellationToken) => (await store.GetOrLoadAsync(path, cancellationToken)).Model.Elements.Count == 0;
 
     protected override void OnChanged(ITimelineDocumentStore store, Action<string> changed) =>
         store.Changed += (_, args) => changed(args.Path);

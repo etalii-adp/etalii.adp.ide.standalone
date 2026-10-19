@@ -257,7 +257,7 @@ public class CausalLoopSessionTests : IDisposable
 
         // Act: the document changes underneath while the reader is zoomed in.
         await File.WriteAllTextAsync(_bodyPath, Corpus + "variable d \"Delta\"\r\n", TestContext.Current.CancellationToken);
-        _store.Reload(_bodyPath);
+        await _store.ReloadAsync(_bodyPath, TestContext.Current.CancellationToken);
 
         // Assert: what was pushed is what the viewport admits, not the whole document.
         var added = pushed.OfType<DiagramAddDelta>().SelectMany(delta => delta.Elements).ToArray();
@@ -276,7 +276,7 @@ public class CausalLoopSessionTests : IDisposable
         await session.BaselineAsync(TestContext.Current.CancellationToken);
         var otherPath = IoPath.Combine(_root, "other.cld");
         await File.WriteAllTextAsync(otherPath, Corpus, TestContext.Current.CancellationToken);
-        _ = _store.GetOrLoad(otherPath);
+        _ = await _store.GetOrLoadAsync(otherPath, TestContext.Current.CancellationToken);
         await File.WriteAllTextAsync(
             _registrationPath,
             "systems/causal-loop-diagram\r\nbody: feedback.cld\r\nlayout:\r\n  variable:a: 5000 6000\r\n", TestContext.Current.CancellationToken);
@@ -285,9 +285,9 @@ public class CausalLoopSessionTests : IDisposable
         session.Changed += (_, args) => pushed.Add(args.Deltas);
 
         // Act.
-        _store.Reload(otherPath);
+        await _store.ReloadAsync(otherPath, TestContext.Current.CancellationToken);
         var pushedForTheOther = pushed.Count;
-        _store.Reload(_bodyPath);
+        await _store.ReloadAsync(_bodyPath, TestContext.Current.CancellationToken);
 
         // Assert: nothing for the other document, and the same change to its own document does
         // move the variable - which is what makes the silence mean something.
@@ -315,7 +315,7 @@ public class CausalLoopSessionTests : IDisposable
         store.Failure = new InvalidOperationException("a defect");
 
         // Act & assert.
-        Assert.Throws<InvalidOperationException>(() => _store.Reload(_bodyPath));
+        await Assert.ThrowsAsync<InvalidOperationException>(async () => await _store.ReloadAsync(_bodyPath, TestContext.Current.CancellationToken));
         Assert.Equal(0, pushed);
     }
 
@@ -336,10 +336,10 @@ public class CausalLoopSessionTests : IDisposable
         store.Failure = new IOException("locked");
 
         // Act.
-        _store.Reload(_bodyPath);
+        await _store.ReloadAsync(_bodyPath, TestContext.Current.CancellationToken);
         var pushedWhileLocked = pushed.Count;
         store.Failure = null;
-        _store.Reload(_bodyPath);
+        await _store.ReloadAsync(_bodyPath, TestContext.Current.CancellationToken);
 
         // Assert: nothing while locked, and the next change catches the diagram up.
         Assert.Equal(0, pushedWhileLocked);

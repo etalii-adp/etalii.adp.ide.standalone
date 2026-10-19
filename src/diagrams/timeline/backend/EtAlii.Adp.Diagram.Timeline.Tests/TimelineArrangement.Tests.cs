@@ -56,12 +56,12 @@ public class TimelineArrangementTests : IDisposable
     {
         // Arrange.
         var path = Write(Roadmap);
-        var before = _store.GetOrLoad(path).Model;
+        var before = (await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Model;
 
         // Act.
         var result = await History.ExecuteAsync(new ArrangeTimelineCommand(path), TestContext.Current.CancellationToken);
         _store.Forget(path);
-        var after = _store.GetOrLoad(path).Model;
+        var after = (await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Model;
 
         // Assert.
         Assert.True(result.IsSuccess, result.Error);

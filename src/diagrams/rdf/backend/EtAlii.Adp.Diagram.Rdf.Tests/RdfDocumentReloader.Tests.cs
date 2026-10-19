@@ -19,7 +19,7 @@ public sealed class RdfDocumentReloaderTests : DocumentReloaderContract<IRdfDocu
 
     protected override IRdfDocumentStore CreateStore() => new RdfDocumentStore(new FileWriter());
 
-    protected override bool IsEmpty(IRdfDocumentStore store, string path) => store.GetOrLoad(path).Model.Triples.Count == 0;
+    protected override async Task<bool> IsEmptyAsync(IRdfDocumentStore store, string path, CancellationToken cancellationToken) => (await store.GetOrLoadAsync(path, cancellationToken)).Model.Triples.Count == 0;
 
     protected override void OnChanged(IRdfDocumentStore store, Action<string> changed) =>
         store.Changed += (_, args) => changed(args.Path);
@@ -33,7 +33,7 @@ public sealed class RdfDocumentReloaderTests : DocumentReloaderContract<IRdfDocu
         using var folder = TestFolder.Create("EtAlii.Adp.RdfDocumentReloaderTests");
         var body = folder.Combine("constructs.ttl");
         File.Copy(Example, body);
-        Assert.False(IsEmpty(store, body));
+        Assert.False(await IsEmptyAsync(store, body, TestContext.Current.CancellationToken));
         var told = 0;
         store.Changed += (_, _) => told++;
 
@@ -45,7 +45,7 @@ public sealed class RdfDocumentReloaderTests : DocumentReloaderContract<IRdfDocu
 
         // Assert: the last good document is kept, not replaced by an empty one (R2.4), and since
         // nothing a session shows has changed, no session is told.
-        Assert.False(IsEmpty(store, body));
+        Assert.False(await IsEmptyAsync(store, body, TestContext.Current.CancellationToken));
         Assert.Equal(0, told);
     }
 
@@ -61,7 +61,7 @@ public sealed class RdfDocumentReloaderTests : DocumentReloaderContract<IRdfDocu
         using var folder = TestFolder.Create("EtAlii.Adp.RdfDocumentReloaderTests");
         var body = folder.Combine("constructs.ttl");
         File.Copy(Example, body);
-        store.GetOrLoad(body);
+        await store.GetOrLoadAsync(body, TestContext.Current.CancellationToken);
         var reloaders = provider.GetServices<IDiagramDocumentReloader>().ToList();
 
         // Act & assert: each reading's reload reaches the store, so a session of any of them sees an

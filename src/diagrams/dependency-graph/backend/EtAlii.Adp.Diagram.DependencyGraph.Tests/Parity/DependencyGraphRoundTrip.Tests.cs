@@ -27,7 +27,7 @@ public class DependencyGraphRoundTripTests
         var path = folder.Combine("body.dgr");
         await File.WriteAllBytesAsync(path, bytes, TestContext.Current.CancellationToken);
         var store = new DependencyGraphDocumentStore(new FileWriter());
-        var entry = store.GetOrLoad(path);
+        var entry = await store.GetOrLoadAsync(path, TestContext.Current.CancellationToken);
         if (!entry.IsUsable) return;
 
         // Act.

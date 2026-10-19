@@ -124,14 +124,14 @@ public sealed class GhgTriggersAndNotesEditingTests : IDisposable
     [MemberData(nameof(EveryRefusal))]
     public async Task EveryRefusal_WritesNothing_AndSaysWhy(string refusal, string saying)
     {
-        var cachedBefore = _store.GetOrLoad(Body).Document.Text;
+        var cachedBefore = (await _store.GetOrLoadAsync(Body, TestContext.Current.CancellationToken)).Document.Text;
 
         var result = await _dispatcher.DispatchAsync(RefusalNamed(refusal), TestContext.Current.CancellationToken);
 
         Assert.False(result.IsSuccess);
         Assert.Contains(saying, result.Error, StringComparison.Ordinal);
         Assert.Equal(_original, await File.ReadAllBytesAsync(Body, TestContext.Current.CancellationToken));
-        Assert.Equal(cachedBefore, _store.GetOrLoad(Body).Document.Text);
+        Assert.Equal(cachedBefore, (await _store.GetOrLoadAsync(Body, TestContext.Current.CancellationToken)).Document.Text);
     }
 
     /// <summary>Requirement 3.5: a trigger takes its influences with it, and one undo restores them.</summary>
@@ -280,7 +280,7 @@ public sealed class GhgTriggersAndNotesEditingTests : IDisposable
         var store = new GhgDocumentStore(new FileWriter());
         await using (new FileStream(Body, FileMode.Open, FileAccess.Read, FileShare.None))
         {
-            Assert.False(store.GetOrLoad(Body).IsUsable);
+            Assert.False((await store.GetOrLoadAsync(Body, TestContext.Current.CancellationToken)).IsUsable);
         }
 
         var dispatcher = new GhgTestDispatcher(store);

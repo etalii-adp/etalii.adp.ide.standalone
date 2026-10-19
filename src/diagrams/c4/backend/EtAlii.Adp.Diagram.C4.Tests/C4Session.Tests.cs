@@ -152,7 +152,7 @@ public class C4SessionTests : IDisposable
 
         // Act.
         // Edit through the document the containers view holds, and save.
-        var document = _documents.GetOrLoad(body).Document;
+        var document = (await _documents.GetOrLoadAsync(body, TestContext.Current.CancellationToken)).Document;
         var line = document.CodeLines().First(l => l.Code.Contains("softwareSystem", StringComparison.Ordinal));
         document.ReplaceLine(line.Number, line.Text.Replace("\"Banking\"", "\"Renamed\"", StringComparison.Ordinal));
         await _documents.SaveAsync(body, document, TestContext.Current.CancellationToken);
@@ -180,7 +180,7 @@ public class C4SessionTests : IDisposable
         var kept = Model.Split('\n').Where(line => !line.Contains("u = person", StringComparison.Ordinal) && !line.Contains("u -> web", StringComparison.Ordinal));
         await File.WriteAllTextAsync(body, string.Join('\n', kept), TestContext.Current.CancellationToken);
         Assert.DoesNotContain("person", await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken), StringComparison.Ordinal);
-        _documents.Reload(body);
+        await _documents.ReloadAsync(body, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.NotNull(pushed);
@@ -200,7 +200,7 @@ public class C4SessionTests : IDisposable
         var other = WriteModel("other.dsl");
         await using var session = Open(body, null);
         _ = await session.BaselineAsync(TestContext.Current.CancellationToken);
-        _ = _documents.GetOrLoad(other).Document;
+        _ = (await _documents.GetOrLoadAsync(other, TestContext.Current.CancellationToken)).Document;
         Assert.Equal("", await new C4LayoutSidecar(new FileWriter()).WriteAsync(body, "context", "u", new C4SidecarPosition(4321, 1234), TestContext.Current.CancellationToken));
 
         var pushed = new List<IReadOnlyList<DiagramDelta>>();
@@ -275,7 +275,7 @@ public class C4SessionTests : IDisposable
         await session.DisposeAsync();
 
         // Act.
-        await _documents.SaveAsync(body, _documents.GetOrLoad(body).Document, TestContext.Current.CancellationToken);
+        await _documents.SaveAsync(body, (await _documents.GetOrLoadAsync(body, TestContext.Current.CancellationToken)).Document, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Equal(0, pushes);

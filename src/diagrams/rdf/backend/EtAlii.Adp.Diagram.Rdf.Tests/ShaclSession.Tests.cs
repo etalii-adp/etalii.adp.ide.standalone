@@ -235,14 +235,14 @@ public class ShaclSessionTests : IDisposable
         // Both readings see it, each in its own vocabulary: a second card here, a further
         // subject there.
         var store = _provider.GetRequiredService<IRdfDocumentStore>();
-        var model = store.GetOrLoad(body).Model;
+        var model = (await store.GetOrLoadAsync(body, TestContext.Current.CancellationToken)).Model;
         Assert.Equal(2, ShaclProjection.Project(model).Cards.Count);
         Assert.Contains(model.Triples, triple =>
             triple.Subject is IriTerm { Iri: "http://example.org/AddressShape" });
 
         Assert.True((await history.UndoAsync(TestContext.Current.CancellationToken)).IsSuccess);
         Assert.Equal(before, await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken));
-        Assert.Single(ShaclProjection.Project(store.GetOrLoad(body).Model).Cards);
+        Assert.Single(ShaclProjection.Project((await store.GetOrLoadAsync(body, TestContext.Current.CancellationToken)).Model).Cards);
     }
 
     [Fact]

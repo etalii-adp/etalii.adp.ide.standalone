@@ -60,7 +60,7 @@ public class RdfDocumentStoreLostEditTests : IDisposable
         // Arrange: a real document of this notation, loaded and then edited in memory only.
         var path = IoPath.Combine(_root, "constructs.ttl");
         File.Copy(IoPath.Combine(AppContext.BaseDirectory, "Fixtures", "constructs.ttl"), path);
-        var entry = _store.GetOrLoad(path);
+        var entry = await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken);
         var document = entry.Document;
         document.Insert(0, ["# lost-edit marker"]);
 
@@ -70,7 +70,7 @@ public class RdfDocumentStoreLostEditTests : IDisposable
 
         // Act: the notification for an EARLIER write of this same file lands now. The store's own
         // guard is already cleared, so this is exactly what the reload bridge does with it.
-        _store.Reload(path);
+        await _store.ReloadAsync(path, TestContext.Current.CancellationToken);
         var error = await _store.SaveAsync(path, entry.Document, TestContext.Current.CancellationToken);
 
         // Assert.

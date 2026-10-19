@@ -33,9 +33,9 @@ public sealed class AbmSessionTests : IDisposable
         }
     }
 
-    private AbmModel Model() => _store.GetOrLoad(Body).Model;
+    private async Task<AbmModel> ModelAsync() => (await _store.GetOrLoadAsync(Body, TestContext.Current.CancellationToken)).Model;
 
-    private IReadOnlyDictionary<string, RegistrationPosition> Drawn() => AbmLayout.Arrange(Model(), RegistrationLayout.Read(Registration));
+    private async Task<IReadOnlyDictionary<string, RegistrationPosition>> DrawnAsync() => AbmLayout.Arrange(await ModelAsync(), RegistrationLayout.Read(Registration));
 
     [Fact]
     public async Task ADragDown_MovesTheWholeRowAndEverythingBeneathIt_PushedAsADelta_AndUndone()
@@ -45,7 +45,7 @@ public sealed class AbmSessionTests : IDisposable
         await using var session = new AbmSession(Body, Registration, _store, new AbmElementMapper(), history);
         await session.BaselineAsync(TestContext.Current.CancellationToken);
         var markdown = await File.ReadAllBytesAsync(Body, TestContext.Current.CancellationToken);
-        var computed = AbmLayout.Compute(Model());
+        var computed = AbmLayout.Compute(await ModelAsync());
         var pushed = new List<DiagramDelta>();
         session.Changed += (_, args) => pushed.AddRange(args.Deltas);
 
@@ -54,9 +54,9 @@ public sealed class AbmSessionTests : IDisposable
 
         // Assert: every child of the root, with its subtree, is 100 lower and where it was across; the root stays.
         Assert.Equal("", refusal);
-        var drawn = Drawn();
+        var drawn = (await DrawnAsync());
         Assert.Equal(computed["1"], drawn["1"]);
-        foreach (var node in Model().Nodes.Where(node => node.Id != "1"))
+        foreach (var node in (await ModelAsync()).Nodes.Where(node => node.Id != "1"))
         {
             Assert.Equal(new RegistrationPosition(computed[node.Id].X, computed[node.Id].Y + 100), drawn[node.Id]);
         }
@@ -80,7 +80,7 @@ public sealed class AbmSessionTests : IDisposable
         var history = new HistoryStack(new AbmTestDispatcher(_store));
         await using var session = new AbmSession(Body, Registration, _store, new AbmElementMapper(), history);
         await session.BaselineAsync(TestContext.Current.CancellationToken);
-        var computed = AbmLayout.Compute(Model());
+        var computed = AbmLayout.Compute(await ModelAsync());
         Assert.Equal("", await session.MoveElementToAsync("1.1.1", computed["1.1.1"].X, computed["1.1.1"].Y + 40, TestContext.Current.CancellationToken));
         var markdown = await File.ReadAllBytesAsync(Body, TestContext.Current.CancellationToken);
         var layout = await File.ReadAllBytesAsync(Registration, TestContext.Current.CancellationToken);
@@ -90,13 +90,13 @@ public sealed class AbmSessionTests : IDisposable
 
         // Assert: the two swapped places in the Markdown, so in the tree.
         Assert.Equal("", refusal);
-        var model = Model();
+        var model = await ModelAsync();
         Assert.Equal(("action", "fallback"), (model.NodeOf("1.1")!.Kind, model.NodeOf("1.2")!.Kind));
         var text = await File.ReadAllTextAsync(Body, TestContext.Current.CancellationToken);
         Assert.True(text.IndexOf("Write a test", StringComparison.Ordinal) < text.IndexOf("Understand the report", StringComparison.Ordinal));
 
         // Assert: the dragged node's children kept the height they were given, under their new ids.
-        var drawn = Drawn();
+        var drawn = (await DrawnAsync());
         Assert.Equal(drawn["1.2"].Y + AbmLayout.NodeHeight + AbmLayout.VerticalGap + 40, drawn["1.2.1"].Y);
         Assert.Equal(drawn["1.2.1"].Y, drawn["1.2.2"].Y);
         Assert.True(drawn["1.1"].X < drawn["1.2"].X);
@@ -107,13 +107,13 @@ public sealed class AbmSessionTests : IDisposable
         // Assert: both files exactly as before the drop.
         Assert.Equal(markdown, await File.ReadAllBytesAsync(Body, TestContext.Current.CancellationToken));
         Assert.Equal(layout, await File.ReadAllBytesAsync(Registration, TestContext.Current.CancellationToken));
-        Assert.Equal("fallback", Model().NodeOf("1.1")!.Kind);
+        Assert.Equal("fallback", (await ModelAsync()).NodeOf("1.1")!.Kind);
 
         // Act: redo.
         await history.RedoAsync(TestContext.Current.CancellationToken);
 
         // Assert.
-        Assert.Equal("action", Model().NodeOf("1.1")!.Kind);
+        Assert.Equal("action", (await ModelAsync()).NodeOf("1.1")!.Kind);
     }
 
     [Fact]
@@ -122,7 +122,7 @@ public sealed class AbmSessionTests : IDisposable
         // Arrange.
         var history = new HistoryStack(new AbmTestDispatcher(_store));
         await using var session = new AbmSession(Body, Registration, _store, new AbmElementMapper(), history);
-        var computed = AbmLayout.Compute(Model());
+        var computed = AbmLayout.Compute(await ModelAsync());
 
         // Act: a little across, not past a neighbour, and at its own height.
         var refusal = await session.MoveElementToAsync("1.3", computed["1.3"].X - 30, computed["1.3"].Y, TestContext.Current.CancellationToken);
@@ -139,13 +139,13 @@ public sealed class AbmSessionTests : IDisposable
         // Arrange.
         var history = new HistoryStack(new AbmTestDispatcher(_store));
         await using var session = new AbmSession(Body, Registration, _store, new AbmElementMapper(), history);
-        var computed = AbmLayout.Compute(Model());
+        var computed = AbmLayout.Compute(await ModelAsync());
 
         // Act.
         Assert.Equal("", await session.MoveElementToAsync("1.2", computed["1.2"].X, computed["1"].Y - 500, TestContext.Current.CancellationToken));
 
         // Assert.
-        Assert.Equal(computed["1"].Y + AbmLayout.NodeHeight + AbmLayout.MinimumGap, Drawn()["1.2"].Y);
+        Assert.Equal(computed["1"].Y + AbmLayout.NodeHeight + AbmLayout.MinimumGap, (await DrawnAsync())["1.2"].Y);
     }
 
     [Fact]
@@ -186,14 +186,14 @@ public sealed class AbmSessionTests : IDisposable
         // Arrange.
         var history = new HistoryStack(new AbmTestDispatcher(_store));
         await using var session = new AbmSession(Body, Registration, _store, new AbmElementMapper(), history);
-        var children = Model().NodeOf("1.1")!.ChildIds.Count;
+        var children = (await ModelAsync()).NodeOf("1.1")!.ChildIds.Count;
 
         // Act: the test-writing step, dropped as the first child of the step before it.
         var refusal = await session.MoveElementAsync("1.2", "1.1", 0, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Equal("", refusal);
-        Assert.Equal(children + 1, Model().NodeOf("1.1")!.ChildIds.Count);
+        Assert.Equal(children + 1, (await ModelAsync()).NodeOf("1.1")!.ChildIds.Count);
         Assert.True(history.CanUndo);
     }
 

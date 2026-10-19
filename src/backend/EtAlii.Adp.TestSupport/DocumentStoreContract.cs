@@ -68,12 +68,12 @@ public abstract class DocumentStoreContract<TStore, TBody, TModel> : IDisposable
     {
         // Arrange: loaded, then edited in memory only.
         var store = CreateStore();
-        var document = store.GetOrLoad(Body).Document;
+        var document = (await store.GetOrLoadAsync(Body, TestContext.Current.CancellationToken)).Document;
         Edit(document);
         Assert.Contains(EditMarker, TextOf(document), StringComparison.Ordinal);
 
         // Act: the notification for an earlier write of this file lands between the edit and the save.
-        store.Reload(Body);
+        await store.ReloadAsync(Body, TestContext.Current.CancellationToken);
         var saved = await store.SaveAsync(Body, document, TestContext.Current.CancellationToken);
 
         // Assert: the save reported success, so the edit it reported success for is in the file.
@@ -87,19 +87,19 @@ public abstract class DocumentStoreContract<TStore, TBody, TModel> : IDisposable
     {
         // Arrange: an edit saved, and the sessions told of it once.
         var store = CreateStore();
-        var document = store.GetOrLoad(Body).Document;
+        var document = (await store.GetOrLoadAsync(Body, TestContext.Current.CancellationToken)).Document;
         Edit(document);
         var told = new List<string>();
         store.Changed += (_, args) => told.Add(args.Path);
         Assert.False((await store.SaveAsync(Body, document, TestContext.Current.CancellationToken)).Failed);
-        var saved = store.GetOrLoad(Body);
+        var saved = await store.GetOrLoadAsync(Body, TestContext.Current.CancellationToken);
 
         // Act: the watcher's notification for that same save.
-        store.Reload(Body);
+        await store.ReloadAsync(Body, TestContext.Current.CancellationToken);
 
         // Assert: not an external change, so nothing is re-read and nobody is told twice.
         Assert.Equal([Body], told);
-        Assert.Same(saved, store.GetOrLoad(Body));
+        Assert.Same(saved, await store.GetOrLoadAsync(Body, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -107,56 +107,56 @@ public abstract class DocumentStoreContract<TStore, TBody, TModel> : IDisposable
     {
         // Arrange: this store has the document open; another writer edits the file.
         var store = CreateStore();
-        Assert.DoesNotContain(EditMarker, TextOf(store.GetOrLoad(Body).Document), StringComparison.Ordinal);
+        Assert.DoesNotContain(EditMarker, TextOf((await store.GetOrLoadAsync(Body, TestContext.Current.CancellationToken)).Document), StringComparison.Ordinal);
         var other = CreateStore();
-        var document = other.GetOrLoad(Body).Document;
+        var document = (await other.GetOrLoadAsync(Body, TestContext.Current.CancellationToken)).Document;
         Edit(document);
         Assert.False((await other.SaveAsync(Body, document, TestContext.Current.CancellationToken)).Failed);
         var told = new List<string>();
         store.Changed += (_, args) => told.Add(args.Path);
 
         // Act.
-        store.Reload(Body);
+        await store.ReloadAsync(Body, TestContext.Current.CancellationToken);
 
         // Assert.
-        Assert.Contains(EditMarker, TextOf(store.GetOrLoad(Body).Document), StringComparison.Ordinal);
+        Assert.Contains(EditMarker, TextOf((await store.GetOrLoadAsync(Body, TestContext.Current.CancellationToken)).Document), StringComparison.Ordinal);
         Assert.Equal([Body], told);
     }
 
     [Fact]
-    public void AReadThatFails_KeepsTheLastGoodDocument()
+    public async Task AReadThatFails_KeepsTheLastGoodDocument()
     {
         // Arrange: open, then the body goes missing - as it does for an instant during a publish.
         var store = CreateStore();
-        var loaded = store.GetOrLoad(Body);
+        var loaded = await store.GetOrLoadAsync(Body, TestContext.Current.CancellationToken);
         Assert.False(IsEmpty(loaded.Model));
         var told = new List<string>();
         store.Changed += (_, args) => told.Add(args.Path);
         File.Delete(Body);
 
         // Act.
-        store.Reload(Body);
+        await store.ReloadAsync(Body, TestContext.Current.CancellationToken);
 
         // Assert: the last good document stays, and the sessions have nothing to redraw.
-        Assert.Same(loaded, store.GetOrLoad(Body));
+        Assert.Same(loaded, await store.GetOrLoadAsync(Body, TestContext.Current.CancellationToken));
         Assert.Empty(told);
     }
 
     [Fact]
-    public void ADeletedBody_EndsAsANewDocument_AndTellsTheSessions()
+    public async Task ADeletedBody_EndsAsANewDocument_AndTellsTheSessions()
     {
         // Arrange.
         var store = CreateStore();
-        Assert.False(IsEmpty(store.GetOrLoad(Body).Model));
+        Assert.False(IsEmpty((await store.GetOrLoadAsync(Body, TestContext.Current.CancellationToken)).Model));
         var told = new List<string>();
         store.Changed += (_, args) => told.Add(args.Path);
         File.Delete(Body);
 
         // Act.
-        store.BodyDeleted(Body);
+        await store.BodyDeletedAsync(Body, TestContext.Current.CancellationToken);
 
         // Assert: what a first open of a missing body shows, and usable, so a new element can be saved into it.
-        var entry = store.GetOrLoad(Body);
+        var entry = await store.GetOrLoadAsync(Body, TestContext.Current.CancellationToken);
         Assert.True(IsEmpty(entry.Model));
         Assert.True(entry.IsUsable);
         Assert.Equal([Body], told);

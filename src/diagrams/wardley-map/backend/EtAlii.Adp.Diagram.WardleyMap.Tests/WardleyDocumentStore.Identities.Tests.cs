@@ -33,11 +33,11 @@ public sealed class WardleyDocumentStoreIdentityTests : IDisposable
         File.Delete(Body);
 
         // Act: a reload that finds no file keeps the last good document, and with it its ids.
-        store.Reload(Body);
+        await store.ReloadAsync(Body, TestContext.Current.CancellationToken);
         var kept = store.Identities(Body);
 
         // Act: the watcher's evidence that it is gone.
-        store.BodyDeleted(Body);
+        await store.BodyDeletedAsync(Body, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Equal(held, kept);
@@ -54,7 +54,7 @@ public sealed class WardleyDocumentStoreIdentityTests : IDisposable
         await File.AppendAllTextAsync(Body, "component Kettle [0.45, 0.57]\n", TestContext.Current.CancellationToken);
 
         // Act.
-        store.Reload(Body);
+        await store.ReloadAsync(Body, TestContext.Current.CancellationToken);
         var after = store.Identities(Body);
 
         // Assert: a `git pull` does not reset a selection on what it left alone.
@@ -113,7 +113,7 @@ public sealed class WardleyDocumentStoreIdentityTests : IDisposable
         // Arrange: a folder where the identity sidecar goes, which no platform lets a file replace.
         var store = new WardleyDocumentStore(new FileWriter());
         Directory.CreateDirectory(WardleyIdentities.PathFor(Body));
-        var document = store.GetOrLoad(Body).Document;
+        var document = (await store.GetOrLoadAsync(Body, TestContext.Current.CancellationToken)).Document;
         WardleyWriter.ReplaceLine(document, 1, "title Kept anyway");
 
         // Act.

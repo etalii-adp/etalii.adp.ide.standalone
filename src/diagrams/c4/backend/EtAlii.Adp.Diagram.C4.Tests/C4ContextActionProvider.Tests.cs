@@ -100,7 +100,7 @@ public class C4ContextActionProviderTests : IDisposable
     public async Task ARelationship_IsOfferedARelabelAndAProtocol_AndNotARename()
     {
         // Arrange.
-        var relationshipId = _documents.GetOrLoad(_bodyPath).Model.Relationships.Single().Id;
+        var relationshipId = (await _documents.GetOrLoadAsync(_bodyPath, TestContext.Current.CancellationToken)).Model.Relationships.Single().Id;
 
         // Act.
         var ids = await ActionIdsFor(relationshipId);
@@ -138,7 +138,7 @@ public class C4ContextActionProviderTests : IDisposable
         // asking for something else about it. A technology and a protocol are not the label, and
         // an element's description is not drawn on its box at all
         // (inline-rename Requirements 3.1, 3.2).
-        var relationshipId = _documents.GetOrLoad(_bodyPath).Model.Relationships.Single().Id;
+        var relationshipId = (await _documents.GetOrLoadAsync(_bodyPath, TestContext.Current.CancellationToken)).Model.Relationships.Single().Id;
 
         // Act.
         var rename = await Input(TargetFor("web"), C4ContextActionProvider.RenameActionId);
@@ -163,7 +163,7 @@ public class C4ContextActionProviderTests : IDisposable
         // brackets, so the editor replaces a label the user reads as one string. The defect this
         // catches is writing that whole rendered string back into the description - after which
         // the technology appears twice and the document says something nobody typed.
-        var relationship = _documents.GetOrLoad(_bodyPath).Model.Relationships.Single();
+        var relationship = (await _documents.GetOrLoadAsync(_bodyPath, TestContext.Current.CancellationToken)).Model.Relationships.Single();
         Assert.NotEqual("", relationship.Technology);
 
         // Act.
@@ -172,7 +172,7 @@ public class C4ContextActionProviderTests : IDisposable
 
         // Assert.
         Assert.True(result.Completed, result.Error);
-        var after = _documents.GetOrLoad(_bodyPath).Model.Relationships.Single();
+        var after = (await _documents.GetOrLoadAsync(_bodyPath, TestContext.Current.CancellationToken)).Model.Relationships.Single();
         Assert.Equal("Views accounts using", after.Description);
         Assert.Equal(relationship.Technology, after.Technology);
     }
@@ -192,7 +192,7 @@ public class C4ContextActionProviderTests : IDisposable
     public async Task Relabel_CommitsThroughACommand()
     {
         // Arrange.
-        var relationshipId = _documents.GetOrLoad(_bodyPath).Model.Relationships.Single().Id;
+        var relationshipId = (await _documents.GetOrLoadAsync(_bodyPath, TestContext.Current.CancellationToken)).Model.Relationships.Single().Id;
 
         // Act.
         var result = await _provider.CommitAsync(
@@ -231,7 +231,7 @@ public class C4ContextActionProviderTests : IDisposable
     public async Task AnActionThatDoesNotApplyToTheSelection_IsRefusedWithAReason()
     {
         // Arrange.
-        var relationshipId = _documents.GetOrLoad(_bodyPath).Model.Relationships.Single().Id;
+        var relationshipId = (await _documents.GetOrLoadAsync(_bodyPath, TestContext.Current.CancellationToken)).Model.Relationships.Single().Id;
 
         var result = await _provider.ExecuteAsync(
             TargetFor(relationshipId), C4ContextActionProvider.SetTechnologyActionId, TestContext.Current.CancellationToken);
@@ -250,10 +250,10 @@ public class C4ContextActionProviderTests : IDisposable
     [InlineData("addContainer", "u", "Wrong parent", null)]
     [InlineData("addPerson", "", "  ", null)]
     [InlineData("addContainer", "parity:unknown", "Orphan", null)]
-    public void AnAdd_IsTheDefinitionsOperation_UnderTheIdentifierTheModuleMakesFromTheName(string operation, string parent, string name, string? expected)
+    public async Task AnAdd_IsTheDefinitionsOperation_UnderTheIdentifierTheModuleMakesFromTheName(string operation, string parent, string name, string? expected)
     {
         // Arrange.
-        var workspace = _documents.GetOrLoad(_bodyPath).Model;
+        var workspace = (await _documents.GetOrLoadAsync(_bodyPath, TestContext.Current.CancellationToken)).Model;
         var identifier = C4Placement.IdentifierFor(workspace, name.Trim());
 
         // Act: the operation the commit runs first, handed that identifier (gap C11).

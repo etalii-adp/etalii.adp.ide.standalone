@@ -420,7 +420,7 @@ public class PipelineContextPropertyProviderTests : IDisposable
 
         // Assert.
         Assert.True(result.IsSuccess, result.Error);
-        Assert.False(_store.GetOrLoad(_workspace, path).Model.Steps.Last().Execution.IsDisabled);
+        Assert.False((await _store.GetOrLoadAsync(_workspace, path, TestContext.Current.CancellationToken)).Model.Steps.Last().Execution.IsDisabled);
     }
 
     /// <summary>Three stages, so there is something for the last one to choose between.</summary>
@@ -515,7 +515,7 @@ public class PipelineContextPropertyProviderTests : IDisposable
 
         // Assert.
         Assert.True(result.IsSuccess, result.Error);
-        Assert.Equal(["A"], _store.GetOrLoad(_workspace, path).Model.Stages.Single(stage => stage.Name == "C").DependsOn);
+        Assert.Equal(["A"], (await _store.GetOrLoadAsync(_workspace, path, TestContext.Current.CancellationToken)).Model.Stages.Single(stage => stage.Name == "C").DependsOn);
     }
 
     [Fact]
@@ -533,7 +533,7 @@ public class PipelineContextPropertyProviderTests : IDisposable
 
         // Assert.
         Assert.True(result.IsSuccess, result.Error);
-        var stage = _store.GetOrLoad(_workspace, path).Model.Stages.Single(candidate => candidate.Name == "C");
+        var stage = (await _store.GetOrLoadAsync(_workspace, path, TestContext.Current.CancellationToken)).Model.Stages.Single(candidate => candidate.Name == "C");
         Assert.True(stage.DependsOnDeclared);
         Assert.Empty(stage.DependsOn);
     }
@@ -554,7 +554,7 @@ public class PipelineContextPropertyProviderTests : IDisposable
 
         // Assert.
         Assert.True(result.IsSuccess, result.Error);
-        Assert.False(_store.GetOrLoad(_workspace, path).Model.Stages.Single(stage => stage.Name == "C").DependsOnDeclared);
+        Assert.False((await _store.GetOrLoadAsync(_workspace, path, TestContext.Current.CancellationToken)).Model.Stages.Single(stage => stage.Name == "C").DependsOnDeclared);
     }
 
     [Fact]
@@ -703,9 +703,9 @@ public class PipelineContextPropertyProviderTests : IDisposable
     }
 
     /// <summary>The id the canvas gives the Build -> Test arrow, from the module's own graph.</summary>
-    private string ArrowId(string path)
+    private async Task<string> ArrowIdAsync(string path)
     {
-        var model = _store.GetOrLoad(_workspace, path).Model;
+        var model = (await _store.GetOrLoadAsync(_workspace, path, TestContext.Current.CancellationToken)).Model;
         return PipelineElementMapper.EdgeId(PipelineGraphBuilder.OfStages(model).Edges.Single(edge => edge is { FromId: "Build", ToId: "Test" }));
     }
 
@@ -718,7 +718,7 @@ public class PipelineContextPropertyProviderTests : IDisposable
         var path = Write();
 
         // Act.
-        var properties = await DescribeAsync(path, ArrowId(path));
+        var properties = await DescribeAsync(path, await ArrowIdAsync(path));
 
         // Assert.
         Assert.Empty(properties);
@@ -734,7 +734,7 @@ public class PipelineContextPropertyProviderTests : IDisposable
         // whether the canvas could reach one. This fails at "there is a step to describe" until
         // the third level exists.
         var path = Write();
-        var model = _store.GetOrLoad(_workspace, path).Model;
+        var model = (await _store.GetOrLoadAsync(_workspace, path, TestContext.Current.CancellationToken)).Model;
         var mapper = new PipelineElementMapper(PipelineMetrics.Default);
         var opened = new HashSet<string>(StringComparer.Ordinal) { "Build", "Build/Compile" };
 

@@ -16,7 +16,7 @@ public sealed class SparqlDocumentReloaderTests : DocumentReloaderContract<ISpar
 
     protected override ISparqlDocumentStore CreateStore() => new SparqlDocumentStore();
 
-    protected override bool IsEmpty(ISparqlDocumentStore store, string path) => ReferenceEquals(store.GetOrLoad(path).Model, SparqlQueryModel.Empty);
+    protected override async Task<bool> IsEmptyAsync(ISparqlDocumentStore store, string path, CancellationToken cancellationToken) => ReferenceEquals((await store.GetOrLoadAsync(path, cancellationToken)).Model, SparqlQueryModel.Empty);
 
     protected override void OnChanged(ISparqlDocumentStore store, Action<string> changed) =>
         store.Changed += (_, args) => changed(args.Path);
@@ -30,14 +30,14 @@ public sealed class SparqlDocumentReloaderTests : DocumentReloaderContract<ISpar
         using var folder = TestFolder.Create("EtAlii.Adp.SparqlDocumentReloaderTests");
         var body = folder.Combine("query.rq");
         File.Copy(Example, body);
-        Assert.True(store.GetOrLoad(body).IsUsable);
+        Assert.True((await store.GetOrLoadAsync(body, TestContext.Current.CancellationToken)).IsUsable);
         File.Delete(body);
 
         // Act.
         await reloader.BodyDeletedAsync(folder.Path, body, TestContext.Current.CancellationToken);
 
         // Assert: this module never creates query files, so a gone one is a state it names.
-        var cleared = store.GetOrLoad(body);
+        var cleared = await store.GetOrLoadAsync(body, TestContext.Current.CancellationToken);
         Assert.False(cleared.IsUsable);
         Assert.Contains("does not exist", cleared.Unreadable, StringComparison.Ordinal);
     }
@@ -51,7 +51,7 @@ public sealed class SparqlDocumentReloaderTests : DocumentReloaderContract<ISpar
         using var folder = TestFolder.Create("EtAlii.Adp.SparqlDocumentReloaderTests");
         var body = folder.Combine("query.rq");
         File.Copy(Example, body);
-        Assert.True(store.GetOrLoad(body).IsUsable);
+        Assert.True((await store.GetOrLoadAsync(body, TestContext.Current.CancellationToken)).IsUsable);
         var told = 0;
         store.Changed += (_, _) => told++;
 
@@ -63,7 +63,7 @@ public sealed class SparqlDocumentReloaderTests : DocumentReloaderContract<ISpar
 
         // Assert: the last good query is kept, not replaced by one naming the read failure (R2.4),
         // and since nothing a session shows has changed, no session is told.
-        Assert.True(store.GetOrLoad(body).IsUsable);
+        Assert.True((await store.GetOrLoadAsync(body, TestContext.Current.CancellationToken)).IsUsable);
         Assert.Equal(0, told);
     }
 }

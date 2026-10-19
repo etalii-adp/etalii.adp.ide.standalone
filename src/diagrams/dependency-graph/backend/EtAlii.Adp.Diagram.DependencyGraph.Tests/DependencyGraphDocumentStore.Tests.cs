@@ -34,7 +34,7 @@ public sealed class DependencyGraphDocumentStoreTests : DocumentStoreContract<ID
         var store = new DependencyGraphDocumentStore(new FileWriter());
 
         // Act.
-        var entry = store.GetOrLoad(body);
+        var entry = await store.GetOrLoadAsync(body, TestContext.Current.CancellationToken);
         var saved = await store.SaveAsync(body, entry.Document, TestContext.Current.CancellationToken);
 
         // Assert: what the file holds is unknown, so the empty model is not written over it.

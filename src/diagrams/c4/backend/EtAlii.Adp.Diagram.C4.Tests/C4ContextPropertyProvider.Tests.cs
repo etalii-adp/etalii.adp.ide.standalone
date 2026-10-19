@@ -141,7 +141,7 @@ public class C4ContextPropertyProviderTests : IDisposable
     public async Task ARelationship_OffersItsDescriptionAndTechnology_AndNamesItsEnds()
     {
         // Arrange.
-        var workspace = _services.GetRequiredService<IC4DocumentStore>().GetOrLoad(_bodyPath).Model;
+        var workspace = (await _services.GetRequiredService<IC4DocumentStore>().GetOrLoadAsync(_bodyPath, TestContext.Current.CancellationToken)).Model;
         var relationship = Assert.Single(workspace.Relationships);
 
         // Act.

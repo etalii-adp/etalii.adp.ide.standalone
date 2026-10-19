@@ -149,7 +149,7 @@ public class ServiceCollectionAddAzurePipelineTests
         var reloader = Assert.Single(provider.GetServices<IDiagramDocumentReloader>(), candidate => candidate.Origin == Diagram.Pipeline.Origin);
         var changed = new List<string>();
         store.Changed += (_, args) => changed.Add(args.Path);
-        _ = store.GetOrLoad(folder.Path, body);
+        _ = await store.GetOrLoadAsync(folder.Path, body, TestContext.Current.CancellationToken);
         File.Delete(body);
 
         // Act.

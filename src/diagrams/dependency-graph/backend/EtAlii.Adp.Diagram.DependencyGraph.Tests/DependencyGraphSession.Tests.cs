@@ -290,7 +290,7 @@ public class DependencyGraphSessionTests : IDisposable
 
         // Act: rename the node that is inside the viewport.
         await File.WriteAllTextAsync(path, Graph.Replace("label: API gateway", "label: Renamed", StringComparison.Ordinal), TestContext.Current.CancellationToken);
-        _store.Reload(path);
+        await _store.ReloadAsync(path, TestContext.Current.CancellationToken);
 
         // Assert: the edit arrives, and nothing the viewport had culled comes back with it.
         Assert.NotNull(received);
@@ -313,7 +313,7 @@ public class DependencyGraphSessionTests : IDisposable
 
         // Act.
         await File.WriteAllTextAsync(path, Graph.Replace("label: API gateway", "label: Renamed", StringComparison.Ordinal), TestContext.Current.CancellationToken);
-        _store.Reload(path);
+        await _store.ReloadAsync(path, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.NotNull(received);
@@ -341,7 +341,7 @@ public class DependencyGraphSessionTests : IDisposable
         // Assert.
         Assert.Equal(Diagram.DependencyGraph.Origin, reloader.Origin);
         Assert.True(disturbed);
-        Assert.Equal(999d, _store.GetOrLoad(path).Model.Elements.Single(element => element.Id == "aaa").X);
+        Assert.Equal(999d, (await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Model.Elements.Single(element => element.Id == "aaa").X);
     }
 
     [Fact]
@@ -357,7 +357,7 @@ public class DependencyGraphSessionTests : IDisposable
         session.Changed += (_, _) => disturbed = true;
 
         // Act.
-        _store.Reload(otherPath);
+        await _store.ReloadAsync(otherPath, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.False(disturbed);

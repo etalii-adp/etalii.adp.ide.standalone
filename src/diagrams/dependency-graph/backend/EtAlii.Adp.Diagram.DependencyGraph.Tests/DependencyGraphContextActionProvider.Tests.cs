@@ -145,7 +145,7 @@ public class DependencyGraphContextActionProviderTests : IDisposable
 
         // Assert.
         Assert.IsType<ContextExecutionCompleted>(result);
-        var added = _store.GetOrLoad(path).Model.Elements.Single(element => element.Id is not ("aaa" or "bbb"));
+        var added = (await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Model.Elements.Single(element => element.Id is not ("aaa" or "bbb"));
         Assert.Equal(-180.5d, added.X);
         Assert.Equal(4, added.Row);
     }
@@ -178,7 +178,7 @@ public class DependencyGraphContextActionProviderTests : IDisposable
 
         // Assert.
         Assert.True(result.Completed, result.Error);
-        var added = _store.GetOrLoad(path).Model.Elements.Single(element => element.Label == "Search service");
+        var added = (await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Model.Elements.Single(element => element.Label == "Search service");
         Assert.Equal(240d + DependencyGraphContextActionProvider.XStep, added.X);
         Assert.Equal(0, added.Row);
     }
@@ -221,7 +221,7 @@ public class DependencyGraphContextActionProviderTests : IDisposable
         // Assert.
         // No date arithmetic anywhere: a plain step along x, and the same row.
         Assert.IsType<ContextExecutionCompleted>(result);
-        var model = _store.GetOrLoad(path).Model;
+        var model = (await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Model;
         var added = model.Elements.Single(element => element.Id is not ("aaa" or "bbb"));
         Assert.Equal(240d + DependencyGraphContextActionProvider.XStep, added.X);
         Assert.Equal(0, added.Row);
@@ -240,7 +240,7 @@ public class DependencyGraphContextActionProviderTests : IDisposable
 
         // Assert.
         Assert.IsType<ContextExecutionCompleted>(result);
-        var model = _store.GetOrLoad(path).Model;
+        var model = (await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Model;
         var added = model.Elements.Single(element => element.Id is not ("aaa" or "bbb"));
         Assert.Equal(240d, added.X);
         Assert.Equal(1, added.Row);
@@ -262,7 +262,7 @@ public class DependencyGraphContextActionProviderTests : IDisposable
         // Dragged from bbb to aaa means bbb depends on aaa, and nothing along the path may
         // normalise that.
         Assert.IsType<ContextExecutionCompleted>(result);
-        var added = _store.GetOrLoad(path).Model.Relations.Single(relation => relation.Id != "ccc");
+        var added = (await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Model.Relations.Single(relation => relation.Id != "ccc");
         Assert.Equal("bbb", added.From);
         Assert.Equal("aaa", added.To);
     }
@@ -278,7 +278,7 @@ public class DependencyGraphContextActionProviderTests : IDisposable
         // Act.
         var result = await _actions.ExecuteAsync(
             Target(path, gesture), DependencyGraphContextActionProvider.ConnectActionId, CancellationToken.None);
-        var model = _store.GetOrLoad(path).Model;
+        var model = (await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Model;
         await _historyStacks.Get(_workspace).UndoAsync(CancellationToken.None);
 
         // Assert.
@@ -304,7 +304,7 @@ public class DependencyGraphContextActionProviderTests : IDisposable
 
         // Assert.
         Assert.IsType<ContextExecutionCompleted>(result);
-        var model = _store.GetOrLoad(path).Model;
+        var model = (await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Model;
         var created = model.Elements.Single(element => element.Id is not ("aaa" or "bbb"));
         Assert.Equal(-300d, created.X);
         Assert.Contains(model.Relations, relation => relation.From == created.Id && relation.To == "aaa");
@@ -340,7 +340,7 @@ public class DependencyGraphContextActionProviderTests : IDisposable
 
         // Assert.
         Assert.IsType<ContextExecutionCompleted>(result);
-        Assert.Empty(_store.GetOrLoad(path).Model.Elements);
+        Assert.Empty((await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Model.Elements);
     }
 
     [Fact]
@@ -354,7 +354,7 @@ public class DependencyGraphContextActionProviderTests : IDisposable
         // Assert.
         var confirmation = Assert.IsType<ContextExecutionRequiresConfirmation>(result);
         Assert.Contains("1 dependency", confirmation.Request.Message, StringComparison.Ordinal);
-        Assert.NotEmpty(_store.GetOrLoad(path).Model.Elements);
+        Assert.NotEmpty((await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Model.Elements);
     }
 
     [Fact]
@@ -369,7 +369,7 @@ public class DependencyGraphContextActionProviderTests : IDisposable
             Target(path, "aaa"), DependencyGraphContextActionProvider.RenameActionId, CancellationToken.None);
         var committed = await _actions.CommitAsync(
             Target(path, "aaa"), DependencyGraphContextActionProvider.RenameActionId, "Edge router", "", CancellationToken.None);
-        var renamed = _store.GetOrLoad(path).Model.Elements.Single(element => element.Id == "aaa").Label;
+        var renamed = (await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Model.Elements.Single(element => element.Id == "aaa").Label;
         await _historyStacks.Get(_workspace).UndoAsync(CancellationToken.None);
 
         // Assert.
@@ -389,7 +389,7 @@ public class DependencyGraphContextActionProviderTests : IDisposable
         // Act.
         var result = await _actions.ExecuteAsync(
             Target(path, "ccc"), DependencyGraphContextActionProvider.DisconnectActionId, CancellationToken.None);
-        var afterDisconnect = _store.GetOrLoad(path).Model.Relations.Count;
+        var afterDisconnect = (await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Model.Relations.Count;
         await _historyStacks.Get(_workspace).UndoAsync(CancellationToken.None);
 
         // Assert.

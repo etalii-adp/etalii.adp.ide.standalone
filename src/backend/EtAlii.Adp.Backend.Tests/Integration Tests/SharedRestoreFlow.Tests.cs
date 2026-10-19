@@ -50,7 +50,7 @@ public sealed class SharedRestoreFlowTests(HostFixture host) : IClassFixture<Hos
             path,
             CausalLoop,
             new AddVariableCommand(path, "births", "Births"),
-            () => store.GetOrLoad(path).Document.Text);
+            async () => (await store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Document.Text);
     }
 
     [Fact]
@@ -66,16 +66,16 @@ public sealed class SharedRestoreFlowTests(HostFixture host) : IClassFixture<Hos
             path,
             Turtle,
             new AddRdfPrefixCommand(path, "foaf", "http://xmlns.com/foaf/0.1/"),
-            () => store.GetOrLoad(path).Document.Text);
+            async () => (await store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Document.Text);
     }
 
-    private async Task AssertUndoAndRedo(string path, string original, ICommand edit, Func<string> storeText)
+    private async Task AssertUndoAndRedo(string path, string original, ICommand edit, Func<Task<string>> storeText)
     {
         var dispatcher = host.Services.GetRequiredService<ICommandDispatcher>();
         var cancellationToken = TestContext.Current.CancellationToken;
 
         // The store holds the document before the edit, as it does once a canvas has opened it.
-        Assert.Equal(original, storeText());
+        Assert.Equal(original, await storeText());
 
         var edited = await dispatcher.DispatchAsync(edit, cancellationToken);
         Assert.True(edited.IsSuccess, edited.Error);
@@ -87,13 +87,13 @@ public sealed class SharedRestoreFlowTests(HostFixture host) : IClassFixture<Hos
         var undone = await dispatcher.DispatchAsync(edited.Inverse, cancellationToken);
         Assert.True(undone.IsSuccess, undone.Error);
         Assert.Equal(original, await File.ReadAllTextAsync(path, cancellationToken));
-        Assert.Equal(original, storeText());
+        Assert.Equal(original, await storeText());
         Assert.Same(edit, undone.Inverse);
 
         // Redo: the inverse of the restore is the original edit, which runs again.
         var redone = await dispatcher.DispatchAsync(undone.Inverse!, cancellationToken);
         Assert.True(redone.IsSuccess, redone.Error);
         Assert.Equal(afterEdit, await File.ReadAllTextAsync(path, cancellationToken));
-        Assert.Equal(afterEdit, storeText());
+        Assert.Equal(afterEdit, await storeText());
     }
 }

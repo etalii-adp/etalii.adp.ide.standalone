@@ -194,7 +194,7 @@ public class TimelineSessionTests : IDisposable
 
         // Act: retitle the period, which is inside the viewport.
         await File.WriteAllTextAsync(path, Timeline.Replace("label: Period", "label: Renamed", StringComparison.Ordinal), TestContext.Current.CancellationToken);
-        _store.Reload(path);
+        await _store.ReloadAsync(path, TestContext.Current.CancellationToken);
 
         // Assert: the edit arrives, and nothing outside the viewport comes back with it.
         var add = Assert.IsType<DiagramAddDelta>(received[0]);
@@ -296,7 +296,7 @@ public class TimelineSessionTests : IDisposable
 
         // Act.
         await File.WriteAllTextAsync(path, Timeline.Replace("label: Period", "label: Renamed", StringComparison.Ordinal), TestContext.Current.CancellationToken);
-        _store.Reload(path);
+        await _store.ReloadAsync(path, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.NotNull(received);
@@ -317,7 +317,7 @@ public class TimelineSessionTests : IDisposable
         session.Changed += (_, _) => disturbed = true;
 
         // Act.
-        _store.Reload(otherPath);
+        await _store.ReloadAsync(otherPath, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.False(disturbed);

@@ -26,17 +26,17 @@ public class DependencyGraphDocumentStoreSharedReadTests : IDisposable
     }
 
     [Fact]
-    public void GetOrLoad_ReadsADocumentAnEditorIsStillWriting()
+    public async Task GetOrLoad_ReadsADocumentAnEditorIsStillWriting()
     {
         // Arrange: the handle every save holds - write access, sharing only reads, the mode
         // File.WriteAllText opens with.
         const string text = "dependencies: 1\nelements:\n  - id: aaa\n    label: Node\n    x: 10\n    row: 0\n";
         var path = IoPath.Combine(_workspace, "graph.dgr");
-        File.WriteAllText(path, text);
+        await File.WriteAllTextAsync(path, text, TestContext.Current.CancellationToken);
         using var editor = new FileStream(path, FileMode.Open, FileAccess.Write, FileShare.Read);
 
         // Act.
-        var entry = new DependencyGraphDocumentStore(new FileWriter()).GetOrLoad(path);
+        var entry = await new DependencyGraphDocumentStore(new FileWriter()).GetOrLoadAsync(path, TestContext.Current.CancellationToken);
 
         // Assert: the document itself, not the empty fallback.
         Assert.True(entry.IsUsable);

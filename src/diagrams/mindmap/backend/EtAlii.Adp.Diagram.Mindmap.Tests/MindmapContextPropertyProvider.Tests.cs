@@ -20,7 +20,7 @@ public class MindmapContextPropertyProviderTests
 
         // Act.
         var properties = await project.Properties.DescribeAsync(
-            project.NodeTarget(BackendNodeId), TestContext.Current.CancellationToken);
+            await project.NodeTargetAsync(BackendNodeId), TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Equal("Backend", properties.Row(MindmapContextPropertyProvider.TextPropertyId).Value);
@@ -57,7 +57,7 @@ public class MindmapContextPropertyProviderTests
 
         // Act.
         var properties = await project.Properties.DescribeAsync(
-            project.NodeTarget(RootNodeId), TestContext.Current.CancellationToken);
+            await project.NodeTargetAsync(RootNodeId), TestContext.Current.CancellationToken);
 
         // Assert.
         var folded = properties.Row(MindmapContextPropertyProvider.FoldedPropertyId);
@@ -74,7 +74,7 @@ public class MindmapContextPropertyProviderTests
 
         // Act.
         var properties = await project.Properties.DescribeAsync(
-            project.NodeTarget(BackendNodeId), TestContext.Current.CancellationToken);
+            await project.NodeTargetAsync(BackendNodeId), TestContext.Current.CancellationToken);
 
         // Assert.
         var identifier = properties.Row(MindmapContextPropertyProvider.IdentifierPropertyId);
@@ -91,14 +91,14 @@ public class MindmapContextPropertyProviderTests
 
         // Act.
         var result = await project.Properties.SetAsync(
-            project.NodeTarget(BackendNodeId),
+            await project.NodeTargetAsync(BackendNodeId),
             MindmapContextPropertyProvider.TextPropertyId,
             "Backend services",
             TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.True(result.IsSuccess, result.Error);
-        Assert.Equal("Backend services", project.Document.Find(BackendNodeId)!.Text);
+        Assert.Equal("Backend services", (await project.DocumentAsync()).Find(BackendNodeId)!.Text);
 
         await project.History.UndoAsync(TestContext.Current.CancellationToken);
         Assert.Equal(before, await File.ReadAllTextAsync(project.BodyPath, TestContext.Current.CancellationToken));
@@ -112,15 +112,15 @@ public class MindmapContextPropertyProviderTests
         // puts the old link back whichever way it was removed.
         using var project = new MindmapTestProject();
         await project.Properties.SetAsync(
-            project.NodeTarget(BackendNodeId), MindmapContextPropertyProvider.LinkPropertyId, "docs/other.md", TestContext.Current.CancellationToken);
+            await project.NodeTargetAsync(BackendNodeId), MindmapContextPropertyProvider.LinkPropertyId, "docs/other.md", TestContext.Current.CancellationToken);
 
         // Act.
         var result = await project.Properties.SetAsync(
-            project.NodeTarget(BackendNodeId), MindmapContextPropertyProvider.LinkPropertyId, "", TestContext.Current.CancellationToken);
+            await project.NodeTargetAsync(BackendNodeId), MindmapContextPropertyProvider.LinkPropertyId, "", TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.True(result.IsSuccess, result.Error);
-        Assert.Null(project.Document.Find(BackendNodeId)!.Link);
+        Assert.Null((await project.DocumentAsync()).Find(BackendNodeId)!.Link);
     }
 
     [Fact]
@@ -131,7 +131,7 @@ public class MindmapContextPropertyProviderTests
 
         // Act.
         var result = await project.Properties.SetAsync(
-            project.NodeTarget("ID_nonexistent"),
+            await project.NodeTargetAsync("ID_nonexistent"),
             MindmapContextPropertyProvider.TextPropertyId,
             "Anything",
             TestContext.Current.CancellationToken);

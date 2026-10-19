@@ -78,7 +78,7 @@ public sealed class MindmapDocumentStoreDepartureTests : IDisposable
         // Arrange.
         var store = new MindmapDocumentStore(new FileWriter());
         IDiagramDocumentReloader reloader = new DiagramDocumentReloader<IMindmapDocumentStore>(Diagram.Mindmap.Origin, store);
-        var document = store.GetOrLoad(Body);
+        var document = await store.GetOrLoadAsync(Body, TestContext.Current.CancellationToken);
         var told = new List<MindmapChange>();
         store.Changed += (_, args) => told.Add(args.Change);
 

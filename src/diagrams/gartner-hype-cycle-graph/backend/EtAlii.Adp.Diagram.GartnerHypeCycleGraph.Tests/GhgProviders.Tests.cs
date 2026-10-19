@@ -210,7 +210,7 @@ public sealed class GhgProvidersTests : IDisposable
         var store = new GhgDocumentStore(new FileWriter());
         await using (new FileStream(Body, FileMode.Open, FileAccess.Read, FileShare.None))
         {
-            Assert.False(store.GetOrLoad(Body).IsUsable);
+            Assert.False((await store.GetOrLoadAsync(Body, TestContext.Current.CancellationToken)).IsUsable);
         }
 
         using var historyStacks = new HistoryStackStore(new GhgTestDispatcher(store));
@@ -248,7 +248,7 @@ public sealed class GhgProvidersTests : IDisposable
         Assert.Empty(offered);
         Assert.IsType<ContextExecutionFailed>(added);
         Assert.Equal(broken, await File.ReadAllTextAsync(Body, TestContext.Current.CancellationToken));
-        var entry = store.GetOrLoad(Body);
+        var entry = await store.GetOrLoadAsync(Body, TestContext.Current.CancellationToken);
         Assert.StartsWith("The document could not be read as YAML: ", entry.Unreadable, StringComparison.Ordinal);
         Assert.Equal(entry.Model.Problems, entry.Problems);
     }

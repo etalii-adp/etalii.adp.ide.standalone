@@ -168,7 +168,7 @@ public sealed class WardleyContextSourceResolverTests : IDisposable
         // this shares the mapper to avoid.
         await _documents.GetOrLoadAsync(_body, TestContext.Current.CancellationToken);
         var identities = _documents.Identities(_body);
-        var map = _documents.GetOrLoad(_body).Model;
+        var map = (await _documents.GetOrLoadAsync(_body, TestContext.Current.CancellationToken)).Model;
         var elementId = await IdOfAsync(WardleyIdentityKind.Component, "Cup of Tea");
         var streamed = new WardleyElementMapper(new WardleyIdentities(new FileWriter()))
             .Elements(map, identities)
@@ -266,7 +266,7 @@ public sealed class WardleyContextSourceResolverTests : IDisposable
         using var subscription = _resolver.Track(ShortGuid.NewShortGuid(), _root, level, path => announced = path);
 
         // Act.
-        var document = _documents.GetOrLoad(_body).Document;
+        var document = (await _documents.GetOrLoadAsync(_body, TestContext.Current.CancellationToken)).Document;
         WardleyWriter.RemoveLine(document, WardleyParser.Parse(document).Components.Single(c => c.Name == "Power").Line);
         await _documents.SaveAsync(_body, document, TestContext.Current.CancellationToken);
 
@@ -284,7 +284,7 @@ public sealed class WardleyContextSourceResolverTests : IDisposable
         using var subscription = _resolver.Track(ShortGuid.NewShortGuid(), _root, level, path => announced = path);
 
         // Act.
-        var document = _documents.GetOrLoad(_body).Document;
+        var document = (await _documents.GetOrLoadAsync(_body, TestContext.Current.CancellationToken)).Document;
         WardleyWriter.Rename(document, WardleyParser.Parse(document), "Power", "Mains Power");
         _documents.Rekey(_body, WardleyIdentityKind.Component, "Power", "Mains Power");
         await _documents.SaveAsync(_body, document, TestContext.Current.CancellationToken);

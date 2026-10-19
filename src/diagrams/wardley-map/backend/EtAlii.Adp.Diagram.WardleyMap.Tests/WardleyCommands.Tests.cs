@@ -136,7 +136,7 @@ public sealed class WardleyCommandsTests : IDisposable
             evolve Alpha 0.9
 
             """);
-        _documents.GetOrLoad(_path);
+        await _documents.GetOrLoadAsync(_path, TestContext.Current.CancellationToken);
 
         // Act.
         var result = await Execute(new RemoveWardleyElementCommand(_path, await IdOfAsync("Alpha")));
@@ -154,7 +154,7 @@ public sealed class WardleyCommandsTests : IDisposable
         // Arrange.
         const string before = "component Alpha [0.5, 0.5]\ncomponent Beta [0.2, 0.2]\nAlpha->Beta\n";
         Write(before);
-        _documents.GetOrLoad(_path);
+        await _documents.GetOrLoadAsync(_path, TestContext.Current.CancellationToken);
 
         // Act.
         await Execute(new RemoveWardleyElementCommand(_path, await IdOfAsync("Alpha")));
@@ -169,7 +169,7 @@ public sealed class WardleyCommandsTests : IDisposable
     {
         // Arrange. Requirement 4.4.
         Write("component Kettle [0.43, 0.35]\nCup of Tea->Kettle\nevolve Kettle 0.62\n");
-        _documents.GetOrLoad(_path);
+        await _documents.GetOrLoadAsync(_path, TestContext.Current.CancellationToken);
 
         // Act.
         var result = await Execute(new RenameWardleyElementCommand(_path, await IdOfAsync("Kettle"), "Boiler"));
@@ -185,7 +185,7 @@ public sealed class WardleyCommandsTests : IDisposable
         // Arrange. Requirement 4.1 - a rename is an edit, not a delete plus an add, so the
         // selection and every undo entry naming it survive.
         Write("component Kettle [0.43, 0.35]\n");
-        _documents.GetOrLoad(_path);
+        await _documents.GetOrLoadAsync(_path, TestContext.Current.CancellationToken);
         var before = await IdOfAsync("Kettle");
 
         // Act.
@@ -201,7 +201,7 @@ public sealed class WardleyCommandsTests : IDisposable
         // Arrange.
         const string before = "component Kettle [0.43, 0.35]\nCup of Tea->Kettle\nevolve Kettle 0.62\n";
         Write(before);
-        _documents.GetOrLoad(_path);
+        await _documents.GetOrLoadAsync(_path, TestContext.Current.CancellationToken);
 
         // Act.
         await Execute(new RenameWardleyElementCommand(_path, await IdOfAsync("Kettle"), "Boiler"));
@@ -216,7 +216,7 @@ public sealed class WardleyCommandsTests : IDisposable
     {
         // Arrange.
         Write("component Alpha [0.5, 0.5]\ncomponent Beta [0.2, 0.2]\n");
-        _documents.GetOrLoad(_path);
+        await _documents.GetOrLoadAsync(_path, TestContext.Current.CancellationToken);
 
         // Act.
         var result = await Execute(new RenameWardleyElementCommand(_path, await IdOfAsync("Alpha"), "Beta"));
@@ -231,7 +231,7 @@ public sealed class WardleyCommandsTests : IDisposable
     {
         // Arrange. Requirement 6.2 - inertia is a boolean, not a decorator.
         Write("component Datacentre [0.15, 0.55]\n");
-        _documents.GetOrLoad(_path);
+        await _documents.GetOrLoadAsync(_path, TestContext.Current.CancellationToken);
         var id = await IdOfAsync("Datacentre");
 
         // Act and assert.
@@ -247,7 +247,7 @@ public sealed class WardleyCommandsTests : IDisposable
     {
         // Arrange. All five live in one set, so setting one must leave the others alone.
         Write("component Payment [0.70, 0.72] (buy)\n");
-        _documents.GetOrLoad(_path);
+        await _documents.GetOrLoadAsync(_path, TestContext.Current.CancellationToken);
 
         // Act.
         await Execute(new SetWardleyDecoratorCommand(_path, await IdOfAsync("Payment"), WardleyDecorator.Market, true));
@@ -261,7 +261,7 @@ public sealed class WardleyCommandsTests : IDisposable
     {
         // Arrange.
         Write("component Payment [0.70, 0.72] (buy)\n");
-        _documents.GetOrLoad(_path);
+        await _documents.GetOrLoadAsync(_path, TestContext.Current.CancellationToken);
 
         // Act.
         await Execute(new SetWardleyDecoratorCommand(_path, await IdOfAsync("Payment"), WardleyDecorator.Buy, false));
@@ -275,7 +275,7 @@ public sealed class WardleyCommandsTests : IDisposable
     {
         // Arrange.
         Write("component Payment [0.70, 0.72] // why\n");
-        _documents.GetOrLoad(_path);
+        await _documents.GetOrLoadAsync(_path, TestContext.Current.CancellationToken);
 
         // Act.
         await Execute(new SetWardleyDecoratorCommand(_path, await IdOfAsync("Payment"), WardleyDecorator.Buy, true));
@@ -289,7 +289,7 @@ public sealed class WardleyCommandsTests : IDisposable
     {
         // Arrange.
         Write("component Payment [0.70, 0.72] (buy)\n");
-        _documents.GetOrLoad(_path);
+        await _documents.GetOrLoadAsync(_path, TestContext.Current.CancellationToken);
 
         // Act. Already in the state asked for.
         var result = await Execute(new SetWardleyDecoratorCommand(_path, await IdOfAsync("Payment"), WardleyDecorator.Buy, true));
@@ -586,7 +586,7 @@ public sealed class WardleyCommandsTests : IDisposable
         {
             Write(before);
             _documents.Forget(_path);
-            _documents.GetOrLoad(_path);
+            await _documents.GetOrLoadAsync(_path, TestContext.Current.CancellationToken);
 
             // Act.
             var result = await Execute(make(await IdOfAsync("Alpha"), await IdOfAsync("Beta")));

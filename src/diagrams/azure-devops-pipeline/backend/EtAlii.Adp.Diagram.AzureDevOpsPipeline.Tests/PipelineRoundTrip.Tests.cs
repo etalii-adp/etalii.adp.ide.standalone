@@ -40,7 +40,7 @@ public class PipelineRoundTripTests
         using var folder = Copy(path, out var body);
         var original = await File.ReadAllBytesAsync(body, TestContext.Current.CancellationToken);
         var store = new PipelineDocumentStore(new FileWriter());
-        var entry = store.GetOrLoad(folder.Path, body);
+        var entry = await store.GetOrLoadAsync(folder.Path, body, TestContext.Current.CancellationToken);
 
         // Act: nothing asked for, then every element's display name as it already is.
         var nothing = entry.Document.Write([]);
@@ -72,7 +72,7 @@ public class PipelineRoundTripTests
         // Arrange.
         using var folder = Copy(path, out var body);
         var original = await File.ReadAllBytesAsync(body, TestContext.Current.CancellationToken);
-        var model = new PipelineDocumentStore(new FileWriter()).GetOrLoad(folder.Path, body).Model;
+        var model = (await new PipelineDocumentStore(new FileWriter()).GetOrLoadAsync(folder.Path, body, TestContext.Current.CancellationToken)).Model;
         List<string> failures = [];
         var applied = 0;
 
@@ -139,7 +139,7 @@ public class PipelineRoundTripTests
         var removed = await dispatcher.DispatchAsync(new RemovePipelineElementCommand(folder.Path, body, "Build/Compile/step-1"), TestContext.Current.CancellationToken);
         Assert.True(removed.IsSuccess, removed.Error);
         await File.AppendAllTextAsync(body, "# changed by someone else\r\n", TestContext.Current.CancellationToken);
-        store.Reload(body);
+        await store.ReloadAsync(body, TestContext.Current.CancellationToken);
         var changed = await File.ReadAllBytesAsync(body, TestContext.Current.CancellationToken);
 
         // Act.

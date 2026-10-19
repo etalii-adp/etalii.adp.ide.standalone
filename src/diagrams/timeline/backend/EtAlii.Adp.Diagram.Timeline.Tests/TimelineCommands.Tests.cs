@@ -94,7 +94,7 @@ public class TimelineCommandsTests : IDisposable
         await History.ExecuteAsync(new AddTimelineElementCommand(path, "mmm00001", "Milestone", "2026-06-01", null, 1), TestContext.Current.CancellationToken);
 
         // Assert.
-        var model = _store.GetOrLoad(path).Model;
+        var model = (await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Model;
         Assert.False(model.Elements.Single(element => element.Id == "mmm00001").IsPeriod);
     }
 
@@ -134,7 +134,7 @@ public class TimelineCommandsTests : IDisposable
 
         // Act.
         var result = await History.ExecuteAsync(new RemoveTimelineElementCommand(path, "aaa"), TestContext.Current.CancellationToken);
-        var afterRemove = _store.GetOrLoad(path).Model;
+        var afterRemove = (await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Model;
         await History.UndoAsync(TestContext.Current.CancellationToken);
 
         // Assert.
@@ -157,7 +157,7 @@ public class TimelineCommandsTests : IDisposable
 
         // Assert.
         Assert.True(redo.IsSuccess, redo.Error);
-        Assert.DoesNotContain("aaa", _store.GetOrLoad(path).Model.Elements.Select(element => element.Id));
+        Assert.DoesNotContain("aaa", (await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Model.Elements.Select(element => element.Id));
     }
 
     [Fact]
@@ -185,7 +185,7 @@ public class TimelineCommandsTests : IDisposable
 
         // Act.
         await History.ExecuteAsync(new RenameTimelineElementCommand(path, "aaa", "Renamed"), TestContext.Current.CancellationToken);
-        var renamed = _store.GetOrLoad(path).Model.Elements.Single(element => element.Id == "aaa");
+        var renamed = (await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Model.Elements.Single(element => element.Id == "aaa");
         await History.UndoAsync(TestContext.Current.CancellationToken);
 
         // Assert.
@@ -223,7 +223,7 @@ public class TimelineCommandsTests : IDisposable
         // The end is ignored rather than written: giving a moment an end is the context menu's
         // action (Requirement 7.5), never a drag's side effect.
         Assert.True(result.IsSuccess, result.Error);
-        Assert.False(_store.GetOrLoad(path).Model.Elements.Single(element => element.Id == "bbb").IsPeriod);
+        Assert.False((await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Model.Elements.Single(element => element.Id == "bbb").IsPeriod);
     }
 
     [Fact]
@@ -267,7 +267,7 @@ public class TimelineCommandsTests : IDisposable
 
         // Assert.
         Assert.True(result.IsSuccess, result.Error);
-        Assert.Equal(2, _store.GetOrLoad(path).Model.Connections.Count);
+        Assert.Equal(2, (await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Model.Connections.Count);
     }
 
     [Fact]
@@ -291,9 +291,9 @@ public class TimelineCommandsTests : IDisposable
 
         // Act.
         await History.ExecuteAsync(new DisconnectTimelineConnectionCommand(path, "ccc"), TestContext.Current.CancellationToken);
-        var afterDisconnect = _store.GetOrLoad(path).Model.Connections.Count;
+        var afterDisconnect = (await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Model.Connections.Count;
         await History.UndoAsync(TestContext.Current.CancellationToken);
-        var restored = TimelineEdits.ConnectionOf(_store.GetOrLoad(path).Model, "ccc");
+        var restored = TimelineEdits.ConnectionOf((await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Model, "ccc");
 
         // Assert.
         Assert.Equal(0, afterDisconnect);

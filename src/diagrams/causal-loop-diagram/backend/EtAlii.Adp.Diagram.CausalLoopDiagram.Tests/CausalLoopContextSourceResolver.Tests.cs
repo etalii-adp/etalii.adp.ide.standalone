@@ -53,7 +53,7 @@ public sealed class CausalLoopContextSourceResolverTests : DiagramElementSourceR
 
     protected override IContextSourceResolver CreateResolver() => Resolver();
 
-    protected override void Reload(string body) => _store.Reload(body);
+    protected override Task ReloadAsync(string body, CancellationToken cancellationToken) => _store.ReloadAsync(body, cancellationToken);
 
     protected override string ElementId => "variable:incidents";
 

@@ -27,13 +27,13 @@ public sealed class LifecycleDocumentStoreOutcomeTests : IDisposable
     }
 
     [Fact]
-    public void AnEntry_CarriesWhatTheParserPassedOver_AndStaysUsable()
+    public async Task AnEntry_CarriesWhatTheParserPassedOver_AndStaysUsable()
     {
         // Arrange.
         var path = Write("a\n?b\nc\n");
 
         // Act.
-        var entry = new OutcomeStore().GetOrLoad(path);
+        var entry = await new OutcomeStore().GetOrLoadAsync(path, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.True(entry.IsUsable);
@@ -48,7 +48,7 @@ public sealed class LifecycleDocumentStoreOutcomeTests : IDisposable
         // Arrange.
         var path = Write("a !! b\n");
         var store = new OutcomeStore();
-        var entry = store.GetOrLoad(path);
+        var entry = await store.GetOrLoadAsync(path, TestContext.Current.CancellationToken);
         entry.Document.Replace(new LineRange(0, 0), ["after"]);
 
         // Act.
@@ -62,10 +62,10 @@ public sealed class LifecycleDocumentStoreOutcomeTests : IDisposable
     }
 
     [Fact]
-    public void AMissingBody_OpensAsAUsableNewDocument_EvenWhereItsParserCannotReadNoText()
+    public async Task AMissingBody_OpensAsAUsableNewDocument_EvenWhereItsParserCannotReadNoText()
     {
         // Act.
-        var entry = new OutcomeStore().GetOrLoad(PathOf("missing.txt"));
+        var entry = await new OutcomeStore().GetOrLoadAsync(PathOf("missing.txt"), TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.True(entry.IsUsable, entry.Unreadable);

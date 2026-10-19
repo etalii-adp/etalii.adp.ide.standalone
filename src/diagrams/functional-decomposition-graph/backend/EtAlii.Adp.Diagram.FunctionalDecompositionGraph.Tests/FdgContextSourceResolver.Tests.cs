@@ -15,7 +15,7 @@ public sealed class FdgContextSourceResolverTests : DiagramElementSourceResolver
     protected override IContextSourceResolver CreateResolver() =>
         new FdgContextSourceResolver(new DiagramFileRouter(new FdgOnlyCatalog()), _store, new FdgElementMapper());
 
-    protected override void Reload(string body) => _store.Reload(body);
+    protected override Task ReloadAsync(string body, CancellationToken cancellationToken) => _store.ReloadAsync(body, cancellationToken);
 
     protected override string ElementId => "planning";
 

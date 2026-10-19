@@ -178,7 +178,7 @@ public class TimelineContextPropertyProviderTests : IDisposable
 
         // Assert.
         Assert.True(result.IsSuccess, result.Error);
-        Assert.Equal(7, _store.GetOrLoad(path).Model.Elements[0].Row);
+        Assert.Equal(7, (await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Model.Elements[0].Row);
     }
 
     [Fact]

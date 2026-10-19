@@ -41,7 +41,7 @@ public abstract class DocumentReloaderContract<TStore> : IDisposable
     protected abstract TStore CreateStore();
 
     /// <summary>Opens the document at <paramref name="path"/> and says whether it holds no element.</summary>
-    protected abstract bool IsEmpty(TStore store, string path);
+    protected abstract Task<bool> IsEmptyAsync(TStore store, string path, CancellationToken cancellationToken);
 
     /// <summary>Calls <paramref name="changed"/> with the path each time the store tells its sessions of a change.</summary>
     protected abstract void OnChanged(TStore store, Action<string> changed);
@@ -65,7 +65,7 @@ public abstract class DocumentReloaderContract<TStore> : IDisposable
         // Arrange.
         var store = CreateStore();
         IDiagramDocumentReloader reloader = new DiagramDocumentReloader<TStore>(Origin, store);
-        Assert.False(IsEmpty(store, Body));
+        Assert.False(await IsEmptyAsync(store, Body, TestContext.Current.CancellationToken));
         File.Delete(Body);
 
         // Act: a reload that finds no file.
@@ -73,13 +73,13 @@ public abstract class DocumentReloaderContract<TStore> : IDisposable
 
         // Assert: kept. A body missing on a reload is far more often a publish in flight than a
         // deletion, so the last good document stays.
-        Assert.False(IsEmpty(store, Body));
+        Assert.False(await IsEmptyAsync(store, Body, TestContext.Current.CancellationToken));
 
         // Act: the watcher's evidence that it is gone.
         await reloader.BodyDeletedAsync(_folder.Path, Body, TestContext.Current.CancellationToken);
 
         // Assert: cleared, to what a first open of a missing body would show.
-        Assert.True(IsEmpty(store, Body));
+        Assert.True(await IsEmptyAsync(store, Body, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -88,7 +88,7 @@ public abstract class DocumentReloaderContract<TStore> : IDisposable
         // Arrange.
         var store = CreateStore();
         IDiagramDocumentReloader reloader = new DiagramDocumentReloader<TStore>(Origin, store);
-        Assert.False(IsEmpty(store, Body));
+        Assert.False(await IsEmptyAsync(store, Body, TestContext.Current.CancellationToken));
         var told = new List<string>();
         OnChanged(store, told.Add);
         File.Delete(Body);
@@ -101,17 +101,17 @@ public abstract class DocumentReloaderContract<TStore> : IDisposable
     }
 
     [Fact]
-    public void AForgottenDocument_IsReadAfreshOnTheNextOpen()
+    public async Task AForgottenDocument_IsReadAfreshOnTheNextOpen()
     {
         // Arrange.
         var store = CreateStore();
-        Assert.False(IsEmpty(store, Body));
+        Assert.False(await IsEmptyAsync(store, Body, TestContext.Current.CancellationToken));
         File.Delete(Body);
 
         // Act.
         store.Forget(Body);
 
         // Assert: the next open reads the file, which is gone, so the document is a new one.
-        Assert.True(IsEmpty(store, Body));
+        Assert.True(await IsEmptyAsync(store, Body, TestContext.Current.CancellationToken));
     }
 }

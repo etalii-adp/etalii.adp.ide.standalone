@@ -30,7 +30,7 @@ public sealed class LifecycleDocumentStoreHooksTests : IDisposable
         // Arrange.
         var path = Write("before\n");
         var store = new KeepingStore("the index beside it was not written");
-        var document = store.GetOrLoad(path).Document;
+        var document = (await store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Document;
         document.Replace(new LineRange(0, 0), ["after"]);
 
         // Act.
@@ -48,7 +48,7 @@ public sealed class LifecycleDocumentStoreHooksTests : IDisposable
         // Arrange.
         var path = Write("before\n");
         var store = new KeepingStore("the index beside it was not written");
-        var basis = store.GetOrLoad(path);
+        var basis = await store.GetOrLoadAsync(path, TestContext.Current.CancellationToken);
 
         // Act.
         var saved = (await store.SaveAsync(path, basis, body =>
@@ -111,7 +111,7 @@ public sealed class LifecycleDocumentStoreHooksTests : IDisposable
             return;
         }
 
-        store.GetOrLoad(path);
+        await store.GetOrLoadAsync(path, TestContext.Current.CancellationToken);
     }
 
     private static async Task Reload(KeepingStore store, string path, bool asynchronously)
@@ -122,7 +122,7 @@ public sealed class LifecycleDocumentStoreHooksTests : IDisposable
             return;
         }
 
-        store.Reload(path);
+        await store.ReloadAsync(path, TestContext.Current.CancellationToken);
     }
 
     private static async Task BodyDeleted(KeepingStore store, string path, bool asynchronously)
@@ -133,7 +133,7 @@ public sealed class LifecycleDocumentStoreHooksTests : IDisposable
             return;
         }
 
-        store.BodyDeleted(path);
+        await store.BodyDeletedAsync(path, TestContext.Current.CancellationToken);
     }
 
     /// <summary>A store over plain lines that records what it is told, and warns of every save.</summary>

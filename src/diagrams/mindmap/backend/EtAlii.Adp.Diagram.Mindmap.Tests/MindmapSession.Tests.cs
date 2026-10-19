@@ -105,7 +105,7 @@ public class MindmapSessionTests : IDisposable
         session.Changed += (_, args) => pushed = args;
 
         // Act.
-        var document = _documents.GetOrLoad(_bodyPath); // ensure loaded, as the service would have
+        var document = await _documents.GetOrLoadAsync(_bodyPath, TestContext.Current.CancellationToken); // ensure loaded, as the service would have
         await _documents.SaveAsync(_bodyPath, document, new MindmapNodeUpdated("ID_88117420"), TestContext.Current.CancellationToken);
 
         // Assert.
@@ -128,7 +128,7 @@ public class MindmapSessionTests : IDisposable
         session.Changed += (_, args) => pushes.Add(args.Deltas);
 
         // Backend is expanded in the file; collapsing it groups its subtree.
-        _views.Toggle(_watchId, _bodyPath, _documents.GetOrLoad(_bodyPath), "ID_411002937");
+        _views.Toggle(_watchId, _bodyPath, await _documents.GetOrLoadAsync(_bodyPath, TestContext.Current.CancellationToken), "ID_411002937");
 
         // Act and assert, step by step.
         var collapse = Assert.Single(pushes);
@@ -139,7 +139,7 @@ public class MindmapSessionTests : IDisposable
         var repositioned = Assert.IsType<DiagramAddDelta>(collapse[1]);
         Assert.DoesNotContain(repositioned.Elements, element => element.Id == "ID_88117420");
 
-        _views.Toggle(_watchId, _bodyPath, _documents.GetOrLoad(_bodyPath), "ID_411002937");
+        _views.Toggle(_watchId, _bodyPath, await _documents.GetOrLoadAsync(_bodyPath, TestContext.Current.CancellationToken), "ID_411002937");
 
         var expand = pushes[1];
         var ungroup = Assert.IsType<DiagramUngroupDelta>(expand[0]);
@@ -156,11 +156,11 @@ public class MindmapSessionTests : IDisposable
         _ = await session.BaselineAsync(TestContext.Current.CancellationToken);
 
         // Act.
-        _views.Toggle(_watchId, _bodyPath, _documents.GetOrLoad(_bodyPath), "ID_411002937");
+        _views.Toggle(_watchId, _bodyPath, await _documents.GetOrLoadAsync(_bodyPath, TestContext.Current.CancellationToken), "ID_411002937");
 
         // Assert.
         Assert.Equal(before, await File.ReadAllTextAsync(_bodyPath, TestContext.Current.CancellationToken));
-        Assert.True(_views.For(_watchId, _bodyPath, _documents.GetOrLoad(_bodyPath)).IsFolded("ID_411002937"));
+        Assert.True(_views.For(_watchId, _bodyPath, await _documents.GetOrLoadAsync(_bodyPath, TestContext.Current.CancellationToken)).IsFolded("ID_411002937"));
     }
 
     [Fact]
@@ -175,7 +175,7 @@ public class MindmapSessionTests : IDisposable
         session.Changed += (_, _) => pushed = true;
 
         // Act.
-        _views.Toggle(ShortGuid.NewShortGuid(), _bodyPath, _documents.GetOrLoad(_bodyPath), "ID_411002937");
+        _views.Toggle(ShortGuid.NewShortGuid(), _bodyPath, await _documents.GetOrLoadAsync(_bodyPath, TestContext.Current.CancellationToken), "ID_411002937");
 
         // Assert.
         Assert.False(pushed);
@@ -194,7 +194,7 @@ public class MindmapSessionTests : IDisposable
 
         // Arrange, continued.
         Assert.Equal("", error);
-        var document = _documents.GetOrLoad(_bodyPath);
+        var document = await _documents.GetOrLoadAsync(_bodyPath, TestContext.Current.CancellationToken);
         Assert.Equal("ID_411002938", document.Find("ID_88117425")!.Parent!.Id);
         Assert.True(_history.CanUndo);
 
@@ -203,7 +203,7 @@ public class MindmapSessionTests : IDisposable
 
         // Assert.
         Assert.True(undone.IsSuccess, undone.Error);
-        Assert.Equal("ID_411002937", _documents.GetOrLoad(_bodyPath).Find("ID_88117425")!.Parent!.Id);
+        Assert.Equal("ID_411002937", (await _documents.GetOrLoadAsync(_bodyPath, TestContext.Current.CancellationToken)).Find("ID_88117425")!.Parent!.Id);
     }
 
     [Fact]
@@ -227,7 +227,7 @@ public class MindmapSessionTests : IDisposable
         // Arrange.
         var session = Open();
         _ = await session.BaselineAsync(TestContext.Current.CancellationToken); // the service always streams the baseline first, which loads the document
-        var document = _documents.GetOrLoad(_bodyPath);
+        var document = await _documents.GetOrLoadAsync(_bodyPath, TestContext.Current.CancellationToken);
         var grandchild = document.Root.Children.SelectMany(child => child.Children).First();
 
         // Arrange, continued.
@@ -265,7 +265,7 @@ public class MindmapSessionTests : IDisposable
         // widening only adds and would pass against either order.
         var session = Open();
         var elements = AddedElements(await session.BaselineAsync(TestContext.Current.CancellationToken));
-        var document = _documents.GetOrLoad(_bodyPath);
+        var document = await _documents.GetOrLoadAsync(_bodyPath, TestContext.Current.CancellationToken);
         var grandchild = document.Root.Children.SelectMany(child => child.Children).First();
         var far = elements.Single(element => element.Id == grandchild.Id);
         _ = session.UpdateView(new DiagramViewport(-20, -20, 20, 20));
@@ -289,7 +289,7 @@ public class MindmapSessionTests : IDisposable
         _ = await session.BaselineAsync(TestContext.Current.CancellationToken);
         var pushes = new List<IReadOnlyList<DiagramDelta>>();
         session.Changed += (_, args) => pushes.Add(args.Deltas);
-        var document = _documents.GetOrLoad(_bodyPath);
+        var document = await _documents.GetOrLoadAsync(_bodyPath, TestContext.Current.CancellationToken);
 
         // Act.
         document.Remove(document.Find("ID_88117420")!);
@@ -310,7 +310,7 @@ public class MindmapSessionTests : IDisposable
         // Arrange.
         var session = Open();
         _ = await session.BaselineAsync(TestContext.Current.CancellationToken);
-        _views.Toggle(_watchId, _bodyPath, _documents.GetOrLoad(_bodyPath), "ID_411002937");
+        _views.Toggle(_watchId, _bodyPath, await _documents.GetOrLoadAsync(_bodyPath, TestContext.Current.CancellationToken), "ID_411002937");
 
         // Act.
         await session.DisposeAsync();
