@@ -52,7 +52,7 @@ public sealed class C4ContextActionProvider(IHistoryStackStore historyStacks, IC
     /// <inheritdoc />
     /// <remarks>
     /// Derived from the DISL definition of the view the target is drawn on (<see cref="C4Definitions.Menus"/>):
-    /// an element's menu, a stored relationship's, the empty canvas's adds; nothing for a line the view
+    /// an element's menu, a stored relationship's, the empty canvas's adds, also for a point on it; nothing for a line the view
     /// derives, for an unknown id, or for a document that could not be read, every edit of which would
     /// be refused.
     /// </remarks>
@@ -61,9 +61,16 @@ public sealed class C4ContextActionProvider(IHistoryStackStore historyStacks, IC
         ArgumentNullException.ThrowIfNull(target);
         ArgumentNullException.ThrowIfNull(entry);
         return entry.IsUsable
-            ? C4Definitions.Menus(entry.Model, C4Disl.FileOf(target.ResolvedFullPath), C4Definitions.ViewOf(entry.Model, target.Origin), target.Origin, target.ElementId)
+            ? C4Definitions.Menus(entry.Model, C4Disl.FileOf(target.ResolvedFullPath), C4Definitions.ViewOf(entry.Model, target.Origin), target.Origin, ElementOrCanvas(target.ElementId))
             : [];
     }
+
+    /// <summary>
+    /// The element <paramref name="elementId"/> names, or the empty id of the empty canvas for a point on it
+    /// (<c>new:x,y</c>): a right-click on empty canvas and a drop there name the point, and a C4 element goes
+    /// at the top of the model wherever on the canvas it lands.
+    /// </summary>
+    private static string ElementOrCanvas(string elementId) => GestureIds.IsPlacement(elementId) ? "" : elementId;
 
     /// <inheritdoc />
     protected override ValueTask<ContextExecutionResult> RunAsync(
@@ -148,7 +155,7 @@ public sealed class C4ContextActionProvider(IHistoryStackStore historyStacks, IC
         // canvas. The command judges whether that pairing is legal and says so if not.
         if (KindOfAdd(actionId) is { } adding)
         {
-            return AddCommand(bodyPath, model, target.Origin, adding, value, target.ElementId);
+            return AddCommand(bodyPath, model, target.Origin, adding, value, ElementOrCanvas(target.ElementId));
         }
 
         (C4Element? element, C4Relationship? relationship) = Resolve(model, target.ElementId);

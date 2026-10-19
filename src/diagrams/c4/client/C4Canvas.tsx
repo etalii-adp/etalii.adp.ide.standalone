@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { placementId } from "@client/canvas/gestureIds";
 import { elementSourceOf } from "@client/canvas/selection";
 import { DiagramCanvas } from "@client/canvas/library/DiagramCanvas";
 import { assertValidDiagramDefinition } from "@client/canvas/library/definition/validateDiagramDefinition";
@@ -158,12 +159,13 @@ export function C4Canvas({ projectId, entryId, path }: C4CanvasProps) {
       // The entry carries the backend's own action id. Dropped on an element, that element
       // becomes the new one's parent - which is how C4's containment gets decided by the
       // gesture; on empty canvas only what stands alone can land, and the backend refuses
-      // the rest with a sentence.
+      // the rest with a sentence. Empty canvas is named by the point, as the background menu
+      // names it: with no source the backend would run the action on whatever is selected.
       const target = [...model.nodes.values()].reverse().find((node) => {
         const { width, height } = node.payload;
         return Math.abs(position.x - node.x) <= width / 2 && Math.abs(position.y - node.y) <= height / 2;
       });
-      void executeAction(elementType, target !== undefined ? elementSourceOf(target.id, entryId) : undefined);
+      void executeAction(elementType, elementSourceOf(target !== undefined ? target.id : placementId(position.x, position.y), entryId));
     },
     onViewChanged: ({ viewport: next }) => setViewport(next),
   };

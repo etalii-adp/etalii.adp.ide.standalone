@@ -178,6 +178,40 @@ public class C4ContextActionProviderTests : IDisposable
     }
 
     [Fact]
+    public async Task TheEmptyCanvas_AsTheCanvasNamesIt_IsOfferedTheEmptyCanvasMenu()
+    {
+        // Arrange: a right-click on empty canvas and a drop there name the point, `new:x,y`, never
+        // the empty id the menus are derived for.
+        var canvas = await ActionIdsFor("");
+
+        // Act.
+        var placement = await ActionIdsFor(GestureIds.Placement(40, 600));
+
+        // Assert.
+        Assert.Contains("c4.add-person", canvas);
+        Assert.Equal(canvas, placement);
+    }
+
+    [Fact]
+    public async Task ADropOnTheEmptyCanvas_ResolvesTheDroppedEntry_AndAddsItAtTheTopOfTheModel()
+    {
+        // Arrange: the gate the context service puts every action through, by its id, on the target.
+        var target = TargetFor(GestureIds.Placement(40, 600));
+        var owner = await new ContextActionResolver([_provider]).ResolveByActionIdAsync(target, "c4.add-person", TestContext.Current.CancellationToken);
+
+        // Act.
+        Assert.NotNull(owner);
+        var asked = await Input(target, owner.Action.Id);
+        var committed = await _provider.CommitAsync(target, owner.Action.Id, "Auditor", "", TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.Equal("Name", asked.Request.FieldLabel);
+        Assert.True(committed.Completed, committed.Error);
+        var added = Assert.Single((await _documents.GetOrLoadAsync(_bodyPath, TestContext.Current.CancellationToken)).Model.Elements, element => element.Name == "Auditor");
+        Assert.Null(added.ParentId);
+    }
+
+    [Fact]
     public async Task Rename_CommitsThroughACommand_SoItIsOneUndoAway()
     {
         // Act.
