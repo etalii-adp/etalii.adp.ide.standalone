@@ -333,9 +333,14 @@ internal sealed class BodyReading
 
     // ---- CEL ----
 
-    private CelProgram? Program(string expression, CelContext context, out string? problem)
+    /// <summary>
+    /// The program of <paramref name="expression"/>: the one its rule kept as the binding loaded when it
+    /// was compiled for this context, else compiled here once per reading.
+    /// </summary>
+    private CelProgram? Program(Rule? rule, string expression, CelContext context, out string? problem)
     {
         problem = null;
+        if (rule?.Program(context, expression) is { } kept) return kept;
         var key = context + ":" + expression;
         if (_programs.TryGetValue(key, out var cached)) return cached;
         try
@@ -360,7 +365,7 @@ internal sealed class BodyReading
 
     private object? Evaluate(string expression, Candidate candidate, out string? problem)
     {
-        var program = Program(expression, RuleContext, out problem);
+        var program = Program(candidate.Rule, expression, RuleContext, out problem);
         if (program is null) return null;
         try
         {
@@ -376,9 +381,9 @@ internal sealed class BodyReading
         }
     }
 
-    public bool InsertAllowed(string expression, IReadOnlyDictionary<string, object?> attributes)
+    public bool InsertAllowed(Rule rule, string expression, IReadOnlyDictionary<string, object?> attributes)
     {
-        var program = Program(expression, CelContext.Insert, out _);
+        var program = Program(rule, expression, CelContext.Insert, out _);
         if (program is null) return false;
         var map = new CelMap();
         foreach ((string name, object? value) in attributes) map[name] = value is int i ? (long)i : value;

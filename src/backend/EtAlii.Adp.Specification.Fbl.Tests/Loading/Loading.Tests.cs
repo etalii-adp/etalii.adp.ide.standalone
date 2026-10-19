@@ -1,5 +1,6 @@
 using System.Text;
 using EtAlii.Adp.Specification.Fbl.Documents;
+using EtAlii.Adp.Specification.Fbl.Expressions;
 using EtAlii.Adp.Specification.Fbl.Tests.Routing;
 using EtAlii.Adp.Specification.Fbl.Tests.Support;
 using EtAlii.Adp.Specification.Json;
@@ -115,6 +116,23 @@ public class LoadingTests
 
         // Assert.
         Assert.Empty(problems);
+    }
+
+    [Fact]
+    public void ARuleKeepsTheProgramsItsExpressionsCompiledTo()
+    {
+        // Arrange.
+        const string rule = """{ "name": "item", "type": "Item", "at": "/items/*", "when": "line > 0", "id": { "from": { "key": "id" } }, "attributes": { "label": { "value": "'x'" } } }""";
+
+        // Act.
+        var problems = FblDocumentLoader.Load(Encoding.UTF8.GetBytes($$"""{ "fbl": "0.1", "bindings": { "t": {{Binding(elements: "[" + rule + "]")}} } }"""), out var document);
+
+        // Assert: compiled once as the binding loads, for the context a yaml body is read in, and kept for every reading.
+        Assert.Empty(problems);
+        var item = Assert.Single(document!.Bindings["t"].Elements);
+        Assert.NotNull(item.Program(CelContext.Scalars, "line > 0"));
+        Assert.NotNull(item.Program(CelContext.Scalars, "'x'"));
+        Assert.Null(item.Program(CelContext.Tree, "line > 0"));
     }
 
     [Fact]
