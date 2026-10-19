@@ -92,7 +92,7 @@ Step 6 is a step of its own so that the only transcript difference of this stage
 ### C4Definitions
 
 - **Purpose:** the six bundled definitions and what is derived from them.
-- **Interfaces:** `For(DiagramOrigin)`; `For(C4ViewKind)`; `Toolbox(origin)`; `Menus(workspace, view, elementId)`; `Rows(workspace, view, elementId)`; `Problems(workspace)`; `Diagnostics`.
+- **Interfaces:** `For(DiagramOrigin)`; `For(C4ViewKind)`; `Toolbox(origin)`; `Menus(workspace, view, elementId)`; `Rows(workspace, view, elementId)`; `Problems(workspace, file, origin)`; `Diagnostics`.
 - **Dependencies:** `EtAlii.Adp.Specification.Disl`.
 - **Reuses:** the shape of `TimelineDefinition`; the table of origins and view kinds that `ServiceCollection.AddC4.cs` holds today moves here.
 - **Which definition answers** (Q6, default): the toolbox is the origin's, as `C4ToolboxProvider` is constructed per origin today. A menu, a row and a drawn line are derived from the definition of **the view's own kind**, whatever the registration's origin, because the module draws a view by its kind today. A target with no view (a registration whose `view:` names nothing) uses the origin's definition, with the workspace's elements and no view statements.
@@ -118,7 +118,7 @@ Step 6 is a step of its own so that the only transcript difference of this stage
 ### The providers, the validator, the mapper and the commands
 
 - **`C4ToolboxProvider`, `C4ContextActionProvider`, `C4ContextPropertyProvider`:** hand out `C4Definitions.Toolbox`, `.Menus` and `.Rows`. A label that follows state ("Add description…" and "Edit description…") is the definition's CEL Message. Executing an action still builds today's command: the definition's operation gives the prompt, the refusal and the new element's attributes, and the command writes, as the timeline maps its operations onto its commands.
-- **`C4Validator`:** `C4Definitions.Problems(workspace)`.
+- **`C4Validator`:** `C4Definitions.Problems(workspace, file, origin)`.
 - **`C4ElementMapper`, `C4Layout`:** the four calls of `C4RuleSet.MembersOf` become a read of the view's members from the model (L2). A stored relationship is drawn when both its ends are members and keeps its menu. A relationship with an end that is not drawn is drawn as the derived `LiftedRelationship`, whose id is the lifted ends with the first source's line (L5, and `key` for the merge). The two never share an id, which matters because `DislModelBuilder` refuses to draw a derived element whose id a stored one has. The synthetic ids `c4:view` and `boundary:<id>` stay the mapper's.
 - **Commands, `C4Placement`, `C4LayoutSidecar`, `C4DocumentFactory`:** unchanged in this stage. A new element's identifier stays `C4Placement.IdentifierFor`, handed to the operation through `DislIds.Fixed`, which settles finding A9 for now: the definition declares `natural` with the pattern and the suffix, and the identifier made from a name is host code named for gap C11.
 
