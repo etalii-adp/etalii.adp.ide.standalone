@@ -1,0 +1,32 @@
+bundle:
+  name: 2024
+
+resources:
+  jobs:
+    01:
+      name: null
+      tasks:
+        - task_key: 01
+          run_if: ALL_DONE
+          notebook_task:
+            notebook_path: notebooks/zero_one
+        - task_key: 02
+          depends_on:
+            - task_key: 01
+              outcome: true
+          notebook_task:
+            notebook_path: notebooks/zero_two
+  pipelines:
+    typed:
+      name: null
+      catalog: 123
+      serverless: "true"
+      continuous: True
+      development: yes
+      libraries:
+        - notebook:
+            path: transformations/typed
+
+targets:
+  dev:
+    default: "true"

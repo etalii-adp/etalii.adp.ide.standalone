@@ -1,0 +1,37 @@
+bundle:
+  name: variable_bundle
+
+variables:
+  workers:
+    default: 4
+  serverless:
+    default: true
+
+resources:
+  jobs:
+    variable_job:
+      name: Variables in typed places
+      job_clusters:
+        - job_cluster_key: sized_by_variable
+          new_cluster:
+            spark_version: ${var.spark_version}
+            node_type_id: Standard_DS3_v2
+            num_workers: ${var.workers}
+      tasks:
+        - task_key: run
+          job_cluster_key: sized_by_variable
+          notebook_task:
+            notebook_path: notebooks/run
+  pipelines:
+    variable_pipeline:
+      name: Variable pipeline
+      catalog: ${var.catalog}
+      serverless: ${var.serverless}
+      continuous: ${var.continuous}
+      libraries:
+        - notebook:
+            path: transformations/variable
+
+targets:
+  dev:
+    default: ${var.is_default}

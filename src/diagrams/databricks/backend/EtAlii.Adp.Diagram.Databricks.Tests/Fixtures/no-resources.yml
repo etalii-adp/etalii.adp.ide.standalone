@@ -1,0 +1,7 @@
+bundle:
+  name: resourceless
+
+targets:
+  dev:
+    mode: development
+    default: true

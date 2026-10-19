@@ -1,0 +1,18 @@
+resources:
+  jobs:
+    doubled:
+      name: A duplicated key on a circle
+      tasks:
+        - task_key: twin
+          notebook_task:
+            notebook_path: notebooks/twin_first
+        - task_key: middle
+          depends_on:
+            - task_key: twin
+          notebook_task:
+            notebook_path: notebooks/middle
+        - task_key: twin
+          depends_on:
+            - task_key: middle
+          notebook_task:
+            notebook_path: notebooks/twin_second

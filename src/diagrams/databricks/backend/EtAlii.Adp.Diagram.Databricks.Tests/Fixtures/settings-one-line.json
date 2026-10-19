@@ -1,0 +1,1 @@
+{ "name": "one_line", "catalog": "main", "schema": "gold", "libraries": [ { "notebook": { "path": "transformations/a" } }, { "file": { "path": "transformations/b.py" } } ] }
