@@ -414,7 +414,7 @@ internal static class PipelineTranscript
         public PipelineModel Model => Store.In(Folder).Get(Body)!.Model;
 
         public ContextTarget Target(string elementId) =>
-            ContextTarget.ForElement(Body, elementId, Folder, _watchId, Diagram.Pipeline.Origin);
+            ContextTarget.ForElement(Body, elementId, ProjectRoot.From(Folder), _watchId, Diagram.Pipeline.Origin);
 
         /// <summary>What the mapper draws with every stage and job opened.</summary>
         public IReadOnlyList<DiagramElement> Drawn()

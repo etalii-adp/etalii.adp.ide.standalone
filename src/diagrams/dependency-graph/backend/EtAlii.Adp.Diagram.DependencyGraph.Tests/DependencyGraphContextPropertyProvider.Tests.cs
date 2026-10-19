@@ -61,7 +61,7 @@ public class DependencyGraphContextPropertyProviderTests : IDisposable
     }
 
     private ContextTarget Target(string path, string elementId) =>
-        ContextTarget.ForElement(path, elementId, _workspace, ShortGuid.NewShortGuid());
+        ContextTarget.ForElement(path, elementId, ProjectRoot.From(_workspace), ShortGuid.NewShortGuid());
 
     [Fact]
     public async Task ANode_ContributesLabelXAndRow_AndNothingElse()

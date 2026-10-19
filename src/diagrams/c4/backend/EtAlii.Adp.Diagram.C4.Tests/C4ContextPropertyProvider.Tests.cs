@@ -66,7 +66,7 @@ public class C4ContextPropertyProviderTests : IDisposable
         _bodyPath,
         IsContainer: false,
         SourceId: ShortGuid.NewShortGuid(),
-        RootPath: _root,
+        Root: ProjectRoot.From(_root),
         ElementId: elementId);
 
     private async Task<IReadOnlyList<ContextPropertyDefinition>> DescribeAsync(string elementId) =>
@@ -221,7 +221,7 @@ public class C4ContextPropertyProviderTests : IDisposable
     {
         // Arrange.
         var fileTarget = new ContextTarget(
-            ContextScope.Hierarchy, _bodyPath, IsContainer: false, SourceId: ShortGuid.NewShortGuid(), RootPath: _root);
+            ContextScope.Hierarchy, _bodyPath, IsContainer: false, SourceId: ShortGuid.NewShortGuid(), Root: ProjectRoot.From(_root));
 
         // Act.
         var properties = await _provider.DescribeAsync(fileTarget, TestContext.Current.CancellationToken);

@@ -55,7 +55,7 @@ public class AddDiagramContextActionProviderDesignersTests : IDisposable
         return new AddDiagramContextActionProvider(historyStacks, new DiagramDocumentFactories([]), catalog, new DiagramFileRouter(catalog), designers);
     }
 
-    private ContextTarget Folder => new(ContextScope.Hierarchy, _root, IsContainer: true, ShortGuid.NewShortGuid(), RootPath: _root);
+    private ContextTarget Folder => new(ContextScope.Hierarchy, _root, IsContainer: true, ShortGuid.NewShortGuid(), Root: ProjectRoot.From(_root));
 
     private string[] Listing() => [.. Directory.GetFileSystemEntries(_root).Select(path => IoPath.GetFileName(path)).Order(StringComparer.Ordinal)];
 

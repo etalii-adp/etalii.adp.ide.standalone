@@ -282,7 +282,7 @@ public class ContextSelectionStoreTests : IDisposable
             fileResolver);
         var elementLevel = new ContextResolvedLevel(
             elementId, ["Incidents"], ContextScope.DiagramElement,
-            ContextTarget.ForElement(bodyPath, "variable:incidents", Root.FullPath, watchId),
+            ContextTarget.ForElement(bodyPath, "variable:incidents", Root, watchId),
             new ContextLevelDetail { Element = new ElementDetail { Text = "Incidents" } },
             elementResolver);
 

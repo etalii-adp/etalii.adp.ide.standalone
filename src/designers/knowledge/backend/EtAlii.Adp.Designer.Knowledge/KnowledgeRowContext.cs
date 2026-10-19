@@ -23,7 +23,7 @@ internal sealed class KnowledgeRowSourceResolver(IKnowledgeDocumentStore documen
 
     public bool CanResolve(ContextSource source) => source.SourceCase == ContextSource.SourceOneofCase.ElementId;
 
-    public ValueTask<ContextLevelResolution> ResolveAsync(ShortGuid watchId, string rootPath, ContextSource id, IReadOnlyList<string> clientPath, ContextResolvedLevel? parent, CancellationToken cancellationToken)
+    public ValueTask<ContextLevelResolution> ResolveAsync(ShortGuid watchId, ProjectRoot root, ContextSource id, IReadOnlyList<string> clientPath, ContextResolvedLevel? parent, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(id);
         cancellationToken.ThrowIfCancellationRequested();
@@ -52,14 +52,14 @@ internal sealed class KnowledgeRowSourceResolver(IKnowledgeDocumentStore documen
             id,
             [described.Title],
             ContextScope.DiagramElement,
-            new ContextTarget(ContextScope.DiagramElement, bodyPath, IsContainer: false, SourceId: default, rootPath, watchId, rowId, RowOrigin),
+            new ContextTarget(ContextScope.DiagramElement, bodyPath, IsContainer: false, SourceId: default, root, watchId, rowId, RowOrigin),
             detail,
             this)));
     }
 
     public ContextNesting NestingOf(ContextResolvedLevel level) => ContextNesting.NotNestable;
 
-    public IDisposable Track(ShortGuid watchId, string rootPath, ContextResolvedLevel level, Action<IReadOnlyList<string>?> onChange)
+    public IDisposable Track(ShortGuid watchId, ProjectRoot root, ContextResolvedLevel level, Action<IReadOnlyList<string>?> onChange)
     {
         ArgumentNullException.ThrowIfNull(level);
         ArgumentNullException.ThrowIfNull(onChange);
@@ -205,7 +205,7 @@ internal sealed class KnowledgeRowPropertyProvider(IHistoryStackStore histories)
             return ContextPropertyResult.Success;
         }
 
-        var result = await histories.Get(target.RootPath).ExecuteAsync(new KnowledgeEditCommand(bodyPath, edit.Changes, edit.Others), cancellationToken).ConfigureAwait(false);
+        var result = await histories.Get(target.Root.FullPath).ExecuteAsync(new KnowledgeEditCommand(bodyPath, edit.Changes, edit.Others), cancellationToken).ConfigureAwait(false);
         return result.IsSuccess ? ContextPropertyResult.Success : ContextPropertyResult.Failure(result.Error);
     }
 }

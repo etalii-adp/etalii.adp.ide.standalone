@@ -52,12 +52,9 @@ public sealed class ContextWatch
         // Bounded: a tab that stops reading ends the stream rather than growing it (B-28).
         var channel = StreamBound.Ending<ContextMessage>($"Context stream on watch {watchId}");
 
-        // The targets take the root as a path.
-        var rootPath = root.FullPath;
-
         // What applies when nothing is selected: the project root's actions, discovered once
         // here and carried on every "nothing selected" message for this connection.
-        var rootActions = await _contextActionResolver.DiscoverAsync(RootTarget(rootPath, watchId), cancellationToken);
+        var rootActions = await _contextActionResolver.DiscoverAsync(RootTarget(root, watchId), cancellationToken);
 
         try
         {
@@ -65,7 +62,7 @@ public sealed class ContextWatch
             // the selection and travel on their own message (diagram-undo-redo Deviation 1). The
             // project's history they act on is held by the connection's scope.
             var projectActions = await _contextActionResolver.DiscoverAsync(
-                HistoryActionsBroadcaster.ProjectTarget(rootPath), cancellationToken);
+                HistoryActionsBroadcaster.ProjectTarget(root), cancellationToken);
 
             // Registering writes the baseline first, so a late subscriber is consistent
             // before anything else can arrive. The problems are read by the registration
@@ -83,7 +80,7 @@ public sealed class ContextWatch
             _logger.Information(
                 "Context stream open on watch {WatchId} for project {ProjectRoot}, with {GroupCount} root action groups",
                 watchId,
-                rootPath,
+                root.FullPath,
                 rootActions.Count);
 
             await foreach (var message in channel.Reader.ReadAllAsync(cancellationToken))
@@ -106,6 +103,6 @@ public sealed class ContextWatch
     /// The project root as an action target. It has no entry id - it is the folder the
     /// entries live in, not an entry - so its source id is the empty guid.
     /// </summary>
-    internal static ContextTarget RootTarget(string rootPath, ShortGuid watchId = default) =>
-        new(ContextScope.Hierarchy, rootPath, IsContainer: true, SourceId: default, RootPath: rootPath, WatchId: watchId);
+    internal static ContextTarget RootTarget(ProjectRoot root, ShortGuid watchId = default) =>
+        new(ContextScope.Hierarchy, root.FullPath, IsContainer: true, SourceId: default, Root: root, WatchId: watchId);
 }

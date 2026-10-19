@@ -396,7 +396,7 @@ internal static partial class DependencyGraphTranscript
         public DislModel Model => Store.Get(Body)!.Model;
 
         public ContextTarget Target(string elementId) =>
-            ContextTarget.ForElement(Body, elementId, Folder, origin: Diagram.DependencyGraph.Origin);
+            ContextTarget.ForElement(Body, elementId, ProjectRoot.From(Folder), origin: Diagram.DependencyGraph.Origin);
 
         public void Dispose() => History.Dispose();
     }

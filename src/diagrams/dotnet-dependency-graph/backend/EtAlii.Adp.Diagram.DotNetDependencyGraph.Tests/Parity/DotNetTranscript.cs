@@ -235,8 +235,9 @@ internal static partial class DotNetTranscript
         json.WriteString("write", write.IsSuccess ? "ok" : $"refused: {write.Error}");
     }
 
+    // The transcript names its solutions without a folder, so their project has no root.
     private static ContextTarget Target(string path, string elementId) =>
-        ContextTarget.ForElement(path, elementId, Path.GetDirectoryName(path) ?? "", origin: Diagram.DependencyGraph.Origin);
+        ContextTarget.ForElement(path, elementId, Path.GetDirectoryName(path) is { Length: > 0 } folder ? ProjectRoot.From(folder) : default, origin: Diagram.DependencyGraph.Origin);
 
     /// <summary>What a graph holds, so two solutions with equal bytes but different projects are told apart.</summary>
     private static string Fingerprint(DependencyGraphModel graph) =>

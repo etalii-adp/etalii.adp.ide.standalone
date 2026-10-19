@@ -118,8 +118,7 @@ public sealed class ContextSelectionResolver
             // No resolver means no way to verify anything about this level; recording
             // it on trust is exactly what the seam exists to prevent.
             ? ValueTask.FromResult<ContextLevelResolution>(new RejectedContextLevel(GenericRejection))
-            // The source resolvers belong to the modules, which take the root as a path.
-            : ResolveThroughAnyAsync(claimants, watchId, root.FullPath, id, clientPath, parent, cancellationToken);
+            : ResolveThroughAnyAsync(claimants, watchId, root, id, clientPath, parent, cancellationToken);
     }
 
     /// <summary>
@@ -152,7 +151,7 @@ public sealed class ContextSelectionResolver
     private static async ValueTask<ContextLevelResolution> ResolveThroughAnyAsync(
         IReadOnlyList<IContextSourceResolver> claimants,
         ShortGuid watchId,
-        string rootPath,
+        ProjectRoot root,
         ContextSource id,
         IReadOnlyList<string> clientPath,
         ContextResolvedLevel? parent,
@@ -162,7 +161,7 @@ public sealed class ContextSelectionResolver
         foreach (var claimant in claimants)
         {
             var resolution = await ResolveThroughAsync(
-                claimant, watchId, rootPath, id, clientPath, parent, cancellationToken);
+                claimant, watchId, root, id, clientPath, parent, cancellationToken);
             if (resolution is ResolvedContextLevel)
             {
                 return resolution;
@@ -177,13 +176,13 @@ public sealed class ContextSelectionResolver
     private static async ValueTask<ContextLevelResolution> ResolveThroughAsync(
         IContextSourceResolver resolver,
         ShortGuid watchId,
-        string rootPath,
+        ProjectRoot root,
         ContextSource id,
         IReadOnlyList<string> clientPath,
         ContextResolvedLevel? parent,
         CancellationToken cancellationToken)
     {
-        var resolution = await resolver.ResolveAsync(watchId, rootPath, id, clientPath, parent, cancellationToken);
+        var resolution = await resolver.ResolveAsync(watchId, root, id, clientPath, parent, cancellationToken);
 
         // A resolver may word its own reason for logging; the caller only ever sees the generic one.
         return resolution is RejectedContextLevel

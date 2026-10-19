@@ -24,7 +24,7 @@ public sealed class AbmProvidersTests : IDisposable
     }
 
     private ContextTarget Target(string body, ToolOrigin? origin) =>
-        ContextTarget.ForElement(body, "1.1", _folder.Path, origin: origin);
+        ContextTarget.ForElement(body, "1.1", ProjectRoot.From(_folder.Path), origin: origin);
 
     private AbmContextActionProvider Actions => new(new HistoryStackStore(new AbmTestDispatcher(_store)), _store);
 

@@ -51,7 +51,7 @@ public class AddDiagramContextActionProviderRegistrationTests : IDisposable
         return path;
     }
 
-    private ContextTarget FileTarget(string path) => new(ContextScope.Hierarchy, path, IsContainer: false, ShortGuid.NewShortGuid(), RootPath: _root);
+    private ContextTarget FileTarget(string path) => new(ContextScope.Hierarchy, path, IsContainer: false, ShortGuid.NewShortGuid(), Root: ProjectRoot.From(_root));
 
     [Fact]
     public async Task DiscoverAsync_OnAFileATypeReads_OffersRegistration()

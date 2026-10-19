@@ -10,7 +10,7 @@ namespace EtAlii.Adp.Context;
 /// <param name="ResolvedFullPath">The absolute, containment-checked location this source resolved to.</param>
 /// <param name="IsContainer">Whether the target holds other targets (for the hierarchy scope: a folder).</param>
 /// <param name="SourceId">The id the client used to name this target, echoed back for correlation.</param>
-/// <param name="RootPath">The project root the target was resolved within; what a provider reaches the project's own state through.</param>
+/// <param name="Root">The project root the target was resolved within; what a provider reaches the project's own state through.</param>
 /// <param name="WatchId">The connection the target was resolved for; what a provider reaches per-connection state through (a viewer's fold state, say).</param>
 /// <param name="ElementId">For a target inside a diagram file, the element's id; empty for a file or folder.</param>
 /// <param name="Origin">
@@ -47,17 +47,17 @@ public sealed record ContextTarget(
     string ResolvedFullPath,
     bool IsContainer,
     ShortGuid SourceId,
-    string RootPath = "",
+    ProjectRoot Root = default,
     ShortGuid WatchId = default,
     string ElementId = "",
     ToolOrigin? Origin = null)
 {
     /// <summary>
     /// The element <paramref name="elementId"/> of the diagram file at <paramref name="bodyPath"/>,
-    /// resolved within <paramref name="rootPath"/>: a leaf, named by no client id - the shape almost
+    /// resolved within <paramref name="root"/>: a leaf, named by no client id - the shape almost
     /// every element target takes.
     /// </summary>
     public static ContextTarget ForElement(
-        string bodyPath, string elementId, string rootPath = "", ShortGuid watchId = default, ToolOrigin? origin = null) =>
-        new(ContextScope.DiagramElement, bodyPath, IsContainer: false, SourceId: default, rootPath, watchId, elementId, origin);
+        string bodyPath, string elementId, ProjectRoot root = default, ShortGuid watchId = default, ToolOrigin? origin = null) =>
+        new(ContextScope.DiagramElement, bodyPath, IsContainer: false, SourceId: default, root, watchId, elementId, origin);
 }

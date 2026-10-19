@@ -514,7 +514,7 @@ public sealed class WardleyContextPropertyProviderTests : IDisposable
             .Id;
     }
 
-    private ContextTarget Target(string elementId) => ContextTarget.ForElement(_path, elementId, _root);
+    private ContextTarget Target(string elementId) => ContextTarget.ForElement(_path, elementId, ProjectRoot.From(_root));
 
     private async Task<IReadOnlyList<ContextPropertyDefinition>> Describe(string elementId) =>
         await _provider.DescribeAsync(Target(elementId), TestContext.Current.CancellationToken);

@@ -56,7 +56,7 @@ public class ShaclActionsTests : IDisposable
     private async Task<DocumentEntry<LineDocument, RdfModel>> EntryAsync() => await _provider.GetRequiredService<IRdfDocumentStore>().GetOrLoadAsync(_body, TestContext.Current.CancellationToken);
 
     private ContextTarget Target(string elementId, ToolOrigin? origin) =>
-        new(ContextScope.DiagramElement, _body, false, ShortGuid.NewShortGuid(), _root, default, elementId) { Origin = origin };
+        new(ContextScope.DiagramElement, _body, false, ShortGuid.NewShortGuid(), ProjectRoot.From(_root), default, elementId) { Origin = origin };
 
     private const string CardId = "res:http://example.org/PersonShape";
 
@@ -117,7 +117,7 @@ public class ShaclActionsTests : IDisposable
         await File.WriteAllTextAsync(body, "@prefix sh: <http://www.w3.org/ns/shacl#> .\r\n@prefix ex: <http://example.org/> .\r\n\r\nex:S a sh:NodeShape ; sh:node [ sh:closed true ] .\r\n", TestContext.Current.CancellationToken);
         var entry = await _provider.GetRequiredService<IRdfDocumentStore>().GetOrLoadAsync(body, TestContext.Current.CancellationToken);
         var blankId = ShaclProjection.Project(entry.Model).Cards.Single(card => card.Blank).Id;
-        var target = new ContextTarget(ContextScope.DiagramElement, body, false, ShortGuid.NewShortGuid(), _root, default, blankId)
+        var target = new ContextTarget(ContextScope.DiagramElement, body, false, ShortGuid.NewShortGuid(), ProjectRoot.From(_root), default, blankId)
         {
             Origin = ServiceCollectionAddShaclExtension.ShaclOrigin,
         };

@@ -60,7 +60,7 @@ public abstract class DiagramSnapshotSourceResolver<TSnapshot> : IContextSourceR
     /// <inheritdoc />
     public async ValueTask<ContextLevelResolution> ResolveAsync(
         ShortGuid watchId,
-        string rootPath,
+        ProjectRoot root,
         ContextSource id,
         IReadOnlyList<string> clientPath,
         ContextResolvedLevel? parent,
@@ -77,7 +77,7 @@ public abstract class DiagramSnapshotSourceResolver<TSnapshot> : IContextSourceR
             return Rejected("A diagram element must be selected within its diagram.");
         }
 
-        if (_router.Route(parent.Target.ResolvedFullPath, rootPath) is not DiagramRouted routed ||
+        if (_router.Route(parent.Target.ResolvedFullPath, root.FullPath) is not DiagramRouted routed ||
             routed.Definition.Origin != Origin ||
             routed.BodyPath is not { Length: > 0 } bodyPath)
         {
@@ -85,7 +85,7 @@ public abstract class DiagramSnapshotSourceResolver<TSnapshot> : IContextSourceR
         }
 
         var elementId = id.ElementId.Value;
-        var target = ContextTarget.ForElement(bodyPath, elementId, rootPath, watchId, routed.Definition.Origin);
+        var target = ContextTarget.ForElement(bodyPath, elementId, root, watchId, routed.Definition.Origin);
 
         if (GestureIds.TryParsePlacement(elementId, out _, out _) || GestureIds.TryParseRelation(elementId, out _, out _))
         {
@@ -127,11 +127,11 @@ public abstract class DiagramSnapshotSourceResolver<TSnapshot> : IContextSourceR
 
     /// <inheritdoc />
     /// <remarks>A rename keeps the id while changing what is shown, and a removal clears the selection.</remarks>
-    public IDisposable Track(ShortGuid watchId, string rootPath, ContextResolvedLevel level, Action<IReadOnlyList<string>?> onChange)
+    public IDisposable Track(ShortGuid watchId, ProjectRoot root, ContextResolvedLevel level, Action<IReadOnlyList<string>?> onChange)
     {
         ArgumentNullException.ThrowIfNull(level);
         ArgumentNullException.ThrowIfNull(onChange);
-        _ = rootPath;
+        _ = root;
 
         var bodyPath = level.Target.ResolvedFullPath;
         var elementId = level.Target.ElementId;

@@ -74,7 +74,7 @@ public class OwlProvidersTests : IDisposable
         return path;
     }
 
-    private ContextTarget Target(string bodyPath, string elementId) => ContextTarget.ForElement(bodyPath, elementId, _root);
+    private ContextTarget Target(string bodyPath, string elementId) => ContextTarget.ForElement(bodyPath, elementId, ProjectRoot.From(_root));
 
     private async Task<IReadOnlyList<string>> ActionIds(string bodyPath, string elementId)
     {

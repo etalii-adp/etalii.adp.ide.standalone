@@ -522,8 +522,8 @@ public sealed class WardleyContextActionProviderTests : IDisposable
         var properties = _services.GetServices<IContextPropertyProvider>().OfType<WardleyContextPropertyProvider>().Single();
 
         // Act.
-        var offered = await _provider.DiscoverAsync(ContextTarget.ForElement(other, "", _root, ShortGuid.NewShortGuid()), TestContext.Current.CancellationToken);
-        var rows = await properties.DescribeAsync(ContextTarget.ForElement(other, await IdOfAsync("Kettle"), _root, ShortGuid.NewShortGuid()), TestContext.Current.CancellationToken);
+        var offered = await _provider.DiscoverAsync(ContextTarget.ForElement(other, "", ProjectRoot.From(_root), ShortGuid.NewShortGuid()), TestContext.Current.CancellationToken);
+        var rows = await properties.DescribeAsync(ContextTarget.ForElement(other, await IdOfAsync("Kettle"), ProjectRoot.From(_root), ShortGuid.NewShortGuid()), TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Empty(offered);
@@ -541,7 +541,7 @@ public sealed class WardleyContextActionProviderTests : IDisposable
             .Id;
     }
 
-    private ContextTarget Target(string elementId) => ContextTarget.ForElement(_path, elementId, _root);
+    private ContextTarget Target(string elementId) => ContextTarget.ForElement(_path, elementId, ProjectRoot.From(_root));
 
     private async Task<IReadOnlyList<ContextActionDefinition>> ActionsFor(string elementId)
     {

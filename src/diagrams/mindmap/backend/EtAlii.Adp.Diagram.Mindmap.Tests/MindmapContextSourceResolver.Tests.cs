@@ -14,7 +14,7 @@ public class MindmapContextSourceResolverTests : IDisposable
     private ValueTask<ContextLevelResolution> ResolveAsync(string nodeId, IReadOnlyList<string>? clientPath = null, ContextResolvedLevel? parent = null) =>
         _project.Resolver.ResolveAsync(
             _project.WatchId,
-            _project.Root,
+            ProjectRoot.From(_project.Root),
             MindmapTestProject.Element(nodeId),
             clientPath ?? [],
             parent ?? _project.FileLevel(),
@@ -40,7 +40,7 @@ public class MindmapContextSourceResolverTests : IDisposable
         Assert.Equal(_project.BodyPath, level.Target.ResolvedFullPath);
         Assert.Equal("ID_88117420", level.Target.ElementId);
         Assert.Equal(_project.WatchId, level.Target.WatchId);
-        Assert.Equal(_project.Root, level.Target.RootPath);
+        Assert.Equal(_project.Root, level.Target.Root.FullPath);
 
         var detail = level.Detail.Element;
         Assert.Equal("Context service", detail.Text);
@@ -97,7 +97,7 @@ public class MindmapContextSourceResolverTests : IDisposable
         // Arrange and act.
         // Requirement 10.4: a node is only ever verified against the diagram it nests under.
         var resolution = await _project.Resolver.ResolveAsync(
-            _project.WatchId, _project.Root,
+            _project.WatchId, ProjectRoot.From(_project.Root),
             MindmapTestProject.Element("ID_88117420"), [], parent: null, TestContext.Current.CancellationToken);
 
         // Assert.
@@ -147,7 +147,7 @@ public class MindmapContextSourceResolverTests : IDisposable
         // Arrange.
         var level = Assert.IsType<ResolvedContextLevel>(await ResolveAsync("ID_88117420")).Level;
         IReadOnlyList<string>? reported = ["unchanged"];
-        using var track = _project.Resolver.Track(_project.WatchId, _project.Root, level, path => reported = path);
+        using var track = _project.Resolver.Track(_project.WatchId, ProjectRoot.From(_project.Root), level, path => reported = path);
 
         // Act.
         await _project.History.ExecuteAsync(new SetNodeTextCommand(_project.BodyPath, "ID_411002937", "Server"), TestContext.Current.CancellationToken);
@@ -163,7 +163,7 @@ public class MindmapContextSourceResolverTests : IDisposable
         // Requirement 10.7: the selection clears without the client asking again.
         var level = Assert.IsType<ResolvedContextLevel>(await ResolveAsync("ID_88117420")).Level;
         IReadOnlyList<string>? reported = ["unchanged"];
-        using var track = _project.Resolver.Track(_project.WatchId, _project.Root, level, path => reported = path);
+        using var track = _project.Resolver.Track(_project.WatchId, ProjectRoot.From(_project.Root), level, path => reported = path);
 
         // Act.
         await _project.History.ExecuteAsync(new RemoveNodeCommand(_project.BodyPath, "ID_88117420"), TestContext.Current.CancellationToken);
@@ -178,7 +178,7 @@ public class MindmapContextSourceResolverTests : IDisposable
         // Arrange.
         var level = Assert.IsType<ResolvedContextLevel>(await ResolveAsync("ID_88117420")).Level;
         var calls = 0;
-        using var track = _project.Resolver.Track(_project.WatchId, _project.Root, level, _ => calls++);
+        using var track = _project.Resolver.Track(_project.WatchId, ProjectRoot.From(_project.Root), level, _ => calls++);
 
         // Act.
         await _project.History.ExecuteAsync(new SetNodeTextCommand(_project.BodyPath, "ID_88117422", "elsewhere"), TestContext.Current.CancellationToken);
@@ -193,7 +193,7 @@ public class MindmapContextSourceResolverTests : IDisposable
         // Arrange.
         var level = Assert.IsType<ResolvedContextLevel>(await ResolveAsync("ID_88117420")).Level;
         var calls = 0;
-        var track = _project.Resolver.Track(_project.WatchId, _project.Root, level, _ => calls++);
+        var track = _project.Resolver.Track(_project.WatchId, ProjectRoot.From(_project.Root), level, _ => calls++);
 
         // Act: let go, then an ancestor renamed.
         track.Dispose();

@@ -58,7 +58,7 @@ public class ServiceCollectionAddC4Tests
             new ContextSource(),
             ["courier.adp"],
             ContextScope.Hierarchy,
-            new ContextTarget(ContextScope.Hierarchy, registration, IsContainer: false, SourceId: default, folder.Path, ShortGuid.NewShortGuid()),
+            new ContextTarget(ContextScope.Hierarchy, registration, IsContainer: false, SourceId: default, ProjectRoot.From(folder.Path), ShortGuid.NewShortGuid()),
             new ContextLevelDetail(),
             null!);
         var element = new ContextSource { ElementId = new ElementId { Value = "tracking" } };
@@ -67,7 +67,7 @@ public class ServiceCollectionAddC4Tests
         var resolved = new List<ContextResolvedLevel>();
         foreach (var resolver in provider.GetServices<IContextSourceResolver>().Where(candidate => candidate.CanResolve(element)))
         {
-            if (await resolver.ResolveAsync(ShortGuid.NewShortGuid(), folder.Path, element, [], parent, TestContext.Current.CancellationToken) is ResolvedContextLevel level)
+            if (await resolver.ResolveAsync(ShortGuid.NewShortGuid(), ProjectRoot.From(folder.Path), element, [], parent, TestContext.Current.CancellationToken) is ResolvedContextLevel level)
             {
                 resolved.Add(level.Level);
             }

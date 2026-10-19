@@ -67,7 +67,7 @@ public sealed class ValidateContextActionProvider : IContextActionProvider
             return new ContextExecutionFailed("This item is no longer there.");
         }
 
-        var rootPath = target.RootPath;
+        var rootPath = target.Root.FullPath;
         _store.BeginValidating(rootPath);
 
         if (target.IsContainer)

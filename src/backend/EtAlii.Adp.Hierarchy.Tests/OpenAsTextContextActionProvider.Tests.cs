@@ -56,7 +56,7 @@ public class OpenAsTextContextActionProviderTests : IDisposable
     {
         var fullPath = IoPath.Combine(_root, fileName);
         File.WriteAllText(fullPath, content);
-        return new ContextTarget(ContextScope.Hierarchy, fullPath, IsContainer: false, ShortGuid.NewShortGuid(), RootPath: _root);
+        return new ContextTarget(ContextScope.Hierarchy, fullPath, IsContainer: false, ShortGuid.NewShortGuid(), Root: ProjectRoot.From(_root));
     }
 
     private static IReadOnlyList<ContextActionDefinition> ActionsOf(IReadOnlyList<ContextActionGroupDefinition> groups) =>
@@ -83,7 +83,7 @@ public class OpenAsTextContextActionProviderTests : IDisposable
         // designer on double-click.
         FileTarget("cities.adp", "fixture/sheet\n");
         FileTarget("cities.yaml", "a: 1\n");
-        var target = new ContextTarget(ContextScope.Hierarchy, IoPath.Combine(_root, fileName), IsContainer: false, ShortGuid.NewShortGuid(), RootPath: _root);
+        var target = new ContextTarget(ContextScope.Hierarchy, IoPath.Combine(_root, fileName), IsContainer: false, ShortGuid.NewShortGuid(), Root: ProjectRoot.From(_root));
 
         // Act.
         var groups = await Provider(Plain).DiscoverAsync(target, TestContext.Current.CancellationToken);
@@ -122,7 +122,7 @@ public class OpenAsTextContextActionProviderTests : IDisposable
         // Arrange.
         var folder = IoPath.Combine(_root, "docs");
         Directory.CreateDirectory(folder);
-        var target = new ContextTarget(ContextScope.Hierarchy, folder, IsContainer: true, ShortGuid.NewShortGuid(), RootPath: _root);
+        var target = new ContextTarget(ContextScope.Hierarchy, folder, IsContainer: true, ShortGuid.NewShortGuid(), Root: ProjectRoot.From(_root));
 
         // Act and assert.
         Assert.Empty(await Provider(Plain).DiscoverAsync(target, TestContext.Current.CancellationToken));

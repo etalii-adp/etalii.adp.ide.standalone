@@ -165,8 +165,8 @@ public sealed class OpenAsTextContextActionProvider : IContextActionProvider
     }
 
     private bool IsClaimedByATool(ContextTarget target) =>
-        _router.Route(target.ResolvedFullPath, target.RootPath) is DiagramRouted
-        || _designerRouter.Route(target.ResolvedFullPath, target.RootPath) is DesignerRouted;
+        _router.Route(target.ResolvedFullPath, target.Root.FullPath) is DiagramRouted
+        || _designerRouter.Route(target.ResolvedFullPath, target.Root.FullPath) is DesignerRouted;
 
     private IReadOnlyList<EditorDefinition> ClaimantsFor(ContextTarget target) =>
         _editorResolver.ClaimantsOf(target.ResolvedFullPath);

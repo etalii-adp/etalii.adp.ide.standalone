@@ -35,7 +35,7 @@ public class EditorFilePropertyProviderTests : IDisposable
     {
         var fullPath = IoPath.Combine(_root, fileName);
         File.WriteAllBytes(fullPath, bytes);
-        return new ContextTarget(ContextScope.Hierarchy, fullPath, IsContainer: false, ShortGuid.NewShortGuid(), RootPath: _root);
+        return new ContextTarget(ContextScope.Hierarchy, fullPath, IsContainer: false, ShortGuid.NewShortGuid(), Root: ProjectRoot.From(_root));
     }
 
     [Fact]

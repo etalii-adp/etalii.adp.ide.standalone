@@ -141,7 +141,7 @@ public sealed class MindmapContextActionProvider : IContextActionProvider
                     "Link to",
                     "mdi-link-variant",
                     "Link",
-                    ProjectTree(target.RootPath),
+                    ProjectTree(target.Root.FullPath),
                     "The project has no files to link to."));
 
             case UnlinkActionId:
@@ -184,14 +184,14 @@ public sealed class MindmapContextActionProvider : IContextActionProvider
             return ContextCommitResult.Failed($"Unknown action '{actionId}'.");
         }
 
-        var result = await _historyStacks.Get(target.RootPath).ExecuteAsync(command, cancellationToken);
+        var result = await _historyStacks.Get(target.Root.FullPath).ExecuteAsync(command, cancellationToken);
         return result.IsSuccess ? ContextCommitResult.Succeeded : ContextCommitResult.Failed(result.Error);
     }
 
     private static SetNodeLinkCommand LinkCommand(ContextTarget target, MindmapNode node, string projectRelative)
     {
         var segments = projectRelative.Split('/', StringSplitOptions.RemoveEmptyEntries);
-        var stored = MindmapLinks.ToMapRelative(target.ResolvedFullPath, segments, target.RootPath);
+        var stored = MindmapLinks.ToMapRelative(target.ResolvedFullPath, segments, target.Root.FullPath);
         return new SetNodeLinkCommand(target.ResolvedFullPath, node.Id, stored);
     }
 
@@ -218,7 +218,7 @@ public sealed class MindmapContextActionProvider : IContextActionProvider
             ? new AddChildNodeCommand(body, node.Id, newId, name)
             : new AddSiblingNodeCommand(body, node.Id, newId, name);
 
-        var result = await _historyStacks.Get(target.RootPath).ExecuteAsync(command, cancellationToken);
+        var result = await _historyStacks.Get(target.Root.FullPath).ExecuteAsync(command, cancellationToken);
         if (!result.IsSuccess)
         {
             return new ContextExecutionFailed(result.Error);
@@ -230,7 +230,7 @@ public sealed class MindmapContextActionProvider : IContextActionProvider
 
     private async ValueTask<ContextExecutionResult> DispatchAsync(ContextTarget target, ICommand command, CancellationToken cancellationToken)
     {
-        var result = await _historyStacks.Get(target.RootPath).ExecuteAsync(command, cancellationToken);
+        var result = await _historyStacks.Get(target.Root.FullPath).ExecuteAsync(command, cancellationToken);
         return result.IsSuccess ? new ContextExecutionCompleted() : new ContextExecutionFailed(result.Error);
     }
 

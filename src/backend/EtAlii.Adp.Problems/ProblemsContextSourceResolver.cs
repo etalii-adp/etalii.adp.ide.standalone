@@ -20,7 +20,7 @@ public sealed class ProblemsContextSourceResolver : IContextSourceResolver
 
     public ValueTask<ContextLevelResolution> ResolveAsync(
         ShortGuid watchId,
-        string rootPath,
+        ProjectRoot root,
         ContextSource id,
         IReadOnlyList<string> clientPath,
         ContextResolvedLevel? parent,
@@ -31,13 +31,13 @@ public sealed class ProblemsContextSourceResolver : IContextSourceResolver
             return ValueTask.FromResult<ContextLevelResolution>(new RejectedContextLevel("The problems panel nests under nothing."));
         }
 
-        var target = new ContextTarget(ContextScope.ProblemsPanel, rootPath, IsContainer: false, SourceId: default, RootPath: rootPath, WatchId: watchId);
+        var target = new ContextTarget(ContextScope.ProblemsPanel, root.FullPath, IsContainer: false, SourceId: default, Root: root, WatchId: watchId);
         var level = new ContextResolvedLevel(id, [], ContextScope.ProblemsPanel, target, new ContextLevelDetail(), this);
         return ValueTask.FromResult<ContextLevelResolution>(new ResolvedContextLevel(level));
     }
 
     public ContextNesting NestingOf(ContextResolvedLevel level) => ContextNesting.NotNestable;
 
-    public IDisposable Track(ShortGuid watchId, string rootPath, ContextResolvedLevel level, Action<IReadOnlyList<string>?> onChange) => Untracked;
+    public IDisposable Track(ShortGuid watchId, ProjectRoot root, ContextResolvedLevel level, Action<IReadOnlyList<string>?> onChange) => Untracked;
 
 }

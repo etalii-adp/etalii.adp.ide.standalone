@@ -64,7 +64,7 @@ public class DependencyGraphContextActionProviderTests : IDisposable
     private readonly ShortGuid _watchId = ShortGuid.NewShortGuid();
 
     private ContextTarget Target(string path, string elementId) =>
-        ContextTarget.ForElement(path, elementId, _workspace, _watchId);
+        ContextTarget.ForElement(path, elementId, ProjectRoot.From(_workspace), _watchId);
 
     private async Task<IReadOnlyList<string>> ActionIdsFor(string path, string elementId)
     {

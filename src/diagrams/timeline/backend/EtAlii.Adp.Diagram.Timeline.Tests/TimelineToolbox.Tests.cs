@@ -95,7 +95,7 @@ public class TimelineToolboxTests : IDisposable
         _store.Forget(path);
         var item = _toolbox.Items.Single(candidate => candidate.Id == "timeline.toolbox.element");
         var seconds = TimelineScale.ToSeconds(new DateTimeOffset(2026, 9, 1, 0, 0, 0, TimeSpan.Zero));
-        var target = ContextTarget.ForElement(path, GestureIds.RowPlacement(seconds, 3), _workspace, ShortGuid.NewShortGuid());
+        var target = ContextTarget.ForElement(path, GestureIds.RowPlacement(seconds, 3), ProjectRoot.From(_workspace), ShortGuid.NewShortGuid());
 
         // Act: the drop names a placement, and the element appears there with nothing asked.
         var result = await _actions.ExecuteAsync(target, item.DropActionId, CancellationToken.None);

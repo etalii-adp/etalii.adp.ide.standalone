@@ -59,7 +59,7 @@ public class CausalLoopContextActionsTests : IDisposable
     }
 
     private ContextTarget Target(string elementId) =>
-        new(ContextScope.DiagramElement, _path, false, ShortGuid.NewShortGuid(), _root, default, elementId);
+        new(ContextScope.DiagramElement, _path, false, ShortGuid.NewShortGuid(), ProjectRoot.From(_root), default, elementId);
 
     private async Task<IReadOnlyList<ContextActionDefinition>> Discover(string elementId)
     {
@@ -197,7 +197,7 @@ public class CausalLoopContextActionsTests : IDisposable
         _sessions.Register(watchId, _path, session, _ => { });
 
         var target = new ContextTarget(
-            ContextScope.DiagramElement, _path, false, ShortGuid.NewShortGuid(), _root, watchId,
+            ContextScope.DiagramElement, _path, false, ShortGuid.NewShortGuid(), ProjectRoot.From(_root), watchId,
             CausalLoopSelection.PlacementFor(0, 0));
 
         // Act.
@@ -361,7 +361,7 @@ public class CausalLoopContextActionsTests : IDisposable
             freshPath, "causal-loop 1\r\n\r\nvariable a\r\nvariable b\r\nlink a -> b +\r\n",
             TestContext.Current.CancellationToken);
         var target = new ContextTarget(
-            ContextScope.DiagramElement, freshPath, false, ShortGuid.NewShortGuid(), _root, default,
+            ContextScope.DiagramElement, freshPath, false, ShortGuid.NewShortGuid(), ProjectRoot.From(_root), default,
             CausalLoopSelection.RelationFor("b", "a"));
 
         // Act.
@@ -508,7 +508,7 @@ public class CausalLoopContextActionsTests : IDisposable
         // Act.
         var groups = await _actions.DiscoverAsync(
             new ContextTarget(
-                ContextScope.DiagramElement, other, false, ShortGuid.NewShortGuid(), _root, default, "variable:population"),
+                ContextScope.DiagramElement, other, false, ShortGuid.NewShortGuid(), ProjectRoot.From(_root), default, "variable:population"),
             TestContext.Current.CancellationToken);
 
         // Assert.

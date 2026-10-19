@@ -52,10 +52,10 @@ public class SplitMoveTests : IDisposable
         var original = CreateFile("original.txt");
         var entryId = model.ListChildren(null).Single(n => n.Name == "original.txt").Id;
         var resolution = await resolver.ResolveAsync(
-            watchId, _root, new ContextSource { EntryId = entryId }, [], parent: null, TestContext.Current.CancellationToken);
+            watchId, ProjectRoot.From(_root), new ContextSource { EntryId = entryId }, [], parent: null, TestContext.Current.CancellationToken);
         var level = Assert.IsType<ResolvedContextLevel>(resolution).Level;
         var reported = new List<IReadOnlyList<string>?>();
-        using var track = resolver.Track(watchId, _root, level, reported.Add);
+        using var track = resolver.Track(watchId, ProjectRoot.From(_root), level, reported.Add);
         using var joiner = new SplitMoveJoiner(model.OnFileEvent, _grace, _time);
         var renamed = IoPath.Combine(_root, "renamed.txt");
         File.Move(original, renamed);

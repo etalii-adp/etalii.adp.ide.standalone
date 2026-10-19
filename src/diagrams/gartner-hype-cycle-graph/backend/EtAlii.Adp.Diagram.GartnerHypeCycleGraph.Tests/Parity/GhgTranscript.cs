@@ -424,7 +424,7 @@ internal static class GhgTranscript
         public GhgModel Model => Store.Get(Body)!.Model;
 
         public ContextTarget Target(string elementId) =>
-            ContextTarget.ForElement(Body, elementId, Folder, origin: Diagram.HypeCycleGraph.Origin);
+            ContextTarget.ForElement(Body, elementId, ProjectRoot.From(Folder), origin: Diagram.HypeCycleGraph.Origin);
 
         public void Dispose() => History.Dispose();
     }

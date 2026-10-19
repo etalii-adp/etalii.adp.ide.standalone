@@ -130,7 +130,7 @@ public sealed class ContextSelectionStore : IContextSelectionStore, IDisposable,
             {
                 var levelIndex = index;
                 var level = record.Levels[index];
-                tracks.Add(level.Resolver.Track(watchId, root.FullPath, level, path => UpdateFromTrack(watchId, levelIndex, path)));
+                tracks.Add(level.Resolver.Track(watchId, root, level, path => UpdateFromTrack(watchId, levelIndex, path)));
             }
 
             entry.Record = record with { Tracks = tracks };

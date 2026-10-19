@@ -29,7 +29,7 @@ public sealed class HistoryContextActionProvider : IContextActionProvider
 
     public ValueTask<IReadOnlyList<ContextActionGroupDefinition>> DiscoverAsync(ContextTarget target, CancellationToken cancellationToken)
     {
-        var availability = _historyStacks.Get(target.RootPath).Availability;
+        var availability = _historyStacks.Get(target.Root.FullPath).Availability;
 
         var group = new ContextActionGroupDefinition([
             new ContextActionDefinition(
@@ -45,7 +45,7 @@ public sealed class HistoryContextActionProvider : IContextActionProvider
 
     public async ValueTask<ContextExecutionResult> ExecuteAsync(ContextTarget target, string actionId, CancellationToken cancellationToken)
     {
-        var stack = _historyStacks.Get(target.RootPath);
+        var stack = _historyStacks.Get(target.Root.FullPath);
         var result = actionId switch
         {
             UndoActionId => await stack.UndoAsync(cancellationToken),

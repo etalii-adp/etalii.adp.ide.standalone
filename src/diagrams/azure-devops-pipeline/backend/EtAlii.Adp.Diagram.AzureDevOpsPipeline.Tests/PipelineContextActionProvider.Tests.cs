@@ -78,7 +78,7 @@ public class PipelineContextActionProviderTests : IDisposable
     }
 
     private ContextTarget Target(string path, string elementId) =>
-        ContextTarget.ForElement(path, elementId, _workspace, ShortGuid.NewShortGuid());
+        ContextTarget.ForElement(path, elementId, ProjectRoot.From(_workspace), ShortGuid.NewShortGuid());
 
     private async Task<IReadOnlyList<string>> ActionsOn(string path, string elementId)
     {

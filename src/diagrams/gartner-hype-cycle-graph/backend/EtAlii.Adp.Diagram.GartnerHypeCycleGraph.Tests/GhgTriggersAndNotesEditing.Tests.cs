@@ -52,7 +52,7 @@ public sealed class GhgTriggersAndNotesEditingTests : IDisposable
     private GhgModel Parse() => GhgParser.Parse(GhgBody.Parse(File.ReadAllText(Body)));
 
     private ContextTarget Target(string elementId) =>
-        ContextTarget.ForElement(Body, elementId, _folder, ShortGuid.NewShortGuid());
+        ContextTarget.ForElement(Body, elementId, ProjectRoot.From(_folder), ShortGuid.NewShortGuid());
 
     public static TheoryData<string> EveryEdit =>
     [

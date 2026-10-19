@@ -199,7 +199,7 @@ public sealed class WardleyContextSourceResolverTests : IDisposable
     {
         // Act. An unverifiable selection is never recorded.
         var resolution = await _resolver.ResolveAsync(
-            ShortGuid.NewShortGuid(), _root,
+            ShortGuid.NewShortGuid(), ProjectRoot.From(_root),
             new ContextSource { ElementId = new ElementId { Value = "whatever" } },
             [], parent: null, TestContext.Current.CancellationToken);
 
@@ -263,7 +263,7 @@ public sealed class WardleyContextSourceResolverTests : IDisposable
         // Arrange.
         var level = Assert.IsType<ResolvedContextLevel>(await Resolve(await IdOfAsync(WardleyIdentityKind.Component, "Power"))).Level;
         IReadOnlyList<string>? announced = ["unset"];
-        using var subscription = _resolver.Track(ShortGuid.NewShortGuid(), _root, level, path => announced = path);
+        using var subscription = _resolver.Track(ShortGuid.NewShortGuid(), ProjectRoot.From(_root), level, path => announced = path);
 
         // Act.
         var document = (await _documents.GetOrLoadAsync(_body, TestContext.Current.CancellationToken)).Document;
@@ -281,7 +281,7 @@ public sealed class WardleyContextSourceResolverTests : IDisposable
         // is a path change - not the element vanishing.
         var level = Assert.IsType<ResolvedContextLevel>(await Resolve(await IdOfAsync(WardleyIdentityKind.Component, "Power"))).Level;
         IReadOnlyList<string>? announced = null;
-        using var subscription = _resolver.Track(ShortGuid.NewShortGuid(), _root, level, path => announced = path);
+        using var subscription = _resolver.Track(ShortGuid.NewShortGuid(), ProjectRoot.From(_root), level, path => announced = path);
 
         // Act.
         var document = (await _documents.GetOrLoadAsync(_body, TestContext.Current.CancellationToken)).Document;
@@ -299,7 +299,7 @@ public sealed class WardleyContextSourceResolverTests : IDisposable
         // Arrange.
         var level = Assert.IsType<ResolvedContextLevel>(await Resolve(await IdOfAsync(WardleyIdentityKind.Component, "Power"))).Level;
         var announcements = 0;
-        var subscription = _resolver.Track(ShortGuid.NewShortGuid(), _root, level, _ => announcements++);
+        var subscription = _resolver.Track(ShortGuid.NewShortGuid(), ProjectRoot.From(_root), level, _ => announcements++);
 
         // Act.
         subscription.Dispose();
@@ -326,12 +326,12 @@ public sealed class WardleyContextSourceResolverTests : IDisposable
             new ContextSource { EntryId = ShortGuid.NewShortGuid() },
             [],
             ContextScope.Hierarchy,
-            new ContextTarget(ContextScope.Hierarchy, registration ?? _registration, IsContainer: false, SourceId: default, _root),
+            new ContextTarget(ContextScope.Hierarchy, registration ?? _registration, IsContainer: false, SourceId: default, ProjectRoot.From(_root)),
             new ContextLevelDetail(),
             null!);
 
         return await _resolver.ResolveAsync(
-            ShortGuid.NewShortGuid(), _root,
+            ShortGuid.NewShortGuid(), ProjectRoot.From(_root),
             new ContextSource { ElementId = new ElementId { Value = elementId } },
             clientPath ?? [], parent, TestContext.Current.CancellationToken);
     }

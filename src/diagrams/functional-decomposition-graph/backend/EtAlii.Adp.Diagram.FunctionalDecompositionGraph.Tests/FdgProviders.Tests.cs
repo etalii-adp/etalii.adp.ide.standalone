@@ -46,7 +46,7 @@ public sealed class FdgProvidersTests : IDisposable
     }
 
     private ContextTarget Target(string elementId) =>
-        ContextTarget.ForElement(Body, elementId, _folder, ShortGuid.NewShortGuid());
+        ContextTarget.ForElement(Body, elementId, ProjectRoot.From(_folder), ShortGuid.NewShortGuid());
 
     private async Task<IReadOnlyList<string>> RowIdsOf(string elementId) =>
         [.. (await _properties.DescribeAsync(Target(elementId), TestContext.Current.CancellationToken)).Select(row => row.Id)];

@@ -67,7 +67,7 @@ public class TimelineContextActionProviderTests : IDisposable
     private readonly ShortGuid _watchId = ShortGuid.NewShortGuid();
 
     private ContextTarget Target(string path, string elementId) =>
-        ContextTarget.ForElement(path, elementId, _workspace, _watchId);
+        ContextTarget.ForElement(path, elementId, ProjectRoot.From(_workspace), _watchId);
 
     private async Task<IReadOnlyList<string>> ActionIdsFor(string path, string elementId)
     {
@@ -369,7 +369,7 @@ public class TimelineActionRealityTests : IDisposable
     }
 
     private ContextTarget Target(string path, string elementId) =>
-        ContextTarget.ForElement(path, elementId, _workspace, _watchId);
+        ContextTarget.ForElement(path, elementId, ProjectRoot.From(_workspace), _watchId);
 
     [Fact]
     public async Task APlacement_DiscoversItsActions_OrNoDropCouldEverResolve()
@@ -473,7 +473,7 @@ public class TimelineRelationGestureTests : IDisposable
     }
 
     private ContextTarget Target(string path, string elementId) =>
-        ContextTarget.ForElement(path, elementId, _workspace, _watchId);
+        ContextTarget.ForElement(path, elementId, ProjectRoot.From(_workspace), _watchId);
 
     [Fact]
     public async Task OneCall_RelatesTwoElements_InTheStatedDirection()

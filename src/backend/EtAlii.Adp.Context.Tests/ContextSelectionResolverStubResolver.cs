@@ -30,7 +30,7 @@ internal sealed class ContextSelectionResolverStubResolver : IContextSourceResol
     public bool CanResolve(ContextSource source) => _canResolve && source.SourceCase == ContextSource.SourceOneofCase.EntryId;
 
     public ValueTask<ContextLevelResolution> ResolveAsync(
-        ShortGuid watchId, string rootPath, ContextSource id,
+        ShortGuid watchId, ProjectRoot root, ContextSource id,
         IReadOnlyList<string> clientPath, ContextResolvedLevel? parent, CancellationToken cancellationToken)
     {
         ParentsSeen.Add(parent);
@@ -42,13 +42,13 @@ internal sealed class ContextSelectionResolverStubResolver : IContextSourceResol
         var path = clientPath.Count == 0 && _fillPath is not null ? _fillPath : clientPath;
         var level = new ContextResolvedLevel(
             id, path, ContextScope.Hierarchy,
-            new ContextTarget(ContextScope.Hierarchy, System.IO.Path.Combine([rootPath, .. path]), false, (ShortGuid)id.EntryId),
+            new ContextTarget(ContextScope.Hierarchy, System.IO.Path.Combine([root.FullPath, .. path]), false, (ShortGuid)id.EntryId),
             new ContextLevelDetail(), this);
         return ValueTask.FromResult<ContextLevelResolution>(new ResolvedContextLevel(level));
     }
 
     public ContextNesting NestingOf(ContextResolvedLevel level) => _nesting;
 
-    public IDisposable Track(ShortGuid watchId, string rootPath, ContextResolvedLevel level, Action<IReadOnlyList<string>?> onChange) => new StubResolverNoopDisposable();
+    public IDisposable Track(ShortGuid watchId, ProjectRoot root, ContextResolvedLevel level, Action<IReadOnlyList<string>?> onChange) => new StubResolverNoopDisposable();
 
 }

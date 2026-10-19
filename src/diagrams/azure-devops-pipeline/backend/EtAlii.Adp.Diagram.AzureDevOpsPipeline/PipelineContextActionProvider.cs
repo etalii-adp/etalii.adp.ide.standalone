@@ -160,7 +160,7 @@ public sealed class PipelineContextActionProvider : DiagramActionProvider<Pipeli
 
     private static ICommand? CommandFor(ContextTarget target, string actionId, string value, DislElement element)
     {
-        var root = target.RootPath;
+        var root = target.Root.FullPath;
         var body = target.ResolvedFullPath;
         var id = element.Id;
 

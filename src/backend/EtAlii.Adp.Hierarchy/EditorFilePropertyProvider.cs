@@ -43,7 +43,7 @@ public sealed class EditorFilePropertyProvider : IContextPropertyProvider
         // grid belongs to its diagram module. A file the buffer refuses (binary, oversize,
         // not UTF-8) contributes nothing - the refusal reaches the user when they open it.
         if (target.IsContainer || !HierarchyTargets.Exists(target)
-            || _router.Route(target.ResolvedFullPath, target.RootPath) is DiagramRouted)
+            || _router.Route(target.ResolvedFullPath, target.Root.FullPath) is DiagramRouted)
         {
             return ValueTask.FromResult<IReadOnlyList<ContextPropertyDefinition>>([]);
         }

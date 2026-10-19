@@ -377,7 +377,7 @@ public sealed class RdfContextActionProvider : IContextActionProvider
             return ContextCommitResult.Failed($"'{actionId}' does not apply to this selection.");
         }
 
-        var result = await _historyStacks.Get(target.RootPath).ExecuteAsync(command, cancellationToken);
+        var result = await _historyStacks.Get(target.Root.FullPath).ExecuteAsync(command, cancellationToken);
         return result.IsSuccess ? ContextCommitResult.Succeeded : ContextCommitResult.Failed(result.Error);
     }
 
@@ -464,7 +464,7 @@ public sealed class RdfContextActionProvider : IContextActionProvider
 
     private async ValueTask<ContextExecutionResult> DispatchAsync(ContextTarget target, ICommand command, CancellationToken cancellationToken)
     {
-        var result = await _historyStacks.Get(target.RootPath).ExecuteAsync(command, cancellationToken);
+        var result = await _historyStacks.Get(target.Root.FullPath).ExecuteAsync(command, cancellationToken);
         return result.IsSuccess
             ? new ContextExecutionCompleted()
             : new ContextExecutionFailed(result.Error);

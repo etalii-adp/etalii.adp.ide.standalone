@@ -44,10 +44,10 @@ public class HierarchyContextActionProviderTests : IDisposable
     }
 
     private ContextTarget FileTarget(string path) =>
-        new(ContextScope.Hierarchy, path, IsContainer: false, ShortGuid.NewShortGuid(), RootPath: _root);
+        new(ContextScope.Hierarchy, path, IsContainer: false, ShortGuid.NewShortGuid(), Root: ProjectRoot.From(_root));
 
     private ContextTarget FolderTarget(string path) =>
-        new(ContextScope.Hierarchy, path, IsContainer: true, ShortGuid.NewShortGuid(), RootPath: _root);
+        new(ContextScope.Hierarchy, path, IsContainer: true, ShortGuid.NewShortGuid(), Root: ProjectRoot.From(_root));
 
     private async Task<IReadOnlyList<ContextActionDefinition>> DiscoverAsync(ContextTarget target) =>
         (await _provider.DiscoverAsync(target, TestContext.Current.CancellationToken)).Actions();
@@ -124,7 +124,7 @@ public class HierarchyContextActionProviderTests : IDisposable
         // Arrange.
         // Rename and delete rightly refuse the root; an add acts WITHIN the folder, never on
         // it, and the root is where a project's first folder belongs.
-        var root = new ContextTarget(ContextScope.Hierarchy, _root, IsContainer: true, SourceId: default, RootPath: _root);
+        var root = new ContextTarget(ContextScope.Hierarchy, _root, IsContainer: true, SourceId: default, Root: ProjectRoot.From(_root));
 
         // Act.
         var result = await _provider.CommitAsync(
@@ -399,7 +399,7 @@ public class HierarchyContextActionProviderTests : IDisposable
     // no entry id, which no real entry ever lacks.
 
     private ContextTarget RootTarget(string path) =>
-        new(ContextScope.Hierarchy, path, IsContainer: true, SourceId: default, RootPath: _root);
+        new(ContextScope.Hierarchy, path, IsContainer: true, SourceId: default, Root: ProjectRoot.From(_root));
 
     [Fact]
     public async Task DiscoverAsync_OnTheProjectRoot_ReportsRenameAndDeleteUnavailable_WithTheReason()

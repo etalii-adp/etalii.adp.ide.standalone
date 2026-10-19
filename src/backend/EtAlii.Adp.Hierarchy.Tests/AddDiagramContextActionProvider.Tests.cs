@@ -33,9 +33,9 @@ public class AddDiagramContextActionProviderTests : IDisposable
         TestFolder.TryDelete(_root);
     }
 
-    private ContextTarget FolderTarget(string path) => new(ContextScope.Hierarchy, path, IsContainer: true, ShortGuid.NewShortGuid(), RootPath: _root);
+    private ContextTarget FolderTarget(string path) => new(ContextScope.Hierarchy, path, IsContainer: true, ShortGuid.NewShortGuid(), Root: ProjectRoot.From(_root));
 
-    private ContextTarget FileTarget(string path) => new(ContextScope.Hierarchy, path, IsContainer: false, ShortGuid.NewShortGuid(), RootPath: _root);
+    private ContextTarget FileTarget(string path) => new(ContextScope.Hierarchy, path, IsContainer: false, ShortGuid.NewShortGuid(), Root: ProjectRoot.From(_root));
 
     private string CreateFile(string name)
     {

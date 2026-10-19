@@ -142,7 +142,7 @@ public abstract class DiagramElementSourceResolverContract : IDisposable
     {
         // Act.
         var resolution = await Resolver.ResolveAsync(
-            ShortGuid.NewShortGuid(), _folder.Path, Element(ElementId), [], null, TestContext.Current.CancellationToken);
+            ShortGuid.NewShortGuid(), ProjectRoot.From(_folder.Path), Element(ElementId), [], null, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.IsType<RejectedContextLevel>(resolution);
@@ -179,7 +179,7 @@ public abstract class DiagramElementSourceResolverContract : IDisposable
         var cancellationToken = TestContext.Current.CancellationToken;
         var level = Assert.IsType<ResolvedContextLevel>(await ResolveAsync(ElementId)).Level;
         var seen = new List<IReadOnlyList<string>?>();
-        var tracking = Resolver.Track(level.Target.WatchId, _folder.Path, level, seen.Add);
+        var tracking = Resolver.Track(level.Target.WatchId, ProjectRoot.From(_folder.Path), level, seen.Add);
 
         // Act: renamed while tracked, then renamed again after it was let go.
         var renamed = await RenameAsync(Body, "Renamed once", cancellationToken);
@@ -201,12 +201,12 @@ public abstract class DiagramElementSourceResolverContract : IDisposable
             new ContextSource(),
             [IoPath.GetFileName(file)],
             scope,
-            new ContextTarget(ContextScope.Hierarchy, file, IsContainer: false, SourceId: default, _folder.Path, ShortGuid.NewShortGuid()),
+            new ContextTarget(ContextScope.Hierarchy, file, IsContainer: false, SourceId: default, ProjectRoot.From(_folder.Path), ShortGuid.NewShortGuid()),
             new ContextLevelDetail(),
             null!);
 
         return Resolver.ResolveAsync(
-            ShortGuid.NewShortGuid(), _folder.Path, Element(elementId), clientPath ?? [], parent, TestContext.Current.CancellationToken).AsTask();
+            ShortGuid.NewShortGuid(), ProjectRoot.From(_folder.Path), Element(elementId), clientPath ?? [], parent, TestContext.Current.CancellationToken).AsTask();
     }
 
     private static ContextSource Element(string elementId) => new() { ElementId = new ElementId { Value = elementId } };

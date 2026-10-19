@@ -301,7 +301,7 @@ internal static class HelmTranscript
     }
 
     private static ContextTarget Target(string registration, string folder, string elementId) =>
-        ContextTarget.ForElement(registration, elementId, folder, origin: Diagram.HelmCharts.Origin);
+        ContextTarget.ForElement(registration, elementId, ProjectRoot.From(folder), origin: Diagram.HelmCharts.Origin);
 
     private static string FindingLine(DiagramProblem problem)
     {

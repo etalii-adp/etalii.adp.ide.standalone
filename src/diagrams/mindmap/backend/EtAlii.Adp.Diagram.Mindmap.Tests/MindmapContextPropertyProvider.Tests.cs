@@ -37,7 +37,7 @@ public class MindmapContextPropertyProviderTests
         using var project = new MindmapTestProject();
         var foreignPath = System.IO.Path.Combine(project.Root, "docs", "roadmap.tml");
         await File.WriteAllTextAsync(foreignPath, "timeline: 1\r\nelements:\r\n  - id: aaa\r\n    label: First\r\n    begin: 2026-01-01\r\n    row: 0\r\n", TestContext.Current.CancellationToken);
-        var target = ContextTarget.ForElement(foreignPath, "aaa", project.Root, project.WatchId);
+        var target = ContextTarget.ForElement(foreignPath, "aaa", ProjectRoot.From(project.Root), project.WatchId);
 
         // Act.
         var properties = await project.Properties.DescribeAsync(target, TestContext.Current.CancellationToken);
