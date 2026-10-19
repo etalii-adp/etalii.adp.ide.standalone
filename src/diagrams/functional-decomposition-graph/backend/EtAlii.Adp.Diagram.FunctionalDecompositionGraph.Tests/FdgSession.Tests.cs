@@ -54,7 +54,7 @@ public sealed class FdgSessionTests : IDisposable
         await using var session = Open();
 
         // Act.
-        var delivered = session.Baseline().AddedElements();
+        var delivered = (await session.BaselineAsync(TestContext.Current.CancellationToken)).AddedElements();
 
         // Assert.
         var expected = model.Elements.Select(element => element.Id).Concat(model.Connections.Select(connection => connection.Id));
@@ -68,7 +68,7 @@ public sealed class FdgSessionTests : IDisposable
         await using var session = Open();
 
         // Act.
-        var delivered = session.Baseline().AddedElements().Where(element => !IsConnection(element)).ToList();
+        var delivered = (await session.BaselineAsync(TestContext.Current.CancellationToken)).AddedElements().Where(element => !IsConnection(element)).ToList();
 
         // Assert.
         Assert.NotEmpty(delivered);
@@ -93,7 +93,7 @@ public sealed class FdgSessionTests : IDisposable
         await using var session = Open();
 
         // Act.
-        var planning = session.Baseline().AddedElements().Single(element => element.Id == "planning");
+        var planning = (await session.BaselineAsync(TestContext.Current.CancellationToken)).AddedElements().Single(element => element.Id == "planning");
         var payload = ElementPayload(planning);
 
         // Assert.
@@ -114,7 +114,7 @@ public sealed class FdgSessionTests : IDisposable
     {
         // Arrange.
         await using var session = Open();
-        session.Baseline();
+        await session.BaselineAsync(TestContext.Current.CancellationToken);
 
         // Act.
         Edit("task-list", (document, element) => FdgWriter.Resize(document, element, 220, null));
@@ -135,7 +135,7 @@ public sealed class FdgSessionTests : IDisposable
     {
         // Arrange.
         await using var session = Open();
-        session.Baseline();
+        await session.BaselineAsync(TestContext.Current.CancellationToken);
 
         // Act: a Description only.
         Edit("task-list", (document, element) => FdgWriter.SetDescription(document, element, "A different description altogether."));

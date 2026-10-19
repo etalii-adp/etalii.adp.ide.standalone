@@ -24,7 +24,7 @@ public sealed class SankeySessionTests : IDisposable
         await using var session = new SankeySession(_folder.Body, _store, new SankeyElementMapper());
 
         // Act.
-        var delivered = session.Baseline().AddedElements();
+        var delivered = (await session.BaselineAsync(TestContext.Current.CancellationToken)).AddedElements();
 
         // Assert.
         Assert.Equal(model.Nodes.Select(node => node.Id).Concat(model.Flows.Select(flow => flow.Id)), delivered.Select(element => element.Id));
@@ -39,7 +39,7 @@ public sealed class SankeySessionTests : IDisposable
         await using var session = new SankeySession(_folder.Body, _store, new SankeyElementMapper());
 
         // Act.
-        var delivered = session.Baseline().AddedElements();
+        var delivered = (await session.BaselineAsync(TestContext.Current.CancellationToken)).AddedElements();
 
         // Assert.
         var cafes = Node(delivered, "cafes");
@@ -54,7 +54,7 @@ public sealed class SankeySessionTests : IDisposable
     {
         // Arrange.
         await using var session = new SankeySession(_folder.Body, _store, new SankeyElementMapper());
-        var delivered = session.Baseline().AddedElements();
+        var delivered = (await session.BaselineAsync(TestContext.Current.CancellationToken)).AddedElements();
 
         // Act.
         var cost = Flow(delivered, "revenue->cost-of-revenue");
@@ -154,7 +154,7 @@ public sealed class SankeySessionTests : IDisposable
         using var history = new HistoryStack(new SankeyTestDispatcher(_store));
         await using var watching = new SankeySession(_folder.Body, _store, new SankeyElementMapper());
         await using var editing = new SankeySession(_folder.Body, _store, new SankeyElementMapper(), history);
-        _ = watching.Baseline();
+        _ = await watching.BaselineAsync(TestContext.Current.CancellationToken);
         var raised = new List<DiagramDelta>();
         watching.Changed += (_, args) => raised.AddRange(args.Deltas);
 
@@ -172,7 +172,7 @@ public sealed class SankeySessionTests : IDisposable
         using var history = new HistoryStack(new SankeyTestDispatcher(_store));
         var watching = new SankeySession(_folder.Body, _store, new SankeyElementMapper());
         await using var editing = new SankeySession(_folder.Body, _store, new SankeyElementMapper(), history);
-        _ = watching.Baseline();
+        _ = await watching.BaselineAsync(TestContext.Current.CancellationToken);
         var raised = new List<DiagramDelta>();
         watching.Changed += (_, args) => raised.AddRange(args.Deltas);
         await watching.DisposeAsync();

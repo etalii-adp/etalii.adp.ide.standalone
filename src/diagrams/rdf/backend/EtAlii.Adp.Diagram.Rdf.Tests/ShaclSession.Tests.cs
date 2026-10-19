@@ -119,7 +119,7 @@ public class ShaclSessionTests : IDisposable
         var body = WriteBody();
 
         await using var session = Open(body, null);
-        var deltas = session.Baseline();
+        var deltas = await session.BaselineAsync(TestContext.Current.CancellationToken);
 
         var added = Assert.IsType<DiagramAddDelta>(Assert.Single(deltas));
         var card = Assert.Single(added.Elements, element => element.Type == ShaclElementMapper.ShapeType);
@@ -136,7 +136,7 @@ public class ShaclSessionTests : IDisposable
         var body = WriteBody();
 
         await using var session = Open(body, null);
-        session.Baseline();
+        await session.BaselineAsync(TestContext.Current.CancellationToken);
 
         var refusal = await session.MoveElementToAsync("res:http://example.org/PersonShape", 10, 20, TestContext.Current.CancellationToken);
 
@@ -158,7 +158,7 @@ public class ShaclSessionTests : IDisposable
         await File.WriteAllTextAsync(registration, "w3c/shacl\r\nbody: anon.ttl\r\n", TestContext.Current.CancellationToken);
 
         await using var session = Open(body, registration);
-        var added = Assert.IsType<DiagramAddDelta>(Assert.Single(session.Baseline()));
+        var added = Assert.IsType<DiagramAddDelta>(Assert.Single(await session.BaselineAsync(TestContext.Current.CancellationToken)));
         var blank = Assert.Single(added.Elements, element => element.Id.StartsWith("blank:", StringComparison.Ordinal));
 
         var refusal = await session.MoveElementToAsync(blank.Id, 10, 20, TestContext.Current.CancellationToken);
@@ -176,7 +176,7 @@ public class ShaclSessionTests : IDisposable
         await File.WriteAllTextAsync(registration, "w3c/shacl\r\nbody: shapes.ttl\r\n", TestContext.Current.CancellationToken);
 
         await using var session = Open(body, registration);
-        session.Baseline();
+        await session.BaselineAsync(TestContext.Current.CancellationToken);
 
         var refusal = await session.MoveElementToAsync("res:http://example.org/PersonShape", 120, 240, TestContext.Current.CancellationToken);
 
@@ -194,7 +194,7 @@ public class ShaclSessionTests : IDisposable
         var before = await File.ReadAllTextAsync(registration, TestContext.Current.CancellationToken);
 
         await using var session = Open(body, registration);
-        session.Baseline();
+        await session.BaselineAsync(TestContext.Current.CancellationToken);
 
         Assert.Equal("", await session.MoveElementToAsync(
             "res:http://example.org/PersonShape", 120, 240, TestContext.Current.CancellationToken));
@@ -223,8 +223,8 @@ public class ShaclSessionTests : IDisposable
             .Single(candidate => candidate.Origin == ServiceCollectionAddRdfExtension.RdfOrigin);
         await using var graph = rdfFactory.Open(ShortGuid.NewShortGuid(), _root, body, null);
 
-        shapes.Baseline();
-        graph.Baseline();
+        await shapes.BaselineAsync(TestContext.Current.CancellationToken);
+        await graph.BaselineAsync(TestContext.Current.CancellationToken);
 
         var history = _provider.GetRequiredService<IHistoryStackStore>().Get(_root);
         var added = await history.ExecuteAsync(
@@ -257,8 +257,8 @@ public class ShaclSessionTests : IDisposable
             .Single(candidate => candidate.Origin == ServiceCollectionAddRdfExtension.RdfOrigin);
         await using var graph = rdfFactory.Open(ShortGuid.NewShortGuid(), _root, body, null);
 
-        var shapeElements = shapes.BaselineElements();
-        var graphElements = graph.BaselineElements();
+        var shapeElements = await shapes.BaselineElementsAsync(TestContext.Current.CancellationToken);
+        var graphElements = await graph.BaselineElementsAsync(TestContext.Current.CancellationToken);
 
         // The shapes reading draws one card; the data-graph reading draws the resources and
         // their edges - more elements, and none of them a shapes card.
@@ -291,7 +291,7 @@ public class ShaclSessionTests : IDisposable
         // UpdateView returns an empty list, which no client-side assertion can catch.
         var body = WriteBody(text: TwoShapes);
         await using var session = Open(body, null);
-        var drawn = ElementsOfBaseline(session);
+        var drawn = await ElementsOfBaselineAsync(session);
         var anchor = drawn.OrderBy(element => element.Y).ThenBy(element => element.X).First();
 
         // Act.
@@ -333,7 +333,7 @@ public class ShaclSessionTests : IDisposable
         // crawl under them.
         var body = WriteBody(text: TwoShapes);
         await using var session = Open(body, null);
-        var atOpen = ElementsOfBaseline(session).ToDictionary(element => element.Id, element => (element.X, element.Y), StringComparer.Ordinal);
+        var atOpen = (await ElementsOfBaselineAsync(session)).ToDictionary(element => element.Id, element => (element.X, element.Y), StringComparer.Ordinal);
 
         // Act.
         session.UpdateView(new DiagramViewport(0, 0, 1, 1));
@@ -351,6 +351,6 @@ public class ShaclSessionTests : IDisposable
     }
 
     /// <summary>The baseline's elements - what the connection holds before any view is reported.</summary>
-    private static IReadOnlyList<DiagramElement> ElementsOfBaseline(IDiagramSession session) =>
-        session.Baseline().OfType<DiagramAddDelta>().SelectMany(delta => delta.Elements).ToList();
+    private static async Task<IReadOnlyList<DiagramElement>> ElementsOfBaselineAsync(IDiagramSession session) =>
+        (await session.BaselineAsync(TestContext.Current.CancellationToken)).OfType<DiagramAddDelta>().SelectMany(delta => delta.Elements).ToList();
 }

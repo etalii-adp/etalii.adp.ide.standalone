@@ -69,7 +69,7 @@ public class OwlSessionTests : IDisposable
 
         // Act.
         await using var session = OpenOwl(body, WriteRegistration("owl-ontology.ttl"));
-        var elements = session.BaselineElements();
+        var elements = await session.BaselineElementsAsync(TestContext.Current.CancellationToken);
 
         // Assert: class nodes, axiom edges and expression nodes, in this reading's own types.
         Assert.Contains(elements, element => element is { Id: $"res:{Ns}Pizza", Type: OwlElementMapper.NodeType });
@@ -90,7 +90,7 @@ public class OwlSessionTests : IDisposable
 
         // Act.
         await using var session = OpenOwl(body, adp);
-        var elements = session.BaselineElements();
+        var elements = await session.BaselineElementsAsync(TestContext.Current.CancellationToken);
 
         // Assert: the class takes its authored place; the expression keeps its computed one -
         // its id does not survive an edit, the identity boundary's reason (Requirement 3.2).
@@ -158,8 +158,8 @@ public class OwlSessionTests : IDisposable
         var body = CopyFixture("owl-ontology.ttl");
         await using var rdfSession = Open(ServiceCollectionAddRdfExtension.RdfOrigin, body, null);
         await using var owlSession = OpenOwl(body, null);
-        _ = rdfSession.BaselineElements();
-        _ = owlSession.BaselineElements();
+        _ = await rdfSession.BaselineElementsAsync(TestContext.Current.CancellationToken);
+        _ = await owlSession.BaselineElementsAsync(TestContext.Current.CancellationToken);
 
         var rdfHeard = false;
         var owlHeard = false;
@@ -184,7 +184,7 @@ public class OwlSessionTests : IDisposable
         // UpdateView returns an empty list, which no client-side assertion can catch.
         var body = CopyFixture("owl-ontology.ttl");
         await using var session = OpenOwl(body, WriteRegistration("owl-ontology.ttl"));
-        var drawn = ElementsOfBaseline(session);
+        var drawn = await ElementsOfBaselineAsync(session);
         var anchor = drawn.OrderBy(element => element.Y).ThenBy(element => element.X).First();
 
         // Act.
@@ -226,7 +226,7 @@ public class OwlSessionTests : IDisposable
         // crawl under them.
         var body = CopyFixture("owl-ontology.ttl");
         await using var session = OpenOwl(body, WriteRegistration("owl-ontology.ttl"));
-        var atOpen = ElementsOfBaseline(session).ToDictionary(element => element.Id, element => (element.X, element.Y), StringComparer.Ordinal);
+        var atOpen = (await ElementsOfBaselineAsync(session)).ToDictionary(element => element.Id, element => (element.X, element.Y), StringComparer.Ordinal);
 
         // Act.
         session.UpdateView(new DiagramViewport(0, 0, 1, 1));
@@ -244,8 +244,8 @@ public class OwlSessionTests : IDisposable
     }
 
     /// <summary>The baseline's elements - what the connection holds before any view is reported.</summary>
-    private static IReadOnlyList<DiagramElement> ElementsOfBaseline(IDiagramSession session) =>
-        session.Baseline().OfType<DiagramAddDelta>().SelectMany(delta => delta.Elements).ToList();
+    private static async Task<IReadOnlyList<DiagramElement>> ElementsOfBaselineAsync(IDiagramSession session) =>
+        (await session.BaselineAsync(TestContext.Current.CancellationToken)).OfType<DiagramAddDelta>().SelectMany(delta => delta.Elements).ToList();
 }
 
 /// <summary>

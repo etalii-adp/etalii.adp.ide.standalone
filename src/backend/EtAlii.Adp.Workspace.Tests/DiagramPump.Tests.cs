@@ -61,7 +61,7 @@ public class DiagramPumpTests
 
         public void Raise(string elementId) => Changed?.Invoke(this, new DiagramDeltasEventArgs([new DiagramRemoveDelta([elementId])]));
 
-        public IReadOnlyList<DiagramDelta> Baseline() => [new DiagramRemoveDelta(["baseline"])];
+        public Task<IReadOnlyList<DiagramDelta>> BaselineAsync(CancellationToken cancellationToken) => Task.FromResult<IReadOnlyList<DiagramDelta>>([new DiagramRemoveDelta(["baseline"])]);
 
         public IReadOnlyList<DiagramDelta> UpdateView(DiagramViewport viewport) => [];
 

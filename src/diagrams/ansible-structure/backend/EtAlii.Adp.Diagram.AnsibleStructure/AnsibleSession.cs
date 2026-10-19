@@ -75,10 +75,10 @@ internal sealed class AnsibleSession : IDiagramSession
 
     public event EventHandler<DiagramDeltasEventArgs>? Changed;
 
-    public IReadOnlyList<DiagramDelta> Baseline()
+    public Task<IReadOnlyList<DiagramDelta>> BaselineAsync(CancellationToken cancellationToken)
     {
         var elements = _changes.Deliver();
-        return elements.Count == 0 ? [] : [new DiagramAddDelta(elements)];
+        return Task.FromResult<IReadOnlyList<DiagramDelta>>(elements.Count == 0 ? [] : [new DiagramAddDelta(elements)]);
     }
 
     public IReadOnlyList<DiagramDelta> UpdateView(DiagramViewport viewport)

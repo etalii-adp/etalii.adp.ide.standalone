@@ -39,8 +39,8 @@ internal sealed class EditorSessionAdapter : IDiagramSession
 
     public event EventHandler<DiagramDeltasEventArgs>? Changed;
 
-    public IReadOnlyList<DiagramDelta> Baseline() =>
-        [new DiagramAddDelta([ContentElement(_session.Content)])];
+    public Task<IReadOnlyList<DiagramDelta>> BaselineAsync(CancellationToken cancellationToken) =>
+        Task.FromResult<IReadOnlyList<DiagramDelta>>([new DiagramAddDelta([ContentElement(_session.Content)])]);
 
     /// <summary>A text file has no viewport semantics: everything is always in view.</summary>
     public IReadOnlyList<DiagramDelta> UpdateView(DiagramViewport viewport) => [];

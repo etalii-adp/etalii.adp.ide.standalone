@@ -43,7 +43,7 @@ public sealed class AbmSessionTests : IDisposable
         // Arrange.
         var history = new HistoryStack(new AbmTestDispatcher(_store));
         await using var session = new AbmSession(Body, Registration, _store, new AbmElementMapper(), history);
-        session.Baseline();
+        await session.BaselineAsync(TestContext.Current.CancellationToken);
         var markdown = await File.ReadAllBytesAsync(Body, TestContext.Current.CancellationToken);
         var computed = AbmLayout.Compute(Model());
         var pushed = new List<DiagramDelta>();
@@ -79,7 +79,7 @@ public sealed class AbmSessionTests : IDisposable
         // Arrange: the first child's own children are dragged 40 lower first.
         var history = new HistoryStack(new AbmTestDispatcher(_store));
         await using var session = new AbmSession(Body, Registration, _store, new AbmElementMapper(), history);
-        session.Baseline();
+        await session.BaselineAsync(TestContext.Current.CancellationToken);
         var computed = AbmLayout.Compute(Model());
         Assert.Equal("", await session.MoveElementToAsync("1.1.1", computed["1.1.1"].X, computed["1.1.1"].Y + 40, TestContext.Current.CancellationToken));
         var markdown = await File.ReadAllBytesAsync(Body, TestContext.Current.CancellationToken);
@@ -154,7 +154,7 @@ public sealed class AbmSessionTests : IDisposable
         // Arrange.
         var history = new HistoryStack(new AbmTestDispatcher(_store));
         await using var session = new AbmSession(Body, Registration, _store, new AbmElementMapper(), history);
-        session.Baseline();
+        await session.BaselineAsync(TestContext.Current.CancellationToken);
         var pushed = new List<DiagramDelta>();
         session.Changed += (_, args) => pushed.AddRange(args.Deltas);
 

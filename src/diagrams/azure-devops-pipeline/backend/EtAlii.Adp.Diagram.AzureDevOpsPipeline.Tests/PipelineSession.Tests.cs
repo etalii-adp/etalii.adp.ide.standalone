@@ -93,7 +93,7 @@ public class PipelineSessionTests : IDisposable
         await using var session = Open(Write(TwoStages));
 
         // Act.
-        var baseline = session.Baseline();
+        var baseline = await session.BaselineAsync(TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Contains("Build", AddedIds(baseline));
@@ -108,7 +108,7 @@ public class PipelineSessionTests : IDisposable
         await using var session = Open(Write(TwoStages));
 
         // Act.
-        var baseline = session.Baseline();
+        var baseline = await session.BaselineAsync(TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.DoesNotContain("Build/Compile", AddedIds(baseline));
@@ -124,7 +124,7 @@ public class PipelineSessionTests : IDisposable
         var path = Write(TwoStages);
         var watchId = ShortGuid.NewShortGuid();
         await using var session = OpenWith(path, watchId);
-        session.Baseline();
+        await session.BaselineAsync(TestContext.Current.CancellationToken);
         var pushed = new List<DiagramDeltasEventArgs>();
         session.Changed += (_, args) => pushed.Add(args);
 
@@ -145,7 +145,7 @@ public class PipelineSessionTests : IDisposable
         var path = Write(TwoStages);
         var watchId = ShortGuid.NewShortGuid();
         await using var session = OpenWith(path, watchId);
-        session.Baseline();
+        await session.BaselineAsync(TestContext.Current.CancellationToken);
         _views.Toggle(watchId, path, "Build");
         var pushed = new List<DiagramDeltasEventArgs>();
         session.Changed += (_, args) => pushed.Add(args);
@@ -171,7 +171,7 @@ public class PipelineSessionTests : IDisposable
         session.Changed += (_, args) => pushed.Add(args);
 
         // Act.
-        var baseline = session.Baseline();
+        var baseline = await session.BaselineAsync(TestContext.Current.CancellationToken);
         _views.Toggle(watchId, path, "Build");
         _views.Toggle(watchId, path, "Build/Compile");
         _views.Toggle(watchId, path, "Build");
@@ -198,8 +198,8 @@ public class PipelineSessionTests : IDisposable
         var yoursId = ShortGuid.NewShortGuid();
         await using var mine = OpenWith(path, mineId);
         await using var yours = OpenWith(path, yoursId);
-        mine.Baseline();
-        yours.Baseline();
+        await mine.BaselineAsync(TestContext.Current.CancellationToken);
+        await yours.BaselineAsync(TestContext.Current.CancellationToken);
         var pushedToYou = 0;
         yours.Changed += (_, _) => pushedToYou++;
 
@@ -221,7 +221,7 @@ public class PipelineSessionTests : IDisposable
         var path = Write(TwoStages);
         var watchId = ShortGuid.NewShortGuid();
         var session = OpenWith(path, watchId);
-        session.Baseline();
+        await session.BaselineAsync(TestContext.Current.CancellationToken);
         _views.Toggle(watchId, path, "Build");
 
         // Act.
@@ -237,7 +237,7 @@ public class PipelineSessionTests : IDisposable
         // Arrange: the store is shared, so an edit anywhere is an edit everywhere.
         var path = Write(TwoStages);
         await using var session = Open(path);
-        session.Baseline();
+        await session.BaselineAsync(TestContext.Current.CancellationToken);
         var pushed = new List<DiagramDeltasEventArgs>();
         session.Changed += (_, args) => pushed.Add(args);
 
@@ -260,7 +260,7 @@ public class PipelineSessionTests : IDisposable
         // and the canvas would still be showing the old name.
         var path = Write(TwoStages);
         await using var session = Open(path);
-        session.Baseline();
+        await session.BaselineAsync(TestContext.Current.CancellationToken);
         DiagramDeltasEventArgs? pushed = null;
         session.Changed += (_, args) => pushed = args;
 
@@ -286,7 +286,7 @@ public class PipelineSessionTests : IDisposable
         // stay there - the failure mode that makes re-delivering-everything not quite enough.
         var path = Write(TwoStages);
         await using var session = Open(path);
-        session.Baseline();
+        await session.BaselineAsync(TestContext.Current.CancellationToken);
         DiagramDeltasEventArgs? pushed = null;
         session.Changed += (_, args) => pushed = args;
 
@@ -306,7 +306,7 @@ public class PipelineSessionTests : IDisposable
         // Arrange: a git pull, or somebody editing the file in their own editor.
         var path = Write(TwoStages);
         await using var session = Open(path);
-        session.Baseline();
+        await session.BaselineAsync(TestContext.Current.CancellationToken);
         DiagramDeltasEventArgs? pushed = null;
         session.Changed += (_, args) => pushed = args;
 
@@ -327,7 +327,7 @@ public class PipelineSessionTests : IDisposable
         var theirs = IoPath.Combine(_workspace, "other.yml");
         await File.WriteAllTextAsync(theirs, TwoStages, TestContext.Current.CancellationToken);
         await using var session = Open(mine);
-        session.Baseline();
+        await session.BaselineAsync(TestContext.Current.CancellationToken);
         var pushed = 0;
         session.Changed += (_, _) => pushed++;
 
@@ -353,7 +353,7 @@ public class PipelineSessionTests : IDisposable
         await File.WriteAllTextAsync(theirs, TwoStages, TestContext.Current.CancellationToken);
         var watchId = ShortGuid.NewShortGuid();
         await using var session = OpenWith(mine, watchId);
-        session.Baseline();
+        await session.BaselineAsync(TestContext.Current.CancellationToken);
         _views.For(watchId, mine).Toggle("Build");
         var pushed = new List<DiagramDeltasEventArgs>();
         session.Changed += (_, args) => pushed.Add(args);
@@ -377,7 +377,7 @@ public class PipelineSessionTests : IDisposable
         // the store's event, nor be pushed to after it has gone.
         var path = Write(TwoStages);
         var session = Open(path);
-        session.Baseline();
+        await session.BaselineAsync(TestContext.Current.CancellationToken);
         var pushed = 0;
         session.Changed += (_, _) => pushed++;
 
@@ -397,11 +397,11 @@ public class PipelineSessionTests : IDisposable
         await using var session = Open(Write("stages:\n  - stage: Build\n   jobs: [\n"));
 
         // Act.
-        var baseline = session.Baseline();
+        var baseline = await session.BaselineAsync(TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Empty(baseline);
-        Assert.Contains("Line ", session.Unavailable);
+        Assert.Contains("Line ", await session.UnavailableAsync(TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -411,7 +411,7 @@ public class PipelineSessionTests : IDisposable
         await using var session = Open(Write(TwoStages));
 
         // Assert.
-        Assert.Equal("", session.Unavailable);
+        Assert.Equal("", await session.UnavailableAsync(TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -420,7 +420,7 @@ public class PipelineSessionTests : IDisposable
         // Arrange: Requirement 11.8 permits it explicitly - these are small graphs and filtering
         // has little to do.
         await using var session = Open(Write(TwoStages));
-        session.Baseline();
+        await session.BaselineAsync(TestContext.Current.CancellationToken);
 
         // Act.
         var deltas = session.UpdateView(new DiagramViewport(0, 0, 10, 10));
@@ -468,7 +468,7 @@ public class PipelineSessionTests : IDisposable
         var path = Write(StepsOutOfAlphabeticalOrder);
         var watchId = ShortGuid.NewShortGuid();
         await using var session = OpenWith(path, watchId);
-        session.Baseline();
+        await session.BaselineAsync(TestContext.Current.CancellationToken);
         _views.Toggle(watchId, path, "Build");
         var pushed = new List<DiagramDeltasEventArgs>();
         session.Changed += (_, args) => pushed.Add(args);
@@ -492,7 +492,7 @@ public class PipelineSessionTests : IDisposable
         var path = Write(StepsOutOfAlphabeticalOrder);
         var watchId = ShortGuid.NewShortGuid();
         await using var session = OpenWith(path, watchId);
-        session.Baseline();
+        await session.BaselineAsync(TestContext.Current.CancellationToken);
         _views.Toggle(watchId, path, "Build");
         _views.Toggle(watchId, path, "Build/Compile");
         var pushed = new List<DiagramDeltasEventArgs>();
@@ -521,7 +521,7 @@ public class PipelineSessionTests : IDisposable
         var path = Write(StepsOutOfAlphabeticalOrder);
         var watchId = ShortGuid.NewShortGuid();
         await using var session = OpenWith(path, watchId);
-        session.Baseline();
+        await session.BaselineAsync(TestContext.Current.CancellationToken);
         var pushed = new List<DiagramDeltasEventArgs>();
         session.Changed += (_, args) => pushed.Add(args);
 

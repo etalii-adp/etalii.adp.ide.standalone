@@ -54,7 +54,7 @@ public class AnsibleSessionTests : IDisposable
     {
         // Act.
         await using var session = Open();
-        var baseline = session.Baseline();
+        var baseline = await session.BaselineAsync(TestContext.Current.CancellationToken);
 
         // Assert.
         // The .adp is one MIME line; everything drawn came from the folder around it.
@@ -77,7 +77,7 @@ public class AnsibleSessionTests : IDisposable
         await using var session = Open();
 
         // Assert.
-        Assert.IsType<DiagramAddDelta>(Assert.Single(session.Baseline()));
+        Assert.IsType<DiagramAddDelta>(Assert.Single(await session.BaselineAsync(TestContext.Current.CancellationToken)));
     }
 
     // ---- the viewport -----------------------------------------------------------------------
@@ -87,7 +87,7 @@ public class AnsibleSessionTests : IDisposable
     {
         // Arrange.
         await using var session = Open();
-        session.Baseline();
+        await session.BaselineAsync(TestContext.Current.CancellationToken);
 
         // Act.
         var deltas = session.UpdateView(new DiagramViewport(-10, -10, 10, 10));
@@ -101,7 +101,7 @@ public class AnsibleSessionTests : IDisposable
     {
         // Arrange.
         await using var session = Open();
-        session.Baseline();
+        await session.BaselineAsync(TestContext.Current.CancellationToken);
         var left = session.UpdateView(new DiagramViewport(-10, -10, 10, 10))
             .OfType<DiagramRemoveDelta>()
             .SelectMany(delta => delta.ElementIds)
@@ -129,7 +129,7 @@ public class AnsibleSessionTests : IDisposable
     {
         // Arrange.
         await using var session = Open();
-        session.Baseline();
+        await session.BaselineAsync(TestContext.Current.CancellationToken);
         var pushes = new List<IReadOnlyList<DiagramDelta>>();
         session.Changed += (_, args) =>
         {
@@ -157,7 +157,7 @@ public class AnsibleSessionTests : IDisposable
     {
         // Arrange.
         await using var session = Open();
-        var delivered = session.BaselineElements()
+        var delivered = (await session.BaselineElementsAsync(TestContext.Current.CancellationToken))
             .ToDictionary(element => element.Id, StringComparer.Ordinal);
         var pushes = new List<IReadOnlyList<DiagramDelta>>();
         session.Changed += (_, args) =>
@@ -186,7 +186,7 @@ public class AnsibleSessionTests : IDisposable
     {
         // Arrange.
         var session = Open();
-        session.Baseline();
+        await session.BaselineAsync(TestContext.Current.CancellationToken);
         var pushes = new List<IReadOnlyList<DiagramDelta>>();
         session.Changed += (_, args) =>
         {
@@ -214,8 +214,8 @@ public class AnsibleSessionTests : IDisposable
         // leave the other's diagram quietly stale.
         var first = Open();
         await using var second = Open();
-        first.Baseline();
-        second.Baseline();
+        await first.BaselineAsync(TestContext.Current.CancellationToken);
+        await second.BaselineAsync(TestContext.Current.CancellationToken);
 
         var pushes = new List<IReadOnlyList<DiagramDelta>>();
         second.Changed += (_, args) =>
@@ -241,7 +241,7 @@ public class AnsibleSessionTests : IDisposable
     {
         // Arrange.
         await using var session = Open();
-        session.Baseline();
+        await session.BaselineAsync(TestContext.Current.CancellationToken);
 
         // Act.
         var reason = await session.MoveElementAsync("role:nginx", "role:common", 0, TestContext.Current.CancellationToken);
@@ -258,7 +258,7 @@ public class AnsibleSessionTests : IDisposable
     {
         // Arrange.
         await using var session = Open();
-        session.Baseline();
+        await session.BaselineAsync(TestContext.Current.CancellationToken);
         var before = Snapshot();
 
         // Act.
@@ -329,7 +329,7 @@ public class AnsibleSessionTests : IDisposable
         // Arrange.
         var registration = IoPath.Combine(_root, "infrastructure.adp");
         await using var session = Open();
-        session.Baseline();
+        await session.BaselineAsync(TestContext.Current.CancellationToken);
 
         // Act.
         var answer = await session.MoveElementToAsync("role:common", 321, 123, TestContext.Current.CancellationToken);
@@ -347,7 +347,7 @@ public class AnsibleSessionTests : IDisposable
         var registration = IoPath.Combine(_root, "infrastructure.adp");
         var before = await File.ReadAllBytesAsync(registration, TestContext.Current.CancellationToken);
         await using var session = Open();
-        session.Baseline();
+        await session.BaselineAsync(TestContext.Current.CancellationToken);
         await session.MoveElementToAsync("role:common", 321, 123, TestContext.Current.CancellationToken);
 
         // Act.
@@ -363,7 +363,7 @@ public class AnsibleSessionTests : IDisposable
     {
         // Arrange.
         await using var session = Open();
-        session.Baseline();
+        await session.BaselineAsync(TestContext.Current.CancellationToken);
 
         // Act.
         var reason = await session.MoveElementToAsync(
@@ -380,7 +380,7 @@ public class AnsibleSessionTests : IDisposable
         // Arrange: the null-stack case, which is how a read-only diagram presents itself.
         await using var session = new AnsibleSession(
             _root, _folders, new AnsibleElementMapper(), IoPath.Combine(_root, "infrastructure.adp"));
-        session.Baseline();
+        await session.BaselineAsync(TestContext.Current.CancellationToken);
 
         // Act.
         var reason = await session.MoveElementToAsync("role:common", 321, 123, TestContext.Current.CancellationToken);
@@ -396,7 +396,7 @@ public class AnsibleSessionTests : IDisposable
         // Arrange.
         await using var session = new AnsibleSession(
             _root, _folders, new AnsibleElementMapper(), null, _provider.GetRequiredService<IHistoryStackStore>().Get(_root));
-        session.Baseline();
+        await session.BaselineAsync(TestContext.Current.CancellationToken);
 
         // Act.
         var reason = await session.MoveElementToAsync("role:common", 321, 123, TestContext.Current.CancellationToken);
@@ -411,13 +411,13 @@ public class AnsibleSessionTests : IDisposable
         // Arrange: the reopen half of Requirement 2.4 - the overlay outlives the session.
         await using (var first = Open())
         {
-            first.Baseline();
+            await first.BaselineAsync(TestContext.Current.CancellationToken);
             await first.MoveElementToAsync("role:common", 321, 123, TestContext.Current.CancellationToken);
         }
 
         // Act.
         await using var second = Open();
-        var baseline = second.Baseline();
+        var baseline = await second.BaselineAsync(TestContext.Current.CancellationToken);
 
         // Assert.
         var elements = Assert.IsType<DiagramAddDelta>(Assert.Single(baseline)).Elements;
@@ -444,7 +444,7 @@ public class AnsibleSessionTests : IDisposable
         {
             await using var session = new AnsibleSession(
                 root, _folders, new AnsibleElementMapper(), registration, _provider.GetRequiredService<IHistoryStackStore>().Get(root));
-            var drawn = Assert.IsType<DiagramAddDelta>(Assert.Single(session.Baseline())).Elements;
+            var drawn = Assert.IsType<DiagramAddDelta>(Assert.Single(await session.BaselineAsync(TestContext.Current.CancellationToken))).Elements;
             Assert.DoesNotContain(drawn, element => element.Id == "playbook:half.yml");
             var pushes = new List<IReadOnlyList<DiagramDelta>>();
             session.Changed += (_, args) =>

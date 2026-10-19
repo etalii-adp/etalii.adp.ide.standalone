@@ -62,11 +62,11 @@ public class CausalLoopSessionTests : IDisposable
         new(element.X - 1, element.Y - 1, element.X + 1, element.Y + 1);
 
     [Fact]
-    public void Baseline_DrawsTheWholeDocument()
+    public async Task Baseline_DrawsTheWholeDocument()
     {
         // Arrange & act.
         var session = Session();
-        var add = Assert.IsType<DiagramAddDelta>(Assert.Single(session.Baseline()));
+        var add = Assert.IsType<DiagramAddDelta>(Assert.Single(await session.BaselineAsync(TestContext.Current.CancellationToken)));
 
         // Assert.
         Assert.NotEmpty(add.Elements);
@@ -81,7 +81,7 @@ public class CausalLoopSessionTests : IDisposable
     /// pass against a session that answers with nothing, which is why this one lives here.
     /// </summary>
     [Fact]
-    public void AViewChange_SendsWhatCameIntoView_AndTakesBackWhatLeft()
+    public async Task AViewChange_SendsWhatCameIntoView_AndTakesBackWhatLeft()
     {
         // Arrange. The corpus triangle no longer works here: a link travels wherever its span
         // touches the view and brings its ends along, so in a triangle every narrowing keeps
@@ -90,12 +90,12 @@ public class CausalLoopSessionTests : IDisposable
         // geometry is this test's own rather than the layout's.
         var bodyPath = IoPath.Combine(_root, "coasts.cld");
         var registrationPath = IoPath.Combine(_root, "coasts.adp");
-        File.WriteAllText(bodyPath, "causal-loop 1\r\nvariable near \"Near\"\r\nvariable far \"Far\"\r\n");
-        File.WriteAllText(
+        await File.WriteAllTextAsync(bodyPath, "causal-loop 1\r\nvariable near \"Near\"\r\nvariable far \"Far\"\r\n", TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(
             registrationPath,
-            "systems/causal-loop-diagram\r\nbody: coasts.cld\r\nlayout:\r\n  variable:near: 0 0\r\n  variable:far: 10000 0\r\n");
+            "systems/causal-loop-diagram\r\nbody: coasts.cld\r\nlayout:\r\n  variable:near: 0 0\r\n  variable:far: 10000 0\r\n", TestContext.Current.CancellationToken);
         var session = new CausalLoopSession(bodyPath, registrationPath, _store, new CausalLoopElementMapper());
-        var all = session.BaselineElements();
+        var all = await session.BaselineElementsAsync(TestContext.Current.CancellationToken);
         var near = all.Single(element => element.Id == "variable:near");
         var far = all.Single(element => element.Id == "variable:far");
 
@@ -120,11 +120,11 @@ public class CausalLoopSessionTests : IDisposable
     }
 
     [Fact]
-    public void AViewportAdmittingEverything_ChangesNothing()
+    public async Task AViewportAdmittingEverything_ChangesNothing()
     {
         // Arrange & act.
         var session = Session();
-        session.Baseline();
+        await session.BaselineAsync(TestContext.Current.CancellationToken);
 
         // Assert.
         // Everything the baseline drew is still visible, so nothing appeared and nothing left.
@@ -136,11 +136,11 @@ public class CausalLoopSessionTests : IDisposable
     /// diagram rearranges itself under them as they pan.
     /// </summary>
     [Fact]
-    public void TheLayoutDoesNotDependOnTheViewport()
+    public async Task TheLayoutDoesNotDependOnTheViewport()
     {
         // Arrange.
         var session = Session();
-        var before = session.BaselineElements()
+        var before = (await session.BaselineElementsAsync(TestContext.Current.CancellationToken))
             .ToDictionary(element => element.Id, element => (element.X, element.Y), StringComparer.Ordinal);
 
         var anchor = before.First(entry => entry.Key.StartsWith("variable:", StringComparison.Ordinal));
@@ -157,15 +157,15 @@ public class CausalLoopSessionTests : IDisposable
     }
 
     [Fact]
-    public void AStoredPosition_OverridesTheComputedOne()
+    public async Task AStoredPosition_OverridesTheComputedOne()
     {
         // Arrange.
-        File.WriteAllText(
+        await File.WriteAllTextAsync(
             _registrationPath,
-            "systems/causal-loop-diagram\r\nbody: feedback.cld\r\nlayout:\r\n  variable:a: 5000 6000\r\n");
+            "systems/causal-loop-diagram\r\nbody: feedback.cld\r\nlayout:\r\n  variable:a: 5000 6000\r\n", TestContext.Current.CancellationToken);
 
         // Act.
-        var elements = Assert.IsType<DiagramAddDelta>(Assert.Single(Session().Baseline())).Elements;
+        var elements = Assert.IsType<DiagramAddDelta>(Assert.Single(await Session().BaselineAsync(TestContext.Current.CancellationToken))).Elements;
         var moved = Assert.Single(elements, element => element.Id == "variable:a");
 
         // Assert.
@@ -179,7 +179,7 @@ public class CausalLoopSessionTests : IDisposable
         // Arrange.
         var before = await File.ReadAllTextAsync(_bodyPath, TestContext.Current.CancellationToken);
         await using var session = Session();
-        session.Baseline();
+        await session.BaselineAsync(TestContext.Current.CancellationToken);
 
         // Act.
         var refusal = await session.MoveElementToAsync("variable:a", 120, 240, TestContext.Current.CancellationToken);
@@ -244,11 +244,11 @@ public class CausalLoopSessionTests : IDisposable
     /// while zoomed in.
     /// </summary>
     [Fact]
-    public void ADocumentChange_IsFilteredThroughTheViewportTheConnectionReported()
+    public async Task ADocumentChange_IsFilteredThroughTheViewportTheConnectionReported()
     {
         // Arrange.
         var session = Session();
-        var all = session.BaselineElements();
+        var all = await session.BaselineElementsAsync(TestContext.Current.CancellationToken);
         var one = all.First(element => element.Type == CausalLoopElementMapper.VariableType);
         session.UpdateView(Around(one));
 
@@ -256,7 +256,7 @@ public class CausalLoopSessionTests : IDisposable
         session.Changed += (_, args) => pushed = args.Deltas;
 
         // Act: the document changes underneath while the reader is zoomed in.
-        File.WriteAllText(_bodyPath, Corpus + "variable d \"Delta\"\r\n");
+        await File.WriteAllTextAsync(_bodyPath, Corpus + "variable d \"Delta\"\r\n", TestContext.Current.CancellationToken);
         _store.Reload(_bodyPath);
 
         // Assert: what was pushed is what the viewport admits, not the whole document.
@@ -265,7 +265,7 @@ public class CausalLoopSessionTests : IDisposable
     }
 
     [Fact]
-    public void AChangeToAnotherDocument_IsNotThisSessionsBusiness()
+    public async Task AChangeToAnotherDocument_IsNotThisSessionsBusiness()
     {
         // Arrange: the store serves every open diagram, so a session has to filter by its own. The
         // diff sends only what differs, so a session that re-rendered on another document's
@@ -273,13 +273,13 @@ public class CausalLoopSessionTests : IDisposable
         // changed WITHOUT telling it - a position written straight into its registration - and a
         // session that re-rendered on the other document's change would now push the variable.
         var session = Session();
-        session.Baseline();
+        await session.BaselineAsync(TestContext.Current.CancellationToken);
         var otherPath = IoPath.Combine(_root, "other.cld");
-        File.WriteAllText(otherPath, Corpus);
+        await File.WriteAllTextAsync(otherPath, Corpus, TestContext.Current.CancellationToken);
         _ = _store.GetOrLoad(otherPath);
-        File.WriteAllText(
+        await File.WriteAllTextAsync(
             _registrationPath,
-            "systems/causal-loop-diagram\r\nbody: feedback.cld\r\nlayout:\r\n  variable:a: 5000 6000\r\n");
+            "systems/causal-loop-diagram\r\nbody: feedback.cld\r\nlayout:\r\n  variable:a: 5000 6000\r\n", TestContext.Current.CancellationToken);
 
         var pushed = new List<IReadOnlyList<DiagramDelta>>();
         session.Changed += (_, args) => pushed.Add(args.Deltas);
@@ -304,12 +304,12 @@ public class CausalLoopSessionTests : IDisposable
     /// the same kind of line as a locked file; a defect now reaches whoever raised the change.
     /// </summary>
     [Fact]
-    public void ADefectWhileReRenderingAChange_ReachesTheCaller()
+    public async Task ADefectWhileReRenderingAChange_ReachesTheCaller()
     {
         // Arrange.
         var store = new FailingStore(_store);
         var session = new CausalLoopSession(_bodyPath, _registrationPath, store, new CausalLoopElementMapper());
-        session.Baseline();
+        await session.BaselineAsync(TestContext.Current.CancellationToken);
         var pushed = 0;
         session.Changed += (_, _) => pushed++;
         store.Failure = new InvalidOperationException("a defect");
@@ -324,15 +324,15 @@ public class CausalLoopSessionTests : IDisposable
     /// nothing else - no exception reaches the caller, and the next change tries again.
     /// </summary>
     [Fact]
-    public void AReadFailureWhileReRenderingAChange_CostsOnlyThatPush()
+    public async Task AReadFailureWhileReRenderingAChange_CostsOnlyThatPush()
     {
         // Arrange.
         var store = new FailingStore(_store);
         var session = new CausalLoopSession(_bodyPath, _registrationPath, store, new CausalLoopElementMapper());
-        session.Baseline();
+        await session.BaselineAsync(TestContext.Current.CancellationToken);
         var pushed = new List<IReadOnlyList<DiagramDelta>>();
         session.Changed += (_, args) => pushed.Add(args.Deltas);
-        File.WriteAllText(_bodyPath, Corpus + "variable d \"Delta\"\r\n");
+        await File.WriteAllTextAsync(_bodyPath, Corpus + "variable d \"Delta\"\r\n", TestContext.Current.CancellationToken);
         store.Failure = new IOException("locked");
 
         // Act.
@@ -349,14 +349,14 @@ public class CausalLoopSessionTests : IDisposable
     }
 
     [Fact]
-    public void AMissingDocument_DrawsNothingRatherThanThrowing()
+    public async Task AMissingDocument_DrawsNothingRatherThanThrowing()
     {
         // Arrange.
         var missing = IoPath.Combine(_root, "absent.cld");
         var session = new CausalLoopSession(missing, null, _store, new CausalLoopElementMapper());
 
         // Act & assert.
-        Assert.Empty(session.Baseline());
+        Assert.Empty(await session.BaselineAsync(TestContext.Current.CancellationToken));
     }
 
     /// <summary>The real store, except that reading from it throws whatever a test sets.</summary>

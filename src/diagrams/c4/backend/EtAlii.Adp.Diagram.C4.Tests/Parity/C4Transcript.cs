@@ -225,7 +225,7 @@ internal static class C4Transcript
         }
 
         await using var opened = factory.Open(ShortGuid.NewShortGuid(), session.Folder, session.Body, registration);
-        return ((C4Session)opened).View() is { } view ? $"shows {Describe(view)}" : "shows no view";
+        return await ((C4Session)opened).ViewAsync(CancellationToken.None) is { } view ? $"shows {Describe(view)}" : "shows no view";
     }
 
     private static string Describe(C4View view) => $"{TranscriptText.Quoted(view.Key)} ({view.Kind}, line {view.Line})";

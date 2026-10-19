@@ -79,16 +79,16 @@ public class SkosSessionTests : IDisposable
     }
 
     [Fact]
-    public void TheSession_RendersTheVocabulary_InTheRegistrationsLanguage()
+    public async Task TheSession_RendersTheVocabulary_InTheRegistrationsLanguage()
     {
         // Arrange: a registration whose language: header sits in the band.
         var body = WriteBody();
         var registration = IoPath.Combine(_root, "drinks.adp");
-        File.WriteAllText(registration, "w3c/skos\r\nbody: drinks.ttl\r\nlanguage: nl\r\n");
+        await File.WriteAllTextAsync(registration, "w3c/skos\r\nbody: drinks.ttl\r\nlanguage: nl\r\n", TestContext.Current.CancellationToken);
 
         // Act.
         var session = (RdfFamilySession<SkosProjectionResult>)Open(body, registration);
-        var baseline = session.Baseline();
+        var baseline = await session.BaselineAsync(TestContext.Current.CancellationToken);
 
         // Assert: the chooser was seeded with nl - the Dutch label reaches the payload.
         Assert.Equal("nl", Assert.IsType<SkosReading>(session.Reading).DisplayLanguage);
@@ -121,7 +121,7 @@ public class SkosSessionTests : IDisposable
     }
 
     [Fact]
-    public void BothReadings_ShareOneStoreEntry_ForOneFile()
+    public async Task BothReadings_ShareOneStoreEntry_ForOneFile()
     {
         // Arrange: the multi-registration promise - one parse, however many readings.
         var body = WriteBody();
@@ -129,7 +129,7 @@ public class SkosSessionTests : IDisposable
 
         // Act: load through the scheme reading, then ask the store as the graph reading would.
         var session = Open(body, registrationPath: null);
-        _ = session.Baseline();
+        _ = await session.BaselineAsync(TestContext.Current.CancellationToken);
         var entry = store.GetOrLoad(body);
 
         // Assert: the same parsed entry serves both - reference-equal, not merely equivalent.
@@ -165,7 +165,7 @@ public class SkosSessionTests : IDisposable
         // UpdateView returns an empty list, which no client-side assertion can catch.
         var body = WriteBody();
         await using var session = Open(body, null);
-        var drawn = ElementsOfBaseline(session);
+        var drawn = await ElementsOfBaselineAsync(session);
         var anchor = drawn.OrderBy(element => element.Y).ThenBy(element => element.X).First();
 
         // Act.
@@ -207,7 +207,7 @@ public class SkosSessionTests : IDisposable
         // crawl under them.
         var body = WriteBody();
         await using var session = Open(body, null);
-        var atOpen = ElementsOfBaseline(session).ToDictionary(element => element.Id, element => (element.X, element.Y), StringComparer.Ordinal);
+        var atOpen = (await ElementsOfBaselineAsync(session)).ToDictionary(element => element.Id, element => (element.X, element.Y), StringComparer.Ordinal);
 
         // Act.
         session.UpdateView(new DiagramViewport(0, 0, 1, 1));
@@ -225,8 +225,8 @@ public class SkosSessionTests : IDisposable
     }
 
     /// <summary>The baseline's elements - what the connection holds before any view is reported.</summary>
-    private static IReadOnlyList<DiagramElement> ElementsOfBaseline(IDiagramSession session) =>
-        session.Baseline().OfType<DiagramAddDelta>().SelectMany(delta => delta.Elements).ToList();
+    private static async Task<IReadOnlyList<DiagramElement>> ElementsOfBaselineAsync(IDiagramSession session) =>
+        (await session.BaselineAsync(TestContext.Current.CancellationToken)).OfType<DiagramAddDelta>().SelectMany(delta => delta.Elements).ToList();
 
     [Fact]
     public async Task TheVendoredThesaurus_NeverStrandsARelatedLink()
@@ -247,7 +247,7 @@ public class SkosSessionTests : IDisposable
         File.Copy(source, body);
 
         await using var session = Open(body, null);
-        var held = session.Baseline()
+        var held = (await session.BaselineAsync(TestContext.Current.CancellationToken))
             .OfType<DiagramAddDelta>()
             .SelectMany(delta => delta.Elements)
             .ToDictionary(element => element.Id, element => element.Type, StringComparer.Ordinal);
@@ -258,7 +258,7 @@ public class SkosSessionTests : IDisposable
         // Act.
         // A window over one concept's own cell, then the whole plane again - the pan that would
         // expose a filter judging edges by position.
-        var anchor = session.Baseline()
+        var anchor = (await session.BaselineAsync(TestContext.Current.CancellationToken))
             .OfType<DiagramAddDelta>()
             .SelectMany(delta => delta.Elements)
             .Where(element => element.Type == SkosElementMapper.ConceptType)

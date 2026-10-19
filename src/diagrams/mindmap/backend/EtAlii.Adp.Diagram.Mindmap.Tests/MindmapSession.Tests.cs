@@ -52,12 +52,12 @@ public class MindmapSessionTests : IDisposable
         deltas.OfType<DiagramAddDelta>().SelectMany(add => add.Elements).ToList();
 
     [Fact]
-    public void Baseline_AddsEveryVisibleNode_AsMindmapNodeElements()
+    public async Task Baseline_AddsEveryVisibleNode_AsMindmapNodeElements()
     {
         // Arrange.
         var session = Open();
 
-        var baseline = session.Baseline();
+        var baseline = await session.BaselineAsync(TestContext.Current.CancellationToken);
 
         // Act and assert, step by step.
         var elements = AddedElements(baseline);
@@ -68,10 +68,10 @@ public class MindmapSessionTests : IDisposable
     }
 
     [Fact]
-    public void Baseline_PacksTheNodesTextIntoThePayload()
+    public async Task Baseline_PacksTheNodesTextIntoThePayload()
     {
         // Arrange.
-        var element = AddedElements(Open().Baseline()).Single(e => e.Id == "ID_88117420");
+        var element = AddedElements(await Open().BaselineAsync(TestContext.Current.CancellationToken)).Single(e => e.Id == "ID_88117420");
 
         // Act and assert, step by step.
         var payload = MindmapNodePayload.Parser.ParseFrom(element.Payload.Span);
@@ -81,13 +81,13 @@ public class MindmapSessionTests : IDisposable
     }
 
     [Fact]
-    public void Baseline_PacksTheMeasuredBoxIntoThePayload()
+    public async Task Baseline_PacksTheMeasuredBoxIntoThePayload()
     {
         // Arrange.
         // The canvas draws each node at its true size and anchors connectors on its actual
         // edges; a payload without the measured box left it guessing a fixed one, and the
         // guesses overlapped on screen (found by the bezier-connector pass).
-        var element = AddedElements(Open().Baseline()).Single(e => e.Id == "ID_88117420");
+        var element = AddedElements(await Open().BaselineAsync(TestContext.Current.CancellationToken)).Single(e => e.Id == "ID_88117420");
 
         // Act and assert, step by step.
         var payload = MindmapNodePayload.Parser.ParseFrom(element.Payload.Span);
@@ -116,14 +116,14 @@ public class MindmapSessionTests : IDisposable
     }
 
     [Fact]
-    public void CollapseThroughTheViewState_PushesAGroupWithRepositioning_ThenAnUngroup()
+    public async Task CollapseThroughTheViewState_PushesAGroupWithRepositioning_ThenAnUngroup()
     {
         // Arrange.
         // The whole route the action takes: the provider toggles through MindmapViewState,
         // whose event is what makes this session push - the bug the manual pass found was a
         // toggle that changed state no stream ever heard of.
         var session = Open();
-        _ = session.Baseline();
+        _ = await session.BaselineAsync(TestContext.Current.CancellationToken);
         var pushes = new List<IReadOnlyList<DiagramDelta>>();
         session.Changed += (_, args) => pushes.Add(args.Deltas);
 
@@ -148,29 +148,29 @@ public class MindmapSessionTests : IDisposable
     }
 
     [Fact]
-    public void CollapseThroughTheViewState_IsViewStateOnly_AndDoesNotWriteTheFile()
+    public async Task CollapseThroughTheViewState_IsViewStateOnly_AndDoesNotWriteTheFile()
     {
         // Arrange.
-        var before = File.ReadAllText(_bodyPath);
+        var before = await File.ReadAllTextAsync(_bodyPath, TestContext.Current.CancellationToken);
         var session = Open();
-        _ = session.Baseline();
+        _ = await session.BaselineAsync(TestContext.Current.CancellationToken);
 
         // Act.
         _views.Toggle(_watchId, _bodyPath, _documents.GetOrLoad(_bodyPath), "ID_411002937");
 
         // Assert.
-        Assert.Equal(before, File.ReadAllText(_bodyPath));
+        Assert.Equal(before, await File.ReadAllTextAsync(_bodyPath, TestContext.Current.CancellationToken));
         Assert.True(_views.For(_watchId, _bodyPath, _documents.GetOrLoad(_bodyPath)).IsFolded("ID_411002937"));
     }
 
     [Fact]
-    public void AnotherConnectionsCollapse_IsNotPushedOnThisStream()
+    public async Task AnotherConnectionsCollapse_IsNotPushedOnThisStream()
     {
         // Arrange.
         // Folds are per connection (Requirement 9.4): a second viewer collapsing a branch
         // must not regroup it for this one.
         var session = Open();
-        _ = session.Baseline();
+        _ = await session.BaselineAsync(TestContext.Current.CancellationToken);
         var pushed = false;
         session.Changed += (_, _) => pushed = true;
 
@@ -187,7 +187,7 @@ public class MindmapSessionTests : IDisposable
         // Arrange.
         // A drag on the canvas: Hierarchy (third child of Backend) moves under Client.
         var session = Open();
-        _ = session.Baseline();
+        _ = await session.BaselineAsync(TestContext.Current.CancellationToken);
 
         // Arrange, continued.
         var error = await session.MoveElementAsync("ID_88117425", "ID_411002938", -1, TestContext.Current.CancellationToken);
@@ -211,7 +211,7 @@ public class MindmapSessionTests : IDisposable
     {
         // Arrange.
         var session = Open();
-        _ = session.Baseline();
+        _ = await session.BaselineAsync(TestContext.Current.CancellationToken);
 
         // Act.
         var error = await session.MoveElementAsync("ID_411002937", "ID_88117422", -1, TestContext.Current.CancellationToken);
@@ -222,11 +222,11 @@ public class MindmapSessionTests : IDisposable
     }
 
     [Fact]
-    public void UpdateView_DeliversWhatNewlyEntersView_AndRemovesWhatLeaves()
+    public async Task UpdateView_DeliversWhatNewlyEntersView_AndRemovesWhatLeaves()
     {
         // Arrange.
         var session = Open();
-        _ = session.Baseline(); // the service always streams the baseline first, which loads the document
+        _ = await session.BaselineAsync(TestContext.Current.CancellationToken); // the service always streams the baseline first, which loads the document
         var document = _documents.GetOrLoad(_bodyPath);
         var grandchild = document.Root.Children.SelectMany(child => child.Children).First();
 
@@ -256,7 +256,7 @@ public class MindmapSessionTests : IDisposable
     }
 
     [Fact]
-    public void UpdateView_ThatBothRemovesAndAdds_RemovesFirst()
+    public async Task UpdateView_ThatBothRemovesAndAdds_RemovesFirst()
     {
         // Arrange. backend-centralization R4.5: one order for every module, removals first,
         // because the client folds an add as an upsert keyed on id - removing first can never
@@ -264,7 +264,7 @@ public class MindmapSessionTests : IDisposable
         // drops the root and brings the grandchild in, so the order is actually exercised; a
         // widening only adds and would pass against either order.
         var session = Open();
-        var elements = AddedElements(session.Baseline());
+        var elements = AddedElements(await session.BaselineAsync(TestContext.Current.CancellationToken));
         var document = _documents.GetOrLoad(_bodyPath);
         var grandchild = document.Root.Children.SelectMany(child => child.Children).First();
         var far = elements.Single(element => element.Id == grandchild.Id);
@@ -286,7 +286,7 @@ public class MindmapSessionTests : IDisposable
         // Arrange. The same order on the structure-change path (backend-centralization R4.5),
         // which mindmap keeps as its own reaction (R5.3) but not its own order.
         var session = Open();
-        _ = session.Baseline();
+        _ = await session.BaselineAsync(TestContext.Current.CancellationToken);
         var pushes = new List<IReadOnlyList<DiagramDelta>>();
         session.Changed += (_, args) => pushes.Add(args.Deltas);
         var document = _documents.GetOrLoad(_bodyPath);
@@ -309,7 +309,7 @@ public class MindmapSessionTests : IDisposable
     {
         // Arrange.
         var session = Open();
-        _ = session.Baseline();
+        _ = await session.BaselineAsync(TestContext.Current.CancellationToken);
         _views.Toggle(_watchId, _bodyPath, _documents.GetOrLoad(_bodyPath), "ID_411002937");
 
         // Act.

@@ -270,8 +270,8 @@ internal static class CausalLoopTranscript
         }));
 
         json.WritePropertyName("payloads");
-        json.WriteLines(await LinesAsync(() => Task.FromResult<IReadOnlyList<string>>([.. session.Baseline()
-            .Select(element => TranscriptText.PayloadLine(element.Id, element.X, element.Y, element.Type, element.PayloadTypeUrl, element.Payload, _payloadTypes))])));
+        json.WriteLines(await LinesAsync(async () => [.. (await session.BaselineAsync(cancellationToken))
+            .Select(element => TranscriptText.PayloadLine(element.Id, element.X, element.Y, element.Type, element.PayloadTypeUrl, element.Payload, _payloadTypes))]));
     }
 
     /// <summary>
@@ -505,7 +505,8 @@ internal static class CausalLoopTranscript
             ContextTarget.ForElement(Body, elementId, Folder, _watchId, Diagram.CausalLoop.Origin);
 
         /// <summary>What the open session sends a connection that has reported no viewport.</summary>
-        public IEnumerable<DiagramElement> Baseline() => _session.Baseline().OfType<DiagramAddDelta>().SelectMany(delta => delta.Elements);
+        public async Task<IEnumerable<DiagramElement>> BaselineAsync(CancellationToken cancellationToken) =>
+            (await _session.BaselineAsync(cancellationToken)).OfType<DiagramAddDelta>().SelectMany(delta => delta.Elements);
 
         public Task<string> MoveAsync(string elementId, double x, double y, CancellationToken cancellationToken) =>
             _session.MoveElementToAsync(elementId, x, y, cancellationToken);

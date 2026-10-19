@@ -301,7 +301,7 @@ internal static class AnsibleTranscript
         List<DiagramElement> elements;
         await using (var session = new AnsibleSession(folder, folders, mapper, registration))
         {
-            elements = [.. session.Baseline().OfType<DiagramAddDelta>().SelectMany(delta => delta.Elements)];
+            elements = [.. (await session.BaselineAsync(cancellationToken)).OfType<DiagramAddDelta>().SelectMany(delta => delta.Elements)];
         }
 
         json.WritePropertyName("payloads");

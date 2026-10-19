@@ -120,7 +120,7 @@ public class AnsibleRealFoldersTests
             var stored = RegistrationLayout.Read(registration);
             await using (var session = new AnsibleSession(Path.GetDirectoryName(registration)!, folders, new AnsibleElementMapper(), registration))
             {
-                var drawn = session.Baseline().OfType<DiagramAddDelta>().SelectMany(delta => delta.Elements)
+                var drawn = (await session.BaselineAsync(TestContext.Current.CancellationToken)).OfType<DiagramAddDelta>().SelectMany(delta => delta.Elements)
                     .ToDictionary(element => element.Id, StringComparer.Ordinal);
                 foreach ((string id, RegistrationPosition position) in stored)
                 {

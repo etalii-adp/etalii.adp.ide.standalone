@@ -66,7 +66,7 @@ public class DiagramViewportRegistryTests
             remove { }
         }
 
-        public IReadOnlyList<DiagramDelta> Baseline() => [];
+        public Task<IReadOnlyList<DiagramDelta>> BaselineAsync(CancellationToken cancellationToken) => Task.FromResult<IReadOnlyList<DiagramDelta>>([]);
 
         public IReadOnlyList<DiagramDelta> UpdateView(DiagramViewport viewport) => [];
 
