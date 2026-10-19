@@ -29,9 +29,9 @@ internal sealed class ViewedPipelineDocumentStore(IDiagramDocumentStore<Pipeline
 
     public PipelineBody Open(string rootPath, string path, byte[] bytes) => _reader.Open(rootPath, path, bytes);
 
-    public void Reload(string path) => view.Reload(path);
+    public Task ReloadAsync(string path, CancellationToken cancellationToken) => view.ReloadAsync(path, cancellationToken);
 
-    public void BodyDeleted(string path) => view.BodyDeleted(path);
+    public Task BodyDeletedAsync(string path, CancellationToken cancellationToken) => view.BodyDeletedAsync(path, cancellationToken);
 
     public void Forget(string path) => view.Forget(path);
 }

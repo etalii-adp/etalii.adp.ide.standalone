@@ -63,77 +63,38 @@ public sealed class LifecycleDocumentStoreHooksTests : IDisposable
         Assert.Equal(["saved after\n", "changed"], store.Heard);
     }
 
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task AReloadThatInstallsADocument_AndADeletion_TellWhatIsKeptBesideIt_BeforeTheSessions(bool asynchronously)
+    [Fact]
+    public async Task AReloadThatInstallsADocument_AndADeletion_TellWhatIsKeptBesideIt_BeforeTheSessions()
     {
         // Arrange.
         var path = Write("before\n");
         var store = new KeepingStore("");
-        await GetOrLoad(store, path, asynchronously);
+        await store.GetOrLoadAsync(path, TestContext.Current.CancellationToken);
         await File.WriteAllTextAsync(path, "written elsewhere\n", TestContext.Current.CancellationToken);
 
         // Act.
-        await Reload(store, path, asynchronously);
+        await store.ReloadAsync(path, TestContext.Current.CancellationToken);
         File.Delete(path);
-        await BodyDeleted(store, path, asynchronously);
+        await store.BodyDeletedAsync(path, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Equal(["installed written elsewhere\n", "changed", "installed ", "changed"], store.Heard);
     }
 
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task AReloadThatKeepsTheLastGoodDocument_TellsNothingBesideIt(bool asynchronously)
+    [Fact]
+    public async Task AReloadThatKeepsTheLastGoodDocument_TellsNothingBesideIt()
     {
         // Arrange.
         var path = Write("before\n");
         var store = new KeepingStore("");
-        await GetOrLoad(store, path, asynchronously);
+        await store.GetOrLoadAsync(path, TestContext.Current.CancellationToken);
         File.Delete(path);
 
         // Act: a reload that finds no file is far more often a publish in flight than a deletion.
-        await Reload(store, path, asynchronously);
+        await store.ReloadAsync(path, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Empty(store.Heard);
-    }
-
-    // The synchronous reads and the asynchronous ones answer alike until the synchronous ones go
-    // (code-structure T283), so these run through both.
-    private static async Task GetOrLoad(KeepingStore store, string path, bool asynchronously)
-    {
-        if (asynchronously)
-        {
-            await store.GetOrLoadAsync(path, TestContext.Current.CancellationToken);
-            return;
-        }
-
-        await store.GetOrLoadAsync(path, TestContext.Current.CancellationToken);
-    }
-
-    private static async Task Reload(KeepingStore store, string path, bool asynchronously)
-    {
-        if (asynchronously)
-        {
-            await store.ReloadAsync(path, TestContext.Current.CancellationToken);
-            return;
-        }
-
-        await store.ReloadAsync(path, TestContext.Current.CancellationToken);
-    }
-
-    private static async Task BodyDeleted(KeepingStore store, string path, bool asynchronously)
-    {
-        if (asynchronously)
-        {
-            await store.BodyDeletedAsync(path, TestContext.Current.CancellationToken);
-            return;
-        }
-
-        await store.BodyDeletedAsync(path, TestContext.Current.CancellationToken);
     }
 
     /// <summary>A store over plain lines that records what it is told, and warns of every save.</summary>
@@ -162,6 +123,6 @@ public sealed class LifecycleDocumentStoreHooksTests : IDisposable
             return Task.FromResult(_warning);
         }
 
-        protected override void Installed(string path) => Heard.Add("installed " + GetOrLoad(path).Model);
+        protected override void Installed(string path) => Heard.Add("installed " + Get(path)!.Model);
     }
 }

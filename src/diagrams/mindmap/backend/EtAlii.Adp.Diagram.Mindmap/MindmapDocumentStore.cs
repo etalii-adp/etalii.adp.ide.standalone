@@ -72,8 +72,6 @@ public sealed class MindmapDocumentStore : IMindmapDocumentStore
 
     public event EventHandler<MindmapChangedEventArgs>? Changed;
 
-    public MindmapDocument GetOrLoad(string bodyPath) => _lifecycle.GetOrLoad(bodyPath);
-
     public ValueTask<MindmapDocument> GetOrLoadAsync(string bodyPath, CancellationToken cancellationToken) =>
         _lifecycle.GetOrLoadAsync(bodyPath, cancellationToken);
 
@@ -118,20 +116,6 @@ public sealed class MindmapDocumentStore : IMindmapDocumentStore
     /// own write is not an external change, and must not bounce back as one. A reload that cannot read
     /// keeps the last good map and tells nobody (R2.4).
     /// </summary>
-    public void Reload(string bodyPath)
-    {
-        if (!IsLoaded(bodyPath))
-        {
-            return;
-        }
-
-        if (_lifecycle.Reload(bodyPath))
-        {
-            Changed?.Invoke(this, new MindmapChangedEventArgs(bodyPath, new MindmapReloaded()));
-        }
-    }
-
-    /// <inheritdoc cref="Reload"/>
     public async Task ReloadAsync(string bodyPath, CancellationToken cancellationToken)
     {
         if (IsLoaded(bodyPath) && await _lifecycle.ReloadAsync(bodyPath, cancellationToken))
@@ -141,20 +125,6 @@ public sealed class MindmapDocumentStore : IMindmapDocumentStore
     }
 
     /// <summary>The watcher saw the body deleted: the map becomes what a first open of a missing body shows (R2.5).</summary>
-    public void BodyDeleted(string bodyPath)
-    {
-        if (!IsLoaded(bodyPath))
-        {
-            return;
-        }
-
-        if (_lifecycle.BodyDeleted(bodyPath))
-        {
-            Changed?.Invoke(this, new MindmapChangedEventArgs(bodyPath, new MindmapReloaded()));
-        }
-    }
-
-    /// <inheritdoc cref="BodyDeleted"/>
     public async Task BodyDeletedAsync(string bodyPath, CancellationToken cancellationToken)
     {
         if (IsLoaded(bodyPath) && await _lifecycle.BodyDeletedAsync(bodyPath, cancellationToken))

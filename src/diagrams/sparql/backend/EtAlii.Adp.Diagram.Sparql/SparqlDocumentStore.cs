@@ -38,9 +38,6 @@ public sealed class SparqlDocumentStore : ISparqlDocumentStore
     public event EventHandler<DocumentChangedEventArgs>? Changed;
 
     /// <inheritdoc />
-    public DocumentEntry<string, SparqlQueryModel> GetOrLoad(string path) => _lifecycle.GetOrLoad(path);
-
-    /// <inheritdoc />
     public ValueTask<DocumentEntry<string, SparqlQueryModel>> GetOrLoadAsync(string path, CancellationToken cancellationToken) =>
         _lifecycle.GetOrLoadAsync(path, cancellationToken);
 
@@ -51,27 +48,9 @@ public sealed class SparqlDocumentStore : ISparqlDocumentStore
     public void Forget(string path) => _lifecycle.Forget(path);
 
     /// <inheritdoc />
-    public void Reload(string path)
-    {
-        if (_lifecycle.Reload(path))
-        {
-            Changed?.Invoke(this, new DocumentChangedEventArgs(path));
-        }
-    }
-
-    /// <inheritdoc />
     public async Task ReloadAsync(string path, CancellationToken cancellationToken)
     {
         if (await _lifecycle.ReloadAsync(path, cancellationToken))
-        {
-            Changed?.Invoke(this, new DocumentChangedEventArgs(path));
-        }
-    }
-
-    /// <inheritdoc />
-    public void BodyDeleted(string path)
-    {
-        if (_lifecycle.BodyDeleted(path))
         {
             Changed?.Invoke(this, new DocumentChangedEventArgs(path));
         }

@@ -13,7 +13,7 @@ namespace EtAlii.Adp.Documents;
 /// resolve.
 /// </para>
 /// <para>
-/// <b><see cref="BodyDeleted"/> is not a <see cref="IReloadableDocumentStore.Reload"/>.</b> A store
+/// <b><see cref="BodyDeletedAsync"/> is not a <see cref="IReloadableDocumentStore.ReloadAsync"/>.</b> A store
 /// keeps its last good document when a reload cannot read the body, because a publish in flight
 /// leaves the body missing for an instant. A deleted body must instead end the document, or the
 /// deleted diagram stays on the canvas.
@@ -22,15 +22,7 @@ namespace EtAlii.Adp.Documents;
 public interface IDiagramDocumentStore : IReloadableDocumentStore
 {
     /// <summary>The body at <paramref name="path"/> was deleted: the document ends as a new, empty one, and the sessions on it are told.</summary>
-    void BodyDeleted(string path);
-
-    /// <inheritdoc cref="BodyDeleted"/>
-    /// <remarks>As <see cref="IReloadableDocumentStore.ReloadAsync"/> answers through <see cref="IReloadableDocumentStore.Reload"/> until a store has moved.</remarks>
-    Task BodyDeletedAsync(string path, CancellationToken cancellationToken)
-    {
-        BodyDeleted(path);
-        return Task.CompletedTask;
-    }
+    Task BodyDeletedAsync(string path, CancellationToken cancellationToken);
 
     /// <summary>Drops the loaded document at <paramref name="path"/>, so the next open reads the file afresh.</summary>
     void Forget(string path);
@@ -49,13 +41,8 @@ public interface IDiagramDocumentStore : IReloadableDocumentStore
 /// <typeparam name="TModel">What the module's parser reads from a body.</typeparam>
 public interface IReadableDiagramDocumentStore<TBody, TModel> : IDiagramDocumentStore
 {
-    /// <summary>The document whose body is at <paramref name="path"/>, loaded once and kept.</summary>
-    DocumentEntry<TBody, TModel> GetOrLoad(string path);
-
-    /// <inheritdoc cref="GetOrLoad"/>
-    /// <remarks>As <see cref="IReloadableDocumentStore.ReloadAsync"/> answers through <see cref="IReloadableDocumentStore.Reload"/> until a store has moved.</remarks>
-    ValueTask<DocumentEntry<TBody, TModel>> GetOrLoadAsync(string path, CancellationToken cancellationToken) =>
-        ValueTask.FromResult(GetOrLoad(path));
+    /// <summary>The document whose body is at <paramref name="path"/>, loaded once and kept, read without holding a thread.</summary>
+    ValueTask<DocumentEntry<TBody, TModel>> GetOrLoadAsync(string path, CancellationToken cancellationToken);
 
     /// <summary>
     /// The document whose body is at <paramref name="path"/> as the store holds it, or null when it

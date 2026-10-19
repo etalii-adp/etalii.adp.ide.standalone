@@ -24,7 +24,7 @@ public sealed class WritableDocumentLifecycle<TDocument>
     private readonly Func<string, string, CancellationToken, Task> _write;
 
     // The paths this lifecycle is writing, and what it last wrote to each, so its own save does not
-    // come back through Reload as an external change - per path, as every writable store kept it
+    // come back through ReloadAsync as an external change - per path, as every writable store kept it
     // before.
     private readonly SelfWriteGuard _selfWrites = new();
 
@@ -97,9 +97,6 @@ public sealed class WritableDocumentLifecycle<TDocument>
         _write = write;
     }
 
-    /// <inheritdoc cref="DocumentLifecycle{TDocument}.GetOrLoad"/>
-    public TDocument GetOrLoad(string path) => _lifecycle.GetOrLoad(path);
-
     /// <inheritdoc cref="DocumentLifecycle{TDocument}.GetOrLoadAsync"/>
     public ValueTask<TDocument> GetOrLoadAsync(string path, CancellationToken cancellationToken) => _lifecycle.GetOrLoadAsync(path, cancellationToken);
 
@@ -117,28 +114,14 @@ public sealed class WritableDocumentLifecycle<TDocument>
     /// Re-reads a body changed on disk - unless the change is this lifecycle's own save in flight,
     /// which is not an external change and is ignored (R2.3).
     /// </summary>
-    /// <returns>As for <see cref="DocumentLifecycle{TDocument}.Reload"/>.</returns>
-    public bool Reload(string path)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(path);
-        return !_selfWrites.IsOwnWrite(path) && _lifecycle.Reload(path);
-    }
-
-    /// <inheritdoc cref="Reload"/>
+    /// <returns>As for <see cref="DocumentLifecycle{TDocument}.ReloadAsync"/>.</returns>
     public async ValueTask<bool> ReloadAsync(string path, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
         return !_selfWrites.IsOwnWrite(path) && await _lifecycle.ReloadAsync(path, cancellationToken);
     }
 
-    /// <inheritdoc cref="DocumentLifecycle{TDocument}.BodyDeleted"/>
-    public bool BodyDeleted(string path)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(path);
-        return !_selfWrites.IsWriting(path) && _lifecycle.BodyDeleted(path);
-    }
-
-    /// <inheritdoc cref="BodyDeleted"/>
+    /// <inheritdoc cref="DocumentLifecycle{TDocument}.BodyDeletedAsync"/>
     public async ValueTask<bool> BodyDeletedAsync(string path, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
@@ -254,7 +237,7 @@ public sealed class WritableDocumentLifecycle<TDocument>
         ArgumentNullException.ThrowIfNull(edit);
 
         var current = basis;
-        if (_lifecycle.TryReadCurrentText(path, out var onDisk)
+        if (await _lifecycle.TryReadCurrentTextAsync(path, cancellationToken) is { } onDisk
             && !string.Equals(onDisk, _serialize(basis), StringComparison.Ordinal))
         {
             _logger.Information("{Path} changed on disk under an edit; applying the edit to what it holds now", path);

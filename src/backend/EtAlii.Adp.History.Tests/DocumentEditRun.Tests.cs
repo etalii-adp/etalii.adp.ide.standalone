@@ -50,9 +50,9 @@ public sealed class DocumentEditRunTests
             remove { }
         }
 
-        public DocumentEntry<LineDocument, string> GetOrLoad(string path) => new(LineDocument.Parse(text), text);
+        public ValueTask<DocumentEntry<LineDocument, string>> GetOrLoadAsync(string path, CancellationToken cancellationToken) => ValueTask.FromResult(Get(path));
 
-        public DocumentEntry<LineDocument, string> Get(string path) => GetOrLoad(path);
+        public DocumentEntry<LineDocument, string> Get(string path) => new(LineDocument.Parse(text), text);
 
         public Task<DocumentSaveResult> SaveAsync(string path, LineDocument document, CancellationToken cancellationToken)
         {
@@ -60,13 +60,9 @@ public sealed class DocumentEditRunTests
             return Task.FromResult(DocumentSaveResult.Ok);
         }
 
-        public void Reload(string path)
-        {
-        }
+        public Task ReloadAsync(string path, CancellationToken cancellationToken) => Task.CompletedTask;
 
-        public void BodyDeleted(string path)
-        {
-        }
+        public Task BodyDeletedAsync(string path, CancellationToken cancellationToken) => Task.CompletedTask;
 
         public void Forget(string path)
         {

@@ -53,23 +53,23 @@ public class DocumentLifecycleRepublishTests : IDisposable
     [InlineData(true, true)]
     [InlineData(false, false)]
     [InlineData(false, true)]
-    public void ARepublishOfAnUnchangedBody_NeverInstallsAnEmptyOrUnreadableDocument(bool writable, bool declaresUnavailability)
+    public async Task ARepublishOfAnUnchangedBody_NeverInstallsAnEmptyOrUnreadableDocument(bool writable, bool declaresUnavailability)
     {
         // Both kinds of module: one that opens an unreadable body EMPTY, and one that reports it as a
         // state of its own (causal-loop, sparql). Either would be what a planted install-on-unreadable
         // puts on the canvas, so neither may appear.
         var path = IoPath.Combine(_folder, "plan.note");
-        File.WriteAllText(path, Body);
+        await File.WriteAllTextAsync(path, Body, TestContext.Current.CancellationToken);
         var publisher = new Publisher(path);
         var store = Store.Over(writable, declaresUnavailability, publisher.Read);
-        var good = store.GetOrLoad(path);
+        var good = await store.GetOrLoadAsync(path, TestContext.Current.CancellationToken);
         Assert.Equal(Body, good.Text);
 
         foreach (var phase in new[] { Phase.RenamedAway, Phase.GoneWhenOpened, Phase.Refused })
         {
             publisher.Enter(phase);
 
-            var announced = store.Reload(path);
+            var announced = await store.ReloadAsync(path, TestContext.Current.CancellationToken);
 
             // The document first, so a failure names what was installed rather than only that
             // something was.
@@ -85,7 +85,7 @@ public class DocumentLifecycleRepublishTests : IDisposable
 
         publisher.Enter(Phase.Published);
 
-        store.Reload(path);
+        await store.ReloadAsync(path, TestContext.Current.CancellationToken);
 
         // The control: the reload after the publish reads the body back, so the kept document above is
         // the lifecycle waiting out the publish rather than a reload that never installs anything.
@@ -142,13 +142,16 @@ public class DocumentLifecycleRepublishTests : IDisposable
     }
 
     /// <summary>The two lifecycles a store can hold, behind the calls its watcher and sessions make.</summary>
-    private sealed class Store(Func<string, Note> getOrLoad, Func<string, Note?> get, Func<string, bool> reload)
+    private sealed class Store(
+        Func<string, CancellationToken, ValueTask<Note>> getOrLoad,
+        Func<string, Note?> get,
+        Func<string, CancellationToken, ValueTask<bool>> reload)
     {
-        public Note GetOrLoad(string path) => getOrLoad(path);
+        public ValueTask<Note> GetOrLoadAsync(string path, CancellationToken cancellationToken) => getOrLoad(path, cancellationToken);
 
         public Note? Get(string path) => get(path);
 
-        public bool Reload(string path) => reload(path);
+        public ValueTask<bool> ReloadAsync(string path, CancellationToken cancellationToken) => reload(path, cancellationToken);
 
         public static Store Over(bool writable, bool declaresUnavailability, Func<string, string> read)
         {
@@ -156,11 +159,11 @@ public class DocumentLifecycleRepublishTests : IDisposable
             if (writable)
             {
                 var lifecycle = new WritableDocumentLifecycle<Note>(Parse, note => note.Text, unavailable, read, Attempts, TimeSpan.Zero, new FileWriter());
-                return new Store(lifecycle.GetOrLoad, lifecycle.Get, lifecycle.Reload);
+                return new Store(lifecycle.GetOrLoadAsync, lifecycle.Get, lifecycle.ReloadAsync);
             }
 
             var readOnly = new DocumentLifecycle<Note>(Parse, unavailable, read, Attempts, TimeSpan.Zero);
-            return new Store(readOnly.GetOrLoad, readOnly.Get, readOnly.Reload);
+            return new Store(readOnly.GetOrLoadAsync, readOnly.Get, readOnly.ReloadAsync);
         }
     }
 

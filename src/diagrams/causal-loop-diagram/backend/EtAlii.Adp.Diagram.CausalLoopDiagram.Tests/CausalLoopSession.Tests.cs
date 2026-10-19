@@ -370,15 +370,15 @@ public class CausalLoopSessionTests : IDisposable
             remove => inner.Changed -= value;
         }
 
-        public DocumentEntry<CausalLoopBody, CausalLoopModel> GetOrLoad(string path) => Failure is null ? inner.GetOrLoad(path) : throw Failure;
+        public ValueTask<DocumentEntry<CausalLoopBody, CausalLoopModel>> GetOrLoadAsync(string path, CancellationToken cancellationToken) => Failure is null ? inner.GetOrLoadAsync(path, cancellationToken) : throw Failure;
 
         public DocumentEntry<CausalLoopBody, CausalLoopModel>? Get(string path) => Failure is null ? inner.Get(path) : throw Failure;
 
         public Task<DocumentSaveResult> SaveAsync(string path, CausalLoopBody document, CancellationToken cancellationToken) => inner.SaveAsync(path, document, cancellationToken);
 
-        public void Reload(string path) => inner.Reload(path);
+        public Task ReloadAsync(string path, CancellationToken cancellationToken) => inner.ReloadAsync(path, cancellationToken);
 
-        public void BodyDeleted(string path) => inner.BodyDeleted(path);
+        public Task BodyDeletedAsync(string path, CancellationToken cancellationToken) => inner.BodyDeletedAsync(path, cancellationToken);
 
         public void Forget(string path) => inner.Forget(path);
     }

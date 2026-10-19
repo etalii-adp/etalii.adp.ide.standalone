@@ -41,9 +41,6 @@ public abstract class LifecycleDocumentStore<TBody, TModel> : IDiagramDocumentSt
     public event EventHandler<DocumentChangedEventArgs>? Changed;
 
     /// <inheritdoc />
-    public DocumentEntry<TBody, TModel> GetOrLoad(string path) => _lifecycle.GetOrLoad(path);
-
-    /// <inheritdoc />
     public DocumentEntry<TBody, TModel>? Get(string path) => _lifecycle.Get(path);
 
     /// <inheritdoc />
@@ -138,29 +135,9 @@ public abstract class LifecycleDocumentStore<TBody, TModel> : IDiagramDocumentSt
     }
 
     /// <inheritdoc />
-    public void Reload(string path)
-    {
-        if (_lifecycle.Reload(path))
-        {
-            Installed(path);
-            OnChanged(path);
-        }
-    }
-
-    /// <inheritdoc />
     public async Task ReloadAsync(string path, CancellationToken cancellationToken)
     {
         if (await _lifecycle.ReloadAsync(path, cancellationToken))
-        {
-            Installed(path);
-            OnChanged(path);
-        }
-    }
-
-    /// <inheritdoc />
-    public void BodyDeleted(string path)
-    {
-        if (_lifecycle.BodyDeleted(path))
         {
             Installed(path);
             OnChanged(path);

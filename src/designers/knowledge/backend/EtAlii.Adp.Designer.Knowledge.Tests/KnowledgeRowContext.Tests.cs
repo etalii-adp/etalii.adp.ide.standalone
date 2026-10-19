@@ -182,7 +182,7 @@ public sealed class KnowledgeRowContextTests : IDisposable
         var body = KnowledgeDocumentStore.Read(Cities).Body!;
         (byte[]? without, _) = body.Change([new ModelChange.Remove("r1")]);
         await _writer.SaveAsync(Cities, without!, TestContext.Current.CancellationToken);
-        _documents.Reload(Cities);
+        await _documents.ReloadAsync(Cities, TestContext.Current.CancellationToken);
 
         // Assert: told its new title, and then that it is gone.
         Assert.Equal(2, told.Count);

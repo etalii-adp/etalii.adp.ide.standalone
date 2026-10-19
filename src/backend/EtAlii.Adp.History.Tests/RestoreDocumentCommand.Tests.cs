@@ -130,7 +130,11 @@ public sealed class RestoreDocumentCommandTests : IDisposable
     {
         public List<string> Reloaded { get; } = [];
 
-        public void Reload(string path) => Reloaded.Add(path);
+        public Task ReloadAsync(string path, CancellationToken cancellationToken)
+        {
+            Reloaded.Add(path);
+            return Task.CompletedTask;
+        }
     }
 
     private sealed class FirstStore : RecordingStore;

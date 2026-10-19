@@ -245,9 +245,9 @@ public class GhgDerivedGesturesTests
             remove { }
         }
 
-        public DocumentEntry<GhgBody, GhgModel> GetOrLoad(string path) => GhgEntries.Read(text);
+        public ValueTask<DocumentEntry<GhgBody, GhgModel>> GetOrLoadAsync(string path, CancellationToken cancellationToken) => ValueTask.FromResult(Get(path));
 
-        public DocumentEntry<GhgBody, GhgModel> Get(string path) => GetOrLoad(path);
+        public DocumentEntry<GhgBody, GhgModel> Get(string path) => GhgEntries.Read(text);
 
         public Task<DocumentSaveResult> SaveAsync(string path, GhgBody document, CancellationToken cancellationToken) => Task.FromResult(DocumentSaveResult.Ok);
 
@@ -255,12 +255,8 @@ public class GhgDerivedGesturesTests
         {
         }
 
-        public void BodyDeleted(string path)
-        {
-        }
+        public Task BodyDeletedAsync(string path, CancellationToken cancellationToken) => Task.CompletedTask;
 
-        public void Reload(string path)
-        {
-        }
+        public Task ReloadAsync(string path, CancellationToken cancellationToken) => Task.CompletedTask;
     }
 }

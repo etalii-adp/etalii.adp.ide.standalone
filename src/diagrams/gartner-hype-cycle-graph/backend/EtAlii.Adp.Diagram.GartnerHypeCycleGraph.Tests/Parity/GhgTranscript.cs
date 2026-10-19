@@ -438,7 +438,7 @@ internal static class GhgTranscript
             remove => inner.Changed -= value;
         }
 
-        public DocumentEntry<GhgBody, GhgModel> GetOrLoad(string path) => inner.GetOrLoad(path) with { Unreadable = "parity: read-only" };
+        public async ValueTask<DocumentEntry<GhgBody, GhgModel>> GetOrLoadAsync(string path, CancellationToken cancellationToken) => await inner.GetOrLoadAsync(path, cancellationToken) with { Unreadable = "parity: read-only" };
 
         public DocumentEntry<GhgBody, GhgModel>? Get(string path) => inner.Get(path) is { } held ? held with { Unreadable = "parity: read-only" } : null;
 
@@ -446,9 +446,9 @@ internal static class GhgTranscript
 
         public void Forget(string path) => inner.Forget(path);
 
-        public void BodyDeleted(string path) => inner.BodyDeleted(path);
+        public Task BodyDeletedAsync(string path, CancellationToken cancellationToken) => inner.BodyDeletedAsync(path, cancellationToken);
 
-        public void Reload(string path) => inner.Reload(path);
+        public Task ReloadAsync(string path, CancellationToken cancellationToken) => inner.ReloadAsync(path, cancellationToken);
     }
 
     /// <summary>Runs the steps of one document's edit sequence and writes each as it goes.</summary>

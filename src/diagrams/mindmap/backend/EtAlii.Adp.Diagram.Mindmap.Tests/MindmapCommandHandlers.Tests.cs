@@ -91,8 +91,6 @@ public sealed class MindmapCommandHandlersTests : IDisposable
             remove => inner.Changed -= value;
         }
 
-        public MindmapDocument GetOrLoad(string bodyPath) => inner.GetOrLoad(bodyPath);
-
         public ValueTask<MindmapDocument> GetOrLoadAsync(string bodyPath, CancellationToken cancellationToken) => inner.GetOrLoadAsync(bodyPath, cancellationToken);
 
         public MindmapDocument? Get(string bodyPath) => inner.Get(bodyPath);
@@ -103,9 +101,9 @@ public sealed class MindmapCommandHandlersTests : IDisposable
             return saved.Failed ? saved : DocumentSaveResult.WithWarning(warning);
         }
 
-        public void Reload(string path) => inner.Reload(path);
+        public Task ReloadAsync(string path, CancellationToken cancellationToken) => inner.ReloadAsync(path, cancellationToken);
 
-        public void BodyDeleted(string path) => inner.BodyDeleted(path);
+        public Task BodyDeletedAsync(string path, CancellationToken cancellationToken) => inner.BodyDeletedAsync(path, cancellationToken);
 
         public void Forget(string path) => inner.Forget(path);
     }

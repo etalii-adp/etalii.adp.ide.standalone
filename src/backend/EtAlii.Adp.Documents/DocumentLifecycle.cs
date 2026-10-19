@@ -51,7 +51,7 @@ public class DocumentLifecycle
 /// <para>
 /// <b>Absence is confirmed by the watcher, never inferred from a read</b> (R2.5): a body missing
 /// on a reload is kept, exactly like an unreadable one, and becomes the empty document only through
-/// <see cref="BodyDeleted"/>. That pairing is the point - see <see cref="BodyDeleted"/>.
+/// <see cref="BodyDeletedAsync"/>. That pairing is the point - see <see cref="BodyDeletedAsync"/>.
 /// </para>
 /// </remarks>
 /// <typeparam name="TDocument">
@@ -66,7 +66,6 @@ public sealed class DocumentLifecycle<TDocument> : DocumentLifecycle
     private readonly ConcurrentDictionary<string, TDocument> _documents = new(StringComparer.OrdinalIgnoreCase);
     private readonly Func<string, string, TDocument> _parse;
     private readonly Func<string, DocumentUnavailability, string, TDocument>? _unavailable;
-    private readonly Func<string, string> _read;
     private readonly Func<string, CancellationToken, Task<string>> _readAsync;
     private readonly int _readAttempts;
     private readonly TimeSpan _betweenReadAttempts;
@@ -84,14 +83,14 @@ public sealed class DocumentLifecycle<TDocument> : DocumentLifecycle
     public DocumentLifecycle(
         Func<string, string, TDocument> parse,
         Func<string, DocumentUnavailability, string, TDocument>? unavailable = null)
-        : this(parse, unavailable, SharedDocumentReader.ReadAllText, SharedDocumentReader.ReadAllTextAsync, DefaultReadAttempts, DefaultBetweenReadAttempts, TimeProvider.System)
+        : this(parse, unavailable, SharedDocumentReader.ReadAllTextAsync, DefaultReadAttempts, DefaultBetweenReadAttempts, TimeProvider.System)
     {
     }
 
     /// <summary>
     /// With the read and its retry supplied, so a test can refuse exactly as often as it chooses and
-    /// wait for nothing - deterministic rather than patient. The asynchronous reads use the same
-    /// read, and wait between two attempts on <paramref name="time"/>, the system's clock when not given.
+    /// wait for nothing - deterministic rather than patient. A refused read waits for its next attempt
+    /// on <paramref name="time"/>, the system's clock when not given, so a test advances a fake one.
     /// </summary>
     internal DocumentLifecycle(
         Func<string, string, TDocument> parse,
@@ -100,25 +99,22 @@ public sealed class DocumentLifecycle<TDocument> : DocumentLifecycle
         int readAttempts,
         TimeSpan betweenReadAttempts,
         TimeProvider? time = null)
-        : this(parse, unavailable, read, (path, _) => Task.FromResult(read(path)), readAttempts, betweenReadAttempts, time ?? TimeProvider.System)
+        : this(parse, unavailable, (path, _) => Task.FromResult((read ?? throw new ArgumentNullException(nameof(read)))(path)), readAttempts, betweenReadAttempts, time ?? TimeProvider.System)
     {
     }
 
     private DocumentLifecycle(
         Func<string, string, TDocument> parse,
         Func<string, DocumentUnavailability, string, TDocument>? unavailable,
-        Func<string, string> read,
         Func<string, CancellationToken, Task<string>> readAsync,
         int readAttempts,
         TimeSpan betweenReadAttempts,
         TimeProvider time)
     {
         ArgumentNullException.ThrowIfNull(parse);
-        ArgumentNullException.ThrowIfNull(read);
         ArgumentOutOfRangeException.ThrowIfLessThan(readAttempts, 1);
         _parse = parse;
         _unavailable = unavailable;
-        _read = read;
         _readAsync = readAsync;
         _readAttempts = readAttempts;
         _betweenReadAttempts = betweenReadAttempts;
@@ -130,18 +126,11 @@ public sealed class DocumentLifecycle<TDocument> : DocumentLifecycle
     /// A missing body opens as a new document; an unreadable one opens the same way with a warning
     /// naming the path (R2.2). A parse that throws is not caught: it is that document's failure,
     /// raised to whoever opened it, and nothing is cached for it.
-    /// </remarks>
-    public TDocument GetOrLoad(string path)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(path);
-        return _documents.GetOrAdd(path, Open);
-    }
-
-    /// <inheritdoc cref="GetOrLoad"/>
-    /// <remarks>
+    /// <para>
     /// Read without holding a thread: a refused read waits for its next attempt on the lifecycle's
     /// clock (code-structure FR-050). Two first opens of one path may both read it; the first to
     /// finish is kept and both get it, as a save or a reload that finished meanwhile is.
+    /// </para>
     /// </remarks>
     public async ValueTask<TDocument> GetOrLoadAsync(string path, CancellationToken cancellationToken)
     {
@@ -175,38 +164,13 @@ public sealed class DocumentLifecycle<TDocument> : DocumentLifecycle
     /// when the last good one was kept and nothing changed for them.
     /// </returns>
     /// <remarks>
+    /// <para>
     /// The new document is parsed BEFORE it replaces the cached one, so a parse that throws leaves
     /// the last good document in place and fails this reload alone - one document's failure never
     /// costs another's.
+    /// </para>
+    /// <para>Read without holding a thread, as <see cref="GetOrLoadAsync"/> is.</para>
     /// </remarks>
-    public bool Reload(string path)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(path);
-
-        if (!TryRead(path, retryMissing: true, out var text, out var unavailability, out var failure))
-        {
-            if (_documents.ContainsKey(path))
-            {
-                // A RELOAD THAT CANNOT READ KEEPS THE LAST GOOD DOCUMENT (R2.4) - but only once the
-                // retries are spent. Do not assume a later event will re-read it: this may have been the
-                // write's last one, and then the change is lost here. A body that is really gone
-                // arrives as BodyDeleted.
-                _logger.Warning(failure, "Keeping the last good {Path}: this reload could not read it ({Unavailability})", path, unavailability);
-                return false;
-            }
-
-            // Nothing loaded, so nothing good to keep: a first open's own rules apply.
-            _documents[path] = Unavailable(path, unavailability, failure);
-            return true;
-        }
-
-        var reloaded = _parse(path, text);
-        _documents[path] = reloaded;
-        return true;
-    }
-
-    /// <inheritdoc cref="Reload"/>
-    /// <remarks>Read without holding a thread, as <see cref="GetOrLoadAsync"/> is.</remarks>
     public async ValueTask<bool> ReloadAsync(string path, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
@@ -216,11 +180,15 @@ public sealed class DocumentLifecycle<TDocument> : DocumentLifecycle
         {
             if (_documents.ContainsKey(path))
             {
-                // Kept, as Reload says, once the retries are spent.
+                // A RELOAD THAT CANNOT READ KEEPS THE LAST GOOD DOCUMENT (R2.4) - but only once the
+                // retries are spent. Do not assume a later event will re-read it: this may have been the
+                // write's last one, and then the change is lost here. A body that is really gone
+                // arrives as BodyDeletedAsync.
                 _logger.Warning(read.Failure, "Keeping the last good {Path}: this reload could not read it ({Unavailability})", path, read.Unavailability);
                 return false;
             }
 
+            // Nothing loaded, so nothing good to keep: a first open's own rules apply.
             _documents[path] = Unavailable(path, read.Unavailability, read.Failure);
             return true;
         }
@@ -234,7 +202,7 @@ public sealed class DocumentLifecycle<TDocument> : DocumentLifecycle
     /// The body was deleted - the watcher's evidence, not a read that failed - so the document ends
     /// as a first open of a missing body would leave it, not as the last one kept alive (R2.5).
     /// </summary>
-    /// <returns><c>true</c> when a document was installed, as for <see cref="Reload"/>.</returns>
+    /// <returns><c>true</c> when a document was installed, as for <see cref="ReloadAsync"/>.</returns>
     /// <remarks>
     /// <para>
     /// <b>This and keep-last-good arrive together, or a deleted diagram is never cleared.</b>
@@ -248,20 +216,6 @@ public sealed class DocumentLifecycle<TDocument> : DocumentLifecycle
     /// because what is on disk now is the answer rather than the delete that preceded it.
     /// </para>
     /// </remarks>
-    public bool BodyDeleted(string path)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(path);
-
-        if (File.Exists(path))
-        {
-            return Reload(path);
-        }
-
-        _documents[path] = Unavailable(path, DocumentUnavailability.Missing, failure: null);
-        return true;
-    }
-
-    /// <inheritdoc cref="BodyDeleted"/>
     public async ValueTask<bool> BodyDeletedAsync(string path, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
@@ -285,32 +239,20 @@ public sealed class DocumentLifecycle<TDocument> : DocumentLifecycle
     /// The text <paramref name="path"/> holds on disk right now, read once and without touching the
     /// cache - for a save that must know whether the file moved under the edit it is about to write.
     /// </summary>
-    /// <returns>False for a body that is missing or cannot be read; the save then has nothing to compare.</returns>
-    internal bool TryReadCurrentText(string path, out string text) => TryReadOnce(path, out text, out _, out _);
+    /// <returns>Null for a body that is missing or cannot be read; the save then has nothing to compare.</returns>
+    internal async Task<string?> TryReadCurrentTextAsync(string path, CancellationToken cancellationToken)
+    {
+        var read = await TryReadOnceAsync(path, cancellationToken);
+        return read.Succeeded ? read.Text : null;
+    }
 
     /// <summary>Parses <paramref name="text"/> as the document at <paramref name="path"/>, without caching it.</summary>
     internal TDocument Parse(string path, string text) => _parse(path, text);
 
-    private TDocument Open(string path)
+    private async Task<TDocument> OpenAsync(string path, CancellationToken cancellationToken)
     {
         // A missing body on a first open is a new document rather than a publish in flight, so only a
         // refused read is retried here - retrying a missing one would delay every new diagram.
-        if (TryRead(path, retryMissing: false, out var text, out var unavailability, out var failure))
-        {
-            return _parse(path, text);
-        }
-
-        if (unavailability == DocumentUnavailability.Unreadable)
-        {
-            _logger.Warning(failure, "Could not read {Path}; opening it as unavailable", path);
-        }
-
-        return Unavailable(path, unavailability, failure);
-    }
-
-    private async Task<TDocument> OpenAsync(string path, CancellationToken cancellationToken)
-    {
-        // As Open: only a refused read is retried on a first open.
         var read = await TryReadAsync(path, retryMissing: false, cancellationToken);
         if (read.Succeeded)
         {
@@ -329,30 +271,6 @@ public sealed class DocumentLifecycle<TDocument> : DocumentLifecycle
         _unavailable is null
             ? _parse(path, "")
             : _unavailable(path, unavailability, failure?.Message ?? "");
-
-    private bool TryRead(string path, bool retryMissing, out string text, out DocumentUnavailability unavailability, out Exception? failure)
-    {
-        for (var attempt = 1; ; attempt++)
-        {
-            if (TryReadOnce(path, out text, out unavailability, out failure))
-            {
-                if (attempt > 1)
-                {
-                    _logger.Information("Read {Path} on attempt {Attempt} of {Attempts}", path, attempt, _readAttempts);
-                }
-
-                return true;
-            }
-
-            var worthRetrying = unavailability == DocumentUnavailability.Unreadable || retryMissing;
-            if (!worthRetrying || attempt >= _readAttempts)
-            {
-                return false;
-            }
-
-            Thread.Sleep(_betweenReadAttempts);
-        }
-    }
 
     /// <summary>
     /// The read with its retry, through the backend's one read-retry: tried again while it is
@@ -377,7 +295,8 @@ public sealed class DocumentLifecycle<TDocument> : DocumentLifecycle
 
     private async Task<ReadOutcome> TryReadOnceAsync(string path, CancellationToken cancellationToken)
     {
-        // As TryReadOnce: the existence check is load-bearing, and a missing body is a state.
+        // The existence check is load-bearing: SharedDocumentReader opens with FileMode.Open and
+        // throws on a missing file, and a missing body is a state, not a failure to log.
         if (!File.Exists(path))
         {
             return new ReadOutcome(false, "", DocumentUnavailability.Missing, null);
@@ -389,6 +308,8 @@ public sealed class DocumentLifecycle<TDocument> : DocumentLifecycle
         }
         catch (Exception exception) when (exception is FileNotFoundException or DirectoryNotFoundException)
         {
+            // There when asked, gone when opened: a publish renaming it away for an instant, or a
+            // delete. Either way it is missing now, and missing is not an error.
             return new ReadOutcome(false, "", DocumentUnavailability.Missing, null);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
@@ -399,36 +320,4 @@ public sealed class DocumentLifecycle<TDocument> : DocumentLifecycle
 
     /// <summary>One read: its text when it succeeded, otherwise which case it is and what failed.</summary>
     private readonly record struct ReadOutcome(bool Succeeded, string Text, DocumentUnavailability Unavailability, Exception? Failure);
-
-    private bool TryReadOnce(string path, out string text, out DocumentUnavailability unavailability, out Exception? failure)
-    {
-        text = "";
-        unavailability = DocumentUnavailability.Missing;
-        failure = null;
-
-        // The existence check is load-bearing: SharedDocumentReader opens with FileMode.Open and
-        // throws on a missing file, and a missing body is a state, not a failure to log.
-        if (!File.Exists(path))
-        {
-            return false;
-        }
-
-        try
-        {
-            text = _read(path);
-            return true;
-        }
-        catch (Exception exception) when (exception is FileNotFoundException or DirectoryNotFoundException)
-        {
-            // There when asked, gone when opened: a publish renaming it away for an instant, or a
-            // delete. Either way it is missing now, and missing is not an error.
-            return false;
-        }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-        {
-            unavailability = DocumentUnavailability.Unreadable;
-            failure = exception;
-            return false;
-        }
-    }
 }
