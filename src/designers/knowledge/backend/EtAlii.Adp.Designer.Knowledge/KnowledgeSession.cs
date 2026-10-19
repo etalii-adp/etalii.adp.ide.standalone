@@ -84,7 +84,7 @@ internal sealed class KnowledgeSession : IDesignerSession
     /// <summary>How many of this session's writes have started: an external re-read that began before one is older than that write's own re-read.</summary>
     private int _writesStarted;
 
-    private readonly string _rootPath;
+    private readonly ProjectRoot _root;
 
     public KnowledgeSession(string bodyPath)
         : this(bodyPath, KnowledgeDocumentStore.Read)
@@ -99,11 +99,11 @@ internal sealed class KnowledgeSession : IDesignerSession
     /// <param name="read">How the file is read.</param>
     /// <param name="write">How an edit is written: through the project's history, so it can be undone. Null for a session that only shows.</param>
     /// <param name="documents">Where the module's commands say a file was written, or null.</param>
-    /// <param name="rootPath">The project the file is in: how far is looked for rows that relate to a row of this file. Empty, nowhere.</param>
+    /// <param name="root">The project the file is in: how far is looked for rows that relate to a row of this file. The default, nowhere.</param>
     /// <param name="time">The clock a refused read waits on before it is tried again; the system's when null.</param>
-    internal KnowledgeSession(string bodyPath, Func<string, KnowledgeRead> read, Func<KnowledgeEditCommand, Task<CommandResult>>? write = null, IKnowledgeDocumentStore? documents = null, string rootPath = "", TimeProvider? time = null, ProjectFileEvents? events = null)
+    internal KnowledgeSession(string bodyPath, Func<string, KnowledgeRead> read, Func<KnowledgeEditCommand, Task<CommandResult>>? write = null, IKnowledgeDocumentStore? documents = null, ProjectRoot root = default, TimeProvider? time = null, ProjectFileEvents? events = null)
     {
-        _rootPath = rootPath;
+        _root = root;
         ArgumentNullException.ThrowIfNull(bodyPath);
         ArgumentNullException.ThrowIfNull(read);
         _bodyPath = bodyPath;
@@ -249,10 +249,10 @@ internal sealed class KnowledgeSession : IDesignerSession
             }
 
             // Rows of other tables may relate to a row that is about to go: its author is told how many first.
-            if (gesture.Kind == "deleteRows" && _rootPath.Length > 0 && gesture.Settings.GetValueOrDefault("confirmed") != "true")
+            if (gesture.Kind == "deleteRows" && _root.FullPath.Length > 0 && gesture.Settings.GetValueOrDefault("confirmed") != "true")
             {
                 IReadOnlyList<string> ids = gesture.Values.Count > 0 ? gesture.Values : [gesture.RowId];
-                if (KnowledgeProject.RowsRelatingTo(_rootPath, _bodyPath, ids) is > 0 and var relating)
+                if (KnowledgeProject.RowsRelatingTo(_root, _bodyPath, ids) is > 0 and var relating)
                 {
                     return KnowledgeEdits.AskFirst(relating, ids.Count);
                 }
@@ -261,7 +261,7 @@ internal sealed class KnowledgeSession : IDesignerSession
             // A relation asked for without the table it relates to is answered with the tables there are to choose from.
             if (gesture.Kind == "addRelation" && string.IsNullOrWhiteSpace(gesture.Settings.GetValueOrDefault("target")))
             {
-                return KnowledgeEdits.ChooseTarget(KnowledgeProject.Targets(_rootPath, _bodyPath));
+                return KnowledgeEdits.ChooseTarget(KnowledgeProject.Targets(_root, _bodyPath));
             }
 
             var files = new KnowledgeSurroundings(_bodyPath, TargetOf, TargetOf);

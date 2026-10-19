@@ -46,16 +46,16 @@ internal static class KnowledgeProject
     /// The tables a relation of one file can relate to: the file itself first, then the project's other
     /// knowledge files that can be read, each as the file names it and under its table's name.
     /// </summary>
-    public static List<(string Target, string Name)> Targets(string rootPath, string bodyPath)
+    public static List<(string Target, string Name)> Targets(ProjectRoot root, string bodyPath)
     {
         List<(string Target, string Name)> targets = [(KnowledgeRelations.Self, "This table")];
         var own = Path.GetFullPath(bodyPath);
-        if (rootPath.Length == 0)
+        if (root.FullPath.Length == 0)
         {
             return targets;
         }
 
-        foreach (var path in Files(rootPath).Where(path => !string.Equals(Path.GetFullPath(path), own, StringComparison.OrdinalIgnoreCase)).Order(StringComparer.OrdinalIgnoreCase))
+        foreach (var path in Files(root.FullPath).Where(path => !string.Equals(Path.GetFullPath(path), own, StringComparison.OrdinalIgnoreCase)).Order(StringComparer.OrdinalIgnoreCase))
         {
             if (KnowledgeDocumentStore.Read(path).Body is { Unreadable.Length: 0 } body)
             {
@@ -70,11 +70,11 @@ internal static class KnowledgeProject
     /// How many rows of the project's other knowledge files relate to any of the given rows of one
     /// file: what deleting those rows would leave pointing at nothing.
     /// </summary>
-    public static int RowsRelatingTo(string rootPath, string bodyPath, IReadOnlyCollection<string> rowIds)
+    public static int RowsRelatingTo(ProjectRoot root, string bodyPath, IReadOnlyCollection<string> rowIds)
     {
         var count = 0;
         var target = Path.GetFullPath(bodyPath);
-        foreach (var path in Files(rootPath).Where(path => !string.Equals(Path.GetFullPath(path), target, StringComparison.OrdinalIgnoreCase)))
+        foreach (var path in Files(root.FullPath).Where(path => !string.Equals(Path.GetFullPath(path), target, StringComparison.OrdinalIgnoreCase)))
         {
             if (KnowledgeDocumentStore.Read(path).Body is not { } body)
             {
