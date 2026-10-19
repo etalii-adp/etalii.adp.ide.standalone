@@ -135,6 +135,6 @@ public sealed class WellFormednessTests : IDisposable
     {
         var path = _folder.Combine("document.xml");
         await File.WriteAllTextAsync(path, text, new UTF8Encoding(false), TestContext.Current.CancellationToken);
-        return await new XmlAnalyzer().AnalyzeAsync(_folder.Path, path, text, TestContext.Current.CancellationToken);
+        return await new XmlAnalyzer().AnalyzeAsync(ProjectPath.Within(ProjectRoot.From(_folder.Path), path)!.Value, text, TestContext.Current.CancellationToken);
     }
 }

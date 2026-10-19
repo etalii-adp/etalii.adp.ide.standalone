@@ -90,7 +90,7 @@ public sealed class EditorService : Editor.Wire.EditorService.EditorServiceBase
 
         try
         {
-            var analysis = await analyzer.AnalyzeAsync(rootPath, file.FullPath, request.Content, context.CancellationToken);
+            var analysis = await analyzer.AnalyzeAsync(file, request.Content, context.CancellationToken);
             var response = new AnalyzeTextResponse { Status = analysis.Status };
             response.Findings.AddRange(analysis.Findings.Select(ToWire));
             response.DependsOn.AddRange(analysis.DependsOn
@@ -118,7 +118,7 @@ public sealed class EditorService : Editor.Wire.EditorService.EditorServiceBase
 
         try
         {
-            var items = await analyzer.CompleteAsync(file.Root.FullPath, file.FullPath, request.Content, (int)request.Offset, request.Explicit, context.CancellationToken);
+            var items = await analyzer.CompleteAsync(file, request.Content, (int)request.Offset, request.Explicit, context.CancellationToken);
             var response = new CompleteTextResponse();
             response.Items.AddRange(items.Select(item => new WireCompletion
             {
