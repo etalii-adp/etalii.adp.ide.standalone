@@ -701,7 +701,7 @@
           }
         },
         "derived": {
-          "from": "env.viewpoint in ['systemLandscape', 'systemContext', 'container', 'component'] ? diagram.relationsOfType('Relationship').filter(r, lifted(r, env.viewpoint).size() == 2 && !isDirect(firstOnPair(r, env.viewpoint), env.viewpoint)) : []",
+          "from": "env.viewpoint in ['systemLandscape', 'systemContext', 'container', 'component'] ? cel.bind(pairs, diagram.relationsOfType('Relationship').map(r, [r, lifted(r, env.viewpoint)]).filter(p, p[1].size() == 2), pairs.filter(p, cel.bind(first, pairs.filter(q, q[1] == p[1])[0], first[1] != [first[0].source, first[0].target])).map(p, p[0])) : []",
           "key": "[lifted(item, env.viewpoint)[0].id, lifted(item, env.viewpoint)[1].id]",
           "id": "lifted(item, env.viewpoint)[0].id + '->' + lifted(item, env.viewpoint)[1].id + '@' + string(item.location().orValue({'line': 0}).line)",
           "source": "lifted(item, env.viewpoint)[0]",
@@ -732,7 +732,7 @@
           }
         },
         "derived": {
-          "from": "env.viewpoint == 'deployment' ? deploymentEntries().filter(x, !x[5] && firstEntry(x) == x) : []",
+          "from": "env.viewpoint == 'deployment' ? cel.bind(entries, deploymentEntries(), entries.filter(x, !x[5] && entries.filter(y, y[3] == x[3] && y[4] == x[4])[0] == x)) : []",
           "id": "item[3] + '->' + item[4] + '@' + string(item[0].location().orValue({'line': 0}).line)",
           "source": "item[1]",
           "target": "item[2]",
@@ -3161,7 +3161,8 @@
           "strategy": "derived",
           "pattern": "^.+$",
           "ephemeral": true,
-          "expression": "writtenEnd(self, 'source') + '->' + writtenEnd(self, 'target') + '@' + string(self.location().orValue({'line': 0}).line)"
+          "expression": "'interaction:' + writtenEnd(self, 'source') + '->' + writtenEnd(self, 'target') + '@' + string(self.location().orValue({'line': 0}).line)",
+          "doc": "An interaction is a statement of the dynamic view, never drawn itself: the line drawn for it (`InteractionLine`) has its ends as written and its line as its id, so the statement's id is told apart from it by a prefix, since a derived element is not drawn under an id the model already holds."
         },
         "LiftedRelationship": {
           "ephemeral": true
