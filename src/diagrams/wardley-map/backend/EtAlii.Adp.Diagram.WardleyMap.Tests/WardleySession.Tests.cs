@@ -56,14 +56,14 @@ public sealed class WardleySessionTests : IDisposable
         AddedBy(deltas).Single(element => element.Type == WardleyElementTypes.Element).Id;
 
     [Fact]
-    public void Baseline_SendsTheWholeMapAsOneAdd()
+    public async Task Baseline_SendsTheWholeMapAsOneAdd()
     {
         // Arrange. Requirement 10.5 and the Performance section: one message rather than a
         // stream of per-element ones.
         var path = Write("title Tea\ncomponent Cup of Tea [0.79, 0.61]\nanchor Customer [0.95, 0.63]\n");
 
         // Act.
-        var deltas = Editable(path).Baseline();
+        var deltas = await Editable(path).BaselineAsync(TestContext.Current.CancellationToken);
 
         // Assert. Two elements plus the evolution axis.
         Assert.Single(deltas.OfType<DiagramAddDelta>());
@@ -71,40 +71,40 @@ public sealed class WardleySessionTests : IDisposable
     }
 
     [Fact]
-    public void Baseline_OfAnEmptyMapIsJustTheAxis()
+    public async Task Baseline_OfAnEmptyMapIsJustTheAxis()
     {
         // Arrange. Requirement 1.4 - a map with no components opens showing its axes.
         var path = Write("title Empty\n");
 
         // Act.
-        var elements = AddedBy(Editable(path).Baseline());
+        var elements = AddedBy(await Editable(path).BaselineAsync(TestContext.Current.CancellationToken));
 
         // Assert.
         Assert.Equal(WardleyElementTypes.EvolutionAxis, Assert.Single(elements).Type);
     }
 
     [Fact]
-    public void Baseline_IncludesAGroupForAPipeline()
+    public async Task Baseline_IncludesAGroupForAPipeline()
     {
         // Arrange. Requirement 10.4 - the existing Group action, no new Delta invented.
         var path = Write("component Kettle [0.43, 0.35]\npipeline Kettle\n{\n  component Electric [0.63]\n}\n");
 
         // Act.
-        var deltas = Editable(path).Baseline();
+        var deltas = await Editable(path).BaselineAsync(TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Single(deltas.OfType<DiagramGroupDelta>());
     }
 
     [Fact]
-    public void UpdateView_WithAnUnboundedViewport_SendsNothing()
+    public async Task UpdateView_WithAnUnboundedViewport_SendsNothing()
     {
         // Arrange. The baseline is already the whole map and an unbounded report admits the whole
         // map, so nothing appeared and nothing left. This used to be the module's entire answer to
         // every viewport; it is now the one case where that answer is still the right one.
         var path = Write("component Alpha [0.5, 0.5]\n");
         var session = Editable(path);
-        session.Baseline();
+        await session.BaselineAsync(TestContext.Current.CancellationToken);
 
         // Act.
         var deltas = session.UpdateView(DiagramViewport.Unbounded);
@@ -114,7 +114,7 @@ public sealed class WardleySessionTests : IDisposable
     }
 
     [Fact]
-    public void UpdateView_AnsweringAViewportChange_RemovesWhatLeftThenAddsWhatAppeared()
+    public async Task UpdateView_AnsweringAViewportChange_RemovesWhatLeftThenAddsWhatAppeared()
     {
         // Arrange. Two components at opposite corners of the map's own 0..1 space. The document
         // writes [visibility, maturity] and the canvas draws (maturity, 1 - visibility), so Alpha
@@ -122,7 +122,7 @@ public sealed class WardleySessionTests : IDisposable
         // literals do not read like the corners they are.
         var path = Write("component Alpha [0.9, 0.1]\ncomponent Beta [0.1, 0.9]\n");
         var session = Editable(path);
-        session.Baseline();
+        await session.BaselineAsync(TestContext.Current.CancellationToken);
         var beta = IdOfFarCorner(path);
 
         // Act. First look at the corner Alpha is in, then at the corner Beta is in.
@@ -145,7 +145,7 @@ public sealed class WardleySessionTests : IDisposable
     }
 
     [Fact]
-    public void ADocumentChangeUnderANarrowedViewport_DoesNotResendTheCulledElements()
+    public async Task ADocumentChangeUnderANarrowedViewport_DoesNotResendTheCulledElements()
     {
         // Arrange. The interaction rather than the method: the change path and the viewport path
         // both render through one viewport-aware place, and when they do not, an ordinary edit
@@ -154,14 +154,14 @@ public sealed class WardleySessionTests : IDisposable
         // meeting rather than for either of them.
         var path = Write("component Alpha [0.9, 0.1]\ncomponent Beta [0.1, 0.9]\n");
         var session = Editable(path);
-        session.Baseline();
+        await session.BaselineAsync(TestContext.Current.CancellationToken);
         session.UpdateView(new DiagramViewport(0d, 0d, 0.4d, 0.4d));
 
         IReadOnlyList<DiagramDelta> received = [];
         session.Changed += (_, args) => received = args.Deltas;
 
         // Act. Move Alpha, which is the component inside the viewport, and leave Beta where it is.
-        File.WriteAllText(path, "component Alpha [0.85, 0.15]\ncomponent Beta [0.1, 0.9]\n");
+        await File.WriteAllTextAsync(path, "component Alpha [0.85, 0.15]\ncomponent Beta [0.1, 0.9]\n", TestContext.Current.CancellationToken);
         _documents.Reload(path);
 
         // Assert. The edit arrives, and Beta - culled by the viewport a moment ago - does not come
@@ -172,7 +172,7 @@ public sealed class WardleySessionTests : IDisposable
     }
 
     [Fact]
-    public void UpdateView_KeepsTheAxisAndALinkWhoseEndpointIsInView()
+    public async Task UpdateView_KeepsTheAxisAndALinkWhoseEndpointIsInView()
     {
         // Arrange. Both carry a placeholder position: a link is emitted at (0, 0) because it is
         // drawn between its endpoints, and the evolution axis at (0, 0) because it is the map's
@@ -181,7 +181,7 @@ public sealed class WardleySessionTests : IDisposable
         // relationship everywhere else.
         var path = Write("component Alpha [0.9, 0.1]\ncomponent Beta [0.1, 0.9]\nAlpha->Beta\n");
         var session = Editable(path);
-        session.Baseline();
+        await session.BaselineAsync(TestContext.Current.CancellationToken);
         var corner = new DiagramViewport(0.6d, 0.6d, 1d, 1d);
 
         // Act. Look only at Beta's corner - the far one from that placeholder position.
@@ -245,7 +245,7 @@ public sealed class WardleySessionTests : IDisposable
         // [visibility, maturity] - the inverse conversion, through the one function that owns it.
         var path = Write("component Alpha [0.90, 0.10]\n");
         var session = Editable(path);
-        var elementId = ElementIdIn(session.Baseline());
+        var elementId = ElementIdIn(await session.BaselineAsync(TestContext.Current.CancellationToken));
 
         // Act. Canvas (0.8, 0.4) is maturity 0.8, visibility 0.6.
         var error = await session.MoveElementToAsync(elementId, 0.8d, 0.4d, TestContext.Current.CancellationToken);
@@ -268,7 +268,7 @@ public sealed class WardleySessionTests : IDisposable
             """;
         var path = Write(text);
         var session = Editable(path);
-        var elementId = AddedBy(session.Baseline())
+        var elementId = AddedBy(await session.BaselineAsync(TestContext.Current.CancellationToken))
             .Single(element => element.Type == WardleyElementTypes.Element
                 && WardleyElementPayload.Parser.ParseFrom(element.Payload.Span).Name == "Alpha")
             .Id;
@@ -290,7 +290,7 @@ public sealed class WardleySessionTests : IDisposable
         // Arrange. Requirement 7.3 - a component cannot be more evolved than commodity.
         var path = Write("component Alpha [0.5, 0.5]\n");
         var session = Editable(path);
-        var elementId = ElementIdIn(session.Baseline());
+        var elementId = ElementIdIn(await session.BaselineAsync(TestContext.Current.CancellationToken));
 
         // Act.
         await session.MoveElementToAsync(elementId, 1.7d, -0.4d, TestContext.Current.CancellationToken);
@@ -306,7 +306,7 @@ public sealed class WardleySessionTests : IDisposable
         const string text = "component Alpha [0.90, 0.10] // kept\n";
         var path = Write(text);
         var session = Editable(path);
-        var elementId = ElementIdIn(session.Baseline());
+        var elementId = ElementIdIn(await session.BaselineAsync(TestContext.Current.CancellationToken));
 
         // Act.
         await session.MoveElementToAsync(elementId, 0.8d, 0.4d, TestContext.Current.CancellationToken);
@@ -340,7 +340,7 @@ public sealed class WardleySessionTests : IDisposable
         // it nowhere to write one of its own.
         var path = Write("component Kettle [0.43, 0.35]\npipeline Kettle\n{\n  component Electric [0.63]\n}\n");
         var session = Editable(path);
-        var childId = AddedBy(session.Baseline())
+        var childId = AddedBy(await session.BaselineAsync(TestContext.Current.CancellationToken))
             .Single(element => element.Type == WardleyElementTypes.Element
                 && WardleyElementPayload.Parser.ParseFrom(element.Payload.Span).Name == "Electric")
             .Id;
@@ -355,18 +355,18 @@ public sealed class WardleySessionTests : IDisposable
     }
 
     [Fact]
-    public void DocumentChanged_SendsTheDifferenceToTheConnection()
+    public async Task DocumentChanged_SendsTheDifferenceToTheConnection()
     {
         // Arrange. Requirement 10.7 - an edit made outside ADP arrives as deltas.
         var path = Write("component Alpha [0.9, 0.1]\n");
         var session = Editable(path);
-        session.Baseline();
+        await session.BaselineAsync(TestContext.Current.CancellationToken);
 
         var received = new List<DiagramDelta>();
         session.Changed += (_, args) => received.AddRange(args.Deltas);
 
         // Act.
-        File.WriteAllText(path, "component Alpha [0.2, 0.8]\n");
+        await File.WriteAllTextAsync(path, "component Alpha [0.2, 0.8]\n", TestContext.Current.CancellationToken);
         _documents.Reload(path);
 
         // Assert. One add carrying the element in its new state, never a remove and an add.
@@ -376,14 +376,14 @@ public sealed class WardleySessionTests : IDisposable
     }
 
     [Fact]
-    public void DocumentChanged_IgnoresAnotherMapsChange()
+    public async Task DocumentChanged_IgnoresAnotherMapsChange()
     {
         // Arrange.
         var path = Write("component Alpha [0.9, 0.1]\n");
         var other = IoPath.Combine(_root, "other.owm");
-        File.WriteAllText(other, "component Beta [0.5, 0.5]\n");
+        await File.WriteAllTextAsync(other, "component Beta [0.5, 0.5]\n", TestContext.Current.CancellationToken);
         var session = Editable(path);
-        session.Baseline();
+        await session.BaselineAsync(TestContext.Current.CancellationToken);
 
         var raised = 0;
         session.Changed += (_, _) => raised++;
@@ -402,7 +402,7 @@ public sealed class WardleySessionTests : IDisposable
         // Arrange.
         var path = Write("component Alpha [0.9, 0.1]\n");
         var session = Editable(path);
-        session.Baseline();
+        await session.BaselineAsync(TestContext.Current.CancellationToken);
         var raised = 0;
         session.Changed += (_, _) => raised++;
 

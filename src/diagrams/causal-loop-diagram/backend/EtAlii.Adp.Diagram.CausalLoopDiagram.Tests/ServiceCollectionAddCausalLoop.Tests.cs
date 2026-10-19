@@ -33,7 +33,7 @@ public class ServiceCollectionAddCausalLoopTests
 
         // Assert.
         Assert.IsType<CausalLoopSession>(session);
-        Assert.NotEmpty(session.Baseline());
+        Assert.NotEmpty(await session.BaselineAsync(TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -53,13 +53,13 @@ public class ServiceCollectionAddCausalLoopTests
         await using var placed = factory.Open(ShortGuid.NewShortGuid(), "root", CausalLoopDocumentStoreTests.OnCall, registration);
 
         // Assert: only the registration's position moves it.
-        var before = Assert.Single(Drawn(bare), element => element.Id == "variable:incidents");
-        var after = Assert.Single(Drawn(placed), element => element.Id == "variable:incidents");
+        var before = Assert.Single(await DrawnAsync(bare), element => element.Id == "variable:incidents");
+        var after = Assert.Single(await DrawnAsync(placed), element => element.Id == "variable:incidents");
         Assert.NotEqual(before.X, after.X);
     }
 
-    private static IEnumerable<DiagramElement> Drawn(IDiagramSession session) =>
-        session.Baseline().OfType<DiagramAddDelta>().SelectMany(delta => delta.Elements);
+    private static async Task<IEnumerable<DiagramElement>> DrawnAsync(IDiagramSession session) =>
+        (await session.BaselineAsync(TestContext.Current.CancellationToken)).OfType<DiagramAddDelta>().SelectMany(delta => delta.Elements);
 
     [Fact]
     public async Task TheReloadSeam_ReachesTheModulesOneStore()

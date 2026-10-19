@@ -137,7 +137,7 @@ public class ServiceCollectionAddDependencyGraphTests
 
         // Assert.
         Assert.IsType<DependencyGraphSession>(session);
-        Assert.NotEmpty(session.Baseline());
+        Assert.NotEmpty(await session.BaselineAsync(TestContext.Current.CancellationToken));
     }
 
     private static string EmptyDocument(ServiceProvider provider, string baseName) =>

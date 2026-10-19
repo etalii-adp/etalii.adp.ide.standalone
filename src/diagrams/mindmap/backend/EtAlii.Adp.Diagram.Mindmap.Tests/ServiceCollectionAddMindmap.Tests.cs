@@ -63,7 +63,7 @@ public class ServiceCollectionAddMindmapTests
 
         // Assert.
         Assert.IsType<MindmapSession>(session);
-        Assert.NotEmpty(session.Baseline());
+        Assert.NotEmpty(await session.BaselineAsync(TestContext.Current.CancellationToken));
     }
 
     [Fact]

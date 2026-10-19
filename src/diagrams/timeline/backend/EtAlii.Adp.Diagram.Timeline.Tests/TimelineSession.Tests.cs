@@ -62,14 +62,14 @@ public class TimelineSessionTests : IDisposable
         new(path, _store, _mapper, _historyStacks.Get(_workspace));
 
     [Fact]
-    public void TheBaselineIsOneAddCarryingEverything()
+    public async Task TheBaselineIsOneAddCarryingEverything()
     {
         // Arrange.
         var path = Write();
         using var session = Wrap(Open(path));
 
         // Act.
-        var baseline = session.Value.Baseline();
+        var baseline = await session.Value.BaselineAsync(TestContext.Current.CancellationToken);
 
         // Assert.
         var add = Assert.IsType<DiagramAddDelta>(Assert.Single(baseline));
@@ -77,7 +77,7 @@ public class TimelineSessionTests : IDisposable
     }
 
     [Fact]
-    public void OpeningTheSameDocumentTwice_ProducesIdenticalOutput()
+    public async Task OpeningTheSameDocumentTwice_ProducesIdenticalOutput()
     {
         // Arrange.
         // Requirement 4.7: a diagram that shifts between openings cannot be talked about.
@@ -86,8 +86,8 @@ public class TimelineSessionTests : IDisposable
         using var second = Wrap(Open(path));
 
         // Act.
-        var one = ((DiagramAddDelta)first.Value.Baseline()[0]).Elements;
-        var two = ((DiagramAddDelta)second.Value.Baseline()[0]).Elements;
+        var one = ((DiagramAddDelta)(await first.Value.BaselineAsync(TestContext.Current.CancellationToken))[0]).Elements;
+        var two = ((DiagramAddDelta)(await second.Value.BaselineAsync(TestContext.Current.CancellationToken))[0]).Elements;
 
         // Assert.
         Assert.Equal(one.Select(element => (element.Id, element.X, element.Y, element.Type)),
@@ -95,14 +95,14 @@ public class TimelineSessionTests : IDisposable
     }
 
     [Fact]
-    public void AChangedViewport_RemovesWhatLeftThenAddsWhatAppeared()
+    public async Task AChangedViewport_RemovesWhatLeftThenAddsWhatAppeared()
     {
         // Arrange: the fixture's period sits on row 0 in early 2026, the moment on row 2 a
         // fortnight later, and one connection joins them. This is the test the task calls the
         // definition of done - it fails against a UpdateView that returns [].
         var path = Write();
         using var session = Wrap(Open(path));
-        session.Value.Baseline();
+        await session.Value.BaselineAsync(TestContext.Current.CancellationToken);
 
         var period = TimelineScale.ToSeconds(new DateTimeOffset(2026, 1, 5, 0, 0, 0, TimeSpan.Zero));
         var moment = TimelineScale.ToSeconds(new DateTimeOffset(2026, 2, 16, 14, 0, 0, TimeSpan.Zero));
@@ -128,14 +128,14 @@ public class TimelineSessionTests : IDisposable
     }
 
     [Fact]
-    public void APeriodStraddlingTheViewport_StaysVisible()
+    public async Task APeriodStraddlingTheViewport_StaysVisible()
     {
         // Arrange: an element is a span, not a point. The fixture's period runs 5 Jan to 13 Feb,
         // so a viewport over a day in the middle contains neither of its ends - and it is
         // precisely the bar the reader is looking at.
         var path = Write();
         using var session = Wrap(Open(path));
-        session.Value.Baseline();
+        await session.Value.BaselineAsync(TestContext.Current.CancellationToken);
 
         var middle = TimelineScale.ToSeconds(new DateTimeOffset(2026, 1, 20, 0, 0, 0, TimeSpan.Zero));
 
@@ -148,13 +148,13 @@ public class TimelineSessionTests : IDisposable
     }
 
     [Fact]
-    public void AConnectionSurvivesOnlyWhileBothItsEndsDo()
+    public async Task AConnectionSurvivesOnlyWhileBothItsEndsDo()
     {
         // Arrange: connections are packed at the origin deliberately, so they cannot be tested
         // against a viewport by position - their visibility follows their endpoints.
         var path = Write();
         using var session = Wrap(Open(path));
-        session.Value.Baseline();
+        await session.Value.BaselineAsync(TestContext.Current.CancellationToken);
 
         // Act: a viewport wide enough in time for both, but only tall enough for row 0.
         var deltas = session.Value.UpdateView(new DiagramViewport(
@@ -166,7 +166,7 @@ public class TimelineSessionTests : IDisposable
     }
 
     [Fact]
-    public void AConnectionThatNeverReportsAViewport_KeepsTheWholeTimeline()
+    public async Task AConnectionThatNeverReportsAViewport_KeepsTheWholeTimeline()
     {
         // Arrange & act: the unbounded default is what makes each module independently
         // landable - a client that has not adopted the report sees no change at all.
@@ -174,18 +174,18 @@ public class TimelineSessionTests : IDisposable
         using var session = Wrap(Open(path));
 
         // Assert.
-        var add = Assert.IsType<DiagramAddDelta>(Assert.Single(session.Value.Baseline()));
+        var add = Assert.IsType<DiagramAddDelta>(Assert.Single(await session.Value.BaselineAsync(TestContext.Current.CancellationToken)));
         Assert.Equal(3, add.Elements.Count);
     }
 
     [Fact]
-    public void ADocumentChangeUnderANarrowedViewport_DoesNotResendTheCulledElements()
+    public async Task ADocumentChangeUnderANarrowedViewport_DoesNotResendTheCulledElements()
     {
         // Arrange: the change path and the viewport path render through one place. When they did
         // not, an ordinary edit re-sent everything the viewport had just culled.
         var path = Write();
         using var session = Wrap(Open(path));
-        session.Value.Baseline();
+        await session.Value.BaselineAsync(TestContext.Current.CancellationToken);
         session.Value.UpdateView(new DiagramViewport(
             double.NegativeInfinity, 0, double.PositiveInfinity, TimelineRows.Height));
 
@@ -193,7 +193,7 @@ public class TimelineSessionTests : IDisposable
         session.Value.Changed += (_, args) => received = args.Deltas;
 
         // Act: retitle the period, which is inside the viewport.
-        File.WriteAllText(path, Timeline.Replace("label: Period", "label: Renamed", StringComparison.Ordinal));
+        await File.WriteAllTextAsync(path, Timeline.Replace("label: Period", "label: Renamed", StringComparison.Ordinal), TestContext.Current.CancellationToken);
         _store.Reload(path);
 
         // Assert: the edit arrives, and nothing outside the viewport comes back with it.
@@ -222,7 +222,7 @@ public class TimelineSessionTests : IDisposable
         // Arrange.
         var path = Write();
         await using var session = Open(path);
-        session.Baseline();
+        await session.BaselineAsync(TestContext.Current.CancellationToken);
         var landing = TimelineScale.ToSeconds(new DateTimeOffset(2026, 3, 1, 0, 0, 0, TimeSpan.Zero));
 
         // Act.
@@ -290,7 +290,7 @@ public class TimelineSessionTests : IDisposable
         // what it receives is purely the store's announcement.
         var path = Write();
         await using var session = Open(path);
-        session.Baseline();
+        await session.BaselineAsync(TestContext.Current.CancellationToken);
         IReadOnlyList<DiagramDelta>? received = null;
         session.Changed += (_, args) => received = args.Deltas;
 
@@ -312,7 +312,7 @@ public class TimelineSessionTests : IDisposable
         var otherPath = IoPath.Combine(_workspace, "other.tml");
         await File.WriteAllTextAsync(otherPath, Timeline, TestContext.Current.CancellationToken);
         await using var session = Open(path);
-        session.Baseline();
+        await session.BaselineAsync(TestContext.Current.CancellationToken);
         var disturbed = false;
         session.Changed += (_, _) => disturbed = true;
 

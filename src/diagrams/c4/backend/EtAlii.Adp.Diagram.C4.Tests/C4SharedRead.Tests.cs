@@ -83,6 +83,6 @@ public class C4SharedReadTests : IDisposable
             .Open(ShortGuid.NewShortGuid(), _root, body, adp);
 
         // Assert.
-        Assert.Equal("containers", session.View()!.Key);
+        Assert.Equal("containers", (await session.ViewAsync(TestContext.Current.CancellationToken))!.Key);
     }
 }

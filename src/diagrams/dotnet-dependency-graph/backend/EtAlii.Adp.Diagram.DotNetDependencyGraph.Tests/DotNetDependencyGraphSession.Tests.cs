@@ -125,14 +125,14 @@ public sealed class DotNetDependencyGraphSessionTests : IDisposable
             watch: false);
 
     [Fact]
-    public void Baseline_DrawsEveryProjectPackageAndEdge()
+    public async Task Baseline_DrawsEveryProjectPackageAndEdge()
     {
         // Arrange.
         (string solution, string registration) = Seed();
         var session = SessionFor(solution, registration);
 
         // Act.
-        var delta = Assert.IsType<DiagramAddDelta>(Assert.Single(session.Baseline()));
+        var delta = Assert.IsType<DiagramAddDelta>(Assert.Single(await session.BaselineAsync(TestContext.Current.CancellationToken)));
 
         // Assert.
         Assert.Contains(delta.Elements, element => element.Id == "project:App/App.csproj");
@@ -175,12 +175,12 @@ public sealed class DotNetDependencyGraphSessionTests : IDisposable
         // Arrange.
         (string solution, string registration) = Seed();
         var session = SessionFor(solution, registration, new DirectHistoryStack());
-        var computed = Assert.IsType<DiagramAddDelta>(Assert.Single(session.Baseline()))
+        var computed = Assert.IsType<DiagramAddDelta>(Assert.Single(await session.BaselineAsync(TestContext.Current.CancellationToken)))
             .Elements.ToDictionary(element => element.Id, element => (element.X, element.Y), StringComparer.Ordinal);
 
         // Act.
         await session.MoveElementToAsync("project:App/App.csproj", 999, 888, CancellationToken.None);
-        var after = Assert.IsType<DiagramAddDelta>(Assert.Single(SessionFor(solution, registration).Baseline()))
+        var after = Assert.IsType<DiagramAddDelta>(Assert.Single(await SessionFor(solution, registration).BaselineAsync(TestContext.Current.CancellationToken)))
             .Elements.ToDictionary(element => element.Id, element => (element.X, element.Y), StringComparer.Ordinal);
 
         // Assert.
@@ -198,7 +198,7 @@ public sealed class DotNetDependencyGraphSessionTests : IDisposable
         // Arrange.
         (string solution, string registration) = Seed();
         var session = SessionFor(solution, registration, new DirectHistoryStack());
-        session.Baseline();
+        await session.BaselineAsync(TestContext.Current.CancellationToken);
         await session.MoveElementToAsync("project:App/App.csproj", 500, 400, CancellationToken.None);
 
         var pushed = new List<DiagramDelta>();
@@ -222,31 +222,31 @@ public sealed class DotNetDependencyGraphSessionTests : IDisposable
         // Assert.
         var added = pushed.OfType<DiagramAddDelta>().SelectMany(delta => delta.Elements).ToArray();
         Assert.Contains(added, element => element.Id == "project:Extra/Extra.csproj");
-        var app = Assert.Single(SessionFor(solution, registration).Baseline().OfType<DiagramAddDelta>()
+        var app = Assert.Single((await SessionFor(solution, registration).BaselineAsync(TestContext.Current.CancellationToken)).OfType<DiagramAddDelta>()
             .SelectMany(delta => delta.Elements), element => element.Id == "project:App/App.csproj");
         Assert.Equal(500, app.X);
         Assert.Equal(400, app.Y);
     }
 
     [Fact]
-    public void ARemovedProject_DisappearsFromTheDiagram()
+    public async Task ARemovedProject_DisappearsFromTheDiagram()
     {
         // Requirement 7.3.
 
         // Arrange.
         (string solution, string registration) = Seed();
         var session = SessionFor(solution, registration);
-        session.Baseline();
+        await session.BaselineAsync(TestContext.Current.CancellationToken);
 
         var pushed = new List<DiagramDelta>();
         session.Changed += (_, args) => pushed.AddRange(args.Deltas);
 
         // Act.
-        File.WriteAllText(solution, """
+        await File.WriteAllTextAsync(solution, """
             <Solution>
               <Project Path="Library/Library.csproj" />
             </Solution>
-            """);
+            """, TestContext.Current.CancellationToken);
         session.Refresh();
 
         // Assert.
@@ -284,7 +284,7 @@ public sealed class DotNetDependencyGraphSessionTests : IDisposable
     }
 
     [Fact]
-    public void AnUnreadableSolution_StillOpens_WithItsReasonCarried()
+    public async Task AnUnreadableSolution_StillOpens_WithItsReasonCarried()
     {
         // Requirement 2.4: the failure is reported rather than presented as an empty diagram,
         // and above all the diagram opens.
@@ -294,7 +294,7 @@ public sealed class DotNetDependencyGraphSessionTests : IDisposable
         var store = Store();
 
         // Act.
-        var deltas = new DotNetDependencyGraphSession(solution, store, new DependencyElementMapper()).Baseline();
+        var deltas = await new DotNetDependencyGraphSession(solution, store, new DependencyElementMapper()).BaselineAsync(TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Empty(deltas);
@@ -340,7 +340,7 @@ public sealed class DotNetDependencyGraphSessionTests : IDisposable
         // Arrange.
         (string solution, string registration) = Seed();
         var session = SessionFor(solution, registration, new DirectHistoryStack());
-        session.Baseline();
+        await session.BaselineAsync(TestContext.Current.CancellationToken);
         var pushed = new List<DiagramDelta>();
         session.Changed += (_, args) => pushed.AddRange(args.Deltas);
 
@@ -365,7 +365,7 @@ public sealed class DotNetDependencyGraphSessionTests : IDisposable
         (string solution, string registration) = Seed();
         var history = new DirectHistoryStack();
         var session = SessionFor(solution, registration, history);
-        session.Baseline();
+        await session.BaselineAsync(TestContext.Current.CancellationToken);
         await session.MoveElementToAsync("project:App/App.csproj", 321, 654, CancellationToken.None);
 
         var pushed = new List<DiagramDelta>();
@@ -391,7 +391,7 @@ public sealed class DotNetDependencyGraphSessionTests : IDisposable
         (string solution, string registration) = Seed();
         var history = new DirectHistoryStack();
         var session = SessionFor(solution, registration, history);
-        session.Baseline();
+        await session.BaselineAsync(TestContext.Current.CancellationToken);
         var pushed = 0;
         session.Changed += (_, _) => pushed++;
 
@@ -413,7 +413,7 @@ public sealed class DotNetDependencyGraphSessionTests : IDisposable
         var session = new DotNetDependencyGraphSession(solution, Store(), new DependencyElementMapper(), registration);
         await using (session)
         {
-            session.Baseline();
+            await session.BaselineAsync(TestContext.Current.CancellationToken);
             var removed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             session.Changed += (_, args) =>
             {

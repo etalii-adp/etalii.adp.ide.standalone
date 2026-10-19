@@ -67,11 +67,11 @@ public class HelmSessionTests : IAsyncDisposable, IDisposable
         withHistory ? _provider.GetRequiredService<IHistoryStackStore>().Get(_root) : null);
 
     [Fact]
-    public void Baseline_DeliversTheWholeChart()
+    public async Task Baseline_DeliversTheWholeChart()
     {
         // Arrange & Act.
         var session = Session();
-        var deltas = session.Baseline();
+        var deltas = await session.BaselineAsync(TestContext.Current.CancellationToken);
 
         // Assert.
         var add = Assert.IsType<DiagramAddDelta>(Assert.Single(deltas));
@@ -89,12 +89,12 @@ public class HelmSessionTests : IAsyncDisposable, IDisposable
     /// with the code instead of breaking it.
     /// </summary>
     [Fact]
-    public void UpdateView_AnswersAChangedViewportWithWhatAppearedAndWhatLeft()
+    public async Task UpdateView_AnswersAChangedViewportWithWhatAppearedAndWhatLeft()
     {
         // Arrange: the whole chart, and the two elements furthest apart on the x axis - the
         // layout lays its kinds out in columns, so those two are never in one narrow viewport.
         var session = Session();
-        var all = session.BaselineElements();
+        var all = await session.BaselineElementsAsync(TestContext.Current.CancellationToken);
         var leftmost = all.MinBy(element => element.X)!;
         var rightmost = all.MaxBy(element => element.X)!;
         Assert.NotEqual(leftmost.Id, rightmost.Id);
@@ -165,7 +165,7 @@ public class HelmSessionTests : IAsyncDisposable, IDisposable
         var chartBytes = await File.ReadAllBytesAsync(IoPath.Combine(_root, "Chart.yaml"), TestContext.Current.CancellationToken);
         var valuesBytes = await File.ReadAllBytesAsync(IoPath.Combine(_root, "values.yaml"), TestContext.Current.CancellationToken);
         await using var session = Session();
-        session.Baseline();
+        await session.BaselineAsync(TestContext.Current.CancellationToken);
         var history = _provider.GetRequiredService<IHistoryStackStore>().Get(_root);
 
         // Act.
@@ -193,11 +193,11 @@ public class HelmSessionTests : IAsyncDisposable, IDisposable
     {
         // Arrange.
         await using var session = Session();
-        session.Baseline();
+        await session.BaselineAsync(TestContext.Current.CancellationToken);
 
         // Act.
         await session.MoveElementToAsync("chart", 555, 444, CancellationToken.None);
-        var rendered = Assert.IsType<DiagramAddDelta>(Assert.Single(session.Baseline()));
+        var rendered = Assert.IsType<DiagramAddDelta>(Assert.Single(await session.BaselineAsync(TestContext.Current.CancellationToken)));
 
         // Assert.
         var chart = Assert.Single(rendered.Elements, element => element.Id == "chart");
@@ -212,7 +212,7 @@ public class HelmSessionTests : IAsyncDisposable, IDisposable
     {
         // Arrange.
         await using var session = Session();
-        session.Baseline();
+        await session.BaselineAsync(TestContext.Current.CancellationToken);
         var pushed = new TaskCompletionSource();
         IReadOnlyList<DiagramDelta>? deltas = null;
         session.Changed += (_, e) =>
@@ -241,7 +241,7 @@ public class HelmSessionTests : IAsyncDisposable, IDisposable
     {
         // Arrange.
         await using var session = Session();
-        var delivered = session.BaselineElements()
+        var delivered = (await session.BaselineElementsAsync(TestContext.Current.CancellationToken))
             .ToDictionary(element => element.Id, StringComparer.Ordinal);
         var pushed = new TaskCompletionSource();
         IReadOnlyList<DiagramDelta>? deltas = null;

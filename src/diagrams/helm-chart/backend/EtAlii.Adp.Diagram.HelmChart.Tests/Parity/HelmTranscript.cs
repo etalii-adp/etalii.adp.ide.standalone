@@ -213,7 +213,7 @@ internal static class HelmTranscript
         List<DiagramElement> elements;
         await using (var session = new HelmSession(folder, registration, store, new HelmElementMapper()))
         {
-            elements = [.. session.Baseline().OfType<DiagramAddDelta>().SelectMany(delta => delta.Elements)];
+            elements = [.. (await session.BaselineAsync(cancellationToken)).OfType<DiagramAddDelta>().SelectMany(delta => delta.Elements)];
         }
 
         json.WritePropertyName("elements");

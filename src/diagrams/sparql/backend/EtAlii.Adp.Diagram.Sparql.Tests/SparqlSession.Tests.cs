@@ -71,7 +71,7 @@ public class SparqlSessionTests : IDisposable
         // Regions, because they are placed: an edge, a note or the header sits at the origin, so
         // the leftmost of everything is a window that holds no region at all, and panning from
         // there only ever adds - which would pass against either order.
-        var regions = session.BaselineElements().Where(element => element.Type == SparqlElementMapper.RegionType).ToList();
+        var regions = (await session.BaselineElementsAsync(TestContext.Current.CancellationToken)).Where(element => element.Type == SparqlElementMapper.RegionType).ToList();
         var leftmost = regions.MinBy(element => element.X)!;
         var rightmost = regions.MaxBy(element => element.X)!;
         Assert.NotEqual(leftmost.Id, rightmost.Id);
@@ -102,7 +102,7 @@ public class SparqlSessionTests : IDisposable
         // Arrange: open, then narrow the viewport to one element so the rest is culled.
         var body = CopyFixture("groups.rq");
         await using var session = Open(body, WriteRegistration("groups.rq"));
-        var all = session.BaselineElements();
+        var all = await session.BaselineElementsAsync(TestContext.Current.CancellationToken);
         var kept = all.MinBy(element => element.X)!;
         var culled = all.MaxBy(element => element.X)!;
         session.UpdateView(Around(kept));
@@ -150,7 +150,7 @@ public class SparqlSessionTests : IDisposable
 
         // Act.
         await using var session = Open(body, WriteRegistration("groups.rq"));
-        var elements = session.BaselineElements();
+        var elements = await session.BaselineElementsAsync(TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Contains(elements, element => element is { Id: "var:x", Type: SparqlElementMapper.VariableType });
@@ -171,7 +171,7 @@ public class SparqlSessionTests : IDisposable
 
         // Act.
         await using var session = Open(body, registration);
-        var elements = session.BaselineElements();
+        var elements = await session.BaselineElementsAsync(TestContext.Current.CancellationToken);
 
         // Assert.
         var node = Assert.Single(elements, element => element.Id == "var:x");
@@ -270,7 +270,7 @@ public class SparqlSessionTests : IDisposable
         // Arrange.
         var body = CopyFixture("lf-line-endings.rq");
         await using var session = Open(body, WriteRegistration("lf-line-endings.rq"));
-        session.BaselineElements();
+        await session.BaselineElementsAsync(TestContext.Current.CancellationToken);
 
         IReadOnlyList<DiagramDelta> received = [];
         session.Changed += (_, args) => received = args.Deltas;
@@ -295,7 +295,7 @@ public class SparqlSessionTests : IDisposable
 
         // Act.
         await using var session = Open(body, WriteRegistration("broken.rq"));
-        var elements = session.BaselineElements();
+        var elements = await session.BaselineElementsAsync(TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Equal(SparqlElementMapper.HeaderId, Assert.Single(elements).Id);

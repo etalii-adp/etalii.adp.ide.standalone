@@ -45,7 +45,7 @@ public sealed class GhgSessionTests : IDisposable
         var model = Parse();
         await using var session = Open();
 
-        var delivered = session.Baseline().AddedElements();
+        var delivered = (await session.BaselineAsync(TestContext.Current.CancellationToken)).AddedElements();
 
         var trends = delivered.Where(element => element.Type == GhgElementMapper.TrendType).ToDictionary(element => element.Id);
         Assert.Equal(model.Trends.Count, trends.Count);
@@ -78,7 +78,7 @@ public sealed class GhgSessionTests : IDisposable
             model.Trends.SingleOrDefault(trend => trend.Id == influence.From) is { } from && influence.FromEnd.PhaseIndex >= from.VisiblePhases);
         await using var session = Open();
 
-        var delivered = session.Baseline().AddedElements().Single(element => element.Id == hidden.Id);
+        var delivered = (await session.BaselineAsync(TestContext.Current.CancellationToken)).AddedElements().Single(element => element.Id == hidden.Id);
 
         var payload = GhgInfluencePayload.Parser.ParseFrom(delivered.Payload.ToArray());
         Assert.Equal(hidden.From, payload.FromElementId);
@@ -96,7 +96,7 @@ public sealed class GhgSessionTests : IDisposable
     public async Task ADescriptionChangedOnDisk_RaisesNothing_WhileANameChangeDoes()
     {
         await using var session = Open();
-        session.Baseline();
+        await session.BaselineAsync(TestContext.Current.CancellationToken);
 
         Edit(document => GhgWriter.SetDescription(document, Trend(document, "railways"), "Something else entirely."));
 
@@ -113,7 +113,7 @@ public sealed class GhgSessionTests : IDisposable
     public async Task APhaseCountLoweredOnDisk_ArrivesAsADelta()
     {
         await using var session = Open();
-        var before = session.Baseline().AddedElements().Count;
+        var before = (await session.BaselineAsync(TestContext.Current.CancellationToken)).AddedElements().Count;
 
         Edit(document => GhgWriter.SetPhases(document, Trend(document, "steam-engine"), 1));
 

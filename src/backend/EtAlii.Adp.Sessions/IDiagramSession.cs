@@ -16,7 +16,8 @@ public interface IDiagramSession : IAsyncDisposable
     /// The baseline: an add for everything currently in the connection's view (grpc-core-communication Requirement 3.2).
     /// An empty list is a valid answer for an empty diagram: core's pump sends the client an empty add for it, so a module need not.
     /// </summary>
-    IReadOnlyList<DiagramDelta> Baseline();
+    /// <remarks>The first read of the document, made without holding a thread (code-structure FR-050).</remarks>
+    Task<IReadOnlyList<DiagramDelta>> BaselineAsync(CancellationToken cancellationToken);
 
     /// <summary>Narrows or widens what is delivered to this connection; returns the deltas that brings it into line.</summary>
     IReadOnlyList<DiagramDelta> UpdateView(DiagramViewport viewport);

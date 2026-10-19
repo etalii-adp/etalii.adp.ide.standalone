@@ -25,7 +25,7 @@ public sealed class SupplyChainSessionTests : IDisposable
         await using var session = Open();
 
         // Act.
-        var delivered = session.Baseline().AddedElements();
+        var delivered = (await session.BaselineAsync(TestContext.Current.CancellationToken)).AddedElements();
 
         // Assert.
         var expected = model.Groups.Select(group => group.Id).Concat(model.Nodes.Select(node => node.Id)).Concat(model.Flows.Select(flow => flow.Id));
@@ -41,7 +41,7 @@ public sealed class SupplyChainSessionTests : IDisposable
         await using var session = Open();
 
         // Act.
-        var delivered = session.Baseline().AddedElements();
+        var delivered = (await session.BaselineAsync(TestContext.Current.CancellationToken)).AddedElements();
 
         // Assert.
         var plant = delivered.Single(element => element.Id == "vehicle-plant");
@@ -61,7 +61,7 @@ public sealed class SupplyChainSessionTests : IDisposable
     {
         // Arrange.
         await using var session = Open();
-        session.Baseline();
+        await session.BaselineAsync(TestContext.Current.CancellationToken);
         var raised = Watch(session);
 
         // Act.
@@ -89,7 +89,7 @@ public sealed class SupplyChainSessionTests : IDisposable
     {
         // Arrange.
         await using var session = Open();
-        session.Baseline();
+        await session.BaselineAsync(TestContext.Current.CancellationToken);
         var raised = Watch(session);
 
         // Act.
@@ -131,8 +131,8 @@ public sealed class SupplyChainSessionTests : IDisposable
         // Arrange.
         var closed = Open();
         await using var open = Open();
-        closed.Baseline();
-        open.Baseline();
+        await closed.BaselineAsync(TestContext.Current.CancellationToken);
+        await open.BaselineAsync(TestContext.Current.CancellationToken);
         var heardClosed = Watch(closed);
         var heardOpen = Watch(open);
         await closed.DisposeAsync();

@@ -47,9 +47,9 @@ internal sealed class MindmapSession : IDiagramSession
 
     public event EventHandler<DiagramDeltasEventArgs>? Changed;
 
-    public IReadOnlyList<DiagramDelta> Baseline()
+    public async Task<IReadOnlyList<DiagramDelta>> BaselineAsync(CancellationToken cancellationToken)
     {
-        var document = _documents.GetOrLoad(_bodyPath);
+        var document = await _documents.GetOrLoadAsync(_bodyPath, cancellationToken);
         var view = _views.For(_watchId, _bodyPath, document);
         var elements = _mapper.Visible(document, view, _viewport);
         return elements.Count == 0 ? [] : [new DiagramAddDelta(elements)];

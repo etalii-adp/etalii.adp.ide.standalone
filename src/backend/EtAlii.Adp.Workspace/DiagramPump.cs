@@ -200,7 +200,7 @@ public sealed class DiagramPump
 
         try
         {
-            var baseline = BaselineOf(session, bodyPath, watchId);
+            var baseline = await BaselineOfAsync(session, bodyPath, watchId, cancellationToken);
             _logger.Debug(
                 "Sending the baseline of {BodyPath} on watch {WatchId}: {DeltaCount} deltas, {DeltaKinds}",
                 bodyPath,
@@ -271,11 +271,11 @@ public sealed class DiagramPump
     /// and the module's own reason, and the client's tab says so instead of re-opening for ever.
     /// Said here, once, for every module.
     /// </summary>
-    private static IReadOnlyList<DiagramDelta> BaselineOf(IDiagramSession session, string bodyPath, ShortGuid watchId)
+    private static async Task<IReadOnlyList<DiagramDelta>> BaselineOfAsync(IDiagramSession session, string bodyPath, ShortGuid watchId, CancellationToken cancellationToken)
     {
         try
         {
-            return session.Baseline();
+            return await session.BaselineAsync(cancellationToken);
         }
         catch (Exception exception) when (exception is not OperationCanceledException and not RpcException)
         {

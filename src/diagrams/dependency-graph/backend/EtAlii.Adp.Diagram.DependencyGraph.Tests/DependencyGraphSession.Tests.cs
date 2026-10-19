@@ -61,14 +61,14 @@ public class DependencyGraphSessionTests : IDisposable
         new(path, _store, _mapper, _historyStacks.Get(_workspace));
 
     [Fact]
-    public void TheBaselineIsOneAddCarryingEverything()
+    public async Task TheBaselineIsOneAddCarryingEverything()
     {
         // Arrange.
         var path = Write();
         using var session = Wrap(Open(path));
 
         // Act.
-        var baseline = session.Value.Baseline();
+        var baseline = await session.Value.BaselineAsync(TestContext.Current.CancellationToken);
 
         // Assert.
         var add = Assert.IsType<DiagramAddDelta>(Assert.Single(baseline));
@@ -76,7 +76,7 @@ public class DependencyGraphSessionTests : IDisposable
     }
 
     [Fact]
-    public void OpeningTheSameDocumentTwice_ProducesIdenticalOutput()
+    public async Task OpeningTheSameDocumentTwice_ProducesIdenticalOutput()
     {
         // Arrange.
         // A diagram that shifts between openings cannot be talked about.
@@ -85,8 +85,8 @@ public class DependencyGraphSessionTests : IDisposable
         using var second = Wrap(Open(path));
 
         // Act.
-        var one = ((DiagramAddDelta)first.Value.Baseline()[0]).Elements;
-        var two = ((DiagramAddDelta)second.Value.Baseline()[0]).Elements;
+        var one = ((DiagramAddDelta)(await first.Value.BaselineAsync(TestContext.Current.CancellationToken))[0]).Elements;
+        var two = ((DiagramAddDelta)(await second.Value.BaselineAsync(TestContext.Current.CancellationToken))[0]).Elements;
 
         // Assert.
         Assert.Equal(one.Select(element => (element.Id, element.X, element.Y, element.Type)),
@@ -131,12 +131,12 @@ public class DependencyGraphSessionTests : IDisposable
     /// (view-delta-adoption Requirement 1.3).
     /// </summary>
     [Fact]
-    public void AChangedViewport_RemovesWhatLeft_ThenAddsWhatAppeared()
+    public async Task AChangedViewport_RemovesWhatLeft_ThenAddsWhatAppeared()
     {
         // Arrange: opened whole, then narrowed to the connected pair - the island leaves.
         var path = Write(GraphWithAnIsland);
         using var session = Wrap(Open(path));
-        session.Value.Baseline();
+        await session.Value.BaselineAsync(TestContext.Current.CancellationToken);
         session.Value.UpdateView(new DiagramViewport(200, -10, 420, 60));
 
         // Act: move the view to the island, which no span reaches.
@@ -157,12 +157,12 @@ public class DependencyGraphSessionTests : IDisposable
     /// (found in the field).
     /// </summary>
     [Fact]
-    public void ARelation_TravelsWhereItsSpanDoes()
+    public async Task ARelation_TravelsWhereItsSpanDoes()
     {
         // Arrange: the island alone in view - no span reaches it, so the pair is not held.
         var path = Write(GraphWithAnIsland);
         using var session = Wrap(Open(path));
-        session.Value.Baseline();
+        await session.Value.BaselineAsync(TestContext.Current.CancellationToken);
         session.Value.UpdateView(new DiagramViewport(19_900, -10, 20_500, 60));
 
         // Act: move onto the first node - the relation's span touches, so all three arrive.
@@ -180,12 +180,12 @@ public class DependencyGraphSessionTests : IDisposable
     /// session starts unbounded, so adoption changes nothing for a client that does not report.
     /// </summary>
     [Fact]
-    public void WithoutAReportedViewport_TheBaselineIsTheWholeGraph()
+    public async Task WithoutAReportedViewport_TheBaselineIsTheWholeGraph()
     {
         // Arrange & act.
         var path = Write();
         using var session = Wrap(Open(path));
-        var baseline = Assert.IsType<DiagramAddDelta>(session.Value.Baseline().Single());
+        var baseline = Assert.IsType<DiagramAddDelta>((await session.Value.BaselineAsync(TestContext.Current.CancellationToken)).Single());
 
         // Assert.
         Assert.Equal(["aaa", "bbb", "ccc"], baseline.Elements.Select(element => element.Id).Order());
@@ -212,7 +212,7 @@ public class DependencyGraphSessionTests : IDisposable
         // Arrange.
         var path = Write();
         await using var session = Open(path);
-        session.Baseline();
+        await session.BaselineAsync(TestContext.Current.CancellationToken);
 
         // Act.
         var answer = await session.MoveElementToAsync("aaa", 812.5, DependencyGraphRows.ToY(4), CancellationToken.None);
@@ -282,7 +282,7 @@ public class DependencyGraphSessionTests : IDisposable
         // Arrange: narrowed to the first node alone, so the second and the relation are culled.
         var path = Write();
         await using var session = Open(path);
-        session.Baseline();
+        await session.BaselineAsync(TestContext.Current.CancellationToken);
         session.UpdateView(new DiagramViewport(200, -10, 420, 60));
 
         IReadOnlyList<DiagramDelta>? received = null;
@@ -307,7 +307,7 @@ public class DependencyGraphSessionTests : IDisposable
         // announcement.
         var path = Write();
         await using var session = Open(path);
-        session.Baseline();
+        await session.BaselineAsync(TestContext.Current.CancellationToken);
         IReadOnlyList<DiagramDelta>? received = null;
         session.Changed += (_, args) => received = args.Deltas;
 
@@ -330,7 +330,7 @@ public class DependencyGraphSessionTests : IDisposable
         var path = Write();
         IDiagramDocumentReloader reloader = new DiagramDocumentReloader<IDependencyGraphDocumentStore>(Diagram.DependencyGraph.Origin, _store);
         await using var session = Open(path);
-        session.Baseline();
+        await session.BaselineAsync(TestContext.Current.CancellationToken);
         var disturbed = false;
         session.Changed += (_, _) => disturbed = true;
 
@@ -352,7 +352,7 @@ public class DependencyGraphSessionTests : IDisposable
         var otherPath = IoPath.Combine(_workspace, "other.dgr");
         await File.WriteAllTextAsync(otherPath, Graph, TestContext.Current.CancellationToken);
         await using var session = Open(path);
-        session.Baseline();
+        await session.BaselineAsync(TestContext.Current.CancellationToken);
         var disturbed = false;
         session.Changed += (_, _) => disturbed = true;
 

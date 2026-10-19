@@ -74,7 +74,7 @@ public class ZeroWritesTests : IDisposable
         // Everything this module can be asked to do, in the order a user would do it.
         await using (var session = factory.Open(ShortGuid.NewShortGuid(), _root, registration, registration))
         {
-            session.Baseline();
+            await session.BaselineAsync(TestContext.Current.CancellationToken);
             session.UpdateView(new DiagramViewport(-50, -50, 200, 200));
             session.UpdateView(DiagramViewport.Unbounded);
 
@@ -128,7 +128,7 @@ public class ZeroWritesTests : IDisposable
 
         var factory = new AnsibleSessionFactory(_folders, new AnsibleElementMapper(), _historyStacks);
         await using var session = factory.Open(ShortGuid.NewShortGuid(), _root, registration, registration);
-        session.Baseline();
+        await session.BaselineAsync(TestContext.Current.CancellationToken);
 
         // Act.
         var answer = await session.MoveElementToAsync("role:common", 321, 123, TestContext.Current.CancellationToken);
@@ -227,7 +227,7 @@ public class ZeroWritesTests : IDisposable
         var registration = IoPath.Combine(_root, "infrastructure.adp");
         var factory = new AnsibleSessionFactory(_folders, new AnsibleElementMapper(), _historyStacks);
         await using var session = factory.Open(ShortGuid.NewShortGuid(), _root, registration, registration);
-        session.Baseline();
+        await session.BaselineAsync(TestContext.Current.CancellationToken);
 
         // Act and assert.
         var playbook = IoPath.Combine(_root, "webservers.yml");

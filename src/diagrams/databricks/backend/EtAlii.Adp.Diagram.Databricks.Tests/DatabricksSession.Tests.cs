@@ -66,7 +66,7 @@ public class DatabricksSessionTests : IDisposable
         // Act & assert.
         await using (var session = Open("databricks/job", job, WriteRegistration("databricks/job", "job.yml")))
         {
-            var elements = session.BaselineElements();
+            var elements = await session.BaselineElementsAsync(TestContext.Current.CancellationToken);
             Assert.Contains(elements, element => element.Id == "task:ingest");
             Assert.Contains(elements, element => element.Id == "edge:quality_gate->publish");
             Assert.Contains(elements, element => element.Id == "cluster:ingest_cluster");
@@ -74,7 +74,7 @@ public class DatabricksSessionTests : IDisposable
 
         await using (var session = Open("databricks/bundle", bundle, null))
         {
-            var elements = session.BaselineElements();
+            var elements = await session.BaselineElementsAsync(TestContext.Current.CancellationToken);
             Assert.Contains(elements, element => element.Id == "bundle");
             Assert.Contains(elements, element => element.Id == "resource:pipelines/bronze_to_gold");
             Assert.Contains(elements, element => element.Id == "override:prod/jobs/nightly_ingest");
@@ -82,7 +82,7 @@ public class DatabricksSessionTests : IDisposable
 
         await using (var session = Open("databricks/pipeline", pipeline, null))
         {
-            var elements = session.BaselineElements();
+            var elements = await session.BaselineElementsAsync(TestContext.Current.CancellationToken);
             Assert.Contains(elements, element => element.Id == "pipeline");
             Assert.Contains(elements, element => element.Id == "library:transformations/bronze");
             Assert.Contains(elements, element => element.Id == "flow:pipeline->target");
@@ -98,7 +98,7 @@ public class DatabricksSessionTests : IDisposable
 
         // Act.
         await using var session = Open("databricks/job", body, adp);
-        var elements = session.BaselineElements();
+        var elements = await session.BaselineElementsAsync(TestContext.Current.CancellationToken);
 
         // Assert.
         var moved = elements.Single(element => element.Id == "task:ingest");
@@ -145,7 +145,7 @@ public class DatabricksSessionTests : IDisposable
 
         // Act.
         await using var session = Open("databricks/job", path, adp);
-        var elements = session.BaselineElements();
+        var elements = await session.BaselineElementsAsync(TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Contains(elements, element => element.Id == "task:b");
@@ -160,7 +160,7 @@ public class DatabricksSessionTests : IDisposable
 
         // Act.
         await using var session = Open("databricks/job", body, WriteRegistration("databricks/job", "job.yml"));
-        var elements = session.BaselineElements();
+        var elements = await session.BaselineElementsAsync(TestContext.Current.CancellationToken);
 
         // Assert.
         var edge = elements.Single(element => element.Id == "edge:quality_gate->publish");
@@ -214,7 +214,7 @@ public class DatabricksSessionTests : IDisposable
         // Arrange: the reader opens the whole job, then settles on the first task.
         var body = CopyFixture("job.yml");
         await using var session = Open("databricks/job", body, WriteRegistration("databricks/job", "job.yml", SpreadOut));
-        _ = session.Baseline();
+        _ = await session.BaselineAsync(TestContext.Current.CancellationToken);
         _ = session.UpdateView(Around(0));
 
         // Act: and then pans down to the third.
@@ -239,7 +239,7 @@ public class DatabricksSessionTests : IDisposable
         // Arrange.
         var body = CopyFixture("job.yml");
         await using var session = Open("databricks/job", body, WriteRegistration("databricks/job", "job.yml", SpreadOut));
-        _ = session.Baseline();
+        _ = await session.BaselineAsync(TestContext.Current.CancellationToken);
 
         // Act: a window holding only `ingest` - `quality_gate` is 5000 units below it.
         var removed = RemovedBy(session.UpdateView(Around(0)));
@@ -258,7 +258,7 @@ public class DatabricksSessionTests : IDisposable
         // Arrange.
         var body = CopyFixture("job.yml");
         await using var session = Open("databricks/job", body, WriteRegistration("databricks/job", "job.yml", SpreadOut));
-        _ = session.Baseline();
+        _ = await session.BaselineAsync(TestContext.Current.CancellationToken);
         _ = session.UpdateView(Around(0));
 
         // Act: the reader nudges the view without uncovering anything.
@@ -279,7 +279,7 @@ public class DatabricksSessionTests : IDisposable
 
         // Assert: the viewport starts unbounded, so adopting the loop changed nothing for a
         // client that has not reported yet - including the far end of the column.
-        var elements = session.BaselineElements().Select(element => element.Id).ToList();
+        var elements = (await session.BaselineElementsAsync(TestContext.Current.CancellationToken)).Select(element => element.Id).ToList();
         Assert.Contains("task:ingest", elements);
         Assert.Contains("cluster:ingest_cluster", elements);
     }
@@ -297,7 +297,7 @@ public class DatabricksSessionTests : IDisposable
         var adp = WriteRegistration("databricks/job", "edit.yml", "layout:\r\n  task:near: 0 0\r\n  task:far: 0 5000\r\n");
 
         await using var session = Open("databricks/job", body, adp);
-        _ = session.Baseline();
+        _ = await session.BaselineAsync(TestContext.Current.CancellationToken);
         _ = session.UpdateView(Around(0));
 
         var pushed = new List<DiagramDelta>();

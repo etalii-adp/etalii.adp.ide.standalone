@@ -81,12 +81,12 @@ internal sealed class HelmSession : IDiagramSession
     public event EventHandler<DiagramDeltasEventArgs>? Changed;
 
     /// <inheritdoc />
-    public IReadOnlyList<DiagramDelta> Baseline()
+    public Task<IReadOnlyList<DiagramDelta>> BaselineAsync(CancellationToken cancellationToken)
     {
         var elements = _changes.Deliver();
-        return elements.Count > 0
+        return Task.FromResult<IReadOnlyList<DiagramDelta>>(elements.Count > 0
             ? [new DiagramAddDelta(elements)]
-            : [];
+            : []);
     }
 
     /// <inheritdoc />

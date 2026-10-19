@@ -133,7 +133,7 @@ public static class DrawnConnections
                 var bodyPath = routed.BodyPath ?? routed.RegistrationPath!;
                 var watchId = ShortGuid.NewShortGuid();
                 await using var session = factory.Open(watchId, workspace, bodyPath, routed.RegistrationPath);
-                var elements = AddedBy(session.Baseline());
+                var elements = AddedBy(await session.BaselineAsync(CancellationToken.None));
                 if (module.ExpandViews is { } expand)
                 {
                     // To a fixed point, because levels nest: opening the stages reveals the jobs, and
@@ -150,7 +150,7 @@ public static class DrawnConnections
                     {
                         var before = elements.Count;
                         expand(services, new DrawnView(watchId, bodyPath, elements));
-                        elements = AddedBy(session.Baseline());
+                        elements = AddedBy(await session.BaselineAsync(CancellationToken.None));
                         if (elements.Count == before)
                         {
                             break;

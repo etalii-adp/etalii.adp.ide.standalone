@@ -58,7 +58,8 @@ public sealed class C4Session : DocumentDiagramSession<LineDocument, C4Workspace
     protected override string ParentRefusal => "Dragging changes where an element is drawn, not what contains it.";
 
     /// <summary>The view this session shows: the one its <c>.adp</c> named, or the document's first.</summary>
-    public C4View? View() => ViewOf(_documents.GetOrLoad(BodyPath).Model);
+    public async Task<C4View?> ViewAsync(CancellationToken cancellationToken) =>
+        ViewOf((await _documents.GetOrLoadAsync(BodyPath, cancellationToken)).Model);
 
     /// <inheritdoc />
     protected override IReadOnlyList<DiagramElement> Render(C4Workspace model, DiagramViewport viewport) =>
