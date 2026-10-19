@@ -264,10 +264,11 @@ public class C4ContextActionProviderTests : IDisposable
     [Theory]
     [InlineData("")]
     [InlineData("s")]
-    public async Task ADeploymentEntryDropped_KeepsItsRefusal_TheSentenceItsDefinitionStates(string elementId)
+    public async Task ADeploymentEntryDropped_KeepsItsRefusal_SayingItIsNotSupportedYet(string elementId)
     {
         // Arrange: no add of a deployment node, an infrastructure node or an instance is implemented, and the
-        // definition answers the drop with its operation's `unavailable` reason (ruled 2026-10-18).
+        // definition answers the drop with its operation's `unavailable` reason (ruled 2026-10-18),
+        // which says the add is not supported yet (ruled 2026-10-19).
         var body = IoPath.Combine(_root, "deployment.dsl");
         await File.WriteAllTextAsync(body, """
             workspace "Bank" {
@@ -295,7 +296,12 @@ public class C4ContextActionProviderTests : IDisposable
 
         // Assert.
         Assert.Equal(
-            ["That element is no longer in this model.", "That element is no longer in this model.", "That element is no longer in this model.", "That element is no longer in this model."],
+            [
+                "Adding a deployment node from the toolbox is not supported yet.",
+                "Adding an infrastructure node from the toolbox is not supported yet.",
+                "Adding a container instance from the toolbox is not supported yet.",
+                "Adding a software system instance from the toolbox is not supported yet.",
+            ],
             owners.Select(owner => owner is { Action.Available: false } ? owner.Action.UnavailableReason : "(not refused)"));
     }
 

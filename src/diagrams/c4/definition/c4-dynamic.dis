@@ -3124,25 +3124,25 @@
       },
       "addDeploymentNode": {
         "unavailable": [
-          "That element is no longer in this model."
+          "Adding a deployment node from the toolbox is not supported yet."
         ],
         "doc": "The toolbox offers this kind and the tool answers its drop with this refusal: no add action is implemented for it. A commit of an answer to it is refused by the host with \"'<action id>' does not apply to this selection.\" (companion, *Outside the definition*)."
       },
       "addInfrastructureNode": {
         "unavailable": [
-          "That element is no longer in this model."
+          "Adding an infrastructure node from the toolbox is not supported yet."
         ],
         "doc": "The toolbox offers this kind and the tool answers its drop with this refusal: no add action is implemented for it. A commit of an answer to it is refused by the host with \"'<action id>' does not apply to this selection.\" (companion, *Outside the definition*)."
       },
       "addContainerInstance": {
         "unavailable": [
-          "That element is no longer in this model."
+          "Adding a container instance from the toolbox is not supported yet."
         ],
         "doc": "The toolbox offers this kind and the tool answers its drop with this refusal: no add action is implemented for it. A commit of an answer to it is refused by the host with \"'<action id>' does not apply to this selection.\" (companion, *Outside the definition*)."
       },
       "addSoftwareSystemInstance": {
         "unavailable": [
-          "That element is no longer in this model."
+          "Adding a software system instance from the toolbox is not supported yet."
         ],
         "doc": "The toolbox offers this kind and the tool answers its drop with this refusal: no add action is implemented for it. A commit of an answer to it is refused by the host with \"'<action id>' does not apply to this selection.\" (companion, *Outside the definition*)."
       }
