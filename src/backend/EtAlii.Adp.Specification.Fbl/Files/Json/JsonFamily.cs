@@ -300,34 +300,34 @@ internal sealed class JsonFamily(BodyText text, FblBinding binding, FblOptions o
         return builder.ToString();
     }
 
-    public override void Write(Plan plan, ReadElement element, IReadOnlyList<SlotChange> changes)
+    protected override bool RemoveSlot(Plan plan, ReadElement element, SlotChange change)
     {
-        foreach (var change in changes)
+        if (change.Read.Node is TreeEntry member) plan.Add(SpliceOperation.RemoveKey, RemovalSpan(member), "");
+        return true;
+    }
+
+    protected override bool ReplaceSlot(Plan plan, SlotChange change)
+    {
+        if (change.Read.Span is not { } span) return false;
+        var written = Format(change.Read, change.Binding, change.Value);
+        if (written != Text.Text(span)) plan.Add(SpliceOperation.ReplaceValue, span, written);
+        return true;
+    }
+
+    protected override bool InsertSlot(Plan plan, ReadElement element, SlotChange change)
+    {
+        var mapping = Mapping((TreeEntry)element.Entry, change.Binding.Child);
+        if (mapping is null || change.Binding.Key is not { } key)
         {
-            var read = change.Read;
-            if (change is { IsEmpty: true, Binding.Empty: "remove" })
-            {
-                if (read.Node is TreeEntry member) plan.Add(SpliceOperation.RemoveKey, RemovalSpan(member), "");
-                continue;
-            }
-            if (read is { Present: true, Span: { } span })
-            {
-                var written = Format(read, change.Binding, change.Value);
-                if (written != Text.Text(span)) plan.Add(SpliceOperation.ReplaceValue, span, written);
-                continue;
-            }
-            var mapping = Mapping((TreeEntry)element.Entry, change.Binding.Child);
-            if (mapping is null || change.Binding.Key is not { } key)
-            {
-                Plan.Refuse($"The {Binding.Name} file has no object to write \"{change.Binding.Key}\" in.");
-                return;
-            }
-            var added = $"{Quote(key)}: {Format(read, change.Binding, change.Value)}";
-            (int offset, string text) = MemberBefore(mapping, key, change.Rule.WireOrder()) is { } before
-                ? (before.Own.End, (before.LineSpan is not null ? "," + NewlineAt(before.Own.End) + Indentation(before.Indent) : ", ") + added)
-                : NewMember(mapping, added);
-            plan.Add(SpliceOperation.InsertKey, offset, offset, text);
+            Plan.Refuse($"The {Binding.Name} file has no object to write \"{change.Binding.Key}\" in.");
+            return true;
         }
+        var added = $"{Quote(key)}: {Format(change.Read, change.Binding, change.Value)}";
+        (int offset, string text) = MemberBefore(mapping, key, change.Rule.WireOrder()) is { } before
+            ? (before.Own.End, (before.LineSpan is not null ? "," + NewlineAt(before.Own.End) + Indentation(before.Indent) : ", ") + added)
+            : NewMember(mapping, added);
+        plan.Add(SpliceOperation.InsertKey, offset, offset, text);
+        return true;
     }
 
     /// <summary>
@@ -381,12 +381,10 @@ internal sealed class JsonFamily(BodyText text, FblBinding binding, FblOptions o
         }
         else
         {
-            var members = new List<string>();
-            foreach (var key in insert.Keys)
-            {
-                if (WireValue(request, key) is { } value) members.Add($"{Quote(key)}: {value}");
-            }
-            text = "{ " + string.Join(", ", members) + " }";
+            var members = InsertValues(request).Select(v => $"{Quote(v.Key)}: {(v.Binding is null ? Quote(NewText.Plain(v.Value, null)) : Write(v.Value, v.Binding))}").ToList();
+            IReadOnlyList<TreeEntry> entries = container is null ? [] : container.Value.Entries;
+            var neighbour = entries.Count == 0 ? null : insert.Place == "start" ? entries[0] : entries[^1];
+            text = NewObject(members, neighbour);
         }
         if (container is null)
         {
@@ -438,16 +436,20 @@ internal sealed class JsonFamily(BodyText text, FblBinding binding, FblOptions o
         return (member.Own.End, $", {Quote(name)}: [");
     }
 
-    private static string? WireValue(InsertRequest request, string key)
+    /// <summary>
+    /// A new entry's object in the layout of <paramref name="neighbour"/>, the entry it is written beside
+    /// (FBL §6.3, spec 025 B-12): a member per line, indented as the neighbour's members are, when the
+    /// neighbour's members stand on lines of their own; else on one line.
+    /// </summary>
+    private string NewObject(IReadOnlyList<string> members, TreeEntry? neighbour)
     {
-        if (request.Rule.Id?.From?.Key == key && request.Id is { } id) return Quote(id);
-        if (request.Rule.Source?.Key == key && request.Source is { } source) return Quote(source.Key);
-        if (request.Rule.Target?.Key == key && request.Target is { } target) return Quote(target.Key);
-        foreach ((string name, AttributeBinding binding) in request.Rule.Attributes)
+        if (members.Count == 0 || neighbour is not { Value: { Kind: ValueKind.Mapping, Entries: [{ LineSpan: not null } first, ..] } })
         {
-            if (binding.Key == key && binding.Child is null && request.Values.TryGetValue(name, out var value) && value is not null) return Write(value, binding);
+            return "{ " + string.Join(", ", members) + " }";
         }
-        return null;
+        var newline = NewlineAt(first.Own.Start);
+        var indent = Indentation(first.Indent);
+        return "{" + newline + indent + string.Join("," + newline + indent, members) + newline + Indentation(neighbour.Indent) + "}";
     }
 
     /// <summary>

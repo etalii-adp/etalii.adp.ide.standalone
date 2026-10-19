@@ -138,7 +138,8 @@ export function DotNetDependencyGraphCanvas({ projectId, entryId, path }: ToolCo
     // A refused menu action or move is shown on the one line the library draws around every
     // canvas, by the call that got it (client-centralization Requirement 2).
     onElementMoved: ({ elementId, position }) => {
-      void moveElementTo(elementId, position.x, position.y);
+      // Returned, so a refusal lets the library put the element back where it was (ruled 2026-10-19).
+      return moveElementTo(elementId, position.x, position.y);
     },
     // The two gestures the rendered element used to answer itself. Same behaviour, reached by
     // action id: the module still decides what "activate" means, and no longer needs a shape

@@ -429,7 +429,8 @@ export function OwlCanvas({ projectId, entryId, path }: ToolContentProps) {
       const size = node ? nodeSizeOf(node) : { width: 0, height: 0 };
       // The authored position, raw. An expression node's refusal comes back from the backend
       // carrying the identity boundary's sentence (Requirement 3.2).
-      void moveElementTo(elementId, position.x - size.width / 2, position.y - size.height / 2);
+      // Returned, so a refusal lets the library put the element back where it was (ruled 2026-10-19).
+      return moveElementTo(elementId, position.x - size.width / 2, position.y - size.height / 2);
     },
     // The whole gesture in one stateless rel: call. Between two classes the backend offers
     // the subclass axiom; anything else asks for a predicate (Requirement 6.1).

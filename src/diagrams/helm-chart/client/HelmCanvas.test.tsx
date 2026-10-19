@@ -11,7 +11,7 @@ import { VIEW_REPORT_DEBOUNCE_MS } from "@client/diagrams/viewReport";
 import { applyDelta, emptyModel, type HelmModel } from "./helmModel";
 import { elementSelectionOf } from "@client/canvas/selection";
 import { expectLibrarySelection } from "@client/canvas/library/testing/expectLibrarySelection";
-import { fakeContextConnection, idsPushed } from "@client/canvas/library/testing/canvasHarness";
+import { fakeContextConnection, idsPushed, dragAndSettle } from "@client/canvas/library/testing/canvasHarness";
 
 const select = vi.fn();
 const revealPath = vi.fn();
@@ -264,6 +264,20 @@ describe("HelmCanvas", () => {
     expect(moveElementTo).toHaveBeenCalledTimes(1);
     const [id] = moveElementTo.mock.calls[0] as unknown as [string, number, number];
     expect(id).toBe("chart");
+  });
+
+  it("snaps an element back when the backend refuses its move, rather than leaving it at the drop", async () => {
+    // Arrange: the library holds a drop until the model moves the element, and a refused move never
+    // does - so the move's answer has to be handed back for the element to return (ruled 2026-10-19).
+    moveElementTo.mockResolvedValueOnce("This chart is read-only.");
+    const { container } = renderCanvas();
+
+    // Act.
+    const { before, after } = await dragAndSettle(container, "chart");
+
+    // Assert.
+    expect(moveElementTo, "the move was never sent, so this test cannot say anything").toHaveBeenCalledTimes(1);
+    expect(after).toBe(before);
   });
 
   it("a press without movement is a click, never a move", () => {

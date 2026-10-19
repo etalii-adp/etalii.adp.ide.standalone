@@ -259,7 +259,8 @@ export function GhgCanvas({ projectId, entryId, path }: ToolContentProps) {
       const half = halfSizeOf(elementId);
       if (half !== undefined) {
         settlePropertyPreview();
-        void moveElementTo(elementId, position.x - half.width, position.y - half.height);
+        // Returned, so a refusal lets the library put the element back where it was (ruled 2026-10-19).
+        return moveElementTo(elementId, position.x - half.width, position.y - half.height);
       }
     },
     // A trend's resize is a span: the dragged edge's month is the new start or stop. A note's is its

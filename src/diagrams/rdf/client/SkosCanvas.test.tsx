@@ -11,7 +11,10 @@ import {
   type SkosModel,
 } from "./skosModel";
 import { expectLibrarySelection } from "@client/canvas/library/testing/expectLibrarySelection";
-import { fakeContextConnection, idsPushed } from "@client/canvas/library/testing/canvasHarness";
+import { fakeContextConnection, idsPushed, dragAndSettle } from "@client/canvas/library/testing/canvasHarness";
+
+// What the backend answers a move with: empty when recorded, its refusal sentence otherwise.
+let moveAnswer = "";
 
 let currentModel: SkosModel = emptySkosModel;
 let currentLoading = false;
@@ -30,7 +33,7 @@ vi.mock("./useSkosStream", () => ({
     reportView: () => {},
     moveElementTo: (elementId: string, x: number, y: number) => {
       moves.push({ elementId, x, y });
-      return Promise.resolve("");
+      return Promise.resolve(moveAnswer);
     },
   }),
 }));
@@ -215,6 +218,21 @@ describe("SkosCanvas", () => {
     fireEvent(relateAnchor, new MouseEvent("pointermove", { bubbles: true, ...overMilk }));
     fireEvent(relateAnchor, new MouseEvent("pointerup", { bubbles: true, ...overMilk }));
     expect(executed.at(-1)?.actionId).toBe("skos.relate");
+  });
+
+  it("snaps an element back when the backend refuses its move, rather than leaving it at the drop", async () => {
+    // Arrange: the library holds a drop until the model moves the element, and a refused move never
+    // does - so the move's answer has to be handed back for the element to return (ruled 2026-10-19).
+    moveAnswer = "A blank node has no position to store.";
+    const { container } = renderCanvas();
+
+    // Act.
+    const { before, after } = await dragAndSettle(container, TEA);
+
+    // Assert.
+    expect(moves, "the move was never sent, so this test cannot say anything").toHaveLength(1);
+    expect(after).toBe(before);
+    moveAnswer = "";
   });
 
   it("sends a drag to the layout path, never to the SKOS file", () => {

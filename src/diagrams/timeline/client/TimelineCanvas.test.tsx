@@ -2,7 +2,10 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import { fireEvent, render, waitFor } from "@testing-library/react";
 import { emptyModel, type TimelineModel } from "./timelineModel";
 import { expectLibrarySelection } from "@client/canvas/library/testing/expectLibrarySelection";
-import { fakeContextConnection, idsPushed, pointer } from "@client/canvas/library/testing/canvasHarness";
+import { fakeContextConnection, idsPushed, pointer, dragAndSettle } from "@client/canvas/library/testing/canvasHarness";
+
+// What the backend answers a move with: empty when recorded, its refusal sentence otherwise.
+let moveAnswer = "";
 
 let currentModel: TimelineModel = emptyModel;
 let currentLoading = false;
@@ -27,7 +30,7 @@ vi.mock("./useTimelineStream", () => ({
     failed: currentFailed,
     moveElementTo: (elementId: string, x: number, y: number) => {
       moves.push({ elementId, x, y });
-      return Promise.resolve("");
+      return Promise.resolve(moveAnswer);
     },
     reportView: (viewport: unknown) => currentReportView?.(viewport),
   }),
@@ -242,6 +245,21 @@ describe("the timeline canvas, on the library", () => {
 
     expect(moves).toHaveLength(0);
     expect(selections).toHaveLength(1);
+  });
+
+  it("snaps an element back when the backend refuses its move, rather than leaving it at the drop", async () => {
+    // Arrange: the library holds a drop until the model moves the element, and a refused move never
+    // does - so the move's answer has to be handed back for the element to return (ruled 2026-10-19).
+    moveAnswer = "This timeline is read-only.";
+    const { container } = renderCanvas();
+
+    // Act.
+    const { before, after } = await dragAndSettle(container, "aaa");
+
+    // Assert.
+    expect(moves, "the move was never sent, so this test cannot say anything").toHaveLength(1);
+    expect(after).toBe(before);
+    moveAnswer = "";
   });
 
   it("commits a drag as one move in module coordinates, snapped to a row", () => {

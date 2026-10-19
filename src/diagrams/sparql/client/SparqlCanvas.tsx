@@ -227,7 +227,8 @@ export function SparqlCanvas({ projectId, entryId, path }: ToolContentProps) {
       const height = region ? region.height : NODE_HEIGHT;
       // The authored position, raw - and the only thing this canvas can send. An anonymous
       // variable's refusal comes back from the backend with its sentence (Requirement 5.4).
-      void moveElementTo(elementId, position.x - width / 2, position.y - height / 2);
+      // Returned, so a refusal lets the library put the element back where it was (ruled 2026-10-19).
+      return moveElementTo(elementId, position.x - width / 2, position.y - height / 2);
     },
     onViewChanged: ({ viewport: next }) => setViewport(next),
   };

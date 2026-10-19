@@ -105,7 +105,8 @@ export function DependencyGraphCanvas({ projectId, entryId, path }: ToolContentP
       // conversion subtracts the centre offset first, so the snapped row is the authored one.
       const x = position.x - NODE_WIDTH / 2;
       const row = nearestRow(position.y - NODE_HEIGHT / 2);
-      void moveElementTo(elementId, x, row * ROW_HEIGHT);
+      // Returned, so a refusal lets the library put the element back where it was (ruled 2026-10-19).
+      return moveElementTo(elementId, x, row * ROW_HEIGHT);
     },
     // The whole gesture in one call - source and landing together in a rel: id. Deliberately
     // stateless: the two-call protocol this replaces kept an armed source in the backend

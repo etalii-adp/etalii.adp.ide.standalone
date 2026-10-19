@@ -505,69 +505,76 @@ internal sealed partial class XmlFamily(BodyText text, FblBinding binding, FblOp
         };
     }
 
-    public override void Write(Plan plan, ReadElement element, IReadOnlyList<SlotChange> changes)
+    protected override bool RemoveSlot(Plan plan, ReadElement element, SlotChange change)
     {
-        var owner = (XmlElement)element.Entry;
-        foreach (var change in changes)
+        if (!change.Read.Present) return false;
+        switch (Node(change.Read))
         {
-            var read = change.Read;
-            var binding = change.Binding;
-            var node = read.Node is OverrideNode over ? over.Node : read.Node;
-            switch (node)
-            {
-                case XmlAttribute attribute when read.Present:
-                    if (change.IsEmpty && binding.Empty == "remove")
-                    {
-                        plan.Add(SpliceOperation.RemoveKey, WhitespaceBefore(attribute.Own.Start), attribute.Own.End, "");
-                    }
-                    else
-                    {
-                        var written = Format(read, binding, change.Value);
-                        if (written != Text.Text(attribute.Value)) plan.Add(SpliceOperation.ReplaceValue, attribute.Value, written);
-                    }
-                    continue;
-                case XmlTextNode text when read.Present:
-                    var removesChild = text.Element != owner && (binding.Create is not null || read.Node is OverrideNode);
-                    if (change.IsEmpty && binding.Empty == "remove" && removesChild)
-                    {
-                        RemoveChild(plan, (XmlElement)text.Element.Parent!, text.Element);
-                    }
-                    else if (text.Span is { } span)
-                    {
-                        var written = Format(read, binding, change.Value);
-                        if (written != Text.Text(span)) plan.Add(SpliceOperation.ReplaceValue, span, written);
-                    }
-                    else
-                    {
-                        Open(plan, text.Element, Format(read, binding, change.Value), SpliceOperation.ReplaceValue, inline: true);
-                    }
-                    continue;
-            }
-            if (binding.XmlAttribute is { } name)
-            {
-                if (node is not XmlElement target)
-                {
-                    Plan.Refuse($"The {Binding.Name} file has no {binding.Child} to write \"{name}\" in.");
-                    return;
-                }
-                // After the nearest attribute before it in the rule's own order, where the order
-                // places it before another that is there; else after the last attribute (FBL §6.3).
-                var order = change.Rule.WireOrder().ToList();
-                var place = order.IndexOf(name);
-                var before = place < 0 ? null : target.Attributes.LastOrDefault(attribute => order.IndexOf(attribute.Name) is >= 0 and var at && at < place);
-                var offset = before is not null ? before.Own.End : target.Attributes.Count > 0 ? target.Attributes[^1].Own.End : target.NameEnd;
-                plan.Add(SpliceOperation.InsertKey, offset, offset, $" {name}=\"{Format(read, binding, change.Value)}\"");
-                continue;
-            }
-            if (binding is { Text: true, Create: { } create })
-            {
-                var content = Format(read with { Node = new XmlTextNode(owner, null, binding.HtmlParagraphs) }, binding, change.Value);
-                CreateChild(plan, owner, create, NewText.Render(create.Emit, placeholder => placeholder == "value" ? content : null));
-                continue;
-            }
-            Plan.Refuse($"The {Binding.Name} file has no {binding.Child ?? "element"} to write the {change.Attribute} in.");
+            case XmlAttribute attribute:
+                plan.Add(SpliceOperation.RemoveKey, WhitespaceBefore(attribute.Own.Start), attribute.Own.End, "");
+                return true;
+            case XmlTextNode text when text.Element != element.Entry && (change.Binding.Create is not null || change.Read.Node is OverrideNode):
+                RemoveChild(plan, (XmlElement)text.Element.Parent!, text.Element);
+                return true;
+            default:
+                return false;
         }
     }
+
+    protected override bool ReplaceSlot(Plan plan, SlotChange change)
+    {
+        var read = change.Read;
+        switch (Node(read))
+        {
+            case XmlAttribute attribute:
+                var value = Format(read, change.Binding, change.Value);
+                if (value != Text.Text(attribute.Value)) plan.Add(SpliceOperation.ReplaceValue, attribute.Value, value);
+                return true;
+            case XmlTextNode { Span: { } span }:
+                var written = Format(read, change.Binding, change.Value);
+                if (written != Text.Text(span)) plan.Add(SpliceOperation.ReplaceValue, span, written);
+                return true;
+            case XmlTextNode text:
+                Open(plan, text.Element, Format(read, change.Binding, change.Value), SpliceOperation.ReplaceValue, inline: true);
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    protected override bool InsertSlot(Plan plan, ReadElement element, SlotChange change)
+    {
+        var read = change.Read;
+        var binding = change.Binding;
+        if (binding.XmlAttribute is { } name)
+        {
+            if (Node(read) is not XmlElement target)
+            {
+                Plan.Refuse($"The {Binding.Name} file has no {binding.Child} to write \"{name}\" in.");
+                return true;
+            }
+            // After the nearest attribute before it in the rule's own order, where the order
+            // places it before another that is there; else after the last attribute (FBL §6.3).
+            var order = change.Rule.WireOrder().ToList();
+            var place = order.IndexOf(name);
+            var before = place < 0 ? null : target.Attributes.LastOrDefault(attribute => order.IndexOf(attribute.Name) is >= 0 and var at && at < place);
+            var offset = before is not null ? before.Own.End : target.Attributes.Count > 0 ? target.Attributes[^1].Own.End : target.NameEnd;
+            plan.Add(SpliceOperation.InsertKey, offset, offset, $" {name}=\"{Format(read, binding, change.Value)}\"");
+            return true;
+        }
+        if (binding is { Text: true, Create: { } create })
+        {
+            var owner = (XmlElement)element.Entry;
+            var content = Format(read with { Node = new XmlTextNode(owner, null, binding.HtmlParagraphs) }, binding, change.Value);
+            CreateChild(plan, owner, create, NewText.Render(create.Emit, placeholder => placeholder == "value" ? content : null));
+            return true;
+        }
+        Plan.Refuse($"The {Binding.Name} file has no {binding.Child ?? "element"} to write the {change.Attribute} in.");
+        return true;
+    }
+
+    /// <summary>The node a slot was read from, through an override to the node it stands for.</summary>
+    private static object? Node(SlotRead read) => read.Node is OverrideNode over ? over.Node : read.Node;
 
     /// <summary>The start of the whitespace directly before <paramref name="offset"/>.</summary>
     private int WhitespaceBefore(int offset)

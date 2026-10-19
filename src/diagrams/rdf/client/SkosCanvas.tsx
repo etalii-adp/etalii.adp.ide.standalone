@@ -299,7 +299,8 @@ export function SkosCanvas({ projectId, entryId, path }: ToolContentProps) {
       const height = model.concepts.has(elementId) ? CONCEPT_HEIGHT : REGION_HEIGHT;
       // The authored position, raw: the layout block stores what the author placed. A blank
       // node's refusal comes back from the backend with its sentence.
-      void moveElementTo(elementId, position.x - width / 2, position.y - height / 2);
+      // Returned, so a refusal lets the library put the element back where it was (ruled 2026-10-19).
+      return moveElementTo(elementId, position.x - width / 2, position.y - height / 2);
     },
     // Which anchor the drag began at is which gesture it is - one stateless rel: id either
     // way, and the backend refuses ends that are not both asserted concepts.
