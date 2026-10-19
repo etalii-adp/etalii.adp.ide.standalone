@@ -252,17 +252,17 @@ internal abstract class FamilyReader(BodyText text, FblBinding binding, FblOptio
     {
         foreach (var change in changes)
         {
-            if (change is { IsEmpty: true, Binding.Empty: "remove" } && RemoveSlot(plan, element, change)) continue;
-            if (change.Read.Present && ReplaceSlot(plan, element, change)) continue;
+            if (change is { IsEmpty: true, Binding.Empty: "remove" } && RemoveSlot(plan, change)) continue;
+            if (change.Read.Present && ReplaceSlot(plan, change)) continue;
             InsertSlot(plan, element, change);
         }
     }
 
     /// <summary>Removes the slot of an emptied value; false hands the change on to <see cref="ReplaceSlot"/>.</summary>
-    protected virtual bool RemoveSlot(Plan plan, ReadElement element, SlotChange change) => throw WritesItsOwn();
+    protected virtual bool RemoveSlot(Plan plan, SlotChange change) => throw WritesItsOwn();
 
     /// <summary>Replaces a value the entry has; false hands the change on to <see cref="InsertSlot"/>.</summary>
-    protected virtual bool ReplaceSlot(Plan plan, ReadElement element, SlotChange change) => throw WritesItsOwn();
+    protected virtual bool ReplaceSlot(Plan plan, SlotChange change) => throw WritesItsOwn();
 
     /// <summary>Writes a value the entry does not have, at its place in the rule's <see cref="Rule.KeyOrder"/>, or refuses.</summary>
     protected virtual void InsertSlot(Plan plan, ReadElement element, SlotChange change) => throw WritesItsOwn();

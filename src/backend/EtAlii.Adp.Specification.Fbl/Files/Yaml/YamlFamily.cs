@@ -202,7 +202,7 @@ internal sealed class YamlFamily(BodyText text, FblBinding binding, FblOptions o
 
     // ---- writing ----
 
-    protected override bool RemoveSlot(Plan plan, ReadElement element, SlotChange change)
+    protected override bool RemoveSlot(Plan plan, SlotChange change)
     {
         if (change.Read.Node is not TreeEntry member) return true;
 
@@ -215,7 +215,7 @@ internal sealed class YamlFamily(BodyText text, FblBinding binding, FblOptions o
         return true;
     }
 
-    protected override bool ReplaceSlot(Plan plan, ReadElement element, SlotChange change)
+    protected override bool ReplaceSlot(Plan plan, SlotChange change)
     {
         if (change.Read.Node is not TreeEntry member) return false;
         var written = Format(change.Read, change.Binding, change.Value);
