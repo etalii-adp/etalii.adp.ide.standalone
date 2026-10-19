@@ -35,10 +35,10 @@ internal sealed partial class SchemaCache(TimeProvider time)
     /// <summary>How many times a set was compiled; a test reads it to see that nothing was compiled again.</summary>
     public int Compilations { get; private set; }
 
-    /// <summary>The compiled set for <paramref name="schemaPaths"/>, the full paths of the root schemas, inside <paramref name="rootPath"/>.</summary>
-    public CompiledSchema Get(string rootPath, IReadOnlyList<string> schemaPaths)
+    /// <summary>The compiled set for <paramref name="schemaPaths"/>, the full paths of the root schemas, inside <paramref name="root"/>.</summary>
+    public CompiledSchema Get(ProjectRoot root, IReadOnlyList<string> schemaPaths)
     {
-        var key = string.Join('\n', [rootPath, .. schemaPaths.Order(StringComparer.Ordinal)]);
+        var key = string.Join('\n', [root.FullPath, .. schemaPaths.Order(StringComparer.Ordinal)]);
         var now = time.GetUtcNow();
         lock (_lock)
         {
@@ -49,7 +49,7 @@ internal sealed partial class SchemaCache(TimeProvider time)
 
             if (!_entries.TryGetValue(key, out var entry) || entry.Changed())
             {
-                entry = new Entry(Compile(rootPath, schemaPaths, null));
+                entry = new Entry(Compile(root, schemaPaths, null));
                 _entries[key] = entry;
             }
 
@@ -59,18 +59,18 @@ internal sealed partial class SchemaCache(TimeProvider time)
     }
 
     /// <summary>Compiles a schema from its text as typed - a document that is itself a schema - without keeping it.</summary>
-    public CompiledSchema CompileText(string rootPath, string fullPath, string content)
+    public CompiledSchema CompileText(ProjectRoot root, string fullPath, string content)
     {
         lock (_lock)
         {
-            return Compile(rootPath, [fullPath], content);
+            return Compile(root, [fullPath], content);
         }
     }
 
-    private CompiledSchema Compile(string rootPath, IReadOnlyList<string> schemaPaths, string? content)
+    private CompiledSchema Compile(ProjectRoot root, IReadOnlyList<string> schemaPaths, string? content)
     {
         Compilations++;
-        var resolver = new ProjectXmlResolver(rootPath);
+        var resolver = new ProjectXmlResolver(root);
         var set = XmlReaders.SchemaSet(resolver);
         var problems = new List<SchemaProblem>();
         set.ValidationEventHandler += (_, args) => problems.Add(ProblemOf(args.Exception, schemaPaths[0]));

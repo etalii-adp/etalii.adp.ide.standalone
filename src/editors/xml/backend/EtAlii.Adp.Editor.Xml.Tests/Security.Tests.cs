@@ -34,7 +34,7 @@ public sealed class SecurityTests : IDisposable
     public void AFileOutsideTheProject_IsNeverRead(string document)
     {
         // Arrange.
-        var resolver = new ProjectXmlResolver(Root);
+        var resolver = new ProjectXmlResolver(ProjectRoot.From(Root));
         var read = new StringBuilder();
 
         // Act: everything the reader yields until it stops, and why it stopped.
@@ -74,7 +74,7 @@ public sealed class SecurityTests : IDisposable
         // Act.
         var refusal = Assert.Throws<XmlException>(() =>
         {
-            using var reader = XmlReaders.Document(document, Path.Combine(Root, "bomb.xml"), new ProjectXmlResolver(Root));
+            using var reader = XmlReaders.Document(document, Path.Combine(Root, "bomb.xml"), new ProjectXmlResolver(ProjectRoot.From(Root)));
             while (reader.Read())
             {
             }

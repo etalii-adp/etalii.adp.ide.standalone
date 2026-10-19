@@ -32,10 +32,10 @@ public sealed class XmlAnalyzer : IEditorAnalyzer
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        var rootPath = file.Root.FullPath;
+        var root = file.Root;
         var filePath = file.FullPath;
 
-        var resolver = new ProjectXmlResolver(rootPath);
+        var resolver = new ProjectXmlResolver(root);
         var positions = new TextPositions(content);
         var findings = new List<TextFinding>();
         var dependsOn = new List<string>();
@@ -51,7 +51,7 @@ public sealed class XmlAnalyzer : IEditorAnalyzer
         var association = SchemaAssociation.Read(content, filePath, resolver, positions);
         findings.AddRange(association.Unsupported);
 
-        var applied = Applied(rootPath, filePath, content, association, resolver, findings, dependsOn);
+        var applied = Applied(root, filePath, content, association, resolver, findings, dependsOn);
         string status;
         if (wellFormed.Stopped)
         {
@@ -68,7 +68,7 @@ public sealed class XmlAnalyzer : IEditorAnalyzer
         }
 
         dependsOn.AddRange(resolver.Read);
-        _logger.Debug("Analysed {Path}: {Findings} finding(s)", Path.GetRelativePath(rootPath, filePath), findings.Count);
+        _logger.Debug("Analysed {Path}: {Findings} finding(s)", file.RelativePath, findings.Count);
         return Task.FromResult(new TextAnalysis(
             findings,
             status,
@@ -79,12 +79,12 @@ public sealed class XmlAnalyzer : IEditorAnalyzer
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        var rootPath = file.Root.FullPath;
+        var root = file.Root;
         var filePath = file.FullPath;
 
         // Only an XSD the document names offers anything: a DTD validates and offers nothing
         // (ruling A2), and with no schema the end tag is the client's (Requirement 7.8).
-        var resolver = new ProjectXmlResolver(rootPath);
+        var resolver = new ProjectXmlResolver(root);
         var association = SchemaAssociation.Read(content, filePath, resolver, new TextPositions(content));
         if (association.IsSchema || association.Xsd.Count == 0)
         {
@@ -92,7 +92,7 @@ public sealed class XmlAnalyzer : IEditorAnalyzer
         }
 
         var resolved = ResolvedXsd(association, filePath, resolver, [], []);
-        var compiled = resolved.Count == 0 ? null : _schemas.Get(rootPath, Roots(resolved));
+        var compiled = resolved.Count == 0 ? null : _schemas.Get(root, Roots(resolved));
         return compiled is not { Set: { } set, Problem: null, Version11: null }
             ? Task.FromResult<IReadOnlyList<TextCompletion>>([])
             : Task.FromResult(XmlCompletion.Complete(content, offset, isExplicit, set, filePath, resolver));
@@ -102,7 +102,7 @@ public sealed class XmlAnalyzer : IEditorAnalyzer
     private sealed record Application(string Status, bool Validate, CompiledSchema? Set);
 
     private Application Applied(
-        string rootPath,
+        ProjectRoot root,
         string filePath,
         string content,
         SchemaAssociation association,
@@ -113,7 +113,7 @@ public sealed class XmlAnalyzer : IEditorAnalyzer
         if (association.IsSchema)
         {
             // Requirement 5.5: a schema is checked as a schema, from its text as typed.
-            var compiled = _schemas.CompileText(rootPath, filePath, content);
+            var compiled = _schemas.CompileText(root, filePath, content);
             dependsOn.AddRange(compiled.Files);
             if (compiled.Problem is { } problem)
             {
@@ -128,14 +128,14 @@ public sealed class XmlAnalyzer : IEditorAnalyzer
         }
 
         return association.Xsd.Count > 0
-            ? AppliedXsd(rootPath, filePath, association, resolver, findings, dependsOn)
+            ? AppliedXsd(root, filePath, association, resolver, findings, dependsOn)
             : association.HasDoctype
                 ? new Application(DtdChecked, true, null)
                 : new Application(NoSchema, false, null);
     }
 
     private Application AppliedXsd(
-        string rootPath,
+        ProjectRoot root,
         string filePath,
         SchemaAssociation association,
         ProjectXmlResolver resolver,
@@ -148,7 +148,7 @@ public sealed class XmlAnalyzer : IEditorAnalyzer
             return new Application(NoSchema, false, null);
         }
 
-        var compiled = _schemas.Get(rootPath, Roots(resolved));
+        var compiled = _schemas.Get(root, Roots(resolved));
         dependsOn.AddRange(compiled.Files);
         if (compiled.Version11 is { } version11)
         {

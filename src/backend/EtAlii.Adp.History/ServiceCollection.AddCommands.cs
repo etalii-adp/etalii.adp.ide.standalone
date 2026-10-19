@@ -31,8 +31,8 @@ public static class ServiceCollectionAddCommandsExtension
         // a handler registers beside the code it invokes, and a test host that
         // dispatches hierarchy commands calls AddHierarchy alongside AddCommands.
 
-        // One history per project, keyed by root path. A provider reaches its project's stack
-        // through Get(target.RootPath); a connection's Watch lifetime retains and releases it,
+        // One history per project, keyed by its root. A provider reaches its project's stack
+        // through Get(target.Root); a connection's Watch lifetime retains and releases it,
         // and the grace after the last release runs on the one clock.
         services.TryAddSingleton(TimeProvider.System);
         services.AddSingleton<IHistoryStackStore>(provider =>
