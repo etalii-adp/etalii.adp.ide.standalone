@@ -239,6 +239,15 @@ internal static class EditPlanner
             if (rule.IsRelation && name is "source" or "target") continue;
             values[name] = value;
         }
+        // An empty value refused for a set is refused for an add too (FBL 0.6 §6.2), but for an emit,
+        // which follows its own rule for optional segments.
+        foreach ((string name, object? value) in values)
+        {
+            if (rule.Insert!.Emit is null && rule.Attribute(name) is { Flag: false, Empty: "refuse" } && NewText.IsEmpty(value))
+            {
+                Planning.Plan.Refuse($"The {name} of a {add.Type} cannot be empty.");
+            }
+        }
         if (rule.Insert!.When is { } when && !reading.InsertAllowed(rule, when, values))
         {
             Planning.Plan.Refuse($"This {add.Type} cannot be added to the file.");

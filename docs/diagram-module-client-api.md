@@ -578,7 +578,7 @@ Source: [`src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx`](../sr
 
 **A refusal needs no handler.** Every call that reaches the backend from a canvas — the library's declared keystrokes and menu actions, and a module's own `executeAction`, `setProperty` and `moveElementTo` — shows its refusal on the one line the library draws around the canvas, and clears it when the next is sent (see [Refusals and status](#refusals-and-status)). `ActionRefused` is still raised, as `action-refused` with the `actionId` and a `message`, for a module that wants to do something of its own besides; **nothing is required to listen**, and a module that draws the message itself draws it twice.
 
-**A refused move snaps back only if the handler hands back the answer.** The canvas holds a dropped element at the drop until the model places it, so an accepted move does not flash back to where it began. A refused move changes nothing in the model, so nothing releases that hold: the element stays at a position nothing recorded. `onElementMoved` may therefore return the `Promise<string>` that `moveElementTo` resolves to - `""` when the move was recorded, its refusal otherwise - and a refusal lets the element go back to where the model has it. A handler that returns nothing is held until the model answers, as before. C4's [`C4Canvas.tsx`](../src/diagrams/c4/client/C4Canvas.tsx) returns it, for a view that declares `autoLayout` (c4-disl-fbl, ruled 2026-10-19).
+**A refused move snaps back only if the handler hands back the answer.** The canvas holds a dropped element at the drop until the model places it, so an accepted move does not flash back to where it began. A refused move changes nothing in the model, so nothing releases that hold: the element stays at a position nothing recorded. `onElementMoved` may therefore return the `Promise<string>` that `moveElementTo` resolves to - `""` when the move was recorded, its refusal otherwise - and a refusal lets the element go back to where the model has it. A handler that returns nothing is held until the model answers. **Every positional module returns it** (ruled 2026-10-19): `return moveElementTo(...)`, never `void moveElementTo(...)`, as [`C4Canvas.tsx`](../src/diagrams/c4/client/C4Canvas.tsx) does for a view that declares `autoLayout`. Two modules release the hold another way and need not: `agent-behavior-modelling` and `sankey` draw the drop through a rearrangement of their own, which moves the element off its old place and is dropped again on a refusal. The mindmap's drop is a re-parenting proposal (`dropTarget`), which the canvas never holds. A module's canvas test checks it with `dragAndSettle` (see [Tests a module writes](#tests-a-module-writes-and-what-a-module-must-not-do)).
 
 ```mermaid
 sequenceDiagram
@@ -784,7 +784,7 @@ sequenceDiagram
 
 ## Tests a module writes, and what a module must not do
 
-**Declarations:** `expectLibrarySelection`, `fakeContextConnection`, `idsPushed`, `pointer`
+**Declarations:** `expectLibrarySelection`, `fakeContextConnection`, `idsPushed`, `pointer`, `dragAndSettle`
 
 **What it is for.** The library's shared test helpers, and the guards that walk every module client and fail when one reinvents something shared.
 
@@ -792,7 +792,7 @@ sequenceDiagram
 
 **The shared helpers.** `expectLibrarySelection`, in `src/client/src/canvas/library/testing/`, asserts that a press produced the library's own selection rather than a module's idea of one. It is the one library folder a module's TEST files may import from, and imports from it are part of the module-facing surface for that reason.
 
-**The canvas test harness** beside it, `canvasHarness.ts`, holds what every canvas test used to write for itself (client-centralization Requirement 10): `pointer` builds a pointer event jsdom can carry, `idsPushed` reads the ids a canvas pushed for a `LibrarySelectionHarness`, and `fakeContextConnection` is the one fake of the context connection, every member a `vi.fn()` - pass only the members a test drives, and mount it as `useContextConnection: () => connection` with `connection` built once. jsdom's missing pointer capture is stubbed in `test-setup.ts` for every test. A module's `renderCanvas` stays its own: its props differ per module.
+**The canvas test harness** beside it, `canvasHarness.ts`, holds what every canvas test used to write for itself (client-centralization Requirement 10): `pointer` builds a pointer event jsdom can carry, `idsPushed` reads the ids a canvas pushed for a `LibrarySelectionHarness`, `dragAndSettle` drags an element, lets go and waits for the move's answer, handing back its markup before and after - a refused move must leave the two equal - and `fakeContextConnection` is the one fake of the context connection, every member a `vi.fn()` - pass only the members a test drives, and mount it as `useContextConnection: () => connection` with `connection` built once. jsdom's missing pointer capture is stubbed in `test-setup.ts` for every test. A module's `renderCanvas` stays its own: its props differ per module.
 
 **The guards that walk module clients — twenty-one of them, measured rather than recalled:**
 

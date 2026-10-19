@@ -246,7 +246,8 @@ export function TimelineCanvas({ projectId, entryId, path }: ShellCanvasProps) {
       const width = element.isPeriod ? Math.max((endSecondsOf(element) - element.x) / scale.secondsPerUnit, 2) : MOMENT_RADIUS * 2;
       const beginSeconds = toSeconds(position.x - width / 2);
       const row = nearestRow(toModuleY(position.y - ELEMENT_HEIGHT / 2));
-      void moveElementTo(elementId, beginSeconds, row * ROW_HEIGHT);
+      // Returned, so a refusal lets the library put the element back where it was (ruled 2026-10-19).
+      return moveElementTo(elementId, beginSeconds, row * ROW_HEIGHT);
     },
     onElementResized: ({ elementId, side, bounds }) => {
       const element = model.elements.get(elementId);

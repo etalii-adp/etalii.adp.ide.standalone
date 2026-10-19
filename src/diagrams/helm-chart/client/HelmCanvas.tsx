@@ -135,7 +135,8 @@ export function HelmCanvas({ projectId, entryId, path }: HelmCanvasProps) {
       }
       // The authored position, raw: the layout block stores what the author placed, and
       // rounding it here would quietly turn the canvas into a grid.
-      void moveElementTo(elementId, position.x - node.payload.width / 2, position.y - node.payload.height / 2);
+      // Returned, so a refusal lets the library put the element back where it was (ruled 2026-10-19).
+      return moveElementTo(elementId, position.x - node.payload.width / 2, position.y - node.payload.height / 2);
     },
     onViewChanged: ({ viewport: next }) => setViewport(next),
   };

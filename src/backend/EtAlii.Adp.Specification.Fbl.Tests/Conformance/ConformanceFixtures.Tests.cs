@@ -60,19 +60,8 @@ public class ConformanceFixturesTests
         return $"../../{Path.GetFileName(file)}{reference[hash..]}";
     }
 
-    /// <summary>
-    /// The fixtures the library passes: every one but those it departs from today, which
-    /// <see cref="InsertEmptyFixturesTests"/> runs with the departure written out.
-    /// </summary>
-    public static TheoryData<string> PassingFixtures()
-    {
-        var data = new TheoryData<string>();
-        foreach (var name in Fixtures().Select(row => row.Data).Where(name => !InsertEmptyFixturesTests.Departing.Contains(name))) data.Add(name);
-        return data;
-    }
-
     [Theory]
-    [MemberData(nameof(PassingFixtures))]
+    [MemberData(nameof(Fixtures))]
     public void TheFixturePasses(string name)
     {
         var folder = Path.Combine(Repository.Conformance, "fixtures", name);
@@ -173,6 +162,9 @@ public class ConformanceFixturesTests
                 }
             }
             Assert.True(expected.SequenceEqual(actual), $"{label}: expected splices\n  {string.Join("\n  ", expected)}\nbut planned\n  {string.Join("\n  ", actual)}");
+
+            // A refused step may leave out the document it leaves, which is the one before it, as compared above.
+            if (step.TryGetProperty("refused", out _) && !step.TryGetProperty("expect", out _) && !step.TryGetProperty("expectFile", out _)) continue;
             var expect = step.TryGetProperty("expect", out var text)
                 ? Encoding.UTF8.GetBytes(text.GetString()!)
                 : File.ReadAllBytes(Path.Combine(folder, step.GetProperty("expectFile").GetString()!));

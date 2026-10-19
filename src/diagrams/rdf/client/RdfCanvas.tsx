@@ -230,7 +230,8 @@ export function RdfCanvas({ projectId, entryId, path }: ShellCanvasProps) {
       }
       // The authored position, raw: the layout block stores what the author placed, and a
       // blank node's refusal comes back from the backend with its sentence.
-      void moveElementTo(elementId, position.x - NODE_WIDTH / 2, position.y - nodeHeightOf(node) / 2);
+      // Returned, so a refusal lets the library put the element back where it was (ruled 2026-10-19).
+      return moveElementTo(elementId, position.x - NODE_WIDTH / 2, position.y - nodeHeightOf(node) / 2);
     },
     // The whole gesture in one stateless rel: call; the predicate is asked in a dialog -
     // the event carries the payload the context channel cannot (Requirement 7.3).

@@ -9,7 +9,7 @@ import {
 import { applyDelta, emptyModel, type DotNetDependencyGraphModel } from "./dotnetDependencyGraphModel";
 import { elementSelectionOf } from "@client/canvas/selection";
 import { expectLibrarySelection } from "@client/canvas/library/testing/expectLibrarySelection";
-import { fakeContextConnection, idsPushed } from "@client/canvas/library/testing/canvasHarness";
+import { fakeContextConnection, idsPushed, dragAndSettle } from "@client/canvas/library/testing/canvasHarness";
 
 const select = vi.fn();
 /** The backend's pushed selection - null for every test but the shared selection assertion. */
@@ -227,6 +227,21 @@ describe("DotNetDependencyGraphCanvas — the declared element", () => {
     // The selection the module pushes carries the CONTEXT_MENU action - the same call its
     // `onContextMenu` made by hand.
     expect(select).toHaveBeenCalled();
+  });
+
+  it("snaps an element back when the backend refuses its move, rather than leaving it at the drop", async () => {
+    // Arrange: the library holds a drop until the model moves the element, and a refused move never
+    // does - so the move's answer has to be handed back for the element to return (ruled 2026-10-19).
+    moveElementTo.mockClear();
+    moveElementTo.mockResolvedValueOnce("This diagram is read-only.");
+    const { container } = renderCanvas();
+
+    // Act.
+    const { before, after } = await dragAndSettle(container, "project:src/Pipeline.Core/Pipeline.Core.csproj");
+
+    // Assert.
+    expect(moveElementTo, "the move was never sent, so this test cannot say anything").toHaveBeenCalledTimes(1);
+    expect(after).toBe(before);
   });
 
   it("carries its accessible name and stays in the tab order", () => {

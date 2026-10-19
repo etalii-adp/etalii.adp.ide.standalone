@@ -245,36 +245,50 @@ internal abstract class FamilyReader(BodyText text, FblBinding binding, FblOptio
     /// must be refused. Each change is one of three (FBL §6.1): a value emptied under <c>empty: "remove"</c>
     /// goes, a value the entry has is replaced, and any other is inserted. A hook that does not take its
     /// change hands it on: a removal the family does not make is written as a replacement, a replacement it
-    /// cannot make as an insertion.
+    /// cannot make as an insertion. When an insertion finds no place, or the entry would no longer read as
+    /// the changes say, what was planned is taken back and the entry is written anew.
     /// </summary>
-    /// <remarks>Virtual until the json, lines and xml families write through the hooks too (T216).</remarks>
-    public virtual void Write(Plan plan, ReadElement element, IReadOnlyList<SlotChange> changes)
+    public void Write(Plan plan, ReadElement element, IReadOnlyList<SlotChange> changes)
     {
+        var mark = plan.Mark();
+        var placed = true;
         foreach (var change in changes)
         {
-            if (change is { IsEmpty: true, Binding.Empty: "remove" } && RemoveSlot(plan, change)) continue;
+            if (change is { IsEmpty: true, Binding.Empty: "remove" } && RemoveSlot(plan, element, change)) continue;
             if (change.Read.Present && ReplaceSlot(plan, change)) continue;
-            InsertSlot(plan, element, change);
+            placed &= InsertSlot(plan, element, change);
         }
+        if (placed && ReadsBack(plan.Since(mark), element, changes)) return;
+        plan.Discard(mark);
+        Rewrite(plan, element, changes);
     }
 
     /// <summary>Removes the slot of an emptied value; false hands the change on to <see cref="ReplaceSlot"/>.</summary>
-    protected virtual bool RemoveSlot(Plan plan, SlotChange change) => throw WritesItsOwn();
+    protected abstract bool RemoveSlot(Plan plan, ReadElement element, SlotChange change);
 
     /// <summary>Replaces a value the entry has; false hands the change on to <see cref="InsertSlot"/>.</summary>
-    protected virtual bool ReplaceSlot(Plan plan, SlotChange change) => throw WritesItsOwn();
+    protected abstract bool ReplaceSlot(Plan plan, SlotChange change);
 
-    /// <summary>Writes a value the entry does not have, at its place in the rule's <see cref="Rule.KeyOrder"/>, or refuses.</summary>
-    protected virtual void InsertSlot(Plan plan, ReadElement element, SlotChange change) => throw WritesItsOwn();
+    /// <summary>
+    /// Writes a value the entry does not have, or refuses; false when the family finds no place for it in
+    /// the entry, which is then written anew by <see cref="Rewrite"/>.
+    /// </summary>
+    protected abstract bool InsertSlot(Plan plan, ReadElement element, SlotChange change);
 
-    private NotSupportedException WritesItsOwn() => new($"The {FamilyName} family writes its changes in its own Write.");
+    /// <summary>Whether the entry, with <paramref name="planned"/> applied, still reads as the changes say.</summary>
+    protected virtual bool ReadsBack(IReadOnlyList<Splice> planned, ReadElement element, IReadOnlyList<SlotChange> changes) => true;
+
+    /// <summary>Writes the entry anew with the changes, when they cannot be written slot by slot.</summary>
+    protected virtual void Rewrite(Plan plan, ReadElement element, IReadOnlyList<SlotChange> changes) =>
+        Plan.Refuse($"This {element.Rule.Type} has no place for the new value in this file.");
 
     /// <summary>
     /// The values a new entry writes, in the rule's key order (FBL §6.1): under each key, the id, the
     /// source or the target the add gives, else the value of the first attribute bound to that key that
     /// the add gives. Only <c>insert.keys</c> is written when the rule names them. A computed attribute
-    /// and one under a <c>child</c> mapping write nothing, and an emptied value is left out unless its
-    /// binding keeps it (<c>empty: "keep"</c>).
+    /// and one under a <c>child</c> mapping write nothing. An empty value is written as a set writes it,
+    /// and left out only under <c>empty: "remove"</c>; the planner has refused it under <c>refuse</c>
+    /// (FBL 0.6 §6.2, spec 025 B-09).
     /// </summary>
     protected static IEnumerable<InsertedValue> InsertValues(InsertRequest request)
     {
@@ -295,7 +309,7 @@ internal abstract class FamilyReader(BodyText text, FblBinding binding, FblOptio
         foreach ((string name, AttributeBinding binding) in rule.Attributes)
         {
             if (binding.Key != key || binding.Child is not null || binding.IsComputed) continue;
-            if (!request.Values.TryGetValue(name, out var value) || (NewText.IsEmpty(value) && binding.Empty != "keep")) continue;
+            if (!request.Values.TryGetValue(name, out var value) || (NewText.IsEmpty(value) && binding.Empty == "remove")) continue;
             return new InsertedValue(key, value, binding);
         }
         return null;

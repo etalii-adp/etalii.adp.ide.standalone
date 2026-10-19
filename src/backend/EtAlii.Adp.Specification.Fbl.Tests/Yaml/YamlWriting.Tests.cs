@@ -120,7 +120,7 @@ public class YamlWritingTests
     }
 
     [Fact]
-    public void AnEmptyValueThatTheAttributeKeepsIsWrittenInANewEntry()
+    public void AnEmptyValueIsWrittenInANewEntryAsASetWritesIt()
     {
         // Arrange.
         var body = Open("items:\n  - id: a\n");
@@ -128,9 +128,9 @@ public class YamlWritingTests
         // Act.
         var result = body.Change(new ModelChange.Add("Item", "b", new Dictionary<string, object?> { ["note"] = "", ["text"] = "" }));
 
-        // Assert: "note" says keep, "text" says nothing, so only "note" is written.
+        // Assert: "note" says keep and "text" says nothing, which for a string is keep too (FBL 0.6 §6.2), so both are written.
         Assert.IsType<PlanResult.Planned>(result);
-        Assert.Equal("items:\n  - id: a\n  - id: b\n    note: \"\"\n", Text(body));
+        Assert.Equal("items:\n  - id: a\n  - id: b\n    text: \"\"\n    note: \"\"\n", Text(body));
     }
 
     [Fact]

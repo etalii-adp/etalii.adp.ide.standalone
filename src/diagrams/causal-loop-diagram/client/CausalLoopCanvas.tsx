@@ -145,7 +145,8 @@ export function CausalLoopCanvas({ projectId, entryId, path }: CausalLoopCanvasP
       if (!model.variables.has(elementId)) {
         return; // a loop badge has no position of its own; the definition already refuses the drag
       }
-      void moveElementTo(elementId, position.x, position.y);
+      // Returned, so a refusal lets the library put the element back where it was (ruled 2026-10-19).
+      return moveElementTo(elementId, position.x, position.y);
     },
     onViewChanged: ({ viewport: next }) => setViewport(next),
     // A toolbox drop carries the backend action its item names; the placement carries where it
