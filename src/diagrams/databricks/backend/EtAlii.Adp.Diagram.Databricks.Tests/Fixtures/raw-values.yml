@@ -1,0 +1,34 @@
+bundle:
+  name: raw_bundle
+
+resources:
+  jobs:
+    raw_job:
+      name: Raw values
+      job_clusters:
+        - job_cluster_key: c1
+          new_cluster:
+            spark_version: 15.4.x-scala2.12
+      tasks:
+        - task_key: plain
+          notebook_task:
+            notebook_path: notebooks/plain
+        - task_key: follower
+          depends_on:
+            - task_key: plain
+          notebook_task:
+            notebook_path: notebooks/follower
+  pipelines:
+    raw_pipeline:
+      name: Raw pipeline
+      catalog: main
+      schema: raw
+      libraries:
+        - notebook:
+            path: transformations/raw
+        - file:
+            path: transformations/raw.py
+
+targets:
+  dev:
+    default: true

@@ -1,0 +1,9 @@
+resources:
+  jobs:
+    twice:
+      name: First name
+      name: Second name
+      tasks:
+        - task_key: only
+          notebook_task:
+            notebook_path: notebooks/only

@@ -21,6 +21,8 @@
     <ProjectReference Include="..\..\diagrams\mindmap\backend\EtAlii.Adp.Diagram.Mindmap\EtAlii.Adp.Diagram.Mindmap.csproj" />
     <!-- The Helm chart folder plugin, for the cross-check of the folder binding (helm-chart-disl-fbl, Requirement 8.5). -->
     <ProjectReference Include="..\..\diagrams\helm-chart\backend\EtAlii.Adp.Diagram.HelmChart\EtAlii.Adp.Diagram.HelmChart.csproj" />
+    <!-- The Databricks module's public model and its three parsers, for the cross-check of the two Databricks bindings (databricks-disl-fbl, task 1). -->
+    <ProjectReference Include="..\..\diagrams\databricks\backend\EtAlii.Adp.Diagram.Databricks\EtAlii.Adp.Diagram.Databricks.csproj" />
   </ItemGroup>
 
   <ItemGroup>

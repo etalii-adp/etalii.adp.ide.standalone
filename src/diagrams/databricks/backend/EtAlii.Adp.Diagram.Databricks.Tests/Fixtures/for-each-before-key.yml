@@ -1,0 +1,17 @@
+resources:
+  jobs:
+    looping:
+      name: Keys written after a nested mapping
+      tasks:
+        - for_each_task:
+            inputs: "[1, 2, 3]"
+            task:
+              task_key: inner
+              notebook_task:
+                notebook_path: notebooks/inner
+          task_key: outer
+        - notebook_task:
+            notebook_path: notebooks/mapping_first
+          task_key: mapping_first
+          depends_on:
+            - task_key: outer

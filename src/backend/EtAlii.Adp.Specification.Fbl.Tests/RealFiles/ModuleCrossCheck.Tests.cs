@@ -1,7 +1,8 @@
-using System.Text;
+﻿using System.Text;
 using System.Text.RegularExpressions;
 using EtAlii.Adp.Diagram.C4;
 using EtAlii.Adp.Diagram.CausalLoopDiagram;
+using EtAlii.Adp.Diagram.Databricks;
 using EtAlii.Adp.Diagram.HelmChart;
 using EtAlii.Adp.Diagram.HelmChart.Tests.Parity;
 using EtAlii.Adp.Diagram.Mindmap;
@@ -26,6 +27,12 @@ namespace EtAlii.Adp.Specification.Fbl.Tests.RealFiles;
 /// against today's reader, which the module's test project keeps as its oracle and this project compiles from
 /// there, with the ids its graph gave each node and relation. The folder body is given nothing beside the binding, so a directory no file rule can select (gap 3 of
 /// the definition's companion, which the module answers with entries of its own) shows here as a divergence.
+/// </para>
+/// <para>
+/// <b>Databricks</b> (databricks-disl-fbl, task 1): every file the two vendored Databricks bindings take, against what
+/// the module's three parsers read of it through <see cref="DatabricksModel.Read"/>. The job binding is opened once per
+/// job the module reads, with that job's key as the <c>resource</c> header, and compared with that job; the resources
+/// it captures are compared with the job resources the bundle parser reads.
 /// </para>
 /// </summary>
 public class ModuleCrossCheckTests
@@ -85,6 +92,54 @@ public class ModuleCrossCheckTests
 
         // Assert.
         Divergences.Check("cross-check", "helm-chart", folder, Difference(fbl, module));
+    }
+
+    public static TheoryData<string, string> DatabricksPairs()
+    {
+        var data = new TheoryData<string, string>();
+        foreach (var key in ModuleIds.DatabricksKeys)
+        {
+            foreach (var file in RealFileCorpus.Files(RealFileCorpus.Find(key))) data.Add(key, file);
+        }
+        return data;
+    }
+
+    [Theory]
+    [MemberData(nameof(DatabricksPairs))]
+    public void TheDatabricksBindingsReadTheIdsTheModuleReads(string key, string file)
+    {
+        // Arrange.
+        var bytes = File.ReadAllBytes(RealFileCorpus.FullPath(file));
+        var binding = RealFileCorpus.Binding(RealFileCorpus.Find(key));
+        var module = DatabricksModel.Outcome(LineDocument.Parse(Encoding.UTF8.GetString(bytes))).Model;
+
+        // Act.
+        var body = OpenBody.Open(bytes, binding, RealFileCorpus.Options(binding, file));
+        if (body.Model.Unreadable) return;
+        var parts = new List<string>();
+        if (key == "databricks-job")
+        {
+            Add(parts, "", Difference(ModuleIds.OfDatabricksResources(body.Model), ModuleIds.OfDatabricksBundle(module)));
+            foreach (var job in module.Jobs)
+            {
+                var headers = new Dictionary<string, string> { ["resource"] = job.Key };
+                var reading = OpenBody.Open(bytes, binding, RealFileCorpus.Options(binding, file, headers)).Model;
+                Add(parts, $"job {job.Key}: ", Difference(ModuleIds.OfDatabricksBinding(reading), ModuleIds.OfDatabricksJob(job)));
+            }
+            if (module.Jobs.Count == 0) Add(parts, "no job: ", Difference(ModuleIds.OfDatabricksBinding(body.Model), new Dictionary<string, SortedSet<string>>()));
+        }
+        else
+        {
+            Add(parts, "", Difference(ModuleIds.OfDatabricksBinding(body.Model), ModuleIds.OfDatabricksPipelines(module)));
+        }
+
+        // Assert.
+        Divergences.Check("cross-check", key, file, parts.Count == 0 ? null : string.Join(" | ", parts));
+
+        static void Add(List<string> into, string prefix, string? difference)
+        {
+            if (difference is not null) into.Add(prefix + difference);
+        }
     }
 
     private static string? Difference(IReadOnlyDictionary<string, SortedSet<string>> fbl, IReadOnlyDictionary<string, SortedSet<string>> module)
@@ -250,6 +305,61 @@ internal static partial class ModuleIds
         return ids;
 
         static string Vendored(VendoredEntry entry) => $"{(entry.Sealed ? "tgz" : "sub")}:{entry.RelativePath}";
+    }
+
+    /// <summary>The two Databricks bindings the cross-check reads, by their corpus keys.</summary>
+    public static readonly IReadOnlyList<string> DatabricksKeys = ["databricks-job", "databricks-pipeline"];
+
+    /// <summary>A Databricks binding's side: every element and relation, by its type, with the natural id it was read with.</summary>
+    public static IReadOnlyDictionary<string, SortedSet<string>> OfDatabricksBinding(FblModel model)
+    {
+        var ids = new Dictionary<string, SortedSet<string>>(StringComparer.Ordinal);
+        foreach (var element in model.Elements) Add(ids, element.Type, element.Id);
+        return ids;
+    }
+
+    /// <summary>The job binding's resources: the values of its <c>job</c> capture.</summary>
+    public static IReadOnlyDictionary<string, SortedSet<string>> OfDatabricksResources(FblModel model)
+    {
+        var ids = new Dictionary<string, SortedSet<string>>(StringComparer.Ordinal);
+        foreach (var resource in model.Resources) Add(ids, "Resource", resource);
+        return ids;
+    }
+
+    /// <summary>The bundle parser's job resources, the module's side of <see cref="OfDatabricksResources"/>.</summary>
+    public static IReadOnlyDictionary<string, SortedSet<string>> OfDatabricksBundle(DatabricksModel model)
+    {
+        var ids = new Dictionary<string, SortedSet<string>>(StringComparer.Ordinal);
+        foreach (var resource in model.Bundle.Resources.Where(resource => resource.Kind == "jobs")) Add(ids, "Resource", resource.Key);
+        return ids;
+    }
+
+    /// <summary>
+    /// One job as the job parser reads it, under the ids the module draws: <c>task:</c> and <c>cluster:</c> with the key,
+    /// and <c>edge:</c> upstream <c>-&gt;</c> task for every dependency, a missing upstream included.
+    /// </summary>
+    public static IReadOnlyDictionary<string, SortedSet<string>> OfDatabricksJob(JobModel job)
+    {
+        var ids = new Dictionary<string, SortedSet<string>>(StringComparer.Ordinal);
+        foreach (var task in job.Tasks.Where(task => task.Key.Length > 0))
+        {
+            Add(ids, "Task", $"task:{task.Key}");
+            foreach (var dependency in task.DependsOn) Add(ids, "Dependency", $"edge:{dependency.TaskKey}->{task.Key}");
+        }
+        foreach (var cluster in job.Clusters) Add(ids, "JobCluster", $"cluster:{cluster.Key}");
+        return ids;
+    }
+
+    /// <summary>The pipelines as the pipeline parser reads them: the fixed <c>pipeline</c>, and <c>library:</c> with each library's path.</summary>
+    public static IReadOnlyDictionary<string, SortedSet<string>> OfDatabricksPipelines(DatabricksModel model)
+    {
+        var ids = new Dictionary<string, SortedSet<string>>(StringComparer.Ordinal);
+        foreach (var pipeline in model.Pipelines)
+        {
+            Add(ids, "Pipeline", "pipeline");
+            foreach (var library in pipeline.Libraries) Add(ids, "Library", $"library:{library.Path}");
+        }
+        return ids;
     }
 
     private static void Add(Dictionary<string, SortedSet<string>> ids, string type, string id)

@@ -434,6 +434,90 @@
       "file": "src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4.Tests/Fixtures/findings/view-without-key.dsl",
       "observed": "Relationship: the binding lacks 1 (u->c)",
       "reason": "The fixture is one of the C4 module's findings corpus (c4-disl-fbl task 1), written to hold views written without a key on purpose (finding B2). Its one relationship ends at a component, and structurizr.fbl has rules for people, software systems and containers only, so the relationship has a dangling end and is dropped (FBL section 5.4), while C4Parser reads components. The parity transcript freezes what the module does with it today."
+    },
+    {
+      "property": "unreadable",
+      "binding": "databricks-pipeline",
+      "file": "src/diagrams/databricks/backend/EtAlii.Adp.Diagram.Databricks.Tests/Fixtures/unreadable.json",
+      "observed": "offset 101: ']' was expected here.",
+      "reason": "The fixture is one of the Databricks module's parity corpus (databricks-disl-fbl task 1), written not to be JSON on purpose (finding B7). FBL refuses to read the body, which is the right answer for it; the sentence is the json family's own, where the module reports databricks.unparseable with YamlDotNet's message. The parity transcript freezes what the module does with it today."
+    },
+    {
+      "property": "cross-check",
+      "binding": "databricks-job",
+      "file": "src/diagrams/databricks/backend/EtAlii.Adp.Diagram.Databricks.Tests/Fixtures/anchors-and-merge.yml",
+      "observed": "Resource: the binding lacks 1 (aliased) | job aliased: Dependency: the binding lacks 1 (edge:shared_first->shared_second) | Task: the binding lacks 2 (task:shared_first, task:shared_second)",
+      "reason": "The fixture is one of the Databricks module's parity corpus (databricks-disl-fbl task 1), written to hold an anchor, an alias and a merge key (finding B5). The job 'aliased' writes its tasks as the alias *shared_tasks; databricks-job.fbl reads no entry through the alias, so neither the job's resource nor its tasks and dependency are read, while YamlDotNet resolves the alias to the anchored list and the job parser reads both jobs with the same tasks. The parity transcript freezes what the module does with it today."
+    },
+    {
+      "property": "cross-check",
+      "binding": "databricks-job",
+      "file": "src/diagrams/databricks/backend/EtAlii.Adp.Diagram.Databricks.Tests/Fixtures/duplicate-key-on-a-circle.yml",
+      "observed": "job doubled: Task: the binding adds 1 (task@14)",
+      "reason": "The fixture is one of the Databricks module's parity corpus (databricks-disl-fbl task 1), written to give two tasks the key 'twin' (the duplicate-key rule of finding A2, and finding A4). The job parser reads both, which the module draws as one task:twin; the binding's natural id for the second holder is taken, so FBL section 5.3 addresses it by its place (task@14). The parity transcript freezes what the module does with it today."
+    },
+    {
+      "property": "cross-check",
+      "binding": "databricks-job",
+      "file": "src/diagrams/databricks/backend/EtAlii.Adp.Diagram.Databricks.Tests/Fixtures/every-task-type.yml",
+      "observed": "job every_type: Dependency: the binding lacks 1 (edge:not_declared->waits_for_nobody)",
+      "reason": "The fixture is one of the Databricks module's parity corpus (databricks-disl-fbl task 1), written to hold every task type the module knows and a dependency on an undeclared task (finding B14). The module draws a stub for 'not_declared' and its edge (finding A9); databricks-job.fbl's dependency relation has a dangling source, which FBL section 5.4 does not read as a relation. The task without a task_key is read by neither side as a task. The parity transcript freezes what the module does with it today."
+    },
+    {
+      "property": "cross-check",
+      "binding": "databricks-job",
+      "file": "src/diagrams/databricks/backend/EtAlii.Adp.Diagram.Databricks.Tests/Fixtures/finding-order.yml",
+      "observed": "job ordered: Dependency: the binding lacks 3 (edge:first_missing->both, edge:second_missing->both, edge:third_missing->plain_missing) | Task: the binding adds 1 (task@25)",
+      "reason": "The fixture is one of the Databricks module's parity corpus (databricks-disl-fbl task 1), written to interleave missing upstreams, a dangling cluster and a duplicate key (finding A8). The module draws a stub and an edge for every missing upstream (finding A9), where the binding's dependency relations have a dangling source and are not read (FBL section 5.4); and the second task keyed 'both' is addressed by its place (task@25) because its natural id is taken, where the module draws one task:both. The parity transcript freezes what the module does with it today."
+    },
+    {
+      "property": "cross-check",
+      "binding": "databricks-job",
+      "file": "src/diagrams/databricks/backend/EtAlii.Adp.Diagram.Databricks.Tests/Fixtures/findings-job.yml",
+      "observed": "job tangled: Dependency: the binding lacks 1 (edge:nowhere->stray) | Task: the binding adds 1 (task@22)",
+      "reason": "The fixture is one of the Databricks module's findings corpus, written to hold a missing upstream and a duplicate key on purpose. The module draws a stub and an edge for 'nowhere' (finding A9 of databricks-disl-fbl), where the binding's dependency relation has a dangling source and is not read (FBL section 5.4); and the second task keyed 'stray' is addressed by its place (task@22) because its natural id is taken, where the module draws one task:stray."
+    },
+    {
+      "property": "cross-check",
+      "binding": "databricks-job",
+      "file": "src/diagrams/databricks/backend/EtAlii.Adp.Diagram.Databricks.Tests/Fixtures/flow-collections.yml",
+      "observed": "Resource: the binding lacks 1 (empty_flow) | job flow_dependencies: Dependency: the binding lacks 1 (edge:a->b)",
+      "reason": "The fixture is one of the Databricks module's parity corpus (databricks-disl-fbl task 1), written to hold flow collections (finding B12). The job 'empty_flow' writes 'tasks: []', and databricks-job.fbl's resource capture over /resources/jobs/{job}/tasks/* captures no job that has no task, so the bundle parser's resource 'empty_flow' is not among the binding's resources; and the dependency written 'depends_on: [{task_key: a}]' is not read as a relation, with no finding, where the job parser reads it. The parity transcript freezes what the module does with it today."
+    },
+    {
+      "property": "cross-check",
+      "binding": "databricks-job",
+      "file": "src/diagrams/databricks/backend/EtAlii.Adp.Diagram.Databricks.Tests/Fixtures/flow-dependencies.yml",
+      "observed": "job flow_dependencies: Dependency: the binding lacks 1 (edge:a->b)",
+      "reason": "The fixture is one of the Databricks module's parity corpus (databricks-disl-fbl task 1), written to hold a dependency written as a flow sequence (finding B12). databricks-job.fbl reads 'depends_on: [{task_key: a}]' as no relation, with no finding, where the job parser reads the dependency a->b. The parity transcript freezes what the module does with it today."
+    },
+    {
+      "property": "cross-check",
+      "binding": "databricks-job",
+      "file": "src/diagrams/databricks/backend/EtAlii.Adp.Diagram.Databricks.Tests/Fixtures/key-written-twice.yml",
+      "observed": "Resource: the binding adds 1 (twice) | no job: Task: the binding adds 1 (task:only)",
+      "reason": "The fixture is one of the Databricks module's parity corpus (databricks-disl-fbl task 1), written to repeat the key 'name' in one mapping (finding B6). YamlDotNet refuses the file, so the module reads nothing of it and reports it unavailable; FBL section 7.4 binds the first value, reports fbl.duplicate-key, and reads the job 'twice' and its task. The parity transcript freezes what the module does with it today."
+    },
+    {
+      "property": "cross-check",
+      "binding": "databricks-job",
+      "file": "src/diagrams/databricks/backend/EtAlii.Adp.Diagram.Databricks.Tests/Fixtures/missing-upstream.yml",
+      "observed": "job stubbed: Dependency: the binding lacks 3 (edge:ghost->first_waiter, edge:ghost->second_waiter, edge:phantom->second_waiter)",
+      "reason": "The fixture is one of the Databricks module's parity corpus (databricks-disl-fbl task 1), written to name upstream tasks no task declares (finding A9). The module draws one stub task per missing key with an edge from it to every task that names it, where the binding's dependency relations have a dangling source and FBL section 5.4 does not read them, reporting fbl.dangling-reference. The parity transcript freezes what the module does with it today."
+    },
+    {
+      "property": "cross-check",
+      "binding": "databricks-job",
+      "file": "src/diagrams/databricks/backend/EtAlii.Adp.Diagram.Databricks.Tests/Fixtures/two-jobs-two-pipelines.yml",
+      "observed": "job job_b: Dependency: the binding lacks 1 (edge:absent->report)",
+      "reason": "The fixture is one of the Databricks module's parity corpus (databricks-disl-fbl task 1), written to hold two jobs and two pipelines, each with a finding of its own (findings A7, A13, B2 and B3). The job 'job_b' names a missing upstream 'absent', for which the module draws a stub and an edge (finding A9), where the binding's dependency relation has a dangling source and is not read (FBL section 5.4). Both jobs are otherwise read alike under their resource header. The parity transcript freezes what the module does with it today."
+    },
+    {
+      "property": "cross-check",
+      "binding": "databricks-pipeline",
+      "file": "src/diagrams/databricks/backend/EtAlii.Adp.Diagram.Databricks.Tests/Fixtures/library-ids.json",
+      "observed": "Library: the binding adds 2 (library@11, library@7)",
+      "reason": "The fixture is one of the Databricks module's parity corpus (databricks-disl-fbl task 1), written to give two libraries one path and to hold two libraries of kind 'other' (finding B15). The pipeline parser reads them under the ids the module draws, library:shared/x and library: (two each, drawn as one), where the binding's natural ids for the second of each are taken, so FBL section 5.3 addresses them by their place (library@7, library@11). The parity transcript freezes what the module does with it today."
     }
   ]
 }

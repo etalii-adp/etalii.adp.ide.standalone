@@ -1,0 +1,27 @@
+definitions:
+  cluster_defaults: &cluster_defaults
+    spark_version: 15.4.x-scala2.12
+    node_type_id: Standard_DS3_v2
+
+resources:
+  jobs:
+    anchored:
+      name: Anchored
+      job_clusters:
+        - job_cluster_key: merged
+          new_cluster:
+            <<: *cluster_defaults
+            num_workers: 2
+      tasks: &shared_tasks
+        - task_key: shared_first
+          job_cluster_key: merged
+          notebook_task:
+            notebook_path: notebooks/shared_first
+        - task_key: shared_second
+          depends_on:
+            - task_key: shared_first
+          notebook_task:
+            notebook_path: notebooks/shared_second
+    aliased:
+      name: Aliased
+      tasks: *shared_tasks
