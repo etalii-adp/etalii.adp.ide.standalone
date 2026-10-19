@@ -343,45 +343,17 @@
       "edits": [
         {
           "do": "move route53 on view \"AmazonWebServicesDeployment\" to 224, 236.89999999999998",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@1 -0 +\"{\\n  \\\"AmazonWebServicesDeployment\\\": {\\n    \\\"route53\\\": {\\n      \\\"x\\\": 224,\\n      \\\"y\\\": 236.89999999999998\\n    }\\n  }\\n}\""
-            ],
-            "sha256": "e4ad886d580c819465d5a8f5c5940303a59b5cd8a9400881b289aa166cd8b7b9"
-          }
-        },
-        {
-          "do": "undo move route53 on view \"AmazonWebServicesDeployment\" to 224, 236.89999999999998",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@2 -6 +\"  \\\"AmazonWebServicesDeployment\\\": {}\\n\""
-            ],
-            "sha256": "ed9fb244d1eb5ee8ca5237747cdb0037f801917f1ecc0c43dd6ea97612ba10bf"
-          }
-        },
-        {
-          "do": "redo move route53 on view \"AmazonWebServicesDeployment\" to 224, 236.89999999999998",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@2 -1 +\"  \\\"AmazonWebServicesDeployment\\\": {\\n    \\\"route53\\\": {\\n      \\\"x\\\": 224,\\n      \\\"y\\\": 236.89999999999998\\n    }\\n  }\\n\""
-            ],
-            "sha256": "e4ad886d580c819465d5a8f5c5940303a59b5cd8a9400881b289aa166cd8b7b9"
-          }
+          "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
+          "unchanged": true
         },
         {
           "do": "move parity:unknown on view \"AmazonWebServicesDeployment\" to 10, 10",
-          "answer": "refused: 'parity:unknown' is not in this model any more.",
+          "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
           "unchanged": true
         },
         {
           "do": "move c4:view on view \"AmazonWebServicesDeployment\" to 10, 10",
-          "answer": "refused: 'c4:view' is not in this model any more.",
+          "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
           "unchanged": true
         },
         {
@@ -1922,210 +1894,42 @@
       "edits": [
         {
           "do": "move customer on view \"SystemLandscape\" to 40, 584.9000000000001",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@1 -0 +\"{\\n  \\\"SystemLandscape\\\": {\\n    \\\"customer\\\": {\\n      \\\"x\\\": 40,\\n      \\\"y\\\": 584.9000000000001\\n    }\\n  }\\n}\""
-            ],
-            "sha256": "8a83135f20033cc72dae29b52e5ffaa86b9d3182a5ee4cfb40d02d41d2339b5c"
-          }
-        },
-        {
-          "do": "undo move customer on view \"SystemLandscape\" to 40, 584.9000000000001",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@2 -6 +\"  \\\"SystemLandscape\\\": {}\\n\""
-            ],
-            "sha256": "0c47a72c9a6769bdc2d4f1bff89fd99651dbc166e4aa825bc642698002b05671"
-          }
-        },
-        {
-          "do": "redo move customer on view \"SystemLandscape\" to 40, 584.9000000000001",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@2 -1 +\"  \\\"SystemLandscape\\\": {\\n    \\\"customer\\\": {\\n      \\\"x\\\": 40,\\n      \\\"y\\\": 584.9000000000001\\n    }\\n  }\\n\""
-            ],
-            "sha256": "8a83135f20033cc72dae29b52e5ffaa86b9d3182a5ee4cfb40d02d41d2339b5c"
-          }
+          "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
+          "unchanged": true
         },
         {
           "do": "move customer on view \"SystemContext\" to 40, 584.9000000000001",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@7 -0 +\"  },\\n  \\\"SystemContext\\\": {\\n    \\\"customer\\\": {\\n      \\\"x\\\": 40,\\n      \\\"y\\\": 584.9000000000001\\n    }\\n\""
-            ],
-            "sha256": "59c411b0e61eeab73f092fa77e0c71e6482a7afc25f08da77bee4e681e6383ab"
-          }
-        },
-        {
-          "do": "undo move customer on view \"SystemContext\" to 40, 584.9000000000001",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@2 -12 +\"  \\\"SystemLandscape\\\": {},\\n  \\\"SystemContext\\\": {}\\n\""
-            ],
-            "sha256": "d79b886bf1dc8bd1d760806f5b2f2d635e9f020ac574583a83dd634e9f8c4a44"
-          }
-        },
-        {
-          "do": "redo move customer on view \"SystemContext\" to 40, 584.9000000000001",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@3 -1 +\"  \\\"SystemContext\\\": {\\n    \\\"customer\\\": {\\n      \\\"x\\\": 40,\\n      \\\"y\\\": 584.9000000000001\\n    }\\n  }\\n\""
-            ],
-            "sha256": "8eda962fbfa02f77b1b0c79ae52e191704e7c56db9f7aef960a7ad053bd1b0b9"
-          }
+          "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
+          "unchanged": true
         },
         {
           "do": "move customer on view \"Containers\" to 40, -120.69999999999999",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@8 -0 +\"  },\\n  \\\"Containers\\\": {\\n    \\\"customer\\\": {\\n      \\\"x\\\": 40,\\n      \\\"y\\\": -120.69999999999999\\n    }\\n\""
-            ],
-            "sha256": "49e6b50edd4d7bd114f2f3b93d8b3de091ef66ac785f6e57ba29cea4aa470a14"
-          }
-        },
-        {
-          "do": "undo move customer on view \"Containers\" to 40, -120.69999999999999",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@3 -12 +\"  \\\"SystemContext\\\": {},\\n  \\\"Containers\\\": {}\\n\""
-            ],
-            "sha256": "cb721162034e3e299a78a1a91d83a6ab78d6425659c0bc9bb47a04cc1feef95d"
-          }
-        },
-        {
-          "do": "redo move customer on view \"Containers\" to 40, -120.69999999999999",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@4 -1 +\"  \\\"Containers\\\": {\\n    \\\"customer\\\": {\\n      \\\"x\\\": 40,\\n      \\\"y\\\": -120.69999999999999\\n    }\\n  }\\n\""
-            ],
-            "sha256": "89e1cf819fddfcebab481e1b7c2d55bf09b1cf2aa7db72afd1c33d14e35166f5"
-          }
+          "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
+          "unchanged": true
         },
         {
           "do": "move customer on view \"Components\" to -442, 594.7",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@9 -0 +\"  },\\n  \\\"Components\\\": {\\n    \\\"customer\\\": {\\n      \\\"x\\\": -442,\\n      \\\"y\\\": 594.7\\n    }\\n\""
-            ],
-            "sha256": "ec03695314b627d96815afa3b69462d90c5d8451e9461740afec3dbc6599b4ad"
-          }
-        },
-        {
-          "do": "undo move customer on view \"Components\" to -442, 594.7",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@4 -12 +\"  \\\"Containers\\\": {},\\n  \\\"Components\\\": {}\\n\""
-            ],
-            "sha256": "0175d10bc0741c916f351c22dff352dd430f55ff2a824ed892e21753880ce215"
-          }
-        },
-        {
-          "do": "redo move customer on view \"Components\" to -442, 594.7",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@5 -1 +\"  \\\"Components\\\": {\\n    \\\"customer\\\": {\\n      \\\"x\\\": -442,\\n      \\\"y\\\": 594.7\\n    }\\n  }\\n\""
-            ],
-            "sha256": "4143abb252fd849ea4c5512c5e0d170b753aa6fe072dc10fd6e1f82f90c36d98"
-          }
+          "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
+          "unchanged": true
         },
         {
           "do": "move singlePageApplication on view \"SignIn\" to 40, 89.3",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@10 -0 +\"  },\\n  \\\"SignIn\\\": {\\n    \\\"singlePageApplication\\\": {\\n      \\\"x\\\": 40,\\n      \\\"y\\\": 89.3\\n    }\\n\""
-            ],
-            "sha256": "41211eb32b6b5741e12e4c3e5c5651d3aa2716dcb8eb8bda8c1eec5b25eeca83"
-          }
-        },
-        {
-          "do": "undo move singlePageApplication on view \"SignIn\" to 40, 89.3",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@11 -6 +\"  \\\"SignIn\\\": {}\\n\""
-            ],
-            "sha256": "369c4e004d225b8c009ffb624f10995ca08762d07189d142c39226eea00ff189"
-          }
-        },
-        {
-          "do": "redo move singlePageApplication on view \"SignIn\" to 40, 89.3",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@11 -1 +\"  \\\"SignIn\\\": {\\n    \\\"singlePageApplication\\\": {\\n      \\\"x\\\": 40,\\n      \\\"y\\\": 89.3\\n    }\\n  }\\n\""
-            ],
-            "sha256": "41211eb32b6b5741e12e4c3e5c5651d3aa2716dcb8eb8bda8c1eec5b25eeca83"
-          }
+          "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
+          "unchanged": true
         },
         {
           "do": "move containerinstance_mobileApp_2 on view \"LiveDeployment\" to 192, 417.3",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@16 -0 +\"  },\\n  \\\"LiveDeployment\\\": {\\n    \\\"containerinstance_mobileApp_2\\\": {\\n      \\\"x\\\": 192,\\n      \\\"y\\\": 417.3\\n    }\\n\""
-            ],
-            "sha256": "06860dc8434c91426dd02d9f450023c81b7c736a7bc01d5798ad4eb0a71dc319"
-          }
-        },
-        {
-          "do": "undo move containerinstance_mobileApp_2 on view \"LiveDeployment\" to 192, 417.3",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@17 -6 +\"  \\\"LiveDeployment\\\": {}\\n\""
-            ],
-            "sha256": "ce040431acf81ddaed9e2eaf9d7991b6e286736e6872ea4320b29b717e51414d"
-          }
-        },
-        {
-          "do": "redo move containerinstance_mobileApp_2 on view \"LiveDeployment\" to 192, 417.3",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@17 -1 +\"  \\\"LiveDeployment\\\": {\\n    \\\"containerinstance_mobileApp_2\\\": {\\n      \\\"x\\\": 192,\\n      \\\"y\\\": 417.3\\n    }\\n  }\\n\""
-            ],
-            "sha256": "06860dc8434c91426dd02d9f450023c81b7c736a7bc01d5798ad4eb0a71dc319"
-          }
+          "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
+          "unchanged": true
         },
         {
           "do": "move parity:unknown on view \"SystemLandscape\" to 10, 10",
-          "answer": "refused: 'parity:unknown' is not in this model any more.",
+          "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
           "unchanged": true
         },
         {
           "do": "move c4:view on view \"SystemLandscape\" to 10, 10",
-          "answer": "refused: 'c4:view' is not in this model any more.",
+          "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
           "unchanged": true
         },
         {
@@ -6047,210 +5851,42 @@
       "edits": [
         {
           "do": "move operator on view \"Landscape\" to -560, 79.5",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@1 -0 +\"{\\n  \\\"Landscape\\\": {\\n    \\\"operator\\\": {\\n      \\\"x\\\": -560,\\n      \\\"y\\\": 79.5\\n    }\\n  }\\n}\""
-            ],
-            "sha256": "366c7b75d2d4333959e20b9f3105a38400cd769cdf69870a00241e55c4cc9ad6"
-          }
-        },
-        {
-          "do": "undo move operator on view \"Landscape\" to -560, 79.5",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@2 -6 +\"  \\\"Landscape\\\": {}\\n\""
-            ],
-            "sha256": "49ce04b57b7032632248fdf0f0215d5511fb85dd49596a1fbe8c902ebe4a59fc"
-          }
-        },
-        {
-          "do": "redo move operator on view \"Landscape\" to -560, 79.5",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@2 -1 +\"  \\\"Landscape\\\": {\\n    \\\"operator\\\": {\\n      \\\"x\\\": -560,\\n      \\\"y\\\": 79.5\\n    }\\n  }\\n\""
-            ],
-            "sha256": "366c7b75d2d4333959e20b9f3105a38400cd769cdf69870a00241e55c4cc9ad6"
-          }
+          "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
+          "unchanged": true
         },
         {
           "do": "move operator on view \"SystemContext\" to -560, 79.5",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@7 -0 +\"  },\\n  \\\"SystemContext\\\": {\\n    \\\"operator\\\": {\\n      \\\"x\\\": -560,\\n      \\\"y\\\": 79.5\\n    }\\n\""
-            ],
-            "sha256": "e2bdbee87d66a342524ce61dc7891538d375f269eabdc03150f582cc1d1043a0"
-          }
-        },
-        {
-          "do": "undo move operator on view \"SystemContext\" to -560, 79.5",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@2 -12 +\"  \\\"Landscape\\\": {},\\n  \\\"SystemContext\\\": {}\\n\""
-            ],
-            "sha256": "d0b516ed7e6cb17c1928e74bd9e3a3b23aff05ebe25363955c4f8eb39ed73c5a"
-          }
-        },
-        {
-          "do": "redo move operator on view \"SystemContext\" to -560, 79.5",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@3 -1 +\"  \\\"SystemContext\\\": {\\n    \\\"operator\\\": {\\n      \\\"x\\\": -560,\\n      \\\"y\\\": 79.5\\n    }\\n  }\\n\""
-            ],
-            "sha256": "3f2073ef72d03162d4b0ce38ad8d2998c061dcf025ff0c77d49a633aad4b46b1"
-          }
+          "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
+          "unchanged": true
         },
         {
           "do": "move operator on view \"Containers\" to 160, -694.1",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@8 -0 +\"  },\\n  \\\"Containers\\\": {\\n    \\\"operator\\\": {\\n      \\\"x\\\": 160,\\n      \\\"y\\\": -694.1\\n    }\\n\""
-            ],
-            "sha256": "10afa2880f4a6a41ed24186fbb89cac6a7a68a6994fe4c1c09705775ea83f50b"
-          }
-        },
-        {
-          "do": "undo move operator on view \"Containers\" to 160, -694.1",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@3 -12 +\"  \\\"SystemContext\\\": {},\\n  \\\"Containers\\\": {}\\n\""
-            ],
-            "sha256": "bb19797b527ea07f7bbb6b93e4799a9a0ad889ba8f9d00a0e37a135eb377c65d"
-          }
-        },
-        {
-          "do": "redo move operator on view \"Containers\" to 160, -694.1",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@4 -1 +\"  \\\"Containers\\\": {\\n    \\\"operator\\\": {\\n      \\\"x\\\": 160,\\n      \\\"y\\\": -694.1\\n    }\\n  }\\n\""
-            ],
-            "sha256": "7d472e2cb417b4768a6084b42f056037d5c8f036d7918bb210dc85a9316abcab"
-          }
+          "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
+          "unchanged": true
         },
         {
           "do": "move operator on view \"OrderServiceComponents\" to 160, -404.9",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@9 -0 +\"  },\\n  \\\"OrderServiceComponents\\\": {\\n    \\\"operator\\\": {\\n      \\\"x\\\": 160,\\n      \\\"y\\\": -404.9\\n    }\\n\""
-            ],
-            "sha256": "ee8d9c64490e4d2a71c068e897c8fd493167acc5d60b0b656f39eacc758b4fd8"
-          }
-        },
-        {
-          "do": "undo move operator on view \"OrderServiceComponents\" to 160, -404.9",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@4 -12 +\"  \\\"Containers\\\": {},\\n  \\\"OrderServiceComponents\\\": {}\\n\""
-            ],
-            "sha256": "1155b96302ef5878bca5b7b333d6dacf594373e25e2fb5501b20767f1aae72c8"
-          }
-        },
-        {
-          "do": "redo move operator on view \"OrderServiceComponents\" to 160, -404.9",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@5 -1 +\"  \\\"OrderServiceComponents\\\": {\\n    \\\"operator\\\": {\\n      \\\"x\\\": 160,\\n      \\\"y\\\": -404.9\\n    }\\n  }\\n\""
-            ],
-            "sha256": "ebb0a127633252bcd9c7f5c4737a20525eebead57c6744575541e824c21f9673"
-          }
+          "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
+          "unchanged": true
         },
         {
           "do": "move opcGateway on view \"BatchRelease\" to 160, 20.5",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@10 -0 +\"  },\\n  \\\"BatchRelease\\\": {\\n    \\\"opcGateway\\\": {\\n      \\\"x\\\": 160,\\n      \\\"y\\\": 20.5\\n    }\\n\""
-            ],
-            "sha256": "4e42e713d95b602bfb0c0f8628e147b8f063d0457667c1bae5402dd8e10e113e"
-          }
-        },
-        {
-          "do": "undo move opcGateway on view \"BatchRelease\" to 160, 20.5",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@11 -6 +\"  \\\"BatchRelease\\\": {}\\n\""
-            ],
-            "sha256": "d8852081409bdfdb93787eda29c9b2603dac514f480a81aa472f34debaef6779"
-          }
-        },
-        {
-          "do": "redo move opcGateway on view \"BatchRelease\" to 160, 20.5",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@11 -1 +\"  \\\"BatchRelease\\\": {\\n    \\\"opcGateway\\\": {\\n      \\\"x\\\": 160,\\n      \\\"y\\\": 20.5\\n    }\\n  }\\n\""
-            ],
-            "sha256": "4e42e713d95b602bfb0c0f8628e147b8f063d0457667c1bae5402dd8e10e113e"
-          }
+          "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
+          "unchanged": true
         },
         {
           "do": "move plcRuntime on view \"PlantDeployment\" to 224, 1433.3",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@16 -0 +\"  },\\n  \\\"PlantDeployment\\\": {\\n    \\\"plcRuntime\\\": {\\n      \\\"x\\\": 224,\\n      \\\"y\\\": 1433.3\\n    }\\n\""
-            ],
-            "sha256": "3eb69b85f112b27a1666f37d939adf0fd8635c9500818733288fe4fa5a6445f4"
-          }
-        },
-        {
-          "do": "undo move plcRuntime on view \"PlantDeployment\" to 224, 1433.3",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@17 -6 +\"  \\\"PlantDeployment\\\": {}\\n\""
-            ],
-            "sha256": "666ddd92938bb42f7eeebcbbb32eda64d30cf0c290fec026aeab0ae758d0f992"
-          }
-        },
-        {
-          "do": "redo move plcRuntime on view \"PlantDeployment\" to 224, 1433.3",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@17 -1 +\"  \\\"PlantDeployment\\\": {\\n    \\\"plcRuntime\\\": {\\n      \\\"x\\\": 224,\\n      \\\"y\\\": 1433.3\\n    }\\n  }\\n\""
-            ],
-            "sha256": "3eb69b85f112b27a1666f37d939adf0fd8635c9500818733288fe4fa5a6445f4"
-          }
+          "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
+          "unchanged": true
         },
         {
           "do": "move parity:unknown on view \"Landscape\" to 10, 10",
-          "answer": "refused: 'parity:unknown' is not in this model any more.",
+          "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
           "unchanged": true
         },
         {
           "do": "move c4:view on view \"Landscape\" to 10, 10",
-          "answer": "refused: 'c4:view' is not in this model any more.",
+          "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
           "unchanged": true
         },
         {
@@ -7513,45 +7149,17 @@
       "edits": [
         {
           "do": "move dns on view \"production\" to 258.45, 82.1",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@1 -0 +\"{\\n  \\\"production\\\": {\\n    \\\"dns\\\": {\\n      \\\"x\\\": 258.45,\\n      \\\"y\\\": 82.1\\n    }\\n  }\\n}\""
-            ],
-            "sha256": "df76efd5f11e4ce4f14612a055da22eeb75f5baaf9a6936ec6514de68d78e38d"
-          }
-        },
-        {
-          "do": "undo move dns on view \"production\" to 258.45, 82.1",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@2 -6 +\"  \\\"production\\\": {}\\n\""
-            ],
-            "sha256": "34d3d309b74f9ea311c47c18bc08a757740506a76dac7c50213b0bbdfec6f6c2"
-          }
-        },
-        {
-          "do": "redo move dns on view \"production\" to 258.45, 82.1",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@2 -1 +\"  \\\"production\\\": {\\n    \\\"dns\\\": {\\n      \\\"x\\\": 258.45,\\n      \\\"y\\\": 82.1\\n    }\\n  }\\n\""
-            ],
-            "sha256": "df76efd5f11e4ce4f14612a055da22eeb75f5baaf9a6936ec6514de68d78e38d"
-          }
+          "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
+          "unchanged": true
         },
         {
           "do": "move parity:unknown on view \"production\" to 10, 10",
-          "answer": "refused: 'parity:unknown' is not in this model any more.",
+          "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
           "unchanged": true
         },
         {
           "do": "move c4:view on view \"production\" to 10, 10",
-          "answer": "refused: 'c4:view' is not in this model any more.",
+          "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
           "unchanged": true
         },
         {
@@ -8513,45 +8121,17 @@
       "edits": [
         {
           "do": "move u on view \"signup\" to 120, 20.5",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@1 -0 +\"{\\n  \\\"signup\\\": {\\n    \\\"u\\\": {\\n      \\\"x\\\": 120,\\n      \\\"y\\\": 20.5\\n    }\\n  }\\n}\""
-            ],
-            "sha256": "73890f7933c8f37788a3956e3757d9b7727b9188d97e0b120d4b157183dca564"
-          }
-        },
-        {
-          "do": "undo move u on view \"signup\" to 120, 20.5",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@2 -6 +\"  \\\"signup\\\": {}\\n\""
-            ],
-            "sha256": "86eb070f7c78bcac25318eb16f8433f53b801d403dc1b94a7de370a0c369c2bc"
-          }
-        },
-        {
-          "do": "redo move u on view \"signup\" to 120, 20.5",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@2 -1 +\"  \\\"signup\\\": {\\n    \\\"u\\\": {\\n      \\\"x\\\": 120,\\n      \\\"y\\\": 20.5\\n    }\\n  }\\n\""
-            ],
-            "sha256": "73890f7933c8f37788a3956e3757d9b7727b9188d97e0b120d4b157183dca564"
-          }
+          "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
+          "unchanged": true
         },
         {
           "do": "move parity:unknown on view \"signup\" to 10, 10",
-          "answer": "refused: 'parity:unknown' is not in this model any more.",
+          "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
           "unchanged": true
         },
         {
           "do": "move c4:view on view \"signup\" to 10, 10",
-          "answer": "refused: 'c4:view' is not in this model any more.",
+          "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
           "unchanged": true
         },
         {
@@ -9172,7 +8752,7 @@
           "unchanged": true
         }
       ],
-      "undoAll": "31 undone; the original text is NOT back",
+      "undoAll": "30 undone; the original text is NOT back",
       "undoAllLeaves": {
         "hunks": [
           "@4 -2 +\"        u = person \\\"User\\\" \\\"\\\"\\n        s = softwareSystem \\\"System\\\" \\\"\\\" {\\n\"",
@@ -9873,45 +9453,17 @@
       "edits": [
         {
           "do": "move u on view \"context\" to 120, 20.5",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@1 -0 +\"{\\n  \\\"context\\\": {\\n    \\\"u\\\": {\\n      \\\"x\\\": 120,\\n      \\\"y\\\": 20.5\\n    }\\n  }\\n}\""
-            ],
-            "sha256": "882b110e0c164210d9438ae6ee7849c996dabe97509b448170dc8a4474923e25"
-          }
-        },
-        {
-          "do": "undo move u on view \"context\" to 120, 20.5",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@2 -6 +\"  \\\"context\\\": {}\\n\""
-            ],
-            "sha256": "18cc83779d09bae08344c128e12b0e43594a4f45a901b7e9d36d3b76ef1fb47f"
-          }
-        },
-        {
-          "do": "redo move u on view \"context\" to 120, 20.5",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@2 -1 +\"  \\\"context\\\": {\\n    \\\"u\\\": {\\n      \\\"x\\\": 120,\\n      \\\"y\\\": 20.5\\n    }\\n  }\\n\""
-            ],
-            "sha256": "882b110e0c164210d9438ae6ee7849c996dabe97509b448170dc8a4474923e25"
-          }
+          "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
+          "unchanged": true
         },
         {
           "do": "move parity:unknown on view \"context\" to 10, 10",
-          "answer": "refused: 'parity:unknown' is not in this model any more.",
+          "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
           "unchanged": true
         },
         {
           "do": "move c4:view on view \"context\" to 10, 10",
-          "answer": "refused: 'c4:view' is not in this model any more.",
+          "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
           "unchanged": true
         },
         {
@@ -10391,7 +9943,7 @@
           "unchanged": true
         }
       ],
-      "undoAll": "23 undone; the original text is NOT back",
+      "undoAll": "22 undone; the original text is NOT back",
       "undoAllLeaves": {
         "hunks": [
           "@4 -3 +\"        u = person \\\"User\\\" \\\"\\\"\\n        s = softwareSystem \\\"System\\\" \\\"\\\"\\n        u -> s \\\"Uses\\\" \\\"\\\"\\n\""
@@ -12626,37 +12178,8 @@
       "edits": [
         {
           "do": "move a on view \"auto\" to 120, 20.5",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@4 -2 +\"      \\\"x\\\": 120,\\n      \\\"y\\\": 20.5\\n\"",
-              "@14 -1 +\"}\""
-            ],
-            "sha256": "832e5327c6cba3ae6fd39d87745ab18efd7686b3dcb2e3e2a8be7045477c1b09"
-          }
-        },
-        {
-          "do": "undo move a on view \"auto\" to 120, 20.5",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@4 -2 +\"      \\\"x\\\": 10,\\n      \\\"y\\\": 20\\n\""
-            ],
-            "sha256": "f19bfe5bf6f2460e549acc6a40692c057bf50ffa7cdf2d41128492822d63940f"
-          }
-        },
-        {
-          "do": "redo move a on view \"auto\" to 120, 20.5",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@4 -2 +\"      \\\"x\\\": 120,\\n      \\\"y\\\": 20.5\\n\""
-            ],
-            "sha256": "832e5327c6cba3ae6fd39d87745ab18efd7686b3dcb2e3e2a8be7045477c1b09"
-          }
+          "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
+          "unchanged": true
         },
         {
           "do": "move a on view \"manual\" to 130, 79.9",
@@ -12664,9 +12187,10 @@
           "unchanged": true,
           "sidecar": {
             "hunks": [
-              "@10 -2 +\"      \\\"x\\\": 130,\\n      \\\"y\\\": 79.9\\n\""
+              "@10 -2 +\"      \\\"x\\\": 130,\\n      \\\"y\\\": 79.9\\n\"",
+              "@14 -1 +\"}\""
             ],
-            "sha256": "e3c19db36c6598646e25bf2c69e90902ad170634190921796039021a68cf10f4"
+            "sha256": "9f04b54dfe56c809df1645b9d2f5108433d4b60650875d1bb3adf8b4c5aa2236"
           }
         },
         {
@@ -12677,7 +12201,7 @@
             "hunks": [
               "@10 -2 +\"      \\\"x\\\": 10,\\n      \\\"y\\\": 20\\n\""
             ],
-            "sha256": "832e5327c6cba3ae6fd39d87745ab18efd7686b3dcb2e3e2a8be7045477c1b09"
+            "sha256": "f19bfe5bf6f2460e549acc6a40692c057bf50ffa7cdf2d41128492822d63940f"
           }
         },
         {
@@ -12688,17 +12212,17 @@
             "hunks": [
               "@10 -2 +\"      \\\"x\\\": 130,\\n      \\\"y\\\": 79.9\\n\""
             ],
-            "sha256": "e3c19db36c6598646e25bf2c69e90902ad170634190921796039021a68cf10f4"
+            "sha256": "9f04b54dfe56c809df1645b9d2f5108433d4b60650875d1bb3adf8b4c5aa2236"
           }
         },
         {
           "do": "move parity:unknown on view \"auto\" to 10, 10",
-          "answer": "refused: 'parity:unknown' is not in this model any more.",
+          "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
           "unchanged": true
         },
         {
           "do": "move c4:view on view \"auto\" to 10, 10",
-          "answer": "refused: 'c4:view' is not in this model any more.",
+          "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
           "unchanged": true
         },
         {
@@ -13072,7 +12596,7 @@
           "unchanged": true
         }
       ],
-      "undoAll": "19 undone; the original text is back"
+      "undoAll": "18 undone; the original text is back"
     },
     {
       "document": "diagrams/c4/backend/EtAlii.Adp.Diagram.C4.Tests/Fixtures/findings/block-comments.dsl",
@@ -22986,36 +22510,8 @@
         },
         {
           "do": "move u on view \"containers\" to 159.8, -237.5",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@7 -0 +\"  },\\n  \\\"containers\\\": {\\n    \\\"u\\\": {\\n      \\\"x\\\": 159.8,\\n      \\\"y\\\": -237.5\\n    }\\n\""
-            ],
-            "sha256": "0dc2ab0f85e4dcb1a635fb8ae64d6ed087ec302289794895550c50f6bf030b7c"
-          }
-        },
-        {
-          "do": "undo move u on view \"containers\" to 159.8, -237.5",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@2 -12 +\"  \\\"landscape\\\": {},\\n  \\\"containers\\\": {}\\n\""
-            ],
-            "sha256": "2628d92c56f7a0111524eb81cf17ea189e3efee9dbb691fadc1010d28035b76a"
-          }
-        },
-        {
-          "do": "redo move u on view \"containers\" to 159.8, -237.5",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@3 -1 +\"  \\\"containers\\\": {\\n    \\\"u\\\": {\\n      \\\"x\\\": 159.8,\\n      \\\"y\\\": -237.5\\n    }\\n  }\\n\""
-            ],
-            "sha256": "a46fa7be578a472eb8f303dccc55cd21afcc4d10a2fc5f744ec797b40b84db0f"
-          }
+          "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
+          "unchanged": true
         },
         {
           "do": "move parity:unknown on view \"landscape\" to 10, 10",
@@ -23635,7 +23131,7 @@
           "unchanged": true
         }
       ],
-      "undoAll": "32 undone; the original text is NOT back",
+      "undoAll": "31 undone; the original text is NOT back",
       "undoAllLeaves": {
         "hunks": [
           "@5 -1 +\"            web = container \\\"Web\\\" \\\"\\\" \\\"\\\" { # a container with a block and nothing else\\n\"",
@@ -25109,36 +24605,8 @@
       "edits": [
         {
           "do": "move u on view \"titled\" to 40, 59.9",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@1 -0 +\"{\\n  \\\"titled\\\": {\\n    \\\"u\\\": {\\n      \\\"x\\\": 40,\\n      \\\"y\\\": 59.9\\n    }\\n  }\\n}\""
-            ],
-            "sha256": "f11c12c64dd32c5e61b47003884f9be5dd556bd13b1896acf8c848fce21ece79"
-          }
-        },
-        {
-          "do": "undo move u on view \"titled\" to 40, 59.9",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@2 -6 +\"  \\\"titled\\\": {}\\n\""
-            ],
-            "sha256": "48198190fa33198048402c795536a4903a6b87a1b6a8497ab345f770b333cd1a"
-          }
-        },
-        {
-          "do": "redo move u on view \"titled\" to 40, 59.9",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@2 -1 +\"  \\\"titled\\\": {\\n    \\\"u\\\": {\\n      \\\"x\\\": 40,\\n      \\\"y\\\": 59.9\\n    }\\n  }\\n\""
-            ],
-            "sha256": "f11c12c64dd32c5e61b47003884f9be5dd556bd13b1896acf8c848fce21ece79"
-          }
+          "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
+          "unchanged": true
         },
         {
           "do": "move web on view \"named\" to 40, 258.70000000000005",
@@ -25146,9 +24614,9 @@
           "unchanged": true,
           "sidecar": {
             "hunks": [
-              "@7 -0 +\"  },\\n  \\\"named\\\": {\\n    \\\"web\\\": {\\n      \\\"x\\\": 40,\\n      \\\"y\\\": 258.70000000000005\\n    }\\n\""
+              "@1 -0 +\"{\\n  \\\"named\\\": {\\n    \\\"web\\\": {\\n      \\\"x\\\": 40,\\n      \\\"y\\\": 258.70000000000005\\n    }\\n  }\\n}\""
             ],
-            "sha256": "4070931afd42c8000be7630cd56ad371e0f5d01bbbb53f9e18365d59453e3f6b"
+            "sha256": "d27addfb7804db1c1df7da501d25aa6d4eb4a63ee9afaf94478f554e6403b2be"
           }
         },
         {
@@ -25157,9 +24625,9 @@
           "unchanged": true,
           "sidecar": {
             "hunks": [
-              "@8 -6 +\"  \\\"named\\\": {}\\n\""
+              "@2 -6 +\"  \\\"named\\\": {}\\n\""
             ],
-            "sha256": "bf47ddc0e7a955e3da3f88c47f3b0d8ec429a727249a08994db0874ba47af405"
+            "sha256": "eadd6d41ed0ad15e1a5a2716acc08da84a1cc080c8b09e376d393a9d85ffc3cb"
           }
         },
         {
@@ -25168,53 +24636,24 @@
           "unchanged": true,
           "sidecar": {
             "hunks": [
-              "@8 -1 +\"  \\\"named\\\": {\\n    \\\"web\\\": {\\n      \\\"x\\\": 40,\\n      \\\"y\\\": 258.70000000000005\\n    }\\n  }\\n\""
+              "@2 -1 +\"  \\\"named\\\": {\\n    \\\"web\\\": {\\n      \\\"x\\\": 40,\\n      \\\"y\\\": 258.70000000000005\\n    }\\n  }\\n\""
             ],
-            "sha256": "4070931afd42c8000be7630cd56ad371e0f5d01bbbb53f9e18365d59453e3f6b"
+            "sha256": "d27addfb7804db1c1df7da501d25aa6d4eb4a63ee9afaf94478f554e6403b2be"
           }
         },
         {
           "do": "move u on view \"steps\" to 120, 20.5",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@13 -0 +\"  },\\n  \\\"steps\\\": {\\n    \\\"u\\\": {\\n      \\\"x\\\": 120,\\n      \\\"y\\\": 20.5\\n    }\\n\""
-            ],
-            "sha256": "cd227acafba15a73e92c452bbcc2a2530cab7d15b8f15939ac7a91e68a3594c9"
-          }
-        },
-        {
-          "do": "undo move u on view \"steps\" to 120, 20.5",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@2 -6 +\"  \\\"titled\\\": {},\\n\"",
-              "@14 -6 +\"  \\\"steps\\\": {}\\n\""
-            ],
-            "sha256": "bf6a06e38cba34154e3c2141cd3d68f40b9f0b5f5e7ffd430da2de388ab85d0b"
-          }
-        },
-        {
-          "do": "redo move u on view \"steps\" to 120, 20.5",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@9 -1 +\"  \\\"steps\\\": {\\n    \\\"u\\\": {\\n      \\\"x\\\": 120,\\n      \\\"y\\\": 20.5\\n    }\\n  }\\n\""
-            ],
-            "sha256": "ce4d54010518f66aeb4e24e8e0ccd1bb1a570fcffdccb5795b655186b0a17fcd"
-          }
+          "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
+          "unchanged": true
         },
         {
           "do": "move parity:unknown on view \"titled\" to 10, 10",
-          "answer": "refused: 'parity:unknown' is not in this model any more.",
+          "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
           "unchanged": true
         },
         {
           "do": "move c4:view on view \"titled\" to 10, 10",
-          "answer": "refused: 'c4:view' is not in this model any more.",
+          "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
           "unchanged": true
         },
         {
@@ -25835,7 +25274,7 @@
           "unchanged": true
         }
       ],
-      "undoAll": "33 undone; the original text is back"
+      "undoAll": "31 undone; the original text is back"
     },
     {
       "document": "diagrams/c4/backend/EtAlii.Adp.Diagram.C4.Tests/Fixtures/findings/view-without-key.dsl",
@@ -28685,214 +28124,42 @@
       "edits": [
         {
           "do": "move operator on view \"Landscape\" to -560, 79.5",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@51 -0 +\"  },\\n  \\\"Landscape\\\": {\\n    \\\"operator\\\": {\\n      \\\"x\\\": -560,\\n      \\\"y\\\": 79.5\\n    }\\n\"",
-              "@52 -1 +\"}\""
-            ],
-            "sha256": "b9b002981d13d3d5061e4bdf5d377cab7d241f330bd6d7dabc833021bd7249d7"
-          }
-        },
-        {
-          "do": "undo move operator on view \"Landscape\" to -560, 79.5",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@35 -4 +\"\"",
-              "@52 -6 +\"  \\\"Landscape\\\": {}\\n\""
-            ],
-            "sha256": "0d03d0a64623e3df147686ef8002c2996b2b021bfc747e96ed41562328a3f4e4"
-          }
-        },
-        {
-          "do": "redo move operator on view \"Landscape\" to -560, 79.5",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@48 -1 +\"  \\\"Landscape\\\": {\\n    \\\"operator\\\": {\\n      \\\"x\\\": -560,\\n      \\\"y\\\": 79.5\\n    }\\n  }\\n\""
-            ],
-            "sha256": "f5e24ea19d04ed9ba7feeb0171b153ee6918380639b2721374f183d19b6b7151"
-          }
+          "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
+          "unchanged": true
         },
         {
           "do": "move operator on view \"SystemContext\" to -560, 79.5",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@46 -0 +\"    },\\n    \\\"operator\\\": {\\n      \\\"x\\\": -560,\\n      \\\"y\\\": 79.5\\n\""
-            ],
-            "sha256": "605d4244395df46d6ce34fd87178c751e81ec5c505ca3d0d5e75d26b7fc7fbe6"
-          }
-        },
-        {
-          "do": "undo move operator on view \"SystemContext\" to -560, 79.5",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@46 -4 +\"\"",
-              "@52 -6 +\"  \\\"Landscape\\\": {}\\n\""
-            ],
-            "sha256": "0d03d0a64623e3df147686ef8002c2996b2b021bfc747e96ed41562328a3f4e4"
-          }
-        },
-        {
-          "do": "redo move operator on view \"SystemContext\" to -560, 79.5",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@46 -0 +\"    },\\n    \\\"operator\\\": {\\n      \\\"x\\\": -560,\\n      \\\"y\\\": 79.5\\n\""
-            ],
-            "sha256": "5ca8feb95ee90523b59cabdfc2c2ffe9dbb11a344e805584cf0b198311a986ee"
-          }
+          "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
+          "unchanged": true
         },
         {
           "do": "move operator on view \"Containers\" to 160, -694.1",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@52 -1 +\"  \\\"Landscape\\\": {},\\n  \\\"Containers\\\": {\\n    \\\"operator\\\": {\\n      \\\"x\\\": 160,\\n      \\\"y\\\": -694.1\\n    }\\n  }\\n\""
-            ],
-            "sha256": "89e685a40667beadb86b08a128bfdbe0116a35a554fe53a1f264f3d83f782222"
-          }
-        },
-        {
-          "do": "undo move operator on view \"Containers\" to 160, -694.1",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@46 -4 +\"\"",
-              "@53 -6 +\"  \\\"Containers\\\": {}\\n\""
-            ],
-            "sha256": "069f74e7d0187a0633a459eaa60c7972dfd0ad16e4789b35f4b9e6728d943ac5"
-          }
-        },
-        {
-          "do": "redo move operator on view \"Containers\" to 160, -694.1",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@49 -1 +\"  \\\"Containers\\\": {\\n    \\\"operator\\\": {\\n      \\\"x\\\": 160,\\n      \\\"y\\\": -694.1\\n    }\\n  }\\n\""
-            ],
-            "sha256": "f6ef9651990f8f85c7d3327cba7deea3e9a8351f9678319ade03db0e8105721d"
-          }
+          "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
+          "unchanged": true
         },
         {
           "do": "move orderIntake on view \"OrderServiceComponents\" to 520, -68.5",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@54 -0 +\"  },\\n  \\\"OrderServiceComponents\\\": {\\n    \\\"orderIntake\\\": {\\n      \\\"x\\\": 520,\\n      \\\"y\\\": -68.5\\n    }\\n\""
-            ],
-            "sha256": "27eeed43e551d72c878c361506c7ad82cfabef606b91137947f19db50409a031"
-          }
-        },
-        {
-          "do": "undo move orderIntake on view \"OrderServiceComponents\" to 520, -68.5",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@55 -6 +\"  \\\"OrderServiceComponents\\\": {}\\n\""
-            ],
-            "sha256": "6e04d4808951c336de69a498dc0f18508cd26368b44c4e1fd777791567e9afbe"
-          }
-        },
-        {
-          "do": "redo move orderIntake on view \"OrderServiceComponents\" to 520, -68.5",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@55 -1 +\"  \\\"OrderServiceComponents\\\": {\\n    \\\"orderIntake\\\": {\\n      \\\"x\\\": 520,\\n      \\\"y\\\": -68.5\\n    }\\n  }\\n\""
-            ],
-            "sha256": "27eeed43e551d72c878c361506c7ad82cfabef606b91137947f19db50409a031"
-          }
+          "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
+          "unchanged": true
         },
         {
           "do": "move opcGateway on view \"BatchRelease\" to 160, 20.5",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@60 -0 +\"  },\\n  \\\"BatchRelease\\\": {\\n    \\\"opcGateway\\\": {\\n      \\\"x\\\": 160,\\n      \\\"y\\\": 20.5\\n    }\\n\""
-            ],
-            "sha256": "bab574d3b1ae817dc5dde078019a798efe2fc8f9bb5adcde3b284e3e4dc84f46"
-          }
-        },
-        {
-          "do": "undo move opcGateway on view \"BatchRelease\" to 160, 20.5",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@61 -6 +\"  \\\"BatchRelease\\\": {}\\n\""
-            ],
-            "sha256": "a85e6af37e3ee8487134a8d572661148855c85a04f4baca145ecef965431ca74"
-          }
-        },
-        {
-          "do": "redo move opcGateway on view \"BatchRelease\" to 160, 20.5",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@61 -1 +\"  \\\"BatchRelease\\\": {\\n    \\\"opcGateway\\\": {\\n      \\\"x\\\": 160,\\n      \\\"y\\\": 20.5\\n    }\\n  }\\n\""
-            ],
-            "sha256": "bab574d3b1ae817dc5dde078019a798efe2fc8f9bb5adcde3b284e3e4dc84f46"
-          }
+          "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
+          "unchanged": true
         },
         {
           "do": "move plcRuntime on view \"PlantDeployment\" to 224, 1433.3",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@66 -0 +\"  },\\n  \\\"PlantDeployment\\\": {\\n    \\\"plcRuntime\\\": {\\n      \\\"x\\\": 224,\\n      \\\"y\\\": 1433.3\\n    }\\n\""
-            ],
-            "sha256": "3c2d150ecf94984ebde2791d60179c3bfb372200734b41e2bf07e6629e53281c"
-          }
-        },
-        {
-          "do": "undo move plcRuntime on view \"PlantDeployment\" to 224, 1433.3",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@67 -6 +\"  \\\"PlantDeployment\\\": {}\\n\""
-            ],
-            "sha256": "493918a8b7c0c9a55c7bbe4f0fcd02c6d8f0a7c227d2f233e779ab5ef8b61040"
-          }
-        },
-        {
-          "do": "redo move plcRuntime on view \"PlantDeployment\" to 224, 1433.3",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@67 -1 +\"  \\\"PlantDeployment\\\": {\\n    \\\"plcRuntime\\\": {\\n      \\\"x\\\": 224,\\n      \\\"y\\\": 1433.3\\n    }\\n  }\\n\""
-            ],
-            "sha256": "3c2d150ecf94984ebde2791d60179c3bfb372200734b41e2bf07e6629e53281c"
-          }
+          "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
+          "unchanged": true
         },
         {
           "do": "move parity:unknown on view \"Landscape\" to 10, 10",
-          "answer": "refused: 'parity:unknown' is not in this model any more.",
+          "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
           "unchanged": true
         },
         {
           "do": "move c4:view on view \"Landscape\" to 10, 10",
-          "answer": "refused: 'c4:view' is not in this model any more.",
+          "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
           "unchanged": true
         },
         {
@@ -30829,214 +30096,42 @@
       "edits": [
         {
           "do": "move sender on view \"Landscape\" to 40, 764.1",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@36 -0 +\"    },\\n    \\\"sender\\\": {\\n      \\\"x\\\": 40,\\n      \\\"y\\\": 764.1\\n\""
-            ],
-            "sha256": "c6ff20b52172c44644754c645f814637f77c723254ac278ca13f58b2366ed38e"
-          }
-        },
-        {
-          "do": "undo move sender on view \"Landscape\" to 40, 764.1",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@3 -4 +\"\"",
-              "@36 -4 +\"\""
-            ],
-            "sha256": "0c5bf0f667c1ffd7d254e0c90484ec5729d9077b7c19906ad561dd741a3c02a8"
-          }
-        },
-        {
-          "do": "redo move sender on view \"Landscape\" to 40, 764.1",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@32 -0 +\"    },\\n    \\\"sender\\\": {\\n      \\\"x\\\": 40,\\n      \\\"y\\\": 764.1\\n\""
-            ],
-            "sha256": "07e8a477d4152701474e2f900a65f3afe76944289c4caeaada701ec8171a44b9"
-          }
+          "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
+          "unchanged": true
         },
         {
           "do": "move sender on view \"SystemContext\" to 40, 764.1",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@26 -0 +\"    },\\n    \\\"sender\\\": {\\n      \\\"x\\\": 40,\\n      \\\"y\\\": 764.1\\n\""
-            ],
-            "sha256": "db5f6e0a3f6aca734af858ac821290c294e4da4b83d65218971ebe2a998349cc"
-          }
-        },
-        {
-          "do": "undo move sender on view \"SystemContext\" to 40, 764.1",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@26 -4 +\"\"",
-              "@36 -4 +\"\""
-            ],
-            "sha256": "0c5bf0f667c1ffd7d254e0c90484ec5729d9077b7c19906ad561dd741a3c02a8"
-          }
-        },
-        {
-          "do": "redo move sender on view \"SystemContext\" to 40, 764.1",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@26 -0 +\"    },\\n    \\\"sender\\\": {\\n      \\\"x\\\": 40,\\n      \\\"y\\\": 764.1\\n\""
-            ],
-            "sha256": "7cc24c96e92a7cfaadbd03d5308cd9b7228496780c6e1786b46f1b5044970cf7"
-          }
+          "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
+          "unchanged": true
         },
         {
           "do": "move sender on view \"Containers\" to 1932, 30.300000000000004",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@42 -0 +\"    },\\n    \\\"sender\\\": {\\n      \\\"x\\\": 1932,\\n      \\\"y\\\": 30.300000000000004\\n\""
-            ],
-            "sha256": "06f137dc7a722f28bfc70745ab6d4cdbb88dcc45797fad294a2183fe1b122e5e"
-          }
-        },
-        {
-          "do": "undo move sender on view \"Containers\" to 1932, 30.300000000000004",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@26 -4 +\"\"",
-              "@42 -4 +\"\""
-            ],
-            "sha256": "0c5bf0f667c1ffd7d254e0c90484ec5729d9077b7c19906ad561dd741a3c02a8"
-          }
-        },
-        {
-          "do": "redo move sender on view \"Containers\" to 1932, 30.300000000000004",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@38 -0 +\"    },\\n    \\\"sender\\\": {\\n      \\\"x\\\": 1932,\\n      \\\"y\\\": 30.300000000000004\\n\""
-            ],
-            "sha256": "12b7e95c0b4edd02c3e5be1cfe090d1c0c91059c8779a0e25787d59474806bf6"
-          }
+          "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
+          "unchanged": true
         },
         {
           "do": "move sender on view \"ApiComponents\" to 2620, -318.5",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@43 -0 +\"  },\\n  \\\"ApiComponents\\\": {\\n    \\\"sender\\\": {\\n      \\\"x\\\": 2620,\\n      \\\"y\\\": -318.5\\n    }\\n\""
-            ],
-            "sha256": "3df4f68e68bb6171e66faca84fb2271bbac62dc0c20c44a9dfb774398c9db4e7"
-          }
-        },
-        {
-          "do": "undo move sender on view \"ApiComponents\" to 2620, -318.5",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@38 -4 +\"\"",
-              "@44 -6 +\"  \\\"ApiComponents\\\": {}\\n\""
-            ],
-            "sha256": "fad21957f58638019e17adb46a181bdd94d9df3849269e23364f17030a3c7d43"
-          }
-        },
-        {
-          "do": "redo move sender on view \"ApiComponents\" to 2620, -318.5",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@40 -1 +\"  \\\"ApiComponents\\\": {\\n    \\\"sender\\\": {\\n      \\\"x\\\": 2620,\\n      \\\"y\\\": -318.5\\n    }\\n  }\\n\""
-            ],
-            "sha256": "02f47b3f888110e0c10813e5bc7164f7cea5746b58dcc95e21962fb6a7352e33"
-          }
+          "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
+          "unchanged": true
         },
         {
           "do": "move mobile on view \"ParcelScanned\" to 160, 20.5",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@45 -0 +\"  },\\n  \\\"ParcelScanned\\\": {\\n    \\\"mobile\\\": {\\n      \\\"x\\\": 160,\\n      \\\"y\\\": 20.5\\n    }\\n\""
-            ],
-            "sha256": "a610b5a6a1bf1791ecf430a81651f1cfec6a892116c5cbc7e20bf7d7e1964b81"
-          }
-        },
-        {
-          "do": "undo move mobile on view \"ParcelScanned\" to 160, 20.5",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@46 -6 +\"  \\\"ParcelScanned\\\": {}\\n\""
-            ],
-            "sha256": "896f6cbe3a0982b7138040d93ab60d81ab705bc90e06fe7458900b2cbb5da64a"
-          }
-        },
-        {
-          "do": "redo move mobile on view \"ParcelScanned\" to 160, 20.5",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@46 -1 +\"  \\\"ParcelScanned\\\": {\\n    \\\"mobile\\\": {\\n      \\\"x\\\": 160,\\n      \\\"y\\\": 20.5\\n    }\\n  }\\n\""
-            ],
-            "sha256": "a610b5a6a1bf1791ecf430a81651f1cfec6a892116c5cbc7e20bf7d7e1964b81"
-          }
+          "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
+          "unchanged": true
         },
         {
           "do": "move containerinstance_spa_3 on view \"ProductionDeployment\" to 549.5, 1444.9",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@51 -0 +\"  },\\n  \\\"ProductionDeployment\\\": {\\n    \\\"containerinstance_spa_3\\\": {\\n      \\\"x\\\": 549.5,\\n      \\\"y\\\": 1444.9\\n    }\\n\""
-            ],
-            "sha256": "3ed3b7173ec7da7bc83aca0bcbd51e2b0ad9e8923fa5fc83a981e53b8e6d5cb2"
-          }
-        },
-        {
-          "do": "undo move containerinstance_spa_3 on view \"ProductionDeployment\" to 549.5, 1444.9",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@52 -6 +\"  \\\"ProductionDeployment\\\": {}\\n\""
-            ],
-            "sha256": "260a7de849db555b48f7b2dd9d95631fd352bd1f1d12b0a90428cc9cd2060b7e"
-          }
-        },
-        {
-          "do": "redo move containerinstance_spa_3 on view \"ProductionDeployment\" to 549.5, 1444.9",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@52 -1 +\"  \\\"ProductionDeployment\\\": {\\n    \\\"containerinstance_spa_3\\\": {\\n      \\\"x\\\": 549.5,\\n      \\\"y\\\": 1444.9\\n    }\\n  }\\n\""
-            ],
-            "sha256": "3ed3b7173ec7da7bc83aca0bcbd51e2b0ad9e8923fa5fc83a981e53b8e6d5cb2"
-          }
+          "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
+          "unchanged": true
         },
         {
           "do": "move parity:unknown on view \"Landscape\" to 10, 10",
-          "answer": "refused: 'parity:unknown' is not in this model any more.",
+          "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
           "unchanged": true
         },
         {
           "do": "move c4:view on view \"Landscape\" to 10, 10",
-          "answer": "refused: 'c4:view' is not in this model any more.",
+          "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
           "unchanged": true
         },
         {
@@ -32987,214 +32082,42 @@
       "edits": [
         {
           "do": "move sender on view \"Landscape\" to 40, 764.1",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@36 -0 +\"    },\\n    \\\"sender\\\": {\\n      \\\"x\\\": 40,\\n      \\\"y\\\": 764.1\\n\""
-            ],
-            "sha256": "c318eda3bec021161f2cd6b11f010e1ddbf4933ae413415d3fe44a8ebbbf9001"
-          }
-        },
-        {
-          "do": "undo move sender on view \"Landscape\" to 40, 764.1",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@3 -4 +\"\"",
-              "@36 -4 +\"\""
-            ],
-            "sha256": "ed1a848a47b5ef3669650bbfc7a9fe92b1a1552c105fa0d3a9d2e3a5a811aa1b"
-          }
-        },
-        {
-          "do": "redo move sender on view \"Landscape\" to 40, 764.1",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@32 -0 +\"    },\\n    \\\"sender\\\": {\\n      \\\"x\\\": 40,\\n      \\\"y\\\": 764.1\\n\""
-            ],
-            "sha256": "27d5ad53abed851bf6261ecfe6b482894e527b418a299395bcc1e5bdf513f76f"
-          }
+          "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
+          "unchanged": true
         },
         {
           "do": "move sender on view \"SystemContext\" to 40, 764.1",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@26 -0 +\"    },\\n    \\\"sender\\\": {\\n      \\\"x\\\": 40,\\n      \\\"y\\\": 764.1\\n\""
-            ],
-            "sha256": "597e960be82281a18e739d69a83e655dcab9be8251d8f5e8ebf8cae45d414858"
-          }
-        },
-        {
-          "do": "undo move sender on view \"SystemContext\" to 40, 764.1",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@26 -4 +\"\"",
-              "@36 -4 +\"\""
-            ],
-            "sha256": "ed1a848a47b5ef3669650bbfc7a9fe92b1a1552c105fa0d3a9d2e3a5a811aa1b"
-          }
-        },
-        {
-          "do": "redo move sender on view \"SystemContext\" to 40, 764.1",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@26 -0 +\"    },\\n    \\\"sender\\\": {\\n      \\\"x\\\": 40,\\n      \\\"y\\\": 764.1\\n\""
-            ],
-            "sha256": "f80740408d283d70321c6f643ebced805360000287ff83bd699caf14cf1bb3b8"
-          }
+          "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
+          "unchanged": true
         },
         {
           "do": "move sender on view \"Containers\" to 1932, 30.300000000000004",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@42 -0 +\"    },\\n    \\\"sender\\\": {\\n      \\\"x\\\": 1932,\\n      \\\"y\\\": 30.300000000000004\\n\""
-            ],
-            "sha256": "dad783ebd2ce4d2ea10dba95362c53b56144408a6ea99de36da28de2bacbe9cf"
-          }
-        },
-        {
-          "do": "undo move sender on view \"Containers\" to 1932, 30.300000000000004",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@26 -4 +\"\"",
-              "@42 -4 +\"\""
-            ],
-            "sha256": "ed1a848a47b5ef3669650bbfc7a9fe92b1a1552c105fa0d3a9d2e3a5a811aa1b"
-          }
-        },
-        {
-          "do": "redo move sender on view \"Containers\" to 1932, 30.300000000000004",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@38 -0 +\"    },\\n    \\\"sender\\\": {\\n      \\\"x\\\": 1932,\\n      \\\"y\\\": 30.300000000000004\\n\""
-            ],
-            "sha256": "a417b6d802f774dc124b74cf74065efb84c624788176b9220d44b4b6cf48983e"
-          }
+          "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
+          "unchanged": true
         },
         {
           "do": "move sender on view \"ApiComponents\" to 2620, -318.5",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@43 -0 +\"  },\\n  \\\"ApiComponents\\\": {\\n    \\\"sender\\\": {\\n      \\\"x\\\": 2620,\\n      \\\"y\\\": -318.5\\n    }\\n\""
-            ],
-            "sha256": "b7a85e3357837282b2f7e7b166964e187ff5c2a4d12f36e01c42715ce331ba6c"
-          }
-        },
-        {
-          "do": "undo move sender on view \"ApiComponents\" to 2620, -318.5",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@38 -4 +\"\"",
-              "@44 -6 +\"  \\\"ApiComponents\\\": {}\\n\""
-            ],
-            "sha256": "97c0057a1dc929180a86de0927bddd73368d6d98dde77e80581fa2880c3c20e4"
-          }
-        },
-        {
-          "do": "redo move sender on view \"ApiComponents\" to 2620, -318.5",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@40 -1 +\"  \\\"ApiComponents\\\": {\\n    \\\"sender\\\": {\\n      \\\"x\\\": 2620,\\n      \\\"y\\\": -318.5\\n    }\\n  }\\n\""
-            ],
-            "sha256": "a8fbf9a3b63aad2619888e530d2b5a321ef84935828ebd89a4c55014d446e4f5"
-          }
+          "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
+          "unchanged": true
         },
         {
           "do": "move mobile on view \"ParcelScanned\" to 160, 20.5",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@45 -0 +\"  },\\n  \\\"ParcelScanned\\\": {\\n    \\\"mobile\\\": {\\n      \\\"x\\\": 160,\\n      \\\"y\\\": 20.5\\n    }\\n\""
-            ],
-            "sha256": "8955460511272c5a60a174d2e4d6c8277653e4142255731fa689a714516dcf53"
-          }
-        },
-        {
-          "do": "undo move mobile on view \"ParcelScanned\" to 160, 20.5",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@46 -6 +\"  \\\"ParcelScanned\\\": {}\\n\""
-            ],
-            "sha256": "b6955cda988ea5b295114b46d837a6cda1dec3c7d7c17dec6cdebe27873862a9"
-          }
-        },
-        {
-          "do": "redo move mobile on view \"ParcelScanned\" to 160, 20.5",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@46 -1 +\"  \\\"ParcelScanned\\\": {\\n    \\\"mobile\\\": {\\n      \\\"x\\\": 160,\\n      \\\"y\\\": 20.5\\n    }\\n  }\\n\""
-            ],
-            "sha256": "8955460511272c5a60a174d2e4d6c8277653e4142255731fa689a714516dcf53"
-          }
+          "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
+          "unchanged": true
         },
         {
           "do": "move containerinstance_spa_3 on view \"ProductionDeployment\" to 549.5, 1444.9",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@51 -0 +\"  },\\n  \\\"ProductionDeployment\\\": {\\n    \\\"containerinstance_spa_3\\\": {\\n      \\\"x\\\": 549.5,\\n      \\\"y\\\": 1444.9\\n    }\\n\""
-            ],
-            "sha256": "a98a6d0c4ba0db14de272b246c3b1507262afa67330e20b3b7f5293db3429238"
-          }
-        },
-        {
-          "do": "undo move containerinstance_spa_3 on view \"ProductionDeployment\" to 549.5, 1444.9",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@52 -6 +\"  \\\"ProductionDeployment\\\": {}\\n\""
-            ],
-            "sha256": "7b03440634830fe358c6e91a7c9c461bbf73bd37e246282a73fa663ea37dc7bd"
-          }
-        },
-        {
-          "do": "redo move containerinstance_spa_3 on view \"ProductionDeployment\" to 549.5, 1444.9",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@52 -1 +\"  \\\"ProductionDeployment\\\": {\\n    \\\"containerinstance_spa_3\\\": {\\n      \\\"x\\\": 549.5,\\n      \\\"y\\\": 1444.9\\n    }\\n  }\\n\""
-            ],
-            "sha256": "a98a6d0c4ba0db14de272b246c3b1507262afa67330e20b3b7f5293db3429238"
-          }
+          "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
+          "unchanged": true
         },
         {
           "do": "move parity:unknown on view \"Landscape\" to 10, 10",
-          "answer": "refused: 'parity:unknown' is not in this model any more.",
+          "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
           "unchanged": true
         },
         {
           "do": "move c4:view on view \"Landscape\" to 10, 10",
-          "answer": "refused: 'c4:view' is not in this model any more.",
+          "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
           "unchanged": true
         },
         {
@@ -34268,45 +33191,17 @@
       "edits": [
         {
           "do": "move parity on view \"context\" to 120, 20.5",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@1 -0 +\"{\\n  \\\"context\\\": {\\n    \\\"parity\\\": {\\n      \\\"x\\\": 120,\\n      \\\"y\\\": 20.5\\n    }\\n  }\\n}\""
-            ],
-            "sha256": "42de96411a4c314f2f3d395fecf661af71fad4e084c14eaec36c39ec6fac7f4c"
-          }
-        },
-        {
-          "do": "undo move parity on view \"context\" to 120, 20.5",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@2 -6 +\"  \\\"context\\\": {}\\n\""
-            ],
-            "sha256": "18cc83779d09bae08344c128e12b0e43594a4f45a901b7e9d36d3b76ef1fb47f"
-          }
-        },
-        {
-          "do": "redo move parity on view \"context\" to 120, 20.5",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@2 -1 +\"  \\\"context\\\": {\\n    \\\"parity\\\": {\\n      \\\"x\\\": 120,\\n      \\\"y\\\": 20.5\\n    }\\n  }\\n\""
-            ],
-            "sha256": "42de96411a4c314f2f3d395fecf661af71fad4e084c14eaec36c39ec6fac7f4c"
-          }
+          "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
+          "unchanged": true
         },
         {
           "do": "move parity:unknown on view \"context\" to 10, 10",
-          "answer": "refused: 'parity:unknown' is not in this model any more.",
+          "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
           "unchanged": true
         },
         {
           "do": "move c4:view on view \"context\" to 10, 10",
-          "answer": "refused: 'c4:view' is not in this model any more.",
+          "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
           "unchanged": true
         },
         {
@@ -34607,7 +33502,7 @@
           "unchanged": true
         }
       ],
-      "undoAll": "14 undone; the original text is NOT back",
+      "undoAll": "13 undone; the original text is NOT back",
       "undoAllLeaves": {
         "hunks": [
           "@4 -1 +\"        parity = softwareSystem \\\"parity\\\" \\\"\\\"\\n\""
@@ -34674,12 +33569,12 @@
       "edits": [
         {
           "do": "move parity:unknown on view \"containers\" to 10, 10",
-          "answer": "refused: 'parity:unknown' is not in this model any more.",
+          "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
           "unchanged": true
         },
         {
           "do": "move c4:view on view \"containers\" to 10, 10",
-          "answer": "refused: 'c4:view' is not in this model any more.",
+          "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
           "unchanged": true
         },
         {
@@ -35064,45 +33959,17 @@
       "edits": [
         {
           "do": "move parity on view \"components\" to 120, 20.5",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@1 -0 +\"{\\n  \\\"components\\\": {\\n    \\\"parity\\\": {\\n      \\\"x\\\": 120,\\n      \\\"y\\\": 20.5\\n    }\\n  }\\n}\""
-            ],
-            "sha256": "d0d0d702a37e9ccd8b068582c0d31a3776dea25795cc154aa499c3489048c61b"
-          }
-        },
-        {
-          "do": "undo move parity on view \"components\" to 120, 20.5",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@2 -6 +\"  \\\"components\\\": {}\\n\""
-            ],
-            "sha256": "719eabf71dbc466ba750eb4d9a541a33fa86f57843ba6ae65a5ea45f0578eb55"
-          }
-        },
-        {
-          "do": "redo move parity on view \"components\" to 120, 20.5",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@2 -1 +\"  \\\"components\\\": {\\n    \\\"parity\\\": {\\n      \\\"x\\\": 120,\\n      \\\"y\\\": 20.5\\n    }\\n  }\\n\""
-            ],
-            "sha256": "d0d0d702a37e9ccd8b068582c0d31a3776dea25795cc154aa499c3489048c61b"
-          }
+          "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
+          "unchanged": true
         },
         {
           "do": "move parity:unknown on view \"components\" to 10, 10",
-          "answer": "refused: 'parity:unknown' is not in this model any more.",
+          "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
           "unchanged": true
         },
         {
           "do": "move c4:view on view \"components\" to 10, 10",
-          "answer": "refused: 'c4:view' is not in this model any more.",
+          "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
           "unchanged": true
         },
         {
@@ -35534,7 +34401,7 @@
           "unchanged": true
         }
       ],
-      "undoAll": "22 undone; the original text is NOT back",
+      "undoAll": "21 undone; the original text is NOT back",
       "undoAllLeaves": {
         "hunks": [
           "@4 -1 +\"        parity = softwareSystem \\\"parity\\\" \\\"\\\" {\\n\""
@@ -35601,45 +34468,17 @@
       "edits": [
         {
           "do": "move parity on view \"landscape\" to 120, 20.5",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@1 -0 +\"{\\n  \\\"landscape\\\": {\\n    \\\"parity\\\": {\\n      \\\"x\\\": 120,\\n      \\\"y\\\": 20.5\\n    }\\n  }\\n}\""
-            ],
-            "sha256": "984b2f19f2968727d7f523e24db58b60885f09c3c95ee1c465a2838b85ada97c"
-          }
-        },
-        {
-          "do": "undo move parity on view \"landscape\" to 120, 20.5",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@2 -6 +\"  \\\"landscape\\\": {}\\n\""
-            ],
-            "sha256": "881c8f933b0bcd7fb3882ea4f47ee2b1a2ece6cf2c01b9e16d52d710b027687d"
-          }
-        },
-        {
-          "do": "redo move parity on view \"landscape\" to 120, 20.5",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@2 -1 +\"  \\\"landscape\\\": {\\n    \\\"parity\\\": {\\n      \\\"x\\\": 120,\\n      \\\"y\\\": 20.5\\n    }\\n  }\\n\""
-            ],
-            "sha256": "984b2f19f2968727d7f523e24db58b60885f09c3c95ee1c465a2838b85ada97c"
-          }
+          "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
+          "unchanged": true
         },
         {
           "do": "move parity:unknown on view \"landscape\" to 10, 10",
-          "answer": "refused: 'parity:unknown' is not in this model any more.",
+          "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
           "unchanged": true
         },
         {
           "do": "move c4:view on view \"landscape\" to 10, 10",
-          "answer": "refused: 'c4:view' is not in this model any more.",
+          "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
           "unchanged": true
         },
         {
@@ -35940,7 +34779,7 @@
           "unchanged": true
         }
       ],
-      "undoAll": "14 undone; the original text is NOT back",
+      "undoAll": "13 undone; the original text is NOT back",
       "undoAllLeaves": {
         "hunks": [
           "@4 -1 +\"        parity = softwareSystem \\\"parity\\\" \\\"\\\"\\n\""
@@ -36007,12 +34846,12 @@
       "edits": [
         {
           "do": "move parity:unknown on view \"scenario\" to 10, 10",
-          "answer": "refused: 'parity:unknown' is not in this model any more.",
+          "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
           "unchanged": true
         },
         {
           "do": "move c4:view on view \"scenario\" to 10, 10",
-          "answer": "refused: 'c4:view' is not in this model any more.",
+          "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
           "unchanged": true
         },
         {
@@ -36397,45 +35236,17 @@
       "edits": [
         {
           "do": "move deploymentnode_Server_1 on view \"deployment\" to 120, 50.1",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@1 -0 +\"{\\n  \\\"deployment\\\": {\\n    \\\"deploymentnode_Server_1\\\": {\\n      \\\"x\\\": 120,\\n      \\\"y\\\": 50.1\\n    }\\n  }\\n}\""
-            ],
-            "sha256": "6fc439ea5ae3b520a0cf1ef9c29603e1e6eb96455cef8fd59d11909129774d1c"
-          }
-        },
-        {
-          "do": "undo move deploymentnode_Server_1 on view \"deployment\" to 120, 50.1",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@2 -6 +\"  \\\"deployment\\\": {}\\n\""
-            ],
-            "sha256": "6e6da886b166785633e44bf8f657158290618f3b603342599d5a200afe72dbd3"
-          }
-        },
-        {
-          "do": "redo move deploymentnode_Server_1 on view \"deployment\" to 120, 50.1",
-          "answer": "ok",
-          "unchanged": true,
-          "sidecar": {
-            "hunks": [
-              "@2 -1 +\"  \\\"deployment\\\": {\\n    \\\"deploymentnode_Server_1\\\": {\\n      \\\"x\\\": 120,\\n      \\\"y\\\": 50.1\\n    }\\n  }\\n\""
-            ],
-            "sha256": "6fc439ea5ae3b520a0cf1ef9c29603e1e6eb96455cef8fd59d11909129774d1c"
-          }
+          "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
+          "unchanged": true
         },
         {
           "do": "move parity:unknown on view \"deployment\" to 10, 10",
-          "answer": "refused: 'parity:unknown' is not in this model any more.",
+          "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
           "unchanged": true
         },
         {
           "do": "move c4:view on view \"deployment\" to 10, 10",
-          "answer": "refused: 'c4:view' is not in this model any more.",
+          "answer": "refused: This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.",
           "unchanged": true
         },
         {

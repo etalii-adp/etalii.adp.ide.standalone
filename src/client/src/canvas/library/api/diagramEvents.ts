@@ -63,7 +63,16 @@ export interface ElementDeleted {
   elementId: string;
 }
 
-/** A drag released: the element was carried to a new position (Requirement 5.2). */
+/**
+ * A drag released: the element was carried to a new position (Requirement 5.2).
+ *
+ * The canvas holds the element at the drop until the model places it. A handler that asks its
+ * backend may return that call's answer - `""` when the move was recorded, the refusal sentence
+ * otherwise - and a refusal lets the element go back to where the model has it: a refused move
+ * changes nothing in the model, so without the answer the element would stay at a drop nothing
+ * recorded (c4-disl-fbl, ruled 2026-10-19). A handler that returns nothing is held until the model
+ * answers, as before.
+ */
 export interface ElementMoved {
   kind: "element-moved";
   elementId: string;
@@ -328,8 +337,11 @@ export interface LayoutModeChanged {
  * handler map that tries is a type error, which is what keeps selection glue from coming back.
  */
 export type DiagramEventHandlers = {
-  [Kind in ModuleEventKind as EventName<Kind>]?: (event: Extract<DiagramEvent, { kind: Kind }>) => void;
+  [Kind in ModuleEventKind as EventName<Kind>]?: (event: Extract<DiagramEvent, { kind: Kind }>) => HandlerAnswer<Kind>;
 };
+
+/** What a handler may answer: for a move, its backend's answer (see {@link ElementMoved}); for every other kind, nothing. */
+type HandlerAnswer<Kind extends string> = Kind extends "element-moved" ? void | Promise<string> : void;
 
 /** Every event kind but the one the library keeps for itself. */
 type ModuleEventKind = Exclude<DiagramEvent["kind"], "selection-changed">;
@@ -339,7 +351,7 @@ type ModuleEventKind = Exclude<DiagramEvent["kind"], "selection-changed">;
  * canvas raises to the library's selection wrapper and to nobody else. <b>Library-internal.</b>
  */
 export type LibraryEventHandlers = {
-  [Kind in DiagramEvent["kind"] as EventName<Kind>]?: (event: Extract<DiagramEvent, { kind: Kind }>) => void;
+  [Kind in DiagramEvent["kind"] as EventName<Kind>]?: (event: Extract<DiagramEvent, { kind: Kind }>) => HandlerAnswer<Kind>;
 };
 
 /** `"element-dropped"` becomes `onElementDropped`, and so on for every member. */
@@ -353,9 +365,13 @@ type PascalCase<Value extends string> = Value extends `${infer Head}-${infer Tai
  * Routes one event to its handler, if the module supplied one. The canvas calls this and
  * nothing else with an event, which is what keeps "every event is a request" true by
  * construction - there is no second path on which the canvas could act on its own raise.
+ *
+ * Returns what the handler returned, which the canvas reads for one kind only: a move's answer
+ * (see {@link ElementMoved}). It is `unknown` because a handler typed to return nothing may still
+ * return something at run time.
  */
-export function dispatchDiagramEvent(handlers: LibraryEventHandlers, event: DiagramEvent): void {
+export function dispatchDiagramEvent(handlers: LibraryEventHandlers, event: DiagramEvent): unknown {
   const name = `on${event.kind.replace(/(^|-)([a-z])/g, (_, __, letter: string) => letter.toUpperCase())}` as keyof LibraryEventHandlers;
-  const handler = handlers[name] as ((raised: DiagramEvent) => void) | undefined;
-  handler?.(event);
+  const handler = handlers[name] as ((raised: DiagramEvent) => unknown) | undefined;
+  return handler?.(event);
 }

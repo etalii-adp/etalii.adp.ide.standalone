@@ -692,6 +692,45 @@ describe("C4Canvas", () => {
     moveOutcome = "";
   });
 
+  it("snaps a refused card back to where the backend has it, rather than leaving it at the drop", async () => {
+    // Arrange: the defect (ruled 2026-10-19). A view that declares autoLayout refuses the move, so
+    // no delta follows - and the card stayed where it was dropped, at a position nothing recorded.
+    moveOutcome = "This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.";
+    const { container } = render(<C4Canvas {...props} />);
+    withSurfaceWidth(container, 500);
+    const alpha = container.querySelectorAll(".c4-node")[0];
+    const before = alpha.getAttribute("transform");
+
+    // Act.
+    fireEvent(alpha, pointer("pointerdown", { button: 0, clientX: 100, clientY: 100 }));
+    fireEvent(alpha, pointer("pointermove", { clientX: 150, clientY: 100 }));
+    fireEvent(alpha, pointer("pointerup", { clientX: 150, clientY: 100 }));
+    await act(async () => {});
+
+    // Assert.
+    expect(moves, "the move was never sent, so this test cannot say anything").toHaveLength(1);
+    expect(container.querySelectorAll(".c4-node")[0].getAttribute("transform")).toBe(before);
+
+    moveOutcome = "";
+  });
+
+  it("keeps an accepted card at its drop until the backend's delta places it", async () => {
+    // Arrange: the other half - an accepted move answers "" and must not snap back first.
+    const { container } = render(<C4Canvas {...props} />);
+    withSurfaceWidth(container, 500);
+    const alpha = container.querySelectorAll(".c4-node")[0];
+    const before = alpha.getAttribute("transform");
+
+    // Act.
+    fireEvent(alpha, pointer("pointerdown", { button: 0, clientX: 100, clientY: 100 }));
+    fireEvent(alpha, pointer("pointermove", { clientX: 150, clientY: 100 }));
+    fireEvent(alpha, pointer("pointerup", { clientX: 150, clientY: 100 }));
+    await act(async () => {});
+
+    // Assert.
+    expect(container.querySelectorAll(".c4-node")[0].getAttribute("transform")).not.toBe(before);
+  });
+
   it("writes nothing for a wobbly click", () => {
     // Arrange.
     // A few pixels of movement while clicking is a click. Sending it would put an entry on the
