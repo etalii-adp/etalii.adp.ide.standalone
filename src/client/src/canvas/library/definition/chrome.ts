@@ -1,4 +1,4 @@
-import { formatEpochSeconds, holds, resolveMany, resolveOne, type Binding, type BindingSource, type Condition, type TemporalFormat, type BindingPath } from "./binding";
+import { formatEpochSeconds, holds, resolveEntries, resolveMany, resolveOne, resolveOneAt, type Binding, type BindingSource, type Condition, type TemporalFormat, type BindingPath } from "./binding";
 import type { LabelTypography } from "./diagramDefinition";
 
 /**
@@ -21,22 +21,48 @@ import type { LabelTypography } from "./diagramDefinition";
  * in writing. So it is chrome, and chrome needs a kind that background does not have.
  */
 
-/** One line of chrome: a message, a title, a legend entry. */
+/**
+ * One line of chrome: a message, a title, a legend entry.
+ *
+ * A `title` is drawn by the canvas above its drawing surface, once its binding resolves against the
+ * model's background (DISL §6.13 `canvas.title`).
+ */
 export interface ChromeTextDeclaration {
   text: Binding;
   when?: Condition;
   typography?: LabelTypography;
   className?: string;
+  /** `data-*` attributes, which the module's tests find the line by. */
+  data?: Readonly<Record<string, string>>;
 }
 
-/** A legend: one entry per model collection entry, each with a swatch class and a caption. */
+/**
+ * A legend: one entry per model collection entry, each with a swatch and a caption.
+ *
+ * The canvas draws it below its drawing surface while it has an entry (DISL §6.13 `canvas.legend`,
+ * `outside-bottom`): its title, then each entry's swatch and caption.
+ */
 export interface ChromeLegendDeclaration {
   /** A collection binding: one entry per item, its paths rooted at the item. */
   entries: Binding;
   /** The class naming the swatch's colour, bound per entry so a notation keeps its own palette. */
   swatchClass?: Binding;
+  /**
+   * The swatch's colour, rooted at the entry, where the colour is the document's rather than one of a
+   * stylesheet's classes: a notation whose author sets the colours of its elements keys them by the
+   * colours it drew.
+   */
+  swatchColour?: Binding;
   when?: Condition;
   className?: string;
+  /** The words before the entries, such as "Key". */
+  title?: string;
+  titleClassName?: string;
+  entryClassName?: string;
+  /** Every swatch's own class, beside the one {@link swatchClass} binds. */
+  swatchClassName?: string;
+  /** `data-*` attributes, which the module's tests find the legend by. */
+  data?: Readonly<Record<string, string>>;
 }
 
 /**
@@ -160,6 +186,7 @@ export interface ResolvedChromeText {
 export interface ResolvedLegendEntry {
   caption: string;
   swatchClass?: string;
+  swatchColour?: string;
 }
 
 export interface ResolvedTick {
@@ -209,9 +236,13 @@ export function resolveLegend(
     return [];
   }
 
-  const captions = resolveMany(declaration.entries, source);
+  const entries = resolveEntries(declaration.entries, source);
   const swatches = declaration.swatchClass ? resolveMany(declaration.swatchClass, source) : [];
-  return captions.map((caption, index) => ({ caption, swatchClass: swatches[index] }));
+  return entries.map((entry, index) => {
+    // The colour read from the entry's own item, so an entry without one cannot borrow its neighbour's.
+    const colour = declaration.swatchColour === undefined ? null : resolveOneAt(declaration.swatchColour as never, entry.root);
+    return { caption: entry.text, swatchClass: swatches[index], ...(colour !== null ? { swatchColour: colour } : {}) };
+  });
 }
 
 /** How many months a calendar step spans. */

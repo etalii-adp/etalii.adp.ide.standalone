@@ -42,6 +42,7 @@ import { BEFORE_GAP, labelKey, layoutLabels, wrappedLabelRegion, type LaidOutLab
 import { wavyUnderlinePath } from "./definition/wavyUnderline";
 import { resolveDecorations, type ResolvedDecoration } from "./definition/decorations";
 import { resolveBackground } from "./definition/background";
+import { resolveChromeText, resolveLegend } from "./definition/chrome";
 import { actionForGesture, actionForKey, flagOf, type ElementGesture } from "./definition/actions";
 import { isCustomShape } from "./definition/diagramDefinition";
 import { outlineEdgePoint, outlineOf } from "./shapes/outline";
@@ -2169,7 +2170,20 @@ export function DiagramCanvasCore({
   // so both live in this one gesture layer rather than in a module.
   const backgroundWiring = gesture.background({ kind: "background", view: effectiveView });
 
+  // THE TITLE BAND AND THE KEY, around the canvas rather than in it: the title above the drawing
+  // surface and the key below it (DISL §6.13), each bound to the model's background and drawn only
+  // once it says something.
+  const title = resolveChromeText(definition.chrome?.title, chromeSource);
+  const legend = definition.chrome?.legend;
+  const legendEntries = resolveLegend(legend, chromeSource);
+
   return (
+    <>
+    {title !== null && (
+      <div className={title.className} {...dataAttributesOf(definition.chrome?.title?.data)}>
+        {title.text}
+      </div>
+    )}
     <div
       ref={rootRef}
       className={["library-canvas", bottomRulers.length > 0 ? "library-canvas-with-bottom-ruler" : "", className ?? ""].filter(Boolean).join(" ")}
@@ -2414,6 +2428,21 @@ export function DiagramCanvasCore({
         />
       )}
     </div>
+    {legend !== undefined && legendEntries.length > 0 && (
+      <div className={legend.className} {...dataAttributesOf(legend.data)}>
+        {legend.title !== undefined && <span className={legend.titleClassName}>{legend.title}</span>}
+        {legendEntries.map((entry) => (
+          <span className={legend.entryClassName} key={entry.caption}>
+            <span
+              className={[legend.swatchClassName, entry.swatchClass].filter(Boolean).join(" ") || undefined}
+              style={entry.swatchColour !== undefined ? { background: entry.swatchColour, borderColor: entry.swatchColour } : undefined}
+            />
+            {entry.caption}
+          </span>
+        ))}
+      </div>
+    )}
+    </>
   );
 }
 

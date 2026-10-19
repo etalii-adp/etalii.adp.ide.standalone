@@ -1,9 +1,10 @@
 import type { ActionDeclaration, ActionInvocation } from "../definition/actions";
 import type { Binding, Condition } from "../definition/binding";
 import type { CompartmentDeclaration } from "../definition/compartments";
-import type { CalendarStep, RulerDeclaration, RulerRung, SwitchDeclaration } from "../definition/chrome";
+import type { CalendarStep, ChromeLegendDeclaration, ChromeTextDeclaration, RulerDeclaration, RulerRung, SwitchDeclaration } from "../definition/chrome";
 import type {
   AnchorSet,
+  BoundElementStyle,
   BuiltInShape,
   ClassDeclaration,
   CompassPosition,
@@ -200,6 +201,35 @@ export interface NotationBindings {
    * stylesheet paints the slot, mixed as the specification says.
    */
   indexedColourClassName?: (type: string, token: string) => string | undefined;
+  /**
+   * Whether the module answers the toolbox's drops itself. Given, the compiler states no `toolbox.drops`
+   * and every drop reaches the module as `element-dropped`; for a specification whose drops land on the
+   * canvas, or are refused by a computed sentence, which the backend evaluates and the library cannot.
+   */
+  toolboxDrops?: "module";
+  /**
+   * The colours and the silhouette a `styled-box` takes from each element, where they are the document's
+   * rather than its type's: a C4 author sets an element's shape and colours, and the backend resolves
+   * them from its theme and the document, so the payload carries what the type's style only defaults.
+   */
+  boundStyle?: (type: string, node: DislNodeNotation) => BoundElementStyle | undefined;
+  /**
+   * Whether a label cut or wrapped at its node's width is fitted at the size its style draws it: by its
+   * style's font size, inside the node style's horizontal padding, a wrapped label's lines its font size
+   * times its line height apart (DISL §6.12 `overflow`, `wrap`; §6.6 `font`, `padding`). Without it the
+   * library fits a label by its own measures, as it does for every specification that states none.
+   */
+  labelFit?: "style";
+  /**
+   * The canvas's title and key (DISL §6.13 `canvas.title`, `canvas.legend`) as the module's stylesheet and
+   * tests know them. A computed key's CEL runs over the elements drawn, which the backend evaluates, so its
+   * entries are the list the model's background holds under `entries`, each read by the key's own CEL
+   * through {@link rowPaths}.
+   */
+  canvasChrome?: {
+    title?: { className?: string; data?: Readonly<Record<string, string>> };
+    legend?: { entries: string; className?: string; titleClassName?: string; entryClassName?: string; swatchClassName?: string; data?: Readonly<Record<string, string>> };
+  };
 }
 
 export interface CompileOptions {
@@ -466,9 +496,18 @@ class Compiler {
     const filter = this.filter();
     const switches = this.switches();
     const empty = this.emptyCanvas();
+    const title = this.canvasTitle();
+    const legend = this.computedLegend();
+    const chrome = {
+      ...(rulers.length > 0 ? { rulers } : {}),
+      ...(switches.length > 0 ? { switches } : {}),
+      ...(empty !== undefined ? { empty } : {}),
+      ...(title !== undefined ? { title } : {}),
+      ...(legend !== undefined ? { legend } : {}),
+    };
     const backgroundMenu = this.backgroundMenu(this.defaultViewpoint?.[0]);
     const dragging = this.dragging(elementTypes);
-    const drops = this.toolboxDrops();
+    const drops = this.bindings.toolboxDrops === "module" ? [] : this.toolboxDrops();
 
     const definition: DiagramDefinition = {
       elementTypes,
@@ -476,9 +515,7 @@ class Compiler {
       ...(acyclic.length > 0 ? { acyclic } : {}),
       ...(actions.length > 0 ? { actions } : {}),
       ...(snap !== undefined ? { snap } : {}),
-      ...(rulers.length > 0 || switches.length > 0 || empty !== undefined
-        ? { chrome: { ...(rulers.length > 0 ? { rulers } : {}), ...(switches.length > 0 ? { switches } : {}), ...(empty !== undefined ? { empty } : {}) } }
-        : {}),
+      ...(Object.keys(chrome).length > 0 ? { chrome } : {}),
       ...(filter !== undefined ? { filter } : {}),
       layout: this.layout(rulers, backgroundMenu, dragging),
       dragging,
@@ -542,6 +579,57 @@ class Compiler {
       fail(`the canvas's empty sentence "${empty.text}" holds a brace, which the library would read as a {placeholder}.`);
     }
     return { text: { template: empty.text } };
+  }
+
+  /**
+   * The canvas's title (DISL §6.13 `canvas.title`), drawn above the drawing surface and bound against the
+   * model's background, which carries the diagram's attributes. The library draws it and never edits it,
+   * so an editable title is refused.
+   */
+  private canvasTitle(): ChromeTextDeclaration | undefined {
+    const title = this.spec.notation.canvas?.title;
+    if (title === undefined) {
+      return undefined;
+    }
+
+    if (title.editable === true) {
+      fail("the canvas's title is editable; the library draws a title and edits none.");
+    }
+    const stated = this.bindings.canvasChrome?.title;
+    return {
+      text: this.binding(title.text, "the canvas's title"),
+      ...(stated?.className !== undefined ? { className: stated.className } : {}),
+      ...(stated?.data !== undefined ? { data: stated.data } : {}),
+    };
+  }
+
+  /**
+   * The canvas's computed key (DISL §6.13 `canvas.legend.computed`), drawn below the drawing surface: one
+   * entry per item of the list the module names, its caption and its swatch's colour each the path within
+   * the item that the key's CEL stands for ({@link NotationBindings.rowPaths}). A key drawn anywhere but
+   * below the surface is refused, as is one the module gives no list for.
+   */
+  private computedLegend(): ChromeLegendDeclaration | undefined {
+    const legend = this.spec.notation.canvas?.legend;
+    if (legend?.computed === undefined || legend.visible === false) {
+      return undefined;
+    }
+
+    if ((legend.position ?? "outside-bottom") !== "outside-bottom") {
+      fail(`the canvas's key is drawn "${legend.position}"; the library draws a computed key below the drawing surface.`);
+    }
+    const stated = this.bindings.canvasChrome?.legend ?? fail("the canvas's key is computed over what is drawn; the library needs the list of entries the module names in canvasChrome.legend.");
+    const fill = legend.computed.swatch?.fill;
+    return {
+      entries: { path: stated.entries, each: { path: this.rowPath(legend.computed.label, "the canvas's key label") } },
+      ...(fill !== undefined ? { swatchColour: { path: this.rowPath(fill, "the canvas's key swatch") } } : {}),
+      ...(legend.title !== undefined ? { title: legend.title } : {}),
+      ...(stated.className !== undefined ? { className: stated.className } : {}),
+      ...(stated.titleClassName !== undefined ? { titleClassName: stated.titleClassName } : {}),
+      ...(stated.entryClassName !== undefined ? { entryClassName: stated.entryClassName } : {}),
+      ...(stated.swatchClassName !== undefined ? { swatchClassName: stated.swatchClassName } : {}),
+      ...(stated.data !== undefined ? { data: stated.data } : {}),
+    };
   }
 
   /**
@@ -670,11 +758,13 @@ class Compiler {
     const centreOf = this.centreOf(name, node);
     const { sizing, resize } = this.sizing(node);
     const editOnDrop = (this.spec.toolbox?.groups ?? []).some((group) => group.tools.some((tool) => tool.creates === name && tool.after === "editLabel"));
+    const boundStyle = this.bindings.boundStyle?.(name, node);
 
     return {
       id: this.typeId(name),
       shape,
       ...(cornerRadius !== undefined ? { style: { cornerRadius } } : {}),
+      ...(boundStyle !== undefined ? { boundStyle } : {}),
       ...(classNames.length > 0 ? { classNames } : {}),
       ...(data !== undefined ? { data } : {}),
       ...(labels.length > 0 ? { labels } : {}),
@@ -931,6 +1021,9 @@ class Compiler {
     } else if (label.overflow === "ellipsis") {
       declaration.truncate = true;
     }
+    if (this.bindings.labelFit === "style" && (declaration.wrap === true || declaration.truncate === true)) {
+      Object.assign(declaration, this.styledFit(type, label, where));
+    }
     if (label.tooltip !== undefined) {
       declaration.tooltip = this.binding(label.tooltip, `${where} tooltip`);
     }
@@ -953,6 +1046,24 @@ class Compiler {
     }
 
     return declaration as unknown as LabelDeclaration;
+  }
+
+  /**
+   * A cut or wrapped label's fit at the size its style draws it ({@link NotationBindings.labelFit}): its
+   * style's font size, inside its node style's horizontal padding (`padding: [vertical, horizontal]`, or
+   * one number for both), and a wrapped label's lines its font size times its style's line height apart.
+   * A style that states no font size is refused, because the fit would be a guess.
+   */
+  private styledFit(type: string, label: DislLabel, where: string): Pick<LabelDeclaration, "fit" | "stack"> {
+    const font = this.styleOf(label.style)?.font;
+    const fontSize = isObject(font) && typeof font.size === "number" ? font.size : fail(`${where} is fitted to its node by its style, which states no font size.`);
+    const padding = this.styleOf(this.spec.notation.nodes[type]?.style)?.padding;
+    const inset = typeof padding === "number" ? padding : Array.isArray(padding) && typeof padding[1] === "number" ? padding[1] : 0;
+    const lineHeight = isObject(font) && typeof font.lineHeight === "number" ? font.lineHeight : undefined;
+    return {
+      fit: { fontSize, inset },
+      ...(label.wrap === "word" && lineHeight !== undefined ? { stack: { lineHeight: Math.round(fontSize * lineHeight * 100) / 100 } } : {}),
+    };
   }
 
   /**
@@ -1986,7 +2097,7 @@ class Compiler {
     const legend = this.spec.notation.canvas?.legend;
     const entries = legend === undefined || legend.visible === false
       ? []
-      : legend.entries.flatMap((enumName) => {
+      : (legend.entries ?? []).flatMap((enumName) => {
         const values = this.spec.metamodel.enums?.[enumName]?.values ?? fail(`the legend names "${enumName}", which is no enum.`);
         return Object.entries(values).map(([value, entry]) => ({
           caption: entry.label ?? value,

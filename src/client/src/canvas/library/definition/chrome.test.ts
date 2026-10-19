@@ -41,6 +41,19 @@ describe("chrome — the states two modules should show identically", () => {
       { caption: "Package", swatchClass: "kind-package" },
     ]);
   });
+
+  it("reads an entry's swatch colour from that entry, so an entry without one has none rather than its neighbour's", () => {
+    const resolved = resolveLegend(
+      { entries: { path: "payload.legend", each: { path: "label" } }, swatchColour: { path: "style.background" } },
+      source({ legend: [{ label: "Person", style: { background: "#08427b" } }, { label: "Plain", style: {} }, { label: "Database", style: { background: "#438dd5" } }] }),
+    );
+
+    expect(resolved).toEqual([
+      { caption: "Person", swatchColour: "#08427b" },
+      { caption: "Plain" },
+      { caption: "Database", swatchColour: "#438dd5" },
+    ]);
+  });
 });
 
 /**

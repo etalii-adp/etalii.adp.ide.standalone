@@ -952,15 +952,16 @@ describe("a refused action", () => {
     // the report of a keystroke). Here: none.
     currentModel = seed(node("a", "Alpha", 0, 0));
     currentSelection = elementSelectionOf(props.entryId, props.path, "a");
-    shortcutOutcome = { accepted: false, error: "Nothing can be inserted inside a person." };
+    shortcutOutcome = { accepted: false, error: "That element is no longer in this model." };
     const { container } = render(<C4Canvas {...props} />);
 
     // Act.
-    fireEvent.keyDown(container.querySelector(".library-canvas-surface")!, { key: "Insert" });
+    // F2, the one key the specifications declare (their rename and relabel entries).
+    fireEvent.keyDown(container.querySelector(".library-canvas-surface")!, { key: "F2" });
     await act(async () => {});
 
     // Assert.
-    expect(container.textContent).not.toContain("Nothing can be inserted inside a person.");
+    expect(container.textContent).not.toContain("That element is no longer in this model.");
     expect(container.querySelector(".canvas-rejection")).toBeNull();
 
     shortcutOutcome = { accepted: true, error: "" };

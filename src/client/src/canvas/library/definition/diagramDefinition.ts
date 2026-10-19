@@ -497,6 +497,14 @@ export interface LabelStack {
   start?: DeclaredNumber;
 }
 
+/** What a line is fitted by: see {@link LabelDeclaration.fit}. */
+export interface LabelFit {
+  /** The font size the line's characters are counted at, in canvas units. */
+  fontSize: number;
+  /** The room kept free on either side of the box, in canvas units. */
+  inset: number;
+}
+
 /** One declared label. A single-label module writes one of these, which is why migration is mechanical. */
 export interface LabelDeclaration {
   /**
@@ -507,6 +515,11 @@ export interface LabelDeclaration {
    * shape that is not a rectangle. Breaks at spaces and at explicit newlines, at the library's
    * own character-width estimate, stacked at the typography's line height; text that does not fit
    * ends its last visible line with an ellipsis and keeps the whole text as the label's tooltip.
+   *
+   * <b>A wrapped label placed by an {@link offset} is a block that starts there instead</b>: broken
+   * where white space falls into lines no wider than the box less its {@link fit}, the first on the
+   * label's own baseline and each next one {@link stack}'s line height below it, however many there
+   * are - the box was made tall enough for them by whoever sized it, as a card's description is.
    */
   wrap?: boolean;
   /** What it says: a field, a template, or a collection with `each`. */
@@ -537,6 +550,16 @@ export interface LabelDeclaration {
   editable?: boolean;
   /** Trim to the box with an ellipsis, replacing the `fit(text, width)` card renderers call by hand. */
   truncate?: boolean;
+  /**
+   * What a {@link truncate}d line, or a {@link wrap}ped block placed by an offset, is fitted by where a
+   * stylesheet draws the text rather than {@link typography}: the font size its characters are counted
+   * at, and the room kept free on either side of the box. Omitted, a line is fitted at the library's
+   * own label size inside its padding, as every label was before.
+   *
+   * DISL states both, as the label style's font size and its node style's padding (§6.6); the
+   * compiler reads them where a module's bindings say its stylesheet draws those sizes.
+   */
+  fit?: LabelFit;
   /** Conditional presence, replacing `badges.length > 0 ? … : null`. */
   when?: Condition;
   /**

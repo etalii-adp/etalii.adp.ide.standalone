@@ -11,6 +11,13 @@ without that, nothing here could resolve `react`.
   `c4/system-landscape`, `c4/dynamic` and `c4/deployment` are views of one model, so they share
   a canvas rather than having six. The backend declares all seven in one `Diagram.Definitions`
   array for the same reason.
+- **The canvas's definition is compiled, not written.** `C4Canvas.tsx` imports the six bundled
+  specifications under `../definition/` with `?raw` and compiles the one of the view's kind with
+  `compileNotation`; `c4Bindings.ts` says what the library cannot read from them, and why each entry
+  is code. The boundary around a view's scope is the host's, not the specifications', so it is
+  declared there too. `handWrittenDefinition.ts` is the definition the canvas stated by hand before,
+  kept as the oracle `c4CompiledDefinition.test.tsx` holds the compiled ones to; nothing the
+  application runs imports it.
 - **`c4/code` has no canvas, and says so itself.** Its registration carries an `unsupported`
   explanation instead, so the reason lives with the module that understands the notation rather
   than in a fallback in the shell. C4 specifies UML class or entity-relationship notation for
