@@ -66,7 +66,7 @@ public sealed class WardleyContextPropertyProviderTests : IDisposable
     public async Task AComponentShows_WhatRequirement152Asks()
     {
         // Act.
-        var rows = await Describe(IdOf("Kettle"));
+        var rows = await Describe(await IdOfAsync("Kettle"));
 
         // Assert.
         Assert.Equal("Kettle", rows.Row(WardleyContextPropertyProvider.NamePropertyId).Value);
@@ -85,7 +85,7 @@ public sealed class WardleyContextPropertyProviderTests : IDisposable
     {
         // Act. Requirement 15.2 - a market is a component that carries `(market)`, not a fourth
         // kind, and showing them as one row would be showing the file wrongly.
-        var rows = await Describe(IdOf("Kettle"));
+        var rows = await Describe(await IdOfAsync("Kettle"));
 
         // Assert.
         Assert.Equal("component", rows.Row(WardleyContextPropertyProvider.KindPropertyId).Value);
@@ -97,15 +97,15 @@ public sealed class WardleyContextPropertyProviderTests : IDisposable
     {
         // Act. Requirement 15.6 - the distinction between "has no evolve" and "has an empty
         // one" is one the contract keeps deliberately.
-        var kettle = await Describe(IdOf("Kettle"));
-        var power = await Describe(IdOf("Power"));
+        var kettle = await Describe(await IdOfAsync("Kettle"));
+        var power = await Describe(await IdOfAsync("Power"));
 
         // Assert.
         Assert.Contains(kettle, row => row.Id == WardleyContextPropertyProvider.EvolvePropertyId);
         Assert.DoesNotContain(power, row => row.Id == WardleyContextPropertyProvider.EvolvePropertyId);
         Assert.DoesNotContain(power, row => row.Id == WardleyContextPropertyProvider.LabelOffsetPropertyId);
         Assert.Contains(
-            await Describe(IdOf("Cup of Tea")),
+            await Describe(await IdOfAsync("Cup of Tea")),
             row => row.Id == WardleyContextPropertyProvider.LabelOffsetPropertyId);
     }
 
@@ -114,7 +114,7 @@ public sealed class WardleyContextPropertyProviderTests : IDisposable
     {
         // Act. The one row that is contributed even when the document says nothing: a toggle
         // with no off state could never be turned off.
-        var power = await Describe(IdOf("Power"));
+        var power = await Describe(await IdOfAsync("Power"));
 
         // Assert.
         var inertia = power.Single(row => row.Id == WardleyContextPropertyProvider.InertiaPropertyId);
@@ -126,7 +126,7 @@ public sealed class WardleyContextPropertyProviderTests : IDisposable
     public async Task TheRowsAreGroupedTheWayRequirement159Asks()
     {
         // Act.
-        var rows = await Describe(IdOf("Kettle"));
+        var rows = await Describe(await IdOfAsync("Kettle"));
 
         // Assert.
         Assert.Equal("Identity", Group(rows, WardleyContextPropertyProvider.NamePropertyId));
@@ -142,7 +142,7 @@ public sealed class WardleyContextPropertyProviderTests : IDisposable
         // Act. Requirement 15.10 - Line, Text and Toggle serve everything here, and this module
         // is not the reason a Choice editor lands early.
         var rows = new List<ContextPropertyDefinition>();
-        foreach (var id in new[] { IdOf("Kettle"), IdOf("Cup of Tea"), LinkId(), ChildId() })
+        foreach (var id in new[] { await IdOfAsync("Kettle"), await IdOfAsync("Cup of Tea"), await LinkIdAsync(), await ChildIdAsync() })
         {
             rows.AddRange(await Describe(id));
         }
@@ -159,7 +159,7 @@ public sealed class WardleyContextPropertyProviderTests : IDisposable
         // Act. Both IsEditable and the client's PropertyRow test the reason's LENGTH, so a
         // reason of " " would render the row editable AND let the write through.
         var rows = new List<ContextPropertyDefinition>();
-        foreach (var id in new[] { IdOf("Kettle"), IdOf("Cup of Tea"), IdOf("Power"), LinkId(), ChildId(), PipelineId() })
+        foreach (var id in new[] { await IdOfAsync("Kettle"), await IdOfAsync("Cup of Tea"), await IdOfAsync("Power"), await LinkIdAsync(), await ChildIdAsync(), await PipelineIdAsync() })
         {
             rows.AddRange(await Describe(id));
         }
@@ -174,7 +174,7 @@ public sealed class WardleyContextPropertyProviderTests : IDisposable
     public async Task TheEditableRowsAreExactlyTheAuthorsOwnClaims()
     {
         // Act. Requirement 15.5.
-        var rows = await Describe(IdOf("Kettle"));
+        var rows = await Describe(await IdOfAsync("Kettle"));
 
         // Assert.
         Assert.True(rows.Row(WardleyContextPropertyProvider.NamePropertyId).IsEditable);
@@ -190,8 +190,8 @@ public sealed class WardleyContextPropertyProviderTests : IDisposable
     public async Task TheDerivedStageRefusesAWrite_WithAReasonNamingMaturity()
     {
         // Act.
-        var rows = await Describe(IdOf("Kettle"));
-        var result = await Set(IdOf("Kettle"), WardleyContextPropertyProvider.StagePropertyId, "Commodity");
+        var rows = await Describe(await IdOfAsync("Kettle"));
+        var result = await Set(await IdOfAsync("Kettle"), WardleyContextPropertyProvider.StagePropertyId, "Commodity");
 
         // Assert. The reason is shown AND thrown: the panel puts it beside the value, and the
         // resolver returns it verbatim when it refuses the write.
@@ -205,7 +205,7 @@ public sealed class WardleyContextPropertyProviderTests : IDisposable
     public async Task ALinkShowsItsEndsItsKindAndItsContext()
     {
         // Act. Requirement 15.3.
-        var rows = await Describe(LinkId());
+        var rows = await Describe(await LinkIdAsync());
 
         // Assert.
         Assert.Equal("Kettle", rows.Row(WardleyContextPropertyProvider.LinkSourcePropertyId).Value);
@@ -220,7 +220,7 @@ public sealed class WardleyContextPropertyProviderTests : IDisposable
     public async Task APipelineChildsVisibilityIsShownAsItsParents_WithAReasonSayingSo()
     {
         // Act. Requirement 15.4.
-        var rows = await Describe(ChildId());
+        var rows = await Describe(await ChildIdAsync());
 
         // Assert.
         var visibility = rows.Row(WardleyContextPropertyProvider.VisibilityPropertyId);
@@ -235,7 +235,7 @@ public sealed class WardleyContextPropertyProviderTests : IDisposable
     public async Task APipelineShowsItsChildrenAndTheirPositions()
     {
         // Act. Requirement 15.4.
-        var rows = await Describe(PipelineId());
+        var rows = await Describe(await PipelineIdAsync());
 
         // Assert.
         Assert.Equal("Kettle", rows.Row(WardleyContextPropertyProvider.NamePropertyId).Value);
@@ -247,14 +247,14 @@ public sealed class WardleyContextPropertyProviderTests : IDisposable
     public async Task InReadOnlyMode_EveryRowIsStillContributed_AndNoneIsEditable()
     {
         // Arrange. Requirement 15.11 - the panel must still answer what the element is.
-        var editable = await Describe(IdOf("Kettle"));
+        var editable = await Describe(await IdOfAsync("Kettle"));
         File.SetAttributes(_path, FileAttributes.ReadOnly);
 
         try
         {
             // Act.
-            var rows = await Describe(IdOf("Kettle"));
-            var refused = await Set(IdOf("Kettle"), WardleyContextPropertyProvider.MaturityPropertyId, "0.9");
+            var rows = await Describe(await IdOfAsync("Kettle"));
+            var refused = await Set(await IdOfAsync("Kettle"), WardleyContextPropertyProvider.MaturityPropertyId, "0.9");
 
             // Assert.
             Assert.Equal(editable.Select(row => row.Id), rows.Select(row => row.Id));
@@ -276,13 +276,13 @@ public sealed class WardleyContextPropertyProviderTests : IDisposable
         var history = _services.GetRequiredService<IHistoryStackStore>().Get(_root);
 
         // Act.
-        var typed = await Set(IdOf("Kettle"), WardleyContextPropertyProvider.MaturityPropertyId, "0.42");
+        var typed = await Set(await IdOfAsync("Kettle"), WardleyContextPropertyProvider.MaturityPropertyId, "0.42");
         var afterTyping = await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken);
         await history.UndoAsync(TestContext.Current.CancellationToken);
         var afterUndo = await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken);
 
         await history.ExecuteAsync(
-            new MoveWardleyElementCommand(_path, IdOf("Kettle"), 0.43d, 0.42d), TestContext.Current.CancellationToken);
+            new MoveWardleyElementCommand(_path, await IdOfAsync("Kettle"), 0.43d, 0.42d), TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.True(typed.IsSuccess, typed.Error);
@@ -295,7 +295,7 @@ public sealed class WardleyContextPropertyProviderTests : IDisposable
     {
         // Act. Both coordinates travel in one command, so the row that was not touched has to
         // carry the value it already had.
-        var result = await Set(IdOf("Kettle"), WardleyContextPropertyProvider.VisibilityPropertyId, "0.5");
+        var result = await Set(await IdOfAsync("Kettle"), WardleyContextPropertyProvider.VisibilityPropertyId, "0.5");
 
         // Assert.
         Assert.True(result.IsSuccess, result.Error);
@@ -306,8 +306,8 @@ public sealed class WardleyContextPropertyProviderTests : IDisposable
     public async Task ARejectedCoordinateLeavesTheDocumentUnchanged()
     {
         // Act. Requirement 15.7.
-        var offScale = await Set(IdOf("Kettle"), WardleyContextPropertyProvider.MaturityPropertyId, "1.4");
-        var notANumber = await Set(IdOf("Kettle"), WardleyContextPropertyProvider.MaturityPropertyId, "quite evolved");
+        var offScale = await Set(await IdOfAsync("Kettle"), WardleyContextPropertyProvider.MaturityPropertyId, "1.4");
+        var notANumber = await Set(await IdOfAsync("Kettle"), WardleyContextPropertyProvider.MaturityPropertyId, "quite evolved");
 
         // Assert.
         Assert.False(offScale.IsSuccess);
@@ -320,7 +320,7 @@ public sealed class WardleyContextPropertyProviderTests : IDisposable
     public async Task ARenameThroughTheGrid_RewritesEveryReference()
     {
         // Act.
-        var result = await Set(IdOf("Kettle"), WardleyContextPropertyProvider.NamePropertyId, "Boiler");
+        var result = await Set(await IdOfAsync("Kettle"), WardleyContextPropertyProvider.NamePropertyId, "Boiler");
 
         // Assert. The same command the menu's Rename uses, so the references travel with it.
         Assert.True(result.IsSuccess, result.Error);
@@ -334,7 +334,7 @@ public sealed class WardleyContextPropertyProviderTests : IDisposable
     public async Task ARenameToATakenName_IsRefusedWithTheReason()
     {
         // Act.
-        var result = await Set(IdOf("Kettle"), WardleyContextPropertyProvider.NamePropertyId, "Power");
+        var result = await Set(await IdOfAsync("Kettle"), WardleyContextPropertyProvider.NamePropertyId, "Power");
 
         // Assert.
         Assert.False(result.IsSuccess);
@@ -350,7 +350,7 @@ public sealed class WardleyContextPropertyProviderTests : IDisposable
         var history = _services.GetRequiredService<IHistoryStackStore>().Get(_root);
 
         // Act.
-        var result = await Set(IdOf("Kettle"), WardleyContextPropertyProvider.DecoratorsPropertyId, "market, outsource");
+        var result = await Set(await IdOfAsync("Kettle"), WardleyContextPropertyProvider.DecoratorsPropertyId, "market, outsource");
         var after = await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken);
         await history.UndoAsync(TestContext.Current.CancellationToken);
 
@@ -366,7 +366,7 @@ public sealed class WardleyContextPropertyProviderTests : IDisposable
     public async Task AMisspelledDecorator_IsRefusedRatherThanQuietlyDropped()
     {
         // Act.
-        var result = await Set(IdOf("Kettle"), WardleyContextPropertyProvider.DecoratorsPropertyId, "buy, outsorce");
+        var result = await Set(await IdOfAsync("Kettle"), WardleyContextPropertyProvider.DecoratorsPropertyId, "buy, outsorce");
 
         // Assert. Keeping the ones it recognised would leave the user looking at a row that did
         // not do what they typed and did not say so.
@@ -380,7 +380,7 @@ public sealed class WardleyContextPropertyProviderTests : IDisposable
     public async Task ClearingTheDecoratorsRow_TakesThemAllOff()
     {
         // Act.
-        var result = await Set(IdOf("Kettle"), WardleyContextPropertyProvider.DecoratorsPropertyId, "");
+        var result = await Set(await IdOfAsync("Kettle"), WardleyContextPropertyProvider.DecoratorsPropertyId, "");
 
         // Assert.
         Assert.True(result.IsSuccess, result.Error);
@@ -391,9 +391,9 @@ public sealed class WardleyContextPropertyProviderTests : IDisposable
     public async Task TogglingInertia_WritesAndRemovesTheWord()
     {
         // Act.
-        await Set(IdOf("Kettle"), WardleyContextPropertyProvider.InertiaPropertyId, "false");
+        await Set(await IdOfAsync("Kettle"), WardleyContextPropertyProvider.InertiaPropertyId, "false");
         var off = await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken);
-        await Set(IdOf("Kettle"), WardleyContextPropertyProvider.InertiaPropertyId, "true");
+        await Set(await IdOfAsync("Kettle"), WardleyContextPropertyProvider.InertiaPropertyId, "true");
 
         // Assert.
         Assert.DoesNotContain("inertia", off, StringComparison.Ordinal);
@@ -404,7 +404,7 @@ public sealed class WardleyContextPropertyProviderTests : IDisposable
     public async Task SettingInertiaToWhatItIs_KeepsIt_RatherThanFlippingIt()
     {
         // Act.
-        await Set(IdOf("Kettle"), WardleyContextPropertyProvider.InertiaPropertyId, "true");
+        await Set(await IdOfAsync("Kettle"), WardleyContextPropertyProvider.InertiaPropertyId, "true");
 
         // Assert.
         Assert.Contains("inertia", await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken), StringComparison.Ordinal);
@@ -414,7 +414,7 @@ public sealed class WardleyContextPropertyProviderTests : IDisposable
     public async Task EmptyingTheEvolveRow_ClearsTheStatement()
     {
         // Act. The row's own way of saying "this is no longer heading anywhere".
-        var result = await Set(IdOf("Kettle"), WardleyContextPropertyProvider.EvolvePropertyId, "");
+        var result = await Set(await IdOfAsync("Kettle"), WardleyContextPropertyProvider.EvolvePropertyId, "");
 
         // Assert.
         Assert.True(result.IsSuccess, result.Error);
@@ -425,7 +425,7 @@ public sealed class WardleyContextPropertyProviderTests : IDisposable
     public async Task EditingTheEvolveTarget_KeepsTheNameItArrivesUnder()
     {
         // Act.
-        var result = await Set(IdOf("Kettle"), WardleyContextPropertyProvider.EvolvePropertyId, "0.8");
+        var result = await Set(await IdOfAsync("Kettle"), WardleyContextPropertyProvider.EvolvePropertyId, "0.8");
 
         // Assert.
         Assert.True(result.IsSuccess, result.Error);
@@ -436,7 +436,7 @@ public sealed class WardleyContextPropertyProviderTests : IDisposable
     public async Task EditingALinksContext_RewritesTheOneStatement()
     {
         // Act.
-        var result = await Set(LinkId(), WardleyContextPropertyProvider.LinkContextPropertyId, "money");
+        var result = await Set(await LinkIdAsync(), WardleyContextPropertyProvider.LinkContextPropertyId, "money");
 
         // Assert.
         Assert.True(result.IsSuccess, result.Error);
@@ -447,7 +447,7 @@ public sealed class WardleyContextPropertyProviderTests : IDisposable
     public async Task EditingAPipelineChildsMaturity_MovesOnlyItsOwnNumber()
     {
         // Act. Requirement 5.4 - a child has no visibility of its own to move.
-        var result = await Set(ChildId(), WardleyContextPropertyProvider.MaturityPropertyId, "0.71");
+        var result = await Set(await ChildIdAsync(), WardleyContextPropertyProvider.MaturityPropertyId, "0.71");
 
         // Assert.
         Assert.True(result.IsSuccess, result.Error);
@@ -469,7 +469,7 @@ public sealed class WardleyContextPropertyProviderTests : IDisposable
     public async Task APropertyThisElementDoesNotHave_IsRefusedRatherThanIgnored()
     {
         // Act.
-        var result = await Set(LinkId(), WardleyContextPropertyProvider.InertiaPropertyId, "true");
+        var result = await Set(await LinkIdAsync(), WardleyContextPropertyProvider.InertiaPropertyId, "true");
 
         // Assert.
         Assert.False(result.IsSuccess);
@@ -478,25 +478,41 @@ public sealed class WardleyContextPropertyProviderTests : IDisposable
 
     // ---- plumbing -----------------------------------------------------------------------------
 
-    private string IdOf(string name) => _documents
-        .Identities(_path)
-        .Single(entry => entry.Kind == WardleyIdentityKind.Component && entry.Key == name)
-        .Id;
+    private async Task<string> IdOfAsync(string name)
+    {
+        await _documents.GetOrLoadAsync(_path, TestContext.Current.CancellationToken);
+        return _documents
+            .Identities(_path)
+            .Single(entry => entry.Kind == WardleyIdentityKind.Component && entry.Key == name)
+            .Id;
+    }
 
-    private string LinkId() => _documents
-        .Identities(_path)
-        .Single(entry => entry.Kind == WardleyIdentityKind.Link && entry.Key.Contains("Power", StringComparison.Ordinal))
-        .Id;
+    private async Task<string> LinkIdAsync()
+    {
+        await _documents.GetOrLoadAsync(_path, TestContext.Current.CancellationToken);
+        return _documents
+            .Identities(_path)
+            .Single(entry => entry.Kind == WardleyIdentityKind.Link && entry.Key.Contains("Power", StringComparison.Ordinal))
+            .Id;
+    }
 
-    private string ChildId() => _documents
-        .Identities(_path)
-        .Single(entry => entry.Kind == WardleyIdentityKind.PipelineChild)
-        .Id;
+    private async Task<string> ChildIdAsync()
+    {
+        await _documents.GetOrLoadAsync(_path, TestContext.Current.CancellationToken);
+        return _documents
+            .Identities(_path)
+            .Single(entry => entry.Kind == WardleyIdentityKind.PipelineChild)
+            .Id;
+    }
 
-    private string PipelineId() => _documents
-        .Identities(_path)
-        .Single(entry => entry.Kind == WardleyIdentityKind.Pipeline)
-        .Id;
+    private async Task<string> PipelineIdAsync()
+    {
+        await _documents.GetOrLoadAsync(_path, TestContext.Current.CancellationToken);
+        return _documents
+            .Identities(_path)
+            .Single(entry => entry.Kind == WardleyIdentityKind.Pipeline)
+            .Id;
+    }
 
     private ContextTarget Target(string elementId) => ContextTarget.ForElement(_path, elementId, _root);
 

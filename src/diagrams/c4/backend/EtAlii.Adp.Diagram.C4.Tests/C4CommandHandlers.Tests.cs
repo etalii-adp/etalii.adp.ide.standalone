@@ -58,6 +58,6 @@ public sealed class C4CommandHandlersTests : EditHandlerContract<IC4DocumentStor
     private sealed class WarningStore(IC4DocumentStore inner, string warning)
         : WarningDocumentStore<LineDocument, C4Workspace>(inner, warning), IC4DocumentStore
     {
-        public void Touch(string path) => inner.Touch(path);
+        public Task TouchAsync(string path, CancellationToken cancellationToken) => inner.TouchAsync(path, cancellationToken);
     }
 }

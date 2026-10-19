@@ -23,10 +23,11 @@ public sealed class WardleyDocumentStoreIdentityTests : IDisposable
     public void Dispose() => _folder.Dispose();
 
     [Fact]
-    public void AMissingBody_KeepsItsIdentitiesOnReload_AndLosesThemOnlyToTheWatchersDelete()
+    public async Task AMissingBody_KeepsItsIdentitiesOnReload_AndLosesThemOnlyToTheWatchersDelete()
     {
         // Arrange.
         var store = new WardleyDocumentStore(new FileWriter());
+        await store.GetOrLoadAsync(Body, TestContext.Current.CancellationToken);
         var held = store.Identities(Body);
         Assert.NotEmpty(held);
         File.Delete(Body);
@@ -48,6 +49,7 @@ public sealed class WardleyDocumentStoreIdentityTests : IDisposable
     {
         // Arrange.
         var store = new WardleyDocumentStore(new FileWriter());
+        await store.GetOrLoadAsync(Body, TestContext.Current.CancellationToken);
         var before = store.Identities(Body);
         await File.AppendAllTextAsync(Body, "component Kettle [0.45, 0.57]\n", TestContext.Current.CancellationToken);
 
@@ -61,18 +63,48 @@ public sealed class WardleyDocumentStoreIdentityTests : IDisposable
     }
 
     [Fact]
-    public void AForgottenDocument_ForgetsItsIdentities_AndReadsTheSidecarAfresh()
+    public async Task AForgottenDocument_ForgetsItsIdentities_AndReadsTheSidecarAfresh()
     {
         // Arrange: ids handed out on open and never written, as on a map opened and not edited.
         var store = new WardleyDocumentStore(new FileWriter());
+        await store.GetOrLoadAsync(Body, TestContext.Current.CancellationToken);
         var minted = store.Identities(Body);
 
         // Act.
         store.Forget(Body);
+        await store.GetOrLoadAsync(Body, TestContext.Current.CancellationToken);
         var again = store.Identities(Body);
 
         // Assert: no sidecar was written, so the next open mints its own; the old ones are not held.
         Assert.NotEqual(minted.Select(entry => entry.Id), again.Select(entry => entry.Id));
+    }
+
+    [Fact]
+    public void TheIdentitiesOfAMapNotReadYet_AreNone_AndReadNothing()
+    {
+        // Arrange: identities are asked for a map that was read; this one was not.
+        var store = new WardleyDocumentStore(new FileWriter());
+
+        // Act.
+        var identities = store.Identities(Body);
+
+        // Assert: nothing minted, nothing read, and nothing kept to answer the read that follows.
+        Assert.Empty(identities);
+        Assert.Null(store.Get(Body));
+    }
+
+    [Fact]
+    public async Task TheIdentitiesOfAMapReadLater_AreReconciledWithIt()
+    {
+        // Arrange: identities asked for before the map was read are not the ones kept for it.
+        var store = new WardleyDocumentStore(new FileWriter());
+        _ = store.Identities(Body);
+
+        // Act.
+        await store.GetOrLoadAsync(Body, TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.NotEmpty(store.Identities(Body));
     }
 
     [Fact]

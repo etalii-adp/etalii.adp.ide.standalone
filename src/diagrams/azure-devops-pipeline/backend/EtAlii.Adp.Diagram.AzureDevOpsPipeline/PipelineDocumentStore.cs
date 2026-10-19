@@ -129,9 +129,9 @@ public sealed class PipelineDocumentStore : IPipelineDocumentStore
     /// Tells every session on this document to re-deliver, without changing the document - for a
     /// change to how it is drawn rather than to what it says.
     /// </summary>
-    public void Touch(string rootPath, string path)
+    public async Task TouchAsync(string rootPath, string path, CancellationToken cancellationToken)
     {
-        GetOrLoad(rootPath, path);
+        await GetOrLoadAsync(rootPath, path, cancellationToken);
         OnChanged(path);
     }
 
@@ -236,10 +236,10 @@ public sealed class PipelineDocumentStore : IPipelineDocumentStore
         public DocumentEntry<PipelineBody, PipelineModel>? Get(string path) => documents._lifecycle.Get(path);
 
         /// <remarks>Refused, as the store refuses it, while what the file holds does not parse.</remarks>
-        public Task<DocumentSaveResult> SaveAsync(string path, PipelineBody document, CancellationToken cancellationToken)
+        public async Task<DocumentSaveResult> SaveAsync(string path, PipelineBody document, CancellationToken cancellationToken)
         {
-            var entry = documents.GetOrLoad(rootPath, path) with { Document = document };
-            return documents.SaveAsync(rootPath, path, entry, cancellationToken);
+            var entry = await documents.GetOrLoadAsync(rootPath, path, cancellationToken) with { Document = document };
+            return await documents.SaveAsync(rootPath, path, entry, cancellationToken);
         }
 
         public void Reload(string path) => documents.Reload(path);

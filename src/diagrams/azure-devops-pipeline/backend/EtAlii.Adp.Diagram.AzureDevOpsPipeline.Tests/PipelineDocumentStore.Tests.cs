@@ -181,21 +181,21 @@ public class PipelineDocumentStoreTests : IDisposable
     }
 
     [Fact]
-    public void ATouch_TellsTheSessionsWithoutChangingAnything()
+    public async Task ATouch_TellsTheSessionsWithoutChangingAnything()
     {
         // Arrange: a change to how a pipeline is drawn rather than to what it says.
         var path = Write("azure-pipelines.yml", Simple);
         var store = new PipelineDocumentStore(new FileWriter());
-        store.GetOrLoad(_workspace, path);
+        await store.GetOrLoadAsync(_workspace, path, TestContext.Current.CancellationToken);
         var announced = 0;
         store.Changed += (_, _) => announced++;
 
         // Act.
-        store.Touch(_workspace, path);
+        await store.TouchAsync(_workspace, path, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Equal(1, announced);
-        Assert.Equal(Simple, File.ReadAllText(path));
+        Assert.Equal(Simple, await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
     }
 
     [Fact]

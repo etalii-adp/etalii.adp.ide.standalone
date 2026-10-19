@@ -100,7 +100,7 @@ public sealed class WardleyToolboxProviderTests : IDisposable
         var onTheMap = await OfferedIds(elementId: "");
 
         await Execute(WardleyContextActionProvider.AddComponentActionId, "Kettle");
-        var onAComponent = await OfferedIds(IdOf("Kettle"));
+        var onAComponent = await OfferedIds(await IdOfAsync("Kettle"));
 
         var offered = onTheMap.Concat(onAComponent).ToHashSet(StringComparer.Ordinal);
 
@@ -227,9 +227,9 @@ public sealed class WardleyToolboxProviderTests : IDisposable
 
         // Act.
         var asked = await _actions.ExecuteAsync(
-            Target(IdOf("Kettle")), WardleyContextActionProvider.AddToPipelineActionId, TestContext.Current.CancellationToken);
+            Target(await IdOfAsync("Kettle")), WardleyContextActionProvider.AddToPipelineActionId, TestContext.Current.CancellationToken);
         var committed = await _actions.CommitAsync(
-            Target(IdOf("Kettle")),
+            Target(await IdOfAsync("Kettle")),
             WardleyContextActionProvider.AddToPipelineActionId,
             "Electric Kettle",
             "",
@@ -243,10 +243,14 @@ public sealed class WardleyToolboxProviderTests : IDisposable
 
     // ---- plumbing -----------------------------------------------------------------------------
 
-    private string IdOf(string name) => _documents
-        .Identities(_path)
-        .Single(entry => entry.Kind == WardleyIdentityKind.Component && entry.Key == name)
-        .Id;
+    private async Task<string> IdOfAsync(string name)
+    {
+        await _documents.GetOrLoadAsync(_path, TestContext.Current.CancellationToken);
+        return _documents
+            .Identities(_path)
+            .Single(entry => entry.Kind == WardleyIdentityKind.Component && entry.Key == name)
+            .Id;
+    }
 
     private ContextTarget Target(string elementId) => ContextTarget.ForElement(_path, elementId, _root);
 

@@ -328,7 +328,7 @@ public class PipelineContextSourceResolverTests : IDisposable
 
         // Act.
         tracking.Dispose();
-        _store.Touch(_workspace, BodyOf(path));
+        await _store.TouchAsync(_workspace, BodyOf(path), TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Equal(0, reported);
@@ -346,7 +346,7 @@ public class PipelineContextSourceResolverTests : IDisposable
 
         // Act.
         _store.GetOrLoad(_workspace, BodyOf(theirs));
-        _store.Touch(_workspace, BodyOf(theirs));
+        await _store.TouchAsync(_workspace, BodyOf(theirs), TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Equal(0, reported);
@@ -468,7 +468,7 @@ public class PipelineContextSourceResolverTests : IDisposable
         using var tracking = Resolver().Track(ShortGuid.NewShortGuid(), _workspace, level, reported.Add);
 
         // Act: an edit elsewhere, then one that removes the dependency.
-        _store.Touch(_workspace, BodyOf(path));
+        await _store.TouchAsync(_workspace, BodyOf(path), TestContext.Current.CancellationToken);
         await File.WriteAllTextAsync(BodyOf(path), Arrows.Replace("- Test", "", StringComparison.Ordinal), TestContext.Current.CancellationToken);
         _store.Reload(BodyOf(path));
 

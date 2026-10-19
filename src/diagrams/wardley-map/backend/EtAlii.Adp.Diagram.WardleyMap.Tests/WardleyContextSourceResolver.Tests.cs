@@ -84,7 +84,7 @@ public sealed class WardleyContextSourceResolverTests : IDisposable
     public async Task AComponent_ResolvesToItsOwnNameAndPath()
     {
         // Act.
-        var resolution = await Resolve(IdOf(WardleyIdentityKind.Component, "Kettle"));
+        var resolution = await Resolve(await IdOfAsync(WardleyIdentityKind.Component, "Kettle"));
 
         // Assert.
         var level = Assert.IsType<ResolvedContextLevel>(resolution).Level;
@@ -98,8 +98,8 @@ public sealed class WardleyContextSourceResolverTests : IDisposable
     public async Task AComponentThatIsAPipelineParent_SaysItHasChildren()
     {
         // Act.
-        var kettle = Assert.IsType<ResolvedContextLevel>(await Resolve(IdOf(WardleyIdentityKind.Component, "Kettle"))).Level;
-        var power = Assert.IsType<ResolvedContextLevel>(await Resolve(IdOf(WardleyIdentityKind.Component, "Power"))).Level;
+        var kettle = Assert.IsType<ResolvedContextLevel>(await Resolve(await IdOfAsync(WardleyIdentityKind.Component, "Kettle"))).Level;
+        var power = Assert.IsType<ResolvedContextLevel>(await Resolve(await IdOfAsync(WardleyIdentityKind.Component, "Power"))).Level;
 
         // Assert. The pipeline is the only containment this notation has, so it is the only
         // thing `has_children` can mean here.
@@ -111,7 +111,7 @@ public sealed class WardleyContextSourceResolverTests : IDisposable
     public async Task APipelineChild_IsNamedBeneathItsParent()
     {
         // Act.
-        var resolution = await Resolve(IdOf(WardleyIdentityKind.PipelineChild, $"Kettle{Key}Electric Kettle"));
+        var resolution = await Resolve(await IdOfAsync(WardleyIdentityKind.PipelineChild, $"Kettle{Key}Electric Kettle"));
 
         // Assert. The one two-segment path this notation produces.
         var level = Assert.IsType<ResolvedContextLevel>(resolution).Level;
@@ -124,8 +124,8 @@ public sealed class WardleyContextSourceResolverTests : IDisposable
     {
         // Act. A link has no name of its own; its key is its endpoints run together, which is a
         // handle rather than something to show anyone.
-        var dependency = await Resolve(IdOf(WardleyIdentityKind.Link, $"Cup of Tea{Key}Kettle{Key}{WardleyLinkKind.Dependency}"));
-        var flow = await Resolve(IdOf(WardleyIdentityKind.Link, $"Kettle{Key}Power{Key}{WardleyLinkKind.Flow}"));
+        var dependency = await Resolve(await IdOfAsync(WardleyIdentityKind.Link, $"Cup of Tea{Key}Kettle{Key}{WardleyLinkKind.Dependency}"));
+        var flow = await Resolve(await IdOfAsync(WardleyIdentityKind.Link, $"Kettle{Key}Power{Key}{WardleyLinkKind.Flow}"));
 
         // Assert.
         Assert.Equal("Cup of Tea -> Kettle", Assert.IsType<ResolvedContextLevel>(dependency).Level.Detail.Element.Text);
@@ -136,8 +136,8 @@ public sealed class WardleyContextSourceResolverTests : IDisposable
     public async Task ANoteAndARegion_AreSelectableToo()
     {
         // Act.
-        var note = await Resolve(IdOf(WardleyIdentityKind.Note, "This is a note"));
-        var attitude = await Resolve(IdOf(WardleyIdentityKind.Attitude, $"Pioneers{Key}0.3{Key}0.2"));
+        var note = await Resolve(await IdOfAsync(WardleyIdentityKind.Note, "This is a note"));
+        var attitude = await Resolve(await IdOfAsync(WardleyIdentityKind.Attitude, $"Pioneers{Key}0.3{Key}0.2"));
 
         // Assert.
         Assert.Equal("This is a note", Assert.IsType<ResolvedContextLevel>(note).Level.Detail.Element.Text);
@@ -148,7 +148,7 @@ public sealed class WardleyContextSourceResolverTests : IDisposable
     public async Task TheSelectionCarriesTheElementsOwnPayload()
     {
         // Act.
-        var level = Assert.IsType<ResolvedContextLevel>(await Resolve(IdOf(WardleyIdentityKind.Component, "Kettle"))).Level;
+        var level = Assert.IsType<ResolvedContextLevel>(await Resolve(await IdOfAsync(WardleyIdentityKind.Component, "Kettle"))).Level;
 
         // Assert. Requirement 11.3: the pushed selection is self-describing - a consumer reads
         // the kind, the coordinates and the derived stage without asking a second time.
@@ -166,9 +166,10 @@ public sealed class WardleyContextSourceResolverTests : IDisposable
     {
         // Arrange. Two descriptions of one element that could drift apart is exactly the defect
         // this shares the mapper to avoid.
+        await _documents.GetOrLoadAsync(_body, TestContext.Current.CancellationToken);
         var identities = _documents.Identities(_body);
         var map = _documents.GetOrLoad(_body).Model;
-        var elementId = IdOf(WardleyIdentityKind.Component, "Cup of Tea");
+        var elementId = await IdOfAsync(WardleyIdentityKind.Component, "Cup of Tea");
         var streamed = new WardleyElementMapper(new WardleyIdentities(new FileWriter()))
             .Elements(map, identities)
             .Single(element => element.Id == elementId);
@@ -185,7 +186,7 @@ public sealed class WardleyContextSourceResolverTests : IDisposable
     public async Task NothingNestsInsideAnElement()
     {
         // Act.
-        var level = Assert.IsType<ResolvedContextLevel>(await Resolve(IdOf(WardleyIdentityKind.Component, "Kettle"))).Level;
+        var level = Assert.IsType<ResolvedContextLevel>(await Resolve(await IdOfAsync(WardleyIdentityKind.Component, "Kettle"))).Level;
 
         // Assert.
         Assert.Equal(ContextNesting.NotNestable, _resolver.NestingOf(level));
@@ -231,7 +232,7 @@ public sealed class WardleyContextSourceResolverTests : IDisposable
     public async Task AClientPathThatDisagreesWithTheElement_IsRejected()
     {
         // Act. The client's version of the path is checked, never trusted.
-        var resolution = await Resolve(IdOf(WardleyIdentityKind.Component, "Kettle"), clientPath: ["Power"]);
+        var resolution = await Resolve(await IdOfAsync(WardleyIdentityKind.Component, "Kettle"), clientPath: ["Power"]);
 
         // Assert.
         Assert.Contains("does not match", Assert.IsType<RejectedContextLevel>(resolution).Reason, StringComparison.Ordinal);
@@ -248,7 +249,7 @@ public sealed class WardleyContextSourceResolverTests : IDisposable
         await File.WriteAllTextAsync(IoPath.Combine(_root, "notes.mm"), "<map><node TEXT=\"a\"/></map>", TestContext.Current.CancellationToken);
 
         // Act.
-        var resolution = await Resolve(IdOf(WardleyIdentityKind.Component, "Kettle"), registration: other);
+        var resolution = await Resolve(await IdOfAsync(WardleyIdentityKind.Component, "Kettle"), registration: other);
 
         // Assert.
         Assert.Contains("not a Wardley map", Assert.IsType<RejectedContextLevel>(resolution).Reason, StringComparison.Ordinal);
@@ -260,7 +261,7 @@ public sealed class WardleyContextSourceResolverTests : IDisposable
     public async Task ARemovedElement_ClearsTheSelection()
     {
         // Arrange.
-        var level = Assert.IsType<ResolvedContextLevel>(await Resolve(IdOf(WardleyIdentityKind.Component, "Power"))).Level;
+        var level = Assert.IsType<ResolvedContextLevel>(await Resolve(await IdOfAsync(WardleyIdentityKind.Component, "Power"))).Level;
         IReadOnlyList<string>? announced = ["unset"];
         using var subscription = _resolver.Track(ShortGuid.NewShortGuid(), _root, level, path => announced = path);
 
@@ -278,7 +279,7 @@ public sealed class WardleyContextSourceResolverTests : IDisposable
     {
         // Arrange. The identity survives a rename (Requirement 4.4), so what the tracker sees
         // is a path change - not the element vanishing.
-        var level = Assert.IsType<ResolvedContextLevel>(await Resolve(IdOf(WardleyIdentityKind.Component, "Power"))).Level;
+        var level = Assert.IsType<ResolvedContextLevel>(await Resolve(await IdOfAsync(WardleyIdentityKind.Component, "Power"))).Level;
         IReadOnlyList<string>? announced = null;
         using var subscription = _resolver.Track(ShortGuid.NewShortGuid(), _root, level, path => announced = path);
 
@@ -296,7 +297,7 @@ public sealed class WardleyContextSourceResolverTests : IDisposable
     public async Task ADisposedSubscription_StopsAnnouncing()
     {
         // Arrange.
-        var level = Assert.IsType<ResolvedContextLevel>(await Resolve(IdOf(WardleyIdentityKind.Component, "Power"))).Level;
+        var level = Assert.IsType<ResolvedContextLevel>(await Resolve(await IdOfAsync(WardleyIdentityKind.Component, "Power"))).Level;
         var announcements = 0;
         var subscription = _resolver.Track(ShortGuid.NewShortGuid(), _root, level, _ => announcements++);
 
@@ -310,8 +311,11 @@ public sealed class WardleyContextSourceResolverTests : IDisposable
 
     // ---- plumbing -----------------------------------------------------------------------------
 
-    private string IdOf(string kind, string key) =>
-        _documents.Identities(_body).Single(entry => entry.Kind == kind && entry.Key == key).Id;
+    private async Task<string> IdOfAsync(string kind, string key)
+    {
+        await _documents.GetOrLoadAsync(_body, TestContext.Current.CancellationToken);
+        return _documents.Identities(_body).Single(entry => entry.Kind == kind && entry.Key == key).Id;
+    }
 
     private async Task<ContextLevelResolution> Resolve(
         string elementId,
