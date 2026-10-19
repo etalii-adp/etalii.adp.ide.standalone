@@ -132,14 +132,25 @@ public partial class ShapeOfFileAccessTests
     /// happen not to touch a file API; the first test helper that needs to read a fixture would
     /// have been told to use <c>SharedDocumentReader</c> for no reason at all.
     /// </para>
+    /// <para>
+    /// The same holds for the two test libraries, <c>EtAlii.Adp.TestSupport</c> and
+    /// <c>EtAlii.Adp.TestSupport.Host</c>, which every test project references and nothing
+    /// ships. Their folders are named for the project, so the <c>TestSupport</c> segment does not
+    /// match them either; that helper which needs to read a fixture arrived with the FBL real-file
+    /// corpus (code-structure T287).
+    /// </para>
     /// </remarks>
     private static IEnumerable<string> ProductionSources() =>
         Directory.EnumerateFiles(IoPath.Combine(RepositoryRoot, "src"), "*.cs", SearchOption.AllDirectories)
             .Where(path => !path.Contains($"{IoPath.DirectorySeparatorChar}bin{IoPath.DirectorySeparatorChar}", StringComparison.Ordinal))
             .Where(path => !path.Contains($"{IoPath.DirectorySeparatorChar}obj{IoPath.DirectorySeparatorChar}", StringComparison.Ordinal))
             .Where(path => !path.Contains(".Tests", StringComparison.Ordinal))
-            .Where(path => !path.Contains($"{IoPath.DirectorySeparatorChar}TestSupport{IoPath.DirectorySeparatorChar}", StringComparison.Ordinal))
+            .Where(path => !IsTestSupport(path))
             .Where(path => !path.EndsWith(".g.cs", StringComparison.Ordinal));
+
+    private static bool IsTestSupport(string path) =>
+        path.Split(IoPath.DirectorySeparatorChar).Any(segment =>
+            segment == "TestSupport" || segment.StartsWith("EtAlii.Adp.TestSupport", StringComparison.Ordinal));
 
     /// <summary>
     /// The rules, as a pure function over one file's lines so they can be exercised directly
@@ -399,6 +410,9 @@ public partial class ShapeOfFileAccessTests
         Assert.DoesNotContain(
             scanned,
             path => path.Contains($"{IoPath.DirectorySeparatorChar}TestSupport{IoPath.DirectorySeparatorChar}", StringComparison.Ordinal));
+
+        // The test libraries ship nowhere either, and their folders are named for the project.
+        Assert.DoesNotContain(scanned, path => path.Contains("EtAlii.Adp.TestSupport", StringComparison.Ordinal));
 
         // And the exclusions have not swallowed the subject: the application is still walked.
         Assert.Contains(scanned, path => path.EndsWith("SharedDocumentReader.cs", StringComparison.Ordinal));

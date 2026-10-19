@@ -17,11 +17,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!--
-      The module cross-check's shared part, which the test projects of the modules it reads compile from here, so that
-      this project references no tool module (code-structure T287). It holds no test of its own.
-    -->
-    <Compile Remove="RealFiles\ModuleCrossCheck.cs" />
     <!-- An FBL document embedded as a module embeds its binding, for BundledBindingTests. -->
     <EmbeddedResource Include="Conformance\timeline.fbl" LogicalName="timeline.fbl" />
   </ItemGroup>

@@ -1,16 +1,17 @@
 using System.Text;
+using EtAlii.Adp.Specification.Fbl;
 using EtAlii.Adp.Specification.Fbl.History;
 using Xunit;
 
-namespace EtAlii.Adp.Specification.Fbl.Tests.RealFiles;
+namespace EtAlii.Adp.TestSupport;
 
 /// <summary>
 /// Requirement 11.6: the ids per type a vendored binding reads from each real file equal the ids the module's own reader
-/// reads, every difference a listed divergence. The check of each module lives in that module's test project, which
-/// compiles this file, the corpus and the ledger from here, so that this project references no tool module
-/// (code-structure T287, SC-013) while the corpus, the bindings and <c>divergences.json</c> stay one.
+/// reads, every difference a listed divergence. The check of each module lives in that module's test project, so
+/// that the FBL test project references no tool module (code-structure T287, SC-013); the corpus, the vendored bindings
+/// and <c>divergences.json</c> it reads through here stay one.
 /// </summary>
-internal static class ModuleCrossCheck
+public static class ModuleCrossCheck
 {
     /// <summary>How many ids of a difference the observation names before it counts the rest.</summary>
     private const int Named = 5;

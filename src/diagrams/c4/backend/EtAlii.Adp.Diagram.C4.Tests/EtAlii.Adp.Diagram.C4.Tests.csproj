@@ -30,17 +30,4 @@
     <Content Include="Fixtures\**" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
-  <ItemGroup>
-    <!--
-      The FBL implementation's real-file cross-check of this module (Requirement 11.6), with the corpus, the vendored
-      bindings and the ledger of divergences it reads, compiled from EtAlii.Adp.Specification.Fbl.Tests rather than
-      copied, so that project references no tool module and the ledger stays one (code-structure T287).
-    -->
-    <Compile Include="..\..\..\..\backend\EtAlii.Adp.Specification.Fbl.Tests\Support\Repository.cs" Link="CrossCheck\Repository.cs" />
-    <Compile Include="..\..\..\..\backend\EtAlii.Adp.Specification.Fbl.Tests\Support\NaturalIds.cs" Link="CrossCheck\NaturalIds.cs" />
-    <Compile Include="..\..\..\..\backend\EtAlii.Adp.Specification.Fbl.Tests\RealFiles\RealFileCorpus.cs" Link="CrossCheck\RealFileCorpus.cs" />
-    <Compile Include="..\..\..\..\backend\EtAlii.Adp.Specification.Fbl.Tests\RealFiles\Divergences.cs" Link="CrossCheck\Divergences.cs" />
-    <Compile Include="..\..\..\..\backend\EtAlii.Adp.Specification.Fbl.Tests\RealFiles\ModuleCrossCheck.cs" Link="CrossCheck\ModuleCrossCheck.cs" />
-  </ItemGroup>
-
 </Project>
