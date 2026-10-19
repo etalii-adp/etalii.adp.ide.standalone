@@ -184,7 +184,7 @@ public sealed class MindmapContextActionProvider : IContextActionProvider
             return ContextCommitResult.Failed($"Unknown action '{actionId}'.");
         }
 
-        var result = await _historyStacks.Get(target.Root.FullPath).ExecuteAsync(command, cancellationToken);
+        var result = await _historyStacks.Get(target.Root).ExecuteAsync(command, cancellationToken);
         return result.IsSuccess ? ContextCommitResult.Succeeded : ContextCommitResult.Failed(result.Error);
     }
 
@@ -218,7 +218,7 @@ public sealed class MindmapContextActionProvider : IContextActionProvider
             ? new AddChildNodeCommand(body, node.Id, newId, name)
             : new AddSiblingNodeCommand(body, node.Id, newId, name);
 
-        var result = await _historyStacks.Get(target.Root.FullPath).ExecuteAsync(command, cancellationToken);
+        var result = await _historyStacks.Get(target.Root).ExecuteAsync(command, cancellationToken);
         if (!result.IsSuccess)
         {
             return new ContextExecutionFailed(result.Error);
@@ -230,7 +230,7 @@ public sealed class MindmapContextActionProvider : IContextActionProvider
 
     private async ValueTask<ContextExecutionResult> DispatchAsync(ContextTarget target, ICommand command, CancellationToken cancellationToken)
     {
-        var result = await _historyStacks.Get(target.Root.FullPath).ExecuteAsync(command, cancellationToken);
+        var result = await _historyStacks.Get(target.Root).ExecuteAsync(command, cancellationToken);
         return result.IsSuccess ? new ContextExecutionCompleted() : new ContextExecutionFailed(result.Error);
     }
 

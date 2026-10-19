@@ -37,7 +37,7 @@ public static class ServiceCollectionAddAgentBehaviorModellingExtension
             opening.RegistrationPath,
             provider.GetRequiredService<IAbmDocumentStore>(),
             provider.GetRequiredService<AbmElementMapper>(),
-            provider.GetRequiredService<IHistoryStackStore>().Get(opening.RootPath)));
+            provider.GetRequiredService<IHistoryStackStore>().Get(ProjectRoot.From(opening.RootPath))));
 
         // The reload seam: an external write to a Markdown body reaches the store, and through it every
         // open session - and a deleted body reaches it as a deletion, not as a reload.

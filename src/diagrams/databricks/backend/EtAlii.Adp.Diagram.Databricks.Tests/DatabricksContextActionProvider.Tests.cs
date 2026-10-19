@@ -31,7 +31,7 @@ public class DatabricksContextActionProviderTests : IDisposable
         _actions = new DatabricksContextActionProvider(
             _provider.GetRequiredService<IHistoryStackStore>(),
             _provider.GetRequiredService<IDatabricksDocumentStore>());
-        _history = _provider.GetRequiredService<IHistoryStackStore>().Get(_root);
+        _history = _provider.GetRequiredService<IHistoryStackStore>().Get(ProjectRoot.From(_root));
     }
 
     public void Dispose()

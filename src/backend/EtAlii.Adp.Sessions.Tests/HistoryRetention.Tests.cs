@@ -35,10 +35,10 @@ public class HistoryRetentionTests
             remove { }
         }
 
-        public IHistoryStack Get(string rootPath) => throw new NotSupportedException();
+        public IHistoryStack Get(ProjectRoot root) => throw new NotSupportedException();
 
-        public void Retain(string rootPath) => Calls.Add($"retain {rootPath}");
+        public void Retain(ProjectRoot root) => Calls.Add($"retain {root}");
 
-        public void Release(string rootPath) => Calls.Add($"release {rootPath}");
+        public void Release(ProjectRoot root) => Calls.Add($"release {root}");
     }
 }

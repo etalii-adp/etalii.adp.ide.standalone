@@ -55,7 +55,7 @@ public static class ServiceCollectionAddRdfExtension
             provider.GetRequiredService<IRdfDocumentStore>(),
             reading(provider, opening.RegistrationPath),
             // The project's history, so a drag on this canvas is one undo away like every other edit.
-            provider.GetRequiredService<IHistoryStackStore>().Get(opening.RootPath)));
+            provider.GetRequiredService<IHistoryStackStore>().Get(ProjectRoot.From(opening.RootPath))));
 
         services.AddSingleton<IContextSourceResolver>(provider =>
         {

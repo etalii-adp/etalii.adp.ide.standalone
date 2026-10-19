@@ -420,7 +420,7 @@ internal static class AbmTranscript
         {
             json.WriteEndArray();
 
-            var stack = session.History.Get(session.Folder);
+            var stack = session.History.Get(ProjectRoot.From(session.Folder));
             var undone = 0;
             while (stack.CanUndo && (await stack.UndoAsync(cancellationToken)).IsSuccess)
             {

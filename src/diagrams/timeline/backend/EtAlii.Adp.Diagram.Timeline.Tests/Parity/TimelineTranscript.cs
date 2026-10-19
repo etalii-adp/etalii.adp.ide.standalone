@@ -417,7 +417,7 @@ internal static class TimelineTranscript
         {
             json.WriteEndArray();
 
-            var stack = session.History.Get(session.Folder);
+            var stack = session.History.Get(ProjectRoot.From(session.Folder));
             var undone = 0;
             var thrown = "";
             try
@@ -474,7 +474,7 @@ internal static class TimelineTranscript
             string answer;
             try
             {
-                var result = await session.History.Get(session.Folder).ExecuteAsync(new SetTimelinePlacementCommand(session.Body, target, begin, end, row), cancellationToken);
+                var result = await session.History.Get(ProjectRoot.From(session.Folder)).ExecuteAsync(new SetTimelinePlacementCommand(session.Body, target, begin, end, row), cancellationToken);
                 answer = result.IsSuccess ? "ok" : $"refused: {result.Error}";
             }
             catch (Exception exception) when (exception is not OperationCanceledException)

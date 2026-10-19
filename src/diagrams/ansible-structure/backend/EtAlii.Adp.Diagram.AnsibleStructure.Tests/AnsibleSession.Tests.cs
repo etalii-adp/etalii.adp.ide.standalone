@@ -351,7 +351,7 @@ public class AnsibleSessionTests : IDisposable
         await session.MoveElementToAsync("role:common", 321, 123, TestContext.Current.CancellationToken);
 
         // Act.
-        await _provider.GetRequiredService<IHistoryStackStore>().Get(_root)
+        await _provider.GetRequiredService<IHistoryStackStore>().Get(ProjectRoot.From(_root))
             .UndoAsync(TestContext.Current.CancellationToken);
 
         // Assert.
@@ -395,7 +395,7 @@ public class AnsibleSessionTests : IDisposable
     {
         // Arrange.
         await using var session = new AnsibleSession(
-            _root, _folders, new AnsibleElementMapper(), null, _provider.GetRequiredService<IHistoryStackStore>().Get(_root));
+            _root, _folders, new AnsibleElementMapper(), null, _provider.GetRequiredService<IHistoryStackStore>().Get(ProjectRoot.From(_root)));
         await session.BaselineAsync(TestContext.Current.CancellationToken);
 
         // Act.
@@ -443,7 +443,7 @@ public class AnsibleSessionTests : IDisposable
         try
         {
             await using var session = new AnsibleSession(
-                root, _folders, new AnsibleElementMapper(), registration, _provider.GetRequiredService<IHistoryStackStore>().Get(root));
+                root, _folders, new AnsibleElementMapper(), registration, _provider.GetRequiredService<IHistoryStackStore>().Get(ProjectRoot.From(root)));
             var drawn = Assert.IsType<DiagramAddDelta>(Assert.Single(await session.BaselineAsync(TestContext.Current.CancellationToken))).Elements;
             Assert.DoesNotContain(drawn, element => element.Id == "playbook:half.yml");
             var pushes = new List<IReadOnlyList<DiagramDelta>>();

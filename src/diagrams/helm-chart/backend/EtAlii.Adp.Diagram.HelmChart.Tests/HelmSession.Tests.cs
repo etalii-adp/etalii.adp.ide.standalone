@@ -64,7 +64,7 @@ public class HelmSessionTests : IAsyncDisposable, IDisposable
         _adpPath,
         _store,
         new HelmElementMapper(),
-        withHistory ? _provider.GetRequiredService<IHistoryStackStore>().Get(_root) : null);
+        withHistory ? _provider.GetRequiredService<IHistoryStackStore>().Get(ProjectRoot.From(_root)) : null);
 
     [Fact]
     public async Task Baseline_DeliversTheWholeChart()
@@ -166,7 +166,7 @@ public class HelmSessionTests : IAsyncDisposable, IDisposable
         var valuesBytes = await File.ReadAllBytesAsync(IoPath.Combine(_root, "values.yaml"), TestContext.Current.CancellationToken);
         await using var session = Session();
         await session.BaselineAsync(TestContext.Current.CancellationToken);
-        var history = _provider.GetRequiredService<IHistoryStackStore>().Get(_root);
+        var history = _provider.GetRequiredService<IHistoryStackStore>().Get(ProjectRoot.From(_root));
 
         // Act.
         var answer = await session.MoveElementToAsync("chart", 321, 123, CancellationToken.None);

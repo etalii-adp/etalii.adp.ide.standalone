@@ -64,7 +64,7 @@ public sealed class MindmapSessionDepartureTests : IDisposable
             .BuildServiceProvider();
         _documents = _services.GetRequiredService<IMindmapDocumentStore>();
         _views = _services.GetRequiredService<MindmapViewState>();
-        _history = _services.GetRequiredService<IHistoryStackStore>().Get(_root);
+        _history = _services.GetRequiredService<IHistoryStackStore>().Get(ProjectRoot.From(_root));
     }
 
     public void Dispose()

@@ -179,7 +179,7 @@ public sealed class KnowledgeContextActionsTests : IDisposable
         }
 
         // Act: the application's undo.
-        var undone = await _histories.Get(_root).UndoAsync(TestContext.Current.CancellationToken);
+        var undone = await _histories.Get(ProjectRoot.From(_root)).UndoAsync(TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.True(undone.IsSuccess);
@@ -277,7 +277,7 @@ public sealed class KnowledgeContextActionsTests : IDisposable
     {
         // Arrange: the table is open in a tab.
         var registration = Registered();
-        await using var session = new KnowledgeSession(Cities, KnowledgeDocumentStore.Read, command => _histories.Get(_root).ExecuteAsync(command), _documents);
+        await using var session = new KnowledgeSession(Cities, KnowledgeDocumentStore.Read, command => _histories.Get(ProjectRoot.From(_root)).ExecuteAsync(command), _documents);
 
         // Act.
         await Related(Target(registration), KnowledgeFiles.Related, KnowledgeContextActionProvider.Many, twoWay: false);

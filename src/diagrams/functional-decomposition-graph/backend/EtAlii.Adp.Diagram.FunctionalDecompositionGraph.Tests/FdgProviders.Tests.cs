@@ -145,7 +145,7 @@ public sealed class FdgProvidersTests : IDisposable
         Assert.NotEqual(_original, await File.ReadAllBytesAsync(Body, TestContext.Current.CancellationToken));
 
         // Act: one undo, through the history the set used.
-        var undone = await _historyStacks.Get(_folder).UndoAsync(TestContext.Current.CancellationToken);
+        var undone = await _historyStacks.Get(ProjectRoot.From(_folder)).UndoAsync(TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.True(undone.IsSuccess, undone.Error);

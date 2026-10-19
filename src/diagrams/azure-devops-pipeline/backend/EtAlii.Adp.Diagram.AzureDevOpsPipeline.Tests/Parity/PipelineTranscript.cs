@@ -432,7 +432,7 @@ internal static class PipelineTranscript
     {
         private string _text = "";
 
-        private IHistoryStack Stack => session.History.Get(session.Folder);
+        private IHistoryStack Stack => session.History.Get(ProjectRoot.From(session.Folder));
 
         public async Task<string> StartAsync()
         {

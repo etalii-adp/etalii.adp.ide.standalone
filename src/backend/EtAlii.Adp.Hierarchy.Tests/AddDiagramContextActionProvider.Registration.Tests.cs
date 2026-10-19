@@ -157,7 +157,7 @@ public class AddDiagramContextActionProviderRegistrationTests : IDisposable
         var adp = IoPath.ChangeExtension(path, ".adp");
 
         // Act.
-        var undone = await _historyStacks.Get(_root).UndoAsync(TestContext.Current.CancellationToken);
+        var undone = await _historyStacks.Get(ProjectRoot.From(_root)).UndoAsync(TestContext.Current.CancellationToken);
 
         // Assert: the registration is gone and the pipeline is still there, untouched.
         Assert.True(undone.IsSuccess, undone.Error);

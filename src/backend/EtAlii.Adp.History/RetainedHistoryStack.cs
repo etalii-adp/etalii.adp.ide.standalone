@@ -1,8 +1,8 @@
 namespace EtAlii.Adp.History;
 
-internal sealed class RetainedHistoryStack(string rootPath, IHistoryStack stack)
+internal sealed class RetainedHistoryStack(ProjectRoot root, IHistoryStack stack)
 {
-    public string RootPath { get; } = rootPath;
+    public ProjectRoot Root { get; } = root;
 
     public IHistoryStack Stack { get; } = stack;
 

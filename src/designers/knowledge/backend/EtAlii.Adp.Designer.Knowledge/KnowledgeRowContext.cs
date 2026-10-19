@@ -205,7 +205,7 @@ internal sealed class KnowledgeRowPropertyProvider(IHistoryStackStore histories)
             return ContextPropertyResult.Success;
         }
 
-        var result = await histories.Get(target.Root.FullPath).ExecuteAsync(new KnowledgeEditCommand(bodyPath, edit.Changes, edit.Others), cancellationToken).ConfigureAwait(false);
+        var result = await histories.Get(target.Root).ExecuteAsync(new KnowledgeEditCommand(bodyPath, edit.Changes, edit.Others), cancellationToken).ConfigureAwait(false);
         return result.IsSuccess ? ContextPropertyResult.Success : ContextPropertyResult.Failure(result.Error);
     }
 }

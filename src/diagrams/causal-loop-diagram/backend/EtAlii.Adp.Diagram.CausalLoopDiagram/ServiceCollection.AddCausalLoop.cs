@@ -40,7 +40,7 @@ public static class ServiceCollectionAddCausalLoopExtension
             opening.RegistrationPath,
             provider.GetRequiredService<ICausalLoopDocumentStore>(),
             provider.GetRequiredService<CausalLoopElementMapper>(),
-            provider.GetRequiredService<IHistoryStackStore>().Get(opening.RootPath)));
+            provider.GetRequiredService<IHistoryStackStore>().Get(ProjectRoot.From(opening.RootPath))));
 
         // The reload seam: a .cld changed by a text editor or a branch switch comes back
         // through here rather than being missed until the next open - and a deleted body as a

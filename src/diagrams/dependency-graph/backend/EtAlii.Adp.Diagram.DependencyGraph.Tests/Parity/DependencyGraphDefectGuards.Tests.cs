@@ -37,7 +37,7 @@ public sealed class DependencyGraphDefectGuardsTests : IDisposable
 
         // Act: 'aaa' names the first holder, so removing it takes the dependencies on 'aaa'; the dependency with no
         // 'from', which names nothing, stays.
-        var result = await _historyStacks.Get(_workspace).ExecuteAsync(new RemoveDependencyGraphElementCommand(path, "aaa"), TestContext.Current.CancellationToken);
+        var result = await _historyStacks.Get(ProjectRoot.From(_workspace)).ExecuteAsync(new RemoveDependencyGraphElementCommand(path, "aaa"), TestContext.Current.CancellationToken);
         var text = await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken);
 
         // Assert.
@@ -86,7 +86,7 @@ public sealed class DependencyGraphDefectGuardsTests : IDisposable
         var path = IoPath.Combine(_workspace, "commented.dgr");
         const string before = "dependencies: 1\nelements:\n  - id: aaa\n    label: A\n    x: 0\n    row: 0\n  - id: bbb\n    label: B\n    x: 240\n    row: 1\nrelations:\n  - id: uses\n    from: aaa\n    to: bbb\n    label: uses # why it does\n";
         await File.WriteAllTextAsync(path, before, TestContext.Current.CancellationToken);
-        var history = _historyStacks.Get(_workspace);
+        var history = _historyStacks.Get(ProjectRoot.From(_workspace));
 
         // Act.
         await history.ExecuteAsync(new RelabelDependencyGraphRelationCommand(path, "uses", "calls"), TestContext.Current.CancellationToken);
@@ -106,7 +106,7 @@ public sealed class DependencyGraphDefectGuardsTests : IDisposable
         var path = IoPath.Combine(_workspace, "unrelated.dgr");
         const string before = "dependencies: 1\nelements:\n  - id: aaa\n    label: A\n    x: 0\n    row: 0\n  - id: bbb\n    label: B\n    x: 240\n    row: 1\n";
         await File.WriteAllTextAsync(path, before, TestContext.Current.CancellationToken);
-        var history = _historyStacks.Get(_workspace);
+        var history = _historyStacks.Get(ProjectRoot.From(_workspace));
         IDocumentEditCommand command = edit == "connect"
             ? new ConnectDependencyGraphElementsCommand(path, "uses", "aaa", "bbb", "")
             : new AddConnectedDependencyGraphElementCommand(path, "aaa", "ccc", "uses", 480, 2);
@@ -128,7 +128,7 @@ public sealed class DependencyGraphDefectGuardsTests : IDisposable
         var path = await WriteAsync("b13.dgr", Text("inline/no-elements-key"));
 
         // Act.
-        var result = await _historyStacks.Get(_workspace).ExecuteAsync(new AddDependencyGraphElementCommand(path, "newid", "New", 1, 2), TestContext.Current.CancellationToken);
+        var result = await _historyStacks.Get(ProjectRoot.From(_workspace)).ExecuteAsync(new AddDependencyGraphElementCommand(path, "newid", "New", 1, 2), TestContext.Current.CancellationToken);
         var text = await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken);
 
         // Assert: an 'elements' key with the node under it, in a body that reads.
@@ -144,7 +144,7 @@ public sealed class DependencyGraphDefectGuardsTests : IDisposable
         var path = await WriteAsync("b14.dgr", Text("inline/b14-wide-dash-gap-and-nested-key"));
 
         // Act.
-        var result = await _historyStacks.Get(_workspace).ExecuteAsync(new RenameDependencyGraphElementCommand(path, "aaa", "Renamed"), TestContext.Current.CancellationToken);
+        var result = await _historyStacks.Get(ProjectRoot.From(_workspace)).ExecuteAsync(new RenameDependencyGraphElementCommand(path, "aaa", "Renamed"), TestContext.Current.CancellationToken);
         var text = await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken);
 
         // Assert: one 'label', changed in place, in a body that still reads.

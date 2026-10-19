@@ -16,7 +16,7 @@ public sealed class AadCommandsTests : IDisposable
 
     private string Body => Path.Combine(_root, "work.aad");
 
-    private IHistoryStack History => _services.GetRequiredService<IHistoryStackStore>().Get(_root);
+    private IHistoryStack History => _services.GetRequiredService<IHistoryStackStore>().Get(ProjectRoot.From(_root));
 
     private IAadDocumentStore Documents => _services.GetRequiredService<IAadDocumentStore>();
 

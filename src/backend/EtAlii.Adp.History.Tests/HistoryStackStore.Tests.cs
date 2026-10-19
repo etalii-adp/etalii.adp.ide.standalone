@@ -22,15 +22,17 @@ public class HistoryStackStoreTests
     private static string TempPath() =>
         IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
 
+    private static ProjectRoot TempRoot() => ProjectRoot.From(TempPath());
+
     [Fact]
     public void Get_ForOnePath_ReturnsTheSameInstanceEveryTime()
     {
         // Arrange and act.
         using var store = new HistoryStackStore(new HistoryStackStoreStubDispatcher());
-        var path = TempPath();
+        var root = TempRoot();
 
         // Assert.
-        Assert.Same(store.Get(path), store.Get(path));
+        Assert.Same(store.Get(root), store.Get(root));
     }
 
     [Fact]
@@ -40,7 +42,7 @@ public class HistoryStackStoreTests
         using var store = new HistoryStackStore(new HistoryStackStoreStubDispatcher());
 
         // Assert.
-        Assert.NotSame(store.Get(TempPath()), store.Get(TempPath()));
+        Assert.NotSame(store.Get(TempRoot()), store.Get(TempRoot()));
     }
 
     [Fact]
@@ -55,7 +57,7 @@ public class HistoryStackStoreTests
         var namesIgnoreCase = OperatingSystem.IsWindows() || OperatingSystem.IsMacOS();
 
         // Assert.
-        Assert.Equal(namesIgnoreCase, ReferenceEquals(store.Get(path.ToUpperInvariant()), store.Get(path.ToLowerInvariant())));
+        Assert.Equal(namesIgnoreCase, ReferenceEquals(store.Get(ProjectRoot.From(path.ToUpperInvariant())), store.Get(ProjectRoot.From(path.ToLowerInvariant()))));
     }
 
     [Fact]
@@ -66,7 +68,7 @@ public class HistoryStackStoreTests
         var path = TempPath();
 
         // Assert.
-        Assert.Same(store.Get(path), store.Get(path + IoPath.DirectorySeparatorChar));
+        Assert.Same(store.Get(ProjectRoot.From(path)), store.Get(ProjectRoot.From(path + IoPath.DirectorySeparatorChar)));
     }
 
     [Fact]
@@ -74,20 +76,20 @@ public class HistoryStackStoreTests
     {
         // Arrange.
         using var store = GracedStore();
-        var path = TempPath();
-        store.Retain(path);
-        var first = store.Get(path);
+        var root = TempRoot();
+        store.Retain(root);
+        var first = store.Get(root);
 
         // Act.
-        store.Release(path);
+        store.Release(root);
 
         // Assert, step by step: kept through the grace, dropped once it passes, and the next ask
         // builds a fresh one.
         _clock.Advance(Grace - TimeSpan.FromMilliseconds(1));
-        Assert.Same(first, store.Get(path));
+        Assert.Same(first, store.Get(root));
 
         _clock.Advance(TimeSpan.FromMilliseconds(1));
-        Assert.NotSame(first, store.Get(path));
+        Assert.NotSame(first, store.Get(root));
     }
 
     [Fact]
@@ -95,18 +97,18 @@ public class HistoryStackStoreTests
     {
         // Arrange.
         using var store = GracedStore();
-        var path = TempPath();
-        store.Retain(path);
-        var first = store.Get(path);
+        var root = TempRoot();
+        store.Retain(root);
+        var first = store.Get(root);
 
-        store.Release(path); // starts the grace
+        store.Release(root); // starts the grace
         _clock.Advance(Grace / 2);
-        store.Retain(path);  // reconnect within it cancels the eviction
+        store.Retain(root);  // reconnect within it cancels the eviction
 
         // Act and assert, step by step.
         _clock.Advance(Grace * 2);
-        Assert.Same(first, store.Get(path));
-        store.Release(path);
+        Assert.Same(first, store.Get(root));
+        store.Release(root);
     }
 
     [Fact]
@@ -114,14 +116,14 @@ public class HistoryStackStoreTests
     {
         // Arrange: a provider reaches the stack without any connection retaining it.
         using var store = GracedStore();
-        var path = TempPath();
-        var first = store.Get(path);
+        var root = TempRoot();
+        var first = store.Get(root);
 
         // Act.
         _clock.Advance(Grace * 2);
 
         // Assert.
-        Assert.Same(first, store.Get(path));
+        Assert.Same(first, store.Get(root));
     }
 
     [Fact]
@@ -129,16 +131,16 @@ public class HistoryStackStoreTests
     {
         // Arrange.
         using var store = new HistoryStackStore(new HistoryStackStoreStubDispatcher());
-        var path = TempPath();
+        var root = TempRoot();
         HistoryChangedEventArgs? captured = null;
         store.Changed += (_, args) => captured = args;
 
         // A recorded command on this project's stack aggregates up to the store's own event.
-        await store.Get(path).ExecuteAsync(new HistoryStackStoreNoop(), TestContext.Current.CancellationToken);
+        await store.Get(root).ExecuteAsync(new HistoryStackStoreNoop(), TestContext.Current.CancellationToken);
 
         // Act and assert, step by step.
         Assert.True(await Eventually.TrueAsync(() => captured is not null, TestContext.Current.CancellationToken, Timeout), "The awaited condition did not hold within the timeout.");
-        Assert.Equal(IoPath.GetFullPath(path), captured!.RootPath);
+        Assert.Equal(root, captured!.Root);
     }
 
     [Fact]
@@ -146,10 +148,10 @@ public class HistoryStackStoreTests
     {
         // Arrange and act.
         using var store = GracedStore();
-        var path = TempPath();
-        store.Retain(path);
-        var dropped = store.Get(path);
-        store.Release(path);
+        var root = TempRoot();
+        store.Retain(root);
+        var dropped = store.Get(root);
+        store.Release(root);
         Assert.False(IsDisposed(dropped), "The stack was disposed before its grace passed.");
 
         // Assert.

@@ -110,7 +110,7 @@ public class RdfSessionTests : IDisposable
         // The RDF file never changes by a byte (Requirement 4.1).
         Assert.Equal(bodyBytes, await File.ReadAllBytesAsync(body, TestContext.Current.CancellationToken));
         // And the drag is one undo away, returning the .adp byte for byte (Requirement 4.2).
-        await _provider.GetRequiredService<IHistoryStackStore>().Get(_root)
+        await _provider.GetRequiredService<IHistoryStackStore>().Get(ProjectRoot.From(_root))
             .UndoAsync(TestContext.Current.CancellationToken);
         Assert.Equal(adpBefore, await File.ReadAllTextAsync(adp, TestContext.Current.CancellationToken));
     }

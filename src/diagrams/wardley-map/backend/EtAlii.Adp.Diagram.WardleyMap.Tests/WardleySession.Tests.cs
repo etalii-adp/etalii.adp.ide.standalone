@@ -27,7 +27,7 @@ public sealed class WardleySessionTests : IDisposable
         _documents = _services.GetRequiredService<IWardleyDocumentStore>();
         // _identities = _services.GetRequiredService<WardleyIdentities>();
         _mapper = _services.GetRequiredService<WardleyElementMapper>();
-        _history = _services.GetRequiredService<IHistoryStackStore>().Get(_root);
+        _history = _services.GetRequiredService<IHistoryStackStore>().Get(ProjectRoot.From(_root));
     }
 
     public void Dispose()

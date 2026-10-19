@@ -29,7 +29,7 @@ public sealed class AadSessionTests : IDisposable
         Body,
         _services.GetRequiredService<IAadDocumentStore>(),
         new AadElementMapper(),
-        _services.GetRequiredService<IHistoryStackStore>().Get(_root));
+        _services.GetRequiredService<IHistoryStackStore>().Get(ProjectRoot.From(_root)));
 
     [Fact]
     public async Task ADrop_LocksTheElementWhereItWasLetGo()

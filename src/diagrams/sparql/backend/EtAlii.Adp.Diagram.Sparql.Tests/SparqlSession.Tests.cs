@@ -208,7 +208,7 @@ public class SparqlSessionTests : IDisposable
         await session.MoveElementToAsync("var:x", 320, 200, CancellationToken.None);
 
         // Act.
-        var history = _provider.GetRequiredService<IHistoryStackStore>().Get(_root);
+        var history = _provider.GetRequiredService<IHistoryStackStore>().Get(ProjectRoot.From(_root));
         await history.UndoAsync(CancellationToken.None);
 
         // Assert.

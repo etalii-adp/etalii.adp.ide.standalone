@@ -202,7 +202,7 @@ public class ShaclSessionTests : IDisposable
 
         // A layout edit rides the same history the triple writers do, so undoing it restores the
         // registration exactly - no residual `layout:` block, no trailing blank line left behind.
-        var history = _provider.GetRequiredService<IHistoryStackStore>().Get(_root);
+        var history = _provider.GetRequiredService<IHistoryStackStore>().Get(ProjectRoot.From(_root));
         Assert.True((await history.UndoAsync(TestContext.Current.CancellationToken)).IsSuccess);
 
         Assert.Equal(before, await File.ReadAllTextAsync(registration, TestContext.Current.CancellationToken));
@@ -226,7 +226,7 @@ public class ShaclSessionTests : IDisposable
         await shapes.BaselineAsync(TestContext.Current.CancellationToken);
         await graph.BaselineAsync(TestContext.Current.CancellationToken);
 
-        var history = _provider.GetRequiredService<IHistoryStackStore>().Get(_root);
+        var history = _provider.GetRequiredService<IHistoryStackStore>().Get(ProjectRoot.From(_root));
         var added = await history.ExecuteAsync(
             new CreateShaclNodeShapeCommand(body, "http://example.org/AddressShape"),
             TestContext.Current.CancellationToken);

@@ -147,7 +147,7 @@ public class C4InteropTests : IDisposable
         SkipWithoutTheCli();
         await using var services = Services();
         var factory = services.GetServices<IDiagramDocumentFactory>().Single(candidate => candidate.Origin.Key == "c4/container");
-        var history = services.GetRequiredService<IHistoryStackStore>().Get(_root);
+        var history = services.GetRequiredService<IHistoryStackStore>().Get(ProjectRoot.From(_root));
 
         var path = IoPath.Combine(_root, "acme.dsl");
         await File.WriteAllTextAsync(path, factory.CreateEmptyDocument("Acme Banking"), TestContext.Current.CancellationToken);

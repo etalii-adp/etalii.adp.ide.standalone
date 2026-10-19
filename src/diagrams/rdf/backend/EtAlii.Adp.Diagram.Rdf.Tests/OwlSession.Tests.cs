@@ -117,7 +117,7 @@ public class OwlSessionTests : IDisposable
         Assert.Equal("", refusal);
         Assert.Equal(new RegistrationPosition(120, 240), RegistrationLayout.Read(adp)[$"res:{Ns}Pizza"]);
         Assert.Equal(bodyBytes, await File.ReadAllBytesAsync(body, TestContext.Current.CancellationToken));
-        await _provider.GetRequiredService<IHistoryStackStore>().Get(_root)
+        await _provider.GetRequiredService<IHistoryStackStore>().Get(ProjectRoot.From(_root))
             .UndoAsync(TestContext.Current.CancellationToken);
         Assert.Equal(adpBefore, await File.ReadAllTextAsync(adp, TestContext.Current.CancellationToken));
     }

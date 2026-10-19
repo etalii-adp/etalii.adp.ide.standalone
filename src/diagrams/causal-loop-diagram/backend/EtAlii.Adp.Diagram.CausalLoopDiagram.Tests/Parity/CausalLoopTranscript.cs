@@ -473,7 +473,7 @@ internal static class CausalLoopTranscript
             History = _services.GetRequiredService<IHistoryStackStore>();
 
             // Registered as the diagram service registers an open stream, so an action reaches it.
-            _session = new CausalLoopSession(body, registration, Store, new CausalLoopElementMapper(), History.Get(folder));
+            _session = new CausalLoopSession(body, registration, Store, new CausalLoopElementMapper(), History.Get(ProjectRoot.From(folder)));
             registry.Register(_watchId, body, _session, _ => { });
 
             var readOnly = new ReadOnlyStore(Store);
@@ -579,7 +579,7 @@ internal static class CausalLoopTranscript
         {
             json.WriteEndArray();
 
-            var stack = session.History.Get(session.Folder);
+            var stack = session.History.Get(ProjectRoot.From(session.Folder));
             var undone = 0;
             var threw = "";
             try

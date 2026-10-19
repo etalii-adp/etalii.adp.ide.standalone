@@ -414,7 +414,7 @@ public sealed class AddDiagramContextActionProvider : IContextActionProvider
         // history is what makes the new file one undo away, by way of the delete the handler
         // reports as the inverse.
         var command = new CreateDiagramFileCommand(target.ResolvedFullPath, fileName, definition.Origin.MimeType, siblingFileName, siblingContent);
-        var result = await _historyStacks.Get(target.Root.FullPath).ExecuteAsync(command, cancellationToken);
+        var result = await _historyStacks.Get(target.Root).ExecuteAsync(command, cancellationToken);
 
         return result.IsSuccess
             // The destination is the command's own, not something the handler had to report:
@@ -445,7 +445,7 @@ public sealed class AddDiagramContextActionProvider : IContextActionProvider
         }
 
         _logger.Debug("Creating a {Origin} document named {FileName} in {Folder}", definition.Origin, command.SiblingFileName, target.ResolvedFullPath);
-        var result = await _historyStacks.Get(target.Root.FullPath).ExecuteAsync(command, cancellationToken);
+        var result = await _historyStacks.Get(target.Root).ExecuteAsync(command, cancellationToken);
 
         return result.IsSuccess
             ? ContextCommitResult.Created(CreateDiagramFileCommandHandler.DestinationOf(command))
@@ -484,7 +484,7 @@ public sealed class AddDiagramContextActionProvider : IContextActionProvider
         _logger.Debug("Registering {File} as a {Origin} diagram", target.ResolvedFullPath, definition.Origin.Key);
 
         var command = new CreateDiagramFileCommand(folder, fileName, definition.Origin.MimeType);
-        var result = await _historyStacks.Get(target.Root.FullPath).ExecuteAsync(command, cancellationToken);
+        var result = await _historyStacks.Get(target.Root).ExecuteAsync(command, cancellationToken);
 
         return result.IsSuccess
             ? ContextCommitResult.Created(CreateDiagramFileCommandHandler.DestinationOf(command))

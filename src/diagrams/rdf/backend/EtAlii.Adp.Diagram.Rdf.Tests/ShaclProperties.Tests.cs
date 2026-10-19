@@ -167,7 +167,7 @@ public class ShaclPropertiesTests : IDisposable
             await EntryAsync(), Target(CardId, ServiceCollectionAddShaclExtension.ShaclOrigin), "shacl.name", "Human");
         Assert.NotNull(command);
 
-        var history = _provider.GetRequiredService<IHistoryStackStore>().Get(_root);
+        var history = _provider.GetRequiredService<IHistoryStackStore>().Get(ProjectRoot.From(_root));
         Assert.True((await history.ExecuteAsync(command, TestContext.Current.CancellationToken)).IsSuccess);
 
         var after = await File.ReadAllTextAsync(_body, TestContext.Current.CancellationToken);

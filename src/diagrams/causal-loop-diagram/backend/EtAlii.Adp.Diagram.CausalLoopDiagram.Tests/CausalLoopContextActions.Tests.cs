@@ -190,7 +190,7 @@ public class CausalLoopContextActionsTests : IDisposable
 
         var watchId = ShortGuid.NewShortGuid();
         var history = _provider.GetRequiredService<IHistoryStackStore>();
-        var session = new CausalLoopSession(_path, adpPath, _store, new CausalLoopElementMapper(), history.Get(_root));
+        var session = new CausalLoopSession(_path, adpPath, _store, new CausalLoopElementMapper(), history.Get(ProjectRoot.From(_root)));
 
         // Registered exactly as the diagram service registers an open stream - which is what
         // lets a unary action reach the session behind it.
@@ -217,7 +217,7 @@ public class CausalLoopContextActionsTests : IDisposable
         Assert.Equal(Corpus, await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken));
 
         // And it is ONE undo away, not one per variable (Requirement 6.8).
-        var undone = await history.Get(_root).UndoAsync(TestContext.Current.CancellationToken);
+        var undone = await history.Get(ProjectRoot.From(_root)).UndoAsync(TestContext.Current.CancellationToken);
         Assert.True(undone.IsSuccess, undone.Error);
         Assert.Equal(before, await File.ReadAllTextAsync(adpPath, TestContext.Current.CancellationToken));
     }

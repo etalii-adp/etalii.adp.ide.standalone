@@ -281,7 +281,7 @@ public sealed class GhgProvidersTests : IDisposable
         Assert.True(result.IsSuccess, result.Error);
         Assert.NotEqual(_original, await File.ReadAllBytesAsync(Body, TestContext.Current.CancellationToken));
 
-        var undone = await _historyStacks.Get(_folder).UndoAsync(TestContext.Current.CancellationToken);
+        var undone = await _historyStacks.Get(ProjectRoot.From(_folder)).UndoAsync(TestContext.Current.CancellationToken);
 
         Assert.True(undone.IsSuccess, undone.Error);
         Assert.Equal(_original, await File.ReadAllBytesAsync(Body, TestContext.Current.CancellationToken));

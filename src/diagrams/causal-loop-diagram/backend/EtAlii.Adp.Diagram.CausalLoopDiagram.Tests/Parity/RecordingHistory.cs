@@ -35,13 +35,13 @@ internal sealed class RecordingHistory : IHistoryStackStore, IHistoryStack
         return recorded;
     }
 
-    public IHistoryStack Get(string rootPath) => this;
+    public IHistoryStack Get(ProjectRoot root) => this;
 
-    public void Retain(string rootPath)
+    public void Retain(ProjectRoot root)
     {
     }
 
-    public void Release(string rootPath)
+    public void Release(ProjectRoot root)
     {
     }
 

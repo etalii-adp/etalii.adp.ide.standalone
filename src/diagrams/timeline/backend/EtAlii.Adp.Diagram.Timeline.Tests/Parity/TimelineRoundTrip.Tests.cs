@@ -140,7 +140,7 @@ public sealed class TimelineRoundTripTests : IDisposable
             var path = await CopyAsync(bytes);
             var store = new TimelineDocumentStore(new FileWriter());
             using var history = new HistoryStackStore(new TimelineTestDispatcher(store));
-            var stack = history.Get(_folder.Path);
+            var stack = history.Get(ProjectRoot.From(_folder.Path));
 
             // Act.
             var result = await stack.ExecuteAsync(edit(path), token);

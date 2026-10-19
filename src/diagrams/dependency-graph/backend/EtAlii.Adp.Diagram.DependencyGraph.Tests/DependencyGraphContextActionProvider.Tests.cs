@@ -279,7 +279,7 @@ public class DependencyGraphContextActionProviderTests : IDisposable
         var result = await _actions.ExecuteAsync(
             Target(path, gesture), DependencyGraphContextActionProvider.ConnectActionId, CancellationToken.None);
         var model = (await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Model;
-        await _historyStacks.Get(_workspace).UndoAsync(CancellationToken.None);
+        await _historyStacks.Get(ProjectRoot.From(_workspace)).UndoAsync(CancellationToken.None);
 
         // Assert.
         Assert.IsType<ContextExecutionCompleted>(result);
@@ -370,7 +370,7 @@ public class DependencyGraphContextActionProviderTests : IDisposable
         var committed = await _actions.CommitAsync(
             Target(path, "aaa"), DependencyGraphContextActionProvider.RenameActionId, "Edge router", "", CancellationToken.None);
         var renamed = (await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Model.Elements.Single(element => element.Id == "aaa").Label;
-        await _historyStacks.Get(_workspace).UndoAsync(CancellationToken.None);
+        await _historyStacks.Get(ProjectRoot.From(_workspace)).UndoAsync(CancellationToken.None);
 
         // Assert.
         Assert.IsType<ContextExecutionRequiresInput>(asked);
@@ -390,7 +390,7 @@ public class DependencyGraphContextActionProviderTests : IDisposable
         var result = await _actions.ExecuteAsync(
             Target(path, "ccc"), DependencyGraphContextActionProvider.DisconnectActionId, CancellationToken.None);
         var afterDisconnect = (await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Model.Relations.Count;
-        await _historyStacks.Get(_workspace).UndoAsync(CancellationToken.None);
+        await _historyStacks.Get(ProjectRoot.From(_workspace)).UndoAsync(CancellationToken.None);
 
         // Assert.
         Assert.IsType<ContextExecutionCompleted>(result);

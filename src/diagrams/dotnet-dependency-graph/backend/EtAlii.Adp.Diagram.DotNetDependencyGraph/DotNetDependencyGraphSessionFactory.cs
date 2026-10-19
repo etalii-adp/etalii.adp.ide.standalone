@@ -52,6 +52,6 @@ public sealed class DotNetDependencyGraphSessionFactory : IDiagramSessionFactory
             _store,
             _mapper,
             registrationPath,
-            _historyStacks.Get(rootPath));
+            _historyStacks.Get(ProjectRoot.From(rootPath)));
     }
 }

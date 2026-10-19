@@ -348,7 +348,7 @@ public class CausalLoopContextPropertiesTests : IDisposable
             TestContext.Current.CancellationToken);
         await _store.ReloadAsync(_path, TestContext.Current.CancellationToken);
 
-        var history = _provider.GetRequiredService<IHistoryStackStore>().Get(_root);
+        var history = _provider.GetRequiredService<IHistoryStackStore>().Get(ProjectRoot.From(_root));
         var removed = await history.ExecuteAsync(new RemoveLoopCommand(_path, "R2"), TestContext.Current.CancellationToken);
         Assert.True(removed.IsSuccess, removed.Error);
         return history;

@@ -231,7 +231,7 @@ public class PipelineToolboxTests : IDisposable
 
         // Act.
         await actions.CommitAsync(Target(path, "Build"), item.DropActionId, "", "", CancellationToken.None);
-        await historyStacks.Get(_workspace).UndoAsync(CancellationToken.None);
+        await historyStacks.Get(ProjectRoot.From(_workspace)).UndoAsync(CancellationToken.None);
 
         // Assert.
         Assert.Equal(before, await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));

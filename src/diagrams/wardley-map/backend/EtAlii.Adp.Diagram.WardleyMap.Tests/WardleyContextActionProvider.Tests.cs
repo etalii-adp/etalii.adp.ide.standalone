@@ -250,7 +250,7 @@ public sealed class WardleyContextActionProviderTests : IDisposable
         // Act.
         await _provider.ExecuteAsync(
             Target(await IdOfAsync("Power")), WardleyContextActionProvider.ToggleInertiaActionId, TestContext.Current.CancellationToken);
-        await _services.GetRequiredService<IHistoryStackStore>().Get(_root).UndoAsync(TestContext.Current.CancellationToken);
+        await _services.GetRequiredService<IHistoryStackStore>().Get(ProjectRoot.From(_root)).UndoAsync(TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Equal(before, await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken));

@@ -157,7 +157,7 @@ public class ShaclActionsTests : IDisposable
 
         var command = ShaclActions.CommandFor(await EntryAsync(), target, ShaclActions.AddTargetClassActionId, "ex:Employee");
         var add = Assert.IsType<AddShaclTargetCommand>(command);
-        var result = await history.Get(_root).ExecuteAsync(add, TestContext.Current.CancellationToken);
+        var result = await history.Get(ProjectRoot.From(_root)).ExecuteAsync(add, TestContext.Current.CancellationToken);
 
         Assert.True(result.IsSuccess, result.Error);
         Assert.Contains("sh:targetClass ex:Employee", await File.ReadAllTextAsync(_body, TestContext.Current.CancellationToken), StringComparison.Ordinal);

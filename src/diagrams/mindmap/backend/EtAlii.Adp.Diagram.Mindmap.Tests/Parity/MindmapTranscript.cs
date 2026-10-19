@@ -352,7 +352,7 @@ internal static partial class MindmapTranscript
 
         public ShortGuid FlippedWatch { get; } = ShortGuid.NewShortGuid();
 
-        public IHistoryStack History => _services.GetRequiredService<IHistoryStackStore>().Get(Folder);
+        public IHistoryStack History => _services.GetRequiredService<IHistoryStackStore>().Get(ProjectRoot.From(Folder));
 
         private IMindmapDocumentStore Documents => _services.GetRequiredService<IMindmapDocumentStore>();
 

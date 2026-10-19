@@ -468,7 +468,7 @@ internal static class GhgTranscript
         {
             json.WriteEndArray();
 
-            var stack = session.History.Get(session.Folder);
+            var stack = session.History.Get(ProjectRoot.From(session.Folder));
             var undone = 0;
             while (stack.CanUndo && (await stack.UndoAsync(cancellationToken)).IsSuccess)
             {
@@ -505,7 +505,7 @@ internal static class GhgTranscript
 
         public async Task CommandAsync(string description, ICommand command)
         {
-            var result = await session.History.Get(session.Folder).ExecuteAsync(command, cancellationToken);
+            var result = await session.History.Get(ProjectRoot.From(session.Folder)).ExecuteAsync(command, cancellationToken);
             await RecordAsync($"command {Mask(description)}", result.IsSuccess ? "ok" : $"refused: {result.Error}", mints: false);
         }
 

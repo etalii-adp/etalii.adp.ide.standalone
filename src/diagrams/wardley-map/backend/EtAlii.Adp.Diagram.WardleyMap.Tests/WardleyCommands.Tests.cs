@@ -23,7 +23,7 @@ public sealed class WardleyCommandsTests : IDisposable
         Directory.CreateDirectory(_root);
         _services = new ServiceCollection().AddCommands().AddHierarchyCommandHandlers().AddWardleyMap().BuildServiceProvider();
         _documents = _services.GetRequiredService<IWardleyDocumentStore>();
-        _history = _services.GetRequiredService<IHistoryStackStore>().Get(_root);
+        _history = _services.GetRequiredService<IHistoryStackStore>().Get(ProjectRoot.From(_root));
         _path = IoPath.Combine(_root, "map.owm");
     }
 

@@ -250,7 +250,7 @@ public sealed class GhgTriggersAndNotesEditingTests : IDisposable
 
         Assert.True(result.IsSuccess, result.Error);
         Assert.Equal(M(1948, 6), Parse().Triggers.Single().Date);
-        Assert.True((await _historyStacks.Get(_folder).UndoAsync(TestContext.Current.CancellationToken)).IsSuccess);
+        Assert.True((await _historyStacks.Get(ProjectRoot.From(_folder)).UndoAsync(TestContext.Current.CancellationToken)).IsSuccess);
         Assert.Equal(_original, await File.ReadAllBytesAsync(Body, TestContext.Current.CancellationToken));
     }
 

@@ -72,7 +72,7 @@ public sealed class EditorService : Editor.Wire.EditorService.EditorServiceBase
         // the file as an ordinary pushed change - each text session through its own watcher,
         // each diagram through the reload bridge and its store - so the file on disk is the
         // tie-breaker by construction (Requirements 5.3, 5.5).
-        var result = await _historyStacks.Get(file.Root.FullPath).ExecuteAsync(
+        var result = await _historyStacks.Get(file.Root).ExecuteAsync(
             new SaveTextFileCommand(file.FullPath, request.Content), context.CancellationToken);
 
         _logger.Information("Saved {FullPath} through the history: {Outcome}", file.FullPath, result.IsSuccess ? "ok" : result.Error);

@@ -36,7 +36,7 @@ public static class TestHistory
     public static IHistoryStack Create(string rootPath, out IHistoryStackStore store, params DiagramDefinition[] definitions)
     {
         store = CreateStore(definitions);
-        return store.Get(rootPath);
+        return store.Get(ProjectRoot.From(rootPath));
     }
 
     /// <summary>
@@ -55,7 +55,7 @@ public static class TestHistory
             .AddCommands().AddHierarchyCommandHandlers()
             .BuildServiceProvider()
             .GetRequiredService<IHistoryStackStore>();
-        return store.Get(rootPath);
+        return store.Get(ProjectRoot.From(rootPath));
     }
 
     /// <summary>
