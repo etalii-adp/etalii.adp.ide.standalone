@@ -64,6 +64,12 @@ export type BuiltInShape =
   | "parallelogram"
   | "cylinder"
   /**
+   * A box with rounded corners of radius 8 over the bounds, and a round head of radius 10 centred 8
+   * above its top edge, so the body covers the bottom of the head. Its outline is the body: a
+   * connection meets the box, and the head stands above it as a part outside the outline.
+   */
+  | "person"
+  /**
    * A point in time rather than a period: the span's dot form (row 26). A different drawing
    * rather than a class on the same one, which is why it is a shape and not a style.
    */
@@ -121,6 +127,7 @@ export const BUILT_IN_SHAPES: readonly BuiltInShape[] = [
   "trapezoid",
   "diode",
   "cylinder",
+  "person",
   "moment",
   "double-ellipse",
   "arrow-banner",
