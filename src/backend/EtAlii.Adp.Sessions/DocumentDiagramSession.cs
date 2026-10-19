@@ -45,7 +45,7 @@ public abstract class DocumentDiagramSession<TBody, TModel> : IDiagramSession
         BodyPath = bodyPath;
         _documents = documents;
         _history = history;
-        _changes = new DiagramDocumentChangeHandler(bodyPath, () => Render(Model(), _viewport), Raise);
+        _changes = new DiagramDocumentChangeHandler(bodyPath, Rendered, Raise);
         _documents.Changed += OnDocumentChanged;
     }
 
@@ -62,8 +62,9 @@ public abstract class DocumentDiagramSession<TBody, TModel> : IDiagramSession
     protected virtual string ReadOnlyRefusal => "This diagram is read-only.";
 
     /// <inheritdoc />
-    public IReadOnlyList<DiagramDelta> Baseline()
+    public async Task<IReadOnlyList<DiagramDelta>> BaselineAsync(CancellationToken cancellationToken)
     {
+        var entry = await _documents.GetOrLoadAsync(BodyPath, cancellationToken);
         var elements = _changes.Deliver();
         var deltas = new List<DiagramDelta>();
         if (elements.Count > 0)
@@ -71,7 +72,7 @@ public abstract class DocumentDiagramSession<TBody, TModel> : IDiagramSession
             deltas.Add(new DiagramAddDelta(elements));
         }
 
-        deltas.AddRange(Groups(Model()));
+        deltas.AddRange(Groups(Shown(entry)));
         return deltas;
     }
 
@@ -113,7 +114,7 @@ public abstract class DocumentDiagramSession<TBody, TModel> : IDiagramSession
             return ReadOnlyRefusal;
         }
 
-        var placement = PlacementOf(Model(), elementId, x, y);
+        var placement = PlacementOf(Shown(await _documents.GetOrLoadAsync(BodyPath, cancellationToken)), elementId, x, y);
         if (placement.Command is not { } command)
         {
             return placement.Refusal;
@@ -168,8 +169,13 @@ public abstract class DocumentDiagramSession<TBody, TModel> : IDiagramSession
         return entry.Model;
     }
 
-    /// <summary>The model the session shows now: the store's document at <see cref="BodyPath"/>, as <see cref="Shown"/> says.</summary>
-    private TModel Model() => Shown(_documents.GetOrLoad(BodyPath));
+    /// <summary>
+    /// What the connection should hold now: the store's document at <see cref="BodyPath"/>, as
+    /// <see cref="Shown"/> says, through the viewport. Nothing until the baseline has read it: a
+    /// viewport report that arrives first is answered once the baseline delivers.
+    /// </summary>
+    private IReadOnlyList<DiagramElement> Rendered() =>
+        _documents.Get(BodyPath) is { } entry ? Render(Shown(entry), _viewport) : [];
 
     /// <summary>
     /// Renders again and raises what changed, as a change to the document does: for a session whose

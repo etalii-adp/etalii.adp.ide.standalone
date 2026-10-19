@@ -31,13 +31,13 @@ public class EditorSessionAdapterTests
     }
 
     [Fact]
-    public void Baseline_IsOneContentElementCarryingTheWholeText()
+    public async Task Baseline_IsOneContentElementCarryingTheWholeText()
     {
         // Arrange.
         var adapter = new EditorSessionAdapter(new FakeEditorSession { Content = "hello" }, "plain");
 
         // Act.
-        var baseline = adapter.Baseline();
+        var baseline = await adapter.BaselineAsync(TestContext.Current.CancellationToken);
 
         // Assert.
         var add = Assert.IsType<DiagramAddDelta>(Assert.Single(baseline));

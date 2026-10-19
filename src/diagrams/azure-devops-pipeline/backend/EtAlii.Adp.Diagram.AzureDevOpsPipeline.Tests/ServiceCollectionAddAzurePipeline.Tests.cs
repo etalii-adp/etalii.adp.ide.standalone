@@ -128,7 +128,7 @@ public class ServiceCollectionAddAzurePipelineTests
 
         // Act: the session reads the body first, so the store keeps what it read with its root.
         await using var session = factory.Open(ShortGuid.NewShortGuid(), folder.Path, body, null);
-        var drawn = session.Baseline();
+        var drawn = await session.BaselineAsync(TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.IsType<PipelineSession>(session);

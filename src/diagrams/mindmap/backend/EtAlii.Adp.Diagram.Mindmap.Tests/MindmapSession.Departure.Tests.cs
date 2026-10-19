@@ -86,7 +86,7 @@ public sealed class MindmapSessionDepartureTests : IDisposable
     {
         // Arrange: a connection that already holds the whole visible map, as after its baseline.
         var session = Open();
-        var visible = AddedElements(session.Baseline()).Select(element => element.Id).ToHashSet(StringComparer.Ordinal);
+        var visible = AddedElements(await session.BaselineAsync(TestContext.Current.CancellationToken)).Select(element => element.Id).ToHashSet(StringComparer.Ordinal);
         Assert.True(visible.Count > 1);
         var pushes = new List<IReadOnlyList<DiagramDelta>>();
         session.Changed += (_, args) => pushes.Add(args.Deltas);
@@ -112,7 +112,7 @@ public sealed class MindmapSessionDepartureTests : IDisposable
     {
         // Arrange.
         var session = Open();
-        _ = session.Baseline();
+        _ = await session.BaselineAsync(TestContext.Current.CancellationToken);
         var pushes = new List<IReadOnlyList<DiagramDelta>>();
         session.Changed += (_, args) => pushes.Add(args.Deltas);
         var document = _documents.GetOrLoad(_bodyPath);
@@ -135,7 +135,7 @@ public sealed class MindmapSessionDepartureTests : IDisposable
     {
         // Arrange: the connection holds the visible map, which leaves out the folded branch.
         var session = Open();
-        var delivered = AddedElements(session.Baseline()).Select(element => element.Id).ToHashSet(StringComparer.Ordinal);
+        var delivered = AddedElements(await session.BaselineAsync(TestContext.Current.CancellationToken)).Select(element => element.Id).ToHashSet(StringComparer.Ordinal);
         Assert.DoesNotContain(HiddenInAFoldedBranch, delivered);
         var pushes = new List<IReadOnlyList<DiagramDelta>>();
         session.Changed += (_, args) => pushes.Add(args.Deltas);

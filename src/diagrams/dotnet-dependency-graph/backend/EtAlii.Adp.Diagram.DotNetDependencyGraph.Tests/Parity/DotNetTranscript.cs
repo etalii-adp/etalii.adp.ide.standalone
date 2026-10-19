@@ -161,7 +161,7 @@ internal static partial class DotNetTranscript
         {
             var first2 = graph.Projects.FirstOrDefault()?.Id ?? Unknown;
             json.WriteStartArray("session");
-            json.WriteStringValue($"baseline => {session.Baseline().Sum(delta => delta is DiagramAddDelta add ? add.Elements.Count : 0)} elements added");
+            json.WriteStringValue($"baseline => {(await session.BaselineAsync(cancellationToken)).Sum(delta => delta is DiagramAddDelta add ? add.Elements.Count : 0)} elements added");
             json.WriteStringValue($"reparent {first2} => {await session.MoveElementAsync(first2, Unknown, 0, cancellationToken)}");
             json.WriteStringValue($"move {first2} to (10, 20) => {await session.MoveElementToAsync(first2, 10, 20, cancellationToken)}");
             json.WriteEndArray();

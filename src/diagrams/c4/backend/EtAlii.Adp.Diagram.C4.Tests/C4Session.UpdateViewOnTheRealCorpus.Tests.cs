@@ -74,7 +74,7 @@ public class C4SessionUpdateViewOnTheRealCorpusTests : IDisposable
         Assert.True(File.Exists(registration), $"The registration the wedged client opened is missing: {registration}");
 
         await using var session = Open(body, registration);
-        var baseline = session.Baseline();
+        var baseline = await session.BaselineAsync(TestContext.Current.CancellationToken);
 
         // NOT VACUOUS: a document that failed to parse yields an empty session whose
         // UpdateView returns instantly, which would pass every timing assertion below while

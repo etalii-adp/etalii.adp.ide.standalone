@@ -69,7 +69,8 @@ public sealed class PipelineSession : DocumentDiagramSession<PipelineBody, Pipel
     }
 
     /// <summary>Why this pipeline cannot be shown, or empty when it can (Requirement 3.6).</summary>
-    public string Unavailable => _documents.GetOrLoad(BodyPath).Unreadable;
+    public async Task<string> UnavailableAsync(CancellationToken cancellationToken) =>
+        (await _documents.GetOrLoadAsync(BodyPath, cancellationToken)).Unreadable;
 
     /// <summary>Whether this connection has <paramref name="stageId"/> open.</summary>
     public bool IsExpanded(string stageId) => _views.For(_watchId, BodyPath).IsExpanded(stageId);

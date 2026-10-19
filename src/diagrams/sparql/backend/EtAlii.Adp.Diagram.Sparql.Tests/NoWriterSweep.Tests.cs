@@ -73,7 +73,7 @@ public class NoWriterSweepTests : IDisposable
         await using (var session = factory.Open(ShortGuid.NewShortGuid(), _root, body, registration))
         {
             // 1. A full render.
-            var baseline = Assert.Single(session.Baseline());
+            var baseline = Assert.Single(await session.BaselineAsync(TestContext.Current.CancellationToken));
             Assert.NotEmpty(Assert.IsType<DiagramAddDelta>(baseline).Elements);
 
             // 2. Every action the provider offers, executed - expected: there are none, so this
@@ -136,7 +136,7 @@ public class NoWriterSweepTests : IDisposable
 
         // Act.
         await using var session = factory.Open(ShortGuid.NewShortGuid(), _root, body, registration);
-        session.Baseline();
+        await session.BaselineAsync(TestContext.Current.CancellationToken);
         await session.MoveElementToAsync("var:name", 120, 80, CancellationToken.None);
 
         // Assert: the query is untouched to the byte, and the position landed in the .adp.

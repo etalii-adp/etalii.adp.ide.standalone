@@ -82,9 +82,9 @@ public class C4SessionTests : IDisposable
         await using var session = Open(body, adp);
 
         // Assert.
-        Assert.Equal("containers", session.View()!.Key);
+        Assert.Equal("containers", (await session.ViewAsync(TestContext.Current.CancellationToken))!.Key);
         // The container view shows the container; the context view would not.
-        Assert.Contains(Added(session.Baseline()), element => element.Id == "web");
+        Assert.Contains(Added(await session.BaselineAsync(TestContext.Current.CancellationToken)), element => element.Id == "web");
     }
 
     [Fact]
@@ -98,7 +98,7 @@ public class C4SessionTests : IDisposable
         await using var session = Open(body, registrationPath: null);
 
         // Assert.
-        Assert.Equal("context", session.View()!.Key);
+        Assert.Equal("context", (await session.ViewAsync(TestContext.Current.CancellationToken))!.Key);
     }
 
     [Fact]
@@ -112,8 +112,8 @@ public class C4SessionTests : IDisposable
         await using var session = Open(body, adp);
 
         // Assert.
-        Assert.Null(session.View());
-        Assert.Empty(Added(session.Baseline()));
+        Assert.Null(await session.ViewAsync(TestContext.Current.CancellationToken));
+        Assert.Empty(Added(await session.BaselineAsync(TestContext.Current.CancellationToken)));
     }
 
     [Fact]
@@ -125,7 +125,7 @@ public class C4SessionTests : IDisposable
         await using var session = Open(body, null);
 
         // Act and assert, step by step.
-        var elements = Added(session.Baseline());
+        var elements = Added(await session.BaselineAsync(TestContext.Current.CancellationToken));
         Assert.Contains(elements, element => element.Type == C4ElementMapper.NodeType);
         Assert.Contains(elements, element => element.Type == C4ElementMapper.ViewType);
     }
@@ -143,8 +143,8 @@ public class C4SessionTests : IDisposable
         // Arrange, continued.
         await using var context = Open(body, contextAdp);
         await using var containers = Open(body, containersAdp);
-        _ = context.Baseline();
-        _ = containers.Baseline();
+        _ = await context.BaselineAsync(TestContext.Current.CancellationToken);
+        _ = await containers.BaselineAsync(TestContext.Current.CancellationToken);
 
         // Arrange, continued.
         DiagramDeltasEventArgs? pushedToContext = null;
@@ -169,7 +169,7 @@ public class C4SessionTests : IDisposable
         // Arrange.
         var body = WriteModel();
         await using var session = Open(body, null);
-        Assert.Contains(Added(session.Baseline()), element => element.Id == "u");
+        Assert.Contains(Added(await session.BaselineAsync(TestContext.Current.CancellationToken)), element => element.Id == "u");
 
         IReadOnlyList<DiagramDelta>? pushed = null;
         session.Changed += (_, args) => pushed = args.Deltas;
@@ -199,7 +199,7 @@ public class C4SessionTests : IDisposable
         var body = WriteModel();
         var other = WriteModel("other.dsl");
         await using var session = Open(body, null);
-        _ = session.Baseline();
+        _ = await session.BaselineAsync(TestContext.Current.CancellationToken);
         _ = _documents.GetOrLoad(other).Document;
         Assert.Equal("", await new C4LayoutSidecar(new FileWriter()).WriteAsync(body, "context", "u", new C4SidecarPosition(4321, 1234), TestContext.Current.CancellationToken));
 
@@ -223,7 +223,7 @@ public class C4SessionTests : IDisposable
         // Arrange.
         var body = WriteModel();
         await using var session = Open(body, null);
-        _ = session.Baseline();
+        _ = await session.BaselineAsync(TestContext.Current.CancellationToken);
 
         var deltas = session.UpdateView(new DiagramViewport(100000, 100000, 200000, 200000));
 
@@ -239,7 +239,7 @@ public class C4SessionTests : IDisposable
         // Arrange.
         var body = WriteModel();
         await using var session = Open(body, null);
-        _ = session.Baseline();
+        _ = await session.BaselineAsync(TestContext.Current.CancellationToken);
         _ = session.UpdateView(new DiagramViewport(100000, 100000, 200000, 200000));
 
         // Act.
@@ -257,8 +257,8 @@ public class C4SessionTests : IDisposable
         await using var session = Open(IoPath.Combine(_root, "not-yet.dsl"), null);
 
         // Assert.
-        Assert.Null(session.View());
-        Assert.Empty(session.Baseline());
+        Assert.Null(await session.ViewAsync(TestContext.Current.CancellationToken));
+        Assert.Empty(await session.BaselineAsync(TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -267,7 +267,7 @@ public class C4SessionTests : IDisposable
         // Arrange.
         var body = WriteModel();
         var session = Open(body, null);
-        _ = session.Baseline();
+        _ = await session.BaselineAsync(TestContext.Current.CancellationToken);
 
         // Arrange, continued.
         var pushes = 0;

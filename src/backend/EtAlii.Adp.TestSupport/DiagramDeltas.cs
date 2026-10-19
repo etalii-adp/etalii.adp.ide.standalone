@@ -17,5 +17,6 @@ public static class DiagramDeltas
                 $"Expected exactly one Add delta, not {deltas.Count}: [{string.Join(", ", deltas.Select(delta => delta.GetType().Name))}].");
 
     /// <summary>The elements of <paramref name="session"/>'s baseline, which is one Add.</summary>
-    public static IReadOnlyList<DiagramElement> BaselineElements(this IDiagramSession session) => session.Baseline().AddedElements();
+    public static async Task<IReadOnlyList<DiagramElement>> BaselineElementsAsync(this IDiagramSession session, CancellationToken cancellationToken) =>
+        (await session.BaselineAsync(cancellationToken)).AddedElements();
 }

@@ -138,14 +138,14 @@ public sealed class AadFindingsTests : IDisposable
         await File.WriteAllTextAsync(Body, AadDocumentTests.Fixture("one-day.aad"), token);
         var documents = _services.GetRequiredService<IAadDocumentStore>();
         await using var session = new AadSession(Body, documents, new AadElementMapper());
-        var before = session.Baseline().OfType<DiagramAddDelta>().Sum(delta => delta.Elements.Count);
+        var before = (await session.BaselineAsync(TestContext.Current.CancellationToken)).OfType<DiagramAddDelta>().Sum(delta => delta.Elements.Count);
 
         // Act: an agent leaves the file half written.
         const string broken = "agent-activity-diagram: 1\r\nprojects: [\r\n";
         await File.WriteAllTextAsync(Body, broken, token);
         await documents.ReloadAsync(Body, TestContext.Current.CancellationToken);
         var still = session.UpdateView(DiagramViewport.Unbounded);
-        var shown = session.Baseline().OfType<DiagramAddDelta>().Sum(delta => delta.Elements.Count);
+        var shown = (await session.BaselineAsync(TestContext.Current.CancellationToken)).OfType<DiagramAddDelta>().Sum(delta => delta.Elements.Count);
         var edit = await _services.GetRequiredService<IHistoryStackStore>().Get(_root).ExecuteAsync(new SetAadAttributeCommand(Body, "p-adp", "name", "Renamed"), token);
 
         // Assert: the open diagram is told to remove nothing, the file says why it cannot be read, and nothing writes it.

@@ -209,7 +209,7 @@ public class ShippedExampleModelsTests(HostFixture host) : IClassFixture<HostFix
                 var bodyPath = routed.BodyPath ?? routed.RegistrationPath!;
                 var watchId = ShortGuid.NewShortGuid();
                 await using var session = factory.Open(watchId, workspace, bodyPath, routed.RegistrationPath);
-                var baseline = session.Baseline();
+                var baseline = await session.BaselineAsync(TestContext.Current.CancellationToken);
                 if (Expansions.TryGetValue(name, out var expand))
                 {
                     // As opened too, because some of what a canvas draws exists only while a view is
@@ -220,7 +220,7 @@ public class ShippedExampleModelsTests(HostFixture host) : IClassFixture<HostFix
                     {
                         var before = AddedBy(baseline).Count;
                         expand(services, new DrawnView(watchId, bodyPath, AddedBy(baseline)));
-                        baseline = session.Baseline();
+                        baseline = await session.BaselineAsync(TestContext.Current.CancellationToken);
                         if (AddedBy(baseline).Count == before)
                         {
                             break;
