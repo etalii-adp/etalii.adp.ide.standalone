@@ -44,7 +44,7 @@ public sealed class SankeyValidatorTests
         var selfFlowLine = lines.FindIndex(line => line.Contains("from: b", StringComparison.Ordinal)) + 1;
 
         // Act.
-        var problems = await new SankeyValidator().ValidateAsync(new DiagramValidationRequest(text, "rules-broken", "", Fixture("rules-broken.skv"), null), TestContext.Current.CancellationToken);
+        var problems = await new SankeyValidator().ValidateAsync(new DiagramValidationRequest(text, "rules-broken", default, Fixture("rules-broken.skv"), null), TestContext.Current.CancellationToken);
 
         // Assert.
         var selfFlow = Assert.Single(problems, problem => problem.RuleId == SankeyRuleIds.SelfFlow);

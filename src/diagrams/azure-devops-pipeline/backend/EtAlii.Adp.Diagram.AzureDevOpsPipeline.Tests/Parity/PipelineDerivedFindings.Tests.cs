@@ -57,7 +57,7 @@ public class PipelineDerivedFindingsTests
     public async Task JobFindingsInTwoStages_AreTheRuleSets_GroupedByKindRatherThanByStage()
     {
         var expected = HandWrittenPipeline.Findings(JobFindingsInTwoStages).Select(Text).ToList();
-        var actual = (await new PipelineValidator().ValidateAsync(new DiagramValidationRequest(JobFindingsInTwoStages, "parity", "", "", null), TestContext.Current.CancellationToken)).Select(Text).ToList();
+        var actual = (await new PipelineValidator().ValidateAsync(new DiagramValidationRequest(JobFindingsInTwoStages, "parity", default, "", null), TestContext.Current.CancellationToken)).Select(Text).ToList();
 
         Assert.Equal(expected.Order(StringComparer.Ordinal), actual.Order(StringComparer.Ordinal));
         Assert.NotEqual(expected, actual);
@@ -94,7 +94,7 @@ public class PipelineDerivedFindingsTests
     private static async Task AssertSameAsync(string name, string text)
     {
         var expected = HandWrittenPipeline.Findings(text).Select(Text).ToList();
-        var actual = (await new PipelineValidator().ValidateAsync(new DiagramValidationRequest(text, "parity", "", "", null), TestContext.Current.CancellationToken)).Select(Text).ToList();
+        var actual = (await new PipelineValidator().ValidateAsync(new DiagramValidationRequest(text, "parity", default, "", null), TestContext.Current.CancellationToken)).Select(Text).ToList();
         Assert.True(
             expected.SequenceEqual(actual, StringComparer.Ordinal),
             $"{name}:\nexpected {string.Join("\n         ", expected)}\nactual   {string.Join("\n         ", actual)}");

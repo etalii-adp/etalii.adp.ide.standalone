@@ -32,7 +32,7 @@ public class SkosValidatorTests : IDisposable
 
     private async Task<IReadOnlyList<DiagramProblem>> Validate(string turtle, string? registrationPath = null)
     {
-        var request = new DiagramValidationRequest(Prelude + turtle, "scheme", _root, IoPath.Combine(_root, "scheme.ttl"), registrationPath);
+        var request = new DiagramValidationRequest(Prelude + turtle, "scheme", ProjectRoot.From(_root), IoPath.Combine(_root, "scheme.ttl"), registrationPath);
         return await new SkosValidator(Origin).ValidateAsync(request, TestContext.Current.CancellationToken);
     }
 

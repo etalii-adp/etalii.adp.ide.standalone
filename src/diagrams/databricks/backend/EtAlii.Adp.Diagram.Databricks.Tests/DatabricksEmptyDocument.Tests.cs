@@ -22,7 +22,7 @@ public class DatabricksEmptyDocumentTests
         var text = ServiceCollectionAddDatabricksExtension.EmptyDocument(origin.Type, "Nightly Ingest");
         var validator = new DatabricksValidator(origin);
         var problems = await validator.ValidateAsync(
-            new DiagramValidationRequest(text, "Nightly Ingest", "", "", null),
+            new DiagramValidationRequest(text, "Nightly Ingest", default, "", null),
             TestContext.Current.CancellationToken);
 
         // Assert.

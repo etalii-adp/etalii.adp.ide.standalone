@@ -92,7 +92,7 @@ public class ZeroWritesTests : IDisposable
 
             // And the rules, which read the whole folder again through their own reader.
             await new HelmValidator().ValidateAsync(
-                new DiagramValidationRequest("helm/chart\r\n", "helm-chart", _root, registration, registration)
+                new DiagramValidationRequest("helm/chart\r\n", "helm-chart", ProjectRoot.From(_root), registration, registration)
                 {
                     SubjectFolder = _root,
                 },

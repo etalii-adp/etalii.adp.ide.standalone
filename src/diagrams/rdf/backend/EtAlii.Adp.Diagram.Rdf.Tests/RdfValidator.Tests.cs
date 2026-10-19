@@ -13,7 +13,7 @@ public class RdfValidatorTests
     {
         var validator = new RdfValidator(ServiceCollectionAddRdfExtension.RdfOrigin);
         return await validator.ValidateAsync(
-            new DiagramValidationRequest(text, "graph", "", "", null),
+            new DiagramValidationRequest(text, "graph", default, "", null),
             TestContext.Current.CancellationToken);
     }
 

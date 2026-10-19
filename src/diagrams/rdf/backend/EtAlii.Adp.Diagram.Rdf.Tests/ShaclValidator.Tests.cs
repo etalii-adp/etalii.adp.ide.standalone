@@ -21,7 +21,7 @@ public class ShaclValidatorTests
     private static async Task<IReadOnlyList<DiagramProblem>> Validate(string body)
     {
         var validator = new ShaclValidator(_origin);
-        var request = new DiagramValidationRequest(Prelude + body, "shapes", "/root", "/root/shapes.ttl", null);
+        var request = new DiagramValidationRequest(Prelude + body, "shapes", ProjectRoot.From("/root"), "/root/shapes.ttl", null);
         return await validator.ValidateAsync(request, TestContext.Current.CancellationToken);
     }
 
@@ -212,7 +212,7 @@ public class ShaclValidatorTests
             """ + "\n";
 
         var problems = await validator.ValidateAsync(
-            new DiagramValidationRequest(text, "shapes", "/root", "/root/shapes.ttl", null), TestContext.Current.CancellationToken);
+            new DiagramValidationRequest(text, "shapes", ProjectRoot.From("/root"), "/root/shapes.ttl", null), TestContext.Current.CancellationToken);
 
         Assert.Single(problems, problem => problem.RuleId == RdfValidator.DuplicatePrefixRuleId);
     }

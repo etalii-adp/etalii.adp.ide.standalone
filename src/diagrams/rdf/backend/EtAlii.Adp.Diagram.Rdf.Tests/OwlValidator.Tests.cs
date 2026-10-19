@@ -131,7 +131,7 @@ public class OwlValidatorTests
 
         // Act.
         var problems = await validator.ValidateAsync(
-            new DiagramValidationRequest("not turtle at all {{{", "broken.ttl", "", "", null),
+            new DiagramValidationRequest("not turtle at all {{{", "broken.ttl", default, "", null),
             TestContext.Current.CancellationToken);
 
         // Assert: the one finding is the family's unparseable rule, delegated rather than

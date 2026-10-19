@@ -18,7 +18,7 @@ public class PipelineValidatorTests
 {
     private static ValueTask<IReadOnlyList<DiagramProblem>> JudgeAsync(string document) =>
         new PipelineValidator().ValidateAsync(
-            new DiagramValidationRequest(document, "azure-pipelines", "/root", "/root/azure-pipelines.yml", null),
+            new DiagramValidationRequest(document, "azure-pipelines", ProjectRoot.From("/root"), "/root/azure-pipelines.yml", null),
             CancellationToken.None);
 
     [Fact]

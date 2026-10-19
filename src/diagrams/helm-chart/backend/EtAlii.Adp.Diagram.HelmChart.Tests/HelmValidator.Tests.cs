@@ -28,7 +28,7 @@ public class HelmValidatorTests : IDisposable
     private DiagramValidationRequest Request(string folder) => new(
         Document: "helm/chart",
         BaseName: "helm-chart",
-        RootPath: _root,
+        Root: ProjectRoot.From(_root),
         BodyPath: IoPath.Combine(folder, "helm-chart.adp"),
         RegistrationPath: IoPath.Combine(folder, "helm-chart.adp"))
     {

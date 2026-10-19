@@ -25,7 +25,7 @@ namespace EtAlii.Adp.Diagram.Mindmap;
 /// and is worth recording. The <see cref="IDiagramValidator"/> seam used to hand over the
 /// document text alone, so a map-relative link could not be resolved to a file at all; it now
 /// carries <see cref="DiagramValidationRequest.BodyPath"/> and
-/// <see cref="DiagramValidationRequest.RootPath"/>, so the rule has become possible
+/// <see cref="DiagramValidationRequest.Root"/>, so the rule has become possible
 /// (ansible-structure-diagram widened the seam for its own folder-subject rules). What stops
 /// it now is only that it belongs to the mindmap specification rather than to the one that
 /// happened to widen the seam - it is a missing rule, no longer a missing capability.

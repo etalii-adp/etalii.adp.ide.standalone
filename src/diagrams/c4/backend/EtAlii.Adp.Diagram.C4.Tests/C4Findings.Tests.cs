@@ -679,7 +679,7 @@ public class C4FindingsTests
             new DiagramValidationRequest(
                 Clean,
                 "clean",
-                RootPath: root,
+                Root: ProjectRoot.From(root),
                 BodyPath: IoPath.Combine(root, "clean.dsl"),
                 RegistrationPath: IoPath.Combine(root, "clean.adp")),
             TestContext.Current.CancellationToken);

@@ -27,7 +27,7 @@ public class MindmapLinksTests : IDisposable
     public void ToMapRelative_ProducesFreeplanesForm_ForwardSlashesFromTheMapsFolder()
     {
         // Act.
-        var stored = MindmapLinks.ToMapRelative(MapAt("docs"), ["src", "backend", "Service.cs"], _root);
+        var stored = MindmapLinks.ToMapRelative(MapAt("docs"), ["src", "backend", "Service.cs"], ProjectRoot.From(_root));
 
         // Assert.
         Assert.Equal("../src/backend/Service.cs", stored);
@@ -37,10 +37,10 @@ public class MindmapLinksTests : IDisposable
     public void ResolveWithinProject_TurnsAStoredLinkBackIntoTheFile()
     {
         // Act.
-        var resolved = MindmapLinks.ResolveWithinProject(MapAt("docs"), "../src/backend/Service.cs", _root);
+        var resolved = MindmapLinks.ResolveWithinProject(MapAt("docs"), "../src/backend/Service.cs", ProjectRoot.From(_root));
 
         // Assert.
-        Assert.Equal(IoPath.Combine(_root, "src", "backend", "Service.cs"), resolved);
+        Assert.Equal(IoPath.Combine(_root, "src", "backend", "Service.cs"), resolved?.FullPath);
     }
 
     [Fact]
@@ -48,7 +48,16 @@ public class MindmapLinksTests : IDisposable
     {
         // Arrange, act and assert.
         // Requirement 12.9: however a link got into the file, it never reaches outside.
-        Assert.Null(MindmapLinks.ResolveWithinProject(MapAt("docs"), "../../../etc/passwd", _root));
+        Assert.Null(MindmapLinks.ResolveWithinProject(MapAt("docs"), "../../../etc/passwd", ProjectRoot.From(_root)));
+    }
+
+    [Fact]
+    public void ResolveWithinProject_RefusesALinkToTheProjectRootItself()
+    {
+        // Arrange, act and assert.
+        // The root is the project, not a file a link can open (code-structure FR-059: the check
+        // moved onto ProjectRoot unchanged).
+        Assert.Null(MindmapLinks.ResolveWithinProject(MapAt("docs"), "..", ProjectRoot.From(_root)));
     }
 
     [Fact]
@@ -56,14 +65,14 @@ public class MindmapLinksTests : IDisposable
     {
         // Arrange, act and assert.
         Assert.True(MindmapLinks.IsExternal("https://www.freeplane.org/"));
-        Assert.Null(MindmapLinks.ResolveWithinProject(MapAt("docs"), "https://www.freeplane.org/", _root));
+        Assert.Null(MindmapLinks.ResolveWithinProject(MapAt("docs"), "https://www.freeplane.org/", ProjectRoot.From(_root)));
     }
 
     [Fact]
     public void ProjectRelative_SplitsIntoSegments()
     {
         // Arrange, act and assert.
-        Assert.Equal(["src", "backend", "Service.cs"], MindmapLinks.ProjectRelative(IoPath.Combine(_root, "src", "backend", "Service.cs"), _root));
+        Assert.Equal(["src", "backend", "Service.cs"], MindmapLinks.ProjectRelative(IoPath.Combine(_root, "src", "backend", "Service.cs"), ProjectRoot.From(_root)));
     }
 
     [Fact]

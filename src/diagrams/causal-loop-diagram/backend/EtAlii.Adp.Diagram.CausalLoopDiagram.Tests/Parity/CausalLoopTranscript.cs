@@ -266,7 +266,7 @@ internal static class CausalLoopTranscript
         json.WriteLines(await LinesAsync(async () =>
         {
             var problems = await new CausalLoopValidator(Diagram.CausalLoop.Origin).ValidateAsync(
-                new DiagramValidationRequest(TranscriptText.Decode(bytes), Path.GetFileNameWithoutExtension(session.Body), session.Folder, session.Body, null),
+                new DiagramValidationRequest(TranscriptText.Decode(bytes), Path.GetFileNameWithoutExtension(session.Body), ProjectRoot.From(session.Folder), session.Body, null),
                 cancellationToken);
             return [.. problems.Select(problem => $"{Location(problem.Location)} | {problem.Severity} | {problem.RuleId} | {problem.Message}")];
         }));

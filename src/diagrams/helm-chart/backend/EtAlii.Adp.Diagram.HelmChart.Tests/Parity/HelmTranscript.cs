@@ -264,7 +264,7 @@ internal static class HelmTranscript
         json.WriteString("write", write.IsSuccess ? "ok" : $"refused: {Mask(write.Error, folder)}");
 
         var problems = await new HelmValidator().ValidateAsync(
-            new DiagramValidationRequest("helm/chart", Path.GetFileNameWithoutExtension(registration), folder, registration, registration) { SubjectFolder = folder },
+            new DiagramValidationRequest("helm/chart", Path.GetFileNameWithoutExtension(registration), ProjectRoot.From(folder), registration, registration) { SubjectFolder = folder },
             cancellationToken);
         json.WritePropertyName("findings");
         json.WriteLines([.. problems.Select(problem => Mask(FindingLine(problem), folder))]);

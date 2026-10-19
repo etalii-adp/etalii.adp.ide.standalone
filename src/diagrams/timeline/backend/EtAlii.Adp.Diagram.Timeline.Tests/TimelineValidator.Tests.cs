@@ -9,7 +9,7 @@ public class TimelineValidatorTests
 {
     private static ValueTask<IReadOnlyList<DiagramProblem>> JudgeAsync(string document) =>
         new TimelineValidator().ValidateAsync(
-            new DiagramValidationRequest(document, "plan", "/root", "/root/plan.tml", null),
+            new DiagramValidationRequest(document, "plan", ProjectRoot.From("/root"), "/root/plan.tml", null),
             CancellationToken.None);
 
     [Fact]

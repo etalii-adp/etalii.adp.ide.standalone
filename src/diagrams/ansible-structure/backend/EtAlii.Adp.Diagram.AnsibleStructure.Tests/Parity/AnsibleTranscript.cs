@@ -329,7 +329,7 @@ internal static class AnsibleTranscript
         json.WriteEndArray();
 
         var problems = await new AnsibleValidator().ValidateAsync(
-            new DiagramValidationRequest(BareRegistration, Path.GetFileNameWithoutExtension(registration), folder, registration, registration) { SubjectFolder = folder },
+            new DiagramValidationRequest(BareRegistration, Path.GetFileNameWithoutExtension(registration), ProjectRoot.From(folder), registration, registration) { SubjectFolder = folder },
             cancellationToken);
         json.WritePropertyName("findings");
         json.WriteLines([.. problems.Select(problem => Mask(FindingLine(problem), folder))]);

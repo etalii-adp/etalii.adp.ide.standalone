@@ -31,7 +31,7 @@ public sealed class SupplyChainValidatorTests
         var selfFlowLine = text.Split('\n').ToList().FindIndex(line => line.Contains("id: loop", StringComparison.Ordinal)) + 1;
 
         // Act.
-        var problems = await new SupplyChainValidator().ValidateAsync(new DiagramValidationRequest(text, "rules-broken", "", Fixture("rules-broken.supply"), null), TestContext.Current.CancellationToken);
+        var problems = await new SupplyChainValidator().ValidateAsync(new DiagramValidationRequest(text, "rules-broken", default, Fixture("rules-broken.supply"), null), TestContext.Current.CancellationToken);
 
         // Assert.
         var selfFlow = Assert.Single(problems, problem => problem.RuleId == SupplyChainRuleIds.SelfFlow);

@@ -16,44 +16,37 @@ public static class MindmapLinks
         Uri.TryCreate(link, UriKind.Absolute, out var uri) && !uri.IsFile;
 
     /// <summary>
-    /// The absolute path a map-relative <paramref name="link"/> in the map at
-    /// <paramref name="bodyPath"/> points to, or null when it leaves the project root -
-    /// which a link must never do, however it got into the file (Requirement 12.9).
+    /// The file a map-relative <paramref name="link"/> in the map at <paramref name="bodyPath"/>
+    /// points to, or null when it leaves the project <paramref name="root"/> - which a link must
+    /// never do, however it got into the file (Requirement 12.9) - or names the root itself,
+    /// which is no file.
     /// </summary>
-    public static string? ResolveWithinProject(string bodyPath, string link, string rootPath)
+    public static ProjectPath? ResolveWithinProject(string bodyPath, string link, ProjectRoot root)
     {
         if (IsExternal(link))
         {
             return null;
         }
 
-        var mapFolder = IoPath.GetDirectoryName(bodyPath) ?? rootPath;
-        string candidate;
-        try
-        {
-            candidate = IoPath.GetFullPath(IoPath.Combine(mapFolder, link.Replace('/', IoPath.DirectorySeparatorChar)));
-        }
-        catch (Exception exception) when (exception is ArgumentException or NotSupportedException or PathTooLongException)
-        {
-            return null;
-        }
-
-        return IsInside(rootPath, candidate) ? candidate : null;
+        var mapFolder = IoPath.GetDirectoryName(bodyPath) ?? root.FullPath;
+        return root.Resolve(IoPath.Combine(mapFolder, link.Replace('/', IoPath.DirectorySeparatorChar))) is { RelativePath: not "." } target
+            ? target
+            : null;
     }
 
     /// <summary>The project-relative segments of an absolute path inside the project, for the wire (Requirement 12.2).</summary>
-    public static IReadOnlyList<string> ProjectRelative(string fullPath, string rootPath) =>
-        IoPath.GetRelativePath(rootPath, fullPath)
+    public static IReadOnlyList<string> ProjectRelative(string fullPath, ProjectRoot root) =>
+        IoPath.GetRelativePath(root.FullPath, fullPath)
             .Split([IoPath.DirectorySeparatorChar, IoPath.AltDirectorySeparatorChar], StringSplitOptions.RemoveEmptyEntries);
 
     /// <summary>
     /// The map-relative form Freeplane stores, for a target the user picked by project-relative
     /// path. Forward slashes, as Freeplane writes them, whatever the platform.
     /// </summary>
-    public static string ToMapRelative(string bodyPath, IReadOnlyList<string> projectRelativeTarget, string rootPath)
+    public static string ToMapRelative(string bodyPath, IReadOnlyList<string> projectRelativeTarget, ProjectRoot root)
     {
-        var mapFolder = IoPath.GetDirectoryName(bodyPath) ?? rootPath;
-        var target = IoPath.Combine([rootPath, .. projectRelativeTarget]);
+        var mapFolder = IoPath.GetDirectoryName(bodyPath) ?? root.FullPath;
+        var target = IoPath.Combine([root.FullPath, .. projectRelativeTarget]);
         return IoPath.GetRelativePath(mapFolder, target).Replace(IoPath.DirectorySeparatorChar, '/');
     }
 
@@ -88,6 +81,4 @@ public static class MindmapLinks
 
         return rewritten;
     }
-
-    private static bool IsInside(string rootPath, string fullPath) => PathContainment.IsInside(rootPath, fullPath);
 }

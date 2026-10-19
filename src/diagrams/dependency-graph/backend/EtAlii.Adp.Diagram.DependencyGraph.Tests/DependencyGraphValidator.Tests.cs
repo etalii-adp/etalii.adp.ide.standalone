@@ -9,7 +9,7 @@ public class DependencyGraphValidatorTests
 {
     private static ValueTask<IReadOnlyList<DiagramProblem>> JudgeAsync(string document) =>
         new DependencyGraphValidator().ValidateAsync(
-            new DiagramValidationRequest(document, "services", "/root", "/root/services.dgr", null),
+            new DiagramValidationRequest(document, "services", ProjectRoot.From("/root"), "/root/services.dgr", null),
             CancellationToken.None);
 
     [Fact]

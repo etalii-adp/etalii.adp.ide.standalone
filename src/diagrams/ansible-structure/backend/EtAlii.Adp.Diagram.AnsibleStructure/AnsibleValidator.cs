@@ -57,7 +57,7 @@ public sealed class AnsibleValidator : IDiagramValidator
         var reading = FolderBody.ReadOnce(folder, AnsibleDefinition.Binding, new AnsibleFolderPlugin(new AnsibleFolderListing(folder)));
         var model = AnsibleDefinition.Model(reading);
         var problems = AnsibleFindings.For(model.Diagram, AnsibleDefinition.Findings(model));
-        return ValueTask.FromResult(Rebased(problems, request.RootPath, folder));
+        return ValueTask.FromResult(Rebased(problems, request.Root, folder));
     }
 
     /// <summary>
@@ -77,14 +77,14 @@ public sealed class AnsibleValidator : IDiagramValidator
     /// </para>
     /// </remarks>
     private static IReadOnlyList<DiagramProblem> Rebased(
-        IReadOnlyList<DiagramProblem> problems, string rootPath, string folder)
+        IReadOnlyList<DiagramProblem> problems, ProjectRoot root, string folder)
     {
-        if (rootPath.Length == 0)
+        if (root.FullPath.Length == 0)
         {
             return problems;
         }
 
-        var prefix = IoPath.GetRelativePath(rootPath, folder).Replace('\\', '/');
+        var prefix = IoPath.GetRelativePath(root.FullPath, folder).Replace('\\', '/');
         return prefix is "." or ""
             ? problems
             : [.. problems.Select(problem => problem.Location is DiagramProblemFileLocation located

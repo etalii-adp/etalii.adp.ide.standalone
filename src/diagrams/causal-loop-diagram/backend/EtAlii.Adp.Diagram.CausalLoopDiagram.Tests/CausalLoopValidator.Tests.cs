@@ -16,7 +16,7 @@ public class CausalLoopValidatorTests
     {
         var text = string.Join("", statements.Select(statement => statement + "\r\n"));
         return await _validator.ValidateAsync(
-            new DiagramValidationRequest(text, "feedback", @"C:\project", @"C:\project\feedback.cld", @"C:\project\feedback.adp"),
+            new DiagramValidationRequest(text, "feedback", ProjectRoot.From(@"C:\project"), @"C:\project\feedback.cld", @"C:\project\feedback.adp"),
             TestContext.Current.CancellationToken);
     }
 
@@ -170,7 +170,7 @@ public class CausalLoopValidatorTests
 
         // Act.
         var problems = await _validator.ValidateAsync(
-            new DiagramValidationRequest(text, "feedback", @"C:\p", @"C:\p\feedback.cld", @"C:\p\feedback.adp"),
+            new DiagramValidationRequest(text, "feedback", ProjectRoot.From(@"C:\p"), @"C:\p\feedback.cld", @"C:\p\feedback.adp"),
             TestContext.Current.CancellationToken);
 
         // Assert.
@@ -182,7 +182,7 @@ public class CausalLoopValidatorTests
     {
         // Arrange.
         var text = "variable a\r\nvariable b\r\nlink a -> b +\r\nlink b -> a -\r\nloop R1 \"wrong\" a b\r\n";
-        var request = new DiagramValidationRequest(text, "f", @"C:\p", @"C:\p\f.cld", @"C:\p\f.adp");
+        var request = new DiagramValidationRequest(text, "f", ProjectRoot.From(@"C:\p"), @"C:\p\f.cld", @"C:\p\f.adp");
 
         // Act.
         var problems = await _validator.ValidateAsync(request, TestContext.Current.CancellationToken);
