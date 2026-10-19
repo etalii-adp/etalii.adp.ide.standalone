@@ -33,7 +33,7 @@ public class ServiceCollectionAddC4Tests
         File.Delete(body);
 
         // Act.
-        await reloader.BodyDeletedAsync(folder.Path, body, TestContext.Current.CancellationToken);
+        await reloader.BodyDeletedAsync(ProjectRoot.From(folder.Path), body, TestContext.Current.CancellationToken);
 
         // Assert: the deletion reached the store the sessions read, and ended its model.
         Assert.Equal([body], changed);

@@ -153,7 +153,7 @@ public class ServiceCollectionAddAzurePipelineTests
         File.Delete(body);
 
         // Act.
-        await reloader.BodyDeletedAsync(folder.Path, body, TestContext.Current.CancellationToken);
+        await reloader.BodyDeletedAsync(ProjectRoot.From(folder.Path), body, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Equal([body], changed);

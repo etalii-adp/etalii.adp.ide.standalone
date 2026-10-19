@@ -56,7 +56,7 @@ public sealed class MindmapDocumentStoreDepartureTests : IDisposable
         store.Changed += (_, _) => told++;
 
         // Act: the watcher reports a change to it.
-        await reloader.ReloadAsync(_folder, Body, TestContext.Current.CancellationToken);
+        await reloader.ReloadAsync(ProjectRoot.From(_folder), Body, TestContext.Current.CancellationToken);
 
         // Assert: skipped. The shared lifecycle would open it and the store would announce it; this
         // store leaves a map nobody has open unopened, and tells nobody.
@@ -65,7 +65,7 @@ public sealed class MindmapDocumentStoreDepartureTests : IDisposable
 
         // Act: and the watcher reports it deleted.
         File.Delete(Body);
-        await reloader.BodyDeletedAsync(_folder, Body, TestContext.Current.CancellationToken);
+        await reloader.BodyDeletedAsync(ProjectRoot.From(_folder), Body, TestContext.Current.CancellationToken);
 
         // Assert: skipped as well - no empty map is installed for a path nobody opened.
         Assert.Null(store.Get(Body));
@@ -87,9 +87,9 @@ public sealed class MindmapDocumentStoreDepartureTests : IDisposable
         var saved = await store.SaveAsync(Body, document, new MindmapNodeUpdated("ID_2"), TestContext.Current.CancellationToken);
         Assert.False(saved.Failed);
         await File.WriteAllTextAsync(Body, Map, TestContext.Current.CancellationToken);
-        await reloader.ReloadAsync(_folder, Body, TestContext.Current.CancellationToken);
+        await reloader.ReloadAsync(ProjectRoot.From(_folder), Body, TestContext.Current.CancellationToken);
         File.Delete(Body);
-        await reloader.BodyDeletedAsync(_folder, Body, TestContext.Current.CancellationToken);
+        await reloader.BodyDeletedAsync(ProjectRoot.From(_folder), Body, TestContext.Current.CancellationToken);
 
         // Assert: a save announces exactly the structural change the command made, so a session can
         // lay out only what moved; a reload and a deletion, after which anything may differ, announce

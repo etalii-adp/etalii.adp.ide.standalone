@@ -51,7 +51,7 @@ public class DiagramDocumentReloadBridgeTests : IDisposable
 
         public TaskCompletionSource Holding { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        public async Task ReloadAsync(string rootPath, string bodyPath, CancellationToken cancellationToken)
+        public async Task ReloadAsync(ProjectRoot root, string bodyPath, CancellationToken cancellationToken)
         {
             if (string.Equals(bodyPath, Held, StringComparison.OrdinalIgnoreCase))
             {
@@ -60,10 +60,10 @@ public class DiagramDocumentReloadBridgeTests : IDisposable
                 await Gate.Task.WaitAsync(cancellationToken);
             }
 
-            _reloads.Writer.TryWrite((rootPath, bodyPath));
+            _reloads.Writer.TryWrite((root.FullPath, bodyPath));
         }
 
-        public Task BodyDeletedAsync(string rootPath, string bodyPath, CancellationToken cancellationToken)
+        public Task BodyDeletedAsync(ProjectRoot root, string bodyPath, CancellationToken cancellationToken)
         {
             _deletions.Writer.TryWrite(bodyPath);
             return Task.CompletedTask;

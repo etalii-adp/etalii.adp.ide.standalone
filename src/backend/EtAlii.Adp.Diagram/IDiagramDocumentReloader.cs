@@ -16,12 +16,12 @@ public interface IDiagramDocumentReloader
 
     /// <summary>
     /// Re-reads the document whose body is at <paramref name="bodyPath"/>, within the project
-    /// rooted at <paramref name="rootPath"/>, and tells the sessions on it. The store's own
+    /// rooted at <paramref name="root"/>, and tells the sessions on it. The store's own
     /// in-flight save is not an external change and must not bounce back through here - each
     /// store suppresses that itself, the way <c>TextEditorSession</c>'s saving guard does.
     /// </summary>
     /// <remarks>Read without holding a thread (code-structure FR-050): a body being written is retried on the clock, not slept on.</remarks>
-    Task ReloadAsync(string rootPath, string bodyPath, CancellationToken cancellationToken);
+    Task ReloadAsync(ProjectRoot root, string bodyPath, CancellationToken cancellationToken);
 
     /// <summary>
     /// The body at <paramref name="bodyPath"/> was deleted, or moved to a name that is not a
@@ -30,5 +30,5 @@ public interface IDiagramDocumentReloader
     /// a publish in flight leaves the body missing for an instant too, but raises no delete of it.
     /// A store with no such rule gets a reload, which is what a delete always was.
     /// </summary>
-    Task BodyDeletedAsync(string rootPath, string bodyPath, CancellationToken cancellationToken) => ReloadAsync(rootPath, bodyPath, cancellationToken);
+    Task BodyDeletedAsync(ProjectRoot root, string bodyPath, CancellationToken cancellationToken) => ReloadAsync(root, bodyPath, cancellationToken);
 }

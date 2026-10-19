@@ -336,7 +336,7 @@ public class DependencyGraphSessionTests : IDisposable
 
         // Act.
         await File.WriteAllTextAsync(path, Graph.Replace("x: 240", "x: 999", StringComparison.Ordinal), TestContext.Current.CancellationToken);
-        await reloader.ReloadAsync(_workspace, path, TestContext.Current.CancellationToken);
+        await reloader.ReloadAsync(ProjectRoot.From(_workspace), path, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Equal(Diagram.DependencyGraph.Origin, reloader.Origin);

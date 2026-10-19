@@ -364,7 +364,7 @@ public class RenameEntryCommandHandlerTests : IDisposable
         var handler = new RenameEntryCommandHandler(new EmptyCatalog(), new FileWriter(), followers: [follower]);
 
         // Act: renamed in a project, and undone by its inverse.
-        var result = await handler.ExecuteAsync(new RenameEntryCommand(path, "renamed.txt", _root), TestContext.Current.CancellationToken);
+        var result = await handler.ExecuteAsync(new RenameEntryCommand(path, "renamed.txt", ProjectRoot.From(_root)), TestContext.Current.CancellationToken);
         var inverse = Assert.IsType<RenameEntryCommand>(result.Inverse);
         var undone = await handler.ExecuteAsync(inverse, TestContext.Current.CancellationToken);
 
@@ -385,7 +385,7 @@ public class RenameEntryCommandHandlerTests : IDisposable
         var handler = new RenameEntryCommandHandler(new EmptyCatalog(), new FileWriter(), followers: [follower]);
 
         // Act: one refused, and one made without a project.
-        var refused = await handler.ExecuteAsync(new RenameEntryCommand(path, "taken.txt", _root), TestContext.Current.CancellationToken);
+        var refused = await handler.ExecuteAsync(new RenameEntryCommand(path, "taken.txt", ProjectRoot.From(_root)), TestContext.Current.CancellationToken);
         var plain = await handler.ExecuteAsync(new RenameEntryCommand(path, "renamed.txt"), TestContext.Current.CancellationToken);
 
         // Assert.
@@ -399,9 +399,9 @@ public class RenameEntryCommandHandlerTests : IDisposable
     {
         public List<(string Root, string From, string To, bool Moved)> Seen { get; } = [];
 
-        public Task RenamedAsync(string rootPath, string fromPath, string toPath, CancellationToken cancellationToken)
+        public Task RenamedAsync(ProjectRoot root, string fromPath, string toPath, CancellationToken cancellationToken)
         {
-            Seen.Add((rootPath, fromPath, toPath, File.Exists(toPath) && !File.Exists(fromPath)));
+            Seen.Add((root.FullPath, fromPath, toPath, File.Exists(toPath) && !File.Exists(fromPath)));
             return Task.CompletedTask;
         }
     }

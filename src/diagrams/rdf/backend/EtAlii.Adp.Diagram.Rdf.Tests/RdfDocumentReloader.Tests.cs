@@ -40,7 +40,7 @@ public sealed class RdfDocumentReloaderTests : DocumentReloaderContract<IRdfDocu
         // Act: a reload while another program holds the file with no sharing at all.
         await using (new FileStream(body, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
         {
-            await reloader.ReloadAsync(folder.Path, body, TestContext.Current.CancellationToken);
+            await reloader.ReloadAsync(ProjectRoot.From(folder.Path), body, TestContext.Current.CancellationToken);
         }
 
         // Assert: the last good document is kept, not replaced by an empty one (R2.4), and since
@@ -74,7 +74,7 @@ public sealed class RdfDocumentReloaderTests : DocumentReloaderContract<IRdfDocu
             store.Changed += Told;
             var reloader = Assert.Single(reloaders, r => r.Origin == new ToolOrigin("w3c", reading));
             await File.AppendAllTextAsync(body, $"<http://example.org/{reading}> <http://example.org/y> <http://example.org/z> .\r\n", TestContext.Current.CancellationToken);
-            await reloader.ReloadAsync(folder.Path, body, TestContext.Current.CancellationToken);
+            await reloader.ReloadAsync(ProjectRoot.From(folder.Path), body, TestContext.Current.CancellationToken);
             store.Changed -= Told;
             Assert.Equal([body], told);
         }

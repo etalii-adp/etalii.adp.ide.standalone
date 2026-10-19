@@ -12,9 +12,9 @@ namespace EtAlii.Adp.Documents;
 /// </remarks>
 public interface IEntryRenameFollower
 {
-    /// <param name="rootPath">The project the entry is in: how far a follower looks.</param>
+    /// <param name="root">The project the entry is in: how far a follower looks.</param>
     /// <param name="fromPath">Where the file or folder was.</param>
     /// <param name="toPath">Where it is now.</param>
     /// <param name="cancellationToken">Stops the follow between the files it writes.</param>
-    Task RenamedAsync(string rootPath, string fromPath, string toPath, CancellationToken cancellationToken);
+    Task RenamedAsync(ProjectRoot root, string fromPath, string toPath, CancellationToken cancellationToken);
 }

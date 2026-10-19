@@ -18,9 +18,9 @@ internal sealed class KnowledgeTargetRename(IKnowledgeDocumentStore documents, I
 {
     private static readonly ILogger _logger = Log.ForContext<KnowledgeTargetRename>();
 
-    public async Task RenamedAsync(string rootPath, string fromPath, string toPath, CancellationToken cancellationToken)
+    public async Task RenamedAsync(ProjectRoot root, string fromPath, string toPath, CancellationToken cancellationToken)
     {
-        foreach (var path in KnowledgeProject.Files(rootPath))
+        foreach (var path in KnowledgeProject.Files(root.FullPath))
         {
             if (KnowledgeDocumentStore.Read(path).Body is not { ReadOnlyReason.Length: 0 } body)
             {

@@ -35,8 +35,8 @@ public sealed class PipelineDocumentReloaderTests : DocumentReloaderContract<IPi
         IDiagramDocumentReloader reloader = new DiagramDocumentReloader<IPipelineDocumentStore>(Origin, store);
 
         // Act.
-        await reloader.ReloadAsync(folder.Path, body, TestContext.Current.CancellationToken);
-        await reloader.BodyDeletedAsync(folder.Path, body, TestContext.Current.CancellationToken);
+        await reloader.ReloadAsync(ProjectRoot.From(folder.Path), body, TestContext.Current.CancellationToken);
+        await reloader.BodyDeletedAsync(ProjectRoot.From(folder.Path), body, TestContext.Current.CancellationToken);
 
         // Assert: nothing was open on it, and its first open reads it.
         Assert.Equal(0, told);

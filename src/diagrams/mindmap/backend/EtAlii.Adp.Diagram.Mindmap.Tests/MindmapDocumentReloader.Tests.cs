@@ -35,7 +35,7 @@ public sealed class MindmapDocumentReloaderTests : DocumentReloaderContract<IMin
         File.Delete(body);
 
         // Act.
-        await reloader.BodyDeletedAsync(folder.Path, body, TestContext.Current.CancellationToken);
+        await reloader.BodyDeletedAsync(ProjectRoot.From(folder.Path), body, TestContext.Current.CancellationToken);
 
         // Assert: what a first open of a missing body shows (R2.5).
         var cleared = await store.GetOrLoadAsync(body, TestContext.Current.CancellationToken);
@@ -59,7 +59,7 @@ public sealed class MindmapDocumentReloaderTests : DocumentReloaderContract<IMin
         // Act: a reload while another program holds the file with no sharing at all.
         await using (new FileStream(body, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
         {
-            await reloader.ReloadAsync(folder.Path, body, TestContext.Current.CancellationToken);
+            await reloader.ReloadAsync(ProjectRoot.From(folder.Path), body, TestContext.Current.CancellationToken);
         }
 
         // Assert: the last good map is kept, not replaced by an empty one (R2.4), and since nothing a
