@@ -33,7 +33,7 @@ public class TimelineDocumentStoreSharedReadTests : IDisposable
         const string text = "timeline: 1\nelements:\n  - id: aaa\n    label: Period\n    begin: 2026-01-05\n    end: 2026-02-13\n    row: 0\n";
         var path = IoPath.Combine(_workspace, "plan.tml");
         await File.WriteAllTextAsync(path, text, TestContext.Current.CancellationToken);
-        using var editor = new FileStream(path, FileMode.Open, FileAccess.Write, FileShare.Read);
+        await using var editor = new FileStream(path, FileMode.Open, FileAccess.Write, FileShare.Read);
 
         // Act.
         var entry = await new TimelineDocumentStore(new FileWriter()).GetOrLoadAsync(path, TestContext.Current.CancellationToken);

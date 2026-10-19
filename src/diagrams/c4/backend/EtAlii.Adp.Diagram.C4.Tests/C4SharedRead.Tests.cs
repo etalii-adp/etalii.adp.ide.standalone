@@ -56,7 +56,7 @@ public class C4SharedReadTests : IDisposable
         // File.WriteAllText opens with.
         var path = IoPath.Combine(_root, "model.dsl");
         await File.WriteAllTextAsync(path, Model, TestContext.Current.CancellationToken);
-        using var editor = new FileStream(path, FileMode.Open, FileAccess.Write, FileShare.Read);
+        await using var editor = new FileStream(path, FileMode.Open, FileAccess.Write, FileShare.Read);
 
         // Act.
         var document = (await _documents.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Document;

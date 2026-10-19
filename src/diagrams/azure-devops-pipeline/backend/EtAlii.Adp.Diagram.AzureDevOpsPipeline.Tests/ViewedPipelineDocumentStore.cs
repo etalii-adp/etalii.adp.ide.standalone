@@ -22,8 +22,6 @@ internal sealed class ViewedPipelineDocumentStore(IDiagramDocumentStore<Pipeline
         remove => view.Changed -= value;
     }
 
-    public DocumentEntry<PipelineBody, PipelineModel> GetOrLoad(string rootPath, string path) => view.GetOrLoad(path);
-
     public ValueTask<DocumentEntry<PipelineBody, PipelineModel>> GetOrLoadAsync(string rootPath, string path, CancellationToken cancellationToken) =>
         view.GetOrLoadAsync(path, cancellationToken);
 

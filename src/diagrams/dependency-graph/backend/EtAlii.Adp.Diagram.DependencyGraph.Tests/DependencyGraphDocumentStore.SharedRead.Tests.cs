@@ -33,7 +33,7 @@ public class DependencyGraphDocumentStoreSharedReadTests : IDisposable
         const string text = "dependencies: 1\nelements:\n  - id: aaa\n    label: Node\n    x: 10\n    row: 0\n";
         var path = IoPath.Combine(_workspace, "graph.dgr");
         await File.WriteAllTextAsync(path, text, TestContext.Current.CancellationToken);
-        using var editor = new FileStream(path, FileMode.Open, FileAccess.Write, FileShare.Read);
+        await using var editor = new FileStream(path, FileMode.Open, FileAccess.Write, FileShare.Read);
 
         // Act.
         var entry = await new DependencyGraphDocumentStore(new FileWriter()).GetOrLoadAsync(path, TestContext.Current.CancellationToken);

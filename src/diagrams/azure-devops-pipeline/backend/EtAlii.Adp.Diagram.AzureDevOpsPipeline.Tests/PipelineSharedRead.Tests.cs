@@ -39,7 +39,7 @@ public class PipelineSharedReadTests : IDisposable
         // Arrange: the handle every save holds - write access, sharing only reads, the mode
         // File.WriteAllText opens with.
         var full = Write("azure-pipelines.yml", Simple);
-        using var editor = new FileStream(full, FileMode.Open, FileAccess.Write, FileShare.Read);
+        await using var editor = new FileStream(full, FileMode.Open, FileAccess.Write, FileShare.Read);
 
         // Act.
         var entry = await new PipelineDocumentStore(new FileWriter()).GetOrLoadAsync(_workspace, full, TestContext.Current.CancellationToken);

@@ -33,7 +33,7 @@ public class MindmapDocumentStoreSharedReadTests : IDisposable
         // File.WriteAllText opens with.
         var bodyPath = IoPath.Combine(_root, "held.mm");
         await File.WriteAllTextAsync(bodyPath, "<map version=\"freeplane 1.11.5\"><node TEXT=\"RootX\"/></map>", TestContext.Current.CancellationToken);
-        using var editor = new FileStream(bodyPath, FileMode.Open, FileAccess.Write, FileShare.Read);
+        await using var editor = new FileStream(bodyPath, FileMode.Open, FileAccess.Write, FileShare.Read);
 
         // Act.
         var document = await _store.GetOrLoadAsync(bodyPath, TestContext.Current.CancellationToken);

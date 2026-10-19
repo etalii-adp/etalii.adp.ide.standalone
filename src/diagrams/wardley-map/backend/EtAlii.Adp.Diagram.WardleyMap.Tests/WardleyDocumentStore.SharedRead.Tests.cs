@@ -29,7 +29,7 @@ public sealed class WardleyDocumentStoreSharedReadTests : IDisposable
         const string text = "title Shared\ncomponent A [0.5, 0.5]\n";
         var path = IoPath.Combine(_folder, "map.owm");
         await File.WriteAllTextAsync(path, text, TestContext.Current.CancellationToken);
-        using var editor = new FileStream(path, FileMode.Open, FileAccess.Write, FileShare.Read);
+        await using var editor = new FileStream(path, FileMode.Open, FileAccess.Write, FileShare.Read);
 
         // Act.
         var document = (await new WardleyDocumentStore(new FileWriter()).GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Document;
