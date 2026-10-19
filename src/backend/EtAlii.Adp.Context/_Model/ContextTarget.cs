@@ -42,6 +42,22 @@ namespace EtAlii.Adp.Context;
 /// did before this field existed, so resolvers adopt it one at a time.
 /// </para>
 /// </param>
+/// <param name="RegistrationPath">
+/// The registration the target was resolved through, for a target inside a diagram file, and
+/// <c>null</c> where it is unknown or does not apply.
+/// <para>
+/// The origin says which tool type a file is read as; it does not say which part of the file a
+/// registration shows. A registration may carry headers of its own type that pick one declaration
+/// out of a file declaring several, and two registrations of one file and one type can then show
+/// different ones. A provider that reads only the body cannot tell which of them the user is
+/// looking at, and acts on whichever comes first; with the registration in hand it reads the same
+/// headers the diagram was opened with.
+/// </para>
+/// <para>
+/// Null means "not known", as for the origin: a provider seeing null does what it did before this
+/// field existed.
+/// </para>
+/// </param>
 public sealed record ContextTarget(
     ContextScope Scope,
     string ResolvedFullPath,
@@ -50,7 +66,8 @@ public sealed record ContextTarget(
     ProjectRoot Root = default,
     ShortGuid WatchId = default,
     string ElementId = "",
-    ToolOrigin? Origin = null)
+    ToolOrigin? Origin = null,
+    string? RegistrationPath = null)
 {
     /// <summary>
     /// The element <paramref name="elementId"/> of the diagram file at <paramref name="bodyPath"/>,

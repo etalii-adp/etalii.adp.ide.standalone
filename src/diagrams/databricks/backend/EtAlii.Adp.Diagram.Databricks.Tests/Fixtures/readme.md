@@ -67,5 +67,5 @@ What the corpus does not demonstrate:
 - A multi-document YAML stream, a YAML tag, a tab, a byte order mark or a non-UTF-8 encoding.
 - A pipeline settings file written in YAML rather than JSON, and a settings file holding a job.
 - The tasks inside a `for_each_task` as tasks of their own: the module draws only the outer task, and no fixture asks otherwise.
-- A `run_if` of `[x`: the transcript shows that setting it throws today rather than writing an unreadable file, which is what finding B9 describes; the unreadable file B9 means is shown with `*nothing` instead.
+- A body that an edit leaves unreadable: since databricks-disl-fbl task 2 every value is written so that it reads back as the same text (finding B9), so the transcript's `*nothing` and `[x` are written quoted, where before the first left the file unreadable and the second threw.
 - Real published Databricks bundles: every file here is written for this repository, as the examples are.

@@ -81,8 +81,9 @@ internal static class BundleWriter
         }
 
         var region = new LineRange(bundleLine, document.Lines.Count - 1);
+        // The bundle's own name, among the keys under bundle: - never the name of a mapping nested in it.
         var nameLine = DatabricksSplices.FindKey(
-            document, new LineRange(bundleLine + 1, RegionEnd(document, bundleLine)), "name");
+            document, new LineRange(bundleLine, RegionEnd(document, bundleLine)), "name");
         if (nameLine >= 0)
         {
             var text = document.Lines[nameLine].Text;
@@ -96,24 +97,25 @@ internal static class BundleWriter
         return "";
     }
 
+    /// <summary>The lines of a new resource, each value written so that it reads back as the key it was made from (finding B9).</summary>
     private static List<string> Skeleton(string kind, string key, string keyIndent) =>
         kind == "jobs"
             ?
             [
-                $"{keyIndent}{key}:",
-                $"{keyIndent}  name: {key}",
+                $"{keyIndent}{DatabricksSplices.Quote(key)}:",
+                $"{keyIndent}  name: {DatabricksSplices.Quote(key)}",
                 $"{keyIndent}  tasks:",
                 $"{keyIndent}    - task_key: main",
                 $"{keyIndent}      notebook_task:",
-                $"{keyIndent}        notebook_path: notebooks/{key}",
+                $"{keyIndent}        notebook_path: {DatabricksSplices.Quote($"notebooks/{key}")}",
             ]
             :
             [
-                $"{keyIndent}{key}:",
-                $"{keyIndent}  name: {key}",
+                $"{keyIndent}{DatabricksSplices.Quote(key)}:",
+                $"{keyIndent}  name: {DatabricksSplices.Quote(key)}",
                 $"{keyIndent}  libraries:",
                 $"{keyIndent}    - notebook:",
-                $"{keyIndent}        path: transformations/{key}",
+                $"{keyIndent}        path: {DatabricksSplices.Quote($"transformations/{key}")}",
             ];
 
     /// <summary>

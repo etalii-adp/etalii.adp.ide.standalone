@@ -88,8 +88,10 @@ public sealed class DatabricksContextActionProvider : DiagramActionProvider<Line
     protected override bool IsBody(string path) => DatabricksSelection.CouldBeFamilyFile(path);
 
     /// <inheritdoc />
-    protected override IReadOnlyList<ContextActionGroupDefinition> Discover(DocumentEntry<LineDocument, DatabricksModel> entry, string elementId)
+    /// <remarks>Of the resource the target's registration names (finding B3).</remarks>
+    protected override IReadOnlyList<ContextActionGroupDefinition> Discover(ContextTarget target, DocumentEntry<LineDocument, DatabricksModel> entry)
     {
+        ArgumentNullException.ThrowIfNull(target);
         ArgumentNullException.ThrowIfNull(entry);
 
         if (!entry.IsUsable)
@@ -98,7 +100,9 @@ public sealed class DatabricksContextActionProvider : DiagramActionProvider<Line
             return [];
         }
 
-        if (DatabricksSelection.TaskOf(entry.Model, elementId) is { } selected)
+        var model = DatabricksSelection.ReadingOf(entry.Model, target);
+        var elementId = target.ElementId;
+        if (DatabricksSelection.TaskOf(model, elementId) is { } selected)
         {
             return ForTask(selected.Task);
         }
@@ -130,7 +134,7 @@ public sealed class DatabricksContextActionProvider : DiagramActionProvider<Line
             ];
         }
 
-        if (DatabricksSelection.TargetOf(entry.Model, elementId) is not null)
+        if (DatabricksSelection.TargetOf(model, elementId) is not null)
         {
             // The mocked domain action on a target frame (Requirement 8.4).
             return
@@ -158,7 +162,7 @@ public sealed class DatabricksContextActionProvider : DiagramActionProvider<Line
             ];
         }
 
-        if (DatabricksSelection.LibraryOf(entry.Model, elementId) is not null)
+        if (DatabricksSelection.LibraryOf(model, elementId) is not null)
         {
             return
             [
@@ -213,7 +217,9 @@ public sealed class DatabricksContextActionProvider : DiagramActionProvider<Line
             return new ContextExecutionCompleted();
         }
 
-        var task = DatabricksSelection.TaskOf(entry.Model, target.ElementId);
+        // The resource the target's registration names, not the file's first (finding B3).
+        var model = DatabricksSelection.ReadingOf(entry.Model, target);
+        var task = DatabricksSelection.TaskOf(model, target.ElementId);
 
         switch (actionId)
         {
@@ -258,7 +264,7 @@ public sealed class DatabricksContextActionProvider : DiagramActionProvider<Line
 
             case RemoveEdgeActionId when DatabricksSelection.TryEdge(target.ElementId, out var fromKey, out var toKey):
                 return await DispatchAsync(target, new DisconnectDatabricksTasksCommand(
-                    target.ResolvedFullPath, JobKeyFor(entry.Model, toKey), fromKey, toKey), cancellationToken);
+                    target.ResolvedFullPath, JobKeyFor(model, target, toKey), fromKey, toKey), cancellationToken);
 
             case ConnectActionId when DatabricksRelationGesture.TryParse(target.ElementId, out var from, out var to):
             {
@@ -273,7 +279,7 @@ public sealed class DatabricksContextActionProvider : DiagramActionProvider<Line
                 var fromKey = KeyOf(from);
                 var toKey = KeyOf(to);
                 return await DispatchAsync(target, new ConnectDatabricksTasksCommand(
-                    target.ResolvedFullPath, JobKeyFor(entry.Model, toKey), fromKey, toKey), cancellationToken);
+                    target.ResolvedFullPath, JobKeyFor(model, target, toKey), fromKey, toKey), cancellationToken);
             }
 
             case var _ when actionId.StartsWith(AddTaskActionPrefix, StringComparison.Ordinal)
@@ -282,7 +288,7 @@ public sealed class DatabricksContextActionProvider : DiagramActionProvider<Line
                 // The gesture already said everything an add needs - so nothing is asked, and
                 // the task appears with a fresh key. The authored drop position is the client's
                 // follow-up layout write; the computed layout places it until then.
-                var job = entry.Model.Jobs.FirstOrDefault();
+                var job = model.Jobs.FirstOrDefault();
                 if (job is null)
                 {
                     return new ContextExecutionFailed("This file declares no job to add a task to.");
@@ -300,7 +306,7 @@ public sealed class DatabricksContextActionProvider : DiagramActionProvider<Line
 
             case RenameBundleActionId when DatabricksSelection.IsBundle(target.ElementId):
                 return new ContextExecutionRequiresInput(new ContextInputRequest(
-                    "Rename bundle", "mdi-pencil-outline", "Name", entry.Model.Bundle.Name, "Rename", target.ElementId));
+                    "Rename bundle", "mdi-pencil-outline", "Name", model.Bundle.Name, "Rename", target.ElementId));
 
             case var _ when actionId.StartsWith(AddResourceActionPrefix, StringComparison.Ordinal):
                 return new ContextExecutionRequiresInput(new ContextInputRequest(
@@ -310,7 +316,7 @@ public sealed class DatabricksContextActionProvider : DiagramActionProvider<Line
                 return new ContextExecutionRequiresInput(new ContextInputRequest(
                     "Add library", "mdi-plus", "Path", "", "Add"));
 
-            case RemoveLibraryActionId when DatabricksSelection.LibraryOf(entry.Model, target.ElementId) is { } selected:
+            case RemoveLibraryActionId when DatabricksSelection.LibraryOf(model, target.ElementId) is { } selected:
                 return await DispatchAsync(target, new RemoveDatabricksLibraryCommand(
                     target.ResolvedFullPath, selected.Pipeline.Key, selected.Library.Kind, selected.Library.Path), cancellationToken);
 
@@ -352,7 +358,8 @@ public sealed class DatabricksContextActionProvider : DiagramActionProvider<Line
 
         var trimmed = value.Trim();
         var body = target.ResolvedFullPath;
-        var task = DatabricksSelection.TaskOf(model, target.ElementId);
+        var reading = DatabricksSelection.ReadingOf(model, target);
+        var task = DatabricksSelection.TaskOf(reading, target.ElementId);
 
         if (actionId.StartsWith(AddResourceActionPrefix, StringComparison.Ordinal))
         {
@@ -361,14 +368,14 @@ public sealed class DatabricksContextActionProvider : DiagramActionProvider<Line
 
         if (actionId.StartsWith(AddLibraryActionPrefix, StringComparison.Ordinal))
         {
-            var pipeline = model.Pipelines.FirstOrDefault();
+            var pipeline = reading.Pipelines.FirstOrDefault();
             return new InsertDatabricksLibraryCommand(
-                body, pipeline?.Key ?? "", actionId[AddLibraryActionPrefix.Length..], trimmed);
+                body, pipeline?.Key ?? DatabricksSelection.ResourceKeyOf(target), actionId[AddLibraryActionPrefix.Length..], trimmed);
         }
 
         if (actionId.StartsWith(AddTaskActionPrefix, StringComparison.Ordinal))
         {
-            var job = model.Jobs.FirstOrDefault();
+            var job = reading.Jobs.FirstOrDefault();
             var taskType = actionId[AddTaskActionPrefix.Length..];
             return job is null
                 ? null
@@ -417,9 +424,15 @@ public sealed class DatabricksContextActionProvider : DiagramActionProvider<Line
         ];
     }
 
-    /// <summary>The job whose task carries <paramref name="taskKey"/>; empty for the file's first.</summary>
-    private static string JobKeyFor(DatabricksModel model, string taskKey) =>
-        model.Jobs.FirstOrDefault(job => job.Tasks.Any(task => task.Key == taskKey))?.Key ?? "";
+    /// <summary>
+    /// The job of <paramref name="model"/> whose task carries <paramref name="taskKey"/>, else its first -
+    /// and where it has none, the job <paramref name="target"/>'s registration names, so a command never
+    /// falls through to another job of the file (finding B3).
+    /// </summary>
+    private static string JobKeyFor(DatabricksModel model, ContextTarget target, string taskKey) =>
+        model.Jobs.FirstOrDefault(job => job.Tasks.Any(task => task.Key == taskKey))?.Key
+        ?? model.Jobs.FirstOrDefault()?.Key
+        ?? DatabricksSelection.ResourceKeyOf(target);
 
     /// <summary>An element id's task key: <c>task:{key}</c>, or the id as given.</summary>
     private static string KeyOf(string elementId) =>

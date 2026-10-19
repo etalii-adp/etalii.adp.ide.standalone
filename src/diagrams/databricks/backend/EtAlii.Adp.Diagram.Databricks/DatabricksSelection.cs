@@ -1,4 +1,5 @@
-﻿using IoPath = System.IO.Path;
+﻿using EtAlii.Adp.Context;
+using IoPath = System.IO.Path;
 
 namespace EtAlii.Adp.Diagram.Databricks;
 
@@ -15,6 +16,53 @@ internal static class DatabricksSelection
     /// </summary>
     public static bool CouldBeFamilyFile(string path) =>
         IoPath.GetExtension(path).ToLowerInvariant() is ".yml" or ".yaml" or ".json";
+
+    /// <summary>
+    /// What of <paramref name="model"/> the registration <paramref name="target"/> was resolved through
+    /// shows (finding B3): under a job registration only the job its <c>resource:</c> header names, or
+    /// the file's first without one, and likewise for a pipeline - the one <see cref="DatabricksSession"/>
+    /// draws - so menus, rows, drops and commands act on that resource rather than the file's first.
+    /// </summary>
+    /// <remarks>
+    /// A target with no registration, and a bundle's, sees the whole file, as every target did before
+    /// targets carried their registration. A header that names nothing leaves nothing to act on, as the
+    /// session draws nothing for it.
+    /// </remarks>
+    public static DatabricksModel ReadingOf(DatabricksModel model, ContextTarget target)
+    {
+        ArgumentNullException.ThrowIfNull(model);
+        ArgumentNullException.ThrowIfNull(target);
+
+        if (target.RegistrationPath is not { Length: > 0 } registration)
+        {
+            return model;
+        }
+
+        var key = DatabricksHeaders.ReadResourceKey(registration);
+        if (target.Origin == ServiceCollectionAddDatabricksExtension.JobOrigin)
+        {
+            return model with { Jobs = Named(model.Jobs, job => job.Key, key) };
+        }
+
+        return target.Origin == ServiceCollectionAddDatabricksExtension.PipelineOrigin
+            ? model with { Pipelines = Named(model.Pipelines, pipeline => pipeline.Key, key) }
+            : model;
+
+        static IReadOnlyList<T> Named<T>(IReadOnlyList<T> candidates, Func<T, string> keyOf, string? named) =>
+            named is { Length: > 0 }
+                ? [.. candidates.Where(candidate => keyOf(candidate) == named).Take(1)]
+                : [.. candidates.Take(1)];
+    }
+
+    /// <summary>
+    /// The resource key the <c>resource:</c> header of <paramref name="target"/>'s registration names, or
+    /// empty - the file's first - without one: what a command names when the reading holds no resource.
+    /// </summary>
+    public static string ResourceKeyOf(ContextTarget target)
+    {
+        ArgumentNullException.ThrowIfNull(target);
+        return DatabricksHeaders.ReadResourceKey(target.RegistrationPath) ?? "";
+    }
 
     /// <summary>The task an id names, with the job declaring it; null when it names none.</summary>
     public static (JobModel Job, JobTask Task)? TaskOf(DatabricksModel model, string? elementId)
