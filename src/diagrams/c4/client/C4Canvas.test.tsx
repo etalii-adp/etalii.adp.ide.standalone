@@ -11,8 +11,10 @@ import {
 import { applyDelta, emptyModel, BOUNDARY_TYPE, NODE_TYPE, RELATIONSHIP_TYPE, VIEW_TYPE, type C4Model } from "./c4Model";
 import { ContextPromptSchema } from "@client/generated/context_pb";
 import type { ContextPrompt } from "@client/generated/context_pb";
+import type { ContextSource } from "@client/generated/context-contract_pb";
 import { act } from "@testing-library/react";
-import { elementSelectionOf } from "@client/canvas/selection";
+import { elementSelectionOf, elementSourceOf } from "@client/canvas/selection";
+import { placementId } from "@client/canvas/gestureIds";
 import { expectLibrarySelection } from "@client/canvas/library/testing/expectLibrarySelection";
 import { fakeContextConnection, idsPushed, pointer } from "@client/canvas/library/testing/canvasHarness";
 
@@ -61,8 +63,9 @@ vi.mock("@client/shell/context/ContextConnectionProvider", async (importOriginal
 
 const connection = fakeContextConnection({
   select,
-  executeAction: (actionId: string) => {
+  executeAction: (actionId: string, source?: ContextSource) => {
     executed.push(actionId);
+    executedSources.push(source);
     return Promise.resolve({ accepted: true, error: "" });
   },
   executeShortcut: () => Promise.resolve(shortcutOutcome),
@@ -78,6 +81,9 @@ vi.mock("@client/shell/panels/DiagramToolboxContext", async (importOriginal) => 
 
 /** Action ids the canvas asked the backend to run - what a drop and a menu choice produce. */
 const executed: string[] = [];
+
+/** What each of those was run on: the source it named, or none for the selection. */
+const executedSources: (ContextSource | undefined)[] = [];
 
 /** Positions the canvas asked the backend to record - what a completed drag produces. */
 const moves: Array<{ elementId: string; x: number; y: number }> = [];
@@ -127,6 +133,7 @@ describe("C4Canvas", () => {
   beforeEach(() => {
     select.mockClear();
     executed.length = 0;
+    executedSources.length = 0;
     moves.length = 0;
     currentLoading = false;
     currentFailed = false;
@@ -581,11 +588,14 @@ describe("C4Canvas", () => {
 
     // Assert.
     expect(executed).toEqual(["c4.add-container"]);
+    expect(executedSources).toEqual([elementSourceOf("a", props.entryId)]);
   });
 
-  it("runs the action with no element when a toolbox entry is dropped on empty canvas", () => {
+  it("runs the action on the point it landed on when a toolbox entry is dropped on empty canvas", () => {
     // No parent, so only what stands on its own can land. The backend refuses the rest and
-    // says where it should have gone - the canvas does not second-guess it.
+    // says where it should have gone - the canvas does not second-guess it. The point is named
+    // (`new:x,y`), as the background menu names it: with no source the action ran on whatever
+    // was selected, which on an empty canvas is no C4 element, and every drop there was refused.
     const { container } = render(<C4Canvas {...props} />);
 
     // Act: dropped far from every box.
@@ -593,6 +603,7 @@ describe("C4Canvas", () => {
 
     // Assert.
     expect(executed).toEqual(["c4.add-softwaresystem"]);
+    expect(executedSources).toEqual([elementSourceOf(placementId(-110, -110), props.entryId)]);
   });
 
   it("ignores a drag that is not from the toolbox", () => {
