@@ -1,5 +1,3 @@
-using System.Globalization;
-using System.Text;
 using System.Text.RegularExpressions;
 using EtAlii.Adp.Specification.Cel;
 using EtAlii.Adp.Specification.Fbl.Documents;
@@ -16,8 +14,8 @@ namespace EtAlii.Adp.Specification.Fbl.Xml;
 /// </summary>
 internal sealed partial class XmlFamily(BodyText text, FblBinding binding, FblOptions options) : FamilyReader(text, binding, options)
 {
-    private readonly List<Entry> _entries = [];
-    private readonly List<Span> _leaves = [];
+    private List<Entry> _entries = [];
+    private List<Span> _leaves = [];
     private readonly Dictionary<int, Span> _commentLines = [];
     private XmlElement? _root;
     private XmlElement? _document;
@@ -35,124 +33,27 @@ internal sealed partial class XmlFamily(BodyText text, FblBinding binding, FblOp
 
     // ---- reading ----
 
-    private sealed class XmlError(int offset, string message) : Exception(message)
-    {
-        public int Offset { get; } = offset;
-    }
-
     public override void Parse()
     {
+        var parser = new XmlParser(Text);
+        _entries = parser.Entries;
+        _leaves = parser.Leaves;
         try
         {
-            ParseDocument();
+            parser.Parse();
         }
-        catch (XmlError error)
+        catch (XmlParser.XmlError error)
         {
             Unreadable = (error.Offset, $"The body is not well-formed XML: {error.Message}");
+            return;
         }
-    }
-
-    private void ParseDocument()
-    {
-        var bytes = Text.Bytes;
-        _root = new XmlElement { IsRoot = true, Own = new Span(0, bytes.Length), Indent = 0 };
-        var stack = new Stack<XmlElement>();
-        var position = Text.BomLength;
-        while (position < bytes.Length)
+        finally
         {
-            if (bytes[position] != (byte)'<')
-            {
-                position = ReadText(position, stack.Count > 0 ? stack.Peek() : null);
-                continue;
-            }
-            if (StartsWith(position, "<?"))
-            {
-                position = Skip(position, "?>", "processing instruction");
-            }
-            else if (StartsWith(position, "<!--"))
-            {
-                var start = position;
-                position = Skip(position, "-->", "comment");
-                RememberComment(new Span(start, position));
-            }
-            else if (StartsWith(position, "<![CDATA["))
-            {
-                if (stack.Count == 0) throw new XmlError(position, "A CDATA section must be inside the document element.");
-                var start = position;
-                position = Skip(position, "]]>", "CDATA section");
-                var content = Text.Text(start + 9, position - 3);
-                stack.Peek().Content.Add(new XmlTextRun(content));
-            }
-            else if (StartsWith(position, "<!"))
-            {
-                if (_document is not null) throw new XmlError(position, "A document type declaration must come before the document element.");
-                position = SkipDeclaration(position);
-            }
-            else if (StartsWith(position, "</"))
-            {
-                position = ReadEndTag(position, stack);
-            }
-            else
-            {
-                position = ReadStartTag(position, stack);
-            }
+            _root = parser.Root;
+            _document = parser.Document;
         }
-        if (stack.Count > 0) throw new XmlError(bytes.Length, $"The element '{stack.Peek().Name}' is not closed.");
-        if (_document is null) throw new XmlError(Text.BomLength, "The body has no document element.");
+        foreach (var comment in parser.Comments) RememberComment(comment);
         foreach (var entry in _entries) entry.LineSpan = LineSpanOf(entry);
-    }
-
-    private bool StartsWith(int position, string literal)
-    {
-        if (position + literal.Length > Text.Length) return false;
-        for (var i = 0; i < literal.Length; i++)
-        {
-            if (Text.Bytes[position + i] != (byte)literal[i]) return false;
-        }
-        return true;
-    }
-
-    private int Find(int position, string literal)
-    {
-        for (var i = position; i + literal.Length <= Text.Length; i++)
-        {
-            if (StartsWith(i, literal)) return i;
-        }
-        return -1;
-    }
-
-    private int Skip(int position, string terminator, string what)
-    {
-        var end = Find(position + 2, terminator);
-        if (end < 0) throw new XmlError(position, $"The {what} is not closed.");
-        end += terminator.Length;
-        _leaves.Add(new Span(position, end));
-        return end;
-    }
-
-    private int SkipDeclaration(int position)
-    {
-        var depth = 0;
-        byte quote = 0;
-        for (var i = position + 2; i < Text.Length; i++)
-        {
-            var b = Text.Bytes[i];
-            if (quote != 0)
-            {
-                if (b == quote) quote = 0;
-                continue;
-            }
-            switch (b)
-            {
-                case (byte)'"' or (byte)'\'': quote = b; break;
-                case (byte)'[': depth++; break;
-                case (byte)']': depth--; break;
-                case (byte)'>' when depth == 0:
-                    _leaves.Add(new Span(position, i + 1));
-                    return i + 1;
-            }
-        }
-        throw new XmlError(position, "The declaration is not closed.");
     }
 
     private void RememberComment(Span comment)
@@ -162,171 +63,6 @@ internal sealed partial class XmlFamily(BodyText text, FblBinding binding, FblOp
         {
             _commentLines[line] = comment;
         }
-    }
-
-    private int ReadText(int position, XmlElement? parent)
-    {
-        var end = position;
-        while (end < Text.Length && Text.Bytes[end] != (byte)'<') end++;
-        var span = new Span(position, end);
-        if (IsWhitespace(span))
-        {
-            parent?.Content.Add(new XmlTextRun(Text.Text(span)));
-            return end;
-        }
-        if (parent is null) throw new XmlError(position, "Text must be inside the document element.");
-        _leaves.Add(span);
-        parent.Content.Add(new XmlTextRun(Decode(span, parent)));
-        return end;
-    }
-
-    /// <summary>Decodes the five predefined entities and character references; any other reference makes <paramref name="owner"/> unreadable.</summary>
-    private string Decode(Span span, XmlElement? owner)
-    {
-        var raw = Text.Text(span);
-        if (!raw.Contains('&')) return raw;
-        var builder = new StringBuilder(raw.Length);
-        for (var i = 0; i < raw.Length; i++)
-        {
-            if (raw[i] != '&')
-            {
-                builder.Append(raw[i]);
-                continue;
-            }
-            var semicolon = raw.IndexOf(';', i + 1);
-            if (semicolon < 0) throw new XmlError(span.Start, "An '&' must start a reference ending in ';'.");
-            var name = raw[(i + 1)..semicolon];
-            switch (name)
-            {
-                case "amp": builder.Append('&'); break;
-                case "lt": builder.Append('<'); break;
-                case "gt": builder.Append('>'); break;
-                case "quot": builder.Append('"'); break;
-                case "apos": builder.Append('\''); break;
-                default:
-                    if (name.StartsWith('#'))
-                    {
-                        var hex = name.StartsWith("#x", StringComparison.Ordinal);
-                        var digits = hex ? name[2..] : name[1..];
-                        if (!int.TryParse(digits, hex ? NumberStyles.AllowHexSpecifier : NumberStyles.None, CultureInfo.InvariantCulture, out var code)
-                            || code is < 1 or > 0x10FFFF or (>= 0xD800 and <= 0xDFFF))
-                        {
-                            throw new XmlError(span.Start, $"'&{name};' is not a valid character reference.");
-                        }
-                        builder.Append(char.ConvertFromUtf32(code));
-                    }
-                    else
-                    {
-                        if (owner is { Unreadable: null }) owner.Unreadable = $"It refers to the entity '&{name};', which is not one of XML's five predefined entities.";
-                        builder.Append('&').Append(name).Append(';');
-                    }
-                    break;
-            }
-            i = semicolon;
-        }
-        return builder.ToString();
-    }
-
-    private static bool IsNameByte(byte b, bool first) =>
-        b >= 0x80 || char.IsAsciiLetter((char)b) || b is (byte)'_' or (byte)':' || (!first && (char.IsAsciiDigit((char)b) || b is (byte)'-' or (byte)'.'));
-
-    private int ReadName(int position)
-    {
-        var end = position;
-        while (end < Text.Length && IsNameByte(Text.Bytes[end], end == position)) end++;
-        return end == position ? throw new XmlError(position, "A name was expected here.") : end;
-    }
-
-    private int SkipSpace(int position)
-    {
-        while (position < Text.Length && Text.Bytes[position] is (byte)' ' or (byte)'\t' or (byte)'\r' or (byte)'\n') position++;
-        return position;
-    }
-
-    private int ReadStartTag(int start, Stack<XmlElement> stack)
-    {
-        var parent = stack.Count > 0 ? stack.Peek() : null;
-        if (parent is null && _document is not null) throw new XmlError(start, "The body has a second document element.");
-        var nameEnd = ReadName(start + 1);
-        var element = new XmlElement
-        {
-            Name = Text.Text(start + 1, nameEnd),
-            NameEnd = nameEnd,
-            Own = new Span(start, nameEnd),
-            Indent = start - Text.Lines[Text.LineIndexAt(start)].Start,
-            Parent = parent ?? _root,
-        };
-        var position = nameEnd;
-        while (true)
-        {
-            var spaced = SkipSpace(position);
-            if (spaced >= Text.Length) throw new XmlError(start, $"The start tag of '{element.Name}' is not closed.");
-            if (StartsWith(spaced, "/>"))
-            {
-                element.SelfClosed = true;
-                element.Close = new Span(spaced, spaced + 2);
-                position = spaced + 2;
-                break;
-            }
-            if (Text.Bytes[spaced] == (byte)'>')
-            {
-                element.Close = new Span(spaced, spaced + 1);
-                position = spaced + 1;
-                break;
-            }
-            if (spaced == position) throw new XmlError(spaced, "Attributes must be separated by whitespace.");
-            var attributeEnd = ReadName(spaced);
-            var name = Text.Text(spaced, attributeEnd);
-            var equals = SkipSpace(attributeEnd);
-            if (equals >= Text.Length || Text.Bytes[equals] != (byte)'=') throw new XmlError(equals, $"The attribute '{name}' has no value.");
-            var open = SkipSpace(equals + 1);
-            if (open >= Text.Length || Text.Bytes[open] is not ((byte)'"' or (byte)'\'')) throw new XmlError(open, $"The value of '{name}' must be quoted.");
-            var quote = Text.Bytes[open];
-            var close = open + 1;
-            while (close < Text.Length && Text.Bytes[close] != quote)
-            {
-                if (Text.Bytes[close] == (byte)'<') throw new XmlError(close, "An attribute value cannot contain '<'.");
-                close++;
-            }
-            if (close >= Text.Length) throw new XmlError(open, $"The value of '{name}' is not closed.");
-            if (element.Attribute(name) is not null) throw new XmlError(spaced, $"The attribute '{name}' is written twice.");
-            var value = new Span(open + 1, close);
-            element.Attributes.Add(new XmlAttribute(name, new Span(spaced, close + 1), value, Decode(value, element)));
-            position = close + 1;
-        }
-        element.StartTag = new Span(start, position);
-        element.Own = element.StartTag;
-        _leaves.Add(element.StartTag);
-        _entries.Add(element);
-        if (parent is null)
-        {
-            _document = element;
-            _root!.Children.Add(element);
-        }
-        else
-        {
-            parent.Children.Add(element);
-            parent.Content.Add(element);
-        }
-        if (!element.SelfClosed) stack.Push(element);
-        return position;
-    }
-
-    private int ReadEndTag(int start, Stack<XmlElement> stack)
-    {
-        var nameEnd = ReadName(start + 2);
-        var name = Text.Text(start + 2, nameEnd);
-        var close = SkipSpace(nameEnd);
-        if (close >= Text.Length || Text.Bytes[close] != (byte)'>') throw new XmlError(start, $"The end tag of '{name}' is not closed.");
-        if (stack.Count == 0 || stack.Peek().Name != name)
-        {
-            throw new XmlError(start, stack.Count == 0 ? $"The end tag '{name}' closes nothing." : $"The end tag '{name}' does not close '{stack.Peek().Name}'.");
-        }
-        var element = stack.Pop();
-        element.EndTag = new Span(start, close + 1);
-        element.Own = element.StartTag with { End = close + 1 };
-        _leaves.Add(element.EndTag.Value);
-        return close + 1;
     }
 
     /// <summary>The line span (FBL §4.1.1): whole lines, extended upwards over comment lines at the same indentation.</summary>
