@@ -154,7 +154,7 @@ internal static class C4Disl
         if (view is not null)
         {
             elements.AddRange(view.Interactions.Select(interaction => Relation(
-                $"{interaction.SourceId}->{interaction.DestinationId}@{interaction.Line}",
+                $"interaction:{interaction.SourceId}->{interaction.DestinationId}@{interaction.Line}",
                 "Interaction",
                 interaction.SourceId,
                 interaction.DestinationId,
@@ -164,7 +164,11 @@ internal static class C4Disl
 
         var viewpoint = view is not null ? ViewpointOf(view.Kind) : DefaultViewpoint(specification);
         var model = DislModelBuilder.From(new FblModel(elements, [], false), specification, new DislEnv(Viewpoint: viewpoint), file);
-        foreach (var each in workspace.Views)
+
+        // The shown view comes first, so that it is the one its key finds (ShownView) also when an earlier
+        // view has the same key; a model of no view lists them as the workspace does.
+        IEnumerable<C4View> views = view is null ? workspace.Views : [view, .. workspace.Views.Where(each => !ReferenceEquals(each, view))];
+        foreach (var each in views)
         {
             if (model.Diagram.Views.Any(added => specification.IdComparer.Equals(added.Id, each.Key)))
             {
@@ -198,6 +202,37 @@ internal static class C4Disl
         return [.. other.Members.Select(counterparts.GetValueOrDefault).OfType<DislElement>()];
 
         static IEnumerable<DislElement> StoredRelationships(DislDiagram of) => of.Relations.Where(relation => !relation.IsDerived && relation.IsA("Relationship"));
+    }
+
+    /// <summary>The view <paramref name="diagram"/> shows, of a model built for <paramref name="view"/>: the first of its key.</summary>
+    public static DislView ShownView(DislDiagram diagram, C4View view)
+    {
+        ArgumentNullException.ThrowIfNull(diagram);
+        ArgumentNullException.ThrowIfNull(view);
+        return diagram.Views.First(each => diagram.Specification.IdComparer.Equals(each.Id, view.Key));
+    }
+
+    /// <summary>
+    /// The workspace's element each node of <paramref name="diagram"/> was built from: a node by its place
+    /// among the nodes, as <see cref="Build(C4Workspace, C4View?, DislSpecification, string)"/> adds them in the
+    /// workspace's order, so that of two elements of one identifier each is its own.
+    /// </summary>
+    public static IReadOnlyDictionary<DislElement, C4Element> ElementsOf(DislDiagram diagram, C4Workspace workspace)
+    {
+        ArgumentNullException.ThrowIfNull(diagram);
+        ArgumentNullException.ThrowIfNull(workspace);
+        var elements = new Dictionary<DislElement, C4Element>(ReferenceEqualityComparer.Instance);
+        foreach ((DislElement node, C4Element element) in diagram.Nodes.Where(node => !node.IsA("IncludedFile")).Zip(workspace.Elements))
+        {
+            if (!string.Equals(node.Id, element.Id, StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException($"The model's node '{node.Id}' is not the workspace's element '{element.Id}' in its place.");
+            }
+
+            elements[node] = element;
+        }
+
+        return elements;
     }
 
     /// <summary>
@@ -307,7 +342,7 @@ internal static class C4Disl
         new(id, false, type, type, true, attributes, null, null, source, target, default, (int)line);
 
     /// <summary>The text <paramref name="relation"/>'s <paramref name="end"/> is written with, also when it names no element.</summary>
-    private static string WrittenEndOf(object? relation, string? end) => relation is DislElement { Type.IsRelation: true } element && end is "source" or "target"
+    public static string WrittenEndOf(object? relation, string? end) => relation is DislElement { Type.IsRelation: true } element && end is "source" or "target"
         ? (end == "source" ? element.SourceId ?? element.Source?.Id : element.TargetId ?? element.Target?.Id) ?? ""
         : throw new CelException("writtenEnd() takes a relationship or an interaction of this model and 'source' or 'target'.");
 }

@@ -79,7 +79,7 @@ public class C4DynamicAndDeploymentViewsTests
             """;
 
         // Act.
-        var problems = C4RuleSet.Validate(C4Parser.Parse(LineDocument.Parse(dsl)));
+        var problems = C4Findings.Of(C4Parser.Parse(LineDocument.Parse(dsl)));
 
         // Assert.
         Assert.Contains(problems, problem => problem.RuleId == C4Rules.EmptyView);

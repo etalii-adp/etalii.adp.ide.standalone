@@ -381,7 +381,7 @@ public class C4ElementMapperTests
         // The same missing description, reported the one way it should be.
         var dsl = Sample.Replace("person \"Customer\" \"A retail banking customer.\"", "person \"Customer\"", StringComparison.Ordinal);
 
-        var problems = C4RuleSet.Validate(C4Parser.Parse(LineDocument.Parse(dsl)));
+        var problems = C4Findings.Of(C4Parser.Parse(LineDocument.Parse(dsl)));
 
         // Act and assert, step by step.
         var problem = Assert.Single(problems, p => p.RuleId == C4Rules.MissingDescription);

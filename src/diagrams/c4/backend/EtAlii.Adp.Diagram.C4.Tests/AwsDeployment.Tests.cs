@@ -134,7 +134,7 @@ public class AwsDeploymentTests
         // And the software system itself is in no relationship. Its two containers talk to
         // each other, which says nothing about where the system sits in a landscape, so
         // nothing places it - `model.element.disconnected`, which Structurizr reports here too.
-        var reported = C4RuleSet.Validate(Workspace)
+        var reported = C4Findings.Of(Workspace)
             .Where(problem => problem.RuleId != C4Rules.EmptyView)
             .Select(problem => problem.RuleId)
             .Distinct()

@@ -1,9 +1,10 @@
-namespace EtAlii.Adp.Diagram.C4;
+namespace EtAlii.Adp.Diagram.C4.Tests.Parity;
 
 /// <summary>
-/// The C4 rules, as a pure function from a parsed workspace to the problems in it. No file, no
-/// canvas, no connection - so every rule is testable from a plain string of DSL, which is what
-/// the spec's non-functional requirements ask for (c4-diagrams Requirement 10).
+/// The C4 rules as the module wrote them by hand before its findings, a view's members and its lines
+/// were derived from the six DISL definitions (c4-disl-fbl tasks 9 and 10), kept verbatim as the oracle
+/// the derived ones are compared with: as a pure function from a parsed workspace to the problems in
+/// it, and <see cref="MembersOf"/>, what a view shows.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -19,7 +20,7 @@ namespace EtAlii.Adp.Diagram.C4;
 /// (Requirement 4.8).
 /// </para>
 /// </remarks>
-public static class C4RuleSet
+internal static class C4RuleSet
 {
 
     /// <summary>What each kind must sit inside, or null when it sits at the top of the model.</summary>

@@ -7,7 +7,9 @@ namespace EtAlii.Adp.Diagram.C4.Tests.Parity;
 /// The palette, the context menus and the property rows as the C4 module wrote them by hand before
 /// they were derived from its six DISL definitions (c4-disl-fbl task 7), kept verbatim from
 /// <c>C4ToolboxProvider</c>, <c>C4ContextActionProvider.Discover</c> and <c>C4ContextPropertyProvider.Describe</c>
-/// as the oracle the derived ones are compared with, per document, view and element.
+/// as the oracle the derived ones are compared with, per document, view and element; and what a view
+/// draws - its lines, its title and its legend - as <c>C4ElementMapper</c> computed it before task 10,
+/// over the members <see cref="C4RuleSet.MembersOf"/> gives.
 /// </summary>
 /// <remarks>
 /// The hand-written menus and rows read the parsed workspace alone: they did not depend on the view a
@@ -221,5 +223,152 @@ internal static class HandWrittenC4
         return workspace.Find(elementId) is { } element
             ? (element, null)
             : (null, workspace.Relationships.FirstOrDefault(candidate => candidate.Id == elementId));
+    }
+
+    /// <summary>
+    /// The lines <paramref name="view"/> draws, as <c>C4ElementMapper.RelationshipsOf</c> computed them, each as
+    /// its id, its two ends, its description, its technology and its order, over a layout that gives
+    /// every member a box.
+    /// </summary>
+    public static IReadOnlyList<C4DrawnLine> Lines(C4Workspace workspace, C4View view)
+    {
+        var members = C4RuleSet.MembersOf(workspace, view);
+        var boxes = members.Select(element => element.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var lines = new List<C4DrawnLine>();
+        if (view.Kind == C4ViewKind.Dynamic)
+        {
+            // A dynamic view draws the interactions it declares, in their order, rather than
+            // every relationship the model happens to carry.
+            foreach (var interaction in view.Interactions)
+            {
+                if (boxes.Contains(interaction.SourceId) && boxes.Contains(interaction.DestinationId))
+                {
+                    lines.Add(new C4DrawnLine($"{interaction.SourceId}->{interaction.DestinationId}@{interaction.Line}", interaction.SourceId, interaction.DestinationId, interaction.Description, "", interaction.Order));
+                }
+            }
+
+            return lines;
+        }
+
+        if (view.Kind == C4ViewKind.Deployment)
+        {
+            // A deployment view draws what its instances imply: the relationships are declared
+            // between containers, which the view never shows, so each is drawn between their
+            // instances instead - plus whatever the deployment elements declare themselves.
+            foreach (var relationship in C4LayoutEngine.DeploymentRelationshipsOf(workspace, members))
+            {
+                if (boxes.Contains(relationship.SourceId) && boxes.Contains(relationship.DestinationId))
+                {
+                    lines.Add(Line(relationship));
+                }
+            }
+
+            return lines;
+        }
+
+        // Relationships are *elevated* to the level the view shows. A container talking to an
+        // external system is, at the system level, that system talking to it.
+        var drawn = new HashSet<(string, string)>();
+        foreach (var relationship in workspace.Relationships)
+        {
+            var sourceId = NearestShown(workspace, boxes, relationship.SourceId);
+            var destinationId = NearestShown(workspace, boxes, relationship.DestinationId);
+            if (sourceId is null || destinationId is null || string.Equals(sourceId, destinationId, StringComparison.OrdinalIgnoreCase))
+            {
+                // Both ends inside one shown element is that element talking to itself, which
+                // is a detail the view has zoomed out past.
+                continue;
+            }
+
+            // Several elevated relationships can collapse onto one pair; one line is enough.
+            if (!drawn.Add((sourceId, destinationId)))
+            {
+                continue;
+            }
+
+            var elevated = string.Equals(sourceId, relationship.SourceId, StringComparison.OrdinalIgnoreCase)
+                && string.Equals(destinationId, relationship.DestinationId, StringComparison.OrdinalIgnoreCase)
+                ? relationship
+                : relationship with { SourceId = sourceId, DestinationId = destinationId };
+            lines.Add(Line(elevated));
+        }
+
+        return lines;
+
+        static C4DrawnLine Line(C4Relationship relationship) =>
+            new(relationship.Id, relationship.SourceId, relationship.DestinationId, relationship.Description, relationship.Technology, "");
+    }
+
+    /// <summary>
+    /// The element the view draws for <paramref name="id"/>: itself when it is on the view, else the
+    /// nearest ancestor that is; null when nothing in its chain appears.
+    /// </summary>
+    private static string? NearestShown(C4Workspace workspace, HashSet<string> boxes, string id)
+    {
+        var current = workspace.Find(id);
+        while (current is not null)
+        {
+            if (boxes.Contains(current.Id))
+            {
+                return current.Id;
+            }
+
+            current = current.ParentId is { } parentId ? workspace.Find(parentId) : null;
+        }
+
+        return null;
+    }
+
+    /// <summary>The title, as <c>C4ElementMapper.TitleOf</c> worded it: "&lt;type&gt; diagram for &lt;scope&gt;", a declared title winning.</summary>
+    public static string Title(C4Workspace workspace, C4View view)
+    {
+        if (view.Title is { Length: > 0 } declared)
+        {
+            return declared;
+        }
+
+        var kind = view.Kind switch
+        {
+            C4ViewKind.SystemLandscape => "System Landscape",
+            C4ViewKind.SystemContext => "System Context",
+            C4ViewKind.Container => "Container",
+            C4ViewKind.Component => "Component",
+            C4ViewKind.Dynamic => "Dynamic",
+            C4ViewKind.Deployment => "Deployment",
+            _ => view.Kind.ToString(),
+        };
+
+        var scope = view.ScopeId is { } id ? workspace.Find(id)?.Name : null;
+        if (view.Kind == C4ViewKind.SystemLandscape)
+        {
+            return workspace.Name.Length > 0 ? $"System Landscape diagram for {workspace.Name}" : "System Landscape diagram";
+        }
+
+        if (view is { Kind: C4ViewKind.Deployment, Environment: { Length: > 0 } environment })
+        {
+            return scope is { Length: > 0 } ? $"Deployment diagram for {scope} - {environment}" : $"Deployment diagram - {environment}";
+        }
+
+        return scope is { Length: > 0 } ? $"{kind} diagram for {scope}" : $"{kind} diagram";
+    }
+
+    /// <summary>The key, as <c>C4ElementMapper.LegendFor</c> built it: one entry per kind among the members, in their order, with the first member it stands for.</summary>
+    public static IReadOnlyList<C4LegendItem> Legend(C4Workspace workspace, C4View view)
+    {
+        var entries = new List<C4LegendItem>();
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var element in C4RuleSet.MembersOf(workspace, view))
+        {
+            var label = element.IsExternal
+                ? $"{C4Theme.KindTag(element.Kind)} (external)"
+                : C4Theme.KindTag(element.Kind);
+
+            if (seen.Add(label))
+            {
+                entries.Add(new C4LegendItem(label, element));
+            }
+        }
+
+        return entries;
     }
 }

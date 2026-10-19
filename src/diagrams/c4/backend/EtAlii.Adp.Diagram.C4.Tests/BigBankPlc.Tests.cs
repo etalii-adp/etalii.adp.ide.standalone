@@ -199,7 +199,7 @@ public class BigBankPlcTests
         // it a good round-trip fixture - and not about quality. What is asserted now is the
         // set of rules reported, so a *new* kind of complaint fails this test while the known
         // ones do not.
-        var reported = C4RuleSet.Validate(Workspace)
+        var reported = C4Findings.Of(Workspace)
             .Where(problem => problem.RuleId != C4Rules.EmptyView)
             .Select(problem => problem.RuleId)
             .Distinct()
@@ -223,7 +223,7 @@ public class BigBankPlcTests
         // are recommendations rather than syntax faults, and that divergence is a decision on
         // the record rather than an accident (quality-gates Requirement 1.9).
         Assert.All(
-            C4RuleSet.Validate(Workspace),
+            C4Findings.Of(Workspace),
             problem => Assert.Equal(DiagramProblemSeverity.Warning, problem.Severity));
     }
 }

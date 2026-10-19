@@ -99,7 +99,7 @@ public sealed class C4ContextSourceResolver : DiagramElementSourceResolver<LineD
     /// <summary>
     /// The relationship a drawn relationship id names - the model's own, or one the view ELEVATED: a
     /// view that does not show an end draws the line to that end's nearest shown ancestor (see
-    /// <c>C4ElementMapper.RelationshipsOf</c>), so a component view draws <c>spa -> api</c> as
+    /// <see cref="C4Definitions.Drawing"/>), so a component view draws <c>spa -> api</c> as
     /// <c>spa->tracking@88</c>. Its id is then in no model relationship, and a lookup of the model's alone
     /// refused every elevated line, so none could be selected (centralized-selection task 26). Returned
     /// with the drawn ends, so the detail names what the user pressed.

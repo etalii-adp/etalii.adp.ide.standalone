@@ -10,10 +10,15 @@ namespace EtAlii.Adp.Diagram.C4.Tests;
 /// file, no canvas, no connection (c4-diagrams Requirement 10 and its non-functional
 /// requirements).
 /// </summary>
-public class C4RuleSetTests
+/// <remarks>
+/// Written against <c>C4RuleSet</c> and kept, since c4-disl-fbl task 10, against what the module reports
+/// in its place: the findings derived from the definitions (<see cref="C4Findings"/>). The hand-written
+/// rule set is the oracle in <c>Parity/</c>, compared with the derived findings over the parity corpus.
+/// </remarks>
+public class C4FindingsTests
 {
     private static IReadOnlyList<DiagramProblem> Validate(string dsl) =>
-        C4RuleSet.Validate(C4Parser.Parse(LineDocument.Parse(dsl)));
+        C4Findings.Of(C4Parser.Parse(LineDocument.Parse(dsl)));
 
     private static string[] RuleIds(string dsl) => Validate(dsl).Select(problem => problem.RuleId).ToArray();
 
@@ -606,16 +611,58 @@ public class C4RuleSetTests
     }
 
     [Fact]
-    public void PermittedKinds_MatchWhatEachC4ViewShows()
+    public void IncludeEverything_ShowsTheKindsEachC4ViewPermits()
     {
-        // Arrange, act and assert.
-        Assert.Equal([C4ElementKind.Person, C4ElementKind.SoftwareSystem], C4RuleSet.PermittedKinds(C4ViewKind.SystemContext));
-        Assert.Equal([C4ElementKind.Person, C4ElementKind.SoftwareSystem], C4RuleSet.PermittedKinds(C4ViewKind.SystemLandscape));
-        Assert.Contains(C4ElementKind.Container, C4RuleSet.PermittedKinds(C4ViewKind.Container));
-        Assert.DoesNotContain(C4ElementKind.Component, C4RuleSet.PermittedKinds(C4ViewKind.Container));
-        Assert.Contains(C4ElementKind.Component, C4RuleSet.PermittedKinds(C4ViewKind.Component));
-        Assert.Contains(C4ElementKind.DeploymentNode, C4RuleSet.PermittedKinds(C4ViewKind.Deployment));
-        Assert.DoesNotContain(C4ElementKind.Person, C4RuleSet.PermittedKinds(C4ViewKind.Deployment));
+        // Arrange.
+        var dsl = """
+            workspace {
+                model {
+                    u = person "User"
+                    x = softwareSystem "Other"
+                    s = softwareSystem "System" {
+                        web = container "Web" {
+                            api = component "Api"
+                        }
+                    }
+                    live = deploymentEnvironment "Live" {
+                        server = deploymentNode "Server" {
+                            balancer = infrastructureNode "Balancer"
+                            containerInstance web
+                        }
+                    }
+                }
+                views {
+                    systemContext s "context" {
+                        include *
+                    }
+                    systemLandscape "landscape" {
+                        include *
+                    }
+                    container s "containers" {
+                        include *
+                    }
+                    component web "components" {
+                        include *
+                    }
+                    deployment * "Live" "deployment" {
+                        include *
+                    }
+                }
+            }
+            """;
+        var workspace = C4Parser.Parse(LineDocument.Parse(dsl));
+
+        // Act.
+        C4ElementKind[] Shown(string key) => [.. C4Findings.MembersOf(workspace, workspace.FindView(key)!).Select(element => element.Kind).Distinct().Order()];
+
+        // Assert.
+        Assert.Equal([C4ElementKind.Person, C4ElementKind.SoftwareSystem], Shown("context"));
+        Assert.Equal([C4ElementKind.Person, C4ElementKind.SoftwareSystem], Shown("landscape"));
+        Assert.Contains(C4ElementKind.Container, Shown("containers"));
+        Assert.DoesNotContain(C4ElementKind.Component, Shown("containers"));
+        Assert.Contains(C4ElementKind.Component, Shown("components"));
+        Assert.Contains(C4ElementKind.DeploymentNode, Shown("deployment"));
+        Assert.DoesNotContain(C4ElementKind.Person, Shown("deployment"));
     }
 
     [Fact]

@@ -8,7 +8,7 @@ namespace EtAlii.Adp.Diagram.C4;
 /// <para>
 /// A <b>default</b>, not a rule. C4 states it is notation independent and that the familiar
 /// blue and grey "isn't something that is dictated by the C4 model", so a document's own
-/// <c>styles</c> block overrides any of this, and no rule in <see cref="C4RuleSet"/> is
+/// <c>styles</c> block overrides any of this, and no rule of the definitions (<see cref="C4Definitions"/>) is
 /// expressed in terms of colour (c4-diagrams Requirement 4.8).
 /// </para>
 /// <para>

@@ -128,7 +128,7 @@ public sealed class C4ContextActionProvider(IHistoryStackStore historyStacks, IC
     /// </summary>
     /// <remarks>
     /// A missing description, technology or relationship label is deliberately *accepted* here.
-    /// C4 asks for all three, and <see cref="C4RuleSet"/> reports each as a warning - but a
+    /// C4 asks for all three, and <see cref="C4Definitions.Problems"/> reports each as a warning - but a
     /// model mid-edit is routinely incomplete, and refusing the keystroke would make the rule a
     /// blocker rather than the guidance Requirement 10.7 says it is.
     /// </remarks>

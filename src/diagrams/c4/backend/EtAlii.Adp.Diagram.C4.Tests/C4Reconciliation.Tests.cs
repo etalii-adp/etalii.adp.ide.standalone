@@ -56,7 +56,7 @@ public class C4ReconciliationTests
         // for four of Structurizr's. Expanding ADP's one report into all four would claim ADP
         // had reported a missing component description because it reported a missing person
         // description - a disagreement invented by the comparison rather than found by it.
-        var adp = C4RuleSet.Validate(Parse(fixture))
+        var adp = C4Findings.Of(Parse(fixture))
             .Select(problem => problem.RuleId)
             .Where(C4StructurizrMirror.MirroredRules.ContainsKey)
             .ToHashSet(StringComparer.Ordinal);
