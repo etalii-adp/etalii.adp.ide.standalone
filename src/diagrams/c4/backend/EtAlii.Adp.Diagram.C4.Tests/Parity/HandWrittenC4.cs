@@ -149,7 +149,7 @@ internal static class HandWrittenC4
         AddableKinds
             .Where(kind => C4Placement.Refuse(C4Workspace.Empty, kind, parentId: "") is null)
             .Where(kind => FitsInside(kind, parent))
-            .Select(kind => new ContextActionDefinition($"c4.add-{kind.ToString().ToLowerInvariant()}", $"Add {SpellAdd(kind).ToLowerInvariant()}&", "mdi-plus"))
+            .Select(kind => new ContextActionDefinition($"c4.add-{kind.ToString().ToLowerInvariant()}", $"Add {SpellAdd(kind).ToLowerInvariant()}…", "mdi-plus"))
             .ToArray();
 
     private static bool FitsInside(C4ElementKind kind, C4Element? parent) => kind switch

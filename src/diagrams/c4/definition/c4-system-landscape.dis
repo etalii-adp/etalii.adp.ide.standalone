@@ -2258,18 +2258,18 @@
             "kind": "operation",
             "operation": "addPerson",
             "group": "g1",
-            "label": "Add person&",
+            "label": "Add person…",
             "icon": "mdi-plus"
           },
           {
             "kind": "operation",
             "operation": "addSoftwareSystem",
             "group": "g1",
-            "label": "Add software system&",
+            "label": "Add software system…",
             "icon": "mdi-plus"
           }
         ],
-        "doc": "The empty canvas offers the two kinds that need no parent. The labels end in a literal `&`, as the tool's do today (finding A14)."
+        "doc": "The empty canvas offers the two kinds that need no parent. The labels end in an ellipsis, as every label that asks for a value does; they ended in a literal `&` until finding A14 of the standalone tool's c4-disl-fbl specification was fixed."
       }
     ]
   },
@@ -2941,7 +2941,7 @@
         ]
       },
       "addPerson": {
-        "label": "Add person&",
+        "label": "Add person…",
         "icon": "mdi-plus",
         "params": {
           "name": {
@@ -2970,7 +2970,7 @@
         "doc": "Added at the top of the model, from the empty canvas's menu or wherever the tool was dropped, so it names no `for`."
       },
       "addSoftwareSystem": {
-        "label": "Add software system&",
+        "label": "Add software system…",
         "icon": "mdi-plus",
         "params": {
           "name": {
