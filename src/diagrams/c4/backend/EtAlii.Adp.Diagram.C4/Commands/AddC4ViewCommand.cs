@@ -8,6 +8,12 @@ namespace EtAlii.Adp.Diagram.C4;
 /// Adds a view to an existing model, and the <c>.adp</c> that opens it. This is what makes a
 /// second diagram of one model - the "model once, view many" of Requirement 2.7.
 /// </summary>
+/// <remarks>
+/// This command and its inverse <see cref="RemoveC4ViewCommand"/> stay module code: they stand in
+/// for gap C8 of c4-disl-fbl, because an FBL block rule has no <c>insert</c>, so no binding can add
+/// a view block, and FBL creates a registration only for a new document or at a first placement
+/// (finding B24, Requirement 6.5). The six definitions' companions name them so.
+/// </remarks>
 /// <param name="BodyPath">The <c>.dsl</c> the view is appended to.</param>
 /// <param name="RegistrationPath">The <c>.adp</c> to create, naming that body and this view.</param>
 /// <param name="MimeType">The C4 type the registration declares.</param>
