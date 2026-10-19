@@ -12,8 +12,8 @@ namespace EtAlii.Adp.TestSupport;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>Seen to fail with <see cref="DiagramDocumentReloader{TStore}.BodyDeleted"/> routed to
-/// <c>Reload</c></b>, which is what the interface's default does: the reload finds no file, keeps the
+/// <b>Seen to fail with <see cref="DiagramDocumentReloader{TStore}.BodyDeletedAsync"/> routed to
+/// <c>ReloadAsync</c></b>, which is what the interface's default does: the reload finds no file, keeps the
 /// last good document, and the deleted diagram stays open with its old elements.
 /// </para>
 /// <para>

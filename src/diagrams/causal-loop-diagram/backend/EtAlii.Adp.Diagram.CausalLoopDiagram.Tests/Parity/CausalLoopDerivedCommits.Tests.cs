@@ -148,7 +148,7 @@ public class CausalLoopDerivedCommitsTests
             yield return (link, CausalLoopContextPropertyProvider.LinkFromProperty, Nobody);
         }
 
-        var entry = new CausalLoopMemoryStore { [Path] = text }.GetOrLoad(Path);
+        var entry = new CausalLoopMemoryStore { [Path] = text }.Get(Path)!;
         foreach (var loop in model.Loops)
         {
             yield return (loop.Id, "causal-loop.loop-name", "Parity name");

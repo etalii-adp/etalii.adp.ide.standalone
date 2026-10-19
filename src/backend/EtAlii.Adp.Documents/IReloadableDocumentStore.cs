@@ -5,7 +5,7 @@ namespace EtAlii.Adp.Documents;
 /// changed on disk and tell every session showing it (backend-centralization R6).
 /// </summary>
 /// <remarks>
-/// A module's store interface extends this rather than declaring its own <c>Reload</c>, so
+/// A module's store interface extends this rather than declaring its own <c>ReloadAsync</c>, so
 /// <c>RestoreDocumentCommand&lt;TStore&gt;</c> can restore that module's files without the module
 /// copying the command.
 /// </remarks>
@@ -16,16 +16,6 @@ public interface IReloadableDocumentStore
     /// ignore this while its own save of that path is in flight: its own write on disk is not an
     /// external change, and must not bounce back as one.
     /// </summary>
-    void Reload(string path);
-
-    /// <inheritdoc cref="Reload"/>
-    /// <remarks>
-    /// Read without holding a thread (code-structure FR-050). A store that has not moved to the
-    /// asynchronous reads yet answers through <see cref="Reload"/>, until every store has (T283).
-    /// </remarks>
-    Task ReloadAsync(string path, CancellationToken cancellationToken)
-    {
-        Reload(path);
-        return Task.CompletedTask;
-    }
+    /// <remarks>Read without holding a thread (code-structure FR-050).</remarks>
+    Task ReloadAsync(string path, CancellationToken cancellationToken);
 }

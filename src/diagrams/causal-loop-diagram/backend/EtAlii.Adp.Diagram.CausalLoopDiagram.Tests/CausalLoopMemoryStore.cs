@@ -23,13 +23,9 @@ internal sealed class CausalLoopMemoryStore : ICausalLoopDocumentStore
         init => _texts[path] = value;
     }
 
-    public DocumentEntry<CausalLoopBody, CausalLoopModel> GetOrLoad(string path)
-    {
-        var body = CausalLoopBody.Parse(_texts[path]);
-        return new DocumentEntry<CausalLoopBody, CausalLoopModel>(body, body.Read());
-    }
+    public ValueTask<DocumentEntry<CausalLoopBody, CausalLoopModel>> GetOrLoadAsync(string path, CancellationToken cancellationToken) => ValueTask.FromResult(Open(path));
 
-    public DocumentEntry<CausalLoopBody, CausalLoopModel>? Get(string path) => _texts.ContainsKey(path) ? GetOrLoad(path) : null;
+    public DocumentEntry<CausalLoopBody, CausalLoopModel>? Get(string path) => _texts.ContainsKey(path) ? Open(path) : null;
 
     public Task<DocumentSaveResult> SaveAsync(string path, CausalLoopBody document, CancellationToken cancellationToken)
     {
@@ -38,13 +34,21 @@ internal sealed class CausalLoopMemoryStore : ICausalLoopDocumentStore
         return Task.FromResult(DocumentSaveResult.Ok);
     }
 
-    public void Reload(string path)
-    {
-    }
+    public Task ReloadAsync(string path, CancellationToken cancellationToken) => Task.CompletedTask;
 
-    public void BodyDeleted(string path) => _texts.Remove(path);
+    public Task BodyDeletedAsync(string path, CancellationToken cancellationToken)
+    {
+        _texts.Remove(path);
+        return Task.CompletedTask;
+    }
 
     public void Forget(string path)
     {
+    }
+
+    private DocumentEntry<CausalLoopBody, CausalLoopModel> Open(string path)
+    {
+        var body = CausalLoopBody.Parse(_texts[path]);
+        return new DocumentEntry<CausalLoopBody, CausalLoopModel>(body, body.Read());
     }
 }

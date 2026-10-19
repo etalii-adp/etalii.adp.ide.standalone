@@ -61,14 +61,6 @@ public sealed class PipelineDocumentStore : IPipelineDocumentStore
 
     public event EventHandler<DocumentChangedEventArgs>? Changed;
 
-    private DocumentEntry<PipelineBody, PipelineModel> GetOrLoad(string rootPath, string path)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(rootPath);
-        ArgumentException.ThrowIfNullOrWhiteSpace(path);
-        _roots[path] = rootPath;
-        return _lifecycle.GetOrLoad(path);
-    }
-
     public ValueTask<DocumentEntry<PipelineBody, PipelineModel>> GetOrLoadAsync(string rootPath, string path, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(rootPath);
@@ -84,8 +76,8 @@ public sealed class PipelineDocumentStore : IPipelineDocumentStore
     /// <returns><see cref="DocumentSaveResult.Ok"/> when it was written, or a failure whose <see cref="DocumentSaveResult.Error"/> says why it was not (backend-centralization R3.1).</returns>
     /// <remarks>
     /// <b>The entry is a parameter rather than something this looked up, and that is the fix for a
-    /// data-loss defect.</b> It used to call <see cref="GetOrLoad"/> itself, so it wrote whatever was
-    /// in the cache at save time - and a <see cref="IReloadableDocumentStore.Reload"/> replaced that entry. A reload landing between a
+    /// data-loss defect.</b> It used to call <c>GetOrLoad</c> itself, so it wrote whatever was
+    /// in the cache at save time - and a <see cref="IReloadableDocumentStore.ReloadAsync"/> replaced that entry. A reload landing between a
     /// command's edit and its save therefore discarded the edit and REPORTED SUCCESS, which put the
     /// command's inverse on the undo stack for a change that never happened. Passing the entry makes
     /// that ordering unrepresentable: what the caller edited is what gets written.
@@ -151,7 +143,7 @@ public sealed class PipelineDocumentStore : IPipelineDocumentStore
         return PipelineBody.Open(bytes, new PipelineReadContext(path, Resolver(rootPath)));
     }
 
-    public void Reload(string path)
+    public async Task ReloadAsync(string path, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
 
@@ -161,33 +153,7 @@ public sealed class PipelineDocumentStore : IPipelineDocumentStore
 
         // A document never opened has no root to resolve its templates against, and nothing open
         // on it to tell: its first open reads it then.
-        if (_roots.ContainsKey(path) && _lifecycle.Reload(path))
-        {
-            OnChanged(path);
-        }
-    }
-
-    public async Task ReloadAsync(string path, CancellationToken cancellationToken)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(path);
-
-        // As Reload says: the change may have been a template, and an unopened document has no root.
-        ForgetTemplates();
         if (_roots.ContainsKey(path) && await _lifecycle.ReloadAsync(path, cancellationToken))
-        {
-            OnChanged(path);
-        }
-    }
-
-    public void BodyDeleted(string path)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(path);
-
-        // A body already back is re-read by the lifecycle, and what it says may rest on templates
-        // that changed with it - so the resolvers are dropped here as they are for a reload.
-        ForgetTemplates();
-
-        if (_roots.ContainsKey(path) && _lifecycle.BodyDeleted(path))
         {
             OnChanged(path);
         }
@@ -197,7 +163,8 @@ public sealed class PipelineDocumentStore : IPipelineDocumentStore
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
 
-        // As BodyDeleted says: a body already back may rest on templates that changed with it.
+        // A body already back is re-read by the lifecycle, and what it says may rest on templates
+        // that changed with it - so the resolvers are dropped here as they are for a reload.
         ForgetTemplates();
         if (_roots.ContainsKey(path) && await _lifecycle.BodyDeletedAsync(path, cancellationToken))
         {
@@ -228,8 +195,6 @@ public sealed class PipelineDocumentStore : IPipelineDocumentStore
             remove => documents.Changed -= value;
         }
 
-        public DocumentEntry<PipelineBody, PipelineModel> GetOrLoad(string path) => documents.GetOrLoad(rootPath, path);
-
         public ValueTask<DocumentEntry<PipelineBody, PipelineModel>> GetOrLoadAsync(string path, CancellationToken cancellationToken) =>
             documents.GetOrLoadAsync(rootPath, path, cancellationToken);
 
@@ -241,10 +206,6 @@ public sealed class PipelineDocumentStore : IPipelineDocumentStore
             var entry = await documents.GetOrLoadAsync(rootPath, path, cancellationToken) with { Document = document };
             return await documents.SaveAsync(rootPath, path, entry, cancellationToken);
         }
-
-        public void Reload(string path) => documents.Reload(path);
-
-        public void BodyDeleted(string path) => documents.BodyDeleted(path);
 
         public Task ReloadAsync(string path, CancellationToken cancellationToken) => documents.ReloadAsync(path, cancellationToken);
 

@@ -114,7 +114,7 @@ public class WarningDocumentStore<TBody, TModel>(IDiagramDocumentStore<TBody, TM
     }
 
     /// <inheritdoc />
-    public DocumentEntry<TBody, TModel> GetOrLoad(string path) => inner.GetOrLoad(path);
+    public ValueTask<DocumentEntry<TBody, TModel>> GetOrLoadAsync(string path, CancellationToken cancellationToken) => inner.GetOrLoadAsync(path, cancellationToken);
 
     /// <inheritdoc />
     public DocumentEntry<TBody, TModel>? Get(string path) => inner.Get(path);
@@ -127,10 +127,10 @@ public class WarningDocumentStore<TBody, TModel>(IDiagramDocumentStore<TBody, TM
     }
 
     /// <inheritdoc />
-    public void Reload(string path) => inner.Reload(path);
+    public Task ReloadAsync(string path, CancellationToken cancellationToken) => inner.ReloadAsync(path, cancellationToken);
 
     /// <inheritdoc />
-    public void BodyDeleted(string path) => inner.BodyDeleted(path);
+    public Task BodyDeletedAsync(string path, CancellationToken cancellationToken) => inner.BodyDeletedAsync(path, cancellationToken);
 
     /// <inheritdoc />
     public void Forget(string path) => inner.Forget(path);

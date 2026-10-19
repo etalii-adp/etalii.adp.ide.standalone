@@ -30,12 +30,12 @@ public class WritableDocumentLifecycleTests : IDisposable
         // is what notices if someone writes it anyway, inside the save.
         var path = Write("plan.note", "before");
         var lifecycle = Lifecycle();
-        var note = lifecycle.GetOrLoad(path);
+        var note = await lifecycle.GetOrLoadAsync(path, TestContext.Current.CancellationToken);
         note.Text = "edited";
 
         // The notification for an EARLIER write of this same file lands now. The reload reads
         // "before" and installs a new document, so the cache no longer holds the edited one.
-        var reloaded = lifecycle.Reload(path);
+        var reloaded = await lifecycle.ReloadAsync(path, TestContext.Current.CancellationToken);
         Assert.True(reloaded);
         Assert.NotSame(note, lifecycle.Get(path));
 
@@ -55,13 +55,13 @@ public class WritableDocumentLifecycleTests : IDisposable
         var path = Write("plan.note", "before");
         bool? reloadedDuringSave = null;
         WritableDocumentLifecycle<Note>? lifecycle = null;
-        lifecycle = Lifecycle(write: (destination, text, cancellationToken) =>
+        lifecycle = Lifecycle(write: async (destination, text, cancellationToken) =>
         {
             // ReSharper disable once AccessToModifiedClosure - Reason: Used in a test case which is acceptable.
-            reloadedDuringSave = lifecycle!.Reload(destination);
-            return new FileWriter().SaveAsync(destination, text, cancellationToken);
+            reloadedDuringSave = await lifecycle!.ReloadAsync(destination, cancellationToken);
+            await new FileWriter().SaveAsync(destination, text, cancellationToken);
         });
-        var note = lifecycle.GetOrLoad(path);
+        var note = await lifecycle.GetOrLoadAsync(path, TestContext.Current.CancellationToken);
         note.Text = "edited";
 
         var saved = await lifecycle.SaveAsync(path, note, TestContext.Current.CancellationToken);
@@ -71,10 +71,8 @@ public class WritableDocumentLifecycleTests : IDisposable
         Assert.Same(note, lifecycle.Get(path));
     }
 
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task AReloadForItsOwnSave_ArrivingAfterTheSaveReturned_IsIgnored(bool asynchronously)
+    [Fact]
+    public async Task AReloadForItsOwnSave_ArrivingAfterTheSaveReturned_IsIgnored()
     {
         // The ordering the watcher actually produces: it reports a write after it lands, on its own
         // thread, so the notification for a save nearly always arrives once the save has returned.
@@ -82,34 +80,32 @@ public class WritableDocumentLifecycleTests : IDisposable
         // change, and every save was followed by a reload of the file it had just written.
         var path = Write("plan.note", "before");
         var lifecycle = Lifecycle();
-        var note = lifecycle.GetOrLoad(path);
+        var note = await lifecycle.GetOrLoadAsync(path, TestContext.Current.CancellationToken);
         note.Text = "edited";
         await lifecycle.SaveAsync(path, note, TestContext.Current.CancellationToken);
 
-        var reloaded = await Reload(lifecycle, path, asynchronously);
+        var reloaded = await lifecycle.ReloadAsync(path, TestContext.Current.CancellationToken);
 
         Assert.False(reloaded);
         Assert.Same(note, lifecycle.Get(path));
     }
 
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task AnExternalEditAfterItsOwnSave_IsTaken(bool asynchronously)
+    [Fact]
+    public async Task AnExternalEditAfterItsOwnSave_IsTaken()
     {
         // The control for the test above: a guard that ignored every reload after a save would pass
         // that one and leave the store deaf to the next person who edits the file.
         var path = Write("plan.note", "before");
         var lifecycle = Lifecycle();
-        var note = lifecycle.GetOrLoad(path);
+        var note = await lifecycle.GetOrLoadAsync(path, TestContext.Current.CancellationToken);
         note.Text = "edited";
         await lifecycle.SaveAsync(path, note, TestContext.Current.CancellationToken);
         await File.WriteAllTextAsync(path, "changed elsewhere", TestContext.Current.CancellationToken);
 
-        var reloaded = await Reload(lifecycle, path, asynchronously);
+        var reloaded = await lifecycle.ReloadAsync(path, TestContext.Current.CancellationToken);
 
         Assert.True(reloaded);
-        Assert.Equal("changed elsewhere", lifecycle.GetOrLoad(path).Text);
+        Assert.Equal("changed elsewhere", (await lifecycle.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Text);
     }
 
     [Fact]
@@ -119,32 +115,32 @@ public class WritableDocumentLifecycleTests : IDisposable
         // save cannot mask a later external change back to it while the cache holds something else.
         var path = Write("plan.note", "before");
         var lifecycle = Lifecycle();
-        var note = lifecycle.GetOrLoad(path);
+        var note = await lifecycle.GetOrLoadAsync(path, TestContext.Current.CancellationToken);
         note.Text = "edited";
         await lifecycle.SaveAsync(path, note, TestContext.Current.CancellationToken);
         await File.WriteAllTextAsync(path, "changed elsewhere", TestContext.Current.CancellationToken);
-        Assert.True(lifecycle.Reload(path));
+        Assert.True(await lifecycle.ReloadAsync(path, TestContext.Current.CancellationToken));
         await File.WriteAllTextAsync(path, "edited", TestContext.Current.CancellationToken);
 
-        var reloaded = lifecycle.Reload(path);
+        var reloaded = await lifecycle.ReloadAsync(path, TestContext.Current.CancellationToken);
 
         Assert.True(reloaded);
-        Assert.Equal("edited", lifecycle.GetOrLoad(path).Text);
+        Assert.Equal("edited", (await lifecycle.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Text);
     }
 
     [Fact]
-    public void AReloadWithNoSaveInFlight_IsTaken()
+    public async Task AReloadWithNoSaveInFlight_IsTaken()
     {
         // The control for the test above: a Reload that ignored everything would pass that one.
         var path = Write("plan.note", "first");
         var lifecycle = Lifecycle();
-        lifecycle.GetOrLoad(path);
-        File.WriteAllText(path, "second");
+        await lifecycle.GetOrLoadAsync(path, TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(path, "second", TestContext.Current.CancellationToken);
 
-        var reloaded = lifecycle.Reload(path);
+        var reloaded = await lifecycle.ReloadAsync(path, TestContext.Current.CancellationToken);
 
         Assert.True(reloaded);
-        Assert.Equal("second", lifecycle.GetOrLoad(path).Text);
+        Assert.Equal("second", (await lifecycle.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Text);
     }
 
     [Fact]
@@ -153,7 +149,7 @@ public class WritableDocumentLifecycleTests : IDisposable
         // R3.2 and R3.4: told rather than thrown at, and the edit kept so a retry saves it.
         var path = Write("plan.note", "before");
         var lifecycle = Lifecycle(write: (_, _, _) => throw new IOException("The process cannot access the file."));
-        var note = lifecycle.GetOrLoad(path);
+        var note = await lifecycle.GetOrLoadAsync(path, TestContext.Current.CancellationToken);
         note.Text = "edited";
 
         var saved = await lifecycle.SaveAsync(path, note, TestContext.Current.CancellationToken);
@@ -171,14 +167,14 @@ public class WritableDocumentLifecycleTests : IDisposable
         // change of that file - the reload would be taken for its own write forever.
         var path = Write("plan.note", "before");
         var lifecycle = Lifecycle(write: (_, _, _) => throw new IOException("refused"));
-        var note = lifecycle.GetOrLoad(path);
+        var note = await lifecycle.GetOrLoadAsync(path, TestContext.Current.CancellationToken);
         await lifecycle.SaveAsync(path, note, TestContext.Current.CancellationToken);
         await File.WriteAllTextAsync(path, "changed elsewhere", TestContext.Current.CancellationToken);
 
-        var reloaded = lifecycle.Reload(path);
+        var reloaded = await lifecycle.ReloadAsync(path, TestContext.Current.CancellationToken);
 
         Assert.True(reloaded);
-        Assert.Equal("changed elsewhere", lifecycle.GetOrLoad(path).Text);
+        Assert.Equal("changed elsewhere", (await lifecycle.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Text);
     }
 
     [Fact]
@@ -187,7 +183,7 @@ public class WritableDocumentLifecycleTests : IDisposable
         // The other direction: without it, a Save that always failed would pass the refusal tests.
         var path = Write("plan.note", "before");
         var lifecycle = Lifecycle();
-        var note = lifecycle.GetOrLoad(path);
+        var note = await lifecycle.GetOrLoadAsync(path, TestContext.Current.CancellationToken);
         note.Text = "after";
 
         var saved = await lifecycle.SaveAsync(path, note, TestContext.Current.CancellationToken);
@@ -204,7 +200,7 @@ public class WritableDocumentLifecycleTests : IDisposable
         // save is what creates it. Seven stores each did this themselves before task 6 moved it here.
         var path = IoPath.Combine(_folder, "not", "there", "yet", "plan.note");
         var lifecycle = Lifecycle();
-        var note = lifecycle.GetOrLoad(path);
+        var note = await lifecycle.GetOrLoadAsync(path, TestContext.Current.CancellationToken);
         note.Text = "first";
 
         var saved = await lifecycle.SaveAsync(path, note, TestContext.Current.CancellationToken);
@@ -221,7 +217,7 @@ public class WritableDocumentLifecycleTests : IDisposable
         // plain save would write "one\n" plus the edit and the other program's line would be gone.
         var path = Write("plan.note", "one\n");
         var lifecycle = Lifecycle();
-        var basis = lifecycle.GetOrLoad(path);
+        var basis = await lifecycle.GetOrLoadAsync(path, TestContext.Current.CancellationToken);
         await File.WriteAllTextAsync(path, "one\ntwo\n", TestContext.Current.CancellationToken);
 
         var saved = await lifecycle.SaveAsync(path, basis, note => DocumentEdit<Note>.Applied(new Note(note.Text + "mine\n")), TestContext.Current.CancellationToken);
@@ -237,7 +233,7 @@ public class WritableDocumentLifecycleTests : IDisposable
         // document - the same reference - and a store pays nothing for the comparison but one read.
         var path = Write("plan.note", "one\n");
         var lifecycle = Lifecycle();
-        var basis = lifecycle.GetOrLoad(path);
+        var basis = await lifecycle.GetOrLoadAsync(path, TestContext.Current.CancellationToken);
         Note? handed = null;
 
         var saved = (await lifecycle.SaveAsync(path, basis, note =>
@@ -258,7 +254,7 @@ public class WritableDocumentLifecycleTests : IDisposable
         // document, the user is told, and the file keeps the other program's text untouched.
         var path = Write("plan.note", "one\n");
         var lifecycle = Lifecycle();
-        var basis = lifecycle.GetOrLoad(path);
+        var basis = await lifecycle.GetOrLoadAsync(path, TestContext.Current.CancellationToken);
         await File.WriteAllTextAsync(path, "two\n", TestContext.Current.CancellationToken);
 
         var saved = (await lifecycle.SaveAsync(path, basis, note => note.Text.Contains("one", StringComparison.Ordinal)
@@ -270,11 +266,6 @@ public class WritableDocumentLifecycleTests : IDisposable
         Assert.Equal("two\n", await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
         Assert.Same(basis, lifecycle.Get(path));
     }
-
-    // The synchronous reload and the asynchronous one answer alike until the synchronous one goes
-    // (code-structure T283), so the self-write rule is held for both.
-    private static async Task<bool> Reload(WritableDocumentLifecycle<Note> lifecycle, string path, bool asynchronously) =>
-        asynchronously ? await lifecycle.ReloadAsync(path, TestContext.Current.CancellationToken) : lifecycle.Reload(path);
 
     private static WritableDocumentLifecycle<Note> Lifecycle(Func<string, string, CancellationToken, Task>? write = null) =>
         new((_, text) => new Note(text), note => note.Text, unavailable: null, write ?? new FileWriter().SaveAsync);

@@ -51,7 +51,11 @@ internal sealed class KnowledgeDocuments : IKnowledgeDocumentStore
 {
     public event Action<string>? Reloaded;
 
-    public void Reload(string path) => Reloaded?.Invoke(path);
+    public Task ReloadAsync(string path, CancellationToken cancellationToken)
+    {
+        Reloaded?.Invoke(path);
+        return Task.CompletedTask;
+    }
 }
 
 /// <summary>

@@ -245,15 +245,15 @@ public sealed class SankeyProvidersTests : IDisposable
             remove => inner.Changed -= value;
         }
 
-        public DocumentEntry<LineDocument, SankeyModel> GetOrLoad(string path) => inner.GetOrLoad(path) with { Unreadable = "it is locked" };
+        public async ValueTask<DocumentEntry<LineDocument, SankeyModel>> GetOrLoadAsync(string path, CancellationToken cancellationToken) => await inner.GetOrLoadAsync(path, cancellationToken) with { Unreadable = "it is locked" };
 
         public DocumentEntry<LineDocument, SankeyModel>? Get(string path) => inner.Get(path) is { } held ? held with { Unreadable = "it is locked" } : null;
 
         public Task<DocumentSaveResult> SaveAsync(string path, LineDocument document, CancellationToken cancellationToken) => inner.SaveAsync(path, document, cancellationToken);
 
-        public void Reload(string path) => inner.Reload(path);
+        public Task ReloadAsync(string path, CancellationToken cancellationToken) => inner.ReloadAsync(path, cancellationToken);
 
-        public void BodyDeleted(string path) => inner.BodyDeleted(path);
+        public Task BodyDeletedAsync(string path, CancellationToken cancellationToken) => inner.BodyDeletedAsync(path, cancellationToken);
 
         public void Forget(string path) => inner.Forget(path);
     }

@@ -26,37 +26,31 @@ public class DocumentLifecycleTests : IDisposable
         GC.SuppressFinalize(this);
     }
 
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task AFirstOpenOfAMissingBody_OpensAsANewEmptyDocument(bool asynchronously)
+    [Fact]
+    public async Task AFirstOpenOfAMissingBody_OpensAsANewEmptyDocument()
     {
         var lifecycle = new DocumentLifecycle<Note>(Parse);
 
-        var note = await GetOrLoad(lifecycle, IoPath.Combine(_folder, "not-written-yet.note"), asynchronously);
+        var note = await lifecycle.GetOrLoadAsync(IoPath.Combine(_folder, "not-written-yet.note"), TestContext.Current.CancellationToken);
 
         Assert.Equal("", note.Text);
     }
 
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task AFirstOpenOfAnUnreadableBody_OpensEmpty(bool asynchronously)
+    [Fact]
+    public async Task AFirstOpenOfAnUnreadableBody_OpensEmpty()
     {
         // R2.2's majority behaviour: open empty, with a warning naming the path.
         var path = Write("held.note", "content nobody can read right now");
         var lifecycle = new DocumentLifecycle<Note>(Parse);
 
         await using var holder = Hold(path);
-        var note = await GetOrLoad(lifecycle, path, asynchronously);
+        var note = await lifecycle.GetOrLoadAsync(path, TestContext.Current.CancellationToken);
 
         Assert.Equal("", note.Text);
     }
 
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task AFirstOpenThatCannotRead_IsTheModulesOwnState_WhenItDeclaresOne(bool asynchronously)
+    [Fact]
+    public async Task AFirstOpenThatCannotRead_IsTheModulesOwnState_WhenItDeclaresOne()
     {
         // R2.2's exception: a module that reports its own unavailability is told which case it is.
         var held = Write("held.note", "content");
@@ -64,54 +58,48 @@ public class DocumentLifecycleTests : IDisposable
         var lifecycle = new DocumentLifecycle<Note>(Parse, Unavailable);
 
         await using var holder = Hold(held);
-        var unreadable = await GetOrLoad(lifecycle, held, asynchronously);
+        var unreadable = await lifecycle.GetOrLoadAsync(held, TestContext.Current.CancellationToken);
 
         Assert.Equal("unavailable: Unreadable", unreadable.Text);
-        Assert.Equal("unavailable: Missing", (await GetOrLoad(lifecycle, missing, asynchronously)).Text);
+        Assert.Equal("unavailable: Missing", (await lifecycle.GetOrLoadAsync(missing, TestContext.Current.CancellationToken)).Text);
     }
 
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task AReloadThatReads_InstallsTheNewDocument(bool asynchronously)
+    [Fact]
+    public async Task AReloadThatReads_InstallsTheNewDocument()
     {
         // The control for the keep-last-good tests below: without it, a Reload that never installed
         // anything would pass all of them.
         var path = Write("plan.note", "first");
         var lifecycle = new DocumentLifecycle<Note>(Parse);
-        var first = await GetOrLoad(lifecycle, path, asynchronously);
+        var first = await lifecycle.GetOrLoadAsync(path, TestContext.Current.CancellationToken);
         await File.WriteAllTextAsync(path, "second", TestContext.Current.CancellationToken);
 
-        var installed = await Reload(lifecycle, path, asynchronously);
+        var installed = await lifecycle.ReloadAsync(path, TestContext.Current.CancellationToken);
 
         Assert.True(installed);
-        Assert.NotSame(first, await GetOrLoad(lifecycle, path, asynchronously));
-        Assert.Equal("second", (await GetOrLoad(lifecycle, path, asynchronously)).Text);
+        Assert.NotSame(first, await lifecycle.GetOrLoadAsync(path, TestContext.Current.CancellationToken));
+        Assert.Equal("second", (await lifecycle.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Text);
     }
 
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task AReloadThatCannotRead_KeepsTheLastGoodDocument(bool asynchronously)
+    [Fact]
+    public async Task AReloadThatCannotRead_KeepsTheLastGoodDocument()
     {
         // R2.4, for every store. Before the shared lifecycle only c4 and causal-loop did this; six
         // stores installed an empty document, which put an empty canvas up whenever another program
         // was mid-save.
         var path = Write("plan.note", "good");
         var lifecycle = new DocumentLifecycle<Note>(Parse);
-        var good = await GetOrLoad(lifecycle, path, asynchronously);
+        var good = await lifecycle.GetOrLoadAsync(path, TestContext.Current.CancellationToken);
 
         await using var holder = Hold(path);
-        var installed = await Reload(lifecycle, path, asynchronously);
+        var installed = await lifecycle.ReloadAsync(path, TestContext.Current.CancellationToken);
 
         Assert.False(installed);
-        Assert.Same(good, await GetOrLoad(lifecycle, path, asynchronously));
+        Assert.Same(good, await lifecycle.GetOrLoadAsync(path, TestContext.Current.CancellationToken));
     }
 
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task AMissingBody_IsKeptOnReload_AndClearedOnlyByTheWatchersDelete(bool asynchronously)
+    [Fact]
+    public async Task AMissingBody_IsKeptOnReload_AndClearedOnlyByTheWatchersDelete()
     {
         // R2.5, and the pairing that makes keep-last-good safe. A reload that finds the body missing
         // cannot tell a publish in flight from a delete, so it keeps the last good document. Only the
@@ -119,89 +107,79 @@ public class DocumentLifecycleTests : IDisposable
         // A store with keep-last-good and no BodyDeleted would keep a deleted diagram forever.
         var path = Write("plan.note", "good");
         var lifecycle = new DocumentLifecycle<Note>(Parse);
-        var good = await GetOrLoad(lifecycle, path, asynchronously);
+        var good = await lifecycle.GetOrLoadAsync(path, TestContext.Current.CancellationToken);
         File.Delete(path);
 
-        var reloaded = await Reload(lifecycle, path, asynchronously);
+        var reloaded = await lifecycle.ReloadAsync(path, TestContext.Current.CancellationToken);
 
         Assert.False(reloaded);
-        Assert.Same(good, await GetOrLoad(lifecycle, path, asynchronously));
+        Assert.Same(good, await lifecycle.GetOrLoadAsync(path, TestContext.Current.CancellationToken));
 
-        var deleted = await BodyDeleted(lifecycle, path, asynchronously);
+        var deleted = await lifecycle.BodyDeletedAsync(path, TestContext.Current.CancellationToken);
 
         Assert.True(deleted);
-        Assert.Equal("", (await GetOrLoad(lifecycle, path, asynchronously)).Text);
+        Assert.Equal("", (await lifecycle.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Text);
     }
 
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task ABodyDeleted_EndsAsTheModulesOwnMissingState_WhenItDeclaresOne(bool asynchronously)
+    [Fact]
+    public async Task ABodyDeleted_EndsAsTheModulesOwnMissingState_WhenItDeclaresOne()
     {
         var path = Write("query.note", "good");
         var lifecycle = new DocumentLifecycle<Note>(Parse, Unavailable);
-        await GetOrLoad(lifecycle, path, asynchronously);
+        await lifecycle.GetOrLoadAsync(path, TestContext.Current.CancellationToken);
         File.Delete(path);
 
-        await BodyDeleted(lifecycle, path, asynchronously);
+        await lifecycle.BodyDeletedAsync(path, TestContext.Current.CancellationToken);
 
-        Assert.Equal("unavailable: Missing", (await GetOrLoad(lifecycle, path, asynchronously)).Text);
+        Assert.Equal("unavailable: Missing", (await lifecycle.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Text);
     }
 
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task ABodyDeletedThatIsAlreadyBack_IsReadAfresh(bool asynchronously)
+    [Fact]
+    public async Task ABodyDeletedThatIsAlreadyBack_IsReadAfresh()
     {
         // An editor that saves by deleting and re-creating: by the time the delete arrives, the file
         // on disk is the answer.
         var path = Write("plan.note", "before");
         var lifecycle = new DocumentLifecycle<Note>(Parse);
-        await GetOrLoad(lifecycle, path, asynchronously);
+        await lifecycle.GetOrLoadAsync(path, TestContext.Current.CancellationToken);
         await File.WriteAllTextAsync(path, "after", TestContext.Current.CancellationToken);
 
-        await BodyDeleted(lifecycle, path, asynchronously);
+        await lifecycle.BodyDeletedAsync(path, TestContext.Current.CancellationToken);
 
-        Assert.Equal("after", (await GetOrLoad(lifecycle, path, asynchronously)).Text);
+        Assert.Equal("after", (await lifecycle.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Text);
     }
 
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task AParseThatThrowsOnReload_FailsThatReload_AndLeavesTheLastGoodDocument(bool asynchronously)
+    [Fact]
+    public async Task AParseThatThrowsOnReload_FailsThatReload_AndLeavesTheLastGoodDocument()
     {
         // Parsed before it is installed, so one document's broken text costs nothing that was cached.
         var path = Write("plan.note", "fine");
         var lifecycle = new DocumentLifecycle<Note>(ParseRefusingBoom);
-        var good = await GetOrLoad(lifecycle, path, asynchronously);
+        var good = await lifecycle.GetOrLoadAsync(path, TestContext.Current.CancellationToken);
         await File.WriteAllTextAsync(path, "boom", TestContext.Current.CancellationToken);
 
-        await Assert.ThrowsAsync<FormatException>(async () => await Reload(lifecycle, path, asynchronously));
+        await Assert.ThrowsAsync<FormatException>(async () => await lifecycle.ReloadAsync(path, TestContext.Current.CancellationToken));
 
         Assert.Same(good, lifecycle.Get(path));
     }
 
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task Forget_MakesTheNextOpenReadTheFileAfresh(bool asynchronously)
+    [Fact]
+    public async Task Forget_MakesTheNextOpenReadTheFileAfresh()
     {
         var path = Write("plan.note", "first");
         var lifecycle = new DocumentLifecycle<Note>(Parse);
-        var first = await GetOrLoad(lifecycle, path, asynchronously);
+        var first = await lifecycle.GetOrLoadAsync(path, TestContext.Current.CancellationToken);
         await File.WriteAllTextAsync(path, "second", TestContext.Current.CancellationToken);
 
         lifecycle.Forget(path);
 
         Assert.Null(lifecycle.Get(path));
-        Assert.NotSame(first, await GetOrLoad(lifecycle, path, asynchronously));
-        Assert.Equal("second", (await GetOrLoad(lifecycle, path, asynchronously)).Text);
+        Assert.NotSame(first, await lifecycle.GetOrLoadAsync(path, TestContext.Current.CancellationToken));
+        Assert.Equal("second", (await lifecycle.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Text);
     }
 
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task AReloadRefusedOnce_StillDeliversTheChange(bool asynchronously)
+    [Fact]
+    public async Task AReloadRefusedOnce_StillDeliversTheChange()
     {
         // THE EDITORRESOLUTION FLAKE'S MECHANISM, pinned deterministically (traced by Developer 5,
         // 2026-09-25): a write's LAST event, a read refused once by another holder, and no later event
@@ -220,23 +198,21 @@ public class DocumentLifecycleTests : IDisposable
 
             return File.ReadAllText(file);
         });
-        await GetOrLoad(lifecycle, path, asynchronously);
+        await lifecycle.GetOrLoadAsync(path, TestContext.Current.CancellationToken);
         await File.WriteAllTextAsync(path, "second", TestContext.Current.CancellationToken);
         refusalsLeft = 1;
 
-        var installed = await Reload(lifecycle, path, asynchronously);
+        var installed = await lifecycle.ReloadAsync(path, TestContext.Current.CancellationToken);
 
         // The refusal was really met: without this, a lifecycle that never consulted the scripted
         // reader would pass by reading the file some other way.
         Assert.Equal(0, refusalsLeft);
         Assert.True(installed);
-        Assert.Equal("second", (await GetOrLoad(lifecycle, path, asynchronously)).Text);
+        Assert.Equal("second", (await lifecycle.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Text);
     }
 
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task AReloadThatFindsTheBodyGoneForAnInstant_StillDeliversTheChange(bool asynchronously)
+    [Fact]
+    public async Task AReloadThatFindsTheBodyGoneForAnInstant_StillDeliversTheChange()
     {
         // A publish renames the body away and back; a read landing in that instant finds it missing.
         var path = Write("plan.note", "first");
@@ -253,21 +229,19 @@ public class DocumentLifecycleTests : IDisposable
 
             return File.ReadAllText(file);
         });
-        await GetOrLoad(lifecycle, path, asynchronously);
+        await lifecycle.GetOrLoadAsync(path, TestContext.Current.CancellationToken);
         await File.WriteAllTextAsync(path, "second", TestContext.Current.CancellationToken);
         vanishingsLeft = 1;
 
-        var installed = await Reload(lifecycle, path, asynchronously);
+        var installed = await lifecycle.ReloadAsync(path, TestContext.Current.CancellationToken);
 
         Assert.Equal(0, vanishingsLeft);
         Assert.True(installed);
-        Assert.Equal("second", (await GetOrLoad(lifecycle, path, asynchronously)).Text);
+        Assert.Equal("second", (await lifecycle.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Text);
     }
 
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task AReloadRefusedEveryTime_StopsAfterItsAttempts_AndKeepsTheLastGoodDocument(bool asynchronously)
+    [Fact]
+    public async Task AReloadRefusedEveryTime_StopsAfterItsAttempts_AndKeepsTheLastGoodDocument()
     {
         // The retry is bounded, and keep-last-good is still what happens when it runs out. This is the
         // case a retry cannot rescue: it must neither spin forever nor install the failure.
@@ -283,21 +257,19 @@ public class DocumentLifecycleTests : IDisposable
             // ReSharper disable once AccessToModifiedClosure - Reason: Used in a test case which is acceptable.
             return refusing ? throw new IOException("held") : File.ReadAllText(file);
         });
-        var good = await GetOrLoad(lifecycle, path, asynchronously);
+        var good = await lifecycle.GetOrLoadAsync(path, TestContext.Current.CancellationToken);
         refusing = true;
         reads = 0;
 
-        var installed = await Reload(lifecycle, path, asynchronously);
+        var installed = await lifecycle.ReloadAsync(path, TestContext.Current.CancellationToken);
 
         Assert.False(installed);
-        Assert.Same(good, await GetOrLoad(lifecycle, path, asynchronously));
+        Assert.Same(good, await lifecycle.GetOrLoadAsync(path, TestContext.Current.CancellationToken));
         Assert.Equal(3, reads);
     }
 
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task AFirstOpenRefusedOnce_OpensTheRealDocument_NotAnEmptyOne(bool asynchronously)
+    [Fact]
+    public async Task AFirstOpenRefusedOnce_OpensTheRealDocument_NotAnEmptyOne()
     {
         // Retried on a first open too: otherwise a holder keeping the file for a moment opens the diagram
         // EMPTY through R2.2's fallback, though the file on disk is fine.
@@ -314,7 +286,7 @@ public class DocumentLifecycleTests : IDisposable
             return File.ReadAllText(file);
         });
 
-        var opened = await GetOrLoad(lifecycle, path, asynchronously);
+        var opened = await lifecycle.GetOrLoadAsync(path, TestContext.Current.CancellationToken);
 
         // The first open really met the refusal, so this passes because of the retry rather than
         // because the open never reached the refusing reader.
@@ -323,7 +295,7 @@ public class DocumentLifecycleTests : IDisposable
     }
 
     [Fact]
-    public async Task AnAsynchronousReadThatIsRefused_WaitsForItsNextAttemptOnTheLifecyclesClock()
+    public async Task AReadThatIsRefused_WaitsForItsNextAttemptOnTheLifecyclesClock()
     {
         // No thread sleeps between two attempts: the reload waits on the clock it was given, and
         // finishes only once that clock has moved (code-structure FR-050).
@@ -367,17 +339,6 @@ public class DocumentLifecycleTests : IDisposable
         Assert.True(await reloading);
         Assert.Equal("second", (await lifecycle.GetOrLoadAsync(path, cancellationToken)).Text);
     }
-
-    // The synchronous reads and the asynchronous ones answer alike until the synchronous ones go
-    // (code-structure T283), so every test runs through both.
-    private static async Task<Note> GetOrLoad(DocumentLifecycle<Note> lifecycle, string path, bool asynchronously) =>
-        asynchronously ? await lifecycle.GetOrLoadAsync(path, TestContext.Current.CancellationToken) : lifecycle.GetOrLoad(path);
-
-    private static async Task<bool> Reload(DocumentLifecycle<Note> lifecycle, string path, bool asynchronously) =>
-        asynchronously ? await lifecycle.ReloadAsync(path, TestContext.Current.CancellationToken) : lifecycle.Reload(path);
-
-    private static async Task<bool> BodyDeleted(DocumentLifecycle<Note> lifecycle, string path, bool asynchronously) =>
-        asynchronously ? await lifecycle.BodyDeletedAsync(path, TestContext.Current.CancellationToken) : lifecycle.BodyDeleted(path);
 
     // Lambdas with discards rather than methods, so no parameter is left unused.
     private static readonly Func<string, string, Note> Parse = (_, text) => new Note(text);
