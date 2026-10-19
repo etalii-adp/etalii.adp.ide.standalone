@@ -76,7 +76,7 @@ public class LoadingTests
 
         // Assert: exactly major.minor in digits, as FBL §2.7 writes it (behaviour change B-08).
         Assert.Null(document);
-        Assert.Equal($"error at /fbl: '{version}' is not an FBL version written as major.minor (FBL §2.7).", Assert.Single(problems).ToString());
+        Assert.Equal($"error at /fbl: The FBL version '{version}' is not written as major.minor (FBL §2.7).", Assert.Single(problems).ToString());
     }
 
     [Fact]

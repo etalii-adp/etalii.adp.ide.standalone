@@ -19,7 +19,7 @@ public sealed record LanguageVersion(string Language, int Major, int Minor, stri
         var parts = version.Split('.');
         if (parts.Length != 2 || !TryDigits(parts[0], out var major) || !TryDigits(parts[1], out var minor))
         {
-            return new LoadDiagnostic(pointer, LoadSeverity.Error, $"'{version}' is not a {Language} version written as major.minor ({Section}).");
+            return new LoadDiagnostic(pointer, LoadSeverity.Error, $"The {Language} version '{version}' is not written as major.minor ({Section}).");
         }
         if (major > Major)
         {

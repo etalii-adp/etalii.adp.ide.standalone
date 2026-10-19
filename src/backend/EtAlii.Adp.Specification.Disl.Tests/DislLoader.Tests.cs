@@ -81,7 +81,7 @@ public class DislLoaderTests
     [InlineData("0")]
     public void AVersionNotWrittenAsMajorDotMinorInDigits_IsRefused(string version)
     {
-        Assert.Equal([$"error at /disl: '{version}' is not a DISL version written as major.minor (DISL §2.9)."], Specifications.Diagnostics(Specifications.With($"\"disl\": \"{version}\"")));
+        Assert.Equal([$"error at /disl: The DISL version '{version}' is not written as major.minor (DISL §2.9)."], Specifications.Diagnostics(Specifications.With($"\"disl\": \"{version}\"")));
     }
 
     [Fact]
