@@ -19,6 +19,15 @@ internal sealed class Plan(BodyReading reading)
 
     public void Add(SpliceOperation operation, Span span, string text) => Add(operation, span.Start, span.End, text);
 
+    /// <summary>A mark to take back what is planned after it, with <see cref="Discard"/>.</summary>
+    public int Mark() => _splices.Count;
+
+    /// <summary>The splices planned since <paramref name="mark"/>, in the order they were planned.</summary>
+    public IReadOnlyList<Splice> Since(int mark) => _splices.GetRange(mark, _splices.Count - mark);
+
+    /// <summary>Takes back the splices planned since <paramref name="mark"/>.</summary>
+    public void Discard(int mark) => _splices.RemoveRange(mark, _splices.Count - mark);
+
     /// <summary>Whether a splice already replaces bytes overlapping <paramref name="span"/>.</summary>
     public bool Touches(Span span) => _splices.Any(s => s.Start < span.End && span.Start < s.End);
 
