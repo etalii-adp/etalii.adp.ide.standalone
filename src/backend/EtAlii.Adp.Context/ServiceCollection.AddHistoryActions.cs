@@ -20,5 +20,10 @@ public static class ServiceCollectionAddHistoryActionsExtension
         ArgumentNullException.ThrowIfNull(services);
 
         services.AddSingleton<IContextActionProvider, HistoryContextActionProvider>();
+
+        // The source the History group and the shortcuts name their target by: the project itself,
+        // resolved like any other source rather than by a special case in the context service
+        // (code-structure FR-073).
+        services.AddSingleton<IContextSourceResolver, ProjectContextSourceResolver>();
     }
 }

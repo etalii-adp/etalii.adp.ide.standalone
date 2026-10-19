@@ -1,27 +1,26 @@
 using System.Text.Json;
-using EtAlii.Adp.Specification.Fbl.Tests.Support;
 using Xunit;
 
-namespace EtAlii.Adp.Specification.Fbl.Tests.RealFiles;
+namespace EtAlii.Adp.TestSupport;
 
 /// <summary>
 /// A place where a vendored binding and a real file disagree (Requirement 12): the property it
 /// breaks, the binding and file, what was observed exactly, and why it is so.
 /// </summary>
-internal sealed record Divergence(string Property, string Binding, string File, string Observed, string Reason);
+public sealed record Divergence(string Property, string Binding, string File, string Observed, string Reason);
 
 /// <summary>
 /// <c>RealFiles/divergences.json</c>: every disagreement the real-file suite found, recorded instead
 /// of hidden. A disagreement that is not listed fails its test; a listed one whose observation has
 /// changed, or that no longer occurs, fails too, so the list cannot go stale.
 /// </summary>
-internal static class Divergences
+public static class Divergences
 {
     private static readonly Lazy<IReadOnlyList<Divergence>> _all = new(Load);
 
     public static IReadOnlyList<Divergence> All => _all.Value;
 
-    private static string FilePath => Path.Combine(Repository.Root, "src", "backend", "EtAlii.Adp.Specification.Fbl.Tests", "RealFiles", "divergences.json");
+    private static string FilePath => Path.Combine(RepositoryPaths.Root, "src", "backend", "EtAlii.Adp.Specification.Fbl.Tests", "RealFiles", "divergences.json");
 
     /// <summary>
     /// Checks one property on one file: <paramref name="observed"/> is null when the binding and the

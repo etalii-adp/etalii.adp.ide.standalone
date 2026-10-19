@@ -72,30 +72,19 @@ public sealed class HierarchyWatch
         // cancelled before it, so such a recovery gives up at its first wait instead.
         var recoveryToken = recoveryCts.Token;
 
-        // The recovery an announcement starts, waited for as the watch closes; the latch below lets
-        // only one run at a time. Held before the subscription, so the connection releases it after
-        // the subscription: a late announcement through the file events starts a recovery that is
+        // The recovery an announcement starts, waited for as the watch closes; RootOutage's latch
+        // lets only one run at a time. Held before the subscription, so the connection releases it
+        // after the subscription: a late announcement through the file events starts a recovery that is
         // handed a cancelled token and gives up at once, and none starts once it is released.
         var recoveries = connection.Hold(() => new RunningTasks());
+        var outage = new RootOutage(this, rootPath, model, recoveries, recoveryToken);
 
-        // One notification per outage, whichever detector saw it first. On Windows the
-        // watcher's own Error event (heard as Lost, with the root gone) reports the root's deletion almost instantly; on Linux,
-        // inotify never reports the watched directory's own deletion at all - the watch just
-        // goes silent - so the presence poll below is the only detector there (found by the
-        // first Linux CI run, where the RootUnavailable push never came). The latch keeps the
-        // two from double-announcing the same outage, and resets once the root recovers so a
-        // second outage announces again.
-        var rootLost = 0;
-
-        connection.Hold(() => Subscribe(rootPath, model, HandleRootLost));
-        var presence = WatchRootPresenceAsync(rootPath, HandleRootLost, recoveryToken);
+        connection.Hold(() => Subscribe(rootPath, model, outage.Lost));
+        var presence = WatchRootPresenceAsync(rootPath, outage.Lost, recoveryToken);
         // Information: a watch is a long-lived resource with a subscription to the root's one
         // watcher behind it, so its open and close are the pair to look for when one is suspected
         // of leaking.
-        _logger.Information(
-            "Watching {RootPath} on watch {WatchId}",
-            rootPath,
-            watchId);
+        _logger.Information("Watching {RootPath} on watch {WatchId}", rootPath, watchId);
 
         try
         {
@@ -128,22 +117,36 @@ public sealed class HierarchyWatch
         return;
 
         void OnEntryChanged(HierarchyEntryChange change) => channel.Writer.TryWrite(new HierarchyMessage { Change = HierarchyWire.ToProto(change) });
+    }
 
-        async Task RecoverAsync()
-        {
-            await WaitForRootRecoveryAsync(rootPath, model, recoveryToken);
-            Interlocked.Exchange(ref rootLost, 0);
-        }
+    /// <summary>
+    /// One notification per outage, whichever detector saw it first. On Windows the watcher's own
+    /// Error event (heard as Lost, with the root gone) reports the root's deletion almost instantly;
+    /// on Linux, inotify never reports the watched directory's own deletion at all - the watch just
+    /// goes silent - so the presence poll is the only detector there (found by the first Linux CI
+    /// run, where the RootUnavailable push never came). The latch keeps the two from
+    /// double-announcing the same outage, and resets once the root recovers so a second outage
+    /// announces again.
+    /// </summary>
+    private sealed class RootOutage(HierarchyWatch watch, string rootPath, HierarchyModel model, RunningTasks recoveries, CancellationToken recoveryToken)
+    {
+        private int _lost;
 
-        void HandleRootLost(string message)
+        public void Lost(string message)
         {
-            if (Interlocked.Exchange(ref rootLost, 1) == 1)
+            if (Interlocked.Exchange(ref _lost, 1) == 1)
             {
                 return;
             }
 
             model.NotifyRootUnavailable(message);
             recoveries.Start(_ => RecoverAsync());
+        }
+
+        private async Task RecoverAsync()
+        {
+            await watch.WaitForRootRecoveryAsync(rootPath, model, recoveryToken);
+            Interlocked.Exchange(ref _lost, 0);
         }
     }
 

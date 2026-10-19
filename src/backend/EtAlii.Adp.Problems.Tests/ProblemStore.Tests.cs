@@ -485,7 +485,7 @@ public class ProblemStoreTests : IDisposable
         var cachePath = CacheFileFor(_root);
         var store = Store();
         store.Replace(_root, [Problem("a.adp")]);
-        var entry = store.EntryFor(_root);
+        var entry = store.Cache.EntryFor(_root);
 
         store.Dispose();
         Assert.True(File.Exists(cachePath), "Dispose must still flush the pending write.");
@@ -494,7 +494,7 @@ public class ProblemStoreTests : IDisposable
         File.Delete(cachePath);
 
         // Act. The callback wakes to a store that is already gone.
-        store.OnDebounceElapsed(entry);
+        store.Cache.OnDebounceElapsed(entry);
 
         // Assert.
         Assert.False(File.Exists(cachePath), "A debounced write woke after Dispose and wrote anyway.");

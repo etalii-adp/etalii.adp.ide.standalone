@@ -44,7 +44,7 @@ One Developer owns this specification, per CLAUDE.md's one-owner-per-specificati
 | 11 | 5 | 12 (11.1, 11.3, 11.4, 11.5), 13 (11.2) |
 | 12 | 4 | 5 (12.3), 12 (12.1, 12.2), 17 (12.4) |
 
-Twenty-nine of the 65 are claimed by a waiting task of the second stage (tasks 13 to 17): 4.2 to 4.7, 5.1 to 5.8, 6.1 to 6.4, 7.1 to 7.5, 8.2, 8.3, 10.4, 11.2 and 12.4. Requirements 6.1 to 6.4 hold through the first stage because the store, the session factory and the registration reading are not touched; they are claimed by task 14, which is the task that could break them.
+Twenty-eight of the 65 are claimed by a waiting task of the second stage (tasks 13 to 17): 4.2 to 4.7, 5.1 to 5.8, 6.1 to 6.4, 7.1 to 7.5, 8.2, 8.3, 10.4, 11.2 and 12.4. Requirements 6.1 to 6.4 hold through the first stage because the store, the session factory and the registration reading are not touched; they are claimed by task 14, which is the task that could break them.
 
 **The diff is run again at task 12 for the first stage and at task 17 for the whole specification**, traced to the tests, files and strings the work produced and not to a task's promise, and two traces are read back to their artefacts each time to check that the evidence is that criterion's and not a neighbour's.
 
@@ -172,6 +172,7 @@ Twenty-nine of the 65 are claimed by a waiting task of the second stage (tasks 1
   - `C4Canvas.tsx` imports the six bundled `.dis` files with `?raw` and compiles the one of the view's kind with `compileNotation(parseDisl(text), C4_BINDINGS)`. Today's hand-written definition moves to the test as the oracle, and the compiled one draws the same markup for the corpus.
   - What `compileNotation` cannot read is added to the shared library, never written in the module: a `person` shape, and `cylinder` and `person` in the DISL shape catalog (C1); a node that ignores gestures, for the dashed boundary (C2); three stacked card labels with a fitted line and a wrapped block (C3). C2 and C3 are confirmed by compiling first; each addition is named for its geometry and has a library test seen to fail first.
   - The title band and the legend keep arriving in the `c4:view` payload.
+  - The canvas no longer sends Delete and Insert, which no C4 action ever answered: both were refused with the generic sentence (removed in #488; chat ruling, 2026-10-19).
   - Add the `tests.md` entry of Requirement 9.4 and run it in a real browser, in both themes: each of the six view kinds of the reference example, a drag and its undo, a drop of each toolbox entry on its parent kind and on the empty canvas, inline rename of an element and of a relationship's label, and a lifted relationship selected. Record what was seen.
   - Build a newly created worktree before trusting the gates, because the client now imports from `definition/`.
   - _Leverage: `src/diagrams/timeline/client/timelineBindings.ts` and `timelineCompiledDefinition.test.tsx`; `src/client/src/canvas/library/noModuleReachesLibraryShapes.test.ts`; `src/client/src/canvas/library/disl/shapeCatalog.test.ts`_

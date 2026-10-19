@@ -10,8 +10,9 @@ function superellipseLevel(x: number, y: number, w: number, h: number, n: number
 
 describe("the DISL shape catalog", () => {
   it("names only shapes the library has", () => {
-    // The trapezoid is admitted only at the library's own inset and direction, not DISL's defaults.
-    const asDrawn = (name: string) => (name === "trapezoid" ? { type: name, params: { inset: 0.15, direction: "down" } } : name);
+    // The trapezoid and the cylinder are admitted only at the library's own parameters, not DISL's defaults.
+    const ASKED: Readonly<Record<string, Readonly<Record<string, unknown>>>> = { trapezoid: { inset: 0.15, direction: "down" }, cylinder: { cap: 12 } };
+    const asDrawn = (name: string) => (name in ASKED ? { type: name, params: ASKED[name] } : name);
     for (const name of DISL_SHAPE_NAMES) {
       expect(BUILT_IN_SHAPES, name).toContain(libraryShapeOf(asDrawn(name)));
     }
@@ -56,6 +57,14 @@ describe("the DISL shape catalog", () => {
     ]);
     // Parallelogram, skew 0.2, right: the top edge shifted right by a fifth of the width.
     expect(outlineOf("parallelogram", bounds)).toEqual([{ x: 40, y: 0 }, { x: 200, y: 0 }, { x: 160, y: 60 }, { x: 0, y: 60 }]);
+  });
+
+  it("draws DISL's cylinder with a cap of 12 as the library's cylinder", () => {
+    expect(libraryShapeOf({ type: "cylinder", params: { cap: 12 } })).toBe("cylinder");
+    expect(libraryShapeOf({ type: "cylinder", params: { cap: 12, orientation: "vertical" } })).toBe("cylinder");
+    // DISL's cap defaults to 0.15 of the height (Appendix B.2); the library's is 12 at every height.
+    expect(() => libraryShapeOf("cylinder")).toThrow(/cap 12.*asks for "0.15 × height"/);
+    expect(() => libraryShapeOf({ type: "cylinder", params: { cap: 12, orientation: "horizontal" } })).toThrow(/orientation/);
   });
 
   it("crosses DISL's marker names over to the library's", () => {

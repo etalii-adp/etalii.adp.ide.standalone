@@ -14,24 +14,11 @@
 
   <ItemGroup>
     <ProjectReference Include="..\EtAlii.Adp.Specification.Fbl\EtAlii.Adp.Specification.Fbl.csproj" />
-    <!-- Read-only use of the public parsers of four modules, for the cross-check of Requirement 11.6. -->
-    <ProjectReference Include="..\..\diagrams\timeline\backend\EtAlii.Adp.Diagram.Timeline\EtAlii.Adp.Diagram.Timeline.csproj" />
-    <ProjectReference Include="..\..\diagrams\causal-loop-diagram\backend\EtAlii.Adp.Diagram.CausalLoopDiagram\EtAlii.Adp.Diagram.CausalLoopDiagram.csproj" />
-    <ProjectReference Include="..\..\diagrams\c4\backend\EtAlii.Adp.Diagram.C4\EtAlii.Adp.Diagram.C4.csproj" />
-    <ProjectReference Include="..\..\diagrams\mindmap\backend\EtAlii.Adp.Diagram.Mindmap\EtAlii.Adp.Diagram.Mindmap.csproj" />
-    <!-- The Helm chart folder plugin, for the cross-check of the folder binding (helm-chart-disl-fbl, Requirement 8.5). -->
-    <ProjectReference Include="..\..\diagrams\helm-chart\backend\EtAlii.Adp.Diagram.HelmChart\EtAlii.Adp.Diagram.HelmChart.csproj" />
-    <!-- The Databricks module's public model and its three parsers, for the cross-check of the two Databricks bindings (databricks-disl-fbl, task 1). -->
-    <ProjectReference Include="..\..\diagrams\databricks\backend\EtAlii.Adp.Diagram.Databricks\EtAlii.Adp.Diagram.Databricks.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <!--
-      Today's Helm reader, the side the Helm cross-check compares the binding and its plugin with. It is the oracle the
-      module's test project keeps (Parity/), compiled here from there rather than copied, so there is one oracle and
-      it cannot drift.
-    -->
-    <Compile Include="..\..\diagrams\helm-chart\backend\EtAlii.Adp.Diagram.HelmChart.Tests\Parity\HandWrittenHelmReader.cs" Link="RealFiles\HelmOracle\HandWrittenHelmReader.cs" />
+    <!-- An FBL document embedded as a module embeds its binding, for BundledBindingTests. -->
+    <EmbeddedResource Include="Conformance\timeline.fbl" LogicalName="timeline.fbl" />
   </ItemGroup>
 
 </Project>

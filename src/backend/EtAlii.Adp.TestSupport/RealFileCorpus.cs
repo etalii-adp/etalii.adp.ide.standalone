@@ -1,12 +1,12 @@
 using System.Text;
+using EtAlii.Adp.Specification.Fbl;
 using EtAlii.Adp.Specification.Fbl.Documents;
-using EtAlii.Adp.Specification.Fbl.Tests.Support;
 using Xunit;
 
-namespace EtAlii.Adp.Specification.Fbl.Tests.RealFiles;
+namespace EtAlii.Adp.TestSupport;
 
 /// <summary>One vendored binding tried on the real files: which files it takes, and how many there were when the suite was written.</summary>
-internal sealed record CorpusBinding(string Key, string Document, string Binding, int Minimum, Func<string, byte[], bool> Selects);
+public sealed record CorpusBinding(string Key, string Document, string Binding, int Minimum, Func<string, byte[], bool> Selects);
 
 /// <summary>
 /// The real files of this repository (Requirement 11.1): everything under <c>src/</c> except
@@ -14,7 +14,7 @@ internal sealed record CorpusBinding(string Key, string Document, string Binding
 /// time so a file added later is covered without a change here. Each binding's enumeration asserts a
 /// minimum count, so a broken enumeration fails rather than passing on zero files.
 /// </summary>
-internal static class RealFileCorpus
+public static class RealFileCorpus
 {
     private static readonly string[] _excludedFolders = ["node_modules", "bin", "obj"];
 
@@ -40,12 +40,15 @@ internal static class RealFileCorpus
 
     private static readonly Lazy<IReadOnlyList<string>> _files = new(Enumerate);
 
+    /// <summary>The FBL examples, fixtures and registrations vendored unchanged from etalii-adp/etalii.adp, which the FBL test project keeps.</summary>
+    private static string Conformance => RepositoryPaths.Under("src", "backend", "EtAlii.Adp.Specification.Fbl.Tests", "Conformance");
+
     private static readonly Dictionary<string, FblBinding> _bindings = new(StringComparer.Ordinal);
 
     /// <summary>Every real file, relative to the repository root, <c>/</c>-separated, in ordinal order.</summary>
     public static IReadOnlyList<string> All => _files.Value;
 
-    public static string FullPath(string relative) => Path.Combine(Repository.Root, relative.Replace('/', Path.DirectorySeparatorChar));
+    public static string FullPath(string relative) => Path.Combine(RepositoryPaths.Root, relative.Replace('/', Path.DirectorySeparatorChar));
 
     public static CorpusBinding Find(string key) => Declared.Single(b => b.Key == key);
 
@@ -81,7 +84,7 @@ internal static class RealFileCorpus
         {
             var key = document + "#" + name;
             if (_bindings.TryGetValue(key, out var binding)) return binding;
-            var path = document.Contains('/', StringComparison.Ordinal) ? FullPath(document) : Path.Combine(Repository.Conformance, document);
+            var path = document.Contains('/', StringComparison.Ordinal) ? FullPath(document) : Path.Combine(Conformance, document);
             var problems = FblDocumentLoader.Load(path, out var loaded);
             Assert.DoesNotContain(problems, p => p.Severity == ProblemSeverity.Error);
             foreach ((string bindingName, FblBinding value) in loaded!.Bindings) _bindings[document + "#" + bindingName] = value;
@@ -95,7 +98,7 @@ internal static class RealFileCorpus
     public static IReadOnlyList<(string Document, FblBinding Binding)> AllBindings()
     {
         var all = new List<(string, FblBinding)>();
-        foreach (var path in Directory.GetFiles(Repository.Conformance, "*.fbl").Order(StringComparer.Ordinal))
+        foreach (var path in Directory.GetFiles(Conformance, "*.fbl").Order(StringComparer.Ordinal))
         {
             var document = Path.GetFileName(path);
             var problems = FblDocumentLoader.Load(path, out var loaded);
@@ -116,10 +119,10 @@ internal static class RealFileCorpus
 
     private static IReadOnlyList<string> Enumerate()
     {
-        var root = Repository.Root;
-        var vendored = Path.GetFullPath(Repository.Conformance);
+        var root = RepositoryPaths.Root;
+        var vendored = Path.GetFullPath(Conformance);
         var files = new List<string>();
-        Walk(new DirectoryInfo(Repository.Source));
+        Walk(new DirectoryInfo(Path.Combine(RepositoryPaths.Root, "src")));
         return files.Order(StringComparer.Ordinal).ToList();
 
         void Walk(DirectoryInfo folder)
