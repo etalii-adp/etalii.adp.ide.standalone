@@ -98,7 +98,7 @@ Fifteen, each a candidate change for this repository: the twelve the conversion'
 - **Construct.** The tool reports the includes, then for each element its description, technology, connection and placement findings, then each relationship's, then each view's, then the coverage findings. DISL orders by rule (8.6), and `constraints.order` by code and then by line; neither states "element by element".
 - **Shown by.** `findings/finding-order.dsl`.
 - **Would resolve it.** An order key per finding, such as the position of its target in reading order, before the rule's position.
-- **Meanwhile.** The module orders the definition's findings itself (`C4FindingOrder` in the conversion's design, Q4).
+- **Meanwhile.** The module orders the definition's findings itself (`C4FindingOrder` in the conversion's design, Q4), finding a view's findings by their subject, the view's key.
 
 ### 11. DISL 11.5.1: the identifier of a new element made from its name (A9)
 
@@ -119,7 +119,7 @@ Fifteen, each a candidate change for this repository: the twelve the conversion'
 - **Construct.** A rule about every view reads `diagram.views`, whose `View` has `id`, `viewpoint`, `name` and `members` only. The tool's view findings need more of each view: `c4.unknown-view-scope` names the scope the view is written with and is located at the view's line, and `c4.empty-view` is located at the view's line. A view's own statements are diagram attributes of the reading that shows it, and no rule about the model can read them for another view.
 - **Shown by.** `findings/finding-order.dsl` (`c4.unknown-view-scope` at line 20, `c4.empty-view` at line 26), `findings/view-without-key.dsl`, the new `c4/container` and `c4/dynamic` documents.
 - **Would resolve it.** `View` exposing its reading's diagram attributes and a `location()`.
-- **Meanwhile.** `emptyView` is a rule without the line, and `c4.unknown-view-scope` is not a rule of the definition; the module reports both from its reading.
+- **Meanwhile.** `emptyView` is a rule without the line, its subject the view's key, and `c4.unknown-view-scope` is not a rule of the definition; the module reports both from its reading, the empty view at the line of the view its subject names.
 
 ### 14. DISL 11.2: the text an unset end was written with
 
