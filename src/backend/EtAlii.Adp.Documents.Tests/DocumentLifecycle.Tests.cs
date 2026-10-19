@@ -327,15 +327,8 @@ public class DocumentLifecycleTests : IDisposable
 
         // Assert: waiting for the next attempt until the clock moves, then delivering the change.
         Assert.False(reloading.IsCompleted, "The reload did not wait between its attempts.");
-        var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(5);
-        while (!reloading.IsCompleted && DateTime.UtcNow < deadline)
-        {
-            // Advanced until the wait is over: the reload may not have started its wait at the first advance.
-            clock.Advance(TimeSpan.FromHours(1));
-            await Task.Delay(10, cancellationToken);
-        }
-
-        Assert.True(reloading.IsCompleted, "The reload did not finish when its clock moved on.");
+        // Driven until the wait is over: the reload may not have started its wait at the first advance.
+        await clock.DriveAsync(reloading, TimeSpan.FromHours(1));
         Assert.True(await reloading);
         Assert.Equal("second", (await lifecycle.GetOrLoadAsync(path, cancellationToken)).Text);
     }
