@@ -1,7 +1,6 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Designer;
 using EtAlii.Adp.Diagram;
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.History;
 using Serilog;
@@ -30,22 +29,11 @@ public sealed class AddDiagramContextActionProvider : IContextActionProvider
     private const string NoDiagramTypes = "No diagram types are available.";
     private const string NotRegistrable = "No diagram type reads this kind of file.";
 
-    /// <summary>
-    /// Shown where the name field would be, for a type whose diagram is the folder. It says
-    /// what will happen rather than that something is unavailable: the user is not being
-    /// refused a name, they are being told the registration is named for them and where it
-    /// lands. A blank space where a field was is the thing this exists to prevent.
-    /// </summary>
-    private const string FolderSubjectSuppression =
-        "This type registers the folder itself, so the registration is created as `.adp` inside it.";
-
     private static readonly ContextShortcutDefinition AddShortcut = new("Insert");
     private static readonly ILogger _logger = Log.ForContext<AddDiagramContextActionProvider>();
 
-    private readonly IReadOnlyList<DiagramDefinition> _definitions;
     private readonly IHistoryStackStore _historyStacks;
-    private readonly DiagramDocumentFactories _documentFactories;
-    private readonly DiagramFileRouter _router;
+    private readonly DiagramAddOptions _diagrams;
     private readonly DesignerAddOptions? _designers;
 
     /// <param name="historyStacks">The history stacks where the create is sent; this provider writes nothing itself.</param>
@@ -79,14 +67,12 @@ public sealed class AddDiagramContextActionProvider : IContextActionProvider
         ArgumentNullException.ThrowIfNull(documentFactories);
         ArgumentNullException.ThrowIfNull(router);
         _historyStacks = historyStacks;
-        _documentFactories = documentFactories;
-        _definitions = catalog.All;
-        _router = router;
+        _diagrams = new DiagramAddOptions(catalog.All, documentFactories, router);
         _designers = designers;
     }
 
     /// <summary>Whether a folder has anything to add: a diagram type, or a designer type with a format.</summary>
-    private bool HasTypes => _definitions.Count > 0 || _designers is { Any: true };
+    private bool HasTypes => _diagrams.Any || _designers is { Any: true };
 
     public ContextScope Scope => ContextScope.Hierarchy;
 
@@ -102,7 +88,7 @@ public sealed class AddDiagramContextActionProvider : IContextActionProvider
         // the .adp beside it (add-diagram-action Requirement 4.3, revised).
         (bool available, string label, string reason) = target.IsContainer
             ? (HasTypes, "Add…", NoDiagramTypes)
-            : (RegistrableTypesFor(target).Count > 0, "Add as diagram…", NotRegistrable);
+            : (_diagrams.RegistrableFor(target).Count > 0, "Add as diagram…", NotRegistrable);
 
         if (!target.IsContainer && !available)
         {
@@ -125,58 +111,6 @@ public sealed class AddDiagramContextActionProvider : IContextActionProvider
         return ValueTask.FromResult<IReadOnlyList<ContextActionGroupDefinition>>([group]);
     }
 
-    /// <summary>
-    /// The diagram types that could claim <paramref name="target"/>, which is a file: those
-    /// declaring its extension. Empty when nothing declares it, or when an <c>.adp</c> already
-    /// sits beside it - a file that is already a diagram is opened, not registered again.
-    /// </summary>
-    private IReadOnlyList<DiagramDefinition> RegistrableTypesFor(ContextTarget target)
-    {
-        var extension = IoPath.GetExtension(target.ResolvedFullPath);
-        if (extension.Length == 0 || string.Equals(extension, DiagramFileName.Extension, StringComparison.OrdinalIgnoreCase))
-        {
-            return [];
-        }
-
-        if (File.Exists(IoPath.ChangeExtension(target.ResolvedFullPath, DiagramFileName.Extension)))
-        {
-            return [];
-        }
-
-        return
-        [
-            .. _definitions
-                .Where(definition => string.Equals(definition.Extension, extension, StringComparison.OrdinalIgnoreCase))
-                .Where(definition => SuggestsFor(definition, target)),
-        ];
-    }
-
-    /// <summary>
-    /// Whether <paramref name="definition"/> should be offered for this file: yes by default,
-    /// and by its own marker test where it declares one - a family's alternative reading is
-    /// suggested exactly on the bodies that carry its marker. A file that cannot be read right
-    /// now is simply not suggested for such a reading; nothing fails.
-    /// </summary>
-    private static bool SuggestsFor(DiagramDefinition definition, ContextTarget target)
-    {
-        if (definition.SuggestsBody is null)
-        {
-            return true;
-        }
-
-        try
-        {
-            // Shared, for the reason RegistrationLayout's read is: this runs while the user
-            // browses, over files ADP may be publishing at that moment, and a read sharing only
-            // Read denies that publish.
-            return definition.SuggestsBody(SharedDocumentReader.ReadAllText(target.ResolvedFullPath));
-        }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-        {
-            return false;
-        }
-    }
-
     public ValueTask<ContextExecutionResult> ExecuteAsync(ContextTarget target, string actionId, CancellationToken cancellationToken)
     {
         if (actionId != AddActionId)
@@ -192,7 +126,7 @@ public sealed class AddDiagramContextActionProvider : IContextActionProvider
 
         if (!target.IsContainer)
         {
-            var registrable = RegistrableTypesFor(target);
+            var registrable = _diagrams.RegistrableFor(target);
             if (registrable.Count == 0)
             {
                 return ValueTask.FromResult<ContextExecutionResult>(new ContextExecutionFailed(NotRegistrable));
@@ -210,13 +144,7 @@ public sealed class AddDiagramContextActionProvider : IContextActionProvider
                     NameField: null)));
         }
 
-        // Read once for the whole tree rather than per option: every folder-subject type asks
-        // the same question of the same folder, and the answer cannot change while one prompt
-        // is being built.
-        var registeredBy = ExistingFolderRegistration(target);
-        var options = DiagramOptionTree.Build(
-            _definitions,
-            definition => Annotate(definition, target, registeredBy));
+        var options = _diagrams.Options(target);
 
         return ValueTask.FromResult<ContextExecutionResult>(new ContextExecutionRequiresChoice(
             new ContextChoiceRequest(
@@ -238,71 +166,14 @@ public sealed class AddDiagramContextActionProvider : IContextActionProvider
     /// <see cref="CommitAsync"/> decides.
     /// </summary>
     public ValueTask<ContextValidationResult> ValidateAsync(ContextTarget target, string actionId, string value, CancellationToken cancellationToken)
-        => ValueTask.FromResult(ValidateName(target, value));
+        => ValueTask.FromResult(DiagramAddOptions.ValidateName(target, value));
 
     /// <summary>
-    /// What this provider has to say about one diagram type, offered for one folder. A
-    /// folder-subject type wants no name and says why; if the folder already holds a
-    /// registration it is also shown greyed, naming the file so the user can go and look at it.
-    /// </summary>
-    private static ContextOptionAnnotations Annotate(
-        DiagramDefinition definition,
-        ContextTarget target,
-        string? registeredBy)
-    {
-        if (!definition.HasFolderSubject)
-        {
-            return new ContextOptionAnnotations(
-                SuggestedValue: DiagramFileName.Suggest(definition.Origin, target.ResolvedFullPath));
-        }
-
-        return new ContextOptionAnnotations(
-            NameSuppressedReason: FolderSubjectSuppression,
-            UnavailableReason: registeredBy is null ? "" : $"This folder is already registered by `{registeredBy}`");
-    }
-
-    /// <summary>
-    /// The name of the registration this folder is already registered by, or null. Both shapes
-    /// count - a bare <c>.adp</c> and a legacy named one alike - because what makes a folder
-    /// registered is the type its registration routes to, never the file's name.
-    /// </summary>
-    /// <remarks>
-    /// The catalog probe comes first so a deployment with no folder-subject type pays no disk
-    /// read at all: with none deployed there is nothing a registration could route to.
-    /// </remarks>
-    private string? ExistingFolderRegistration(ContextTarget target)
-    {
-        if (!_router.HasFolderSubjectTypes)
-        {
-            return null;
-        }
-
-        foreach (var path in Directory.EnumerateFiles(target.ResolvedFullPath))
-        {
-            if (DiagramFilePair.IsRegistrationFile(path)
-                && _router.Route(path, target.Root.FullPath) is DiagramRouted { Definition.HasFolderSubject: true })
-            {
-                return IoPath.GetFileName(path);
-            }
-        }
-
-        return null;
-    }
-
-    private static ContextValidationResult ValidateName(ContextTarget target, string name)
-    {
-        return DiagramFileName.StripExtension(name).Trim().Length == 0
-            // Judged before the extension is added: without this, an empty name would become the
-            // perfectly valid file ".adp" instead of being refused.
-            ? ContextValidationResult.Rejected("Enter a name.")
-            : EntryNameRules.Validate(DiagramFileName.WithExtension(name), target.ResolvedFullPath);
-    }
-
-    /// <summary>
-    /// Creates the diagram. In this order: the folder is re-checked (it may have vanished while
-    /// the dialog was open), the option id is resolved to a definition, and the name is judged
-    /// again - a client that skipped validation cannot get past this. Only then is anything
-    /// written, and what is written is one line: the chosen type's MIME type.
+    /// Creates what was chosen. In this order: the folder or file is re-checked (it may have
+    /// vanished while the dialog was open), then the family the option belongs to plans the one
+    /// command it comes down to - resolving the option and judging the name again, so a client
+    /// that skipped validation cannot get past this. Only then is anything written, by that
+    /// command through the history.
     /// </summary>
     public async ValueTask<ContextCommitResult> CommitAsync(ContextTarget target, string actionId, string value, string text, CancellationToken cancellationToken)
     {
@@ -316,104 +187,21 @@ public sealed class AddDiagramContextActionProvider : IContextActionProvider
             return ContextCommitResult.Failed(target.IsContainer ? "The folder no longer exists." : "The file no longer exists.");
         }
 
-        if (!target.IsContainer)
+        // One strategy per case (code-structure FR-071): registering a file that is there, a
+        // designer's new document, or a diagram's - a new document or the folder itself.
+        (CreateDiagramFileCommand? command, string error) = !target.IsContainer
+            ? _diagrams.PlanRegistration(target, value)
+            : _designers?.Resolve(value) is { } designer
+                ? PlanDesignerDocument(target, designer.Definition, designer.Format, text)
+                : _diagrams.PlanInFolder(target, value, text);
+        if (command is null)
         {
-            return await RegisterAsync(target, value, cancellationToken);
-        }
-
-        if (_designers?.Resolve(value) is { } designer)
-        {
-            return await CreateDesignerDocumentAsync(target, designer.Definition, designer.Format, text, cancellationToken);
-        }
-
-        var definition = _definitions.FirstOrDefault(candidate => candidate.Origin.Key == value);
-        if (definition is null)
-        {
-            // The client offered an option that is not on the list it was given - a stale
-            // dialog, or a client built against a different set of modules.
-            _logger.Warning("Rejecting the Add: {OptionId} is not one of the {Count} diagram types on offer", value, _definitions.Count);
-            return ContextCommitResult.Failed("That diagram type is not available.");
-        }
-
-        string fileName;
-        if (definition.HasFolderSubject)
-        {
-            // The folder is the diagram, so there is no name to take. A submitted one means a
-            // stale client rather than a user's intent: ignored rather than obeyed, and logged
-            // so that a client still sending one is visible rather than silently tolerated.
-            if (text.Trim().Length > 0)
-            {
-                _logger.Warning(
-                    "Ignoring the name {Name} submitted for {Origin}, which registers the folder itself",
-                    text,
-                    definition.Origin.Key);
-            }
-
-            // ValidateName is skipped rather than called with an empty string. It rejects an
-            // empty base name precisely so that nothing creates a file called ".adp" - which is
-            // the file this path creates on purpose, so the guard would refuse the one case it
-            // was written to prevent everywhere else.
-            var registeredBy = ExistingFolderRegistration(target);
-            if (registeredBy is not null)
-            {
-                // Re-consulted here rather than trusted from the prompt: the dialog may have
-                // been open while another registration landed, and overwriting one is the
-                // outcome worth spending a second read to avoid.
-                _logger.Debug(
-                    "Refusing a {Origin} registration for {Folder}, already registered by {Existing}",
-                    definition.Origin.Key,
-                    target.ResolvedFullPath,
-                    registeredBy);
-                return ContextCommitResult.Failed($"This folder is already registered by '{registeredBy}'.");
-            }
-
-            fileName = DiagramFileName.Extension;
-        }
-        else
-        {
-            var validation = ValidateName(target, text);
-            if (!validation.Valid)
-            {
-                _logger.Debug("Rejecting the name {Name} for a new {Origin}: {Reason}", text, definition.Origin.Key, validation.Reason);
-                return ContextCommitResult.Failed(validation.Reason);
-            }
-
-            fileName = DiagramFileName.WithExtension(text);
-        }
-        _logger.Debug("Creating a {Origin} diagram named {FileName} in {Folder}", definition.Origin.Key, fileName, target.ResolvedFullPath);
-
-        // A type that keeps its body in a sibling file gets that body from its own factory,
-        // written by the same command so both files appear or neither does. The factory is
-        // resolved here rather than in the handler so the command stays plain data a redo can
-        // replay, and so the handler never looks a diagram type up.
-        var siblingFileName = "";
-        var siblingContent = "";
-        if (definition.HasDocumentSibling)
-        {
-            var factory = _documentFactories.Find(definition.Origin);
-            if (factory is null)
-            {
-                // The host's startup check makes this unreachable in a consistent deployment;
-                // answered anyway, because a silent .adp without its body is worse than a refusal.
-                _logger.Error("No IDiagramDocumentFactory is registered for {Origin}, which declares {Extension}", definition.Origin.Key, definition.Extension);
-                return ContextCommitResult.Failed("This diagram type cannot be created: its module is incomplete.");
-            }
-
-            var baseName = DiagramFileName.StripExtension(fileName);
-            siblingFileName = baseName + definition.Extension;
-            siblingContent = factory.CreateEmptyDocument(baseName);
-
-            var siblingPath = IoPath.Combine(target.ResolvedFullPath, siblingFileName);
-            if (File.Exists(siblingPath) || Directory.Exists(siblingPath))
-            {
-                return ContextCommitResult.Failed($"An item named '{siblingFileName}' already exists in this folder.");
-            }
+            return ContextCommitResult.Failed(error);
         }
 
         // The write is the command's; this provider only decides what to write and where. The
         // history is what makes the new file one undo away, by way of the delete the handler
         // reports as the inverse.
-        var command = new CreateDiagramFileCommand(target.ResolvedFullPath, fileName, definition.Origin.MimeType, siblingFileName, siblingContent);
         var result = await _historyStacks.Get(target.Root).ExecuteAsync(command, cancellationToken);
 
         return result.IsSuccess
@@ -424,70 +212,26 @@ public sealed class AddDiagramContextActionProvider : IContextActionProvider
     }
 
     /// <summary>
-    /// Creates a designer's document in the chosen format: its body and the registration beside
-    /// it, through the same command a diagram with a body file is created by, so the two files
+    /// A designer's document in the chosen format: its body and the registration beside it,
+    /// through the same command a diagram with a body file is created by, so the two files
     /// appear or neither does and one undo removes both.
     /// </summary>
-    private async ValueTask<ContextCommitResult> CreateDesignerDocumentAsync(
-        ContextTarget target, DesignerDefinition definition, DesignerFormat format, string text, CancellationToken cancellationToken)
+    private (CreateDiagramFileCommand? Command, string Error) PlanDesignerDocument(
+        ContextTarget target, DesignerDefinition definition, DesignerFormat format, string text)
     {
-        var validation = ValidateName(target, text);
+        var validation = DiagramAddOptions.ValidateName(target, text);
         if (!validation.Valid)
         {
             _logger.Debug("Rejecting the name {Name} for a new {Origin}: {Reason}", text, definition.Origin, validation.Reason);
-            return ContextCommitResult.Failed(validation.Reason);
+            return (null, validation.Reason);
         }
 
         (CreateDiagramFileCommand? command, string error) = _designers!.Plan(definition, format, target.ResolvedFullPath, DiagramFileName.StripExtension(text));
-        if (command is null)
+        if (command is not null)
         {
-            return ContextCommitResult.Failed(error);
+            _logger.Debug("Creating a {Origin} document named {FileName} in {Folder}", definition.Origin, command.SiblingFileName, target.ResolvedFullPath);
         }
 
-        _logger.Debug("Creating a {Origin} document named {FileName} in {Folder}", definition.Origin, command.SiblingFileName, target.ResolvedFullPath);
-        var result = await _historyStacks.Get(target.Root).ExecuteAsync(command, cancellationToken);
-
-        return result.IsSuccess
-            ? ContextCommitResult.Created(CreateDiagramFileCommandHandler.DestinationOf(command))
-            : ContextCommitResult.Failed(result.Error);
-    }
-
-    /// <summary>
-    /// Registers a file the repository already has: writes the <c>.adp</c> beside it naming the
-    /// chosen type, and touches the file itself not at all.
-    /// </summary>
-    /// <remarks>
-    /// The same <see cref="CreateDiagramFileCommand"/> the folder path uses, with no sibling -
-    /// because the body is the file being registered, and it is already there. That is the whole
-    /// difference between creating a diagram and registering one, which is why this is a branch
-    /// rather than a second command: undo removes the registration and leaves the pipeline alone.
-    /// </remarks>
-    private async ValueTask<ContextCommitResult> RegisterAsync(ContextTarget target, string optionId, CancellationToken cancellationToken)
-    {
-        var registrable = RegistrableTypesFor(target);
-        var definition = registrable.FirstOrDefault(candidate => candidate.Origin.Key == optionId);
-        if (definition is null)
-        {
-            // Either a stale dialog, or one built against a different set of modules. Checked
-            // against the registrable list rather than every definition, so a type that does not
-            // read this kind of file cannot be chosen for it.
-            _logger.Warning(
-                "Rejecting the registration: {OptionId} is not one of the {Count} types that read {Extension}",
-                optionId,
-                registrable.Count,
-                IoPath.GetExtension(target.ResolvedFullPath));
-            return ContextCommitResult.Failed("That diagram type is not available for this file.");
-        }
-
-        var folder = IoPath.GetDirectoryName(target.ResolvedFullPath) ?? "";
-        var fileName = DiagramFileName.WithExtension(IoPath.GetFileNameWithoutExtension(target.ResolvedFullPath));
-        _logger.Debug("Registering {File} as a {Origin} diagram", target.ResolvedFullPath, definition.Origin.Key);
-
-        var command = new CreateDiagramFileCommand(folder, fileName, definition.Origin.MimeType);
-        var result = await _historyStacks.Get(target.Root).ExecuteAsync(command, cancellationToken);
-
-        return result.IsSuccess
-            ? ContextCommitResult.Created(CreateDiagramFileCommandHandler.DestinationOf(command))
-            : ContextCommitResult.Failed(result.Error);
+        return (command, error);
     }
 }
