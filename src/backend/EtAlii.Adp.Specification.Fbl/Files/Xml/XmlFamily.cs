@@ -218,15 +218,15 @@ internal sealed partial class XmlFamily(BodyText text, FblBinding binding, FblOp
     // ---- writing (FBL §6) ----
 
     /// <summary>Text escaping (FBL §4.5): <c>&amp;</c>, <c>&lt;</c> and <c>&gt;</c>.</summary>
-    public static string EscapeText(string value) =>
+    private static string EscapeText(string value) =>
         value.Replace("&", "&amp;", StringComparison.Ordinal).Replace("<", "&lt;", StringComparison.Ordinal).Replace(">", "&gt;", StringComparison.Ordinal);
 
     /// <summary>Attribute escaping (FBL §4.5): the text escapes, and <c>"</c>, LF and CR.</summary>
-    public static string EscapeAttribute(string value) =>
+    private static string EscapeAttribute(string value) =>
         EscapeText(value).Replace("\"", "&quot;", StringComparison.Ordinal).Replace("\n", "&#xa;", StringComparison.Ordinal).Replace("\r", "&#xd;", StringComparison.Ordinal);
 
     /// <summary>Plain text as html paragraphs (FBL §4.5): one <c>&lt;p&gt;line&lt;/p&gt;</c> per line.</summary>
-    public static string HtmlParagraphs(string value) =>
+    private static string HtmlParagraphs(string value) =>
         value.Length == 0 ? "" : string.Concat(value.Replace("\r\n", "\n", StringComparison.Ordinal).Split('\n').Select(line => $"<p>{EscapeText(line)}</p>"));
 
     public override string Format(SlotRead read, AttributeBinding? binding, object? value)

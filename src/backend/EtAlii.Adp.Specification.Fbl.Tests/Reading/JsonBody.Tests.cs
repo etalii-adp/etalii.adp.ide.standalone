@@ -71,7 +71,7 @@ public class JsonBodyTests
 
         // Assert.
         Assert.Null(family.Unreadable);
-        Assert.Equal("\ud800", family.Root!.Value!.Entries[0].Value!.Text);
+        Assert.Equal("\ud800", family.Root!.Value.Entries[0].Value.Text);
     }
 
     private static JsonFamily Parse(string body)

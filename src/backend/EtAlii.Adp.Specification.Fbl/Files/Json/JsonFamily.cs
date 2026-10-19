@@ -76,7 +76,7 @@ internal sealed class JsonFamily(BodyText text, FblBinding binding, FblOptions o
         return wire is not null ? Quote(wire) : Write(value, binding);
     }
 
-    public static string Write(object? value, AttributeBinding? binding) => value switch
+    private static string Write(object? value, AttributeBinding? binding) => value switch
     {
         null => "null",
         string s => Quote(s),
@@ -89,7 +89,7 @@ internal sealed class JsonFamily(BodyText text, FblBinding binding, FblOptions o
     /// <summary>A JSON string with the escapes RFC 8785 uses (FBL §6.3).</summary>
     public static string Quote(string value) => "\"" + Escape(value) + "\"";
 
-    public static string Escape(string value)
+    private static string Escape(string value)
     {
         var builder = new StringBuilder(value.Length + 2);
         foreach (var c in value)
