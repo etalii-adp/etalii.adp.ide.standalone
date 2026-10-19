@@ -300,34 +300,34 @@ internal sealed class JsonFamily(BodyText text, FblBinding binding, FblOptions o
         return builder.ToString();
     }
 
-    public override void Write(Plan plan, ReadElement element, IReadOnlyList<SlotChange> changes)
+    protected override bool RemoveSlot(Plan plan, ReadElement element, SlotChange change)
     {
-        foreach (var change in changes)
+        if (change.Read.Node is TreeEntry member) plan.Add(SpliceOperation.RemoveKey, RemovalSpan(member), "");
+        return true;
+    }
+
+    protected override bool ReplaceSlot(Plan plan, ReadElement element, SlotChange change)
+    {
+        if (change.Read.Span is not { } span) return false;
+        var written = Format(change.Read, change.Binding, change.Value);
+        if (written != Text.Text(span)) plan.Add(SpliceOperation.ReplaceValue, span, written);
+        return true;
+    }
+
+    protected override bool InsertSlot(Plan plan, ReadElement element, SlotChange change)
+    {
+        var mapping = Mapping((TreeEntry)element.Entry, change.Binding.Child);
+        if (mapping is null || change.Binding.Key is not { } key)
         {
-            var read = change.Read;
-            if (change is { IsEmpty: true, Binding.Empty: "remove" })
-            {
-                if (read.Node is TreeEntry member) plan.Add(SpliceOperation.RemoveKey, RemovalSpan(member), "");
-                continue;
-            }
-            if (read is { Present: true, Span: { } span })
-            {
-                var written = Format(read, change.Binding, change.Value);
-                if (written != Text.Text(span)) plan.Add(SpliceOperation.ReplaceValue, span, written);
-                continue;
-            }
-            var mapping = Mapping((TreeEntry)element.Entry, change.Binding.Child);
-            if (mapping is null || change.Binding.Key is not { } key)
-            {
-                Plan.Refuse($"The {Binding.Name} file has no object to write \"{change.Binding.Key}\" in.");
-                return;
-            }
-            var added = $"{Quote(key)}: {Format(read, change.Binding, change.Value)}";
-            (int offset, string text) = MemberBefore(mapping, key, change.Rule.WireOrder()) is { } before
-                ? (before.Own.End, (before.LineSpan is not null ? "," + NewlineAt(before.Own.End) + Indentation(before.Indent) : ", ") + added)
-                : NewMember(mapping, added);
-            plan.Add(SpliceOperation.InsertKey, offset, offset, text);
+            Plan.Refuse($"The {Binding.Name} file has no object to write \"{change.Binding.Key}\" in.");
+            return true;
         }
+        var added = $"{Quote(key)}: {Format(change.Read, change.Binding, change.Value)}";
+        (int offset, string text) = MemberBefore(mapping, key, change.Rule.WireOrder()) is { } before
+            ? (before.Own.End, (before.LineSpan is not null ? "," + NewlineAt(before.Own.End) + Indentation(before.Indent) : ", ") + added)
+            : NewMember(mapping, added);
+        plan.Add(SpliceOperation.InsertKey, offset, offset, text);
+        return true;
     }
 
     /// <summary>

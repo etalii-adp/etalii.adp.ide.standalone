@@ -426,44 +426,46 @@ internal sealed class LinesFamily(BodyText text, FblBinding binding, FblOptions 
         return System.Text.RegularExpressions.Regex.Unescape(word);
     }
 
-    public override void Write(Plan plan, ReadElement element, IReadOnlyList<SlotChange> changes)
+    /// <summary>A flag is never removed as an emptied value: it is written as present or not (<see cref="ReplaceSlot"/>, <see cref="InsertSlot"/>).</summary>
+    protected override bool RemoveSlot(Plan plan, ReadElement element, SlotChange change)
+    {
+        if (change.Binding.Flag) return false;
+        if (change.Read.Present) plan.Add(SpliceOperation.RemoveKey, Removable(change.Read), "");
+        return true;
+    }
+
+    protected override bool ReplaceSlot(Plan plan, ReadElement element, SlotChange change)
+    {
+        var read = change.Read;
+        if (change.Binding.Flag)
+        {
+            if (change.Value is not true) plan.Add(SpliceOperation.RemoveKey, WithSpaceBefore(read.Span!.Value), "");
+            return true;
+        }
+        if (read.Span is not { } readSpan) return false;
+        if (SameNumber(read, change.Value) || SameWords(read, change.Value)) return true;
+        var span = AfterLeadingSpace(read, readSpan);
+        var text = Format(read, change.Binding, change.Value);
+        if (text != Text.Text(span)) plan.Add(SpliceOperation.ReplaceValue, span, text);
+        return true;
+    }
+
+    /// <summary>False when the line has no place for the value, and it is re-emitted (<see cref="Rewrite"/>).</summary>
+    protected override bool InsertSlot(Plan plan, ReadElement element, SlotChange change)
+    {
+        if (change.Binding.Flag && change.Value is not true) return true;
+        if (InsertPoint(element, change) is not { } point) return false;
+        plan.Add(SpliceOperation.InsertKey, point.Offset, point.Offset, point.Text);
+        return true;
+    }
+
+    protected override bool ReadsBack(IReadOnlyList<Splice> planned, ReadElement element, IReadOnlyList<SlotChange> changes) =>
+        RemovalsReadBack(element, (Statement)element.Entry, changes, planned);
+
+    /// <summary>The line re-emitted through the rule's <c>emit</c> with the changes, or refused when it has none.</summary>
+    protected override void Rewrite(Plan plan, ReadElement element, IReadOnlyList<SlotChange> changes)
     {
         var statement = (Statement)element.Entry;
-        var reEmit = false;
-        var pending = new List<(SpliceOperation Operation, Span Span, string Text)>();
-        foreach (var change in changes)
-        {
-            var read = change.Read;
-            var binding = change.Binding;
-            if (binding.Flag)
-            {
-                if (change.Value is true == read.Present) continue;
-                if (read.Present) pending.Add((SpliceOperation.RemoveKey, WithSpaceBefore(read.Span!.Value), ""));
-                else if (InsertPoint(element, change) is { } at) pending.Add((SpliceOperation.InsertKey, new Span(at.Offset, at.Offset), at.Text));
-                else reEmit = true;
-                continue;
-            }
-            if (change.IsEmpty && binding.Empty == "remove")
-            {
-                if (read.Present) pending.Add((SpliceOperation.RemoveKey, Removable(read), ""));
-                continue;
-            }
-            if (read is { Present: true, Span: { } readSpan })
-            {
-                if (SameNumber(read, change.Value) || SameWords(read, change.Value)) continue;
-                var span = AfterLeadingSpace(read, readSpan);
-                var text = Format(read, binding, change.Value);
-                if (text != Text.Text(span)) pending.Add((SpliceOperation.ReplaceValue, span, text));
-                continue;
-            }
-            if (InsertPoint(element, change) is { } point) pending.Add((SpliceOperation.InsertKey, new Span(point.Offset, point.Offset), point.Text));
-            else reEmit = true;
-        }
-        if (!reEmit && RemovalsReadBack(element, statement, changes, pending))
-        {
-            foreach ((SpliceOperation operation, Span span, string text) in pending) plan.Add(operation, span, text);
-            return;
-        }
         if (element.Rule.Insert?.Emit is not { } emit)
         {
             Plan.Refuse($"This {element.Rule.Type} has no place in its line for the new value, and its rule gives no form to write the line in.");
@@ -477,23 +479,23 @@ internal sealed class LinesFamily(BodyText text, FblBinding binding, FblOptions 
     }
 
     /// <summary>
-    /// Whether the line, with <paramref name="pending"/> applied, still reads as the change says where a
+    /// Whether the line, with <paramref name="planned"/> applied, still reads as the change says where a
     /// value is removed: the rule still matches it, every group the change does not write reads as it
     /// did, and a value that has a group of its own no longer reads one. A removal can fail that - the word after the value is glued to the
     /// word before it, or moves into the value's place - and the line is then re-emitted instead.
     /// </summary>
-    private bool RemovalsReadBack(ReadElement element, Statement statement, IReadOnlyList<SlotChange> changes, List<(SpliceOperation Operation, Span Span, string Text)> pending)
+    private bool RemovalsReadBack(ReadElement element, Statement statement, IReadOnlyList<SlotChange> changes, IReadOnlyList<Splice> planned)
     {
-        if (pending.All(splice => splice.Operation != SpliceOperation.RemoveKey) || element.Rule.Line is not { } expression) return true;
+        if (planned.All(splice => splice.Operation != SpliceOperation.RemoveKey) || element.Rule.Line is not { } expression) return true;
         var start = statement.Offsets[0];
         var end = statement.Offsets[^1];
         var after = new StringBuilder();
         var at = start;
-        foreach ((_, Span span, string text) in pending.OrderBy(splice => splice.Span.Start))
+        foreach (var splice in planned.OrderBy(splice => splice.Start))
         {
-            if (span.Start < at || span.End > end) return true;
-            after.Append(Text.Text(at, span.Start)).Append(text);
-            at = span.End;
+            if (splice.Start < at || splice.End > end) return true;
+            after.Append(Text.Text(at, splice.Start)).Append(splice.Text);
+            at = splice.End;
         }
         after.Append(Text.Text(at, end));
         Match? match;

@@ -223,7 +223,7 @@ internal sealed class YamlFamily(BodyText text, FblBinding binding, FblOptions o
         return true;
     }
 
-    protected override void InsertSlot(Plan plan, ReadElement element, SlotChange change)
+    protected override bool InsertSlot(Plan plan, ReadElement element, SlotChange change)
     {
         var mapping = change.Read.Node as TreeValue ?? Mapping((TreeEntry)element.Entry, change.Binding.Child);
         if (mapping is null && change.Binding is { Create.AtEnd: true, Child: { } child, Key: { } created })
@@ -232,18 +232,19 @@ internal sealed class YamlFamily(BodyText text, FblBinding binding, FblOptions o
             if (!MissingLevels((TreeEntry)element.Entry, child.Trim('/').Split('/'), out var at, out var levels, out var inside))
             {
                 Plan.Refuse($"The {Binding.Name} file has no place to create {child} in.");
-                return;
+                return true;
             }
             foreach (var level in levels) plan.Add(SpliceOperation.EnsureContainer, at, at, NewLine(at, [level]));
             plan.Add(SpliceOperation.InsertKey, at, at, NewLine(at, [Indentation(inside) + created + ": " + Scalar(change.Value, null, change.Binding, inside)]));
-            return;
+            return true;
         }
         if (mapping is null || mapping.Kind != ValueKind.Mapping || change.Binding.Key is not { } key)
         {
             Plan.Refuse($"The {Binding.Name} file has no mapping to write '{change.Binding.Key}' in.");
-            return;
+            return true;
         }
         InsertKey(plan, mapping, key, change);
+        return true;
     }
 
     /// <summary>A key the entry lacks goes at its place in the rule's key order: after the nearest present key before it, else before the nearest after it.</summary>
