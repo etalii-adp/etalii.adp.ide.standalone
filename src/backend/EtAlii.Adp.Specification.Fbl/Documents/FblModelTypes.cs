@@ -1,8 +1,8 @@
-namespace EtAlii.Adp.Specification.Fbl.Documents;
-
 using System.Text.Json;
 using EtAlii.Adp.Specification.Cel;
 using EtAlii.Adp.Specification.Fbl.Expressions;
+
+namespace EtAlii.Adp.Specification.Fbl.Documents;
 
 /// <summary>A loaded FBL document (FBL §2.1): its version and its bindings by name.</summary>
 public sealed class FblDocument
