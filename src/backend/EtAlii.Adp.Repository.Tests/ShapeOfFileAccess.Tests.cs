@@ -55,8 +55,8 @@ public partial class ShapeOfFileAccessTests
         // That file was the guard's blind spot twice over - the only File.ReadAllBytes in the
         // backend, which the rule did not match until 6.1, inside the only file exempted from
         // every rule. Neither exemption survives.
-        ("Problems/ProblemStore.cs", RawRead, "ADP's own problem cache, not a user document - no user-driven writer contends for it"),
-        ("Problems/ProblemStore.cs", UnguardedWrite, "the same cache on the way out: a truncated one is rebuilt on the next scan, which is what separates it from FileProjectStore's projects list"),
+        ("Problems/ProblemCache.cs", RawRead, "ADP's own problem cache, not a user document - no user-driven writer contends for it"),
+        ("Problems/ProblemCache.cs", UnguardedWrite, "the same cache on the way out: a truncated one is rebuilt on the next scan, which is what separates it from FileProjectStore's projects list"),
         ("Projects/FileProjectStore.cs", RawRead, "ADP's own projects file, not a user document"),
         ("C4/C4LayoutSidecar.cs", RawRead, "reads ADP's own layout sidecar JSON, not the user's .dsl"),
         ("WardleyMap/WardleyIdentities.cs", RawRead, "reads ADP's own identities sidecar JSON, not the user's .owm"),
