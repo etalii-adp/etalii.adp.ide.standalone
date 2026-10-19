@@ -13,10 +13,8 @@ namespace EtAlii.Adp.Specification.Fbl.Documents;
 /// </summary>
 public static class FblDocumentLoader
 {
-    private const int SupportedMajor = 0;
-
-    /// <summary>The newest minor version this library reads in full; a document of a newer one loads with a warning.</summary>
-    private const int KnownMinor = 5;
+    /// <summary>The FBL major version this library reads, and the newest minor it reads in full; a document of a newer one loads with a warning.</summary>
+    private static readonly LanguageVersion Fbl = new("FBL", 0, 5, "FBL §2.7");
 
     public static IReadOnlyList<LoadDiagnostic> Load(string path, out FblDocument? document) =>
         Load(ReadShared(path), out document);
@@ -34,9 +32,6 @@ public static class FblDocumentLoader
     {
         var problems = new List<LoadDiagnostic>();
         document = null;
-        FindDuplicateKeys(json, problems);
-        if (problems.Count > 0) return problems;
-
         JsonDocument parsed;
         try
         {
@@ -51,31 +46,23 @@ public static class FblDocumentLoader
         using (parsed)
         {
             var root = parsed.RootElement;
+            problems.AddRange(JsonDuplicateKeys.Find(root, "FBL §2.1"));
+            if (problems.Count > 0) return problems;
             if (root.ValueKind != JsonValueKind.Object)
             {
                 problems.Add(new LoadDiagnostic("", LoadSeverity.Error, "An FBL document is a JSON object."));
                 return problems;
             }
+
+            // A version this library does not read is reported, and the rest of the document still is (behaviour change B-08).
             var version = root.TryGetProperty("fbl", out var v) && v.ValueKind == JsonValueKind.String ? v.GetString()! : null;
             if (version is null)
             {
                 problems.Add(new LoadDiagnostic("/fbl", LoadSeverity.Error, "The document does not say which FBL version it is written in."));
-                return problems;
             }
-            var parts = version.Split('.');
-            if (parts.Length < 2 || !int.TryParse(parts[0], out var major) || !int.TryParse(parts[1], out var minor))
+            else if (Fbl.Check(version, "/fbl") is { } versionProblem)
             {
-                problems.Add(new LoadDiagnostic("/fbl", LoadSeverity.Error, $"'{version}' is not an FBL version."));
-                return problems;
-            }
-            if (major != SupportedMajor)
-            {
-                problems.Add(new LoadDiagnostic("/fbl", LoadSeverity.Error, $"FBL {version} is not supported; this library reads FBL {SupportedMajor}.x."));
-                return problems;
-            }
-            if (minor > KnownMinor)
-            {
-                problems.Add(new LoadDiagnostic("/fbl", LoadSeverity.Warning, $"FBL {version} is newer than {SupportedMajor}.{KnownMinor}; what this library does not know is ignored."));
+                problems.Add(versionProblem);
             }
             if (!root.TryGetProperty("bindings", out var bindings) || bindings.ValueKind != JsonValueKind.Object || !bindings.EnumerateObject().Any())
             {
@@ -100,7 +87,7 @@ public static class FblDocumentLoader
             }
 
             if (problems.Any(p => p.Severity == LoadSeverity.Error)) return problems;
-            document = new FblDocument { Version = version, Bindings = result };
+            document = new FblDocument { Version = version!, Bindings = result };
             return problems;
         }
     }
@@ -118,66 +105,6 @@ public static class FblDocumentLoader
         return document.Bindings.TryGetValue(name, out var binding)
             ? binding
             : throw new InvalidOperationException($"The FBL document '{path}' has no binding '{name}'.");
-    }
-
-    private static void FindDuplicateKeys(byte[] json, List<LoadDiagnostic> problems)
-    {
-        var reader = new Utf8JsonReader(json, new JsonReaderOptions { CommentHandling = JsonCommentHandling.Disallow });
-        var stack = new Stack<(HashSet<string>? Keys, string Pointer, int Index)>();
-        string? pending = null;
-        var pointer = "";
-        try
-        {
-            while (reader.Read())
-            {
-                switch (reader.TokenType)
-                {
-                    case JsonTokenType.StartObject:
-                    case JsonTokenType.StartArray:
-                        var here = Child(stack, pointer, pending);
-                        if (stack.Count > 0 && stack.Peek().Keys is null)
-                        {
-                            var top = stack.Pop();
-                            stack.Push((null, top.Pointer, top.Index + 1));
-                        }
-                        stack.Push((reader.TokenType == JsonTokenType.StartObject ? new HashSet<string>(StringComparer.Ordinal) : null, here, 0));
-                        pending = null;
-                        break;
-                    case JsonTokenType.EndObject:
-                    case JsonTokenType.EndArray:
-                        stack.Pop();
-                        break;
-                    case JsonTokenType.PropertyName:
-                        var name = reader.GetString()!;
-                        var keys = stack.Peek().Keys!;
-                        if (!keys.Add(name))
-                        {
-                            problems.Add(new LoadDiagnostic(JsonPointer.Append(stack.Peek().Pointer, name), LoadSeverity.Error, $"The key '{name}' appears twice."));
-                        }
-                        pending = name;
-                        break;
-                    default:
-                        if (stack.Count > 0 && stack.Peek().Keys is null)
-                        {
-                            var top = stack.Pop();
-                            stack.Push((null, top.Pointer, top.Index + 1));
-                        }
-                        pending = null;
-                        break;
-                }
-            }
-        }
-        catch (JsonException e)
-        {
-            problems.Add(new LoadDiagnostic(pointer, LoadSeverity.Error, $"The document is not JSON: {e.Message}"));
-        }
-    }
-
-    private static string Child(Stack<(HashSet<string>? Keys, string Pointer, int Index)> stack, string root, string? pending)
-    {
-        if (stack.Count == 0) return root;
-        var top = stack.Peek();
-        return top.Keys is null ? $"{top.Pointer}/{top.Index}" : $"{top.Pointer}/{JsonPointer.Token(pending ?? "")}";
     }
 }
 

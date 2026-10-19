@@ -74,6 +74,16 @@ public class DislLoaderTests
         Assert.Equal(["warning at /dedl: 'dedl' is the deprecated alias of 'disl' (DISL §18)."], result.Diagnostics.Select(diagnostic => diagnostic.ToString()));
     }
 
+    [Theory]
+    [InlineData("0.3.1")]
+    [InlineData("+0.3")]
+    [InlineData(" 0.3")]
+    [InlineData("0")]
+    public void AVersionNotWrittenAsMajorDotMinorInDigits_IsRefused(string version)
+    {
+        Assert.Equal([$"error at /disl: The DISL version '{version}' is not written as major.minor (DISL §2.9)."], Specifications.Diagnostics(Specifications.With($"\"disl\": \"{version}\"")));
+    }
+
     [Fact]
     public void AMissingVersion_IsRefused()
     {
