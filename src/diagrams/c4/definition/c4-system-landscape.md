@@ -8,6 +8,8 @@ The tool is the C4 system landscape diagram of the standalone IDE (origin `c4/sy
 
 All the software systems of an organisation, and the people who use them. A system landscape diagram is a system context diagram without a focus on one system. A system landscape view shows people and software systems. Relationships between what it does not show are drawn between the nearest elements it does show, one line per pair.
 
+The definition raises `language.limits.celCost` to 10 000 000 from DISL's default of 1 000 000 (ruled in chat on 2026-10-19), so that a view with many lifted relationships keeps its lines: merging lifted lines into one line per pair costs more than linearly, 400 relationships taking about 0.9 million steps and 800 about 3.4 million, so the default would drop every lifted line of a view with about 400 or more.
+
 ## The gaps
 
 Fifteen, each a candidate change for this repository: the twelve the conversion's requirements list (C1 to C12, in their order) and three found while writing the definitions. None is worked around in the `.dis` by stating something the tool does not do.

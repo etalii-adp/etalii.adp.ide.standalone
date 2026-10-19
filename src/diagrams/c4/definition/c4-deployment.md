@@ -8,6 +8,8 @@ The tool is the C4 deployment diagram of the standalone IDE (origin `c4/deployme
 
 A system's containers mapped onto the infrastructure they run on. A deployment diagram shows deployment nodes, which nest, the container and software system instances running on them, and supporting infrastructure nodes, in one deployment environment. A deployment view shows deployment nodes, infrastructure nodes and instances. A relationship between two containers it does not show is drawn between every two of their instances, once per pair; a hosting node is drawn as a boundary around what it hosts.
 
+The definition raises `language.limits.celCost` to 10 000 000 from DISL's default of 1 000 000 (ruled in chat on 2026-10-19), so that a view with many lifted relationships keeps its lines: merging lifted lines into one line per pair costs more than linearly, 400 relationships taking about 0.9 million steps and 800 about 3.4 million, so the default would drop every lifted line of a view with about 400 or more.
+
 ## The gaps
 
 Fifteen, each a candidate change for this repository: the twelve the conversion's requirements list (C1 to C12, in their order) and three found while writing the definitions. None is worked around in the `.dis` by stating something the tool does not do.

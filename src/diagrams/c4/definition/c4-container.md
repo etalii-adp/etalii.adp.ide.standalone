@@ -8,6 +8,8 @@ The tool is the C4 container diagram of the standalone IDE (origin `c4/container
 
 The applications and data stores that make up a system, and how they talk to each other. A container diagram zooms into one software system and shows its containers, with the technology choices in them and how they communicate, together with the people and systems around them. A container view shows people, software systems and containers. The software system it is scoped to is drawn as the boundary around its containers, not as a card. Relationships between what it does not show are drawn between the nearest elements it does show, one line per pair.
 
+The definition raises `language.limits.celCost` to 10 000 000 from DISL's default of 1 000 000 (ruled in chat on 2026-10-19), so that a view with many lifted relationships keeps its lines: merging lifted lines into one line per pair costs more than linearly, 400 relationships taking about 0.9 million steps and 800 about 3.4 million, so the default would drop every lifted line of a view with about 400 or more.
+
 ## The gaps
 
 Fifteen, each a candidate change for this repository: the twelve the conversion's requirements list (C1 to C12, in their order) and three found while writing the definitions. None is worked around in the `.dis` by stating something the tool does not do.

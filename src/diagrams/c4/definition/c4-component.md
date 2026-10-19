@@ -8,6 +8,8 @@ The tool is the C4 component diagram of the standalone IDE (origin `c4/component
 
 The components inside one container and how they work together. A component diagram zooms into one container and shows the components inside it, their responsibilities and their technology, with the containers, people and systems they interact with. A component view shows people, software systems, containers and components. The container it is scoped to is drawn as the boundary around its components, not as a card. Relationships between what it does not show are drawn between the nearest elements it does show, one line per pair.
 
+The definition raises `language.limits.celCost` to 10 000 000 from DISL's default of 1 000 000 (ruled in chat on 2026-10-19), so that a view with many lifted relationships keeps its lines: merging lifted lines into one line per pair costs more than linearly, 400 relationships taking about 0.9 million steps and 800 about 3.4 million, so the default would drop every lifted line of a view with about 400 or more.
+
 ## The gaps
 
 Fifteen, each a candidate change for this repository: the twelve the conversion's requirements list (C1 to C12, in their order) and three found while writing the definitions. None is worked around in the `.dis` by stating something the tool does not do.

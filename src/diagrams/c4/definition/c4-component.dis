@@ -45,6 +45,9 @@
     "homepage": "https://github.com/etalii-adp/etalii.adp.ide.standalone/tree/develop/src/diagrams/c4",
     "icon": "mdi:puzzle-outline",
     "fileExtension": "dsl",
+    "limits": {
+      "celCost": 10000000
+    },
     "requires": {
       "conformance": "standard"
     }
