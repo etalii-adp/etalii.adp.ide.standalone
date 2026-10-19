@@ -434,7 +434,7 @@ internal sealed class LinesFamily(BodyText text, FblBinding binding, FblOptions 
         return true;
     }
 
-    protected override bool ReplaceSlot(Plan plan, ReadElement element, SlotChange change)
+    protected override bool ReplaceSlot(Plan plan, SlotChange change)
     {
         var read = change.Read;
         if (change.Binding.Flag)

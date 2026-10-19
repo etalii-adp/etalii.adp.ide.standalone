@@ -521,7 +521,7 @@ internal sealed partial class XmlFamily(BodyText text, FblBinding binding, FblOp
         }
     }
 
-    protected override bool ReplaceSlot(Plan plan, ReadElement element, SlotChange change)
+    protected override bool ReplaceSlot(Plan plan, SlotChange change)
     {
         var read = change.Read;
         switch (Node(read))

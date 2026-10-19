@@ -306,7 +306,7 @@ internal sealed class JsonFamily(BodyText text, FblBinding binding, FblOptions o
         return true;
     }
 
-    protected override bool ReplaceSlot(Plan plan, ReadElement element, SlotChange change)
+    protected override bool ReplaceSlot(Plan plan, SlotChange change)
     {
         if (change.Read.Span is not { } span) return false;
         var written = Format(change.Read, change.Binding, change.Value);

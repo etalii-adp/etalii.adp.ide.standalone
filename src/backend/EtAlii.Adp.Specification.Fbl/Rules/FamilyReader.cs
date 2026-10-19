@@ -255,7 +255,7 @@ internal abstract class FamilyReader(BodyText text, FblBinding binding, FblOptio
         foreach (var change in changes)
         {
             if (change is { IsEmpty: true, Binding.Empty: "remove" } && RemoveSlot(plan, element, change)) continue;
-            if (change.Read.Present && ReplaceSlot(plan, element, change)) continue;
+            if (change.Read.Present && ReplaceSlot(plan, change)) continue;
             placed &= InsertSlot(plan, element, change);
         }
         if (placed && ReadsBack(plan.Since(mark), element, changes)) return;
@@ -267,7 +267,7 @@ internal abstract class FamilyReader(BodyText text, FblBinding binding, FblOptio
     protected abstract bool RemoveSlot(Plan plan, ReadElement element, SlotChange change);
 
     /// <summary>Replaces a value the entry has; false hands the change on to <see cref="InsertSlot"/>.</summary>
-    protected abstract bool ReplaceSlot(Plan plan, ReadElement element, SlotChange change);
+    protected abstract bool ReplaceSlot(Plan plan, SlotChange change);
 
     /// <summary>
     /// Writes a value the entry does not have, or refuses; false when the family finds no place for it in
