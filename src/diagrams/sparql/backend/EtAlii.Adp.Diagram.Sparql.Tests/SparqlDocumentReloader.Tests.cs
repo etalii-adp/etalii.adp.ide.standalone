@@ -34,7 +34,7 @@ public sealed class SparqlDocumentReloaderTests : DocumentReloaderContract<ISpar
         File.Delete(body);
 
         // Act.
-        await reloader.BodyDeletedAsync(folder.Path, body, TestContext.Current.CancellationToken);
+        await reloader.BodyDeletedAsync(ProjectRoot.From(folder.Path), body, TestContext.Current.CancellationToken);
 
         // Assert: this module never creates query files, so a gone one is a state it names.
         var cleared = await store.GetOrLoadAsync(body, TestContext.Current.CancellationToken);
@@ -58,7 +58,7 @@ public sealed class SparqlDocumentReloaderTests : DocumentReloaderContract<ISpar
         // Act: a reload while another program holds the file with no sharing at all.
         await using (new FileStream(body, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
         {
-            await reloader.ReloadAsync(folder.Path, body, TestContext.Current.CancellationToken);
+            await reloader.ReloadAsync(ProjectRoot.From(folder.Path), body, TestContext.Current.CancellationToken);
         }
 
         // Assert: the last good query is kept, not replaced by one naming the read failure (R2.4),

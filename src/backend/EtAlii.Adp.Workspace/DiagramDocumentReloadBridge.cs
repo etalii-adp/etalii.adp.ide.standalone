@@ -272,11 +272,11 @@ public sealed class DiagramDocumentReloadBridge : IDisposable
             var deleted = pending.Step == Step.Deleted || (pending.Step == Step.AskTheDisk && !File.Exists(document.BodyPath));
             if (deleted)
             {
-                await document.Reloader.BodyDeletedAsync(document.Root.FullPath, document.BodyPath, cancellationToken);
+                await document.Reloader.BodyDeletedAsync(document.Root, document.BodyPath, cancellationToken);
             }
             else
             {
-                await document.Reloader.ReloadAsync(document.Root.FullPath, document.BodyPath, cancellationToken);
+                await document.Reloader.ReloadAsync(document.Root, document.BodyPath, cancellationToken);
             }
         }
         catch (Exception reload) when (reload is not OperationCanceledException || !cancellationToken.IsCancellationRequested)

@@ -13,9 +13,9 @@ namespace EtAlii.Adp.Hierarchy;
 /// </summary>
 /// <param name="FullPath">Absolute path of the entry as it stands now.</param>
 /// <param name="NewName">The new name only - not a path. A separator in it is rejected.</param>
-/// <param name="RootPath">
+/// <param name="Root">
 /// The project the entry is in, when the rename is made in one: what names the entry elsewhere in
-/// that project follows it (<see cref="IEntryRenameFollower"/>). Empty, nothing follows.
+/// that project follows it (<see cref="IEntryRenameFollower"/>). The default, nothing follows.
 /// </param>
 /// <remarks>
 /// This is the commit step of the rename flow: the point at which a name the user has already
@@ -26,7 +26,7 @@ namespace EtAlii.Adp.Hierarchy;
 public sealed record RenameEntryCommand(
     string FullPath,
     string NewName,
-    string RootPath = "") : ICommand;
+    ProjectRoot Root = default) : ICommand;
 
 /// <summary>
 /// Applies a <see cref="RenameEntryCommand"/> to disk.
@@ -165,12 +165,12 @@ public sealed class RenameEntryCommandHandler : ICommandHandler<RenameEntryComma
             _modelStore!.WithdrawRename(sourcePath, targetPath);
         }
 
-        if (moved is { IsSuccess: true, Inverse: RenameEntryCommand inverse } && command.RootPath.Length > 0)
+        if (moved is { IsSuccess: true, Inverse: RenameEntryCommand inverse } && command.Root.FullPath.Length > 0)
         {
             // What names the entry elsewhere in the project follows it, and follows it back: the
             // inverse is a rename in the same project, so an undo runs the followers the other way.
-            await FollowAsync(command.RootPath, sourcePath, targetPath);
-            moved = CommandResult.Success(inverse with { RootPath = command.RootPath });
+            await FollowAsync(command.Root, sourcePath, targetPath);
+            moved = CommandResult.Success(inverse with { Root = command.Root });
         }
 
         return moved;
@@ -178,13 +178,13 @@ public sealed class RenameEntryCommandHandler : ICommandHandler<RenameEntryComma
 
     /// <summary>Tells each follower of the move. One that fails is logged and does not undo a rename that happened.</summary>
     /// <remarks>Not cancelled: the rename has happened, and a follow stopped halfway would leave relations naming where it was.</remarks>
-    private async Task FollowAsync(string rootPath, string sourcePath, string targetPath)
+    private async Task FollowAsync(ProjectRoot root, string sourcePath, string targetPath)
     {
         foreach (var follower in _followers)
         {
             try
             {
-                await follower.RenamedAsync(rootPath, sourcePath, targetPath, CancellationToken.None);
+                await follower.RenamedAsync(root, sourcePath, targetPath, CancellationToken.None);
             }
             catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
             {

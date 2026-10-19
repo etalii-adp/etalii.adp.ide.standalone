@@ -41,16 +41,16 @@ public sealed class DiagramDocumentReloader<TStore> : IDiagramDocumentReloader
     public ToolOrigin Origin { get; }
 
     /// <inheritdoc />
-    public Task ReloadAsync(string rootPath, string bodyPath, CancellationToken cancellationToken)
+    public Task ReloadAsync(ProjectRoot root, string bodyPath, CancellationToken cancellationToken)
     {
-        _ = rootPath;
+        _ = root;
         return _documents.ReloadAsync(bodyPath, cancellationToken);
     }
 
     /// <inheritdoc />
-    public Task BodyDeletedAsync(string rootPath, string bodyPath, CancellationToken cancellationToken)
+    public Task BodyDeletedAsync(ProjectRoot root, string bodyPath, CancellationToken cancellationToken)
     {
-        _ = rootPath;
+        _ = root;
         return _documents.BodyDeletedAsync(bodyPath, cancellationToken);
     }
 }

@@ -179,7 +179,7 @@ public sealed class KnowledgeDesignerTests(HostFixture host) : IClassFixture<Hos
         var history = host.Services.GetRequiredService<IHistoryStackStore>().Get(ProjectRoot.From(_projectFolder));
 
         // Act: the rename the explorer makes.
-        var renamed = await history.ExecuteAsync(new RenameEntryCommand(provinces, "regions.yaml", _projectFolder), TestContext.Current.CancellationToken);
+        var renamed = await history.ExecuteAsync(new RenameEntryCommand(provinces, "regions.yaml", ProjectRoot.From(_projectFolder)), TestContext.Current.CancellationToken);
 
         // Assert: the file has its new name, and the relation names it by that.
         Assert.True(renamed.IsSuccess, renamed.Error);

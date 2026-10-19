@@ -123,7 +123,7 @@ public class SparqlSessionTests : IDisposable
             StringComparison.Ordinal), TestContext.Current.CancellationToken);
         await _provider.GetServices<IDiagramDocumentReloader>()
             .Single(candidate => candidate.Origin == ServiceCollectionAddSparqlExtension.SparqlOrigin)
-            .ReloadAsync(_root, body, TestContext.Current.CancellationToken);
+            .ReloadAsync(ProjectRoot.From(_root), body, TestContext.Current.CancellationToken);
 
         // Assert: the culled elements do not come back with the edit - the change path renders
         // through the same viewport the view path does.
@@ -279,7 +279,7 @@ public class SparqlSessionTests : IDisposable
         await File.WriteAllTextAsync(body, "PREFIX ex: <http://example.org/>\nSELECT ?s ?extra\nWHERE { ?s ex:p ?o . ?s ex:q ?extra }\n", TestContext.Current.CancellationToken);
         await _provider.GetServices<IDiagramDocumentReloader>()
             .Single(candidate => candidate.Origin == ServiceCollectionAddSparqlExtension.SparqlOrigin)
-            .ReloadAsync(_root, body, TestContext.Current.CancellationToken);
+            .ReloadAsync(ProjectRoot.From(_root), body, TestContext.Current.CancellationToken);
 
         // Assert.
         var add = Assert.IsType<DiagramAddDelta>(received[0]);

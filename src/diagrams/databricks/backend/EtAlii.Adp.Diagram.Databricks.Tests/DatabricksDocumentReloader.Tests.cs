@@ -46,7 +46,7 @@ public sealed class DatabricksDocumentReloaderTests : DocumentReloaderContract<I
         var reloader = provider.GetServices<IDiagramDocumentReloader>().Single(candidate => candidate.Origin == new ToolOrigin("databricks", type));
 
         // Act.
-        await reloader.ReloadAsync(folder.Path, body, TestContext.Current.CancellationToken);
+        await reloader.ReloadAsync(ProjectRoot.From(folder.Path), body, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Equal("replaced", (await store.GetOrLoadAsync(body, TestContext.Current.CancellationToken)).Model.Bundle.Name);
@@ -68,7 +68,7 @@ public sealed class DatabricksDocumentReloaderTests : DocumentReloaderContract<I
         // Act: a reload while another program holds the file with no sharing at all.
         await using (new FileStream(body, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
         {
-            await reloader.ReloadAsync(folder.Path, body, TestContext.Current.CancellationToken);
+            await reloader.ReloadAsync(ProjectRoot.From(folder.Path), body, TestContext.Current.CancellationToken);
         }
 
         // Assert: the last good bundle is kept, not replaced by an empty one (R2.4), and since
