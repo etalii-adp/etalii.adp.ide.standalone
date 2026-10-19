@@ -44,7 +44,7 @@ One Developer owns this specification, per CLAUDE.md's one-owner-per-specificati
 | 11 | 5 | 12 (11.1, 11.3, 11.4, 11.5), 13 (11.2) |
 | 12 | 4 | 5 (12.3), 12 (12.1, 12.2), 17 (12.4) |
 
-Twenty-nine of the 65 are claimed by a waiting task of the second stage (tasks 13 to 17): 4.2 to 4.7, 5.1 to 5.8, 6.1 to 6.4, 7.1 to 7.5, 8.2, 8.3, 10.4, 11.2 and 12.4. Requirements 6.1 to 6.4 hold through the first stage because the store, the session factory and the registration reading are not touched; they are claimed by task 14, which is the task that could break them.
+Twenty-eight of the 65 are claimed by a waiting task of the second stage (tasks 13 to 17): 4.2 to 4.7, 5.1 to 5.8, 6.1 to 6.4, 7.1 to 7.5, 8.2, 8.3, 10.4, 11.2 and 12.4. Requirements 6.1 to 6.4 hold through the first stage because the store, the session factory and the registration reading are not touched; they are claimed by task 14, which is the task that could break them.
 
 **The diff is run again at task 12 for the first stage and at task 17 for the whole specification**, traced to the tests, files and strings the work produced and not to a task's promise, and two traces are read back to their artefacts each time to check that the evidence is that criterion's and not a neighbour's.
 
