@@ -61,9 +61,9 @@ public class ProblemStoreFlushKeepsTheLastWriteTests : IDisposable
         using (var store = Store())
         {
             store.ReplaceFor(_root, ["services.adp"], [Verdict()]);
-            var entry = store.EntryFor(_root);
+            var entry = store.Cache.EntryFor(_root);
             // ReSharper disable once AccessToDisposedClosure - Reason: Used in a test case which is acceptable.
-            store.BetweenClosingAndFlushing = () => store.OnDebounceElapsed(entry);
+            store.Cache.BetweenClosingAndFlushing = () => store.Cache.OnDebounceElapsed(entry);
         }
 
         // Assert: a restart reads the verdict back. Through a second store rather than off disk,
@@ -94,14 +94,14 @@ public class ProblemStoreFlushKeepsTheLastWriteTests : IDisposable
         // owner may already have taken it away.
         var store = Store();
         store.ReplaceFor(_root, ["services.adp"], [Verdict()]);
-        var entry = store.EntryFor(_root);
+        var entry = store.Cache.EntryFor(_root);
         store.Dispose();
 
         var cachePath = Directory.EnumerateFiles(_appData, "*.json", SearchOption.AllDirectories).Single();
         var written = File.GetLastWriteTimeUtc(cachePath);
         var content = File.ReadAllText(cachePath);
 
-        store.OnDebounceElapsed(entry);
+        store.Cache.OnDebounceElapsed(entry);
 
         Assert.Equal(written, File.GetLastWriteTimeUtc(cachePath));
         Assert.Equal(content, File.ReadAllText(cachePath));
