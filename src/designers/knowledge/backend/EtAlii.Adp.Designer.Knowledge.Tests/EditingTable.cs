@@ -36,7 +36,7 @@ internal sealed class EditingTable : IAsyncDisposable
             [typeof(ICommandHandler<RestoreDocumentCommand<IKnowledgeDocumentStore>>)] = new RestoreDocumentCommandHandler<IKnowledgeDocumentStore>(documents, new FileWriter()),
         };
         History = new HistoryStack(new CommandDispatcher(services));
-        Session = new KnowledgeSession(path, read ?? KnowledgeDocumentStore.Read, Write, documents, rootPath ?? "");
+        Session = new KnowledgeSession(path, read ?? KnowledgeDocumentStore.Read, Write, documents, rootPath is null ? default : ProjectRoot.From(rootPath));
         Session.Changed += (_, args) =>
         {
             lock (_gate)
