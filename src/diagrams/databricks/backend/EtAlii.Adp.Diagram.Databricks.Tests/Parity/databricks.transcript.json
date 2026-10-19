@@ -298,9 +298,9 @@
           "do": "set task:shared_first databricks.run-if = \"yes\"",
           "answer": "ok",
           "hunks": [
-            "@17 -0 +\"          run_if: yes\\r\\n\""
+            "@17 -0 +\"          run_if: \\\"yes\\\"\\r\\n\""
           ],
-          "sha256": "9b575df968743e8e4851a099d433f65fc732a0281a43eacdf7b4d923fc19e0f9",
+          "sha256": "e8c914ec2668d2598f7550022f3c1a8ecb36985a9948ee2f9f947723412a65cc",
           "undo": "ok; restores the text"
         },
         {
@@ -384,10 +384,10 @@
           "do": "commit databricks.rename-task on task:shared_first = \"123\"",
           "answer": "ok",
           "hunks": [
-            "@16 -1 +\"        - task_key: 123\\r\\n\"",
-            "@22 -1 +\"            - task_key: 123\\r\\n\""
+            "@16 -1 +\"        - task_key: \\\"123\\\"\\r\\n\"",
+            "@22 -1 +\"            - task_key: \\\"123\\\"\\r\\n\""
           ],
-          "sha256": "d32dc8c61c977469d1ada472714dc709782952763d573193390a238a63bb8c1f",
+          "sha256": "2988ce1d2da7a12acf53c5737c9f8a026ec7e943244056982e18bbbd369c6dde",
           "undo": "ok; restores the text"
         },
         {
@@ -438,19 +438,23 @@
           "do": "set task:shared_first databricks.run-if = \"*nothing\"",
           "answer": "ok",
           "hunks": [
-            "@17 -0 +\"          run_if: *nothing\\r\\n\""
+            "@17 -0 +\"          run_if: \\\"*nothing\\\"\\r\\n\""
           ],
-          "sha256": "890ec0df1859af55d741ffdee741d4a230507a9cae9f991cb0ec6c4471e92bd9"
+          "sha256": "994e70035e82e889c8f0ffb37675255aaaef4310ff47dd7994bff9a198003643"
         },
         {
           "do": "execute databricks.rename-task on task:shared_first",
-          "answer": "refused: anchors-and-merge.yml could not be read, so it cannot be edited.",
+          "answer": "asks: ContextInputRequest { Title = Rename task, Icon = mdi-pencil-outline, FieldLabel = Key, InitialValue = shared_first, ConfirmLabel = Rename, InlineLabelElementId = task:shared_first, CommitActionId =  }",
           "unchanged": true
         },
         {
           "do": "set task:shared_first databricks.run-if = \"ALL_DONE\"",
-          "answer": "refused: anchors-and-merge.yml could not be read, so it cannot be edited.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@17 -1 +\"          run_if: ALL_DONE\\r\\n\""
+          ],
+          "sha256": "857c2db07b35b2dec44ab00285fefb4e87e68e56827da757acc9f87eb87c53d0",
+          "undo": "ok; restores the text"
         },
         {
           "do": "undo",
@@ -462,8 +466,11 @@
         },
         {
           "do": "set task:shared_first databricks.run-if = \"[x\"",
-          "answer": "throws InvalidOperationException: Operation is not valid due to the current state of the object.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@17 -0 +\"          run_if: \\\"[x\\\"\\r\\n\""
+          ],
+          "sha256": "7447a1202794f822286bb3ebeac637d183b9899609a64ad4b5f03e2956c7f43a"
         },
         {
           "do": "execute databricks.rename-task on task:shared_first",
@@ -474,15 +481,18 @@
           "do": "set task:shared_first databricks.run-if = \"ALL_DONE\"",
           "answer": "ok",
           "hunks": [
-            "@17 -0 +\"          run_if: ALL_DONE\\r\\n\""
+            "@17 -1 +\"          run_if: ALL_DONE\\r\\n\""
           ],
           "sha256": "857c2db07b35b2dec44ab00285fefb4e87e68e56827da757acc9f87eb87c53d0",
           "undo": "ok; restores the text"
         },
         {
           "do": "undo",
-          "answer": "refused: There is nothing to undo.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@17 -1 +\"\""
+          ],
+          "sha256": "baa9f114bfc6e22a058497627a173cb3b698a8f6d2d412303d4cc74876fb475a"
         },
         {
           "do": "execute databricks.disconnect:shared_first on task:shared_second",
@@ -705,9 +715,9 @@
           "do": "commit databricks.add-resource:jobs on bundle = \"yes\"",
           "answer": "ok",
           "hunks": [
-            "@28 -0 +\"    yes:\\r\\n      name: yes\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
+            "@28 -0 +\"    \\\"yes\\\":\\r\\n      name: \\\"yes\\\"\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
           ],
-          "sha256": "7cc494cc78bd322aeea4b6588fb53f4a421bbf0bdf866389442fdcde4432233a",
+          "sha256": "3d8f692cae8e3f4bf041e2b33c500a89ef5e13a38c8858aabdae43b8a9e1b4c1",
           "undo": "ok; restores the text"
         },
         {
@@ -1088,9 +1098,9 @@
           "do": "set task:only databricks.run-if = \"yes\"",
           "answer": "ok",
           "hunks": [
-            "@9 -0 +\"            run_if: yes\\r\\n\""
+            "@9 -0 +\"            run_if: \\\"yes\\\"\\r\\n\""
           ],
-          "sha256": "dc2b604749a0933d0abac475a78f8fec1e196ee1e9643ea367bdfa428656490c",
+          "sha256": "1664d79acd364a51ab3e87feb75ad7af4be3b2c34247dcde58d88c4c1987c24e",
           "undo": "ok; restores the text"
         },
         {
@@ -1203,9 +1213,9 @@
           "do": "set task:only databricks.run-if = \"*nothing\"",
           "answer": "ok",
           "hunks": [
-            "@9 -0 +\"            run_if: *nothing\\r\\n\""
+            "@9 -0 +\"            run_if: \\\"*nothing\\\"\\r\\n\""
           ],
-          "sha256": "0a11219437b3baeee939c163a979a67eb0ee01ca71cf1119a87c2d954096514f"
+          "sha256": "4fde6cdde53f757c3fd706efe656c1d9e71c564d0a0787870ab76ee2cb5befe9"
         },
         {
           "do": "execute databricks.rename-task on task:only",
@@ -1229,9 +1239,9 @@
           "do": "set task:only databricks.run-if = \"[x\"",
           "answer": "ok",
           "hunks": [
-            "@9 -0 +\"            run_if: [x\\r\\n\""
+            "@9 -0 +\"            run_if: \\\"[x\\\"\\r\\n\""
           ],
-          "sha256": "8399f9507b30001cd26f50168f3fe69f1aadee30eaae3304950f9ae72e26ac8f"
+          "sha256": "5ac426ed7b6ad42719f1ae4c218283334606d402e00552aa1525e4f20484b25a"
         },
         {
           "do": "execute databricks.rename-task on task:only",
@@ -1416,9 +1426,9 @@
           "do": "commit databricks.add-resource:jobs on bundle = \"yes\"",
           "answer": "ok",
           "hunks": [
-            "@9 -0 +\"      yes:\\r\\n        name: yes\\r\\n        tasks:\\r\\n          - task_key: main\\r\\n            notebook_task:\\r\\n              notebook_path: notebooks/yes\\r\\n\""
+            "@9 -0 +\"      \\\"yes\\\":\\r\\n        name: \\\"yes\\\"\\r\\n        tasks:\\r\\n          - task_key: main\\r\\n            notebook_task:\\r\\n              notebook_path: notebooks/yes\\r\\n\""
           ],
-          "sha256": "c798df44e31fc4381a5b54496d6f848cdc87f081a99b95c51bb4c0ad32c42eeb",
+          "sha256": "d96f8f09755b9481dc8fabdc5c6f15627bb8d3fd9939777a39864e37bd99095f",
           "undo": "ok; restores the text"
         },
         {
@@ -1735,9 +1745,9 @@
           "do": "commit databricks.rename-bundle on bundle = \"null\"",
           "answer": "ok",
           "hunks": [
-            "@3 -1 +\"  name: null\\r\\n\""
+            "@3 -1 +\"  name: \\\"null\\\"\\r\\n\""
           ],
-          "sha256": "1fa70b8da8e0cce373687a8f53dd27f886c37833c6cda952d00a2832bf551572",
+          "sha256": "4a4910c6eca5fc6c313d1861b236deea49ce47bdc40d141c5fa85a21619add4f",
           "undo": "ok; restores the text"
         },
         {
@@ -1760,9 +1770,9 @@
           "do": "commit databricks.add-resource:jobs on bundle = \"yes\"",
           "answer": "ok",
           "hunks": [
-            "@23 -0 +\"    yes:\\r\\n      name: yes\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
+            "@23 -0 +\"    \\\"yes\\\":\\r\\n      name: \\\"yes\\\"\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
           ],
-          "sha256": "38cf52777d4888865f93daefbfb3411108d832f6a73fef93e1fd3759197edec5",
+          "sha256": "d50f34ecce8077166117c0049b90d05d8be2b5b8b82ed24e9e9642ea75e56422",
           "undo": "ok; restores the text"
         },
         {
@@ -1846,9 +1856,9 @@
           "do": "set pipeline databricks.pipeline:serverless = \"false\"",
           "answer": "ok",
           "hunks": [
-            "@25 -0 +\"      serverless: false\\r\\n\""
+            "@25 -0 +\"      serverless: \\\"false\\\"\\r\\n\""
           ],
-          "sha256": "afbea8997ee11a8f579b9025b4e001d05921552098a3f186ed6539a50405a256",
+          "sha256": "77b076d6e2335c4798baefd00a91941c7e627ba7dd48511cb768c14b38003aad",
           "undo": "ok; restores the text"
         },
         {
@@ -1903,9 +1913,9 @@
           "do": "commit databricks.add-library:notebook on pipeline = \"*star\"",
           "answer": "ok",
           "hunks": [
-            "@26 -0 +\"      libraries:\\r\\n        - notebook:\\r\\n            path: *star\\r\\n\""
+            "@26 -0 +\"      libraries:\\r\\n        - notebook:\\r\\n            path: \\\"*star\\\"\\r\\n\""
           ],
-          "sha256": "3cda2f0c64ca975f3a4a4b576e9d07ee0f39379237ea9b4d6e59b82a42e9ac1d",
+          "sha256": "50f08b39be3f83f7a626c64d0407124aa3fdb807dec749a821acce8a750fc824",
           "undo": "ok; restores the text"
         },
         {
@@ -2210,9 +2220,9 @@
           "do": "set task:quoted_task databricks.run-if = \"yes\"",
           "answer": "ok",
           "hunks": [
-            "@17 -1 +\"          run_if: yes\\r\\n\""
+            "@17 -1 +\"          run_if: \\\"yes\\\"\\r\\n\""
           ],
-          "sha256": "f86b1d4fc46c79d8a3335ab1fc1442e4a1d4abd5f68e3d80ebe3aa4fced800f1",
+          "sha256": "abe761a6f457f54f05e896d9e9e5f7794e7abde7b3528c777c50a76e40ccec3f",
           "undo": "ok; restores the text"
         },
         {
@@ -2299,10 +2309,10 @@
           "do": "commit databricks.rename-task on task:quoted_task = \"123\"",
           "answer": "ok",
           "hunks": [
-            "@16 -1 +\"        - task_key: 123\\r\\n\"",
-            "@23 -1 +\"            - task_key: 123\\r\\n\""
+            "@16 -1 +\"        - task_key: \\\"123\\\"\\r\\n\"",
+            "@23 -1 +\"            - task_key: \\\"123\\\"\\r\\n\""
           ],
-          "sha256": "17ad02a327cb009dd577c8f2ca3c3e2dd22a539d392f9a25d31314b8340ba551",
+          "sha256": "f021788ecc1d2116f65bad637218c0459d6bf991d7d0728c9ac2fcd30847c88a",
           "undo": "ok; restores the text"
         },
         {
@@ -2356,32 +2366,9 @@
           "do": "set task:quoted_task databricks.run-if = \"*nothing\"",
           "answer": "ok",
           "hunks": [
-            "@17 -1 +\"          run_if: *nothing\\r\\n\""
+            "@17 -1 +\"          run_if: \\\"*nothing\\\"\\r\\n\""
           ],
-          "sha256": "aa58a46af2a78ff9a3f44a7f52c117110c47f00fb6f3e6407da4c3c95abb81a5"
-        },
-        {
-          "do": "execute databricks.rename-task on task:quoted_task",
-          "answer": "refused: comments-and-quotes.yml could not be read, so it cannot be edited.",
-          "unchanged": true
-        },
-        {
-          "do": "set task:quoted_task databricks.run-if = \"ALL_DONE\"",
-          "answer": "refused: comments-and-quotes.yml could not be read, so it cannot be edited.",
-          "unchanged": true
-        },
-        {
-          "do": "undo",
-          "answer": "ok",
-          "hunks": [
-            "@17 -1 +\"          run_if: 'ALL_DONE' # keep going whatever happens\\r\\n\""
-          ],
-          "sha256": "4de239591e6a14239cf7901438af96b549015225fc9fc8b92c802f84e1d55d93"
-        },
-        {
-          "do": "set task:quoted_task databricks.run-if = \"[x\"",
-          "answer": "throws InvalidOperationException: Operation is not valid due to the current state of the object.",
-          "unchanged": true
+          "sha256": "54f389b827cd07d1b9797c028e97ff2c0175bfce3d3c109b3a31cac0500b74af"
         },
         {
           "do": "execute databricks.rename-task on task:quoted_task",
@@ -2399,8 +2386,41 @@
         },
         {
           "do": "undo",
-          "answer": "refused: There is nothing to undo.",
+          "answer": "ok",
+          "hunks": [
+            "@17 -1 +\"          run_if: 'ALL_DONE' # keep going whatever happens\\r\\n\""
+          ],
+          "sha256": "4de239591e6a14239cf7901438af96b549015225fc9fc8b92c802f84e1d55d93"
+        },
+        {
+          "do": "set task:quoted_task databricks.run-if = \"[x\"",
+          "answer": "ok",
+          "hunks": [
+            "@17 -1 +\"          run_if: \\\"[x\\\"\\r\\n\""
+          ],
+          "sha256": "02ccb4b4a60d233f335894624d19f31209869a3d921a46912557c4fd8a8cd7ab"
+        },
+        {
+          "do": "execute databricks.rename-task on task:quoted_task",
+          "answer": "asks: ContextInputRequest { Title = Rename task, Icon = mdi-pencil-outline, FieldLabel = Key, InitialValue = quoted_task, ConfirmLabel = Rename, InlineLabelElementId = task:quoted_task, CommitActionId =  }",
           "unchanged": true
+        },
+        {
+          "do": "set task:quoted_task databricks.run-if = \"ALL_DONE\"",
+          "answer": "ok",
+          "hunks": [
+            "@17 -1 +\"          run_if: ALL_DONE\\r\\n\""
+          ],
+          "sha256": "fb6192ab4daa3adf2adda023a6a13ee2d521ff04f1428afa6439d98cd919b1c1",
+          "undo": "ok; restores the text"
+        },
+        {
+          "do": "undo",
+          "answer": "ok",
+          "hunks": [
+            "@17 -1 +\"          run_if: 'ALL_DONE' # keep going whatever happens\\r\\n\""
+          ],
+          "sha256": "4de239591e6a14239cf7901438af96b549015225fc9fc8b92c802f84e1d55d93"
         },
         {
           "do": "execute databricks.disconnect:quoted_task on task:downstream",
@@ -2599,9 +2619,9 @@
           "do": "commit databricks.rename-bundle on bundle = \"null\"",
           "answer": "ok",
           "hunks": [
-            "@2 -1 +\"  name: null\\r\\n\""
+            "@2 -1 +\"  name: \\\"null\\\"\\r\\n\""
           ],
-          "sha256": "d40c336c66d4cfabde351c9f6fc005f059a16409bc97d46f2a08513ba4f662ee",
+          "sha256": "a4c3a6f487a0ac58d47618e68b8e3ed6d47188176e56c3b7230da0cd39f23c9e",
           "undo": "ok; restores the text"
         },
         {
@@ -2624,9 +2644,9 @@
           "do": "commit databricks.add-resource:jobs on bundle = \"yes\"",
           "answer": "ok",
           "hunks": [
-            "@26 -0 +\"    yes:\\r\\n      name: yes\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
+            "@26 -0 +\"    \\\"yes\\\":\\r\\n      name: \\\"yes\\\"\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
           ],
-          "sha256": "3e894492098d920c9d747b2dd5bb66f234fb0a841700a790bc2f50b51e44c085",
+          "sha256": "f4c402fff221acb4364716e18dcf15f380f61fa2555f589096ada7d91981a14e",
           "undo": "ok; restores the text"
         },
         {
@@ -2700,9 +2720,9 @@
           "do": "set pipeline databricks.pipeline:serverless = \"false\"",
           "answer": "ok",
           "hunks": [
-            "@28 -0 +\"      serverless: false\\r\\n\""
+            "@28 -0 +\"      serverless: \\\"false\\\"\\r\\n\""
           ],
-          "sha256": "971ee0f037d0ee1def1c989ca5e37c54f8768b859d2150acff1bd7d4878e8329",
+          "sha256": "4aaf418798f3c1cdb8c2a778b831fe0f3c0d281cd157774b0ba3d47d2b128466",
           "undo": "ok; restores the text"
         },
         {
@@ -2757,9 +2777,9 @@
           "do": "commit databricks.add-library:notebook on pipeline = \"*star\"",
           "answer": "ok",
           "hunks": [
-            "@34 -0 +\"        - notebook:\\r\\n            path: *star\\r\\n\""
+            "@34 -0 +\"        - notebook:\\r\\n            path: \\\"*star\\\"\\r\\n\""
           ],
-          "sha256": "1b7fe81e28c11ae72e9fcad486af973c70137c89fb499c78992e644eb4e4a2ed",
+          "sha256": "5b54868bb80166e79f5c9ebd8ea401d2232c5b23d28b81e534da6b2760e30340",
           "undo": "ok; restores the text"
         },
         {
@@ -2928,9 +2948,9 @@
           "do": "commit databricks.rename-bundle on bundle = \"null\"",
           "answer": "ok",
           "hunks": [
-            "@2 -1 +\"  name: null\\r\\n\""
+            "@2 -1 +\"  name: \\\"null\\\"\\r\\n\""
           ],
-          "sha256": "c54875aa9f2286ef26176a6e4c2a890e18bfd8c3054842e589b322318344a148",
+          "sha256": "9079a512a0e4dcf1b2678e49b8c71937a68707d033a7edeb96314284a4e4b30e",
           "undo": "ok; restores the text"
         },
         {
@@ -2953,9 +2973,9 @@
           "do": "commit databricks.add-resource:jobs on bundle = \"yes\"",
           "answer": "ok",
           "hunks": [
-            "@8 -0 +\"resources:\\r\\n  jobs:\\r\\n    yes:\\r\\n      name: yes\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
+            "@8 -0 +\"resources:\\r\\n  jobs:\\r\\n    \\\"yes\\\":\\r\\n      name: \\\"yes\\\"\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
           ],
-          "sha256": "febf4c876ec362d3e3fd1e1637a85cd821d07bd04e3e467d093332a6eb2d99e7",
+          "sha256": "ef770acbc2226b9132f03bd2c290e32633d0736edfcab3b0bf0aab67869d526c",
           "undo": "ok; restores the text"
         },
         {
@@ -3278,9 +3298,9 @@
           "do": "set task:left databricks.run-if = \"yes\"",
           "answer": "ok",
           "hunks": [
-            "@7 -0 +\"          run_if: yes\\r\\n\""
+            "@7 -0 +\"          run_if: \\\"yes\\\"\\r\\n\""
           ],
-          "sha256": "4412af82ce217c7ca42dcecee8dff71c7678b88a05d0df3b4afa55c9080c9658",
+          "sha256": "f590a65d7cbcf3492ee23df8afd712542243a1af65882efb68a97487533cbd01",
           "undo": "ok; restores the text"
         },
         {
@@ -3360,10 +3380,10 @@
           "do": "commit databricks.rename-task on task:left = \"123\"",
           "answer": "ok",
           "hunks": [
-            "@6 -1 +\"        - task_key: 123\\r\\n\"",
-            "@13 -1 +\"            - task_key: 123\\r\\n\""
+            "@6 -1 +\"        - task_key: \\\"123\\\"\\r\\n\"",
+            "@13 -1 +\"            - task_key: \\\"123\\\"\\r\\n\""
           ],
-          "sha256": "3501f3dd47f49c41719f694797b83331f87f38ecc935cce0a01befc6cef3d7c5",
+          "sha256": "f54780d21c5f1708c8501bba8eca2b7b1edd6285d5474ba8215eb8c71a5cd6f5",
           "undo": "ok; restores the text"
         },
         {
@@ -3410,19 +3430,23 @@
           "do": "set task:left databricks.run-if = \"*nothing\"",
           "answer": "ok",
           "hunks": [
-            "@7 -0 +\"          run_if: *nothing\\r\\n\""
+            "@7 -0 +\"          run_if: \\\"*nothing\\\"\\r\\n\""
           ],
-          "sha256": "96efe010fb2ad29d564c44d914f6ed08be68063a0d9ffef53a5dbe71cc46091b"
+          "sha256": "93a396b0ba5ff391cad1cbb3bf9d818664792ac08142e607edb393274f672c38"
         },
         {
           "do": "execute databricks.rename-task on task:left",
-          "answer": "refused: cycle-downstream.yml could not be read, so it cannot be edited.",
+          "answer": "asks: ContextInputRequest { Title = Rename task, Icon = mdi-pencil-outline, FieldLabel = Key, InitialValue = left, ConfirmLabel = Rename, InlineLabelElementId = task:left, CommitActionId =  }",
           "unchanged": true
         },
         {
           "do": "set task:left databricks.run-if = \"ALL_DONE\"",
-          "answer": "refused: cycle-downstream.yml could not be read, so it cannot be edited.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@7 -1 +\"          run_if: ALL_DONE\\r\\n\""
+          ],
+          "sha256": "d5b20934bad72762b292c26142245f64c68e57d6b9333c7e0f50b50f6af8d6c1",
+          "undo": "ok; restores the text"
         },
         {
           "do": "undo",
@@ -3434,8 +3458,11 @@
         },
         {
           "do": "set task:left databricks.run-if = \"[x\"",
-          "answer": "throws InvalidOperationException: Operation is not valid due to the current state of the object.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@7 -0 +\"          run_if: \\\"[x\\\"\\r\\n\""
+          ],
+          "sha256": "049eebf57fc7a721cea76154b08e30c43c385addc5432fe66721a071e4a9be3d"
         },
         {
           "do": "execute databricks.rename-task on task:left",
@@ -3446,15 +3473,18 @@
           "do": "set task:left databricks.run-if = \"ALL_DONE\"",
           "answer": "ok",
           "hunks": [
-            "@7 -0 +\"          run_if: ALL_DONE\\r\\n\""
+            "@7 -1 +\"          run_if: ALL_DONE\\r\\n\""
           ],
           "sha256": "d5b20934bad72762b292c26142245f64c68e57d6b9333c7e0f50b50f6af8d6c1",
           "undo": "ok; restores the text"
         },
         {
           "do": "undo",
-          "answer": "refused: There is nothing to undo.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@7 -1 +\"\""
+          ],
+          "sha256": "0d88064938f794704b408d59189a32c097fb3cb26569eb20a549a489032be41c"
         },
         {
           "do": "execute databricks.disconnect:right on task:left",
@@ -3679,9 +3709,9 @@
           "do": "commit databricks.add-resource:jobs on bundle = \"yes\"",
           "answer": "ok",
           "hunks": [
-            "@29 -0 +\"    yes:\\r\\n      name: yes\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
+            "@29 -0 +\"    \\\"yes\\\":\\r\\n      name: \\\"yes\\\"\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
           ],
-          "sha256": "81f973e86b2c6781b4783dfdf85dbb2c11e28b16010326a22f8e40221580489f",
+          "sha256": "5ca1dfb2f2308f68b2be081e1fa2eb76bcc660b5d1c8e56aa01e204e2f289f9b",
           "undo": "ok; restores the text"
         },
         {
@@ -3944,9 +3974,9 @@
           "do": "set task:twin databricks.run-if = \"yes\"",
           "answer": "ok",
           "hunks": [
-            "@7 -0 +\"          run_if: yes\\r\\n\""
+            "@7 -0 +\"          run_if: \\\"yes\\\"\\r\\n\""
           ],
-          "sha256": "7a1efd990281532afa001335fc20a4a2d8713213b6ca7e4a32ca93dfb3a25759",
+          "sha256": "2a5a991cddd8e717d7b2a20d2be6dc86fca290db13d46177dffb0d79467c0ce7",
           "undo": "ok; restores the text"
         },
         {
@@ -4026,10 +4056,10 @@
           "do": "commit databricks.rename-task on task:twin = \"123\"",
           "answer": "ok",
           "hunks": [
-            "@6 -1 +\"        - task_key: 123\\r\\n\"",
-            "@11 -1 +\"            - task_key: 123\\r\\n\""
+            "@6 -1 +\"        - task_key: \\\"123\\\"\\r\\n\"",
+            "@11 -1 +\"            - task_key: \\\"123\\\"\\r\\n\""
           ],
-          "sha256": "1a4491c8ba86b749e1f00241b59fd0635e1d76e204bd0790dda0f08a93b42223",
+          "sha256": "5ada674ec5a4a2262ee3b505991ed8ff66e77428b8adfd24a41f6af7a5f74df2",
           "undo": "ok; restores the text"
         },
         {
@@ -4076,19 +4106,23 @@
           "do": "set task:twin databricks.run-if = \"*nothing\"",
           "answer": "ok",
           "hunks": [
-            "@7 -0 +\"          run_if: *nothing\\r\\n\""
+            "@7 -0 +\"          run_if: \\\"*nothing\\\"\\r\\n\""
           ],
-          "sha256": "acb2330231fb0ddd5c52f11d49f3ecab4e628c9c44454f541c6cd1d6d4ad94e4"
+          "sha256": "1d9595c8b3611b41257cdf589a3e28ab371fa77d661de6f8d1f83f8afd1f99d5"
         },
         {
           "do": "execute databricks.rename-task on task:twin",
-          "answer": "refused: duplicate-key-on-a-circle.yml could not be read, so it cannot be edited.",
+          "answer": "asks: ContextInputRequest { Title = Rename task, Icon = mdi-pencil-outline, FieldLabel = Key, InitialValue = twin, ConfirmLabel = Rename, InlineLabelElementId = task:twin, CommitActionId =  }",
           "unchanged": true
         },
         {
           "do": "set task:twin databricks.run-if = \"ALL_DONE\"",
-          "answer": "refused: duplicate-key-on-a-circle.yml could not be read, so it cannot be edited.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@7 -1 +\"          run_if: ALL_DONE\\r\\n\""
+          ],
+          "sha256": "3249a0259f11bad6a408f0a43d4f5ce932a3f9aaa1acee4362af7246c89125c8",
+          "undo": "ok; restores the text"
         },
         {
           "do": "undo",
@@ -4100,8 +4134,11 @@
         },
         {
           "do": "set task:twin databricks.run-if = \"[x\"",
-          "answer": "throws InvalidOperationException: Operation is not valid due to the current state of the object.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@7 -0 +\"          run_if: \\\"[x\\\"\\r\\n\""
+          ],
+          "sha256": "aa46b961b6d814e4a6b81baf4cf26e9f46440691f24168263dfaae8c62466da4"
         },
         {
           "do": "execute databricks.rename-task on task:twin",
@@ -4112,15 +4149,18 @@
           "do": "set task:twin databricks.run-if = \"ALL_DONE\"",
           "answer": "ok",
           "hunks": [
-            "@7 -0 +\"          run_if: ALL_DONE\\r\\n\""
+            "@7 -1 +\"          run_if: ALL_DONE\\r\\n\""
           ],
           "sha256": "3249a0259f11bad6a408f0a43d4f5ce932a3f9aaa1acee4362af7246c89125c8",
           "undo": "ok; restores the text"
         },
         {
           "do": "undo",
-          "answer": "refused: There is nothing to undo.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@7 -1 +\"\""
+          ],
+          "sha256": "42ae195bd9fc90c3714458155c278209d74e532d6da149d4a952abac6abb70ae"
         },
         {
           "do": "execute databricks.disconnect:twin on task:middle",
@@ -4323,9 +4363,9 @@
           "do": "commit databricks.add-resource:jobs on bundle = \"yes\"",
           "answer": "ok",
           "hunks": [
-            "@19 -0 +\"    yes:\\r\\n      name: yes\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
+            "@19 -0 +\"    \\\"yes\\\":\\r\\n      name: \\\"yes\\\"\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
           ],
-          "sha256": "28e929aa67dd77bee6ee32aff50df200655ba1bc67bf0ee264c1617d350583a4",
+          "sha256": "1cb47d2bf0e49ec5889daa033c949c6a289de80936194df084e6a6315caf1974",
           "undo": "ok; restores the text"
         },
         {
@@ -4502,9 +4542,9 @@
           "do": "commit databricks.add-resource:jobs on bundle = \"yes\"",
           "answer": "ok",
           "hunks": [
-            "@1 -0 +\"resources:\\r\\n  jobs:\\r\\n    yes:\\r\\n      name: yes\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
+            "@1 -0 +\"resources:\\r\\n  jobs:\\r\\n    \\\"yes\\\":\\r\\n      name: \\\"yes\\\"\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
           ],
-          "sha256": "497dd08204430efb5a650e79712385f408545026b7db2f2b23587264c6463c34",
+          "sha256": "a635a2c602fce517f1b7b744d8ed17ead14fc9ace8941adf7c5ca02fdf8dd0ad",
           "undo": "ok; restores the text"
         },
         {
@@ -4882,9 +4922,9 @@
           "do": "set task:a_notebook databricks.run-if = \"yes\"",
           "answer": "ok",
           "hunks": [
-            "@7 -0 +\"          run_if: yes\\r\\n\""
+            "@7 -0 +\"          run_if: \\\"yes\\\"\\r\\n\""
           ],
-          "sha256": "544f396153c08c107f49ac0a3fc8dc8a350f1930f2bc00363e53bca6f13a2972",
+          "sha256": "c85c3981ff5c7279f455720defb2e2d0b6f5a4688d89d4737ec764d40382b146",
           "undo": "ok; restores the text"
         },
         {
@@ -4964,10 +5004,10 @@
           "do": "commit databricks.rename-task on task:a_notebook = \"123\"",
           "answer": "ok",
           "hunks": [
-            "@6 -1 +\"        - task_key: 123\\r\\n\"",
-            "@52 -1 +\"            - task_key: 123\\r\\n\""
+            "@6 -1 +\"        - task_key: \\\"123\\\"\\r\\n\"",
+            "@52 -1 +\"            - task_key: \\\"123\\\"\\r\\n\""
           ],
-          "sha256": "b786dadfdd50ca070f3837871843d9a3bbb49bb3953b872e9adf69e0487d9f22",
+          "sha256": "293de57daf1b107c1803eea6d5f23d8738dc83c962a8f023a4f1ac2aebf92e40",
           "undo": "ok; restores the text"
         },
         {
@@ -5014,19 +5054,23 @@
           "do": "set task:a_notebook databricks.run-if = \"*nothing\"",
           "answer": "ok",
           "hunks": [
-            "@7 -0 +\"          run_if: *nothing\\r\\n\""
+            "@7 -0 +\"          run_if: \\\"*nothing\\\"\\r\\n\""
           ],
-          "sha256": "a5e5579a25d608b00585f7467836fc188c59029890bbbc57ff308f80e538ebf6"
+          "sha256": "113af4586915b7094b43aa585f9edd8a24d6b667d05dbb4fe3c7dc52d62f8fe1"
         },
         {
           "do": "execute databricks.rename-task on task:a_notebook",
-          "answer": "refused: every-task-type.yml could not be read, so it cannot be edited.",
+          "answer": "asks: ContextInputRequest { Title = Rename task, Icon = mdi-pencil-outline, FieldLabel = Key, InitialValue = a_notebook, ConfirmLabel = Rename, InlineLabelElementId = task:a_notebook, CommitActionId =  }",
           "unchanged": true
         },
         {
           "do": "set task:a_notebook databricks.run-if = \"ALL_DONE\"",
-          "answer": "refused: every-task-type.yml could not be read, so it cannot be edited.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@7 -1 +\"          run_if: ALL_DONE\\r\\n\""
+          ],
+          "sha256": "0c26ad615285099b227d04389efc2ea7891ed57d460372eff7bc4e6d01b9343c",
+          "undo": "ok; restores the text"
         },
         {
           "do": "undo",
@@ -5038,8 +5082,11 @@
         },
         {
           "do": "set task:a_notebook databricks.run-if = \"[x\"",
-          "answer": "throws InvalidOperationException: Operation is not valid due to the current state of the object.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@7 -0 +\"          run_if: \\\"[x\\\"\\r\\n\""
+          ],
+          "sha256": "fbee0c9eebacb2d6c90bfafc894630e0608f21a5497926dd7d89b9bfd57db4fb"
         },
         {
           "do": "execute databricks.rename-task on task:a_notebook",
@@ -5050,15 +5097,18 @@
           "do": "set task:a_notebook databricks.run-if = \"ALL_DONE\"",
           "answer": "ok",
           "hunks": [
-            "@7 -0 +\"          run_if: ALL_DONE\\r\\n\""
+            "@7 -1 +\"          run_if: ALL_DONE\\r\\n\""
           ],
           "sha256": "0c26ad615285099b227d04389efc2ea7891ed57d460372eff7bc4e6d01b9343c",
           "undo": "ok; restores the text"
         },
         {
           "do": "undo",
-          "answer": "refused: There is nothing to undo.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@7 -1 +\"\""
+          ],
+          "sha256": "2d287aaa6b4d554674d3d89ea31461596d1d6622ed7ae3fd4ac35e84d8421184"
         },
         {
           "do": "execute databricks.disconnect:a_notebook on task:waits_for_nobody",
@@ -5283,9 +5333,9 @@
           "do": "commit databricks.add-resource:jobs on bundle = \"yes\"",
           "answer": "ok",
           "hunks": [
-            "@56 -0 +\"    yes:\\r\\n      name: yes\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
+            "@56 -0 +\"    \\\"yes\\\":\\r\\n      name: \\\"yes\\\"\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
           ],
-          "sha256": "2be673635ec9f3b078d42d236a37b6a2487262c21300ae581ef8da3bb4ef3b27",
+          "sha256": "ad7e2c599aebc5065a79e043edd04ac5f762e5b15065b9b92a7ff6b4282fdc08",
           "undo": "ok; restores the text"
         },
         {
@@ -5615,9 +5665,9 @@
           "do": "set task:both databricks.run-if = \"yes\"",
           "answer": "ok",
           "hunks": [
-            "@14 -0 +\"          run_if: yes\\r\\n\""
+            "@14 -0 +\"          run_if: \\\"yes\\\"\\r\\n\""
           ],
-          "sha256": "70eaca74fe1149aa3d695f5c5e8ea6749faa0546d76999ece227e738f4d2de70",
+          "sha256": "de287228814623143b8eb969c70be7a79d5c51158ad20928533dec95c50b4eb0",
           "undo": "ok; restores the text"
         },
         {
@@ -5703,9 +5753,9 @@
           "do": "commit databricks.rename-task on task:both = \"123\"",
           "answer": "ok",
           "hunks": [
-            "@13 -1 +\"        - task_key: 123\\r\\n\""
+            "@13 -1 +\"        - task_key: \\\"123\\\"\\r\\n\""
           ],
-          "sha256": "277d53ed492423857ee4e4d8b4df5a6998642bdc67a09b9e6784a647d027f8cd",
+          "sha256": "ef3d233a0cbbdfc0e06b5ba9a7b211f01638df3d7dbcb881597e3b9a49bcfec5",
           "undo": "ok; restores the text"
         },
         {
@@ -5759,19 +5809,23 @@
           "do": "set task:both databricks.run-if = \"*nothing\"",
           "answer": "ok",
           "hunks": [
-            "@14 -0 +\"          run_if: *nothing\\r\\n\""
+            "@14 -0 +\"          run_if: \\\"*nothing\\\"\\r\\n\""
           ],
-          "sha256": "ba9e1ad018d87cf6baf2cace8b35cb8b8e49f898c7dc5c74b8f462df53f70e13"
+          "sha256": "8e97a18ee994fa40af1c0cae9c978b40a530892f62f15d4ef396f3ef98097238"
         },
         {
           "do": "execute databricks.rename-task on task:both",
-          "answer": "refused: finding-order.yml could not be read, so it cannot be edited.",
+          "answer": "asks: ContextInputRequest { Title = Rename task, Icon = mdi-pencil-outline, FieldLabel = Key, InitialValue = both, ConfirmLabel = Rename, InlineLabelElementId = task:both, CommitActionId =  }",
           "unchanged": true
         },
         {
           "do": "set task:both databricks.run-if = \"ALL_DONE\"",
-          "answer": "refused: finding-order.yml could not be read, so it cannot be edited.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@14 -1 +\"          run_if: ALL_DONE\\r\\n\""
+          ],
+          "sha256": "434ec71ec2093c80b98d13c4093fc6cd3db78491cfb0a5f33a00de4c804e77c3",
+          "undo": "ok; restores the text"
         },
         {
           "do": "undo",
@@ -5783,8 +5837,11 @@
         },
         {
           "do": "set task:both databricks.run-if = \"[x\"",
-          "answer": "throws InvalidOperationException: Operation is not valid due to the current state of the object.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@14 -0 +\"          run_if: \\\"[x\\\"\\r\\n\""
+          ],
+          "sha256": "8c9817df31061f56b992dd0504bf4d881d7e544368a33daa0cc68bb62073779c"
         },
         {
           "do": "execute databricks.rename-task on task:both",
@@ -5795,15 +5852,18 @@
           "do": "set task:both databricks.run-if = \"ALL_DONE\"",
           "answer": "ok",
           "hunks": [
-            "@14 -0 +\"          run_if: ALL_DONE\\r\\n\""
+            "@14 -1 +\"          run_if: ALL_DONE\\r\\n\""
           ],
           "sha256": "434ec71ec2093c80b98d13c4093fc6cd3db78491cfb0a5f33a00de4c804e77c3",
           "undo": "ok; restores the text"
         },
         {
           "do": "undo",
-          "answer": "refused: There is nothing to undo.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@14 -1 +\"\""
+          ],
+          "sha256": "6dcfc8be1baa7d761244799db0bd50d7daf36e2d04e4990a050fa43d7cbdabe6"
         },
         {
           "do": "execute databricks.disconnect:first_missing on task:both",
@@ -6021,9 +6081,9 @@
           "do": "commit databricks.add-resource:jobs on bundle = \"yes\"",
           "answer": "ok",
           "hunks": [
-            "@39 -0 +\"    yes:\\r\\n      name: yes\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
+            "@39 -0 +\"    \\\"yes\\\":\\r\\n      name: \\\"yes\\\"\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
           ],
-          "sha256": "63066c30cd27c327abe54510d98abe9a502f1a21de0168c6a3d060a9cb5b77e3",
+          "sha256": "4abe3b449b53b69f199154ed9397f9a692d6dedc0465c801070545a5bb28209d",
           "undo": "ok; restores the text"
         },
         {
@@ -6280,9 +6340,9 @@
           "do": "commit databricks.rename-bundle on bundle = \"null\"",
           "answer": "ok",
           "hunks": [
-            "@2 -1 +\"  name: null\\r\\n\""
+            "@2 -1 +\"  name: \\\"null\\\"\\r\\n\""
           ],
-          "sha256": "46ea4acdca2a06bda498e631d0aa5963b3890691ce1c94ae2937fee33042a082",
+          "sha256": "af6afa17ae616feb2ed33f41f0a8e02156339907e1eabf44d7e971fded2b7509",
           "undo": "ok; restores the text"
         },
         {
@@ -6305,9 +6365,9 @@
           "do": "commit databricks.add-resource:jobs on bundle = \"yes\"",
           "answer": "ok",
           "hunks": [
-            "@8 -0 +\"    yes:\\r\\n      name: yes\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
+            "@8 -0 +\"    \\\"yes\\\":\\r\\n      name: \\\"yes\\\"\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
           ],
-          "sha256": "55560e60371be031dac81dcd8469992ff74bbd08199a8158857d786725902026",
+          "sha256": "f7ad437710e3c2d43faabd48480adb06934acb13552842a3ac9ea0d2d70ad0bb",
           "undo": "ok; restores the text"
         },
         {
@@ -6616,9 +6676,9 @@
           "do": "set task:loop_a databricks.run-if = \"yes\"",
           "answer": "ok",
           "hunks": [
-            "@7 -0 +\"          run_if: yes\\r\\n\""
+            "@7 -0 +\"          run_if: \\\"yes\\\"\\r\\n\""
           ],
-          "sha256": "1ee6e01b5c453a00d26e94ea246b826878e7004ee539fa641956276cab8449db",
+          "sha256": "fbbd7b45884484472c6989943e11045e8532a92c94d25a3fb908641ebc34df12",
           "undo": "ok; restores the text"
         },
         {
@@ -6698,10 +6758,10 @@
           "do": "commit databricks.rename-task on task:loop_a = \"123\"",
           "answer": "ok",
           "hunks": [
-            "@6 -1 +\"        - task_key: 123\\r\\n\"",
-            "@13 -1 +\"            - task_key: 123\\r\\n\""
+            "@6 -1 +\"        - task_key: \\\"123\\\"\\r\\n\"",
+            "@13 -1 +\"            - task_key: \\\"123\\\"\\r\\n\""
           ],
-          "sha256": "c87c46aa93b3a59d64a6607ab2eaaac1ff85ca6beff00d3ed6eba9819f990ac4",
+          "sha256": "c1e8d623a8fac517b6de2e54ed6c3db453ef15730783e5877def88c4905d7a3e",
           "undo": "ok; restores the text"
         },
         {
@@ -6748,19 +6808,23 @@
           "do": "set task:loop_a databricks.run-if = \"*nothing\"",
           "answer": "ok",
           "hunks": [
-            "@7 -0 +\"          run_if: *nothing\\r\\n\""
+            "@7 -0 +\"          run_if: \\\"*nothing\\\"\\r\\n\""
           ],
-          "sha256": "114d215c0e374a6b0d4ff4530a4dd6e6a51a11044b220f59e105284ee0da642a"
+          "sha256": "903fd481ee311a6939ff41900c5a3b8be7b3dc80a25eb8d120040a4ad1a5d9d9"
         },
         {
           "do": "execute databricks.rename-task on task:loop_a",
-          "answer": "refused: findings-job.yml could not be read, so it cannot be edited.",
+          "answer": "asks: ContextInputRequest { Title = Rename task, Icon = mdi-pencil-outline, FieldLabel = Key, InitialValue = loop_a, ConfirmLabel = Rename, InlineLabelElementId = task:loop_a, CommitActionId =  }",
           "unchanged": true
         },
         {
           "do": "set task:loop_a databricks.run-if = \"ALL_DONE\"",
-          "answer": "refused: findings-job.yml could not be read, so it cannot be edited.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@7 -1 +\"          run_if: ALL_DONE\\r\\n\""
+          ],
+          "sha256": "696b6b776c7c4cb1f3ddb078d41c0fa6289220019752796385f8ab5c10ca99dc",
+          "undo": "ok; restores the text"
         },
         {
           "do": "undo",
@@ -6772,8 +6836,11 @@
         },
         {
           "do": "set task:loop_a databricks.run-if = \"[x\"",
-          "answer": "throws InvalidOperationException: Operation is not valid due to the current state of the object.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@7 -0 +\"          run_if: \\\"[x\\\"\\r\\n\""
+          ],
+          "sha256": "b05d7a33fdb307cba5c36f40b2bd407373d2e8b2b66d0f636c518663256a7f5f"
         },
         {
           "do": "execute databricks.rename-task on task:loop_a",
@@ -6784,15 +6851,18 @@
           "do": "set task:loop_a databricks.run-if = \"ALL_DONE\"",
           "answer": "ok",
           "hunks": [
-            "@7 -0 +\"          run_if: ALL_DONE\\r\\n\""
+            "@7 -1 +\"          run_if: ALL_DONE\\r\\n\""
           ],
           "sha256": "696b6b776c7c4cb1f3ddb078d41c0fa6289220019752796385f8ab5c10ca99dc",
           "undo": "ok; restores the text"
         },
         {
           "do": "undo",
-          "answer": "refused: There is nothing to undo.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@7 -1 +\"\""
+          ],
+          "sha256": "b44633ef92def6793e026271332848b72d9bf69c33f2fb6064b3eaa46098ad04"
         },
         {
           "do": "execute databricks.disconnect:loop_b on task:loop_a",
@@ -6876,9 +6946,9 @@
           "do": "execute databricks.add-task:notebook on new:120,80",
           "answer": "ok",
           "hunks": [
-            "@27 -0 +\"        - task_key: notebook_1\\r\\n            notebook_task:\\r\\n              notebook_path: notebooks/notebook_1\\r\\n\""
+            "@27 -0 +\"        - task_key: notebook_1\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/notebook_1\\r\\n\""
           ],
-          "sha256": "59cb6f97449824711a4d375bd3acdbd2983b22abccbd35397bcbe212aceb293d",
+          "sha256": "bba1a39a3358b8fdddd094bf283f5ff2926bea1b1e5c028e70ba6badca69d1a6",
           "undo": "ok; restores the text",
           "redo": "ok; reapplies the text",
           "undoAgain": "ok; restores the text"
@@ -6887,18 +6957,18 @@
           "do": "execute databricks.add-task:python on new:120,80",
           "answer": "ok",
           "hunks": [
-            "@27 -0 +\"        - task_key: python_1\\r\\n            spark_python_task:\\r\\n              python_file: scripts/python_1.py\\r\\n\""
+            "@27 -0 +\"        - task_key: python_1\\r\\n          spark_python_task:\\r\\n            python_file: scripts/python_1.py\\r\\n\""
           ],
-          "sha256": "d24edb4fab8dae3d9261741b58f6025e0b2dcfb16261e2761dd1ab1e01b99bf2",
+          "sha256": "6e7ed4f4d1d575ba080f1f2259536c8be61a22a3be66ac7daa99eb8f7099962c",
           "undo": "ok; restores the text"
         },
         {
           "do": "execute databricks.add-task:condition on new:120,80",
           "answer": "ok",
           "hunks": [
-            "@27 -0 +\"        - task_key: condition_1\\r\\n            condition_task:\\r\\n              op: EQUAL_TO\\r\\n              left: \\\"condition_1\\\"\\r\\n              right: \\\"true\\\"\\r\\n\""
+            "@27 -0 +\"        - task_key: condition_1\\r\\n          condition_task:\\r\\n            op: EQUAL_TO\\r\\n            left: \\\"condition_1\\\"\\r\\n            right: \\\"true\\\"\\r\\n\""
           ],
-          "sha256": "fa842ecca22191461fa8b3876e32e4240d1a3f59c49f206400fc34cedd1f7b2c",
+          "sha256": "73bae3ba906d6d7b2bdf5fea4b91ee66414724d858a7c90536dc58fa91abc013",
           "undo": "ok; restores the text"
         },
         {
@@ -6920,9 +6990,9 @@
           "do": "commit databricks.add-task:notebook on  = \"parity_task\"",
           "answer": "ok",
           "hunks": [
-            "@27 -0 +\"        - task_key: parity_task\\r\\n            notebook_task:\\r\\n              notebook_path: notebooks/parity_task\\r\\n\""
+            "@27 -0 +\"        - task_key: parity_task\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/parity_task\\r\\n\""
           ],
-          "sha256": "1698a2d44afb21f34775233e6288a7c3a4256b3a1d34b638ad50ec0a0f810db2",
+          "sha256": "2be425a6f5c2d55031a8d729b31cbdfebe2a06976ddf49c3828547c983590792",
           "undo": "ok; restores the text"
         },
         {
@@ -6934,36 +7004,36 @@
           "do": "insert a wheel task",
           "answer": "ok",
           "hunks": [
-            "@27 -0 +\"        - task_key: parity_wheel\\r\\n            python_wheel_task:\\r\\n              package_name: parity/wheel\\r\\n              entry_point: main\\r\\n\""
+            "@27 -0 +\"        - task_key: parity_wheel\\r\\n          python_wheel_task:\\r\\n            package_name: parity/wheel\\r\\n            entry_point: main\\r\\n\""
           ],
-          "sha256": "137b0c38f861f33139c7600fe396937536e14cf0be4297bc340887e9bc2518c4",
+          "sha256": "49b704938c8d2d29373648564a7f4a84395d2d39989c7f966e070923ea8dff38",
           "undo": "ok; restores the text"
         },
         {
           "do": "insert a sql task",
           "answer": "ok",
           "hunks": [
-            "@27 -0 +\"        - task_key: parity_sql\\r\\n            sql_task:\\r\\n              warehouse_id: \\\"\\\"\\r\\n              query:\\r\\n                query_id: parity/sql\\r\\n\""
+            "@27 -0 +\"        - task_key: parity_sql\\r\\n          sql_task:\\r\\n            warehouse_id: \\\"\\\"\\r\\n            query:\\r\\n              query_id: parity/sql\\r\\n\""
           ],
-          "sha256": "cb6a69c97dbe7a857e39cde3537b9ef7048e558c51fed7341352b1784df3ad00",
+          "sha256": "68bdcfe8b84080d67888fc69a28290fff37fc3feaff68e4e610bf1e186d6e825",
           "undo": "ok; restores the text"
         },
         {
           "do": "insert a pipeline task",
           "answer": "ok",
           "hunks": [
-            "@27 -0 +\"        - task_key: parity_pipeline\\r\\n            pipeline_task:\\r\\n              pipeline_id: parity/pipeline\\r\\n\""
+            "@27 -0 +\"        - task_key: parity_pipeline\\r\\n          pipeline_task:\\r\\n            pipeline_id: parity/pipeline\\r\\n\""
           ],
-          "sha256": "55012baf71c0d60bfc3546bb3c73907790337d601e9ef114ef2da479b96444f3",
+          "sha256": "4414e5d75b9e5c3b6f1c246202659e5b4667f3c5ec311f58a5e11ae37056b280",
           "undo": "ok; restores the text"
         },
         {
           "do": "insert a run-job task",
           "answer": "ok",
           "hunks": [
-            "@27 -0 +\"        - task_key: parity_run_job\\r\\n            run_job_task:\\r\\n              job_id: parity/run-job\\r\\n\""
+            "@27 -0 +\"        - task_key: parity_run_job\\r\\n          run_job_task:\\r\\n            job_id: parity/run-job\\r\\n\""
           ],
-          "sha256": "99ccf1f49ec85ab5c2ffccbfb9a917ccbf08da6ae742920a09df2b739589617b",
+          "sha256": "dd6ab2caae4d74d14580783d09f0b48498829b49b3773e4e0e7e6fcb950adefc",
           "undo": "ok; restores the text"
         },
         {
@@ -7011,9 +7081,9 @@
           "do": "commit databricks.add-resource:jobs on bundle = \"yes\"",
           "answer": "ok",
           "hunks": [
-            "@27 -0 +\"    yes:\\r\\n      name: yes\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
+            "@27 -0 +\"    \\\"yes\\\":\\r\\n      name: \\\"yes\\\"\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
           ],
-          "sha256": "85dfd62bbb26c48947d6b04717e20373e53e620256e920585a13ea75441348b7",
+          "sha256": "6fb843a20d3b8907aa8e1c574b9637a0c795214ac112b7ea4c01590fdd5e982d",
           "undo": "ok; restores the text"
         },
         {
@@ -7240,9 +7310,9 @@
           "do": "commit databricks.add-resource:jobs on bundle = \"yes\"",
           "answer": "ok",
           "hunks": [
-            "@6 -0 +\"resources:\\r\\n  jobs:\\r\\n    yes:\\r\\n      name: yes\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
+            "@6 -0 +\"resources:\\r\\n  jobs:\\r\\n    \\\"yes\\\":\\r\\n      name: \\\"yes\\\"\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
           ],
-          "sha256": "24de14eee561e808e6336363c87992aec138753e9c44072c327f52e6d6f1dd17",
+          "sha256": "b31e01a451214a7afeba4da02e6b5b459c324a7bde0018de16ce0068e782e743",
           "undo": "ok; restores the text"
         },
         {
@@ -7316,17 +7386,17 @@
         },
         {
           "do": "commit databricks.add-library:notebook on pipeline = \"parity/notebook\"",
-          "answer": "refused: The settings file has no libraries array to add into.",
+          "answer": "refused: This list is written on one line; write it as one item per line in the text editor to edit it here.",
           "unchanged": true
         },
         {
           "do": "commit databricks.add-library:file on pipeline = \"parity/file.py\"",
-          "answer": "refused: The settings file has no libraries array to add into.",
+          "answer": "refused: This list is written on one line; write it as one item per line in the text editor to edit it here.",
           "unchanged": true
         },
         {
           "do": "commit databricks.add-library:glob on pipeline = \"parity/**\"",
-          "answer": "refused: The settings file has no libraries array to add into.",
+          "answer": "refused: This list is written on one line; write it as one item per line in the text editor to edit it here.",
           "unchanged": true
         },
         {
@@ -7336,7 +7406,7 @@
         },
         {
           "do": "commit databricks.add-library:notebook on pipeline = \"*star\"",
-          "answer": "refused: The settings file has no libraries array to add into.",
+          "answer": "refused: This list is written on one line; write it as one item per line in the text editor to edit it here.",
           "unchanged": true
         },
         {
@@ -7592,32 +7662,18 @@
         },
         {
           "do": "execute databricks.add-task:notebook on new:120,80",
-          "answer": "ok",
-          "hunks": [
-            "@6 -0 +\"        - task_key: notebook_1\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/notebook_1\\r\\n\""
-          ],
-          "sha256": "852cec12ac1c1408a19149a0a1da2ed99627809d927bc2c682dfd85fcd9f2c20",
-          "undo": "ok; restores the text",
-          "redo": "ok; reapplies the text",
-          "undoAgain": "ok; restores the text"
+          "answer": "refused: This list is written on one line; write it as one item per line in the text editor to edit it here.",
+          "unchanged": true
         },
         {
           "do": "execute databricks.add-task:python on new:120,80",
-          "answer": "ok",
-          "hunks": [
-            "@6 -0 +\"        - task_key: python_1\\r\\n          spark_python_task:\\r\\n            python_file: scripts/python_1.py\\r\\n\""
-          ],
-          "sha256": "2532cca91647870d82bd3e0479dba4cc8123c9adeee6dc53cfc637bdc2c720b1",
-          "undo": "ok; restores the text"
+          "answer": "refused: This list is written on one line; write it as one item per line in the text editor to edit it here.",
+          "unchanged": true
         },
         {
           "do": "execute databricks.add-task:condition on new:120,80",
-          "answer": "ok",
-          "hunks": [
-            "@6 -0 +\"        - task_key: condition_1\\r\\n          condition_task:\\r\\n            op: EQUAL_TO\\r\\n            left: \\\"condition_1\\\"\\r\\n            right: \\\"true\\\"\\r\\n\""
-          ],
-          "sha256": "5fc8528c1dc5144b287e7584c61d7d69e32c6db0bbd525a26447646521ba33c8",
-          "undo": "ok; restores the text"
+          "answer": "refused: This list is written on one line; write it as one item per line in the text editor to edit it here.",
+          "unchanged": true
         },
         {
           "do": "execute databricks.add-task:jar on new:120,80",
@@ -7636,48 +7692,28 @@
         },
         {
           "do": "commit databricks.add-task:notebook on  = \"parity_task\"",
-          "answer": "ok",
-          "hunks": [
-            "@6 -0 +\"        - task_key: parity_task\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/parity_task\\r\\n\""
-          ],
-          "sha256": "60152137377ae2f021a20e095e5b56b254e25de1ee8185f5cdcdfb2adae148af",
-          "undo": "ok; restores the text"
+          "answer": "refused: This list is written on one line; write it as one item per line in the text editor to edit it here.",
+          "unchanged": true
         },
         {
           "do": "insert a wheel task",
-          "answer": "ok",
-          "hunks": [
-            "@6 -0 +\"        - task_key: parity_wheel\\r\\n          python_wheel_task:\\r\\n            package_name: parity/wheel\\r\\n            entry_point: main\\r\\n\""
-          ],
-          "sha256": "b630e17f1fa6ad86c0f06be20b018f48b20349fb7b883dbcf830df8586d80bf1",
-          "undo": "ok; restores the text"
+          "answer": "refused: This list is written on one line; write it as one item per line in the text editor to edit it here.",
+          "unchanged": true
         },
         {
           "do": "insert a sql task",
-          "answer": "ok",
-          "hunks": [
-            "@6 -0 +\"        - task_key: parity_sql\\r\\n          sql_task:\\r\\n            warehouse_id: \\\"\\\"\\r\\n            query:\\r\\n              query_id: parity/sql\\r\\n\""
-          ],
-          "sha256": "89497fbf47a86775b9a7058c010969be60c5b4dd01f69c95c783a8572cfadb42",
-          "undo": "ok; restores the text"
+          "answer": "refused: This list is written on one line; write it as one item per line in the text editor to edit it here.",
+          "unchanged": true
         },
         {
           "do": "insert a pipeline task",
-          "answer": "ok",
-          "hunks": [
-            "@6 -0 +\"        - task_key: parity_pipeline\\r\\n          pipeline_task:\\r\\n            pipeline_id: parity/pipeline\\r\\n\""
-          ],
-          "sha256": "27fa2286c2b22a7731be4a1127168bd8d33d9e5106753db09f723dab90eae372",
-          "undo": "ok; restores the text"
+          "answer": "refused: This list is written on one line; write it as one item per line in the text editor to edit it here.",
+          "unchanged": true
         },
         {
           "do": "insert a run-job task",
-          "answer": "ok",
-          "hunks": [
-            "@6 -0 +\"        - task_key: parity_run_job\\r\\n          run_job_task:\\r\\n            job_id: parity/run-job\\r\\n\""
-          ],
-          "sha256": "842de668b2669fb0db071008d4aeb786cf9e1d72ce00017fbbfbf15e8f83f41d",
-          "undo": "ok; restores the text"
+          "answer": "refused: This list is written on one line; write it as one item per line in the text editor to edit it here.",
+          "unchanged": true
         },
         {
           "do": "insert a for-each task",
@@ -7733,9 +7769,9 @@
           "do": "commit databricks.add-resource:jobs on bundle = \"yes\"",
           "answer": "ok",
           "hunks": [
-            "@18 -0 +\"    yes:\\r\\n      name: yes\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
+            "@18 -0 +\"    \\\"yes\\\":\\r\\n      name: \\\"yes\\\"\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
           ],
-          "sha256": "ef0747646e238fa65d4d02b2cd26cbcb3d0f97bb797c406b47ba594ee485f2b4",
+          "sha256": "707060d6f2e8abecd054c9f8ce1bc183b60b24e90018c9f77f0e1a830b9ba9e5",
           "undo": "ok; restores the text"
         },
         {
@@ -7809,9 +7845,9 @@
           "do": "set pipeline databricks.pipeline:serverless = \"false\"",
           "answer": "ok",
           "hunks": [
-            "@20 -0 +\"      serverless: false\\r\\n\""
+            "@20 -0 +\"      serverless: \\\"false\\\"\\r\\n\""
           ],
-          "sha256": "fc4af9e6aad7c74afa205c452632fb1bba4c708f152c711a810b622d5d9d5108",
+          "sha256": "099eb5a18dd0008b036923abfc89ae7c0cb7b1ee06c658752fa16d4bbabb0537",
           "undo": "ok; restores the text"
         },
         {
@@ -7830,32 +7866,18 @@
         },
         {
           "do": "commit databricks.add-library:notebook on pipeline = \"parity/notebook\"",
-          "answer": "ok",
-          "hunks": [
-            "@22 -0 +\"      - notebook:\\r\\n          path: parity/notebook\\r\\n\""
-          ],
-          "sha256": "f2445a65233cdc49156317c180fb58a5561826405baf6acadae04b807aee9359",
-          "undo": "ok; restores the text",
-          "redo": "ok; reapplies the text",
-          "undoAgain": "ok; restores the text"
+          "answer": "refused: This list is written on one line; write it as one item per line in the text editor to edit it here.",
+          "unchanged": true
         },
         {
           "do": "commit databricks.add-library:file on pipeline = \"parity/file.py\"",
-          "answer": "ok",
-          "hunks": [
-            "@22 -0 +\"      - file:\\r\\n          path: parity/file.py\\r\\n\""
-          ],
-          "sha256": "43c846b4e8cdbfd715feea3e8a8d7fd9ea97789ca719dae8f25ed510da134aca",
-          "undo": "ok; restores the text"
+          "answer": "refused: This list is written on one line; write it as one item per line in the text editor to edit it here.",
+          "unchanged": true
         },
         {
           "do": "commit databricks.add-library:glob on pipeline = \"parity/**\"",
-          "answer": "ok",
-          "hunks": [
-            "@22 -0 +\"      - glob:\\r\\n          include: parity/**\\r\\n\""
-          ],
-          "sha256": "ac83ee51014600dedcc68d589393da6113e8617caa3fe64ed4c7c08e01ea8c6d",
-          "undo": "ok; restores the text"
+          "answer": "refused: This list is written on one line; write it as one item per line in the text editor to edit it here.",
+          "unchanged": true
         },
         {
           "do": "commit databricks.add-library:jar on pipeline = \"parity.jar\"",
@@ -7864,12 +7886,8 @@
         },
         {
           "do": "commit databricks.add-library:notebook on pipeline = \"*star\"",
-          "answer": "ok",
-          "hunks": [
-            "@22 -0 +\"      - notebook:\\r\\n          path: *star\\r\\n\""
-          ],
-          "sha256": "75dc2d989946538994b3448f6dee0d72eace0f94c0380888d56f252f78d83316",
-          "undo": "ok; restores the text"
+          "answer": "refused: This list is written on one line; write it as one item per line in the text editor to edit it here.",
+          "unchanged": true
         },
         {
           "do": "commit databricks.add-library:notebook on pipeline = \"\"",
@@ -7883,23 +7901,13 @@
         },
         {
           "do": "execute databricks.remove-library on library:transformations/one",
-          "answer": "ok",
-          "hunks": [
-            "@21 -1 +\"\""
-          ],
-          "sha256": "683e75dd814470cc7e9e2d04127023c736e90d674ec9df7a97bc4d143ae706e9",
-          "undo": "ok; restores the text",
-          "redo": "ok; reapplies the text",
-          "undoAgain": "ok; restores the text"
+          "answer": "refused: This list is written on one line; write it as one item per line in the text editor to edit it here.",
+          "unchanged": true
         },
         {
           "do": "execute databricks.remove-library on library:transformations/two.py",
-          "answer": "ok",
-          "hunks": [
-            "@21 -1 +\"\""
-          ],
-          "sha256": "683e75dd814470cc7e9e2d04127023c736e90d674ec9df7a97bc4d143ae706e9",
-          "undo": "ok; restores the text"
+          "answer": "refused: This list is written on one line; write it as one item per line in the text editor to edit it here.",
+          "unchanged": true
         },
         {
           "do": "execute databricks.simulated.pipeline-update on pipeline",
@@ -8146,9 +8154,9 @@
           "do": "set task:b databricks.run-if = \"yes\"",
           "answer": "ok",
           "hunks": [
-            "@7 -0 +\"          run_if: yes\\r\\n\""
+            "@7 -0 +\"          run_if: \\\"yes\\\"\\r\\n\""
           ],
-          "sha256": "72cd563d9ce96a215c59cad3e9de45e3fc9101ba9465e4ad01f93c9dc5d9e335",
+          "sha256": "95ed99f85b7f9cf3821a536bf16dab06236d46010a5ecacab17059e9c98af189",
           "undo": "ok; restores the text"
         },
         {
@@ -8227,9 +8235,9 @@
           "do": "commit databricks.rename-task on task:b = \"123\"",
           "answer": "ok",
           "hunks": [
-            "@6 -1 +\"        - task_key: 123\\r\\n\""
+            "@6 -1 +\"        - task_key: \\\"123\\\"\\r\\n\""
           ],
-          "sha256": "1eff4d26eb1f939bb4797bf8a7f044af3795d35acd4fb3f6a4a66ebfd90eaeb5",
+          "sha256": "fb737d7efc495ea9b30fb7c666b416113a1df5d8307860c1816143e77f22d2d6",
           "undo": "ok; restores the text"
         },
         {
@@ -8276,19 +8284,23 @@
           "do": "set task:b databricks.run-if = \"*nothing\"",
           "answer": "ok",
           "hunks": [
-            "@7 -0 +\"          run_if: *nothing\\r\\n\""
+            "@7 -0 +\"          run_if: \\\"*nothing\\\"\\r\\n\""
           ],
-          "sha256": "06e78268710c9e7e44fc4ea335c2d5c48163f3ac2a7da556ff0f0224aa9fc04f"
+          "sha256": "177e76f693a4394c2290fc6f60f50363cfd60e98c33bbdf7e4f3332298bcef56"
         },
         {
           "do": "execute databricks.rename-task on task:b",
-          "answer": "refused: flow-dependencies.yml could not be read, so it cannot be edited.",
+          "answer": "asks: ContextInputRequest { Title = Rename task, Icon = mdi-pencil-outline, FieldLabel = Key, InitialValue = b, ConfirmLabel = Rename, InlineLabelElementId = task:b, CommitActionId =  }",
           "unchanged": true
         },
         {
           "do": "set task:b databricks.run-if = \"ALL_DONE\"",
-          "answer": "refused: flow-dependencies.yml could not be read, so it cannot be edited.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@7 -1 +\"          run_if: ALL_DONE\\r\\n\""
+          ],
+          "sha256": "f7526dbd3007bd5b052fd501298d57669be78fc256b9d16c12e416595d2be5ca",
+          "undo": "ok; restores the text"
         },
         {
           "do": "undo",
@@ -8300,8 +8312,11 @@
         },
         {
           "do": "set task:b databricks.run-if = \"[x\"",
-          "answer": "throws InvalidOperationException: Operation is not valid due to the current state of the object.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@7 -0 +\"          run_if: \\\"[x\\\"\\r\\n\""
+          ],
+          "sha256": "19324e90e01999806ee4d86d9e7c157b85e8be344040f587d8db81b431881d22"
         },
         {
           "do": "execute databricks.rename-task on task:b",
@@ -8312,26 +8327,23 @@
           "do": "set task:b databricks.run-if = \"ALL_DONE\"",
           "answer": "ok",
           "hunks": [
-            "@7 -0 +\"          run_if: ALL_DONE\\r\\n\""
+            "@7 -1 +\"          run_if: ALL_DONE\\r\\n\""
           ],
           "sha256": "f7526dbd3007bd5b052fd501298d57669be78fc256b9d16c12e416595d2be5ca",
           "undo": "ok; restores the text"
         },
         {
           "do": "undo",
-          "answer": "refused: There is nothing to undo.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@7 -1 +\"\""
+          ],
+          "sha256": "ff9187ee7da7ff38832a59946a25e63fb536e81c026b1086d2303e706c5aabe1"
         },
         {
           "do": "execute databricks.disconnect:a on task:b",
-          "answer": "ok",
-          "hunks": [
-            "@7 -2 +\"\""
-          ],
-          "sha256": "40f25be4f8171528ad27c7acc734a152e59d3c1b709e39c41f416f918f3a53a3",
-          "undo": "ok; restores the text",
-          "redo": "ok; reapplies the text",
-          "undoAgain": "ok; restores the text"
+          "answer": "refused: This list is written on one line; write it as one item per line in the text editor to edit it here.",
+          "unchanged": true
         },
         {
           "do": "execute databricks.disconnect:parity_nobody on task:b",
@@ -8340,12 +8352,8 @@
         },
         {
           "do": "execute databricks.remove-edge on edge:a->b",
-          "answer": "ok",
-          "hunks": [
-            "@7 -2 +\"\""
-          ],
-          "sha256": "40f25be4f8171528ad27c7acc734a152e59d3c1b709e39c41f416f918f3a53a3",
-          "undo": "ok; restores the text"
+          "answer": "refused: This list is written on one line; write it as one item per line in the text editor to edit it here.",
+          "unchanged": true
         },
         {
           "do": "execute databricks.connect on rel:task:a->task:b",
@@ -8354,14 +8362,8 @@
         },
         {
           "do": "execute databricks.connect on rel:task:c->task:b",
-          "answer": "ok",
-          "hunks": [
-            "@8 -0 +\"          - task_key: c\\r\\n\""
-          ],
-          "sha256": "45df7f89271dd18da0eba7e7402effd4fb097c2170c633703a1424845104f790",
-          "undo": "ok; restores the text",
-          "redo": "ok; reapplies the text",
-          "undoAgain": "ok; restores the text"
+          "answer": "refused: This list is written on one line; write it as one item per line in the text editor to edit it here.",
+          "unchanged": true
         },
         {
           "do": "execute databricks.connect on rel:task:b->task:b",
@@ -8544,9 +8546,9 @@
           "do": "commit databricks.add-resource:jobs on bundle = \"yes\"",
           "answer": "ok",
           "hunks": [
-            "@15 -0 +\"    yes:\\r\\n      name: yes\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
+            "@15 -0 +\"    \\\"yes\\\":\\r\\n      name: \\\"yes\\\"\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
           ],
-          "sha256": "9160a2da7483e532d47021c38201857c9bde5ad3f5a4fb84a67502a557944cb4",
+          "sha256": "cf391ea00dfbf55d874f1227b8c95eac9fbf5d1e7e556c2210f1564d8d7bb192",
           "undo": "ok; restores the text"
         },
         {
@@ -8763,16 +8765,16 @@
           "do": "commit databricks.rename-task on task:outer = \"parity_moved\"",
           "answer": "ok",
           "hunks": [
-            "@9 -1 +\"              task_key: parity_moved\\r\\n\"",
+            "@12 -1 +\"          task_key: parity_moved\\r\\n\"",
             "@17 -1 +\"            - task_key: parity_moved\\r\\n\""
           ],
-          "sha256": "1eec9be9d8af1d14fdb10252b8d3ad687aa0ad4c8e2eee4e10d2868f49ca6f6e"
+          "sha256": "4da4a9356b5b33467877f18cbe684c02387ecf0decda184e6d997bd59455ef57"
         },
         {
           "do": "undo",
           "answer": "ok",
           "hunks": [
-            "@9 -1 +\"              task_key: inner\\r\\n\"",
+            "@12 -1 +\"          task_key: outer\\r\\n\"",
             "@17 -1 +\"            - task_key: outer\\r\\n\""
           ],
           "sha256": "754f8df8d68f8d3a60022068f82e407518d097b18b96ab8a462f6accb4f08ec5"
@@ -8787,9 +8789,9 @@
           "do": "set task:outer databricks.run-if = \"ALL_DONE\"",
           "answer": "ok",
           "hunks": [
-            "@7 -0 +\"            run_if: ALL_DONE\\r\\n\""
+            "@12 -0 +\"          run_if: ALL_DONE\\r\\n\""
           ],
-          "sha256": "3391858cb28d947d58e6a3a82215838d222cbcdce58b7918dcf16b5bff127768",
+          "sha256": "c2310d7d73aff43e61aaaabc0949bc4a1a41b4b508fa6bb8b9279b0cf47cb149",
           "undo": "ok; restores the text",
           "redo": "ok; reapplies the text",
           "undoAgain": "ok; restores the text"
@@ -8804,9 +8806,9 @@
           "do": "set task:outer databricks.run-if = \"yes\"",
           "answer": "ok",
           "hunks": [
-            "@7 -0 +\"            run_if: yes\\r\\n\""
+            "@12 -0 +\"          run_if: \\\"yes\\\"\\r\\n\""
           ],
-          "sha256": "dd5e021086b5e7c2fb7fcc235d31256651780436f03ded078c6de988f608265e",
+          "sha256": "edc111f4e48940fb1169f450839a005616bd53213cd1dd138180e4b1a438e46d",
           "undo": "ok; restores the text"
         },
         {
@@ -8874,10 +8876,10 @@
           "do": "commit databricks.rename-task on task:outer = \"parity_renamed\"",
           "answer": "ok",
           "hunks": [
-            "@9 -1 +\"              task_key: parity_renamed\\r\\n\"",
+            "@12 -1 +\"          task_key: parity_renamed\\r\\n\"",
             "@17 -1 +\"            - task_key: parity_renamed\\r\\n\""
           ],
-          "sha256": "dc1262e813c78e452bbb18a8b16dece30c1bc84ed99358194ab9c19e0589073d",
+          "sha256": "6c98c0401df90ff2099d5d059e01ba570c2baf2ef7f0db776b808a348b1e5c13",
           "undo": "ok; restores the text",
           "redo": "ok; reapplies the text",
           "undoAgain": "ok; restores the text"
@@ -8886,10 +8888,10 @@
           "do": "commit databricks.rename-task on task:outer = \"123\"",
           "answer": "ok",
           "hunks": [
-            "@9 -1 +\"              task_key: 123\\r\\n\"",
-            "@17 -1 +\"            - task_key: 123\\r\\n\""
+            "@12 -1 +\"          task_key: \\\"123\\\"\\r\\n\"",
+            "@17 -1 +\"            - task_key: \\\"123\\\"\\r\\n\""
           ],
-          "sha256": "8f960f7143651e974fb38b265c2dd6202f9cb2fa2a0e9c9236ca1deb8c6b7994",
+          "sha256": "bc97799ab7309b8333afca0059edc9eabf709577f2215a67e7f479425b2c3bf2",
           "undo": "ok; restores the text"
         },
         {
@@ -8906,9 +8908,9 @@
           "do": "commit databricks.set-run-if on task:outer = \"AT_LEAST_ONE_SUCCESS\"",
           "answer": "ok",
           "hunks": [
-            "@7 -0 +\"            run_if: AT_LEAST_ONE_SUCCESS\\r\\n\""
+            "@12 -0 +\"          run_if: AT_LEAST_ONE_SUCCESS\\r\\n\""
           ],
-          "sha256": "71ae8216214b18a07661e263ff9c90f7fa2cfc7134dd0a47a4c838370bf67d19",
+          "sha256": "21c37f8aafca54e7618c18b491fe17341b590e680415e46549e5f583eac8f88c",
           "undo": "ok; restores the text"
         },
         {
@@ -8936,32 +8938,9 @@
           "do": "set task:outer databricks.run-if = \"*nothing\"",
           "answer": "ok",
           "hunks": [
-            "@7 -0 +\"            run_if: *nothing\\r\\n\""
+            "@12 -0 +\"          run_if: \\\"*nothing\\\"\\r\\n\""
           ],
-          "sha256": "b77df97c8f91fb0a41d22602a7071f12b5dd49b567d58a44c12cba394f278baf"
-        },
-        {
-          "do": "execute databricks.rename-task on task:outer",
-          "answer": "refused: for-each-before-key.yml could not be read, so it cannot be edited.",
-          "unchanged": true
-        },
-        {
-          "do": "set task:outer databricks.run-if = \"ALL_DONE\"",
-          "answer": "refused: for-each-before-key.yml could not be read, so it cannot be edited.",
-          "unchanged": true
-        },
-        {
-          "do": "undo",
-          "answer": "ok",
-          "hunks": [
-            "@7 -1 +\"\""
-          ],
-          "sha256": "754f8df8d68f8d3a60022068f82e407518d097b18b96ab8a462f6accb4f08ec5"
-        },
-        {
-          "do": "set task:outer databricks.run-if = \"[x\"",
-          "answer": "throws InvalidOperationException: Operation is not valid due to the current state of the object.",
-          "unchanged": true
+          "sha256": "38fab62ea894a16fbfb09857261d07a3ce7639b5e6f7aed2bf38f0b4b2ed51e9"
         },
         {
           "do": "execute databricks.rename-task on task:outer",
@@ -8972,15 +8951,48 @@
           "do": "set task:outer databricks.run-if = \"ALL_DONE\"",
           "answer": "ok",
           "hunks": [
-            "@7 -0 +\"            run_if: ALL_DONE\\r\\n\""
+            "@12 -1 +\"          run_if: ALL_DONE\\r\\n\""
           ],
-          "sha256": "3391858cb28d947d58e6a3a82215838d222cbcdce58b7918dcf16b5bff127768",
+          "sha256": "c2310d7d73aff43e61aaaabc0949bc4a1a41b4b508fa6bb8b9279b0cf47cb149",
           "undo": "ok; restores the text"
         },
         {
           "do": "undo",
-          "answer": "refused: There is nothing to undo.",
+          "answer": "ok",
+          "hunks": [
+            "@12 -1 +\"\""
+          ],
+          "sha256": "754f8df8d68f8d3a60022068f82e407518d097b18b96ab8a462f6accb4f08ec5"
+        },
+        {
+          "do": "set task:outer databricks.run-if = \"[x\"",
+          "answer": "ok",
+          "hunks": [
+            "@12 -0 +\"          run_if: \\\"[x\\\"\\r\\n\""
+          ],
+          "sha256": "418d90ebab07784787884ef16f46df9f90d2f0b339b62fd2e58d1eea74b90bee"
+        },
+        {
+          "do": "execute databricks.rename-task on task:outer",
+          "answer": "asks: ContextInputRequest { Title = Rename task, Icon = mdi-pencil-outline, FieldLabel = Key, InitialValue = outer, ConfirmLabel = Rename, InlineLabelElementId = task:outer, CommitActionId =  }",
           "unchanged": true
+        },
+        {
+          "do": "set task:outer databricks.run-if = \"ALL_DONE\"",
+          "answer": "ok",
+          "hunks": [
+            "@12 -1 +\"          run_if: ALL_DONE\\r\\n\""
+          ],
+          "sha256": "c2310d7d73aff43e61aaaabc0949bc4a1a41b4b508fa6bb8b9279b0cf47cb149",
+          "undo": "ok; restores the text"
+        },
+        {
+          "do": "undo",
+          "answer": "ok",
+          "hunks": [
+            "@12 -1 +\"\""
+          ],
+          "sha256": "754f8df8d68f8d3a60022068f82e407518d097b18b96ab8a462f6accb4f08ec5"
         },
         {
           "do": "execute databricks.disconnect:outer on task:mapping_first",
@@ -9016,9 +9028,9 @@
           "do": "execute databricks.connect on rel:task:mapping_first->task:outer",
           "answer": "ok",
           "hunks": [
-            "@7 -0 +\"            depends_on:\\r\\n              - task_key: mapping_first\\r\\n\""
+            "@12 -0 +\"          depends_on:\\r\\n            - task_key: mapping_first\\r\\n\""
           ],
-          "sha256": "e2579dc79df24b6050820f616f77243f6c78032135c058f66d7aac2976a24fd9",
+          "sha256": "486be0ac5cf230cc01ee0f241a0ab6a62edbcafcb529b4f2633c08cc76c36040",
           "undo": "ok; restores the text",
           "redo": "ok; reapplies the text",
           "undoAgain": "ok; restores the text"
@@ -9059,9 +9071,9 @@
           "do": "execute databricks.add-task:notebook on new:120,80",
           "answer": "ok",
           "hunks": [
-            "@18 -0 +\"        - task_key: notebook_1\\r\\n            notebook_task:\\r\\n              notebook_path: notebooks/notebook_1\\r\\n\""
+            "@18 -0 +\"        - task_key: notebook_1\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/notebook_1\\r\\n\""
           ],
-          "sha256": "e96241e048d89c8655fa6c3d0fd34d0e70496cd7f2734e078c1f1c84f219a56f",
+          "sha256": "0389a49f45b95812e68fdfa52d717ba4b12b31109eee2da13aefe7e211069350",
           "undo": "ok; restores the text",
           "redo": "ok; reapplies the text",
           "undoAgain": "ok; restores the text"
@@ -9070,18 +9082,18 @@
           "do": "execute databricks.add-task:python on new:120,80",
           "answer": "ok",
           "hunks": [
-            "@18 -0 +\"        - task_key: python_1\\r\\n            spark_python_task:\\r\\n              python_file: scripts/python_1.py\\r\\n\""
+            "@18 -0 +\"        - task_key: python_1\\r\\n          spark_python_task:\\r\\n            python_file: scripts/python_1.py\\r\\n\""
           ],
-          "sha256": "89ab4c88f1485992b8d8ec67d8243ec30d997a53558b243cfb13ad22f8af39f9",
+          "sha256": "1442f780f52eba7cfb82627f408730fbd633ce786468e206e80f4ccf09f0fbda",
           "undo": "ok; restores the text"
         },
         {
           "do": "execute databricks.add-task:condition on new:120,80",
           "answer": "ok",
           "hunks": [
-            "@18 -0 +\"        - task_key: condition_1\\r\\n            condition_task:\\r\\n              op: EQUAL_TO\\r\\n              left: \\\"condition_1\\\"\\r\\n              right: \\\"true\\\"\\r\\n\""
+            "@18 -0 +\"        - task_key: condition_1\\r\\n          condition_task:\\r\\n            op: EQUAL_TO\\r\\n            left: \\\"condition_1\\\"\\r\\n            right: \\\"true\\\"\\r\\n\""
           ],
-          "sha256": "9499e111871a3e6535c6dd9ddae7cd3271dee10363344c86b8d24a73a8b6d8c8",
+          "sha256": "bfc56bc02e8ee285bea866cdeead816853218fd59bcdf1ee837e1d92ac1d344b",
           "undo": "ok; restores the text"
         },
         {
@@ -9103,9 +9115,9 @@
           "do": "commit databricks.add-task:notebook on  = \"parity_task\"",
           "answer": "ok",
           "hunks": [
-            "@18 -0 +\"        - task_key: parity_task\\r\\n            notebook_task:\\r\\n              notebook_path: notebooks/parity_task\\r\\n\""
+            "@18 -0 +\"        - task_key: parity_task\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/parity_task\\r\\n\""
           ],
-          "sha256": "e393df430e4e676598b34ebf7ae86eecd854a5f633f918d7ae61a95aad6c9a2b",
+          "sha256": "3e32082239a0d3dfc869de58b7751856274d0ee7e656d085281814c76560cff7",
           "undo": "ok; restores the text"
         },
         {
@@ -9117,36 +9129,36 @@
           "do": "insert a wheel task",
           "answer": "ok",
           "hunks": [
-            "@18 -0 +\"        - task_key: parity_wheel\\r\\n            python_wheel_task:\\r\\n              package_name: parity/wheel\\r\\n              entry_point: main\\r\\n\""
+            "@18 -0 +\"        - task_key: parity_wheel\\r\\n          python_wheel_task:\\r\\n            package_name: parity/wheel\\r\\n            entry_point: main\\r\\n\""
           ],
-          "sha256": "ec2d3de966966a5089cc9de908db0f96b6c3ede38b51b4d5fc6d8012c1756558",
+          "sha256": "bceee922f64281d3e9a980713cedba0e888cf9ba08e2f3959b1898c738586c8d",
           "undo": "ok; restores the text"
         },
         {
           "do": "insert a sql task",
           "answer": "ok",
           "hunks": [
-            "@18 -0 +\"        - task_key: parity_sql\\r\\n            sql_task:\\r\\n              warehouse_id: \\\"\\\"\\r\\n              query:\\r\\n                query_id: parity/sql\\r\\n\""
+            "@18 -0 +\"        - task_key: parity_sql\\r\\n          sql_task:\\r\\n            warehouse_id: \\\"\\\"\\r\\n            query:\\r\\n              query_id: parity/sql\\r\\n\""
           ],
-          "sha256": "54f457218a179b74ff0e78f9d75cd377ba852907d6bc5e7ca7388df6b39b876e",
+          "sha256": "87aa562a204bc413b213af3ada1d6aed91a156d3e3908a6c7eff1853581e8344",
           "undo": "ok; restores the text"
         },
         {
           "do": "insert a pipeline task",
           "answer": "ok",
           "hunks": [
-            "@18 -0 +\"        - task_key: parity_pipeline\\r\\n            pipeline_task:\\r\\n              pipeline_id: parity/pipeline\\r\\n\""
+            "@18 -0 +\"        - task_key: parity_pipeline\\r\\n          pipeline_task:\\r\\n            pipeline_id: parity/pipeline\\r\\n\""
           ],
-          "sha256": "8bb222975618608c4c1b488eeba71b92beba78770faca73754de659629d8e624",
+          "sha256": "b39767a5fa7caf1fc16791ea49fd5833856793a112d34d77804442bd4dd980b5",
           "undo": "ok; restores the text"
         },
         {
           "do": "insert a run-job task",
           "answer": "ok",
           "hunks": [
-            "@18 -0 +\"        - task_key: parity_run_job\\r\\n            run_job_task:\\r\\n              job_id: parity/run-job\\r\\n\""
+            "@18 -0 +\"        - task_key: parity_run_job\\r\\n          run_job_task:\\r\\n            job_id: parity/run-job\\r\\n\""
           ],
-          "sha256": "f269514a71ce6766b8c2abea337fad749c888ef8049470b68a22edbcc1c662ec",
+          "sha256": "4baf11f80d07eedb38f6a7cbb914cdb4dd112e6596b57cb0eccb26eb4e09afce",
           "undo": "ok; restores the text"
         },
         {
@@ -9194,9 +9206,9 @@
           "do": "commit databricks.add-resource:jobs on bundle = \"yes\"",
           "answer": "ok",
           "hunks": [
-            "@18 -0 +\"    yes:\\r\\n      name: yes\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
+            "@18 -0 +\"    \\\"yes\\\":\\r\\n      name: \\\"yes\\\"\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
           ],
-          "sha256": "7d93b4e80a229184ba36787802e0d870d1126595f396672e497930a9050d7d11",
+          "sha256": "70cc09557d0f5c86024231ab71dc7a44ca310207ebd45ebeaaf10c0c565d9e3b",
           "undo": "ok; restores the text"
         },
         {
@@ -9463,9 +9475,9 @@
           "do": "set task:notebook_2 databricks.run-if = \"yes\"",
           "answer": "ok",
           "hunks": [
-            "@7 -0 +\"          run_if: yes\\r\\n\""
+            "@7 -0 +\"          run_if: \\\"yes\\\"\\r\\n\""
           ],
-          "sha256": "75b0063536f41fe21339ff7fcf8fe98104db1e4b51bf94ddc746ab82aa31d480",
+          "sha256": "2e666810b7a7742a6be61e1b99c32ce4afeb7112cc72ba60d7da34480da57c8a",
           "undo": "ok; restores the text"
         },
         {
@@ -9544,9 +9556,9 @@
           "do": "commit databricks.rename-task on task:notebook_2 = \"123\"",
           "answer": "ok",
           "hunks": [
-            "@6 -1 +\"        - task_key: 123\\r\\n\""
+            "@6 -1 +\"        - task_key: \\\"123\\\"\\r\\n\""
           ],
-          "sha256": "758730cbb357ea53107d242a12771ae6938c56be5c8327f3071208885c69443b",
+          "sha256": "01c5ce623727eee982d2b30ca56e27aa48ea132de3886cbf0ea2f1e3014121a0",
           "undo": "ok; restores the text"
         },
         {
@@ -9593,19 +9605,23 @@
           "do": "set task:notebook_2 databricks.run-if = \"*nothing\"",
           "answer": "ok",
           "hunks": [
-            "@7 -0 +\"          run_if: *nothing\\r\\n\""
+            "@7 -0 +\"          run_if: \\\"*nothing\\\"\\r\\n\""
           ],
-          "sha256": "665df82fe87a105bc34dbdc9b0bdb0d7a5dce401d7ecac906f5e7c3cb0cedb5f"
+          "sha256": "7a66829d7f7c72b8bfb46096509873f5c69e56bfe0115b746c3c63fdb3beecd0"
         },
         {
           "do": "execute databricks.rename-task on task:notebook_2",
-          "answer": "refused: fresh-key.yml could not be read, so it cannot be edited.",
+          "answer": "asks: ContextInputRequest { Title = Rename task, Icon = mdi-pencil-outline, FieldLabel = Key, InitialValue = notebook_2, ConfirmLabel = Rename, InlineLabelElementId = task:notebook_2, CommitActionId =  }",
           "unchanged": true
         },
         {
           "do": "set task:notebook_2 databricks.run-if = \"ALL_DONE\"",
-          "answer": "refused: fresh-key.yml could not be read, so it cannot be edited.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@7 -1 +\"          run_if: ALL_DONE\\r\\n\""
+          ],
+          "sha256": "4eee1551095083e79c015156225a58ab1d0ca9ea87658e2f02072e9caece6349",
+          "undo": "ok; restores the text"
         },
         {
           "do": "undo",
@@ -9617,8 +9633,11 @@
         },
         {
           "do": "set task:notebook_2 databricks.run-if = \"[x\"",
-          "answer": "throws InvalidOperationException: Operation is not valid due to the current state of the object.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@7 -0 +\"          run_if: \\\"[x\\\"\\r\\n\""
+          ],
+          "sha256": "4c3aee223c9aa5030067ccdaef0df87a927ec707eeb3e87b8839451e81ff15aa"
         },
         {
           "do": "execute databricks.rename-task on task:notebook_2",
@@ -9629,15 +9648,18 @@
           "do": "set task:notebook_2 databricks.run-if = \"ALL_DONE\"",
           "answer": "ok",
           "hunks": [
-            "@7 -0 +\"          run_if: ALL_DONE\\r\\n\""
+            "@7 -1 +\"          run_if: ALL_DONE\\r\\n\""
           ],
           "sha256": "4eee1551095083e79c015156225a58ab1d0ca9ea87658e2f02072e9caece6349",
           "undo": "ok; restores the text"
         },
         {
           "do": "undo",
-          "answer": "refused: There is nothing to undo.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@7 -1 +\"\""
+          ],
+          "sha256": "cca4bbcac01aa89fc1ba8f63267e1b0d2a18702a7f9142bd124178ead1ace93c"
         },
         {
           "do": "execute databricks.disconnect:python_1 on task:condition_1",
@@ -9862,9 +9884,9 @@
           "do": "commit databricks.add-resource:jobs on bundle = \"yes\"",
           "answer": "ok",
           "hunks": [
-            "@19 -0 +\"    yes:\\r\\n      name: yes\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
+            "@19 -0 +\"    \\\"yes\\\":\\r\\n      name: \\\"yes\\\"\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
           ],
-          "sha256": "7ed495ccd95bfbf100a430f0c38661e018802a973dbb2b974f842e2d0aeb227e",
+          "sha256": "8bd272548a401ceafa20a5c58d971f972d87f37368078b2f3ffa97a0e8b4cec8",
           "undo": "ok; restores the text"
         },
         {
@@ -10179,9 +10201,9 @@
           "do": "set task:ingest databricks.run-if = \"yes\"",
           "answer": "ok",
           "hunks": [
-            "@16 -0 +\"          run_if: yes\\r\\n\""
+            "@16 -0 +\"          run_if: \\\"yes\\\"\\r\\n\""
           ],
-          "sha256": "f3f7c5c56944fd69b9d508be838f19c065a3d2c0450a2d8d97c38d933f4cf8d6",
+          "sha256": "1c9732d8fd7999a6fc659d7e2273286d1994349d1a4c6bea9e99359d07d9c8bc",
           "undo": "ok; restores the text"
         },
         {
@@ -10265,10 +10287,10 @@
           "do": "commit databricks.rename-task on task:ingest = \"123\"",
           "answer": "ok",
           "hunks": [
-            "@15 -1 +\"        - task_key: 123\\r\\n\"",
-            "@21 -1 +\"            - task_key: 123\\r\\n\""
+            "@15 -1 +\"        - task_key: \\\"123\\\"\\r\\n\"",
+            "@21 -1 +\"            - task_key: \\\"123\\\"\\r\\n\""
           ],
-          "sha256": "c35db23ca4dbda82392b39424a1d03dd550ad10812e7446ab8f9ba01f86ed4b1",
+          "sha256": "f333f724e062bebfb07b50398ef92557cfe189c611a1402d3785d8abe766bbd3",
           "undo": "ok; restores the text"
         },
         {
@@ -10319,19 +10341,23 @@
           "do": "set task:ingest databricks.run-if = \"*nothing\"",
           "answer": "ok",
           "hunks": [
-            "@16 -0 +\"          run_if: *nothing\\r\\n\""
+            "@16 -0 +\"          run_if: \\\"*nothing\\\"\\r\\n\""
           ],
-          "sha256": "b45dc6d7cc692e1af72ab574c483a61204abc9e97d0b7b958bc6c95e532b18d4"
+          "sha256": "7c0ef186642d14722cfb881c1bdc499a0f3fe10833f31653f2ace6010ab4244a"
         },
         {
           "do": "execute databricks.rename-task on task:ingest",
-          "answer": "refused: job.yml could not be read, so it cannot be edited.",
+          "answer": "asks: ContextInputRequest { Title = Rename task, Icon = mdi-pencil-outline, FieldLabel = Key, InitialValue = ingest, ConfirmLabel = Rename, InlineLabelElementId = task:ingest, CommitActionId =  }",
           "unchanged": true
         },
         {
           "do": "set task:ingest databricks.run-if = \"ALL_DONE\"",
-          "answer": "refused: job.yml could not be read, so it cannot be edited.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@16 -1 +\"          run_if: ALL_DONE\\r\\n\""
+          ],
+          "sha256": "053ccca818c1cbc04f69068c4b0a31b84ef00341a8ce7e1925ef1af247655d4a",
+          "undo": "ok; restores the text"
         },
         {
           "do": "undo",
@@ -10343,8 +10369,11 @@
         },
         {
           "do": "set task:ingest databricks.run-if = \"[x\"",
-          "answer": "throws InvalidOperationException: Operation is not valid due to the current state of the object.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@16 -0 +\"          run_if: \\\"[x\\\"\\r\\n\""
+          ],
+          "sha256": "6417f8610467b4e596de866133576a1e9eb0e694e37e2d9000f62190b51ea44d"
         },
         {
           "do": "execute databricks.rename-task on task:ingest",
@@ -10355,15 +10384,18 @@
           "do": "set task:ingest databricks.run-if = \"ALL_DONE\"",
           "answer": "ok",
           "hunks": [
-            "@16 -0 +\"          run_if: ALL_DONE\\r\\n\""
+            "@16 -1 +\"          run_if: ALL_DONE\\r\\n\""
           ],
           "sha256": "053ccca818c1cbc04f69068c4b0a31b84ef00341a8ce7e1925ef1af247655d4a",
           "undo": "ok; restores the text"
         },
         {
           "do": "undo",
-          "answer": "refused: There is nothing to undo.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@16 -1 +\"\""
+          ],
+          "sha256": "442e011930eeb461cf9e69796796853e2f0f519d785c37655da65a1e7befbf11"
         },
         {
           "do": "execute databricks.disconnect:ingest on task:quality_gate",
@@ -10577,9 +10609,9 @@
           "do": "commit databricks.add-resource:jobs on bundle = \"yes\"",
           "answer": "ok",
           "hunks": [
-            "@46 -0 +\"    yes:\\r\\n      name: yes\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
+            "@46 -0 +\"    \\\"yes\\\":\\r\\n      name: \\\"yes\\\"\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
           ],
-          "sha256": "eab2d9b5f79ec936875b7b78d599c5db9cfa96a5f665975491c6eeb6fedd1941",
+          "sha256": "f7af2435f7e0caff00ab4da80d74a189a84f3c1b2ec78af72e278cce562abefb",
           "undo": "ok; restores the text"
         },
         {
@@ -10997,9 +11029,9 @@
           "do": "set task:land databricks.run-if = \"yes\"",
           "answer": "ok",
           "hunks": [
-            "@8 -0 +\"          run_if: yes\\r\\n\""
+            "@8 -0 +\"          run_if: \\\"yes\\\"\\r\\n\""
           ],
-          "sha256": "467dacfe1f8e3a9406150d01552c050bb3ce97ed0206359f80c42ce8a29794b0",
+          "sha256": "bac3a346c1d7456f1772c8d46a0306a99f745a04f20c948c0d75baa041c2e344",
           "undo": "ok; restores the text"
         },
         {
@@ -11079,10 +11111,10 @@
           "do": "commit databricks.rename-task on task:land = \"123\"",
           "answer": "ok",
           "hunks": [
-            "@7 -1 +\"        - task_key: 123\\r\\n\"",
-            "@14 -1 +\"            - task_key: 123\\r\\n\""
+            "@7 -1 +\"        - task_key: \\\"123\\\"\\r\\n\"",
+            "@14 -1 +\"            - task_key: \\\"123\\\"\\r\\n\""
           ],
-          "sha256": "844aff5c4c7eee1a7991a299fb9f65a75294f22b14c030f24c42e44004e7704d",
+          "sha256": "a9047542f819fa108bbd5211c5a59b6d78088be4f247cdd5f89a6bb0a35afdef",
           "undo": "ok; restores the text"
         },
         {
@@ -11129,19 +11161,23 @@
           "do": "set task:land databricks.run-if = \"*nothing\"",
           "answer": "ok",
           "hunks": [
-            "@8 -0 +\"          run_if: *nothing\\r\\n\""
+            "@8 -0 +\"          run_if: \\\"*nothing\\\"\\r\\n\""
           ],
-          "sha256": "7a5557843538fe6fbcf1d196e8c970fbaca0028e62813b91ba4b8a9cdad3f0d5"
+          "sha256": "14841ee011ef0cb72b0ca59f4ffb6e9b76432b3825f4996661a121925fc96d12"
         },
         {
           "do": "execute databricks.rename-task on task:land",
-          "answer": "refused: leading-comments.yml could not be read, so it cannot be edited.",
+          "answer": "asks: ContextInputRequest { Title = Rename task, Icon = mdi-pencil-outline, FieldLabel = Key, InitialValue = land, ConfirmLabel = Rename, InlineLabelElementId = task:land, CommitActionId =  }",
           "unchanged": true
         },
         {
           "do": "set task:land databricks.run-if = \"ALL_DONE\"",
-          "answer": "refused: leading-comments.yml could not be read, so it cannot be edited.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@8 -1 +\"          run_if: ALL_DONE\\r\\n\""
+          ],
+          "sha256": "9993dc76626843ee98516a09b1360f5a5f49798c07d0f64b0703f114dc4320b0",
+          "undo": "ok; restores the text"
         },
         {
           "do": "undo",
@@ -11153,8 +11189,11 @@
         },
         {
           "do": "set task:land databricks.run-if = \"[x\"",
-          "answer": "throws InvalidOperationException: Operation is not valid due to the current state of the object.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@8 -0 +\"          run_if: \\\"[x\\\"\\r\\n\""
+          ],
+          "sha256": "b42143afb56fc9ff7497486a52ab74b093eb6b85624c34895c1194926ccd85e6"
         },
         {
           "do": "execute databricks.rename-task on task:land",
@@ -11165,15 +11204,18 @@
           "do": "set task:land databricks.run-if = \"ALL_DONE\"",
           "answer": "ok",
           "hunks": [
-            "@8 -0 +\"          run_if: ALL_DONE\\r\\n\""
+            "@8 -1 +\"          run_if: ALL_DONE\\r\\n\""
           ],
           "sha256": "9993dc76626843ee98516a09b1360f5a5f49798c07d0f64b0703f114dc4320b0",
           "undo": "ok; restores the text"
         },
         {
           "do": "undo",
-          "answer": "refused: There is nothing to undo.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@8 -1 +\"\""
+          ],
+          "sha256": "6f7e30ea8ffe205ae0ad4fef3f888fff225f0a092ec3a1f3b0e1c61917177e00"
         },
         {
           "do": "execute databricks.disconnect:land on task:refine",
@@ -11398,9 +11440,9 @@
           "do": "commit databricks.add-resource:jobs on bundle = \"yes\"",
           "answer": "ok",
           "hunks": [
-            "@21 -0 +\"    yes:\\r\\n      name: yes\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
+            "@21 -0 +\"    \\\"yes\\\":\\r\\n      name: \\\"yes\\\"\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
           ],
-          "sha256": "81317a469f5a70aff821cc35a5bd3af3bf5bad413a5d408d4a19cd39a187447e",
+          "sha256": "959db7fd76b150bf7a7d2f7ded6448a67cc11b90d4c64b44fc46be4a6a68eaa3",
           "undo": "ok; restores the text"
         },
         {
@@ -11633,9 +11675,9 @@
           "do": "commit databricks.add-resource:jobs on bundle = \"yes\"",
           "answer": "ok",
           "hunks": [
-            "@9 -0 +\"resources:\\r\\n  jobs:\\r\\n    yes:\\r\\n      name: yes\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
+            "@9 -0 +\"resources:\\r\\n  jobs:\\r\\n    \\\"yes\\\":\\r\\n      name: \\\"yes\\\"\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
           ],
-          "sha256": "8700c8567af7b6c8e1378b8fcb05e17c86a28e416055736e9eb1fe3e302c28e3",
+          "sha256": "24261af87505bb4439a7bc25f0f2689bf60b9593673d107cb04d4ecbc20e505c",
           "undo": "ok; restores the text"
         },
         {
@@ -11974,9 +12016,9 @@
           "do": "commit databricks.add-resource:jobs on bundle = \"yes\"",
           "answer": "ok",
           "hunks": [
-            "@2 -0 +\"  jobs:\\r\\n    yes:\\r\\n      name: yes\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
+            "@2 -0 +\"  jobs:\\r\\n    \\\"yes\\\":\\r\\n      name: \\\"yes\\\"\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
           ],
-          "sha256": "04115ff351cf8a4055d7db5ab70d02fe048168756e739e19ec4a9e63042e30f8",
+          "sha256": "85e561d39dd1dd3c30126926b97e674e8b96d4220802fb2ddf6dca9b2121460c",
           "undo": "ok; restores the text"
         },
         {
@@ -12050,9 +12092,9 @@
           "do": "set pipeline databricks.pipeline:serverless = \"false\"",
           "answer": "ok",
           "hunks": [
-            "@4 -0 +\"      serverless: false\\r\\n\""
+            "@4 -0 +\"      serverless: \\\"false\\\"\\r\\n\""
           ],
-          "sha256": "22f327c2962143c7323a59d9aef02d2fea52fdb608eb04daf6d5433ffafd3d53",
+          "sha256": "d5200426642d9e18348ad4509374612f86cc7ff7371e38becc8cf8126b9d62c8",
           "undo": "ok; restores the text"
         },
         {
@@ -12107,9 +12149,9 @@
           "do": "commit databricks.add-library:notebook on pipeline = \"*star\"",
           "answer": "ok",
           "hunks": [
-            "@10 -0 +\"        - notebook:\\r\\n            path: *star\\r\\n\""
+            "@10 -0 +\"        - notebook:\\r\\n            path: \\\"*star\\\"\\r\\n\""
           ],
-          "sha256": "1383ebb10a3319685a32a847d232b875f3739ca47b9fc7d38c645ea522725d56",
+          "sha256": "e3fc4ff0dbd4811d4cafa2d3f6533136065d864277307e9dd40a1952c8f6d43c",
           "undo": "ok; restores the text"
         },
         {
@@ -12278,9 +12320,9 @@
           "do": "commit databricks.rename-bundle on bundle = \"null\"",
           "answer": "ok",
           "hunks": [
-            "@2 -1 +\"  name: null\\n\""
+            "@2 -1 +\"  name: \\\"null\\\"\\n\""
           ],
-          "sha256": "c873782754ee3d33bee90e4abe4b8530c2ae24da4feabcae5e0e0bfb16de4b9a",
+          "sha256": "e35afbd6d37e93aa94ac3bf9cc6db8c17cec289e2281ab47b9d807655dd709e2",
           "undo": "ok; restores the text"
         },
         {
@@ -12303,9 +12345,9 @@
           "do": "commit databricks.add-resource:jobs on bundle = \"yes\"",
           "answer": "ok",
           "hunks": [
-            "@8 -0 +\"resources:\\n  jobs:\\n    yes:\\n      name: yes\\n      tasks:\\n        - task_key: main\\n          notebook_task:\\n            notebook_path: notebooks/yes\\n\""
+            "@8 -0 +\"resources:\\n  jobs:\\n    \\\"yes\\\":\\n      name: \\\"yes\\\"\\n      tasks:\\n        - task_key: main\\n          notebook_task:\\n            notebook_path: notebooks/yes\\n\""
           ],
-          "sha256": "cfc39cbdd0cc18d5c67c163a43197d162975b633477ad4afb6caac98f85670b1",
+          "sha256": "cba39dcfb8fd667b4efca7c0061a0aa25cdf4a9985ab4072d82e1cd364bebcd4",
           "undo": "ok; restores the text"
         },
         {
@@ -12559,9 +12601,9 @@
           "do": "commit databricks.add-resource:jobs on bundle = \"yes\"",
           "answer": "ok",
           "hunks": [
-            "@14 -0 +\"resources:\\r\\n  jobs:\\r\\n    yes:\\r\\n      name: yes\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
+            "@14 -0 +\"resources:\\r\\n  jobs:\\r\\n    \\\"yes\\\":\\r\\n      name: \\\"yes\\\"\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
           ],
-          "sha256": "bf4005cc227548c2702c0d8779921f14c3f7f7e7861d8321e412d583b05480ae",
+          "sha256": "2238772c4dc1b5c28f6bb58726fc7928f9dd4070e5d7dd00500beec3879b04b3",
           "undo": "ok; restores the text"
         },
         {
@@ -12965,9 +13007,9 @@
           "do": "set task:first_waiter databricks.run-if = \"yes\"",
           "answer": "ok",
           "hunks": [
-            "@7 -0 +\"          run_if: yes\\r\\n\""
+            "@7 -0 +\"          run_if: \\\"yes\\\"\\r\\n\""
           ],
-          "sha256": "2f67d0734fd11de01b6d031b09e45b936fa0d4c60f85763fe19e571031c5138a",
+          "sha256": "3ce027bd5883905ace2aebbccb943dc0f77842871e9d1cf0b4cb977dffd8fd4e",
           "undo": "ok; restores the text"
         },
         {
@@ -13046,9 +13088,9 @@
           "do": "commit databricks.rename-task on task:first_waiter = \"123\"",
           "answer": "ok",
           "hunks": [
-            "@6 -1 +\"        - task_key: 123\\r\\n\""
+            "@6 -1 +\"        - task_key: \\\"123\\\"\\r\\n\""
           ],
-          "sha256": "e2e169a71e7a31407edfa5a7ed27036efeb9313ecd28ede9d18153ecafb06d2e",
+          "sha256": "4b929c52f3c9dd03da081081f5ee8d881b295291ac08acc423401c7ce072cfdd",
           "undo": "ok; restores the text"
         },
         {
@@ -13095,19 +13137,23 @@
           "do": "set task:first_waiter databricks.run-if = \"*nothing\"",
           "answer": "ok",
           "hunks": [
-            "@7 -0 +\"          run_if: *nothing\\r\\n\""
+            "@7 -0 +\"          run_if: \\\"*nothing\\\"\\r\\n\""
           ],
-          "sha256": "3d271d2d0892fe4ae44548f71034e3539a45607c10ac32ec0705a39670f215b7"
+          "sha256": "94cb867ef5913c2995eda95516171aa8288fe93e779b40cc758dab107c063d24"
         },
         {
           "do": "execute databricks.rename-task on task:first_waiter",
-          "answer": "refused: missing-upstream.yml could not be read, so it cannot be edited.",
+          "answer": "asks: ContextInputRequest { Title = Rename task, Icon = mdi-pencil-outline, FieldLabel = Key, InitialValue = first_waiter, ConfirmLabel = Rename, InlineLabelElementId = task:first_waiter, CommitActionId =  }",
           "unchanged": true
         },
         {
           "do": "set task:first_waiter databricks.run-if = \"ALL_DONE\"",
-          "answer": "refused: missing-upstream.yml could not be read, so it cannot be edited.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@7 -1 +\"          run_if: ALL_DONE\\r\\n\""
+          ],
+          "sha256": "13aa837ab67c90c00ed1630b523aa1d9d773fd5f567b9e6f17deb23751ba34a7",
+          "undo": "ok; restores the text"
         },
         {
           "do": "undo",
@@ -13119,8 +13165,11 @@
         },
         {
           "do": "set task:first_waiter databricks.run-if = \"[x\"",
-          "answer": "throws InvalidOperationException: Operation is not valid due to the current state of the object.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@7 -0 +\"          run_if: \\\"[x\\\"\\r\\n\""
+          ],
+          "sha256": "beb95cf650c5a7eedbf631ec16d3a9962f0062077ab711f0135b5e868a8ac5f3"
         },
         {
           "do": "execute databricks.rename-task on task:first_waiter",
@@ -13131,15 +13180,18 @@
           "do": "set task:first_waiter databricks.run-if = \"ALL_DONE\"",
           "answer": "ok",
           "hunks": [
-            "@7 -0 +\"          run_if: ALL_DONE\\r\\n\""
+            "@7 -1 +\"          run_if: ALL_DONE\\r\\n\""
           ],
           "sha256": "13aa837ab67c90c00ed1630b523aa1d9d773fd5f567b9e6f17deb23751ba34a7",
           "undo": "ok; restores the text"
         },
         {
           "do": "undo",
-          "answer": "refused: There is nothing to undo.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@7 -1 +\"\""
+          ],
+          "sha256": "72015b9eaf577989ddc3ce7438d653dd1cd05050f78fffb96a91040ef1c45cf1"
         },
         {
           "do": "execute databricks.disconnect:ghost on task:first_waiter",
@@ -13352,9 +13404,9 @@
           "do": "commit databricks.add-resource:jobs on bundle = \"yes\"",
           "answer": "ok",
           "hunks": [
-            "@18 -0 +\"    yes:\\r\\n      name: yes\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
+            "@18 -0 +\"    \\\"yes\\\":\\r\\n      name: \\\"yes\\\"\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
           ],
-          "sha256": "253967a7ab80cd4b8eaacd44efb0524e14521b749a987b9707e72d1b4c04fbb9",
+          "sha256": "5b17a617a94b735193217951c55ad61699ccec621b4c256d90382d5fd683db02",
           "undo": "ok; restores the text"
         },
         {
@@ -13614,9 +13666,9 @@
           "do": "set task:upstream databricks.run-if = \"yes\"",
           "answer": "ok",
           "hunks": [
-            "@14 -0 +\"          run_if: yes\\r\\n\""
+            "@14 -0 +\"          run_if: \\\"yes\\\"\\r\\n\""
           ],
-          "sha256": "93247de1d3a319e7ef7e6ccb7c99c0f8805e7c36651a41a3867078ce8b1959fe",
+          "sha256": "96f7dee40ea447d69048d361fc2604278899c44bab7b6ce4d8360c547620cf01",
           "undo": "ok; restores the text"
         },
         {
@@ -13700,10 +13752,10 @@
           "do": "commit databricks.rename-task on task:upstream = \"123\"",
           "answer": "ok",
           "hunks": [
-            "@13 -1 +\"        - task_key: 123\\r\\n\"",
-            "@18 -1 +\"            - task_key: 123\\r\\n\""
+            "@13 -1 +\"        - task_key: \\\"123\\\"\\r\\n\"",
+            "@18 -1 +\"            - task_key: \\\"123\\\"\\r\\n\""
           ],
-          "sha256": "a1b547dc36547f804189d188b3850d051dfb663fff88b78c85ec4e582346f136",
+          "sha256": "11655ae77f587d36dadce0681140b24186429b76756647408f93638ac7c946c1",
           "undo": "ok; restores the text"
         },
         {
@@ -13754,19 +13806,23 @@
           "do": "set task:upstream databricks.run-if = \"*nothing\"",
           "answer": "ok",
           "hunks": [
-            "@14 -0 +\"          run_if: *nothing\\r\\n\""
+            "@14 -0 +\"          run_if: \\\"*nothing\\\"\\r\\n\""
           ],
-          "sha256": "6b83d4014c83655b40feb92be4a123f7a7d20b9a6ab79d5c471aeeb304336904"
+          "sha256": "dd1ef5e46488106e3f8b72354ea35101008d6d28b2b37e8ef6389c348f13c0f3"
         },
         {
           "do": "execute databricks.rename-task on task:upstream",
-          "answer": "refused: new-key-placement.yml could not be read, so it cannot be edited.",
+          "answer": "asks: ContextInputRequest { Title = Rename task, Icon = mdi-pencil-outline, FieldLabel = Key, InitialValue = upstream, ConfirmLabel = Rename, InlineLabelElementId = task:upstream, CommitActionId =  }",
           "unchanged": true
         },
         {
           "do": "set task:upstream databricks.run-if = \"ALL_DONE\"",
-          "answer": "refused: new-key-placement.yml could not be read, so it cannot be edited.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@14 -1 +\"          run_if: ALL_DONE\\r\\n\""
+          ],
+          "sha256": "f2adb14d030d8fc554c72d7a2acaf9a2b5206caf9e635e89bcd5053d2f8a9215",
+          "undo": "ok; restores the text"
         },
         {
           "do": "undo",
@@ -13778,8 +13834,11 @@
         },
         {
           "do": "set task:upstream databricks.run-if = \"[x\"",
-          "answer": "throws InvalidOperationException: Operation is not valid due to the current state of the object.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@14 -0 +\"          run_if: \\\"[x\\\"\\r\\n\""
+          ],
+          "sha256": "e22555c917d24cf48a0a0eca3e1951a5a3f9f13da0b466ebe4f36ca7e496e634"
         },
         {
           "do": "execute databricks.rename-task on task:upstream",
@@ -13790,15 +13849,18 @@
           "do": "set task:upstream databricks.run-if = \"ALL_DONE\"",
           "answer": "ok",
           "hunks": [
-            "@14 -0 +\"          run_if: ALL_DONE\\r\\n\""
+            "@14 -1 +\"          run_if: ALL_DONE\\r\\n\""
           ],
           "sha256": "f2adb14d030d8fc554c72d7a2acaf9a2b5206caf9e635e89bcd5053d2f8a9215",
           "undo": "ok; restores the text"
         },
         {
           "do": "undo",
-          "answer": "refused: There is nothing to undo.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@14 -1 +\"\""
+          ],
+          "sha256": "cf837e51550cab0d34adb59057a7db8eaf6c24a0e44b9629ded479048d3de3ce"
         },
         {
           "do": "execute databricks.disconnect:upstream on task:with_dependency",
@@ -13997,9 +14059,9 @@
           "do": "commit databricks.rename-bundle on bundle = \"null\"",
           "answer": "ok",
           "hunks": [
-            "@2 -1 +\"  name: null\\r\\n\""
+            "@2 -1 +\"  name: \\\"null\\\"\\r\\n\""
           ],
-          "sha256": "9d613885c991618255b64481a5002d722a793102c05eb508df10fecfb1d19cea",
+          "sha256": "c58320a8c4c4115dad965bf845b976736e14ca602ec72101e59352caa38ea52b",
           "undo": "ok; restores the text"
         },
         {
@@ -14022,9 +14084,9 @@
           "do": "commit databricks.add-resource:jobs on bundle = \"yes\"",
           "answer": "ok",
           "hunks": [
-            "@21 -0 +\"    yes:\\r\\n      name: yes\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
+            "@21 -0 +\"    \\\"yes\\\":\\r\\n      name: \\\"yes\\\"\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
           ],
-          "sha256": "6ac0ef454d9dbe8a3cbae66d69752247ee60ef46374ebab9e9fd7070a38f797e",
+          "sha256": "934720ac6495d532afdfcb1966c77ab0333f72995fbbcb0630897d6e247553ce",
           "undo": "ok; restores the text"
         },
         {
@@ -14255,9 +14317,9 @@
           "do": "commit databricks.add-resource:jobs on bundle = \"yes\"",
           "answer": "ok",
           "hunks": [
-            "@7 -0 +\"  jobs:\\r\\n    yes:\\r\\n      name: yes\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
+            "@7 -0 +\"  jobs:\\r\\n    \\\"yes\\\":\\r\\n      name: \\\"yes\\\"\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
           ],
-          "sha256": "b89a6a73fee467c9573d20715c70617789564287592f93917101a4441dc7e2a9",
+          "sha256": "d159079423b77a314ad63e03381f24968e8638933fdec5df4da53248f47a93b7",
           "undo": "ok; restores the text"
         },
         {
@@ -14331,9 +14393,9 @@
           "do": "set pipeline databricks.pipeline:serverless = \"false\"",
           "answer": "ok",
           "hunks": [
-            "@9 -0 +\"      serverless: false\\r\\n\""
+            "@9 -0 +\"      serverless: \\\"false\\\"\\r\\n\""
           ],
-          "sha256": "7fca5518d5effec7f293488205468202959885de151dc4779bfaa2b5adbaf3bc",
+          "sha256": "7e54b437bddb2c170b1f7720e22cc9a68f36a55ba3d54c550087b805a06674ba",
           "undo": "ok; restores the text"
         },
         {
@@ -14388,9 +14450,9 @@
           "do": "commit databricks.add-library:notebook on pipeline = \"*star\"",
           "answer": "ok",
           "hunks": [
-            "@13 -0 +\"        - notebook:\\r\\n            path: *star\\r\\n\""
+            "@13 -0 +\"        - notebook:\\r\\n            path: \\\"*star\\\"\\r\\n\""
           ],
-          "sha256": "28715e722723319a50dd6f2fdabbdc40ac74763026eb6370079a7e9802248977",
+          "sha256": "bc20c7ddeede4ab42c452776f1aae6a4035592132b50857e8fdde9f126805700",
           "undo": "ok; restores the text"
         },
         {
@@ -14559,9 +14621,9 @@
           "do": "commit databricks.rename-bundle on bundle = \"null\"",
           "answer": "ok",
           "hunks": [
-            "@2 -1 +\"  name: null\\r\\n\""
+            "@2 -1 +\"  name: \\\"null\\\"\\r\\n\""
           ],
-          "sha256": "c54875aa9f2286ef26176a6e4c2a890e18bfd8c3054842e589b322318344a148",
+          "sha256": "9079a512a0e4dcf1b2678e49b8c71937a68707d033a7edeb96314284a4e4b30e",
           "undo": "ok; restores the text"
         },
         {
@@ -14584,9 +14646,9 @@
           "do": "commit databricks.add-resource:jobs on bundle = \"yes\"",
           "answer": "ok",
           "hunks": [
-            "@8 -0 +\"resources:\\r\\n  jobs:\\r\\n    yes:\\r\\n      name: yes\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
+            "@8 -0 +\"resources:\\r\\n  jobs:\\r\\n    \\\"yes\\\":\\r\\n      name: \\\"yes\\\"\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
           ],
-          "sha256": "94a8b8a41413b11216d6a331e6552f3dba83d5065eb6208d9773d56cf9760e43",
+          "sha256": "d14472550c62033e72dc589e608e9d299530751086ce34233f29ceadaf32ac81",
           "undo": "ok; restores the text"
         },
         {
@@ -14764,9 +14826,9 @@
           "do": "commit databricks.rename-bundle on bundle = \"null\"",
           "answer": "ok",
           "hunks": [
-            "@2 -1 +\"  name: null\\r\\n\""
+            "@2 -1 +\"  name: \\\"null\\\"\\r\\n\""
           ],
-          "sha256": "31bc686c1de766821fe481ecce2b0c676a51dc3a7de26d52f09d0e5e75107979",
+          "sha256": "7da5c4230d10c4752b835ead73f1951f9511cf2129ea943e917f824acab75a02",
           "undo": "ok; restores the text"
         },
         {
@@ -14789,9 +14851,9 @@
           "do": "commit databricks.add-resource:jobs on bundle = \"yes\"",
           "answer": "ok",
           "hunks": [
-            "@7 -1 +\"    default: true\\r\\nresources:\\r\\n  jobs:\\r\\n    yes:\\r\\n      name: yes\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\""
+            "@7 -1 +\"    default: true\\r\\nresources:\\r\\n  jobs:\\r\\n    \\\"yes\\\":\\r\\n      name: \\\"yes\\\"\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\""
           ],
-          "sha256": "fdf4faf6aa5b8bcbc2b5e7e053ae1edb1f9d6506bb2a9f36f6d34ac09a45a9ac",
+          "sha256": "b5772fdbe19e4c524b87fbdb533ddd82bb197021f3fb9414123e8cc7d1408fb7",
           "undo": "ok; restores the text"
         },
         {
@@ -15051,9 +15113,9 @@
           "do": "commit databricks.add-resource:jobs on bundle = \"yes\"",
           "answer": "ok",
           "hunks": [
-            "@22 -0 +\"resources:\\r\\n  jobs:\\r\\n    yes:\\r\\n      name: yes\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
+            "@22 -0 +\"resources:\\r\\n  jobs:\\r\\n    \\\"yes\\\":\\r\\n      name: \\\"yes\\\"\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
           ],
-          "sha256": "25e6c9f3427843c9c9d570aca4a96ee179d242acc4b061780eb789e0ef74325b",
+          "sha256": "b127066bb751318ed5e69bac4ab994172dfeaa361ee2605eb3cded963bf45be8",
           "undo": "ok; restores the text"
         },
         {
@@ -15521,9 +15583,9 @@
           "do": "set task:plain databricks.run-if = \"yes\"",
           "answer": "ok",
           "hunks": [
-            "@14 -0 +\"          run_if: yes\\r\\n\""
+            "@14 -0 +\"          run_if: \\\"yes\\\"\\r\\n\""
           ],
-          "sha256": "57a0a7dccd36731ea73a4dc1c38c3e5bcf807eddff9dd20f3a55cb257a631466",
+          "sha256": "cbb729d43728dc5e46de8fd4beb52d1ddbc5b6198d4dfbd640481288ecb9e062",
           "undo": "ok; restores the text"
         },
         {
@@ -15607,10 +15669,10 @@
           "do": "commit databricks.rename-task on task:plain = \"123\"",
           "answer": "ok",
           "hunks": [
-            "@13 -1 +\"        - task_key: 123\\r\\n\"",
-            "@18 -1 +\"            - task_key: 123\\r\\n\""
+            "@13 -1 +\"        - task_key: \\\"123\\\"\\r\\n\"",
+            "@18 -1 +\"            - task_key: \\\"123\\\"\\r\\n\""
           ],
-          "sha256": "13b0ddf5e870ed9d1499a6ba1ae79517762ea739b3dfb9f799207d3844c2ba71",
+          "sha256": "c402ae6b8fd5a72b6364d7ef5df950dc4ee042ebd1175efecd445b1959c4f9cb",
           "undo": "ok; restores the text"
         },
         {
@@ -15661,19 +15723,23 @@
           "do": "set task:plain databricks.run-if = \"*nothing\"",
           "answer": "ok",
           "hunks": [
-            "@14 -0 +\"          run_if: *nothing\\r\\n\""
+            "@14 -0 +\"          run_if: \\\"*nothing\\\"\\r\\n\""
           ],
-          "sha256": "f87f2ceeecefa3910db83fcb22346a9edeb6e082ca11fa592695ea69df9ece6f"
+          "sha256": "6c18e708d55177a25253f6cdce4284b30ffda4c6b0bd63a17bc9416fea8d912f"
         },
         {
           "do": "execute databricks.rename-task on task:plain",
-          "answer": "refused: raw-values.yml could not be read, so it cannot be edited.",
+          "answer": "asks: ContextInputRequest { Title = Rename task, Icon = mdi-pencil-outline, FieldLabel = Key, InitialValue = plain, ConfirmLabel = Rename, InlineLabelElementId = task:plain, CommitActionId =  }",
           "unchanged": true
         },
         {
           "do": "set task:plain databricks.run-if = \"ALL_DONE\"",
-          "answer": "refused: raw-values.yml could not be read, so it cannot be edited.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@14 -1 +\"          run_if: ALL_DONE\\r\\n\""
+          ],
+          "sha256": "a589a03ca5f695fa7c5b6f736d76b45e32bac67052135d3560099ead66f0eca7",
+          "undo": "ok; restores the text"
         },
         {
           "do": "undo",
@@ -15685,8 +15751,11 @@
         },
         {
           "do": "set task:plain databricks.run-if = \"[x\"",
-          "answer": "throws InvalidOperationException: Operation is not valid due to the current state of the object.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@14 -0 +\"          run_if: \\\"[x\\\"\\r\\n\""
+          ],
+          "sha256": "223a76f56344171f6015ac5128d5ca3c2eef2f090d4d406fc97ff949afb95114"
         },
         {
           "do": "execute databricks.rename-task on task:plain",
@@ -15697,15 +15766,18 @@
           "do": "set task:plain databricks.run-if = \"ALL_DONE\"",
           "answer": "ok",
           "hunks": [
-            "@14 -0 +\"          run_if: ALL_DONE\\r\\n\""
+            "@14 -1 +\"          run_if: ALL_DONE\\r\\n\""
           ],
           "sha256": "a589a03ca5f695fa7c5b6f736d76b45e32bac67052135d3560099ead66f0eca7",
           "undo": "ok; restores the text"
         },
         {
           "do": "undo",
-          "answer": "refused: There is nothing to undo.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@14 -1 +\"\""
+          ],
+          "sha256": "7849037370de7d676fd1b063df1269ae0896bbfcfec281755846df754c47de43"
         },
         {
           "do": "execute databricks.disconnect:plain on task:follower",
@@ -15904,9 +15976,9 @@
           "do": "commit databricks.rename-bundle on bundle = \"null\"",
           "answer": "ok",
           "hunks": [
-            "@2 -1 +\"  name: null\\r\\n\""
+            "@2 -1 +\"  name: \\\"null\\\"\\r\\n\""
           ],
-          "sha256": "bfeb72d8713e054f1198426eb1d1f96de86f4bf0405be127128c2e09928659eb",
+          "sha256": "c035edc176efca015986e2aa4c0907d83ba3c4a79484b5d73598190e00952cf0",
           "undo": "ok; restores the text"
         },
         {
@@ -15929,9 +16001,9 @@
           "do": "commit databricks.add-resource:jobs on bundle = \"yes\"",
           "answer": "ok",
           "hunks": [
-            "@21 -0 +\"    yes:\\r\\n      name: yes\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
+            "@21 -0 +\"    \\\"yes\\\":\\r\\n      name: \\\"yes\\\"\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
           ],
-          "sha256": "9073988157edb4791ea47d4f0ff5edbc9cebe1b7c8bff523e03f6529b24c8893",
+          "sha256": "df577cc59fa7f5fe6e27095bdf92e62c44ae1bf22d83cf7649d491b29a59a581",
           "undo": "ok; restores the text"
         },
         {
@@ -16015,9 +16087,9 @@
           "do": "set pipeline databricks.pipeline:serverless = \"false\"",
           "answer": "ok",
           "hunks": [
-            "@23 -0 +\"      serverless: false\\r\\n\""
+            "@23 -0 +\"      serverless: \\\"false\\\"\\r\\n\""
           ],
-          "sha256": "e9ab715b0ebc4136457f17a92d589a1c1526ee76e7215e68ebb258e523ea9c1e",
+          "sha256": "bf2d7b0a60bbf395fc2de31d9b6ef468acdff1afece5aed9e00d7e72a567cf7a",
           "undo": "ok; restores the text"
         },
         {
@@ -16072,9 +16144,9 @@
           "do": "commit databricks.add-library:notebook on pipeline = \"*star\"",
           "answer": "ok",
           "hunks": [
-            "@31 -0 +\"        - notebook:\\r\\n            path: *star\\r\\n\""
+            "@31 -0 +\"        - notebook:\\r\\n            path: \\\"*star\\\"\\r\\n\""
           ],
-          "sha256": "4305fe85bc42baa91e25b619d8c3d4ed4431e4ed81d74d7d2e7b0524c20c696d",
+          "sha256": "8ed13bf592deba3abc55ca41e279e0677e0018d2a258b235afb7271c8cd57a07",
           "undo": "ok; restores the text"
         },
         {
@@ -16322,9 +16394,9 @@
           "do": "commit databricks.add-resource:jobs on bundle = \"yes\"",
           "answer": "ok",
           "hunks": [
-            "@2 -0 +\"resources:\\r\\n  jobs:\\r\\n    yes:\\r\\n      name: yes\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
+            "@2 -0 +\"resources:\\r\\n  jobs:\\r\\n    \\\"yes\\\":\\r\\n      name: \\\"yes\\\"\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
           ],
-          "sha256": "cbc176c710fe2ddd7b12a1253065cbeab88c61c27bd403746360eb526fbefd45",
+          "sha256": "e29bdf7aa98f513c44aa25623ac42d76887333ac8465c400bc6c6cc3895927a3",
           "undo": "ok; restores the text"
         },
         {
@@ -16388,32 +16460,18 @@
         },
         {
           "do": "commit databricks.add-library:notebook on pipeline = \"parity/notebook\"",
-          "answer": "ok",
-          "hunks": [
-            "@1 -1 +\"{ \\\"name\\\": \\\"one_line\\\", \\\"catalog\\\": \\\"main\\\", \\\"schema\\\": \\\"gold\\\", \\\"libraries\\\": [ { \\\"notebook\\\": { \\\"path\\\": \\\"transformations/a\\\" } }, { \\\"file\\\": { \\\"path\\\": \\\"transformations/b.py\\\" } } ] },\\r\\n{ \\\"notebook\\\": { \\\"path\\\": \\\"parity/notebook\\\" } }\\r\\n\""
-          ],
-          "sha256": "0b16384531253221ea41cf3c9815311f176ff64d88d67ba7a525c6a7960a4aee",
-          "undo": "ok; restores the text",
-          "redo": "ok; reapplies the text",
-          "undoAgain": "ok; restores the text"
+          "answer": "refused: This list is written on one line; write it as one item per line in the text editor to edit it here.",
+          "unchanged": true
         },
         {
           "do": "commit databricks.add-library:file on pipeline = \"parity/file.py\"",
-          "answer": "ok",
-          "hunks": [
-            "@1 -1 +\"{ \\\"name\\\": \\\"one_line\\\", \\\"catalog\\\": \\\"main\\\", \\\"schema\\\": \\\"gold\\\", \\\"libraries\\\": [ { \\\"notebook\\\": { \\\"path\\\": \\\"transformations/a\\\" } }, { \\\"file\\\": { \\\"path\\\": \\\"transformations/b.py\\\" } } ] },\\r\\n{ \\\"file\\\": { \\\"path\\\": \\\"parity/file.py\\\" } }\\r\\n\""
-          ],
-          "sha256": "195942cc4add4f056a87e45354b5a8d3b52a898469f909cfbcf1a50d7158bd42",
-          "undo": "ok; restores the text"
+          "answer": "refused: This list is written on one line; write it as one item per line in the text editor to edit it here.",
+          "unchanged": true
         },
         {
           "do": "commit databricks.add-library:glob on pipeline = \"parity/**\"",
-          "answer": "ok",
-          "hunks": [
-            "@1 -1 +\"{ \\\"name\\\": \\\"one_line\\\", \\\"catalog\\\": \\\"main\\\", \\\"schema\\\": \\\"gold\\\", \\\"libraries\\\": [ { \\\"notebook\\\": { \\\"path\\\": \\\"transformations/a\\\" } }, { \\\"file\\\": { \\\"path\\\": \\\"transformations/b.py\\\" } } ] },\\r\\n{ \\\"glob\\\": { \\\"include\\\": \\\"parity/**\\\" } }\\r\\n\""
-          ],
-          "sha256": "b3f28c903743691963179c3de6375394446d6edbe01859b3b83bd6d811374d5b",
-          "undo": "ok; restores the text"
+          "answer": "refused: This list is written on one line; write it as one item per line in the text editor to edit it here.",
+          "unchanged": true
         },
         {
           "do": "commit databricks.add-library:jar on pipeline = \"parity.jar\"",
@@ -16422,12 +16480,8 @@
         },
         {
           "do": "commit databricks.add-library:notebook on pipeline = \"*star\"",
-          "answer": "ok",
-          "hunks": [
-            "@1 -1 +\"{ \\\"name\\\": \\\"one_line\\\", \\\"catalog\\\": \\\"main\\\", \\\"schema\\\": \\\"gold\\\", \\\"libraries\\\": [ { \\\"notebook\\\": { \\\"path\\\": \\\"transformations/a\\\" } }, { \\\"file\\\": { \\\"path\\\": \\\"transformations/b.py\\\" } } ] },\\r\\n{ \\\"notebook\\\": { \\\"path\\\": \\\"*star\\\" } }\\r\\n\""
-          ],
-          "sha256": "fc6554a7b0c1e5b198002e80c6dc1d3f90be372f1abf1c828fdd2718124ec45b",
-          "undo": "ok; restores the text"
+          "answer": "refused: This list is written on one line; write it as one item per line in the text editor to edit it here.",
+          "unchanged": true
         },
         {
           "do": "commit databricks.add-library:notebook on pipeline = \"\"",
@@ -16441,23 +16495,13 @@
         },
         {
           "do": "execute databricks.remove-library on library:transformations/a",
-          "answer": "ok",
-          "hunks": [
-            "@1 -1 +\"\""
-          ],
-          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-          "undo": "ok; restores the text",
-          "redo": "ok; reapplies the text",
-          "undoAgain": "ok; restores the text"
+          "answer": "refused: This list is written on one line; write it as one item per line in the text editor to edit it here.",
+          "unchanged": true
         },
         {
           "do": "execute databricks.remove-library on library:transformations/b.py",
-          "answer": "ok",
-          "hunks": [
-            "@1 -1 +\"\""
-          ],
-          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-          "undo": "ok; restores the text"
+          "answer": "refused: This list is written on one line; write it as one item per line in the text editor to edit it here.",
+          "unchanged": true
         },
         {
           "do": "execute databricks.simulated.pipeline-update on pipeline",
@@ -16612,9 +16656,9 @@
           "do": "commit databricks.rename-bundle on bundle = \"null\"",
           "answer": "ok",
           "hunks": [
-            "@2 -1 +\"  name: null\\n\""
+            "@2 -1 +\"  name: \\\"null\\\"\\n\""
           ],
-          "sha256": "48dc5a42dd88dc3ec21b4a4b87a5c3e649c67426525f2d916030f605757a0c49",
+          "sha256": "c4b3d17a70ba97ad33d073e6644c79cf0eaca56d60faa48e461a696894ddd0e4",
           "undo": "ok; restores the text"
         },
         {
@@ -16637,9 +16681,9 @@
           "do": "commit databricks.add-resource:jobs on bundle = \"yes\"",
           "answer": "ok",
           "hunks": [
-            "@7 -0 +\"resources:\\r\\n  jobs:\\r\\n    yes:\\r\\n      name: yes\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
+            "@7 -0 +\"resources:\\r\\n  jobs:\\r\\n    \\\"yes\\\":\\r\\n      name: \\\"yes\\\"\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
           ],
-          "sha256": "f4fd7cafebeba57d5a6de48564afe0683b9bb89d7f2b264cbe02f9c184467a02",
+          "sha256": "b23ad9f49a5de5e3df4d117501fc501f2b1a4928311135352a7c835b4eec064b",
           "undo": "ok; restores the text"
         },
         {
@@ -16756,8 +16800,8 @@
             "task:absent | databricks/job+task | 0, 240 | DatabricksTaskPayload { \"taskKey\": \"absent\", \"taskType\": \"other\", \"unresolved\": true }"
           ],
           "targets": [
-            "\"task:ingest\" => selects \"ingest\", menu #5, rows #3",
-            "\"task:report\" => selects \"report\", menu #8, rows #5",
+            "\"task:ingest\" => selects \"ingest\", menu #5, rows #5",
+            "\"task:report\" => selects \"report\", menu #8, rows #6",
             "\"edge:absent->report\" => selects \"absent → report\", menu #7, no rows",
             "\"task:absent\" => selects null, menu #1, no rows",
             "\"\" => selects null, menu #1, no rows",
@@ -16791,7 +16835,7 @@
           "targets": [
             "\"library:transformations/a\" => selects \"transformations/a\", menu #9, no rows",
             "\"flow:transformations/a->pipeline\" => selects \"transformations/a → Pipe A\", menu #1, no rows",
-            "\"pipeline\" => selects \"Pipe A\", menu #10, rows #6",
+            "\"pipeline\" => selects \"Pipe A\", menu #10, rows #7",
             "\"target\" => selects null, menu #1, no rows",
             "\"flow:pipeline->target\" => selects \"Pipe A → target\", menu #1, no rows",
             "\"compute\" => selects null, menu #1, no rows",
@@ -16819,7 +16863,7 @@
           "targets": [
             "\"library:transformations/b\" => selects \"transformations/b\", menu #9, no rows",
             "\"flow:transformations/b->pipeline\" => selects null, menu #1, no rows",
-            "\"pipeline\" => selects \"Pipe A\", menu #10, rows #6",
+            "\"pipeline\" => selects \"Pipe A\", menu #10, rows #8",
             "\"target\" => selects null, menu #1, no rows",
             "\"flow:pipeline->target\" => selects \"Pipe A → target\", menu #1, no rows",
             "\"compute\" => selects null, menu #1, no rows",
@@ -16933,6 +16977,15 @@
           "databricks.last-simulated-run | Last simulated run | \"\" | Line | read-only (Simulated runs play on the canvas and never touch the file.) | group Workspace"
         ],
         [
+          "databricks.task-key | Key | \"ingest\" | Line | read-only (Rename through the context menu, so every depends_on reference follows the key.) | group Identity",
+          "databricks.task-type | Type | \"notebook\" | Line | read-only (The type is which *_task mapping the file carries; change it in the file.) | group Identity",
+          "databricks.task-source | Source | \"notebooks/b_ingest\" | Line | read-only (The type is which *_task mapping the file carries; change it in the file.) | group Identity",
+          "databricks.run-if | Run if | \"\" | Line | editable | group Execution",
+          "databricks.cluster | Cluster | \"\" | Line | editable | group Execution",
+          "databricks.workspace | Workspace connection | \"Not connected\" | Line | read-only (Not connected — a placeholder for the real workspace connection.) | group Workspace",
+          "databricks.last-simulated-run | Last simulated run | \"\" | Line | read-only (Simulated runs play on the canvas and never touch the file.) | group Workspace"
+        ],
+        [
           "databricks.task-key | Key | \"report\" | Line | read-only (Rename through the context menu, so every depends_on reference follows the key.) | group Identity",
           "databricks.task-type | Type | \"notebook\" | Line | read-only (The type is which *_task mapping the file carries; change it in the file.) | group Identity",
           "databricks.task-source | Source | \"notebooks/b_report\" | Line | read-only (The type is which *_task mapping the file carries; change it in the file.) | group Identity",
@@ -16945,6 +16998,14 @@
           "databricks.pipeline:name | Name | \"Pipe A\" | Line | editable | group Identity",
           "databricks.pipeline:catalog | Catalog | \"main\" | Line | editable | group Identity",
           "databricks.pipeline:schema | Schema | \"bronze\" | Line | editable | group Identity",
+          "databricks.pipeline:channel | Channel | \"\" | Line | editable | group Execution",
+          "databricks.workspace | Workspace connection | \"Not connected\" | Line | read-only (Not connected — a placeholder for the real workspace connection.) | group Workspace",
+          "databricks.last-simulated-run | Last simulated run | \"\" | Line | read-only (Simulated runs play on the canvas and never touch the file.) | group Workspace"
+        ],
+        [
+          "databricks.pipeline:name | Name | \"Pipe B\" | Line | editable | group Identity",
+          "databricks.pipeline:catalog | Catalog | \"\" | Line | editable | group Identity",
+          "databricks.pipeline:schema | Schema | \"silver\" | Line | editable | group Identity",
           "databricks.pipeline:channel | Channel | \"\" | Line | editable | group Execution",
           "databricks.workspace | Workspace connection | \"Not connected\" | Line | read-only (Not connected — a placeholder for the real workspace connection.) | group Workspace",
           "databricks.last-simulated-run | Last simulated run | \"\" | Line | read-only (Simulated runs play on the canvas and never touch the file.) | group Workspace"
@@ -17045,9 +17106,9 @@
           "do": "set task:ingest databricks.run-if = \"yes\"",
           "answer": "ok",
           "hunks": [
-            "@11 -0 +\"          run_if: yes\\r\\n\""
+            "@11 -0 +\"          run_if: \\\"yes\\\"\\r\\n\""
           ],
-          "sha256": "9ad3d73840289b1badcff69809a6b8f0a173bbccca27cd6fbfa957cbc44e2e18",
+          "sha256": "0e0f5bb97545ae54e07227598da84d45d1428a965e89f6bf3f7662f9b52465de",
           "undo": "ok; restores the text"
         },
         {
@@ -17145,10 +17206,10 @@
           "do": "commit databricks.rename-task on task:ingest = \"123\"",
           "answer": "ok",
           "hunks": [
-            "@10 -1 +\"        - task_key: 123\\r\\n\"",
-            "@16 -1 +\"            - task_key: 123\\r\\n\""
+            "@10 -1 +\"        - task_key: \\\"123\\\"\\r\\n\"",
+            "@16 -1 +\"            - task_key: \\\"123\\\"\\r\\n\""
           ],
-          "sha256": "bbfa86b3b9518f7d59d0dc0c53c2afe257d4fc2eacbdacb771b8f2d666c90f8a",
+          "sha256": "5101603ed914d3e4cec8ce341b1be31d957d3bcecc6ff6194d430447dff739e2",
           "undo": "ok; restores the text"
         },
         {
@@ -17198,19 +17259,23 @@
           "do": "set task:ingest databricks.run-if = \"*nothing\"",
           "answer": "ok",
           "hunks": [
-            "@11 -0 +\"          run_if: *nothing\\r\\n\""
+            "@11 -0 +\"          run_if: \\\"*nothing\\\"\\r\\n\""
           ],
-          "sha256": "9a06425c403e197e1bd03396f03ac53774cb01a7c66f9f3e0c870a13e696e6bf"
+          "sha256": "735800078a6cd70d12f53369d286cc75069847cf080c923a4394a4433cde2d9e"
         },
         {
           "do": "execute databricks.rename-task on task:ingest",
-          "answer": "refused: two-jobs-two-pipelines.yml could not be read, so it cannot be edited.",
+          "answer": "asks: ContextInputRequest { Title = Rename task, Icon = mdi-pencil-outline, FieldLabel = Key, InitialValue = ingest, ConfirmLabel = Rename, InlineLabelElementId = task:ingest, CommitActionId =  }",
           "unchanged": true
         },
         {
           "do": "set task:ingest databricks.run-if = \"ALL_DONE\"",
-          "answer": "refused: two-jobs-two-pipelines.yml could not be read, so it cannot be edited.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@11 -1 +\"          run_if: ALL_DONE\\r\\n\""
+          ],
+          "sha256": "a5f4d22f02754a2aba7948dd8b64f182a8de913fa52b2727b6036b84c72892d8",
+          "undo": "ok; restores the text"
         },
         {
           "do": "undo",
@@ -17222,8 +17287,11 @@
         },
         {
           "do": "set task:ingest databricks.run-if = \"[x\"",
-          "answer": "throws InvalidOperationException: Operation is not valid due to the current state of the object.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@11 -0 +\"          run_if: \\\"[x\\\"\\r\\n\""
+          ],
+          "sha256": "d8ea6142bdc0786d1c37dc924beace18497ea78461e4119cc14e96a4d6cdc8d9"
         },
         {
           "do": "execute databricks.rename-task on task:ingest",
@@ -17234,15 +17302,18 @@
           "do": "set task:ingest databricks.run-if = \"ALL_DONE\"",
           "answer": "ok",
           "hunks": [
-            "@11 -0 +\"          run_if: ALL_DONE\\r\\n\""
+            "@11 -1 +\"          run_if: ALL_DONE\\r\\n\""
           ],
           "sha256": "a5f4d22f02754a2aba7948dd8b64f182a8de913fa52b2727b6036b84c72892d8",
           "undo": "ok; restores the text"
         },
         {
           "do": "undo",
-          "answer": "refused: There is nothing to undo.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@11 -1 +\"\""
+          ],
+          "sha256": "569b2ce4f7faad3d4bf8ae3d74c50d37ac985703ef47a7ea30e644d97b31f272"
         },
         {
           "do": "execute databricks.disconnect:ingest on task:shape",
@@ -17450,9 +17521,9 @@
           "do": "commit databricks.rename-bundle on bundle = \"null\"",
           "answer": "ok",
           "hunks": [
-            "@3 -1 +\"  name: null\\r\\n\""
+            "@3 -1 +\"  name: \\\"null\\\"\\r\\n\""
           ],
-          "sha256": "b54f0100494fa3a2a5ade7c840e758d1888e18f369ec698187528deb0dda7ccb",
+          "sha256": "c2a2a5a6ea525efefb385d1591d3434a4f38ccc476f81db97e542c6ef7f5a2eb",
           "undo": "ok; restores the text"
         },
         {
@@ -17475,9 +17546,9 @@
           "do": "commit databricks.add-resource:jobs on bundle = \"yes\"",
           "answer": "ok",
           "hunks": [
-            "@30 -0 +\"    yes:\\r\\n      name: yes\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
+            "@30 -0 +\"    \\\"yes\\\":\\r\\n      name: \\\"yes\\\"\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
           ],
-          "sha256": "e7534d18d35c798ea44d2df9f9cbe59f93a1a7e98c7e2a6b9c7b93bab696042b",
+          "sha256": "d5f6ac32caf8b5bd05dc15276b7b602ce43bcb65f439ac3476097a085979c5ae",
           "undo": "ok; restores the text"
         },
         {
@@ -17561,9 +17632,9 @@
           "do": "set pipeline databricks.pipeline:serverless = \"false\"",
           "answer": "ok",
           "hunks": [
-            "@32 -0 +\"      serverless: false\\r\\n\""
+            "@32 -0 +\"      serverless: \\\"false\\\"\\r\\n\""
           ],
-          "sha256": "5a072d8b54a7f699f7608a7285024af334631521f4f2d3b5eecb099e3810eaec",
+          "sha256": "eddecc0ba4b335539e8c7d9e232f01a293d15f96711b7ba9c743d2853c392cfa",
           "undo": "ok; restores the text"
         },
         {
@@ -17618,9 +17689,9 @@
           "do": "commit databricks.add-library:notebook on pipeline = \"*star\"",
           "answer": "ok",
           "hunks": [
-            "@38 -0 +\"        - notebook:\\r\\n            path: *star\\r\\n\""
+            "@38 -0 +\"        - notebook:\\r\\n            path: \\\"*star\\\"\\r\\n\""
           ],
-          "sha256": "d46086bf23498a4b16c386b35426e2dc624094acb792b7720c54a1e852f5c100",
+          "sha256": "98dc3ccfc73918400c52b1566112a52bf2b7adcf787c097c828c08ade2e251bc",
           "undo": "ok; restores the text"
         },
         {
@@ -17939,9 +18010,9 @@
           "do": "set task:01 databricks.run-if = \"yes\"",
           "answer": "ok",
           "hunks": [
-            "@10 -1 +\"          run_if: yes\\r\\n\""
+            "@10 -1 +\"          run_if: \\\"yes\\\"\\r\\n\""
           ],
-          "sha256": "30e1dd26f7ba2e5afee73863fd6d5dd1cd407e8d2c811f060f9907b717e0ba74",
+          "sha256": "05b61be84d03a87f167a6e67a9c9a7363777ea61601cd5fccaf776d1bf7040ba",
           "undo": "ok; restores the text"
         },
         {
@@ -18021,10 +18092,10 @@
           "do": "commit databricks.rename-task on task:01 = \"123\"",
           "answer": "ok",
           "hunks": [
-            "@9 -1 +\"        - task_key: 123\\r\\n\"",
-            "@15 -1 +\"            - task_key: 123\\r\\n\""
+            "@9 -1 +\"        - task_key: \\\"123\\\"\\r\\n\"",
+            "@15 -1 +\"            - task_key: \\\"123\\\"\\r\\n\""
           ],
-          "sha256": "b7ef5d62e14c60fc947e38879c53d256c6979555c57b0465697af4b6fe9e23ae",
+          "sha256": "0614c6036676bf6399d94de1b54ae1c2e7c9baf0531c1efa9c40aa8ee649c1d8",
           "undo": "ok; restores the text"
         },
         {
@@ -18071,19 +18142,23 @@
           "do": "set task:01 databricks.run-if = \"*nothing\"",
           "answer": "ok",
           "hunks": [
-            "@10 -1 +\"          run_if: *nothing\\r\\n\""
+            "@10 -1 +\"          run_if: \\\"*nothing\\\"\\r\\n\""
           ],
-          "sha256": "14a534f3d1cb96c94ece86eea7288a780e36c1fa1a9e012f49eb793cc31e12b5"
+          "sha256": "16b82096cd4146f76982f47c734ed66fe538f64175c188f50b790a6a31c0bc83"
         },
         {
           "do": "execute databricks.rename-task on task:01",
-          "answer": "refused: typed-scalars.yml could not be read, so it cannot be edited.",
+          "answer": "asks: ContextInputRequest { Title = Rename task, Icon = mdi-pencil-outline, FieldLabel = Key, InitialValue = 01, ConfirmLabel = Rename, InlineLabelElementId = task:01, CommitActionId =  }",
           "unchanged": true
         },
         {
           "do": "set task:01 databricks.run-if = \"ALL_DONE\"",
-          "answer": "refused: typed-scalars.yml could not be read, so it cannot be edited.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@10 -1 +\"          run_if: ALL_DONE\\r\\n\""
+          ],
+          "sha256": "ead7546e5b895823959450c04cc0d3a21ffbe9d8c5497fd74b3f1e4f946f7224",
+          "undo": "ok; restores the text"
         },
         {
           "do": "undo",
@@ -18095,8 +18170,11 @@
         },
         {
           "do": "set task:01 databricks.run-if = \"[x\"",
-          "answer": "throws InvalidOperationException: Operation is not valid due to the current state of the object.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@10 -1 +\"          run_if: \\\"[x\\\"\\r\\n\""
+          ],
+          "sha256": "1e4d26a86a3adabf6e5379a414e72361b0e6ffe221a93332bec3a1b6ad3fc441"
         },
         {
           "do": "execute databricks.rename-task on task:01",
@@ -18106,13 +18184,19 @@
         {
           "do": "set task:01 databricks.run-if = \"ALL_DONE\"",
           "answer": "ok",
-          "unchanged": true,
+          "hunks": [
+            "@10 -1 +\"          run_if: ALL_DONE\\r\\n\""
+          ],
+          "sha256": "ead7546e5b895823959450c04cc0d3a21ffbe9d8c5497fd74b3f1e4f946f7224",
           "undo": "ok; restores the text"
         },
         {
           "do": "undo",
-          "answer": "refused: There is nothing to undo.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@10 -1 +\"          run_if: ALL_DONE\\r\\n\""
+          ],
+          "sha256": "ead7546e5b895823959450c04cc0d3a21ffbe9d8c5497fd74b3f1e4f946f7224"
         },
         {
           "do": "execute databricks.disconnect:01 on task:02",
@@ -18148,9 +18232,9 @@
           "do": "execute databricks.connect on rel:task:02->task:01",
           "answer": "ok",
           "hunks": [
-            "@10 -0 +\"          depends_on:\\r\\n            - task_key: 02\\r\\n\""
+            "@10 -0 +\"          depends_on:\\r\\n            - task_key: \\\"02\\\"\\r\\n\""
           ],
-          "sha256": "afad1f9b3cb5437a94348a55514fd35e58f0c6140d8ec4a7faec662e0d80fa63",
+          "sha256": "6aa3d564d2ab2eceb53b418335616c7421d2073164d7a44c1de5659c5a4c4cf0",
           "undo": "ok; restores the text",
           "redo": "ok; reapplies the text",
           "undoAgain": "ok; restores the text"
@@ -18311,9 +18395,9 @@
           "do": "commit databricks.rename-bundle on bundle = \"null\"",
           "answer": "ok",
           "hunks": [
-            "@2 -1 +\"  name: null\\r\\n\""
+            "@2 -1 +\"  name: \\\"null\\\"\\r\\n\""
           ],
-          "sha256": "abbd7bdb81f62db7d9a265f1333669eeaa0b6999ee99b2d2bda0e558809e9e93",
+          "sha256": "63e25b10da39a45ec6f6bf1d8c1592571dd46a990cd06f0d7c8b0eeef8d51a16",
           "undo": "ok; restores the text"
         },
         {
@@ -18336,9 +18420,9 @@
           "do": "commit databricks.add-resource:jobs on bundle = \"yes\"",
           "answer": "ok",
           "hunks": [
-            "@19 -0 +\"    yes:\\r\\n      name: yes\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
+            "@19 -0 +\"    \\\"yes\\\":\\r\\n      name: \\\"yes\\\"\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
           ],
-          "sha256": "5ff6cee0404282c0870fe2ed52626d0e722bbede15ec2f9e21d905a5ab2acbf2",
+          "sha256": "1dc11565436a77d5380703d5811608ba91a28268631ccb33791856fd7d9aace9",
           "undo": "ok; restores the text"
         },
         {
@@ -18422,9 +18506,9 @@
           "do": "set pipeline databricks.pipeline:serverless = \"false\"",
           "answer": "ok",
           "hunks": [
-            "@23 -1 +\"      serverless: false\\r\\n\""
+            "@23 -1 +\"      serverless: \\\"false\\\"\\r\\n\""
           ],
-          "sha256": "53be475c818ad8a92abf01d88ea7be801b9ab4ad124e410d9551755faa504af3",
+          "sha256": "25d79ff73da38e898daa12387711adacfc01792b1d68984eeced5aa9bcb31d9a",
           "undo": "ok; restores the text"
         },
         {
@@ -18479,9 +18563,9 @@
           "do": "commit databricks.add-library:notebook on pipeline = \"*star\"",
           "answer": "ok",
           "hunks": [
-            "@29 -0 +\"        - notebook:\\r\\n            path: *star\\r\\n\""
+            "@29 -0 +\"        - notebook:\\r\\n            path: \\\"*star\\\"\\r\\n\""
           ],
-          "sha256": "e915650c1f04d066699c2206c006b48d34bd6e579dec4a0a7b191c684236a76f",
+          "sha256": "48309268117a5ddb9cb54902c862ab5348e47ec33689325a50c35c0ce8df5f78",
           "undo": "ok; restores the text"
         },
         {
@@ -18922,9 +19006,9 @@
           "do": "set task:run databricks.run-if = \"yes\"",
           "answer": "ok",
           "hunks": [
-            "@22 -0 +\"          run_if: yes\\r\\n\""
+            "@22 -0 +\"          run_if: \\\"yes\\\"\\r\\n\""
           ],
-          "sha256": "78ebcb930432904ed12abd3980a6aae9ee5d26e067b228a12a32f2743db46788",
+          "sha256": "bfde05376dfb5de1b4669eb7aac064e8ea45135bf4accd36a79fa36088d39597",
           "undo": "ok; restores the text"
         },
         {
@@ -19007,9 +19091,9 @@
           "do": "commit databricks.rename-task on task:run = \"123\"",
           "answer": "ok",
           "hunks": [
-            "@21 -1 +\"        - task_key: 123\\r\\n\""
+            "@21 -1 +\"        - task_key: \\\"123\\\"\\r\\n\""
           ],
-          "sha256": "6ea4497783374a1f345ad5e026ba649f7296020f4ff3653ddd90ca184ad0077a",
+          "sha256": "0c0241abaddca6d7b58829318e79644c94a0ded8c0941373aad5e43dfe4a3e12",
           "undo": "ok; restores the text"
         },
         {
@@ -19055,19 +19139,23 @@
           "do": "set task:run databricks.run-if = \"*nothing\"",
           "answer": "ok",
           "hunks": [
-            "@22 -0 +\"          run_if: *nothing\\r\\n\""
+            "@22 -0 +\"          run_if: \\\"*nothing\\\"\\r\\n\""
           ],
-          "sha256": "e0d5b668402976638af82b6bb6f196eac81df796c24b0bc93a1e60692427bdd2"
+          "sha256": "ab07e03cc11ef31fa7b963076387cd3331941e1900a6a8e31914ac9bc8f6325b"
         },
         {
           "do": "execute databricks.rename-task on task:run",
-          "answer": "refused: variables-in-typed-places.yml could not be read, so it cannot be edited.",
+          "answer": "asks: ContextInputRequest { Title = Rename task, Icon = mdi-pencil-outline, FieldLabel = Key, InitialValue = run, ConfirmLabel = Rename, InlineLabelElementId = task:run, CommitActionId =  }",
           "unchanged": true
         },
         {
           "do": "set task:run databricks.run-if = \"ALL_DONE\"",
-          "answer": "refused: variables-in-typed-places.yml could not be read, so it cannot be edited.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@22 -1 +\"          run_if: ALL_DONE\\r\\n\""
+          ],
+          "sha256": "9077f1a8d820af4e13e984eebc21ee22c0acab11388f688cdaba20324edb77f3",
+          "undo": "ok; restores the text"
         },
         {
           "do": "undo",
@@ -19079,8 +19167,11 @@
         },
         {
           "do": "set task:run databricks.run-if = \"[x\"",
-          "answer": "throws InvalidOperationException: Operation is not valid due to the current state of the object.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@22 -0 +\"          run_if: \\\"[x\\\"\\r\\n\""
+          ],
+          "sha256": "242f5ad72c77fc32305099bc80dc10e4b8bd659f4762327783f8c7a8ff0631f7"
         },
         {
           "do": "execute databricks.rename-task on task:run",
@@ -19091,15 +19182,18 @@
           "do": "set task:run databricks.run-if = \"ALL_DONE\"",
           "answer": "ok",
           "hunks": [
-            "@22 -0 +\"          run_if: ALL_DONE\\r\\n\""
+            "@22 -1 +\"          run_if: ALL_DONE\\r\\n\""
           ],
           "sha256": "9077f1a8d820af4e13e984eebc21ee22c0acab11388f688cdaba20324edb77f3",
           "undo": "ok; restores the text"
         },
         {
           "do": "undo",
-          "answer": "refused: There is nothing to undo.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@22 -1 +\"\""
+          ],
+          "sha256": "5080db3ca5a3817073936967dfca11c34c74e4289719fbb3a1c0dd6ca7ae52d2"
         },
         {
           "do": "execute databricks.connect on rel:task:run->task:run",
@@ -19251,9 +19345,9 @@
           "do": "commit databricks.rename-bundle on bundle = \"null\"",
           "answer": "ok",
           "hunks": [
-            "@2 -1 +\"  name: null\\r\\n\""
+            "@2 -1 +\"  name: \\\"null\\\"\\r\\n\""
           ],
-          "sha256": "0f29408db022d424843abddaa6e69eca251cbd73ac2da89bafad94951e3e42db",
+          "sha256": "a1246cf18f4d3050facfc6115755a9d8461736fa8631846e850831796f20f82d",
           "undo": "ok; restores the text"
         },
         {
@@ -19276,9 +19370,9 @@
           "do": "commit databricks.add-resource:jobs on bundle = \"yes\"",
           "answer": "ok",
           "hunks": [
-            "@25 -0 +\"    yes:\\r\\n      name: yes\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
+            "@25 -0 +\"    \\\"yes\\\":\\r\\n      name: \\\"yes\\\"\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
           ],
-          "sha256": "e0325e775ba3148133d4fa727b9db4e6cbb17eb671f8a2dd19ab54b34e97f3f5",
+          "sha256": "08a7e8786294e93410e94a0079d4c2415b3cebc4256e4eb153b49618e5dd9c84",
           "undo": "ok; restores the text"
         },
         {
@@ -19362,9 +19456,9 @@
           "do": "set pipeline databricks.pipeline:serverless = \"false\"",
           "answer": "ok",
           "hunks": [
-            "@29 -1 +\"      serverless: false\\r\\n\""
+            "@29 -1 +\"      serverless: \\\"false\\\"\\r\\n\""
           ],
-          "sha256": "539459aa5bb38d5533256ae07c6cbb4bac8426c58830f77ad177ebc81bdcc9bc",
+          "sha256": "9f99f5ca17bb673a37f1042dbb1e06a75692804460818a0ae9f3fe4024d6c5e7",
           "undo": "ok; restores the text"
         },
         {
@@ -19419,9 +19513,9 @@
           "do": "commit databricks.add-library:notebook on pipeline = \"*star\"",
           "answer": "ok",
           "hunks": [
-            "@34 -0 +\"        - notebook:\\r\\n            path: *star\\r\\n\""
+            "@34 -0 +\"        - notebook:\\r\\n            path: \\\"*star\\\"\\r\\n\""
           ],
-          "sha256": "abaafd6dd0691a26239c5497c7ee42e9f6d84e089e8623798f87f69be9c36f71",
+          "sha256": "3f5ba750a3efa8593969b3a9619e73600c7e97972e7de7fbbe7bfafba4b6f1af",
           "undo": "ok; restores the text"
         },
         {
@@ -19708,9 +19802,9 @@
           "do": "commit databricks.rename-bundle on bundle = \"null\"",
           "answer": "ok",
           "hunks": [
-            "@4 -1 +\"  name: null\\r\\n\""
+            "@4 -1 +\"  name: \\\"null\\\"\\r\\n\""
           ],
-          "sha256": "f8573e2479d98729f25f7e37b96771697489772cd30bc58b9c40c2e2c729b9fe",
+          "sha256": "6f90f95fc92723f4308086cade9862f118a6cd0beec8658a214fbebdba0c982e",
           "undo": "ok; restores the text"
         },
         {
@@ -19733,9 +19827,9 @@
           "do": "commit databricks.add-resource:jobs on bundle = \"yes\"",
           "answer": "ok",
           "hunks": [
-            "@18 -0 +\"  jobs:\\r\\n    yes:\\r\\n      name: yes\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
+            "@18 -0 +\"  jobs:\\r\\n    \\\"yes\\\":\\r\\n      name: \\\"yes\\\"\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
           ],
-          "sha256": "1c98e7a0d7ed8852fd05c44d3a2749fd3de3dee7a8f08833081192b21d9e8136",
+          "sha256": "cd7d221d5054a437a67977b5c042c188ee05546798a8d45545bdd3f63dc54b95",
           "undo": "ok; restores the text"
         },
         {
@@ -19819,9 +19913,9 @@
           "do": "set pipeline databricks.pipeline:serverless = \"false\"",
           "answer": "ok",
           "hunks": [
-            "@23 -1 +\"      serverless: false\\r\\n\""
+            "@23 -1 +\"      serverless: \\\"false\\\"\\r\\n\""
           ],
-          "sha256": "4765f52dcd3050a0b194aec9ce66991711d0a07d0f7970447cae9d6c880075e7",
+          "sha256": "621a59f0ea6c6558f0ea85078f3143ef81ae227113156def2b5956aa342b5b89",
           "undo": "ok; restores the text"
         },
         {
@@ -19876,9 +19970,9 @@
           "do": "commit databricks.add-library:notebook on pipeline = \"*star\"",
           "answer": "ok",
           "hunks": [
-            "@32 -0 +\"        - notebook:\\r\\n            path: *star\\r\\n\""
+            "@32 -0 +\"        - notebook:\\r\\n            path: \\\"*star\\\"\\r\\n\""
           ],
-          "sha256": "71454cc75cd94b4cf42e1da08c1c5e8a04a1367a8f3ccf47269ce205db933137",
+          "sha256": "3bf11f5107ace7b041a1e5640e08f0eb83c98d35d1a192f49ce76aa15240419b",
           "undo": "ok; restores the text"
         },
         {
@@ -20242,9 +20336,9 @@
           "do": "set task:land_raw databricks.run-if = \"yes\"",
           "answer": "ok",
           "hunks": [
-            "@18 -0 +\"          run_if: yes\\r\\n\""
+            "@18 -0 +\"          run_if: \\\"yes\\\"\\r\\n\""
           ],
-          "sha256": "61a3eed670b5458e6f39057fd382f6888dadee52fa5900efe1c323645c537dd1",
+          "sha256": "fb98a6e3b1f2a8ba6e1ef1a15213950c0b3712882e96dee582e429079d58ae9d",
           "undo": "ok; restores the text"
         },
         {
@@ -20328,10 +20422,10 @@
           "do": "commit databricks.rename-task on task:land_raw = \"123\"",
           "answer": "ok",
           "hunks": [
-            "@17 -1 +\"        - task_key: 123\\r\\n\"",
-            "@25 -1 +\"            - task_key: 123\\r\\n\""
+            "@17 -1 +\"        - task_key: \\\"123\\\"\\r\\n\"",
+            "@25 -1 +\"            - task_key: \\\"123\\\"\\r\\n\""
           ],
-          "sha256": "3d098d16ddceb34571727e1f163b4e2b534c1384876c64ed0fdab751bd095814",
+          "sha256": "2ac5f8050b7539a9119c43cd02f1143920c96b6fb06d8a5fa648dbf207afe784",
           "undo": "ok; restores the text"
         },
         {
@@ -20382,19 +20476,23 @@
           "do": "set task:land_raw databricks.run-if = \"*nothing\"",
           "answer": "ok",
           "hunks": [
-            "@18 -0 +\"          run_if: *nothing\\r\\n\""
+            "@18 -0 +\"          run_if: \\\"*nothing\\\"\\r\\n\""
           ],
-          "sha256": "b83b765b944f3194a64493fb4520498a2f52fdd13029381f6a4300702f6cc5b4"
+          "sha256": "3b8065418d1efecedbe0120ef7c298c6ecabc2da6f0ce3eb113d2895b1e04d34"
         },
         {
           "do": "execute databricks.rename-task on task:land_raw",
-          "answer": "refused: nightly-ingest.yml could not be read, so it cannot be edited.",
+          "answer": "asks: ContextInputRequest { Title = Rename task, Icon = mdi-pencil-outline, FieldLabel = Key, InitialValue = land_raw, ConfirmLabel = Rename, InlineLabelElementId = task:land_raw, CommitActionId =  }",
           "unchanged": true
         },
         {
           "do": "set task:land_raw databricks.run-if = \"ALL_DONE\"",
-          "answer": "refused: nightly-ingest.yml could not be read, so it cannot be edited.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@18 -1 +\"          run_if: ALL_DONE\\r\\n\""
+          ],
+          "sha256": "f262208f64dfc6f68a86e5b689233bc70c351f2ae17efee9bcd1511877194be3",
+          "undo": "ok; restores the text"
         },
         {
           "do": "undo",
@@ -20406,8 +20504,11 @@
         },
         {
           "do": "set task:land_raw databricks.run-if = \"[x\"",
-          "answer": "throws InvalidOperationException: Operation is not valid due to the current state of the object.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@18 -0 +\"          run_if: \\\"[x\\\"\\r\\n\""
+          ],
+          "sha256": "34787f2b9f7768af4cf46c9ded6d426ecbcd3190b133d6a6fcd2c5c328400e5f"
         },
         {
           "do": "execute databricks.rename-task on task:land_raw",
@@ -20418,15 +20519,18 @@
           "do": "set task:land_raw databricks.run-if = \"ALL_DONE\"",
           "answer": "ok",
           "hunks": [
-            "@18 -0 +\"          run_if: ALL_DONE\\r\\n\""
+            "@18 -1 +\"          run_if: ALL_DONE\\r\\n\""
           ],
           "sha256": "f262208f64dfc6f68a86e5b689233bc70c351f2ae17efee9bcd1511877194be3",
           "undo": "ok; restores the text"
         },
         {
           "do": "undo",
-          "answer": "refused: There is nothing to undo.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@18 -1 +\"\""
+          ],
+          "sha256": "0041ed5073e94019149330c9f33e0e15cfc3d4d8e6421b354ffa7c47cef3e917"
         },
         {
           "do": "execute databricks.disconnect:land_raw on task:quality_gate",
@@ -20640,9 +20744,9 @@
           "do": "commit databricks.add-resource:jobs on bundle = \"yes\"",
           "answer": "ok",
           "hunks": [
-            "@50 -0 +\"    yes:\\r\\n      name: yes\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
+            "@50 -0 +\"    \\\"yes\\\":\\r\\n      name: \\\"yes\\\"\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
           ],
-          "sha256": "114da0287c4e878625838595975985ab36c665522ab123c09a114d46725db372",
+          "sha256": "d2338ab0cf7f2e6b15f5f0abad88db8f38d604d7885cf81485c3b986b487bdbc",
           "undo": "ok; restores the text"
         },
         {
@@ -20933,9 +21037,9 @@
           "do": "commit databricks.rename-bundle on bundle = \"null\"",
           "answer": "ok",
           "hunks": [
-            "@4 -1 +\"  name: null\\r\\n\""
+            "@4 -1 +\"  name: \\\"null\\\"\\r\\n\""
           ],
-          "sha256": "f8573e2479d98729f25f7e37b96771697489772cd30bc58b9c40c2e2c729b9fe",
+          "sha256": "6f90f95fc92723f4308086cade9862f118a6cd0beec8658a214fbebdba0c982e",
           "undo": "ok; restores the text"
         },
         {
@@ -20958,9 +21062,9 @@
           "do": "commit databricks.add-resource:jobs on bundle = \"yes\"",
           "answer": "ok",
           "hunks": [
-            "@18 -0 +\"  jobs:\\r\\n    yes:\\r\\n      name: yes\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
+            "@18 -0 +\"  jobs:\\r\\n    \\\"yes\\\":\\r\\n      name: \\\"yes\\\"\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
           ],
-          "sha256": "1c98e7a0d7ed8852fd05c44d3a2749fd3de3dee7a8f08833081192b21d9e8136",
+          "sha256": "cd7d221d5054a437a67977b5c042c188ee05546798a8d45545bdd3f63dc54b95",
           "undo": "ok; restores the text"
         },
         {
@@ -21044,9 +21148,9 @@
           "do": "set pipeline databricks.pipeline:serverless = \"false\"",
           "answer": "ok",
           "hunks": [
-            "@23 -1 +\"      serverless: false\\r\\n\""
+            "@23 -1 +\"      serverless: \\\"false\\\"\\r\\n\""
           ],
-          "sha256": "4765f52dcd3050a0b194aec9ce66991711d0a07d0f7970447cae9d6c880075e7",
+          "sha256": "621a59f0ea6c6558f0ea85078f3143ef81ae227113156def2b5956aa342b5b89",
           "undo": "ok; restores the text"
         },
         {
@@ -21101,9 +21205,9 @@
           "do": "commit databricks.add-library:notebook on pipeline = \"*star\"",
           "answer": "ok",
           "hunks": [
-            "@32 -0 +\"        - notebook:\\r\\n            path: *star\\r\\n\""
+            "@32 -0 +\"        - notebook:\\r\\n            path: \\\"*star\\\"\\r\\n\""
           ],
-          "sha256": "71454cc75cd94b4cf42e1da08c1c5e8a04a1367a8f3ccf47269ce205db933137",
+          "sha256": "3bf11f5107ace7b041a1e5640e08f0eb83c98d35d1a192f49ce76aa15240419b",
           "undo": "ok; restores the text"
         },
         {
@@ -21295,9 +21399,9 @@
           "do": "commit databricks.rename-bundle on bundle = \"null\"",
           "answer": "ok",
           "hunks": [
-            "@2 -1 +\"  name: null\\r\\n\""
+            "@2 -1 +\"  name: \\\"null\\\"\\r\\n\""
           ],
-          "sha256": "c985289d93181844a5db725c85cf847c334240f4bbe7e2029dc657f575d4f001",
+          "sha256": "72c5734fa84c6ea1baa3e16629a2569c76bcff3e66fc463b8da206a8c528dfa9",
           "undo": "ok; restores the text"
         },
         {
@@ -21320,9 +21424,9 @@
           "do": "commit databricks.add-resource:jobs on bundle = \"yes\"",
           "answer": "ok",
           "hunks": [
-            "@7 -0 +\"resources:\\r\\n  jobs:\\r\\n    yes:\\r\\n      name: yes\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
+            "@7 -0 +\"resources:\\r\\n  jobs:\\r\\n    \\\"yes\\\":\\r\\n      name: \\\"yes\\\"\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
           ],
-          "sha256": "26f39b7b8a99d06a31eeb43180e37a52bf93f1fb14cc5daaa3e59d21e851a670",
+          "sha256": "04ba91e0e1de1b31c512b7c0db5a5b800e1c58825b7adf689df3ef04af011d84",
           "undo": "ok; restores the text"
         },
         {
@@ -21554,9 +21658,9 @@
           "do": "set task:main databricks.run-if = \"yes\"",
           "answer": "ok",
           "hunks": [
-            "@7 -0 +\"          run_if: yes\\r\\n\""
+            "@7 -0 +\"          run_if: \\\"yes\\\"\\r\\n\""
           ],
-          "sha256": "d46063753ed6261f0d8ee5db5b146fea3aad20953c8c8aadbe03718dde15d3a9",
+          "sha256": "18997a5d6ec9210f68e0bb3da59a03d9a8cbf289ab31ab67b2e4f924d1537280",
           "undo": "ok; restores the text"
         },
         {
@@ -21635,9 +21739,9 @@
           "do": "commit databricks.rename-task on task:main = \"123\"",
           "answer": "ok",
           "hunks": [
-            "@6 -1 +\"        - task_key: 123\\r\\n\""
+            "@6 -1 +\"        - task_key: \\\"123\\\"\\r\\n\""
           ],
-          "sha256": "7965c2f89d0cfb255aeadd7613c6cf194a41ba6606ffd6d6e39f00c32b218b2e",
+          "sha256": "776307b3773e97436e2ce08c3c064b7d2b7227b494d49a4bff187310026e1654",
           "undo": "ok; restores the text"
         },
         {
@@ -21679,19 +21783,23 @@
           "do": "set task:main databricks.run-if = \"*nothing\"",
           "answer": "ok",
           "hunks": [
-            "@7 -0 +\"          run_if: *nothing\\r\\n\""
+            "@7 -0 +\"          run_if: \\\"*nothing\\\"\\r\\n\""
           ],
-          "sha256": "0075cfab139e4304299f9eb0db56ab0f5975f41e5d1f90b0b0891551a31fbed6"
+          "sha256": "8957350ba48b02c06202867573411fce9c7352eced1ef1a4f2b651ffff9ea348"
         },
         {
           "do": "execute databricks.rename-task on task:main",
-          "answer": "refused: parity.yml could not be read, so it cannot be edited.",
+          "answer": "asks: ContextInputRequest { Title = Rename task, Icon = mdi-pencil-outline, FieldLabel = Key, InitialValue = main, ConfirmLabel = Rename, InlineLabelElementId = task:main, CommitActionId =  }",
           "unchanged": true
         },
         {
           "do": "set task:main databricks.run-if = \"ALL_DONE\"",
-          "answer": "refused: parity.yml could not be read, so it cannot be edited.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@7 -1 +\"          run_if: ALL_DONE\\r\\n\""
+          ],
+          "sha256": "4f7f85e43e56debc8dc71012c683b573e39ae3bc5a046db490dd5e6c725324a0",
+          "undo": "ok; restores the text"
         },
         {
           "do": "undo",
@@ -21703,8 +21811,11 @@
         },
         {
           "do": "set task:main databricks.run-if = \"[x\"",
-          "answer": "throws InvalidOperationException: Operation is not valid due to the current state of the object.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@7 -0 +\"          run_if: \\\"[x\\\"\\r\\n\""
+          ],
+          "sha256": "f6723171dc4fae89a676a876ebcfe3890cd05bf96529a5a78027f3fd957d2ee0"
         },
         {
           "do": "execute databricks.rename-task on task:main",
@@ -21715,15 +21826,18 @@
           "do": "set task:main databricks.run-if = \"ALL_DONE\"",
           "answer": "ok",
           "hunks": [
-            "@7 -0 +\"          run_if: ALL_DONE\\r\\n\""
+            "@7 -1 +\"          run_if: ALL_DONE\\r\\n\""
           ],
           "sha256": "4f7f85e43e56debc8dc71012c683b573e39ae3bc5a046db490dd5e6c725324a0",
           "undo": "ok; restores the text"
         },
         {
           "do": "undo",
-          "answer": "refused: There is nothing to undo.",
-          "unchanged": true
+          "answer": "ok",
+          "hunks": [
+            "@7 -1 +\"\""
+          ],
+          "sha256": "a9ce543bde2c13310e6151501c964a5259a37a8d80254db68c64a479ff598722"
         },
         {
           "do": "execute databricks.connect on rel:task:main->task:main",
@@ -21890,9 +22004,9 @@
           "do": "commit databricks.add-resource:jobs on bundle = \"yes\"",
           "answer": "ok",
           "hunks": [
-            "@9 -0 +\"    yes:\\r\\n      name: yes\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
+            "@9 -0 +\"    \\\"yes\\\":\\r\\n      name: \\\"yes\\\"\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
           ],
-          "sha256": "b9be1b56cd66234e57004071a73d93cf49362678e1c9b90b2caf1e7f4a547001",
+          "sha256": "72ffb096939d694581f6c614988264b5b21b95061a5cb100528991a54e2ed49f",
           "undo": "ok; restores the text"
         },
         {
@@ -22121,9 +22235,9 @@
           "do": "commit databricks.add-resource:jobs on bundle = \"yes\"",
           "answer": "ok",
           "hunks": [
-            "@7 -0 +\"resources:\\r\\n  jobs:\\r\\n    yes:\\r\\n      name: yes\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
+            "@7 -0 +\"resources:\\r\\n  jobs:\\r\\n    \\\"yes\\\":\\r\\n      name: \\\"yes\\\"\\r\\n      tasks:\\r\\n        - task_key: main\\r\\n          notebook_task:\\r\\n            notebook_path: notebooks/yes\\r\\n\""
           ],
-          "sha256": "0b4570d8aadca0635ea73d5bf57fd51879306e5cde6217effe215295b542933b",
+          "sha256": "189a42118d5a3327e7acdb040d22d12ab881b72b6e7973d86b7b294a2f5480d1",
           "undo": "ok; restores the text"
         },
         {

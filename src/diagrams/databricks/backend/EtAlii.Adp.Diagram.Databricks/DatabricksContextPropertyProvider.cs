@@ -62,11 +62,15 @@ public sealed class DatabricksContextPropertyProvider : DiagramPropertyProvider<
     protected override bool IsBody(string path) => DatabricksSelection.CouldBeFamilyFile(path);
 
     /// <inheritdoc />
-    protected override IReadOnlyList<ContextPropertyDefinition> Describe(DocumentEntry<LineDocument, DatabricksModel> entry, string elementId)
+    /// <remarks>Of the resource the target's registration names (finding B3).</remarks>
+    protected override IReadOnlyList<ContextPropertyDefinition> Describe(ContextTarget target, DocumentEntry<LineDocument, DatabricksModel> entry)
     {
+        ArgumentNullException.ThrowIfNull(target);
         ArgumentNullException.ThrowIfNull(entry);
 
-        if (DatabricksSelection.TaskOf(entry.Model, elementId) is { } selected)
+        var model = DatabricksSelection.ReadingOf(entry.Model, target);
+        var elementId = target.ElementId;
+        if (DatabricksSelection.TaskOf(model, elementId) is { } selected)
         {
             return
             [
@@ -83,12 +87,12 @@ public sealed class DatabricksContextPropertyProvider : DiagramPropertyProvider<
         {
             return
             [
-                new ContextPropertyDefinition(BundleNameProperty, "Name", entry.Model.Bundle.Name, Group: IdentityGroup),
+                new ContextPropertyDefinition(BundleNameProperty, "Name", model.Bundle.Name, Group: IdentityGroup),
                 .. Placeholders(),
             ];
         }
 
-        if (DatabricksSelection.IsPipelineNode(elementId) && entry.Model.Pipelines.FirstOrDefault() is { } pipeline)
+        if (DatabricksSelection.IsPipelineNode(elementId) && model.Pipelines.FirstOrDefault() is { } pipeline)
         {
             return
             [
@@ -100,7 +104,7 @@ public sealed class DatabricksContextPropertyProvider : DiagramPropertyProvider<
             ];
         }
 
-        if (DatabricksSelection.TargetOf(entry.Model, elementId) is { } frame)
+        if (DatabricksSelection.TargetOf(model, elementId) is { } frame)
         {
             return
             [
@@ -123,17 +127,18 @@ public sealed class DatabricksContextPropertyProvider : DiagramPropertyProvider<
 
         var trimmed = value.Trim();
         var body = target.ResolvedFullPath;
+        var reading = DatabricksSelection.ReadingOf(model, target);
         ICommand? command;
         if (propertyId.StartsWith(PipelineScalarPrefix, StringComparison.Ordinal)
             && DatabricksSelection.IsPipelineNode(target.ElementId))
         {
-            command = model.Pipelines.FirstOrDefault() is { } pipeline
+            command = reading.Pipelines.FirstOrDefault() is { } pipeline
                 ? new SetDatabricksPipelineScalarCommand(body, pipeline.Key, propertyId[PipelineScalarPrefix.Length..], trimmed)
                 : null;
         }
         else
         {
-            var task = DatabricksSelection.TaskOf(model, target.ElementId);
+            var task = DatabricksSelection.TaskOf(reading, target.ElementId);
             command = propertyId switch
             {
                 RunIfProperty when task is { } selected =>
