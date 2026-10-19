@@ -140,7 +140,7 @@ public class DependencyGraphContextPropertyProviderTests : IDisposable
         // Act.
         var result = await _properties.SetAsync(
             Target(path, "aaa"), DependencyGraphContextPropertyProvider.XProperty, "612", CancellationToken.None);
-        await _historyStacks.Get(_workspace).UndoAsync(CancellationToken.None);
+        await _historyStacks.Get(ProjectRoot.From(_workspace)).UndoAsync(CancellationToken.None);
 
         // Assert.
         Assert.True(result.IsSuccess, result.Error);

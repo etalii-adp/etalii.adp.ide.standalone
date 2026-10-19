@@ -20,7 +20,7 @@ public sealed class HistoryActionsBroadcaster : IHostedService, IDisposable
     private readonly IHistoryStackStore _historyStacks;
     private readonly IContextActionResolver _actionResolver;
     private readonly IContextSelectionStore _selectionStore;
-    private readonly Debouncer<string> _pending;
+    private readonly Debouncer<ProjectRoot> _pending;
     private readonly CancellationTokenSource _stopping = new();
     private bool _isDisposed;
 
@@ -41,32 +41,31 @@ public sealed class HistoryActionsBroadcaster : IHostedService, IDisposable
         _historyStacks = historyStacks;
         _actionResolver = actionResolver;
         _selectionStore = selectionStore;
-        // The history store reports each project by its normalized root, so its roots compare as
-        // the file system compares names, as a ProjectRoot does (code-structure FR-059).
-        _pending = new Debouncer<string>(CoalesceWindow, Broadcast, time, PathContainment.NameComparer);
+        // The history store reports each project by its root, which compares as the file system
+        // compares names (code-structure FR-059).
+        _pending = new Debouncer<ProjectRoot>(CoalesceWindow, Broadcast, time);
         _historyStacks.Changed += OnHistoryChanged;
     }
 
     // Coalesce: one discovery-and-push per project, the window starting over on every change.
     // A short window is enough to fold a handler that records several commands.
-    private void OnHistoryChanged(object? sender, HistoryChangedEventArgs args) => _pending.Schedule(args.RootPath);
+    private void OnHistoryChanged(object? sender, HistoryChangedEventArgs args) => _pending.Schedule(args.Root);
 
     // Runs on the clock's timer, which it hands back at once: the discovery is awaited by the
     // broadcast, and the broadcast by StopAsync, rather than waited on here (code-structure FR-070).
-    private void Broadcast(string rootPath)
+    private void Broadcast(ProjectRoot root)
     {
         var key = new object();
         _broadcasts[key] = null;
-        var broadcast = BroadcastAsync(rootPath, key);
+        var broadcast = BroadcastAsync(root, key);
         _broadcasts.TryUpdate(key, broadcast, null);
     }
 
     /// <summary>Never throws: a broadcast that fails is logged and pushes nothing.</summary>
-    private async Task BroadcastAsync(string rootPath, object key)
+    private async Task BroadcastAsync(ProjectRoot root, object key)
     {
         try
         {
-            var root = ProjectRoot.From(rootPath);
             var actions = await _actionResolver.DiscoverAsync(ProjectTarget(root), _stopping.Token);
             _selectionStore.PushProjectActions(root, actions);
         }
@@ -78,7 +77,7 @@ public sealed class HistoryActionsBroadcaster : IHostedService, IDisposable
         {
             // A discovery that failed pushes nothing; the clients keep the availability they
             // last had rather than losing their buttons to a transient fault.
-            _logger.Warning(exception, "Could not broadcast project actions for {RootPath}", rootPath);
+            _logger.Warning(exception, "Could not broadcast project actions for {RootPath}", root.FullPath);
         }
         finally
         {

@@ -101,7 +101,7 @@ public sealed class MindmapContextPropertyProvider : IContextPropertyProvider
             return ContextPropertyResult.Failure($"'{propertyId}' is not a property of what is selected.");
         }
 
-        var result = await _historyStacks.Get(target.Root.FullPath).ExecuteAsync(command, cancellationToken);
+        var result = await _historyStacks.Get(target.Root).ExecuteAsync(command, cancellationToken);
         return result.IsSuccess ? ContextPropertyResult.Success : ContextPropertyResult.Failure(result.Error);
     }
 

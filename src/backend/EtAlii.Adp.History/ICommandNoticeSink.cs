@@ -24,6 +24,6 @@ namespace EtAlii.Adp.History;
 /// </remarks>
 public interface ICommandNoticeSink
 {
-    /// <summary>Tells everyone watching <paramref name="rootPath"/>'s project.</summary>
-    void Notify(string rootPath, string message);
+    /// <summary>Tells everyone watching the project at <paramref name="root"/>.</summary>
+    void Notify(ProjectRoot root, string message);
 }

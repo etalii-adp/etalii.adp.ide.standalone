@@ -103,7 +103,7 @@ public class NoWriterSweepTests : IDisposable
             Assert.Equal("", await session.MoveElementToAsync("var:name", 400, 300, CancellationToken.None));
 
             // 5. Its undo.
-            await _provider.GetRequiredService<IHistoryStackStore>().Get(_root).UndoAsync(CancellationToken.None);
+            await _provider.GetRequiredService<IHistoryStackStore>().Get(ProjectRoot.From(_root)).UndoAsync(CancellationToken.None);
 
             // 6. An external edit, picked up through the reload seam.
             await File.WriteAllTextAsync(body, (await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken)).Replace("?mbox", "?mailbox", StringComparison.Ordinal), TestContext.Current.CancellationToken);

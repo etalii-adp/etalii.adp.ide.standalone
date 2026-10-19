@@ -51,7 +51,7 @@ public class C4ContextPropertyProviderTests : IDisposable
 
         _services = new ServiceCollection().AddCommands().AddHierarchyCommandHandlers().AddC4().BuildServiceProvider();
         _provider = _services.GetServices<IContextPropertyProvider>().OfType<C4ContextPropertyProvider>().Single();
-        _history = _services.GetRequiredService<IHistoryStackStore>().Get(_root);
+        _history = _services.GetRequiredService<IHistoryStackStore>().Get(ProjectRoot.From(_root));
     }
 
     public void Dispose()

@@ -273,7 +273,7 @@ public sealed class WardleyContextPropertyProviderTests : IDisposable
     public async Task EditingMaturity_AndDraggingToTheSamePlace_AreOneCommandAndOneUndo()
     {
         // Arrange. Requirement 15.7's own claim, tested by doing both and comparing the bytes.
-        var history = _services.GetRequiredService<IHistoryStackStore>().Get(_root);
+        var history = _services.GetRequiredService<IHistoryStackStore>().Get(ProjectRoot.From(_root));
 
         // Act.
         var typed = await Set(await IdOfAsync("Kettle"), WardleyContextPropertyProvider.MaturityPropertyId, "0.42");
@@ -347,7 +347,7 @@ public sealed class WardleyContextPropertyProviderTests : IDisposable
     {
         // Arrange. The row shows "what is set" (Requirement 15.2), so replacing two words with
         // two others is one edit and must be one press of Ctrl+Z.
-        var history = _services.GetRequiredService<IHistoryStackStore>().Get(_root);
+        var history = _services.GetRequiredService<IHistoryStackStore>().Get(ProjectRoot.From(_root));
 
         // Act.
         var result = await Set(await IdOfAsync("Kettle"), WardleyContextPropertyProvider.DecoratorsPropertyId, "market, outsource");

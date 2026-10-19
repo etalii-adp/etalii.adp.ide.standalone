@@ -160,7 +160,7 @@ public class TimelineContextActionProviderTests : IDisposable
 
         // Act.
         var commit = await _actions.CommitAsync(Target(path, "aaa"), TimelineContextActionProvider.RemoveActionId, "", "", CancellationToken.None);
-        await _historyStacks.Get(_workspace).UndoAsync(CancellationToken.None);
+        await _historyStacks.Get(ProjectRoot.From(_workspace)).UndoAsync(CancellationToken.None);
 
         // Assert.
         Assert.True(commit.Completed, commit.Error);
@@ -234,7 +234,7 @@ public class TimelineContextActionProviderTests : IDisposable
         // Act.
         var commit = await _actions.CommitAsync(Target(path, "bbb"), TimelineContextActionProvider.GiveEndActionId, "2026-03-01", "", CancellationToken.None);
         var after = (await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Model.Elements.Single(element => element.Id == "bbb").IsPeriod;
-        await _historyStacks.Get(_workspace).UndoAsync(CancellationToken.None);
+        await _historyStacks.Get(ProjectRoot.From(_workspace)).UndoAsync(CancellationToken.None);
 
         // Assert.
         Assert.True(commit.Completed, commit.Error);
@@ -307,7 +307,7 @@ public class TimelineContextActionProviderTests : IDisposable
         // Act.
         var commit = await _actions.CommitAsync(Target(path, "ccc"), TimelineContextActionProvider.DisconnectActionId, "", "", CancellationToken.None);
         var afterDisconnect = (await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Model.Connections.Count;
-        await _historyStacks.Get(_workspace).UndoAsync(CancellationToken.None);
+        await _historyStacks.Get(ProjectRoot.From(_workspace)).UndoAsync(CancellationToken.None);
 
         // Assert.
         Assert.True(commit.Completed, commit.Error);
@@ -509,7 +509,7 @@ public class TimelineRelationGestureTests : IDisposable
             CancellationToken.None);
         var model = (await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Model;
         var added = model.Elements.Single(element => element.Label == "New element");
-        await _historyStacks.Get(_workspace).UndoAsync(CancellationToken.None);
+        await _historyStacks.Get(ProjectRoot.From(_workspace)).UndoAsync(CancellationToken.None);
 
         // Assert.
         Assert.IsType<ContextExecutionCompleted>(result);
@@ -537,7 +537,7 @@ public class TimelineRelationGestureTests : IDisposable
             CancellationToken.None);
         var model = (await _store.GetOrLoadAsync(path, TestContext.Current.CancellationToken)).Model;
         var added = model.Elements.Single(element => element.Label == "New element");
-        await _historyStacks.Get(_workspace).UndoAsync(CancellationToken.None);
+        await _historyStacks.Get(ProjectRoot.From(_workspace)).UndoAsync(CancellationToken.None);
 
         // Assert.
         Assert.IsType<ContextExecutionCompleted>(result);
@@ -577,7 +577,7 @@ public class TimelineRelationGestureTests : IDisposable
             Target(path, GestureIds.Relation("aaa", "bbb")),
             TimelineContextActionProvider.ConnectActionId,
             CancellationToken.None);
-        await _historyStacks.Get(_workspace).UndoAsync(CancellationToken.None);
+        await _historyStacks.Get(ProjectRoot.From(_workspace)).UndoAsync(CancellationToken.None);
 
         // Assert.
         Assert.IsType<ContextExecutionCompleted>(result);

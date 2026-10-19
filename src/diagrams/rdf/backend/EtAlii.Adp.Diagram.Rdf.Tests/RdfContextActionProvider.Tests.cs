@@ -40,7 +40,7 @@ public class RdfContextActionProviderTests : IDisposable
         _actions = new RdfContextActionProvider(
             _provider.GetRequiredService<IHistoryStackStore>(),
             _provider.GetRequiredService<IRdfDocumentStore>());
-        _history = _provider.GetRequiredService<IHistoryStackStore>().Get(_root);
+        _history = _provider.GetRequiredService<IHistoryStackStore>().Get(ProjectRoot.From(_root));
     }
 
     public void Dispose()

@@ -377,7 +377,7 @@ public class PipelineContextActionProviderTests : IDisposable
         // Assert.
         Assert.True(result.Completed, result.Error);
         Assert.Contains("displayName: Build it", await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
-        Assert.True(_historyStacks.Get(_workspace).CanUndo);
+        Assert.True(_historyStacks.Get(ProjectRoot.From(_workspace)).CanUndo);
     }
 
     [Fact]
@@ -389,7 +389,7 @@ public class PipelineContextActionProviderTests : IDisposable
         await CommitAsync(path, "Build", PipelineContextActionProvider.RenameActionId, "Build it");
 
         // Act.
-        await _historyStacks.Get(_workspace).UndoAsync(CancellationToken.None);
+        await _historyStacks.Get(ProjectRoot.From(_workspace)).UndoAsync(CancellationToken.None);
 
         // Assert.
         Assert.Equal(before, await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));

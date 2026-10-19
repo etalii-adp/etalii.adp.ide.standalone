@@ -59,7 +59,7 @@ public class TimelineSessionTests : IDisposable
     }
 
     private TimelineSession Open(string path) =>
-        new(path, _store, _mapper, _historyStacks.Get(_workspace));
+        new(path, _store, _mapper, _historyStacks.Get(ProjectRoot.From(_workspace)));
 
     [Fact]
     public async Task TheBaselineIsOneAddCarryingEverything()
@@ -247,7 +247,7 @@ public class TimelineSessionTests : IDisposable
 
         // Act.
         await session.MoveElementToAsync("aaa", landing, TimelineRows.ToY(4), CancellationToken.None);
-        await _historyStacks.Get(_workspace).UndoAsync(CancellationToken.None);
+        await _historyStacks.Get(ProjectRoot.From(_workspace)).UndoAsync(CancellationToken.None);
 
         // Assert.
         Assert.Equal(before, await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));

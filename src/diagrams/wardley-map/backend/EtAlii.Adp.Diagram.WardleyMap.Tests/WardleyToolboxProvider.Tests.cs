@@ -142,7 +142,7 @@ public sealed class WardleyToolboxProviderTests : IDisposable
 
         // Act.
         await Execute(WardleyContextActionProvider.AddMarketActionId, "Tea Buyers");
-        await _services.GetRequiredService<IHistoryStackStore>().Get(_root).UndoAsync(TestContext.Current.CancellationToken);
+        await _services.GetRequiredService<IHistoryStackStore>().Get(ProjectRoot.From(_root)).UndoAsync(TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Equal(before, await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken));

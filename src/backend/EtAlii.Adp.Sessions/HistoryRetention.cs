@@ -11,8 +11,7 @@ public sealed class HistoryRetention(IHistoryStackStore stacks) : IProjectSessio
 {
     public IDisposable Acquire(ProjectRoot root)
     {
-        var rootPath = root.FullPath;
-        stacks.Retain(rootPath);
-        return Disposable.From(() => stacks.Release(rootPath));
+        stacks.Retain(root);
+        return Disposable.From(() => stacks.Release(root));
     }
 }

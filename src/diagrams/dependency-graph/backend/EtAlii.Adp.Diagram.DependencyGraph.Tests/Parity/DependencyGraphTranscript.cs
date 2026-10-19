@@ -454,7 +454,7 @@ internal static partial class DependencyGraphTranscript
         {
             json.WriteEndArray();
 
-            var stack = session.History.Get(session.Folder);
+            var stack = session.History.Get(ProjectRoot.From(session.Folder));
             var undone = 0;
             while (stack.CanUndo && (await stack.UndoAsync(cancellationToken)).IsSuccess)
             {
@@ -502,7 +502,7 @@ internal static partial class DependencyGraphTranscript
             var before = session.Model;
             var answer = await Answer(async () =>
             {
-                var result = await session.History.Get(session.Folder).ExecuteAsync(command, cancellationToken);
+                var result = await session.History.Get(ProjectRoot.From(session.Folder)).ExecuteAsync(command, cancellationToken);
                 return result.IsSuccess ? "ok" : $"refused: {result.Error}";
             });
             await RecordAsync($"command {Mask(description)}", answer, before);

@@ -8,14 +8,14 @@ namespace EtAlii.Adp.History;
 /// </summary>
 public interface IHistoryStackStore
 {
-    /// <summary>The stack for <paramref name="rootPath"/>, created on first ask; the same instance thereafter. Never null.</summary>
-    IHistoryStack Get(string rootPath);
+    /// <summary>The stack for <paramref name="root"/>, created on first ask; the same instance thereafter. Never null.</summary>
+    IHistoryStack Get(ProjectRoot root);
 
     /// <summary>A connection begins watching the project: keep its stack alive while it is here.</summary>
-    void Retain(string rootPath);
+    void Retain(ProjectRoot root);
 
     /// <summary>A connection stops watching: on the last release the stack is dropped, behind a short grace so a reconnect keeps its history.</summary>
-    void Release(string rootPath);
+    void Release(ProjectRoot root);
 
     /// <summary>Raised when any held stack's history changes, carrying which project's it was.</summary>
     event EventHandler<HistoryChangedEventArgs>? Changed;

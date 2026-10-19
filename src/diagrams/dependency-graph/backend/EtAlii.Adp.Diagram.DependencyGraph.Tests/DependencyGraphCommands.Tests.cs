@@ -19,7 +19,7 @@ public class DependencyGraphCommandsTests : IDisposable
     private readonly DependencyGraphDocumentStore _store = new(new FileWriter());
     private readonly HistoryStackStore _historyStacks;
 
-    private IHistoryStack History => _historyStacks.Get(_workspace);
+    private IHistoryStack History => _historyStacks.Get(ProjectRoot.From(_workspace));
 
     public DependencyGraphCommandsTests()
     {

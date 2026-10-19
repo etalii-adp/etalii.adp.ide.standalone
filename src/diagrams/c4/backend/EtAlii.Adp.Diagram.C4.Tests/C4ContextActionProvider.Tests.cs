@@ -185,7 +185,7 @@ public class C4ContextActionProviderTests : IDisposable
 
         // Assert.
         Assert.Contains("container \"Web Application\"", await File.ReadAllTextAsync(_bodyPath, TestContext.Current.CancellationToken), StringComparison.Ordinal);
-        Assert.True(_services.GetRequiredService<IHistoryStackStore>().Get(_root).CanUndo);
+        Assert.True(_services.GetRequiredService<IHistoryStackStore>().Get(ProjectRoot.From(_root)).CanUndo);
     }
 
     [Fact]

@@ -206,7 +206,7 @@ public sealed class GhgCommandsTests : IDisposable
     public async Task AMoveThroughTheSession_IsWritten_AndOneUndoAway()
     {
         using var historyStacks = new HistoryStackStore(_dispatcher);
-        var history = historyStacks.Get(_folder);
+        var history = historyStacks.Get(ProjectRoot.From(_folder));
         await using var session = new GhgSession(Body, _store, new GhgElementMapper(), history);
 
         var error = await session.MoveElementToAsync("railways", GhgScale.XOf(M(1830)), GhgScale.TopOf(40), TestContext.Current.CancellationToken);
@@ -231,7 +231,7 @@ public sealed class GhgCommandsTests : IDisposable
     {
         using var historyStacks = new HistoryStackStore(_dispatcher);
         await using var readOnly = new GhgSession(Body, _store, new GhgElementMapper());
-        await using var session = new GhgSession(Body, _store, new GhgElementMapper(), historyStacks.Get(_folder));
+        await using var session = new GhgSession(Body, _store, new GhgElementMapper(), historyStacks.Get(ProjectRoot.From(_folder)));
         var influence = Parse().Influences[0].Id;
 
         var unhistoried = await readOnly.MoveElementToAsync("railways", GhgScale.XOf(M(1830)), GhgScale.TopOf(40), TestContext.Current.CancellationToken);
@@ -254,7 +254,7 @@ public sealed class GhgCommandsTests : IDisposable
         File.Copy(Path.Combine(AppContext.BaseDirectory, "Fixtures", "rule-duplicate-id.ghg"), Body, overwrite: true);
         var before = await File.ReadAllBytesAsync(Body, TestContext.Current.CancellationToken);
         using var historyStacks = new HistoryStackStore(_dispatcher);
-        await using var session = new GhgSession(Body, _store, new GhgElementMapper(), historyStacks.Get(_folder));
+        await using var session = new GhgSession(Body, _store, new GhgElementMapper(), historyStacks.Get(ProjectRoot.From(_folder)));
         var ephemeral = new GhgElementMapper().Visible(Parse(), DiagramViewport.Unbounded)
             .Single(element => element is { Type: GhgElementMapper.TrendType, Id: not "a" and not "b" });
 

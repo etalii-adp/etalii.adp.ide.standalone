@@ -202,7 +202,7 @@ public sealed class FdgCommandsTests : IDisposable
     {
         // Arrange.
         using var historyStacks = new HistoryStackStore(_dispatcher);
-        var history = historyStacks.Get(_folder);
+        var history = historyStacks.Get(ProjectRoot.From(_folder));
         await using var session = new FdgSession(Body, _store, new FdgElementMapper(), history);
 
         // Act.
@@ -231,7 +231,7 @@ public sealed class FdgCommandsTests : IDisposable
         // Arrange.
         using var historyStacks = new HistoryStackStore(_dispatcher);
         await using var readOnly = new FdgSession(Body, _store, new FdgElementMapper());
-        await using var session = new FdgSession(Body, _store, new FdgElementMapper(), historyStacks.Get(_folder));
+        await using var session = new FdgSession(Body, _store, new FdgElementMapper(), historyStacks.Get(ProjectRoot.From(_folder)));
         var connection = Parse().Connections[0].Id;
 
         // Act.

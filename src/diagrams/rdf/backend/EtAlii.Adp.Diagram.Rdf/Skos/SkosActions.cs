@@ -222,7 +222,7 @@ public static class SkosActions
     private static async ValueTask<ContextExecutionResult> DispatchAsync(
         IHistoryStackStore historyStacks, ContextTarget target, ICommand command, CancellationToken cancellationToken)
     {
-        var result = await historyStacks.Get(target.Root.FullPath).ExecuteAsync(command, cancellationToken);
+        var result = await historyStacks.Get(target.Root).ExecuteAsync(command, cancellationToken);
         return result.IsSuccess
             ? new ContextExecutionCompleted()
             : new ContextExecutionFailed(result.Error);

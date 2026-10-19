@@ -46,7 +46,7 @@ public static class ServiceCollectionAddSparqlExtension
             provider.GetRequiredService<ISparqlDocumentStore>(),
             provider.GetRequiredService<SparqlElementMapper>(),
             // The project's history, so the one gesture this diagram has is one undo away.
-            provider.GetRequiredService<IHistoryStackStore>().Get(opening.RootPath)));
+            provider.GetRequiredService<IHistoryStackStore>().Get(ProjectRoot.From(opening.RootPath))));
 
         // The reload seam: the text editor is where these files change, so this path is the
         // normal way a query diagram updates at all.

@@ -548,7 +548,7 @@ internal static class C4Transcript
 
         public C4Workspace Model => Documents.Get(Body)!.Model;
 
-        public IHistoryStack Stack => History.Get(Folder);
+        public IHistoryStack Stack => History.Get(ProjectRoot.From(Folder));
 
         public ContextTarget Target(string elementId, ToolOrigin? origin = null) =>
             ContextTarget.ForElement(Body, elementId, ProjectRoot.From(Folder), _watchId, origin ?? Diagram.SystemContext.Origin);

@@ -262,10 +262,10 @@ public sealed class EditorServiceAnalysisTests : IDisposable
         public event EventHandler<HistoryChangedEventArgs>? Changed;
 #pragma warning restore CS0067
 
-        public IHistoryStack Get(string rootPath) => throw new NotSupportedException();
+        public IHistoryStack Get(ProjectRoot root) => throw new NotSupportedException();
 
-        public void Retain(string rootPath) => throw new NotSupportedException();
+        public void Retain(ProjectRoot root) => throw new NotSupportedException();
 
-        public void Release(string rootPath) => throw new NotSupportedException();
+        public void Release(ProjectRoot root) => throw new NotSupportedException();
     }
 }

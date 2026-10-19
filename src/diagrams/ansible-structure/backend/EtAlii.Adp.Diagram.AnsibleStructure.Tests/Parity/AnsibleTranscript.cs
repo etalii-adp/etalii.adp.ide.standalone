@@ -175,7 +175,7 @@ internal static class AnsibleTranscript
             var write = await new AnsibleContextPropertyProvider(folders).SetAsync(Target(registration, folder, node), "ansible.name", "Renamed", cancellationToken);
             lines.Add($"write ansible.name of {node} => {(write.IsSuccess ? "accepted" : $"refused: {write.Error}")}");
 
-            await using (var session = new AnsibleSession(folder, folders, new AnsibleElementMapper(), registration, histories.Get(folder)))
+            await using (var session = new AnsibleSession(folder, folders, new AnsibleElementMapper(), registration, histories.Get(ProjectRoot.From(folder))))
             {
                 lines.Add($"reparent {node} under {Unknown} => {Answer(await session.MoveElementAsync(node, Unknown, 0, cancellationToken))}");
                 lines.Add($"move relation {relation} => {Answer(await session.MoveElementToAsync(relation, 10.5, -20.25, cancellationToken))}");
@@ -186,7 +186,7 @@ internal static class AnsibleTranscript
                 lines.Add($"move {node} without a history => {Answer(await session.MoveElementToAsync(node, 10.5, -20.25, cancellationToken))}");
             }
 
-            await using (var session = new AnsibleSession(folder, folders, new AnsibleElementMapper(), registrationPath: null, histories.Get(folder)))
+            await using (var session = new AnsibleSession(folder, folders, new AnsibleElementMapper(), registrationPath: null, histories.Get(ProjectRoot.From(folder))))
             {
                 lines.Add($"move {node} without a registration => {Answer(await session.MoveElementToAsync(node, 10.5, -20.25, cancellationToken))}");
             }
@@ -391,7 +391,7 @@ internal static class AnsibleTranscript
 
         var node = model.Nodes[0].Id;
         var lines = new List<string>();
-        await using (var session = new AnsibleSession(folder, folders, new AnsibleElementMapper(), registration, histories.Get(folder)))
+        await using (var session = new AnsibleSession(folder, folders, new AnsibleElementMapper(), registration, histories.Get(ProjectRoot.From(folder))))
         {
             lines.Add($"move {node} to (10.5, -20.25) => {Answer(await session.MoveElementToAsync(node, 10.5, -20.25, cancellationToken))}");
         }

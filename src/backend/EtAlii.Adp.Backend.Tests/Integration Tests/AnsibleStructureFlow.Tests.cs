@@ -195,7 +195,7 @@ public class AnsibleStructureFlowTests : IClassFixture<HostFixture>
         Assert.Equal(123, nginx.Position.Y);
 
         // Assert 3: one undo, and the registration is byte-for-byte what it was.
-        var history = _host.Services.GetRequiredService<IHistoryStackStore>().Get(_projectFolder);
+        var history = _host.Services.GetRequiredService<IHistoryStackStore>().Get(ProjectRoot.From(_projectFolder));
         await history.UndoAsync(TestContext.Current.CancellationToken);
         Assert.Equal(registrationBefore, await File.ReadAllBytesAsync(registration, TestContext.Current.CancellationToken));
     }

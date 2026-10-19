@@ -185,7 +185,7 @@ internal sealed class KnowledgeContextActionProvider(IHistoryStackStore historie
             return ContextCommitResult.Failed(edit.Refusal);
         }
 
-        var result = await histories.Get(target.Root.FullPath).ExecuteAsync(new KnowledgeEditCommand(bodyPath, edit.Changes, edit.Others), cancellationToken).ConfigureAwait(false);
+        var result = await histories.Get(target.Root).ExecuteAsync(new KnowledgeEditCommand(bodyPath, edit.Changes, edit.Others), cancellationToken).ConfigureAwait(false);
         return result.IsSuccess ? ContextCommitResult.Succeeded : ContextCommitResult.Failed(result.Error);
     }
 

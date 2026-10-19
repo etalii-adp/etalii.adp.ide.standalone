@@ -46,6 +46,6 @@ public sealed class AnsibleSessionFactory : IDiagramSessionFactory
 
         // The marker is the registration: the file that made this folder a diagram, and the
         // file a position is authored into. The project's history makes that write undoable.
-        return new AnsibleSession(folder, _folders, _mapper, marker, _historyStacks.Get(rootPath));
+        return new AnsibleSession(folder, _folders, _mapper, marker, _historyStacks.Get(ProjectRoot.From(rootPath)));
     }
 }

@@ -37,13 +37,13 @@ public sealed class HistoryStack : IHistoryStack, IDisposable
 
     private bool _isDisposed;
 
-    private readonly string _rootPath;
+    private readonly ProjectRoot _root;
     private readonly ICommandNoticeSink? _notices;
 
     public HistoryStack(
         ICommandDispatcher dispatcher,
         int capacity = DefaultCapacity,
-        string rootPath = "",
+        ProjectRoot root = default,
         ICommandNoticeSink? notices = null)
     {
         ArgumentNullException.ThrowIfNull(dispatcher);
@@ -51,7 +51,7 @@ public sealed class HistoryStack : IHistoryStack, IDisposable
 
         _dispatcher = dispatcher;
         Capacity = capacity;
-        _rootPath = rootPath;
+        _root = root;
         _notices = notices;
     }
 
@@ -123,9 +123,9 @@ public sealed class HistoryStack : IHistoryStack, IDisposable
                 // because the loss belongs to the document: the position is missing for
                 // whoever opens it next, not only for whoever dragged it.
                 _logger.Warning("{Command} succeeded with a warning: {Warning}", command.GetType().Name, result.Warning);
-                if (_rootPath.Length > 0)
+                if (_root.FullPath.Length > 0)
                 {
-                    _notices?.Notify(_rootPath, result.Warning);
+                    _notices?.Notify(_root, result.Warning);
                 }
             }
             else if (result.Inverse is null)

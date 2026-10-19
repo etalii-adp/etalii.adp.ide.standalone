@@ -43,7 +43,7 @@ public class SkosActionsTests : IDisposable
         _properties = new RdfContextPropertyProvider(
             _provider.GetRequiredService<IHistoryStackStore>(),
             _provider.GetRequiredService<IRdfDocumentStore>());
-        _history = _provider.GetRequiredService<IHistoryStackStore>().Get(_root);
+        _history = _provider.GetRequiredService<IHistoryStackStore>().Get(ProjectRoot.From(_root));
     }
 
     public void Dispose()

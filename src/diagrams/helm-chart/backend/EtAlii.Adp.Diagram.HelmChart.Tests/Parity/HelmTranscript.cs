@@ -284,7 +284,7 @@ internal static class HelmTranscript
         var lines = new List<string>();
         foreach (var history in new[] { false, true })
         {
-            await using var session = new HelmSession(folder, registration, store, new HelmElementMapper(), history ? histories.Get(folder) : null);
+            await using var session = new HelmSession(folder, registration, store, new HelmElementMapper(), history ? histories.Get(ProjectRoot.From(folder)) : null);
             var label = history ? "with a history" : "without a history";
             lines.Add($"{label}: reparent {node ?? Unknown} under {Unknown} => {Answer(await session.MoveElementAsync(node ?? Unknown, Unknown, 0, cancellationToken))}");
             foreach ((string what, string? id) in moves)

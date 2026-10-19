@@ -55,7 +55,7 @@ public class CausalLoopSessionTests : IDisposable
         registration ?? _registrationPath,
         _store,
         new CausalLoopElementMapper(),
-        withHistory ? _provider.GetRequiredService<IHistoryStackStore>().Get(_root) : null);
+        withHistory ? _provider.GetRequiredService<IHistoryStackStore>().Get(ProjectRoot.From(_root)) : null);
 
     /// <summary>A viewport tight around one element, in the module's own units.</summary>
     private static DiagramViewport Around(DiagramElement element) =>

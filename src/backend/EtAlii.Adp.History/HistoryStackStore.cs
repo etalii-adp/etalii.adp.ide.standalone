@@ -22,7 +22,7 @@ public sealed class HistoryStackStore : IHistoryStackStore, IDisposable
     public HistoryStackStore(ICommandDispatcher dispatcher, TimeSpan? grace = null, ICommandNoticeSink? notices = null, TimeProvider? time = null)
     {
         ArgumentNullException.ThrowIfNull(dispatcher);
-        _create = root => Attach(root.FullPath, new HistoryStack(dispatcher, HistoryStack.DefaultCapacity, root.FullPath, notices));
+        _create = root => Attach(root, new HistoryStack(dispatcher, HistoryStack.DefaultCapacity, root, notices));
         _stacks = new RetainedRegistry<ProjectRoot, RetainedHistoryStack>(
             grace ?? DefaultGrace,
             (_, entry) => Detach(entry),
@@ -31,28 +31,32 @@ public sealed class HistoryStackStore : IHistoryStackStore, IDisposable
 
     public event EventHandler<HistoryChangedEventArgs>? Changed;
 
-    public IHistoryStack Get(string rootPath)
+    public IHistoryStack Get(ProjectRoot root)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(rootPath);
-        return _stacks.GetOrAdd(ProjectRoot.From(rootPath), _create).Stack;
+        ArgumentException.ThrowIfNullOrWhiteSpace(root.FullPath, nameof(root));
+        return _stacks.GetOrAdd(root, _create).Stack;
     }
 
-    public void Retain(string rootPath) => _stacks.Retain(ProjectRoot.From(rootPath), _create);
-
-    public void Release(string rootPath)
+    public void Retain(ProjectRoot root)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(rootPath);
+        ArgumentException.ThrowIfNullOrWhiteSpace(root.FullPath, nameof(root));
+        _stacks.Retain(root, _create);
+    }
+
+    public void Release(ProjectRoot root)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(root.FullPath, nameof(root));
         // Not dropped now: a reconnect within the grace re-retains and keeps its history.
-        _stacks.Release(ProjectRoot.From(rootPath));
+        _stacks.Release(root);
     }
 
     public void Dispose() => _stacks.Dispose();
 
-    private RetainedHistoryStack Attach(string rootPath, IHistoryStack stack)
+    private RetainedHistoryStack Attach(ProjectRoot root, IHistoryStack stack)
     {
-        var entry = new RetainedHistoryStack(rootPath, stack);
+        var entry = new RetainedHistoryStack(root, stack);
         // Aggregate every stack's Changed into the store's own event, tagged with the project.
-        entry.Handler = (_, _) => Changed?.Invoke(this, new HistoryChangedEventArgs(entry.RootPath));
+        entry.Handler = (_, _) => Changed?.Invoke(this, new HistoryChangedEventArgs(entry.Root));
         stack.Changed += entry.Handler;
         return entry;
     }

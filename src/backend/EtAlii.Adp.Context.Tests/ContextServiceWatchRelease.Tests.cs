@@ -118,11 +118,11 @@ public sealed class ContextServiceWatchReleaseTests : IDisposable
 
         public int Releases { get; private set; }
 
-        public IHistoryStack Get(string rootPath) => throw new NotSupportedException();
+        public IHistoryStack Get(ProjectRoot root) => throw new NotSupportedException();
 
-        public void Retain(string rootPath) => Retains++;
+        public void Retain(ProjectRoot root) => Retains++;
 
-        public void Release(string rootPath) => Releases++;
+        public void Release(ProjectRoot root) => Releases++;
     }
 
     private sealed class OneProjectStore(ProjectRecord project) : IProjectStore

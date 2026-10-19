@@ -52,7 +52,7 @@ public class AddC4ElementTests : IDisposable
             .AddCommands().AddHierarchyCommandHandlers()
             .AddC4()
             .BuildServiceProvider();
-        _history = _services.GetRequiredService<IHistoryStackStore>().Get(_root);
+        _history = _services.GetRequiredService<IHistoryStackStore>().Get(ProjectRoot.From(_root));
         _documents = _services.GetRequiredService<IC4DocumentStore>();
     }
 

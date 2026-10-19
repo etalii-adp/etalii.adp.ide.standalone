@@ -178,7 +178,7 @@ public sealed partial class HierarchyContextActionProvider : IContextActionProvi
     /// </summary>
     private async ValueTask<ContextCommitResult> DispatchAsync(ContextTarget target, ICommand command, CancellationToken cancellationToken)
     {
-        var result = await _historyStacks.Get(target.Root.FullPath).ExecuteAsync(command, cancellationToken);
+        var result = await _historyStacks.Get(target.Root).ExecuteAsync(command, cancellationToken);
         return result.IsSuccess ? ContextCommitResult.Succeeded : ContextCommitResult.Failed(result.Error);
     }
 
@@ -189,7 +189,7 @@ public sealed partial class HierarchyContextActionProvider : IContextActionProvi
     private async ValueTask<ContextCommitResult> CreateFolderAsync(ContextTarget target, string name, CancellationToken cancellationToken)
     {
         var fullPath = IoPath.Combine(target.ResolvedFullPath, name);
-        var result = await _historyStacks.Get(target.Root.FullPath).ExecuteAsync(new CreateFolderCommand(fullPath), cancellationToken);
+        var result = await _historyStacks.Get(target.Root).ExecuteAsync(new CreateFolderCommand(fullPath), cancellationToken);
         return result.IsSuccess ? ContextCommitResult.Created(fullPath) : ContextCommitResult.Failed(result.Error);
     }
 

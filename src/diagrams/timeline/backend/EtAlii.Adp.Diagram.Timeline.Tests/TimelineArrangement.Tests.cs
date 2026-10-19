@@ -24,7 +24,7 @@ public class TimelineArrangementTests : IDisposable
         GC.SuppressFinalize(this);
     }
 
-    private IHistoryStack History => _historyStacks.Get(_workspace);
+    private IHistoryStack History => _historyStacks.Get(ProjectRoot.From(_workspace));
 
     /// <summary>The module's own roadmap: thirty elements scattered over seventeen rows.</summary>
     private static string Roadmap

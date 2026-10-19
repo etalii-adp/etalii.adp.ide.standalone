@@ -20,7 +20,7 @@ public class TimelineCommandsTests : IDisposable
     private readonly TimelineDocumentStore _store = new(new FileWriter());
     private readonly IHistoryStackStore _historyStacks;
 
-    private IHistoryStack History => _historyStacks.Get(_workspace);
+    private IHistoryStack History => _historyStacks.Get(ProjectRoot.From(_workspace));
 
     public TimelineCommandsTests()
     {

@@ -159,7 +159,7 @@ public sealed class KnowledgeRowContextTests : IDisposable
         // Act: four undos.
         for (var step = 0; step < 4; step++)
         {
-            Assert.True((await _histories.Get(_root).UndoAsync(TestContext.Current.CancellationToken)).IsSuccess);
+            Assert.True((await _histories.Get(ProjectRoot.From(_root)).UndoAsync(TestContext.Current.CancellationToken)).IsSuccess);
         }
 
         // Assert: the file as it was.

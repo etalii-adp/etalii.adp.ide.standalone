@@ -176,7 +176,7 @@ public sealed class KnowledgeDesignerTests(HostFixture host) : IClassFixture<Hos
         var cities = IoPath.Combine(_projectFolder, "cities.yaml");
         var provinces = IoPath.Combine(_projectFolder, "provinces.yaml");
         var before = await File.ReadAllBytesAsync(cities, TestContext.Current.CancellationToken);
-        var history = host.Services.GetRequiredService<IHistoryStackStore>().Get(_projectFolder);
+        var history = host.Services.GetRequiredService<IHistoryStackStore>().Get(ProjectRoot.From(_projectFolder));
 
         // Act: the rename the explorer makes.
         var renamed = await history.ExecuteAsync(new RenameEntryCommand(provinces, "regions.yaml", _projectFolder), TestContext.Current.CancellationToken);

@@ -17,9 +17,9 @@ public class HistoryStackNoticesTests
 {
     private sealed class RecordingSink : ICommandNoticeSink
     {
-        public List<(string RootPath, string Message)> Notified { get; } = [];
+        public List<(ProjectRoot Root, string Message)> Notified { get; } = [];
 
-        public void Notify(string rootPath, string message) => Notified.Add((rootPath, message));
+        public void Notify(ProjectRoot root, string message) => Notified.Add((root, message));
     }
 
     private sealed record NothingCommand : ICommand;
@@ -36,15 +36,15 @@ public class HistoryStackNoticesTests
         // Arrange.
         var sink = new RecordingSink();
         var result = CommandResult.Success(new NothingCommand(), "The new position could not be saved.");
-        var stack = new HistoryStack(new StubDispatcher(result), rootPath: @"C:\project", notices: sink);
+        var stack = new HistoryStack(new StubDispatcher(result), root: ProjectRoot.From(@"C:\project"), notices: sink);
 
         // Act.
         var executed = await stack.ExecuteAsync(new NothingCommand(), TestContext.Current.CancellationToken);
 
         // Assert: the edit still succeeded - that is the whole point - and the loss was reported.
         Assert.True(executed.IsSuccess);
-        (string rootPath, string message) = Assert.Single(sink.Notified);
-        Assert.Equal(@"C:\project", rootPath);
+        (ProjectRoot root, string message) = Assert.Single(sink.Notified);
+        Assert.Equal(ProjectRoot.From(@"C:\project"), root);
         Assert.Equal("The new position could not be saved.", message);
     }
 
@@ -56,7 +56,7 @@ public class HistoryStackNoticesTests
         var sink = new RecordingSink();
         var stack = new HistoryStack(
             new StubDispatcher(CommandResult.Success(new NothingCommand())),
-            rootPath: @"C:\project",
+            root: ProjectRoot.From(@"C:\project"),
             notices: sink);
 
         await stack.ExecuteAsync(new NothingCommand(), TestContext.Current.CancellationToken);
@@ -72,7 +72,7 @@ public class HistoryStackNoticesTests
         var sink = new RecordingSink();
         var stack = new HistoryStack(
             new StubDispatcher(CommandResult.Failure("No.")),
-            rootPath: @"C:\project",
+            root: ProjectRoot.From(@"C:\project"),
             notices: sink);
 
         await stack.ExecuteAsync(new NothingCommand(), TestContext.Current.CancellationToken);

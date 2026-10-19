@@ -102,7 +102,7 @@ public sealed class AadFindingsTests : IDisposable
         await File.WriteAllTextAsync(Body, text, TestContext.Current.CancellationToken);
 
         // Act.
-        var result = await _services.GetRequiredService<IHistoryStackStore>().Get(_root).ExecuteAsync(new SetAadAttributeCommand(Body, "p", "name", "Renamed"), TestContext.Current.CancellationToken);
+        var result = await _services.GetRequiredService<IHistoryStackStore>().Get(ProjectRoot.From(_root)).ExecuteAsync(new SetAadAttributeCommand(Body, "p", "name", "Renamed"), TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.False(result.IsSuccess);
@@ -121,7 +121,7 @@ public sealed class AadFindingsTests : IDisposable
         Assert.DoesNotContain(AadValidator.Validate(AadBody.Parse(text)), problem => problem.RuleId == "fbl.dangling-reference");
 
         // Act: any edit made in ADP.
-        var result = await _services.GetRequiredService<IHistoryStackStore>().Get(_root).ExecuteAsync(new SetAadAttributeCommand(Body, "p", "name", "Renamed"), TestContext.Current.CancellationToken);
+        var result = await _services.GetRequiredService<IHistoryStackStore>().Get(ProjectRoot.From(_root)).ExecuteAsync(new SetAadAttributeCommand(Body, "p", "name", "Renamed"), TestContext.Current.CancellationToken);
 
         // Assert: the edit, and the two entries about nothing gone with it; the lock that names an element stays.
         Assert.True(result.IsSuccess, result.Error);
@@ -146,7 +146,7 @@ public sealed class AadFindingsTests : IDisposable
         await documents.ReloadAsync(Body, TestContext.Current.CancellationToken);
         var still = session.UpdateView(DiagramViewport.Unbounded);
         var shown = (await session.BaselineAsync(TestContext.Current.CancellationToken)).OfType<DiagramAddDelta>().Sum(delta => delta.Elements.Count);
-        var edit = await _services.GetRequiredService<IHistoryStackStore>().Get(_root).ExecuteAsync(new SetAadAttributeCommand(Body, "p-adp", "name", "Renamed"), token);
+        var edit = await _services.GetRequiredService<IHistoryStackStore>().Get(ProjectRoot.From(_root)).ExecuteAsync(new SetAadAttributeCommand(Body, "p-adp", "name", "Renamed"), token);
 
         // Assert: the open diagram is told to remove nothing, the file says why it cannot be read, and nothing writes it.
         Assert.True(before > 5);

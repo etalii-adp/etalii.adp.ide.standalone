@@ -7,11 +7,11 @@ internal sealed class HistoryActionsBroadcasterFakeStore : IHistoryStackStore
 {
     public event EventHandler<HistoryChangedEventArgs>? Changed;
 
-    public void Raise(string rootPath) => Changed?.Invoke(this, new HistoryChangedEventArgs(rootPath));
+    public void Raise(string rootPath) => Changed?.Invoke(this, new HistoryChangedEventArgs(ProjectRoot.From(rootPath)));
 
-    public IHistoryStack Get(string rootPath) => throw new NotSupportedException();
+    public IHistoryStack Get(ProjectRoot root) => throw new NotSupportedException();
 
-    public void Retain(string rootPath) => throw new NotSupportedException();
+    public void Retain(ProjectRoot root) => throw new NotSupportedException();
 
-    public void Release(string rootPath) => throw new NotSupportedException();
+    public void Release(ProjectRoot root) => throw new NotSupportedException();
 }

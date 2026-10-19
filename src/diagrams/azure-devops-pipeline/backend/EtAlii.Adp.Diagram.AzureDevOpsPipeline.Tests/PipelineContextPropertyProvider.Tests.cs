@@ -405,7 +405,7 @@ public class PipelineContextPropertyProviderTests : IDisposable
         Assert.Contains("displayName: Built", await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
 
         // Act.
-        await _historyStacks.Get(_workspace).UndoAsync(CancellationToken.None);
+        await _historyStacks.Get(ProjectRoot.From(_workspace)).UndoAsync(CancellationToken.None);
 
         // Assert.
         Assert.Equal(before, await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));

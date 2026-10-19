@@ -46,7 +46,7 @@ public class C4MoveElementTests : IDisposable
         _services = new ServiceCollection().AddCommands().AddHierarchyCommandHandlers().AddC4().BuildServiceProvider();
         _documents = _services.GetRequiredService<IC4DocumentStore>();
         _sidecar = _services.GetRequiredService<C4LayoutSidecar>();
-        _history = _services.GetRequiredService<IHistoryStackStore>().Get(_root);
+        _history = _services.GetRequiredService<IHistoryStackStore>().Get(ProjectRoot.From(_root));
     }
 
     public void Dispose()
