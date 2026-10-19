@@ -286,8 +286,9 @@ internal abstract class FamilyReader(BodyText text, FblBinding binding, FblOptio
     /// The values a new entry writes, in the rule's key order (FBL §6.1): under each key, the id, the
     /// source or the target the add gives, else the value of the first attribute bound to that key that
     /// the add gives. Only <c>insert.keys</c> is written when the rule names them. A computed attribute
-    /// and one under a <c>child</c> mapping write nothing, and an emptied value is left out unless its
-    /// binding keeps it (<c>empty: "keep"</c>).
+    /// and one under a <c>child</c> mapping write nothing. An empty value is written as a set writes it,
+    /// and left out only under <c>empty: "remove"</c>; the planner has refused it under <c>refuse</c>
+    /// (FBL 0.6 §6.2, spec 025 B-09).
     /// </summary>
     protected static IEnumerable<InsertedValue> InsertValues(InsertRequest request)
     {
@@ -308,7 +309,7 @@ internal abstract class FamilyReader(BodyText text, FblBinding binding, FblOptio
         foreach ((string name, AttributeBinding binding) in rule.Attributes)
         {
             if (binding.Key != key || binding.Child is not null || binding.IsComputed) continue;
-            if (!request.Values.TryGetValue(name, out var value) || (NewText.IsEmpty(value) && binding.Empty != "keep")) continue;
+            if (!request.Values.TryGetValue(name, out var value) || (NewText.IsEmpty(value) && binding.Empty == "remove")) continue;
             return new InsertedValue(key, value, binding);
         }
         return null;

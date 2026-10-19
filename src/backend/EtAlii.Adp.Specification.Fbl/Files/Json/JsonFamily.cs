@@ -381,12 +381,9 @@ internal sealed class JsonFamily(BodyText text, FblBinding binding, FblOptions o
         }
         else
         {
-            var members = new List<string>();
-            foreach (var key in insert.Keys)
-            {
-                if (WireValue(request, key) is { } value) members.Add($"{Quote(key)}: {value}");
-            }
-            text = "{ " + string.Join(", ", members) + " }";
+            var members = InsertValues(request).Select(v => $"{Quote(v.Key)}: {(v.Binding is null ? Quote(NewText.Plain(v.Value, null)) : Write(v.Value, v.Binding))}").ToList();
+            var neighbour = container?.Value.Entries is { Count: > 0 } entries ? insert.Place == "start" ? entries[0] : entries[^1] : null;
+            text = NewObject(members, neighbour);
         }
         if (container is null)
         {
@@ -438,16 +435,20 @@ internal sealed class JsonFamily(BodyText text, FblBinding binding, FblOptions o
         return (member.Own.End, $", {Quote(name)}: [");
     }
 
-    private static string? WireValue(InsertRequest request, string key)
+    /// <summary>
+    /// A new entry's object in the layout of <paramref name="neighbour"/>, the entry it is written beside
+    /// (FBL §6.3, spec 025 B-12): a member per line, indented as the neighbour's members are, when the
+    /// neighbour's members stand on lines of their own; else on one line.
+    /// </summary>
+    private string NewObject(IReadOnlyList<string> members, TreeEntry? neighbour)
     {
-        if (request.Rule.Id?.From?.Key == key && request.Id is { } id) return Quote(id);
-        if (request.Rule.Source?.Key == key && request.Source is { } source) return Quote(source.Key);
-        if (request.Rule.Target?.Key == key && request.Target is { } target) return Quote(target.Key);
-        foreach ((string name, AttributeBinding binding) in request.Rule.Attributes)
+        if (members.Count == 0 || neighbour is not { Value: { Kind: ValueKind.Mapping, Entries: [{ LineSpan: not null } first, ..] } })
         {
-            if (binding.Key == key && binding.Child is null && request.Values.TryGetValue(name, out var value) && value is not null) return Write(value, binding);
+            return "{ " + string.Join(", ", members) + " }";
         }
-        return null;
+        var newline = NewlineAt(first.Own.Start);
+        var indent = Indentation(first.Indent);
+        return "{" + newline + indent + string.Join("," + newline + indent, members) + newline + Indentation(neighbour.Indent) + "}";
     }
 
     /// <summary>
