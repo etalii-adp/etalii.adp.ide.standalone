@@ -266,6 +266,51 @@ public class LoadingTests
         Assert.Contains(problems, p => p.Severity == LoadSeverity.Error && p.Pointer == pointer);
     }
 
+    /// <summary>
+    /// Input the schema refuses is collected as a problem at its pointer, as every other is (FBL §14.1),
+    /// rather than thrown out of the loader: each of these threw before T217, but a registration's resource
+    /// that is not an object, which was read as absent.
+    /// </summary>
+    [Theory]
+    [InlineData(", \"elements\": [{ \"name\": \"item\", \"type\": \"Item\", \"at\": \"/items/*\", \"insert\": { \"container\": \"/items\" } }]", "/bindings/t/elements/0/insert/place")]
+    [InlineData(", \"elements\": [{ \"name\": \"item\", \"type\": \"Item\", \"at\": \"/items/*\", \"insert\": { \"place\": 3 } }]", "/bindings/t/elements/0/insert/place")]
+    [InlineData(", \"elements\": [{ \"name\": \"item\", \"type\": \"Item\", \"at\": \"/items/*\", \"insert\": { \"place\": \"end\", \"create\": {} } }]", "/bindings/t/elements/0/insert/create/at")]
+    [InlineData(", \"elements\": [{ \"name\": \"item\", \"type\": \"Item\", \"at\": \"/items/*\", \"insert\": \"end\" }]", "/bindings/t/elements/0/insert")]
+    [InlineData(", \"elements\": [{ \"name\": \"item\", \"type\": \"Item\", \"at\": \"/items/*\", \"id\": \"id\" }]", "/bindings/t/elements/0/id")]
+    [InlineData(", \"elements\": [\"item\"]", "/bindings/t/elements/0")]
+    [InlineData(", \"elements\": [{ \"name\": \"item\", \"type\": \"Item\", \"at\": \"/items/*\", \"attributes\": { \"n\": { \"key\": \"n\", \"number\": { \"decimals\": \"two\" } } } }]", "/bindings/t/elements/0/attributes/n/number/decimals")]
+    [InlineData(", \"elements\": [{ \"name\": \"item\", \"type\": \"Item\", \"at\": \"/items/*\", \"attributes\": { \"n\": { \"key\": \"n\", \"absent\": { \"yaml\": 1 } } } }]", "/bindings/t/elements/0/attributes/n/absent/yaml")]
+    [InlineData(", \"elements\": [{ \"name\": \"item\", \"type\": \"Item\", \"at\": \"/items/*\", \"attributes\": { \"n\": { \"key\": \"n\", \"create\": \"last\" } } }]", "/bindings/t/elements/0/attributes/n/create")]
+    [InlineData(", \"elements\": [" + Item + "], \"text\": { \"indent\": 2.5 }", "/bindings/t/text/indent")]
+    [InlineData(", \"elements\": [" + Item + "], \"title\": { \"en\": 1 }", "/bindings/t/title")]
+    [InlineData(", \"elements\": [" + Item + "], \"template\": { \"text\": \"\", \"byOrigin\": { \"a\": 1 } }", "/bindings/t/template/byOrigin/a")]
+    [InlineData(", \"elements\": [" + Item + "], \"header\": \"version\"", "/bindings/t/header")]
+    [InlineData(", \"elements\": [" + Item + "], \"registration\": { \"resource\": \"x\" }", "/bindings/t/registration/resource")]
+    public void InputTheSchemaRefusesIsAProblemAtItsPointer(string rest, string pointer)
+    {
+        // Arrange.
+        var binding = $$"""{ "claims": { "extensions": [".t"] }, "body": { "kind": "file", "family": "yaml" }, "reader": "declared"{{rest}} }""";
+
+        // Act.
+        var problems = Load(binding);
+
+        // Assert.
+        Assert.Contains(problems, p => p.Severity == LoadSeverity.Error && p.Pointer == pointer);
+    }
+
+    [Theory]
+    [InlineData("\".t\"", "/bindings/t/claims")]
+    [InlineData("{ \"extensions\": [\".t\"], \"marker\": { \"rootKey\": \"items\", \"lines\": \"x\" } }", "/bindings/t/claims/marker/lines")]
+    [InlineData("{ \"extensions\": [\".t\"], \"readings\": { \"a\": 1 } }", "/bindings/t/claims/readings/a")]
+    public void ClaimsTheSchemaRefusesAreAProblemAtTheirPointer(string claims, string pointer)
+    {
+        // Act.
+        var problems = Load(Binding(claims));
+
+        // Assert.
+        Assert.Contains(problems, p => p.Severity == LoadSeverity.Error && p.Pointer == pointer);
+    }
+
     [Fact]
     public void ASharedClaimWithAMarkerIsAccepted()
     {
