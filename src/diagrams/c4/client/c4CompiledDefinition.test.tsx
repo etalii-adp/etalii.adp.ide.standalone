@@ -289,7 +289,7 @@ describe("the C4 specifications' shapes", () => {
   function specified(parts: readonly DislShapePart[], w: number, h: number): Drawn[] {
     return parts.map((part) => {
       const box = resolveBox(part.box!, { w, h, p: {} });
-      const shape = typeof part.shape === "string" ? { type: part.shape, params: {} } : (part.shape as { type: string; params?: { radius?: number } });
+      const shape = typeof part.shape === "string" ? { type: part.shape, params: {} } : (part.shape as unknown as { type: string; params?: { radius?: number } });
       const element = shape.type === "circle" ? "circle" : shape.type === "ellipse" ? "ellipse" : "rect";
       return { element, x: round(box.x), y: round(box.y), w: round(box.w), h: round(box.h), radius: shape.params?.radius ?? 0 };
     });
