@@ -84,7 +84,42 @@ internal static class C4Disl
     /// change as it runs. Its elements are located in <paramref name="file"/>, the body's file name, so
     /// <c>location()</c> gives the line the parser read each at (§12.2).
     /// </summary>
-    public static DislModel Build(C4Workspace workspace, C4View? view, DislSpecification specification, string file)
+    public static DislModel Build(C4Workspace workspace, C4View? view, DislSpecification specification, string file) =>
+        Build(workspace, view, specification, file, null);
+
+    /// <summary>
+    /// The model of <paramref name="workspace"/> that its findings are evaluated over, under
+    /// <paramref name="specification"/>: no view shown, and every view of the workspace with the members
+    /// the model of that view shows, under the definition of its kind (<paramref name="definitionOf"/>);
+    /// built once per parsed workspace and kept while it is; read it, never change it.
+    /// </summary>
+    /// <remarks>
+    /// A rule about the model asks every view what it shows (<c>diagram.views</c>), and one definition
+    /// declares the viewpoint of its own kind only, while a view's members depend on its own statements
+    /// and, for a dynamic view, on its own interactions, which only the model that shows it holds. So each
+    /// view's members are computed where the view is shown, and handed to this model as the host's (§12.2).
+    /// </remarks>
+    public static DislModel OfTheWholeModel(C4Workspace workspace, DislSpecification specification, string file, Func<C4ViewKind, DislSpecification> definitionOf)
+    {
+        ArgumentNullException.ThrowIfNull(workspace);
+        ArgumentNullException.ThrowIfNull(specification);
+        ArgumentNullException.ThrowIfNull(file);
+        ArgumentNullException.ThrowIfNull(definitionOf);
+        var key = $"{specification.Origin}|(whole model)|{file}";
+        return _built.GetValue(workspace, _ => new ConcurrentDictionary<string, Lazy<DislModel>>(StringComparer.Ordinal))
+            .GetOrAdd(key, _ => new Lazy<DislModel>(() => Build(workspace, null, specification, file, each => MembersOf(workspace, each, file, definitionOf(each.Kind)))))
+            .Value;
+    }
+
+    /// <summary>What <paramref name="view"/> shows in the model that shows it, under <paramref name="specification"/>, the definition of its kind.</summary>
+    private static (DislDiagram Diagram, IReadOnlyList<DislElement> Members) MembersOf(C4Workspace workspace, C4View view, string file, DislSpecification specification)
+    {
+        var shown = Of(workspace, view, specification, file).Diagram;
+        var own = shown.Views.FirstOrDefault(each => specification.IdComparer.Equals(each.Id, view.Key));
+        return (shown, own?.Members ?? []);
+    }
+
+    private static DislModel Build(C4Workspace workspace, C4View? view, DislSpecification specification, string file, Func<C4View, (DislDiagram Diagram, IReadOnlyList<DislElement> Members)>? membersOf)
     {
         ArgumentNullException.ThrowIfNull(workspace);
         ArgumentNullException.ThrowIfNull(specification);
@@ -137,10 +172,32 @@ internal static class C4Disl
                 continue;
             }
 
-            model.Diagram.AddView(each.Key, ViewpointOf(each.Kind), each.Title ?? "", ViewAttributes(each));
+            model.Diagram.AddView(each.Key, ViewpointOf(each.Kind), each.Title ?? "", ViewAttributes(each), membersOf is null ? null : Mapped(membersOf(each), model.Diagram));
         }
 
         return model;
+    }
+
+    /// <summary>
+    /// The members of a view in <paramref name="other"/>, another model of the same workspace, as the elements of
+    /// <paramref name="diagram"/> they are: a node by its place among the nodes, a stored relationship by
+    /// its place among the stored relationships, both read from one workspace in one order; what the
+    /// other model derives or holds only for the view it shows has no counterpart here, and is left out.
+    /// </summary>
+    private static List<DislElement> Mapped((DislDiagram Diagram, IReadOnlyList<DislElement> Members) other, DislDiagram diagram)
+    {
+        var counterparts = new Dictionary<DislElement, DislElement>(ReferenceEqualityComparer.Instance);
+        foreach ((DislElement theirs, DislElement ours) in other.Diagram.Nodes.Zip(diagram.Nodes).Concat(StoredRelationships(other.Diagram).Zip(StoredRelationships(diagram))))
+        {
+            if (string.Equals(theirs.Id, ours.Id, StringComparison.Ordinal))
+            {
+                counterparts[theirs] = ours;
+            }
+        }
+
+        return [.. other.Members.Select(counterparts.GetValueOrDefault).OfType<DislElement>()];
+
+        static IEnumerable<DislElement> StoredRelationships(DislDiagram of) => of.Relations.Where(relation => !relation.IsDerived && relation.IsA("Relationship"));
     }
 
     /// <summary>

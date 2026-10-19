@@ -392,8 +392,8 @@
         }
       ],
       "returns": "bool",
-      "cel": "cel.bind(s, r.source == null ? [] : [r.source] + r.source.ancestors(), cel.bind(t, r.target == null ? [] : [r.target] + r.target.ancestors(), (e in s) != (e in t)))",
-      "doc": "Whether a relationship crosses `e`: one end is `e` or inside it and the other is not, so a relationship between two containers of one system does not connect the system (`C4RuleSet.ConnectedElements`)."
+      "cel": "cel.bind(s, r.source == null ? [] : ([r.source] + r.source.ancestors()).map(a, a.id), cel.bind(t, r.target == null ? [] : ([r.target] + r.target.ancestors()).map(a, a.id), (e.id in s) != (e.id in t)))",
+      "doc": "Whether a relationship crosses `e`: one end is `e` or inside it and the other is not, so a relationship between two containers of one system does not connect the system (`C4RuleSet.ConnectedElements`). Compared by identifier, as the tool compares them: of two elements of one identifier, a relationship that names the first connects the second too."
     },
     "lineLabel": {
       "params": [
@@ -2799,10 +2799,11 @@
         "scope": "Element",
         "forEach": "diagram.views.filter(v, v.members.exists(m, m == self) && !(self.type in permitted(v.viewpoint)))",
         "target": "self",
+        "subject": "item.id",
         "message": {
           "cel": "\"The '\" + item.id + \"' view shows '\" + shownName(self) + \"', which is a \" + spelled(self.type) + \". A \" + viewSpelled(item.viewpoint) + \" view shows \" + permitted(item.viewpoint).map(t, spelled(t)).join(', ') + \".\""
         },
-        "doc": "Only an element a view's `include` names can be of a kind the view does not permit; `include *` selects permitted kinds only."
+        "doc": "Only an element a view's `include` names can be of a kind the view does not permit; `include *` selects permitted kinds only. The subject is the view's key: the tool reports a view's findings together (companion, gap 10)."
       },
       {
         "id": "emptyView",
@@ -2811,10 +2812,11 @@
         "over": "model",
         "scope": "diagram",
         "forEach": "diagram.views.filter(v, !v.members.exists(m, m.kind == 'node'))",
+        "subject": "item.id",
         "message": {
           "cel": "\"The '\" + item.id + \"' view is empty.\""
         },
-        "doc": "The tool locates the finding at the view's line, which a View does not expose (companion, gap 13)."
+        "doc": "The subject is the view's key, a finding having neither a target nor a location otherwise (8.6). The tool locates the finding at the view's line, which a View does not expose (companion, gap 13)."
       },
       {
         "id": "elementNotOnAnyView",
