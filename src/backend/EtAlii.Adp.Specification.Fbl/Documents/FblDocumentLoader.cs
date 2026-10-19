@@ -498,10 +498,10 @@ internal static class BindingChecker
             var families = FamiliesOf(binding, rule);
             var scalars = families.Count > 0 && families.All(f => f is Family.Yaml or Family.Json);
             var context = rule.At is null ? CelContext.Lines : scalars ? CelContext.Scalars : CelContext.Tree;
-            Compile(rule.When, context, at + "/when", problems);
-            Compile(rule.Insert?.When, CelContext.Insert, at + "/insert/when", problems);
-            if (rule.Id?.From is { } from) CheckSlot(from, context, at + "/id/from", problems);
-            if (rule.Id?.SidecarKey is { } sidecar) Compile(sidecar, context, at + "/id/sidecar/key", problems);
+            Compile(rule, rule.When, context, at + "/when", problems);
+            Compile(rule, rule.Insert?.When, CelContext.Insert, at + "/insert/when", problems);
+            if (rule.Id?.From is { } from) CheckSlot(rule, from, context, at + "/id/from", problems);
+            if (rule.Id?.SidecarKey is { } sidecar) Compile(rule, sidecar, context, at + "/id/sidecar/key", problems);
             if (rule.IsRelation && (rule.Source is null || rule.Target is null))
             {
                 problems.Add(new LoadDiagnostic(at, LoadSeverity.Error, "A relation rule has a source and a target."));
@@ -509,20 +509,20 @@ internal static class BindingChecker
             foreach ((string name, AttributeBinding attribute) in rule.Attributes)
             {
                 var a = $"{at}/attributes/{JsonPointer.Token(name)}";
-                CheckSlot(attribute, context, a, problems);
+                CheckSlot(rule, attribute, context, a, problems);
                 if (attribute.Reference is { } reference)
                 {
                     foreach (var to in reference.To) Require(to, rules, a + "/reference/to", problems);
                 }
-                if (attribute.Override is { } o) CheckSlot(o, context, a + "/override", problems);
+                if (attribute.Override is { } o) CheckSlot(rule, o, context, a + "/override", problems);
                 CheckScalarOptions(attribute, scalars, a, problems);
                 if (CountSlots(attribute) != 1)
                 {
                     problems.Add(new LoadDiagnostic(a, LoadSeverity.Error, "An attribute binding names exactly one slot (FBL §3.3)."));
                 }
             }
-            if (rule.Source is not null) CheckSlot(rule.Source, context, at + "/source", problems);
-            if (rule.Target is not null) CheckSlot(rule.Target, context, at + "/target", problems);
+            if (rule.Source is not null) CheckSlot(rule, rule.Source, context, at + "/source", problems);
+            if (rule.Target is not null) CheckSlot(rule, rule.Target, context, at + "/target", problems);
         }
 
         var family = binding.Body.Family;
@@ -580,9 +580,9 @@ internal static class BindingChecker
         (s.Key is null ? 0 : 1) + (s.XmlAttribute is null ? 0 : 1) + (s.Text ? 1 : 0) + (s.Group is null ? 0 : 1) +
         (s.Parent is null ? 0 : 1) + (s.Capture is null ? 0 : 1) + (s.Value is null ? 0 : 1);
 
-    private static void CheckSlot(Slot slot, CelContext context, string pointer, List<LoadDiagnostic> problems)
+    private static void CheckSlot(Rule rule, Slot slot, CelContext context, string pointer, List<LoadDiagnostic> problems)
     {
-        if (slot.Value is not null) Compile(slot.Value, context, pointer + "/value", problems);
+        if (slot.Value is not null) Compile(rule, slot.Value, context, pointer + "/value", problems);
         if (slot.Word is not null) CheckRegex(slot.Word, pointer + "/word", problems);
     }
 
@@ -606,12 +606,13 @@ internal static class BindingChecker
         if (problem is not null) problems.Add(new LoadDiagnostic(pointer, LoadSeverity.Error, problem));
     }
 
-    private static void Compile(string? expression, CelContext context, string pointer, List<LoadDiagnostic> problems)
+    /// <summary>Compiles <paramref name="expression"/> once, keeping its program on the rule for every reading that follows.</summary>
+    private static void Compile(Rule rule, string? expression, CelContext context, string pointer, List<LoadDiagnostic> problems)
     {
         if (expression is null) return;
         try
         {
-            FblCel.Compile(expression, context);
+            rule.Keep(context, expression, FblCel.Compile(expression, context));
         }
         catch (CelException e)
         {
