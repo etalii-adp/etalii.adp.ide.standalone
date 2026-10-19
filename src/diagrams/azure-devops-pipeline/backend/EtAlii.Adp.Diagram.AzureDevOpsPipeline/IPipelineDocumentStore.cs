@@ -54,6 +54,6 @@ public interface IPipelineDocumentStore : IDiagramDocumentStore
     internal static Func<ContextTarget, CancellationToken, ValueTask<DocumentEntry<PipelineBody, PipelineModel>>> LoaderFor(IPipelineDocumentStore documents)
     {
         ArgumentNullException.ThrowIfNull(documents);
-        return (target, cancellationToken) => documents.GetOrLoadAsync(target.RootPath, target.ResolvedFullPath, cancellationToken);
+        return (target, cancellationToken) => documents.GetOrLoadAsync(target.Root.FullPath, target.ResolvedFullPath, cancellationToken);
     }
 }

@@ -14,13 +14,13 @@ internal sealed class ContextSelectionStoreStubResolver : IContextSourceResolver
     public bool CanResolve(ContextSource source) => true;
 
     public ValueTask<ContextLevelResolution> ResolveAsync(
-        ShortGuid watchId, string rootPath, ContextSource id,
+        ShortGuid watchId, ProjectRoot root, ContextSource id,
         IReadOnlyList<string> clientPath, ContextResolvedLevel? parent, CancellationToken cancellationToken) =>
         throw new NotSupportedException();
 
     public ContextNesting NestingOf(ContextResolvedLevel level) => ContextNesting.NotNestable;
 
-    public IDisposable Track(ShortGuid watchId, string rootPath, ContextResolvedLevel level, Action<IReadOnlyList<string>?> onChange)
+    public IDisposable Track(ShortGuid watchId, ProjectRoot root, ContextResolvedLevel level, Action<IReadOnlyList<string>?> onChange)
     {
         _onChange = onChange;
         return new StubResolverSubscription(this);

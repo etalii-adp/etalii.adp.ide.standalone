@@ -507,7 +507,7 @@ internal static class CausalLoopTranscript
         public CausalLoopModel Model => Store.Get(Body)!.Model;
 
         public ContextTarget Target(string elementId) =>
-            ContextTarget.ForElement(Body, elementId, Folder, _watchId, Diagram.CausalLoop.Origin);
+            ContextTarget.ForElement(Body, elementId, ProjectRoot.From(Folder), _watchId, Diagram.CausalLoop.Origin);
 
         /// <summary>What the open session sends a connection that has reported no viewport.</summary>
         public async Task<IEnumerable<DiagramElement>> BaselineAsync(CancellationToken cancellationToken) =>

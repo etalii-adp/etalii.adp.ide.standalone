@@ -41,7 +41,7 @@ public sealed class PipelineContextSourceResolver : IContextSourceResolver
     /// <inheritdoc />
     public async ValueTask<ContextLevelResolution> ResolveAsync(
         ShortGuid watchId,
-        string rootPath,
+        ProjectRoot root,
         ContextSource id,
         IReadOnlyList<string> clientPath,
         ContextResolvedLevel? parent,
@@ -56,14 +56,14 @@ public sealed class PipelineContextSourceResolver : IContextSourceResolver
             return Rejected("A pipeline element must be selected within its pipeline.");
         }
 
-        if (_router.Route(parent.Target.ResolvedFullPath, rootPath) is not DiagramRouted routed ||
+        if (_router.Route(parent.Target.ResolvedFullPath, root.FullPath) is not DiagramRouted routed ||
             routed.Definition.Origin.Vendor != Diagram.Pipeline.Origin.Vendor)
         {
             return Rejected("The selected file is not an Azure pipeline.");
         }
 
         var bodyPath = routed.BodyPath!;
-        var entry = await _documents.GetOrLoadAsync(rootPath, bodyPath, cancellationToken);
+        var entry = await _documents.GetOrLoadAsync(root.FullPath, bodyPath, cancellationToken);
         if (!entry.IsUsable)
         {
             // Nothing can be selected in a file that does not parse, and saying so is better than
@@ -94,7 +94,7 @@ public sealed class PipelineContextSourceResolver : IContextSourceResolver
                 bodyPath,
                 IsContainer: found.HasChildren,
                 SourceId: default,
-                rootPath,
+                root,
                 watchId,
                 elementId,
                 routed.Definition.Origin),
@@ -132,7 +132,7 @@ public sealed class PipelineContextSourceResolver : IContextSourceResolver
     /// clears the selection. One document may back several open views, so a change through any of
     /// them re-resolves this one.
     /// </summary>
-    public IDisposable Track(ShortGuid watchId, string rootPath, ContextResolvedLevel level, Action<IReadOnlyList<string>?> onChange)
+    public IDisposable Track(ShortGuid watchId, ProjectRoot root, ContextResolvedLevel level, Action<IReadOnlyList<string>?> onChange)
     {
         ArgumentNullException.ThrowIfNull(level);
         ArgumentNullException.ThrowIfNull(onChange);
@@ -151,7 +151,7 @@ public sealed class PipelineContextSourceResolver : IContextSourceResolver
             }
 
             // The document the change names is held by now; reading it again here would block the raiser.
-            if (_documents.In(rootPath).Get(bodyPath) is { } entry)
+            if (_documents.In(root.FullPath).Get(bodyPath) is { } entry)
             {
                 onChange(Find(entry.Model, elementId)?.Path);
             }

@@ -35,7 +35,7 @@ public sealed class AadSurfaceTests : IDisposable
 
     private Task GivenOneDayAsync() => File.WriteAllTextAsync(Body, AadDocumentTests.Fixture("one-day.aad"), TestContext.Current.CancellationToken);
 
-    private ContextTarget Target(string elementId) => ContextTarget.ForElement(Body, elementId, _root, origin: Diagram.AgentActivity.Origin);
+    private ContextTarget Target(string elementId) => ContextTarget.ForElement(Body, elementId, ProjectRoot.From(_root), origin: Diagram.AgentActivity.Origin);
 
     private AadContextActionProvider Actions => new(_services.GetRequiredService<IHistoryStackStore>(), _services.GetRequiredService<IAadDocumentStore>());
 

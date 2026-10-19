@@ -215,15 +215,15 @@ public class ValidateContextActionProviderTests : IDisposable
         await _provider.DiscoverAsync(target, TestContext.Current.CancellationToken);
 
     private ContextTarget RootTarget() =>
-        new(ContextScope.Hierarchy, _root, IsContainer: true, SourceId: default, RootPath: _root);
+        new(ContextScope.Hierarchy, _root, IsContainer: true, SourceId: default, Root: ProjectRoot.From(_root));
 
     private ContextTarget FolderTarget(string fullPath) =>
-        new(ContextScope.Hierarchy, fullPath, IsContainer: true, SourceId: ShortGuid.NewShortGuid(), RootPath: _root);
+        new(ContextScope.Hierarchy, fullPath, IsContainer: true, SourceId: ShortGuid.NewShortGuid(), Root: ProjectRoot.From(_root));
 
     private ContextTarget FileTarget(string fullPath) =>
-        new(ContextScope.Hierarchy, fullPath, IsContainer: false, SourceId: ShortGuid.NewShortGuid(), RootPath: _root);
+        new(ContextScope.Hierarchy, fullPath, IsContainer: false, SourceId: ShortGuid.NewShortGuid(), Root: ProjectRoot.From(_root));
 
     private ContextTarget PanelTarget() =>
-        new(ContextScope.ProblemsPanel, _root, IsContainer: false, SourceId: default, RootPath: _root);
+        new(ContextScope.ProblemsPanel, _root, IsContainer: false, SourceId: default, Root: ProjectRoot.From(_root));
 
 }

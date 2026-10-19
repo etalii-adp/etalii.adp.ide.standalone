@@ -77,7 +77,7 @@ public abstract class DiagramPropertyProvider<TBody, TModel> : IContextPropertyP
             return change.Refusal.Length > 0 ? ContextPropertyResult.Failure(change.Refusal) : ContextPropertyResult.Success;
         }
 
-        var result = await _historyStacks.Get(target.RootPath).ExecuteAsync(command, cancellationToken);
+        var result = await _historyStacks.Get(target.Root.FullPath).ExecuteAsync(command, cancellationToken);
         return result.IsSuccess ? ContextPropertyResult.Success : ContextPropertyResult.Failure(result.Error);
     }
 

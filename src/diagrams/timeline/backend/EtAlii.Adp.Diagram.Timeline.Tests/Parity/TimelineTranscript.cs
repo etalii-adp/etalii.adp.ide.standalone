@@ -395,7 +395,7 @@ internal static class TimelineTranscript
         public TimelineModel Model => Store.Get(Body)!.Model;
 
         public ContextTarget Target(string elementId) =>
-            ContextTarget.ForElement(Body, elementId, Folder, origin: Diagram.Timeline.Origin);
+            ContextTarget.ForElement(Body, elementId, ProjectRoot.From(Folder), origin: Diagram.Timeline.Origin);
 
         public void Dispose() => History.Dispose();
     }

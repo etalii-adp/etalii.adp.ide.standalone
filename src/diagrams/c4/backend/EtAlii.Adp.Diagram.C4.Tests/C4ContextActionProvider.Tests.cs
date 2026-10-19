@@ -59,7 +59,7 @@ public class C4ContextActionProviderTests : IDisposable
     }
 
     private ContextTarget TargetFor(string elementId) =>
-        ContextTarget.ForElement(_bodyPath, elementId, _root, ShortGuid.NewShortGuid());
+        ContextTarget.ForElement(_bodyPath, elementId, ProjectRoot.From(_root), ShortGuid.NewShortGuid());
 
     /// <summary>Executes an action that is expected to ask for a value, and hands back the request.</summary>
     private async Task<ContextExecutionRequiresInput> Input(ContextTarget target, string actionId) =>
@@ -296,12 +296,12 @@ public class C4ContextActionProviderTests : IDisposable
         // Arrange: the C4 model's very text, in a file no C4 type opens.
         var other = IoPath.Combine(_root, "model.txt");
         await File.WriteAllTextAsync(other, Model, TestContext.Current.CancellationToken);
-        var target = ContextTarget.ForElement(other, "", _root, ShortGuid.NewShortGuid());
+        var target = ContextTarget.ForElement(other, "", ProjectRoot.From(_root), ShortGuid.NewShortGuid());
         var properties = new C4ContextPropertyProvider(_services.GetRequiredService<IHistoryStackStore>(), _documents);
 
         // Act.
         var offered = await _provider.DiscoverAsync(target, TestContext.Current.CancellationToken);
-        var rows = await properties.DescribeAsync(ContextTarget.ForElement(other, "web", _root, ShortGuid.NewShortGuid()), TestContext.Current.CancellationToken);
+        var rows = await properties.DescribeAsync(ContextTarget.ForElement(other, "web", ProjectRoot.From(_root), ShortGuid.NewShortGuid()), TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Empty(offered);

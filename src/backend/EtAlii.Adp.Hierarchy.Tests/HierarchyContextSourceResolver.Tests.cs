@@ -67,7 +67,7 @@ public class HierarchyContextSourceResolverTests : IDisposable
     private static ContextSource Source(ShortGuid id) => new() { EntryId = id };
 
     private ValueTask<ContextLevelResolution> ResolveAsync(ShortGuid id, IReadOnlyList<string>? clientPath = null, ContextResolvedLevel? parent = null) =>
-        _resolver.ResolveAsync(_watchId, _root, Source(id), clientPath ?? [], parent, TestContext.Current.CancellationToken);
+        _resolver.ResolveAsync(_watchId, ProjectRoot.From(_root), Source(id), clientPath ?? [], parent, TestContext.Current.CancellationToken);
 
     [Fact]
     public async Task ResolveAsync_NestedFile_YieldsProjectRelativeSegmentsAndDetail()
@@ -192,7 +192,7 @@ public class HierarchyContextSourceResolverTests : IDisposable
         var file = CreateFile("a.txt");
         var level = Assert.IsType<ResolvedContextLevel>(await ResolveAsync(IdOf("a.txt"))).Level;
         var reported = new List<IReadOnlyList<string>?>();
-        using var track = _resolver.Track(_watchId, _root, level, reported.Add);
+        using var track = _resolver.Track(_watchId, ProjectRoot.From(_root), level, reported.Add);
 
         // Act.
         var renamed = IoPath.Combine(_root, "b.txt");
@@ -211,7 +211,7 @@ public class HierarchyContextSourceResolverTests : IDisposable
         CreateFile("docs", "design.mm");
         var level = Assert.IsType<ResolvedContextLevel>(await ResolveAsync(IdOf("docs", "design.mm"))).Level;
         var reported = new List<IReadOnlyList<string>?>();
-        using var track = _resolver.Track(_watchId, _root, level, reported.Add);
+        using var track = _resolver.Track(_watchId, ProjectRoot.From(_root), level, reported.Add);
 
         // Act.
         var renamed = IoPath.Combine(_root, "documents");
@@ -229,7 +229,7 @@ public class HierarchyContextSourceResolverTests : IDisposable
         var file = CreateFile("a.txt");
         var level = Assert.IsType<ResolvedContextLevel>(await ResolveAsync(IdOf("a.txt"))).Level;
         var reported = new List<IReadOnlyList<string>?>();
-        using var track = _resolver.Track(_watchId, _root, level, reported.Add);
+        using var track = _resolver.Track(_watchId, ProjectRoot.From(_root), level, reported.Add);
 
         // Act.
         File.Delete(file);
@@ -246,7 +246,7 @@ public class HierarchyContextSourceResolverTests : IDisposable
         var file = CreateFile("a.txt");
         var level = Assert.IsType<ResolvedContextLevel>(await ResolveAsync(IdOf("a.txt"))).Level;
         var reported = new List<IReadOnlyList<string>?>();
-        var track = _resolver.Track(_watchId, _root, level, reported.Add);
+        var track = _resolver.Track(_watchId, ProjectRoot.From(_root), level, reported.Add);
         track.Dispose();
 
         // Act.
@@ -270,7 +270,7 @@ public class HierarchyContextSourceResolverTests : IDisposable
         var tracked = CreateFile("b.txt");
         var level = Assert.IsType<ResolvedContextLevel>(await ResolveAsync(IdOf("b.txt"))).Level;
         var reported = new List<IReadOnlyList<string>?>();
-        using var track = _resolver.Track(_watchId, _root, level, reported.Add);
+        using var track = _resolver.Track(_watchId, ProjectRoot.From(_root), level, reported.Add);
 
         // Act.
         // Both files go from disk at once; only the sibling's event has been processed so far,
@@ -306,7 +306,7 @@ public class HierarchyContextSourceResolverTests : IDisposable
     private async Task<string> DiagramMimeOfAsync(HierarchyContextSourceResolver resolver, params string[] segments)
     {
         var result = await resolver.ResolveAsync(
-            _watchId, _root, Source(IdOf(segments)), [], null, TestContext.Current.CancellationToken);
+            _watchId, ProjectRoot.From(_root), Source(IdOf(segments)), [], null, TestContext.Current.CancellationToken);
         return Assert.IsType<ResolvedContextLevel>(result).Level.Detail.Entry.DiagramMimeType;
     }
 

@@ -99,7 +99,7 @@ public class MindmapContextActionProviderTests : IDisposable
         // action lookup over a .tml timeline.
         var foreignPath = IoPath.Combine(_project.Root, "docs", "roadmap.tml");
         await File.WriteAllTextAsync(foreignPath, "timeline: 1\r\nelements:\r\n  - id: aaa\r\n    label: First\r\n    begin: 2026-01-01\r\n    row: 0\r\n", TestContext.Current.CancellationToken);
-        var target = ContextTarget.ForElement(foreignPath, "aaa", _project.Root, _project.WatchId);
+        var target = ContextTarget.ForElement(foreignPath, "aaa", ProjectRoot.From(_project.Root), _project.WatchId);
 
         // Act.
         var groups = await _project.Provider.DiscoverAsync(target, TestContext.Current.CancellationToken);

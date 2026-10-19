@@ -34,7 +34,7 @@ public sealed class SupplyChainContextSourceResolverTests : IDisposable
         var level = Assert.IsType<ResolvedContextLevel>(await ResolveAsync("pack-assembly")).Level;
 
         // Act.
-        var tracking = _resolver.Track(_watchId, _folder.Folder, level, _ => { });
+        var tracking = _resolver.Track(_watchId, ProjectRoot.From(_folder.Folder), level, _ => { });
         var selected = _selections.Of(_watchId, _folder.Body);
         tracking.Dispose();
 
@@ -50,7 +50,7 @@ public sealed class SupplyChainContextSourceResolverTests : IDisposable
         var level = Assert.IsType<ResolvedContextLevel>(await ResolveAsync("new:300,700")).Level;
 
         // Act.
-        using var tracking = _resolver.Track(_watchId, _folder.Folder, level, _ => { });
+        using var tracking = _resolver.Track(_watchId, ProjectRoot.From(_folder.Folder), level, _ => { });
 
         // Assert.
         Assert.Equal(["New node"], level.RelativePath);
@@ -63,13 +63,13 @@ public sealed class SupplyChainContextSourceResolverTests : IDisposable
             new ContextSource(),
             [System.IO.Path.GetFileName(_folder.Body)],
             ContextScope.Hierarchy,
-            new ContextTarget(ContextScope.Hierarchy, _folder.Body, IsContainer: false, SourceId: default, _folder.Folder, _watchId),
+            new ContextTarget(ContextScope.Hierarchy, _folder.Body, IsContainer: false, SourceId: default, ProjectRoot.From(_folder.Folder), _watchId),
             new ContextLevelDetail(),
             null!);
 
         return _resolver.ResolveAsync(
             _watchId,
-            _folder.Folder,
+            ProjectRoot.From(_folder.Folder),
             new ContextSource { ElementId = new ElementId { Value = elementId } },
             [],
             file,

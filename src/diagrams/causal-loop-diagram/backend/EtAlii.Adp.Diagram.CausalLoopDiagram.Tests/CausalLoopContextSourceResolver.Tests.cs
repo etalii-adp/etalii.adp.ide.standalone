@@ -118,7 +118,7 @@ public sealed class CausalLoopContextSourceResolverTests : DiagramElementSourceR
             ContextScope.Hierarchy,
             new ContextTarget(
                 ContextScope.Hierarchy, path, IsContainer: false, SourceId: default,
-                IoPath.GetDirectoryName(path)!, ShortGuid.NewShortGuid()),
+                ProjectRoot.From(IoPath.GetDirectoryName(path)!), ShortGuid.NewShortGuid()),
             new ContextLevelDetail(),
             null!);
 
@@ -126,7 +126,7 @@ public sealed class CausalLoopContextSourceResolverTests : DiagramElementSourceR
         ContextResolvedLevel? parent, string elementId, IReadOnlyList<string>? clientPath = null) =>
         await Resolver().ResolveAsync(
             ShortGuid.NewShortGuid(),
-            IoPath.GetDirectoryName(parent!.Target.ResolvedFullPath)!,
+            ProjectRoot.From(IoPath.GetDirectoryName(parent!.Target.ResolvedFullPath)!),
             new ContextSource { ElementId = new ElementId { Value = elementId } },
             clientPath ?? [],
             parent,
@@ -279,7 +279,7 @@ public sealed class CausalLoopContextSourceResolverTests : DiagramElementSourceR
         // Act.
         var resolution = await resolver.ResolveAsync(
             ShortGuid.NewShortGuid(),
-            workspace.Path,
+            ProjectRoot.From(workspace.Path),
             new ContextSource { ElementId = new ElementId { Value = "variable:population" } },
             [],
             FileLevel(other),

@@ -36,7 +36,7 @@ public sealed class MindmapContextSourceResolver : IContextSourceResolver
 
     public async ValueTask<ContextLevelResolution> ResolveAsync(
         ShortGuid watchId,
-        string rootPath,
+        ProjectRoot root,
         ContextSource id,
         IReadOnlyList<string> clientPath,
         ContextResolvedLevel? parent,
@@ -105,7 +105,7 @@ public sealed class MindmapContextSourceResolver : IContextSourceResolver
             id,
             relativePath,
             ContextScope.DiagramElement,
-            new ContextTarget(ContextScope.DiagramElement, bodyPath!, node.HasChildren, SourceId: default, rootPath, watchId, nodeId),
+            new ContextTarget(ContextScope.DiagramElement, bodyPath!, node.HasChildren, SourceId: default, root, watchId, nodeId),
             detail,
             this);
 
@@ -119,7 +119,7 @@ public sealed class MindmapContextSourceResolver : IContextSourceResolver
     /// Re-resolves the node after every change to its map: a rename of an ancestor changes
     /// the path, a removal clears the selection (Requirement 10.7).
     /// </summary>
-    public IDisposable Track(ShortGuid watchId, string rootPath, ContextResolvedLevel level, Action<IReadOnlyList<string>?> onChange)
+    public IDisposable Track(ShortGuid watchId, ProjectRoot root, ContextResolvedLevel level, Action<IReadOnlyList<string>?> onChange)
     {
         var bodyPath = level.Target.ResolvedFullPath;
         var nodeId = level.Target.ElementId;

@@ -68,7 +68,7 @@ public class ShaclPropertiesTests : IDisposable
     private async Task<DocumentEntry<LineDocument, RdfModel>> EntryAsync() => await _provider.GetRequiredService<IRdfDocumentStore>().GetOrLoadAsync(_body, TestContext.Current.CancellationToken);
 
     private ContextTarget Target(string elementId, ToolOrigin? origin) =>
-        new(ContextScope.DiagramElement, _body, false, ShortGuid.NewShortGuid(), _root, default, elementId) { Origin = origin };
+        new(ContextScope.DiagramElement, _body, false, ShortGuid.NewShortGuid(), ProjectRoot.From(_root), default, elementId) { Origin = origin };
 
     private const string CardId = "res:http://example.org/PersonShape";
 

@@ -551,7 +551,7 @@ internal static class C4Transcript
         public IHistoryStack Stack => History.Get(Folder);
 
         public ContextTarget Target(string elementId, ToolOrigin? origin = null) =>
-            ContextTarget.ForElement(Body, elementId, Folder, _watchId, origin ?? Diagram.SystemContext.Origin);
+            ContextTarget.ForElement(Body, elementId, ProjectRoot.From(Folder), _watchId, origin ?? Diagram.SystemContext.Origin);
 
         public ValueTask DisposeAsync() => Services.DisposeAsync();
     }

@@ -56,7 +56,7 @@ public class PipelineToolboxTests : IDisposable
     }
 
     private ContextTarget Target(string path, string elementId) =>
-        ContextTarget.ForElement(path, elementId, _workspace, ShortGuid.NewShortGuid());
+        ContextTarget.ForElement(path, elementId, ProjectRoot.From(_workspace), ShortGuid.NewShortGuid());
 
     /// <summary>Dropping an entry on an element is committing the action the entry names.</summary>
     private async Task<ContextCommitResult> DropAsync(string entryId, string path, string ontoElementId)

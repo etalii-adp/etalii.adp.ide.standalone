@@ -65,13 +65,13 @@ internal sealed class MindmapTestProject : IDisposable
         new ContextSource { EntryId = ShortGuid.NewShortGuid() },
         ["docs", "architecture.adp"],
         ContextScope.Hierarchy,
-        new ContextTarget(ContextScope.Hierarchy, AdpPath, IsContainer: false, ShortGuid.NewShortGuid(), Root, WatchId),
+        new ContextTarget(ContextScope.Hierarchy, AdpPath, IsContainer: false, ShortGuid.NewShortGuid(), ProjectRoot.From(Root), WatchId),
         new ContextLevelDetail { Entry = new EntryDetail { Kind = EntryKind.File, Available = true } },
         new MindmapTestProjectNullResolver());
 
     /// <summary>A provider target for one node, as the resolver would build it.</summary>
     public async Task<ContextTarget> NodeTargetAsync(string nodeId) =>
-        new(ContextScope.DiagramElement, BodyPath, (await DocumentAsync()).Find(nodeId)?.HasChildren ?? false, SourceId: default, Root, WatchId, nodeId);
+        new(ContextScope.DiagramElement, BodyPath, (await DocumentAsync()).Find(nodeId)?.HasChildren ?? false, SourceId: default, ProjectRoot.From(Root), WatchId, nodeId);
 
     public static ContextSource Element(string nodeId) => new() { ElementId = new ElementId { Value = nodeId } };
 

@@ -84,5 +84,5 @@ public class HelmContextPropertyProviderTests : IDisposable
     }
 
     /// <summary>A selected element's target: the registration it was selected in, beside the chart.</summary>
-    private ContextTarget Target(string elementId) => ContextTarget.ForElement(IoPath.Combine(_root, "helm-chart.adp"), elementId, _root);
+    private ContextTarget Target(string elementId) => ContextTarget.ForElement(IoPath.Combine(_root, "helm-chart.adp"), elementId, ProjectRoot.From(_root));
 }

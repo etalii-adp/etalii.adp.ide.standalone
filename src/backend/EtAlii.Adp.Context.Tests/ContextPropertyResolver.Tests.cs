@@ -18,7 +18,7 @@ public class ContextPropertyResolverTests
         ResolvedFullPath: "C:/project/model.dsl",
         IsContainer: false,
         SourceId: ShortGuid.NewShortGuid(),
-        RootPath: "C:/project",
+        Root: ProjectRoot.From("C:/project"),
         ElementId: "element");
 
     [Fact]

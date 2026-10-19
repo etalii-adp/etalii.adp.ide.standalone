@@ -30,7 +30,7 @@ internal sealed class ContextSelectionResolverRefusingStubResolver : IContextSou
 
     public ValueTask<ContextLevelResolution> ResolveAsync(
         ShortGuid watchId,
-        string rootPath,
+        ProjectRoot root,
         ContextSource id,
         IReadOnlyList<string> clientPath,
         ContextResolvedLevel? parent,
@@ -46,7 +46,7 @@ internal sealed class ContextSelectionResolverRefusingStubResolver : IContextSou
             id,
             clientPath,
             ContextScope.DiagramElement,
-            ContextTarget.ForElement(System.IO.Path.Combine(rootPath, "diagram.adp"), id.ElementId.Value, rootPath, watchId),
+            ContextTarget.ForElement(System.IO.Path.Combine(root.FullPath, "diagram.adp"), id.ElementId.Value, root, watchId),
             new ContextLevelDetail(),
             this);
 
@@ -55,6 +55,6 @@ internal sealed class ContextSelectionResolverRefusingStubResolver : IContextSou
 
     public ContextNesting NestingOf(ContextResolvedLevel level) => ContextNesting.NotNestable;
 
-    public IDisposable Track(ShortGuid watchId, string rootPath, ContextResolvedLevel level, Action<IReadOnlyList<string>?> onChange) =>
+    public IDisposable Track(ShortGuid watchId, ProjectRoot root, ContextResolvedLevel level, Action<IReadOnlyList<string>?> onChange) =>
         new StubResolverNoopDisposable();
 }

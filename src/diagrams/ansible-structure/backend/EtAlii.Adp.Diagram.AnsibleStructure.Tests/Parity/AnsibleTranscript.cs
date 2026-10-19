@@ -355,7 +355,7 @@ internal static class AnsibleTranscript
             new ContextSource { EntryId = ShortGuid.NewShortGuid() },
             [],
             ContextScope.Hierarchy,
-            new ContextTarget(ContextScope.Hierarchy, registration, IsContainer: false, SourceId: default, folder),
+            new ContextTarget(ContextScope.Hierarchy, registration, IsContainer: false, SourceId: default, ProjectRoot.From(folder)),
             new ContextLevelDetail(),
             null!);
 
@@ -363,7 +363,7 @@ internal static class AnsibleTranscript
         foreach (var element in elements)
         {
             var resolution = await resolver.ResolveAsync(
-                ShortGuid.NewShortGuid(), folder, new ContextSource { ElementId = new ElementId { Value = element.Id } }, [], parent, cancellationToken);
+                ShortGuid.NewShortGuid(), ProjectRoot.From(folder), new ContextSource { ElementId = new ElementId { Value = element.Id } }, [], parent, cancellationToken);
             lines.Add(resolution switch
             {
                 ResolvedContextLevel resolved => $"{element.Id} => [{string.Join("/", resolved.Level.RelativePath)}] | {TranscriptText.Quoted(resolved.Level.Detail.Element.Text)}",
@@ -404,7 +404,7 @@ internal static class AnsibleTranscript
     private static string Answer(string answer) => answer.Length == 0 ? "accepted" : $"refused: {answer}";
 
     private static ContextTarget Target(string registration, string folder, string elementId) =>
-        ContextTarget.ForElement(registration, elementId, folder, origin: Diagram.AnsibleStructure.Origin);
+        ContextTarget.ForElement(registration, elementId, ProjectRoot.From(folder), origin: Diagram.AnsibleStructure.Origin);
 
     private static string FindingLine(DiagramProblem problem)
     {

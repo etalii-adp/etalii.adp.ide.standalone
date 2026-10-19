@@ -83,7 +83,7 @@ public class CausalLoopEmptyVariableIdTests : IDisposable
         // file must not gain a link with a missing end.
         var path = IoPath.Combine(_root, "nameless.cld");
         await File.WriteAllTextAsync(path, WithEmptyVariable, TestContext.Current.CancellationToken);
-        var target = new ContextTarget(ContextScope.DiagramElement, path, false, ShortGuid.NewShortGuid(), _root, default, "rel:a->");
+        var target = new ContextTarget(ContextScope.DiagramElement, path, false, ShortGuid.NewShortGuid(), ProjectRoot.From(_root), default, "rel:a->");
 
         // Any answer short of a written link is acceptable; only the file is measured.
         await _actions.ExecuteAsync(target, CausalLoopContextActionProvider.ConnectActionId, TestContext.Current.CancellationToken);

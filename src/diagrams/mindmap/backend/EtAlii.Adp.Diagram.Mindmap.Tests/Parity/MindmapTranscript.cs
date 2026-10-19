@@ -383,7 +383,7 @@ internal static partial class MindmapTranscript
         public MindmapDocument? TryDocument() => Documents.Get(Body);
 
         public ContextTarget Target(string elementId, bool flipped = false) =>
-            new(ContextScope.DiagramElement, Body, TryDocument()?.Find(elementId)?.HasChildren ?? false, SourceId: default, Folder, flipped ? FlippedWatch : Watch, elementId);
+            new(ContextScope.DiagramElement, Body, TryDocument()?.Find(elementId)?.HasChildren ?? false, SourceId: default, ProjectRoot.From(Folder), flipped ? FlippedWatch : Watch, elementId);
 
         /// <summary>Gives every id the document holds now that the file did not, and that has no mask yet, the next mask.</summary>
         public void Learn()

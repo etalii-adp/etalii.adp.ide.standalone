@@ -55,7 +55,7 @@ public sealed class WardleyContextSourceResolver : IContextSourceResolver
 
     public async ValueTask<ContextLevelResolution> ResolveAsync(
         ShortGuid watchId,
-        string rootPath,
+        ProjectRoot root,
         ContextSource id,
         IReadOnlyList<string> clientPath,
         ContextResolvedLevel? parent,
@@ -71,7 +71,7 @@ public sealed class WardleyContextSourceResolver : IContextSourceResolver
             return Rejected("A diagram element must be selected within its diagram.");
         }
 
-        if (_router.Route(parent.Target.ResolvedFullPath, rootPath) is not DiagramRouted routed ||
+        if (_router.Route(parent.Target.ResolvedFullPath, root.FullPath) is not DiagramRouted routed ||
             routed.Definition.Origin != Diagram.WardleyMap.Origin ||
             routed.BodyPath is not { Length: > 0 } bodyPath)
         {
@@ -132,7 +132,7 @@ public sealed class WardleyContextSourceResolver : IContextSourceResolver
                 bodyPath,
                 IsContainer: false,
                 SourceId: default,
-                rootPath,
+                root,
                 watchId,
                 elementId,
                 routed.Definition.Origin),
@@ -158,14 +158,14 @@ public sealed class WardleyContextSourceResolver : IContextSourceResolver
     /// </summary>
     public IDisposable Track(
         ShortGuid watchId,
-        string rootPath,
+        ProjectRoot root,
         ContextResolvedLevel level,
         Action<IReadOnlyList<string>?> onChange)
     {
         ArgumentNullException.ThrowIfNull(level);
         ArgumentNullException.ThrowIfNull(onChange);
         _ = watchId;
-        _ = rootPath;
+        _ = root;
 
         var bodyPath = level.Target.ResolvedFullPath;
         var elementId = level.Target.ElementId;

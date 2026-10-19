@@ -116,13 +116,13 @@ public sealed class DatabricksContextSourceResolverTests : DiagramElementSourceR
             new ContextSource(),
             [IoPath.GetFileName(file)],
             ContextScope.Hierarchy,
-            new ContextTarget(ContextScope.Hierarchy, file, IsContainer: false, SourceId: default, root, ShortGuid.NewShortGuid()),
+            new ContextTarget(ContextScope.Hierarchy, file, IsContainer: false, SourceId: default, ProjectRoot.From(root), ShortGuid.NewShortGuid()),
             new ContextLevelDetail(),
             null!);
 
         return resolver.ResolveAsync(
             ShortGuid.NewShortGuid(),
-            root,
+            ProjectRoot.From(root),
             new ContextSource { ElementId = new ElementId { Value = elementId } },
             [],
             parent,

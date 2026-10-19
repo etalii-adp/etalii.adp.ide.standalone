@@ -25,7 +25,7 @@ public class AnsibleContextPropertyProviderTests : IDisposable
     /// <summary>Describes an element as selected in the registration of <paramref name="folder"/>, the fixture's by default.</summary>
     private async Task<IReadOnlyList<ContextPropertyDefinition>> Describe(string elementId, string? folder = null) =>
         await _provider.DescribeAsync(
-            ContextTarget.ForElement(Registration(folder ?? _root), elementId, _root),
+            ContextTarget.ForElement(Registration(folder ?? _root), elementId, ProjectRoot.From(_root)),
             TestContext.Current.CancellationToken);
 
     /// <summary>Where a folder's registration sits: a selection's target, from which the provider takes the folder.</summary>
@@ -81,7 +81,7 @@ public class AnsibleContextPropertyProviderTests : IDisposable
         // Unreachable through the grid - the resolver stops a write to a read-only property
         // first - and written to refuse anyway, so it stays safe if that ever changes.
         var result = await _provider.SetAsync(
-            ContextTarget.ForElement(Registration(_root), "role:nginx", _root),
+            ContextTarget.ForElement(Registration(_root), "role:nginx", ProjectRoot.From(_root)),
             "ansible.name", "something-else", TestContext.Current.CancellationToken);
 
         // Assert.

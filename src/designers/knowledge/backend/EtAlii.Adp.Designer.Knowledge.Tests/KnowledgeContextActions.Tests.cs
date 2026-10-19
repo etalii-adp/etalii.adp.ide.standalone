@@ -60,7 +60,7 @@ public sealed class KnowledgeContextActionsTests : IDisposable
         return IoPath.Combine(_root, "cities.adp");
     }
 
-    private ContextTarget Target(string path, bool container = false) => new(ContextScope.Hierarchy, path, container, ShortGuid.NewShortGuid(), _root);
+    private ContextTarget Target(string path, bool container = false) => new(ContextScope.Hierarchy, path, container, ShortGuid.NewShortGuid(), ProjectRoot.From(_root));
 
     /// <summary>Adds a relation as its author does: the table, how many rows, and where it is shown - three answers, the last of which makes it.</summary>
     private async Task<ContextCommitResult> Related(ContextTarget target, string file, string holds, bool twoWay, string name = "")

@@ -60,13 +60,13 @@ public sealed class KnowledgeRowContextTests : IDisposable
         new ContextSource { EntryId = ShortGuid.NewShortGuid() },
         [IoPath.GetFileName(path)],
         ContextScope.Hierarchy,
-        new ContextTarget(ContextScope.Hierarchy, path, IsContainer: false, ShortGuid.NewShortGuid(), _root),
+        new ContextTarget(ContextScope.Hierarchy, path, IsContainer: false, ShortGuid.NewShortGuid(), ProjectRoot.From(_root)),
         new ContextLevelDetail(),
         _resolver);
 
     private async Task<ContextLevelResolution> Resolve(string rowId, string? file = null) => await _resolver.ResolveAsync(
         ShortGuid.NewShortGuid(),
-        _root,
+        ProjectRoot.From(_root),
         new ContextSource { ElementId = new ElementId { Value = rowId } },
         [],
         File_(file ?? Registration),
@@ -175,7 +175,7 @@ public sealed class KnowledgeRowContextTests : IDisposable
         // Arrange: the row is tracked, as a selection is.
         var level = Assert.IsType<ResolvedContextLevel>(await Resolve("r1")).Level;
         List<IReadOnlyList<string>?> told = [];
-        using var tracking = _resolver.Track(ShortGuid.NewShortGuid(), _root, level, told.Add);
+        using var tracking = _resolver.Track(ShortGuid.NewShortGuid(), ProjectRoot.From(_root), level, told.Add);
 
         // Act: renamed through the grid, then deleted.
         await _provider.SetAsync(level.Target, "p1", "Mokum", TestContext.Current.CancellationToken);

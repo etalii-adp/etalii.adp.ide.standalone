@@ -67,7 +67,7 @@ public class NoWriterSweepTests : IDisposable
 
         var factory = _provider.GetServices<IDiagramSessionFactory>()
             .Single(candidate => candidate.Origin == ServiceCollectionAddSparqlExtension.SparqlOrigin);
-        var target = ContextTarget.ForElement(body, "var:x", _root, ShortGuid.NewShortGuid());
+        var target = ContextTarget.ForElement(body, "var:x", ProjectRoot.From(_root), ShortGuid.NewShortGuid());
 
         // Act: everything the module can be asked to do, in one pass.
         await using (var session = factory.Open(ShortGuid.NewShortGuid(), _root, body, registration))

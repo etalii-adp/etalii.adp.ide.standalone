@@ -252,7 +252,7 @@ public sealed class WardleyToolboxProviderTests : IDisposable
             .Id;
     }
 
-    private ContextTarget Target(string elementId) => ContextTarget.ForElement(_path, elementId, _root);
+    private ContextTarget Target(string elementId) => ContextTarget.ForElement(_path, elementId, ProjectRoot.From(_root));
 
     private async Task<IReadOnlyList<string>> OfferedIds(string elementId)
     {

@@ -79,7 +79,7 @@ public sealed class C4ContextSourceResolverTests : DiagramElementSourceResolverC
 
         // Act.
         var resolution = await Resolver().ResolveAsync(
-            ShortGuid.NewShortGuid(), folder.Path, new ContextSource { ElementId = new ElementId { Value = elevated.Id } }, [], FileLevel(registration),
+            ShortGuid.NewShortGuid(), ProjectRoot.From(folder.Path), new ContextSource { ElementId = new ElementId { Value = elevated.Id } }, [], FileLevel(registration),
             TestContext.Current.CancellationToken);
 
         // Assert.
@@ -109,7 +109,7 @@ public sealed class C4ContextSourceResolverTests : DiagramElementSourceResolverC
 
     private async Task<ContextResolvedLevel> ResolveAsync(TestFolder folder, string registration, string elementId) =>
         Assert.IsType<ResolvedContextLevel>(await Resolver().ResolveAsync(
-            ShortGuid.NewShortGuid(), folder.Path, new ContextSource { ElementId = new ElementId { Value = elementId } }, [], FileLevel(registration),
+            ShortGuid.NewShortGuid(), ProjectRoot.From(folder.Path), new ContextSource { ElementId = new ElementId { Value = elementId } }, [], FileLevel(registration),
             TestContext.Current.CancellationToken)).Level;
 
     private static ContextResolvedLevel FileLevel(string path) =>
@@ -117,7 +117,7 @@ public sealed class C4ContextSourceResolverTests : DiagramElementSourceResolverC
             new ContextSource(),
             [IoPath.GetFileName(path)],
             ContextScope.Hierarchy,
-            new ContextTarget(ContextScope.Hierarchy, path, IsContainer: false, SourceId: default, IoPath.GetDirectoryName(path)!, ShortGuid.NewShortGuid()),
+            new ContextTarget(ContextScope.Hierarchy, path, IsContainer: false, SourceId: default, ProjectRoot.From(IoPath.GetDirectoryName(path)!), ShortGuid.NewShortGuid()),
             new ContextLevelDetail(),
             null!);
 }

@@ -66,9 +66,9 @@ public sealed class HistoryActionsBroadcaster : IHostedService, IDisposable
     {
         try
         {
-            var target = ProjectTarget(rootPath);
-            var actions = await _actionResolver.DiscoverAsync(target, _stopping.Token);
-            _selectionStore.PushProjectActions(ProjectRoot.From(rootPath), actions);
+            var root = ProjectRoot.From(rootPath);
+            var actions = await _actionResolver.DiscoverAsync(ProjectTarget(root), _stopping.Token);
+            _selectionStore.PushProjectActions(root, actions);
         }
         catch (OperationCanceledException) when (_stopping.IsCancellationRequested)
         {
@@ -87,8 +87,8 @@ public sealed class HistoryActionsBroadcaster : IHostedService, IDisposable
     }
 
     /// <summary>The project itself as an action target - what the project-scope providers resolve against.</summary>
-    internal static ContextTarget ProjectTarget(string rootPath) =>
-        new(ContextScope.Project, rootPath, IsContainer: true, SourceId: default, RootPath: rootPath);
+    internal static ContextTarget ProjectTarget(ProjectRoot root) =>
+        new(ContextScope.Project, root.FullPath, IsContainer: true, SourceId: default, Root: root);
 
     /// <summary>
     /// Nothing is left to start: the constructor subscribed. The broadcaster is a hosted service so

@@ -165,7 +165,7 @@ public sealed class RdfContextPropertyProvider : IContextPropertyProvider
         }
 
         // Through the project's history and out through the delta stream (Requirement 6.3).
-        var result = await _historyStacks.Get(target.RootPath).ExecuteAsync(command, cancellationToken);
+        var result = await _historyStacks.Get(target.Root.FullPath).ExecuteAsync(command, cancellationToken);
         return result.IsSuccess ? ContextPropertyResult.Success : ContextPropertyResult.Failure(result.Error);
     }
 

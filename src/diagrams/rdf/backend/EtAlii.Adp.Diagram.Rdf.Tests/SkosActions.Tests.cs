@@ -59,7 +59,7 @@ public class SkosActionsTests : IDisposable
         return path;
     }
 
-    private ContextTarget Target(string bodyPath, string elementId) => ContextTarget.ForElement(bodyPath, elementId, _root);
+    private ContextTarget Target(string bodyPath, string elementId) => ContextTarget.ForElement(bodyPath, elementId, ProjectRoot.From(_root));
 
     private const string Tea = "res:http://example.org/tea";
     private const string Milk = "res:http://example.org/milk";

@@ -62,7 +62,7 @@ public class CausalLoopContextPropertiesTests : IDisposable
     }
 
     private ContextTarget Target(string elementId) =>
-        new(ContextScope.DiagramElement, _path, false, ShortGuid.NewShortGuid(), _root, default, elementId);
+        new(ContextScope.DiagramElement, _path, false, ShortGuid.NewShortGuid(), ProjectRoot.From(_root), default, elementId);
 
     private async Task<IReadOnlyList<ContextPropertyDefinition>> Describe(string elementId) =>
         await _properties.DescribeAsync(Target(elementId), TestContext.Current.CancellationToken);
@@ -465,7 +465,7 @@ public class CausalLoopContextPropertiesTests : IDisposable
         // Act.
         var rows = await _properties.DescribeAsync(
             new ContextTarget(
-                ContextScope.DiagramElement, other, false, ShortGuid.NewShortGuid(), _root, default, "variable:population"),
+                ContextScope.DiagramElement, other, false, ShortGuid.NewShortGuid(), ProjectRoot.From(_root), default, "variable:population"),
             TestContext.Current.CancellationToken);
 
         // Assert.

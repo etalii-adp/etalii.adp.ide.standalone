@@ -103,7 +103,7 @@ public abstract class DiagramActionProvider<TBody, TModel> : IContextActionProvi
             return ContextCommitResult.Failed($"'{actionId}' does not apply to this selection.");
         }
 
-        var result = await _historyStacks.Get(target.RootPath).ExecuteAsync(command, cancellationToken);
+        var result = await _historyStacks.Get(target.Root.FullPath).ExecuteAsync(command, cancellationToken);
         return result.IsSuccess ? ContextCommitResult.Succeeded : ContextCommitResult.Failed(result.Error);
     }
 
@@ -190,7 +190,7 @@ public abstract class DiagramActionProvider<TBody, TModel> : IContextActionProvi
         ArgumentNullException.ThrowIfNull(target);
         ArgumentNullException.ThrowIfNull(command);
 
-        var result = await _historyStacks.Get(target.RootPath).ExecuteAsync(command, cancellationToken);
+        var result = await _historyStacks.Get(target.Root.FullPath).ExecuteAsync(command, cancellationToken);
         return result.IsSuccess ? new ContextExecutionCompleted() : new ContextExecutionFailed(result.Error);
     }
 

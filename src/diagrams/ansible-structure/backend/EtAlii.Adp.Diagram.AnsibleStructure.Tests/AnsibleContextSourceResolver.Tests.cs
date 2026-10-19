@@ -117,7 +117,7 @@ public class AnsibleContextSourceResolverTests : IDisposable
         // Act.
         // An unverifiable selection is never recorded.
         var resolution = await _resolver.ResolveAsync(
-            ShortGuid.NewShortGuid(), _root,
+            ShortGuid.NewShortGuid(), ProjectRoot.From(_root),
             new ContextSource { ElementId = new ElementId { Value = "role:nginx" } },
             [], parent: null, TestContext.Current.CancellationToken);
 
@@ -171,7 +171,7 @@ public class AnsibleContextSourceResolverTests : IDisposable
         // Arrange.
         var level = Assert.IsType<ResolvedContextLevel>(await Resolve("role:postgres")).Level;
         var cleared = new TaskCompletionSource<bool>();
-        using var subscription = _resolver.Track(ShortGuid.NewShortGuid(), _root, level, path =>
+        using var subscription = _resolver.Track(ShortGuid.NewShortGuid(), ProjectRoot.From(_root), level, path =>
         {
             if (path is null)
             {
@@ -192,7 +192,7 @@ public class AnsibleContextSourceResolverTests : IDisposable
         // Arrange.
         var level = Assert.IsType<ResolvedContextLevel>(await Resolve("role:postgres")).Level;
         var announcements = 0;
-        var subscription = _resolver.Track(ShortGuid.NewShortGuid(), _root, level, _ => Interlocked.Increment(ref announcements));
+        var subscription = _resolver.Track(ShortGuid.NewShortGuid(), ProjectRoot.From(_root), level, _ => Interlocked.Increment(ref announcements));
 
         // Act.
         subscription.Dispose();
@@ -219,12 +219,12 @@ public class AnsibleContextSourceResolverTests : IDisposable
             new ContextSource { EntryId = ShortGuid.NewShortGuid() },
             [],
             ContextScope.Hierarchy,
-            new ContextTarget(ContextScope.Hierarchy, registration ?? _registration, IsContainer: false, SourceId: default, _root),
+            new ContextTarget(ContextScope.Hierarchy, registration ?? _registration, IsContainer: false, SourceId: default, ProjectRoot.From(_root)),
             new ContextLevelDetail(),
             null!);
 
         return await _resolver.ResolveAsync(
-            ShortGuid.NewShortGuid(), _root,
+            ShortGuid.NewShortGuid(), ProjectRoot.From(_root),
             new ContextSource { ElementId = new ElementId { Value = elementId } },
             clientPath ?? [], parent, TestContext.Current.CancellationToken);
     }

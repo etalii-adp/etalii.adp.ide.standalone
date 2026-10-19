@@ -31,7 +31,7 @@ public class HistoryContextActionProviderTests : IDisposable
     }
 
     private ContextTarget ProjectTarget() =>
-        new(ContextScope.Project, _root, IsContainer: true, SourceId: default, RootPath: _root);
+        new(ContextScope.Project, _root, IsContainer: true, SourceId: default, Root: ProjectRoot.From(_root));
 
     private async Task<IReadOnlyList<ContextActionDefinition>> DiscoverAsync() =>
         (await _provider.DiscoverAsync(ProjectTarget(), TestContext.Current.CancellationToken)).Actions();

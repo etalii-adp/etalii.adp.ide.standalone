@@ -251,14 +251,14 @@ public static class DrawnConnections
                 new ContextSource(),
                 [IoPath.GetFileName(parentPath)],
                 ContextScope.Hierarchy,
-                new ContextTarget(ContextScope.Hierarchy, parentPath, IsContainer: false, SourceId: default, workspace, ShortGuid.NewShortGuid(), Origin: origin),
+                new ContextTarget(ContextScope.Hierarchy, parentPath, IsContainer: false, SourceId: default, ProjectRoot.From(workspace), ShortGuid.NewShortGuid(), Origin: origin),
                 new ContextLevelDetail(),
                 claimant);
             try
             {
                 var resolution = await claimant.ResolveAsync(
                     ShortGuid.NewShortGuid(),
-                    workspace,
+                    ProjectRoot.From(workspace),
                     id,
                     [],
                     fileLevel,

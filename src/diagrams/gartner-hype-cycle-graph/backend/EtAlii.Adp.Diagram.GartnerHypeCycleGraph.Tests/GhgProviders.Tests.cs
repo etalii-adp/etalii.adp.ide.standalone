@@ -49,7 +49,7 @@ public sealed class GhgProvidersTests : IDisposable
     private static int M(int year, int month = 1) => GhgScale.MonthIndex(year, month);
 
     private ContextTarget Target(string elementId) =>
-        ContextTarget.ForElement(Body, elementId, _folder, ShortGuid.NewShortGuid());
+        ContextTarget.ForElement(Body, elementId, ProjectRoot.From(_folder), ShortGuid.NewShortGuid());
 
     private async Task<IReadOnlyList<ContextPropertyDefinition>> RowsOf(string elementId, GhgContextPropertyProvider? provider = null) =>
         await (provider ?? _properties).DescribeAsync(Target(elementId), TestContext.Current.CancellationToken);

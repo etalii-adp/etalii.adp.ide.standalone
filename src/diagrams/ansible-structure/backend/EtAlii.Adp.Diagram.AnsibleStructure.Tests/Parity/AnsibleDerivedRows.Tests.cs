@@ -56,7 +56,7 @@ public class AnsibleDerivedRowsTests
     {
         // Arrange.
         using var folders = new AnsibleFolders();
-        var target = ContextTarget.ForElement(Path.Combine(Path.GetTempPath(), "parity.adp"), "role:nginx", Path.GetTempPath());
+        var target = ContextTarget.ForElement(Path.Combine(Path.GetTempPath(), "parity.adp"), "role:nginx", ProjectRoot.From(Path.GetTempPath()));
 
         // Act.
         var result = await new AnsibleContextPropertyProvider(folders).SetAsync(target, "ansible.name", "renamed", TestContext.Current.CancellationToken);

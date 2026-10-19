@@ -34,7 +34,7 @@ public class SparqlProvidersTests : IDisposable
     }
 
     private ContextTarget TargetFor(string bodyPath, string elementId) =>
-        ContextTarget.ForElement(bodyPath, elementId, _root, ShortGuid.NewShortGuid());
+        ContextTarget.ForElement(bodyPath, elementId, ProjectRoot.From(_root), ShortGuid.NewShortGuid());
 
     private async Task<IReadOnlyList<ContextPropertyDefinition>> RowsFor(string elementId)
     {
@@ -177,7 +177,7 @@ public class SparqlProvidersTests : IDisposable
         var level = new ContextResolvedLevel(new ContextSource(), ["Query"], ContextScope.DiagramElement, target, new ContextLevelDetail(), resolver);
         IReadOnlyList<string>? reported = null;
         await _documents.GetOrLoadAsync(body, TestContext.Current.CancellationToken);
-        using var track = resolver.Track(target.WatchId, _root, level, path => reported = path);
+        using var track = resolver.Track(target.WatchId, ProjectRoot.From(_root), level, path => reported = path);
 
         // Act: the text editor makes it an ASK.
         await File.WriteAllTextAsync(body, "ASK { ?s ?p ?o }", TestContext.Current.CancellationToken);

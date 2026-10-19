@@ -142,7 +142,7 @@ public sealed class DotNetContextSourceResolverTests : IDisposable
         var level = Assert.IsType<ResolvedContextLevel>(await Resolve("project:Library/Library.csproj")).Level;
         var cleared = new TaskCompletionSource();
         var heard = new ConcurrentQueue<IReadOnlyList<string>?>();
-        var tracking = _resolver.Track(level.Target.WatchId, _root, level, path =>
+        var tracking = _resolver.Track(level.Target.WatchId, ProjectRoot.From(_root), level, path =>
         {
             heard.Enqueue(path);
             if (path is null)
@@ -185,12 +185,12 @@ public sealed class DotNetContextSourceResolverTests : IDisposable
             new ContextSource(),
             [IoPath.GetFileName(file)],
             ContextScope.Hierarchy,
-            new ContextTarget(ContextScope.Hierarchy, file, IsContainer: false, SourceId: default, _root, ShortGuid.NewShortGuid()),
+            new ContextTarget(ContextScope.Hierarchy, file, IsContainer: false, SourceId: default, ProjectRoot.From(_root), ShortGuid.NewShortGuid()),
             new ContextLevelDetail(),
             null!);
 
         return _resolver.ResolveAsync(
-            ShortGuid.NewShortGuid(), _root, new ContextSource { ElementId = new ElementId { Value = elementId } },
+            ShortGuid.NewShortGuid(), ProjectRoot.From(_root), new ContextSource { ElementId = new ElementId { Value = elementId } },
             clientPath ?? [], parent, TestContext.Current.CancellationToken).AsTask();
     }
 

@@ -31,7 +31,7 @@ public sealed class ValidateAllContextActionProvider : IContextActionProvider
 
     public ValueTask<IReadOnlyList<ContextActionGroupDefinition>> DiscoverAsync(ContextTarget target, CancellationToken cancellationToken)
     {
-        var running = _validator.IsValidating(target.RootPath);
+        var running = _validator.IsValidating(target.Root.FullPath);
         var group = new ContextActionGroupDefinition([
             new ContextActionDefinition(
                 ValidateAllActionId, "Validate all", "mdi-check-all", ValidateAllShortcut,
@@ -49,9 +49,9 @@ public sealed class ValidateAllContextActionProvider : IContextActionProvider
 
         // A second request while one runs joins the running traversal inside the validator
         // (Requirement 6.5, design deviation 2) - both callers get the same fresh answer.
-        _store.BeginValidating(target.RootPath);
-        var outcome = await _validator.ValidateAsync(new ProjectValidationScope(target.RootPath), cancellationToken);
-        _store.Replace(target.RootPath, outcome.Problems);
+        _store.BeginValidating(target.Root.FullPath);
+        var outcome = await _validator.ValidateAsync(new ProjectValidationScope(target.Root.FullPath), cancellationToken);
+        _store.Replace(target.Root.FullPath, outcome.Problems);
         return new ContextExecutionCompleted();
     }
 

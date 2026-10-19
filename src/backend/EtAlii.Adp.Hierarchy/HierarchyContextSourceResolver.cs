@@ -35,20 +35,20 @@ public sealed class HierarchyContextSourceResolver : IContextSourceResolver
 
     public ValueTask<ContextLevelResolution> ResolveAsync(
         ShortGuid watchId,
-        string rootPath,
+        ProjectRoot root,
         ContextSource id,
         IReadOnlyList<string> clientPath,
         ContextResolvedLevel? parent,
         CancellationToken cancellationToken)
     {
-        var model = _hierarchyModelStore.GetOrCreate(watchId, ProjectRoot.From(rootPath));
+        var model = _hierarchyModelStore.GetOrCreate(watchId, root);
         var entryId = (ShortGuid)id.EntryId;
         if (!model.TryResolvePath(entryId, out var fullPath, out var isFolder))
         {
             return Rejected("Unknown entry on this connection.");
         }
 
-        var basePath = rootPath;
+        var basePath = root.FullPath;
         if (parent is not null)
         {
             if (!parent.Target.IsContainer || !IsInside(parent.Target.ResolvedFullPath, fullPath))
@@ -82,7 +82,7 @@ public sealed class HierarchyContextSourceResolver : IContextSourceResolver
             id,
             relativePath,
             ContextScope.Hierarchy,
-            new ContextTarget(ContextScope.Hierarchy, fullPath, isFolder, entryId, rootPath, watchId),
+            new ContextTarget(ContextScope.Hierarchy, fullPath, isFolder, entryId, root, watchId),
             detail,
             this);
 
@@ -106,9 +106,9 @@ public sealed class HierarchyContextSourceResolver : IContextSourceResolver
     /// an ancestor folder's - so each one simply re-resolves the id and reports only a
     /// real difference. Re-resolving beats string-rewriting: the model already knows.
     /// </summary>
-    public IDisposable Track(ShortGuid watchId, string rootPath, ContextResolvedLevel level, Action<IReadOnlyList<string>?> onChange)
+    public IDisposable Track(ShortGuid watchId, ProjectRoot root, ContextResolvedLevel level, Action<IReadOnlyList<string>?> onChange)
     {
-        var model = _hierarchyModelStore.GetOrCreate(watchId, ProjectRoot.From(rootPath));
+        var model = _hierarchyModelStore.GetOrCreate(watchId, root);
         var entryId = (ShortGuid)level.Id.EntryId;
         var basePath = BaseOf(level);
         var lastPath = level.RelativePath;

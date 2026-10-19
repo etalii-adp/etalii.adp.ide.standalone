@@ -377,7 +377,7 @@ internal static class AbmTranscript
         public AbmModel Model => Store.Get(Body)!.Model;
 
         public ContextTarget Target(string elementId) =>
-            ContextTarget.ForElement(Body, elementId, Folder, origin: Diagram.AgentBehaviorModelling.Origin);
+            ContextTarget.ForElement(Body, elementId, ProjectRoot.From(Folder), origin: Diagram.AgentBehaviorModelling.Origin);
 
         public void Dispose() => History.Dispose();
     }

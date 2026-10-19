@@ -94,7 +94,7 @@ public sealed class PipelineContextPropertyProvider : DiagramPropertyProvider<Pi
 
     private static ICommand? CommandFor(ContextTarget target, string propertyId, string value, DislElement element)
     {
-        var root = target.RootPath;
+        var root = target.Root.FullPath;
         var body = target.ResolvedFullPath;
         var id = element.Id;
 

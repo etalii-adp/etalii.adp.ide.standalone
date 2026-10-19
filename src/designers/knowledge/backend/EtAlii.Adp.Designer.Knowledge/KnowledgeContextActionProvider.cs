@@ -108,7 +108,7 @@ internal sealed class KnowledgeContextActionProvider(IHistoryStackStore historie
     }
 
     private static string Chosen(ContextTarget target, string value) =>
-        Path.GetFullPath(Path.IsPathRooted(value) ? value : Path.Combine(target.RootPath, value.Replace('/', Path.DirectorySeparatorChar)));
+        Path.GetFullPath(Path.IsPathRooted(value) ? value : Path.Combine(target.Root.FullPath, value.Replace('/', Path.DirectorySeparatorChar)));
 
     public async ValueTask<ContextCommitResult> CommitAsync(ContextTarget target, string actionId, string value, string text, CancellationToken cancellationToken)
     {
@@ -185,7 +185,7 @@ internal sealed class KnowledgeContextActionProvider(IHistoryStackStore historie
             return ContextCommitResult.Failed(edit.Refusal);
         }
 
-        var result = await histories.Get(target.RootPath).ExecuteAsync(new KnowledgeEditCommand(bodyPath, edit.Changes, edit.Others), cancellationToken).ConfigureAwait(false);
+        var result = await histories.Get(target.Root.FullPath).ExecuteAsync(new KnowledgeEditCommand(bodyPath, edit.Changes, edit.Others), cancellationToken).ConfigureAwait(false);
         return result.IsSuccess ? ContextCommitResult.Succeeded : ContextCommitResult.Failed(result.Error);
     }
 

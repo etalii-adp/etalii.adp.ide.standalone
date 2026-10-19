@@ -232,7 +232,7 @@ public sealed class SankeyProvidersTests : IDisposable
     }
 
     private ContextTarget Target(string elementId) =>
-        ContextTarget.ForElement(_folder.Body, elementId, _folder.Folder, ShortGuid.NewShortGuid());
+        ContextTarget.ForElement(_folder.Body, elementId, ProjectRoot.From(_folder.Folder), ShortGuid.NewShortGuid());
 
     private SankeyModel Parse() => SankeyParser.Parse(LineDocument.Parse(File.ReadAllText(_folder.Body)));
 
