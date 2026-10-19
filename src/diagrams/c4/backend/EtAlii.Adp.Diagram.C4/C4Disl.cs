@@ -195,7 +195,7 @@ internal static class C4Disl
             }
         }
 
-        return [.. other.Members.Select(member => counterparts.GetValueOrDefault(member)).OfType<DislElement>()];
+        return [.. other.Members.Select(counterparts.GetValueOrDefault).OfType<DislElement>()];
 
         static IEnumerable<DislElement> StoredRelationships(DislDiagram of) => of.Relations.Where(relation => !relation.IsDerived && relation.IsA("Relationship"));
     }

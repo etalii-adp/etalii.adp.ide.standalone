@@ -269,7 +269,7 @@ internal static class C4Definitions
 
     /// <summary>The line of the view <paramref name="key"/> names, the first of that key, for a finding about a view (gap C13).</summary>
     private static int? ViewLineOf(C4Workspace workspace, string? key) =>
-        key is null ? null : workspace.Views.FirstOrDefault(view => string.Equals(view.Key, key, StringComparison.Ordinal)) is { } view ? (int)view.Line : null;
+        key is null ? null : workspace.Views.FirstOrDefault(each => string.Equals(each.Key, key, StringComparison.Ordinal)) is { } view ? (int)view.Line : null;
 
     /// <summary>The definition a target is derived from: its view's kind's, else its origin's, else the system context's.</summary>
     private static BundledDefinition DefinitionOf(C4View? view, ToolOrigin? origin) =>
