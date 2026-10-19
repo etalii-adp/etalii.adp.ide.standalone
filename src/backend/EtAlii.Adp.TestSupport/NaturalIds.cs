@@ -1,4 +1,6 @@
-namespace EtAlii.Adp.Specification.Fbl.Tests.Support;
+using EtAlii.Adp.Specification.Fbl;
+
+namespace EtAlii.Adp.TestSupport;
 
 /// <summary>
 /// The DISL id derivations the vendored fixtures name their elements by, standing in for DISL,
@@ -7,7 +9,7 @@ namespace EtAlii.Adp.Specification.Fbl.Tests.Support;
 /// type's prefix (databricks-job.dis, databricks-pipeline.dis, causal-loop-diagram.dis, whose
 /// keys are a variable's name, a link's cause and effect names and a loop's identifier).
 /// </summary>
-internal static class NaturalIds
+public static class NaturalIds
 {
     public static Func<IdRequest, string?> For(string binding) => request => (binding, request.Rule) switch
     {
