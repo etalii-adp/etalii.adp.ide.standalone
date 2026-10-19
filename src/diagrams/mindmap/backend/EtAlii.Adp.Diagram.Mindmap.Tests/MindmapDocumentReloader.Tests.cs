@@ -23,7 +23,7 @@ public sealed class MindmapDocumentReloaderTests : DocumentReloaderContract<IMin
         store.Changed += (_, args) => changed(args.BodyPath);
 
     [Fact]
-    public void ADeletedMap_IsClearedToARootNamedAfterTheFile()
+    public async Task ADeletedMap_IsClearedToARootNamedAfterTheFile()
     {
         // Arrange.
         using var folder = TestFolder.Create("EtAlii.Adp.MindmapDocumentReloaderTests");
@@ -35,7 +35,7 @@ public sealed class MindmapDocumentReloaderTests : DocumentReloaderContract<IMin
         File.Delete(body);
 
         // Act.
-        reloader.BodyDeleted(folder.Path, body);
+        await reloader.BodyDeletedAsync(folder.Path, body, TestContext.Current.CancellationToken);
 
         // Assert: what a first open of a missing body shows (R2.5).
         var cleared = store.GetOrLoad(body);
@@ -44,7 +44,7 @@ public sealed class MindmapDocumentReloaderTests : DocumentReloaderContract<IMin
     }
 
     [Fact]
-    public void AnUnreadableBody_IsKeptOnReload_AndTellsNobody()
+    public async Task AnUnreadableBody_IsKeptOnReload_AndTellsNobody()
     {
         // Arrange.
         using var folder = TestFolder.Create("EtAlii.Adp.MindmapDocumentReloaderTests");
@@ -57,9 +57,9 @@ public sealed class MindmapDocumentReloaderTests : DocumentReloaderContract<IMin
         store.Changed += (_, _) => told++;
 
         // Act: a reload while another program holds the file with no sharing at all.
-        using (new FileStream(body, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+        await using (new FileStream(body, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
         {
-            reloader.Reload(folder.Path, body);
+            await reloader.ReloadAsync(folder.Path, body, TestContext.Current.CancellationToken);
         }
 
         // Assert: the last good map is kept, not replaced by an empty one (R2.4), and since nothing a

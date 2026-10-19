@@ -25,7 +25,7 @@ public sealed class RdfDocumentReloaderTests : DocumentReloaderContract<IRdfDocu
         store.Changed += (_, args) => changed(args.Path);
 
     [Fact]
-    public void AnUnreadableBody_IsKeptOnReload_AndTellsNobody()
+    public async Task AnUnreadableBody_IsKeptOnReload_AndTellsNobody()
     {
         // Arrange.
         var store = CreateStore();
@@ -38,9 +38,9 @@ public sealed class RdfDocumentReloaderTests : DocumentReloaderContract<IRdfDocu
         store.Changed += (_, _) => told++;
 
         // Act: a reload while another program holds the file with no sharing at all.
-        using (new FileStream(body, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+        await using (new FileStream(body, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
         {
-            reloader.Reload(folder.Path, body);
+            await reloader.ReloadAsync(folder.Path, body, TestContext.Current.CancellationToken);
         }
 
         // Assert: the last good document is kept, not replaced by an empty one (R2.4), and since
@@ -50,14 +50,14 @@ public sealed class RdfDocumentReloaderTests : DocumentReloaderContract<IRdfDocu
     }
 
     [Fact]
-    public void EveryReadingOfTheFamily_ReloadsThroughTheOneStore()
+    public async Task EveryReadingOfTheFamily_ReloadsThroughTheOneStore()
     {
         // Arrange: a body each reading could have opened, and the family registered as the host does.
         var store = CreateStore();
         var services = new ServiceCollection();
         services.AddSingleton(store);
         services.AddRdf();
-        using var provider = services.BuildServiceProvider();
+        await using var provider = services.BuildServiceProvider();
         using var folder = TestFolder.Create("EtAlii.Adp.RdfDocumentReloaderTests");
         var body = folder.Combine("constructs.ttl");
         File.Copy(Example, body);
@@ -73,8 +73,8 @@ public sealed class RdfDocumentReloaderTests : DocumentReloaderContract<IRdfDocu
             void Told(object? sender, DocumentChangedEventArgs args) => told.Add(args.Path);
             store.Changed += Told;
             var reloader = Assert.Single(reloaders, r => r.Origin == new ToolOrigin("w3c", reading));
-            File.AppendAllText(body, $"<http://example.org/{reading}> <http://example.org/y> <http://example.org/z> .\r\n");
-            reloader.Reload(folder.Path, body);
+            await File.AppendAllTextAsync(body, $"<http://example.org/{reading}> <http://example.org/y> <http://example.org/z> .\r\n", TestContext.Current.CancellationToken);
+            await reloader.ReloadAsync(folder.Path, body, TestContext.Current.CancellationToken);
             store.Changed -= Told;
             Assert.Equal([body], told);
         }

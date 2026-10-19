@@ -107,9 +107,9 @@ public class NoWriterSweepTests : IDisposable
 
             // 6. An external edit, picked up through the reload seam.
             await File.WriteAllTextAsync(body, (await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken)).Replace("?mbox", "?mailbox", StringComparison.Ordinal), TestContext.Current.CancellationToken);
-            _provider.GetServices<IDiagramDocumentReloader>()
+            await _provider.GetServices<IDiagramDocumentReloader>()
                 .Single(candidate => candidate.Origin == ServiceCollectionAddSparqlExtension.SparqlOrigin)
-                .Reload(_root, body);
+                .ReloadAsync(_root, body, TestContext.Current.CancellationToken);
         }
 
         // Assert: the only bytes that differ are the ones this test wrote itself in step 6, so

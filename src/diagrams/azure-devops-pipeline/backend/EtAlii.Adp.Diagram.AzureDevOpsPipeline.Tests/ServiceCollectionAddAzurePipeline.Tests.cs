@@ -138,10 +138,10 @@ public class ServiceCollectionAddAzurePipelineTests
     }
 
     [Fact]
-    public void TheReloadSeam_ReachesTheModulesOneStore()
+    public async Task TheReloadSeam_ReachesTheModulesOneStore()
     {
         // Arrange.
-        using var provider = Build();
+        await using var provider = Build();
         using var folder = TestFolder.Create("pipeline-reload");
         var body = folder.Combine("azure-pipelines.yml");
         File.Copy(IoPath.Combine(AppContext.BaseDirectory, "Fixtures", "jobs-only.yml"), body);
@@ -153,7 +153,7 @@ public class ServiceCollectionAddAzurePipelineTests
         File.Delete(body);
 
         // Act.
-        reloader.BodyDeleted(folder.Path, body);
+        await reloader.BodyDeletedAsync(folder.Path, body, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Equal([body], changed);

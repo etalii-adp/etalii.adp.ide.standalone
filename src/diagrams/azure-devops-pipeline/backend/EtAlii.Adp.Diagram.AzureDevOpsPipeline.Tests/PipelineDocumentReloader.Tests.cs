@@ -24,7 +24,7 @@ public sealed class PipelineDocumentReloaderTests : DocumentReloaderContract<IPi
         store.Changed += (_, args) => changed(args.Path);
 
     [Fact]
-    public void AReloadOfAPipelineNeverOpened_ReadsNothing_AndTellsNobody()
+    public async Task AReloadOfAPipelineNeverOpened_ReadsNothing_AndTellsNobody()
     {
         // Arrange: the store knows a pipeline's root only from an open, and its parse needs it.
         using var folder = TestFolder.Create("adp-pipeline-reloader");
@@ -36,8 +36,8 @@ public sealed class PipelineDocumentReloaderTests : DocumentReloaderContract<IPi
         IDiagramDocumentReloader reloader = new DiagramDocumentReloader<IPipelineDocumentStore>(Origin, store);
 
         // Act.
-        reloader.Reload(folder.Path, body);
-        reloader.BodyDeleted(folder.Path, body);
+        await reloader.ReloadAsync(folder.Path, body, TestContext.Current.CancellationToken);
+        await reloader.BodyDeletedAsync(folder.Path, body, TestContext.Current.CancellationToken);
 
         // Assert: nothing was open on it, and its first open reads it.
         Assert.Equal(0, told);

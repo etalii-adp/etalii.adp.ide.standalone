@@ -131,6 +131,15 @@ public sealed class MindmapDocumentStore : IMindmapDocumentStore
         }
     }
 
+    /// <inheritdoc cref="Reload"/>
+    public async Task ReloadAsync(string bodyPath, CancellationToken cancellationToken)
+    {
+        if (IsLoaded(bodyPath) && await _lifecycle.ReloadAsync(bodyPath, cancellationToken))
+        {
+            Changed?.Invoke(this, new MindmapChangedEventArgs(bodyPath, new MindmapReloaded()));
+        }
+    }
+
     /// <summary>The watcher saw the body deleted: the map becomes what a first open of a missing body shows (R2.5).</summary>
     public void BodyDeleted(string bodyPath)
     {
@@ -140,6 +149,15 @@ public sealed class MindmapDocumentStore : IMindmapDocumentStore
         }
 
         if (_lifecycle.BodyDeleted(bodyPath))
+        {
+            Changed?.Invoke(this, new MindmapChangedEventArgs(bodyPath, new MindmapReloaded()));
+        }
+    }
+
+    /// <inheritdoc cref="BodyDeleted"/>
+    public async Task BodyDeletedAsync(string bodyPath, CancellationToken cancellationToken)
+    {
+        if (IsLoaded(bodyPath) && await _lifecycle.BodyDeletedAsync(bodyPath, cancellationToken))
         {
             Changed?.Invoke(this, new MindmapChangedEventArgs(bodyPath, new MindmapReloaded()));
         }

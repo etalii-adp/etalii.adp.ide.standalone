@@ -13,7 +13,7 @@ namespace EtAlii.Adp.Diagram;
 /// with <see cref="ServiceCollectionAddDiagramDocumentReloaderExtension.AddDiagramDocumentReloader{TStore}"/>.
 /// </para>
 /// <para>
-/// <b><see cref="BodyDeleted"/> is implemented on purpose.</b> The interface's default routes a
+/// <b><see cref="BodyDeletedAsync"/> is implemented on purpose.</b> The interface's default routes a
 /// deletion to a reload, which a store answers by keeping the last good document - so a deleted
 /// diagram would stay on the canvas. The store's own deletion is the one call that clears it.
 /// <c>DocumentReloaderContract</c> holds every module to that.
@@ -41,16 +41,16 @@ public sealed class DiagramDocumentReloader<TStore> : IDiagramDocumentReloader
     public ToolOrigin Origin { get; }
 
     /// <inheritdoc />
-    public void Reload(string rootPath, string bodyPath)
+    public Task ReloadAsync(string rootPath, string bodyPath, CancellationToken cancellationToken)
     {
         _ = rootPath;
-        _documents.Reload(bodyPath);
+        return _documents.ReloadAsync(bodyPath, cancellationToken);
     }
 
     /// <inheritdoc />
-    public void BodyDeleted(string rootPath, string bodyPath)
+    public Task BodyDeletedAsync(string rootPath, string bodyPath, CancellationToken cancellationToken)
     {
         _ = rootPath;
-        _documents.BodyDeleted(bodyPath);
+        return _documents.BodyDeletedAsync(bodyPath, cancellationToken);
     }
 }

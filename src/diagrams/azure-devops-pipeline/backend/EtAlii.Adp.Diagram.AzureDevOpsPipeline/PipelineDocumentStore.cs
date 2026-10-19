@@ -167,6 +167,18 @@ public sealed class PipelineDocumentStore : IPipelineDocumentStore
         }
     }
 
+    public async Task ReloadAsync(string path, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+
+        // As Reload says: the change may have been a template, and an unopened document has no root.
+        ForgetTemplates();
+        if (_roots.ContainsKey(path) && await _lifecycle.ReloadAsync(path, cancellationToken))
+        {
+            OnChanged(path);
+        }
+    }
+
     public void BodyDeleted(string path)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
@@ -176,6 +188,18 @@ public sealed class PipelineDocumentStore : IPipelineDocumentStore
         ForgetTemplates();
 
         if (_roots.ContainsKey(path) && _lifecycle.BodyDeleted(path))
+        {
+            OnChanged(path);
+        }
+    }
+
+    public async Task BodyDeletedAsync(string path, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+
+        // As BodyDeleted says: a body already back may rest on templates that changed with it.
+        ForgetTemplates();
+        if (_roots.ContainsKey(path) && await _lifecycle.BodyDeletedAsync(path, cancellationToken))
         {
             OnChanged(path);
         }
@@ -221,6 +245,10 @@ public sealed class PipelineDocumentStore : IPipelineDocumentStore
         public void Reload(string path) => documents.Reload(path);
 
         public void BodyDeleted(string path) => documents.BodyDeleted(path);
+
+        public Task ReloadAsync(string path, CancellationToken cancellationToken) => documents.ReloadAsync(path, cancellationToken);
+
+        public Task BodyDeletedAsync(string path, CancellationToken cancellationToken) => documents.BodyDeletedAsync(path, cancellationToken);
 
         public void Forget(string path) => documents.Forget(path);
     }

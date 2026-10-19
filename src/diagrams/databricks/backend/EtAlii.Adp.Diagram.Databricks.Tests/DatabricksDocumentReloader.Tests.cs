@@ -29,10 +29,10 @@ public sealed class DatabricksDocumentReloaderTests : DocumentReloaderContract<I
     [InlineData("bundle")]
     [InlineData("job")]
     [InlineData("pipeline")]
-    public void EachTypeOfTheFamily_ReloadsIntoTheOneSharedStore(string type)
+    public async Task EachTypeOfTheFamily_ReloadsIntoTheOneSharedStore(string type)
     {
         // Arrange.
-        using var provider = new ServiceCollection()
+        await using var provider = new ServiceCollection()
             .AddSingleton<IReadOnlyList<DiagramDefinition>>(Diagram.Definitions)
             .AddCommands().AddHierarchyCommandHandlers()
             .AddDatabricks()
@@ -42,18 +42,18 @@ public sealed class DatabricksDocumentReloaderTests : DocumentReloaderContract<I
         File.Copy(Example, body);
         var store = provider.GetRequiredService<IDatabricksDocumentStore>();
         store.GetOrLoad(body);
-        File.WriteAllText(body, "bundle:\r\n  name: replaced\r\n");
+        await File.WriteAllTextAsync(body, "bundle:\r\n  name: replaced\r\n", TestContext.Current.CancellationToken);
         var reloader = provider.GetServices<IDiagramDocumentReloader>().Single(candidate => candidate.Origin == new ToolOrigin("databricks", type));
 
         // Act.
-        reloader.Reload(folder.Path, body);
+        await reloader.ReloadAsync(folder.Path, body, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Equal("replaced", store.GetOrLoad(body).Model.Bundle.Name);
     }
 
     [Fact]
-    public void AnUnreadableBody_IsKeptOnReload_AndTellsNobody()
+    public async Task AnUnreadableBody_IsKeptOnReload_AndTellsNobody()
     {
         // Arrange.
         using var folder = TestFolder.Create("EtAlii.Adp.DatabricksDocumentReloaderTests");
@@ -66,9 +66,9 @@ public sealed class DatabricksDocumentReloaderTests : DocumentReloaderContract<I
         store.Changed += (_, _) => told++;
 
         // Act: a reload while another program holds the file with no sharing at all.
-        using (new FileStream(body, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+        await using (new FileStream(body, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
         {
-            reloader.Reload(folder.Path, body);
+            await reloader.ReloadAsync(folder.Path, body, TestContext.Current.CancellationToken);
         }
 
         // Assert: the last good bundle is kept, not replaced by an empty one (R2.4), and since

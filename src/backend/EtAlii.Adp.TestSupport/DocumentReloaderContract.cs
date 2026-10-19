@@ -60,7 +60,7 @@ public abstract class DocumentReloaderContract<TStore> : IDisposable
     }
 
     [Fact]
-    public void AMissingBody_IsKeptOnReload_AndClearedOnlyByTheWatchersDelete()
+    public async Task AMissingBody_IsKeptOnReload_AndClearedOnlyByTheWatchersDelete()
     {
         // Arrange.
         var store = CreateStore();
@@ -69,21 +69,21 @@ public abstract class DocumentReloaderContract<TStore> : IDisposable
         File.Delete(Body);
 
         // Act: a reload that finds no file.
-        reloader.Reload(_folder.Path, Body);
+        await reloader.ReloadAsync(_folder.Path, Body, TestContext.Current.CancellationToken);
 
         // Assert: kept. A body missing on a reload is far more often a publish in flight than a
         // deletion, so the last good document stays.
         Assert.False(IsEmpty(store, Body));
 
         // Act: the watcher's evidence that it is gone.
-        reloader.BodyDeleted(_folder.Path, Body);
+        await reloader.BodyDeletedAsync(_folder.Path, Body, TestContext.Current.CancellationToken);
 
         // Assert: cleared, to what a first open of a missing body would show.
         Assert.True(IsEmpty(store, Body));
     }
 
     [Fact]
-    public void ADeletion_TellsTheSessions()
+    public async Task ADeletion_TellsTheSessions()
     {
         // Arrange.
         var store = CreateStore();
@@ -94,7 +94,7 @@ public abstract class DocumentReloaderContract<TStore> : IDisposable
         File.Delete(Body);
 
         // Act.
-        reloader.BodyDeleted(_folder.Path, Body);
+        await reloader.BodyDeletedAsync(_folder.Path, Body, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Equal([Body], told);
