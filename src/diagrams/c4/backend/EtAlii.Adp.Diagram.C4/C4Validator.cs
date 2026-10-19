@@ -2,9 +2,10 @@ using EtAlii.Adp.Documents;
 namespace EtAlii.Adp.Diagram.C4;
 
 /// <summary>
-/// Adapts <see cref="C4RuleSet"/> to core's validator seam, so C4's rules reach the errors and
-/// warnings panel like any other type's. One instance per C4 diagram type, because core
-/// resolves validators by origin.
+/// Adapts the findings of the C4 definitions (<see cref="C4Definitions.Problems"/>) to core's validator
+/// seam, so C4's rules reach the errors and warnings panel like any other type's. One instance per C4
+/// diagram type, because core resolves validators by origin, and each evaluates its own type's
+/// definition; the rules are about the model, so the six give one list (c4-disl-fbl Requirement 3.3).
 /// </summary>
 /// <remarks>
 /// The rules themselves stay a pure function over a parsed workspace. This class only parses
@@ -27,6 +28,6 @@ public sealed class C4Validator : IDiagramValidator
 
         cancellationToken.ThrowIfCancellationRequested();
         var workspace = C4Parser.Parse(LineDocument.Parse(request.Document));
-        return ValueTask.FromResult(C4RuleSet.Validate(workspace));
+        return ValueTask.FromResult(C4Definitions.Problems(workspace, C4Disl.FileOf(request.BodyPath), Origin));
     }
 }

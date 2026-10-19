@@ -1,6 +1,7 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.Specification.Disl;
+using Serilog;
 
 namespace EtAlii.Adp.Diagram.C4;
 
@@ -12,8 +13,9 @@ namespace EtAlii.Adp.Diagram.C4;
 /// <remarks>
 /// <para>
 /// <b>The toolbox, the menus and the rows are derived from them</b> (c4-disl-fbl task 7), mapped onto
-/// today's wire ids by each definition's <c>x-c4</c> block; the findings, the drawn lines, the title and
-/// the legend are still the module's own until the tasks after it. The toolbox is the origin's. A menu
+/// today's wire ids by each definition's <c>x-c4</c> block, and so are <b>the findings</b> (task 9),
+/// ordered as today by <see cref="C4FindingOrder"/>; the drawn lines, the title and the legend are still
+/// the module's own until the tasks after it. The toolbox is the origin's. A menu
 /// and a row are derived from the definition of the view's own kind, over the model <see cref="C4Disl"/>
 /// builds from the parser's reading; a target with no view is derived from the origin's definition. A
 /// line the view derives rather than a stored relationship, and an unknown id, get nothing (finding A10).
@@ -30,6 +32,8 @@ namespace EtAlii.Adp.Diagram.C4;
 /// </remarks>
 internal static class C4Definitions
 {
+    private static readonly ILogger _logger = Log.ForContext(typeof(C4Definitions));
+
     /// <summary>Each C4 diagram type that has a definition, with the view kind it binds and the resource its definition is embedded as.</summary>
     internal static IReadOnlyList<(ToolOrigin Origin, C4ViewKind ViewKind, string Resource)> Types { get; } =
     [
@@ -180,6 +184,92 @@ internal static class C4Definitions
             EnvOf(diagram));
         return transaction is { WasApplied: true, Changes: [DislChange.Create created] } ? created.Id : null;
     }
+
+    /// <summary>
+    /// The findings of <paramref name="workspace"/>, read from the body named <paramref name="file"/>, under the
+    /// definition of the C4 type <paramref name="origin"/> names, in today's order: the definition's rules
+    /// evaluated over the model, which is the same for every view and every origin, with the one finding no
+    /// rule can state yet added from the reading, and ordered by <see cref="C4FindingOrder"/>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Where each is</b>: a finding about an element names it, one about a relationship is at its line,
+    /// one about a view is at the line of the view its subject names, and the include finding is nowhere.
+    /// </para>
+    /// <para>
+    /// <b>Gap C13</b> (the definitions' companion, gap 13): a <c>View</c> exposes neither the scope it is
+    /// written with nor its line, so <c>c4.unknown-view-scope</c> is no rule of the definition, and the
+    /// empty view's line is not the finding's. Both come from the reading here until it does.
+    /// </para>
+    /// <para>
+    /// <b>A finding the runtime raises while it builds the model</b> (<c>std.derivedFailed</c>,
+    /// <c>std.derivedEnds</c>, <c>std.derivedId</c>) is logged and not reported, because the tool gives
+    /// none today (c4-disl-fbl Requirement 3.3, Q4).
+    /// </para>
+    /// <para>
+    /// <b>A type without a definition</b>, as <c>c4/code</c> has none, is judged under the system context's,
+    /// as a target without a view is: the rules are about the model, so every definition gives one list.
+    /// </para>
+    /// </remarks>
+    public static IReadOnlyList<DiagramProblem> Problems(C4Workspace workspace, string file, ToolOrigin origin)
+    {
+        (IReadOnlyList<DislFinding> findings, DislDiagram diagram) = Evaluated(workspace, file, origin);
+        return [.. C4FindingOrder.Order(findings, workspace).Select(finding => Problem(finding, diagram, workspace))];
+    }
+
+    /// <summary>
+    /// The findings <see cref="Problems"/> reports, as the evaluator gives them, before they are ordered:
+    /// by rule, and within a rule by element in model order, the one added from the reading last; with
+    /// the model they are about.
+    /// </summary>
+    internal static (IReadOnlyList<DislFinding> Findings, DislDiagram Diagram) Evaluated(C4Workspace workspace, string file, ToolOrigin origin)
+    {
+        ArgumentNullException.ThrowIfNull(workspace);
+        ArgumentNullException.ThrowIfNull(origin);
+        var specification = DefinitionOf(null, origin).Specification;
+        var model = C4Disl.OfTheWholeModel(workspace, specification, file, kind => For(kind).Specification);
+        foreach (var finding in model.Findings)
+        {
+            _logger.Warning("{File} under {Origin}: {Code} {Message}, which the tool does not report", file, origin.Key, finding.Code, finding.Message);
+        }
+
+        var findings = ConstraintEvaluator.Evaluate(specification, model.Diagram, new DislConstraintOptions(EnvOf(model.Diagram)));
+        return ([.. findings, .. UnknownViewScopes(workspace)], model.Diagram);
+    }
+
+    /// <summary>
+    /// <c>c4.unknown-view-scope</c> for each view whose scope names no element, at the view's line, from the
+    /// reading: no rule can state it while a <c>View</c> does not expose its scope (gap C13).
+    /// </summary>
+    private static IEnumerable<DislFinding> UnknownViewScopes(C4Workspace workspace) =>
+        workspace.Views
+            .Where(view => view.ScopeId is { } scope && workspace.Find(scope) is null)
+            .Select(view => new DislFinding(
+                C4Rules.UnknownViewScope,
+                C4Rules.UnknownViewScope,
+                "warning",
+                $"The '{view.Key}' view is scoped to '{view.ScopeId}', which the model does not declare.",
+                [],
+                (int)view.Line,
+                Subject: view.Key));
+
+    /// <summary>A finding as the host reports it: about an element by its id, about a relationship or a view at its line, else nowhere.</summary>
+    private static DiagramProblem Problem(DislFinding finding, DislDiagram diagram, C4Workspace workspace)
+    {
+        var about = finding.ElementIds is [var id, ..] ? diagram.ElementById(id) : null;
+        DiagramProblemLocation? location = about switch
+        {
+            { Type.IsRelation: true } => new DiagramProblemLineLocation((uint)(finding.Line ?? about.Line ?? 0)),
+            not null => new DiagramProblemElementLocation(finding.ElementIds[0]),
+            null when (finding.Line ?? ViewLineOf(workspace, finding.Subject)) is { } line => new DiagramProblemLineLocation((uint)line),
+            null => null,
+        };
+        return new DiagramProblem(DislDiagramDefinition.SeverityOf(finding), finding.Message, finding.Code, location);
+    }
+
+    /// <summary>The line of the view <paramref name="key"/> names, the first of that key, for a finding about a view (gap C13).</summary>
+    private static int? ViewLineOf(C4Workspace workspace, string? key) =>
+        key is null ? null : workspace.Views.FirstOrDefault(view => string.Equals(view.Key, key, StringComparison.Ordinal)) is { } view ? (int)view.Line : null;
 
     /// <summary>The definition a target is derived from: its view's kind's, else its origin's, else the system context's.</summary>
     private static BundledDefinition DefinitionOf(C4View? view, ToolOrigin? origin) =>
