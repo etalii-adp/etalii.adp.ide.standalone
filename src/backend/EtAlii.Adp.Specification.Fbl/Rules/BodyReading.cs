@@ -1,4 +1,3 @@
-using System.Text.Json;
 using EtAlii.Adp.Specification.Cel;
 using EtAlii.Adp.Specification.Fbl.Documents;
 using EtAlii.Adp.Specification.Fbl.Expressions;
@@ -8,6 +7,7 @@ using EtAlii.Adp.Specification.Fbl.Planning;
 using EtAlii.Adp.Specification.Fbl.Text;
 using EtAlii.Adp.Specification.Fbl.Xml;
 using EtAlii.Adp.Specification.Fbl.Yaml;
+using EtAlii.Adp.Specification.Json;
 
 namespace EtAlii.Adp.Specification.Fbl.Rules;
 
@@ -478,12 +478,12 @@ internal sealed class BodyReading
                 if (scalar && read is { Value: null, Style: "plain", Written.Length: 0 })
                 {
                     // Nothing written (key:) is absent, so the default applies (FBL 0.5 §5.2).
-                    if (binding.Default is { } empty) element.Attributes[name] = FromJson(empty);
+                    if (binding.Default is { } empty) element.Attributes[name] = JsonScalars.ToCel(empty);
                     continue;
                 }
                 value = Convert(element, name, binding, read, type, value, scalar);
             }
-            if (!read.Present && binding is { Flag: false, Default: { } fallback }) value = FromJson(fallback);
+            if (!read.Present && binding is { Flag: false, Default: { } fallback }) value = JsonScalars.ToCel(fallback);
             if (read.Present || binding.Flag || binding.Default is not null) element.Attributes[name] = value;
         }
         if (rule.Source is { } source) element.SourceRead = ReadSlot(element.Candidate, source, element);
@@ -504,7 +504,7 @@ internal sealed class BodyReading
             element.Mistyped ??= $"'{name}' is not a {type}.";
             return value;
         }
-        var replacement = FromJson(fallback.Value);
+        var replacement = JsonScalars.ToCel(fallback.Value);
         if (fallback.Report)
         {
             var kind = ScalarConversion.Describe(type);
@@ -552,15 +552,6 @@ internal sealed class BodyReading
         }
         return Family.Read(candidate, slot);
     }
-
-    private static object? FromJson(JsonElement value) => value.ValueKind switch
-    {
-        JsonValueKind.String => value.GetString(),
-        JsonValueKind.Number => value.TryGetInt64(out var l) ? l : value.GetDouble(),
-        JsonValueKind.True => true,
-        JsonValueKind.False => false,
-        _ => null,
-    };
 
     // ---- ids, references, containment (FBL §5.3 to §5.5) ----
 

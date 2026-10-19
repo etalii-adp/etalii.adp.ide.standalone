@@ -86,7 +86,7 @@ public static class FblDocumentLoader
             var result = new Dictionary<string, FblBinding>(StringComparer.Ordinal);
             foreach (var property in bindings.EnumerateObject())
             {
-                var pointer = "/bindings/" + Escape(property.Name);
+                var pointer = JsonPointer.Append("/bindings", property.Name);
                 if (!Names.IsName(property.Name))
                 {
                     problems.Add(new LoadDiagnostic(pointer, LoadSeverity.Error, $"'{property.Name}' is not a valid binding name."));
@@ -120,8 +120,6 @@ public static class FblDocumentLoader
             : throw new InvalidOperationException($"The FBL document '{path}' has no binding '{name}'.");
     }
 
-    internal static string Escape(string token) => token.Replace("~", "~0").Replace("/", "~1");
-
     private static void FindDuplicateKeys(byte[] json, List<LoadDiagnostic> problems)
     {
         var reader = new Utf8JsonReader(json, new JsonReaderOptions { CommentHandling = JsonCommentHandling.Disallow });
@@ -154,7 +152,7 @@ public static class FblDocumentLoader
                         var keys = stack.Peek().Keys!;
                         if (!keys.Add(name))
                         {
-                            problems.Add(new LoadDiagnostic(stack.Peek().Pointer + "/" + Escape(name), LoadSeverity.Error, $"The key '{name}' appears twice."));
+                            problems.Add(new LoadDiagnostic(JsonPointer.Append(stack.Peek().Pointer, name), LoadSeverity.Error, $"The key '{name}' appears twice."));
                         }
                         pending = name;
                         break;
@@ -179,7 +177,7 @@ public static class FblDocumentLoader
     {
         if (stack.Count == 0) return root;
         var top = stack.Peek();
-        return top.Keys is null ? $"{top.Pointer}/{top.Index}" : $"{top.Pointer}/{Escape(pending ?? "")}";
+        return top.Keys is null ? $"{top.Pointer}/{top.Index}" : $"{top.Pointer}/{JsonPointer.Token(pending ?? "")}";
     }
 }
 
@@ -215,7 +213,7 @@ internal static class BindingReader
         PluginReader? plugin = null;
         if (reader.ValueKind == JsonValueKind.Object)
         {
-            plugin = new PluginReader(Str(reader, "plugin") ?? "", Str(reader, "version"));
+            plugin = new PluginReader(JsonProperties.String(reader, "plugin") ?? "", JsonProperties.String(reader, "version"));
         }
         else if (reader.ValueKind != JsonValueKind.String || reader.GetString() != "declared")
         {
@@ -232,16 +230,16 @@ internal static class BindingReader
             ReadOnly = ReadOnly(json),
             Text = ReadText(json),
             Header = json.TryGetProperty("header", out var h)
-                ? new HeaderSettings(Str(h, "key"), h.TryGetProperty("value", out var hv) ? hv.Clone() : null, Str(h, "line"), Bool(h, "required"))
+                ? new HeaderSettings(JsonProperties.String(h, "key"), h.TryGetProperty("value", out var hv) ? hv.Clone() : null, JsonProperties.String(h, "line"), JsonProperties.Bool(h, "required"))
                 : null,
-            Comment = Str(json, "comment"),
-            ReportUnmatched = Str(json, "unmatched") == "report",
-            Blocks = Array(json, "blocks").Select(b => new BlockRule(Str(b, "name") ?? "", Str(b, "line") ?? "", OptionalStrings(b, "within"), Bool(b, "caseInsensitive"), Str(b, "view"))).ToList(),
+            Comment = JsonProperties.String(json, "comment"),
+            ReportUnmatched = JsonProperties.String(json, "unmatched") == "report",
+            Blocks = Array(json, "blocks").Select(b => new BlockRule(JsonProperties.String(b, "name") ?? "", JsonProperties.String(b, "line") ?? "", OptionalStrings(b, "within"), JsonProperties.Bool(b, "caseInsensitive"), JsonProperties.String(b, "view"))).ToList(),
             Elements = Array(json, "elements").Select(e => ReadRule(e, false)).ToList(),
             Relations = Array(json, "relations").Select(e => ReadRule(e, true)).ToList(),
             Registration = ReadRegistration(json),
             Template = json.TryGetProperty("template", out var t)
-                ? new TemplateSettings(Str(t, "text") ?? "", t.TryGetProperty("byOrigin", out var bo) ? bo.EnumerateObject().ToDictionary(p => p.Name, p => p.Value.GetString() ?? "") : new Dictionary<string, string>())
+                ? new TemplateSettings(JsonProperties.String(t, "text") ?? "", t.TryGetProperty("byOrigin", out var bo) ? bo.EnumerateObject().ToDictionary(p => p.Name, p => p.Value.GetString() ?? "") : new Dictionary<string, string>())
                 : null,
         };
     }
@@ -251,7 +249,7 @@ internal static class BindingReader
         Marker? marker = null;
         if (json.TryGetProperty("marker", out var m))
         {
-            marker = new Marker(Str(m, "rootKey"), m.TryGetProperty("value", out var mv) ? mv.Clone() : null, Str(m, "firstLine"), Str(m, "pattern"),
+            marker = new Marker(JsonProperties.String(m, "rootKey"), m.TryGetProperty("value", out var mv) ? mv.Clone() : null, JsonProperties.String(m, "firstLine"), JsonProperties.String(m, "pattern"),
                 m.TryGetProperty("lines", out var l) && l.TryGetInt32(out var n) ? n : 20);
         }
         var readings = new Dictionary<string, ReadingClaim>(StringComparer.Ordinal);
@@ -259,25 +257,25 @@ internal static class BindingReader
         {
             foreach (var p in r.EnumerateObject())
             {
-                readings[p.Name] = new ReadingClaim(Bool(p.Value, "bare"), p.Value.TryGetProperty("suggest", out var s) ? Strings(s, "contains") : []);
+                readings[p.Name] = new ReadingClaim(JsonProperties.Bool(p.Value, "bare"), p.Value.TryGetProperty("suggest", out var s) ? JsonProperties.Strings(s, "contains") : []);
             }
         }
         return new Claims
         {
-            Extensions = Strings(json, "extensions"),
-            Names = Strings(json, "names"),
-            Shared = Bool(json, "shared"),
-            RegistrationOnly = Bool(json, "registrationOnly"),
+            Extensions = JsonProperties.Strings(json, "extensions"),
+            Names = JsonProperties.Strings(json, "names"),
+            Shared = JsonProperties.Bool(json, "shared"),
+            RegistrationOnly = JsonProperties.Bool(json, "registrationOnly"),
             Marker = marker,
-            Suggest = json.TryGetProperty("suggest", out var sg) ? Strings(sg, "contains") : [],
-            Origins = Strings(json, "origins"),
+            Suggest = json.TryGetProperty("suggest", out var sg) ? JsonProperties.Strings(sg, "contains") : [],
+            Origins = JsonProperties.Strings(json, "origins"),
             Readings = readings,
         };
     }
 
     private static BodySettings ReadBody(JsonElement json, string pointer, List<LoadDiagnostic> problems)
     {
-        var kind = Str(json, "kind");
+        var kind = JsonProperties.String(json, "kind");
         if (kind is not ("file" or "folder")) problems.Add(new LoadDiagnostic(pointer + "/kind", LoadSeverity.Error, "A body's kind is \"file\" or \"folder\"."));
         var recognise = json.TryGetProperty("recognise", out var r) ? r : default;
         var settle = BodySettings.DefaultSettle;
@@ -289,13 +287,13 @@ internal static class BindingReader
         return new BodySettings
         {
             IsFolder = kind == "folder",
-            Family = ParseFamily(Str(json, "family")),
-            AlsoRead = Strings(json, "alsoRead").Select(ParseFamily).OfType<Family>().ToList(),
-            RecogniseAll = recognise.ValueKind == JsonValueKind.Object ? Strings(recognise, "all") : [],
-            RecogniseAny = recognise.ValueKind == JsonValueKind.Object ? Strings(recognise, "any") : [],
-            RecogniseNone = recognise.ValueKind == JsonValueKind.Object ? Strings(recognise, "none") : [],
-            Files = Array(json, "files").Select(f => new FileRule(Str(f, "name"), Str(f, "glob") ?? "", ParseFamily(Str(f, "family")))).ToList(),
-            Ignore = Strings(json, "ignore"),
+            Family = ParseFamily(JsonProperties.String(json, "family")),
+            AlsoRead = JsonProperties.Strings(json, "alsoRead").Select(ParseFamily).OfType<Family>().ToList(),
+            RecogniseAll = recognise.ValueKind == JsonValueKind.Object ? JsonProperties.Strings(recognise, "all") : [],
+            RecogniseAny = recognise.ValueKind == JsonValueKind.Object ? JsonProperties.Strings(recognise, "any") : [],
+            RecogniseNone = recognise.ValueKind == JsonValueKind.Object ? JsonProperties.Strings(recognise, "none") : [],
+            Files = Array(json, "files").Select(f => new FileRule(JsonProperties.String(f, "name"), JsonProperties.String(f, "glob") ?? "", ParseFamily(JsonProperties.String(f, "family")))).ToList(),
+            Ignore = JsonProperties.Strings(json, "ignore"),
             Settle = settle,
         };
     }
@@ -320,10 +318,10 @@ internal static class BindingReader
         }
         return new TextDefaults
         {
-            Newline = Str(t, "newline") switch { "crlf" => "\r\n", "cr" => "\r", _ => "\n" },
+            Newline = JsonProperties.String(t, "newline") switch { "crlf" => "\r\n", "cr" => "\r", _ => "\n" },
             Indent = indent,
-            SequenceFlush = Str(t, "sequenceIndent") == "flush",
-            Quote = Str(t, "quote") ?? "double",
+            SequenceFlush = JsonProperties.String(t, "sequenceIndent") == "flush",
+            Quote = JsonProperties.String(t, "quote") ?? "double",
         };
     }
 
@@ -333,12 +331,12 @@ internal static class BindingReader
         if (json.TryGetProperty("id", out var idJson))
         {
             id = new IdBinding(idJson.TryGetProperty("from", out var from) ? ReadSlot(from) : null,
-                idJson.TryGetProperty("sidecar", out var sc) ? Str(sc, "key") : null);
+                idJson.TryGetProperty("sidecar", out var sc) ? JsonProperties.String(sc, "key") : null);
         }
         ParentBinding? parent = null;
         if (json.TryGetProperty("parent", out var p))
         {
-            parent = new ParentBinding(Strings(p, "rules"), Str(p, "slot"));
+            parent = new ParentBinding(JsonProperties.Strings(p, "rules"), JsonProperties.String(p, "slot"));
         }
         var attributes = new List<KeyValuePair<string, AttributeBinding>>();
         if (json.TryGetProperty("attributes", out var attrs) && attrs.ValueKind == JsonValueKind.Object)
@@ -355,42 +353,42 @@ internal static class BindingReader
             if (ins.TryGetProperty("create", out var c))
             {
                 var at = c.GetProperty("at");
-                if (at.ValueKind == JsonValueKind.String) create = new CreateContainer(at.GetString()!, null, Str(c, "text"));
+                if (at.ValueKind == JsonValueKind.String) create = new CreateContainer(at.GetString()!, null, JsonProperties.String(c, "text"));
                 else
                 {
                     var prop = at.EnumerateObject().First();
-                    create = new CreateContainer(prop.Name, prop.Value.GetString(), Str(c, "text"));
+                    create = new CreateContainer(prop.Name, prop.Value.GetString(), JsonProperties.String(c, "text"));
                 }
             }
             insert = new InsertSettings
             {
                 Place = place,
-                Container = Str(ins, "container"),
+                Container = JsonProperties.String(ins, "container"),
                 Create = create,
-                Keys = Strings(ins, "keys"),
-                Emit = Str(ins, "emit"),
-                Skeleton = Str(ins, "skeleton"),
-                When = Str(ins, "when"),
+                Keys = JsonProperties.Strings(ins, "keys"),
+                Emit = JsonProperties.String(ins, "emit"),
+                Skeleton = JsonProperties.String(ins, "skeleton"),
+                When = JsonProperties.String(ins, "when"),
             };
         }
         RemoveSettings? remove = null;
         if (json.TryGetProperty("remove", out var rem))
         {
-            var container = Str(rem, "container");
-            remove = new RemoveSettings(Strings(rem, "cascade"), container is "remove-when-empty" or "remove-empty-levels", container == "remove-empty-levels");
+            var container = JsonProperties.String(rem, "container");
+            remove = new RemoveSettings(JsonProperties.Strings(rem, "cascade"), container is "remove-when-empty" or "remove-empty-levels", container == "remove-empty-levels");
         }
         return new Rule
         {
-            Name = Str(json, "name") ?? "",
-            Type = Str(json, "type") ?? "",
+            Name = JsonProperties.String(json, "name") ?? "",
+            Type = JsonProperties.String(json, "type") ?? "",
             IsRelation = relation,
-            At = Str(json, "at"),
-            Line = Str(json, "line"),
+            At = JsonProperties.String(json, "at"),
+            Line = JsonProperties.String(json, "line"),
             Within = OptionalStrings(json, "within"),
-            Opens = Bool(json, "opens"),
-            CaseInsensitive = Bool(json, "caseInsensitive"),
-            Files = Strings(json, "files"),
-            When = Str(json, "when"),
+            Opens = JsonProperties.Bool(json, "opens"),
+            CaseInsensitive = JsonProperties.Bool(json, "caseInsensitive"),
+            Files = JsonProperties.Strings(json, "files"),
+            When = JsonProperties.String(json, "when"),
             Id = id,
             Parent = parent,
             Attributes = attributes,
@@ -398,23 +396,23 @@ internal static class BindingReader
             Target = json.TryGetProperty("target", out var t) ? ReadAttribute(t) : null,
             Insert = insert,
             Remove = remove,
-            SnapshotUndo = Str(json, "undo") == "snapshot",
+            SnapshotUndo = JsonProperties.String(json, "undo") == "snapshot",
             ReadOnly = ReadOnly(json),
         };
     }
 
     private static Slot ReadSlot(JsonElement json) => new()
     {
-        Key = Str(json, "key"),
-        XmlAttribute = Str(json, "attribute"),
-        Text = Bool(json, "text"),
-        Child = Str(json, "child"),
-        Group = Str(json, "group"),
-        Parent = Str(json, "parent"),
-        Capture = Str(json, "capture"),
-        Value = Str(json, "value"),
-        Word = Str(json, "word"),
-        Flag = Bool(json, "flag"),
+        Key = JsonProperties.String(json, "key"),
+        XmlAttribute = JsonProperties.String(json, "attribute"),
+        Text = JsonProperties.Bool(json, "text"),
+        Child = JsonProperties.String(json, "child"),
+        Group = JsonProperties.String(json, "group"),
+        Parent = JsonProperties.String(json, "parent"),
+        Capture = JsonProperties.String(json, "capture"),
+        Value = JsonProperties.String(json, "value"),
+        Word = JsonProperties.String(json, "word"),
+        Flag = JsonProperties.Bool(json, "flag"),
     };
 
     private static AttributeBinding ReadAttribute(JsonElement json)
@@ -434,16 +432,16 @@ internal static class BindingReader
         if (json.TryGetProperty("create", out var c))
         {
             var pl = c.TryGetProperty("place", out var place) ? place : default;
-            create = Str(c, "at") == "end"
+            create = JsonProperties.String(c, "at") == "end"
                 ? new CreateChild("", "last", null, true)
                 : pl.ValueKind == JsonValueKind.Object
-                ? new CreateChild(Str(c, "emit") ?? "", "before", Str(pl, "before"))
-                : new CreateChild(Str(c, "emit") ?? "", pl.ValueKind == JsonValueKind.String ? pl.GetString()! : "last", null);
+                ? new CreateChild(JsonProperties.String(c, "emit") ?? "", "before", JsonProperties.String(pl, "before"))
+                : new CreateChild(JsonProperties.String(c, "emit") ?? "", pl.ValueKind == JsonValueKind.String ? pl.GetString()! : "last", null);
         }
         ReferenceBinding? reference = null;
         if (json.TryGetProperty("reference", out var r))
         {
-            reference = new ReferenceBinding(Strings(r, "to"), Str(r, "by") ?? "");
+            reference = new ReferenceBinding(JsonProperties.Strings(r, "to"), JsonProperties.String(r, "by") ?? "");
         }
         return new AttributeBinding
         {
@@ -457,22 +455,22 @@ internal static class BindingReader
             Value = slot.Value,
             Word = slot.Word,
             Flag = slot.Flag,
-            Empty = Str(json, "empty"),
+            Empty = JsonProperties.String(json, "empty"),
             Absent = json.TryGetProperty("absent", out var a) && a.ValueKind == JsonValueKind.Object
                 ? a.EnumerateObject().ToDictionary(p => p.Name, p => p.Value.GetString() ?? "insert")
                 : new Dictionary<string, string>(),
             Default = json.TryGetProperty("default", out var def) ? def.Clone() : null,
             Decimals = decimals,
-            KeepTimePrecision = Str(json, "time") == "keep-precision",
-            Style = Str(json, "style"),
+            KeepTimePrecision = JsonProperties.String(json, "time") == "keep-precision",
+            Style = JsonProperties.String(json, "style"),
             Reference = reference,
             Map = map,
             Override = json.TryGetProperty("override", out var o) ? ReadSlot(o) : null,
-            HtmlParagraphs = Str(json, "content") == "html-paragraphs",
+            HtmlParagraphs = JsonProperties.String(json, "content") == "html-paragraphs",
             Create = create,
             ReadOnly = ReadOnly(json),
-            Read = Str(json, "read"),
-            Quoted = Str(json, "quoted"),
+            Read = JsonProperties.String(json, "read"),
+            Quoted = JsonProperties.String(json, "quoted"),
             Fallback = json.TryGetProperty("fallback", out var f) && f.ValueKind == JsonValueKind.Object
                 ? new FallbackBinding(f.TryGetProperty("value", out var fv) ? fv.Clone() : default, !f.TryGetProperty("report", out var report) || report.ValueKind != JsonValueKind.False)
                 : null,
@@ -485,9 +483,9 @@ internal static class BindingReader
         return new RegistrationSettings
         {
             Headers = r.TryGetProperty("headers", out var h) && h.ValueKind == JsonValueKind.Object ? h.EnumerateObject().Select(p => p.Name).ToList() : [],
-            CreateOnFirstPlacement = Bool(r, "createOnFirstPlacement"),
-            ResourceCapture = r.TryGetProperty("resource", out var res) ? Str(res, "capture") : null,
-            LegacyLayout = Str(r, "legacyLayout"),
+            CreateOnFirstPlacement = JsonProperties.Bool(r, "createOnFirstPlacement"),
+            ResourceCapture = r.TryGetProperty("resource", out var res) ? JsonProperties.String(res, "capture") : null,
+            LegacyLayout = JsonProperties.String(r, "legacyLayout"),
         };
     }
 
@@ -519,19 +517,8 @@ internal static class BindingReader
     private static string? LocalizedValue(JsonElement value) =>
         value.TryGetProperty("en", out var en) ? en.GetString() : value.EnumerateObject().Select(p => p.Value.GetString()).FirstOrDefault();
 
-    private static string? Str(JsonElement json, string name) =>
-        json.ValueKind == JsonValueKind.Object && json.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.String ? v.GetString() : null;
-
-    private static bool Bool(JsonElement json, string name) =>
-        json.ValueKind == JsonValueKind.Object && json.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.True;
-
-    private static IReadOnlyList<string> Strings(JsonElement json, string name) =>
-        json.ValueKind == JsonValueKind.Object && json.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.Array
-            ? v.EnumerateArray().Where(e => e.ValueKind == JsonValueKind.String).Select(e => e.GetString()!).ToList()
-            : [];
-
     private static IReadOnlyList<string>? OptionalStrings(JsonElement json, string name) =>
-        json.ValueKind == JsonValueKind.Object && json.TryGetProperty(name, out _) ? Strings(json, name) : null;
+        json.ValueKind == JsonValueKind.Object && json.TryGetProperty(name, out _) ? JsonProperties.Strings(json, name) : null;
 
     private static IEnumerable<JsonElement> Array(JsonElement json, string name) =>
         json.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.Array ? v.EnumerateArray().ToList() : [];
@@ -594,7 +581,7 @@ internal static class BindingChecker
             }
             foreach ((string name, AttributeBinding attribute) in rule.Attributes)
             {
-                var a = $"{at}/attributes/{FblDocumentLoader.Escape(name)}";
+                var a = $"{at}/attributes/{JsonPointer.Token(name)}";
                 CheckSlot(attribute, context, a, problems);
                 if (attribute.Reference is { } reference)
                 {
