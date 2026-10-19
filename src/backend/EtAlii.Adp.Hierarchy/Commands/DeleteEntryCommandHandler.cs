@@ -71,7 +71,7 @@ public sealed class DeleteEntryCommandHandler : ICommandHandler<DeleteEntryComma
             return CommandResult.Failure("The entry no longer exists.");
         }
 
-        var (sibling, cascade) = isDirectory ? (null, []) : CompanionsOf(path);
+        (string? sibling, List<string> cascade) = isDirectory ? (null, []) : CompanionsOf(path);
         if (cascade.Count > 0)
         {
             _logger.Information("Deleting {Path} and the {Count} diagram registration(s) over it", path, cascade.Count);

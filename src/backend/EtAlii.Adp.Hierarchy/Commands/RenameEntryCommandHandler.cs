@@ -357,7 +357,7 @@ public sealed class RenameEntryCommandHandler : ICommandHandler<RenameEntryComma
             return null;
         }
 
-        var (moves, rewrites) = PlanSet(rename, registrations);
+        (List<(string From, string To)> moves, List<(string Path, string OldContent, string NewContent)> rewrites) = PlanSet(rename, registrations);
         foreach ((var _, string to) in moves.Skip(1))
         {
             if (!rename.IsCaseOnly && (File.Exists(to) || Directory.Exists(to)))
