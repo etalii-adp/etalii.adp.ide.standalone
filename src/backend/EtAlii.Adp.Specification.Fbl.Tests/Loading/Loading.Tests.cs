@@ -2,6 +2,7 @@ using System.Text;
 using EtAlii.Adp.Specification.Fbl.Documents;
 using EtAlii.Adp.Specification.Fbl.Tests.Routing;
 using EtAlii.Adp.Specification.Fbl.Tests.Support;
+using EtAlii.Adp.Specification.Json;
 using Xunit;
 
 namespace EtAlii.Adp.Specification.Fbl.Tests.Loading;
@@ -14,7 +15,7 @@ public class LoadingTests
     private static string Binding(string claims = """{ "extensions": [".t"] }""", string reader = "\"declared\"", string elements = "[" + Item + "]", string extra = "") =>
         $$"""{ "claims": {{claims}}, "body": { "kind": "file", "family": "yaml" }, "reader": {{reader}}, "elements": {{elements}}{{extra}} }""";
 
-    private static IReadOnlyList<LoadProblem> Load(string binding, string version = "0.1") =>
+    private static IReadOnlyList<LoadDiagnostic> Load(string binding, string version = "0.1") =>
         FblDocumentLoader.Load(Encoding.UTF8.GetBytes($$"""{ "fbl": "{{version}}", "bindings": { "t": {{binding}} } }"""), out _);
 
     [Fact]
@@ -36,7 +37,7 @@ public class LoadingTests
 
         // Assert.
         var problem = Assert.Single(problems);
-        Assert.Equal(ProblemSeverity.Error, problem.Severity);
+        Assert.Equal(LoadSeverity.Error, problem.Severity);
         Assert.Equal("/bindings/t/elements/0/type", problem.Pointer);
     }
 
@@ -49,7 +50,7 @@ public class LoadingTests
         var problems = Load(Binding(), version);
 
         // Assert.
-        Assert.Contains(problems, p => p is { Severity: ProblemSeverity.Error, Pointer: "/fbl" });
+        Assert.Contains(problems, p => p is { Severity: LoadSeverity.Error, Pointer: "/fbl" });
     }
 
     [Fact]
@@ -60,7 +61,7 @@ public class LoadingTests
 
         // Assert.
         Assert.NotNull(document);
-        Assert.Equal(ProblemSeverity.Warning, Assert.Single(problems).Severity);
+        Assert.Equal(LoadSeverity.Warning, Assert.Single(problems).Severity);
     }
 
     [Theory]
@@ -120,7 +121,7 @@ public class LoadingTests
 
         // Assert: one error, at the option.
         var problem = Assert.Single(problems);
-        Assert.Equal((ProblemSeverity.Error, "/bindings/t/elements/0/attributes/label/" + option), (problem.Severity, problem.Pointer));
+        Assert.Equal((LoadSeverity.Error, "/bindings/t/elements/0/attributes/label/" + option), (problem.Severity, problem.Pointer));
     }
 
     [Theory]
@@ -153,7 +154,7 @@ public class LoadingTests
 
         // Assert.
         var problem = Assert.Single(problems);
-        Assert.Equal((ProblemSeverity.Error, "/bindings/t/elements/0/" + at), (problem.Severity, problem.Pointer));
+        Assert.Equal((LoadSeverity.Error, "/bindings/t/elements/0/" + at), (problem.Severity, problem.Pointer));
     }
 
     [Theory]
@@ -169,7 +170,7 @@ public class LoadingTests
         var problems = Load(Binding(elements: elements));
 
         // Assert.
-        Assert.Contains(problems, p => p.Severity == ProblemSeverity.Error && p.Pointer == pointer);
+        Assert.Contains(problems, p => p.Severity == LoadSeverity.Error && p.Pointer == pointer);
     }
 
     [Theory]
@@ -184,7 +185,7 @@ public class LoadingTests
         var problems = Load(Binding(claims, reader, elements));
 
         // Assert.
-        Assert.Contains(problems, p => p.Severity == ProblemSeverity.Error && p.Pointer == pointer);
+        Assert.Contains(problems, p => p.Severity == LoadSeverity.Error && p.Pointer == pointer);
     }
 
     [Fact]
@@ -237,7 +238,7 @@ public class LoadingTests
         var problems = FblDocumentLoader.Load(Path.Combine(Repository.Conformance, "helm-chart.fbl"), out var document);
 
         // Assert: the file rules' families and the plugin's version, as helm-chart.fbl declares them.
-        Assert.DoesNotContain(problems, p => p.Severity == ProblemSeverity.Error);
+        Assert.DoesNotContain(problems, p => p.Severity == LoadSeverity.Error);
         var chart = document!.Bindings["chart"];
         Assert.Equal(
             [Family.Yaml, Family.Yaml, Family.Yaml, null, Family.Lines, Family.Yaml, Family.Yaml, null, null, null, Family.Yaml, Family.Yaml, Family.Yaml],
@@ -267,7 +268,7 @@ public class LoadingTests
     private static IReadOnlyDictionary<string, FblBinding> Vendored(string file, out string version)
     {
         var problems = FblDocumentLoader.Load(Path.Combine(Repository.Conformance, file), out var document);
-        Assert.DoesNotContain(problems, p => p.Severity == ProblemSeverity.Error);
+        Assert.DoesNotContain(problems, p => p.Severity == LoadSeverity.Error);
         version = document!.Version;
         return document.Bindings;
     }

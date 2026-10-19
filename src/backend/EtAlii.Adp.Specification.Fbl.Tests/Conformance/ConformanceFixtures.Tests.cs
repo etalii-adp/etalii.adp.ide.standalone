@@ -5,6 +5,7 @@ using EtAlii.Adp.Specification.Fbl.History;
 using EtAlii.Adp.Specification.Fbl.Planning;
 using EtAlii.Adp.Specification.Fbl.Registration;
 using EtAlii.Adp.Specification.Fbl.Tests.Support;
+using EtAlii.Adp.Specification.Json;
 using Xunit;
 
 namespace EtAlii.Adp.Specification.Fbl.Tests.Conformance;
@@ -118,7 +119,7 @@ public class ConformanceFixturesTests
         using var fixture = JsonDocument.Parse(fixtureBytes);
         var root = fixture.RootElement;
         var binding = FblDocumentLoader.ResolveReference(BindingReference(root.GetProperty("binding").GetString()!, folder), fixturePath, out var problems);
-        Assert.DoesNotContain(problems, p => p.Severity == ProblemSeverity.Error);
+        Assert.DoesNotContain(problems, p => p.Severity == LoadSeverity.Error);
         var inputName = root.GetProperty("input").GetString()!;
         var input = File.ReadAllBytes(Path.Combine(folder, inputName));
         var subject = Subject.Open(input, inputName, binding);

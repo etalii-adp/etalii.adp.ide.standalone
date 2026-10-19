@@ -4,6 +4,7 @@ using EtAlii.Adp.Specification.Fbl.Documents;
 using EtAlii.Adp.Specification.Fbl.History;
 using EtAlii.Adp.Specification.Fbl.Planning;
 using EtAlii.Adp.Specification.Fbl.Tests.Support;
+using EtAlii.Adp.Specification.Json;
 using Xunit;
 
 namespace EtAlii.Adp.Specification.Fbl.Tests.Conformance;
@@ -46,7 +47,7 @@ public class KnowledgeFixtureStepsTests
         using var document = JsonDocument.Parse(File.ReadAllBytes(fixturePath));
         var fixture = document.RootElement;
         var binding = FblDocumentLoader.ResolveReference(fixture.GetProperty("binding").GetString()!, fixturePath, out var problems);
-        Assert.DoesNotContain(problems, problem => problem.Severity == ProblemSeverity.Error);
+        Assert.DoesNotContain(problems, problem => problem.Severity == LoadSeverity.Error);
         var inputName = fixture.GetProperty("input").GetString()!;
         var body = OpenBody.Open(
             File.ReadAllBytes(Path.Combine(folder, inputName)),

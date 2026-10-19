@@ -1,6 +1,7 @@
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Text.Json;
+using EtAlii.Adp.Specification.Json;
 
 namespace EtAlii.Adp.Specification.Disl;
 
@@ -12,7 +13,7 @@ namespace EtAlii.Adp.Specification.Disl;
 public sealed record DefinitionProvenance(string Repository, string Path, string Revision, string Sha256);
 
 /// <summary>A specification bundled into a module's assembly, loaded, with its provenance.</summary>
-public sealed record BundledDefinition(DislSpecification Specification, DefinitionProvenance Provenance, IReadOnlyList<DislDiagnostic> Diagnostics)
+public sealed record BundledDefinition(DislSpecification Specification, DefinitionProvenance Provenance, IReadOnlyList<LoadDiagnostic> Diagnostics)
 {
     /// <summary>
     /// Loads the definition <paramref name="assembly"/> embeds as <paramref name="logicalName"/>

@@ -2,6 +2,7 @@ using System.Text;
 using EtAlii.Adp.Specification.Fbl.Documents;
 using EtAlii.Adp.Specification.Fbl.History;
 using EtAlii.Adp.Specification.Fbl.Planning;
+using EtAlii.Adp.Specification.Json;
 using Xunit;
 
 namespace EtAlii.Adp.Specification.Fbl.Tests.Yaml;
@@ -36,7 +37,7 @@ public class YamlLevelsTests
     {
         var json = $$"""{ "fbl": "0.4", "bindings": { "t": { "claims": { "extensions": [".t"] }, "body": { "kind": "file", "family": "yaml" }, "reader": "declared", "elements": {{elements}} } } }""";
         var problems = FblDocumentLoader.Load(Encoding.UTF8.GetBytes(json), out var document);
-        Assert.DoesNotContain(problems, problem => problem.Severity == ProblemSeverity.Error);
+        Assert.DoesNotContain(problems, problem => problem.Severity == LoadSeverity.Error);
         return document!.Bindings["t"];
     }
 

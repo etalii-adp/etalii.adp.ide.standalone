@@ -8,6 +8,7 @@ using EtAlii.Adp.Files;
 using EtAlii.Adp.History;
 using EtAlii.Adp.Specification.Disl;
 using EtAlii.Adp.Specification.Fbl.Documents;
+using EtAlii.Adp.Specification.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using IoPath = System.IO.Path;
@@ -86,7 +87,7 @@ public sealed partial class BundledDefinitionTests
         var loaded = DislLoader.Load(_module.ResourceBytes(Definition));
 
         Assert.NotNull(loaded.Specification);
-        Assert.DoesNotContain(loaded.Diagnostics, diagnostic => diagnostic.Severity == DislSeverity.Error);
+        Assert.DoesNotContain(loaded.Diagnostics, diagnostic => diagnostic.Severity == LoadSeverity.Error);
     }
 
     /// <summary>
@@ -143,7 +144,7 @@ public sealed partial class BundledDefinitionTests
     {
         var problems = FblDocumentLoader.Load(_module.ResourceBytes("azure-devops-pipeline.fbl"), out var document);
 
-        Assert.DoesNotContain(problems, problem => problem.Severity == ProblemSeverity.Error);
+        Assert.DoesNotContain(problems, problem => problem.Severity == LoadSeverity.Error);
         var binding = Assert.Single(document!.Bindings).Value;
         Assert.Equal(PipelineYamlPlugin.PluginId, binding.Plugin?.Plugin);
         Assert.Equal(binding.Plugin?.Plugin, new PipelineYamlPlugin(PipelineReadContext.Unbound).Id);

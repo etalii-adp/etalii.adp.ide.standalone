@@ -17,6 +17,8 @@
     <ProjectReference Include="..\EtAlii.Adp\EtAlii.Adp.csproj" />
     <!-- The CEL engine of FBL section 2.4, shared with DISL; FBL's contexts are presets of it, in Expressions/. -->
     <ProjectReference Include="..\EtAlii.Adp.Specification.Cel\EtAlii.Adp.Specification.Cel.csproj" />
+    <!-- What this loader shares with DISL's: the diagnostic it reports (spec 025, FR-074). -->
+    <ProjectReference Include="..\EtAlii.Adp.Specification.Json\EtAlii.Adp.Specification.Json.csproj" />
   </ItemGroup>
 
   <ItemGroup>

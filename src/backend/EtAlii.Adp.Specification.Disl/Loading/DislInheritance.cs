@@ -1,4 +1,5 @@
 using System.Text.Json;
+using EtAlii.Adp.Specification.Json;
 
 namespace EtAlii.Adp.Specification.Disl;
 
@@ -8,7 +9,7 @@ namespace EtAlii.Adp.Specification.Disl;
 /// </summary>
 internal static class DislInheritance
 {
-    public static DislMetamodel Build(JsonElement metamodel, List<DislDiagnostic> diagnostics)
+    public static DislMetamodel Build(JsonElement metamodel, List<LoadDiagnostic> diagnostics)
     {
         var enums = Enums(metamodel);
         var dataTypes = DislJson.Members(metamodel, "dataTypes").Select(member => member.Name).ToHashSet(StringComparer.Ordinal);
@@ -72,7 +73,7 @@ internal static class DislInheritance
     }
 
     /// <summary>Each type's <c>extends</c>, every name a type of the same kind (§4.7).</summary>
-    private static void Supertypes(OrderedDictionary<string, DislType> types, OrderedDictionary<string, DislType> sameKind, string section, string kind, List<DislDiagnostic> diagnostics)
+    private static void Supertypes(OrderedDictionary<string, DislType> types, OrderedDictionary<string, DislType> sameKind, string section, string kind, List<LoadDiagnostic> diagnostics)
     {
         foreach (var type in types.Values)
         {
@@ -86,7 +87,7 @@ internal static class DislInheritance
     }
 
     /// <summary>The C3 linearisation of every type (§4.7); a cycle or an inconsistent hierarchy is an error.</summary>
-    private static void Linearise(OrderedDictionary<string, DislType> types, string section, List<DislDiagnostic> diagnostics)
+    private static void Linearise(OrderedDictionary<string, DislType> types, string section, List<LoadDiagnostic> diagnostics)
     {
         var done = new Dictionary<string, List<string>>(StringComparer.Ordinal);
         var visiting = new HashSet<string>(StringComparer.Ordinal);
@@ -129,7 +130,7 @@ internal static class DislInheritance
     }
 
     /// <summary>A type's attributes, containment and label attribute, merged along its linearisation (§4.6 to §4.8).</summary>
-    private static void Merge(DislType type, Dictionary<string, DislType> all, string pointer, TypeNames known, List<DislDiagnostic> diagnostics)
+    private static void Merge(DislType type, Dictionary<string, DislType> all, string pointer, TypeNames known, List<LoadDiagnostic> diagnostics)
     {
         var merged = new OrderedDictionary<string, DislAttribute>(StringComparer.Ordinal);
         foreach (var ancestor in type.Linearisation.AsEnumerable().Reverse())
@@ -176,7 +177,7 @@ internal static class DislInheritance
     /// The attributes an object declares itself, in order; each name checked against the reserved names
     /// and each type resolved when <paramref name="diagnostics"/> is given.
     /// </summary>
-    private static OrderedDictionary<string, DislAttribute> Attributes(JsonElement owner, string declaredBy, string pointer, TypeNames known, List<DislDiagnostic>? diagnostics)
+    private static OrderedDictionary<string, DislAttribute> Attributes(JsonElement owner, string declaredBy, string pointer, TypeNames known, List<LoadDiagnostic>? diagnostics)
     {
         var attributes = new OrderedDictionary<string, DislAttribute>(StringComparer.Ordinal);
         foreach (var member in DislJson.Members(owner, "attributes"))
@@ -207,7 +208,7 @@ internal static class DislInheritance
     }
 
     /// <summary>A relation end (§4.9): a TypeRef, a TypeRef[] or a RelationEnd, its types resolved.</summary>
-    private static DislRelationEnd End(DislType relation, string side, Dictionary<string, DislType> all, string pointer, List<DislDiagnostic> diagnostics)
+    private static DislRelationEnd End(DislType relation, string side, Dictionary<string, DislType> all, string pointer, List<LoadDiagnostic> diagnostics)
     {
         // An end is inherited from the nearest supertype that declares it.
         var declaring = relation.Linearisation.Select(name => all[name].Json).FirstOrDefault(json => json.TryGetProperty(side, out _));

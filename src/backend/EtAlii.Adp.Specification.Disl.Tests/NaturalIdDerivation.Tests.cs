@@ -1,6 +1,7 @@
 using EtAlii.Adp.Specification.Fbl;
 using EtAlii.Adp.Specification.Fbl.Documents;
 using EtAlii.Adp.Specification.Fbl.History;
+using EtAlii.Adp.Specification.Json;
 using Xunit;
 
 namespace EtAlii.Adp.Specification.Disl.Tests;
@@ -88,7 +89,7 @@ public class NaturalIdDerivationTests
             }
             """u8.ToArray(), out var document);
         Assert.NotNull(document);
-        Assert.DoesNotContain(problems, problem => problem.Severity == ProblemSeverity.Error);
+        Assert.DoesNotContain(problems, problem => problem.Severity == LoadSeverity.Error);
         var bytes = "pump p1\npump p2\nline p1 p2\n"u8.ToArray();
 
         // Act.

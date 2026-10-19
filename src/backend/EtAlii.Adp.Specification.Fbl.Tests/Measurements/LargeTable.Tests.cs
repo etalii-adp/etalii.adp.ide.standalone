@@ -5,6 +5,7 @@ using EtAlii.Adp.Specification.Fbl.Documents;
 using EtAlii.Adp.Specification.Fbl.History;
 using EtAlii.Adp.Specification.Fbl.Planning;
 using EtAlii.Adp.Specification.Fbl.Tests.Support;
+using EtAlii.Adp.Specification.Json;
 using Xunit;
 
 namespace EtAlii.Adp.Specification.Fbl.Tests.Measurements;
@@ -71,7 +72,7 @@ public class LargeTableTests(ITestOutputHelper output)
         // The binding is written in a newer FBL than this library names, which it reads with a
         // warning, so only an error is a reason not to measure.
         var problems = FblDocumentLoader.Load(KnowledgeBinding, out var document);
-        Assert.DoesNotContain(problems, problem => problem.Severity == ProblemSeverity.Error);
+        Assert.DoesNotContain(problems, problem => problem.Severity == LoadSeverity.Error);
         return document!.Bindings["yaml"];
     }
 

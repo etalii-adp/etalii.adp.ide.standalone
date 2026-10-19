@@ -1,6 +1,7 @@
 using System.Text;
 using EtAlii.Adp.Specification.Fbl;
 using EtAlii.Adp.Specification.Fbl.Documents;
+using EtAlii.Adp.Specification.Json;
 using Xunit;
 
 namespace EtAlii.Adp.TestSupport;
@@ -86,7 +87,7 @@ public static class RealFileCorpus
             if (_bindings.TryGetValue(key, out var binding)) return binding;
             var path = document.Contains('/', StringComparison.Ordinal) ? FullPath(document) : Path.Combine(Conformance, document);
             var problems = FblDocumentLoader.Load(path, out var loaded);
-            Assert.DoesNotContain(problems, p => p.Severity == ProblemSeverity.Error);
+            Assert.DoesNotContain(problems, p => p.Severity == LoadSeverity.Error);
             foreach ((string bindingName, FblBinding value) in loaded!.Bindings) _bindings[document + "#" + bindingName] = value;
             return _bindings[key];
         }
@@ -102,7 +103,7 @@ public static class RealFileCorpus
         {
             var document = Path.GetFileName(path);
             var problems = FblDocumentLoader.Load(path, out var loaded);
-            Assert.DoesNotContain(problems, p => p.Severity == ProblemSeverity.Error);
+            Assert.DoesNotContain(problems, p => p.Severity == LoadSeverity.Error);
             foreach (var name in loaded!.Bindings.Keys) all.Add((document, Binding(document, name)));
         }
         return all;

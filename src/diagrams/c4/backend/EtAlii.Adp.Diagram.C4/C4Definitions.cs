@@ -1,6 +1,7 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.Specification.Disl;
+using EtAlii.Adp.Specification.Json;
 using Serilog;
 
 namespace EtAlii.Adp.Diagram.C4;
@@ -86,7 +87,7 @@ internal static class C4Definitions
     }
 
     /// <summary>What the runtime had to say about the six as it loaded them, each with the file it is about.</summary>
-    public static IReadOnlyList<(string Path, DislDiagnostic Diagnostic)> Diagnostics =>
+    public static IReadOnlyList<(string Path, LoadDiagnostic Diagnostic)> Diagnostics =>
         [.. Set.Definitions.SelectMany(definition => definition.Diagnostics.Select(diagnostic => (definition.Provenance.Path, diagnostic)))];
 
     /// <summary>What <c>env</c> reads for a menu and a row: editable, in the viewpoint of the view the target is drawn on.</summary>

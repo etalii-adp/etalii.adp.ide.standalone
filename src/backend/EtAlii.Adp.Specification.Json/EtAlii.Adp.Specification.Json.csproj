@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- What the DISL and FBL loaders share (spec 025, FR-074): the diagnostic a loader reports and
+       the helpers both need to read a JSON specification. Neither specification project may reference
+       the other for it, so it lives here; it references nothing of this solution. -->
+</Project>
