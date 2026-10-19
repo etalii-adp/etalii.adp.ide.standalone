@@ -65,10 +65,11 @@
 /* By the line's own declared class, never by element type: `.c4-relationship line` once went
    stale when the shared StraightConnection started drawing a <path>, and every relationship
    went invisible - labels and arrowheads floating with no line between them. */
+/* The dash is the specification's (`notation.edges.*.line.stroke.dash`), which the library draws
+   inline on the line, so it is not said a second time here. */
 .c4-relationship-line {
   stroke: var(--color-border);
   stroke-width: 1.5;
-  stroke-dasharray: 6 4;
   fill: none;
 }
 
