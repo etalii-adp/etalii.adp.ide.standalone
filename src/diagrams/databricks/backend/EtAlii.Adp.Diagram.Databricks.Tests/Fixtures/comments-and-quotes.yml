@@ -1,0 +1,33 @@
+bundle:
+  name: 'quoted_bundle' # the bundle's name, single-quoted
+
+resources:
+  jobs:
+    commented:
+      name: "Commented" # a quoted name
+      job_clusters:
+        - job_cluster_key: main
+          new_cluster:
+            spark_version: 15.4.x-scala2.12
+        - job_cluster_key: spare
+          new_cluster:
+            spark_version: 15.4.x-scala2.12
+      tasks:
+        - task_key: 'quoted_task' # a single-quoted key
+          run_if: 'ALL_DONE' # keep going whatever happens
+          job_cluster_key: "main"  # the main cluster
+          notebook_task:
+            notebook_path: notebooks/quoted
+        - task_key: downstream
+          depends_on:
+            - task_key: 'quoted_task' # the reference, quoted too
+          notebook_task:
+            notebook_path: notebooks/downstream
+  pipelines:
+    commented_pipeline:
+      name: "Commented pipeline" # quoted
+      catalog: 'main' # the catalog
+      schema: gold # the schema
+      libraries:
+        - notebook:
+            path: transformations/commented

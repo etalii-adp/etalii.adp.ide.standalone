@@ -1,0 +1,20 @@
+resources:
+  jobs:
+    commented_tasks:
+      name: Comments above tasks
+      tasks:
+        # The first task lands the data.
+        - task_key: land
+          notebook_task:
+            notebook_path: notebooks/land
+        # The second task, which waits for the first,
+        # explained over two lines.
+        - task_key: refine
+          depends_on:
+            - task_key: land
+          notebook_task:
+            notebook_path: notebooks/refine
+        # The last one.
+        - task_key: publish
+          notebook_task:
+            notebook_path: notebooks/publish

@@ -1,0 +1,55 @@
+resources:
+  jobs:
+    every_type:
+      name: Every task type
+      tasks:
+        - task_key: a_notebook
+          notebook_task:
+            notebook_path: notebooks/a
+        - task_key: a_python
+          spark_python_task:
+            python_file: scripts/a.py
+        - task_key: a_wheel
+          python_wheel_task:
+            package_name: parity
+            entry_point: main
+        - task_key: a_sql
+          sql_task:
+            warehouse_id: "abc"
+            file:
+              path: queries/a.sql
+        - task_key: a_dbt
+          dbt_task:
+            project_directory: dbt/a
+            commands: ["dbt run"]
+        - task_key: a_pipeline
+          pipeline_task:
+            pipeline_id: 1234-pipeline
+        - task_key: a_run_job
+          run_job_task:
+            job_id: 42
+        - task_key: a_condition
+          condition_task:
+            op: EQUAL_TO
+            left: "1"
+            right: "1"
+        - task_key: a_for_each
+          for_each_task:
+            inputs: "[1, 2]"
+            task:
+              task_key: a_for_each_inner
+              notebook_task:
+                notebook_path: notebooks/inner
+        - task_key: a_jar
+          spark_jar_task:
+            main_class_name: net.etalii.Main
+        - task_key: an_other
+          existing_cluster_id: "0101-cluster"
+        - spark_python_task:
+            python_file: scripts/keyless.py
+        - task_key: waits_for_nobody
+          depends_on:
+            - task_key: a_notebook
+            - task_key: not_declared
+          notebook_task:
+            notebook_path: notebooks/waits

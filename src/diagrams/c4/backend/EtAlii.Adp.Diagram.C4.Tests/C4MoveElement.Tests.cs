@@ -1,4 +1,4 @@
-using EtAlii.Adp.Hierarchy;
+﻿using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 using EtAlii.Adp.Sessions;
 using Microsoft.Extensions.DependencyInjection;
@@ -55,10 +55,36 @@ public class C4MoveElementTests : IDisposable
         TestFolder.TryDelete(_root);
     }
 
-    private C4Session Open() => (C4Session)_services
+    /// <summary>The same model, its one view declaring <c>autoLayout</c>: the view places its elements itself.</summary>
+    private const string LaidOutModel = """
+        workspace "Bank" {
+            model {
+                a = softwareSystem "A" "desc"
+                b = softwareSystem "B" "desc"
+                a -> b "Calls" "HTTPS"
+            }
+            views {
+                systemLandscape "all" {
+                    include *
+                    autoLayout lr
+                }
+            }
+        }
+        """;
+
+    private C4Session Open() => Open(_bodyPath);
+
+    private C4Session Open(string bodyPath) => (C4Session)_services
         .GetServices<IDiagramSessionFactory>()
         .First(factory => factory.Origin.Key == "c4/system-landscape")
-        .Open(ShortGuid.NewShortGuid(), ProjectRoot.From(_root), _bodyPath, null);
+        .Open(ShortGuid.NewShortGuid(), ProjectRoot.From(_root), bodyPath, null);
+
+    private async Task<string> LaidOutAsync()
+    {
+        var bodyPath = IoPath.Combine(_root, "laid-out.dsl");
+        await File.WriteAllTextAsync(bodyPath, LaidOutModel, TestContext.Current.CancellationToken);
+        return bodyPath;
+    }
 
     [Fact]
     public async Task ADrag_RecordsThePositionInTheSidecar_AndLeavesTheDocumentAlone()
@@ -205,4 +231,24 @@ public class C4MoveElementTests : IDisposable
         Assert.Empty(_sidecar.Read(_bodyPath, "all"));
     }
 
+    [Fact]
+    public async Task ADragOnAViewThatDeclaresAutoLayout_IsRefused_AndWritesNothing()
+    {
+        // Arrange.
+        // The defect: such a view ignores every stored position when it is drawn (finding A12), yet
+        // the drag was accepted - the sidecar written and an undo step made - while the view went on
+        // drawing the layout's arrangement and undoing moved nothing. Ruled 2026-10-19: refuse it.
+        var bodyPath = await LaidOutAsync();
+        await using var session = Open(bodyPath);
+        var undoable = _history.Availability.UndoCount;
+
+        // Act.
+        var error = await session.MoveElementToAsync("a", 250, 400, TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.Equal(C4Session.AutoLayoutRefusal, error);
+        Assert.Empty(_sidecar.Read(bodyPath, "all"));
+        Assert.False(File.Exists(C4LayoutSidecar.PathFor(bodyPath)), "the refused drag wrote the layout file");
+        Assert.Equal(undoable, _history.Availability.UndoCount);
+    }
 }

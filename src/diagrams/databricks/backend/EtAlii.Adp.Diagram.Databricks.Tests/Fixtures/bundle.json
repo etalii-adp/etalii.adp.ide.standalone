@@ -1,0 +1,16 @@
+{
+  "bundle": { "name": "json_bundle" },
+  "resources": {
+    "jobs": {
+      "json_job": {
+        "name": "JSON job",
+        "tasks": [
+          { "task_key": "only", "notebook_task": { "notebook_path": "notebooks/only" } }
+        ]
+      }
+    }
+  },
+  "targets": {
+    "dev": { "mode": "development", "default": true }
+  }
+}

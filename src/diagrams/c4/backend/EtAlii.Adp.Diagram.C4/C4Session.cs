@@ -54,6 +54,13 @@ public sealed class C4Session : DocumentDiagramSession<LineDocument, C4Workspace
         _mapper = mapper;
     }
 
+    /// <summary>
+    /// What a drag on a view that declares <c>autoLayout</c> answers. Such a view ignores every stored
+    /// position when it is drawn (finding A12), so a position recorded for it would be a write and an
+    /// undo step that change nothing anyone can see (ruled 2026-10-19).
+    /// </summary>
+    public const string AutoLayoutRefusal = "This view declares autoLayout, so it places its elements itself; remove autoLayout from the view to arrange it by hand.";
+
     /// <inheritdoc />
     protected override string ParentRefusal => "Dragging changes where an element is drawn, not what contains it.";
 
@@ -65,11 +72,18 @@ public sealed class C4Session : DocumentDiagramSession<LineDocument, C4Workspace
     protected override IReadOnlyList<DiagramElement> Render(C4Workspace model, DiagramViewport viewport) =>
         ViewOf(model) is { } view ? _mapper.Visible(model, view, viewport, BodyPath) : [];
 
-    /// <summary>A drop records where the user put the element in the view this session shows.</summary>
+    /// <summary>
+    /// A drop records where the user put the element in the view this session shows - unless that view
+    /// declares <c>autoLayout</c>, which places its elements itself and is refused in
+    /// <see cref="AutoLayoutRefusal"/>'s words: nothing is written and no undo step is made.
+    /// </summary>
     protected override DiagramPlacement PlacementOf(C4Workspace model, string elementId, double x, double y) =>
-        ViewOf(model) is { } view
-            ? DiagramPlacement.By(new MoveC4ElementCommand(BodyPath, view.Key, elementId, x, y))
-            : DiagramPlacement.Refused("This diagram has no view to arrange.");
+        ViewOf(model) switch
+        {
+            null => DiagramPlacement.Refused("This diagram has no view to arrange."),
+            { AutoLayout: not null } => DiagramPlacement.Refused(AutoLayoutRefusal),
+            var view => DiagramPlacement.By(new MoveC4ElementCommand(BodyPath, view.Key, elementId, x, y)),
+        };
 
     private C4View? ViewOf(C4Workspace workspace)
     {

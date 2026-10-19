@@ -574,6 +574,29 @@ export function DiagramCanvasCore({
       dragValue.clear();
     }
   }, [model.elements, dragValue]);
+
+  // A REFUSAL RELEASES IT TOO. A refused move changes nothing in the model, so the effect above
+  // never fires for it and the element stayed where it was dropped, at a position nothing had
+  // recorded (c4-disl-fbl, ruled 2026-10-19). A module that answers the move with its backend's
+  // sentence (`ElementMoved`) lets it go back; only this drop's hold, never a later gesture's.
+  const releaseOnRefusal = useCallback(
+    (answer: unknown, hold: { id: string; fromX: number; fromY: number }) => {
+      if (typeof (answer as PromiseLike<unknown> | undefined)?.then !== "function") {
+        return;
+      }
+
+      void Promise.resolve(answer as PromiseLike<unknown>).then(
+        (sentence) => {
+          if (typeof sentence === "string" && sentence !== "" && heldDropRef.current === hold) {
+            heldDropRef.current = null;
+            dragValue.clear();
+          }
+        },
+        () => {},
+      );
+    },
+    [dragValue],
+  );
   const connectValue = useMemo(() => createGestureValue<ConnectPreview>(), []);
   const connectFrameRef = useRef<GestureFrame<ConnectPreview> | null>(null);
   const resizeValue = useMemo(() => createGestureValue<ResizeDragPreview>(), []);
@@ -680,12 +703,7 @@ export function DiagramCanvasCore({
   const viewRef = useRef(effectiveView);
   viewRef.current = effectiveView;
 
-  const raise = useCallback(
-    (event: DiagramEvent) => {
-      dispatchDiagramEvent(events, event);
-    },
-    [events],
-  );
+  const raise = useCallback((event: DiagramEvent): unknown => dispatchDiagramEvent(events, event), [events]);
 
   /** The element whose in-flight shape was last previewed, so the gesture's end can say so. */
   const previewingRef = useRef<string | null>(null);
@@ -1268,9 +1286,11 @@ export function DiagramCanvasCore({
           // have. Nor for a drop that landed where it started: there is nothing to wait for.
           const positional = definition.dropTarget === undefined;
           const moved = landing.x !== target.element.x || landing.y !== target.element.y;
+          let hold: { id: string; fromX: number; fromY: number } | null = null;
           if (positional && moved) {
             frame?.cancel(); // stop the frame WITHOUT reverting what it published
-            heldDropRef.current = { id: target.element.id, fromX: target.element.x, fromY: target.element.y };
+            hold = { id: target.element.id, fromX: target.element.x, fromY: target.element.y };
+            heldDropRef.current = hold;
             // Set explicitly rather than trusting the last frame: frames coalesce, and the drop
             // must be drawn at exactly the landing the module is told about.
             dragValue.set({ id: target.element.id, dx: landing.x - target.element.x, dy: landing.y - target.element.y, held: true });
@@ -1278,7 +1298,10 @@ export function DiagramCanvasCore({
             frame?.commit();
           }
 
-          raise({ kind: "element-moved", elementId: target.element.id, position: landing });
+          const answer = raise({ kind: "element-moved", elementId: target.element.id, position: landing });
+          if (hold !== null) {
+            releaseOnRefusal(answer, hold);
+          }
           break;
         }
         case "resize": {

@@ -1,0 +1,20 @@
+bundle:
+  name: placement_bundle
+
+resources:
+  jobs:
+    placement:
+      name: Where a new key goes
+      job_clusters:
+        - job_cluster_key: cluster_one
+          new_cluster:
+            spark_version: 15.4.x-scala2.12
+      tasks:
+        - task_key: upstream
+          notebook_task:
+            notebook_path: notebooks/upstream
+        - task_key: with_dependency
+          depends_on:
+            - task_key: upstream
+          notebook_task:
+            notebook_path: notebooks/with_dependency
