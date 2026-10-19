@@ -8,6 +8,8 @@ The tool is the C4 system context diagram of the standalone IDE (origin `c4/cont
 
 The system in its world: who uses it, and what it depends on. A system context diagram shows one software system, the people who use it and the other software systems it depends on or that depend on it, for an audience of everybody, technical or not. A system context view shows people and software systems. Relationships between what it does not show, such as two containers of different systems, are drawn between the nearest elements it does show, one line per pair.
 
+The definition raises `language.limits.celCost` to 10 000 000 from DISL's default of 1 000 000 (ruled in chat on 2026-10-19), so that a view with many lifted relationships keeps its lines: merging lifted lines into one line per pair costs more than linearly, 400 relationships taking about 0.9 million steps and 800 about 3.4 million, so the default would drop every lifted line of a view with about 400 or more.
+
 ## The gaps
 
 Fifteen, each a candidate change for this repository: the twelve the conversion's requirements list (C1 to C12, in their order) and three found while writing the definitions. None is worked around in the `.dis` by stating something the tool does not do.
