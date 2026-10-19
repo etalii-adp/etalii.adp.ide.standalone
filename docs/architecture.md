@@ -93,6 +93,7 @@ One line each, with the project that owns it. Their internals are deliberately o
 | Designer-family abstractions | `EtAlii.Adp.Designer` |
 | Reading and writing bodies through FBL bindings | `EtAlii.Adp.Specification.Fbl` |
 | Evaluating CEL expressions, for FBL and DISL alike | `EtAlii.Adp.Specification.Cel` |
+| What the DISL and FBL loaders share: the diagnostic a loader reports and its severity | `EtAlii.Adp.Specification.Json` |
 | Loading DISL specifications and the bundled definitions, building a diagram's model from a reading, and deriving its toolbox, context menus, property rows, findings and gesture refusals, resolving a toolbox drop by its drop targets, and running its operations, hooks, deletion policy and retyping, and giving the FBL library the attribute types of a binding | `EtAlii.Adp.Specification.Disl` |
 
 For how a subsystem behaves rather than which project holds it, read [`tech.md`](../.spec-workflow/steering/tech.md).

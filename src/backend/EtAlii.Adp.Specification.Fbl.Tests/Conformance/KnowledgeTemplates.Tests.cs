@@ -3,6 +3,7 @@ using EtAlii.Adp.Specification.Fbl.Documents;
 using EtAlii.Adp.Specification.Fbl.History;
 using EtAlii.Adp.Specification.Fbl.Routing;
 using EtAlii.Adp.Specification.Fbl.Tests.Support;
+using EtAlii.Adp.Specification.Json;
 using Xunit;
 
 namespace EtAlii.Adp.Specification.Fbl.Tests.Conformance;
@@ -27,7 +28,7 @@ public class KnowledgeTemplatesTests
     private static FblBinding Binding(string name)
     {
         var binding = FblDocumentLoader.ResolveReference("knowledge.fbl#" + name, BindingFile, out var problems);
-        Assert.DoesNotContain(problems, problem => problem.Severity == ProblemSeverity.Error);
+        Assert.DoesNotContain(problems, problem => problem.Severity == LoadSeverity.Error);
         return binding;
     }
 

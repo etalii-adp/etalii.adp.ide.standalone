@@ -4,6 +4,7 @@ using EtAlii.Adp.Diagram.Modules;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Specification.Disl;
 using EtAlii.Adp.Specification.Fbl;
+using EtAlii.Adp.Specification.Json;
 
 namespace EtAlii.Adp.Diagram.Timeline;
 
@@ -66,7 +67,7 @@ internal static class TimelineDefinition
     public static DislSpecification Specification => Definition.Specification;
 
     /// <summary>What the runtime had to say about the definition as it loaded it.</summary>
-    public static IReadOnlyList<DislDiagnostic> Diagnostics => Definition.Diagnostics;
+    public static IReadOnlyList<LoadDiagnostic> Diagnostics => Definition.Diagnostics;
 
     /// <summary>What <c>env</c> reads: editable, in the one viewpoint a timeline has.</summary>
     private static DislEnv Env { get; } = new();

@@ -1,4 +1,5 @@
 using System.Text.Json;
+using EtAlii.Adp.Specification.Json;
 
 namespace EtAlii.Adp.Specification.Disl;
 
@@ -13,7 +14,7 @@ internal static class DislNames
     /// <summary>The words a context menu's <c>for</c>, a constraint's <c>scope</c> or an operation's <c>for</c> may use besides type names.</summary>
     private static readonly HashSet<string> TargetWords = new(StringComparer.Ordinal) { "diagram", "connection", "node", "relation", "port", "*" };
 
-    public static void Resolve(JsonElement root, DislMetamodel metamodel, List<DislDiagnostic> diagnostics)
+    public static void Resolve(JsonElement root, DislMetamodel metamodel, List<LoadDiagnostic> diagnostics)
     {
         var operations = DislJson.Members(root.TryGetProperty("behavior", out var behavior) ? behavior : default, "operations")
             .Select(member => member.Name).ToHashSet(StringComparer.Ordinal);
@@ -116,7 +117,7 @@ internal static class DislNames
         }
     }
 
-    private sealed class Resolver(DislMetamodel metamodel, List<DislDiagnostic> diagnostics)
+    private sealed class Resolver(DislMetamodel metamodel, List<LoadDiagnostic> diagnostics)
     {
         /// <summary>A type name, where any node or relation type will do.</summary>
         public void Name(string name, string pointer)

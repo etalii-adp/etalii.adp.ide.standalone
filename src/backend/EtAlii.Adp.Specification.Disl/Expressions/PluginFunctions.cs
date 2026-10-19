@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using EtAlii.Adp.Specification.Cel;
+using EtAlii.Adp.Specification.Json;
 
 namespace EtAlii.Adp.Specification.Disl;
 
@@ -53,7 +54,7 @@ internal static partial class PluginFunctions
     [GeneratedRegex("^[A-Za-z_][A-Za-z0-9_]*$", RegexOptions.CultureInvariant)]
     private static partial Regex SimpleIdentifier();
 
-    public static void Register(CelEnvironment environment, JsonElement root, DislPluginFunctions implementations, List<DislDiagnostic> diagnostics)
+    public static void Register(CelEnvironment environment, JsonElement root, DislPluginFunctions implementations, List<LoadDiagnostic> diagnostics)
     {
         foreach (var plugin in DislJson.Members(root, "plugins"))
         {
@@ -73,7 +74,7 @@ internal static partial class PluginFunctions
         string pointer,
         CelEnvironment environment,
         DislPluginFunctions implementations,
-        List<DislDiagnostic> diagnostics)
+        List<LoadDiagnostic> diagnostics)
     {
         var name = DislJson.String(declaration, "name") ?? "";
         if (!SimpleIdentifier().IsMatch(name))

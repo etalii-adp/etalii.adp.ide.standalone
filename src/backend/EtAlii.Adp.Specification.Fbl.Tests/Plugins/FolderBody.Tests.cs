@@ -3,6 +3,7 @@ using EtAlii.Adp.Specification.Fbl.Documents;
 using EtAlii.Adp.Specification.Fbl.Planning;
 using EtAlii.Adp.Specification.Fbl.Plugins;
 using EtAlii.Adp.Specification.Fbl.Tests.Routing;
+using EtAlii.Adp.Specification.Json;
 using Xunit;
 
 namespace EtAlii.Adp.Specification.Fbl.Tests.Plugins;
@@ -36,7 +37,7 @@ public class FolderBodyTests
             } } }
             """;
         var problems = FblDocumentLoader.Load(Encoding.UTF8.GetBytes(json), out var document);
-        Assert.DoesNotContain(problems, p => p.Severity == ProblemSeverity.Error);
+        Assert.DoesNotContain(problems, p => p.Severity == LoadSeverity.Error);
         return document!.Bindings["notes"];
     }
 

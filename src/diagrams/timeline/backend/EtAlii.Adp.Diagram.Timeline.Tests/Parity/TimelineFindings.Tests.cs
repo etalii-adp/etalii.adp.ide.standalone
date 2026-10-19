@@ -6,6 +6,7 @@ using EtAlii.Adp.Specification.Fbl;
 using EtAlii.Adp.Specification.Fbl.Documents;
 using EtAlii.Adp.Specification.Fbl.History;
 using EtAlii.Adp.Specification.Fbl.Planning;
+using EtAlii.Adp.Specification.Json;
 using Xunit;
 using Path = System.IO.Path;
 
@@ -279,7 +280,7 @@ public sealed partial class TimelineFindingsTests
     private static FblBinding LoadBinding()
     {
         var problems = FblDocumentLoader.Load(Path.Combine(AppContext.BaseDirectory, "Parity", "timeline.fbl"), out var document);
-        Assert.DoesNotContain(problems, problem => problem.Severity == ProblemSeverity.Error);
+        Assert.DoesNotContain(problems, problem => problem.Severity == LoadSeverity.Error);
         return document!.Bindings["timeline"];
     }
 

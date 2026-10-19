@@ -3,7 +3,7 @@ using System.Security.Cryptography;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using EtAlii.Adp.Documents;
-using EtAlii.Adp.Specification.Disl;
+using EtAlii.Adp.Specification.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
@@ -106,8 +106,8 @@ public sealed partial class BundledDefinitionTests
 
         var definition = Assert.Single(C4Definitions.Set.Definitions, candidate => candidate.Provenance.Path == path);
 
-        Assert.DoesNotContain(definition.Diagnostics, diagnostic => diagnostic.Severity == DislSeverity.Error);
-        Assert.DoesNotContain(C4Definitions.Diagnostics, entry => entry.Path == path && entry.Diagnostic.Severity == DislSeverity.Error);
+        Assert.DoesNotContain(definition.Diagnostics, diagnostic => diagnostic.Severity == LoadSeverity.Error);
+        Assert.DoesNotContain(C4Definitions.Diagnostics, entry => entry.Path == path && entry.Diagnostic.Severity == LoadSeverity.Error);
     }
 
     /// <summary>The module embeds the six definitions and no other, so a seventh cannot be bundled unnoticed.</summary>

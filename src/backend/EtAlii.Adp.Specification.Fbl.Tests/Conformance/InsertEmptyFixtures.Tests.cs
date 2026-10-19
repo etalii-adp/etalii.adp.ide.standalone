@@ -5,6 +5,7 @@ using EtAlii.Adp.Specification.Fbl.Documents;
 using EtAlii.Adp.Specification.Fbl.History;
 using EtAlii.Adp.Specification.Fbl.Planning;
 using EtAlii.Adp.Specification.Fbl.Tests.Support;
+using EtAlii.Adp.Specification.Json;
 using Xunit;
 
 namespace EtAlii.Adp.Specification.Fbl.Tests.Conformance;
@@ -145,7 +146,7 @@ public class InsertEmptyFixturesTests
             using var fixture = JsonDocument.Parse(File.ReadAllBytes(fixturePath));
             var root = fixture.RootElement.Clone();
             var binding = FblDocumentLoader.ResolveReference(root.GetProperty("binding").GetString()!, fixturePath, out var problems);
-            Assert.DoesNotContain(problems, p => p.Severity == ProblemSeverity.Error);
+            Assert.DoesNotContain(problems, p => p.Severity == LoadSeverity.Error);
             var input = root.GetProperty("input").GetString()!;
             _body = OpenBody.Open(File.ReadAllBytes(Path.Combine(folder, input)), binding, new FblOptions { FileName = input });
             _steps = [.. root.GetProperty("steps").EnumerateArray()];

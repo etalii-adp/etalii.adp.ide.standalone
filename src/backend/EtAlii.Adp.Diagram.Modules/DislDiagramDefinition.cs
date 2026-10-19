@@ -3,6 +3,7 @@ using System.Text.Json;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Specification.Disl;
+using EtAlii.Adp.Specification.Json;
 
 namespace EtAlii.Adp.Diagram.Modules;
 
@@ -67,7 +68,7 @@ public sealed class DislDiagramDefinition
     public DislSpecification Specification => _loaded.Value.Specification;
 
     /// <summary>What the runtime had to say about the definition as it loaded it.</summary>
-    public IReadOnlyList<DislDiagnostic> Diagnostics => _loaded.Value.Diagnostics;
+    public IReadOnlyList<LoadDiagnostic> Diagnostics => _loaded.Value.Diagnostics;
 
     /// <summary>The wire ids of the module's block.</summary>
     public WireIdMap Ids => _ids.Value;

@@ -3,6 +3,7 @@ using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 using EtAlii.Adp.Diagram.AnsibleStructure.Tests.Parity;
 using EtAlii.Adp.Specification.Disl;
+using EtAlii.Adp.Specification.Json;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.AnsibleStructure.Tests;
@@ -80,7 +81,7 @@ public sealed partial class BundledDefinitionTests
     {
         var loaded = BundledDefinition.Load(_module, "ansible-structure.dis");
 
-        Assert.DoesNotContain(loaded.Diagnostics, d => d.Severity == DislSeverity.Error);
+        Assert.DoesNotContain(loaded.Diagnostics, d => d.Severity == LoadSeverity.Error);
     }
 
     /// <summary>

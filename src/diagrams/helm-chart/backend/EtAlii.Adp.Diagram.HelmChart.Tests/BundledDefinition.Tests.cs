@@ -2,6 +2,7 @@ using System.Reflection;
 using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 using EtAlii.Adp.Specification.Disl;
+using EtAlii.Adp.Specification.Json;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.HelmChart.Tests;
@@ -72,7 +73,7 @@ public sealed partial class BundledDefinitionTests
     {
         var loaded = BundledDefinition.Load(_module, "helm-chart.dis");
 
-        Assert.DoesNotContain(loaded.Diagnostics, d => d.Severity == DislSeverity.Error);
+        Assert.DoesNotContain(loaded.Diagnostics, d => d.Severity == LoadSeverity.Error);
     }
 
     private static string DefinitionFolder()

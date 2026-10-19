@@ -1,20 +1,9 @@
 using System.Text.Json;
 using EtAlii.Adp.Specification.Cel;
 using EtAlii.Adp.Specification.Fbl.Expressions;
+using EtAlii.Adp.Specification.Json;
 
 namespace EtAlii.Adp.Specification.Fbl.Documents;
-
-public enum ProblemSeverity
-{
-    Warning,
-    Error,
-}
-
-/// <summary>A problem in an FBL document, at the JSON Pointer of its location (FBL §14.1).</summary>
-public sealed record LoadProblem(string Pointer, ProblemSeverity Severity, string Message)
-{
-    public override string ToString() => $"{Severity} at {(Pointer.Length == 0 ? "/" : Pointer)}: {Message}";
-}
 
 /// <summary>
 /// Loads an FBL document as FBL §14.1 says, apart from validating against the JSON Schema (left to
@@ -29,7 +18,7 @@ public static class FblDocumentLoader
     /// <summary>The newest minor version this library reads in full; a document of a newer one loads with a warning.</summary>
     private const int KnownMinor = 5;
 
-    public static IReadOnlyList<LoadProblem> Load(string path, out FblDocument? document) =>
+    public static IReadOnlyList<LoadDiagnostic> Load(string path, out FblDocument? document) =>
         Load(ReadShared(path), out document);
 
     /// <summary>Reads at the sharing the repository's own reader uses, so a concurrent save is never refused.</summary>
@@ -41,9 +30,9 @@ public static class FblDocumentLoader
         return buffer.ToArray();
     }
 
-    public static IReadOnlyList<LoadProblem> Load(byte[] json, out FblDocument? document)
+    public static IReadOnlyList<LoadDiagnostic> Load(byte[] json, out FblDocument? document)
     {
-        var problems = new List<LoadProblem>();
+        var problems = new List<LoadDiagnostic>();
         document = null;
         FindDuplicateKeys(json, problems);
         if (problems.Count > 0) return problems;
@@ -55,7 +44,7 @@ public static class FblDocumentLoader
         }
         catch (JsonException e)
         {
-            problems.Add(new LoadProblem("", ProblemSeverity.Error, $"The document is not JSON: {e.Message}"));
+            problems.Add(new LoadDiagnostic("", LoadSeverity.Error, $"The document is not JSON: {e.Message}"));
             return problems;
         }
 
@@ -64,33 +53,33 @@ public static class FblDocumentLoader
             var root = parsed.RootElement;
             if (root.ValueKind != JsonValueKind.Object)
             {
-                problems.Add(new LoadProblem("", ProblemSeverity.Error, "An FBL document is a JSON object."));
+                problems.Add(new LoadDiagnostic("", LoadSeverity.Error, "An FBL document is a JSON object."));
                 return problems;
             }
             var version = root.TryGetProperty("fbl", out var v) && v.ValueKind == JsonValueKind.String ? v.GetString()! : null;
             if (version is null)
             {
-                problems.Add(new LoadProblem("/fbl", ProblemSeverity.Error, "The document does not say which FBL version it is written in."));
+                problems.Add(new LoadDiagnostic("/fbl", LoadSeverity.Error, "The document does not say which FBL version it is written in."));
                 return problems;
             }
             var parts = version.Split('.');
             if (parts.Length < 2 || !int.TryParse(parts[0], out var major) || !int.TryParse(parts[1], out var minor))
             {
-                problems.Add(new LoadProblem("/fbl", ProblemSeverity.Error, $"'{version}' is not an FBL version."));
+                problems.Add(new LoadDiagnostic("/fbl", LoadSeverity.Error, $"'{version}' is not an FBL version."));
                 return problems;
             }
             if (major != SupportedMajor)
             {
-                problems.Add(new LoadProblem("/fbl", ProblemSeverity.Error, $"FBL {version} is not supported; this library reads FBL {SupportedMajor}.x."));
+                problems.Add(new LoadDiagnostic("/fbl", LoadSeverity.Error, $"FBL {version} is not supported; this library reads FBL {SupportedMajor}.x."));
                 return problems;
             }
             if (minor > KnownMinor)
             {
-                problems.Add(new LoadProblem("/fbl", ProblemSeverity.Warning, $"FBL {version} is newer than {SupportedMajor}.{KnownMinor}; what this library does not know is ignored."));
+                problems.Add(new LoadDiagnostic("/fbl", LoadSeverity.Warning, $"FBL {version} is newer than {SupportedMajor}.{KnownMinor}; what this library does not know is ignored."));
             }
             if (!root.TryGetProperty("bindings", out var bindings) || bindings.ValueKind != JsonValueKind.Object || !bindings.EnumerateObject().Any())
             {
-                problems.Add(new LoadProblem("/bindings", ProblemSeverity.Error, "A document has at least one binding."));
+                problems.Add(new LoadDiagnostic("/bindings", LoadSeverity.Error, "A document has at least one binding."));
                 return problems;
             }
 
@@ -100,7 +89,7 @@ public static class FblDocumentLoader
                 var pointer = "/bindings/" + Escape(property.Name);
                 if (!Names.IsName(property.Name))
                 {
-                    problems.Add(new LoadProblem(pointer, ProblemSeverity.Error, $"'{property.Name}' is not a valid binding name."));
+                    problems.Add(new LoadDiagnostic(pointer, LoadSeverity.Error, $"'{property.Name}' is not a valid binding name."));
                 }
                 var binding = BindingReader.Read(property.Name, property.Value, pointer, problems);
                 if (binding is not null)
@@ -110,14 +99,14 @@ public static class FblDocumentLoader
                 }
             }
 
-            if (problems.Any(p => p.Severity == ProblemSeverity.Error)) return problems;
+            if (problems.Any(p => p.Severity == LoadSeverity.Error)) return problems;
             document = new FblDocument { Version = version, Bindings = result };
             return problems;
         }
     }
 
     /// <summary>Resolves a binding reference, <c>doc.fbl#name</c> or <c>#name</c>, against <paramref name="referrer"/> (FBL §2.3).</summary>
-    public static FblBinding ResolveReference(string reference, string referrer, out IReadOnlyList<LoadProblem> problems)
+    public static FblBinding ResolveReference(string reference, string referrer, out IReadOnlyList<LoadDiagnostic> problems)
     {
         var hash = reference.LastIndexOf('#');
         if (hash < 0) throw new ArgumentException($"'{reference}' is not a binding reference.", nameof(reference));
@@ -133,7 +122,7 @@ public static class FblDocumentLoader
 
     internal static string Escape(string token) => token.Replace("~", "~0").Replace("/", "~1");
 
-    private static void FindDuplicateKeys(byte[] json, List<LoadProblem> problems)
+    private static void FindDuplicateKeys(byte[] json, List<LoadDiagnostic> problems)
     {
         var reader = new Utf8JsonReader(json, new JsonReaderOptions { CommentHandling = JsonCommentHandling.Disallow });
         var stack = new Stack<(HashSet<string>? Keys, string Pointer, int Index)>();
@@ -165,7 +154,7 @@ public static class FblDocumentLoader
                         var keys = stack.Peek().Keys!;
                         if (!keys.Add(name))
                         {
-                            problems.Add(new LoadProblem(stack.Peek().Pointer + "/" + Escape(name), ProblemSeverity.Error, $"The key '{name}' appears twice."));
+                            problems.Add(new LoadDiagnostic(stack.Peek().Pointer + "/" + Escape(name), LoadSeverity.Error, $"The key '{name}' appears twice."));
                         }
                         pending = name;
                         break;
@@ -182,7 +171,7 @@ public static class FblDocumentLoader
         }
         catch (JsonException e)
         {
-            problems.Add(new LoadProblem(pointer, ProblemSeverity.Error, $"The document is not JSON: {e.Message}"));
+            problems.Add(new LoadDiagnostic(pointer, LoadSeverity.Error, $"The document is not JSON: {e.Message}"));
         }
     }
 
@@ -211,17 +200,17 @@ internal static class Names
 /// <summary>Maps a binding's JSON onto the typed records, reporting what it cannot map.</summary>
 internal static class BindingReader
 {
-    public static FblBinding? Read(string name, JsonElement json, string pointer, List<LoadProblem> problems)
+    public static FblBinding? Read(string name, JsonElement json, string pointer, List<LoadDiagnostic> problems)
     {
         if (json.ValueKind != JsonValueKind.Object)
         {
-            problems.Add(new LoadProblem(pointer, ProblemSeverity.Error, "A binding is an object."));
+            problems.Add(new LoadDiagnostic(pointer, LoadSeverity.Error, "A binding is an object."));
             return null;
         }
-        if (!json.TryGetProperty("claims", out var claims)) problems.Add(new LoadProblem(pointer + "/claims", ProblemSeverity.Error, "A binding has claims."));
-        if (!json.TryGetProperty("body", out var body)) problems.Add(new LoadProblem(pointer + "/body", ProblemSeverity.Error, "A binding has a body."));
-        if (!json.TryGetProperty("reader", out var reader)) problems.Add(new LoadProblem(pointer + "/reader", ProblemSeverity.Error, "A binding has a reader."));
-        if (problems.Any(p => p.Severity == ProblemSeverity.Error && p.Pointer.StartsWith(pointer, StringComparison.Ordinal))) return null;
+        if (!json.TryGetProperty("claims", out var claims)) problems.Add(new LoadDiagnostic(pointer + "/claims", LoadSeverity.Error, "A binding has claims."));
+        if (!json.TryGetProperty("body", out var body)) problems.Add(new LoadDiagnostic(pointer + "/body", LoadSeverity.Error, "A binding has a body."));
+        if (!json.TryGetProperty("reader", out var reader)) problems.Add(new LoadDiagnostic(pointer + "/reader", LoadSeverity.Error, "A binding has a reader."));
+        if (problems.Any(p => p.Severity == LoadSeverity.Error && p.Pointer.StartsWith(pointer, StringComparison.Ordinal))) return null;
 
         PluginReader? plugin = null;
         if (reader.ValueKind == JsonValueKind.Object)
@@ -230,7 +219,7 @@ internal static class BindingReader
         }
         else if (reader.ValueKind != JsonValueKind.String || reader.GetString() != "declared")
         {
-            problems.Add(new LoadProblem(pointer + "/reader", ProblemSeverity.Error, "The reader is \"declared\" or a plugin."));
+            problems.Add(new LoadDiagnostic(pointer + "/reader", LoadSeverity.Error, "The reader is \"declared\" or a plugin."));
         }
 
         return new FblBinding
@@ -286,15 +275,15 @@ internal static class BindingReader
         };
     }
 
-    private static BodySettings ReadBody(JsonElement json, string pointer, List<LoadProblem> problems)
+    private static BodySettings ReadBody(JsonElement json, string pointer, List<LoadDiagnostic> problems)
     {
         var kind = Str(json, "kind");
-        if (kind is not ("file" or "folder")) problems.Add(new LoadProblem(pointer + "/kind", ProblemSeverity.Error, "A body's kind is \"file\" or \"folder\"."));
+        if (kind is not ("file" or "folder")) problems.Add(new LoadDiagnostic(pointer + "/kind", LoadSeverity.Error, "A body's kind is \"file\" or \"folder\"."));
         var recognise = json.TryGetProperty("recognise", out var r) ? r : default;
         var settle = BodySettings.DefaultSettle;
         if (json.TryGetProperty("settle", out var t) && !(t.ValueKind == JsonValueKind.Number && t.TryGetInt32(out settle) && settle >= 0))
         {
-            problems.Add(new LoadProblem(pointer + "/settle", ProblemSeverity.Error, "A body's settle is a whole number of milliseconds, 0 or more."));
+            problems.Add(new LoadDiagnostic(pointer + "/settle", LoadSeverity.Error, "A body's settle is a whole number of milliseconds, 0 or more."));
             settle = BodySettings.DefaultSettle;
         }
         return new BodySettings
@@ -551,7 +540,7 @@ internal static class BindingReader
 /// <summary>The checks of FBL §14.1 steps 4 to 6 that need no DISL specification.</summary>
 internal static class BindingChecker
 {
-    public static void Check(FblBinding binding, string pointer, List<LoadProblem> problems)
+    public static void Check(FblBinding binding, string pointer, List<LoadDiagnostic> problems)
     {
         var rules = binding.AllRules.ToList();
         var names = new HashSet<string>(StringComparer.Ordinal);
@@ -562,7 +551,7 @@ internal static class BindingChecker
         {
             var block = binding.Blocks[i];
             var at = $"{pointer}/blocks/{i}";
-            if (!names.Add(block.Name)) problems.Add(new LoadProblem(at + "/name", ProblemSeverity.Error, $"The rule name '{block.Name}' is used twice."));
+            if (!names.Add(block.Name)) problems.Add(new LoadDiagnostic(at + "/name", LoadSeverity.Error, $"The rule name '{block.Name}' is used twice."));
             CheckRegex(block.Line, at + "/line", problems);
             CheckWithin(block.Within, ruleNames, at + "/within", problems);
         }
@@ -572,17 +561,17 @@ internal static class BindingChecker
         {
             var rule = rules[i];
             var at = rule.IsRelation ? $"{pointer}/relations/{i - elementCount}" : $"{pointer}/elements/{i}";
-            if (!Names.IsName(rule.Name)) problems.Add(new LoadProblem(at + "/name", ProblemSeverity.Error, $"'{rule.Name}' is not a valid rule name."));
-            if (!names.Add(rule.Name)) problems.Add(new LoadProblem(at + "/name", ProblemSeverity.Error, $"The rule name '{rule.Name}' is used twice."));
+            if (!Names.IsName(rule.Name)) problems.Add(new LoadDiagnostic(at + "/name", LoadSeverity.Error, $"'{rule.Name}' is not a valid rule name."));
+            if (!names.Add(rule.Name)) problems.Add(new LoadDiagnostic(at + "/name", LoadSeverity.Error, $"The rule name '{rule.Name}' is used twice."));
             if ((rule.At is null) == (rule.Line is null) && binding.Plugin is null)
             {
-                problems.Add(new LoadProblem(at, ProblemSeverity.Error, "A rule has exactly one of 'at' and 'line'."));
+                problems.Add(new LoadDiagnostic(at, LoadSeverity.Error, "A rule has exactly one of 'at' and 'line'."));
             }
             if (rule.Line is not null) CheckRegex(rule.Line, at + "/line", problems);
             CheckWithin(rule.Within, ruleNames, at + "/within", problems);
             foreach (var file in rule.Files)
             {
-                if (!fileRules.Contains(file)) problems.Add(new LoadProblem(at + "/files", ProblemSeverity.Error, $"No file rule is named '{file}'."));
+                if (!fileRules.Contains(file)) problems.Add(new LoadDiagnostic(at + "/files", LoadSeverity.Error, $"No file rule is named '{file}'."));
             }
             if (rule.Parent is not null)
             {
@@ -601,7 +590,7 @@ internal static class BindingChecker
             if (rule.Id?.SidecarKey is { } sidecar) Compile(sidecar, context, at + "/id/sidecar/key", problems);
             if (rule.IsRelation && (rule.Source is null || rule.Target is null))
             {
-                problems.Add(new LoadProblem(at, ProblemSeverity.Error, "A relation rule has a source and a target."));
+                problems.Add(new LoadDiagnostic(at, LoadSeverity.Error, "A relation rule has a source and a target."));
             }
             foreach ((string name, AttributeBinding attribute) in rule.Attributes)
             {
@@ -615,7 +604,7 @@ internal static class BindingChecker
                 CheckScalarOptions(attribute, scalars, a, problems);
                 if (CountSlots(attribute) != 1)
                 {
-                    problems.Add(new LoadProblem(a, ProblemSeverity.Error, "An attribute binding names exactly one slot (FBL §3.3)."));
+                    problems.Add(new LoadDiagnostic(a, LoadSeverity.Error, "An attribute binding names exactly one slot (FBL §3.3)."));
                 }
             }
             if (rule.Source is not null) CheckSlot(rule.Source, context, at + "/source", problems);
@@ -627,24 +616,24 @@ internal static class BindingChecker
         {
             if (!binding.Body.IsFolder && family is null)
             {
-                problems.Add(new LoadProblem(pointer + "/body/family", ProblemSeverity.Error, "A declared file body names its family."));
+                problems.Add(new LoadDiagnostic(pointer + "/body/family", LoadSeverity.Error, "A declared file body names its family."));
             }
             if (rules.Count == 0)
             {
-                problems.Add(new LoadProblem(pointer, ProblemSeverity.Error, "A declared binding has at least one element or relation rule."));
+                problems.Add(new LoadDiagnostic(pointer, LoadSeverity.Error, "A declared binding has at least one element or relation rule."));
             }
         }
         else if (rules.Count > 0)
         {
-            problems.Add(new LoadProblem(pointer, ProblemSeverity.Error, "A binding read by a plugin has no rules; its model is what the plugin reads."));
+            problems.Add(new LoadDiagnostic(pointer, LoadSeverity.Error, "A binding read by a plugin has no rules; its model is what the plugin reads."));
         }
         if (binding.Claims is { Shared: true, Marker: null, RegistrationOnly: false })
         {
-            problems.Add(new LoadProblem(pointer + "/claims", ProblemSeverity.Error, "A shared claim has a marker or is registrationOnly."));
+            problems.Add(new LoadDiagnostic(pointer + "/claims", LoadSeverity.Error, "A shared claim has a marker or is registrationOnly."));
         }
         if (binding.Claims.Readings.Values.Count(r => r.Bare) > 1)
         {
-            problems.Add(new LoadProblem(pointer + "/claims/readings", ProblemSeverity.Error, "At most one reading is bare."));
+            problems.Add(new LoadDiagnostic(pointer + "/claims/readings", LoadSeverity.Error, "At most one reading is bare."));
         }
         if (binding.Comment is not null) CheckRegex(binding.Comment, pointer + "/comment", problems);
         if (binding.Header?.Line is { } headerLine) CheckRegex(headerLine, pointer + "/header/line", problems);
@@ -663,13 +652,13 @@ internal static class BindingChecker
     /// FBL 0.5 §5.2: <c>read</c>, <c>quoted</c> and <c>fallback</c> are given only on a slot of the yaml
     /// or json family that reads a scalar, so never in another family nor on a <c>value</c> or <c>capture</c> slot.
     /// </summary>
-    private static void CheckScalarOptions(AttributeBinding attribute, bool scalars, string pointer, List<LoadProblem> problems)
+    private static void CheckScalarOptions(AttributeBinding attribute, bool scalars, string pointer, List<LoadDiagnostic> problems)
     {
         var where = !scalars ? "a slot of the xml, lines or blocks family" : attribute.Value is not null ? "a value slot" : attribute.Capture is not null ? "a capture slot" : null;
         if (where is null) return;
         foreach ((string option, bool given) in new[] { ("read", attribute.Read is not null), ("quoted", attribute.Quoted is not null), ("fallback", attribute.Fallback is not null) })
         {
-            if (given) problems.Add(new LoadProblem($"{pointer}/{option}", ProblemSeverity.Error, $"'{option}' is not given on {where} (FBL 5.2)."));
+            if (given) problems.Add(new LoadDiagnostic($"{pointer}/{option}", LoadSeverity.Error, $"'{option}' is not given on {where} (FBL 5.2)."));
         }
     }
 
@@ -677,33 +666,33 @@ internal static class BindingChecker
         (s.Key is null ? 0 : 1) + (s.XmlAttribute is null ? 0 : 1) + (s.Text ? 1 : 0) + (s.Group is null ? 0 : 1) +
         (s.Parent is null ? 0 : 1) + (s.Capture is null ? 0 : 1) + (s.Value is null ? 0 : 1);
 
-    private static void CheckSlot(Slot slot, CelContext context, string pointer, List<LoadProblem> problems)
+    private static void CheckSlot(Slot slot, CelContext context, string pointer, List<LoadDiagnostic> problems)
     {
         if (slot.Value is not null) Compile(slot.Value, context, pointer + "/value", problems);
         if (slot.Word is not null) CheckRegex(slot.Word, pointer + "/word", problems);
     }
 
-    private static void Require(string name, List<Rule> rules, string pointer, List<LoadProblem> problems)
+    private static void Require(string name, List<Rule> rules, string pointer, List<LoadDiagnostic> problems)
     {
-        if (rules.All(r => r.Name != name)) problems.Add(new LoadProblem(pointer, ProblemSeverity.Error, $"No rule is named '{name}'."));
+        if (rules.All(r => r.Name != name)) problems.Add(new LoadDiagnostic(pointer, LoadSeverity.Error, $"No rule is named '{name}'."));
     }
 
-    private static void CheckWithin(IReadOnlyList<string>? within, HashSet<string> names, string pointer, List<LoadProblem> problems)
+    private static void CheckWithin(IReadOnlyList<string>? within, HashSet<string> names, string pointer, List<LoadDiagnostic> problems)
     {
         if (within is null) return;
         foreach (var w in within)
         {
-            if (w != "^" && !names.Contains(w)) problems.Add(new LoadProblem(pointer, ProblemSeverity.Error, $"No rule is named '{w}'."));
+            if (w != "^" && !names.Contains(w)) problems.Add(new LoadDiagnostic(pointer, LoadSeverity.Error, $"No rule is named '{w}'."));
         }
     }
 
-    private static void CheckRegex(string expression, string pointer, List<LoadProblem> problems)
+    private static void CheckRegex(string expression, string pointer, List<LoadDiagnostic> problems)
     {
         var problem = RegexSubset.Check(expression);
-        if (problem is not null) problems.Add(new LoadProblem(pointer, ProblemSeverity.Error, problem));
+        if (problem is not null) problems.Add(new LoadDiagnostic(pointer, LoadSeverity.Error, problem));
     }
 
-    private static void Compile(string? expression, CelContext context, string pointer, List<LoadProblem> problems)
+    private static void Compile(string? expression, CelContext context, string pointer, List<LoadDiagnostic> problems)
     {
         if (expression is null) return;
         try
@@ -712,7 +701,7 @@ internal static class BindingChecker
         }
         catch (CelException e)
         {
-            problems.Add(new LoadProblem(pointer, ProblemSeverity.Error, e.Message));
+            problems.Add(new LoadDiagnostic(pointer, LoadSeverity.Error, e.Message));
         }
     }
 }

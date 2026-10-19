@@ -22,20 +22,20 @@ flowchart LR
 
 ## The solution, with its counts
 
-`src/backend/EtAlii.Adp.slnx` holds **142** projects: the core projects at its root and the modules in one solution folder per kind (`/Diagrams/`, `/editors/`, `/designers/`), so the whole thing opens and builds as one solution in Rider:
+`src/backend/EtAlii.Adp.slnx` holds **143** projects: the core projects at its root and the modules in one solution folder per kind (`/Diagrams/`, `/editors/`, `/designers/`), so the whole thing opens and builds as one solution in Rider:
 
 | Split | Count |
 | --- | --- |
-| core | **44** |
+| core | **45** |
 | diagram | **86** |
 | editor | **10** |
 | designer | **2** |
-| production | **95** |
+| production | **96** |
 | test | **47** |
 
-Those are **two different splits of the same 142**, and a figure appearing in both tables is a coincidence rather than a correspondence, which is exactly what makes a wrong classification look right.
+Those are **two different splits of the same 143**, and a figure appearing in both tables is a coincidence rather than a correspondence, which is exactly what makes a wrong classification look right.
 
-There are **157** tracked `.csproj` files under `src/`, which is **15** more than the solution holds. Every one of the 15 is fixture or example data of the dotnet-dependency-graph module — a module whose subject matter *is* reading `.csproj` files, so its test fixtures and its showcase project are themselves `.csproj`, in `src/diagrams/dotnet-dependency-graph` and in the showcase copy under `src/examples/`. **A page giving the tracked count as the number of projects would be wrong in the confident direction.**
+There are **158** tracked `.csproj` files under `src/`, which is **15** more than the solution holds. Every one of the 15 is fixture or example data of the dotnet-dependency-graph module — a module whose subject matter *is* reading `.csproj` files, so its test fixtures and its showcase project are themselves `.csproj`, in `src/diagrams/dotnet-dependency-graph` and in the showcase copy under `src/examples/`. **A page giving the tracked count as the number of projects would be wrong in the confident direction.**
 
 ## The relative-path trap
 
@@ -45,7 +45,7 @@ Classifying by path segment — "count the ones containing `backend`" as the cor
 
 ## The core projects
 
-**22** production:
+**23** production:
 
 | Concern | Project |
 | --- | --- |
@@ -70,6 +70,7 @@ Classifying by path segment — "count the ones containing `backend`" as the cor
 | The in-process host the flow tests drive: one host per test class, a signed-in session, stream probes | `EtAlii.Adp.TestSupport.Host` |
 | Reading and writing bodies through FBL bindings (Format Binding Language) | `EtAlii.Adp.Specification.Fbl` |
 | Evaluating CEL expressions (Common Expression Language), for FBL and DISL alike | `EtAlii.Adp.Specification.Cel` |
+| What the DISL and FBL loaders share: the diagnostic a loader reports and its severity | `EtAlii.Adp.Specification.Json` |
 | Loading DISL specifications (Diagram Specification Language) and the bundled definitions, building a diagram's model from a reading, and deriving its toolbox, context menus, property rows, findings and gesture refusals, and running its operations, hooks and deletion policy, and giving the FBL library the attribute types of a binding | `EtAlii.Adp.Specification.Disl` |
 
 **22** test: `EtAlii.Adp.Tests`, `EtAlii.Adp.Authentication.Tests`, `EtAlii.Adp.Backend.Tests`, `EtAlii.Adp.Client.Tests`, `EtAlii.Adp.Context.Tests`, `EtAlii.Adp.Designer.Tests`, `EtAlii.Adp.Diagram.Tests`, `EtAlii.Adp.Diagram.Modules.Tests`, `EtAlii.Adp.Documents.Tests`, `EtAlii.Adp.Editor.Tests`, `EtAlii.Adp.Hierarchy.Tests`, `EtAlii.Adp.History.Tests`, `EtAlii.Adp.HostLogging.Tests`, `EtAlii.Adp.Layout.Tests`, `EtAlii.Adp.Problems.Tests`, `EtAlii.Adp.Projects.Tests`, `EtAlii.Adp.Repository.Tests`, `EtAlii.Adp.Sessions.Tests`, `EtAlii.Adp.Specification.Cel.Tests`, `EtAlii.Adp.Specification.Disl.Tests`, `EtAlii.Adp.Specification.Fbl.Tests`, `EtAlii.Adp.Workspace.Tests`.

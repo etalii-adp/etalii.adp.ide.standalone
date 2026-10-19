@@ -1,6 +1,7 @@
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using EtAlii.Adp.Specification.Cel;
+using EtAlii.Adp.Specification.Json;
 
 namespace EtAlii.Adp.Specification.Disl;
 
@@ -38,7 +39,7 @@ internal static partial class UserFunctions
     /// Adds every function of <paramref name="declarations"/> to <paramref name="environment"/>, in
     /// order, and reports each one that does not compile; a function that does not compile is not added.
     /// </summary>
-    public static void Compile(CelEnvironment environment, IReadOnlyList<DislFunctionDeclaration> declarations, List<DislDiagnostic> diagnostics)
+    public static void Compile(CelEnvironment environment, IReadOnlyList<DislFunctionDeclaration> declarations, List<LoadDiagnostic> diagnostics)
     {
         var declared = declarations.Select(declaration => declaration.Name).ToHashSet(StringComparer.Ordinal);
         foreach (var declaration in declarations)
@@ -59,7 +60,7 @@ internal static partial class UserFunctions
             }
             catch (CelException e)
             {
-                diagnostics.Add(new DislDiagnostic(DislJson.Pointer(pointer, "cel"), DislSeverity.Error, Explain(declaration, e.Message, declared)));
+                diagnostics.Add(new LoadDiagnostic(DislJson.Pointer(pointer, "cel"), LoadSeverity.Error, Explain(declaration, e.Message, declared)));
                 continue;
             }
 
@@ -67,32 +68,32 @@ internal static partial class UserFunctions
         }
     }
 
-    private static bool Valid(DislFunctionDeclaration declaration, string pointer, CelEnvironment environment, List<DislDiagnostic> diagnostics)
+    private static bool Valid(DislFunctionDeclaration declaration, string pointer, CelEnvironment environment, List<LoadDiagnostic> diagnostics)
     {
         var valid = true;
         if (!SimpleIdentifier().IsMatch(declaration.Name))
         {
-            diagnostics.Add(new DislDiagnostic(pointer, DislSeverity.Error, $"'{declaration.Name}' is not a simple identifier, so CEL cannot call it."));
+            diagnostics.Add(new LoadDiagnostic(pointer, LoadSeverity.Error, $"'{declaration.Name}' is not a simple identifier, so CEL cannot call it."));
             valid = false;
         }
         if (environment.TryGetFunction(declaration.Name, CelCallStyle.Global, out _))
         {
-            diagnostics.Add(new DislDiagnostic(pointer, DislSeverity.Error, $"'{declaration.Name}' is already a function of the DISL library or of this specification."));
+            diagnostics.Add(new LoadDiagnostic(pointer, LoadSeverity.Error, $"'{declaration.Name}' is already a function of the DISL library or of this specification."));
             valid = false;
         }
         foreach (var parameter in declaration.Parameters.Where(parameter => !SimpleIdentifier().IsMatch(parameter.Name)))
         {
-            diagnostics.Add(new DislDiagnostic(DislJson.Pointer(pointer, "params"), DislSeverity.Error, $"The parameter '{parameter.Name}' is not a simple identifier."));
+            diagnostics.Add(new LoadDiagnostic(DislJson.Pointer(pointer, "params"), LoadSeverity.Error, $"The parameter '{parameter.Name}' is not a simple identifier."));
             valid = false;
         }
         foreach (var use in declaration.Uses.Where(use => use is not ("diagram" or "env")))
         {
-            diagnostics.Add(new DislDiagnostic(DislJson.Pointer(pointer, "uses"), DislSeverity.Error, $"A function may use 'diagram' and 'env', not '{use}'."));
+            diagnostics.Add(new LoadDiagnostic(DislJson.Pointer(pointer, "uses"), LoadSeverity.Error, $"A function may use 'diagram' and 'env', not '{use}'."));
             valid = false;
         }
         if (declaration.Recursion is { MaxDepth: < 1 })
         {
-            diagnostics.Add(new DislDiagnostic(DislJson.Pointer(pointer, "recursion"), DislSeverity.Error, "recursion.maxDepth must be at least 1."));
+            diagnostics.Add(new LoadDiagnostic(DislJson.Pointer(pointer, "recursion"), LoadSeverity.Error, "recursion.maxDepth must be at least 1."));
             valid = false;
         }
         return valid;

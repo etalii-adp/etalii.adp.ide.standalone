@@ -1,13 +1,14 @@
 using System.Text;
 using System.Text.Json;
 using EtAlii.Adp.Specification.Cel;
+using EtAlii.Adp.Specification.Json;
 
 namespace EtAlii.Adp.Specification.Disl;
 
 /// <summary>What loading a specification gives: the specification, when it has no errors, and every diagnostic.</summary>
-public sealed record DislLoadResult(DislSpecification? Specification, IReadOnlyList<DislDiagnostic> Diagnostics)
+public sealed record DislLoadResult(DislSpecification? Specification, IReadOnlyList<LoadDiagnostic> Diagnostics)
 {
-    public IEnumerable<DislDiagnostic> Errors => Diagnostics.Where(diagnostic => diagnostic.Severity == DislSeverity.Error);
+    public IEnumerable<LoadDiagnostic> Errors => Diagnostics.Where(diagnostic => diagnostic.Severity == LoadSeverity.Error);
 }
 
 /// <summary>
@@ -65,7 +66,7 @@ public static class DislLoader
     public static DislLoadResult Load(ReadOnlyMemory<byte> utf8, DislPluginFunctions plugins)
     {
         ArgumentNullException.ThrowIfNull(plugins);
-        var diagnostics = new List<DislDiagnostic>();
+        var diagnostics = new List<LoadDiagnostic>();
 
         // Step 1: parse, rejecting a byte-order mark and duplicate keys (§2.1).
         if (utf8.Span.StartsWith("﻿"u8))
@@ -117,7 +118,7 @@ public static class DislLoader
         {
             diagnostics.Add(Error("/imports", "This runtime does not resolve imports (DISL §3.3, step 3 of §14.1)."));
         }
-        if (diagnostics.Any(diagnostic => diagnostic.Severity == DislSeverity.Error)) return new DislLoadResult(null, diagnostics);
+        if (diagnostics.Any(diagnostic => diagnostic.Severity == LoadSeverity.Error)) return new DislLoadResult(null, diagnostics);
 
         // Steps 5 and 6: the metamodel, names resolved and inheritance flattened (§4.7), and the other references.
         var metamodel = DislInheritance.Build(metamodelJson, diagnostics);
@@ -132,17 +133,17 @@ public static class DislLoader
         UserFunctions.Compile(environment, functions, diagnostics);
         var expressions = Compile(root, environment, diagnostics);
 
-        return diagnostics.Any(diagnostic => diagnostic.Severity == DislSeverity.Error)
+        return diagnostics.Any(diagnostic => diagnostic.Severity == LoadSeverity.Error)
             ? new DislLoadResult(null, diagnostics)
             : new DislLoadResult(new DislSpecification(root, metamodel, functions, environment, expressions), diagnostics);
     }
 
-    internal static DislDiagnostic Error(string pointer, string message) => new(pointer, DislSeverity.Error, message);
+    internal static LoadDiagnostic Error(string pointer, string message) => new(pointer, LoadSeverity.Error, message);
 
-    private static DislDiagnostic Warning(string pointer, string message) => new(pointer, DislSeverity.Warning, message);
+    private static LoadDiagnostic Warning(string pointer, string message) => new(pointer, LoadSeverity.Warning, message);
 
     /// <summary>Every object's keys are unique (§2.1); a repeated key is reported at its second occurrence.</summary>
-    private static void DuplicateKeys(JsonElement element, string pointer, List<DislDiagnostic> diagnostics)
+    private static void DuplicateKeys(JsonElement element, string pointer, List<LoadDiagnostic> diagnostics)
     {
         switch (element.ValueKind)
         {
@@ -166,7 +167,7 @@ public static class DislLoader
     }
 
     /// <summary>The <c>disl</c> version, or its deprecated alias <c>dedl</c> (§2.9, §18): a higher major is refused, a higher minor warned about.</summary>
-    private static void Version(JsonElement root, List<DislDiagnostic> diagnostics)
+    private static void Version(JsonElement root, List<LoadDiagnostic> diagnostics)
     {
         var disl = DislJson.String(root, "disl");
         var dedl = DislJson.String(root, "dedl");
@@ -209,7 +210,7 @@ public static class DislLoader
             ? value
             : DefaultCostLimit;
 
-    private static List<DislFunctionDeclaration> Functions(JsonElement root, List<DislDiagnostic> diagnostics)
+    private static List<DislFunctionDeclaration> Functions(JsonElement root, List<LoadDiagnostic> diagnostics)
     {
         var functions = new List<DislFunctionDeclaration>();
         foreach (var function in DislJson.Members(root, "functions"))
@@ -238,7 +239,7 @@ public static class DislLoader
     }
 
     /// <summary>Compiles every expression the walker finds, each in its context with the names bound around it.</summary>
-    private static List<DislExpression> Compile(JsonElement root, CelEnvironment functions, List<DislDiagnostic> diagnostics)
+    private static List<DislExpression> Compile(JsonElement root, CelEnvironment functions, List<LoadDiagnostic> diagnostics)
     {
         var expressions = new List<DislExpression>();
         var everything = DislContexts.All.SelectMany(DislContexts.VariablesOf).Distinct(StringComparer.Ordinal).ToArray();
