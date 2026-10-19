@@ -406,7 +406,20 @@ export interface DislCanvas {
   /** What the canvas says once its document is read and holds nothing to draw (DISL §6.13). */
   empty?: { text: string; when?: string };
   filters?: Readonly<Record<string, DislFilter>>;
-  legend?: { visible?: boolean; position?: string; entries: readonly string[] };
+  /** The title drawn above the drawing surface (DISL §6.13 `canvas.title`). */
+  title?: { id?: string; text: Bindable<string>; style?: string | Readonly<Record<string, unknown>>; editable?: boolean };
+  /**
+   * The key: an enum's values (`entries`), or one entry per distinct thing drawn (`computed`, CEL over each
+   * element: its `key`, its `label` and its swatch's `fill`).
+   */
+  legend?: {
+    visible?: boolean;
+    position?: string;
+    title?: string;
+    from?: string;
+    entries?: readonly string[];
+    computed?: { key?: unknown; label: unknown; swatch?: { shape?: unknown; fill?: unknown } };
+  };
 }
 
 export interface DislViewpoint {

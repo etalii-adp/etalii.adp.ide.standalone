@@ -1,5 +1,5 @@
 import { holds, resolveEntries, resolveMany, resolveNumber, resolveOneAt, type Binding, type BindingSource } from "./binding";
-import type { BuiltInShape, DeclaredNumber, LabelDeclaration, LabelSlot, LabelTypography, ShapeBounds } from "./diagramDefinition";
+import type { BuiltInShape, DeclaredNumber, LabelDeclaration, LabelFit, LabelSlot, LabelTypography, ShapeBounds } from "./diagramDefinition";
 import { outlineOf, textRegionOf } from "../shapes/outline";
 import { capacityOf, continuedWithin, fitToCapacity, fitToWidth, LABEL_FONT_SIZE } from "../../label/textMetrics";
 
@@ -135,6 +135,42 @@ function fittedWrap(
   visible[room - 1] = continuedWithin(last, capacity);
   return { lines: visible, region, overflowed: true };
 }
+
+/**
+ * The text broken where white space falls into lines of at most `capacity` characters, for a block
+ * placed by an offset. White space of any kind separates words and makes no line of its own; a word
+ * longer than a line is cut, since nothing else keeps it inside the box.
+ */
+function blockLines(text: string, capacity: number): readonly string[] {
+  const lines: string[] = [];
+  let current = "";
+  for (let word of text.split(/\s+/).filter((part) => part.length > 0)) {
+    if (current.length > 0 && current.length + 1 + word.length <= capacity) {
+      current = `${current} ${word}`;
+      continue;
+    }
+    if (current.length > 0) {
+      lines.push(current);
+    }
+    while (word.length > capacity) {
+      lines.push(word.slice(0, capacity));
+      word = word.slice(capacity);
+    }
+    current = word;
+  }
+  if (current.length > 0) {
+    lines.push(current);
+  }
+  return lines;
+}
+
+/** How many characters of a fitted line go across the box: its width less the room either side. */
+function fittedCapacity(fit: LabelFit, bounds: ShapeBounds): number {
+  return capacityOf(bounds.width - 2 * fit.inset, fit.fontSize);
+}
+
+/** The padding a line keeps either side where its declaration states no fit: half of what `fitToWidth` keeps. */
+const DEFAULT_FIT_INSET = 4;
 
 /** Vertical offsets for the named slots, as fractions of the box height. */
 const SLOT_FRACTION: Record<LabelSlot, number> = { header: 0.28, body: 0.5, footer: 0.78 };
@@ -378,6 +414,34 @@ export function layoutLabels(
     const lines = entries.map((entry) => entry.text);
     const underline = declaration.underline !== undefined && holds(declaration.underline.when, source) ? declaration.underline.style : undefined;
 
+    if (declaration.wrap === true && declaration.offset !== undefined) {
+      // A BLOCK PLACED BY AN OFFSET: it starts on the label's own baseline and runs down, as many
+      // lines as the text takes, because whoever sized the box made it tall enough for them.
+      const typography = scaledTypography(declaration.typography, viewScale);
+      const fit = declaration.fit ?? { fontSize: typography?.fontSize ?? LABEL_FONT_SIZE, inset: DEFAULT_FIT_INSET };
+      const lineHeight = declaration.stack?.lineHeight ?? Math.round(fit.fontSize * 1.4);
+      const base = baselineOf(declaration, bounds, source.element);
+      const block = blockLines(lines.join("\n"), fittedCapacity(fit, bounds));
+      const tooltip = declaration.tooltip ? (resolveMany(declaration.tooltip, source)[0] ?? undefined) : undefined;
+      block.forEach((line, lineIndex) => {
+        laidOut.push({
+          text: line,
+          x: base.x,
+          y: base.y + lineIndex * lineHeight,
+          anchor: base.anchor,
+          typography,
+          // A block is one authored value broken for drawing; only a single line of it is an editor's.
+          editable: (declaration.editable ?? false) && block.length === 1,
+          className: classOf(declaration.className, entries[0]!.root),
+          tooltip,
+          declarationIndex,
+          lineIndex,
+          ...(underline !== undefined ? { underline } : {}),
+        });
+      });
+      return;
+    }
+
     if (declaration.wrap === true) {
       const typography = scaledTypography(declaration.typography, viewScale);
       const lineHeight = declaration.stack?.lineHeight ?? Math.round((typography?.fontSize ?? 12) * 1.4);
@@ -413,7 +477,8 @@ export function layoutLabels(
 
     const base = baselineOf(declaration, bounds, source.element);
     const typography = scaledTypography(declaration.typography, viewScale);
-    const region = fittedRegionOf(declaration, bounds, shape, declaration.stack?.lineHeight ?? Math.round((typography?.fontSize ?? 12) * 1.4));
+    // A declared fit says how the line is fitted; the shape's region answers only where none does.
+    const region = declaration.fit !== undefined ? null : fittedRegionOf(declaration, bounds, shape, declaration.stack?.lineHeight ?? Math.round((typography?.fontSize ?? 12) * 1.4));
     const stackStart = numberOf(declaration.stack?.start, source, 0);
     const tooltip = declaration.tooltip ? (resolveMany(declaration.tooltip, source)[0] ?? undefined) : undefined;
     const stack = declaration.stack;
@@ -447,6 +512,7 @@ export function layoutLabels(
       laidOut.push({
         text: region !== null
           ? fitToCapacity(line, capacityOf(region.width, typography?.fontSize ?? LABEL_FONT_SIZE))
+          : declaration.truncate && declaration.fit !== undefined ? fitToCapacity(line, fittedCapacity(declaration.fit, bounds))
           : declaration.truncate ? fitToWidth(line, roomOf(declaration.align, bounds, declaration.insetX), typography?.fontSize ?? LABEL_FONT_SIZE) : line,
         x: region !== null ? region.x + (region.width / 2) : base.x,
         y,

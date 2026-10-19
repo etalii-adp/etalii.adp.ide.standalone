@@ -514,3 +514,48 @@ describe("a truncated line inside an outlined shape is fitted to the shape, not 
     expect(line.x).toBe(40);
   });
 });
+
+describe("a line fitted by the size a stylesheet draws it at (LabelDeclaration.fit)", () => {
+  // A card 160 wide whose small lines are drawn at 10 with 12 kept free either side: 136 across,
+  // which is 24 characters of 10 * 0.55. Nothing here is a font the library draws itself.
+  const card = { x: -80, y: -40, width: 160, height: 80 };
+  const fit = { fontSize: 10, inset: 12 };
+
+  it("cuts a truncated line to the characters that fit across the box less the room either side", () => {
+    const line = layoutLabels([{ text: { path: "payload.t" }, anchorTo: "top", offset: { x: 0, y: 38 }, truncate: true, fit }], source({ t: "[Container: Java and Spring MVC running in Tomcat]" }), card)[0]!;
+
+    // 24 characters, the last of them the ellipsis.
+    expect(line.text).toBe("[Container: Java and Sp…");
+    expect(line.y).toBe(card.y + 38);
+  });
+
+  it("leaves a truncated line that fits exactly as it is", () => {
+    const text = "x".repeat(24);
+    expect(layoutLabels([{ text: { path: "payload.t" }, truncate: true, fit }], source({ t: text }), card)[0]!.text).toBe(text);
+  });
+
+  it("draws a wrapped label placed by an offset as a block starting there, one line per line's width", () => {
+    const lines = layoutLabels(
+      [{ text: { path: "payload.d" }, anchorTo: "top", offset: { x: 0, y: 58 }, wrap: true, stack: { lineHeight: 14 }, fit, className: "card-description" }],
+      source({ d: "Allows customers to view information about their bank accounts, and make payments." }),
+      card,
+    );
+
+    // Broken where white space falls, each line no longer than 24 characters, the first on the
+    // label's own baseline and every next one 14 below it, centred on the box.
+    expect(lines.map((line) => line.text)).toEqual(["Allows customers to view", "information about their", "bank accounts, and make", "payments."]);
+    expect(lines.map((line) => line.y)).toEqual([18, 32, 46, 60]);
+    expect(lines.every((line) => line.x === 0 && line.anchor === "middle" && line.className === "card-description" && !line.editable)).toBe(true);
+    expect(lines.map((line) => line.lineIndex)).toEqual([0, 1, 2, 3]);
+  });
+
+  it("cuts a word longer than a line, and makes no line of white space", () => {
+    const lines = layoutLabels([{ text: { path: "payload.d" }, offset: { x: 0, y: 0 }, wrap: true, stack: { lineHeight: 14 }, fit }], source({ d: `  ${"y".repeat(30)}   z  ` }), card);
+
+    expect(lines.map((line) => line.text)).toEqual(["y".repeat(24), "yyyyyy z"]);
+  });
+
+  it("draws nothing for a block of white space", () => {
+    expect(layoutLabels([{ text: { path: "payload.d" }, offset: { x: 0, y: 0 }, wrap: true, fit }], source({ d: "   " }), card)).toEqual([]);
+  });
+});
