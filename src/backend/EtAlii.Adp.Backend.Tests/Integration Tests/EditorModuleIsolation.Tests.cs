@@ -58,7 +58,7 @@ public class EditorModuleIsolationTests(EditorModuleIsolationTests.Host host) : 
     {
         public string EditorId => "boom";
 
-        public IEditorSession Open(ShortGuid watchId, string rootPath, string filePath) => new ThrowingEditorSession();
+        public IEditorSession Open(ShortGuid watchId, ProjectPath file) => new ThrowingEditorSession();
     }
 
     private static string Seed(string projectFolder)

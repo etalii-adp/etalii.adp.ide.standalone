@@ -45,7 +45,7 @@ public class AnsibleSessionTests : IDisposable
     }
 
     private IDiagramSession Open() =>
-        _factory.Open(ShortGuid.NewShortGuid(), _root, IoPath.Combine(_root, "infrastructure.adp"), IoPath.Combine(_root, "infrastructure.adp"));
+        _factory.Open(ShortGuid.NewShortGuid(), ProjectRoot.From(_root), IoPath.Combine(_root, "infrastructure.adp"), IoPath.Combine(_root, "infrastructure.adp"));
 
     // ---- the subject is the folder --------------------------------------------------------
 

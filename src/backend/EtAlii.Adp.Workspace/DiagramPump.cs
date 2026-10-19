@@ -86,7 +86,7 @@ public sealed class DiagramPump
 
             _logger.Debug("Opening {FullPath} as text in the {EditorId} editor (forced) on watch {WatchId}", forcedPath, forcedId, watchId);
             bodyPath = forcedPath;
-            openedSession = new EditorSessionAdapter(forcedFactory.Open(watchId, forced.Root.FullPath, forcedPath), forcedId);
+            openedSession = new EditorSessionAdapter(forcedFactory.Open(watchId, forced), forcedId);
         }
         else
         {
@@ -98,7 +98,7 @@ public sealed class DiagramPump
                 throw new RpcException(new Status(PermanentRefusal.CannotOpen, "The diagram cannot be opened."));
             }
 
-            // The modules and the router take the root as a path; it is normalized already.
+            // The router takes the root as a path; it is normalized already.
             var rootPath = file.Root.FullPath;
             var fullPath = file.FullPath;
 
@@ -116,7 +116,7 @@ public sealed class DiagramPump
 
                     _logger.Debug("Routed {FullPath} to {Origin}, body {BodyPath}, on watch {WatchId}", string.Join('/', request.Path.Segments), origin.Key, diagramBody, watchId);
                     bodyPath = diagramBody;
-                    openedSession = factory.Open(watchId, rootPath, bodyPath, routed.RegistrationPath);
+                    openedSession = factory.Open(watchId, file.Root, bodyPath, routed.RegistrationPath);
 
                     // From here on, an external write to this body or its .adp reaches the module's
                     // store as a Reload and every open session as pushed deltas (Requirement 5.3).
@@ -152,7 +152,7 @@ public sealed class DiagramPump
 
                     _logger.Debug("Opening {FullPath} in the {EditorId} editor on watch {WatchId}", fullPath, editorId, watchId);
                     bodyPath = fullPath;
-                    openedSession = new EditorSessionAdapter(editorFactory.Open(watchId, rootPath, fullPath), editorId);
+                    openedSession = new EditorSessionAdapter(editorFactory.Open(watchId, file), editorId);
                     break;
                 }
 

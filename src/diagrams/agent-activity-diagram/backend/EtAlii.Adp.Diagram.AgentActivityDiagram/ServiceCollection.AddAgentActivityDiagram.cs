@@ -29,7 +29,7 @@ public static class ServiceCollectionAddAgentActivityDiagramExtension
             opening.BodyPath,
             provider.GetRequiredService<IAadDocumentStore>(),
             provider.GetRequiredService<AadElementMapper>(),
-            provider.GetRequiredService<IHistoryStackStore>().Get(ProjectRoot.From(opening.RootPath))));
+            provider.GetRequiredService<IHistoryStackStore>().Get(opening.Root)));
 
         // The reload seam: an agent's write to an .aad body reaches the store, and through it every
         // open session - and a deleted body reaches it as a deletion, not as a reload.

@@ -10,5 +10,5 @@ public sealed class MarkdownEditorSessionFactory(ProjectFileEvents? events = nul
 {
     public string EditorId => Editor.Markdown.Id;
 
-    public IEditorSession Open(ShortGuid watchId, string rootPath, string filePath) => new MarkdownEditorSession(filePath, events);
+    public IEditorSession Open(ShortGuid watchId, ProjectPath file) => new MarkdownEditorSession(file.FullPath, events);
 }

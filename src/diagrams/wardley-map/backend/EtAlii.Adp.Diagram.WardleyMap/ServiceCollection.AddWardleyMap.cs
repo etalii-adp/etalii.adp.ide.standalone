@@ -47,7 +47,7 @@ public static class ServiceCollectionAddWardleyMapExtension
             opening.BodyPath,
             provider.GetRequiredService<IWardleyDocumentStore>(),
             provider.GetRequiredService<WardleyElementMapper>(),
-            provider.GetRequiredService<IHistoryStackStore>().Get(ProjectRoot.From(opening.RootPath))));
+            provider.GetRequiredService<IHistoryStackStore>().Get(opening.Root)));
 
         // The reload seam: an external write to a map reaches the store, and through it every
         // open session (modular-text-editors Requirement 5.3).

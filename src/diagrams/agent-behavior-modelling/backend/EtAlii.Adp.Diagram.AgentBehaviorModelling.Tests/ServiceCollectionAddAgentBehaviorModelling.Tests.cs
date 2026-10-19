@@ -43,7 +43,7 @@ public sealed class ServiceCollectionAddAgentBehaviorModellingTests
         var factory = new DiagramSessionFactories(provider.GetServices<IDiagramSessionFactory>()).Find(Diagram.AgentBehaviorModelling.Origin)!;
 
         // Act.
-        await using var session = factory.Open(ShortGuid.NewShortGuid(), "root", AbmExamples.BodyOf("bug-fixer"), null);
+        await using var session = factory.Open(ShortGuid.NewShortGuid(), ProjectRoot.From("root"), AbmExamples.BodyOf("bug-fixer"), null);
 
         // Assert.
         Assert.IsType<AbmSession>(session);

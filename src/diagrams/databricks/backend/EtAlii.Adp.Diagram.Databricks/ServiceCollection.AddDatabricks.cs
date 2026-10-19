@@ -88,7 +88,7 @@ public static class ServiceCollectionAddDatabricksExtension
                 DatabricksHeaders.ReadResourceKey(opening.RegistrationPath),
                 provider.GetRequiredService<IDatabricksDocumentStore>(),
                 provider.GetRequiredService<DatabricksElementMapper>(),
-                provider.GetRequiredService<IHistoryStackStore>().Get(ProjectRoot.From(opening.RootPath))));
+                provider.GetRequiredService<IHistoryStackStore>().Get(opening.Root)));
 
             // The reload seam: an external write to a body OR its registration reaches the
             // shared store, and through it every open session - which is how a stored

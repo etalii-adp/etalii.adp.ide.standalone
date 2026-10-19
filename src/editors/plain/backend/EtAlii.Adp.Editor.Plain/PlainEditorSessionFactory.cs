@@ -8,5 +8,5 @@ public sealed class PlainEditorSessionFactory(ProjectFileEvents? events = null) 
 {
     public string EditorId => Editor.Plain.Id;
 
-    public IEditorSession Open(ShortGuid watchId, string rootPath, string filePath) => new TextEditorSession(filePath, events);
+    public IEditorSession Open(ShortGuid watchId, ProjectPath file) => new TextEditorSession(file.FullPath, events);
 }

@@ -14,8 +14,8 @@ internal sealed class KnowledgeSessionFactory(IHistoryStackStore histories, IKno
 {
     public string Origin => Designer.Origin;
 
-    public IDesignerSession Open(ShortGuid watchId, string rootPath, string registrationPath, string bodyPath) =>
-        new KnowledgeSession(bodyPath, KnowledgeDocumentStore.Read, command => histories.Get(ProjectRoot.From(rootPath)).ExecuteAsync(command), documents, rootPath, events: events);
+    public IDesignerSession Open(ShortGuid watchId, ProjectRoot root, string registrationPath, string bodyPath) =>
+        new KnowledgeSession(bodyPath, KnowledgeDocumentStore.Read, command => histories.Get(root).ExecuteAsync(command), documents, root.FullPath, events: events);
 }
 
 /// <summary>

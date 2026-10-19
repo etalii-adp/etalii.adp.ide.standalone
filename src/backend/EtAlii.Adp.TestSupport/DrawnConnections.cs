@@ -132,7 +132,7 @@ public static class DrawnConnections
             {
                 var bodyPath = routed.BodyPath ?? routed.RegistrationPath!;
                 var watchId = ShortGuid.NewShortGuid();
-                await using var session = factory.Open(watchId, workspace, bodyPath, routed.RegistrationPath);
+                await using var session = factory.Open(watchId, ProjectRoot.From(workspace), bodyPath, routed.RegistrationPath);
                 var elements = AddedBy(await session.BaselineAsync(CancellationToken.None));
                 if (module.ExpandViews is { } expand)
                 {

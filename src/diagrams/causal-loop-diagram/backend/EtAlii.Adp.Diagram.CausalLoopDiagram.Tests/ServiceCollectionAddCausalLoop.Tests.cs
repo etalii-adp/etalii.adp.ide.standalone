@@ -29,7 +29,7 @@ public class ServiceCollectionAddCausalLoopTests
             .Find(ServiceCollectionAddCausalLoopExtension.CausalLoopOrigin)!;
 
         // Act.
-        await using var session = factory.Open(ShortGuid.NewShortGuid(), "root", CausalLoopDocumentStoreTests.OnCall, null);
+        await using var session = factory.Open(ShortGuid.NewShortGuid(), ProjectRoot.From("root"), CausalLoopDocumentStoreTests.OnCall, null);
 
         // Assert.
         Assert.IsType<CausalLoopSession>(session);
@@ -49,8 +49,8 @@ public class ServiceCollectionAddCausalLoopTests
         await RegistrationLayout.SetPositionAsync(new FileWriter(), registration, "variable:incidents", new RegistrationPosition(4321, 1234), TestContext.Current.CancellationToken);
 
         // Act.
-        await using var bare = factory.Open(ShortGuid.NewShortGuid(), "root", CausalLoopDocumentStoreTests.OnCall, null);
-        await using var placed = factory.Open(ShortGuid.NewShortGuid(), "root", CausalLoopDocumentStoreTests.OnCall, registration);
+        await using var bare = factory.Open(ShortGuid.NewShortGuid(), ProjectRoot.From("root"), CausalLoopDocumentStoreTests.OnCall, null);
+        await using var placed = factory.Open(ShortGuid.NewShortGuid(), ProjectRoot.From("root"), CausalLoopDocumentStoreTests.OnCall, registration);
 
         // Assert: only the registration's position moves it.
         var before = Assert.Single(await DrawnAsync(bare), element => element.Id == "variable:incidents");

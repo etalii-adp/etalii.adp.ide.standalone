@@ -44,7 +44,7 @@ public sealed class ServiceCollectionAddFunctionalDecompositionGraphTests
         var factory = new DiagramSessionFactories(provider.GetServices<IDiagramSessionFactory>()).Find(Diagram.FunctionalDecompositionGraph.Origin)!;
 
         // Act.
-        await using var session = factory.Open(ShortGuid.NewShortGuid(), "root", FieldServiceExample.Path, null);
+        await using var session = factory.Open(ShortGuid.NewShortGuid(), ProjectRoot.From("root"), FieldServiceExample.Path, null);
 
         // Assert.
         Assert.IsType<FdgSession>(session);

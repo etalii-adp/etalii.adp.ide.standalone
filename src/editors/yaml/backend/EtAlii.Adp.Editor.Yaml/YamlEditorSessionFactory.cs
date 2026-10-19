@@ -10,5 +10,5 @@ public sealed class YamlEditorSessionFactory(ProjectFileEvents? events = null) :
 {
     public string EditorId => Editor.Yaml.Id;
 
-    public IEditorSession Open(ShortGuid watchId, string rootPath, string filePath) => new YamlEditorSession(filePath, events);
+    public IEditorSession Open(ShortGuid watchId, ProjectPath file) => new YamlEditorSession(file.FullPath, events);
 }

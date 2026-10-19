@@ -10,5 +10,5 @@ public sealed class JsonEditorSessionFactory(ProjectFileEvents? events = null) :
 {
     public string EditorId => Editor.Json.Id;
 
-    public IEditorSession Open(ShortGuid watchId, string rootPath, string filePath) => new JsonEditorSession(filePath, events);
+    public IEditorSession Open(ShortGuid watchId, ProjectPath file) => new JsonEditorSession(file.FullPath, events);
 }

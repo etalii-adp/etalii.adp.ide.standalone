@@ -13,8 +13,8 @@ public interface IDesignerSessionFactory
     string Origin { get; }
 
     /// <param name="watchId">The connection the session belongs to.</param>
-    /// <param name="rootPath">The project's root folder.</param>
+    /// <param name="root">The project's root folder.</param>
     /// <param name="registrationPath">The document's <c>.adp</c> registration.</param>
     /// <param name="bodyPath">The file that holds the document.</param>
-    IDesignerSession Open(ShortGuid watchId, string rootPath, string registrationPath, string bodyPath);
+    IDesignerSession Open(ShortGuid watchId, ProjectRoot root, string registrationPath, string bodyPath);
 }

@@ -25,7 +25,7 @@ public class PlainEditorSessionFactoryTests : IDisposable
 
     private static TextEditorSession Open(string path) =>
         Assert.IsType<TextEditorSession>(
-            new PlainEditorSessionFactory().Open(ShortGuid.NewShortGuid(), IoPath.GetDirectoryName(path)!, path));
+            new PlainEditorSessionFactory().Open(ShortGuid.NewShortGuid(), ProjectPath.Within(ProjectRoot.From(IoPath.GetDirectoryName(path)!), path)!.Value));
 
     private string Write(string name, byte[] bytes)
     {

@@ -66,7 +66,7 @@ public class C4SessionTests : IDisposable
 
     private C4Session Open(string bodyPath, string? registrationPath) =>
         (C4Session)new C4SessionFactory(new ToolOrigin("c4", "context"), _documents, _mapper, _historyStacks)
-            .Open(ShortGuid.NewShortGuid(), _root, bodyPath, registrationPath);
+            .Open(ShortGuid.NewShortGuid(), ProjectRoot.From(_root), bodyPath, registrationPath);
 
     private static IReadOnlyList<DiagramElement> Added(IReadOnlyList<DiagramDelta> deltas) =>
         deltas.OfType<DiagramAddDelta>().SelectMany(add => add.Elements).ToArray();

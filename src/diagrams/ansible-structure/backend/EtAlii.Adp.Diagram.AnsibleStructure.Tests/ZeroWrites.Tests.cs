@@ -72,7 +72,7 @@ public class ZeroWritesTests : IDisposable
 
         // Act.
         // Everything this module can be asked to do, in the order a user would do it.
-        await using (var session = factory.Open(ShortGuid.NewShortGuid(), _root, registration, registration))
+        await using (var session = factory.Open(ShortGuid.NewShortGuid(), ProjectRoot.From(_root), registration, registration))
         {
             await session.BaselineAsync(TestContext.Current.CancellationToken);
             session.UpdateView(new DiagramViewport(-50, -50, 200, 200));
@@ -127,7 +127,7 @@ public class ZeroWritesTests : IDisposable
         var before = Snapshot();
 
         var factory = new AnsibleSessionFactory(_folders, new AnsibleElementMapper(), _historyStacks);
-        await using var session = factory.Open(ShortGuid.NewShortGuid(), _root, registration, registration);
+        await using var session = factory.Open(ShortGuid.NewShortGuid(), ProjectRoot.From(_root), registration, registration);
         await session.BaselineAsync(TestContext.Current.CancellationToken);
 
         // Act.
@@ -226,7 +226,7 @@ public class ZeroWritesTests : IDisposable
         // these very files. Holding an exclusive handle would fight it.
         var registration = IoPath.Combine(_root, "infrastructure.adp");
         var factory = new AnsibleSessionFactory(_folders, new AnsibleElementMapper(), _historyStacks);
-        await using var session = factory.Open(ShortGuid.NewShortGuid(), _root, registration, registration);
+        await using var session = factory.Open(ShortGuid.NewShortGuid(), ProjectRoot.From(_root), registration, registration);
         await session.BaselineAsync(TestContext.Current.CancellationToken);
 
         // Act and assert.

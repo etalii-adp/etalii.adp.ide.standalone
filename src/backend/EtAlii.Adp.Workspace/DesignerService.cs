@@ -140,7 +140,7 @@ public sealed class DesignerService : Proto.DesignerService.DesignerServiceBase
         }
 
         _logger.Debug("Routed {Path} to {Origin}, body {BodyPath}, on watch {WatchId}", asked, routed.Definition.Origin, bodyPath, watchId);
-        return factory.Open(watchId, file.Root.FullPath, routed.RegistrationPath, bodyPath);
+        return factory.Open(watchId, file.Root, routed.RegistrationPath, bodyPath);
     }
 
     /// <summary>

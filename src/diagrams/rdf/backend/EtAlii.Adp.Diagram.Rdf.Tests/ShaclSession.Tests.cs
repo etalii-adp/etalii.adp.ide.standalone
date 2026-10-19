@@ -82,7 +82,7 @@ public class ShaclSessionTests : IDisposable
     {
         var factory = _provider.GetServices<IDiagramSessionFactory>()
             .Single(candidate => candidate.Origin == ServiceCollectionAddShaclExtension.ShaclOrigin);
-        return factory.Open(ShortGuid.NewShortGuid(), _root, bodyPath, registrationPath);
+        return factory.Open(ShortGuid.NewShortGuid(), ProjectRoot.From(_root), bodyPath, registrationPath);
     }
 
     [Fact]
@@ -221,7 +221,7 @@ public class ShaclSessionTests : IDisposable
         await using var shapes = Open(body, null);
         var rdfFactory = _provider.GetServices<IDiagramSessionFactory>()
             .Single(candidate => candidate.Origin == ServiceCollectionAddRdfExtension.RdfOrigin);
-        await using var graph = rdfFactory.Open(ShortGuid.NewShortGuid(), _root, body, null);
+        await using var graph = rdfFactory.Open(ShortGuid.NewShortGuid(), ProjectRoot.From(_root), body, null);
 
         await shapes.BaselineAsync(TestContext.Current.CancellationToken);
         await graph.BaselineAsync(TestContext.Current.CancellationToken);
@@ -255,7 +255,7 @@ public class ShaclSessionTests : IDisposable
         await using var shapes = Open(body, null);
         var rdfFactory = _provider.GetServices<IDiagramSessionFactory>()
             .Single(candidate => candidate.Origin == ServiceCollectionAddRdfExtension.RdfOrigin);
-        await using var graph = rdfFactory.Open(ShortGuid.NewShortGuid(), _root, body, null);
+        await using var graph = rdfFactory.Open(ShortGuid.NewShortGuid(), ProjectRoot.From(_root), body, null);
 
         var shapeElements = await shapes.BaselineElementsAsync(TestContext.Current.CancellationToken);
         var graphElements = await graph.BaselineElementsAsync(TestContext.Current.CancellationToken);

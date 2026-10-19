@@ -133,7 +133,7 @@ public class ServiceCollectionAddDependencyGraphTests
         var factory = new DiagramSessionFactories(provider.GetServices<IDiagramSessionFactory>()).Find(Diagram.DependencyGraph.Origin)!;
 
         // Act.
-        await using var session = factory.Open(ShortGuid.NewShortGuid(), "root", DependencyGraphDocumentStoreTests.Simple, null);
+        await using var session = factory.Open(ShortGuid.NewShortGuid(), ProjectRoot.From("root"), DependencyGraphDocumentStoreTests.Simple, null);
 
         // Assert.
         Assert.IsType<DependencyGraphSession>(session);

@@ -47,7 +47,7 @@ public static class ServiceCollectionAddAzurePipelineExtension
 
         services.AddDiagramSession(Diagram.Pipeline.Origin, (provider, opening) => new PipelineSession(
             opening.WatchId,
-            opening.RootPath,
+            opening.Root.FullPath,
             opening.BodyPath,
             provider.GetRequiredService<IPipelineDocumentStore>(),
             provider.GetRequiredService<PipelineElementMapper>(),

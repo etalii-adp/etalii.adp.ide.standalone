@@ -55,7 +55,7 @@ public class SkosSessionTests : IDisposable
     {
         var factory = _provider.GetServices<IDiagramSessionFactory>()
             .Single(candidate => candidate.Origin == ServiceCollectionAddSkosExtension.SkosOrigin);
-        return factory.Open(ShortGuid.NewShortGuid(), _root, bodyPath, registrationPath);
+        return factory.Open(ShortGuid.NewShortGuid(), ProjectRoot.From(_root), bodyPath, registrationPath);
     }
 
     [Fact]

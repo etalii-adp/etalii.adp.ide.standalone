@@ -40,7 +40,7 @@ public sealed class DotNetDependencyGraphSessionFactory : IDiagramSessionFactory
 
     public ToolOrigin Origin => Diagram.DependencyGraph.Origin;
 
-    public IDiagramSession Open(ShortGuid watchId, string rootPath, string bodyPath, string? registrationPath)
+    public IDiagramSession Open(ShortGuid watchId, ProjectRoot root, string bodyPath, string? registrationPath)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(bodyPath);
 
@@ -52,6 +52,6 @@ public sealed class DotNetDependencyGraphSessionFactory : IDiagramSessionFactory
             _store,
             _mapper,
             registrationPath,
-            _historyStacks.Get(ProjectRoot.From(rootPath)));
+            _historyStacks.Get(root));
     }
 }

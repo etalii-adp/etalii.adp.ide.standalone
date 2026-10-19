@@ -130,7 +130,7 @@ public class ServiceCollectionAddTimelineTests
         var factory = new DiagramSessionFactories(provider.GetServices<IDiagramSessionFactory>()).Find(Diagram.Timeline.Origin)!;
 
         // Act.
-        await using var session = factory.Open(ShortGuid.NewShortGuid(), "root", TimelineDocumentStoreTests.Simple, null);
+        await using var session = factory.Open(ShortGuid.NewShortGuid(), ProjectRoot.From("root"), TimelineDocumentStoreTests.Simple, null);
 
         // Assert.
         Assert.IsType<TimelineSession>(session);

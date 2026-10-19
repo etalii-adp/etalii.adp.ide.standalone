@@ -31,11 +31,11 @@ public sealed class C4SessionFactory : IDiagramSessionFactory
 
     public ToolOrigin Origin { get; }
 
-    public IDiagramSession Open(ShortGuid watchId, string rootPath, string bodyPath, string? registrationPath)
+    public IDiagramSession Open(ShortGuid watchId, ProjectRoot root, string bodyPath, string? registrationPath)
     {
         var viewKey = registrationPath is { Length: > 0 } ? ReadViewKey(registrationPath) : null;
         // The project's history, so a drag on this canvas is one undo away like every other edit.
-        return new C4Session(bodyPath, viewKey, _documents, _mapper, _historyStacks.Get(ProjectRoot.From(rootPath)));
+        return new C4Session(bodyPath, viewKey, _documents, _mapper, _historyStacks.Get(root));
     }
 
     /// <summary>

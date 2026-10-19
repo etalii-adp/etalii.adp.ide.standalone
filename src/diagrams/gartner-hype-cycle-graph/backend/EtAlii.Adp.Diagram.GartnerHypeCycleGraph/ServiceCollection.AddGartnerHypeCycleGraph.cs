@@ -32,7 +32,7 @@ public static class ServiceCollectionAddGartnerHypeCycleGraphExtension
             opening.BodyPath,
             provider.GetRequiredService<IGhgDocumentStore>(),
             provider.GetRequiredService<GhgElementMapper>(),
-            provider.GetRequiredService<IHistoryStackStore>().Get(ProjectRoot.From(opening.RootPath))));
+            provider.GetRequiredService<IHistoryStackStore>().Get(opening.Root)));
 
         // The reload seam: an external write to a .ghg body reaches the store, and through it every
         // open session - and a deleted body reaches it as a deletion, not as a reload.

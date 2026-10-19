@@ -307,9 +307,9 @@ public sealed class TableStreamFlowTests : IClassFixture<TableStreamFlowTests.Ho
 
         public string Origin => Sheet.Origin;
 
-        public IDesignerSession Open(ShortGuid watchId, string rootPath, string registrationPath, string bodyPath)
+        public IDesignerSession Open(ShortGuid watchId, ProjectRoot root, string registrationPath, string bodyPath)
         {
-            var session = new FakeSession(watchId, rootPath, registrationPath, bodyPath);
+            var session = new FakeSession(watchId, root.FullPath, registrationPath, bodyPath);
             Opened.Add(session);
             return session;
         }

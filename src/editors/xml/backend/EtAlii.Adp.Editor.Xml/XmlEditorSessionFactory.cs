@@ -10,5 +10,5 @@ public sealed class XmlEditorSessionFactory(ProjectFileEvents? events = null) : 
 {
     public string EditorId => Editor.Xml.Id;
 
-    public IEditorSession Open(ShortGuid watchId, string rootPath, string filePath) => new XmlEditorSession(filePath, events);
+    public IEditorSession Open(ShortGuid watchId, ProjectPath file) => new XmlEditorSession(file.FullPath, events);
 }

@@ -127,7 +127,7 @@ public class ServiceCollectionAddAzurePipelineTests
         await File.WriteAllTextAsync(body, "jobs:\n  - template: /templates/shared.yml\n", cancellationToken);
 
         // Act: the session reads the body first, so the store keeps what it read with its root.
-        await using var session = factory.Open(ShortGuid.NewShortGuid(), folder.Path, body, null);
+        await using var session = factory.Open(ShortGuid.NewShortGuid(), ProjectRoot.From(folder.Path), body, null);
         var drawn = await session.BaselineAsync(TestContext.Current.CancellationToken);
 
         // Assert.
