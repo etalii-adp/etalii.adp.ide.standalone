@@ -2,6 +2,7 @@ using System.Collections;
 using System.Globalization;
 using System.Text.Json;
 using EtAlii.Adp.Specification.Cel;
+using EtAlii.Adp.Specification.Json;
 
 namespace EtAlii.Adp.Specification.Disl;
 
@@ -145,10 +146,6 @@ internal static class DislValues
             return map;
         }),
         JsonValueKind.Array => json.EnumerateArray().Select(Json).ToList(),
-        JsonValueKind.String => json.GetString(),
-        JsonValueKind.Number => json.TryGetInt64(out var integer) ? integer : json.GetDouble(),
-        JsonValueKind.True => true,
-        JsonValueKind.False => false,
-        _ => null,
+        _ => JsonScalars.ToCel(json),
     };
 }
