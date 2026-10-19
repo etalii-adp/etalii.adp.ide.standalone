@@ -2,8 +2,6 @@ using EtAlii.Adp.Context.Wire;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Sessions;
 using Grpc.Core;
-using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
-using Path = EtAlii.Adp.Documents.Wire.Path;
 
 namespace EtAlii.Adp.Context;
 
@@ -66,7 +64,7 @@ public sealed partial class ContextService
             ExecuteActionRequest.TriggerOneofCase.ActionId =>
                 await _contextActionResolver.ResolveByActionIdAsync(target, request.ActionId, context.CancellationToken),
             ExecuteActionRequest.TriggerOneofCase.Shortcut =>
-                await _contextActionResolver.ResolveByShortcutAsync(target, FromProto(request.Shortcut), context.CancellationToken),
+                await _contextActionResolver.ResolveByShortcutAsync(target, ContextWire.FromProto(request.Shortcut), context.CancellationToken),
             _ => null,
         };
 
@@ -125,7 +123,7 @@ public sealed partial class ContextService
 
         // A file dialog's tree is built once, here: what the provider's predicate accepts now is
         // both what the dialog shows and the only thing its submission may be.
-        var fileDialog = execution is ContextExecutionRequiresFile requiresFile ? ToProto(requiresFile.Request, rootPath) : null;
+        var fileDialog = execution is ContextExecutionRequiresFile requiresFile ? ContextWire.ToProto(requiresFile.Request, rootPath) : null;
 
         _contextInteractionStore.Begin(new ContextInteraction
         {
@@ -135,10 +133,10 @@ public sealed partial class ContextService
             ActionId = commitActionId,
             Provider = owner.Provider,
             RootPath = rootPath,
-            Offered = fileDialog?.Pinned.Concat(fileDialog.Files).SelectMany(Selectable).ToHashSet(StringComparer.Ordinal),
+            Offered = fileDialog?.Pinned.Concat(fileDialog.Files).SelectMany(ContextWire.Selectable).ToHashSet(StringComparer.Ordinal),
         });
 
-        var prompt = PromptOf(interactionId, execution, fileDialog);
+        var prompt = ContextWire.PromptOf(interactionId, execution, fileDialog);
 
         if (!_contextInteractionStore.TryPush(request.WatchId, prompt))
         {
@@ -249,7 +247,7 @@ public sealed partial class ContextService
             // this response and not the watch stream, so the client can put it where the answered
             // dialog was without the two crossing.
             var nextId = ShortGuid.NewShortGuid();
-            var nextFile = next is ContextExecutionRequiresFile nextRequiresFile ? ToProto(nextRequiresFile.Request, interaction.RootPath) : null;
+            var nextFile = next is ContextExecutionRequiresFile nextRequiresFile ? ContextWire.ToProto(nextRequiresFile.Request, interaction.RootPath) : null;
             _contextInteractionStore.Begin(new ContextInteraction
             {
                 Id = nextId,
@@ -258,14 +256,14 @@ public sealed partial class ContextService
                 ActionId = commit.NextActionId.Length > 0 ? commit.NextActionId : interaction.ActionId,
                 Provider = interaction.Provider,
                 RootPath = interaction.RootPath,
-                Offered = nextFile?.Pinned.Concat(nextFile.Files).SelectMany(Selectable).ToHashSet(StringComparer.Ordinal),
+                Offered = nextFile?.Pinned.Concat(nextFile.Files).SelectMany(ContextWire.Selectable).ToHashSet(StringComparer.Ordinal),
             });
-            response.NextPrompt = PromptOf(nextId, next, nextFile);
+            response.NextPrompt = ContextWire.PromptOf(nextId, next, nextFile);
         }
 
         if (commit.CreatedFullPath.Length > 0)
         {
-            response.CreatedPath = ToRelativePath(interaction.RootPath, commit.CreatedFullPath);
+            response.CreatedPath = ContextWire.ToRelativePath(interaction.RootPath, commit.CreatedFullPath);
         }
 
         return response;
@@ -279,29 +277,6 @@ public sealed partial class ContextService
     }
 
     private static ExecuteActionResponse Rejected(string error) => new() { Accepted = false, Error = error };
-
-    /// <summary>The dialog an execution asks for, as the prompt of one interaction.</summary>
-    private static ContextPrompt PromptOf(ShortGuid interactionId, ContextExecutionResult execution, FileDialogPrompt? fileDialog)
-    {
-        var prompt = new ContextPrompt { InteractionId = interactionId };
-        switch (execution)
-        {
-            case ContextExecutionRequiresInput requiresInput:
-                prompt.InputDialog = ToProto(requiresInput.Request);
-                break;
-            case ContextExecutionRequiresConfirmation requiresConfirmation:
-                prompt.ConfirmDialog = ToProto(requiresConfirmation.Request);
-                break;
-            case ContextExecutionRequiresChoice requiresChoice:
-                prompt.ChoiceDialog = ToProto(requiresChoice.Request);
-                break;
-            case ContextExecutionRequiresFile:
-                prompt.FileDialog = fileDialog;
-                break;
-        }
-
-        return prompt;
-    }
 
     /// <summary>Names what a call pointed at, for the log: an explicit source, or the selection.</summary>
     private static string Describe(ContextSource? source) => source?.SourceCase switch
@@ -413,125 +388,5 @@ public sealed partial class ContextService
             watchId, root, source, [], null, context.CancellationToken);
 
         return resolution is ResolvedContextLevel resolved ? resolved.Level.Target : null;
-    }
-
-    /// <summary>
-    /// The project-relative form of an absolute path the backend produced - the one shape a
-    /// path is ever allowed to take on the wire, and the same one a selection carries.
-    /// </summary>
-    private static Path ToRelativePath(string rootPath, string fullPath) =>
-        Path.OfLocation(IoPath.GetRelativePath(rootPath, fullPath));
-
-    private static ContextShortcutDefinition FromProto(ContextShortcut shortcut) =>
-        new(shortcut.Key, shortcut.Ctrl, shortcut.Shift, shortcut.Alt, shortcut.Meta);
-
-    /// <summary>
-    /// Internal rather than private so the marker's two cases can be pinned without booting a
-    /// host - the same reason <see cref="ContextWatch.RootTarget"/> is internal.
-    /// </summary>
-    internal static InputDialogPrompt ToProto(ContextInputRequest request)
-    {
-        var prompt = new InputDialogPrompt
-        {
-            Title = request.Title,
-            Icon = request.Icon,
-            FieldLabel = request.FieldLabel,
-            InitialValue = request.InitialValue,
-            ConfirmLabel = request.ConfirmLabel,
-        };
-
-        // Left unset for an empty id rather than set to an empty marker: an unset field is what
-        // tells the client to render the dialog exactly as it does today, and a marker carrying
-        // no element would be a claim the canvas cannot check.
-        if (request.InlineLabelElementId.Length > 0)
-        {
-            prompt.InlineLabelEdit = new InlineLabelEdit { ElementId = new ElementId { Value = request.InlineLabelElementId } };
-        }
-
-        return prompt;
-    }
-
-    private static ConfirmDialogPrompt ToProto(ContextConfirmationRequest request) => new()
-    {
-        Title = request.Title,
-        Icon = request.Icon,
-        Message = request.Message,
-        ConfirmLabel = request.ConfirmLabel,
-        Danger = request.Danger,
-    };
-
-    private static FileDialogPrompt ToProto(ContextFileRequest request, string rootPath)
-    {
-        var prompt = new FileDialogPrompt
-        {
-            Title = request.Title,
-            Icon = request.Icon,
-            ConfirmLabel = request.ConfirmLabel,
-            EmptyMessage = request.EmptyMessage,
-        };
-        if (request.NameField is { } nameField)
-        {
-            prompt.NameField = new ContextTextField { Label = nameField.Label, InitialValue = nameField.InitialValue };
-        }
-
-        if (rootPath.Length == 0)
-        {
-            // No project to list: the dialog says so with its empty message.
-            return prompt;
-        }
-
-        foreach (var pinned in request.Pinned)
-        {
-            if (ContextFileTree.IdOf(rootPath, pinned.FullPath) is { } id && File.Exists(pinned.FullPath))
-            {
-                prompt.Pinned.Add(new ContextOption { Id = id, Label = pinned.Label, Selectable = true, Icon = "mdi-pin-outline", Description = id });
-            }
-        }
-
-        prompt.Files.AddRange(ContextFileTree.Build(rootPath, request.Accepts).Select(ToProto));
-        return prompt;
-    }
-
-    /// <summary>The ids of every option under <paramref name="option"/>, itself included, that can be chosen.</summary>
-    private static IEnumerable<string> Selectable(ContextOption option) =>
-        option.Selectable ? [option.Id] : option.Children.SelectMany(Selectable);
-
-    private static ChoiceDialogPrompt ToProto(ContextChoiceRequest request)
-    {
-        var prompt = new ChoiceDialogPrompt
-        {
-            Title = request.Title,
-            Icon = request.Icon,
-            ConfirmLabel = request.ConfirmLabel,
-            EmptyMessage = request.EmptyMessage,
-        };
-        if (request.NameField is { } nameField)
-        {
-            prompt.NameField = new ContextTextField { Label = nameField.Label, InitialValue = nameField.InitialValue };
-        }
-
-        prompt.Options.AddRange(request.Options.Select(ToProto));
-        return prompt;
-    }
-
-    private static ContextOption ToProto(ContextOptionNode node)
-    {
-        var option = new ContextOption
-        {
-            Id = node.Id,
-            Label = node.Label,
-            Selectable = node.Selectable,
-            SuggestedValue = node.SuggestedValue,
-            Description = node.Description,
-            Icon = node.Icon,
-            NameSuppressedReason = node.NameSuppressedReason,
-            UnavailableReason = node.UnavailableReason,
-        };
-        if (node.Children is { Count: > 0 } children)
-        {
-            option.Children.AddRange(children.Select(ToProto));
-        }
-
-        return option;
     }
 }

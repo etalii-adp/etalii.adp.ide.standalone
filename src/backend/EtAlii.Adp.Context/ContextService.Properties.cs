@@ -34,7 +34,7 @@ public sealed partial class ContextService
         }
 
         var properties = await _contextPropertyResolver.DescribeAsync(target, context.CancellationToken);
-        response.Properties.AddRange(properties.Select(ToProto));
+        response.Properties.AddRange(properties.Select(ContextWire.ToProto));
         _logger.Debug(
             "Described {Count} properties for {TargetPath} on watch {WatchId}",
             response.Properties.Count,
@@ -79,23 +79,5 @@ public sealed partial class ContextService
             target.ResolvedFullPath,
             request.WatchId);
         return new SetPropertyResponse { Accepted = true };
-    }
-
-    private static ContextProperty ToProto(ContextPropertyDefinition definition)
-    {
-        var property = new ContextProperty
-        {
-            Id = definition.Id,
-            Label = definition.Label,
-            Value = definition.Value,
-            Editor = definition.Editor,
-            ReadOnlyReason = definition.ReadOnlyReason,
-            Group = definition.Group,
-        };
-
-        // Only a Choice, a Slider and a Tags row have any, and an empty repeated field costs nothing on the wire - so this
-        // adds nothing to every property that is not one.
-        property.Candidates.AddRange(definition.Choices);
-        return property;
     }
 }

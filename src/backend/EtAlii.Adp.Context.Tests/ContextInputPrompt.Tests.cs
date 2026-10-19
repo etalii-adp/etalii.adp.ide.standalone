@@ -1,7 +1,4 @@
 ﻿using Xunit;
-// The generated gRPC stub for `service ContextService` claims the same simple name in
-// EtAlii.Adp, so the backend's own service has to be named through an alias here.
-using BackendContextService = EtAlii.Adp.Context.ContextService;
 
 namespace EtAlii.Adp.Context.Tests;
 
@@ -29,7 +26,7 @@ public class ContextInputPromptTests
         var request = Request();
 
         // Act.
-        var prompt = BackendContextService.ToProto(request);
+        var prompt = ContextWire.ToProto(request);
 
         // Assert.
         // Unset, not "set but empty": the client's whole rule is that an unset field renders the
@@ -45,7 +42,7 @@ public class ContextInputPromptTests
         var request = Request("node-7");
 
         // Act.
-        var prompt = BackendContextService.ToProto(request);
+        var prompt = ContextWire.ToProto(request);
 
         // Assert.
         Assert.NotNull(prompt.InlineLabelEdit);
