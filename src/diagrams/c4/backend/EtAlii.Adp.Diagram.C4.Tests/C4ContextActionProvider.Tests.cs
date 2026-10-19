@@ -218,7 +218,7 @@ public class C4ContextActionProviderTests : IDisposable
     public async Task AnEmptyDescription_IsAccepted_BecauseAnIncompleteModelIsOrdinary()
     {
         // Act.
-        // C4 asks for a description and C4RuleSet warns when there is none - but a model
+        // C4 asks for a description and the findings warn when there is none - but a model
         // mid-edit is routinely incomplete, so the rule guides rather than blocks
         // (Requirement 10.7).
         var result = await _provider.ValidateAsync(TargetFor("web"), C4ContextActionProvider.EditDescriptionActionId, "", TestContext.Current.CancellationToken);

@@ -42,17 +42,22 @@ public static class C4LayoutEngine
     /// for a computed one explicitly (Requirements 8.3, 8.4).
     /// </param>
     /// <param name="workspace">The workspace to compute the layout for.</param>
+    /// <param name="members">
+    /// The elements the view shows, when the caller has them already; else they are read from the
+    /// definition of the view's kind (<see cref="C4Definitions.Members"/>).
+    /// </param>
     public static C4Layout Compute(
         C4Workspace workspace,
         C4View view,
         C4Metrics metrics,
-        IReadOnlyDictionary<string, C4SidecarPosition>? authored = null)
+        IReadOnlyDictionary<string, C4SidecarPosition>? authored = null,
+        IReadOnlyList<C4Element>? members = null)
     {
         ArgumentNullException.ThrowIfNull(workspace);
         ArgumentNullException.ThrowIfNull(view);
         ArgumentNullException.ThrowIfNull(metrics);
 
-        var members = C4RuleSet.MembersOf(workspace, view);
+        members ??= C4Definitions.Members(workspace, C4Disl.FileOf(""), view);
         if (members.Count == 0)
         {
             return new C4Layout(new Dictionary<string, Rect>(StringComparer.OrdinalIgnoreCase), []);

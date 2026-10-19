@@ -62,7 +62,7 @@ public class C4ExportTests
         // container it instantiates, so looking for the instance's own name would fail on a
         // diagram that is drawing exactly the right thing.
         var undrawn = workspace.Views
-            .SelectMany(view => C4RuleSet.MembersOf(workspace, view))
+            .SelectMany(view => C4Findings.MembersOf(workspace, view))
             .Where(element => element.Kind is not (C4ElementKind.ContainerInstance or C4ElementKind.SoftwareSystemInstance))
             .Select(element => element.Name)
             .Distinct(StringComparer.Ordinal)

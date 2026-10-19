@@ -159,7 +159,7 @@ public class ExamplesTests
         // Act.
         // Both examples are meant to be exemplary rather than merely parseable, so anything
         // reported here is a defect in the example - not a rule to be narrowed.
-        var problems = C4RuleSet.Validate(Read(ModelsOf(project).Single()))
+        var problems = C4Findings.Of(Read(ModelsOf(project).Single()))
             .Select(problem => $"{problem.RuleId}: {problem.Message}")
             .ToArray();
 

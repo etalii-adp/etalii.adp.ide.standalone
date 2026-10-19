@@ -7,7 +7,7 @@ namespace EtAlii.Adp.Diagram.C4.Tests;
 /// <summary>
 /// Reading the DSL subset ADP models: the model, the deployment model, relationships, views and
 /// styles (c4-diagrams tasks 7-11). What a document *means* is not judged here - that is
-/// C4RuleSet's job - so an incomplete model still parses.
+/// the findings' job - so an incomplete model still parses.
 /// </summary>
 public class C4ParserTests
 {

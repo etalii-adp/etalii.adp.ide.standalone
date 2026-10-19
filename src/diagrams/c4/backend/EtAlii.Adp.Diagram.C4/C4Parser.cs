@@ -40,7 +40,7 @@ public sealed record C4Workspace(
 /// </summary>
 /// <remarks>
 /// Hand-written rather than a generated grammar, and deliberately forgiving. This is not a
-/// validating parser: what a document *means* is <c>C4RuleSet</c>'s question, and reporting a
+/// validating parser: what a document *means* is the definitions' question (<c>C4Definitions</c>), and reporting a
 /// missing description as a parse failure would stop a mid-edit document from opening at all.
 /// </remarks>
 public static class C4Parser

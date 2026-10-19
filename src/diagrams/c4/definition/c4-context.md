@@ -28,7 +28,7 @@ Fifteen, each a candidate change for this repository: the twelve the conversion'
 | 12 | Both | An id that depends on a directive of the body | B12 |
 | 13 | DISL | What a view exposes to a rule about the model | found while writing |
 | 14 | DISL | The text an unset end was written with | found while writing |
-| 15 | DISL | The order of computed legend entries | found while writing |
+| 15 | DISL | The order of a view's members and of its legend entries | found while writing |
 
 ### 1. FBL: the statements of the selected view (B13)
 
@@ -128,12 +128,12 @@ Fifteen, each a candidate change for this repository: the twelve the conversion'
 - **Would resolve it.** The written text of an unset end or reference, readable in CEL, such as `self.written('source')`.
 - **Meanwhile.** The plugin function `writtenEnd(relation, end)`, which the module supplies from its reading, as the timeline does (`timeline.md`, gap 4).
 
-### 15. DISL 6.13: the order of computed legend entries
+### 15. DISL 3.5 and 6.13: the order of a view's members and of its legend entries
 
-- **Construct.** The tool lists the legend's entries in the order of the view's members, which lists what the view's `include` statements name first, in their order, then what `include *` adds. `legend.computed.order` is evaluated on the first element of each group in model order, so an entry cannot take the earliest position any of its elements has among the members.
-- **Shown by.** `C4ElementMapper.LegendFor`, read; no fixture shows the two orders apart.
-- **Would resolve it.** An `order` that is the least of an expression over the group's elements.
-- **Meanwhile.** The entries come in model order, which is the tool's order for every view of the corpus.
+- **Construct.** The tool draws, lays out and keys a view's members in the order of the statements that select them: what the view's `include` statements name first, in their order, then what `include *` adds, in model order, then, on a dynamic view, what its interactions name, in their order. A view's members are in model order (3.5), and `legend.computed.order` is evaluated on the first element of each group in model order, so neither a member nor an entry can take the position of the statement that selects it.
+- **Shown by.** `findings/view-statements.dsl` (the view `named`, whose `include` names a container before a person) and the dynamic view `BatchRelease` of `crowded-component-view.dsl`.
+- **Would resolve it.** An order of a viewpoint's members by an expression, such as the position of the first statement that selects each; and a legend `order` that is the least of an expression over the group's elements.
+- **Meanwhile.** The module orders the members it reads from the model by the view's statements, and keys the legend by them, each entry painted from its first member (`C4Definitions.Drawing` in the conversion, task 10).
 
 ## Stand-ins
 
@@ -143,6 +143,7 @@ Code that stands in for a gap while it stands, named so that nobody reads it as 
 | --- | --- | --- |
 | `C4Disl` | Gaps 1, 2, 3 and 6: the module builds this definition's model from its own reading of the body | Planned in the conversion's design (Q5) |
 | `C4FindingOrder` | Gap 10: today's order of findings | Planned in the conversion's design (Q4) |
+| The statement order of `C4Definitions.Drawing` | Gap 15: a view's members and legend entries in the order of its statements | The module |
 | `C4Placement.IdentifierFor` | Gap 11: a new element's identifier | The module, handed to the operation |
 | `AddC4ViewCommand` | Gap 8: adding a view block | The module |
 | `C4LayoutSidecar` | Gap 7: positions in the legacy sidecar | The module |

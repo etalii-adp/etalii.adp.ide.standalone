@@ -14,8 +14,8 @@ namespace EtAlii.Adp.Diagram.C4;
 /// <para>
 /// <b>The toolbox, the menus and the rows are derived from them</b> (c4-disl-fbl task 7), mapped onto
 /// today's wire ids by each definition's <c>x-c4</c> block, and so are <b>the findings</b> (task 9),
-/// ordered as today by <see cref="C4FindingOrder"/>; the drawn lines, the title and the legend are still
-/// the module's own until the tasks after it. The toolbox is the origin's. A menu
+/// ordered as today by <see cref="C4FindingOrder"/>, and so is <b>what a view draws</b> (task 10): its
+/// members, its lines, its title and its legend (<see cref="Drawing"/>). The toolbox is the origin's. A menu
 /// and a row are derived from the definition of the view's own kind, over the model <see cref="C4Disl"/>
 /// builds from the parser's reading; a target with no view is derived from the origin's definition. A
 /// line the view derives rather than a stored relationship, and an unknown id, get nothing (finding A10).
@@ -270,6 +270,168 @@ internal static class C4Definitions
     /// <summary>The line of the view <paramref name="key"/> names, the first of that key, for a finding about a view (gap C13).</summary>
     private static int? ViewLineOf(C4Workspace workspace, string? key) =>
         key is null ? null : workspace.Views.FirstOrDefault(each => string.Equals(each.Key, key, StringComparison.Ordinal)) is { } view ? (int)view.Line : null;
+
+    /// <summary>
+    /// What <paramref name="view"/> of <paramref name="workspace"/>, read from the body named <paramref name="file"/>,
+    /// draws, from the definition of the view's kind: its members, its lines, its title and its legend.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>The members</b> are the elements the viewpoint's <c>members</c> holds for (L2), in model order;
+    /// of two elements of one identifier the first, as an edit finds it, because the wire carries one
+    /// element per id (Q4: <c>std.duplicateId</c> is switched off).
+    /// </para>
+    /// <para>
+    /// <b>The lines</b> are the relations the view shows: a stored relationship drawn as itself, and the
+    /// derived <c>LiftedRelationship</c>, <c>InstanceLine</c> and <c>InteractionLine</c>, each with the id the
+    /// definition computes. They come in the order of the relationship or interaction each is drawn for,
+    /// the first of a merged group's, which is the order the body declares them: the model lists every
+    /// derived relation after the stored ones. A line drawn between the two ends of the one statement it
+    /// is drawn for names them as that statement writes them; any other names the elements it is drawn between.
+    /// </para>
+    /// <para>
+    /// <b>The title and the legend</b> are the canvas's (DISL 6.13, L7), over the members; a legend entry
+    /// carries the first member it stands for, from which the host paints its swatch.
+    /// </para>
+    /// <para>
+    /// A finding the runtime raises while it derives the lines (<c>std.derivedFailed</c>,
+    /// <c>std.derivedEnds</c>, <c>std.derivedId</c>) is logged and
+    /// the line is not drawn, as for the findings (<see cref="Evaluated"/>).
+    /// </para>
+    /// </remarks>
+    public static C4Drawing Drawing(C4Workspace workspace, string file, C4View view)
+    {
+        ArgumentNullException.ThrowIfNull(workspace);
+        ArgumentNullException.ThrowIfNull(file);
+        ArgumentNullException.ThrowIfNull(view);
+        var specification = For(view.Kind).Specification;
+        (DislDiagram diagram, IReadOnlyDictionary<DislElement, C4Element> elements, IReadOnlyList<DislElement> shown, List<DislElement> nodes) = Shown(workspace, file, view, specification);
+        IReadOnlyList<C4Element> members = [.. nodes.Select(node => elements[node])];
+
+        var declared = new Dictionary<DislElement, int>(ReferenceEqualityComparer.Instance);
+        foreach (var relation in diagram.Relations.Where(relation => !relation.IsDerived))
+        {
+            declared[relation] = declared.Count;
+        }
+
+        IReadOnlyList<C4DrawnLine> lines =
+        [
+            .. shown.Where(member => member.Type.IsRelation)
+                .OrderBy(line => declared.GetValueOrDefault(line.IsDerived ? line.Sources[0] : line, int.MaxValue))
+                .Select(Line),
+        ];
+
+        var env = EnvOf(diagram);
+        var chrome = CanvasChromeDerivation.Derive(diagram, nodes, env);
+
+        // One entry per key, in the order of the members and painted from the first member of each
+        // (gap 15): the derivation orders its groups by model order, so each member's entry is derived
+        // on its own, and the first of every key is kept.
+        IReadOnlyList<C4LegendItem> legend =
+        [
+            .. nodes
+                .Select(node => (Node: node, Entry: CanvasChromeDerivation.Derive(diagram, [node], env).Legend?.Entries.FirstOrDefault()))
+                .Where(each => each.Entry is not null)
+                .DistinctBy(each => each.Entry!.Key, StringComparer.Ordinal)
+                .Select(each => new C4LegendItem(each.Entry!.Label, elements[each.Node])),
+        ];
+        return new C4Drawing(members, lines, chrome.Title ?? "", legend);
+    }
+
+    /// <summary>
+    /// <paramref name="nodes"/>, the members of <paramref name="view"/>, in the order of the statements that
+    /// select them, which is the order the tool draws, lays out and keys them in: what an <c>include</c> names,
+    /// in the order of the includes; then what <c>include *</c> selects, in model order; then, on a dynamic
+    /// view, what its interactions name, in their order.
+    /// </summary>
+    /// <remarks>
+    /// <b>Gap 15</b>, widened (c4-disl-fbl task 10): DISL 3.5 gives a view's members in model order, and
+    /// nothing orders them by the statement that selects them. The kinds <c>include *</c> selects are the
+    /// definition's own (its <c>permitted</c> function), asked only on a dynamic view that has a wildcard,
+    /// the one case where an element both a wildcard and an interaction select is placed by the wildcard.
+    /// </remarks>
+    private static IEnumerable<DislElement> InStatementOrder(IEnumerable<DislElement> nodes, IReadOnlyDictionary<DislElement, C4Element> elements, C4View view, DislDiagram diagram)
+    {
+        List<string> participants = [.. view.Interactions.SelectMany(interaction => new[] { interaction.SourceId, interaction.DestinationId })];
+        IReadOnlyList<string> wildcard = view.IncludesEverything && participants.Count > 0 ? PermittedTypes(diagram) : [];
+        return nodes
+            .Select((node, position) => (Node: node, Rank: RankOf(elements[node], node, position)))
+            .OrderBy(each => each.Rank.Group)
+            .ThenBy(each => each.Rank.Index)
+            .Select(each => each.Node);
+
+        (int Group, int Index) RankOf(C4Element element, DislElement node, int position)
+        {
+            var included = view.Includes.ToList().FindIndex(include => string.Equals(include, element.Id, StringComparison.OrdinalIgnoreCase));
+            if (included >= 0)
+            {
+                return (0, included);
+            }
+
+            var participant = participants.FindIndex(id => string.Equals(id, element.Id, StringComparison.OrdinalIgnoreCase));
+            return view.IncludesEverything && (participant < 0 || wildcard.Contains(node.Type.Name, StringComparer.Ordinal))
+                ? (1, position)
+                : (2, participant < 0 ? position : participant);
+        }
+    }
+
+    /// <summary>The types <c>include *</c> selects on the view <paramref name="diagram"/> shows: the definition's <c>permitted(env.viewpoint)</c>.</summary>
+    private static IReadOnlyList<string> PermittedTypes(DislDiagram diagram) =>
+        diagram.Specification.Environment(DislContexts.Element).Compile("permitted(env.viewpoint)")
+            .Evaluate(new Dictionary<string, object?> { ["self"] = null, ["diagram"] = diagram, ["env"] = diagram.Env.ToCel() }) is IReadOnlyList<object?> types
+            ? [.. types.OfType<string>()]
+            : [];
+
+    /// <summary>The elements <paramref name="view"/> shows, as <see cref="Drawing"/> gives them, without its lines, title and legend.</summary>
+    public static IReadOnlyList<C4Element> Members(C4Workspace workspace, string file, C4View view)
+    {
+        ArgumentNullException.ThrowIfNull(workspace);
+        ArgumentNullException.ThrowIfNull(file);
+        ArgumentNullException.ThrowIfNull(view);
+        (_, IReadOnlyDictionary<DislElement, C4Element> elements, _, List<DislElement> nodes) = Shown(workspace, file, view, For(view.Kind).Specification);
+        return [.. nodes.Select(node => elements[node])];
+    }
+
+    /// <summary>
+    /// The model of <paramref name="view"/>, the workspace's element of each of its nodes, everything the view
+    /// shows, and of that the nodes, in the order of the view's statements and one per identifier.
+    /// </summary>
+    private static (DislDiagram Diagram, IReadOnlyDictionary<DislElement, C4Element> Elements, IReadOnlyList<DislElement> Shown, List<DislElement> Nodes) Shown(C4Workspace workspace, string file, C4View view, DislSpecification specification)
+    {
+        var model = C4Disl.Of(workspace, view, specification, file);
+        foreach (var finding in model.Findings)
+        {
+            _logger.Warning("{File}, view {View}: {Code} {Message}, which the tool does not report", file, view.Key, finding.Code, finding.Message);
+        }
+
+        var diagram = model.Diagram;
+        var elements = C4Disl.ElementsOf(diagram, workspace);
+        var shown = C4Disl.ShownView(diagram, view).Members;
+        List<DislElement> nodes =
+        [
+            .. InStatementOrder(shown.Where(member => !member.Type.IsRelation), elements, view, diagram)
+                .DistinctBy(node => elements[node].Id, StringComparer.OrdinalIgnoreCase),
+        ];
+        return (diagram, elements, shown, nodes);
+    }
+
+    /// <summary>A line as the mapper draws it, from the relation the view shows.</summary>
+    private static C4DrawnLine Line(DislElement line)
+    {
+        var statement = line.IsDerived ? line.Sources[0] : line;
+        var asWritten = !line.IsDerived || (line.Sources.Count == 1 && ReferenceEquals(statement.Source, line.Source) && ReferenceEquals(statement.Target, line.Target));
+        return new C4DrawnLine(
+            line.Id,
+            asWritten ? C4Disl.WrittenEndOf(statement, "source") : line.Source?.Id ?? "",
+            asWritten ? C4Disl.WrittenEndOf(statement, "target") : line.Target?.Id ?? "",
+            TextOf(line, "description"),
+            TextOf(line, "technology"),
+            TextOf(line, "order"));
+    }
+
+    /// <summary>A text attribute of <paramref name="element"/>; empty when its type has none.</summary>
+    private static string TextOf(DislElement element, string attribute) =>
+        element.Type.Attributes.ContainsKey(attribute) && element.ValueOf(attribute) is string text ? text : "";
 
     /// <summary>The definition a target is derived from: its view's kind's, else its origin's, else the system context's.</summary>
     private static BundledDefinition DefinitionOf(C4View? view, ToolOrigin? origin) =>
