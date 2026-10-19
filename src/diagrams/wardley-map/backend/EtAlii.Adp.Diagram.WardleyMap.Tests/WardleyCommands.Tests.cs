@@ -38,8 +38,9 @@ public sealed class WardleyCommandsTests : IDisposable
     private string Read() => File.ReadAllText(_path);
 
     /// <summary>The element id the session would hand out for a named component.</summary>
-    private string IdOf(string name)
+    private async Task<string> IdOfAsync(string name)
     {
+        await _documents.GetOrLoadAsync(_path, TestContext.Current.CancellationToken);
         var entry = _documents
             .Identities(_path)
             .Single(candidate => candidate.Kind == WardleyIdentityKind.Component && candidate.Key == name);
@@ -138,7 +139,7 @@ public sealed class WardleyCommandsTests : IDisposable
         _documents.GetOrLoad(_path);
 
         // Act.
-        var result = await Execute(new RemoveWardleyElementCommand(_path, IdOf("Alpha")));
+        var result = await Execute(new RemoveWardleyElementCommand(_path, await IdOfAsync("Alpha")));
 
         // Assert.
         Assert.True(result.IsSuccess);
@@ -156,7 +157,7 @@ public sealed class WardleyCommandsTests : IDisposable
         _documents.GetOrLoad(_path);
 
         // Act.
-        await Execute(new RemoveWardleyElementCommand(_path, IdOf("Alpha")));
+        await Execute(new RemoveWardleyElementCommand(_path, await IdOfAsync("Alpha")));
         await _history.UndoAsync(TestContext.Current.CancellationToken);
 
         // Assert. Requirement 9.6 - every statement the remove took comes back together.
@@ -171,7 +172,7 @@ public sealed class WardleyCommandsTests : IDisposable
         _documents.GetOrLoad(_path);
 
         // Act.
-        var result = await Execute(new RenameWardleyElementCommand(_path, IdOf("Kettle"), "Boiler"));
+        var result = await Execute(new RenameWardleyElementCommand(_path, await IdOfAsync("Kettle"), "Boiler"));
 
         // Assert.
         Assert.True(result.IsSuccess);
@@ -185,13 +186,13 @@ public sealed class WardleyCommandsTests : IDisposable
         // selection and every undo entry naming it survive.
         Write("component Kettle [0.43, 0.35]\n");
         _documents.GetOrLoad(_path);
-        var before = IdOf("Kettle");
+        var before = await IdOfAsync("Kettle");
 
         // Act.
         await Execute(new RenameWardleyElementCommand(_path, before, "Boiler"));
 
         // Assert.
-        Assert.Equal(before, IdOf("Boiler"));
+        Assert.Equal(before, await IdOfAsync("Boiler"));
     }
 
     [Fact]
@@ -203,7 +204,7 @@ public sealed class WardleyCommandsTests : IDisposable
         _documents.GetOrLoad(_path);
 
         // Act.
-        await Execute(new RenameWardleyElementCommand(_path, IdOf("Kettle"), "Boiler"));
+        await Execute(new RenameWardleyElementCommand(_path, await IdOfAsync("Kettle"), "Boiler"));
         await _history.UndoAsync(TestContext.Current.CancellationToken);
 
         // Assert. Requirement 9.6 - never a partially renamed file.
@@ -218,7 +219,7 @@ public sealed class WardleyCommandsTests : IDisposable
         _documents.GetOrLoad(_path);
 
         // Act.
-        var result = await Execute(new RenameWardleyElementCommand(_path, IdOf("Alpha"), "Beta"));
+        var result = await Execute(new RenameWardleyElementCommand(_path, await IdOfAsync("Alpha"), "Beta"));
 
         // Assert.
         Assert.False(result.IsSuccess);
@@ -231,7 +232,7 @@ public sealed class WardleyCommandsTests : IDisposable
         // Arrange. Requirement 6.2 - inertia is a boolean, not a decorator.
         Write("component Datacentre [0.15, 0.55]\n");
         _documents.GetOrLoad(_path);
-        var id = IdOf("Datacentre");
+        var id = await IdOfAsync("Datacentre");
 
         // Act and assert.
         await Execute(new SetWardleyInertiaCommand(_path, id, true));
@@ -249,7 +250,7 @@ public sealed class WardleyCommandsTests : IDisposable
         _documents.GetOrLoad(_path);
 
         // Act.
-        await Execute(new SetWardleyDecoratorCommand(_path, IdOf("Payment"), WardleyDecorator.Market, true));
+        await Execute(new SetWardleyDecoratorCommand(_path, await IdOfAsync("Payment"), WardleyDecorator.Market, true));
 
         // Assert.
         Assert.Equal("component Payment [0.70, 0.72] (buy) (market)\n", Read());
@@ -263,7 +264,7 @@ public sealed class WardleyCommandsTests : IDisposable
         _documents.GetOrLoad(_path);
 
         // Act.
-        await Execute(new SetWardleyDecoratorCommand(_path, IdOf("Payment"), WardleyDecorator.Buy, false));
+        await Execute(new SetWardleyDecoratorCommand(_path, await IdOfAsync("Payment"), WardleyDecorator.Buy, false));
 
         // Assert. No trailing space left behind.
         Assert.Equal("component Payment [0.70, 0.72]\n", Read());
@@ -277,7 +278,7 @@ public sealed class WardleyCommandsTests : IDisposable
         _documents.GetOrLoad(_path);
 
         // Act.
-        await Execute(new SetWardleyDecoratorCommand(_path, IdOf("Payment"), WardleyDecorator.Buy, true));
+        await Execute(new SetWardleyDecoratorCommand(_path, await IdOfAsync("Payment"), WardleyDecorator.Buy, true));
 
         // Assert.
         Assert.Equal("component Payment [0.70, 0.72] (buy) // why\n", Read());
@@ -291,7 +292,7 @@ public sealed class WardleyCommandsTests : IDisposable
         _documents.GetOrLoad(_path);
 
         // Act. Already in the state asked for.
-        var result = await Execute(new SetWardleyDecoratorCommand(_path, IdOf("Payment"), WardleyDecorator.Buy, true));
+        var result = await Execute(new SetWardleyDecoratorCommand(_path, await IdOfAsync("Payment"), WardleyDecorator.Buy, true));
 
         // Assert.
         Assert.True(result.IsSuccess);
@@ -308,7 +309,7 @@ public sealed class WardleyCommandsTests : IDisposable
 
         // Act.
         var result = await Execute(new SetWardleyLinkCommand(
-            _path, IdOf("Alpha"), IdOf("Beta"), WardleyLinkKind.Flow, Present: true, "cash"));
+            _path, await IdOfAsync("Alpha"), await IdOfAsync("Beta"), WardleyLinkKind.Flow, Present: true, "cash"));
 
         // Assert. A flow link is written with its own arrow, and its context after a semicolon.
         Assert.True(result.IsSuccess, result.Error);
@@ -324,7 +325,7 @@ public sealed class WardleyCommandsTests : IDisposable
 
         // Act.
         var result = await Execute(new SetWardleyLinkCommand(
-            _path, IdOf("Alpha"), IdOf("Beta"), WardleyLinkKind.Dependency, Present: true, "needs"));
+            _path, await IdOfAsync("Alpha"), await IdOfAsync("Beta"), WardleyLinkKind.Dependency, Present: true, "needs"));
 
         // Assert.
         Assert.True(result.IsSuccess, result.Error);
@@ -340,7 +341,7 @@ public sealed class WardleyCommandsTests : IDisposable
 
         // Act.
         var result = await Execute(new SetWardleyLinkCommand(
-            _path, IdOf("Alpha"), IdOf("Beta"), WardleyLinkKind.Dependency, Present: false));
+            _path, await IdOfAsync("Alpha"), await IdOfAsync("Beta"), WardleyLinkKind.Dependency, Present: false));
 
         // Assert.
         Assert.True(result.IsSuccess, result.Error);
@@ -355,7 +356,7 @@ public sealed class WardleyCommandsTests : IDisposable
 
         // Act.
         var result = await Execute(new SetWardleyLinkCommand(
-            _path, IdOf("Alpha"), IdOf("Alpha"), WardleyLinkKind.Dependency, Present: true));
+            _path, await IdOfAsync("Alpha"), await IdOfAsync("Alpha"), WardleyLinkKind.Dependency, Present: true));
 
         // Assert.
         Assert.False(result.IsSuccess);
@@ -372,7 +373,7 @@ public sealed class WardleyCommandsTests : IDisposable
 
         // Act.
         var result = await Execute(new SetWardleyLinkCommand(
-            _path, IdOf("Alpha"), IdOf("Beta"), WardleyLinkKind.Dependency, Present: false));
+            _path, await IdOfAsync("Alpha"), await IdOfAsync("Beta"), WardleyLinkKind.Dependency, Present: false));
 
         // Assert.
         Assert.False(result.IsSuccess);
@@ -388,10 +389,10 @@ public sealed class WardleyCommandsTests : IDisposable
         Write("component Alpha [0.5, 0.5]\n");
 
         // Act.
-        Assert.True((await Execute(new SetWardleyEvolveCommand(_path, IdOf("Alpha"), Present: true, 0.7d))).IsSuccess);
+        Assert.True((await Execute(new SetWardleyEvolveCommand(_path, await IdOfAsync("Alpha"), Present: true, 0.7d))).IsSuccess);
         Assert.Equal("component Alpha [0.5, 0.5]\nevolve Alpha 0.7\n", Read());
 
-        var again = await Execute(new SetWardleyEvolveCommand(_path, IdOf("Alpha"), Present: true, 0.85d));
+        var again = await Execute(new SetWardleyEvolveCommand(_path, await IdOfAsync("Alpha"), Present: true, 0.85d));
 
         // Assert. A component evolves to one place, so a second target replaces the first.
         Assert.True(again.IsSuccess, again.Error);
@@ -407,7 +408,7 @@ public sealed class WardleyCommandsTests : IDisposable
 
         // Act.
         var result = await Execute(new SetWardleyEvolveCommand(
-            _path, IdOf("Kettle"), Present: true, 0.75d, "Electric Kettle"));
+            _path, await IdOfAsync("Kettle"), Present: true, 0.75d, "Electric Kettle"));
 
         // Assert.
         Assert.True(result.IsSuccess, result.Error);
@@ -422,7 +423,7 @@ public sealed class WardleyCommandsTests : IDisposable
         Write("component Alpha [0.5, 0.5]\n");
 
         // Act.
-        await Execute(new SetWardleyEvolveCommand(_path, IdOf("Alpha"), Present: true, 1.4d));
+        await Execute(new SetWardleyEvolveCommand(_path, await IdOfAsync("Alpha"), Present: true, 1.4d));
 
         // Assert.
         Assert.Equal("component Alpha [0.5, 0.5]\nevolve Alpha 1\n", Read());
@@ -435,8 +436,8 @@ public sealed class WardleyCommandsTests : IDisposable
         Write("component Alpha [0.5, 0.5]\nevolve Alpha 0.7\n");
 
         // Act.
-        var cleared = await Execute(new SetWardleyEvolveCommand(_path, IdOf("Alpha"), Present: false, 0d));
-        var again = await Execute(new SetWardleyEvolveCommand(_path, IdOf("Alpha"), Present: false, 0d));
+        var cleared = await Execute(new SetWardleyEvolveCommand(_path, await IdOfAsync("Alpha"), Present: false, 0d));
+        var again = await Execute(new SetWardleyEvolveCommand(_path, await IdOfAsync("Alpha"), Present: false, 0d));
 
         // Assert.
         Assert.True(cleared.IsSuccess, cleared.Error);
@@ -455,7 +456,7 @@ public sealed class WardleyCommandsTests : IDisposable
 
         // Act.
         var result = await Execute(new SetWardleyPipelineMembershipCommand(
-            _path, IdOf("Kettle"), "Electric Kettle", Member: true, 0.63d));
+            _path, await IdOfAsync("Kettle"), "Electric Kettle", Member: true, 0.63d));
 
         // Assert. Written in the nested form, because that is the form that can hold a child.
         Assert.True(result.IsSuccess, result.Error);
@@ -473,7 +474,7 @@ public sealed class WardleyCommandsTests : IDisposable
 
         // Act.
         var result = await Execute(new SetWardleyPipelineMembershipCommand(
-            _path, IdOf("Kettle"), "Electric Kettle", Member: true, 0.63d));
+            _path, await IdOfAsync("Kettle"), "Electric Kettle", Member: true, 0.63d));
 
         // Assert.
         Assert.True(result.IsSuccess, result.Error);
@@ -490,7 +491,7 @@ public sealed class WardleyCommandsTests : IDisposable
 
         // Act.
         var result = await Execute(new SetWardleyPipelineMembershipCommand(
-            _path, IdOf("Kettle"), "Campfire Kettle", Member: false));
+            _path, await IdOfAsync("Kettle"), "Campfire Kettle", Member: false));
 
         // Assert.
         Assert.True(result.IsSuccess, result.Error);
@@ -508,7 +509,7 @@ public sealed class WardleyCommandsTests : IDisposable
 
         // Act.
         var result = await Execute(new SetWardleyPipelineMembershipCommand(
-            _path, IdOf("Power"), "Solar", Member: true, 0.4d));
+            _path, await IdOfAsync("Power"), "Solar", Member: true, 0.4d));
 
         // Assert.
         Assert.False(result.IsSuccess);
@@ -524,9 +525,9 @@ public sealed class WardleyCommandsTests : IDisposable
 
         // Act.
         var duplicate = await Execute(new SetWardleyPipelineMembershipCommand(
-            _path, IdOf("Kettle"), "Electric Kettle", Member: true, 0.4d));
+            _path, await IdOfAsync("Kettle"), "Electric Kettle", Member: true, 0.4d));
         var absent = await Execute(new SetWardleyPipelineMembershipCommand(
-            _path, IdOf("Kettle"), "Campfire Kettle", Member: false));
+            _path, await IdOfAsync("Kettle"), "Campfire Kettle", Member: false));
 
         // Assert.
         Assert.False(duplicate.IsSuccess);
@@ -549,7 +550,7 @@ public sealed class WardleyCommandsTests : IDisposable
             new RenameWardleyElementCommand(_path, "gone", "Beta"),
             new SetWardleyInertiaCommand(_path, "gone", true),
             new SetWardleyDecoratorCommand(_path, "gone", WardleyDecorator.Buy, true),
-            new SetWardleyLinkCommand(_path, "gone", IdOf("Alpha"), WardleyLinkKind.Dependency, true),
+            new SetWardleyLinkCommand(_path, "gone", await IdOfAsync("Alpha"), WardleyLinkKind.Dependency, true),
             new SetWardleyEvolveCommand(_path, "gone", true, 0.5d),
             new SetWardleyPipelineMembershipCommand(_path, "gone", "Child", true),
         })
@@ -569,18 +570,18 @@ public sealed class WardleyCommandsTests : IDisposable
         // be left with the file they started with, whatever the edit was (Requirements 3.1, 9.6).
         const string before = "// a comment\ncomponent Alpha [0.50, 0.50] (buy)\ncomponent Beta [0.20, 0.20]\nAlpha->Beta\n";
 
-        foreach (var make in new Func<string, ICommand>[]
+        foreach (var make in new Func<string, string, ICommand>[]
         {
-            _ => new AddWardleyElementCommand(_path, "component", "Gamma", 0.3d, 0.3d),
-            id => new RemoveWardleyElementCommand(_path, id),
-            id => new RenameWardleyElementCommand(_path, id, "Renamed"),
-            id => new SetWardleyInertiaCommand(_path, id, true),
-            id => new SetWardleyDecoratorCommand(_path, id, WardleyDecorator.Market, true),
-            id => new SetWardleyDecoratorCommand(_path, id, WardleyDecorator.Buy, false),
-            id => new SetWardleyLinkCommand(_path, id, IdOf("Beta"), WardleyLinkKind.Flow, true, "cash"),
-            id => new SetWardleyLinkCommand(_path, id, IdOf("Beta"), WardleyLinkKind.Dependency, false),
-            id => new SetWardleyEvolveCommand(_path, id, true, 0.9d),
-            id => new SetWardleyPipelineMembershipCommand(_path, id, "Child", true, 0.4d),
+            (_, _) => new AddWardleyElementCommand(_path, "component", "Gamma", 0.3d, 0.3d),
+            (id, _) => new RemoveWardleyElementCommand(_path, id),
+            (id, _) => new RenameWardleyElementCommand(_path, id, "Renamed"),
+            (id, _) => new SetWardleyInertiaCommand(_path, id, true),
+            (id, _) => new SetWardleyDecoratorCommand(_path, id, WardleyDecorator.Market, true),
+            (id, _) => new SetWardleyDecoratorCommand(_path, id, WardleyDecorator.Buy, false),
+            (id, beta) => new SetWardleyLinkCommand(_path, id, beta, WardleyLinkKind.Flow, true, "cash"),
+            (id, beta) => new SetWardleyLinkCommand(_path, id, beta, WardleyLinkKind.Dependency, false),
+            (id, _) => new SetWardleyEvolveCommand(_path, id, true, 0.9d),
+            (id, _) => new SetWardleyPipelineMembershipCommand(_path, id, "Child", true, 0.4d),
         })
         {
             Write(before);
@@ -588,7 +589,7 @@ public sealed class WardleyCommandsTests : IDisposable
             _documents.GetOrLoad(_path);
 
             // Act.
-            var result = await Execute(make(IdOf("Alpha")));
+            var result = await Execute(make(await IdOfAsync("Alpha"), await IdOfAsync("Beta")));
             Assert.True(result.IsSuccess, result.Error);
             await _history.UndoAsync(TestContext.Current.CancellationToken);
 
@@ -604,7 +605,7 @@ public sealed class WardleyCommandsTests : IDisposable
         // Arrange: a holder that shares Read only, which denies the replace a publish performs.
         // An external editor with the file open looks exactly like this to us.
         Write("component Alpha [0.5, 0.5]\n");
-        var id = IdOf("Alpha");
+        var id = await IdOfAsync("Alpha");
         await using var holder = new FileStream(_path, FileMode.Open, FileAccess.Read, FileShare.Read);
 
         // Act.

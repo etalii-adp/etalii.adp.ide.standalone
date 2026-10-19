@@ -51,7 +51,7 @@ internal sealed class MoveC4ElementCommandHandler(IC4DocumentStore documents, C4
         // position could not be recorded would lose work the user can see. The warning is
         // what stops the position quietly not being there on the next open.
         var warning = await sidecar.WriteAsync(command.BodyPath, command.ViewKey, command.ElementId, new C4SidecarPosition(command.X, command.Y), cancellationToken);
-        documents.Touch(command.BodyPath);
+        await documents.TouchAsync(command.BodyPath, cancellationToken);
         return CommandResult.Success(previous, warning);
     }
 }
@@ -72,7 +72,7 @@ internal sealed class RestoreC4ElementPositionCommandHandler(IC4DocumentStore do
             ? await sidecar.WriteAsync(command.BodyPath, command.ViewKey, command.ElementId, new C4SidecarPosition(x, y), cancellationToken)
             : await sidecar.RemoveAsync(command.BodyPath, command.ViewKey, command.ElementId, cancellationToken);
 
-        documents.Touch(command.BodyPath);
+        await documents.TouchAsync(command.BodyPath, cancellationToken);
 
         // Redoing a "restore to computed" means moving back to where the drag put it; when
         // there was nothing to move back to, the inverse is a no-op restore.

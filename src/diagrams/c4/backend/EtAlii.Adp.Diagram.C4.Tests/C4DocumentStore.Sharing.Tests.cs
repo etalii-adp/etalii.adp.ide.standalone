@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.Files;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
@@ -129,6 +130,22 @@ public class C4DocumentStoreSharingTests : IDisposable
 
         // Assert.
         Assert.Equal("Renamed", _store.GetOrLoad(path).Model.Find("s")!.Name);
+    }
+
+    [Fact]
+    public async Task ATouchOfADocumentNotReadYet_ReadsItBeforeTheSessionsHear()
+    {
+        // Arrange: a drag's sidecar written for a model this store has not read yet.
+        var path = Write("model.dsl", Sample);
+        DocumentEntry<LineDocument, C4Workspace>? heard = null;
+        _store.Changed += (_, _) => heard = _store.Get(path);
+
+        // Act.
+        await _store.TouchAsync(path, TestContext.Current.CancellationToken);
+
+        // Assert: a session re-delivering on the touch finds the model held, as it renders only
+        // what is held.
+        Assert.Equal("System", heard?.Model.Find("s")?.Name);
     }
 
     [Fact]

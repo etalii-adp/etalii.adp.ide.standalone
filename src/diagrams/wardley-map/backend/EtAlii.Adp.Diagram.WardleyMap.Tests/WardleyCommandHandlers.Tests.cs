@@ -39,6 +39,7 @@ public sealed class WardleyCommandHandlersTests : EditHandlerContract<IWardleyDo
         File.Copy(Example, body);
         var store = Warning(CreateStore(), warning);
         var dispatcher = Dispatcher(store);
+        await store.GetOrLoadAsync(body, TestContext.Current.CancellationToken);
         var cup = store.Identities(body).Single(entry => entry.Key == "Cup of Tea").Id;
 
         // Act.

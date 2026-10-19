@@ -333,7 +333,7 @@ public class PipelineSessionTests : IDisposable
 
         // Act.
         _store.GetOrLoad(_workspace, theirs);
-        _store.Touch(_workspace, theirs);
+        await _store.TouchAsync(_workspace, theirs, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Equal(0, pushed);
@@ -360,9 +360,9 @@ public class PipelineSessionTests : IDisposable
 
         // Act.
         _store.GetOrLoad(_workspace, theirs);
-        _store.Touch(_workspace, theirs);
+        await _store.TouchAsync(_workspace, theirs, TestContext.Current.CancellationToken);
         var pushedForTheirs = pushed.Count;
-        _store.Touch(_workspace, mine);
+        await _store.TouchAsync(_workspace, mine, TestContext.Current.CancellationToken);
 
         // Assert: nothing for the other file, and the same change to its own file does push the
         // jobs - which is what makes the silence mean something.
@@ -383,7 +383,7 @@ public class PipelineSessionTests : IDisposable
 
         // Act.
         await session.DisposeAsync();
-        _store.Touch(_workspace, path);
+        await _store.TouchAsync(_workspace, path, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Equal(0, pushed);

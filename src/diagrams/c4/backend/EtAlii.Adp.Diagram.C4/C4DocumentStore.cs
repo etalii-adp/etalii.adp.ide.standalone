@@ -22,10 +22,10 @@ namespace EtAlii.Adp.Diagram.C4;
 public sealed class C4DocumentStore(IFileWriter writer) : LifecycleDocumentStore<LineDocument, C4Workspace>(writer), IC4DocumentStore
 {
     /// <inheritdoc />
-    public void Touch(string path)
+    public async Task TouchAsync(string path, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
-        GetOrLoad(path);
+        await GetOrLoadAsync(path, cancellationToken);
         OnChanged(path);
     }
 

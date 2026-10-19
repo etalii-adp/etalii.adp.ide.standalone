@@ -207,9 +207,9 @@ public class C4SessionTests : IDisposable
         session.Changed += (_, args) => pushed.Add(args.Deltas);
 
         // Act.
-        _documents.Touch(other);
+        await _documents.TouchAsync(other, TestContext.Current.CancellationToken);
         var pushedForTheOther = pushed.Count;
-        _documents.Touch(body);
+        await _documents.TouchAsync(body, TestContext.Current.CancellationToken);
 
         // Assert: nothing for the other document, and the same change to its own document does
         // move the person - which is what makes the silence mean something.

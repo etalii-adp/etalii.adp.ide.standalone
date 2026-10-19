@@ -16,7 +16,8 @@ public interface IC4DocumentStore : IDiagramDocumentStore<LineDocument, C4Worksp
     /// <summary>
     /// Tells every session on this document to re-deliver, without changing the document.
     /// A drag changes where an element is drawn but not what the model says, so it has a
-    /// sidecar to write and nothing to save (Requirement 8.3).
+    /// sidecar to write and nothing to save (Requirement 8.3). The document is read first when it is
+    /// not held yet, without holding a thread (code-structure FR-050).
     /// </summary>
-    void Touch(string path);
+    Task TouchAsync(string path, CancellationToken cancellationToken);
 }

@@ -329,6 +329,6 @@ public class C4ContextActionProviderTests : IDisposable
 
         public void Forget(string path) => inner.Forget(path);
 
-        public void Touch(string path) => inner.Touch(path);
+        public Task TouchAsync(string path, CancellationToken cancellationToken) => inner.TouchAsync(path, cancellationToken);
     }
 }

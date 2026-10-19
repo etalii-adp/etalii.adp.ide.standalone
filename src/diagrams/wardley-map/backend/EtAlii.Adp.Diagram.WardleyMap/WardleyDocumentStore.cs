@@ -34,9 +34,17 @@ public sealed class WardleyDocumentStore(IFileWriter writer) : LifecycleDocument
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
 
-        return _identities.GetOrAdd(
-            path,
-            key => WardleyIdentities.Reconcile(GetOrLoad(key).Model, _sidecar.Read(key)));
+        if (_identities.TryGetValue(path, out var held))
+        {
+            return held;
+        }
+
+        // Reconciled against the document this store holds, never read here: a caller asks for the
+        // identities of a map it has already read, so a map that is not held has none yet, and none
+        // are kept for it until it is (code-structure FR-050).
+        return Get(path) is { } entry
+            ? _identities.GetOrAdd(path, key => WardleyIdentities.Reconcile(entry.Model, _sidecar.Read(key)))
+            : [];
     }
 
     /// <inheritdoc />
@@ -105,7 +113,12 @@ public sealed class WardleyDocumentStore(IFileWriter writer) : LifecycleDocument
     /// </remarks>
     protected override void Installed(string path)
     {
+        if (Get(path) is not { } entry)
+        {
+            return;
+        }
+
         var known = _identities.TryGetValue(path, out var held) ? held : [];
-        _identities[path] = WardleyIdentities.Reconcile(GetOrLoad(path).Model, known);
+        _identities[path] = WardleyIdentities.Reconcile(entry.Model, known);
     }
 }

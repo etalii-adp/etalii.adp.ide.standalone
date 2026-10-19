@@ -57,7 +57,7 @@ public sealed class WardleyContextActionProviderTests : IDisposable
         // neighbour has quietly acquired one. Rename asks for the component's Name, which is
         // the drawn label. Add-component asks for a name that does not exist yet, and evolve
         // asks for a maturity number - emphatically not a label.
-        var kettle = IdOf("Kettle");
+        var kettle = await IdOfAsync("Kettle");
 
         // Act.
         var rename = await _provider.ExecuteAsync(Target(kettle), WardleyContextActionProvider.RenameActionId, TestContext.Current.CancellationToken);
@@ -81,7 +81,7 @@ public sealed class WardleyContextActionProviderTests : IDisposable
     public async Task AComponent_IsOfferedTheEditsOfRequirement93()
     {
         // Act.
-        var ids = await ActionIdsFor(IdOf("Kettle"));
+        var ids = await ActionIdsFor(await IdOfAsync("Kettle"));
 
         // Assert. Every one of these dispatches a command, and each command has an inverse -
         // which is what makes the menu and the canvas two routes to one implementation.
@@ -98,7 +98,7 @@ public sealed class WardleyContextActionProviderTests : IDisposable
     public async Task EveryShortcutIsDescribedByTheBackend()
     {
         // Act.
-        var actions = await ActionsFor(IdOf("Kettle"));
+        var actions = await ActionsFor(await IdOfAsync("Kettle"));
 
         // Assert. Requirement 11.5 - the client holds no key-to-action table, so a shortcut that
         // is not described here does not exist anywhere.
@@ -112,8 +112,8 @@ public sealed class WardleyContextActionProviderTests : IDisposable
     public async Task ALabelSaysWhichWayTheToggleGoes()
     {
         // Act. Kettle carries `(buy)`; Power carries nothing.
-        var kettle = await ActionsFor(IdOf("Kettle"));
-        var power = await ActionsFor(IdOf("Power"));
+        var kettle = await ActionsFor(await IdOfAsync("Kettle"));
+        var power = await ActionsFor(await IdOfAsync("Power"));
 
         // Assert. A toggle whose label does not say what it will do is a coin flip.
         var id = WardleyContextActionProvider.DecoratorActionIdFor(WardleyDecorator.Buy);
@@ -131,7 +131,7 @@ public sealed class WardleyContextActionProviderTests : IDisposable
         _documents.Forget(_path);
 
         // Act.
-        var ids = await ActionIdsFor(IdOf("Alone"));
+        var ids = await ActionIdsFor(await IdOfAsync("Alone"));
 
         // Assert.
         Assert.DoesNotContain(WardleyContextActionProvider.UnlinkActionId, ids);
@@ -145,8 +145,8 @@ public sealed class WardleyContextActionProviderTests : IDisposable
         _documents.Forget(_path);
 
         // Act.
-        var evolving = await ActionIdsFor(IdOf("Kettle"));
-        var still = await ActionIdsFor(IdOf("Power"));
+        var evolving = await ActionIdsFor(await IdOfAsync("Kettle"));
+        var still = await ActionIdsFor(await IdOfAsync("Power"));
 
         // Assert.
         Assert.Contains(WardleyContextActionProvider.ClearEvolveActionId, evolving);
@@ -162,7 +162,7 @@ public sealed class WardleyContextActionProviderTests : IDisposable
         _documents.Forget(_path);
 
         // Act.
-        var ids = await ActionIdsFor(IdOf("Power"));
+        var ids = await ActionIdsFor(await IdOfAsync("Power"));
 
         // Assert.
         Assert.DoesNotContain(WardleyContextActionProvider.AddToPipelineActionId, ids);
@@ -198,7 +198,7 @@ public sealed class WardleyContextActionProviderTests : IDisposable
         try
         {
             // Act.
-            var ids = await ActionIdsFor(IdOf("Kettle"));
+            var ids = await ActionIdsFor(await IdOfAsync("Kettle"));
 
             // Assert.
             Assert.Empty(ids);
@@ -215,6 +215,7 @@ public sealed class WardleyContextActionProviderTests : IDisposable
         // Arrange.
         await File.WriteAllTextAsync(_path, "component Alpha [0.5, 0.5]\nnote Mind the gap [0.2, 0.2]\n", TestContext.Current.CancellationToken);
         _documents.Forget(_path);
+        await _documents.GetOrLoadAsync(_path, TestContext.Current.CancellationToken);
         var note = _documents.Identities(_path).Single(entry => entry.Kind == WardleyIdentityKind.Note);
 
         // Act.
@@ -232,7 +233,7 @@ public sealed class WardleyContextActionProviderTests : IDisposable
     {
         // Act.
         var result = await _provider.ExecuteAsync(
-            Target(IdOf("Power")), WardleyContextActionProvider.ToggleInertiaActionId, TestContext.Current.CancellationToken);
+            Target(await IdOfAsync("Power")), WardleyContextActionProvider.ToggleInertiaActionId, TestContext.Current.CancellationToken);
 
         // Assert. Immediate: there is nothing to ask about a toggle.
         Assert.IsType<ContextExecutionCompleted>(result);
@@ -248,7 +249,7 @@ public sealed class WardleyContextActionProviderTests : IDisposable
 
         // Act.
         await _provider.ExecuteAsync(
-            Target(IdOf("Power")), WardleyContextActionProvider.ToggleInertiaActionId, TestContext.Current.CancellationToken);
+            Target(await IdOfAsync("Power")), WardleyContextActionProvider.ToggleInertiaActionId, TestContext.Current.CancellationToken);
         await _services.GetRequiredService<IHistoryStackStore>().Get(_root).UndoAsync(TestContext.Current.CancellationToken);
 
         // Assert.
@@ -262,9 +263,9 @@ public sealed class WardleyContextActionProviderTests : IDisposable
         var id = WardleyContextActionProvider.DecoratorActionIdFor(WardleyDecorator.Buy);
 
         // Act.
-        await _provider.ExecuteAsync(Target(IdOf("Kettle")), id, TestContext.Current.CancellationToken);
+        await _provider.ExecuteAsync(Target(await IdOfAsync("Kettle")), id, TestContext.Current.CancellationToken);
         var cleared = await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken);
-        await _provider.ExecuteAsync(Target(IdOf("Kettle")), id, TestContext.Current.CancellationToken);
+        await _provider.ExecuteAsync(Target(await IdOfAsync("Kettle")), id, TestContext.Current.CancellationToken);
 
         // Assert. The label said "Clear buy" because it was there; after clearing it, setting it
         // again puts the same word back.
@@ -277,9 +278,9 @@ public sealed class WardleyContextActionProviderTests : IDisposable
     {
         // Act.
         var asked = await _provider.ExecuteAsync(
-            Target(IdOf("Kettle")), WardleyContextActionProvider.RenameActionId, TestContext.Current.CancellationToken);
+            Target(await IdOfAsync("Kettle")), WardleyContextActionProvider.RenameActionId, TestContext.Current.CancellationToken);
         var committed = await _provider.CommitAsync(
-            Target(IdOf("Kettle")), WardleyContextActionProvider.RenameActionId, "Boiler", "", TestContext.Current.CancellationToken);
+            Target(await IdOfAsync("Kettle")), WardleyContextActionProvider.RenameActionId, "Boiler", "", TestContext.Current.CancellationToken);
 
         // Assert. The dialog starts from the current name, so an edit begins where the user is.
         var request = Assert.IsType<ContextExecutionRequiresInput>(asked).Request;
@@ -294,7 +295,7 @@ public sealed class WardleyContextActionProviderTests : IDisposable
     {
         // Act.
         var asked = await _provider.ExecuteAsync(
-            Target(IdOf("Kettle")), WardleyContextActionProvider.RemoveActionId, TestContext.Current.CancellationToken);
+            Target(await IdOfAsync("Kettle")), WardleyContextActionProvider.RemoveActionId, TestContext.Current.CancellationToken);
 
         // Assert.
         var request = Assert.IsType<ContextExecutionRequiresConfirmation>(asked).Request;
@@ -307,11 +308,11 @@ public sealed class WardleyContextActionProviderTests : IDisposable
     {
         // Act.
         var asked = await _provider.ExecuteAsync(
-            Target(IdOf("Cup of Tea")), WardleyContextActionProvider.LinkActionId, TestContext.Current.CancellationToken);
+            Target(await IdOfAsync("Cup of Tea")), WardleyContextActionProvider.LinkActionId, TestContext.Current.CancellationToken);
         var request = Assert.IsType<ContextExecutionRequiresChoice>(asked).Request;
         var power = request.Options.Single(option => option.Label == "Power");
         var committed = await _provider.CommitAsync(
-            Target(IdOf("Cup of Tea")), WardleyContextActionProvider.LinkActionId, power.Id, "", TestContext.Current.CancellationToken);
+            Target(await IdOfAsync("Cup of Tea")), WardleyContextActionProvider.LinkActionId, power.Id, "", TestContext.Current.CancellationToken);
 
         // Assert. The option's id IS the element id the command needs, so the dialog's answer is
         // already what gets dispatched.
@@ -325,10 +326,10 @@ public sealed class WardleyContextActionProviderTests : IDisposable
     {
         // Act.
         var asked = await _provider.ExecuteAsync(
-            Target(IdOf("Cup of Tea")), WardleyContextActionProvider.FlowActionId, TestContext.Current.CancellationToken);
+            Target(await IdOfAsync("Cup of Tea")), WardleyContextActionProvider.FlowActionId, TestContext.Current.CancellationToken);
         var options = Assert.IsType<ContextExecutionRequiresChoice>(asked).Request.Options;
         await _provider.CommitAsync(
-            Target(IdOf("Cup of Tea")),
+            Target(await IdOfAsync("Cup of Tea")),
             WardleyContextActionProvider.FlowActionId,
             options.Single(option => option.Label == "Power").Id,
             "",
@@ -347,7 +348,7 @@ public sealed class WardleyContextActionProviderTests : IDisposable
 
         // Act.
         var result = await _provider.ExecuteAsync(
-            Target(IdOf("Alpha")), WardleyContextActionProvider.UnlinkActionId, TestContext.Current.CancellationToken);
+            Target(await IdOfAsync("Alpha")), WardleyContextActionProvider.UnlinkActionId, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.IsType<ContextExecutionCompleted>(result);
@@ -359,11 +360,11 @@ public sealed class WardleyContextActionProviderTests : IDisposable
     {
         // Act. Kettle is an end of both links in the fixture.
         var asked = await _provider.ExecuteAsync(
-            Target(IdOf("Kettle")), WardleyContextActionProvider.UnlinkActionId, TestContext.Current.CancellationToken);
+            Target(await IdOfAsync("Kettle")), WardleyContextActionProvider.UnlinkActionId, TestContext.Current.CancellationToken);
         var request = Assert.IsType<ContextExecutionRequiresChoice>(asked).Request;
         var chosen = request.Options.Single(option => option.Label == "Kettle +> Power");
         var committed = await _provider.CommitAsync(
-            Target(IdOf("Kettle")), WardleyContextActionProvider.UnlinkActionId, chosen.Id, "", TestContext.Current.CancellationToken);
+            Target(await IdOfAsync("Kettle")), WardleyContextActionProvider.UnlinkActionId, chosen.Id, "", TestContext.Current.CancellationToken);
 
         // Assert. The label says which arrow it is, because the two claims are different.
         Assert.Equal(["Cup of Tea -> Kettle", "Kettle +> Power"], request.Options.Select(option => option.Label));
@@ -377,6 +378,7 @@ public sealed class WardleyContextActionProviderTests : IDisposable
     public async Task ALinkItself_IsSelectableAndRemovable()
     {
         // Arrange. Selecting the arrow and pressing Delete is the gesture this exists for.
+        await _documents.GetOrLoadAsync(_path, TestContext.Current.CancellationToken);
         var link = _documents.Identities(_path).First(entry => entry.Kind == WardleyIdentityKind.Link);
 
         // Act.
@@ -396,7 +398,7 @@ public sealed class WardleyContextActionProviderTests : IDisposable
         // Arrange, act and assert. Requirement 7.3 clamps a DRAG past the edge, because that is
         // a slip of the hand; a typed 1.4 is a misunderstanding of the scale, and saying so is
         // more use than silently storing something else.
-        var target = Target(IdOf("Kettle"));
+        var target = Target(await IdOfAsync("Kettle"));
         var refused = await _provider.ValidateAsync(target, WardleyContextActionProvider.SetEvolveActionId, "1.4", TestContext.Current.CancellationToken);
         var accepted = await _provider.ValidateAsync(target, WardleyContextActionProvider.SetEvolveActionId, "0.8", TestContext.Current.CancellationToken);
 
@@ -410,7 +412,7 @@ public sealed class WardleyContextActionProviderTests : IDisposable
     {
         // Act.
         var asked = await _provider.ExecuteAsync(
-            Target(IdOf("Kettle")), WardleyContextActionProvider.SetEvolveActionId, TestContext.Current.CancellationToken);
+            Target(await IdOfAsync("Kettle")), WardleyContextActionProvider.SetEvolveActionId, TestContext.Current.CancellationToken);
 
         // Assert. An evolution target starts at the component's own maturity, which is the one
         // number the user is certainly thinking about.
@@ -422,7 +424,7 @@ public sealed class WardleyContextActionProviderTests : IDisposable
     {
         // Act.
         var committed = await _provider.CommitAsync(
-            Target(IdOf("Kettle")),
+            Target(await IdOfAsync("Kettle")),
             WardleyContextActionProvider.AddToPipelineActionId,
             "Electric Kettle",
             "",
@@ -439,6 +441,7 @@ public sealed class WardleyContextActionProviderTests : IDisposable
         // Arrange.
         await File.WriteAllTextAsync(_path, "component Kettle [0.4, 0.3]\npipeline Kettle\n{\n  component Electric Kettle [0.63]\n}\n", TestContext.Current.CancellationToken);
         _documents.Forget(_path);
+        await _documents.GetOrLoadAsync(_path, TestContext.Current.CancellationToken);
         var child = _documents.Identities(_path).Single(entry => entry.Kind == WardleyIdentityKind.PipelineChild);
 
         // Act.
@@ -470,7 +473,7 @@ public sealed class WardleyContextActionProviderTests : IDisposable
         // drop it. One record now makes both commands, so both keep it.
         await File.WriteAllTextAsync(_path, "component Kettle [0.43, 0.35]\nevolve Kettle->Electric Kettle 0.62\n", TestContext.Current.CancellationToken);
         _documents.Forget(_path);
-        var kettle = IdOf("Kettle");
+        var kettle = await IdOfAsync("Kettle");
 
         // Act.
         var committed = await _provider.CommitAsync(
@@ -487,7 +490,7 @@ public sealed class WardleyContextActionProviderTests : IDisposable
     public async Task ADocumentThatCouldNotBeRead_IsRefusedByTheMenusAndTheGrid_AndWritesNothing()
     {
         // Arrange.
-        var kettle = IdOf("Kettle");
+        var kettle = await IdOfAsync("Kettle");
         var unreadable = new UnreadableStore(_documents);
         var historyStacks = _services.GetRequiredService<IHistoryStackStore>();
         var actions = new WardleyContextActionProvider(historyStacks, unreadable);
@@ -520,7 +523,7 @@ public sealed class WardleyContextActionProviderTests : IDisposable
 
         // Act.
         var offered = await _provider.DiscoverAsync(ContextTarget.ForElement(other, "", _root, ShortGuid.NewShortGuid()), TestContext.Current.CancellationToken);
-        var rows = await properties.DescribeAsync(ContextTarget.ForElement(other, IdOf("Kettle"), _root, ShortGuid.NewShortGuid()), TestContext.Current.CancellationToken);
+        var rows = await properties.DescribeAsync(ContextTarget.ForElement(other, await IdOfAsync("Kettle"), _root, ShortGuid.NewShortGuid()), TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Empty(offered);
@@ -529,10 +532,14 @@ public sealed class WardleyContextActionProviderTests : IDisposable
 
     // ---- plumbing -----------------------------------------------------------------------------
 
-    private string IdOf(string name) => _documents
-        .Identities(_path)
-        .Single(entry => entry.Kind == WardleyIdentityKind.Component && entry.Key == name)
-        .Id;
+    private async Task<string> IdOfAsync(string name)
+    {
+        await _documents.GetOrLoadAsync(_path, TestContext.Current.CancellationToken);
+        return _documents
+            .Identities(_path)
+            .Single(entry => entry.Kind == WardleyIdentityKind.Component && entry.Key == name)
+            .Id;
+    }
 
     private ContextTarget Target(string elementId) => ContextTarget.ForElement(_path, elementId, _root);
 
