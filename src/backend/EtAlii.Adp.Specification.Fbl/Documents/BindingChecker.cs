@@ -105,7 +105,7 @@ internal static class BindingChecker
     {
         if (binding.Plugin is null)
         {
-            if (!binding.Body.IsFolder && binding.Body.Family is null)
+            if (binding.Body is { IsFolder: false, Family: null })
             {
                 problems.Add(new LoadDiagnostic(pointer + "/body/family", LoadSeverity.Error, "A declared file body names its family."));
             }
