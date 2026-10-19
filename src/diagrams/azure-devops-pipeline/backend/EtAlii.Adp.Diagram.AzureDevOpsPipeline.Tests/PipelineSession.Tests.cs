@@ -17,6 +17,8 @@ public class PipelineSessionTests : IDisposable
         IoPath.GetTempPath(),
         "adp-pipeline-session-" + Guid.NewGuid().ToString("N"));
 
+    private ProjectRoot Root => ProjectRoot.From(_workspace);
+
     private readonly PipelineDocumentStore _store = new(new FileWriter());
     private readonly PipelineElementMapper _mapper = new(PipelineMetrics.Default);
     private readonly PipelineViewState _views = new();
@@ -78,7 +80,7 @@ public class PipelineSessionTests : IDisposable
 
     /// <summary>A session on a known watch id, so a test can toggle that connection's own view.</summary>
     private PipelineSession OpenWith(string path, ShortGuid watchId) =>
-        new(watchId, _workspace, path, _store, _mapper, _views);
+        new(watchId, Root, path, _store, _mapper, _views);
 
     private static IEnumerable<string> AddedIds(IEnumerable<DiagramDelta> deltas) =>
         deltas.OfType<DiagramAddDelta>().SelectMany(delta => delta.Elements).Select(element => element.Id);
@@ -242,10 +244,10 @@ public class PipelineSessionTests : IDisposable
         session.Changed += (_, args) => pushed.Add(args);
 
         // Act.
-        var entry = await _store.GetOrLoadAsync(_workspace, path, TestContext.Current.CancellationToken);
+        var entry = await _store.GetOrLoadAsync(Root, path, TestContext.Current.CancellationToken);
         var build = entry.Model.Stages.Single(stage => stage.Name == "Build");
         PipelineBodyEdits.Rename(entry.Document, build.Id, "Build it all");
-        await _store.SaveAsync(_workspace, path, entry, TestContext.Current.CancellationToken);
+        await _store.SaveAsync(Root, path, entry, TestContext.Current.CancellationToken);
 
         // Assert.
         var deltas = Assert.Single(pushed);
@@ -265,10 +267,10 @@ public class PipelineSessionTests : IDisposable
         session.Changed += (_, args) => pushed = args;
 
         // Act.
-        var entry = await _store.GetOrLoadAsync(_workspace, path, TestContext.Current.CancellationToken);
+        var entry = await _store.GetOrLoadAsync(Root, path, TestContext.Current.CancellationToken);
         var build = entry.Model.Stages.Single(stage => stage.Name == "Build");
         PipelineBodyEdits.Rename(entry.Document, build.Id, "Build it all");
-        await _store.SaveAsync(_workspace, path, entry, TestContext.Current.CancellationToken);
+        await _store.SaveAsync(Root, path, entry, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.NotNull(pushed);
@@ -332,8 +334,8 @@ public class PipelineSessionTests : IDisposable
         session.Changed += (_, _) => pushed++;
 
         // Act.
-        await _store.GetOrLoadAsync(_workspace, theirs, TestContext.Current.CancellationToken);
-        await _store.TouchAsync(_workspace, theirs, TestContext.Current.CancellationToken);
+        await _store.GetOrLoadAsync(Root, theirs, TestContext.Current.CancellationToken);
+        await _store.TouchAsync(Root, theirs, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Equal(0, pushed);
@@ -359,10 +361,10 @@ public class PipelineSessionTests : IDisposable
         session.Changed += (_, args) => pushed.Add(args);
 
         // Act.
-        await _store.GetOrLoadAsync(_workspace, theirs, TestContext.Current.CancellationToken);
-        await _store.TouchAsync(_workspace, theirs, TestContext.Current.CancellationToken);
+        await _store.GetOrLoadAsync(Root, theirs, TestContext.Current.CancellationToken);
+        await _store.TouchAsync(Root, theirs, TestContext.Current.CancellationToken);
         var pushedForTheirs = pushed.Count;
-        await _store.TouchAsync(_workspace, mine, TestContext.Current.CancellationToken);
+        await _store.TouchAsync(Root, mine, TestContext.Current.CancellationToken);
 
         // Assert: nothing for the other file, and the same change to its own file does push the
         // jobs - which is what makes the silence mean something.
@@ -383,7 +385,7 @@ public class PipelineSessionTests : IDisposable
 
         // Act.
         await session.DisposeAsync();
-        await _store.TouchAsync(_workspace, path, TestContext.Current.CancellationToken);
+        await _store.TouchAsync(Root, path, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Equal(0, pushed);

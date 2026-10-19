@@ -42,10 +42,10 @@ public class PipelineBodyTests
         var full = IoPath.Combine(PipelineCorpus.SourceFolder, document.Relative);
         var root = IoPath.Combine(PipelineCorpus.SourceFolder, document.Root);
         var text = File.ReadAllText(full);
-        var expected = PipelineParser.Outcome(LineDocument.Parse(text), new PipelineTemplates(root), full);
+        var expected = PipelineParser.Outcome(LineDocument.Parse(text), new PipelineTemplates(ProjectRoot.From(root)), full);
 
         // Act.
-        var outcome = PipelineBody.Open(Encoding.UTF8.GetBytes(text), new PipelineReadContext(full, new PipelineTemplates(root))).Outcome;
+        var outcome = PipelineBody.Open(Encoding.UTF8.GetBytes(text), new PipelineReadContext(full, new PipelineTemplates(ProjectRoot.From(root)))).Outcome;
 
         // Assert.
         Assert.Equal(expected.Unreadable, outcome.Unreadable);

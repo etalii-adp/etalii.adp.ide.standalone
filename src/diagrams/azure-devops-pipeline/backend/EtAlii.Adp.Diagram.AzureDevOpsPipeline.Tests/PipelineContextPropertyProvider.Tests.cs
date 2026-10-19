@@ -23,6 +23,8 @@ public class PipelineContextPropertyProviderTests : IDisposable
         IoPath.GetTempPath(),
         "adp-pipeline-properties-" + Guid.NewGuid().ToString("N"));
 
+    private ProjectRoot Root => ProjectRoot.From(_workspace);
+
     private readonly PipelineDocumentStore _store = new(new FileWriter());
     private readonly HistoryStackStore _historyStacks;
     private readonly PipelineContextPropertyProvider _provider;
@@ -83,7 +85,7 @@ public class PipelineContextPropertyProviderTests : IDisposable
     }
 
     private ContextTarget Target(string path, string elementId) =>
-        ContextTarget.ForElement(path, elementId, ProjectRoot.From(_workspace), ShortGuid.NewShortGuid());
+        ContextTarget.ForElement(path, elementId, Root, ShortGuid.NewShortGuid());
 
     private async Task<IReadOnlyList<ContextPropertyDefinition>> DescribeAsync(string path, string elementId) =>
         await _provider.DescribeAsync(Target(path, elementId), CancellationToken.None);
@@ -405,7 +407,7 @@ public class PipelineContextPropertyProviderTests : IDisposable
         Assert.Contains("displayName: Built", await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
 
         // Act.
-        await _historyStacks.Get(ProjectRoot.From(_workspace)).UndoAsync(CancellationToken.None);
+        await _historyStacks.Get(Root).UndoAsync(CancellationToken.None);
 
         // Assert.
         Assert.Equal(before, await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
@@ -420,7 +422,7 @@ public class PipelineContextPropertyProviderTests : IDisposable
 
         // Assert.
         Assert.True(result.IsSuccess, result.Error);
-        Assert.False((await _store.GetOrLoadAsync(_workspace, path, TestContext.Current.CancellationToken)).Model.Steps.Last().Execution.IsDisabled);
+        Assert.False((await _store.GetOrLoadAsync(Root, path, TestContext.Current.CancellationToken)).Model.Steps.Last().Execution.IsDisabled);
     }
 
     /// <summary>Three stages, so there is something for the last one to choose between.</summary>
@@ -515,7 +517,7 @@ public class PipelineContextPropertyProviderTests : IDisposable
 
         // Assert.
         Assert.True(result.IsSuccess, result.Error);
-        Assert.Equal(["A"], (await _store.GetOrLoadAsync(_workspace, path, TestContext.Current.CancellationToken)).Model.Stages.Single(stage => stage.Name == "C").DependsOn);
+        Assert.Equal(["A"], (await _store.GetOrLoadAsync(Root, path, TestContext.Current.CancellationToken)).Model.Stages.Single(stage => stage.Name == "C").DependsOn);
     }
 
     [Fact]
@@ -533,7 +535,7 @@ public class PipelineContextPropertyProviderTests : IDisposable
 
         // Assert.
         Assert.True(result.IsSuccess, result.Error);
-        var stage = (await _store.GetOrLoadAsync(_workspace, path, TestContext.Current.CancellationToken)).Model.Stages.Single(candidate => candidate.Name == "C");
+        var stage = (await _store.GetOrLoadAsync(Root, path, TestContext.Current.CancellationToken)).Model.Stages.Single(candidate => candidate.Name == "C");
         Assert.True(stage.DependsOnDeclared);
         Assert.Empty(stage.DependsOn);
     }
@@ -554,7 +556,7 @@ public class PipelineContextPropertyProviderTests : IDisposable
 
         // Assert.
         Assert.True(result.IsSuccess, result.Error);
-        Assert.False((await _store.GetOrLoadAsync(_workspace, path, TestContext.Current.CancellationToken)).Model.Stages.Single(stage => stage.Name == "C").DependsOnDeclared);
+        Assert.False((await _store.GetOrLoadAsync(Root, path, TestContext.Current.CancellationToken)).Model.Stages.Single(stage => stage.Name == "C").DependsOnDeclared);
     }
 
     [Fact]
@@ -705,7 +707,7 @@ public class PipelineContextPropertyProviderTests : IDisposable
     /// <summary>The id the canvas gives the Build -> Test arrow, from the module's own graph.</summary>
     private async Task<string> ArrowIdAsync(string path)
     {
-        var model = (await _store.GetOrLoadAsync(_workspace, path, TestContext.Current.CancellationToken)).Model;
+        var model = (await _store.GetOrLoadAsync(Root, path, TestContext.Current.CancellationToken)).Model;
         return PipelineElementMapper.EdgeId(PipelineGraphBuilder.OfStages(model).Edges.Single(edge => edge is { FromId: "Build", ToId: "Test" }));
     }
 
@@ -734,7 +736,7 @@ public class PipelineContextPropertyProviderTests : IDisposable
         // whether the canvas could reach one. This fails at "there is a step to describe" until
         // the third level exists.
         var path = Write();
-        var model = (await _store.GetOrLoadAsync(_workspace, path, TestContext.Current.CancellationToken)).Model;
+        var model = (await _store.GetOrLoadAsync(Root, path, TestContext.Current.CancellationToken)).Model;
         var mapper = new PipelineElementMapper(PipelineMetrics.Default);
         var opened = new HashSet<string>(StringComparer.Ordinal) { "Build", "Build/Compile" };
 

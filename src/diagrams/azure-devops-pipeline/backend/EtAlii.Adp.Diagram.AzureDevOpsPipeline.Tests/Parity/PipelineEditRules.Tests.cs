@@ -106,7 +106,7 @@ public class PipelineEditRulesTests
     public async Task WaitingForWhatTheElementAlreadyWaitsFor_IsWritten()
     {
         // Act: C already waits for A, through B; waiting for it directly closes nothing (noCycleByEdit).
-        var outcome = await Run(Sequential, workspace => new SetPipelineDependenciesCommand(workspace.Root, workspace.Body, "C", ["A"], true), (text, model) => HandWrittenPipelineEdits.SetDependencies(text, model, "C", ["A"], true));
+        var outcome = await Run(Sequential, workspace => new SetPipelineDependenciesCommand(ProjectRoot.From(workspace.Root), workspace.Body, "C", ["A"], true), (text, model) => HandWrittenPipelineEdits.SetDependencies(text, model, "C", ["A"], true));
 
         // Assert.
         Assert.Equal("written", outcome.HandWritten);
@@ -117,7 +117,7 @@ public class PipelineEditRulesTests
     public async Task WaitingForWhatWaitsForTheElement_IsRefused()
     {
         // Act: Z waits for X, through Y; X waiting for Z closes a cycle (noCycleByEdit).
-        var outcome = await Run(ChainedJobs, workspace => new SetPipelineDependenciesCommand(workspace.Root, workspace.Body, "A/X", ["Z"], true), (text, model) => HandWrittenPipelineEdits.SetDependencies(text, model, "A/X", ["Z"], true));
+        var outcome = await Run(ChainedJobs, workspace => new SetPipelineDependenciesCommand(ProjectRoot.From(workspace.Root), workspace.Body, "A/X", ["Z"], true), (text, model) => HandWrittenPipelineEdits.SetDependencies(text, model, "A/X", ["Z"], true));
 
         // Assert.
         Assert.Equal("refused: That would make X wait for something that is already waiting for it.", outcome.HandWritten);
@@ -140,7 +140,7 @@ public class PipelineEditRulesTests
                     steps:
                       - script: x
             """;
-        var outcome = await Run(unnamedFirst, workspace => new SetPipelineDependenciesCommand(workspace.Root, workspace.Body, "stage-0", ["B"], true), (text, model) => HandWrittenPipelineEdits.SetDependencies(text, model, "stage-0", ["B"], true));
+        var outcome = await Run(unnamedFirst, workspace => new SetPipelineDependenciesCommand(ProjectRoot.From(workspace.Root), workspace.Body, "stage-0", ["B"], true), (text, model) => HandWrittenPipelineEdits.SetDependencies(text, model, "stage-0", ["B"], true));
 
         // Assert.
         Assert.Equal("refused: That would make stage wait for something that is already waiting for it.", outcome.HandWritten);
@@ -151,7 +151,7 @@ public class PipelineEditRulesTests
     public async Task ClearingTheDependenciesOfTheOnlyStartingStage_IsWritten()
     {
         // Act: A is the one stage that waits for nothing; back to the default order it is the first stage still (keepAStart).
-        var outcome = await Run(FirstOptsOut, workspace => new SetPipelineDependenciesCommand(workspace.Root, workspace.Body, "A", [], false), (text, model) => HandWrittenPipelineEdits.SetDependencies(text, model, "A", [], false));
+        var outcome = await Run(FirstOptsOut, workspace => new SetPipelineDependenciesCommand(ProjectRoot.From(workspace.Root), workspace.Body, "A", [], false), (text, model) => HandWrittenPipelineEdits.SetDependencies(text, model, "A", [], false));
 
         // Assert.
         Assert.Equal("written", outcome.HandWritten);
@@ -185,7 +185,7 @@ public class PipelineEditRulesTests
             """;
 
         // Act: keepAStart still refuses what it is for.
-        var outcome = await Run(pipeline, workspace => new SetPipelineDependenciesCommand(workspace.Root, workspace.Body, "A", ["B"], true), (text, model) => HandWrittenPipelineEdits.SetDependencies(text, model, "A", ["B"], true));
+        var outcome = await Run(pipeline, workspace => new SetPipelineDependenciesCommand(ProjectRoot.From(workspace.Root), workspace.Body, "A", ["B"], true), (text, model) => HandWrittenPipelineEdits.SetDependencies(text, model, "A", ["B"], true));
 
         // Assert.
         Assert.Equal("refused: A pipeline must contain at least one stage with no dependencies, or it has nothing to start with.", outcome.HandWritten);
@@ -196,7 +196,7 @@ public class PipelineEditRulesTests
     public async Task RemovingTheFirstOfStagesInTheDefaultOrder_IsWritten()
     {
         // Act: B becomes the first stage, and so the one to start with (keepTheOnlyStart).
-        var outcome = await Run(Sequential, workspace => new RemovePipelineElementCommand(workspace.Root, workspace.Body, "A"), (text, model) => HandWrittenPipelineEdits.Remove(text, model, "A"));
+        var outcome = await Run(Sequential, workspace => new RemovePipelineElementCommand(ProjectRoot.From(workspace.Root), workspace.Body, "A"), (text, model) => HandWrittenPipelineEdits.Remove(text, model, "A"));
 
         // Assert.
         Assert.Equal("written", outcome.HandWritten);
@@ -229,7 +229,7 @@ public class PipelineEditRulesTests
             """;
 
         // Act.
-        var outcome = await Run(pipeline, workspace => new RemovePipelineElementCommand(workspace.Root, workspace.Body, "B"), (text, model) => HandWrittenPipelineEdits.Remove(text, model, "B"));
+        var outcome = await Run(pipeline, workspace => new RemovePipelineElementCommand(ProjectRoot.From(workspace.Root), workspace.Body, "B"), (text, model) => HandWrittenPipelineEdits.Remove(text, model, "B"));
 
         // Assert: the hand-written check of this refusal was passed no dependencies and so never refused (it returns
         // early on an empty list); the definition refuses with the sentence that check was written to give.
@@ -253,7 +253,7 @@ public class PipelineEditRulesTests
                     steps:
                       - script: x
             """;
-        var outcome = await Run(pipeline, workspace => new RemovePipelineElementCommand(workspace.Root, workspace.Body, "stage-1/Only"), (text, model) => HandWrittenPipelineEdits.Remove(text, model, "stage-1/Only"));
+        var outcome = await Run(pipeline, workspace => new RemovePipelineElementCommand(ProjectRoot.From(workspace.Root), workspace.Body, "stage-1/Only"), (text, model) => HandWrittenPipelineEdits.Remove(text, model, "stage-1/Only"));
 
         // Assert.
         Assert.Equal("refused: stage needs at least one job.", outcome.HandWritten);
@@ -264,7 +264,7 @@ public class PipelineEditRulesTests
     public async Task RemovingTheLastStepOfAnUnnamedJob_IsRefusedCallingItAJob()
     {
         // Act: keepLastStep's sentence for a job with no label.
-        var outcome = await Run(UnnamedJob, workspace => new RemovePipelineElementCommand(workspace.Root, workspace.Body, "A/job-1/step-0"), (text, model) => HandWrittenPipelineEdits.Remove(text, model, "A/job-1/step-0"));
+        var outcome = await Run(UnnamedJob, workspace => new RemovePipelineElementCommand(ProjectRoot.From(workspace.Root), workspace.Body, "A/job-1/step-0"), (text, model) => HandWrittenPipelineEdits.Remove(text, model, "A/job-1/step-0"));
 
         // Assert.
         Assert.Equal("refused: job needs at least one step.", outcome.HandWritten);
@@ -275,7 +275,7 @@ public class PipelineEditRulesTests
     public async Task RemovingAStepOfAnUnnamedStage_IsWritten()
     {
         // Act: the job of the unnamed stage has two steps, so one of them may go.
-        var outcome = await Run(Unnamed, workspace => new RemovePipelineElementCommand(workspace.Root, workspace.Body, "stage-1/job-0/step-0"), (text, model) => HandWrittenPipelineEdits.Remove(text, model, "stage-1/job-0/step-0"));
+        var outcome = await Run(Unnamed, workspace => new RemovePipelineElementCommand(ProjectRoot.From(workspace.Root), workspace.Body, "stage-1/job-0/step-0"), (text, model) => HandWrittenPipelineEdits.Remove(text, model, "stage-1/job-0/step-0"));
 
         // Assert.
         Assert.Equal("written", outcome.HandWritten);
@@ -296,7 +296,7 @@ public class PipelineEditRulesTests
         await File.WriteAllTextAsync(workspace.Body, pipeline, Encoding.UTF8, TestContext.Current.CancellationToken);
 
         var text = LineDocument.Parse(pipeline);
-        var refusal = handWritten(text, PipelineParser.Parse(text, new PipelineTemplates(workspace.Root), workspace.Body));
+        var refusal = handWritten(text, PipelineParser.Parse(text, new PipelineTemplates(ProjectRoot.From(workspace.Root)), workspace.Body));
 
         var result = await new PipelineTestDispatcher(new PipelineDocumentStore(new FileWriter())).DispatchAsync(command(workspace), TestContext.Current.CancellationToken);
         return new Outcome(

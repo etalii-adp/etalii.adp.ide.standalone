@@ -22,6 +22,8 @@ public class PipelineContextActionProviderTests : IDisposable
         IoPath.GetTempPath(),
         "adp-pipeline-actions-" + Guid.NewGuid().ToString("N"));
 
+    private ProjectRoot Root => ProjectRoot.From(_workspace);
+
     private readonly PipelineDocumentStore _store = new(new FileWriter());
     private readonly PipelineViewState _views = new();
     private readonly HistoryStackStore _historyStacks;
@@ -78,7 +80,7 @@ public class PipelineContextActionProviderTests : IDisposable
     }
 
     private ContextTarget Target(string path, string elementId) =>
-        ContextTarget.ForElement(path, elementId, ProjectRoot.From(_workspace), ShortGuid.NewShortGuid());
+        ContextTarget.ForElement(path, elementId, Root, ShortGuid.NewShortGuid());
 
     private async Task<IReadOnlyList<string>> ActionsOn(string path, string elementId)
     {
@@ -377,7 +379,7 @@ public class PipelineContextActionProviderTests : IDisposable
         // Assert.
         Assert.True(result.Completed, result.Error);
         Assert.Contains("displayName: Build it", await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
-        Assert.True(_historyStacks.Get(ProjectRoot.From(_workspace)).CanUndo);
+        Assert.True(_historyStacks.Get(Root).CanUndo);
     }
 
     [Fact]
@@ -389,7 +391,7 @@ public class PipelineContextActionProviderTests : IDisposable
         await CommitAsync(path, "Build", PipelineContextActionProvider.RenameActionId, "Build it");
 
         // Act.
-        await _historyStacks.Get(ProjectRoot.From(_workspace)).UndoAsync(CancellationToken.None);
+        await _historyStacks.Get(Root).UndoAsync(CancellationToken.None);
 
         // Assert.
         Assert.Equal(before, await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
@@ -405,14 +407,14 @@ public class PipelineContextActionProviderTests : IDisposable
         await CommitAsync(path, "Build/Lint", PipelineContextActionProvider.ToggleEnabledActionId);
 
         // Assert.
-        Assert.True((await _store.GetOrLoadAsync(_workspace, path, TestContext.Current.CancellationToken)).Model.Jobs.Single(job => job.Name == "Lint").Execution.IsDisabled);
+        Assert.True((await _store.GetOrLoadAsync(Root, path, TestContext.Current.CancellationToken)).Model.Jobs.Single(job => job.Name == "Lint").Execution.IsDisabled);
 
         // Act: the action's label and effect both follow the current state, so committing again
         // turns it back on rather than off a second time.
         await CommitAsync(path, "Build/Lint", PipelineContextActionProvider.ToggleEnabledActionId);
 
         // Assert.
-        Assert.False((await _store.GetOrLoadAsync(_workspace, path, TestContext.Current.CancellationToken)).Model.Jobs.Single(job => job.Name == "Lint").Execution.IsDisabled);
+        Assert.False((await _store.GetOrLoadAsync(Root, path, TestContext.Current.CancellationToken)).Model.Jobs.Single(job => job.Name == "Lint").Execution.IsDisabled);
     }
 
     [Fact]
@@ -442,7 +444,7 @@ public class PipelineContextActionProviderTests : IDisposable
 
         // Assert.
         Assert.True(result.Completed, result.Error);
-        Assert.Equal(2, (await _store.GetOrLoadAsync(_workspace, path, TestContext.Current.CancellationToken)).Model.Stages.Single(stage => stage.Name == "Test").Jobs.Count);
+        Assert.Equal(2, (await _store.GetOrLoadAsync(Root, path, TestContext.Current.CancellationToken)).Model.Stages.Single(stage => stage.Name == "Test").Jobs.Count);
     }
 
     [Fact]
@@ -456,7 +458,7 @@ public class PipelineContextActionProviderTests : IDisposable
         Assert.True(result.Completed, result.Error);
         Assert.Equal(
             ["dotnet pack", "dotnet build"],
-            (await _store.GetOrLoadAsync(_workspace, path, TestContext.Current.CancellationToken)).Model.Jobs.Single(job => job.Name == "Compile").Steps.Select(step => step.Identifier));
+            (await _store.GetOrLoadAsync(Root, path, TestContext.Current.CancellationToken)).Model.Jobs.Single(job => job.Name == "Compile").Steps.Select(step => step.Identifier));
     }
 
     [Fact]
@@ -468,7 +470,7 @@ public class PipelineContextActionProviderTests : IDisposable
 
         // Assert.
         Assert.True(result.Completed, result.Error);
-        Assert.Equal(["Build"], (await _store.GetOrLoadAsync(_workspace, path, TestContext.Current.CancellationToken)).Model.Stages.Select(stage => stage.Name));
+        Assert.Equal(["Build"], (await _store.GetOrLoadAsync(Root, path, TestContext.Current.CancellationToken)).Model.Stages.Select(stage => stage.Name));
     }
 
     [Fact]
@@ -480,7 +482,7 @@ public class PipelineContextActionProviderTests : IDisposable
 
         // Assert.
         Assert.True(result.Completed, result.Error);
-        Assert.False((await _store.GetOrLoadAsync(_workspace, path, TestContext.Current.CancellationToken)).Model.Stages.Single(stage => stage.Name == "Test").DependsOnDeclared);
+        Assert.False((await _store.GetOrLoadAsync(Root, path, TestContext.Current.CancellationToken)).Model.Stages.Single(stage => stage.Name == "Test").DependsOnDeclared);
     }
 
     [Fact]
@@ -620,7 +622,7 @@ public class PipelineContextActionProviderTests : IDisposable
     /// <summary>Every element of the fixture pipeline, at all three levels.</summary>
     private async Task<IReadOnlyList<string>> AllElementIdsAsync()
     {
-        var model = (await _store.GetOrLoadAsync(_workspace, Write(), TestContext.Current.CancellationToken)).Model;
+        var model = (await _store.GetOrLoadAsync(Root, Write(), TestContext.Current.CancellationToken)).Model;
         List<string> ids = [];
         foreach (var stage in model.Stages)
         {
@@ -644,7 +646,7 @@ public class PipelineContextActionProviderTests : IDisposable
     /// <summary>The id the canvas gives the Build -> Test arrow, from the module's own graph.</summary>
     private async Task<string> ArrowIdAsync(string path)
     {
-        var model = (await _store.GetOrLoadAsync(_workspace, path, TestContext.Current.CancellationToken)).Model;
+        var model = (await _store.GetOrLoadAsync(Root, path, TestContext.Current.CancellationToken)).Model;
         return PipelineElementMapper.EdgeId(PipelineGraphBuilder.OfStages(model).Edges.Single(edge => edge is { FromId: "Build", ToId: "Test" }));
     }
 

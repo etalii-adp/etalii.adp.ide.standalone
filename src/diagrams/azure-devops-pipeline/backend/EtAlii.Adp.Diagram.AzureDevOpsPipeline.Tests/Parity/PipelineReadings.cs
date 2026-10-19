@@ -48,7 +48,7 @@ internal sealed class PipelineReadings : IDisposable
         var document = PipelineCorpus.Documents().Single(candidate => candidate.Relative == path);
         var folder = Path.Combine(Path.GetTempPath(), "EtAlii.Adp.PipelineReadings", Guid.NewGuid().ToString("N"));
         PipelineCorpus.CopyFolder(Path.Combine(PipelineCorpus.SourceFolder, document.Root), folder);
-        var entry = await new PipelineDocumentStore(new FileWriter()).GetOrLoadAsync(folder, Path.Combine(folder, document.InFolder), cancellationToken);
+        var entry = await new PipelineDocumentStore(new FileWriter()).GetOrLoadAsync(ProjectRoot.From(folder), Path.Combine(folder, document.InFolder), cancellationToken);
         return new PipelineReadings(folder, entry);
     }
 

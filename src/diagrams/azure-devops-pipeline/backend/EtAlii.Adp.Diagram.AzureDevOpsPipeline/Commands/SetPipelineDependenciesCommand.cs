@@ -19,7 +19,7 @@ namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline;
 /// diagram does not.
 /// </para>
 /// </remarks>
-/// <param name="RootPath">The project.</param>
+/// <param name="Root">The project.</param>
 /// <param name="BodyPath">The pipeline file.</param>
 /// <param name="ElementId">The element whose dependencies these are.</param>
 /// <param name="DependsOn">The names it waits for, in order.</param>
@@ -29,7 +29,7 @@ namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline;
 /// opposite instruction and has to stay tellable from it.
 /// </param>
 public sealed record SetPipelineDependenciesCommand(
-    string RootPath,
+    ProjectRoot Root,
     string BodyPath,
     string ElementId,
     IReadOnlyList<string> DependsOn,

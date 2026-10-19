@@ -133,7 +133,7 @@ public class ServiceCollectionAddAzurePipelineTests
         // Assert.
         Assert.IsType<PipelineSession>(session);
         Assert.NotEmpty(drawn);
-        var held = await provider.GetRequiredService<IPipelineDocumentStore>().GetOrLoadAsync(folder.Path, body, cancellationToken);
+        var held = await provider.GetRequiredService<IPipelineDocumentStore>().GetOrLoadAsync(ProjectRoot.From(folder.Path), body, cancellationToken);
         Assert.Equal("Shared", held.Model.Jobs.Single().Name);
     }
 
@@ -149,7 +149,7 @@ public class ServiceCollectionAddAzurePipelineTests
         var reloader = Assert.Single(provider.GetServices<IDiagramDocumentReloader>(), candidate => candidate.Origin == Diagram.Pipeline.Origin);
         var changed = new List<string>();
         store.Changed += (_, args) => changed.Add(args.Path);
-        _ = await store.GetOrLoadAsync(folder.Path, body, TestContext.Current.CancellationToken);
+        _ = await store.GetOrLoadAsync(ProjectRoot.From(folder.Path), body, TestContext.Current.CancellationToken);
         File.Delete(body);
 
         // Act.

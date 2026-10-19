@@ -35,18 +35,18 @@ public sealed class PipelineSession : DocumentDiagramSession<PipelineBody, Pipel
 
     /// <summary>Opens a session on <paramref name="bodyPath"/> for one connection.</summary>
     /// <remarks>
-    /// The session base is handed the store as seen from <paramref name="rootPath"/>, because a
+    /// The session base is handed the store as seen from <paramref name="root"/>, because a
     /// pipeline's templates resolve against the root it was opened in. It is given no history: a
     /// pipeline has no gesture of its own on the canvas, only the edits its providers make.
     /// </remarks>
     public PipelineSession(
         ShortGuid watchId,
-        string rootPath,
+        ProjectRoot root,
         string bodyPath,
         IPipelineDocumentStore documents,
         PipelineElementMapper mapper,
         PipelineViewState views)
-        : this(watchId, bodyPath, In(documents, rootPath), mapper, views)
+        : this(watchId, bodyPath, In(documents, root), mapper, views)
     {
     }
 
@@ -136,10 +136,10 @@ public sealed class PipelineSession : DocumentDiagramSession<PipelineBody, Pipel
         Rerender();
     }
 
-    private static IDiagramDocumentStore<PipelineBody, PipelineModel> In(IPipelineDocumentStore documents, string rootPath)
+    private static IDiagramDocumentStore<PipelineBody, PipelineModel> In(IPipelineDocumentStore documents, ProjectRoot root)
     {
         ArgumentNullException.ThrowIfNull(documents);
-        ArgumentException.ThrowIfNullOrWhiteSpace(rootPath);
-        return documents.In(rootPath);
+        ArgumentException.ThrowIfNullOrWhiteSpace(root.FullPath, nameof(root));
+        return documents.In(root);
     }
 }

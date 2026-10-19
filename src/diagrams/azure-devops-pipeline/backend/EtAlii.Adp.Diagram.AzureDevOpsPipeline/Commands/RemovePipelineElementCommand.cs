@@ -12,11 +12,11 @@ namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline;
 /// its comments gone. So the undo puts back the exact bytes the removal took, which is the only
 /// version of "undo" that is true for a file this module promises not to reformat.
 /// </remarks>
-/// <param name="RootPath">The project.</param>
+/// <param name="Root">The project.</param>
 /// <param name="BodyPath">The pipeline file.</param>
 /// <param name="ElementId">What to remove.</param>
 public sealed record RemovePipelineElementCommand(
-    string RootPath,
+    ProjectRoot Root,
     string BodyPath,
     string ElementId) : IPipelineEditCommand;
 

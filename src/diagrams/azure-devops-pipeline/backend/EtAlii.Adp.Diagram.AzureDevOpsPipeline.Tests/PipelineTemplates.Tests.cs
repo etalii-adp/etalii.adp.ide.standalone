@@ -17,6 +17,8 @@ public class PipelineTemplatesTests : IDisposable
         IoPath.GetTempPath(),
         "adp-pipeline-templates-" + Guid.NewGuid().ToString("N"));
 
+    private ProjectRoot Root => ProjectRoot.From(_workspace);
+
     public PipelineTemplatesTests() => Directory.CreateDirectory(_workspace);
 
     public void Dispose()
@@ -38,7 +40,7 @@ public class PipelineTemplatesTests : IDisposable
     {
         var path = IoPath.Combine(_workspace, relativePath.Replace('/', IoPath.DirectorySeparatorChar));
         var document = LineDocument.Parse(File.ReadAllText(path));
-        return PipelineParser.Parse(document, new PipelineTemplates(_workspace), path);
+        return PipelineParser.Parse(document, new PipelineTemplates(Root), path);
     }
 
     /// <summary>The corpus lives beside the test binary; these copy from it into a real workspace.</summary>
@@ -279,7 +281,7 @@ public class PipelineTemplatesTests : IDisposable
         Write("one.yml", "jobs:\n  - template: templates/shared.yml\n");
         Write("two.yml", "jobs:\n  - template: templates/shared.yml\n");
         var shared = Write("templates/shared.yml", "jobs:\n  - job: Before\n    steps:\n      - script: x\n");
-        var resolver = new PipelineTemplates(_workspace);
+        var resolver = new PipelineTemplates(Root);
         var one = IoPath.Combine(_workspace, "one.yml");
         var two = IoPath.Combine(_workspace, "two.yml");
 
@@ -303,7 +305,7 @@ public class PipelineTemplatesTests : IDisposable
         // has gone is reported gone, even to a resolver that read it a moment ago.
         Write("one.yml", "jobs:\n  - template: templates/shared.yml\n");
         var shared = Write("templates/shared.yml", "jobs:\n  - job: Shared\n    steps:\n      - script: x\n");
-        var resolver = new PipelineTemplates(_workspace);
+        var resolver = new PipelineTemplates(Root);
         var one = IoPath.Combine(_workspace, "one.yml");
         PipelineParser.Parse(LineDocument.Parse(File.ReadAllText(one)), resolver, one);
 
@@ -321,7 +323,7 @@ public class PipelineTemplatesTests : IDisposable
         // Arrange: a file changed on disk must be picked up, which is what the store calls this for.
         Write("one.yml", "jobs:\n  - template: templates/shared.yml\n");
         var shared = Write("templates/shared.yml", "jobs:\n  - job: Before\n    steps:\n      - script: x\n");
-        var resolver = new PipelineTemplates(_workspace);
+        var resolver = new PipelineTemplates(Root);
         var path = IoPath.Combine(_workspace, "one.yml");
         PipelineParser.Parse(LineDocument.Parse(File.ReadAllText(path)), resolver, path);
 
@@ -353,7 +355,7 @@ public class PipelineTemplatesTests : IDisposable
         }
 
         // Act.
-        var entry = await new PipelineDocumentStore(new FileWriter()).GetOrLoadAsync(_workspace, body, TestContext.Current.CancellationToken);
+        var entry = await new PipelineDocumentStore(new FileWriter()).GetOrLoadAsync(Root, body, TestContext.Current.CancellationToken);
         var explained = entry.Document.Disl.Diagram.Nodes
             .Where(node => node.IsA("TemplateReference"))
             .Select(node => (Path: node.ValueOf("path") as string, Sentence: node.ValueOf("explanation") as string))

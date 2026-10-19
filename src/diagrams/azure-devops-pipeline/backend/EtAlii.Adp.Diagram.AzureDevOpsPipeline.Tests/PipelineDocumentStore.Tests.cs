@@ -15,6 +15,8 @@ public class PipelineDocumentStoreTests : IDisposable
         IoPath.GetTempPath(),
         "adp-pipeline-store-" + Guid.NewGuid().ToString("N"));
 
+    private ProjectRoot Root => ProjectRoot.From(_workspace);
+
     public PipelineDocumentStoreTests() => Directory.CreateDirectory(_workspace);
 
     public void Dispose()
@@ -43,8 +45,8 @@ public class PipelineDocumentStoreTests : IDisposable
         var store = new PipelineDocumentStore(new FileWriter());
 
         // Act.
-        var first = await store.GetOrLoadAsync(_workspace, path, TestContext.Current.CancellationToken);
-        var second = await store.GetOrLoadAsync(_workspace, path, TestContext.Current.CancellationToken);
+        var first = await store.GetOrLoadAsync(Root, path, TestContext.Current.CancellationToken);
+        var second = await store.GetOrLoadAsync(Root, path, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Same(first.Document, second.Document);
@@ -58,7 +60,7 @@ public class PipelineDocumentStoreTests : IDisposable
         var store = new PipelineDocumentStore(new FileWriter());
 
         // Act.
-        var entry = await store.GetOrLoadAsync(_workspace, IoPath.Combine(_workspace, "not-written-yet.yml"), TestContext.Current.CancellationToken);
+        var entry = await store.GetOrLoadAsync(Root, IoPath.Combine(_workspace, "not-written-yet.yml"), TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.True(entry.IsUsable);
@@ -75,7 +77,7 @@ public class PipelineDocumentStoreTests : IDisposable
         var store = new PipelineDocumentStore(new FileWriter());
 
         // Act.
-        var entry = await store.GetOrLoadAsync(_workspace, path, TestContext.Current.CancellationToken);
+        var entry = await store.GetOrLoadAsync(Root, path, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.False(entry.IsUsable);
@@ -93,10 +95,10 @@ public class PipelineDocumentStoreTests : IDisposable
         const string broken = "stages:\n  - stage: Build\n   jobs: [\n";
         var path = Write("broken.yml", broken);
         var store = new PipelineDocumentStore(new FileWriter());
-        var entry = await store.GetOrLoadAsync(_workspace, path, TestContext.Current.CancellationToken);
+        var entry = await store.GetOrLoadAsync(Root, path, TestContext.Current.CancellationToken);
 
         // Act.
-        var refusal = await store.SaveAsync(_workspace, path, entry, TestContext.Current.CancellationToken);
+        var refusal = await store.SaveAsync(Root, path, entry, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.NotEqual("", refusal.Error);
@@ -111,11 +113,11 @@ public class PipelineDocumentStoreTests : IDisposable
         var path = Write("pipelines/azure-pipelines.yml", "jobs:\n  - template: /templates/shared.yml\n");
         const string broken = "stages:\n  - stage: Build\n   jobs: [\n";
         var brokenPath = Write("broken.yml", broken);
-        var rooted = new PipelineDocumentStore(new FileWriter()).In(_workspace);
+        var rooted = new PipelineDocumentStore(new FileWriter()).In(Root);
 
         // Act.
         var entry = await rooted.GetOrLoadAsync(path, TestContext.Current.CancellationToken);
-        var edited = new PipelineDocumentStore(new FileWriter()).Open(_workspace, path, [.. entry.Document.Bytes, .. "# edited\n"u8]);
+        var edited = new PipelineDocumentStore(new FileWriter()).Open(Root, path, [.. entry.Document.Bytes, .. "# edited\n"u8]);
         var saved = await rooted.SaveAsync(path, edited, TestContext.Current.CancellationToken);
         var refused = await rooted.SaveAsync(brokenPath, (await rooted.GetOrLoadAsync(brokenPath, TestContext.Current.CancellationToken)).Document, TestContext.Current.CancellationToken);
 
@@ -132,12 +134,12 @@ public class PipelineDocumentStoreTests : IDisposable
         // Arrange.
         var path = Write("azure-pipelines.yml", Simple);
         var store = new PipelineDocumentStore(new FileWriter());
-        var entry = await store.GetOrLoadAsync(_workspace, path, TestContext.Current.CancellationToken);
+        var entry = await store.GetOrLoadAsync(Root, path, TestContext.Current.CancellationToken);
         var stage = entry.Model.Stages.Single();
 
         // Act.
         PipelineBodyEdits.Rename(entry.Document, stage.Id, "Build it");
-        var refusal = await store.SaveAsync(_workspace, path, entry, TestContext.Current.CancellationToken);
+        var refusal = await store.SaveAsync(Root, path, entry, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Equal("", refusal.Error);
@@ -151,14 +153,14 @@ public class PipelineDocumentStoreTests : IDisposable
         // Arrange.
         var path = Write("azure-pipelines.yml", Simple);
         var store = new PipelineDocumentStore(new FileWriter());
-        var entry = await store.GetOrLoadAsync(_workspace, path, TestContext.Current.CancellationToken);
+        var entry = await store.GetOrLoadAsync(Root, path, TestContext.Current.CancellationToken);
         PipelineBodyEdits.Rename(entry.Document, entry.Model.Stages.Single().Id, "Build it");
 
         // Act.
-        await store.SaveAsync(_workspace, path, entry, TestContext.Current.CancellationToken);
+        await store.SaveAsync(Root, path, entry, TestContext.Current.CancellationToken);
 
         // Assert.
-        Assert.Equal("Build it", (await store.GetOrLoadAsync(_workspace, path, TestContext.Current.CancellationToken)).Model.Stages.Single().DisplayName);
+        Assert.Equal("Build it", (await store.GetOrLoadAsync(Root, path, TestContext.Current.CancellationToken)).Model.Stages.Single().DisplayName);
     }
 
     [Fact]
@@ -167,17 +169,17 @@ public class PipelineDocumentStoreTests : IDisposable
         // Arrange.
         var path = Write("azure-pipelines.yml", Simple);
         var store = new PipelineDocumentStore(new FileWriter());
-        var entry = await store.GetOrLoadAsync(_workspace, path, TestContext.Current.CancellationToken);
+        var entry = await store.GetOrLoadAsync(Root, path, TestContext.Current.CancellationToken);
         PipelineBodyEdits.Rename(entry.Document, entry.Model.Stages.Single().Id, "Build it");
         var announced = new List<string>();
         store.Changed += (_, args) => announced.Add(args.Path);
 
         // Act.
-        await store.SaveAsync(_workspace, path, entry, TestContext.Current.CancellationToken);
+        await store.SaveAsync(Root, path, entry, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Equal([path], announced);
-        Assert.Equal("Build it", (await store.GetOrLoadAsync(_workspace, path, TestContext.Current.CancellationToken)).Model.Stages.Single().DisplayName);
+        Assert.Equal("Build it", (await store.GetOrLoadAsync(Root, path, TestContext.Current.CancellationToken)).Model.Stages.Single().DisplayName);
     }
 
     [Fact]
@@ -186,12 +188,12 @@ public class PipelineDocumentStoreTests : IDisposable
         // Arrange: a change to how a pipeline is drawn rather than to what it says.
         var path = Write("azure-pipelines.yml", Simple);
         var store = new PipelineDocumentStore(new FileWriter());
-        await store.GetOrLoadAsync(_workspace, path, TestContext.Current.CancellationToken);
+        await store.GetOrLoadAsync(Root, path, TestContext.Current.CancellationToken);
         var announced = 0;
         store.Changed += (_, _) => announced++;
 
         // Act.
-        await store.TouchAsync(_workspace, path, TestContext.Current.CancellationToken);
+        await store.TouchAsync(Root, path, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Equal(1, announced);
@@ -204,7 +206,7 @@ public class PipelineDocumentStoreTests : IDisposable
         // Arrange: somebody edited the file in their editor while the diagram was open.
         var path = Write("azure-pipelines.yml", Simple);
         var store = new PipelineDocumentStore(new FileWriter());
-        await store.GetOrLoadAsync(_workspace, path, TestContext.Current.CancellationToken);
+        await store.GetOrLoadAsync(Root, path, TestContext.Current.CancellationToken);
         await File.WriteAllTextAsync(path, Simple.Replace("stage: Build", "stage: Rebuilt", StringComparison.Ordinal), TestContext.Current.CancellationToken);
         var announced = new List<string>();
         store.Changed += (_, args) => announced.Add(args.Path);
@@ -214,7 +216,7 @@ public class PipelineDocumentStoreTests : IDisposable
 
         // Assert.
         Assert.Equal([path], announced);
-        Assert.Equal("Rebuilt", (await store.GetOrLoadAsync(_workspace, path, TestContext.Current.CancellationToken)).Model.Stages.Single().Name);
+        Assert.Equal("Rebuilt", (await store.GetOrLoadAsync(Root, path, TestContext.Current.CancellationToken)).Model.Stages.Single().Name);
     }
 
     [Fact]
@@ -225,14 +227,14 @@ public class PipelineDocumentStoreTests : IDisposable
         var path = Write("azure-pipelines.yml", "jobs:\n  - template: templates/shared.yml\n");
         var template = Write("templates/shared.yml", "jobs:\n  - job: Before\n    steps:\n      - script: x\n");
         var store = new PipelineDocumentStore(new FileWriter());
-        Assert.Equal("Before", (await store.GetOrLoadAsync(_workspace, path, TestContext.Current.CancellationToken)).Model.Jobs.Single().Name);
+        Assert.Equal("Before", (await store.GetOrLoadAsync(Root, path, TestContext.Current.CancellationToken)).Model.Jobs.Single().Name);
 
         // Act.
         await File.WriteAllTextAsync(template, "jobs:\n  - job: After\n    steps:\n      - script: x\n", TestContext.Current.CancellationToken);
         await store.ReloadAsync(path, TestContext.Current.CancellationToken);
 
         // Assert.
-        Assert.Equal("After", (await store.GetOrLoadAsync(_workspace, path, TestContext.Current.CancellationToken)).Model.Jobs.Single().Name);
+        Assert.Equal("After", (await store.GetOrLoadAsync(Root, path, TestContext.Current.CancellationToken)).Model.Jobs.Single().Name);
     }
 
     [Fact]
@@ -241,11 +243,11 @@ public class PipelineDocumentStoreTests : IDisposable
         // Arrange.
         var path = Write("azure-pipelines.yml", Simple);
         var store = new PipelineDocumentStore(new FileWriter());
-        var first = await store.GetOrLoadAsync(_workspace, path, TestContext.Current.CancellationToken);
+        var first = await store.GetOrLoadAsync(Root, path, TestContext.Current.CancellationToken);
 
         // Act.
         store.Forget(path);
-        var second = await store.GetOrLoadAsync(_workspace, path, TestContext.Current.CancellationToken);
+        var second = await store.GetOrLoadAsync(Root, path, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.NotSame(first.Document, second.Document);
@@ -263,11 +265,11 @@ public class PipelineDocumentStoreTests : IDisposable
         var store = new PipelineDocumentStore(new FileWriter());
 
         // Act.
-        await store.GetOrLoadAsync(_workspace, one, TestContext.Current.CancellationToken);
+        await store.GetOrLoadAsync(Root, one, TestContext.Current.CancellationToken);
         await File.WriteAllTextAsync(template, "jobs:\n  - job: After\n    steps:\n      - script: x\n", TestContext.Current.CancellationToken);
 
         // Assert.
-        Assert.Equal("Before", (await store.GetOrLoadAsync(_workspace, two, TestContext.Current.CancellationToken)).Model.Jobs.Single().Name);
+        Assert.Equal("Before", (await store.GetOrLoadAsync(Root, two, TestContext.Current.CancellationToken)).Model.Jobs.Single().Name);
     }
 
     [Fact]
@@ -278,7 +280,7 @@ public class PipelineDocumentStoreTests : IDisposable
         var store = new PipelineDocumentStore(new FileWriter());
 
         // Act.
-        var entry = await store.GetOrLoadAsync(_workspace, path, TestContext.Current.CancellationToken);
+        var entry = await store.GetOrLoadAsync(Root, path, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.True(entry.IsUsable);

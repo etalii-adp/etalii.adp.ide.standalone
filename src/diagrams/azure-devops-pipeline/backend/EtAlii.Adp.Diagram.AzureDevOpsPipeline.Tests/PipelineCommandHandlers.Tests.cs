@@ -22,7 +22,7 @@ public sealed class PipelineCommandHandlersTests : EditHandlerContract<IDiagramD
     protected override string Example => Fixture("multi-stage.yml");
 
     protected override IDiagramDocumentStore<PipelineBody, PipelineModel> CreateStore() =>
-        new PipelineDocumentStore(new FileWriter()).In(IoPath.GetTempPath());
+        new PipelineDocumentStore(new FileWriter()).In(ProjectRoot.From(IoPath.GetTempPath()));
 
     protected override IDiagramDocumentStore<PipelineBody, PipelineModel> Warning(IDiagramDocumentStore<PipelineBody, PipelineModel> store, string warning) =>
         new WarningDocumentStore<PipelineBody, PipelineModel>(store, warning);
@@ -30,9 +30,9 @@ public sealed class PipelineCommandHandlersTests : EditHandlerContract<IDiagramD
     protected override ICommandDispatcher Dispatcher(IDiagramDocumentStore<PipelineBody, PipelineModel> store) =>
         new PipelineTestDispatcher(new ViewedPipelineDocumentStore(store));
 
-    protected override ICommand EditOf(string bodyPath) => new RenamePipelineElementCommand(RootOf(bodyPath), bodyPath, "Build", "Build it all");
+    protected override ICommand EditOf(string bodyPath) => new RenamePipelineElementCommand(ProjectRoot.From(RootOf(bodyPath)), bodyPath, "Build", "Build it all");
 
-    protected override ICommand EditOfMissing(string bodyPath) => new RenamePipelineElementCommand(RootOf(bodyPath), bodyPath, "NoSuchStage", "Anything");
+    protected override ICommand EditOfMissing(string bodyPath) => new RenamePipelineElementCommand(ProjectRoot.From(RootOf(bodyPath)), bodyPath, "NoSuchStage", "Anything");
 
     /// <summary>One edit of each command of the module.</summary>
     public static TheoryData<string> Commands() =>
@@ -79,7 +79,7 @@ public sealed class PipelineCommandHandlersTests : EditHandlerContract<IDiagramD
         var body = folder.Combine("multi-stage.yml");
         File.Copy(Example, body);
         var dispatcher = Dispatcher(CreateStore());
-        var removed = await dispatcher.DispatchAsync(new RemovePipelineElementCommand(RootOf(body), body, "Build/Compile/step-1"), TestContext.Current.CancellationToken);
+        var removed = await dispatcher.DispatchAsync(new RemovePipelineElementCommand(ProjectRoot.From(RootOf(body)), body, "Build/Compile/step-1"), TestContext.Current.CancellationToken);
         var without = await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken);
         var undone = await dispatcher.DispatchAsync(removed.Inverse!, TestContext.Current.CancellationToken);
 
@@ -97,15 +97,15 @@ public sealed class PipelineCommandHandlersTests : EditHandlerContract<IDiagramD
         var root = RootOf(body);
         return edit switch
         {
-            "rename" => new RenamePipelineElementCommand(root, body, "Build", "Build it all"),
-            "enabled" => new SetPipelineElementEnabledCommand(root, body, "Test", Enabled: false),
-            "dependencies" => new SetPipelineDependenciesCommand(root, body, "DeployProduction", ["Build"], Declared: true),
-            "add-stage" => new AddPipelineElementCommand(root, body, PipelineAddKind.Stage, ""),
-            "add-job" => new AddPipelineElementCommand(root, body, PipelineAddKind.Job, "Test"),
-            "add-step" => new AddPipelineElementCommand(root, body, PipelineAddKind.Step, "Build/Compile"),
-            "remove" => new RemovePipelineElementCommand(root, body, "Test/Integration"),
-            "remove-stage" => new RemovePipelineElementCommand(root, body, "Test"),
-            "move" => new MovePipelineStepCommand(root, body, "Build/Compile/step-0", 2),
+            "rename" => new RenamePipelineElementCommand(ProjectRoot.From(root), body, "Build", "Build it all"),
+            "enabled" => new SetPipelineElementEnabledCommand(ProjectRoot.From(root), body, "Test", Enabled: false),
+            "dependencies" => new SetPipelineDependenciesCommand(ProjectRoot.From(root), body, "DeployProduction", ["Build"], Declared: true),
+            "add-stage" => new AddPipelineElementCommand(ProjectRoot.From(root), body, PipelineAddKind.Stage, ""),
+            "add-job" => new AddPipelineElementCommand(ProjectRoot.From(root), body, PipelineAddKind.Job, "Test"),
+            "add-step" => new AddPipelineElementCommand(ProjectRoot.From(root), body, PipelineAddKind.Step, "Build/Compile"),
+            "remove" => new RemovePipelineElementCommand(ProjectRoot.From(root), body, "Test/Integration"),
+            "remove-stage" => new RemovePipelineElementCommand(ProjectRoot.From(root), body, "Test"),
+            "move" => new MovePipelineStepCommand(ProjectRoot.From(root), body, "Build/Compile/step-0", 2),
             _ => throw new ArgumentOutOfRangeException(nameof(edit), edit, "No such edit."),
         };
     }

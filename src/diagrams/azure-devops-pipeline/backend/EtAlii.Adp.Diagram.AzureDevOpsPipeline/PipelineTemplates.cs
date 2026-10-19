@@ -27,15 +27,15 @@ public sealed class PipelineTemplates
 
     private readonly Dictionary<string, LineDocument?> _documents = new(StringComparer.OrdinalIgnoreCase);
 
-    /// <summary>Creates a resolver bounded by <paramref name="workspaceRoot"/>.</summary>
-    public PipelineTemplates(string workspaceRoot)
+    /// <summary>Creates a resolver bounded by <paramref name="root"/>.</summary>
+    public PipelineTemplates(ProjectRoot root)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(workspaceRoot);
-        WorkspaceRoot = IoPath.TrimEndingDirectorySeparator(IoPath.GetFullPath(workspaceRoot));
+        ArgumentException.ThrowIfNullOrWhiteSpace(root.FullPath, nameof(root));
+        Root = root;
     }
 
     /// <summary>The only directory tree this will read from.</summary>
-    public string WorkspaceRoot { get; }
+    public ProjectRoot Root { get; }
 
     /// <summary>
     /// How many times a template was read from disk rather than from what this remembers: what holds a
@@ -70,7 +70,7 @@ public sealed class PipelineTemplates
         string combined;
         if (raw.StartsWith('/'))
         {
-            combined = IoPath.Combine(WorkspaceRoot, raw.TrimStart('/'));
+            combined = IoPath.Combine(Root.FullPath, raw.TrimStart('/'));
         }
         else if (IoPath.IsPathRooted(raw) || IsWindowsAbsolute(raw))
         {
@@ -82,13 +82,13 @@ public sealed class PipelineTemplates
         }
         else
         {
-            combined = IoPath.Combine(IoPath.GetDirectoryName(referencingPath) ?? WorkspaceRoot, raw);
+            combined = IoPath.Combine(IoPath.GetDirectoryName(referencingPath) ?? Root.FullPath, raw);
         }
 
         var full = IoPath.GetFullPath(combined);
         if (!IsInsideWorkspace(full))
         {
-            _logger.Debug("Refusing template {Reference}: {Path} is outside {Workspace}", reference.Reference, full, WorkspaceRoot);
+            _logger.Debug("Refusing template {Reference}: {Path} is outside {Workspace}", reference.Reference, full, Root.FullPath);
             return ("", PipelineTemplateUnresolvedReason.OutsideWorkspace);
         }
 
@@ -146,7 +146,7 @@ public sealed class PipelineTemplates
     /// with the workspace's - <c>work</c> and <c>workspace-backup</c> - is not mistaken for being
     /// inside it.
     /// </remarks>
-    private bool IsInsideWorkspace(string fullPath) => PathContainment.IsAtOrInside(WorkspaceRoot, fullPath);
+    private bool IsInsideWorkspace(string fullPath) => Root.Contains(fullPath);
 
     /// <summary>
     /// Whether a path is decided at compile or run time rather than written out - the three

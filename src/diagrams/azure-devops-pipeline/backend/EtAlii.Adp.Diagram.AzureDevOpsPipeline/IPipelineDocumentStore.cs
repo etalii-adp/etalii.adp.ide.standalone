@@ -28,21 +28,21 @@ public interface IPipelineDocumentStore : IDiagramDocumentStore
     /// yields an empty document rather than throwing, so a diagram whose body has not been written
     /// still opens and the first save creates it. Read without blocking a thread.
     /// </summary>
-    ValueTask<DocumentEntry<PipelineBody, PipelineModel>> GetOrLoadAsync(string rootPath, string path, CancellationToken cancellationToken);
+    ValueTask<DocumentEntry<PipelineBody, PipelineModel>> GetOrLoadAsync(ProjectRoot root, string path, CancellationToken cancellationToken);
 
     /// <summary>
-    /// This store as seen from <paramref name="rootPath"/>: the shared store interface, whose calls
+    /// This store as seen from <paramref name="root"/>: the shared store interface, whose calls
     /// name a path alone, answered with that root. It is how a session opened in a workspace stands
     /// on the session base.
     /// </summary>
-    IDiagramDocumentStore<PipelineBody, PipelineModel> In(string rootPath);
+    IDiagramDocumentStore<PipelineBody, PipelineModel> In(ProjectRoot root);
 
     /// <summary>
-    /// <paramref name="bytes"/> read as the pipeline at <paramref name="path"/> in <paramref name="rootPath"/> is:
+    /// <paramref name="bytes"/> read as the pipeline at <paramref name="path"/> in <paramref name="root"/> is:
     /// its templates followed from that root. An edit opens the copy of a body it changes with this, so the copy
     /// reads as the store's own does. Never throws on content.
     /// </summary>
-    PipelineBody Open(string rootPath, string path, byte[] bytes);
+    PipelineBody Open(ProjectRoot root, string path, byte[] bytes);
 
     /// <summary>Raised after a save, and after an external change is picked up.</summary>
     event EventHandler<DocumentChangedEventArgs>? Changed;
@@ -54,6 +54,6 @@ public interface IPipelineDocumentStore : IDiagramDocumentStore
     internal static Func<ContextTarget, CancellationToken, ValueTask<DocumentEntry<PipelineBody, PipelineModel>>> LoaderFor(IPipelineDocumentStore documents)
     {
         ArgumentNullException.ThrowIfNull(documents);
-        return (target, cancellationToken) => documents.GetOrLoadAsync(target.Root.FullPath, target.ResolvedFullPath, cancellationToken);
+        return (target, cancellationToken) => documents.GetOrLoadAsync(target.Root, target.ResolvedFullPath, cancellationToken);
     }
 }

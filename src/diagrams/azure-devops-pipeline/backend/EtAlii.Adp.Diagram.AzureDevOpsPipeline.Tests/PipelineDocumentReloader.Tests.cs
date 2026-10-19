@@ -17,7 +17,7 @@ public sealed class PipelineDocumentReloaderTests : DocumentReloaderContract<IPi
 
     protected override IPipelineDocumentStore CreateStore() => new PipelineDocumentStore(new FileWriter());
 
-    protected override async Task<bool> IsEmptyAsync(IPipelineDocumentStore store, string path, CancellationToken cancellationToken) => (await store.GetOrLoadAsync(IoPath.GetDirectoryName(path)!, path, cancellationToken)).Model.Jobs.Any() is false;
+    protected override async Task<bool> IsEmptyAsync(IPipelineDocumentStore store, string path, CancellationToken cancellationToken) => (await store.GetOrLoadAsync(ProjectRoot.From(IoPath.GetDirectoryName(path)!), path, cancellationToken)).Model.Jobs.Any() is false;
 
     protected override void OnChanged(IPipelineDocumentStore store, Action<string> changed) =>
         store.Changed += (_, args) => changed(args.Path);
@@ -40,6 +40,6 @@ public sealed class PipelineDocumentReloaderTests : DocumentReloaderContract<IPi
 
         // Assert: nothing was open on it, and its first open reads it.
         Assert.Equal(0, told);
-        Assert.NotEmpty((await store.GetOrLoadAsync(folder.Path, body, TestContext.Current.CancellationToken)).Model.Jobs);
+        Assert.NotEmpty((await store.GetOrLoadAsync(ProjectRoot.From(folder.Path), body, TestContext.Current.CancellationToken)).Model.Jobs);
     }
 }

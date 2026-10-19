@@ -22,12 +22,12 @@ internal sealed class ViewedPipelineDocumentStore(IDiagramDocumentStore<Pipeline
         remove => view.Changed -= value;
     }
 
-    public ValueTask<DocumentEntry<PipelineBody, PipelineModel>> GetOrLoadAsync(string rootPath, string path, CancellationToken cancellationToken) =>
+    public ValueTask<DocumentEntry<PipelineBody, PipelineModel>> GetOrLoadAsync(ProjectRoot root, string path, CancellationToken cancellationToken) =>
         view.GetOrLoadAsync(path, cancellationToken);
 
-    public IDiagramDocumentStore<PipelineBody, PipelineModel> In(string rootPath) => view;
+    public IDiagramDocumentStore<PipelineBody, PipelineModel> In(ProjectRoot root) => view;
 
-    public PipelineBody Open(string rootPath, string path, byte[] bytes) => _reader.Open(rootPath, path, bytes);
+    public PipelineBody Open(ProjectRoot root, string path, byte[] bytes) => _reader.Open(root, path, bytes);
 
     public Task ReloadAsync(string path, CancellationToken cancellationToken) => view.ReloadAsync(path, cancellationToken);
 

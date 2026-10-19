@@ -6,5 +6,5 @@ namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline;
 public interface IPipelineEditCommand : IDocumentEditCommand
 {
     /// <summary>The project, which the store needs to resolve templates.</summary>
-    string RootPath { get; }
+    ProjectRoot Root { get; }
 }

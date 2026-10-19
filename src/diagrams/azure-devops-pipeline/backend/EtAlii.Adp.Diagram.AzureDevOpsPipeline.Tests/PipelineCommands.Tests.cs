@@ -17,6 +17,8 @@ public class PipelineCommandsTests : IDisposable
         IoPath.GetTempPath(),
         "adp-pipeline-commands-" + Guid.NewGuid().ToString("N"));
 
+    private ProjectRoot Root => ProjectRoot.From(_workspace);
+
     private readonly PipelineDocumentStore _store = new(new FileWriter());
 
     public PipelineCommandsTests() => Directory.CreateDirectory(_workspace);
@@ -57,33 +59,33 @@ public class PipelineCommandsTests : IDisposable
         return path;
     }
 
-    private async Task<PipelineModel> ModelAsync(string path) => (await _store.GetOrLoadAsync(_workspace, path, TestContext.Current.CancellationToken)).Model;
+    private async Task<PipelineModel> ModelAsync(string path) => (await _store.GetOrLoadAsync(Root, path, TestContext.Current.CancellationToken)).Model;
 
     private string Text(string path) => File.ReadAllText(path);
 
     private Task<CommandResult> Rename(string path, string elementId, string displayName) =>
         new RenamePipelineElementCommandHandler(_store).ExecuteAsync(
-            new RenamePipelineElementCommand(_workspace, path, elementId, displayName));
+            new RenamePipelineElementCommand(Root, path, elementId, displayName));
 
     private Task<CommandResult> SetDependencies(string path, string elementId, string[] dependsOn, bool declared = true) =>
         new SetPipelineDependenciesCommandHandler(_store).ExecuteAsync(
-            new SetPipelineDependenciesCommand(_workspace, path, elementId, dependsOn, declared));
+            new SetPipelineDependenciesCommand(Root, path, elementId, dependsOn, declared));
 
     private Task<CommandResult> SetEnabled(string path, string elementId, bool enabled) =>
         new SetPipelineElementEnabledCommandHandler(_store).ExecuteAsync(
-            new SetPipelineElementEnabledCommand(_workspace, path, elementId, enabled));
+            new SetPipelineElementEnabledCommand(Root, path, elementId, enabled));
 
     private Task<CommandResult> Add(string path, PipelineAddKind kind, string parentId = "", string name = "") =>
         new AddPipelineElementCommandHandler(_store).ExecuteAsync(
-            new AddPipelineElementCommand(_workspace, path, kind, parentId, name));
+            new AddPipelineElementCommand(Root, path, kind, parentId, name));
 
     private Task<CommandResult> Remove(string path, string elementId) =>
         new RemovePipelineElementCommandHandler(_store).ExecuteAsync(
-            new RemovePipelineElementCommand(_workspace, path, elementId));
+            new RemovePipelineElementCommand(Root, path, elementId));
 
     private Task<CommandResult> MoveStep(string path, string stepId, int toIndex) =>
         new MovePipelineStepCommandHandler(_store).ExecuteAsync(
-            new MovePipelineStepCommand(_workspace, path, stepId, toIndex));
+            new MovePipelineStepCommand(Root, path, stepId, toIndex));
 
     /// <summary>Runs whatever a command reported as its inverse, whichever kind it is.</summary>
     // ReSharper disable once UnusedMethodReturnValue.Local - Reason: the body is a switch expression over the inverse's kind, and a switch expression must yield a value, so it returns each handler's CommandResult; the callers await it only for its effect on the store.
@@ -638,7 +640,7 @@ public class PipelineCommandsTests : IDisposable
         Assert.True((await SetDependencies(path, "Ship", ["Test"])).IsSuccess);
 
         // Assert.
-        var entry = await _store.GetOrLoadAsync(_workspace, path, TestContext.Current.CancellationToken);
+        var entry = await _store.GetOrLoadAsync(Root, path, TestContext.Current.CancellationToken);
         Assert.True(entry.IsUsable, entry.Unreadable);
         Assert.Equal(["Build", "Test", "Ship"], entry.Model.Stages.Select(stage => stage.Name));
         Assert.Equal(["Test"], entry.Model.Stages.Single(stage => stage.Name == "Ship").DependsOn);

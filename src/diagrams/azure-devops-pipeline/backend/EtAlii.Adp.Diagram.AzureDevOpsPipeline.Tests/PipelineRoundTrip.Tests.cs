@@ -40,7 +40,7 @@ public class PipelineRoundTripTests
         using var folder = Copy(path, out var body);
         var original = await File.ReadAllBytesAsync(body, TestContext.Current.CancellationToken);
         var store = new PipelineDocumentStore(new FileWriter());
-        var entry = await store.GetOrLoadAsync(folder.Path, body, TestContext.Current.CancellationToken);
+        var entry = await store.GetOrLoadAsync(ProjectRoot.From(folder.Path), body, TestContext.Current.CancellationToken);
 
         // Act: nothing asked for, then every element's display name as it already is.
         var nothing = entry.Document.Write([]);
@@ -55,7 +55,7 @@ public class PipelineRoundTripTests
                     : EditOutcome.Unchanged)
                 .ToList()
             : [];
-        var saved = await store.SaveAsync(folder.Path, body, entry, TestContext.Current.CancellationToken);
+        var saved = await store.SaveAsync(ProjectRoot.From(folder.Path), body, entry, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.True(nothing.IsUnchanged);
@@ -72,7 +72,7 @@ public class PipelineRoundTripTests
         // Arrange.
         using var folder = Copy(path, out var body);
         var original = await File.ReadAllBytesAsync(body, TestContext.Current.CancellationToken);
-        var model = (await new PipelineDocumentStore(new FileWriter()).GetOrLoadAsync(folder.Path, body, TestContext.Current.CancellationToken)).Model;
+        var model = (await new PipelineDocumentStore(new FileWriter()).GetOrLoadAsync(ProjectRoot.From(folder.Path), body, TestContext.Current.CancellationToken)).Model;
         List<string> failures = [];
         var applied = 0;
 
@@ -86,20 +86,20 @@ public class PipelineRoundTripTests
         var other = model.Stages.Skip(1).FirstOrDefault()?.Name ?? "";
         foreach (var id in ids)
         {
-            await Check(new RenamePipelineElementCommand(folder.Path, body, id, "Round trip"));
-            await Check(new SetPipelineElementEnabledCommand(folder.Path, body, id, false));
-            await Check(new SetPipelineDependenciesCommand(folder.Path, body, id, [], Declared: false));
-            await Check(new SetPipelineDependenciesCommand(folder.Path, body, id, [], Declared: true));
-            await Check(new SetPipelineDependenciesCommand(folder.Path, body, id, [other], Declared: true));
-            await Check(new AddPipelineElementCommand(folder.Path, body, PipelineAddKind.Job, id));
-            await Check(new AddPipelineElementCommand(folder.Path, body, PipelineAddKind.DeploymentJob, id));
-            await Check(new AddPipelineElementCommand(folder.Path, body, PipelineAddKind.Step, id));
-            await Check(new RemovePipelineElementCommand(folder.Path, body, id));
-            await Check(new MovePipelineStepCommand(folder.Path, body, id, 0));
-            await Check(new MovePipelineStepCommand(folder.Path, body, id, int.MaxValue));
+            await Check(new RenamePipelineElementCommand(ProjectRoot.From(folder.Path), body, id, "Round trip"));
+            await Check(new SetPipelineElementEnabledCommand(ProjectRoot.From(folder.Path), body, id, false));
+            await Check(new SetPipelineDependenciesCommand(ProjectRoot.From(folder.Path), body, id, [], Declared: false));
+            await Check(new SetPipelineDependenciesCommand(ProjectRoot.From(folder.Path), body, id, [], Declared: true));
+            await Check(new SetPipelineDependenciesCommand(ProjectRoot.From(folder.Path), body, id, [other], Declared: true));
+            await Check(new AddPipelineElementCommand(ProjectRoot.From(folder.Path), body, PipelineAddKind.Job, id));
+            await Check(new AddPipelineElementCommand(ProjectRoot.From(folder.Path), body, PipelineAddKind.DeploymentJob, id));
+            await Check(new AddPipelineElementCommand(ProjectRoot.From(folder.Path), body, PipelineAddKind.Step, id));
+            await Check(new RemovePipelineElementCommand(ProjectRoot.From(folder.Path), body, id));
+            await Check(new MovePipelineStepCommand(ProjectRoot.From(folder.Path), body, id, 0));
+            await Check(new MovePipelineStepCommand(ProjectRoot.From(folder.Path), body, id, int.MaxValue));
         }
 
-        await Check(new AddPipelineElementCommand(folder.Path, body, PipelineAddKind.Stage, ""));
+        await Check(new AddPipelineElementCommand(ProjectRoot.From(folder.Path), body, PipelineAddKind.Stage, ""));
         Assert.True(failures.Count == 0, $"{path}: {failures.Count} of {applied} edits\n{string.Join("\n", failures)}");
         if (model.Stages.Any(stage => stage is { IsImplicit: false, IsFromTemplate: false })) Assert.True(applied > 0, $"{path}: no edit applied, so nothing was undone.");
         return;
@@ -136,7 +136,7 @@ public class PipelineRoundTripTests
         using var folder = Copy("diagrams/azure-devops-pipeline/backend/EtAlii.Adp.Diagram.AzureDevOpsPipeline.Tests/Fixtures/multi-stage.yml", out var body);
         var store = new PipelineDocumentStore(new FileWriter());
         var dispatcher = new PipelineTestDispatcher(store);
-        var removed = await dispatcher.DispatchAsync(new RemovePipelineElementCommand(folder.Path, body, "Build/Compile/step-1"), TestContext.Current.CancellationToken);
+        var removed = await dispatcher.DispatchAsync(new RemovePipelineElementCommand(ProjectRoot.From(folder.Path), body, "Build/Compile/step-1"), TestContext.Current.CancellationToken);
         Assert.True(removed.IsSuccess, removed.Error);
         await File.AppendAllTextAsync(body, "# changed by someone else\r\n", TestContext.Current.CancellationToken);
         await store.ReloadAsync(body, TestContext.Current.CancellationToken);
