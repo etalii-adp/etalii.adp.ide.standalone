@@ -112,7 +112,8 @@ export function AadCanvas({ projectId, entryId, path }: ToolContentProps) {
     // A drag locks the element where it was let go. The library reports the centre it drew the
     // element at, and that is what the file keeps: a locked position is a centre.
     onElementMoved: ({ elementId, position }) => {
-      void moveElementTo(elementId, position.x, position.y);
+      // Returned, so a refusal lets the library put the element back where it was (ruled 2026-10-19).
+      return moveElementTo(elementId, position.x, position.y);
     },
     onConnectionDrawn: ({ sourceElementId, targetElementId }) => {
       runAction(AadActions.connect, relationId(sourceElementId, targetElementId));

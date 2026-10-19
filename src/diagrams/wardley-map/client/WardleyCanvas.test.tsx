@@ -19,7 +19,7 @@ import {
 import { applyDelta, emptyModel, type WardleyModel } from "./wardleyModel";
 import { ToolboxItemSchema, type ToolboxItem } from "@client/generated/diagrams_pb";
 import { DiagramToolboxProvider, useDiagramToolbox } from "@client/shell/panels/DiagramToolboxContext";
-import { fakeContextConnection, idsPushed } from "@client/canvas/library/testing/canvasHarness";
+import { fakeContextConnection, idsPushed, dragAndSettle } from "@client/canvas/library/testing/canvasHarness";
 
 let currentModel: WardleyModel = emptyModel;
 let currentLoading = false;
@@ -704,6 +704,20 @@ describe("WardleyCanvas dragging", () => {
 
     // Assert.
     expect(container.querySelector(".wardley-link")?.getAttribute("d")).not.toBe(before);
+  });
+
+  it("snaps an element back when the backend refuses its move, rather than leaving it at the drop", async () => {
+    // Arrange: the library holds a drop until the model moves the element, and a refused move never
+    // does - so the move's answer has to be handed back for the element to return (ruled 2026-10-19).
+    const { container } = renderDraggable();
+    moveAnswer = "This map is read-only."; // after the render, which resets it
+
+    // Act.
+    const { before, after } = await dragAndSettle(container, "a");
+
+    // Assert.
+    expect(moves, "the move was never sent, so this test cannot say anything").toHaveLength(1);
+    expect(after).toBe(before);
   });
 
   it("sends the move and leaves its refusal to the library's line, rather than drawing its own", async () => {

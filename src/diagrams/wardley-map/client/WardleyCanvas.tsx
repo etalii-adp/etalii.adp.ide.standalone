@@ -579,7 +579,8 @@ export function WardleyCanvas({ projectId, entryId, path }: WardleyCanvasProps) 
       // A drag is a DOCUMENT EDIT here, not a view change: the backend converts the point
       // back into the document's axes and the new position returns as an ordinary delta. The
       // library already clamped to the map's edge; the division puts it back into 0..1.
-      void moveElementTo(elementId, position.x / scale.width, position.y / scale.height);
+      // Returned, so a refusal lets the library put the element back where it was (ruled 2026-10-19).
+      return moveElementTo(elementId, position.x / scale.width, position.y / scale.height);
     },
     onViewChanged: ({ viewport: next }) => setViewport(next),
     // Deliberately unanswered: element-dropped (the hand-built canvas never wired toolbox

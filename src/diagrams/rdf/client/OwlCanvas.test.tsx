@@ -2,7 +2,7 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import { fireEvent, render } from "@testing-library/react";
 import { emptyOwlModel, type OwlModel, type OwlNode, type OwlNodeKind } from "./owlModel";
 import { expectLibrarySelection } from "@client/canvas/library/testing/expectLibrarySelection";
-import { fakeContextConnection, idsPushed } from "@client/canvas/library/testing/canvasHarness";
+import { fakeContextConnection, idsPushed, dragAndSettle } from "@client/canvas/library/testing/canvasHarness";
 
 let currentModel: OwlModel = emptyOwlModel;
 let currentLoading = false;
@@ -251,6 +251,21 @@ describe("the owl canvas", () => {
     expect(container.querySelector('[data-connection-id="edge:property"] path[marker-end]')).not.toBeNull();
     // A pure axiom edge has no label to draw.
     expect(container.querySelector('[data-connection-id="edge:subclass"] text.library-connection-label')).toBeNull();
+  });
+
+  it("snaps an element back when the backend refuses its move, rather than leaving it at the drop", async () => {
+    // Arrange: the library holds a drop until the model moves the element, and a refused move never
+    // does - so the move's answer has to be handed back for the element to return (ruled 2026-10-19).
+    moveError = "This ontology is read-only.";
+    const { container } = renderCanvas();
+
+    // Act.
+    const { before, after } = await dragAndSettle(container, `res:${NS}Pizza`);
+
+    // Assert.
+    expect(moves, "the move was never sent, so this test cannot say anything").toHaveLength(1);
+    expect(after).toBe(before);
+    moveError = "";
   });
 
   it("repositions a class through the layout path, and shows the refusal an expression drag earns", async () => {

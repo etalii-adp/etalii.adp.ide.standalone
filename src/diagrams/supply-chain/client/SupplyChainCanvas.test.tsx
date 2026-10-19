@@ -7,9 +7,12 @@ import {
   SupplyChainNodePayloadSchema,
 } from "@client/generated/supply-chain_pb";
 import { expectLibrarySelection } from "@client/canvas/library/testing/expectLibrarySelection";
-import { fakeContextConnection, idsPushed, pointer } from "@client/canvas/library/testing/canvasHarness";
+import { fakeContextConnection, idsPushed, pointer, dragAndSettle } from "@client/canvas/library/testing/canvasHarness";
 import { SupplyChainActions } from "./supplyChainIds";
 import { emptyModel, type SupplyChainModel } from "./supplyChainModel";
+
+// What the backend answers a move with: empty when recorded, its refusal sentence otherwise.
+let moveAnswer = "";
 
 /**
  * The REAL canvas, mounted: what the library draws from this module's definition and model, the
@@ -34,7 +37,7 @@ vi.mock("@client/diagrams/useDiagramStream", () => ({
     client: { moveElement: () => Promise.resolve({ error: "" }) },
     moveElementTo: (elementId: string, x: number, y: number) => {
       moves.push({ elementId, x, y });
-      return Promise.resolve("");
+      return Promise.resolve(moveAnswer);
     },
   }),
 }));
@@ -200,6 +203,21 @@ describe("the supply chain canvas, mounted", () => {
 
     // Assert.
     expect(executed).toEqual([{ actionId: SupplyChainActions.increase, targetId: "goods" }]);
+  });
+
+  it("snaps an element back when the backend refuses its move, rather than leaving it at the drop", async () => {
+    // Arrange: the library holds a drop until the model moves the element, and a refused move never
+    // does - so the move's answer has to be handed back for the element to return (ruled 2026-10-19).
+    moveAnswer = "This diagram is read-only.";
+    const { container } = renderCanvas();
+
+    // Act.
+    const { before, after } = await dragAndSettle(container, "north");
+
+    // Assert.
+    expect(moves, "the move was never sent, so this test cannot say anything").toHaveLength(1);
+    expect(after).toBe(before);
+    moveAnswer = "";
   });
 
   it("moves a group by its frame's top-left, which the backend turns into moving its members", () => {

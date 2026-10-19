@@ -12,7 +12,7 @@ import { applyDelta, emptyModel, type AnsibleModel } from "./ansibleModel";
 import { DiagramToolboxProvider, useDiagramToolbox } from "@client/shell/panels/DiagramToolboxContext";
 import { elementSelectionOf } from "@client/canvas/selection";
 import { expectLibrarySelection } from "@client/canvas/library/testing/expectLibrarySelection";
-import { fakeContextConnection, idsPushed, pointer } from "@client/canvas/library/testing/canvasHarness";
+import { fakeContextConnection, idsPushed, pointer, dragAndSettle } from "@client/canvas/library/testing/canvasHarness";
 
 const select = vi.fn();
 const revealPath = vi.fn();
@@ -286,6 +286,21 @@ describe("AnsibleCanvas", () => {
     expect(moveElementTo).toHaveBeenCalledTimes(1);
     expect(container.textContent).not.toContain("This node's position cannot be saved here.");
     expect(container.querySelector(".canvas-rejection")).toBeNull();
+  });
+
+  it("snaps a node back when the backend refuses its move, rather than leaving it at the drop", async () => {
+    // Arrange: the library holds a drop until the model moves the node, and a refused move never
+    // does - so the answer has to be handed back for the node to return (ruled 2026-10-19).
+    moveElementTo.mockClear();
+    moveElementTo.mockResolvedValueOnce("This node's position cannot be saved here.");
+    const { container } = renderCanvas();
+
+    // Act.
+    const { before, after } = await dragAndSettle(container, "role:nginx");
+
+    // Assert.
+    expect(moveElementTo, "the move was never sent, so this test cannot say anything").toHaveBeenCalledTimes(1);
+    expect(after).toBe(before);
   });
 
   it("does not reposition on a click that barely moves", () => {

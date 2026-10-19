@@ -230,7 +230,8 @@ export function ShaclCanvas({ projectId, entryId, path }: ToolContentProps) {
       const height = shape ? shapeHeight(shape) : 0;
       // The authored position, raw. An anonymous shape's refusal comes back from the backend
       // with its sentence - the canvas does not decide it, it reports it (Requirement 3.2).
-      void moveElementTo(elementId, position.x - CARD_WIDTH / 2, position.y - height / 2);
+      // Returned, so a refusal lets the library put the element back where it was (ruled 2026-10-19).
+      return moveElementTo(elementId, position.x - CARD_WIDTH / 2, position.y - height / 2);
     },
     // A row entry dropped on a card acts on that card; anything else lands as a placement.
     onElementDropped: ({ elementType, position }) => {
