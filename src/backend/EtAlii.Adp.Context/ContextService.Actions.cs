@@ -320,21 +320,6 @@ public sealed partial class ContextService
             return _selectionStore.Get(watchId)?.Innermost.Target ?? ContextWatch.RootTarget(root, watchId);
         }
 
-        // An explicit project source names the project itself, for undo and redo, which apply
-        // to it rather than to whatever is selected (diagram-undo-redo Requirement 5.1).
-        if (source.SourceCase == ContextSource.SourceOneofCase.Project)
-        {
-            return HistoryActionsBroadcaster.ProjectTarget(root);
-        }
-
-        // An explicit problems source names the errors-and-warnings panel itself, for
-        // Validate all, which applies to the problem list rather than to whatever is
-        // selected (errors-and-warnings-panel Requirement 7.4).
-        if (source.SourceCase == ContextSource.SourceOneofCase.Problems)
-        {
-            return new ContextTarget(ContextScope.ProblemsPanel, root.FullPath, IsContainer: false, SourceId: default, Root: root, WatchId: watchId);
-        }
-
         // An element lives inside a diagram, so a bare element id is resolvable only within
         // the connection's current selection - whose chain names the file the element is in.
         // The canvas sends exactly this: a keystroke against its focused node, which is
