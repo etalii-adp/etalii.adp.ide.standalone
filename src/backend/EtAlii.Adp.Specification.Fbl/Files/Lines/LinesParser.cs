@@ -35,12 +35,12 @@ internal sealed class Statement : Entry
 /// </summary>
 internal sealed class LinesParser(BodyText text, BoundedRegex? comment, bool blocks)
 {
+    /// <summary>The indexes of the lines that are comments.</summary>
+    private readonly HashSet<int> _commentLines = [];
+
     public List<Statement> Statements { get; } = [];
 
     public List<Span> Leaves { get; } = [];
-
-    /// <summary>The indexes of the lines that are comments.</summary>
-    public HashSet<int> CommentLines { get; } = [];
 
     public sealed class LinesError(int offset, string message) : Exception(message)
     {
@@ -61,7 +61,7 @@ internal sealed class LinesParser(BodyText text, BoundedRegex? comment, bool blo
             var content = text.Text(first, line.ContentEnd);
             if (IsComment(text.Text(start, line.ContentEnd)))
             {
-                CommentLines.Add(index);
+                _commentLines.Add(index);
                 Leaves.Add(new Span(first, line.ContentEnd));
                 continue;
             }
@@ -114,7 +114,7 @@ internal sealed class LinesParser(BodyText text, BoundedRegex? comment, bool blo
     private int LeadingCommentStart(int index)
     {
         var start = text.Lines[index].Start;
-        for (var above = index - 1; above >= 0 && CommentLines.Contains(above); above--)
+        for (var above = index - 1; above >= 0 && _commentLines.Contains(above); above--)
         {
             start = text.Lines[above].Start;
         }
