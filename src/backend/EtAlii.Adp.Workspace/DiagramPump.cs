@@ -60,111 +60,115 @@ public sealed class DiagramPump
         // the kinds is decided: diagrams, then designers, then editors (code-structure FR-058).
         // The fallback editor answers for whatever remains, so a file that resolves to nothing at
         // all is a broken deployment, not an ordinary miss (modular-text-editors Requirement 3.2).
-        IDiagramSession openedSession;
-        string bodyPath;
-        if (request.EditorId.Length > 0)
+        return request.EditorId.Length > 0
+            ? OpenAsText(userId, request, watchId)
+            : OpenRouted(userId, request, watchId);
+    }
+
+    /// <summary>
+    /// Opens the file in the editor the caller forced - the "Open as text" gesture. The diagram
+    /// family is deliberately not consulted: this is the one way a diagram-routed file opens as
+    /// text at all, and the one way its diagram stream and its text stream can coexist on one
+    /// connection (modular-text-editors Requirements 5.2, 5.3).
+    /// </summary>
+    private OpenedDiagram OpenAsText(ShortGuid userId, OpenDiagramRequest request, ShortGuid watchId)
+    {
+        if (!TryResolveTextFile(request.ProjectId, request.Path, userId, out var forced))
         {
-            // The caller forced the editor family - the "Open as text" gesture. The diagram
-            // family is deliberately not consulted: this is the one way a diagram-routed file
-            // opens as text at all, and the one way its diagram stream and its text stream can
-            // coexist on one connection (modular-text-editors Requirements 5.2, 5.3).
-            if (!TryResolveTextFile(request.ProjectId, request.Path, userId, out var forced))
-            {
-                // The client is told only that it failed; the log keeps what it asked for.
-                _logger.Warning("Refusing to open {Path} as text on watch {WatchId}: it does not resolve inside the project", string.Join('/', request.Path.Segments), watchId);
-                throw new RpcException(new Status(PermanentRefusal.CannotOpen, "The file cannot be opened as text."));
-            }
-
-            var forcedPath = forced.FullPath;
-            var forcedId = request.EditorId == "*" ? ResolvedEditorIdOf(forcedPath) : request.EditorId;
-            var forcedFactory = _editorSessionFactories.Find(forcedId);
-            if (forcedFactory is null)
-            {
-                _logger.Warning("Refusing to open {FullPath} on watch {WatchId}: no {EditorId} editor is deployed", forcedPath, watchId, forcedId);
-                throw new RpcException(new Status(PermanentRefusal.CannotOpen, $"No '{forcedId}' editor is deployed."));
-            }
-
-            _logger.Debug("Opening {FullPath} as text in the {EditorId} editor (forced) on watch {WatchId}", forcedPath, forcedId, watchId);
-            bodyPath = forcedPath;
-            openedSession = new EditorSessionAdapter(forcedFactory.Open(watchId, forced), forcedId);
+            // The client is told only that it failed; the log keeps what it asked for.
+            _logger.Warning("Refusing to open {Path} as text on watch {WatchId}: it does not resolve inside the project", string.Join('/', request.Path.Segments), watchId);
+            throw new RpcException(new Status(PermanentRefusal.CannotOpen, "The file cannot be opened as text."));
         }
-        else
+
+        var forcedPath = forced.FullPath;
+        var forcedId = request.EditorId == "*" ? ResolvedEditorIdOf(forcedPath) : request.EditorId;
+        var forcedFactory = _editorSessionFactories.Find(forcedId);
+        if (forcedFactory is null)
         {
-            // One open reads projects.json once: the root, the containment check and the file's
-            // existence are resolved here and handed to the router (code-structure FR-062).
-            if (!TryResolveTextFile(request.ProjectId, request.Path, userId, out var file))
-            {
-                _logger.Warning("Refusing to open {Path} on watch {WatchId}: it does not resolve inside the project", string.Join('/', request.Path.Segments), watchId);
+            _logger.Warning("Refusing to open {FullPath} on watch {WatchId}: no {EditorId} editor is deployed", forcedPath, watchId, forcedId);
+            throw new RpcException(new Status(PermanentRefusal.CannotOpen, $"No '{forcedId}' editor is deployed."));
+        }
+
+        _logger.Debug("Opening {FullPath} as text in the {EditorId} editor (forced) on watch {WatchId}", forcedPath, forcedId, watchId);
+        return new OpenedDiagram(new EditorSessionAdapter(forcedFactory.Open(watchId, forced), forcedId), forcedPath, watchId);
+    }
+
+    /// <summary>Opens the file in the tool <see cref="ToolRouter"/> names for it, or refuses.</summary>
+    private OpenedDiagram OpenRouted(ShortGuid userId, OpenDiagramRequest request, ShortGuid watchId)
+    {
+        // One open reads projects.json once: the root, the containment check and the file's
+        // existence are resolved here and handed to the router (code-structure FR-062).
+        if (!TryResolveTextFile(request.ProjectId, request.Path, userId, out var file))
+        {
+            _logger.Warning("Refusing to open {Path} on watch {WatchId}: it does not resolve inside the project", string.Join('/', request.Path.Segments), watchId);
+            throw new RpcException(new Status(PermanentRefusal.CannotOpen, "The diagram cannot be opened."));
+        }
+
+        // The router takes the root as a path; it is normalized already.
+        switch (_toolRouter.Route(file.FullPath, file.Root.FullPath))
+        {
+            case DiagramRouted { BodyPath: { } diagramBody } routed:
+                return OpenDiagram(file, routed, diagramBody, request, watchId);
+
+            case DesignerRouted designer:
+                // A designer's registration and its body are that designer's to open, and must
+                // not fall through to a text editor that would present a table as its raw file
+                // (knowledge-designer Requirement 10.2). The designer family has no session on
+                // this stream yet, so the answer is a refusal that names the type rather than a
+                // text stream of the wrong thing.
+                _logger.Warning("Refusing to open {Path} on watch {WatchId}: it is a {Origin} document, and designers cannot be opened on this stream", string.Join('/', request.Path.Segments), watchId, designer.Definition.Origin);
+                throw new RpcException(new Status(PermanentRefusal.NotDeployed, $"'{designer.Definition.Origin}' documents cannot be opened yet."));
+
+            case ToolUnreadable unreadable:
+                // A registration that names its tool but cannot be served is refused with the
+                // router's reason, as the problems panel reports it, rather than shown as a text
+                // file of its own; "Open as text" still opens it for repair.
+                _logger.Warning("Refusing to open {Path} on watch {WatchId}: {Reason}", string.Join('/', request.Path.Segments), watchId, unreadable.Reason);
+                throw new RpcException(new Status(PermanentRefusal.CannotOpen, $"'{System.IO.Path.GetFileName(unreadable.Path)}' cannot be opened. {unreadable.Reason}"));
+
+            case EditorRouted editor:
+                return OpenInEditor(file, editor, watchId);
+
+            default:
+                // The refusal every misrouted open lands on: without this line there is nothing
+                // anywhere saying which file was asked for, and people debug it blind.
+                _logger.Warning("Refusing to open {Path} on watch {WatchId}: neither a diagram type nor an editor claims it", string.Join('/', request.Path.Segments), watchId);
                 throw new RpcException(new Status(PermanentRefusal.CannotOpen, "The diagram cannot be opened."));
-            }
+        }
+    }
 
-            // The router takes the root as a path; it is normalized already.
-            var rootPath = file.Root.FullPath;
-            var fullPath = file.FullPath;
-
-            switch (_toolRouter.Route(fullPath, rootPath))
-            {
-                case DiagramRouted { BodyPath: { } diagramBody } routed:
-                {
-                    var origin = routed.Definition.Origin;
-                    var factory = _sessionFactories.Find(origin);
-                    if (factory is null)
-                    {
-                        _logger.Warning("Refusing to open {BodyPath} on watch {WatchId}: no session factory is deployed for {Origin}", diagramBody, watchId, origin.Key);
-                        throw new RpcException(new Status(PermanentRefusal.NotDeployed, $"'{origin}' diagrams cannot be opened yet."));
-                    }
-
-                    _logger.Debug("Routed {FullPath} to {Origin}, body {BodyPath}, on watch {WatchId}", string.Join('/', request.Path.Segments), origin.Key, diagramBody, watchId);
-                    bodyPath = diagramBody;
-                    openedSession = factory.Open(watchId, file.Root, bodyPath, routed.RegistrationPath);
-
-                    // From here on, an external write to this body or its .adp reaches the module's
-                    // store as a Reload and every open session as pushed deltas (Requirement 5.3).
-                    _reloadBridge.Track(file.Root, bodyPath, routed.RegistrationPath, origin);
-                    break;
-                }
-
-                case DesignerRouted designer:
-                    // A designer's registration and its body are that designer's to open, and must
-                    // not fall through to a text editor that would present a table as its raw file
-                    // (knowledge-designer Requirement 10.2). The designer family has no session on
-                    // this stream yet, so the answer is a refusal that names the type rather than a
-                    // text stream of the wrong thing.
-                    _logger.Warning("Refusing to open {Path} on watch {WatchId}: it is a {Origin} document, and designers cannot be opened on this stream", string.Join('/', request.Path.Segments), watchId, designer.Definition.Origin);
-                    throw new RpcException(new Status(PermanentRefusal.NotDeployed, $"'{designer.Definition.Origin}' documents cannot be opened yet."));
-
-                case ToolUnreadable unreadable:
-                    // A registration that names its tool but cannot be served is refused with the
-                    // router's reason, as the problems panel reports it, rather than shown as a text
-                    // file of its own; "Open as text" still opens it for repair.
-                    _logger.Warning("Refusing to open {Path} on watch {WatchId}: {Reason}", string.Join('/', request.Path.Segments), watchId, unreadable.Reason);
-                    throw new RpcException(new Status(PermanentRefusal.CannotOpen, $"'{System.IO.Path.GetFileName(unreadable.Path)}' cannot be opened. {unreadable.Reason}"));
-
-                case EditorRouted editor:
-                {
-                    var editorId = editor.Definition.Id;
-                    var editorFactory = _editorSessionFactories.Find(editorId);
-                    if (editorFactory is null)
-                    {
-                        _logger.Warning("Refusing to open {FullPath} on watch {WatchId}: the {EditorId} editor registered no session factory", fullPath, watchId, editorId);
-                        throw new RpcException(new Status(PermanentRefusal.NotDeployed, $"The '{editorId}' editor registered no session factory."));
-                    }
-
-                    _logger.Debug("Opening {FullPath} in the {EditorId} editor on watch {WatchId}", fullPath, editorId, watchId);
-                    bodyPath = fullPath;
-                    openedSession = new EditorSessionAdapter(editorFactory.Open(watchId, file), editorId);
-                    break;
-                }
-
-                default:
-                    // The refusal every misrouted open lands on: without this line there is nothing
-                    // anywhere saying which file was asked for, and people debug it blind.
-                    _logger.Warning("Refusing to open {Path} on watch {WatchId}: neither a diagram type nor an editor claims it", string.Join('/', request.Path.Segments), watchId);
-                    throw new RpcException(new Status(PermanentRefusal.CannotOpen, "The diagram cannot be opened."));
-            }
+    private OpenedDiagram OpenDiagram(ProjectPath file, DiagramRouted routed, string bodyPath, OpenDiagramRequest request, ShortGuid watchId)
+    {
+        var origin = routed.Definition.Origin;
+        var factory = _sessionFactories.Find(origin);
+        if (factory is null)
+        {
+            _logger.Warning("Refusing to open {BodyPath} on watch {WatchId}: no session factory is deployed for {Origin}", bodyPath, watchId, origin.Key);
+            throw new RpcException(new Status(PermanentRefusal.NotDeployed, $"'{origin}' diagrams cannot be opened yet."));
         }
 
-        return new OpenedDiagram(openedSession, bodyPath, watchId);
+        _logger.Debug("Routed {FullPath} to {Origin}, body {BodyPath}, on watch {WatchId}", string.Join('/', request.Path.Segments), origin.Key, bodyPath, watchId);
+        var session = factory.Open(watchId, file.Root, bodyPath, routed.RegistrationPath);
+
+        // From here on, an external write to this body or its .adp reaches the module's
+        // store as a Reload and every open session as pushed deltas (Requirement 5.3).
+        _reloadBridge.Track(file.Root, bodyPath, routed.RegistrationPath, origin);
+        return new OpenedDiagram(session, bodyPath, watchId);
+    }
+
+    private OpenedDiagram OpenInEditor(ProjectPath file, EditorRouted editor, ShortGuid watchId)
+    {
+        var fullPath = file.FullPath;
+        var editorId = editor.Definition.Id;
+        var editorFactory = _editorSessionFactories.Find(editorId);
+        if (editorFactory is null)
+        {
+            _logger.Warning("Refusing to open {FullPath} on watch {WatchId}: the {EditorId} editor registered no session factory", fullPath, watchId, editorId);
+            throw new RpcException(new Status(PermanentRefusal.NotDeployed, $"The '{editorId}' editor registered no session factory."));
+        }
+
+        _logger.Debug("Opening {FullPath} in the {EditorId} editor on watch {WatchId}", fullPath, editorId, watchId);
+        return new OpenedDiagram(new EditorSessionAdapter(editorFactory.Open(watchId, file), editorId), fullPath, watchId);
     }
 
     /// <summary>
@@ -200,36 +204,7 @@ public sealed class DiagramPump
 
         try
         {
-            var baseline = await BaselineOfAsync(session, bodyPath, watchId, cancellationToken);
-            _logger.Debug(
-                "Sending the baseline of {BodyPath} on watch {WatchId}: {DeltaCount} deltas, {DeltaKinds}",
-                bodyPath,
-                watchId,
-                baseline.Count,
-                KindsOf(baseline));
-
-            // A diagram with nothing in it still has a baseline: an empty Add. The client knows
-            // the open has answered only when the first delta arrives, so a session whose
-            // baseline is no deltas at all - a Helm chart over a folder without Chart.yaml, an
-            // empty mindmap - left its tab on "Opening…" until something changed. Said here,
-            // once, rather than in every module's Baseline().
-            if (baseline.Count == 0)
-            {
-                await write(new Delta { Add = new Add() }, cancellationToken);
-            }
-
-            foreach (var delta in baseline)
-            {
-                await write(DiagramWire.ToProto(delta), cancellationToken);
-            }
-
-            await foreach (var batch in channel.Reader.ReadAllAsync(cancellationToken))
-            {
-                foreach (var delta in batch)
-                {
-                    await write(delta, cancellationToken);
-                }
-            }
+            await WriteAsync(session, bodyPath, watchId, channel, write, cancellationToken);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -261,6 +236,47 @@ public sealed class DiagramPump
 
             // MUST STAY NON-BLOCKING: DiagramDocumentChangeHandler raises into this while holding its lock.
             Push(args.Deltas, channel);
+        }
+    }
+
+    /// <summary>The session's baseline, then every batch of changes <paramref name="channel"/> carries, written as they come.</summary>
+    private static async Task WriteAsync(
+        IDiagramSession session,
+        string bodyPath,
+        ShortGuid watchId,
+        Channel<Delta[]> channel,
+        Func<Delta, CancellationToken, Task> write,
+        CancellationToken cancellationToken)
+    {
+        var baseline = await BaselineOfAsync(session, bodyPath, watchId, cancellationToken);
+        _logger.Debug(
+            "Sending the baseline of {BodyPath} on watch {WatchId}: {DeltaCount} deltas, {DeltaKinds}",
+            bodyPath,
+            watchId,
+            baseline.Count,
+            KindsOf(baseline));
+
+        // A diagram with nothing in it still has a baseline: an empty Add. The client knows
+        // the open has answered only when the first delta arrives, so a session whose
+        // baseline is no deltas at all - a Helm chart over a folder without Chart.yaml, an
+        // empty mindmap - left its tab on "Opening…" until something changed. Said here,
+        // once, rather than in every module's Baseline().
+        if (baseline.Count == 0)
+        {
+            await write(new Delta { Add = new Add() }, cancellationToken);
+        }
+
+        foreach (var delta in baseline)
+        {
+            await write(DiagramWire.ToProto(delta), cancellationToken);
+        }
+
+        await foreach (var batch in channel.Reader.ReadAllAsync(cancellationToken))
+        {
+            foreach (var delta in batch)
+            {
+                await write(delta, cancellationToken);
+            }
         }
     }
 
