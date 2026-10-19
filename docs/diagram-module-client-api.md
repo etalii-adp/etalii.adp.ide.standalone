@@ -578,6 +578,8 @@ Source: [`src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx`](../sr
 
 **A refusal needs no handler.** Every call that reaches the backend from a canvas — the library's declared keystrokes and menu actions, and a module's own `executeAction`, `setProperty` and `moveElementTo` — shows its refusal on the one line the library draws around the canvas, and clears it when the next is sent (see [Refusals and status](#refusals-and-status)). `ActionRefused` is still raised, as `action-refused` with the `actionId` and a `message`, for a module that wants to do something of its own besides; **nothing is required to listen**, and a module that draws the message itself draws it twice.
 
+**A refused move snaps back only if the handler hands back the answer.** The canvas holds a dropped element at the drop until the model places it, so an accepted move does not flash back to where it began. A refused move changes nothing in the model, so nothing releases that hold: the element stays at a position nothing recorded. `onElementMoved` may therefore return the `Promise<string>` that `moveElementTo` resolves to - `""` when the move was recorded, its refusal otherwise - and a refusal lets the element go back to where the model has it. A handler that returns nothing is held until the model answers, as before. C4's [`C4Canvas.tsx`](../src/diagrams/c4/client/C4Canvas.tsx) returns it, for a view that declares `autoLayout` (c4-disl-fbl, ruled 2026-10-19).
+
 ```mermaid
 sequenceDiagram
     participant User

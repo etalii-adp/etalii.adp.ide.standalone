@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fireEvent, render } from "@testing-library/react";
+import { act, fireEvent, render } from "@testing-library/react";
 import { DiagramCanvas } from "./DiagramCanvas";
 import type { DiagramDefinition } from "./definition/diagramDefinition";
 import type { DiagramModel } from "./api/diagramModel";
@@ -49,11 +49,19 @@ function drawnAt(container: HTMLElement): { x: number; y: number } {
   return { x: Number(translate![1]), y: Number(translate![2]) };
 }
 
-function mount(definition: DiagramDefinition, model: DiagramModel, moves: { x: number; y: number }[]) {
+/**
+ * Mounts the canvas. `answer` is what the module's move handler resolves to: nothing (the default,
+ * a handler that answers through the model alone), `""` for a move it accepted, or its refusal.
+ */
+function mount(definition: DiagramDefinition, model: DiagramModel, moves: { x: number; y: number }[], answer?: string) {
+  const onElementMoved = ({ position }: { position: { x: number; y: number } }) => {
+    moves.push(position);
+    return answer === undefined ? undefined : Promise.resolve(answer);
+  };
   const tree = (m: DiagramModel) => (
     <DiagramViewProvider>
       <DiagramToolboxProvider>
-        <DiagramCanvas definition={definition} model={m} events={{ onElementMoved: ({ position }) => void moves.push(position) }} />
+        <DiagramCanvas definition={definition} model={m} events={{ onElementMoved }} />
       </DiagramToolboxProvider>
     </DiagramViewProvider>
   );
@@ -126,6 +134,42 @@ describe("a positional drop is held until the model answers", () => {
     dragAndDrop(container, 50, 30);
 
     expect(container.querySelector('[data-element-id="a"]')!.getAttribute("class")).not.toContain("library-element-dragging");
+    unmount();
+  });
+});
+
+describe("a refused drop is let go", () => {
+  it("returns to the model's position when the module answers the move with a refusal", async () => {
+    // THE DEFECT (c4-disl-fbl, ruled 2026-10-19). A refused move changes nothing in the model, and
+    // only the model's answer released the hold - so a refused card stayed where it was dropped,
+    // drawn at a position nothing had recorded, until something else moved it.
+    const moves: { x: number; y: number }[] = [];
+    const { container, unmount } = mount(definitionWith(), at(0, 0), moves, "This view places its elements itself.");
+    const before = drawnAt(container);
+
+    dragAndDrop(container, 50, 30);
+    await act(async () => {});
+
+    expect(moves, "the module was never told about the move, so this test cannot say anything").toHaveLength(1);
+    const after = drawnAt(container);
+    expect(after.x).toBeCloseTo(before.x, 5);
+    expect(after.y).toBeCloseTo(before.y, 5);
+    unmount();
+  });
+
+  it("stays held when the module answers that it accepted the move", async () => {
+    // The other half: an accepted move answers "" and its delta follows. Letting go on that answer
+    // would bring back the flash to where the drag began that holding exists to prevent.
+    const moves: { x: number; y: number }[] = [];
+    const { container, unmount } = mount(definitionWith(), at(0, 0), moves, "");
+    const before = drawnAt(container);
+
+    dragAndDrop(container, 50, 30);
+    await act(async () => {});
+
+    const after = drawnAt(container);
+    expect(after.x).toBeCloseTo(before.x + 50, 5);
+    expect(after.y).toBeCloseTo(before.y + 30, 5);
     unmount();
   });
 });

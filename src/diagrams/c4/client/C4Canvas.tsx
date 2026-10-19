@@ -153,10 +153,11 @@ export function C4Canvas({ projectId, entryId, path }: C4CanvasProps) {
       if (!model.nodes.has(elementId)) {
         return;
       }
-      // Nothing optimistic: the element stays where it was until the backend's delta says
-      // otherwise, so what is drawn is always what was recorded. A refused move answers with
-      // its sentence, shown like every other refusal rather than as a silent snap-back.
-      void moveElementTo(elementId, position.x, position.y);
+      // The library holds the card at the drop until the backend's delta places it. A refused move
+      // - a view that declares autoLayout, ruled 2026-10-19 - sends no delta, so the answer is
+      // handed back: the card snaps back to where the backend has it, and the sentence is shown on
+      // the library's line like every other refusal.
+      return moveElementTo(elementId, position.x, position.y);
     },
     onElementDropped: ({ elementType, position }) => {
       // The entry carries the backend's own drop action, and is sent as a drop: the backend
