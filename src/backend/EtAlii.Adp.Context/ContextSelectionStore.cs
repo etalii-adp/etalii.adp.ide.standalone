@@ -51,9 +51,12 @@ public sealed class ContextSelectionStore : IContextSelectionStore, IDisposable,
             // baseline, and the push of one that changes after it waits for the gate and lands
             // behind it. Read before registering, a validation finishing in between pushed to a
             // connection that was not there yet, and the baseline went stale for good (T292).
+            // A set that changes before the read is pushed after it all the same, and is not sent
+            // twice: the push finds the connection already has it (T300).
             writer.TryWrite(ContextSelectionRecord.ToWire(entry.Record, entry.RootActions));
             writer.TryWrite(ContextActionGroups.ToProto(projectActions));
-            writer.TryWrite(new ContextMessage { Problems = problems() });
+            entry.LastProblems = problems();
+            writer.TryWrite(new ContextMessage { Problems = entry.LastProblems });
         }
 
         return Disposable.From(() => Remove(watchId));
@@ -83,12 +86,13 @@ public sealed class ContextSelectionStore : IContextSelectionStore, IDisposable,
         {
             lock (entry.Gate)
             {
-                if (entry.Writer is null || entry.Root != root)
+                if (entry.Writer is null || entry.Root != root || problems.Equals(entry.LastProblems))
                 {
                     continue;
                 }
 
                 // The same message instance for everyone: what one connection reads, all read.
+                entry.LastProblems = problems;
                 entry.Writer.TryWrite(message);
             }
         }

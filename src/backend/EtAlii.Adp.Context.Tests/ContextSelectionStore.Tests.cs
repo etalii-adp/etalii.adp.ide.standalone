@@ -496,6 +496,47 @@ public class ContextSelectionStoreTests : IDisposable
     }
 
     [Fact]
+    public async Task Register_AProblemSetAlreadyInTheBaseline_IsNotPushedAgain()
+    {
+        // Arrange.
+        // Stability runs 14 and 15 (T300): a project's validation finished between a second
+        // connection's registration and the broadcaster's push, so the connection read the
+        // validated set for its baseline and was then pushed the same set again. The flows that
+        // assert nothing else reaches that connection read the second copy as a message leaking
+        // from the other one. The push here carries the set the baseline already did, as the
+        // broadcaster's does - read from the store after the change.
+        var channel = Channel.CreateUnbounded<ContextMessage>();
+        _store.Register(ShortGuid.NewShortGuid(), Root, channel.Writer, [], [], () => new ProjectProblems { State = ProblemSetState.Validated, ErrorCount = 1 });
+        await TestBaselineAsync(channel.Reader);
+
+        // Act.
+        _store.PushProblems(Root, new ProjectProblems { State = ProblemSetState.Validated, ErrorCount = 1 });
+
+        // Assert.
+        Assert.False(channel.Reader.TryRead(out var again), $"The connection was sent the set its baseline carried a second time: {again}");
+    }
+
+    [Fact]
+    public async Task PushProblems_ASetThatChanged_IsPushedEvenWhenAnEarlierOneWasTheSame()
+    {
+        // Arrange.
+        // Only the set a connection already has is held back: a change after it, and a change back
+        // again, both arrive.
+        var channel = Channel.CreateUnbounded<ContextMessage>();
+        var validated = new ProjectProblems { State = ProblemSetState.Validated, ErrorCount = 1 };
+        _store.Register(ShortGuid.NewShortGuid(), Root, channel.Writer, [], [], () => validated);
+        await TestBaselineAsync(channel.Reader);
+
+        // Act.
+        _store.PushProblems(Root, new ProjectProblems { State = ProblemSetState.Validating, ErrorCount = 1 });
+        _store.PushProblems(Root, validated);
+
+        // Assert.
+        Assert.Equal(ProblemSetState.Validating, (await ReadAsync(channel.Reader)).Problems.State);
+        Assert.Equal(ProblemSetState.Validated, (await ReadAsync(channel.Reader)).Problems.State);
+    }
+
+    [Fact]
     public async Task PushProblems_ReachesEveryConnectionInTheProject()
     {
         // Arrange.
@@ -547,7 +588,7 @@ public class ContextSelectionStoreTests : IDisposable
         await TestBaselineAsync(mine.Reader);
         await TestBaselineAsync(theirs.Reader);
 
-        _store.PushProblems(Root, new ProjectProblems());
+        _store.PushProblems(Root, new ProjectProblems { State = ProblemSetState.Validated });
 
         // Act and assert, step by step.
         var message = await ReadAsync(mine.Reader);
