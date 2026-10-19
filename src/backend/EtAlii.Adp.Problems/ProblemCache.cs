@@ -83,6 +83,7 @@ internal sealed class ProblemCache : IDisposable
                 }
                 catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or JsonException)
                 {
+                    // ReSharper disable once InconsistentlySynchronizedField - Reason: a static Serilog logger is safe on any thread; the entry gates guard the problems, not it.
                     _logger.Warning(exception, "Skipping the problem cache at {CachePath}: unreadable", cachePath);
                 }
             }
@@ -220,6 +221,7 @@ internal sealed class ProblemCache : IDisposable
             // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract - Reason: JsonSerializer does not honour the record's non-nullable annotations, so a cache file of another shape - or one holding "Problems": null - deserialises with Problems null, and this check turns that into an ignored cache rather than a NullReferenceException.
             if (cache is null || cache.Version != CacheFormatVersion || cache.Problems is null)
             {
+                // ReSharper disable once InconsistentlySynchronizedField - Reason: a static Serilog logger is safe on any thread; the entry gates guard the problems, not it.
                 _logger.Warning("Ignoring the problem cache at {CachePath}: not this format", cachePath);
                 return entry;
             }
@@ -229,6 +231,7 @@ internal sealed class ProblemCache : IDisposable
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or JsonException)
         {
             // A broken cache must never throw into project opening (Requirement 4.6).
+            // ReSharper disable once InconsistentlySynchronizedField - Reason: a static Serilog logger is safe on any thread; the entry gates guard the problems, not it.
             _logger.Warning(exception, "Ignoring the problem cache at {CachePath}: unreadable", cachePath);
         }
         return entry;
